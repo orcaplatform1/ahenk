@@ -95,19 +95,19 @@ export function TabKyc() {
 
   if (kycStatus?.status === 'APPROVED') {
     return (
-      <div className="bg-surface border border-green-800 rounded-2xl p-8 flex flex-col items-center gap-3 text-center">
+      <div className="glass-card p-8 flex flex-col items-center gap-3 text-center" style={{ border: '1px solid rgba(74,222,128,0.25)' }}>
         <span className="text-3xl">✓</span>
         <p className="font-medium text-green-400">Kimliğiniz doğrulandı</p>
-        <p className="text-sm text-muted">Artık masalara katılabilir ve paket satın alabilirsiniz.</p>
+        <p className="text-sm text-[#888]">Artık masalara katılabilir ve paket satın alabilirsiniz.</p>
       </div>
     );
   }
 
   if (kycStatus?.status === 'PENDING') {
     return (
-      <div className="bg-surface border border-border rounded-2xl p-8 flex flex-col items-center gap-3 text-center">
-        <p className="font-medium text-text">Belgeleriniz inceleniyor</p>
-        <p className="text-sm text-muted">Başvurunuz değerlendiriliyor. Bu süreç genellikle 24-48 saat sürer.</p>
+      <div className="glass-card p-8 flex flex-col items-center gap-3 text-center">
+        <p className="font-medium text-[#f5f5f5]">Belgeleriniz inceleniyor</p>
+        <p className="text-sm text-[#888]">Başvurunuz değerlendiriliyor. Bu süreç genellikle 24-48 saat sürer.</p>
       </div>
     );
   }
@@ -160,7 +160,7 @@ export function TabKyc() {
           <button
             onClick={handleSubmit}
             disabled={submitting || !files.idFront || !files.idBack || !files.liveness}
-            className="w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-sm font-medium transition-colors disabled:opacity-50"
+            className="w-full py-3 text-sm btn-grad"
           >
             {submitting ? 'Yükleniyor…' : 'Başvuruyu Gönder'}
           </button>
@@ -182,7 +182,7 @@ const FileInput = forwardRef<HTMLInputElement, {
   <div>
     <label className="block text-sm text-muted mb-2">{label}</label>
     <div
-      className="relative bg-surface border border-border rounded-xl p-4 cursor-pointer hover:border-muted transition-colors"
+      className="relative cursor-pointer glass-card p-4 hover:border-[rgba(192,57,43,0.4)] transition-colors"
       onClick={() => (ref as React.RefObject<HTMLInputElement>).current?.click()}
     >
       <input

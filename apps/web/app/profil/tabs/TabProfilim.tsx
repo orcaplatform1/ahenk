@@ -115,8 +115,8 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
             />
             {saveError && <p className="text-accent text-sm">{saveError}</p>}
             <div className="flex gap-2">
-              <button onClick={() => setEditingCities(false)} className="flex-1 py-2 rounded-xl border border-border text-sm text-muted hover:text-text">İptal</button>
-              <button onClick={saveCities} disabled={saving} className="flex-1 py-2 rounded-xl bg-primary hover:bg-primary-hover text-sm disabled:opacity-50">
+              <button onClick={() => setEditingCities(false)} className="flex-1 py-2 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>İptal</button>
+              <button onClick={saveCities} disabled={saving} className="flex-1 py-2 text-sm btn-grad">
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
             </div>
@@ -139,7 +139,12 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
                   key={t}
                   type="button"
                   onClick={() => setTopics((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t])}
-                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${topics.includes(t) ? 'bg-primary border-primary text-white' : 'bg-bg border-border text-muted hover:border-accent hover:text-accent'}`}
+                  className="px-3 py-1.5 rounded-full text-sm transition-all"
+                  style={
+                    topics.includes(t)
+                      ? { background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff', border: 'none', boxShadow: '0 0 10px rgba(192,57,43,0.35)' }
+                      : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#888' }
+                  }
                 >
                   {t}
                 </button>
@@ -147,8 +152,8 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
             </div>
             {saveError && <p className="text-accent text-sm">{saveError}</p>}
             <div className="flex gap-2">
-              <button onClick={() => setEditingTopics(false)} className="flex-1 py-2 rounded-xl border border-border text-sm text-muted hover:text-text">İptal</button>
-              <button onClick={saveTopics} disabled={saving} className="flex-1 py-2 rounded-xl bg-primary hover:bg-primary-hover text-sm disabled:opacity-50">
+              <button onClick={() => setEditingTopics(false)} className="flex-1 py-2 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>İptal</button>
+              <button onClick={saveTopics} disabled={saving} className="flex-1 py-2 text-sm btn-grad">
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
             </div>
@@ -182,11 +187,15 @@ export function TabProfilimSkeleton() {
 
 function Card({ title, children, action }: { title: string; children: React.ReactNode; action?: { label: string; onClick: () => void }; }) {
   return (
-    <div className="bg-surface border border-border rounded-2xl p-5">
+    <div className="glass-card p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium text-sm text-muted uppercase tracking-wide">{title}</h3>
+        <h3 className="font-medium text-sm text-[#888] uppercase tracking-wide">{title}</h3>
         {action && (
-          <button onClick={action.onClick} className="text-xs text-muted hover:text-text border border-border rounded-lg px-3 py-1">
+          <button
+            onClick={action.onClick}
+            className="text-xs text-[#888] hover:text-[#f5f5f5] transition-colors px-3 py-1"
+            style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}
+          >
             {action.label}
           </button>
         )}

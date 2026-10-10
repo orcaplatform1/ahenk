@@ -25,7 +25,7 @@ export function Modal({ open, onClose, title, children }: Props) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-surface border border-border rounded-2xl p-6"
+        className="w-full max-w-md glass-card p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">

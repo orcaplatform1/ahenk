@@ -78,8 +78,8 @@ export function TabMasalar() {
 
   if (meetings.length === 0) {
     return (
-      <div className="bg-surface border border-border rounded-2xl p-8 text-center">
-        <p className="text-muted text-sm">Henüz hiç masana katılmadın.</p>
+      <div className="glass-card p-8 text-center">
+        <p className="text-[#888] text-sm">Henüz hiç masana katılmadın.</p>
       </div>
     );
   }
@@ -90,7 +90,7 @@ export function TabMasalar() {
         {meetings.map((m) => {
           const s = STATUS_LABEL[m.status];
           return (
-            <div key={m.id} className="bg-surface border border-border rounded-2xl p-5">
+            <div key={m.id} className="glass-card p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
                   <p className="text-sm text-text font-medium">
@@ -106,7 +106,8 @@ export function TabMasalar() {
               {m.status === 'CONFIRMED' && (
                 <button
                   onClick={() => openPreview(m)}
-                  className="mt-4 text-xs border border-border rounded-xl px-3 py-1.5 text-muted hover:text-text hover:border-muted transition-colors"
+                  className="mt-4 text-xs px-3 py-1.5 text-[#888] hover:text-[#f5f5f5] transition-colors"
+                  style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}
                 >
                   Katılımcıları Gör
                 </button>
@@ -115,7 +116,8 @@ export function TabMasalar() {
               {m.status === 'COMPLETED' && (
                 <button
                   onClick={() => openPreview(m)}
-                  className="mt-4 text-xs border border-border rounded-xl px-3 py-1.5 text-muted hover:text-text hover:border-muted transition-colors"
+                  className="mt-4 text-xs px-3 py-1.5 text-[#888] hover:text-[#f5f5f5] transition-colors"
+                  style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}
                 >
                   Katılımcıları Gör &amp; Engelle
                 </button>
@@ -140,7 +142,7 @@ export function TabMasalar() {
             {participants.map((p) => (
               <div key={p.userId} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-bg border border-border flex items-center justify-center text-xs font-medium text-text">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium text-[#f5f5f5]" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
                     {p.initials}
                   </div>
                   <span className="text-sm text-muted">{p.gender === 'MALE' ? 'Erkek' : p.gender === 'FEMALE' ? 'Kadın' : '—'}</span>

@@ -96,11 +96,12 @@ export default function ProfilPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap transition-colors flex-shrink-0 ${
+                className="px-4 py-2 text-sm whitespace-nowrap transition-all flex-shrink-0"
+                style={
                   activeTab === tab.key
-                    ? 'bg-primary text-white'
-                    : 'text-muted hover:text-text hover:bg-surface'
-                }`}
+                    ? { background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', borderRadius: 9999, color: '#fff', boxShadow: '0 0 12px rgba(192,57,43,0.35)' }
+                    : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999, color: '#888' }
+                }
               >
                 {tab.label}
               </button>

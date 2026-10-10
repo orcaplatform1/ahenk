@@ -16,14 +16,35 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Ahenk — Algoritmik Masa Buluşması',
+  title: 'Ahenk — Sana Uygun İnsanlarla Buluş',
   description:
-    'Her hafta algoritma seni uyumlu kişilerle eşleştirir. İstanbul, Ankara, İzmir ve daha fazla şehirde yabancılarla dolu bir masaya otur.',
+    'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. İster Grup masasında, istersen başbaşa bir yemek veya kahve. Doğru insanlar, doğru zamanda.',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/favicon.png',
+  },
   openGraph: {
-    title: 'Ahenk — Algoritmik Masa Buluşması',
+    title: 'Ahenk — Sana Uygun İnsanlarla Buluş',
     description:
-      'Her hafta algoritma seni uyumlu kişilerle eşleştirir. İstanbul, Ankara, İzmir ve daha fazla şehirde yabancılarla dolu bir masaya otur.',
+      'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. İster Grup masasında, istersen başbaşa bir yemek veya kahve. Doğru insanlar, doğru zamanda.',
     type: 'website',
+    url: 'https://ahenk.tr',
+    siteName: 'Ahenk',
+    images: [
+      {
+        url: 'https://ahenk.tr/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Ahenk — Sana Uygun İnsanlarla Buluş',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Ahenk — Sana Uygun İnsanlarla Buluş',
+    description:
+      'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. Doğru insanlar, doğru zamanda.',
+    images: ['https://ahenk.tr/og-image.jpg'],
   },
   alternates: {
     canonical: 'https://ahenk.tr',
