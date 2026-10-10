@@ -1,0 +1,505 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// KULLANICI
+// ─────────────────────────────────────────────
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  phone         String?    @unique
+  passwordHash  String
+  role          UserRole   @default(USER)
+  status        UserStatus @default(ACTIVE)
+  emailVerified Boolean    @default(false)
+  phoneVerified Boolean    @default(false)
+  isBot         Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  profile        Profile?
+  oceanScore     OceanScore?
+  oceanAnswers   OceanAnswer[]
+  participations MeetingParticipant[]
+  notifications  Notification[]
+  refreshTokens  RefreshToken[]
+  consents       ConsentLog[]
+  kyc            KycSubmission?
+  kycReviews     KycSubmission[]   @relation("KycReviewer")
+  waitlistEntries MatchingWaitlist[]
+  subscriptions  Subscription[]
+  payments       Payment[]
+  fcmToken         String?    // Firebase Cloud Messaging cihaz token'ı
+  quarantineUntil  DateTime?  // Karantina bitiş tarihi
+  blocksGiven      UserBlock[] @relation("BlockerRelation")
+  blocksReceived   UserBlock[] @relation("BlockedRelation")
+  reportsMade      Report[]   @relation("ReportsByUser")
+  reportsReceived  Report[]   @relation("ReportsAgainstUser")
+}
+
+enum UserRole {
+  USER
+  COACH
+  ADMIN
+  SUPERADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETED
+}
+
+// ─────────────────────────────────────────────
+// PROFİL
+// ─────────────────────────────────────────────
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName String
+  lastName  String
+  birthDate DateTime?
+  gender    Gender?
+  city          String?           // İkamet şehri (gösterim amaçlı)
+  primaryCity   String?           // Katılım birincil şehri (eşleştirmede kullanılır, zorunlu)
+  secondaryCity String?           // Katılım ikincil şehri (opsiyonel, birincilde eşleşme yoksa)
+  bio               String?  @db.Text
+  avatarUrl         String?
+  interests         String[]
+  district          String?     // İlçe
+  venueCategories   String[]    // Mekan tercihleri (ör: "kafe", "park", "kütüphane")
+  topicPreferences  String[]    // Konu tercihleri (ör: "teknoloji", "müzik", "spor")
+  isPioneer         Boolean  @default(false) // Öncü rozeti — admin tarafından atanır
+  isPublic          Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+// ─────────────────────────────────────────────
+// OCEAN KİŞİLİK TESTİ
+// ─────────────────────────────────────────────
+
+model OceanScore {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  openness          Float    // Açıklık (0-100)
+  conscientiousness Float    // Sorumluluk (0-100)
+  extraversion      Float    // Dışadönüklük (0-100)
+  agreeableness     Float    // Uyumluluk (0-100)
+  neuroticism       Float    // Nevrotiklik (0-100)
+  adminCanReset     Boolean  @default(false) // Admin açarsa 180 gün kilidi devre dışı
+  completedAt       DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model OceanQuestion {
+  id           String         @id @default(cuid())
+  text         String
+  dimension    OceanDimension
+  reversed     Boolean        @default(false)
+  orderNum     Int            // Global sıra (1-19)
+  section      Int            // Bölüm numarası (1-6)
+  sectionTitle String         // Bölüm başlığı
+  active       Boolean        @default(true)
+
+  answers OceanAnswer[]
+}
+
+enum OceanDimension {
+  OPENNESS
+  CONSCIENTIOUSNESS
+  EXTRAVERSION
+  AGREEABLENESS
+  NEUROTICISM
+}
+
+model OceanAnswer {
+  id         String        @id @default(cuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String
+  question   OceanQuestion @relation(fields: [questionId], references: [id])
+  sessionId  String        // Bir test oturumunun tüm cevaplarını gruplar
+  score      Int           // 1-5 (Likert ölçeği)
+  createdAt  DateTime      @default(now())
+
+  @@unique([userId, questionId, sessionId])
+  @@index([userId, sessionId])
+}
+
+// ─────────────────────────────────────────────
+// HAFTALIK EŞLEŞTİRME
+// ─────────────────────────────────────────────
+
+model MatchingCycle {
+  id         String      @id @default(cuid())
+  weekNumber Int         // ISO hafta numarası (1-53)
+  year       Int
+  runAt      DateTime    @default(now())
+  status     CycleStatus @default(RUNNING)
+
+  meetings  Meeting[]
+  waitlist  MatchingWaitlist[]
+
+  @@unique([weekNumber, year])
+}
+
+enum CycleStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// ─────────────────────────────────────────────
+// BULUŞMA
+// ─────────────────────────────────────────────
+
+model Meeting {
+  id              String        @id @default(cuid())
+  cycleId         String?
+  cycle           MatchingCycle? @relation(fields: [cycleId], references: [id])
+  type            MeetingType
+  title           String
+  description     String?       @db.Text
+  scheduledAt     DateTime
+  endsAt          DateTime?
+  status          MeetingStatus @default(PENDING)
+  maxParticipants Int           @default(6)
+  venuePhotoUrl        String?       // Mekan fotoğrafı URL
+  locationUrl          String?       // Online toplantı linki
+  locationText         String?       // Fiziksel mekan adı/adresi
+  registrationDeadline DateTime?     // Kayıt kapanış (Cumartesi 10:00, uzatılabilir)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  participants MeetingParticipant[]
+}
+
+enum MeetingType {
+  GROUP
+  ONE_ON_ONE
+}
+
+enum MeetingStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model MeetingParticipant {
+  id         String            @id @default(cuid())
+  meetingId  String
+  meeting    Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status     ParticipantStatus @default(INVITED)
+  matchScore Float?            // OCEAN uyumluluk skoru (0-100)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@unique([meetingId, userId])
+  @@index([userId])
+}
+
+enum ParticipantStatus {
+  INVITED
+  ACCEPTED
+  DECLINED
+  ATTENDED
+  NO_SHOW
+}
+
+// ─────────────────────────────────────────────
+// BİLDİRİM
+// ─────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String           @db.Text
+  data      Json?
+  read      Boolean          @default(false)
+  sentAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}
+
+enum NotificationType {
+  EMAIL
+  PUSH
+  SMS
+  IN_APP
+  WHATSAPP
+}
+
+// ─────────────────────────────────────────────
+// JWT REFRESH TOKEN
+// ─────────────────────────────────────────────
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────
+// KVKK / ONAY KAYDI
+// ─────────────────────────────────────────────
+
+model ConsentLog {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      ConsentType
+  accepted  Boolean
+  ip        String?
+  userAgent String?
+  createdAt DateTime    @default(now())
+
+  @@index([userId, type])
+}
+
+enum ConsentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+  MARKETING_EMAIL
+  MARKETING_SMS
+}
+
+// ─────────────────────────────────────────────
+// EŞLEŞTİRME BEKLİSTE
+// ─────────────────────────────────────────────
+
+model MatchingWaitlist {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycleId   String        // Yerleştirilemediği hafta
+  cycle     MatchingCycle @relation(fields: [cycleId], references: [id])
+  reason    String        // "ODD_NUMBER" | "GENDER_IMBALANCE"
+  addedAt   DateTime      @default(now())
+
+  @@unique([userId, cycleId])
+  @@index([cycleId])
+}
+
+// ─────────────────────────────────────────────
+// KİMLİK DOĞRULAMA (KYC)
+// ─────────────────────────────────────────────
+
+model KycSubmission {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Cloudflare R2 nesne anahtarları
+  idFrontKey  String    // kimlik ön yüz
+  idBackKey   String    // kimlik arka yüz
+  livenessKey String    // canlılık videosu (6-7 sn)
+
+  status      KycStatus @default(PENDING)
+
+  // İnceleme bilgisi
+  reviewedById   String?
+  reviewedBy     User?     @relation("KycReviewer", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  rejectReason   String?   @db.Text  // REJECTED veya SUSPICIOUS durumunda doldurulur
+  adminNote      String?   @db.Text  // İç not (kullanıcıya gösterilmez)
+
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPICIOUS
+}
+
+// ─────────────────────────────────────────────
+// ABONELIK & ÖDEME
+// ─────────────────────────────────────────────
+
+model Subscription {
+  id         String             @id @default(cuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan       SubscriptionPlan
+  status     SubscriptionStatus @default(ACTIVE)
+  startsAt   DateTime           @default(now())
+  expiresAt  DateTime?          // MASADA: +30 gün; KARSIMDA/ICERDE: null
+  usedAt     DateTime?          // KARSIMDA tek kullanım: tüketildiğinde set edilir
+  cancelNote String?            @db.Text  // Admin iade/iptal notu
+  payment    Payment?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([userId, status])
+}
+
+model Payment {
+  id                   String          @id @default(cuid())
+  userId               String
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId       String?         @unique
+  subscription         Subscription?   @relation(fields: [subscriptionId], references: [id])
+  plan                 SubscriptionPlan
+  amountKurus          Int             // 34900 = 349.00 TL (kuruş cinsinden)
+  status               PaymentStatus   @default(PENDING)
+  platform             PaymentPlatform
+  iyzicoToken          String?         // checkout form token
+  iyzicoPaymentId      String?         // onay sonrası iyzico payment ID
+  iyzicoConversationId String?
+  failureReason        String?         @db.Text
+  paidAt               DateTime?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([iyzicoToken])
+}
+
+enum SubscriptionPlan {
+  MASADA    // 349 TL/ay — grup buluşma
+  KARSIMDA  // 449 TL/tek kullanım — başbaşa buluşma
+  ICERDE    // 679 TL — MASADA (1 ay) + KARSIMDA (1 kullanım) "Tercih Edilen"
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentPlatform {
+  WEB
+  ANDROID
+  IOS
+}
+
+// ─────────────────────────────────────────────
+// SİSTEM AYARLARI
+// ─────────────────────────────────────────────
+
+model AppConfig {
+  key       String   @id   // ör: "WEEKLY_TABLE_LIMIT", "MATCHING_ENABLED"
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// ŞEHİR & MEKAN
+// ─────────────────────────────────────────────
+
+model City {
+  id               String   @id @default(cuid())
+  name             String   @unique
+  isActive         Boolean  @default(true)
+  weeklyTableLimit Int      @default(0)  // 0 = global AppConfig değerini kullan
+  venues           Venue[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Venue {
+  id          String        @id @default(cuid())
+  name        String
+  description String?       @db.Text
+  category    VenueCategory
+  cityId      String
+  city        City          @relation(fields: [cityId], references: [id])
+  address     String?
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([cityId])
+}
+
+enum VenueCategory {
+  SADE
+  ORTA
+  PREMIUM
+}
+
+// ─────────────────────────────────────────────
+// KULLANICI ENGELLEMESİ
+// ─────────────────────────────────────────────
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("BlockerRelation", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("BlockedRelation", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+}
+
+// ─────────────────────────────────────────────
+// ŞİKAYET / RAPOR
+// ─────────────────────────────────────────────
+
+model Report {
+  id         String       @id @default(cuid())
+  reporterId String
+  reporter   User         @relation("ReportsByUser", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedId String
+  reported   User         @relation("ReportsAgainstUser", fields: [reportedId], references: [id], onDelete: Cascade)
+  reason     String
+  detail     String?      @db.Text
+  status     ReportStatus @default(PENDING)
+  adminNote  String?      @db.Text
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([reportedId, status])
+  @@index([reporterId])
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}

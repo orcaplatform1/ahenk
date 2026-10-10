@@ -1,0 +1,252 @@
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { MeetingStatus, MeetingType } from "@prisma/client";
+
+@Injectable()
+export class MeetingsService {
+  constructor(private prisma: PrismaService) {}
+
+  // ─── Aktif / bekleyen masa ────────────────────────────────────────────────────
+
+  async getMyCurrent(userId: string) {
+    const participation = await this.prisma.meetingParticipant.findFirst({
+      where: {
+        userId,
+        meeting: {
+          status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] },
+          scheduledAt: { gte: new Date() },
+        },
+      },
+      orderBy: { meeting: { scheduledAt: 'asc' } },
+      select: {
+        meeting: {
+          select: {
+            id: true,
+            scheduledAt: true,
+            locationText: true,
+            locationUrl: true,
+            venuePhotoUrl: true,
+            participants: {
+              select: {
+                user: {
+                  select: {
+                    profile: { select: { firstName: true, lastName: true, gender: true } },
+                    oceanScore: {
+                      select: {
+                        openness: true,
+                        conscientiousness: true,
+                        extraversion: true,
+                        agreeableness: true,
+                        neuroticism: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!participation) return null;
+
+    const m = participation.meeting;
+    return {
+      id: m.id,
+      scheduledAt: m.scheduledAt,
+      locationName: m.locationText ?? null,
+      locationText: m.locationText ?? null,
+      venuePhotoUrl: m.venuePhotoUrl ?? null,
+      locationMapsUrl: m.locationUrl ?? null,
+      participants: m.participants.map((p) => {
+        const first = p.user.profile?.firstName ?? '';
+        const last = p.user.profile?.lastName ?? '';
+        return {
+          initials: `${first[0] ?? '?'}.${last[0] ?? '?'}.`,
+          gender: p.user.profile?.gender ?? null,
+          oceanScore: p.user.oceanScore ?? null,
+        };
+      }),
+    };
+  }
+
+  // ─── Geçmiş masalar ─────────────────────────────────────────────────────────
+
+  async getMyHistory(userId: string) {
+    const participations = await this.prisma.meetingParticipant.findMany({
+      where: {
+        userId,
+        meeting: { status: MeetingStatus.COMPLETED },
+      },
+      orderBy: { meeting: { scheduledAt: "desc" } },
+      select: {
+        matchScore: true,
+        meeting: {
+          select: {
+            id: true,
+            scheduledAt: true,
+            locationText: true,
+            venuePhotoUrl: true,
+            cycle: { select: { weekNumber: true, year: true } },
+            participants: {
+              where: { userId },
+              select: {
+                user: {
+                  select: {
+                    oceanScore: {
+                      select: {
+                        openness: true,
+                        conscientiousness: true,
+                        extraversion: true,
+                        agreeableness: true,
+                        neuroticism: true,
+                      },
+                    },
+                    profile: { select: { primaryCity: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return participations.map((p) => {
+      const ocean = p.meeting.participants[0]?.user?.oceanScore;
+      const overallCompatibility = ocean
+        ? Math.round(
+            (ocean.openness +
+              ocean.conscientiousness +
+              ocean.extraversion +
+              ocean.agreeableness +
+              (100 - ocean.neuroticism)) /
+              5,
+          )
+        : null;
+
+      return {
+        id: p.meeting.id,
+        weekNumber: p.meeting.cycle?.weekNumber ?? null,
+        date: p.meeting.scheduledAt,
+        venueName: p.meeting.locationText ?? null,
+        venuePhotoUrl: p.meeting.venuePhotoUrl ?? null,
+        city: p.meeting.participants[0]?.user?.profile?.primaryCity ?? null,
+        overallCompatibility,
+      };
+    });
+  }
+
+  // ─── Katılımcı önizlemesi (baş harfi + cinsiyet) ──────────────────────────
+
+  async getParticipantsPreview(meetingId: string, requesterId: string) {
+    const requesterParticipation = await this.prisma.meetingParticipant.findUnique({
+      where: { meetingId_userId: { meetingId, userId: requesterId } },
+    });
+    if (!requesterParticipation) {
+      throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    }
+
+    const participants = await this.prisma.meetingParticipant.findMany({
+      where: { meetingId },
+      select: {
+        userId: true,
+        status: true,
+        user: {
+          select: {
+            profile: { select: { firstName: true, lastName: true, gender: true } },
+          },
+        },
+      },
+    });
+
+    return participants.map((p) => {
+      const first = p.user.profile?.firstName ?? "";
+      const last = p.user.profile?.lastName ?? "";
+      const initials = `${first[0] ?? "?"}.${last[0] ?? "?"}.`;
+      return {
+        userId: p.userId,
+        initials,
+        gender: p.user.profile?.gender ?? null,
+        isRequester: p.userId === requesterId,
+      };
+    });
+  }
+
+  // ─── Buluşma sonrası engelleme (grup) ────────────────────────────────────
+
+  async blockUsers(meetingId: string, blockerId: string, blockedUserIds: string[]) {
+    // Engelleyen kişi bu masanın katılımcısı olmalı
+    const blockerParticipation = await this.prisma.meetingParticipant.findUnique({
+      where: { meetingId_userId: { meetingId, userId: blockerId } },
+    });
+    if (!blockerParticipation) {
+      throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    }
+
+    // Engellenenler de bu masanın katılımcısı olmalı
+    const meetingParticipants = await this.prisma.meetingParticipant.findMany({
+      where: { meetingId },
+      select: { userId: true },
+    });
+    const validIds = new Set(meetingParticipants.map((p) => p.userId));
+
+    const invalid = blockedUserIds.filter((id) => !validIds.has(id) || id === blockerId);
+    if (invalid.length > 0) {
+      throw new BadRequestException("Geçersiz kullanıcı ID'leri: " + invalid.join(", "));
+    }
+
+    const blocks = await Promise.all(
+      blockedUserIds.map((blockedId) =>
+        this.prisma.userBlock.upsert({
+          where: { blockerId_blockedId: { blockerId, blockedId } },
+          update: {},
+          create: { blockerId, blockedId },
+        }),
+      ),
+    );
+
+    return { blocked: blocks.length };
+  }
+
+  // ─── Başbaşa kalıcı engelleme ─────────────────────────────────────────────
+
+  async rematchBlock(meetingId: string, blockerId: string) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: { participants: { select: { userId: true } } },
+    });
+    if (!meeting) throw new NotFoundException("Masa bulunamadı");
+    if (meeting.type !== MeetingType.ONE_ON_ONE) {
+      throw new BadRequestException("Bu endpoint sadece başbaşa buluşmalar için geçerlidir");
+    }
+
+    const isParticipant = meeting.participants.some((p) => p.userId === blockerId);
+    if (!isParticipant) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+
+    const otherId = meeting.participants.find((p) => p.userId !== blockerId)?.userId;
+    if (!otherId) throw new BadRequestException("Karşı katılımcı bulunamadı");
+
+    // Çift yönlü kalıcı engel
+    await Promise.all([
+      this.prisma.userBlock.upsert({
+        where: { blockerId_blockedId: { blockerId, blockedId: otherId } },
+        update: {},
+        create: { blockerId, blockedId: otherId },
+      }),
+      this.prisma.userBlock.upsert({
+        where: { blockerId_blockedId: { blockerId: otherId, blockedId: blockerId } },
+        update: {},
+        create: { blockerId: otherId, blockedId: blockerId },
+      }),
+    ]);
+
+    return { rematchBlocked: true, pairedUserId: otherId };
+  }
+}

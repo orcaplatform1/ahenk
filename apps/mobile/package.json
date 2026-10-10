@@ -1,0 +1,27 @@
+{
+  "name": "@ahenk/mobile",
+  "version": "0.0.1",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ahenk/shared": "workspace:*",
+    "expo": "~51.0.28",
+    "expo-router": "~3.5.23",
+    "expo-status-bar": "~1.12.1",
+    "react": "18.2.0",
+    "react-native": "0.74.5"
+  },
+  "devDependencies": {
+    "@ahenk/config": "workspace:*",
+    "@babel/core": "^7.24.0",
+    "@types/react": "~18.2.79",
+    "typescript": "^5.4.5"
+  }
+}
