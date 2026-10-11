@@ -214,7 +214,7 @@ export default function KayitPage() {
         }
       }
       setShowSuccess(true);
-      setTimeout(() => router.push('/dashboard'), 2000);
+      setTimeout(() => router.push('/profil'), 2000);
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
   }
