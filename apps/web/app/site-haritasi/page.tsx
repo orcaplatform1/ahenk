@@ -81,12 +81,6 @@ export default function SiteHaritasiPage() {
           textAlign: 'center',
         }}
       >
-        <Link
-          href="/"
-          style={{ color: '#555', fontSize: '0.8rem', letterSpacing: '0.05em', textDecoration: 'none' }}
-        >
-          ← Anasayfa
-        </Link>
         <h1
           style={{
             marginTop: '1.25rem',
@@ -198,36 +192,6 @@ export default function SiteHaritasiPage() {
             </div>
           </motion.div>
         ))}
-      </div>
-
-      {/* Footer */}
-      <div
-        style={{
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          padding: '2rem 1.5rem',
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem',
-        }}
-      >
-        <p style={{ color: '#e8e8e8', fontSize: '0.85rem', fontWeight: 500 }}>
-          © 2026 Ahenk. Tüm hakları saklıdır.
-        </p>
-        <p style={{ color: '#888', fontSize: '0.8rem' }}>
-          Ahenk bir{' '}
-          <span style={{ color: '#f5f5f5', fontWeight: 600 }}>Traders</span>
-          <span style={{ color: '#1e90ff', fontWeight: 700 }}>.TR</span>
-          <span style={{ marginLeft: '3px' }}>🇹🇷</span>{' '}ticari markasıdır.
-        </p>
-        <p style={{ color: '#555', fontSize: '0.7rem', maxWidth: '560px', margin: '0 auto', lineHeight: 1.6 }}>
-          Bu platformda yer alan tüm içerikler, tasarımlar, marka unsurları ve fikrî mülkiyet hakları ilgili yasal mevzuat kapsamında korunmaktadır.
-        </p>
-        <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', fontSize: '0.75rem', color: '#555' }}>
-          <Link href="/site-haritasi" style={{ color: '#555', textDecoration: 'none' }}>Site Haritası</Link>
-          <span style={{ opacity: 0.4 }}>·</span>
-          <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" style={{ color: '#555', textDecoration: 'none' }}>XML Site Haritası</a>
-        </div>
       </div>
     </main>
   );

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 const sections = [
@@ -360,23 +359,6 @@ export default function KvkkPage() {
       />
 
       <div style={{ position: 'relative' as const, zIndex: 1, maxWidth: '760px', margin: '0 auto', padding: '3rem 1.5rem 4rem' }}>
-        {/* Geri dön */}
-        <Link
-          href="/"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            color: '#555',
-            fontSize: '0.8rem',
-            letterSpacing: '0.05em',
-            textDecoration: 'none',
-            marginBottom: '2.5rem',
-          }}
-        >
-          ← Ana Sayfa
-        </Link>
-
         {/* Başlık */}
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
           <h1
@@ -449,46 +431,6 @@ export default function KvkkPage() {
                 {sec.content}
               </div>
             </motion.div>
-          ))}
-        </div>
-
-        {/* Footer linkleri */}
-        <div
-          style={{
-            marginTop: '3rem',
-            paddingTop: '2rem',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            display: 'flex',
-            flexWrap: 'wrap' as const,
-            justifyContent: 'center',
-            gap: '0.5rem 1.5rem',
-          }}
-        >
-          <p style={{ width: '100%', textAlign: 'center' as const, color: '#e8e8e8', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.5rem' }}>
-            © 2026 Ahenk. Tüm hakları saklıdır.
-          </p>
-          <p style={{ width: '100%', textAlign: 'center' as const, color: '#888', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-            Ahenk bir{' '}
-            <a href="https://ahenk.tr" style={{ textDecoration: 'none' }}>
-              <span style={{ color: '#f5f5f5', fontWeight: 600 }}>Traders</span>
-              <span style={{ color: '#1e90ff', fontWeight: 700 }}>.TR</span>
-            </a>
-            <span style={{ marginLeft: '3px' }}>🇹🇷</span>{' '}ticari markasıdır.
-          </p>
-          {[
-            { label: 'Ana Sayfa', href: '/' },
-            { label: 'Gizlilik Politikası', href: '/gizlilik-politikasi' },
-            { label: 'Kullanım Koşulları', href: '/kullanim-kosullari' },
-            { label: 'Çerez Politikası', href: '/cerez-politikasi' },
-            { label: 'Site Haritası', href: '/site-haritasi' },
-          ].map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              style={{ color: '#555', fontSize: '0.78rem', textDecoration: 'none' }}
-            >
-              {link.label}
-            </Link>
           ))}
         </div>
       </div>
