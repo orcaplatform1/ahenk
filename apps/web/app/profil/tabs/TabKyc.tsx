@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, forwardRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
@@ -28,22 +28,204 @@ async function putToR2(url: string, file: File | Blob, mimeType: string, onProgr
   });
 }
 
-// ─── Liveness kaydedici ──────────────────────────────────────────────────────
+/* ── Görsel Yükleyici ────────────────────────────────────────────────────── */
+
+function ImageUploader({
+  svgSrc, svgAlt, uploadLabel, file, progress, onChange,
+}: {
+  svgSrc: string; svgAlt: string; uploadLabel: string;
+  file?: File | null; progress: number;
+  onChange: (f: File | null) => void;
+}) {
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const cameraRef  = useRef<HTMLInputElement>(null);
+  const [showChoice, setShowChoice] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) { setPreviewUrl(null); return; }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  function pick(f: File) {
+    onChange(f);
+    setShowChoice(false);
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* SVG veya önizleme */}
+      <AnimatePresence mode="wait">
+        {!file ? (
+          <motion.div
+            key="svg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mx-auto relative rounded-xl overflow-hidden"
+            style={{ maxHeight: '160px', width: '100%', maxWidth: '260px', aspectRatio: '85/54' }}
+          >
+            <img
+              src={svgSrc}
+              alt={svgAlt}
+              className="w-full h-full object-contain"
+              style={{
+                filter: 'brightness(0.6) contrast(1.05)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: '12px',
+              }}
+            />
+            {/* Karartma overlay */}
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', borderRadius: '12px' }} />
+            {/* Örnek etiketi */}
+            <span
+              style={{
+                position: 'absolute', top: '8px', left: '8px',
+                fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em',
+                color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase',
+                background: 'rgba(0,0,0,0.45)', borderRadius: '4px', padding: '2px 5px',
+              }}
+            >
+              Örnek
+            </span>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="preview"
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {previewUrl && (
+              <img
+                src={previewUrl}
+                alt="Önizleme"
+                className="w-full rounded-xl"
+                style={{ maxHeight: '220px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.08)' }}
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Yüklendi onayı veya yükleme butonu */}
+      {file ? (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
+          <span className="text-green-400">✓</span>
+          <p className="text-xs text-green-400">Görsel Yüklendi</p>
+          <button
+            onClick={() => onChange(null as unknown as File)}
+            className="ml-auto text-xs text-[#555] hover:text-[#888] transition-colors"
+          >
+            Değiştir
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setShowChoice(v => !v)}
+            className="w-full py-2.5 text-sm font-medium rounded-xl transition-all"
+            style={{ border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b', background: 'rgba(192,57,43,0.06)' }}
+          >
+            {uploadLabel}
+          </button>
+
+          <AnimatePresence>
+            {showChoice && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.15 }}
+                className="flex gap-2"
+              >
+                <button
+                  onClick={() => cameraRef.current?.click()}
+                  className="flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5"
+                  style={{ border: '1px solid rgba(255,255,255,0.1)', color: '#ccc', background: 'rgba(255,255,255,0.03)' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                  Kamera Aç
+                </button>
+                <button
+                  onClick={() => galleryRef.current?.click()}
+                  className="flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5"
+                  style={{ border: '1px solid rgba(255,255,255,0.1)', color: '#ccc', background: 'rgba(255,255,255,0.03)' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                  Galeriden Yükle
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {progress > 0 && progress < 100 && (
+        <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          <div className="h-full transition-all" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#c0392b,#ff6b6b)' }} />
+        </div>
+      )}
+
+      {/* Gizli file input'lar */}
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && pick(e.target.files[0])}
+      />
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && pick(e.target.files[0])}
+      />
+    </div>
+  );
+}
+
+/* ── Liveness Kaydedici ──────────────────────────────────────────────────── */
 
 function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string) => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const previewRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const videoRef    = useRef<HTMLVideoElement>(null);
+  const streamRef   = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const chunksRef   = useRef<Blob[]>([]);
 
-  const [phase, setPhase] = useState<'idle' | 'preview' | 'countdown' | 'recording' | 'done' | 'error'>('idle');
+  const [phase,     setPhase]     = useState<'idle' | 'preview' | 'countdown' | 'recording' | 'done' | 'error'>('idle');
   const [countdown, setCountdown] = useState(5);
-  const [captured, setCaptured] = useState<{ blob: Blob; mime: string; url: string } | null>(null);
-  const [camError, setCamError] = useState('');
+  const [camError,  setCamError]  = useState('');
+  const [done,      setDone]      = useState(false);
+
+  function stopStream() {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+  }
 
   async function openCamera() {
     setCamError('');
+    setDone(false);
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCamError('Kamera için HTTPS bağlantısı gereklidir. Güvenli bağlantıyla erişin.');
+      setPhase('error');
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
@@ -52,18 +234,22 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        await videoRef.current.play().catch(() => {});
       }
       setPhase('preview');
-    } catch {
-      setCamError('Kamera erişimine izin verin.');
+    } catch (err) {
+      const e = err as DOMException;
+      if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+        setCamError('Kamera izni reddedildi. Tarayıcı ayarlarından izin verin.');
+      } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
+        setCamError('Kamera bulunamadı.');
+      } else if (e.name === 'NotSupportedError') {
+        setCamError('HTTPS bağlantısı gereklidir.');
+      } else {
+        setCamError(`Kamera açılamadı: ${e.message || e.name}`);
+      }
       setPhase('error');
     }
-  }
-
-  function stopStream() {
-    streamRef.current?.getTracks().forEach(t => t.stop());
-    streamRef.current = null;
   }
 
   function startRecording() {
@@ -71,23 +257,19 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
     chunksRef.current = [];
 
     const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-      ? 'video/webm;codecs=vp9'
+      ? 'video/webm'
       : MediaRecorder.isTypeSupported('video/webm')
       ? 'video/webm'
       : 'video/mp4';
 
-    const recorder = new MediaRecorder(streamRef.current, { mimeType: mime.split(';')[0] });
+    const recorder = new MediaRecorder(streamRef.current, { mimeType: mime });
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
     recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: mime.split(';')[0] });
-      const url = URL.createObjectURL(blob);
-      setCaptured({ blob, mime: mime.split(';')[0], url });
+      const blob = new Blob(chunksRef.current, { type: mime });
       stopStream();
       setPhase('done');
-      if (previewRef.current) {
-        previewRef.current.src = url;
-        previewRef.current.load();
-      }
+      setDone(true);
+      onCapture(blob, mime);
     };
     recorderRef.current = recorder;
     recorder.start();
@@ -108,39 +290,31 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
   }
 
   function retake() {
-    if (captured) URL.revokeObjectURL(captured.url);
-    setCaptured(null);
+    setDone(false);
     setPhase('idle');
-  }
-
-  function useCapture() {
-    if (captured) onCapture(captured.blob, captured.mime);
+    onCapture(new Blob(), '');
   }
 
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-[#888]">Liveness Videosu</p>
 
-      {/* Kamera önizlemesi */}
+      {/* Kamera canlı görüntü */}
       {(phase === 'preview' || phase === 'countdown' || phase === 'recording') && (
         <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: '4/3', background: '#000', border: '1px solid rgba(255,255,255,0.08)' }}>
           <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
 
-          {/* Geri sayım overlay */}
           <AnimatePresence>
             {(phase === 'countdown' || phase === 'recording') && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="absolute inset-0 flex flex-col items-center justify-center gap-3"
                 style={{ background: 'rgba(0,0,0,0.45)' }}
               >
                 {phase === 'countdown' && (
                   <motion.span
                     key={countdown}
-                    initial={{ scale: 1.4, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
+                    initial={{ scale: 1.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.25 }}
                     className="text-7xl font-bold"
                     style={{ color: '#c0392b', fontVariantNumeric: 'tabular-nums' }}
@@ -165,13 +339,6 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
         </div>
       )}
 
-      {/* Çekim sonrası önizleme */}
-      {phase === 'done' && captured && (
-        <div className="rounded-2xl overflow-hidden" style={{ aspectRatio: '4/3', background: '#000', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <video ref={previewRef} controls playsInline className="w-full h-full object-cover" />
-        </div>
-      )}
-
       {/* Hata */}
       {phase === 'error' && camError && (
         <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(192,57,43,0.1)', border: '1px solid rgba(192,57,43,0.3)' }}>
@@ -179,7 +346,18 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
         </div>
       )}
 
-      {/* Açıklama — kamera açıkken */}
+      {/* Video kaydedildi onayı */}
+      {done && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
+          <span className="text-green-400">✓</span>
+          <p className="text-xs text-green-400">Video Yüklendi</p>
+          <button onClick={retake} className="ml-auto text-xs text-[#555] hover:text-[#888] transition-colors">
+            Tekrar Çek
+          </button>
+        </div>
+      )}
+
+      {/* Açıklama */}
       {phase === 'preview' && (
         <p className="text-xs text-[#555] text-center">
           Kayıt başlayınca adınızı ve soyadınızı yüksek sesle söyleyin.
@@ -187,58 +365,44 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
       )}
 
       {/* Butonlar */}
-      <div className="flex gap-2">
-        {phase === 'idle' || phase === 'error' ? (
-          <button
-            onClick={openCamera}
-            className="flex-1 py-2.5 text-sm font-medium rounded-xl transition-all"
-            style={{ border: '1px solid rgba(255,255,255,0.1)', color: '#f5f5f5', background: 'rgba(255,255,255,0.04)' }}
-          >
-            Kamerayı Aç
-          </button>
-        ) : phase === 'preview' ? (
-          <button
-            onClick={startRecording}
-            className="flex-1 py-2.5 text-sm font-medium btn-grad"
-          >
-            Kaydı Başlat
-          </button>
-        ) : phase === 'done' ? (
-          <>
+      {!done && (
+        <div className="flex gap-2">
+          {(phase === 'idle' || phase === 'error') && (
             <button
-              onClick={retake}
+              onClick={openCamera}
               className="flex-1 py-2.5 text-sm font-medium rounded-xl transition-all"
-              style={{ border: '1px solid rgba(255,255,255,0.1)', color: '#888', background: 'transparent' }}
+              style={{ border: '1px solid rgba(255,255,255,0.1)', color: '#f5f5f5', background: 'rgba(255,255,255,0.04)' }}
             >
-              Tekrar Çek
+              Kamerayı Aç
             </button>
-            <button
-              onClick={useCapture}
-              className="flex-1 py-2.5 text-sm font-medium btn-grad"
-            >
-              Kullan ✓
+          )}
+          {phase === 'preview' && (
+            <button onClick={startRecording} className="flex-1 py-2.5 text-sm font-medium btn-grad">
+              Kaydı Başlat
             </button>
-          </>
-        ) : null}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── Ana bileşen ──────────────────────────────────────────────────────────────
+/* ── Ana bileşen ─────────────────────────────────────────────────────────── */
 
 export function TabKyc() {
   const [kycStatus, setKycStatus] = useState<KycStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [progress, setProgress] = useState({ idFront: 0, idBack: 0, liveness: 0 });
+  const [progress,  setProgress]  = useState({ idFront: 0, idBack: 0, liveness: 0 });
 
-  const idFrontRef = useRef<HTMLInputElement>(null);
-  const idBackRef  = useRef<HTMLInputElement>(null);
-
-  const [files, setFiles] = useState<{ idFront?: File; idBack?: File }>({});
+  const [files,    setFiles]    = useState<{ idFront?: File; idBack?: File }>({});
   const [liveness, setLiveness] = useState<{ blob: Blob; mime: string } | null>(null);
+
+  const handleCapture = useCallback((blob: Blob, mime: string) => {
+    if (blob.size === 0) { setLiveness(null); return; }
+    setLiveness({ blob, mime });
+  }, []);
 
   useEffect(() => {
     api.get<KycStatus>('/kyc/status')
@@ -273,9 +437,9 @@ export function TabKyc() {
         livenessSize: liveness.blob.size,
       });
 
-      await putToR2(urls.idFront.url, files.idFront, files.idFront.type, (p) => setProgress((prev) => ({ ...prev, idFront: p })));
-      await putToR2(urls.idBack.url, files.idBack, files.idBack.type, (p) => setProgress((prev) => ({ ...prev, idBack: p })));
-      await putToR2(urls.liveness.url, livenessFile, liveness.mime, (p) => setProgress((prev) => ({ ...prev, liveness: p })));
+      await putToR2(urls.idFront.url, files.idFront, files.idFront.type, (p) => setProgress(prev => ({ ...prev, idFront: p })));
+      await putToR2(urls.idBack.url,  files.idBack,  files.idBack.type,  (p) => setProgress(prev => ({ ...prev, idBack: p })));
+      await putToR2(urls.liveness.url, livenessFile,  liveness.mime,      (p) => setProgress(prev => ({ ...prev, liveness: p })));
 
       await api.post('/kyc/submit', {
         idFrontKey:  urls.idFront.key,
@@ -331,63 +495,25 @@ export function TabKyc() {
         <>
           <h3 className="font-medium text-sm text-muted uppercase tracking-wide">Kimlik Belgelerini Yükle</h3>
 
-          <div className="flex flex-col gap-2">
-            <img
-              src="/kyc_demo_identity_card.svg"
-              alt="Kimlik ön yüz örneği"
-              className="w-full rounded-xl"
-              style={{ aspectRatio: '85/54', objectFit: 'contain', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-            />
-            <p className="text-xs text-[#555] text-center">Kimliğiniz bu şekilde görünmeli</p>
-            <FileInput
-              label="Kimlik Ön Yüz"
-              accept="image/jpeg,image/png,image/webp"
-              hint="JPEG, PNG veya WebP — maks. 5 MB"
-              ref={idFrontRef}
-              file={files.idFront}
-              progress={progress.idFront}
-              onChange={(f) => setFiles((p) => ({ ...p, idFront: f }))}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <img
-              src="/kyc_demo_identity_card_back.svg"
-              alt="Kimlik arka yüz örneği"
-              className="w-full rounded-xl"
-              style={{ aspectRatio: '85/54', objectFit: 'contain', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-            />
-            <p className="text-xs text-[#555] text-center">Kimliğiniz bu şekilde görünmeli</p>
-            <FileInput
-              label="Kimlik Arka Yüz"
-              accept="image/jpeg,image/png,image/webp"
-              hint="JPEG, PNG veya WebP — maks. 5 MB"
-              ref={idBackRef}
-              file={files.idBack}
-              progress={progress.idBack}
-              onChange={(f) => setFiles((p) => ({ ...p, idBack: f }))}
-            />
-          </div>
-
-          <LivenessRecorder
-            onCapture={(blob, mime) => setLiveness({ blob, mime })}
+          <ImageUploader
+            svgSrc="/kyc_demo_identity_card.svg"
+            svgAlt="Kimlik ön yüz örneği"
+            uploadLabel="Ön Yüzü Yükle"
+            file={files.idFront}
+            progress={progress.idFront}
+            onChange={(f) => setFiles(p => ({ ...p, idFront: f || undefined }))}
           />
 
-          {liveness && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
-              <span className="text-green-400 text-sm">✓</span>
-              <p className="text-xs text-green-400">Liveness videosu hazır</p>
-            </div>
-          )}
+          <ImageUploader
+            svgSrc="/kyc_demo_identity_card_back.svg"
+            svgAlt="Kimlik arka yüz örneği"
+            uploadLabel="Arka Yüzü Yükle"
+            file={files.idBack}
+            progress={progress.idBack}
+            onChange={(f) => setFiles(p => ({ ...p, idBack: f || undefined }))}
+          />
 
-          {progress.liveness > 0 && progress.liveness < 100 && (
-            <div className="flex flex-col gap-1">
-              <p className="text-xs text-[#555]">Video yükleniyor… {progress.liveness}%</p>
-              <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                <div className="h-full transition-all" style={{ width: `${progress.liveness}%`, background: 'linear-gradient(90deg,#c0392b,#ff6b6b)' }} />
-              </div>
-            </div>
-          )}
+          <LivenessRecorder onCapture={handleCapture} />
 
           {error && <p className="text-accent text-sm">{error}</p>}
 
@@ -403,38 +529,3 @@ export function TabKyc() {
     </div>
   );
 }
-
-// ─── FileInput bileşeni ───────────────────────────────────────────────────────
-
-const FileInput = forwardRef<HTMLInputElement, {
-  label: string; accept: string; hint: string;
-  file?: File; progress: number;
-  onChange: (f: File) => void;
-}>(({ label, accept, hint, file, progress, onChange }, ref) => (
-  <div>
-    <label className="block text-sm text-muted mb-2">{label}</label>
-    <div
-      className="relative cursor-pointer glass-card p-4 hover:border-[rgba(192,57,43,0.4)] transition-colors"
-      onClick={() => (ref as React.RefObject<HTMLInputElement>).current?.click()}
-    >
-      <input
-        ref={ref}
-        type="file"
-        accept={accept}
-        className="hidden"
-        onChange={(e) => e.target.files?.[0] && onChange(e.target.files[0])}
-      />
-      {file ? (
-        <p className="text-sm text-text truncate">{file.name}</p>
-      ) : (
-        <p className="text-sm text-muted">{hint}</p>
-      )}
-      {progress > 0 && progress < 100 && (
-        <div className="mt-2 h-1 bg-bg rounded-full overflow-hidden">
-          <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
-        </div>
-      )}
-    </div>
-  </div>
-));
-FileInput.displayName = 'FileInput';
