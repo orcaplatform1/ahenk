@@ -20,6 +20,7 @@ interface UserData {
   email: string;
   phone?: string;
   activeCity?: string | null;
+  activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
   profile?: {
     gender?: string;
     birthDate?: string;
@@ -171,7 +172,7 @@ export default function ProfilPage() {
                 exit={{ opacity: 0, y: 6 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
               >
-                {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} />}
+                {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} activePlan={user.activePlan ?? null} />}
                 {activeTab === 'test'    && <TabTest />}
                 {activeTab === 'masalar' && <TabMasalar />}
                 {activeTab === 'paket'   && <TabPaket kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}

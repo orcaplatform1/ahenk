@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 
@@ -49,9 +49,151 @@ interface Props {
   user: UserData;
   onGoKyc: () => void;
   cities: City[];
+  activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
 }
 
-export function TabProfilim({ user, onGoKyc, cities }: Props) {
+/* ─── Havuz Ekranı ─────────────────────────────────────────────────────────── */
+interface PoolStatus {
+  isSubscribed: boolean;
+  activePlan: string | null;
+  inPool: boolean;
+  hasMeeting: boolean;
+  poolSize: number;
+  meetingScheduledAt: string | null;
+}
+
+function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERDE' }) {
+  const [status, setStatus] = useState<PoolStatus | null>(null);
+  const [tick, setTick] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const data = await api.get<PoolStatus>('/matching/pool-status');
+      setStatus(data);
+    } catch { /* sessizce geç */ }
+  }, []);
+
+  useEffect(() => {
+    fetchStatus();
+    intervalRef.current = setInterval(() => {
+      fetchStatus();
+      setTick(t => t + 1);
+    }, 30000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [fetchStatus]);
+
+  /* Dönen halka animasyonu (CSS keyframe inline) */
+  const PLAN_LABEL: Record<string, string> = {
+    MASADA: 'Masada',
+    KARSIMDA: 'Karşımda',
+    ICERDE: 'İçerde',
+  };
+
+  if (!status) {
+    return (
+      <div className="glass-card p-5">
+        <h3 className="font-medium text-sm text-[#888] uppercase tracking-wide mb-4">Eşleşme Havuzu</h3>
+        <div className="h-32 animate-pulse rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }} />
+      </div>
+    );
+  }
+
+  if (status.hasMeeting) {
+    const date = status.meetingScheduledAt
+      ? new Date(status.meetingScheduledAt).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })
+      : null;
+    return (
+      <div className="glass-card p-5">
+        <h3 className="font-medium text-sm text-[#888] uppercase tracking-wide mb-4">Eşleşme Havuzu</h3>
+        <div className="flex flex-col items-center gap-4 py-4">
+          <div style={{ position: 'relative', width: 80, height: 80 }}>
+            <div style={{
+              position: 'absolute', inset: 0, borderRadius: '50%',
+              background: 'conic-gradient(#22c55e 0%, #22c55e 100%)',
+              animation: 'spin 3s linear infinite',
+            }} />
+            <div style={{ position: 'absolute', inset: 4, borderRadius: '50%', background: '#0c0909', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 28 }}>✓</span>
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-[#4ade80]">Masanız Kuruldu!</p>
+            {date && <p className="text-xs text-[#666] mt-1">{date}</p>}
+            <p className="text-xs text-[#555] mt-1">Masalar sekmesinden detayları görebilirsiniz.</p>
+          </div>
+        </div>
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  const size = status.poolSize ?? 0;
+
+  return (
+    <div className="glass-card p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-medium text-sm text-[#888] uppercase tracking-wide">Eşleşme Havuzu</h3>
+        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', color: '#ff6b6b' }}>
+          {PLAN_LABEL[activePlan] ?? activePlan}
+        </span>
+      </div>
+      <div className="flex flex-col items-center gap-5 py-2">
+        {/* Animasyonlu halka */}
+        <div style={{ position: 'relative', width: 100, height: 100 }}>
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: '50%',
+            background: status.inPool
+              ? 'conic-gradient(#c0392b 0%, #e74c3c 40%, transparent 40%)'
+              : 'conic-gradient(rgba(192,57,43,0.3) 0%, rgba(192,57,43,0.3) 100%)',
+            animation: status.inPool ? 'poolSpin 2.5s linear infinite' : undefined,
+          }} />
+          <div style={{
+            position: 'absolute', inset: 6, borderRadius: '50%', background: '#0c0909',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{ fontSize: 22, fontWeight: 700, color: '#f5f5f5', lineHeight: 1 }}>{size}</span>
+            <span style={{ fontSize: 9, color: '#555', marginTop: 2 }}>KİŞİ</span>
+          </div>
+        </div>
+
+        {/* Durum metni */}
+        <div className="text-center">
+          {status.inPool ? (
+            <>
+              <p className="text-sm font-semibold text-[#f5f5f5]">Havuzdasın</p>
+              <p className="text-xs text-[#555] mt-1">Algoritma her saat eşleşme arıyor.</p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-[#888]">Bekleme dışında</p>
+              <p className="text-xs text-[#555] mt-1">OCEAN testi veya KYC eksik olabilir.</p>
+            </>
+          )}
+        </div>
+
+        {/* Darbe noktaları — aktifken titreşir */}
+        {status.inPool && (
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map(i => (
+              <div key={i} style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: '#c0392b',
+                animation: `pulse 1.4s ease-in-out ${i * 0.2}s infinite`,
+              }} />
+            ))}
+          </div>
+        )}
+      </div>
+      <style>{`
+        @keyframes poolSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,80%,100% { opacity:0.3; transform:scale(0.8); } 40% { opacity:1; transform:scale(1.2); } }
+      `}</style>
+    </div>
+  );
+}
+
+export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
   const [editingCities, setEditingCities] = useState(false);
   const [editingVenue, setEditingVenue] = useState(false);
 
@@ -194,6 +336,11 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
             Doğrula →
           </button>
         </div>
+      )}
+
+      {/* Havuz ekranı — sadece abonelerde */}
+      {activePlan && (
+        <PoolScreen activePlan={activePlan} />
       )}
 
       {/* Temel bilgiler */}

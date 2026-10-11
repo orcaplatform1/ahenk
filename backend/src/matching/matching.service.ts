@@ -594,4 +594,109 @@ export class MatchingService {
       this.logger.log(`Masa kesinleşti (kabul): ${meetingId}`);
     }
   }
+
+  async getPoolStatus(userId: string): Promise<{
+    isSubscribed: boolean;
+    activePlan: string | null;
+    inPool: boolean;
+    hasMeeting: boolean;
+    poolSize: number;
+    meetingScheduledAt: string | null;
+  }> {
+    const now = new Date();
+    const { week: weekNumber, year } = getISOWeekNumber(now);
+
+    const cycle = await this.prisma.matchingCycle.findUnique({
+      where: { weekNumber_year: { weekNumber, year } },
+    });
+
+    const activeSub = await this.prisma.subscription.findFirst({
+      where: { userId, status: "ACTIVE" },
+      select: { plan: true },
+    });
+
+    if (!activeSub) {
+      return { isSubscribed: false, activePlan: null, inPool: false, hasMeeting: false, poolSize: 0, meetingScheduledAt: null };
+    }
+
+    const planOrder = ['ICERDE', 'MASADA', 'KARSIMDA'];
+    const allSubs = await this.prisma.subscription.findMany({
+      where: { userId, status: "ACTIVE" },
+      select: { plan: true },
+    });
+    const plans = allSubs.map(s => s.plan);
+    const activePlan = planOrder.find(p => plans.includes(p as any)) ?? plans[0] ?? null;
+
+    if (!cycle) {
+      const poolSize = await this.prisma.user.count({
+        where: {
+          status: "ACTIVE",
+          isBot: false,
+          oceanScore: { isNot: null },
+          kyc: { status: KycStatus.APPROVED },
+          subscriptions: { some: { status: "ACTIVE" } },
+        },
+      });
+      return { isSubscribed: true, activePlan, inPool: true, hasMeeting: false, poolSize, meetingScheduledAt: null };
+    }
+
+    const existingMeeting = await this.prisma.meetingParticipant.findFirst({
+      where: {
+        userId,
+        meeting: {
+          cycleId: cycle.id,
+          status: { in: ["PENDING", "ACTIVE"] },
+        },
+      },
+      include: { meeting: { select: { scheduledAt: true, status: true } } },
+    });
+
+    const poolSize = await this.prisma.user.count({
+      where: {
+        status: "ACTIVE",
+        isBot: false,
+        oceanScore: { isNot: null },
+        kyc: { status: KycStatus.APPROVED },
+        subscriptions: { some: { status: "ACTIVE" } },
+        participations: {
+          none: {
+            meeting: {
+              cycleId: cycle.id,
+              status: { in: ["PENDING", "ACTIVE"] },
+            },
+          },
+        },
+      },
+    });
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        status: true,
+        isBot: true,
+        oceanScore: true,
+        kyc: { select: { status: true } },
+        subscriptions: {
+          where: { status: "ACTIVE" },
+          select: { plan: true },
+        },
+      },
+    });
+
+    const inPool = !existingMeeting &&
+      user?.status === "ACTIVE" &&
+      !user?.isBot &&
+      !!user?.oceanScore &&
+      user?.kyc?.status === "APPROVED" &&
+      (user?.subscriptions?.length ?? 0) > 0;
+
+    return {
+      isSubscribed: true,
+      activePlan,
+      inPool,
+      hasMeeting: !!existingMeeting,
+      poolSize: inPool ? poolSize + 1 : poolSize,
+      meetingScheduledAt: existingMeeting?.meeting?.scheduledAt?.toISOString() ?? null,
+    };
+  }
 }
