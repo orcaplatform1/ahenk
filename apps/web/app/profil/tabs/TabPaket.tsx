@@ -214,11 +214,11 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
                 ))}
               </ul>
 
-              <div className="relative group mt-2">
+              <div className="flex flex-col gap-2 mt-2">
                 <button
                   onClick={() => kycApproved && handleBuy(plan.key)}
                   disabled={!kycApproved || buying === plan.key}
-                  className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 ${!kycApproved ? 'cursor-not-allowed' : ''}`}
+                  className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${!kycApproved ? 'opacity-40 cursor-not-allowed' : ''}`}
                   style={plan.featured ? {
                     background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)',
                     color: '#fff',
@@ -234,9 +234,9 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
                   {buying === plan.key ? 'Yönlendiriliyor…' : 'Satın Al'}
                 </button>
                 {!kycApproved && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-xs text-[#888] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none glass-card">
-                    Önce kimlik doğrulaması yapmalısınız
-                  </div>
+                  <p className="text-center text-xs" style={{ color: 'rgba(192,57,43,0.8)' }}>
+                    KYC doğrulaması gerekli
+                  </p>
                 )}
               </div>
             </div>
