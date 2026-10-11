@@ -146,6 +146,17 @@ const navLinks = [
   { label: 'Hikayemiz',      href: '/hikayemiz' },
 ];
 
+const profileLinks = [
+  { key: 'dashboard', label: 'Dashboard',          href: '/dashboard' },
+  { key: 'profil',    label: 'Profilim',            href: '/profil?tab=profil' },
+  { key: 'test',      label: 'Kişilik Testim',      href: '/profil?tab=test' },
+  { key: 'masalar',   label: 'Masalarım',           href: '/profil?tab=masalar' },
+  { key: 'paket',     label: 'Paketim',             href: '/profil?tab=paket' },
+  { key: 'gecmis',    label: 'Ahenk Geçmişim',      href: '/profil/gecmis' },
+  { key: 'kyc',       label: 'Kimlik Doğrulama',    href: '/profil?tab=kyc' },
+  { key: 'rehber',    label: 'Numara Engelleme',     href: '/profil?tab=rehber' },
+];
+
 /* ── Navbar ──────────────────────────────────────────────────────────── */
 export default function Navbar() {
   const pathname = usePathname();
@@ -188,80 +199,18 @@ export default function Navbar() {
             <span className="font-sans font-semibold text-sm tracking-[0.12em] text-text">AHENK</span>
           </Link>
 
-          {/* Orta linkler — sadece desktop */}
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map(item => (
-              <a key={item.label} href={item.href} className="text-sm text-muted hover:text-text transition-colors">
-                {item.label}
-              </a>
-            ))}
-          </div>
-
           {/* Sağ alan */}
           <div className="flex items-center gap-2">
-            {/* Desktop auth butonları */}
-            {checked && (
-              <div className="hidden md:flex items-center gap-2">
-                {navUser ? (
-                  <>
-                    {(navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
-                      <Link
-                        href="/admin"
-                        className="text-sm font-medium transition-colors"
-                        style={{ color: '#c0392b', letterSpacing: '0.01em' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; }}
-                      >
-                        Yönetim Paneli
-                      </Link>
-                    )}
-                    <Link href="/profil" className="cursor-pointer flex-shrink-0">
-                      <NavAvatar user={navUser} />
-                    </Link>
-                    <CapsuleBtn
-                      label="Çıkış Yap"
-                      leftBg="linear-gradient(115deg,#1a1a1a 0%,#111 100%)"
-                      outerBorder="rgba(255,255,255,0.18)"
-                      outerGlow="inset 0 1px 1px rgba(255,255,255,0.05), 0 0 6px rgba(255,255,255,0.06)"
-                      icon={IkonCikis}
-                      onClick={handleLogout}
-                    />
-                  </>
-                ) : (
-                  <>
-                    {showGiris && (
-                      <CapsuleBtn
-                        label="Giriş Yap"
-                        href="/giris"
-                        leftBg="linear-gradient(115deg,#1a5c2a 0%,#27ae60 100%)"
-                        outerBorder="rgba(39,174,96,0.75)"
-                        outerGlow="inset 0 1px 1px rgba(255,255,255,0.08), 0 0 6px rgba(39,174,96,0.22)"
-                        icon={IkonGiris}
-                      />
-                    )}
-                    {showKayit && (
-                      <CapsuleBtn
-                        label="Kayıt Ol"
-                        href="/kayit"
-                        leftBg="linear-gradient(115deg,#E83F3D 0%,#FF6669 100%)"
-                        outerBorder="rgba(255,85,90,0.8)"
-                        outerGlow="inset 0 1px 1px rgba(255,125,110,0.10), 0 0 6px rgba(255,55,65,0.22)"
-                        icon={IkonKayit}
-                      />
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Mobil: avatar (giriş yapmışsa) + hamburger */}
+            {/* Avatar (giriş yapmışsa) */}
             {checked && navUser && (
-              <Link href="/profil" className="md:hidden cursor-pointer flex-shrink-0">
+              <Link href="/profil" className="cursor-pointer flex-shrink-0">
                 <NavAvatar user={navUser} />
               </Link>
             )}
+
+            {/* Hamburger butonu — her ekranda */}
             <button
-              className="md:hidden flex flex-col justify-center items-center gap-[5px] p-1.5"
+              className="flex flex-col justify-center items-center gap-[5px] p-1.5"
               onClick={() => setMenuOpen(v => !v)}
               aria-label="Menü"
               style={{ background: 'none', border: 'none', cursor: 'pointer' }}
@@ -287,13 +236,13 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobil drawer overlay + panel */}
+      {/* Drawer overlay + panel */}
       <AnimatePresence>
         {menuOpen && (
           <>
             {/* Karartma */}
             <motion.div
-              className="md:hidden fixed inset-0 z-40"
+              className="fixed inset-0 z-40"
               style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)' }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -304,10 +253,9 @@ export default function Navbar() {
 
             {/* Drawer panel */}
             <motion.div
-              className="md:hidden fixed top-0 right-0 bottom-0 z-50 flex flex-col"
+              className="fixed top-0 right-0 bottom-0 z-50 flex flex-col overflow-y-auto"
               style={{
-                width: '33.333vw',
-                minWidth: 200,
+                width: 'min(280px, 80vw)',
                 background: 'linear-gradient(160deg,#111010 0%,#0d0b0b 60%,#120808 100%)',
                 borderLeft: '1px solid rgba(255,255,255,0.07)',
                 boxShadow: '-8px 0 32px rgba(0,0,0,0.6)',
@@ -318,8 +266,32 @@ export default function Navbar() {
               exit={{ x: '100%' }}
               transition={{ type: 'tween', duration: 0.28, ease: 'easeInOut' }}
             >
-              {/* Nav linkleri */}
-              <div className="flex flex-col px-4 pt-6 gap-1">
+              {/* Profil linkleri — üstte (giriş yapılmışsa) */}
+              {checked && navUser && (
+                <div className="flex flex-col px-4 pt-4 gap-0.5">
+                  <p className="text-xs text-[#444] uppercase tracking-[0.1em] px-2 py-1.5">Hesabım</p>
+                  {profileLinks.map((item, i) => (
+                    <motion.a
+                      key={item.key}
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
+                      className="text-sm py-2.5 px-2 rounded-lg transition-colors"
+                      style={{ color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.04 + i * 0.04, duration: 0.22 }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#ccc'; }}
+                    >
+                      {item.label}
+                    </motion.a>
+                  ))}
+                </div>
+              )}
+
+              {/* Normal nav linkleri */}
+              <div className="flex flex-col px-4 pt-4 gap-1" style={{ borderTop: checked && navUser ? '1px solid rgba(255,255,255,0.06)' : undefined, marginTop: checked && navUser ? 8 : 0 }}>
+                <p className="text-xs text-[#444] uppercase tracking-[0.1em] px-2 py-1.5">Keşfet</p>
                 {navLinks.map((item, i) => (
                   <motion.a
                     key={item.label}
@@ -329,7 +301,7 @@ export default function Navbar() {
                     style={{ color: '#aaa', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
                     initial={{ opacity: 0, x: 16 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.04 + i * 0.05, duration: 0.22 }}
+                    transition={{ delay: 0.1 + i * 0.05, duration: 0.22 }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#aaa'; }}
                   >
@@ -338,39 +310,9 @@ export default function Navbar() {
                 ))}
               </div>
 
-              {/* Profil sekmeleri (giriş yapılmışsa) */}
-              {checked && navUser && (
-                <div className="flex flex-col px-4 pt-3 gap-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                  <p className="text-xs text-[#444] uppercase tracking-[0.1em] px-2 py-1.5">Profilim</p>
-                  {([
-                    { key: 'profil',  label: 'Profilim' },
-                    { key: 'test',    label: 'Kişilik Testim' },
-                    { key: 'masalar', label: 'Masalarım' },
-                    { key: 'paket',   label: 'Paketim' },
-                    { key: 'kyc',     label: 'Kimlik Doğrulama' },
-                    { key: 'rehber',  label: 'Numara Engelleme' },
-                  ] as { key: string; label: string }[]).map((tab, i) => (
-                    <motion.a
-                      key={tab.key}
-                      href={`/profil?tab=${tab.key}`}
-                      onClick={() => setMenuOpen(false)}
-                      className="text-sm py-2.5 px-2 rounded-lg transition-colors"
-                      style={{ color: '#888', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                      initial={{ opacity: 0, x: 16 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.08 + i * 0.04, duration: 0.22 }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#888'; }}
-                    >
-                      {tab.label}
-                    </motion.a>
-                  ))}
-                </div>
-              )}
-
               {/* Auth butonları */}
               {checked && (
-                <div className="flex flex-col px-4 pt-6 gap-3">
+                <div className="flex flex-col px-4 pt-5 pb-6 gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 8 }}>
                   {navUser ? (
                     <>
                       {(navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
@@ -385,11 +327,11 @@ export default function Navbar() {
                       )}
                       <button
                         onClick={handleLogout}
-                      className="w-full py-2.5 rounded-xl text-sm font-medium transition-colors"
-                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc' }}
-                    >
-                      Çıkış Yap
-                    </button>
+                        className="w-full py-2.5 rounded-xl text-sm font-medium transition-colors"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc' }}
+                      >
+                        Çıkış Yap
+                      </button>
                     </>
                   ) : (
                     <>

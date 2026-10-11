@@ -50,29 +50,6 @@ export default function DashboardPage() {
           token={token ?? undefined}
         />
 
-        {/* Hızlı linkler */}
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link
-            href="/profil/gecmis"
-            className="group glass-card p-5 transition-all hover:border-[rgba(192,57,43,0.4)]"
-            style={{ display: 'block' }}
-          >
-            <h3 className="text-sm font-semibold text-[#f5f5f5] mb-1 group-hover:text-[#ff6b6b] transition-colors">
-              Ahenk Geçmişim →
-            </h3>
-            <p className="text-xs text-[#888]">Önceki buluşmalarını ve uyumluluk skorlarını görün.</p>
-          </Link>
-          <Link
-            href="/profil?tab=paket"
-            className="group glass-card p-5 transition-all hover:border-[rgba(192,57,43,0.4)]"
-            style={{ display: 'block' }}
-          >
-            <h3 className="text-sm font-semibold text-[#f5f5f5] mb-1 group-hover:text-[#ff6b6b] transition-colors">
-              Aboneliğim →
-            </h3>
-            <p className="text-xs text-[#888]">Aktif paketini ve yenileme tarihlerini görün.</p>
-          </Link>
-        </div>
       </main>
     </div>
   );
