@@ -188,6 +188,38 @@ function DualRings() {
 }
 
 /* ─── Red last word helper ───────────────────────────────────────────────── */
+function AccordionGroup({ items }: { items: { title: string; body: string }[] }) {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <div className="flex flex-col" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+      {items.map((item, i) => (
+        <div key={i} style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.07)' }}>
+          <button
+            onClick={() => setOpen(open === i ? null : i)}
+            className="w-full flex items-center justify-between py-5 text-left"
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', outline: 'none' }}
+          >
+            <span className="text-[15px] font-medium pr-4" style={{
+              background: open === i ? 'linear-gradient(135deg,#c0392b,#ff6b6b)' : 'none',
+              WebkitBackgroundClip: open === i ? 'text' : 'unset',
+              WebkitTextFillColor: open === i ? 'transparent' : '#e8e8e8',
+              backgroundClip: open === i ? 'text' : 'unset',
+            }}>{item.title}</span>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}
+              className="flex-shrink-0 w-4 h-4 transition-transform duration-200"
+              style={{ color: '#555', transform: open === i ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {open === i && (
+            <p className="text-sm leading-relaxed pb-5" style={{ color: '#888' }}>{item.body}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function RedLast({ text }: { text: string }) {
   const parts = text.trim().split(' ');
   const last = parts.pop();
@@ -451,6 +483,82 @@ export default function Home() {
               );
             })}
           </div>
+        </section>
+
+        {/* ── Ahenk Seni Nasıl Tanır? ────────────────────────────────────── */}
+        <section id="how-it-knows-you" className="max-w-3xl mx-auto px-6 py-24">
+          <div className="text-center mb-12">
+            <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5] mb-3">
+              <RedLast text="Ahenk Seni Nasıl Tanır?" />
+            </h2>
+            <p className="text-sm text-[#555]">Bilimsel eşleştirmenin arkasındaki sistem.</p>
+          </div>
+          <AccordionGroup items={[
+            {
+              title: 'Bir test değil, bir profil.',
+              body: 'Ahenk\'e katılmadan önce doldurduğun sorular sıradan bir anket değil. Her cevap, seni tanımlamak için tasarlanmış bir sinyal. Düşünce tarzın, sosyal enerjin, masada üstlendiğin rol, mekân tercihin hepsi birleşerek sana özgü bir profil oluşturuyor.',
+            },
+            {
+              title: 'OCEAN modeli nedir?',
+              body: 'Eşleştirme motorumuz, psikoloji araştırmalarının altın standardı olan OCEAN (Big Five) modelini kullanır. 1980\'lerden bu yana milyonlarca kişi üzerinde doğrulanmış bu model; kişiliğin beş temel boyutunu ölçer: Açıklık, Özdisiplin, Dışadönüklük, Uyumluluk ve Duygusal Denge. Bunlar bir kutup değil, birer spektrum ve senin yerinle başkasının yeri asla aynı değil.',
+            },
+            {
+              title: 'Algoritma ne yapıyor?',
+              body: 'Profilini oluşturduktan sonra algoritma devreye girer. Seni sadece sana benzer insanlarla değil, seninle gerçek bir ahenk kurabilecek insanlarla eşleştirir. Meslek alanın, yaşın ve mekan tercihin de hesaba katılır ama bunlar yardımcı faktörler. Asıl ağırlık kişilik uyumunda.',
+            },
+            {
+              title: 'Masa nasıl kurulur?',
+              body: 'Her hafta belirli bir gün eşleşmeler kapanır. Algoritma o ana kadar biriken profilleri değerlendirir, en yüksek uyum skoruna sahip grupları veya iki kişiyi bir araya getirir ve masayı kurar. Sen sadece onayı beklersin.',
+            },
+            {
+              title: 'Buluşma sonrası ne olur?',
+              body: 'Her buluşmanın ardından Ahenk, masa hakkında kısa bir yapay zeka raporu oluşturur. Grubun genel uyum skoru, öne çıkan kişilik dinamikleri ve masa enerjisi hakkında bir özet; sadece senin için, sadece o akşam için.',
+            },
+            {
+              title: 'Başbaşa buluşmalar farklı mı?',
+              body: 'Grup masalarında ahenk aranır, başbaşa buluşmalarda ise derinlik. İki kişilik eşleşmelerde algoritma çok daha hassas çalışır: yaş uyumu, kişilik dengesi ve beklenti örtüşmesi ön plana çıkar. Karşındaki kişi rastgele değil, seninle birebir örtüşen biri.',
+            },
+            {
+              title: '180 günde bir yenilenir.',
+              body: 'Kişilik sabit, ama bağlam değişir. Bu yüzden OCEAN profilin 180 günde bir güncellenir; o dönemki sen, o dönemki ahenginle buluşur.',
+            },
+          ]} />
+        </section>
+
+        {/* ── Neden Rahat Hissedersin? ────────────────────────────────────── */}
+        <section id="why-safe" className="max-w-3xl mx-auto px-6 py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="text-center mb-12">
+            <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5] mb-3">
+              <RedLast text="Neden Rahat Hissedersin?" />
+            </h2>
+            <p className="text-sm text-[#555]">Güvenli, doğrulanmış, kontrollü.</p>
+          </div>
+          <AccordionGroup items={[
+            {
+              title: 'Yabancıyla tanışmak bu kadar zor mu olmalı?',
+              body: 'Bir arkadaşının arkadaşıyla tanışırsın; sormadan, araştırmadan, sadece güvenirsin. Ahenk tam bunu yapıyor. Aramana gerek yok, seçmene gerek yok. Algoritma seçer, sen sadece gelirsin.',
+            },
+            {
+              title: 'Kim olduğunu biliyoruz.',
+              body: 'Platforma katılmak için telefon numaranı doğruluyor, kimliğin kontrol ediliyor ve kısa bir video doğrulaması yapılıyor. Masanda oturan herkes aynı süreçten geçti. Anonim hesap yok, sahte profil yok.',
+            },
+            {
+              title: 'Nerede buluşuyorsunuz?',
+              body: 'Her buluşma şehrindeki restoran ve kafelerden gerçekleşir. Kişilik profiline ve mekan tercihine göre o haftaki buluşma yeri belirlenir. Adres ve saat bilgisi buluşmadan önce sana iletilir. Özel bir anlaşma veya ekstra ücret yok; sadece kendi hesabını ödersin.',
+            },
+            {
+              title: 'Yalnız değilsin.',
+              body: 'Grup masaları 5-6 kişiden oluşuyor. Başbaşa buluşmalarda ise eşleşme çift yönlü onaylanmış; karşındaki kişi de aynı süreci tamamlamış, aynı şartları kabul etmiş biri.',
+            },
+            {
+              title: 'Kimseyi tanımak zorunda değilsin.',
+              body: 'Masadaki diğer kişilerin soyadını, mesleğini, yaşını önceden göremezsin; onlar da seninkini göremez. Buluşma anında tanışırsınız. Bu hem heyecan hem de eşitlik demek.',
+            },
+            {
+              title: 'Bir sorun olursa?',
+              body: 'Buluşma sonrası değerlendirme sistemi var. Bir daha eşleşmek istemediğin biri varsa belirtirsin; bir daha o kişiyle asla karşılaşmazsın. Ciddi bir durum bildirirsen kürasyon ekibimiz devreye girerek inceler ve o kişinin hesabı süresiz yasaklanır, tekrar kayıt yapmasına bir daha izin verilmez.',
+            },
+          ]} />
         </section>
 
         {/* ── Paketler ───────────────────────────────────────────────────── */}
