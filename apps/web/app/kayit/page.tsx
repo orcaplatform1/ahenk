@@ -449,6 +449,11 @@ export default function KayitPage() {
                   />
                 </div>
 
+                {/* Test uyarısı */}
+                <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5 }}>
+                  Bu test, size en uygun kişilerle eşleştirmek için kullanılır. Lütfen gerçek yanıtlarınızı seçin. Yeni test 6 ay boyunca tekrar yapılamaz.
+                </p>
+
                 {/* Soru + yanıtlar */}
                 <AnimatePresence mode="wait" custom={testDirection}>
                   <motion.div
@@ -510,10 +515,6 @@ export default function KayitPage() {
                 </AnimatePresence>
 
                 {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-
-                <p className="text-xs text-[#444] leading-relaxed">
-                  Bu test, size en uygun kişilerle eşleştirmek için kullanılır. Lütfen, doğru yanıtları seçin. Yeni test 6 ay boyunca tekrar yapılamaz.
-                </p>
 
                 <div className="flex items-center gap-3 mt-1">
                   <button
