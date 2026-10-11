@@ -186,7 +186,7 @@ export default function Navbar() {
             { label: 'Nasıl Çalışır?', href: '#how-it-works' },
             { label: 'Buluşmalar',     href: '#cities' },
             { label: 'Test',           href: '/kayit' },
-            { label: 'Hakkımızda',     href: '#faq' },
+            { label: 'Hikayemiz',     href: '/hikayemiz' },
           ].map(item => (
             <a key={item.label} href={item.href} className="text-sm text-muted hover:text-text transition-colors">
               {item.label}

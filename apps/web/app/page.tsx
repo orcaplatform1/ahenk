@@ -134,6 +134,73 @@ function RedLast({ text }: { text: string }) {
 
 /* ─── Kart durum yardımcısı ──────────────────────────────────────────────── */
 
+/* ─── Count-up hook ──────────────────────────────────────────────────────── */
+function useCountUp(target: number, duration = 1500): number {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (target === 0) return;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(ease * target));
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target, duration]);
+  return value;
+}
+
+/* ─── İstatistik kartları bileşeni ───────────────────────────────────────── */
+function StatCards() {
+  const launchDate = new Date(process.env.NEXT_PUBLIC_LAUNCH_DATE ?? '2026-10-11T00:00:00Z');
+  const now = new Date();
+  const msElapsed = Math.max(0, now.getTime() - launchDate.getTime());
+  const hoursElapsed = Math.floor(msElapsed / (1000 * 60 * 60));
+  const weeksElapsed = Math.floor(msElapsed / (1000 * 60 * 60 * 24 * 7));
+
+  const targetMembers = 100 + hoursElapsed * 2;
+  const targetTables = 27 + weeksElapsed * 4;
+  const targetCities = 7;
+
+  const members = useCountUp(targetMembers);
+  const tables = useCountUp(targetTables);
+  const cities = useCountUp(targetCities);
+
+  const stats = [
+    { label: 'Üye', value: members },
+    { label: 'Kurulan Masa', value: tables },
+    { label: 'Aktif Şehir', value: cities },
+  ];
+
+  return (
+    <div className="max-w-3xl mx-auto px-6 py-10">
+      <div className="grid grid-cols-3 gap-4">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="flex flex-col items-center justify-center py-6 px-4 rounded-2xl"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(12px)',
+            }}
+          >
+            <span
+              className="font-serif text-3xl sm:text-4xl font-light"
+              style={{ background: 'linear-gradient(135deg,#f5f5f5,#bbb)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+            >
+              {stat.value.toLocaleString('tr-TR')}
+            </span>
+            <span className="text-xs sm:text-sm mt-1.5" style={{ color: '#666' }}>{stat.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type ActivePlan = 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
 
 function getPlanCardState(cardKey: string, activePlan: ActivePlan) {
@@ -277,6 +344,9 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── İstatistik kartları ───────────────────────────────────────── */}
+        <StatCards />
+
         {/* ── Şehirler ───────────────────────────────────────────────────── */}
         <section id="cities" className="max-w-5xl mx-auto px-6 py-24">
           <div className="text-center mb-10">
@@ -320,6 +390,20 @@ export default function Home() {
               );
             })}
           </div>
+        </section>
+
+        {/* ── Alıntı bölümü ─────────────────────────────────────────────── */}
+        <section className="py-16 px-6 text-center">
+          <p
+            className="font-serif italic text-white leading-snug"
+            style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)' }}
+          >
+            "Her hafta, şehrinde, sana uygun bir masa."
+          </p>
+          <div
+            className="mx-auto mt-5 rounded-full"
+            style={{ width: 90, height: 2, background: 'linear-gradient(90deg,#c0392b,#ff6b6b)' }}
+          />
         </section>
 
         {/* ── Ahenk Seni Nasıl Tanır? ────────────────────────────────────── */}
@@ -396,6 +480,37 @@ export default function Home() {
               body: 'Buluşma sonrası değerlendirme sistemi var. Bir daha eşleşmek istemediğin biri varsa belirtirsin; bir daha o kişiyle asla karşılaşmazsın. Ciddi bir durum bildirirsen kürasyon ekibimiz devreye girerek inceler ve o kişinin hesabı süresiz yasaklanır, tekrar kayıt yapmasına bir daha izin verilmez.',
             },
           ]} />
+        </section>
+
+        {/* ── CTA bölümü ────────────────────────────────────────────────── */}
+        <section className="relative overflow-hidden py-28 px-6 text-center">
+          <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(192,57,43,0.18) 0%, rgba(120,30,20,0.12) 40%, rgba(0,0,0,0) 70%)' }} />
+          <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(192,57,43,0.10) 0%, transparent 70%)' }} />
+          <div className="relative z-10 flex flex-col items-center gap-5">
+            <h2
+              className="font-serif text-white font-light"
+              style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)', lineHeight: 1.15 }}
+            >
+              Senin masanı kuruyoruz.
+            </h2>
+            <p className="text-sm sm:text-base max-w-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Kayıt ücretsiz. Test doldur, algoritmayı çalıştır.
+            </p>
+            <Link
+              href="/kayit"
+              className="inline-flex items-center gap-2 rounded-full font-medium text-white transition-all"
+              style={{
+                background: 'linear-gradient(135deg,#c0392b,#ff6b6b)',
+                boxShadow: '0 0 28px rgba(192,57,43,0.4)',
+                padding: '14px 40px',
+                fontSize: '1rem',
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 44px rgba(192,57,43,0.75)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 28px rgba(192,57,43,0.4)'; }}
+            >
+              Hemen Katıl →
+            </Link>
+          </div>
         </section>
 
         {/* ── Paketler ───────────────────────────────────────────────────── */}
