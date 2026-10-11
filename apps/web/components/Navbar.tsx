@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
 
-// SIZE=36 → R=18, BORDER_R=16.5, CIRCUMF=2π×16.5≈103.67
-const AV_SIZE  = 36;
-const AV_R     = AV_SIZE / 2;               // 18
-const AV_BR    = AV_R - 1.5;               // 16.5
-const AV_CIRC  = +(2 * Math.PI * AV_BR).toFixed(2); // 103.67
+const AV_D    = 38;
+const AV_R    = AV_D / 2;
+const AV_BR   = AV_R - 2;
+const AV_CIRC = +(2 * Math.PI * AV_BR).toFixed(2);
 
 interface NavUser {
   firstName: string;
@@ -25,61 +26,71 @@ function initials(u: NavUser) {
 
 function genderTheme(gender?: string) {
   if (gender === 'MALE') return {
-    color:  '#4fc3f7',
-    bg:     'rgba(79,195,247,0.12)',
-    glow:   'drop-shadow(0 0 5px rgba(79,195,247,0.5))',
-    pulse:  '_avPulseM 2.4s ease-in-out 1.2s infinite',
+    color:    '#4fc3f7',
+    bg:       'rgba(79,195,247,0.12)',
+    shadow:   'drop-shadow(0 0 5px rgba(79,195,247,0.5))',
+    pulseMin: 0.45,
+    pulseMax: 1.0,
+    pulseDur: 2.4,
   };
   if (gender === 'FEMALE') return {
-    color:  '#f48fb1',
-    bg:     'rgba(244,143,177,0.12)',
-    glow:   'drop-shadow(0 0 5px rgba(244,143,177,0.45))',
-    pulse:  '_avPulseF 2.8s ease-in-out 1.2s infinite',
+    color:    '#f48fb1',
+    bg:       'rgba(244,143,177,0.12)',
+    shadow:   'drop-shadow(0 0 5px rgba(244,143,177,0.45))',
+    pulseMin: 0.4,
+    pulseMax: 0.95,
+    pulseDur: 2.8,
   };
   return {
-    color:  'rgba(255,255,255,0.35)',
-    bg:     'rgba(255,255,255,0.05)',
-    glow:   'none',
-    pulse:  '_avPulseM 2.4s ease-in-out 1.2s infinite',
+    color:    'rgba(255,255,255,0.4)',
+    bg:       'rgba(255,255,255,0.06)',
+    shadow:   'drop-shadow(0 0 4px rgba(255,255,255,0.2))',
+    pulseMin: 0.3,
+    pulseMax: 0.7,
+    pulseDur: 2.6,
   };
 }
 
 function NavAvatar({ user }: { user: NavUser }) {
-  const theme = genderTheme(user.profile?.gender);
+  const t = genderTheme(user.profile?.gender);
   return (
-    <div style={{ position: 'relative', width: AV_SIZE, height: AV_SIZE, flexShrink: 0 }}>
+    <div style={{ position: 'relative', width: AV_D, height: AV_D, flexShrink: 0 }}>
       <svg
-        width={AV_SIZE} height={AV_SIZE}
-        viewBox={`0 0 ${AV_SIZE} ${AV_SIZE}`}
+        width={AV_D} height={AV_D}
+        viewBox={`0 0 ${AV_D} ${AV_D}`}
         style={{ position: 'absolute', inset: 0, overflow: 'visible' }}
       >
-        {/* Arka plan dairesi */}
-        <circle cx={AV_R} cy={AV_R} r={AV_R - 1} fill={theme.bg} />
+        {/* Arka plan */}
+        <circle cx={AV_R} cy={AV_R} r={AV_R - 1} fill={t.bg} />
 
-        {/* Draw-in border (stroke-dashoffset animasyonu) */}
-        <circle
+        {/* Draw-in border */}
+        <motion.circle
           cx={AV_R} cy={AV_R} r={AV_BR}
           fill="none"
-          stroke={theme.color}
-          strokeWidth={1.5}
+          stroke={t.color}
+          strokeWidth={2.5}
           strokeLinecap="round"
           strokeDasharray={AV_CIRC}
-          style={{
-            transform: `rotate(-90deg)`,
-            transformOrigin: `${AV_R}px ${AV_R}px`,
-            animation: `_avDraw 0.85s ease-out 0.1s forwards`,
-          }}
+          style={{ rotate: '-90deg', transformOrigin: `${AV_R}px ${AV_R}px` }}
+          initial={{ strokeDashoffset: AV_CIRC }}
+          animate={{ strokeDashoffset: 0 }}
+          transition={{ delay: 0.1, duration: 0.85, ease: 'easeOut' }}
         />
 
         {/* Pulse glow ring */}
-        <circle
+        <motion.circle
           cx={AV_R} cy={AV_R} r={AV_BR}
           fill="none"
-          stroke={theme.color}
-          strokeWidth={1.5}
-          style={{
-            filter: theme.glow,
-            animation: theme.pulse,
+          stroke={t.color}
+          strokeWidth={2.5}
+          style={{ filter: t.shadow }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [t.pulseMin, t.pulseMax, t.pulseMin] }}
+          transition={{
+            delay: 1.05,
+            duration: t.pulseDur,
+            repeat: Infinity,
+            ease: 'easeInOut',
           }}
         />
       </svg>
@@ -88,8 +99,8 @@ function NavAvatar({ user }: { user: NavUser }) {
       <div style={{
         position: 'absolute', inset: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, fontWeight: 600, color: '#ffffff',
-        letterSpacing: '0.05em', userSelect: 'none', pointerEvents: 'none',
+        fontSize: 11, fontWeight: 700, color: '#f0f0f0',
+        letterSpacing: '0.05em', userSelect: 'none',
       }}>
         {initials(user)}
       </div>
@@ -98,33 +109,24 @@ function NavAvatar({ user }: { user: NavUser }) {
 }
 
 export default function Navbar() {
+  const pathname = usePathname();
   const [navUser, setNavUser] = useState<NavUser | null>(null);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
+    setNavUser(null);
+    setChecked(false);
     const token = api.getToken();
     if (!token) { setChecked(true); return; }
     api.get<NavUser>('/auth/me')
       .then(u => setNavUser(u))
       .catch(() => {})
       .finally(() => setChecked(true));
-  }, []);
+  }, [pathname]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-bg/80 border-b border-border">
       <style>{`
-        @keyframes _avDraw {
-          from { stroke-dashoffset: ${AV_CIRC}; }
-          to   { stroke-dashoffset: 0; }
-        }
-        @keyframes _avPulseM {
-          0%, 100% { opacity: 0.45; }
-          50%      { opacity: 1; }
-        }
-        @keyframes _avPulseF {
-          0%, 100% { opacity: 0.4; }
-          50%      { opacity: 0.95; }
-        }
         @keyframes _gBtn {
           0%, 100% { background-position: 0% 50%; }
           50%      { background-position: 100% 50%; }
