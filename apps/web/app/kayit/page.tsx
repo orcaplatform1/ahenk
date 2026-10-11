@@ -116,8 +116,8 @@ export default function KayitPage() {
       return;
     }
     const phoneDigits = form.phoneNumber.replace(/\D/g, '');
-    if (form.phoneNumber && (phoneDigits.length !== 10 || !phoneDigits.startsWith('5'))) {
-      setError('Geçerli bir Türk telefon numarası girin (5 ile başlayan 10 hane).');
+    if (!phoneDigits || phoneDigits.length !== 10 || !phoneDigits.startsWith('5')) {
+      setError('WhatsApp numaranızı girin (5 ile başlayan 10 hane).');
       return;
     }
     if (!form.birthDate) { setError('Doğum tarihinizi seçin.'); return; }
@@ -345,7 +345,8 @@ export default function KayitPage() {
             <Field label="E-posta" type="email" value={form.email} onChange={(v) => set('email', v)} />
             {/* Telefon */}
             <div>
-              <label className="block text-xs text-[#555] mb-1.5">Telefon Numarası <span className="text-[#333]">(opsiyonel)</span></label>
+              <label className="block text-xs text-[#555] mb-1.5">Telefon Numarası</label>
+              <p className="text-xs text-[#444] mb-2">WhatsApp'a kayıtlı numaranızı yazın</p>
               <div className="flex gap-2">
                 <div
                   className="flex items-center px-4 text-[#555] text-sm select-none flex-shrink-0"
