@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
 
@@ -73,7 +74,10 @@ export default function GirisPage() {
       <div className="relative w-full max-w-sm" style={{ zIndex: 1 }}>
         {/* Logo alanı */}
         <div className="mb-10 text-center">
-          <p className="text-xs font-semibold tracking-[0.22em] text-[#555] uppercase mb-4">AHENK</p>
+          <div className="flex flex-col items-center gap-2 mb-6">
+            <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
+            <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
+          </div>
           <h1 className="font-serif text-4xl text-[#f5f5f5] mb-2">
             {step === 0 ? 'Giriş Yap' : 'Kodu Gir'}
           </h1>

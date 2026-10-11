@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { api } from '@/lib/api';
 
@@ -260,6 +261,12 @@ export default function KayitPage() {
       </div>
 
       <div className="relative flex flex-col flex-1 max-w-xl mx-auto w-full px-5 py-10" style={{ zIndex: 1 }}>
+
+        {/* Logo */}
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
+          <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
+        </div>
 
         {/* Adım göstergesi */}
         <div className="flex justify-center items-center gap-0 mb-10">
