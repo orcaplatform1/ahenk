@@ -8,59 +8,6 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
 
-const steps = [
-  {
-    n: '01',
-    title: 'Profilini Oluştur',
-    desc: 'Birkaç dakika ayır, kendini anlat. Şehrini seç, kim olduğunu ve ne aradığını bizimle paylaş. Kayıt tamamen ücretsiz, hiçbir şeyi senden saklamıyoruz.',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-      </svg>
-    ),
-  },
-  {
-    n: '02',
-    title: 'Kişilik Testini Tamamla',
-    desc: 'Psikoloji araştırmalarının altın standardı olan Big Five modeline dayalı 19 soruluk testimizi doldur. Doğru cevap yok — sadece sen varsın. Algoritma bu profili kullanarak seni gerçekten uyumlu insanlarla buluşturuyor.',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-      </svg>
-    ),
-  },
-  {
-    n: '03',
-    title: 'Algoritma Senin İçin Çalışır',
-    desc: 'Her Perşembe gece algoritmamız devreye girer. Kişilik uyumu, şehir, semt ve buluşma tercihlerin bir araya gelir. Rastgele değil, tam olarak sana göre.',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
-      </svg>
-    ),
-  },
-  {
-    n: '04',
-    title: 'Buluşma Zamanı',
-    desc: 'Cumartesi sabahı masanı ve mekanını öğrenirsin. Akşam 20:00\'de kapıdan içeri girdiğinde, masandaki herkes seninle bir şekilde örtüşüyor. Gerisi sana kalmış.',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-      </svg>
-    ),
-  },
-  {
-    n: '05',
-    title: 'Yapay Zeka Masa Raporu',
-    desc: 'Buluşma günü Ahenk\'in yapay zeka asistanı, gruptaki OCEAN uyum skorlarını analiz ederek sana özel bir masa raporu hazırlar. Grubun güçlü yönleri, ortak noktaları ve uyum skoru; hepsi ekranında seni bekliyor.',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <circle cx="12" cy="12" r="3" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
-      </svg>
-    ),
-  },
-];
 
 const cities = [
   { name: 'İstanbul' },
@@ -358,7 +305,7 @@ export default function Home() {
                   Hemen Katıl
                   <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" /></svg>
                 </Link>
-                <a href="#how-it-works" className="inline-flex items-center gap-2.5 px-6 py-4 rounded-full text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.12)' }}>
+                <a href="#how-it-knows-you" className="inline-flex items-center gap-2.5 px-6 py-4 rounded-full text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.12)' }}>
                   <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ border: '1px solid rgba(255,255,255,0.12)' }}>
                     <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" /></svg>
                   </span>
@@ -384,56 +331,6 @@ export default function Home() {
                 <div>
                   <h3 className="text-sm font-semibold text-[#f5f5f5] mb-0.5">{f.title}</h3>
                   <p className="text-xs text-[#888] leading-relaxed">{f.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Nasıl Çalışır ──────────────────────────────────────────────── */}
-        <section id="how-it-works" className="max-w-5xl mx-auto px-6 py-24">
-          <div className="text-center mb-14">
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5] mb-3">
-              <RedLast text="Nasıl Çalışır?" />
-            </h2>
-            <p className="text-[#888] text-sm sm:text-base">Dört adımda, sana özel bir akşam.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {steps.map((s) => (
-              <div
-                key={s.n}
-                className="relative rounded-2xl p-6 flex flex-col overflow-hidden"
-                style={{
-                  background: 'rgba(255,60,40,0.06)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  backdropFilter: 'blur(20px)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
-                  minHeight: 220,
-                }}
-              >
-                {/* Sağ üst smoke efekti */}
-                <div className="absolute top-0 right-0 w-40 h-40 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(192,57,43,0.25) 0%, transparent 65%)' }} />
-
-                {/* Sağ üst ikon dairesi */}
-                <div className="absolute top-5 right-5 w-10 h-10 rounded-full flex items-center justify-center text-[#c0392b]" style={{ border: '1px solid rgba(192,57,43,0.4)', background: 'rgba(192,57,43,0.08)' }}>
-                  {s.icon}
-                </div>
-
-                {/* Numara */}
-                <span className="font-serif text-5xl leading-none block mb-4 relative z-10" style={{ background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', filter: 'drop-shadow(0 0 12px rgba(192,57,43,0.6))' }}>
-                  {s.n}
-                </span>
-
-                <h3 className="font-medium text-base text-[#f5f5f5] mb-2 relative z-10 pr-12">{s.title}</h3>
-                <p className="text-[#888] text-sm leading-relaxed flex-1 relative z-10">{s.desc}</p>
-
-                {/* Sağ alt ok butonu */}
-                <div className="flex justify-end mt-5 relative z-10">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)' }}>
-                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-[#888]">
-                      <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />
-                    </svg>
-                  </div>
                 </div>
               </div>
             ))}
