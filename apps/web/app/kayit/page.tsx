@@ -697,110 +697,142 @@ function PasswordField({ label, value, onChange, placeholder, shakeKey }: {
 
 const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 
-function ChevronDown() {
+
+/* ── DatePickerModal ─────────────────────────────────────────────────────── */
+
+function PickerColumn({ title, options, selected, onSelect }: {
+  title: string;
+  options: { value: number; label: string }[];
+  selected: number;
+  onSelect: (v: number) => void;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Seçili öğeye scroll et
+  useEffect(() => {
+    const el = listRef.current?.querySelector('[data-sel="1"]') as HTMLElement | null;
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [selected]);
+
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ pointerEvents: 'none' }}>
-      <path d="M3 5L7 9L11 5" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <p style={{ textAlign: 'center', fontSize: 11, color: '#555', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</p>
+      <div
+        ref={listRef}
+        style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'] }}
+      >
+        {options.map(opt => {
+          const isSel = opt.value === selected;
+          return (
+            <div
+              key={opt.value}
+              data-sel={isSel ? '1' : '0'}
+              onClick={() => onSelect(opt.value)}
+              style={{
+                padding: '11px 6px',
+                textAlign: 'center',
+                fontSize: 15,
+                color: isSel ? '#ff6b6b' : '#777',
+                fontWeight: isSel ? 600 : 400,
+                background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent',
+                borderRadius: 8,
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+                transition: 'color 0.1s, background 0.1s',
+              }}
+            >
+              {opt.label}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
-function CustomDateSelect({ placeholder, value, onChange, options }: {
-  placeholder: string;
-  value: string | number;
+function DatePickerModal({ value, onChange, onClose }: {
+  value: string;
   onChange: (v: string) => void;
-  options: { value: string | number; label: string }[];
+  onClose: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const now = new Date();
+  const maxYear = now.getFullYear() - 18;
+  const minYear = now.getFullYear() - 80;
 
+  const parts = value ? value.split('-').map(Number) : [0, 0, 0];
+  const [tmpYear,  setTmpYear]  = useState(parts[0] || maxYear);
+  const [tmpMonth, setTmpMonth] = useState(parts[1] || 1);
+  const [tmpDay,   setTmpDay]   = useState(parts[2] || 1);
+
+  const daysInMonth = new Date(tmpYear, tmpMonth, 0).getDate();
+  const dayOpts   = Array.from({ length: daysInMonth }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
+  const monthOpts = MONTHS_TR.map((m, i) => ({ value: i + 1, label: m }));
+  const yearOpts  = Array.from({ length: maxYear - minYear + 1 }, (_, i) => ({ value: maxYear - i, label: String(maxYear - i) }));
+
+  // Ay değişince gün sınırını koru
   useEffect(() => {
-    if (!open) return;
-    function onDown(e: MouseEvent | TouchEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('touchstart', onDown);
-    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('touchstart', onDown); };
-  }, [open]);
+    const max = new Date(tmpYear, tmpMonth, 0).getDate();
+    if (tmpDay > max) setTmpDay(max);
+  }, [tmpMonth, tmpYear]);
 
-  const selected = options.find(o => String(o.value) === String(value));
+  function confirm() {
+    const safeDay = Math.min(tmpDay, new Date(tmpYear, tmpMonth, 0).getDate());
+    onChange(`${tmpYear}-${String(tmpMonth).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`);
+    onClose();
+  }
 
   return (
-    <div ref={ref} style={{ position: 'relative', flex: 1 }}>
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 999,
+        background: 'rgba(0,0,0,0.72)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'flex-end',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
         style={{
           width: '100%',
-          background: open ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.05)',
-          border: `1px solid ${open ? 'rgba(192,57,43,0.45)' : selected ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`,
-          borderRadius: 12,
-          padding: '14px 36px 14px 14px',
-          fontSize: 14,
-          color: selected ? '#f5f5f5' : '#555',
-          textAlign: 'left',
-          cursor: 'pointer',
-          outline: 'none',
-          WebkitTapHighlightColor: 'transparent',
-          transition: 'border-color 0.15s, background 0.15s',
-          userSelect: 'none',
+          background: '#111',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          padding: '20px 16px 36px',
         }}
       >
-        {selected ? selected.label : placeholder}
-      </button>
-
-      <span style={{
-        position: 'absolute', right: 12, top: '50%',
-        transform: `translateY(-50%) rotate(${open ? '180deg' : '0'})`,
-        pointerEvents: 'none', transition: 'transform 0.2s',
-      }}>
-        <ChevronDown />
-      </span>
-
-      {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 4px)',
-          left: 0, right: 0,
-          background: '#141414',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 12,
-          maxHeight: 224,
-          overflowY: 'auto',
-          zIndex: 300,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
-          WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
-        }}>
-          {options.map((opt, i) => {
-            const isSel = String(opt.value) === String(value);
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onMouseDown={e => { e.preventDefault(); onChange(String(opt.value)); setOpen(false); }}
-                onTouchEnd={e => { e.preventDefault(); onChange(String(opt.value)); setOpen(false); }}
-                style={{
-                  width: '100%',
-                  padding: '13px 16px',
-                  textAlign: 'left',
-                  fontSize: 14,
-                  color: isSel ? '#ff6b6b' : '#e0e0e0',
-                  background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent',
-                  borderBottom: i < options.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                  cursor: 'pointer',
-                  outline: 'none',
-                  WebkitTapHighlightColor: 'transparent',
-                  fontWeight: isSel ? 500 : 400,
-                  display: 'block',
-                }}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
+        {/* Başlık */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <p style={{ fontSize: 13, color: '#888' }}>Doğum tarihi seç</p>
+          <button
+            onClick={onClose}
+            style={{ color: '#555', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
+          >×</button>
         </div>
-      )}
+
+        {/* Üç kolon */}
+        <div style={{ display: 'flex', gap: 8, height: 220 }}>
+          <PickerColumn title="Gün"   options={dayOpts}   selected={tmpDay}   onSelect={setTmpDay}   />
+          <PickerColumn title="Ay"    options={monthOpts} selected={tmpMonth} onSelect={setTmpMonth} />
+          <PickerColumn title="Yıl"   options={yearOpts}  selected={tmpYear}  onSelect={setTmpYear}  />
+        </div>
+
+        {/* Onayla */}
+        <button
+          onClick={confirm}
+          style={{
+            width: '100%', marginTop: 20,
+            padding: '15px', borderRadius: 14,
+            background: 'linear-gradient(135deg,#c0392b,#ff6b6b)',
+            color: '#fff', fontSize: 15, fontWeight: 600,
+            outline: 'none', cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          Seç
+        </button>
+      </div>
     </div>
   );
 }
@@ -808,36 +840,37 @@ function CustomDateSelect({ placeholder, value, onChange, options }: {
 function DateField({ label, value, onChange }: {
   label: string; value: string; onChange: (v: string) => void;
 }) {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const minYear = currentYear - 80;
-  const maxYear = currentYear - 18;
+  const [open, setOpen] = useState(false);
 
-  const parts = value ? value.split('-').map(Number) : [0, 0, 0];
-  const [year, month, day] = parts;
-
-  const daysInMonth = year && month ? new Date(year, month, 0).getDate() : 31;
-
-  const dayOpts   = Array.from({ length: daysInMonth }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
-  const monthOpts = MONTHS_TR.map((m, i) => ({ value: i + 1, label: m }));
-  const yearOpts  = Array.from({ length: maxYear - minYear + 1 }, (_, i) => ({ value: maxYear - i, label: String(maxYear - i) }));
-
-  function update(y: number, m: number, d: number) {
-    if (!y || !m || !d) { onChange(''); return; }
-    const safeDay = Math.min(d, new Date(y, m, 0).getDate());
-    onChange(`${y}-${String(m).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`);
+  let display = 'Doğum tarihi seç';
+  if (value) {
+    const [y, m, d] = value.split('-').map(Number);
+    display = `${d} ${MONTHS_TR[m - 1]} ${y}`;
   }
 
   return (
     <div>
       <label className="block text-xs text-[#555] mb-1.5">{label}</label>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <CustomDateSelect placeholder="Gün"  value={day   || ''} onChange={v => update(year, month, Number(v))} options={dayOpts} />
-        <div style={{ flex: 2 }}>
-          <CustomDateSelect placeholder="Ay" value={month || ''} onChange={v => update(year, Number(v), day)} options={monthOpts} />
-        </div>
-        <CustomDateSelect placeholder="Yıl"  value={year  || ''} onChange={v => update(Number(v), month, day)} options={yearOpts} />
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{
+          width: '100%',
+          background: 'rgba(255,255,255,0.05)',
+          border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`,
+          borderRadius: 12,
+          padding: '14px 16px',
+          fontSize: 14,
+          color: value ? '#f5f5f5' : '#555',
+          textAlign: 'left',
+          cursor: 'pointer',
+          outline: 'none',
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        {display}
+      </button>
+      {open && <DatePickerModal value={value} onChange={onChange} onClose={() => setOpen(false)} />}
     </div>
   );
 }
