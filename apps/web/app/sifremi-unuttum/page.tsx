@@ -37,10 +37,7 @@ export default function SifremiUnuttumPage() {
             <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
             <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
           </div>
-          <h1 className="font-serif text-4xl text-[#f5f5f5] mb-2">Şifre Sıfırla</h1>
-          <p className="text-[#555] text-sm">
-            E-posta adresini gir, sıfırlama bağlantısı gönderelim.
-          </p>
+          <h1 className="font-serif text-4xl text-[#f5f5f5]">Şifre Sıfırla</h1>
         </div>
 
         <AnimatePresence mode="wait">
@@ -96,9 +93,13 @@ export default function SifremiUnuttumPage() {
           )}
         </AnimatePresence>
 
-        <div className="mt-10 text-center">
-          <Link href="/giris" className="text-xs text-[#444] hover:text-[#888] transition-colors tracking-wide">
-            ← Girişe dön
+        <div className="mt-8 flex justify-center">
+          <Link
+            href="/giris"
+            className="text-xs px-4 py-2 rounded-xl transition-all text-[#666] hover:text-[#aaa]"
+            style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+          >
+            Girişe Dön
           </Link>
         </div>
       </div>

@@ -139,9 +139,13 @@ export default function SifremiSifirlaPage() {
           <SifremiSifirlaForm />
         </Suspense>
 
-        <div className="mt-10 text-center">
-          <Link href="/giris" className="text-xs text-[#444] hover:text-[#888] transition-colors tracking-wide">
-            ← Girişe dön
+        <div className="mt-8 flex justify-center">
+          <Link
+            href="/giris"
+            className="text-xs px-4 py-2 rounded-xl transition-all text-[#666] hover:text-[#aaa]"
+            style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+          >
+            Girişe Dön
           </Link>
         </div>
       </div>

@@ -53,6 +53,7 @@ type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE' | '';
 
 interface FormState {
   firstName: string; lastName: string; email: string; password: string; confirmPassword: string;
+  phoneNumber: string;
   birthDate: string; gender: 'MALE' | 'FEMALE' | '';
   primaryCityId: string; secondaryCityId: string;
   venuePreference: VenuePreference;
@@ -76,10 +77,14 @@ export default function KayitPage() {
 
   const [form, setForm] = useState<FormState>({
     firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
+    phoneNumber: '',
     birthDate: '', gender: '', primaryCityId: '', secondaryCityId: '',
     venuePreference: '',
     contactNumbers: [], contactInput: '',
   });
+
+  const [pwError, setPwError] = useState('');
+  const [pwConfirmError, setPwConfirmError] = useState('');
 
   const [testQuestions, setTestQuestions] = useState<Question[]>([]);
   const [testAnswers, setTestAnswers] = useState<Record<string, number>>({});
@@ -98,9 +103,23 @@ export default function KayitPage() {
   });
 
   function handleStep1() {
+    setPwError(''); setPwConfirmError('');
     if (!form.firstName || !form.lastName || !form.email || !form.password) { setError('Tüm alanları doldurun.'); return; }
-    if (form.password.length < 6 || form.password.length > 20) { setError('Şifre 6-20 karakter arasında olmalı.'); return; }
-    if (form.password !== form.confirmPassword) { setError('Şifreler eşleşmiyor.'); setConfirmShake(k => k + 1); return; }
+    if (!form.email.includes('@')) { setError('Geçerli bir e-posta girin.'); return; }
+    if (form.password.length < 6 || form.password.length > 20) {
+      setPwError('Şifre 6-20 karakter arasında olmalı.');
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      setPwConfirmError('Şifreler eşleşmiyor.');
+      setConfirmShake(k => k + 1);
+      return;
+    }
+    const phoneDigits = form.phoneNumber.replace(/\D/g, '');
+    if (form.phoneNumber && (phoneDigits.length !== 10 || !phoneDigits.startsWith('5'))) {
+      setError('Geçerli bir Türk telefon numarası girin (5 ile başlayan 10 hane).');
+      return;
+    }
     if (!form.birthDate) { setError('Doğum tarihinizi seçin.'); return; }
     if (!form.gender) { setError('Cinsiyet seçin.'); return; }
     setError(''); setStepDir(1); setStep(1);
@@ -110,11 +129,13 @@ export default function KayitPage() {
     if (!form.primaryCityId) { setError('Ana şehir seçin.'); return; }
     setLoading(true); setError('');
     try {
+      const phoneDigits = form.phoneNumber.replace(/\D/g, '');
       const data = await api.post<RegisterResponse>('/auth/register', {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
         password: form.password,
+        phoneNumber: phoneDigits.length === 10 ? `+90${phoneDigits}` : undefined,
         acceptTerms: true,
         primaryCityId: form.primaryCityId || undefined,
         secondaryCityId: form.secondaryCityId || undefined,
@@ -322,8 +343,27 @@ export default function KayitPage() {
               <Field label="Soyad" value={form.lastName} onChange={(v) => set('lastName', v)} />
             </div>
             <Field label="E-posta" type="email" value={form.email} onChange={(v) => set('email', v)} />
-            <PasswordField label="Şifre" value={form.password} onChange={(v) => set('password', v)} placeholder="6-20 karakter" />
-            <PasswordField label="Şifre Tekrar" value={form.confirmPassword} onChange={(v) => set('confirmPassword', v)} shakeKey={confirmShake} />
+            {/* Telefon */}
+            <div>
+              <label className="block text-xs text-[#555] mb-1.5">Telefon Numarası <span className="text-[#333]">(opsiyonel)</span></label>
+              <div className="flex gap-2">
+                <div
+                  className="flex items-center px-4 text-[#555] text-sm select-none flex-shrink-0"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}
+                >
+                  +90
+                </div>
+                <input
+                  type="tel"
+                  value={form.phoneNumber}
+                  onChange={(e) => set('phoneNumber', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="5XX XXX XX XX"
+                  className="input-glass flex-1 px-4 py-3 text-sm"
+                />
+              </div>
+            </div>
+            <PasswordField label="Şifre" value={form.password} onChange={(v) => { set('password', v); setPwError(''); }} error={pwError} />
+            <PasswordField label="Şifre Tekrar" value={form.confirmPassword} onChange={(v) => { set('confirmPassword', v); setPwConfirmError(''); }} shakeKey={confirmShake} error={pwConfirmError} />
             <DateField label="Doğum tarihi" value={form.birthDate} onChange={(v) => set('birthDate', v)} />
             <div>
               <label className="block text-sm text-[#555] mb-2">Cinsiyet</label>
@@ -649,8 +689,8 @@ function Field({ label, value, onChange, type = 'text', placeholder, maxLength }
   );
 }
 
-function PasswordField({ label, value, onChange, placeholder, shakeKey }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; shakeKey?: number;
+function PasswordField({ label, value, onChange, shakeKey, error }: {
+  label: string; value: string; onChange: (v: string) => void; shakeKey?: number; error?: string;
 }) {
   const [show, setShow] = useState(false);
   const [shaking, setShaking] = useState(false);
@@ -675,10 +715,9 @@ function PasswordField({ label, value, onChange, placeholder, shakeKey }: {
           type={show ? 'text' : 'password'}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
           maxLength={20}
           className="input-glass px-4 py-3 text-sm pr-12"
-          style={shaking ? { borderColor: 'rgba(192,57,43,1)', transition: 'border-color 0.3s' } : { transition: 'border-color 0.3s' }}
+          style={shaking || error ? { borderColor: 'rgba(192,57,43,0.7)', transition: 'border-color 0.3s' } : { transition: 'border-color 0.3s' }}
         />
         <button
           type="button"
@@ -698,6 +737,7 @@ function PasswordField({ label, value, onChange, placeholder, shakeKey }: {
           )}
         </button>
       </motion.div>
+      {error && <p className="text-[#ff6b6b] text-xs mt-1.5">{error}</p>}
     </div>
   );
 }

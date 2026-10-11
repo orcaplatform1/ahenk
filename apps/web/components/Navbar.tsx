@@ -214,22 +214,28 @@ export default function Navbar() {
           ) : (
             /* Giriş yapmamış: Giriş Yap + Kayıt Ol */
             <>
-              <CapsuleBtn
-                label="Giriş Yap"
-                href="/giris"
-                leftBg="linear-gradient(115deg,#1a5c2a 0%,#27ae60 100%)"
-                outerBorder="rgba(39,174,96,0.75)"
-                outerGlow="inset 0 1px 1px rgba(255,255,255,0.08), 0 0 6px rgba(39,174,96,0.22), 0 0 16px rgba(39,174,96,0.12)"
-                icon={IkonGiris}
-              />
-              <CapsuleBtn
-                label="Kayıt Ol"
-                href="/kayit"
-                leftBg="linear-gradient(115deg,#E83F3D 0%,#FF6669 100%)"
-                outerBorder="rgba(255,85,90,0.8)"
-                outerGlow="inset 0 1px 1px rgba(255,125,110,0.10), 0 0 6px rgba(255,55,65,0.22), 0 0 16px rgba(255,45,55,0.12)"
-                icon={IkonKayit}
-              />
+              {/* /giris, /sifremi-unuttum, /sifremi-sifirla sayfalarında Giriş Yap gizlenir */}
+              {!['/giris', '/sifremi-unuttum', '/sifremi-sifirla'].includes(pathname) && (
+                <CapsuleBtn
+                  label="Giriş Yap"
+                  href="/giris"
+                  leftBg="linear-gradient(115deg,#1a5c2a 0%,#27ae60 100%)"
+                  outerBorder="rgba(39,174,96,0.75)"
+                  outerGlow="inset 0 1px 1px rgba(255,255,255,0.08), 0 0 6px rgba(39,174,96,0.22), 0 0 16px rgba(39,174,96,0.12)"
+                  icon={IkonGiris}
+                />
+              )}
+              {/* /kayit sayfasında Kayıt Ol gizlenir */}
+              {pathname !== '/kayit' && (
+                <CapsuleBtn
+                  label="Kayıt Ol"
+                  href="/kayit"
+                  leftBg="linear-gradient(115deg,#E83F3D 0%,#FF6669 100%)"
+                  outerBorder="rgba(255,85,90,0.8)"
+                  outerGlow="inset 0 1px 1px rgba(255,125,110,0.10), 0 0 6px rgba(255,55,65,0.22), 0 0 16px rgba(255,45,55,0.12)"
+                  icon={IkonKayit}
+                />
+              )}
             </>
           )}
         </div>

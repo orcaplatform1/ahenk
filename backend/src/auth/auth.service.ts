@@ -38,11 +38,17 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
+    if (dto.phoneNumber) {
+      const phoneExists = await this.prisma.user.findUnique({ where: { phone: dto.phoneNumber } });
+      if (phoneExists) throw new ConflictException("Bu telefon numarası zaten kullanılıyor");
+    }
+
     const user = await this.prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
         data: {
           email: dto.email,
           passwordHash,
+          phone: dto.phoneNumber ?? null,
           role: UserRole.USER,
           profile: {
             create: {
@@ -122,6 +128,37 @@ export class AuthService {
     await this.prisma.refreshToken.update({
       where: { id: storedToken.id },
       data: { revoked: true },
+    });
+
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    return { user: this.sanitizeUser(user), ...tokens };
+  }
+
+  // ─── WhatsApp OTP ile Giriş (public) ────────────────────────────────────
+
+  async sendLoginOtp(phone: string) {
+    const user = await this.prisma.user.findUnique({ where: { phone } });
+    if (!user) throw new UnauthorizedException("Bu telefon numarasıyla kayıtlı hesap bulunamadı");
+    if (user.status === "DELETED") throw new ForbiddenException("Bu hesap silinmiş");
+    if (user.status === "SUSPENDED") throw new ForbiddenException("Bu hesap askıya alınmış");
+    await this.otpService.send(phone);
+    return { message: "Doğrulama kodu gönderildi" };
+  }
+
+  async verifyLoginOtp(phone: string, code: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { phone },
+      include: { profile: true },
+    });
+    if (!user) throw new UnauthorizedException("Hesap bulunamadı");
+    if (user.status === "DELETED") throw new ForbiddenException("Bu hesap silinmiş");
+    if (user.status === "SUSPENDED") throw new ForbiddenException("Bu hesap askıya alınmış");
+
+    await this.otpService.verify(phone, code);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { phoneVerified: true },
     });
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);

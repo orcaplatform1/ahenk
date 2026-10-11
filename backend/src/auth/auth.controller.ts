@@ -21,7 +21,7 @@ import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { SendOtpDto, VerifyOtpDto } from "./dto/send-otp.dto";
+import { SendOtpDto, VerifyOtpDto, SendLoginOtpDto, VerifyLoginOtpDto } from "./dto/send-otp.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 import { CurrentUser } from "./decorators/current-user.decorator";
@@ -98,6 +98,25 @@ export class AuthController {
   @ApiOperation({ summary: "Mevcut kullanıcı bilgisi" })
   me(@CurrentUser() user: any) {
     return this.authService.getMe(user);
+  }
+
+  @Post("send-login-otp")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "WhatsApp OTP ile giriş — kod gönder (public)" })
+  async sendLoginOtp(@Body() dto: SendLoginOtpDto) {
+    return this.authService.sendLoginOtp(dto.phone);
+  }
+
+  @Post("verify-login-otp")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "WhatsApp OTP ile giriş — kodu doğrula (public)" })
+  async verifyLoginOtp(
+    @Body() dto: VerifyLoginOtpDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { user, accessToken, refreshToken } = await this.authService.verifyLoginOtp(dto.phone, dto.code);
+    this.setRefreshCookie(res, refreshToken);
+    return { user, accessToken };
   }
 
   @Post("send-otp")

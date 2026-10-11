@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsBoolean,
   IsArray,
+  Matches,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
@@ -35,6 +36,12 @@ export class RegisterDto {
   @ApiProperty({ description: "Kullanım şartları kabul edildi" })
   @IsBoolean({ message: "Kullanım şartlarını kabul etmelisiniz" })
   acceptTerms: boolean;
+
+  @ApiPropertyOptional({ example: "+905551234567" })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  phoneNumber?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

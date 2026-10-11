@@ -19,3 +19,22 @@ export class VerifyOtpDto {
   @Matches(/^[0-9]{6}$/, { message: "OTP 6 haneli bir sayı olmalı" })
   code: string;
 }
+
+export class SendLoginOtpDto {
+  @ApiProperty({ example: "+905551234567" })
+  @IsString()
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  phone: string;
+}
+
+export class VerifyLoginOtpDto {
+  @ApiProperty({ example: "+905551234567" })
+  @IsString()
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  phone: string;
+
+  @ApiProperty({ example: "123456" })
+  @IsString()
+  @Matches(/^[0-9]{6}$/, { message: "OTP 6 haneli bir sayı olmalı" })
+  code: string;
+}
