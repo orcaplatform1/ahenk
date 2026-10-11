@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { api } from '@/lib/api';
 
 interface City { id: string; name: string; }
@@ -71,6 +71,7 @@ export default function KayitPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cities, setCities] = useState<City[]>([]);
+  const [confirmShake, setConfirmShake] = useState(0);
 
   const [form, setForm] = useState<FormState>({
     firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
@@ -98,7 +99,8 @@ export default function KayitPage() {
   function handleStep1() {
     if (!form.firstName || !form.lastName || !form.email || !form.password) { setError('Tüm alanları doldurun.'); return; }
     if (form.password.length < 6 || form.password.length > 20) { setError('Şifre 6-20 karakter arasında olmalı.'); return; }
-    if (form.password !== form.confirmPassword) { setError('Şifreler eşleşmiyor.'); return; }
+    if (form.password !== form.confirmPassword) { setError('Şifreler eşleşmiyor.'); setConfirmShake(k => k + 1); return; }
+    if (!form.birthDate) { setError('Doğum tarihinizi seçin.'); return; }
     if (!form.gender) { setError('Cinsiyet seçin.'); return; }
     setError(''); setStepDir(1); setStep(1);
   }
@@ -186,7 +188,7 @@ export default function KayitPage() {
         const results = await Promise.all(form.contactNumbers.map(n => sha256(n)));
         const hashes = results.filter((h): h is string => h !== null);
         if (hashes.length > 0) {
-          await api.post('/contact-blocks/sync', { hashes }).catch(() => {});
+          await api.post('/contact-blocks/sync', { hashedPhones: hashes }).catch(() => {});
         }
       }
       setShowSuccess(true);
@@ -314,7 +316,7 @@ export default function KayitPage() {
             </div>
             <Field label="E-posta" type="email" value={form.email} onChange={(v) => set('email', v)} />
             <PasswordField label="Şifre" value={form.password} onChange={(v) => set('password', v)} placeholder="6-20 karakter" />
-            <PasswordField label="Şifre Tekrar" value={form.confirmPassword} onChange={(v) => set('confirmPassword', v)} />
+            <PasswordField label="Şifre Tekrar" value={form.confirmPassword} onChange={(v) => set('confirmPassword', v)} shakeKey={confirmShake} />
             <DateField label="Doğum tarihi" value={form.birthDate} onChange={(v) => set('birthDate', v)} />
             <div>
               <label className="block text-sm text-[#555] mb-2">Cinsiyet</label>
@@ -327,7 +329,20 @@ export default function KayitPage() {
                 ))}
               </div>
             </div>
-            {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.p
+                  key={error}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  className="text-[#ff6b6b] text-sm"
+                >
+                  {error}
+                </motion.p>
+              )}
+            </AnimatePresence>
             <button type="button" onClick={handleStep1} disabled={loading} className="w-full py-3.5 text-sm btn-grad">
               Devam Et
             </button>
@@ -340,10 +355,13 @@ export default function KayitPage() {
             <div>
               <p className="text-xs font-semibold tracking-[0.18em] text-[#555] uppercase mb-1">ADIM 2</p>
               <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Şehir Seçimi</h1>
-              <p className="text-[#555] text-sm">Buluşmak istediğin şehri seç.</p>
+              <p className="text-[#555] text-sm">Hangi şehirde buluşmak istediğini seç. Yaşadığın şehir değil, katılmak istediğin şehir.</p>
             </div>
             <GlassSelect label="Ana Şehir *" value={form.primaryCityId} onChange={(v) => set('primaryCityId', v)} cities={cities} />
             <GlassSelect label="İkinci Şehir (opsiyonel)" value={form.secondaryCityId} onChange={(v) => set('secondaryCityId', v)} cities={cities.filter((c) => c.id !== form.primaryCityId)} optional />
+            <p className="text-xs text-[#444] leading-relaxed">
+              Farklı bir şehirde olduğun haftalarda profilindeki "Bu Hafta Hangi Şehirdesiniz?" kartından geçici şehir seçebilirsin.
+            </p>
             {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
             <div className="flex gap-3 mt-1">
               <button type="button" onClick={() => { setStepDir(-1); setStep(0); setError(''); }} className="px-5 py-3.5 text-sm text-[#555] hover:text-[#888] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: 9999 }}>
@@ -624,14 +642,28 @@ function Field({ label, value, onChange, type = 'text', placeholder, maxLength }
   );
 }
 
-function PasswordField({ label, value, onChange, placeholder }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+function PasswordField({ label, value, onChange, placeholder, shakeKey }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; shakeKey?: number;
 }) {
   const [show, setShow] = useState(false);
+  const [shaking, setShaking] = useState(false);
+  const controls = useAnimation();
+
+  useEffect(() => {
+    if (!shakeKey) return;
+    setShaking(true);
+    controls.start({
+      x: [0, -8, 8, -8, 8, 0],
+      transition: { duration: 0.4, ease: 'easeInOut' },
+    });
+    const t = setTimeout(() => setShaking(false), 400);
+    return () => clearTimeout(t);
+  }, [shakeKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div>
       <label className="block text-xs text-[#555] mb-1.5">{label}</label>
-      <div className="relative">
+      <motion.div className="relative" animate={controls}>
         <input
           type={show ? 'text' : 'password'}
           value={value}
@@ -639,6 +671,7 @@ function PasswordField({ label, value, onChange, placeholder }: {
           placeholder={placeholder}
           maxLength={20}
           className="input-glass px-4 py-3 text-sm pr-12"
+          style={shaking ? { borderColor: 'rgba(192,57,43,1)', transition: 'border-color 0.3s' } : { transition: 'border-color 0.3s' }}
         />
         <button
           type="button"
@@ -657,7 +690,52 @@ function PasswordField({ label, value, onChange, placeholder }: {
             </svg>
           )}
         </button>
-      </div>
+      </motion.div>
+    </div>
+  );
+}
+
+const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+function ChevronDown() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ pointerEvents: 'none' }}>
+      <path d="M3 5L7 9L11 5" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function DateSelect({ placeholder, value, onChange, children }: {
+  placeholder: string; value: string | number; onChange: (v: string) => void; children: React.ReactNode;
+}) {
+  return (
+    <div style={{ position: 'relative', flex: 1 }}>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          width: '100%',
+          background: 'rgba(255,255,255,0.05)',
+          border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`,
+          borderRadius: 12,
+          padding: '14px 36px 14px 14px',
+          fontSize: 14,
+          color: value ? '#f5f5f5' : '#555',
+          outline: 'none',
+          appearance: 'none',
+          WebkitAppearance: 'none',
+          cursor: 'pointer',
+          transition: 'border-color 0.15s',
+        }}
+        onFocus={e => { (e.currentTarget as HTMLSelectElement).style.borderColor = 'rgba(192,57,43,0.5)'; }}
+        onBlur={e => { (e.currentTarget as HTMLSelectElement).style.borderColor = value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'; }}
+      >
+        <option value="" disabled style={{ background: '#111', color: '#555' }}>{placeholder}</option>
+        {children}
+      </select>
+      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+        <ChevronDown />
+      </span>
     </div>
   );
 }
@@ -665,16 +743,41 @@ function PasswordField({ label, value, onChange, placeholder }: {
 function DateField({ label, value, onChange }: {
   label: string; value: string; onChange: (v: string) => void;
 }) {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const minYear = currentYear - 80;
+  const maxYear = currentYear - 18;
+
+  const parts = value ? value.split('-').map(Number) : [0, 0, 0];
+  const [year, month, day] = parts;
+
+  const daysInMonth = year && month ? new Date(year, month, 0).getDate() : 31;
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i);
+
+  function update(y: number, m: number, d: number) {
+    if (!y || !m || !d) { onChange(''); return; }
+    const safeDay = Math.min(d, new Date(y, m, 0).getDate());
+    onChange(`${y}-${String(m).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`);
+  }
+
   return (
     <div>
       <label className="block text-xs text-[#555] mb-1.5">{label}</label>
-      <input
-        type="date"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="input-glass px-4 py-3 text-sm"
-        style={{ colorScheme: 'dark' }}
-      />
+      <style>{`.date-opt{background:#111!important;color:#f5f5f5!important;}`}</style>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <DateSelect placeholder="Gün" value={day || ''} onChange={v => update(year, month, Number(v))}>
+          {days.map(d => <option key={d} value={d} className="date-opt">{d}</option>)}
+        </DateSelect>
+        <div style={{ flex: 2 }}>
+          <DateSelect placeholder="Ay" value={month || ''} onChange={v => update(year, Number(v), day)}>
+            {MONTHS_TR.map((m, i) => <option key={i+1} value={i+1} className="date-opt">{m}</option>)}
+          </DateSelect>
+        </div>
+        <DateSelect placeholder="Yıl" value={year || ''} onChange={v => update(Number(v), month, day)}>
+          {years.map(y => <option key={y} value={y} className="date-opt">{y}</option>)}
+        </DateSelect>
+      </div>
     </div>
   );
 }
