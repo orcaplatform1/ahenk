@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 
@@ -61,6 +61,64 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
+  /* Telefon değiştirme */
+  const [phoneMode, setPhoneMode] = useState<'idle' | 'enter' | 'otp'>('idle');
+  const [newPhone, setNewPhone] = useState('');
+  const [phoneOtp, setPhoneOtp] = useState(['', '', '', '', '', '']);
+  const [phoneSaving, setPhoneSaving] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+  const [currentPhone, setCurrentPhone] = useState(user.phone ?? '');
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  /* E-posta değiştirme */
+  const [emailMode, setEmailMode] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [currentEmail, setCurrentEmail] = useState(user.email);
+
+  async function sendPhoneOtp() {
+    if (!newPhone || newPhone.length !== 10 || !newPhone.startsWith('5')) { setPhoneError('Geçerli bir numara girin (5 ile başlayan 10 hane).'); return; }
+    setPhoneSaving(true); setPhoneError('');
+    try {
+      await api.post('/users/change-phone/request', { phone: `+90${newPhone}` });
+      setPhoneMode('otp');
+    } catch (e) { setPhoneError((e as Error).message); }
+    finally { setPhoneSaving(false); }
+  }
+
+  async function verifyPhoneOtp() {
+    const code = phoneOtp.join('');
+    if (code.length !== 6) return;
+    setPhoneSaving(true); setPhoneError('');
+    try {
+      await api.post('/users/change-phone/verify', { phone: `+90${newPhone}`, code });
+      setCurrentPhone(`+90${newPhone}`);
+      setPhoneMode('idle'); setNewPhone(''); setPhoneOtp(['', '', '', '', '', '']);
+    } catch (e) { setPhoneError((e as Error).message); }
+    finally { setPhoneSaving(false); }
+  }
+
+  function handleOtpInput(i: number, val: string) {
+    const d = val.replace(/\D/g, '').slice(-1);
+    const next = [...phoneOtp]; next[i] = d;
+    setPhoneOtp(next);
+    if (d && i < 5) otpRefs.current[i + 1]?.focus();
+  }
+
+  async function saveEmail() {
+    if (!newEmail.includes('@') || !newEmail.includes('.')) { setEmailError('Geçerli bir e-posta girin.'); return; }
+    if (!emailPassword) { setEmailError('Mevcut şifrenizi girin.'); return; }
+    setEmailSaving(true); setEmailError('');
+    try {
+      await api.patch('/users/change-email', { email: newEmail, currentPassword: emailPassword });
+      setCurrentEmail(newEmail);
+      setEmailMode(false); setNewEmail(''); setEmailPassword('');
+    } catch (e) { setEmailError((e as Error).message); }
+    finally { setEmailSaving(false); }
+  }
+
   const kycStatus = user.kyc?.status ?? 'PENDING';
   const badge = KYC_BADGE[kycStatus] ?? KYC_BADGE.PENDING;
 
@@ -107,8 +165,77 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
       {/* Temel bilgiler */}
       <Card title="Hesap Bilgileri">
         <Row label="Ad Soyad" value={`${user.firstName} ${user.lastName}`} />
-        <Row label="E-posta" value={user.email} />
-        {user.phone && <Row label="Telefon" value={user.phone} />}
+
+        {/* E-posta */}
+        {emailMode ? (
+          <div className="flex flex-col gap-2 pt-1">
+            <p className="text-xs text-[#555]">Yeni e-posta adresi</p>
+            <input type="email" value={newEmail} onChange={e => { setNewEmail(e.target.value); setEmailError(''); }} placeholder="yeni@eposta.com" className="input-glass px-4 py-3 text-sm w-full" />
+            <input type="password" value={emailPassword} onChange={e => { setEmailPassword(e.target.value); setEmailError(''); }} placeholder="Mevcut şifreniz" className="input-glass px-4 py-3 text-sm w-full" />
+            {emailError && <p className="text-[#ff6b6b] text-xs">{emailError}</p>}
+            <div className="flex gap-2">
+              <button onClick={() => { setEmailMode(false); setEmailError(''); }} className="flex-1 py-2 text-xs text-[#888]" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>İptal</button>
+              <button onClick={saveEmail} disabled={emailSaving} className="flex-1 py-2 text-xs btn-grad">{emailSaving ? '…' : 'Kaydet'}</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted">E-posta</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-text">{currentEmail}</span>
+              <button onClick={() => setEmailMode(true)} className="text-xs text-[#888] hover:text-[#f5f5f5] transition-colors px-2 py-0.5" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}>Değiştir</button>
+            </div>
+          </div>
+        )}
+
+        {/* Telefon */}
+        {phoneMode === 'idle' && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted">Telefon</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-text">{currentPhone || '—'}</span>
+              <button onClick={() => setPhoneMode('enter')} className="text-xs text-[#888] hover:text-[#f5f5f5] transition-colors px-2 py-0.5" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}>
+                {currentPhone ? 'Değiştir' : 'Ekle'}
+              </button>
+            </div>
+          </div>
+        )}
+        {phoneMode === 'enter' && (
+          <div className="flex flex-col gap-2 pt-1">
+            <p className="text-xs text-[#555]">{currentPhone ? 'Yeni telefon numarası' : 'Telefon numarası ekle'}</p>
+            <div className="flex gap-2">
+              <div className="flex items-center px-3 text-[#555] text-sm select-none" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}>+90</div>
+              <input type="tel" value={newPhone} onChange={e => { setNewPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setPhoneError(''); }} placeholder="5XX XXX XX XX" className="input-glass flex-1 px-4 py-3 text-sm" />
+            </div>
+            {phoneError && <p className="text-[#ff6b6b] text-xs">{phoneError}</p>}
+            <div className="flex gap-2">
+              <button onClick={() => { setPhoneMode('idle'); setPhoneError(''); setNewPhone(''); }} className="flex-1 py-2 text-xs text-[#888]" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>İptal</button>
+              <button onClick={sendPhoneOtp} disabled={phoneSaving} className="flex-1 py-2 text-xs btn-grad">{phoneSaving ? '…' : 'Kod Gönder'}</button>
+            </div>
+          </div>
+        )}
+        {phoneMode === 'otp' && (
+          <div className="flex flex-col gap-2 pt-1">
+            <p className="text-xs text-[#555]">+90{newPhone} numarasına WhatsApp kodu gönderildi.</p>
+            <div className="flex gap-1.5 justify-center">
+              {phoneOtp.map((d, i) => (
+                <input key={i} ref={el => { otpRefs.current[i] = el; }} type="tel" inputMode="numeric" maxLength={1} value={d}
+                  onChange={e => handleOtpInput(i, e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Backspace' && !d && i > 0) otpRefs.current[i - 1]?.focus(); }}
+                  autoFocus={i === 0}
+                  className="text-center input-glass text-lg font-semibold"
+                  style={{ borderRadius: 10, width: 40, height: 50 }}
+                />
+              ))}
+            </div>
+            {phoneError && <p className="text-[#ff6b6b] text-xs text-center">{phoneError}</p>}
+            <div className="flex gap-2">
+              <button onClick={() => { setPhoneMode('enter'); setPhoneError(''); setPhoneOtp(['', '', '', '', '', '']); }} className="flex-1 py-2 text-xs text-[#888]" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>← Geri</button>
+              <button onClick={verifyPhoneOtp} disabled={phoneSaving || phoneOtp.join('').length !== 6} className="flex-1 py-2 text-xs btn-grad disabled:opacity-40">{phoneSaving ? '…' : 'Doğrula'}</button>
+            </div>
+          </div>
+        )}
+
         {user.profile?.birthDate && (
           <Row label="Doğum Tarihi" value={new Date(user.profile.birthDate).toLocaleDateString('tr-TR')} />
         )}
