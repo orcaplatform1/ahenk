@@ -13,7 +13,7 @@ const AV_R    = AV_D / 2;
 const AV_BR   = AV_R - 2;
 const AV_CIRC = +(2 * Math.PI * AV_BR).toFixed(2);
 
-interface NavUser { firstName: string; lastName: string; profile?: { gender?: string }; }
+interface NavUser { firstName: string; lastName: string; role?: string; profile?: { gender?: string }; }
 
 function initials(u: NavUser) {
   return `${u.firstName?.[0]?.toUpperCase() ?? '?'}.${u.lastName?.[0]?.toUpperCase() ?? '?'}.`;
@@ -204,6 +204,17 @@ export default function Navbar() {
               <div className="hidden md:flex items-center gap-2">
                 {navUser ? (
                   <>
+                    {(navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
+                      <Link
+                        href="/admin"
+                        className="text-sm font-medium transition-colors"
+                        style={{ color: '#c0392b', letterSpacing: '0.01em' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; }}
+                      >
+                        Yönetim Paneli
+                      </Link>
+                    )}
                     <Link href="/profil" className="cursor-pointer flex-shrink-0">
                       <NavAvatar user={navUser} />
                     </Link>
@@ -331,13 +342,25 @@ export default function Navbar() {
               {checked && (
                 <div className="flex flex-col px-4 pt-6 gap-3">
                   {navUser ? (
-                    <button
-                      onClick={handleLogout}
+                    <>
+                      {(navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setMenuOpen(false)}
+                          className="w-full py-2.5 rounded-xl text-sm font-medium text-center transition-colors"
+                          style={{ background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.35)', color: '#c0392b' }}
+                        >
+                          Yönetim Paneli
+                        </Link>
+                      )}
+                      <button
+                        onClick={handleLogout}
                       className="w-full py-2.5 rounded-xl text-sm font-medium transition-colors"
                       style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc' }}
                     >
                       Çıkış Yap
                     </button>
+                    </>
                   ) : (
                     <>
                       {showGiris && (

@@ -19,6 +19,7 @@ interface UserData {
   lastName: string;
   email: string;
   phone?: string;
+  role?: string;
   activeCity?: string | null;
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
   profile?: {
@@ -139,6 +140,25 @@ export default function ProfilPage() {
             className="glass-card mb-6 md:mb-0 md:sticky overflow-hidden"
             style={{ top: '60px', padding: 0 }}
           >
+            {(user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
+              <a
+                href="/admin"
+                className="w-full text-left px-4 py-3.5 text-sm flex items-center gap-2 transition-all"
+                style={{
+                  borderLeft: '2px solid rgba(192,57,43,0.6)',
+                  background: 'rgba(192,57,43,0.08)',
+                  color: '#c0392b',
+                  fontWeight: 600,
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  display: 'flex',
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>
+                Yönetim Paneli
+              </a>
+            )}
             {TABS.map((tab, i) => {
               const active = activeTab === tab.key;
               return (
