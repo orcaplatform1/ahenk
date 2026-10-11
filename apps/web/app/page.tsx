@@ -49,7 +49,15 @@ const steps = [
   },
 ];
 
-const cities = ['İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Muğla', 'Aydın', 'Balıkesir'];
+const cities = [
+  { name: 'İstanbul' },
+  { name: 'Ankara' },
+  { name: 'İzmir' },
+  { name: 'Antalya' },
+  { name: 'Muğla' },
+  { name: 'Aydın' },
+  { name: 'Balıkesir', sub: 'Ayvalık / Akçay' },
+];
 
 const plans = [
   {
@@ -201,7 +209,7 @@ export default function Home() {
 
       <div className="relative" style={{ zIndex: 1 }}>
         {/* ── Hero ──────────────────────────────────────────────────────── */}
-        <section id="hero" className="relative overflow-hidden" style={{ minHeight: '70vh', display: 'flex', alignItems: 'center' }}>
+        <section id="hero" className="relative overflow-hidden pt-[52px]" style={{ minHeight: '70vh', display: 'flex', alignItems: 'center' }}>
           <div className="hero-bg absolute inset-0" />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
@@ -348,13 +356,13 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap justify-center gap-3">
             {cities.map((city) => {
-              const isActive = activeCity === city;
+              const isActive = activeCity === city.name;
               return (
                 <button
-                  key={city}
+                  key={city.name}
                   type="button"
-                  onClick={() => setActiveCity(city)}
-                  className="px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5"
+                  onClick={() => setActiveCity(city.name)}
+                  className="px-5 py-2 rounded-full font-medium transition-all duration-200 flex items-center gap-1.5"
                   style={isActive ? {
                     border: '1px solid rgba(192,57,43,0.8)',
                     background: 'rgba(192,57,43,0.12)',
@@ -371,7 +379,12 @@ export default function Home() {
                       <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
                     </svg>
                   )}
-                  {city}
+                  <span className="flex flex-col items-start leading-tight">
+                    <span className="text-sm">{city.name}</span>
+                    {city.sub && (
+                      <span className="text-[10px] font-normal opacity-60 tracking-wide">{city.sub}</span>
+                    )}
+                  </span>
                 </button>
               );
             })}
