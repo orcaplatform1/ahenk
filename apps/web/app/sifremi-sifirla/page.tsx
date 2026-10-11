@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 
@@ -117,7 +118,7 @@ function SifremiSifirlaForm() {
 export default function SifremiSifirlaPage() {
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-6"
+      className="min-h-screen flex flex-col items-center justify-center md:justify-start px-6 md:pt-[80px]"
       style={{ background: '#0a0a0a' }}
     >
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
@@ -126,7 +127,10 @@ export default function SifremiSifirlaPage() {
 
       <div className="relative w-full max-w-sm" style={{ zIndex: 1 }}>
         <div className="mb-10 text-center">
-          <p className="text-xs font-semibold tracking-[0.22em] text-[#555] uppercase mb-4">AHENK</p>
+          <div className="flex flex-col items-center gap-2 mb-6">
+            <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
+            <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
+          </div>
           <h1 className="font-serif text-4xl text-[#f5f5f5] mb-2">Yeni Şifre</h1>
           <p className="text-[#555] text-sm">Hesabın için yeni bir şifre belirle.</p>
         </div>

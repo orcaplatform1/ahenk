@@ -63,7 +63,7 @@ export default function GirisPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-6 pt-[52px]"
+      className="min-h-screen flex flex-col items-center justify-center md:justify-start px-6 pt-[52px] md:pt-[80px]"
       style={{ background: '#0a0a0a' }}
     >
       {/* Arka plan glow */}
