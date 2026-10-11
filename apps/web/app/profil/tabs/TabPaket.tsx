@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 
@@ -140,8 +139,10 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
       {error && <p className="text-accent text-sm">{error}</p>}
 
       <style>{`
-        @keyframes _pRotGrad{to{transform:rotate(360deg)}}
-        .p-tercih-badge::before{content:'';position:absolute;inset:-1.5px;border-radius:9999px;background:conic-gradient(#c0392b,#ff6b6b,#e74c3c,#c0392b);animation:_pRotGrad 3s linear infinite;z-index:-1;}
+        @keyframes _pRotBorder{to{transform:rotate(360deg)}}
+        .p-tercih-wrap{position:relative;display:inline-flex;}
+        .p-tercih-wrap::before{content:'';position:absolute;inset:-1.5px;border-radius:9999px;background:conic-gradient(from 0deg,transparent 0%,transparent 65%,#ff6b6b 75%,#c0392b 82%,transparent 92%);animation:_pRotBorder 2.2s linear infinite;z-index:0;}
+        .p-tercih-inner{position:relative;z-index:1;background:#0a0a0a;border-radius:9999px;padding:4px 12px;font-size:0.75rem;font-weight:600;color:#fff;}
       `}</style>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -168,29 +169,13 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
             />
             {/* Karartma katmanı */}
             <div className="absolute inset-0" style={{
-              background: plan.featured
-                ? 'linear-gradient(160deg, rgba(120,20,10,0.45) 0%, rgba(10,5,5,0.85) 55%)'
-                : 'linear-gradient(160deg, rgba(80,15,10,0.35) 0%, rgba(10,5,5,0.85) 55%)',
+              background: 'linear-gradient(160deg, rgba(10,5,5,0.3) 0%, rgba(10,5,5,0.82) 55%)',
             }} />
-            {/* Sağ üst smoke */}
-            {plan.featured ? (
-              <motion.div
-                className="absolute top-0 right-0 w-40 h-40 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse at top right, rgba(192,57,43,0.45) 0%, transparent 65%)' }}
-                animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-              />
-            ) : (
-              <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(192,57,43,0.3) 0%, transparent 65%)' }} />
-            )}
 
             {plan.featured && (
-              <span
-                className="p-tercih-badge absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
-                style={{ background: '#0a0a0a' }}
-              >
-                Tercih Edilen
-              </span>
+              <div className="p-tercih-wrap absolute top-4 right-4 z-10">
+                <span className="p-tercih-inner">Tercih Edilen</span>
+              </div>
             )}
 
             <div className="relative z-10 p-6 flex flex-col gap-3 flex-1">
@@ -220,18 +205,17 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
                   disabled={!kycApproved || buying === plan.key}
                   className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${!kycApproved ? 'opacity-40 cursor-not-allowed' : ''}`}
                   style={plan.featured ? {
+                    background: 'linear-gradient(90deg, #b8960c 0%, #e8c84a 45%, #c9a227 100%)',
+                    color: '#1a1100',
+                    fontWeight: 700,
+                    boxShadow: '0 4px 18px rgba(200,160,30,0.35)',
+                  } : {
                     background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)',
                     color: '#fff',
-                    boxShadow: '0 4px 16px rgba(192,57,43,0.4)',
-                  } : {
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    color: '#aaa',
-                    background: 'rgba(255,255,255,0.04)',
+                    boxShadow: '0 4px 16px rgba(192,57,43,0.35)',
                   }}
-                  onMouseEnter={e => { if (!plan.featured && kycApproved) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(192,57,43,0.5)'; (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; } }}
-                  onMouseLeave={e => { if (!plan.featured) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.15)'; (e.currentTarget as HTMLElement).style.color = '#aaa'; } }}
                 >
-                  {buying === plan.key ? 'Yönlendiriliyor…' : 'Satın Al'}
+                  {buying === plan.key ? 'Yönlendiriliyor…' : 'Paketi Seç'}
                 </button>
                 {!kycApproved && (
                   <p className="text-center text-xs" style={{ color: 'rgba(192,57,43,0.8)' }}>

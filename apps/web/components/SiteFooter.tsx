@@ -65,13 +65,11 @@ export default function SiteFooter() {
         <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.05)' }} />
 
         {/* Copyright */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-          <p style={{ color: '#555', fontSize: '0.78rem' }}>
-            © 2026{' '}
-            <span style={{ color: '#888', fontWeight: 600 }}>Ahenk</span>
-            {'. '}Tüm hakları saklıdır.
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <p style={{ color: '#555', fontSize: '0.78rem', lineHeight: '1.5' }}>
+            © 2026{' '}Ahenk. Tüm hakları saklıdır.
           </p>
-          <p style={{ color: '#444', fontSize: '0.75rem' }}>
+          <p style={{ color: '#555', fontSize: '0.78rem', lineHeight: '1.5' }}>
             Ahenk bir{' '}
             <span style={{ color: '#e8e8e8', fontWeight: 700 }}>Traders</span>
             <span style={{ color: '#4a90d9', fontWeight: 800 }}>.TR</span>
