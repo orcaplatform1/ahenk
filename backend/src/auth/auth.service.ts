@@ -261,10 +261,13 @@ export class AuthService {
 
   // passwordHash ve hassas alanları çıkar; KYC rozetini ekle
   sanitizeUser(user: any) {
-    const { passwordHash, kyc, ...safe } = user;
+    const { passwordHash, kyc, profile, ...safe } = user;
     return {
       ...safe,
+      firstName: profile?.firstName ?? '',
+      lastName: profile?.lastName ?? '',
       isKycVerified: kyc?.status === "APPROVED",
+      profile,
     };
   }
 

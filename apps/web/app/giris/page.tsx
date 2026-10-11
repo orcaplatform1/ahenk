@@ -145,6 +145,14 @@ export default function GirisPage() {
             >
               {welcomeUser.firstName} {welcomeUser.lastName}
             </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.75, duration: 0.35, ease: 'easeOut' }}
+              className="text-sm text-[#888] mt-3"
+            >
+              Bu hafta yeni masalar kuruluyor.
+            </motion.p>
           </motion.div>
         )}
       </AnimatePresence>
