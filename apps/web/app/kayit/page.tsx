@@ -512,7 +512,7 @@ export default function KayitPage() {
                 {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
 
                 <p className="text-xs text-[#444] leading-relaxed">
-                  Bu test, size en uygun kişilerle eşleştirmek için kullanılır. Lütfen, doğru cevaplar kullanın. Yeni test 6 ay boyunca tekrar yapılamaz.
+                  Bu test, size en uygun kişilerle eşleştirmek için kullanılır. Lütfen, doğru yanıtları seçin. Yeni test 6 ay boyunca tekrar yapılamaz.
                 </p>
 
                 <div className="flex items-center gap-3 mt-1">
@@ -659,14 +659,9 @@ export default function KayitPage() {
               </div>
             )}
             {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-            <div className="flex gap-3 mt-1">
-              <button type="button" onClick={() => handleFinish(true)} disabled={loading} className="flex-1 py-3.5 text-sm text-[#555] hover:text-[#888] transition-colors disabled:opacity-50" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 9999 }}>
-                Atla
-              </button>
-              <button type="button" onClick={() => handleFinish(false)} disabled={loading} className="flex-1 py-3.5 text-sm btn-grad">
-                {loading ? 'Kaydediliyor…' : 'Tamamla →'}
-              </button>
-            </div>
+            <button type="button" onClick={() => handleFinish(false)} disabled={loading} className="w-full py-3.5 text-sm btn-grad mt-1">
+              {loading ? 'Kaydediliyor…' : 'Tamamla →'}
+            </button>
           </div>
         )}
 
