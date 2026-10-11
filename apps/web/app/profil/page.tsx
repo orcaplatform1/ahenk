@@ -132,76 +132,23 @@ export default function ProfilPage() {
           </div>
         )}
 
-        {/* İçerik: dikey tab listesi + içerik */}
-        <div className="flex flex-col md:grid md:grid-cols-[200px_1fr] md:gap-6 md:items-start">
-
-          {/* Sol: dikey sekme listesi */}
-          <nav
-            className="glass-card mb-6 md:mb-0 md:sticky overflow-hidden"
-            style={{ top: '60px', padding: 0 }}
+        {/* Sekme içeriği */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
           >
-            {(user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
-              <a
-                href="/admin"
-                className="w-full text-left px-4 py-3.5 text-sm flex items-center gap-2 transition-all"
-                style={{
-                  borderLeft: '2px solid rgba(192,57,43,0.6)',
-                  background: 'rgba(192,57,43,0.08)',
-                  color: '#c0392b',
-                  fontWeight: 600,
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  display: 'flex',
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-                </svg>
-                Yönetim Paneli
-              </a>
-            )}
-            {TABS.map((tab, i) => {
-              const active = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => changeTab(tab.key)}
-                  className="w-full text-left px-4 py-3.5 text-sm transition-all"
-                  style={{
-                    borderLeft: active ? '2px solid #c0392b' : '2px solid transparent',
-                    background: active ? 'rgba(192,57,43,0.06)' : 'transparent',
-                    color: active ? '#f5f5f5' : '#666',
-                    fontWeight: active ? 500 : 400,
-                    borderBottom: i < TABS.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                  }}
-                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#bbb'; }}
-                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = '#666'; }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Sağ: sekme içeriği */}
-          <div className="min-w-0">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-              >
-                {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} activePlan={user.activePlan ?? null} />}
-                {activeTab === 'test'    && <TabTest />}
-                {activeTab === 'masalar' && <TabMasalar />}
-                {activeTab === 'paket'   && <TabPaket kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
-                {activeTab === 'kyc'     && <TabKyc />}
-                {activeTab === 'rehber'  && <TabRehber />}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
+            {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} activePlan={user.activePlan ?? null} />}
+            {activeTab === 'test'    && <TabTest />}
+            {activeTab === 'masalar' && <TabMasalar />}
+            {activeTab === 'paket'   && <TabPaket kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
+            {activeTab === 'kyc'     && <TabKyc />}
+            {activeTab === 'rehber'  && <TabRehber />}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </main>
   );
