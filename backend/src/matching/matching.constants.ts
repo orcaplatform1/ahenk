@@ -1,9 +1,8 @@
 // Ağırlıklar (toplam 100)
 export const WEIGHTS = {
-  OCEAN: 50,
+  OCEAN: 60,
   VENUE: 25,
   CITY: 15,
-  TOPIC: 10,
 } as const;
 
 // Şehir/İlçe puanları

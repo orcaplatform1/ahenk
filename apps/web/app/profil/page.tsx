@@ -20,12 +20,13 @@ interface UserData {
   lastName: string;
   email: string;
   phone?: string;
+  activeCity?: string | null;
   profile?: {
     gender?: string;
     birthDate?: string;
     primaryCity?: City;
     secondaryCity?: City;
-    topics?: string[];
+    venuePreference?: 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
   };
   kyc?: { status: string };
 }
@@ -82,13 +83,12 @@ export default function ProfilPage() {
     <>
       <Navbar />
       <main className="min-h-screen bg-bg text-text">
-        <div className="max-w-3xl mx-auto px-4 py-10">
+        <div className="max-w-3xl mx-auto px-4 pt-24 pb-10">
           {/* Başlık */}
           <div className="mb-8">
             <h1 className="font-serif text-3xl">
               {user.firstName} {user.lastName}
             </h1>
-            <p className="text-muted text-sm mt-1">{user.email}</p>
           </div>
 
           {/* Tab bar */}

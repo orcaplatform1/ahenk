@@ -4,11 +4,6 @@ import { useState } from 'react';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 
-const TOPICS_LIST = [
-  'Teknoloji', 'Sanat', 'Spor', 'Seyahat', 'Müzik',
-  'Sinema', 'Edebiyat', 'Gastronomi', 'Girişimcilik', 'Bilim',
-];
-
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
 
 const VENUE_OPTIONS: { value: VenuePreference; emoji: string; label: string; description: string }[] = [
@@ -38,12 +33,12 @@ interface UserData {
   lastName: string;
   email: string;
   phone?: string;
+  activeCity?: string | null;
   profile?: {
     gender?: string;
     birthDate?: string;
     primaryCity?: City;
     secondaryCity?: City;
-    topics?: string[];
     venuePreference?: VenuePreference;
   };
   kyc?: { status: string };
@@ -57,12 +52,12 @@ interface Props {
 
 export function TabProfilim({ user, onGoKyc, cities }: Props) {
   const [editingCities, setEditingCities] = useState(false);
-  const [editingTopics, setEditingTopics] = useState(false);
   const [editingVenue, setEditingVenue] = useState(false);
   const [primaryCityId, setPrimaryCityId] = useState(user.profile?.primaryCity?.id ?? '');
   const [secondaryCityId, setSecondaryCityId] = useState(user.profile?.secondaryCity?.id ?? '');
-  const [topics, setTopics] = useState<string[]>(user.profile?.topics ?? []);
   const [venuePreference, setVenuePreference] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
+  const [activeCity, setActiveCity] = useState<string>(user.activeCity ?? '');
+  const [savingActiveCity, setSavingActiveCity] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
@@ -73,20 +68,19 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
     if (!primaryCityId) { setSaveError('Ana şehir zorunlu.'); return; }
     setSaving(true); setSaveError('');
     try {
-      await api.patch('/users/me', { primaryCityId, secondaryCityId: secondaryCityId || null });
+      await api.post('/users/cities', { primaryCityId, secondaryCityId: secondaryCityId || undefined });
       setEditingCities(false);
     } catch (e) { setSaveError((e as Error).message); }
     finally { setSaving(false); }
   }
 
-  async function saveTopics() {
-    if (topics.length === 0) { setSaveError('En az bir konu seç.'); return; }
-    setSaving(true); setSaveError('');
+  async function saveActiveCity(cityId: string | null) {
+    setSavingActiveCity(true);
     try {
-      await api.put('/users/topics', { topics });
-      setEditingTopics(false);
+      await api.patch('/users/active-city', { activeCityId: cityId });
+      setActiveCity(cityId ?? '');
     } catch (e) { setSaveError((e as Error).message); }
-    finally { setSaving(false); }
+    finally { setSavingActiveCity(false); }
   }
 
   async function saveVenuePreference() {
@@ -127,6 +121,45 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
         </div>
       </Card>
 
+      {/* Bu hafta aktif şehir */}
+      <Card title="Bu Hafta Hangi Şehirdesiniz?">
+        <p className="text-xs text-[#555] mb-3">
+          Her hafta Pazartesi sıfırlanır. Belirtmezseniz ana şehriniz kullanılır.
+        </p>
+        <div className="flex gap-2">
+          <Select
+            label=""
+            value={activeCity}
+            onChange={(v) => setActiveCity(v)}
+            cities={cities}
+            optional
+            placeholder="Bu hafta şehir seç"
+          />
+          <button
+            onClick={() => saveActiveCity(activeCity || null)}
+            disabled={savingActiveCity}
+            className="px-4 py-2 text-sm btn-grad disabled:opacity-50 whitespace-nowrap"
+          >
+            {savingActiveCity ? '…' : 'Kaydet'}
+          </button>
+        </div>
+        {activeCity && (
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-xs text-[#555]">
+              Aktif: <span className="text-[#f5f5f5]">{cities.find(c => c.id === activeCity)?.name ?? '—'}</span>
+            </span>
+            <button
+              onClick={() => saveActiveCity(null)}
+              disabled={savingActiveCity}
+              className="text-xs text-[#888] hover:text-[#ff6b6b] transition-colors"
+            >
+              Temizle
+            </button>
+          </div>
+        )}
+        {saveError && <p className="text-accent text-sm mt-1">{saveError}</p>}
+      </Card>
+
       {/* Şehir tercihleri */}
       <Card title="Şehir Tercihleri" action={!editingCities ? { label: 'Düzenle', onClick: () => setEditingCities(true) } : undefined}>
         {editingCities ? (
@@ -152,47 +185,6 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
             <Row label="Ana Şehir" value={user.profile?.primaryCity?.name ?? '—'} />
             <Row label="İkinci Şehir" value={user.profile?.secondaryCity?.name ?? 'Seçilmedi'} />
           </>
-        )}
-      </Card>
-
-      {/* Konu tercihleri */}
-      <Card title="Konu Tercihleri" action={!editingTopics ? { label: 'Düzenle', onClick: () => setEditingTopics(true) } : undefined}>
-        {editingTopics ? (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap gap-2">
-              {TOPICS_LIST.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTopics((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t])}
-                  className="px-3 py-1.5 rounded-full text-sm transition-all"
-                  style={
-                    topics.includes(t)
-                      ? { background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff', border: 'none', boxShadow: '0 0 10px rgba(192,57,43,0.35)' }
-                      : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#888' }
-                  }
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-            {saveError && <p className="text-accent text-sm">{saveError}</p>}
-            <div className="flex gap-2">
-              <button onClick={() => setEditingTopics(false)} className="flex-1 py-2 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>İptal</button>
-              <button onClick={saveTopics} disabled={saving} className="flex-1 py-2 text-sm btn-grad">
-                {saving ? 'Kaydediliyor…' : 'Kaydet'}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {(user.profile?.topics ?? []).length > 0
-              ? (user.profile?.topics ?? []).map((t) => (
-                  <span key={t} className="px-3 py-1 rounded-full bg-surface border border-border text-sm text-muted">{t}</span>
-                ))
-              : <span className="text-sm text-muted">Henüz konu seçilmedi.</span>
-            }
-          </div>
         )}
       </Card>
 
@@ -286,14 +278,14 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Select({ label, value, onChange, cities, optional }: {
-  label: string; value: string; onChange: (v: string) => void; cities: City[]; optional?: boolean;
+function Select({ label, value, onChange, cities, optional, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; cities: City[]; optional?: boolean; placeholder?: string;
 }) {
   return (
-    <div>
-      <label className="block text-xs text-muted mb-1">{label}</label>
+    <div className="flex-1">
+      {label && <label className="block text-xs text-muted mb-1">{label}</label>}
       <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-bg border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:border-primary">
-        {optional && <option value="">Seçmek istemiyorum</option>}
+        {optional && <option value="">{placeholder ?? 'Seçmek istemiyorum'}</option>}
         {!optional && <option value="">Şehir seç</option>}
         {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
       </select>

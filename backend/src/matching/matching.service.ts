@@ -24,14 +24,15 @@ type EligibleUser = {
   isBot: boolean;
   status: UserStatus;
   phoneHash: string | null;
+  activeCity: string | null;
   profile: {
     firstName: string | null;
     lastName: string | null;
     gender: Gender | null;
     city: string | null;
     district: string | null;
+    primaryCity: string | null;
     venueCategories: string[];
-    topicPreferences: string[];
     venuePreference: 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE' | null;
   } | null;
   oceanScore: OceanScoreData | null;
@@ -335,7 +336,8 @@ export class MatchingService {
         isBot: true,
         status: true,
         phoneHash: true,
-        profile: { select: { firstName: true, lastName: true, gender: true, city: true, district: true, venueCategories: true, topicPreferences: true, venuePreference: true } },
+        activeCity: true,
+        profile: { select: { firstName: true, lastName: true, gender: true, city: true, district: true, primaryCity: true, venueCategories: true, venuePreference: true } },
         oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
         contactBlocks: { select: { hashedPhone: true } },
       },
@@ -471,12 +473,15 @@ export class MatchingService {
            (pa === 'NON_ALCOHOLIC' && pb === 'ALCOHOLIC');
   }
 
+  private effectiveCity(u: EligibleUser): string | null {
+    return u.activeCity ?? u.profile?.primaryCity ?? u.profile?.city ?? null;
+  }
+
   private scoreTwo(a: EligibleUser, b: EligibleUser): number {
     return (
       this.calcOcean(a.oceanScore, b.oceanScore) +
       this.calcVenue(a.profile?.venueCategories ?? [], b.profile?.venueCategories ?? []) +
-      this.calcCity(a.profile, b.profile) +
-      this.calcTopic(a.profile?.topicPreferences ?? [], b.profile?.topicPreferences ?? [])
+      this.calcCity(this.effectiveCity(a), a.profile?.district ?? null, this.effectiveCity(b), b.profile?.district ?? null)
     );
   }
 
@@ -501,20 +506,14 @@ export class MatchingService {
   }
 
   private calcCity(
-    a: { city?: string | null; district?: string | null } | null,
-    b: { city?: string | null; district?: string | null } | null,
+    cityA: string | null,
+    districtA: string | null,
+    cityB: string | null,
+    districtB: string | null,
   ): number {
-    if (!a?.city || !b?.city || a.city !== b.city) return CITY_SCORE.DIFFERENT;
-    if (a.district && b.district && a.district === b.district) return CITY_SCORE.SAME_CITY_AND_DISTRICT;
+    if (!cityA || !cityB || cityA !== cityB) return CITY_SCORE.DIFFERENT;
+    if (districtA && districtB && districtA === districtB) return CITY_SCORE.SAME_CITY_AND_DISTRICT;
     return CITY_SCORE.SAME_CITY_ONLY;
-  }
-
-  private calcTopic(a: string[], b: string[]): number {
-    if (!a.length || !b.length) return 0;
-    const setA = new Set(a);
-    const union = new Set([...a, ...b]).size;
-    const intersection = b.filter((x) => setA.has(x)).length;
-    return (intersection / union) * WEIGHTS.TOPIC;
   }
 
   // ─── Bot yönetimi ─────────────────────────────────────────────────────────
