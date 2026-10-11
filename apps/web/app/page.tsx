@@ -203,12 +203,20 @@ export default function Home() {
 
       <div className="relative" style={{ zIndex: 1 }}>
         {/* ── Hero ──────────────────────────────────────────────────────── */}
-        <section id="hero" className="relative overflow-hidden pt-[52px]" style={{ minHeight: '70vh', display: 'flex', alignItems: 'center' }}>
+        <section id="hero" className="relative overflow-hidden pt-[52px] min-h-[60vh] lg:min-h-[70vh]" style={{ display: 'flex', alignItems: 'center' }}>
           <div className="hero-bg absolute inset-0" />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
-          <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-16 w-full py-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+          {/* Dönen logo — absolute, hero sağ üst */}
+          <div className="absolute pointer-events-none hidden lg:block" style={{ top: '15%', right: '8%', width: 340, height: 340, zIndex: 5 }}>
+            <DualRings />
+          </div>
+          <div className="absolute pointer-events-none block lg:hidden" style={{ top: '20%', right: '5%', width: 180, height: 180, zIndex: 5 }}>
+            <DualRings />
+          </div>
+
+          <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-16 w-full py-12">
             <div className="flex flex-col gap-5 lg:max-w-lg">
               <motion.span
                 className="text-xs font-semibold tracking-[0.22em] text-[#888] uppercase"
@@ -265,10 +273,6 @@ export default function Home() {
                   Nasıl Çalışır?
                 </a>
               </motion.div>
-            </div>
-
-            <div className="flex items-center justify-center" style={{ height: '440px' }}>
-              <DualRings />
             </div>
           </div>
         </section>
