@@ -10,11 +10,18 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { Request } from "express";
+import { IsEnum } from "class-validator";
 import { PaymentService } from "./payment.service";
 import { InitCheckoutDto } from "./dto/init-checkout.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { KycGuard } from "../kyc/kyc.guard";
 import { TestCompletedGuard } from "../test/test.guard";
+import { RefundType } from "@prisma/client";
+
+class RequestRefundDto {
+  @IsEnum(RefundType)
+  refundType: RefundType;
+}
 
 @Controller("payment")
 export class PaymentController {
@@ -41,6 +48,14 @@ export class PaymentController {
   initCheckout(@Req() req: Request, @Body() dto: InitCheckoutDto) {
     const user = req.user as { id: string };
     return this.paymentService.initCheckout(user.id, dto.plan, dto.platform, dto.callbackUrl);
+  }
+
+  // İade talebi
+  @Post("refund-request")
+  @UseGuards(JwtAuthGuard)
+  requestRefund(@Req() req: Request, @Body() dto: RequestRefundDto) {
+    const user = req.user as { id: string };
+    return this.paymentService.requestRefund(user.id, dto.refundType);
   }
 
   // iyzico callback — iyzico'dan POST gelir (auth yok, token ile doğrulama yapılır)

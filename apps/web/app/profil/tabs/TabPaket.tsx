@@ -10,6 +10,8 @@ interface Subscription {
   platform: string;
   startedAt: string;
   expiresAt?: string;
+  missedGroupCycles: number;
+  missedOneonOneCycles: number;
 }
 
 interface InitCheckoutResponse {
@@ -68,15 +70,44 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [buying, setBuying] = useState('');
+  const [refundLoading, setRefundLoading] = useState(false);
+  const [refundMsg, setRefundMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
-    api.get<Subscription[]>('/payment/subscriptions')
-      .then((subs) => {
-        if (subs.length > 0) { setSubscription(subs[0]); setHasSubscription(true); }
+    api.get<{ subscriptions: Subscription[] }>('/payment/subscriptions')
+      .then((d) => {
+        const subs = d.subscriptions ?? (d as any);
+        if (Array.isArray(subs) && subs.length > 0) { setSubscription(subs[0]); setHasSubscription(true); }
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleRefund(refundType: string) {
+    setRefundLoading(true);
+    setRefundMsg(null);
+    try {
+      await api.post('/payment/refund-request', { refundType });
+      setRefundMsg({ ok: true, text: 'İade talebiniz alındı, en kısa sürede size ulaşacağız.' });
+    } catch (e: any) {
+      setRefundMsg({ ok: false, text: e.message ?? 'İşlem başarısız oldu.' });
+    } finally {
+      setRefundLoading(false);
+    }
+  }
+
+  function getRefundType(sub: Subscription): string | null {
+    const g = sub.missedGroupCycles ?? 0;
+    const o = sub.missedOneonOneCycles ?? 0;
+    if (sub.plan === 'MASADA' && g >= 4) return 'GROUP';
+    if (sub.plan === 'KARSIMDA' && o >= 4) return 'ONEONE';
+    if (sub.plan === 'ICERDE') {
+      if (g >= 4 && o >= 4) return 'FULL';
+      if (g >= 4) return 'GROUP';
+      if (o >= 4) return 'ONEONE';
+    }
+    return null;
+  }
 
   async function handleBuy(plan: string) {
     setBuying(plan);
@@ -103,27 +134,60 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
   if (loading) return <SkeletonBlock lines={4} />;
 
   if (hasSubscription && subscription) {
+    const refundType = getRefundType(subscription);
+    const canRefund = refundType !== null;
     return (
-      <div className="glass-card p-5 flex flex-col gap-3">
-        <h3 className="font-medium text-sm text-muted uppercase tracking-wide">Aktif Paket</h3>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted">Paket</span>
-          <span className="text-sm font-semibold text-text">{PLAN_LABEL[subscription.plan] ?? subscription.plan}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted">Platform</span>
-          <span className="text-sm text-text">{PLATFORM_LABEL[subscription.platform] ?? subscription.platform}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted">Başlangıç</span>
-          <span className="text-sm text-text">{new Date(subscription.startedAt).toLocaleDateString('tr-TR')}</span>
-        </div>
-        {subscription.expiresAt && (
+      <div className="flex flex-col gap-4">
+        <div className="glass-card p-5 flex flex-col gap-3">
+          <h3 className="font-medium text-sm text-muted uppercase tracking-wide">Aktif Paket</h3>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted">Bitiş</span>
-            <span className="text-sm text-text">{new Date(subscription.expiresAt).toLocaleDateString('tr-TR')}</span>
+            <span className="text-sm text-muted">Paket</span>
+            <span className="text-sm font-semibold text-text">{PLAN_LABEL[subscription.plan] ?? subscription.plan}</span>
           </div>
-        )}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted">Platform</span>
+            <span className="text-sm text-text">{PLATFORM_LABEL[subscription.platform] ?? subscription.platform}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted">Başlangıç</span>
+            <span className="text-sm text-text">{new Date(subscription.startedAt).toLocaleDateString('tr-TR')}</span>
+          </div>
+          {subscription.expiresAt && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted">Bitiş</span>
+              <span className="text-sm text-text">{new Date(subscription.expiresAt).toLocaleDateString('tr-TR')}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 flex flex-col gap-3">
+          <p className="text-xs text-[#555] leading-relaxed">
+            Eşleşme 4 döngü boyunca gerçekleşmezse iade talep edebilirsiniz. İade talepleri 5 iş günü içinde değerlendirilir. Masa kurulduğu halde katılım sağlanmamışsa iade yapılmaz.
+          </p>
+          {refundMsg ? (
+            <p className={`text-sm ${refundMsg.ok ? 'text-green-400' : 'text-accent'}`}>{refundMsg.text}</p>
+          ) : (
+            <button
+              disabled={!canRefund || refundLoading}
+              onClick={() => canRefund && handleRefund(refundType!)}
+              className="w-full py-2 rounded-xl text-sm font-medium border transition-colors"
+              style={canRefund ? {
+                border: '1px solid rgba(192,57,43,0.6)',
+                color: '#e74c3c',
+                background: 'rgba(192,57,43,0.06)',
+              } : {
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.25)',
+                cursor: 'not-allowed',
+              }}
+            >
+              {refundLoading ? 'Gönderiliyor…' : 'İade Talep Et'}
+            </button>
+          )}
+          {!canRefund && !refundMsg && (
+            <p className="text-xs text-[#444]">4 kaçırılmış döngü gerekli (mevcut: grup {subscription.missedGroupCycles ?? 0}, başbaşa {subscription.missedOneonOneCycles ?? 0})</p>
+          )}
+        </div>
       </div>
     );
   }

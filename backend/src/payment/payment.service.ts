@@ -9,7 +9,7 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import { IyzicoService } from "./iyzico/iyzico.service";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "./payment.constants";
-import { SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus } from "@prisma/client";
+import { SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType } from "@prisma/client";
 
 @Injectable()
 export class PaymentService {
@@ -35,6 +35,8 @@ export class PaymentService {
         expiresAt: true,
         usedAt: true,
         createdAt: true,
+        missedGroupCycles: true,
+        missedOneonOneCycles: true,
       },
     });
 
@@ -214,6 +216,41 @@ export class PaymentService {
       });
       await tx.payment.update({ where: { id: paymentId }, data: { subscriptionId: sub.id } });
     }
+  }
+
+  // ─── İade Talebi ─────────────────────────────────────────────────────────
+
+  async requestRefund(userId: string, refundType: RefundType) {
+    const sub = await this.prisma.subscription.findFirst({
+      where: { userId, status: SubscriptionStatus.ACTIVE },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!sub) throw new NotFoundException("Aktif abonelik bulunamadı.");
+
+    const isGroup = refundType === RefundType.GROUP || refundType === RefundType.FULL;
+    const isOneone = refundType === RefundType.ONEONE || refundType === RefundType.FULL;
+
+    if (isGroup && sub.missedGroupCycles < 4) {
+      throw new BadRequestException(
+        `Grup döngüsü iade için 4 kaçırılmış döngü gerekli. Mevcut: ${sub.missedGroupCycles}`,
+      );
+    }
+    if (isOneone && sub.missedOneonOneCycles < 4) {
+      throw new BadRequestException(
+        `Başbaşa döngüsü iade için 4 kaçırılmış döngü gerekli. Mevcut: ${sub.missedOneonOneCycles}`,
+      );
+    }
+
+    const existing = await this.prisma.refundRequest.findFirst({
+      where: { userId, subscriptionId: sub.id, status: "PENDING" },
+    });
+    if (existing) throw new ConflictException("Bu abonelik için bekleyen bir iade talebi zaten var.");
+
+    const refundRequest = await this.prisma.refundRequest.create({
+      data: { userId, subscriptionId: sub.id, refundType },
+    });
+
+    return { ok: true, refundRequestId: refundRequest.id };
   }
 
   // ─── Planlar listesi (herkese açık) ──────────────────────────────────────

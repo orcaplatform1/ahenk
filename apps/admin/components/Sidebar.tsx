@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const LINKS = [
   { href: '/',            label: 'Dashboard' },
@@ -11,6 +12,7 @@ const LINKS = [
   { href: '/matches',     label: 'Eşleştirme' },
   { href: '/quality',     label: 'Kalite Kontrol' },
   { href: '/kyc',         label: 'KYC' },
+  { href: '/uyarilar',    label: 'Uyarılar' },
   { href: '/kullanicilar',label: 'Kullanıcılar' },
   { href: '/botlar',      label: 'Botlar' },
   { href: '/masalar',     label: 'Masalar' },
@@ -22,6 +24,13 @@ const LINKS = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [unreadAlerts, setUnreadAlerts] = useState(0);
+
+  useEffect(() => {
+    api.get('/admin/alerts').then((d: any) => {
+      if (d?.unreadCount) setUnreadAlerts(d.unreadCount);
+    }).catch(() => {});
+  }, [pathname]);
 
   function handleLogout() {
     api.clearToken();
@@ -41,9 +50,12 @@ export function Sidebar() {
             <Link
               key={l.href}
               href={l.href}
-              className={`px-3 py-2 rounded-xl text-sm transition-colors ${active ? 'bg-primary/10 text-primary' : 'text-muted hover:text-text hover:bg-bg'}`}
+              className={`px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between ${active ? 'bg-primary/10 text-primary' : 'text-muted hover:text-text hover:bg-bg'}`}
             >
-              {l.label}
+              <span>{l.label}</span>
+              {l.href === '/uyarilar' && unreadAlerts > 0 && (
+                <span className="text-xs bg-accent text-white rounded-full px-1.5 py-0.5 leading-none">{unreadAlerts}</span>
+              )}
             </Link>
           );
         })}

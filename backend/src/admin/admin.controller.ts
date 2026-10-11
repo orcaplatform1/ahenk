@@ -11,7 +11,10 @@ import {
   UseGuards,
   ParseIntPipe,
   DefaultValuePipe,
+  HttpCode,
+  HttpStatus,
 } from "@nestjs/common";
+import { IsEnum, IsOptional, IsString } from "class-validator";
 import { Request } from "express";
 import { AdminService } from "./admin.service";
 import {
@@ -31,7 +34,16 @@ import {
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
-import { UserRole } from "@prisma/client";
+import { UserRole, RefundStatus } from "@prisma/client";
+
+class UpdateRefundDto {
+  @IsEnum(RefundStatus)
+  status: RefundStatus;
+
+  @IsOptional()
+  @IsString()
+  adminNote?: string;
+}
 
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -251,6 +263,24 @@ export class AdminController {
   @Post("matches/:id/bot")
   placeBot(@Param("id") id: string, @Body() body: { botUserId: string }) {
     return this.adminService.placeBot(id, body.botUserId);
+  }
+
+  // ─── Uyarılar & İade Talepleri ────────────────────────────────────────────
+
+  @Get("alerts")
+  getAlerts() {
+    return this.adminService.getAlerts();
+  }
+
+  @Patch("alerts/:id/read")
+  @HttpCode(HttpStatus.OK)
+  markAlertRead(@Param("id") id: string) {
+    return this.adminService.markAlertRead(id);
+  }
+
+  @Patch("refunds/:id")
+  updateRefund(@Param("id") id: string, @Body() dto: UpdateRefundDto) {
+    return this.adminService.updateRefundStatus(id, dto.status, dto.adminNote);
   }
 
   // ─── Stats ───────────────────────────────────────────────────────────────

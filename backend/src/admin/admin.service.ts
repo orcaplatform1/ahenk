@@ -15,6 +15,7 @@ import {
   MeetingType,
   VenueCategory,
   VenueType,
+  RefundStatus,
 } from "@prisma/client";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "../payment/payment.constants";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
@@ -869,5 +870,42 @@ export class AdminService {
     }
 
     return { banned: true, cancelledSubscriptions: user.subscriptions.length };
+  }
+
+  // ─── Uyarılar & İade Talepleri ────────────────────────────────────────────
+
+  async getAlerts() {
+    const [alerts, refunds, unreadCount] = await Promise.all([
+      this.prisma.adminAlert.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: { include: { profile: { select: { firstName: true, lastName: true } } } },
+        },
+      }),
+      this.prisma.refundRequest.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: { include: { profile: { select: { firstName: true, lastName: true } } } },
+          subscription: { select: { plan: true, createdAt: true } },
+        },
+      }),
+      this.prisma.adminAlert.count({ where: { isRead: false } }),
+    ]);
+    return { alerts, refunds, unreadCount };
+  }
+
+  async markAlertRead(id: string) {
+    await this.prisma.adminAlert.update({ where: { id }, data: { isRead: true } });
+    return { ok: true };
+  }
+
+  async updateRefundStatus(id: string, status: RefundStatus, adminNote?: string) {
+    const refund = await this.prisma.refundRequest.findUnique({ where: { id } });
+    if (!refund) throw new NotFoundException("İade talebi bulunamadı.");
+    await this.prisma.refundRequest.update({
+      where: { id },
+      data: { status, adminNote: adminNote ?? refund.adminNote },
+    });
+    return { ok: true };
   }
 }

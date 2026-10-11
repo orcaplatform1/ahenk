@@ -139,19 +139,38 @@ const sections = [
     n: '06',
     title: 'İptal ve İade Politikası',
     content: (
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
-        {[
-          'Kullanıcı aboneliğini profil sayfasındaki Paketim sekmesinden istediği zaman iptal edebilir.',
-          'İptal işlemi mevcut abonelik döneminin sonunda geçerli olur; kalan süre için hizmet aktif kalmaya devam eder.',
-          'Mevcut dönem için kısmi veya tam iade yapılmaz.',
-          'Teknik arıza veya Ahenk kaynaklı hizmet kesintisi durumunda iade değerlendirilebilir; talep için bilgi@ahenk.tr adresine başvurulmalıdır.',
-          'Hesabın kural ihlali nedeniyle Ahenk tarafından kapatılması durumunda kalan abonelik süresi için iade yapılmaz.',
-        ].map((item) => (
-          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
-            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
-          </li>
-        ))}
-      </ul>
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1.25rem' }}>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
+          {[
+            'Kullanıcı aboneliğini profil sayfasındaki Paketim sekmesinden istediği zaman iptal edebilir.',
+            'İptal işlemi mevcut abonelik döneminin sonunda geçerli olur; kalan süre için hizmet aktif kalmaya devam eder.',
+            'Mevcut dönem için kısmi veya tam iade yapılmaz.',
+            'Teknik arıza veya Ahenk kaynaklı hizmet kesintisi durumunda iade değerlendirilebilir; talep için bilgi@ahenk.tr adresine başvurulmalıdır.',
+            'Hesabın kural ihlali nedeniyle Ahenk tarafından kapatılması durumunda kalan abonelik süresi için iade yapılmaz.',
+          ].map((item) => (
+            <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+              <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
+            </li>
+          ))}
+        </ul>
+
+        <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(192,57,43,0.06)', border: '1px solid rgba(192,57,43,0.2)', borderRadius: '12px' }}>
+          <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#c0392b', marginBottom: '0.85rem' }}>Eşleşme Gerçekleşmemesi Durumunda İade</p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
+            {[
+              'Grup masası eşleşmesi 4 Perşembe döngüsü boyunca gerçekleşmezse; Masada paketi için tam iade, İçerde paketinde grup masası kısmı için yarım iade talep edilebilir.',
+              'Başbaşa eşleşme 4 döngü boyunca gerçekleşmezse; Karşımda paketi için tam iade, İçerde paketinde başbaşa kısmı için yarım iade talep edilebilir.',
+              'İçerde paketinde her iki eşleşme de gerçekleşmezse tam iade talep edilebilir.',
+              'Masa kurulduğu halde kullanıcının katılım sağlamaması durumunda iade yapılmaz.',
+              'İade talepleri profil sayfasındaki İade Talep Et butonu üzerinden iletilir ve 5 iş günü içinde değerlendirilir.',
+            ].map((item) => (
+              <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+                <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     ),
   },
   {
