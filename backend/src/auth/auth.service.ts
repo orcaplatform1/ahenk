@@ -14,7 +14,7 @@ import { UsersService } from "../users/users.service";
 import { OtpService } from "./otp/otp.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { ConsentType, UserRole, SubscriptionStatus } from "@prisma/client";
+import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus } from "@prisma/client";
 
 @Injectable()
 export class AuthService {
@@ -72,6 +72,44 @@ export class AuthService {
 
       return created;
     });
+
+    // Referral kodu ile geldiyse ilişkilendir
+    if (dto.referralCode) {
+      await this.prisma.referral.updateMany({
+        where: { inviteCode: dto.referralCode, status: ReferralStatus.PENDING },
+        data: { referredId: user.id, status: ReferralStatus.REGISTERED },
+      });
+      // Referral bulundu ise davet edilen kullanıcıya indirim hakkı ver
+      const updated = await this.prisma.referral.findFirst({
+        where: { inviteCode: dto.referralCode, referredId: user.id },
+        select: { referrerId: true },
+      });
+      if (updated) {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { referralDiscountAvailable: true },
+        });
+        // Davet eden kullanıcıya FCM bildirimi
+        const referrer = await this.prisma.user.findUnique({
+          where: { id: updated.referrerId },
+          select: { fcmToken: true },
+        });
+        if (referrer?.fcmToken) {
+          const { FcmService } = await import("../notification/fcm/fcm.service");
+          // Notification servisini enjekte etmek yerine doğrudan prisma üzerinden yaz
+          await this.prisma.notification.create({
+            data: {
+              userId: updated.referrerId,
+              type: "IN_APP",
+              title: "Arkadaşın platforma katıldı!",
+              body: "Bir davet hakkın kullanıldı. 1 indirim hakkın eklendi.",
+              data: { event: "REFERRAL_REGISTERED" },
+              sentAt: new Date(),
+            },
+          });
+        }
+      }
+    }
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
     return { user: this.sanitizeUser(user), ...tokens };

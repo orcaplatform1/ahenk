@@ -16,6 +16,7 @@ import {
   VenueCategory,
   VenueType,
   RefundStatus,
+  ReferralStatus,
 } from "@prisma/client";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "../payment/payment.constants";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
@@ -699,6 +700,7 @@ export class AdminService {
       prevWeekRevenue,
       thisWeekMeetings,
       prevWeekMeetings,
+      referralRegisteredCount,
     ] = await Promise.all([
       this.prisma.user.count({ where: { isBot: false, status: UserStatus.ACTIVE } }),
       this.prisma.kycSubmission.count({ where: { status: "PENDING" } }),
@@ -712,6 +714,7 @@ export class AdminService {
       }),
       this.prisma.meeting.count({ where: { status: MeetingStatus.COMPLETED, scheduledAt: { gte: weekStart } } }),
       this.prisma.meeting.count({ where: { status: MeetingStatus.COMPLETED, scheduledAt: { gte: prevWeekStart, lt: weekStart } } }),
+      this.prisma.referral.count({ where: { status: { in: [ReferralStatus.KYC_APPROVED, ReferralStatus.DISCOUNT_USED] } } }),
     ]);
 
     const totalRevenue = (thisWeekRevenue._sum.amountKurus ?? 0) / 100;
@@ -722,12 +725,33 @@ export class AdminService {
         ? Math.round(((thisWeekMeetings - prevWeekMeetings) / prevWeekMeetings) * 100)
         : 0;
 
+    // DISCOUNT_USED referral'lardan toplam indirim tutarını hesapla
+    const discountUsedReferrals = await this.prisma.referral.findMany({
+      where: { status: ReferralStatus.DISCOUNT_USED, discountUsedAt: { not: null } },
+      select: { referrerId: true, discountUsedAt: true },
+    });
+
+    let referralTotalDiscountTL = 0;
+    for (const ref of discountUsedReferrals) {
+      const payment = await this.prisma.payment.findFirst({
+        where: { userId: ref.referrerId, status: "SUCCESS", paidAt: { gte: ref.discountUsedAt! } },
+        orderBy: { paidAt: 'asc' },
+        select: { amountKurus: true },
+      });
+      if (payment) {
+        // Ödenen tutar zaten indirimli; indirim miktarı = ödenen * (1/9)
+        referralTotalDiscountTL += (payment.amountKurus / 9) / 100;
+      }
+    }
+
     return {
       totalRevenue,
       netCommission: Math.round(netCommission * 100) / 100,
       activeUsers,
       kycPending,
       matchRateThisWeek,
+      referralRegisteredCount,
+      referralTotalDiscountTL: Math.round(referralTotalDiscountTL * 100) / 100,
     };
   }
 

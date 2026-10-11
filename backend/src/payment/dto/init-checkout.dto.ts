@@ -8,8 +8,11 @@ export class InitCheckoutDto {
   @IsEnum(PaymentPlatform)
   platform: PaymentPlatform;
 
-  // Callback sonrası yönlendirilecek frontend URL (opsiyonel, .env'deki varsayılan kullanılır)
   @IsOptional()
   @IsString()
   callbackUrl?: string;
+
+  @IsOptional()
+  @IsEnum(['REFERRER', 'INVITEE'])
+  useDiscount?: 'REFERRER' | 'INVITEE';
 }

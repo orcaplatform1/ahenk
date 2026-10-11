@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { api } from '@/lib/api';
@@ -84,8 +84,10 @@ const VENUE_OPTIONS: { value: VenuePreference; label: string; description: strin
   { value: 'NO_PREFERENCE', label: 'Her ikisi de uygun', description: 'Her iki mekan türü de uygundur' },
 ];
 
-export default function KayitPage() {
+function KayitPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get('ref') ?? undefined;
   const [step, setStep] = useState(0);
   const [stepDir, setStepDir] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -160,6 +162,7 @@ export default function KayitPage() {
         acceptTerms: true,
         occupationSector: form.occupationSector,
         primaryCityId: form.primaryCityId || undefined,
+        referralCode,
       });
       api.setToken(data.accessToken);
 
@@ -1152,5 +1155,13 @@ function CityPickerField({ label, value, onChange, cities, optional, title }: {
       </button>
       {open && <CityPickerModal cities={cities} value={value} onChange={onChange} onClose={() => setOpen(false)} optional={optional} title={title ?? 'Şehir seç'} />}
     </div>
+  );
+}
+
+export default function KayitPage() {
+  return (
+    <Suspense>
+      <KayitPageInner />
+    </Suspense>
   );
 }

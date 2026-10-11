@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 
@@ -54,6 +54,13 @@ interface Props {
 export function TabProfilim({ user, onGoKyc, cities }: Props) {
   const [editingCities, setEditingCities] = useState(false);
   const [editingVenue, setEditingVenue] = useState(false);
+
+  /* Sadakat programı */
+  const [referralStats, setReferralStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
+  const [referralStatsLoaded, setReferralStatsLoaded] = useState(false);
+  const [referralPhone, setReferralPhone] = useState('');
+  const [referralSending, setReferralSending] = useState(false);
+  const [referralMsg, setReferralMsg] = useState('');
   const [primaryCityId, setPrimaryCityId] = useState(user.profile?.primaryCity?.id ?? '');
   const [displayPrimaryCity, setDisplayPrimaryCity] = useState<City | null>(user.profile?.primaryCity ?? null);
   const [venuePreference, setVenuePreference] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
@@ -81,6 +88,27 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [currentEmail, setCurrentEmail] = useState(user.email);
+
+  useEffect(() => {
+    if (referralStatsLoaded) return;
+    api.get('/referral/my-stats').then((d) => { setReferralStats(d as { totalInvites: number; availableDiscounts: number }); setReferralStatsLoaded(true); }).catch(() => {});
+  }, [referralStatsLoaded]);
+
+  async function sendReferralInvite() {
+    if (!referralPhone || referralPhone.length !== 10 || !referralPhone.startsWith('5')) {
+      setReferralMsg('Geçerli bir numara girin (5 ile başlayan 10 hane).');
+      return;
+    }
+    setReferralSending(true); setReferralMsg('');
+    try {
+      await api.post('/referral/invite', { phoneNumber: `+90${referralPhone}` });
+      setReferralMsg('Davet başarıyla gönderildi!');
+      setReferralPhone('');
+      const d = await api.get('/referral/my-stats');
+      setReferralStats(d as { totalInvites: number; availableDiscounts: number });
+    } catch (e) { setReferralMsg((e as Error).message || 'Gönderilemedi.'); }
+    finally { setReferralSending(false); }
+  }
 
   async function sendPhoneOtp() {
     if (!newPhone || newPhone.length !== 10 || !newPhone.startsWith('5')) { setPhoneError('Geçerli bir numara girin (5 ile başlayan 10 hane).'); return; }
@@ -400,6 +428,43 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
             value={VENUE_LABELS[displayVenuePreference]}
           />
         )}
+      </Card>
+
+      {/* Sadakat Programı */}
+      <Card title="SADAKAT PROGRAMI">
+        <div className="flex gap-2 mb-3">
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
+            <span style={{ color: '#555', fontSize: 14, marginRight: 4 }}>+90</span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              placeholder="5XX XXX XX XX"
+              value={referralPhone}
+              onChange={e => setReferralPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: '#f5f5f5', padding: '12px 0' }}
+            />
+          </div>
+          <button
+            onClick={sendReferralInvite}
+            disabled={referralSending}
+            className="px-4 py-2 text-sm btn-grad disabled:opacity-50 whitespace-nowrap"
+          >
+            {referralSending ? '…' : 'Davet Gönder'}
+          </button>
+        </div>
+        {referralMsg && (
+          <p className="text-xs mb-3" style={{ color: referralMsg.includes('başarı') ? '#4ade80' : '#ff6b6b' }}>{referralMsg}</p>
+        )}
+        <div className="flex gap-6 pt-3 border-t border-white/5">
+          <div>
+            <p className="text-xs text-[#555]">Davetli Arkadaş</p>
+            <p className="text-base font-semibold text-text">{referralStats?.totalInvites ?? '—'} kişi</p>
+          </div>
+          <div>
+            <p className="text-xs text-[#555]">Toplam %10 İndirim Hakkı</p>
+            <p className="text-base font-semibold text-text">{referralStats?.availableDiscounts ?? '—'} Adet</p>
+          </div>
+        </div>
       </Card>
     </div>
   );

@@ -82,6 +82,8 @@ const PLATFORM_LABEL: Record<string, string> = {
   APPLE: 'App Store',
 };
 
+interface DiscountInfo { referralDiscount: boolean; referralCount: number; inviteeDiscount: boolean; }
+
 interface Props { kycApproved: boolean; onGoKyc: () => void; }
 
 export function TabPaket({ kycApproved, onGoKyc }: Props) {
@@ -92,6 +94,11 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
   const [buying, setBuying] = useState('');
   const [refundLoading, setRefundLoading] = useState(false);
   const [refundMsg, setRefundMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [discountInfo, setDiscountInfo] = useState<DiscountInfo | null>(null);
+  const [referralPhone, setReferralPhone] = useState('');
+  const [referralSending, setReferralSending] = useState(false);
+  const [referralMsg, setReferralMsg] = useState('');
+  const [referralStats, setReferralStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
 
   useEffect(() => {
     api.get<{ subscriptions: Subscription[]; hasMasada?: boolean; hasKarsimda?: boolean }>('/payment/subscriptions')
@@ -107,7 +114,26 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
+
+    api.get<DiscountInfo>('/payment/discount-info').then(setDiscountInfo).catch(() => {});
+    api.get<{ totalInvites: number; availableDiscounts: number }>('/referral/my-stats').then(setReferralStats).catch(() => {});
   }, []);
+
+  async function sendReferralInvite() {
+    if (!referralPhone || referralPhone.length !== 10 || !referralPhone.startsWith('5')) {
+      setReferralMsg('Geçerli bir numara girin (5 ile başlayan 10 hane).');
+      return;
+    }
+    setReferralSending(true); setReferralMsg('');
+    try {
+      await api.post('/referral/invite', { phoneNumber: `+90${referralPhone}` });
+      setReferralMsg('Davet başarıyla gönderildi!');
+      setReferralPhone('');
+      const d = await api.get<{ totalInvites: number; availableDiscounts: number }>('/referral/my-stats');
+      setReferralStats(d);
+    } catch (e) { setReferralMsg((e as Error).message || 'Gönderilemedi.'); }
+    finally { setReferralSending(false); }
+  }
 
   async function handleRefund(refundType: string) {
     setRefundLoading(true);
@@ -139,11 +165,13 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
     setBuying(plan);
     setError('');
     try {
+      const useDiscount = discountInfo?.referralDiscount ? 'REFERRER' : discountInfo?.inviteeDiscount ? 'INVITEE' : undefined;
       const data = await api.post<InitCheckoutResponse>('/payment/init', {
         plan,
         platform: 'WEB',
         callbackUrl: `${window.location.origin}/odeme/basarili`,
         failCallbackUrl: `${window.location.origin}/odeme/basarisiz`,
+        ...(useDiscount ? { useDiscount } : {}),
       });
       const form = document.createElement('div');
       form.innerHTML = data.checkoutFormContent;
@@ -162,8 +190,54 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
   const refundType = subscription ? getRefundType(subscription) : null;
   const canRefund = refundType !== null;
 
+  const hasReferralDiscount = !!(discountInfo?.referralDiscount);
+
+  function discountedPrice(price: string): string {
+    const kurus = Math.round(parseFloat(price) * 100 * 0.9);
+    const tl = kurus / 100;
+    return tl % 1 === 0 ? String(tl) : tl.toFixed(2).replace('.', ',');
+  }
+
   return (
     <div className="flex flex-col gap-5">
+      {/* Sadakat Programı kartı */}
+      <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 flex flex-col gap-3">
+        <p className="text-xs font-medium text-muted uppercase tracking-wide">Sadakat Programı</p>
+        <div className="flex gap-2">
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
+            <span style={{ color: '#555', fontSize: 14, marginRight: 4 }}>+90</span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              placeholder="5XX XXX XX XX"
+              value={referralPhone}
+              onChange={e => setReferralPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: '#f5f5f5', padding: '11px 0' }}
+            />
+          </div>
+          <button
+            onClick={sendReferralInvite}
+            disabled={referralSending}
+            className="px-4 py-2 text-sm btn-grad disabled:opacity-50 whitespace-nowrap"
+          >
+            {referralSending ? '…' : 'Davet Gönder'}
+          </button>
+        </div>
+        {referralMsg && (
+          <p className="text-xs" style={{ color: referralMsg.includes('başarı') ? '#4ade80' : '#ff6b6b' }}>{referralMsg}</p>
+        )}
+        <div className="flex gap-6 pt-1 border-t border-white/5">
+          <div>
+            <p className="text-xs text-[#555]">Davetli Arkadaş</p>
+            <p className="text-base font-semibold text-text">{referralStats?.totalInvites ?? '—'} kişi</p>
+          </div>
+          <div>
+            <p className="text-xs text-[#555]">Toplam %10 İndirim Hakkı</p>
+            <p className="text-base font-semibold text-text">{referralStats?.availableDiscounts ?? '—'} Adet</p>
+          </div>
+        </div>
+      </div>
+
       {/* Aktif abonelik varsa iade bölümü */}
       {subscription && (
         <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 flex flex-col gap-3">
@@ -257,10 +331,21 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
             <div className="relative z-10 p-6 flex flex-col gap-3 flex-1">
               <div>
                 <h4 className="font-serif text-xl text-[#f5f5f5] mb-1">{plan.name}</h4>
-                <div className="flex items-end gap-1 mb-1">
-                  <span className="text-3xl font-bold text-[#f5f5f5]">{plan.price}</span>
-                  <span className="text-base text-[#888] mb-0.5">₺</span>
-                </div>
+                {hasReferralDiscount ? (
+                  <>
+                    <div className="flex items-end gap-2 mb-0.5">
+                      <span className="text-3xl font-bold text-[#f5f5f5]">{discountedPrice(plan.price)}</span>
+                      <span className="text-base text-[#888] mb-0.5">₺</span>
+                      <span className="text-sm text-[#555] line-through mb-0.5">{plan.price}₺</span>
+                    </div>
+                    <p className="text-xs text-[#4ade80] mb-1">Kalan İndirim Hakkı: {discountInfo!.referralCount}</p>
+                  </>
+                ) : (
+                  <div className="flex items-end gap-1 mb-1">
+                    <span className="text-3xl font-bold text-[#f5f5f5]">{plan.price}</span>
+                    <span className="text-base text-[#888] mb-0.5">₺</span>
+                  </div>
+                )}
                 <p className="text-[#888] text-sm">{plan.desc}</p>
               </div>
 

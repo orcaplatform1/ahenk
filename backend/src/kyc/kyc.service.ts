@@ -11,7 +11,7 @@ import { NotificationService } from "../notification/notification.service";
 import { RequestUploadDto } from "./dto/request-upload.dto";
 import { SubmitKycDto } from "./dto/submit-kyc.dto";
 import { ReviewKycDto } from "./dto/review-kyc.dto";
-import { KycStatus } from "@prisma/client";
+import { KycStatus, ReferralStatus } from "@prisma/client";
 
 // Başvuru tekrar gönderilebilir durumlar
 const RESUBMITTABLE: KycStatus[] = [KycStatus.REJECTED, KycStatus.SUSPICIOUS];
@@ -205,6 +205,14 @@ export class KycService {
     this.notifications
       .notifyKycReviewed(kyc.userId, dto.status, dto.rejectReason)
       .catch(() => {});
+
+    // KYC onaylandıysa: bu kullanıcıyı davet eden referrer'ın REGISTERED referral'ını KYC_APPROVED'a yükselt
+    if (dto.status === KycStatus.APPROVED) {
+      this.prisma.referral.updateMany({
+        where: { referredId: kyc.userId, status: ReferralStatus.REGISTERED },
+        data: { status: ReferralStatus.KYC_APPROVED },
+      }).catch(() => {});
+    }
 
     return updated;
   }

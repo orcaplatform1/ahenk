@@ -60,4 +60,9 @@ export class RegisterDto {
   @IsArray()
   @IsString({ each: true })
   contactPhoneHashes?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }

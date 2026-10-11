@@ -46,9 +46,12 @@ model User {
   reportsMade     Report[]             @relation("ReportsByUser")
   reportsReceived Report[]             @relation("ReportsAgainstUser")
   meetingReviews  MeetingReview[]      @relation("MeetingReviewer")
-  contactBlocks   ContactBlock[]
-  adminAlerts     AdminAlert[]
-  refundRequests  RefundRequest[]
+  contactBlocks             ContactBlock[]
+  adminAlerts               AdminAlert[]
+  refundRequests            RefundRequest[]
+  referralDiscountAvailable Boolean    @default(false)
+  referralsSent             Referral[] @relation("ReferralsSent")
+  referralsReceived         Referral[] @relation("ReferralsReceived")
 }
 
 enum UserRole {
@@ -683,4 +686,31 @@ enum RefundStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+// ─────────────────────────────────────────────
+// SADAKAT PROGRAMI
+// ─────────────────────────────────────────────
+
+enum ReferralStatus {
+  PENDING
+  REGISTERED
+  KYC_APPROVED
+  DISCOUNT_USED
+}
+
+model Referral {
+  id             String         @id @default(cuid())
+  createdAt      DateTime       @default(now())
+  referrerId     String
+  referrer       User           @relation("ReferralsSent",     fields: [referrerId], references: [id], onDelete: Cascade)
+  referredId     String?
+  referred       User?          @relation("ReferralsReceived", fields: [referredId], references: [id])
+  inviteCode     String         @unique @default(cuid())
+  invitedPhone   String?
+  discountUsedAt DateTime?
+  status         ReferralStatus @default(PENDING)
+
+  @@index([referrerId])
+  @@index([status])
 }

@@ -9,7 +9,7 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import { IyzicoService } from "./iyzico/iyzico.service";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "./payment.constants";
-import { SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType } from "@prisma/client";
+import { SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType, ReferralStatus } from "@prisma/client";
 
 @Injectable()
 export class PaymentService {
@@ -59,17 +59,51 @@ export class PaymentService {
 
   // ─── iyzico Checkout Form başlat ─────────────────────────────────────────
 
+  async getDiscountInfo(userId: string): Promise<{ referralDiscount: boolean; referralCount: number; inviteeDiscount: boolean }> {
+    const [referralCount, user] = await Promise.all([
+      this.prisma.referral.count({ where: { referrerId: userId, status: ReferralStatus.KYC_APPROVED } }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { referralDiscountAvailable: true } }),
+    ]);
+    return {
+      referralDiscount: referralCount > 0,
+      referralCount,
+      inviteeDiscount: user?.referralDiscountAvailable ?? false,
+    };
+  }
+
   async initCheckout(
     userId: string,
     plan: SubscriptionPlan,
     platform: PaymentPlatform,
     callbackOverride?: string,
+    useDiscount?: 'REFERRER' | 'INVITEE',
   ) {
     if (platform === PaymentPlatform.IOS) {
       return { stub: true, message: "iOS ödemesi henüz aktif değil. StoreKit 2 desteği yakında gelecek." };
     }
 
     const planCfg = PLAN_CONFIG[plan];
+    let amountKurus = planCfg.amountKurus;
+
+    if (useDiscount === 'REFERRER') {
+      const referral = await this.prisma.referral.findFirst({
+        where: { referrerId: userId, status: ReferralStatus.KYC_APPROVED },
+      });
+      if (referral) {
+        amountKurus = Math.round(amountKurus * 0.9);
+        await this.prisma.referral.update({
+          where: { id: referral.id },
+          data: { discountUsedAt: new Date(), status: ReferralStatus.DISCOUNT_USED },
+        });
+      }
+    } else if (useDiscount === 'INVITEE') {
+      const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { referralDiscountAvailable: true } });
+      if (user?.referralDiscountAvailable) {
+        amountKurus = Math.round(amountKurus * 0.9);
+        await this.prisma.user.update({ where: { id: userId }, data: { referralDiscountAvailable: false } });
+      }
+    }
+
     const conversationId = `ahenk-${userId}-${Date.now()}`;
     const callbackUrl =
       callbackOverride ?? this.config.get<string>("IYZICO_CALLBACK_URL") ?? "http://localhost:3001/odeme/callback";
@@ -84,7 +118,7 @@ export class PaymentService {
       data: {
         userId,
         plan,
-        amountKurus: planCfg.amountKurus,
+        amountKurus,
         status: PaymentStatus.PENDING,
         platform,
         iyzicoConversationId: conversationId,
@@ -103,7 +137,7 @@ export class PaymentService {
 
     const result = await this.iyzico.initCheckoutForm({
       conversationId,
-      amountKurus: planCfg.amountKurus,
+      amountKurus,
       basketId: payment.id,
       itemName: planCfg.nametr,
       buyerEmail: user.email,

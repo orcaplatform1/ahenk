@@ -9,6 +9,8 @@ export interface OverviewStats {
   activeUsers: number;
   kycPending: number;
   matchRateThisWeek: number;
+  referralRegisteredCount?: number;
+  referralTotalDiscountTL?: number;
 }
 
 export interface CityStats {
@@ -30,6 +32,8 @@ const MOCK_OVERVIEW: OverviewStats = {
   activeUsers: 1248,
   kycPending: 23,
   matchRateThisWeek: 12,
+  referralRegisteredCount: 0,
+  referralTotalDiscountTL: 0,
 };
 
 const MOCK_CITIES: CityStats[] = [
@@ -106,6 +110,33 @@ export function AdminStatsDashboard({ apiBase = '', token }: Props) {
           </motion.div>
         ))}
       </div>
+
+      {/* Sadakat Programı kartı */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, type: 'spring', stiffness: 200, damping: 22 }}
+        className="relative overflow-hidden rounded-2xl border border-border p-5"
+        style={{ background: 'rgba(20,20,20,0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+      >
+        <div className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ background: 'radial-gradient(circle at 80% 20%, #c0392b, transparent 70%)' }} />
+        <p className="text-xs text-muted uppercase tracking-wide mb-4">Sadakat Programı</p>
+        <div className="flex gap-8">
+          <div>
+            <p className="text-xs text-muted mb-1">Davet ile Kayıt</p>
+            <p className="text-2xl font-bold text-text">
+              {(overview.referralRegisteredCount ?? 0).toLocaleString('tr-TR')}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted mb-1">Toplam İndirim</p>
+            <p className="text-2xl font-bold text-text">
+              ₺{(overview.referralTotalDiscountTL ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Haftalık eşleşme oranı */}
       <div className="bg-surface border border-border rounded-2xl p-5 flex items-center gap-4">

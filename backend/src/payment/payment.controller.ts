@@ -41,13 +41,21 @@ export class PaymentController {
     return this.paymentService.getSubscriptions(user.id);
   }
 
+  // İndirim bilgisi — kullanıcının aktif referral/invitee indirimi var mı
+  @Get("discount-info")
+  @UseGuards(JwtAuthGuard)
+  getDiscountInfo(@Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.paymentService.getDiscountInfo(user.id);
+  }
+
   // iyzico checkout form başlat (web/android)
   // TestCompletedGuard + KycGuard zorunlu
   @Post("init")
   @UseGuards(JwtAuthGuard, TestCompletedGuard, KycGuard)
   initCheckout(@Req() req: Request, @Body() dto: InitCheckoutDto) {
     const user = req.user as { id: string };
-    return this.paymentService.initCheckout(user.id, dto.plan, dto.platform, dto.callbackUrl);
+    return this.paymentService.initCheckout(user.id, dto.plan, dto.platform, dto.callbackUrl, dto.useDiscount);
   }
 
   // İade talebi
