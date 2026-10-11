@@ -3,6 +3,7 @@ import { DM_Serif_Display, Inter } from 'next/font/google';
 import './globals.css';
 import CookieBanner from '@/components/CookieBanner';
 import SiteFooter from '@/components/SiteFooter';
+import NavbarWrapper from '@/components/NavbarWrapper';
 
 const dmSerifDisplay = DM_Serif_Display({
   subsets: ['latin'],
@@ -65,6 +66,7 @@ export default function RootLayout({
   return (
     <html lang="tr" className={`${dmSerifDisplay.variable} ${inter.variable}`}>
       <body className="font-sans antialiased" style={{}}>
+        <NavbarWrapper />
         {children}
         <SiteFooter />
         <CookieBanner />

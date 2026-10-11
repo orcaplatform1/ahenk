@@ -204,7 +204,7 @@ export default function KayitPage() {
   const tIsLast = testCurrent === tTotal - 1;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0a0a0a' }}>
+    <div className="min-h-screen flex flex-col pt-[52px]" style={{ background: '#0a0a0a' }}>
       {/* Başarı overlay */}
       <AnimatePresence>
         {showSuccess && (

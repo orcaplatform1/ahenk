@@ -4,8 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import Navbar from '@/components/Navbar';
-
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
 
 const steps = [
@@ -202,8 +200,6 @@ export default function Home() {
       </motion.div>
 
       <div className="relative" style={{ zIndex: 1 }}>
-        <Navbar />
-
         {/* ── Hero ──────────────────────────────────────────────────────── */}
         <section id="hero" className="relative overflow-hidden" style={{ minHeight: '70vh', display: 'flex', alignItems: 'center' }}>
           <div className="hero-bg absolute inset-0" />
@@ -430,21 +426,22 @@ export default function Home() {
                 )}
 
                 {plan.featured && (
-                  <motion.span
-                    className="absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
-                    style={{ background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)' }}
-                    animate={{ opacity: [0.75, 1, 0.75], scale: [1, 1.04, 1] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                  >
-                    Tercih Edilen
-                  </motion.span>
+                  <>
+                    <style>{`
+                      @keyframes _rotGrad{to{transform:rotate(360deg)}}
+                      .tercih-badge::before{content:'';position:absolute;inset:-1.5px;border-radius:9999px;background:conic-gradient(#c0392b,#ff6b6b,#e74c3c,#c0392b);animation:_rotGrad 3s linear infinite;z-index:-1;}
+                      .tercih-badge{position:relative;}
+                    `}</style>
+                    <span
+                      className="tercih-badge absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
+                      style={{ background: '#0a0a0a' }}
+                    >
+                      Tercih Edilen
+                    </span>
+                  </>
                 )}
 
                 <div className="relative z-10 p-7 flex flex-col gap-4 flex-1">
-                  {/* Plan ikonu */}
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-[#c0392b]" style={{ border: '1px solid rgba(192,57,43,0.35)', background: 'rgba(192,57,43,0.1)' }}>
-                    {plan.icon}
-                  </div>
 
                   <div>
                     <h3 className="font-serif text-2xl text-[#f5f5f5] mb-2">{plan.name}</h3>

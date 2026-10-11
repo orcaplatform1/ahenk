@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { MasalarDashboard } from '@ahenk/ui';
 import { api } from '@/lib/api';
 
@@ -33,31 +32,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#f5f5f5]">
-      {/* Minimal header */}
-      <header className="sticky top-0 z-40 bg-[#0A0A0A]/80 backdrop-blur-md border-b border-[#1f1f1f]">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.webp" alt="Ahenk" width={28} height={28} className="rounded-full" />
-            <span className="font-sans font-semibold tracking-[0.1em] text-sm">AHENK</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/profil/gecmis"
-              className="text-xs text-[#888] hover:text-[#f5f5f5] transition-colors px-3 py-1.5 rounded-lg border border-[#1f1f1f] hover:border-[#888]"
-            >
-              Geçmişim
-            </Link>
-            <button
-              onClick={() => { api.clearToken(); router.push('/'); }}
-              className="text-xs text-[#888] hover:text-[#ff6b6b] transition-colors"
-            >
-              Çıkış
-            </button>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-[#0A0A0A] text-[#f5f5f5] pt-[52px]">
       {/* Arka plan glow */}
       <div
         className="fixed inset-0 pointer-events-none"
