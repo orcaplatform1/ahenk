@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { MeetingStatus, MeetingType } from "@prisma/client";
@@ -27,7 +28,9 @@ export class MeetingsService {
         meeting: {
           select: {
             id: true,
+            type: true,
             scheduledAt: true,
+            maxParticipants: true,
             locationText: true,
             locationUrl: true,
             venuePhotoUrl: true,
@@ -59,7 +62,9 @@ export class MeetingsService {
     const m = participation.meeting;
     return {
       id: m.id,
+      type: m.type,
       scheduledAt: m.scheduledAt,
+      maxParticipants: m.maxParticipants,
       locationName: m.locationText ?? null,
       locationText: m.locationText ?? null,
       venuePhotoUrl: m.venuePhotoUrl ?? null,
@@ -118,6 +123,14 @@ export class MeetingsService {
       },
     });
 
+    // Kullanıcının değerlendirdiği masa ID'lerini çek
+    const reviewedIds = new Set(
+      (await this.prisma.meetingReview.findMany({
+        where: { reviewerId: userId },
+        select: { meetingId: true },
+      })).map((r) => r.meetingId),
+    );
+
     return participations.map((p) => {
       const ocean = p.meeting.participants[0]?.user?.oceanScore;
       const overallCompatibility = ocean
@@ -139,8 +152,60 @@ export class MeetingsService {
         venuePhotoUrl: p.meeting.venuePhotoUrl ?? null,
         city: p.meeting.participants[0]?.user?.profile?.primaryCity ?? null,
         overallCompatibility,
+        isReviewed: reviewedIds.has(p.meeting.id),
       };
     });
+  }
+
+  // ─── Buluşma değerlendirmesi ──────────────────────────────────────────────
+
+  async submitReview(
+    meetingId: string,
+    reviewerId: string,
+    rating: number,
+    blockedUserIds: string[] = [],
+    comment?: string,
+  ) {
+    // Katılımcı kontrolü
+    const participation = await this.prisma.meetingParticipant.findUnique({
+      where: { meetingId_userId: { meetingId, userId: reviewerId } },
+    });
+    if (!participation) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+
+    // Zaten değerlendirmiş mi?
+    const existing = await this.prisma.meetingReview.findUnique({
+      where: { meetingId_reviewerId: { meetingId, reviewerId } },
+    });
+    if (existing) throw new ConflictException("Bu masayı zaten değerlendirdiniz");
+
+    // Review kaydet
+    await this.prisma.meetingReview.create({
+      data: { meetingId, reviewerId, rating, comment },
+    });
+
+    // Engelleme işlemleri
+    if (blockedUserIds.length > 0) {
+      const meetingParticipants = await this.prisma.meetingParticipant.findMany({
+        where: { meetingId },
+        select: { userId: true },
+      });
+      const validIds = new Set(meetingParticipants.map((p) => p.userId));
+      const toBlock = blockedUserIds.filter((id) => validIds.has(id) && id !== reviewerId);
+
+      if (toBlock.length > 0) {
+        await Promise.all(
+          toBlock.map((blockedId) =>
+            this.prisma.userBlock.upsert({
+              where: { blockerId_blockedId: { blockerId: reviewerId, blockedId } },
+              update: {},
+              create: { blockerId: reviewerId, blockedId },
+            }),
+          ),
+        );
+      }
+    }
+
+    return { success: true };
   }
 
   // ─── Katılımcı önizlemesi (baş harfi + cinsiyet) ──────────────────────────
