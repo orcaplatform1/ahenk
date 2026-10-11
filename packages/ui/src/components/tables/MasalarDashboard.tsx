@@ -324,6 +324,39 @@ function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
   );
 }
 
+// ── Radar sweep (RAF tabanlı) ─────────────────────────────────────────────────
+function RadarSweep({ running, cx, cy, sweepPath }: {
+  running: boolean; cx: number; cy: number; sweepPath: string;
+}) {
+  const gRef = useRef<SVGGElement>(null);
+  const angleRef = useRef(0);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!running) return;
+    let last = 0;
+    function tick(ts: number) {
+      const dt = last ? ts - last : 0;
+      last = ts;
+      angleRef.current = (angleRef.current + (dt / (SCAN_DUR * 1000)) * 360) % 360;
+      if (gRef.current) {
+        gRef.current.setAttribute('transform', `rotate(${angleRef.current} ${cx} ${cy})`);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [running, cx, cy]);
+
+  return (
+    <g ref={gRef}>
+      <path d={sweepPath} fill="url(#swpRG)" />
+      <line x1={cx} y1={cy} x2={cx} y2={cy - ORBIT_R} stroke={SCAN_CLR} strokeWidth={1.5} opacity={0.9} />
+      <circle cx={cx} cy={cy - ORBIT_R} r={3.5} fill={SCAN_CLR} />
+    </g>
+  );
+}
+
 // ── SCANNING ekranı (radar) ──────────────────────────────────────────────────
 function ScanningView({ masa }: { masa: MasaData | null }) {
   const seenIds = useRef<Set<string>>(new Set());
@@ -420,18 +453,7 @@ function ScanningView({ masa }: { masa: MasaData | null }) {
               <stop offset="100%" stopColor={SCAN_CLR} stopOpacity={0.28} />
             </radialGradient>
           </defs>
-          <motion.g
-            style={{ transformOrigin: `${CX}px ${CY}px` }}
-            animate={isFull ? { opacity: 0 } : { rotate: 360 }}
-            transition={isFull
-              ? { duration: 0.6, ease: 'easeOut' }
-              : { rotate: { duration: SCAN_DUR, repeat: Infinity, ease: 'linear', repeatDelay: 0 } }}
-            initial={{ opacity: 1, rotate: 0 }}
-          >
-            <path d={SWEEP_PATH} fill="url(#swpRG)" />
-            <line x1={CX} y1={CY} x2={CX} y2={CY - ORBIT_R} stroke={SCAN_CLR} strokeWidth={1.5} opacity={0.9} />
-            <circle cx={CX} cy={CY - ORBIT_R} r={3.5} fill={SCAN_CLR} />
-          </motion.g>
+          <RadarSweep running={!isFull} cx={CX} cy={CY} sweepPath={SWEEP_PATH} />
         </svg>
 
         <AnimatePresence>

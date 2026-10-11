@@ -1,4 +1,4 @@
-import { Controller, Post, Patch, Get, Body, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Post, Patch, Get, Body, UseGuards, HttpCode, HttpStatus, BadRequestException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { IsString, IsOptional, IsEnum } from "class-validator";
 import { VenuePreference } from "@prisma/client";
@@ -18,6 +18,12 @@ class SaveCitiesDto {
 class UpdateVenuePreferenceDto {
   @IsEnum(VenuePreference)
   venuePreference: VenuePreference;
+}
+
+class UpdateActiveCityDto {
+  @IsOptional()
+  @IsString()
+  activeCityId?: string | null;
 }
 
 @ApiTags("Users")
@@ -40,6 +46,14 @@ export class UsersController {
   @ApiOperation({ summary: "Mekan tercihi güncelle" })
   updateVenuePreference(@CurrentUser() user: any, @Body() dto: UpdateVenuePreferenceDto) {
     return this.usersService.updateVenuePreference(user.id, dto.venuePreference);
+  }
+
+  @Patch("active-city")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Bu haftaki aktif şehri güncelle" })
+  updateActiveCity(@CurrentUser() user: any, @Body() dto: UpdateActiveCityDto) {
+    return this.usersService.updateActiveCity(user.id, dto.activeCityId ?? null);
   }
 
   @Get("profile")

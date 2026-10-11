@@ -49,6 +49,18 @@ export class UsersService {
     return { ok: true };
   }
 
+  async updateActiveCity(userId: string, activeCityId: string | null) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { activeCity: activeCityId },
+    });
+    return { ok: true };
+  }
+
+  async resetAllActiveCities() {
+    await this.prisma.user.updateMany({ data: { activeCity: null } });
+  }
+
   async getProfile(userId: string) {
     return this.prisma.profile.findUnique({
       where: { userId },

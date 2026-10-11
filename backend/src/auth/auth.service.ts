@@ -193,6 +193,34 @@ export class AuthService {
     };
   }
 
+  async getMe(user: any) {
+    const [primaryCity, secondaryCity] = await Promise.all([
+      user.profile?.primaryCity
+        ? this.prisma.city.findUnique({ where: { id: user.profile.primaryCity }, select: { id: true, name: true } })
+        : Promise.resolve(null),
+      user.profile?.secondaryCity
+        ? this.prisma.city.findUnique({ where: { id: user.profile.secondaryCity }, select: { id: true, name: true } })
+        : Promise.resolve(null),
+    ]);
+
+    const { passwordHash, kyc, profile, ...safe } = user;
+    return {
+      ...safe,
+      firstName: profile?.firstName ?? '',
+      lastName: profile?.lastName ?? '',
+      isKycVerified: kyc?.status === 'APPROVED',
+      kyc: kyc ? { status: kyc.status } : undefined,
+      profile: profile ? {
+        gender: profile.gender,
+        birthDate: profile.birthDate,
+        primaryCity: primaryCity ?? undefined,
+        secondaryCity: secondaryCity ?? undefined,
+        topics: profile.topicPreferences ?? [],
+        venuePreference: profile.venuePreference,
+      } : undefined,
+    };
+  }
+
   getActiveCities() {
     return this.prisma.city.findMany({
       where: { isActive: true },

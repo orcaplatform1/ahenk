@@ -97,7 +97,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Mevcut kullanıcı bilgisi" })
   me(@CurrentUser() user: any) {
-    return this.authService.sanitizeUser(user);
+    return this.authService.getMe(user);
   }
 
   @Post("send-otp")

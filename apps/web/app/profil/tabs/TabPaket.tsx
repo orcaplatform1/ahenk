@@ -113,40 +113,58 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
         </div>
       )}
       {error && <p className="text-accent text-sm">{error}</p>}
+      <style>{`
+        @keyframes _pRotGrad{to{transform:rotate(360deg)}}
+        .paket-featured-wrap{position:relative;}
+        .paket-featured-wrap::before{content:'';position:absolute;inset:-1.5px;border-radius:18px;background:conic-gradient(#c0392b,#ff6b6b,#e74c3c,#c0392b);animation:_pRotGrad 3s linear infinite;z-index:0;}
+        .paket-featured-inner{position:relative;z-index:1;border-radius:16px;}
+        .tercih-chip{position:relative;}
+        .tercih-chip::before{content:'';position:absolute;inset:-1px;border-radius:9999px;background:conic-gradient(#c0392b,#ff6b6b,#c0392b);animation:_pRotGrad 3s linear infinite;z-index:-1;}
+      `}</style>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {PLANS.map((plan) => (
           <div
             key={plan.key}
-            className={`relative p-6 flex flex-col gap-3 ${plan.featured ? 'glass-card-featured' : 'glass-card'}`}
+            className={plan.featured ? 'paket-featured-wrap' : ''}
           >
-            {plan.featured && (
-              <span
-                className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap"
-                style={{ background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff' }}
-              >
-                Tercih Edilen
-              </span>
-            )}
-            <h4 className="font-serif text-xl text-[#f5f5f5]">{plan.name}</h4>
-            <div className="text-3xl font-bold text-[#f5f5f5] font-variant-numeric tabular-nums">
-              {plan.price}<span className="text-base font-normal text-[#888]">₺</span>
-            </div>
-            <div className="relative group mt-auto">
-              <button
-                onClick={() => kycApproved && handleBuy(plan.key)}
-                disabled={!kycApproved || buying === plan.key}
-                className={`w-full py-2.5 text-sm font-medium transition-all disabled:opacity-50 ${
-                  plan.featured ? 'btn-grad' : ''
-                } ${!kycApproved ? 'cursor-not-allowed' : ''}`}
-                style={!plan.featured ? { border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9999, color: '#f5f5f5', background: 'transparent' } : {}}
-              >
-                {buying === plan.key ? 'Yönlendiriliyor…' : 'Satın Al'}
-              </button>
-              {!kycApproved && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-xs text-[#888] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none glass-card">
-                  Önce kimlik doğrulaması yapmalısınız
-                </div>
+            <div
+              className={`paket-featured-inner p-6 flex flex-col gap-3 ${!plan.featured ? 'glass-card' : ''}`}
+              style={plan.featured ? {
+                background: 'rgba(255,255,255,0.05)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
+              } : {}}
+            >
+              {plan.featured && (
+                <span
+                  className="tercih-chip self-start px-3 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap"
+                  style={{ background: '#0a0a0a', color: '#ff6b6b' }}
+                >
+                  Tercih Edilen
+                </span>
               )}
+              <h4 className="font-serif text-xl text-[#f5f5f5]">{plan.name}</h4>
+              <div className="text-3xl font-bold text-[#f5f5f5] font-variant-numeric tabular-nums">
+                {plan.price}<span className="text-base font-normal text-[#888]">₺</span>
+              </div>
+              <div className="relative group mt-auto">
+                <button
+                  onClick={() => kycApproved && handleBuy(plan.key)}
+                  disabled={!kycApproved || buying === plan.key}
+                  className={`w-full py-2.5 text-sm font-medium transition-all disabled:opacity-50 ${
+                    plan.featured ? 'btn-grad' : ''
+                  } ${!kycApproved ? 'cursor-not-allowed' : ''}`}
+                  style={!plan.featured ? { border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9999, color: '#f5f5f5', background: 'transparent' } : {}}
+                >
+                  {buying === plan.key ? 'Yönlendiriliyor…' : 'Satın Al'}
+                </button>
+                {!kycApproved && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-xs text-[#888] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none glass-card">
+                    Önce kimlik doğrulaması yapmalısınız
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}

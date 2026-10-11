@@ -39,6 +39,7 @@ model User {
   fcmToken         String?    // Firebase Cloud Messaging cihaz token'ı
   quarantineUntil  DateTime?  // Karantina bitiş tarihi
   phoneHash        String?
+  activeCity       String?    // Bu haftaki aktif şehir; her Pazartesi sıfırlanır
   blocksGiven      UserBlock[] @relation("BlockerRelation")
   blocksReceived   UserBlock[] @relation("BlockedRelation")
   reportsMade      Report[]   @relation("ReportsByUser")

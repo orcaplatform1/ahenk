@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
-interface LocalBlock { id: string; display: string; hashed?: string; }
+interface ServerBlock { id: string; createdAt: string; }
+interface LocalBlock { id: string; display: string; }
 
 async function sha256hex(text: string): Promise<string | null> {
   if (typeof crypto === 'undefined' || !crypto.subtle) return null;
@@ -14,71 +15,80 @@ async function sha256hex(text: string): Promise<string | null> {
 }
 
 export function TabRehber() {
-  const [blocks, setBlocks] = useState<LocalBlock[]>([]);
+  const [serverBlocks, setServerBlocks] = useState<ServerBlock[]>([]);
+  const [localBlocks, setLocalBlocks] = useState<LocalBlock[]>([]);
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [serverCount, setServerCount] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  useEffect(() => {
-    api.get<{ count: number }>('/contact-blocks')
-      .then(r => setServerCount(r.count))
+  function loadBlocks() {
+    api.get<{ count: number; items: ServerBlock[] }>('/contact-blocks')
+      .then(r => setServerBlocks(r.items ?? []))
       .catch(() => {});
-  }, []);
+  }
+
+  useEffect(() => { loadBlocks(); }, []);
+
+  const totalCount = serverBlocks.length + localBlocks.length;
 
   function handleAdd() {
     const digits = input.replace(/\D/g, '');
     if (digits.length !== 10) { setError('10 haneli numara girin.'); return; }
-    if (blocks.length >= 50) { setError('En fazla 50 numara ekleyebilirsiniz.'); return; }
+    if (totalCount >= 50) { setError('En fazla 50 numara ekleyebilirsiniz.'); return; }
     const display = `+90${digits}`;
-    if (blocks.some(b => b.display === display)) { setError('Bu numara zaten eklenmiş.'); return; }
-    setBlocks(prev => [...prev, { id: `${Date.now()}`, display }]);
+    if (localBlocks.some(b => b.display === display)) { setError('Bu numara zaten eklendi.'); return; }
+    setLocalBlocks(prev => [...prev, { id: `${Date.now()}`, display }]);
     setInput('');
     setError('');
     setSaved(false);
   }
 
-  function handleDelete(id: string) {
-    setBlocks(prev => prev.filter(b => b.id !== id));
-    setSaved(false);
+  async function handleServerDelete(id: string) {
+    setDeleting(id);
+    try {
+      await api.delete(`/contact-blocks/${id}`);
+      setServerBlocks(prev => prev.filter(b => b.id !== id));
+    } catch (e) { setError((e as Error).message); }
+    finally { setDeleting(null); }
   }
 
   async function handleSave() {
-    if (blocks.length === 0) { setError('Eklenecek numara yok.'); return; }
+    if (localBlocks.length === 0) { setError('Eklenecek numara yok.'); return; }
     setSaving(true); setError('');
     try {
       const hashes = (await Promise.all(
-        blocks.map(b => sha256hex(b.display))
+        localBlocks.map(b => sha256hex(b.display))
       )).filter((h): h is string => h !== null);
 
       if (hashes.length === 0) {
-        setError('Numaralar hash\'lenemedi. HTTPS bağlantısı gereklidir.');
+        setError("Numaralar hash'lenemedi. HTTPS bağlantısı gereklidir.");
         return;
       }
 
       await api.post('/contact-blocks/sync', { hashedPhones: hashes });
       setSaved(true);
-      const r = await api.get<{ count: number }>('/contact-blocks');
-      setServerCount(r.count);
+      setLocalBlocks([]);
+      loadBlocks();
     } catch (e) { setError((e as Error).message); }
     finally { setSaving(false); }
   }
 
-  const displayCount = serverCount !== null ? serverCount : blocks.length;
-
   return (
     <div className="flex flex-col gap-5">
+      {/* Sayaç */}
       <div className="glass-card p-5">
         <p className="text-sm text-[#888] mb-1">Engellenen numaralar</p>
         <p className="text-2xl font-semibold text-[#f5f5f5]">
-          {displayCount}<span className="text-sm font-normal text-[#888]">/50</span>
+          {totalCount}<span className="text-sm font-normal text-[#888]">/50</span>
         </p>
         <p className="text-xs text-[#888] mt-1">
           Numaralar SHA-256 ile hash'lenerek saklanır; ham numara görüntülenemez.
         </p>
       </div>
 
+      {/* Yeni numara girişi */}
       <div className="flex gap-2">
         <div
           className="flex items-center px-3 text-[#888] text-sm select-none flex-shrink-0"
@@ -96,7 +106,7 @@ export function TabRehber() {
         />
         <button
           onClick={handleAdd}
-          disabled={blocks.length >= 50}
+          disabled={totalCount >= 50}
           className="px-4 py-3 text-sm btn-grad disabled:opacity-50"
         >
           Ekle
@@ -104,23 +114,49 @@ export function TabRehber() {
       </div>
 
       {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-      {blocks.length >= 50 && <p className="text-[#ff6b6b] text-xs">Maksimum 50 numaraya ulaştınız.</p>}
+      {totalCount >= 50 && <p className="text-[#ff6b6b] text-xs">Maksimum 50 numaraya ulaştınız.</p>}
 
-      {blocks.length > 0 && (
+      {/* Kaydedilmiş engeller (serverBlocks) */}
+      {serverBlocks.length > 0 && (
         <div className="flex flex-col gap-2">
-          {blocks.map((b, i) => (
+          <p className="text-xs text-[#555] uppercase tracking-wide mb-1">Kayıtlı Engeller</p>
+          {serverBlocks.map((b, i) => (
             <div key={b.id} className="flex items-center justify-between glass-card px-4 py-3">
-              <span className="text-sm text-[#888]">#{i + 1} — {b.display}</span>
+              <div>
+                <span className="text-sm text-[#f5f5f5]">Engellenen Numara #{i + 1}</span>
+                <span className="block text-xs text-[#555] mt-0.5">
+                  {new Date(b.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
+              </div>
               <button
-                onClick={() => handleDelete(b.id)}
+                onClick={() => handleServerDelete(b.id)}
+                disabled={deleting === b.id}
+                className="text-xs text-[#888] hover:text-[#ff6b6b] transition-colors disabled:opacity-40"
+              >
+                {deleting === b.id ? '…' : 'Kaldır'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Yeni eklenenler (henüz kaydedilmedi) */}
+      {localBlocks.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-[#555] uppercase tracking-wide mb-1">Yeni Eklenenler</p>
+          {localBlocks.map((b, i) => (
+            <div key={b.id} className="flex items-center justify-between glass-card px-4 py-3" style={{ borderColor: 'rgba(192,57,43,0.2)' }}>
+              <span className="text-sm text-[#888]">{b.display}</span>
+              <button
+                onClick={() => setLocalBlocks(prev => prev.filter(x => x.id !== b.id))}
                 className="text-xs text-[#888] hover:text-[#ff6b6b] transition-colors"
               >
                 Sil
               </button>
             </div>
           ))}
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-[#555]">{blocks.length} numara listeye eklendi (henüz kaydedilmedi)</p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-[#555]">{localBlocks.length} numara bekliyor</p>
             <button
               onClick={handleSave}
               disabled={saving || saved}
@@ -130,6 +166,10 @@ export function TabRehber() {
             </button>
           </div>
         </div>
+      )}
+
+      {serverBlocks.length === 0 && localBlocks.length === 0 && (
+        <p className="text-sm text-[#555] text-center py-4">Henüz engellenen numara yok.</p>
       )}
     </div>
   );
