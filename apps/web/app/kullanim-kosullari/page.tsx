@@ -150,6 +150,7 @@ const sections = [
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
           'Ahenk, OCEAN Big Five modeline dayalı algoritmik eşleştirme yapar ancak belirli bir kişiyle eşleşme garantisi vermez.',
+          'Ahenk, buluşma günü OCEAN uyum skorlarını yapay zeka yardımıyla analiz ederek gruba özel bir masa raporu oluşturabilir. Bu rapor yalnızca grup uyumunu özetleyen bilgilendirici bir içeriktir; herhangi bir taahhüt ya da garanti oluşturmaz.',
           'Kullanıcı sayısının yetersiz olduğu şehir veya dönemlerde eşleştirme gerçekleşmeyebilir; bu durumda ilgili dönem için iade değerlendirilebilir.',
           'Ahenk, buluşmanın gerçekleşeceği mekanın kalitesini veya hizmetini garanti etmez.',
           'Buluşma sırasında yaşanan kişisel anlaşmazlıklardan Ahenk sorumlu tutulamaz.',

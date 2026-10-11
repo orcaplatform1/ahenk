@@ -1,13 +1,17 @@
 import { Controller, Get, Post, Param, Body, Req, UseGuards } from "@nestjs/common";
 import { Request } from "express";
 import { MeetingsService } from "./meetings.service";
+import { AiReportService } from "./ai-report.service";
 import { BlockUsersDto, ReviewMeetingDto } from "./dto/meetings.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @Controller("meetings")
 @UseGuards(JwtAuthGuard)
 export class MeetingsController {
-  constructor(private meetingsService: MeetingsService) {}
+  constructor(
+    private meetingsService: MeetingsService,
+    private aiReportService: AiReportService,
+  ) {}
 
   // Kullanıcının aktif/bekleyen en yakın masası
   @Get("my-current")
@@ -52,6 +56,12 @@ export class MeetingsController {
   rematchBlock(@Param("id") id: string, @Req() req: Request) {
     const user = req.user as { id: string };
     return this.meetingsService.rematchBlock(id, user.id);
+  }
+
+  // AI masa raporu
+  @Get(":id/ai-report")
+  getAiReport(@Param("id") id: string) {
+    return this.aiReportService.getReport(id);
   }
 
   // Buluşma değerlendirmesi

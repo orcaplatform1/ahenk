@@ -14,6 +14,12 @@ export interface VenuePhoto {
   caption?: string;
 }
 
+export interface AiReport {
+  content: string;
+  uyumSkoru: number;
+  generatedAt: string;
+}
+
 export interface MasaDetayData {
   id: string;
   type?: 'GROUP' | 'ONE_ON_ONE';
@@ -24,6 +30,7 @@ export interface MasaDetayData {
   venueMapsUrl?: string | null;
   venuePhotos?: VenuePhoto[];
   participants: DetayParticipant[];
+  aiReport?: AiReport | null;
 }
 
 interface Props {
@@ -433,6 +440,87 @@ export function MasaDetayKarti({ masa }: Props) {
             ))}
           </div>
         </motion.div>
+
+        {/* Yapay Zeka Masa Raporu */}
+        {masa.aiReport && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.72, duration: 0.4 }}
+            style={{
+              background: 'rgba(192,57,43,0.12)',
+              border: '1px solid rgba(192,57,43,0.3)',
+              borderRadius: 10,
+              padding: '12px 14px',
+              marginBottom: 14,
+            }}
+          >
+            {/* Başlık satırı: logo + etiket */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%',
+                background: 'rgba(192,57,43,0.18)',
+                border: '1px solid rgba(192,57,43,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(192,57,43,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+                </svg>
+              </div>
+              <p style={{
+                margin: 0, fontSize: 9, fontWeight: 700,
+                color: 'rgba(192,57,43,0.9)', letterSpacing: '0.16em',
+                textTransform: 'uppercase', fontFamily: 'Inter, sans-serif',
+              }}>
+                YAPAY ZEKA MASA RAPORU
+              </p>
+            </div>
+
+            {/* Uyum skoru barı */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif' }}>
+                  Grup Uyum Skoru
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(192,57,43,0.9)', fontFamily: 'Inter, sans-serif' }}>
+                  {masa.aiReport.uyumSkoru}/100
+                </span>
+              </div>
+              <div style={{
+                height: 4, borderRadius: 99,
+                background: 'rgba(255,255,255,0.07)',
+                overflow: 'hidden',
+              }}>
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 0.9, duration: 0.8, ease: 'easeOut' }}
+                  style={{
+                    height: '100%',
+                    width: `${masa.aiReport.uyumSkoru}%`,
+                    background: 'linear-gradient(90deg, rgba(192,57,43,0.7) 0%, rgba(231,76,60,1) 100%)',
+                    borderRadius: 99,
+                    transformOrigin: 'left',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* AI metin alanı */}
+            <div style={{ minHeight: 0 }}>
+              <p style={{
+                margin: 0, fontSize: 12,
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: 'Inter, sans-serif',
+                lineHeight: 1.6,
+              }}>
+                {masa.aiReport.content}
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Rezervasyon notu */}
         <motion.div

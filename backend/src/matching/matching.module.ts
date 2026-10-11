@@ -7,11 +7,13 @@ import { MatchingScheduler } from "./matching.scheduler";
 import { MATCHING_QUEUE } from "./matching.constants";
 import { PrismaModule } from "../prisma/prisma.module";
 import { NotificationModule } from "../notification/notification.module";
+import { MeetingsModule } from "../meetings/meetings.module";
 
 @Module({
   imports: [
     PrismaModule,
     NotificationModule,
+    MeetingsModule,
     BullModule.registerQueue({ name: MATCHING_QUEUE }),
   ],
   controllers: [MatchingController],

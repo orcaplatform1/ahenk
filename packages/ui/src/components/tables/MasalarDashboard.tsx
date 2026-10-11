@@ -210,6 +210,7 @@ interface DashboardResponse {
     venueAddress?: string;
     venueMapsUrl?: string;
     venuePhotos?: Array<{ url: string; caption?: string }>;
+    aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
   };
 }
 
@@ -579,6 +580,7 @@ export function MasalarDashboard({
         venueMapsUrl:   meeting.venueMapsUrl,
         venuePhotos:    meeting.venuePhotos,
         participants:   meeting.participants,
+        aiReport:       meeting.aiReport,
       };
       return <MasaDetayKarti masa={detayData} />;
     }

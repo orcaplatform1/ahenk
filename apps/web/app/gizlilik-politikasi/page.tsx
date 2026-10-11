@@ -84,6 +84,7 @@ const sections = [
           'Kullanıcı hesabının oluşturulması ve yönetilmesi',
           'Kimlik doğrulama (KYC) sürecinin yürütülmesi ve güvenli platform ortamının sağlanması',
           'OCEAN kişilik modeline dayalı algoritmik eşleştirme ile uyumlu masa buluşmalarının organize edilmesi',
+          'OCEAN skorlarının yapay zeka destekli analizi ile masa uyum raporu oluşturulması (yalnızca toplu skor verisi kullanılır; bireysel kimlik bilgisi yapay zeka sistemine aktarılmaz)',
           'Abonelik ve ödeme işlemlerinin gerçekleştirilmesi',
           'Kullanıcıyla e-posta ve sistem bildirimleri aracılığıyla iletişim kurulması',
           'Yasal yükümlülüklerin yerine getirilmesi ve yetkili kurumlara bildirim yapılması',

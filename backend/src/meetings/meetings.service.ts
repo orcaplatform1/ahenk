@@ -152,6 +152,15 @@ export class MeetingsService {
       { url: m.venuePhoto3Url, caption: m.venuePhotoCaption3 ?? 'Alan 3' },
     ].filter((p) => !!p.url);
 
+    let aiReport = null;
+    if (isRevealed) {
+      const report = await this.prisma.meetingAiReport.findUnique({
+        where: { meetingId: m.id },
+        select: { content: true, uyumSkoru: true, generatedAt: true },
+      });
+      if (report) aiReport = report;
+    }
+
     return {
       phase: isRevealed ? ('REVEALED' as const) : ('WAITING' as const),
       meeting: {
@@ -166,6 +175,7 @@ export class MeetingsService {
           venueAddress: m.venueAddress,
           venueMapsUrl: m.locationUrl,
           venuePhotos: photos,
+          aiReport,
         }),
       },
     };

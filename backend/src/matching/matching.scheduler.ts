@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { MatchingService } from "./matching.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { AiReportService } from "../meetings/ai-report.service";
 
 @Injectable()
 export class MatchingScheduler {
@@ -10,6 +11,7 @@ export class MatchingScheduler {
   constructor(
     private matchingService: MatchingService,
     private prisma: PrismaService,
+    private aiReportService: AiReportService,
   ) {}
 
   // Her saat başı: havuzda yeterli kullanıcı birikince masa kur
@@ -111,7 +113,7 @@ export class MatchingScheduler {
     this.logger.log("Döngü takibi güncellendi");
   }
 
-  // Cumartesi 10:00 (TR): eşleşmiş kullanıcılara bildirim gönder
+  // Cumartesi 10:00 (TR): eşleşmiş kullanıcılara bildirim gönder + AI raporları oluştur
   @Cron("0 10 * * 6", { timeZone: "Europe/Istanbul" })
   async scheduleSaturdayNotifications(): Promise<void> {
     this.logger.log("Cumartesi bildirimleri gönderiliyor...");
@@ -120,6 +122,35 @@ export class MatchingScheduler {
       this.logger.log("Cumartesi bildirimleri tamamlandı");
     } catch (err) {
       this.logger.error(`Cumartesi bildirim hatası: ${err}`);
+    }
+
+    this.logger.log("Cumartesi AI raporları oluşturuluyor...");
+    try {
+      await this.generateSaturdayAiReports();
+      this.logger.log("Cumartesi AI raporları tamamlandı");
+    } catch (err) {
+      this.logger.error(`Cumartesi AI raporu hatası: ${err}`);
+    }
+  }
+
+  private async generateSaturdayAiReports(): Promise<void> {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay() + 1);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const meetings = await this.prisma.meeting.findMany({
+      where: {
+        status: "ACTIVE",
+        scheduledAt: { gte: weekStart },
+        aiReport: null,
+      },
+      select: { id: true },
+    });
+
+    this.logger.log(`${meetings.length} masa için AI raporu oluşturulacak`);
+    for (const meeting of meetings) {
+      await this.aiReportService.generateReport(meeting.id);
     }
   }
 

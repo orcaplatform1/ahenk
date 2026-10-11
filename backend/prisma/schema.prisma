@@ -211,6 +211,16 @@ model Meeting {
 
   participants MeetingParticipant[]
   reviews      MeetingReview[]
+  aiReport     MeetingAiReport?
+}
+
+model MeetingAiReport {
+  id           String   @id @default(cuid())
+  meetingId    String   @unique
+  meeting      Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  content      String   @db.Text
+  uyumSkoru    Int
+  generatedAt  DateTime @default(now())
 }
 
 model MeetingReview {

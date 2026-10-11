@@ -49,6 +49,17 @@ const steps = [
       </svg>
     ),
   },
+  {
+    n: '05',
+    title: 'Yapay Zeka Masa Raporu',
+    desc: 'Buluşma günü Ahenk\'in yapay zeka asistanı, gruptaki OCEAN uyum skorlarını analiz ederek sana özel bir masa raporu hazırlar. Grubun güçlü yönleri, ortak noktaları ve uyum skoru; hepsi ekranında seni bekliyor.',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
+        <circle cx="12" cy="12" r="3" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
+      </svg>
+    ),
+  },
 ];
 
 const cities = [
