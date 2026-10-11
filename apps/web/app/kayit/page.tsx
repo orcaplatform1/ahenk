@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { api } from '@/lib/api';
@@ -705,37 +705,102 @@ function ChevronDown() {
   );
 }
 
-function DateSelect({ placeholder, value, onChange, children }: {
-  placeholder: string; value: string | number; onChange: (v: string) => void; children: React.ReactNode;
+function CustomDateSelect({ placeholder, value, onChange, options }: {
+  placeholder: string;
+  value: string | number;
+  onChange: (v: string) => void;
+  options: { value: string | number; label: string }[];
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: MouseEvent | TouchEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('touchstart', onDown); };
+  }, [open]);
+
+  const selected = options.find(o => String(o.value) === String(value));
+
   return (
-    <div style={{ position: 'relative', flex: 1 }}>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
+    <div ref={ref} style={{ position: 'relative', flex: 1 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
         style={{
           width: '100%',
-          background: 'rgba(255,255,255,0.05)',
-          border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`,
+          background: open ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.05)',
+          border: `1px solid ${open ? 'rgba(192,57,43,0.45)' : selected ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`,
           borderRadius: 12,
           padding: '14px 36px 14px 14px',
           fontSize: 14,
-          color: value ? '#f5f5f5' : '#555',
-          outline: 'none',
-          appearance: 'none',
-          WebkitAppearance: 'none',
+          color: selected ? '#f5f5f5' : '#555',
+          textAlign: 'left',
           cursor: 'pointer',
-          transition: 'border-color 0.15s',
+          outline: 'none',
+          WebkitTapHighlightColor: 'transparent',
+          transition: 'border-color 0.15s, background 0.15s',
+          userSelect: 'none',
         }}
-        onFocus={e => { (e.currentTarget as HTMLSelectElement).style.borderColor = 'rgba(192,57,43,0.5)'; }}
-        onBlur={e => { (e.currentTarget as HTMLSelectElement).style.borderColor = value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'; }}
       >
-        <option value="" disabled style={{ background: '#111', color: '#555' }}>{placeholder}</option>
-        {children}
-      </select>
-      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+        {selected ? selected.label : placeholder}
+      </button>
+
+      <span style={{
+        position: 'absolute', right: 12, top: '50%',
+        transform: `translateY(-50%) rotate(${open ? '180deg' : '0'})`,
+        pointerEvents: 'none', transition: 'transform 0.2s',
+      }}>
         <ChevronDown />
       </span>
+
+      {open && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 4px)',
+          left: 0, right: 0,
+          background: '#141414',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          maxHeight: 224,
+          overflowY: 'auto',
+          zIndex: 300,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
+          WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
+        }}>
+          {options.map((opt, i) => {
+            const isSel = String(opt.value) === String(value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onMouseDown={e => { e.preventDefault(); onChange(String(opt.value)); setOpen(false); }}
+                onTouchEnd={e => { e.preventDefault(); onChange(String(opt.value)); setOpen(false); }}
+                style={{
+                  width: '100%',
+                  padding: '13px 16px',
+                  textAlign: 'left',
+                  fontSize: 14,
+                  color: isSel ? '#ff6b6b' : '#e0e0e0',
+                  background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent',
+                  borderBottom: i < options.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  WebkitTapHighlightColor: 'transparent',
+                  fontWeight: isSel ? 500 : 400,
+                  display: 'block',
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -752,8 +817,10 @@ function DateField({ label, value, onChange }: {
   const [year, month, day] = parts;
 
   const daysInMonth = year && month ? new Date(year, month, 0).getDate() : 31;
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i);
+
+  const dayOpts   = Array.from({ length: daysInMonth }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
+  const monthOpts = MONTHS_TR.map((m, i) => ({ value: i + 1, label: m }));
+  const yearOpts  = Array.from({ length: maxYear - minYear + 1 }, (_, i) => ({ value: maxYear - i, label: String(maxYear - i) }));
 
   function update(y: number, m: number, d: number) {
     if (!y || !m || !d) { onChange(''); return; }
@@ -764,19 +831,12 @@ function DateField({ label, value, onChange }: {
   return (
     <div>
       <label className="block text-xs text-[#555] mb-1.5">{label}</label>
-      <style>{`.date-opt{background:#111!important;color:#f5f5f5!important;}`}</style>
       <div style={{ display: 'flex', gap: 8 }}>
-        <DateSelect placeholder="Gün" value={day || ''} onChange={v => update(year, month, Number(v))}>
-          {days.map(d => <option key={d} value={d} className="date-opt">{d}</option>)}
-        </DateSelect>
+        <CustomDateSelect placeholder="Gün"  value={day   || ''} onChange={v => update(year, month, Number(v))} options={dayOpts} />
         <div style={{ flex: 2 }}>
-          <DateSelect placeholder="Ay" value={month || ''} onChange={v => update(year, Number(v), day)}>
-            {MONTHS_TR.map((m, i) => <option key={i+1} value={i+1} className="date-opt">{m}</option>)}
-          </DateSelect>
+          <CustomDateSelect placeholder="Ay" value={month || ''} onChange={v => update(year, Number(v), day)} options={monthOpts} />
         </div>
-        <DateSelect placeholder="Yıl" value={year || ''} onChange={v => update(Number(v), month, day)}>
-          {years.map(y => <option key={y} value={y} className="date-opt">{y}</option>)}
-        </DateSelect>
+        <CustomDateSelect placeholder="Yıl"  value={year  || ''} onChange={v => update(Number(v), month, day)} options={yearOpts} />
       </div>
     </div>
   );
