@@ -2,14 +2,64 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { OceanRadar, OceanScores } from '../ocean/OceanRadar';
 
+// ── Sabitler ───────────────────────────────────────────────────────────────
+const RADAR_SZ   = 320;
+const CX         = RADAR_SZ / 2;   // 160
+const CY         = RADAR_SZ / 2;   // 160
+const ORBIT_R    = 118;             // avatarların oturduğu yarıçap
+const AV_D       = 52;             // avatar çapı (px)
+const AV_R       = AV_D / 2;       // 26
+const AV_BR      = AV_R - 3;       // border circle yarıçapı
+const CIRCUMF    = 2 * Math.PI * AV_BR; // ≈ 144.5
+
+const SCAN_CLR   = '#c0392b';
+const MALE_CLR   = '#4fc3f7';
+const FEMALE_CLR = '#f48fb1';
+const OTHER_CLR  = '#888888';
+
+const SCAN_DUR     = 1.8;    // saniye/tur
+const FIRST_DELAY  = 1800;   // ms — 1 tam tur sonra ilk avatar
+const STAGGER      = 1100;   // ms — avatarlar arası
+
+// ── Orbit konumları (üstten başlayan, eşit açılı) ─────────────────────────
+function orbitPts(n: number): Array<{ x: number; y: number }> {
+  const step = (2 * Math.PI) / n;
+  return Array.from({ length: n }, (_, i) => {
+    const a = -Math.PI / 2 + i * step; // -90° = 12 saat
+    return { x: CX + ORBIT_R * Math.cos(a), y: CY + ORBIT_R * Math.sin(a) };
+  });
+}
+
+// ── Sweep path (70° kuyruk, kol yukarı bakıyor) ────────────────────────────
+// Kol: (CX, CY) → (CX, CY - ORBIT_R) yani 12 saat
+// Kuyruk: -90° - 70° = -160° → -90° yönünde
+function buildSweepPath(): string {
+  const startRad = (-160 * Math.PI) / 180;
+  const sx = CX + ORBIT_R * Math.cos(startRad); // ≈ 48.8
+  const sy = CY + ORBIT_R * Math.sin(startRad); // ≈ 119.6
+  // Saat yönünde ark: (sx,sy) → (CX, CY-ORBIT_R) — büyük ark değil, CW
+  return `M ${CX},${CY} L ${sx.toFixed(1)},${sy.toFixed(1)} A ${ORBIT_R},${ORBIT_R} 0 0,1 ${CX},${CY - ORBIT_R} Z`;
+}
+const SWEEP_PATH = buildSweepPath();
+
+// ── Cinsiyet yardımcıları ──────────────────────────────────────────────────
+function gColor(g?: string | null) {
+  if (g === 'MALE')   return MALE_CLR;
+  if (g === 'FEMALE') return FEMALE_CLR;
+  return OTHER_CLR;
+}
+function gBg(g?: string | null) {
+  if (g === 'MALE')   return 'rgba(79,195,247,0.12)';
+  if (g === 'FEMALE') return 'rgba(244,143,177,0.12)';
+  return 'rgba(136,136,136,0.08)';
+}
+
+// ── Tipler ─────────────────────────────────────────────────────────────────
 export interface Participant {
   id?: string;
   initials: string;
-  gender: string | null;
-  oceanScore?: OceanScores;
-  avatarUrl?: string;
+  gender: 'MALE' | 'FEMALE' | string | null;
 }
 
 export interface MasaData {
@@ -17,7 +67,7 @@ export interface MasaData {
   type?: 'GROUP' | 'ONE_ON_ONE';
   scheduledAt: string;
   maxParticipants?: number;
-  locationName: string | null;
+  locationName?: string | null;
   locationText?: string | null;
   locationMapsUrl?: string | null;
   locationAddress?: string;
@@ -32,243 +82,125 @@ interface Props {
   pollIntervalMs?: number;
 }
 
-/* ── Renk sabitleri ─────────────────────────────────────────────────────── */
-const MALE_COLOR   = '#4fc3f7';
-const FEMALE_COLOR = '#f48fb1';
-const OTHER_COLOR  = '#888888';
-
-function genderColor(g: string | null): string {
-  if (g === 'MALE')   return MALE_COLOR;
-  if (g === 'FEMALE') return FEMALE_COLOR;
-  return OTHER_COLOR;
-}
-
-/* ── Animasyonlu katılımcı avatarı ──────────────────────────────────────── */
-const AVATAR_R   = 36; // daire yarıçapı (px)
-const AVATAR_SZ  = (AVATAR_R + 6) * 2; // svg boyutu
-const CIRCUMF    = 2 * Math.PI * AVATAR_R; // ≈ 226.2
-
-interface AvatarProps {
+// ── Avatar bileşeni ────────────────────────────────────────────────────────
+interface BubbleProps {
   participant: Participant;
-  index: number;
+  cx: number;
+  cy: number;
+  delayMs: number;
 }
 
-function ParticipantAvatar({ participant, index }: AvatarProps) {
-  const color = genderColor(participant.gender);
+function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
+  const color  = gColor(participant.gender);
+  const bg     = gBg(participant.gender);
+  const ds     = delayMs / 1000;
+  const isFem  = participant.gender === 'FEMALE';
+
+  // Pulse parametreleri
+  const pulseMin = isFem ? 0.4  : 0.45;
+  const pulseMax = isFem ? 0.95 : 1.0;
+  const pulseDur = isFem ? 2.8  : 2.4;
+  const shadow   = isFem
+    ? 'drop-shadow(0 0 5px rgba(244,143,177,0.45))'
+    : 'drop-shadow(0 0 5px rgba(79,195,247,0.5))';
 
   return (
     <motion.div
-      key={participant.id ?? participant.initials}
-      initial={{ scale: 0, opacity: 0 }}
+      style={{
+        position: 'absolute',
+        left: cx - AV_R,
+        top:  cy - AV_R,
+        width: AV_D,
+        height: AV_D,
+      }}
+      initial={{ scale: 0.4, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 20, delay: index * 0.12 }}
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
+      transition={{ delay: ds, duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
     >
-      <div style={{ position: 'relative' }}>
-        {/* Pulse glow */}
-        <motion.div
+      {/* SVG: arka plan dolgusu + border animasyonu */}
+      <svg
+        width={AV_D}
+        height={AV_D}
+        viewBox={`0 0 ${AV_D} ${AV_D}`}
+        style={{ position: 'absolute', inset: 0 }}
+      >
+        {/* İç dolgu */}
+        <circle cx={AV_R} cy={AV_R} r={AV_R - 1} fill={bg} />
+
+        {/* Border çizme animasyonu (stroke-dashoffset 144.5→0) */}
+        <motion.circle
+          cx={AV_R}
+          cy={AV_R}
+          r={AV_BR}
+          fill="none"
+          stroke={color}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeDasharray={CIRCUMF}
           style={{
-            position: 'absolute',
-            inset: -4,
-            borderRadius: '50%',
-            background: `radial-gradient(circle, ${color}44 0%, transparent 70%)`,
+            rotate: '-90deg',
+            transformOrigin: `${AV_R}px ${AV_R}px`,
           }}
-          animate={{ scale: [1, 1.18, 1], opacity: [0.5, 0.9, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: index * 0.3 }}
+          initial={{ strokeDashoffset: CIRCUMF, opacity: 1 }}
+          animate={{ strokeDashoffset: 0 }}
+          transition={{ delay: ds + 0.65, duration: 0.9, ease: 'easeOut' }}
         />
 
-        <svg
-          width={AVATAR_SZ}
-          height={AVATAR_SZ}
-          viewBox={`0 0 ${AVATAR_SZ} ${AVATAR_SZ}`}
-          style={{ transform: 'rotate(-90deg)' }}
-        >
-          {/* Arka halka */}
-          <circle
-            cx={AVATAR_SZ / 2} cy={AVATAR_SZ / 2} r={AVATAR_R}
-            fill="rgba(255,255,255,0.04)"
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth={2.5}
-          />
-          {/* Animasyonlu renkli halka */}
-          <motion.circle
-            cx={AVATAR_SZ / 2} cy={AVATAR_SZ / 2} r={AVATAR_R}
-            fill="none"
-            stroke={color}
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            initial={{ strokeDasharray: `0 ${CIRCUMF}` }}
-            animate={{ strokeDasharray: `${CIRCUMF} 0` }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: index * 0.12 }}
-            style={{ filter: `drop-shadow(0 0 6px ${color}88)` }}
-          />
-        </svg>
-
-        {/* Baş harf etiketi */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 13,
-            fontWeight: 700,
-            color: '#f0f0f0',
-            letterSpacing: '0.05em',
+        {/* Pulse: border tamamlandıktan sonra başlar */}
+        <motion.circle
+          cx={AV_R}
+          cy={AV_R}
+          r={AV_BR}
+          fill="none"
+          stroke={color}
+          strokeWidth={2.5}
+          style={{ filter: shadow }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [pulseMin, pulseMax, pulseMin] }}
+          transition={{
+            delay: ds + 0.65 + 0.9,
+            duration: pulseDur,
+            repeat: Infinity,
+            ease: 'easeInOut',
           }}
-        >
-          {participant.initials}
-        </div>
-      </div>
+        />
+      </svg>
 
-      <span style={{ fontSize: 10, color: '#666', letterSpacing: '0.03em' }}>
-        {participant.gender === 'MALE' ? 'E' : participant.gender === 'FEMALE' ? 'K' : '—'}
-      </span>
-    </motion.div>
-  );
-}
-
-/* ── Boş slot ─────────────────────────────────────────────────────────────── */
-function EmptySlot({ index }: { index: number }) {
-  return (
-    <motion.div
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: index * 0.08 }}
-    >
-      <motion.div
+      {/* Baş harfler */}
+      <div
         style={{
-          width: AVATAR_SZ,
-          height: AVATAR_SZ,
-          borderRadius: '50%',
-          border: '2px dashed rgba(255,255,255,0.15)',
+          position: 'absolute',
+          inset: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          fontSize: 11,
+          fontWeight: 700,
+          color: '#f0f0f0',
+          letterSpacing: '0.04em',
+          fontFamily: 'Inter, sans-serif',
+          userSelect: 'none',
+          pointerEvents: 'none',
         }}
-        animate={{ opacity: [0.35, 0.7, 0.35] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: index * 0.2 }}
       >
-        <span style={{ fontSize: 10, color: '#555' }}>+</span>
-      </motion.div>
-      <span style={{ fontSize: 10, color: '#444' }}>bekleniyor</span>
+        {participant.initials}
+      </div>
     </motion.div>
   );
 }
 
-/* ── Katılımcı ızgarası ───────────────────────────────────────────────────── */
-function ParticipantGrid({ participants, maxParticipants }: { participants: Participant[]; maxParticipants: number }) {
-  const slots = Array.from({ length: maxParticipants });
-
-  // M-F-M-F sıralama: erkekler önce, kadınlar ikinci, diğerleri sonra
-  const males   = participants.filter((p) => p.gender === 'MALE');
-  const females = participants.filter((p) => p.gender === 'FEMALE');
-  const others  = participants.filter((p) => p.gender !== 'MALE' && p.gender !== 'FEMALE');
-  const ordered: Participant[] = [];
-  const maxLen = Math.max(males.length, females.length);
-  for (let i = 0; i < maxLen; i++) {
-    if (i < males.length)   ordered.push(males[i]);
-    if (i < females.length) ordered.push(females[i]);
-  }
-  ordered.push(...others);
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 16,
-        justifyContent: 'center',
-        padding: '16px 0',
-      }}
-    >
-      {slots.map((_, i) => {
-        const p = ordered[i];
-        return p
-          ? <ParticipantAvatar key={p.id ?? p.initials} participant={p} index={i} />
-          : <EmptySlot key={`empty-${i}`} index={i} />;
-      })}
-    </div>
-  );
-}
-
-/* ── Bekleme animasyonu ───────────────────────────────────────────────────── */
-function AnimatedDots() {
-  return (
-    <span style={{ display: 'inline-flex', gap: 3, marginLeft: 2 }}>
-      {[0, 1, 2].map((i) => (
-        <motion.span
-          key={i}
-          style={{ display: 'inline-block', color: '#888', fontSize: 14 }}
-          animate={{ opacity: [0.2, 1, 0.2] }}
-          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut', delay: i * 0.3 }}
-        >
-          .
-        </motion.span>
-      ))}
-    </span>
-  );
-}
-
-function MatchingWait() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', gap: 32 }}>
-      <div style={{ position: 'relative', width: 200, height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <motion.div
-          style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.18) 0%, transparent 65%)' }}
-          animate={{ scale: [1, 1.12, 1], opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div style={{ position: 'absolute', width: '100%', height: '100%' }}
-          animate={{ rotate: 360 }} transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}>
-          <svg viewBox="0 0 200 200" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-            <circle cx="100" cy="100" r="94" fill="none" stroke="#c0392b"
-              strokeWidth="2" strokeDasharray="150 440" strokeLinecap="round"
-              opacity="0.85" style={{ filter: 'drop-shadow(0 0 8px #c0392b)' }} />
-          </svg>
-        </motion.div>
-        <motion.div style={{ position: 'absolute', width: '72%', height: '72%' }}
-          animate={{ rotate: -360 }} transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}>
-          <svg viewBox="0 0 200 200" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-            <circle cx="100" cy="100" r="94" fill="none" stroke="#ff6b6b"
-              strokeWidth="1.5" strokeDasharray="60 530" strokeLinecap="round"
-              opacity="0.6" style={{ filter: 'drop-shadow(0 0 6px rgba(255,107,107,0.6))' }} />
-          </svg>
-        </motion.div>
-        <motion.div style={{ position: 'absolute', width: '44%', height: '44%' }}
-          animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}>
-          <svg viewBox="0 0 200 200" style={{ width: '100%', height: '100%' }}>
-            <circle cx="100" cy="100" r="94" fill="none" stroke="#ff6b6b"
-              strokeWidth="1.5" strokeDasharray="28 562" strokeLinecap="round" opacity="0.45" />
-          </svg>
-        </motion.div>
-        <motion.div
-          style={{ position: 'absolute', width: 36, height: 36, borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.5) 0%, rgba(192,57,43,0.1) 70%)', border: '1px solid rgba(192,57,43,0.4)' }}
-          animate={{ scale: [1, 1.18, 1], opacity: [0.7, 1, 0.7] }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <div style={{ position: 'absolute', width: 10, height: 10, borderRadius: '50%', background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', boxShadow: '0 0 12px rgba(192,57,43,0.7)' }} />
-      </div>
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: 14, fontWeight: 500, color: '#888' }}>
-          Senin için masa aranıyor<AnimatedDots />
-        </p>
-        <p style={{ fontSize: 12, marginTop: 8, color: '#555' }}>
-          Algoritma her saat çalışır
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ── Ana bileşen ─────────────────────────────────────────────────────────── */
-export function MasalarDashboard({ masa: propMasa, apiBase, token, pollIntervalMs = 30000 }: Props) {
+// ── Ana bileşen ─────────────────────────────────────────────────────────────
+export function MasalarDashboard({
+  masa: propMasa,
+  apiBase,
+  token,
+  pollIntervalMs = 30000,
+}: Props) {
   const [masa, setMasa] = useState<MasaData | null>(propMasa ?? null);
   const [loading, setLoading] = useState(!propMasa && !!apiBase);
-  const prevParticipantIds = useRef<Set<string>>(new Set());
+  const seenIds = useRef<Set<string>>(new Set());
 
+  // API çekimi
   const fetchMasa = async () => {
     if (!apiBase) return;
     try {
@@ -276,8 +208,7 @@ export function MasalarDashboard({ masa: propMasa, apiBase, token, pollIntervalM
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) { setMasa(null); return; }
-      const data: MasaData = await res.json();
-      setMasa(data);
+      setMasa(await res.json());
     } catch {
       setMasa(null);
     }
@@ -287,155 +218,237 @@ export function MasalarDashboard({ masa: propMasa, apiBase, token, pollIntervalM
     if (propMasa || !apiBase) return;
     setLoading(true);
     fetchMasa().finally(() => setLoading(false));
-  }, [apiBase, token, propMasa]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiBase, token]);
 
-  // Polling
   useEffect(() => {
     if (!apiBase || propMasa) return;
     const id = setInterval(fetchMasa, pollIntervalMs);
     return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiBase, token, propMasa, pollIntervalMs]);
 
-  // Yeni katılımcı geldiğinde id setini güncelle
-  useEffect(() => {
-    if (!masa) return;
-    masa.participants.forEach((p) => { if (p.id) prevParticipantIds.current.add(p.id); });
-  }, [masa]);
-
+  // Yüklenme
   if (loading) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-        <div style={{ height: 256, borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {[0, 1, 2].map((i) => (
-            <div key={i} style={{ height: 80, borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }} />
-          ))}
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}>
+        <div
+          style={{
+            width: 32, height: 32, borderRadius: '50%',
+            border: `2px solid ${SCAN_CLR}`, borderTopColor: 'transparent',
+            animation: 'spin 0.8s linear infinite',
+          }}
+        />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
-  if (!masa) return <MatchingWait />;
+  // ── Hesaplamalar ─────────────────────────────────────────────────────────
+  const maxP        = masa?.maxParticipants ?? (masa?.type === 'ONE_ON_ONE' ? 2 : 6);
+  const rawParts    = masa?.participants ?? [];
+  const isOneOnOne  = masa?.type === 'ONE_ON_ONE';
+  const title       = isOneOnOne ? 'BAŞ BAŞA MASA' : 'GRUP MASASI';
 
-  const maxParticipants = masa.maxParticipants ?? (masa.type === 'ONE_ON_ONE' ? 2 : 6);
-  const participantCount = masa.participants.length;
-  const dateStr = new Date(masa.scheduledAt).toLocaleDateString('tr-TR', {
-    weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+  // M-F-M-F sıralama
+  const males   = rawParts.filter(p => p.gender === 'MALE');
+  const females = rawParts.filter(p => p.gender === 'FEMALE');
+  const others  = rawParts.filter(p => p.gender !== 'MALE' && p.gender !== 'FEMALE');
+  const ordered: Participant[] = [];
+  const mfLen = Math.max(males.length, females.length);
+  for (let i = 0; i < mfLen; i++) {
+    if (i < males.length)   ordered.push(males[i]);
+    if (i < females.length) ordered.push(females[i]);
+  }
+  ordered.push(...others);
+
+  // Tam dolu mu?
+  const isFull = ordered.length >= maxP;
+
+  // Her katılımcı için reveal gecikmesi
+  // İlk render'da: 1.8s sonra başlar, 1.1s arayla
+  // Polling ile gelen yeni katılımcı: hemen
+  const delays: number[] = ordered.map((p, i) => {
+    const key = p.id ?? p.initials;
+    if (seenIds.current.has(key)) return 0; // zaten görüldü
+    seenIds.current.add(key);
+    return FIRST_DELAY + i * STAGGER;
   });
-  const displayName = masa.locationName ?? masa.locationText ?? 'Mekan belirleniyor';
 
-  const card: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.07)',
-    borderRadius: 20,
-    overflow: 'hidden',
+  // Konum dizisi (maxP kadar, kullanılacak)
+  const positions = orbitPts(maxP);
+
+  // ── Render ──────────────────────────────────────────────────────────────
+  const cardStyle: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
+    borderRadius: 16,
+    padding: '28px 20px 20px',
+    maxWidth: 380,
+    margin: '0 auto',
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
-    >
-      {/* Katılımcı kartı */}
-      <div style={{ ...card, padding: '24px 20px' }}>
-        {/* Sayım başlığı */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <span style={{ fontSize: 13, color: '#888' }}>
-            {masa.type === 'ONE_ON_ONE' ? 'Başbaşa buluşma' : 'Grup masası'}
-          </span>
+    <div style={cardStyle}>
+      {/* Başlık */}
+      <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <h2
+          style={{
+            fontFamily: 'var(--font-serif, "DM Serif Display", serif)',
+            fontSize: 22,
+            fontWeight: 400,
+            color: '#f5f5f5',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            margin: 0,
+          }}
+        >
+          {title}
+        </h2>
+
+        {/* Durum satırı */}
+        <motion.div
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8 }}
+        >
+          {/* Yanıp sönen nokta */}
           <motion.span
-            key={participantCount}
-            initial={{ scale: 1.3, color: '#c0392b' }}
-            animate={{ scale: 1, color: '#aaa' }}
+            style={{
+              display: 'inline-block',
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: isFull ? '#27ae60' : SCAN_CLR,
+            }}
+            animate={isFull ? { opacity: 1 } : { opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1.2, repeat: isFull ? 0 : Infinity }}
+          />
+          <motion.span
+            key={isFull ? 'full' : 'scan'}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            style={{ fontSize: 13, fontWeight: 600 }}
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.12em',
+              color: isFull ? '#27ae60' : SCAN_CLR,
+              fontFamily: 'Inter, sans-serif',
+            }}
           >
-            {participantCount}/{maxParticipants} kişi
+            {isFull ? 'MASA OLUŞTURULDU' : 'EŞLEŞME TARANIYOR'}
           </motion.span>
-        </div>
+        </motion.div>
+      </div>
 
-        {/* Renk göstergesi */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-          <span style={{ fontSize: 11, color: '#555', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: MALE_COLOR }} />
-            Erkek
-          </span>
-          <span style={{ fontSize: 11, color: '#555', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: FEMALE_COLOR }} />
-            Kadın
-          </span>
-        </div>
+      {/* Radar alanı */}
+      <div
+        style={{
+          position: 'relative',
+          width: RADAR_SZ,
+          height: RADAR_SZ,
+          margin: '0 auto',
+        }}
+      >
+        {/* ── Radar SVG: ızgara + dönen tarama kolu ── */}
+        <svg
+          width={RADAR_SZ}
+          height={RADAR_SZ}
+          viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`}
+          style={{ position: 'absolute', inset: 0 }}
+        >
+          {/* Çok sönük ızgara */}
+          {[30, 62, 93, ORBIT_R].map(r => (
+            <circle
+              key={r} cx={CX} cy={CY} r={r}
+              fill="none" stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.05}
+            />
+          ))}
+          {/* Çapraz çizgiler */}
+          <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8}
+            stroke={SCAN_CLR} strokeWidth={0.5} opacity={0.04} />
+          <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY}
+            stroke={SCAN_CLR} strokeWidth={0.5} opacity={0.04} />
 
-        {/* Avatar ızgarası */}
+          {/* Merkez nokta */}
+          <circle cx={CX} cy={CY} r={5} fill={SCAN_CLR} opacity={0.85} />
+
+          {/* Dönen tarama grubu */}
+          <motion.g
+            style={{ transformOrigin: `${CX}px ${CY}px` }}
+            animate={isFull
+              ? { opacity: 0 }
+              : { rotate: 360 }}
+            transition={isFull
+              ? { duration: 0.6, ease: 'easeOut' }
+              : { rotate: { duration: SCAN_DUR, repeat: Infinity, ease: 'linear', repeatDelay: 0 } }}
+            initial={{ opacity: 1, rotate: 0 }}
+          >
+            {/* Sweep sweep (70° koni dolgusu) */}
+            <defs>
+              <radialGradient id="swpRG" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"   stopColor={SCAN_CLR} stopOpacity={0} />
+                <stop offset="45%"  stopColor={SCAN_CLR} stopOpacity={0.05} />
+                <stop offset="100%" stopColor={SCAN_CLR} stopOpacity={0.28} />
+              </radialGradient>
+            </defs>
+            <path d={SWEEP_PATH} fill="url(#swpRG)" />
+
+            {/* Kol çizgisi */}
+            <line
+              x1={CX} y1={CY}
+              x2={CX} y2={CY - ORBIT_R}
+              stroke={SCAN_CLR} strokeWidth={1.5} opacity={0.9}
+            />
+            {/* Uç nokta */}
+            <circle cx={CX} cy={CY - ORBIT_R} r={3.5} fill={SCAN_CLR} />
+          </motion.g>
+        </svg>
+
+        {/* ── Avatar baloncukları (absolute) ── */}
         <AnimatePresence>
-          <ParticipantGrid participants={masa.participants} maxParticipants={maxParticipants} />
+          {ordered.map((p, i) => {
+            const pos = positions[i];
+            if (!pos) return null;
+            return (
+              <AvatarBubble
+                key={p.id ?? `${p.initials}-${i}`}
+                participant={p}
+                cx={pos.x}
+                cy={pos.y}
+                delayMs={delays[i] ?? 0}
+              />
+            );
+          })}
         </AnimatePresence>
       </div>
 
-      {/* Mekan kartı */}
-      <div style={card}>
-        {masa.venuePhotoUrl ? (
-          <div style={{ height: 160, overflow: 'hidden' }}>
-            <img src={masa.venuePhotoUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-        ) : (
-          <div style={{ height: 120, background: 'linear-gradient(135deg, #c0392b 0%, #b5651d 60%, #0a0a0a 100%)', display: 'flex', alignItems: 'flex-end', padding: '0 20px 16px' }}>
-            <span style={{ fontFamily: 'var(--font-serif, serif)', fontSize: 22, color: 'rgba(255,255,255,0.8)' }}>{displayName}</span>
-          </div>
-        )}
-        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {masa.venuePhotoUrl && (
-            <h3 style={{ fontFamily: 'var(--font-serif, serif)', fontSize: 18, color: '#f0f0f0', margin: 0 }}>{displayName}</h3>
-          )}
-          {masa.locationAddress && <p style={{ fontSize: 13, color: '#666', margin: 0 }}>{masa.locationAddress}</p>}
-          <p style={{ fontSize: 13, color: '#666', margin: 0 }}>{dateStr}</p>
-          {masa.locationMapsUrl && (
-            <motion.a
-              href={masa.locationMapsUrl}
-              target="_blank"
-              rel="noreferrer"
-              whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(192,57,43,0.4)' }}
-              whileTap={{ scale: 0.97 }}
-              style={{
-                marginTop: 4,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '10px 20px',
-                borderRadius: 12,
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#fff',
-                background: 'linear-gradient(135deg, #c0392b, #b5651d)',
-                textDecoration: 'none',
-                alignSelf: 'flex-start',
-              }}
-            >
-              Rotayı Al →
-            </motion.a>
-          )}
-        </div>
+      {/* Katılımcı sayısı */}
+      <div style={{ textAlign: 'center', marginTop: 18 }}>
+        <span
+          style={{
+            fontSize: 14,
+            color: '#666',
+            fontFamily: 'Inter, sans-serif',
+            letterSpacing: '0.02em',
+          }}
+        >
+          Katılımcı:{' '}
+          <motion.span
+            key={ordered.length}
+            initial={{ scale: 1.4, color: '#ff6b6b' }}
+            animate={{ scale: 1, color: SCAN_CLR }}
+            transition={{ duration: 0.4 }}
+            style={{ fontWeight: 700, display: 'inline-block' }}
+          >
+            {ordered.length}
+          </motion.span>
+          <span style={{ color: '#444', margin: '0 4px' }}>/</span>
+          <span style={{ fontWeight: 700, color: SCAN_CLR }}>{maxP}</span>
+        </span>
       </div>
-
-      {/* OCEAN karşılaştırma (grupsa göster) */}
-      {masa.type !== 'ONE_ON_ONE' && masa.participants.some((p) => p.oceanScore) && (
-        <div style={card}>
-          <div style={{ padding: '16px 20px' }}>
-            <p style={{ fontSize: 12, color: '#555', margin: '0 0 12px' }}>Kişilik uyumu</p>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {masa.participants.filter((p) => p.oceanScore).map((p, i) => (
-                <div key={p.id ?? i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  <OceanRadar scores={p.oceanScore!} size={100} />
-                  <span style={{ fontSize: 10, color: '#555' }}>{p.initials}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </motion.div>
+    </div>
   );
 }
