@@ -163,6 +163,8 @@ export class NotificationService {
       title: "Mekan bilgisi güncellendi 📍",
       body: `Buluşma mekanı: ${venueName} — ${dateStr}`,
       data: { event: "MEETING_VENUE_SET", meetingId, venueName },
+      whatsappTemplate: "ahenk_meeting_venue_set",
+      whatsappParams: [venueName, dateStr],
     });
   }
 
@@ -180,6 +182,20 @@ export class NotificationService {
       title: "Aboneliğiniz sona eriyor",
       body: `${planName} aboneliğiniz ${dateStr} tarihinde sona eriyor. Yenilemek için tıklayın.`,
       data: { event: "SUBSCRIPTION_EXPIRING", planName },
+    });
+  }
+
+  // ─── Döngü kapanış hatırlatması ──────────────────────────────────────────
+
+  async notifyCycleClosingSoon(userId: string, meetingType: 'GROUP' | 'ONE_ON_ONE'): Promise<void> {
+    const isGroup = meetingType === 'GROUP';
+    await this.send({
+      userId,
+      title: isGroup ? 'Grup döngüsü kapanıyor' : 'Başbaşa döngüsü kapanıyor',
+      body: isGroup
+        ? 'Grup masası döngüsü 12 saat içinde kapanıyor. Hâlâ eşleşme havuzundasın.'
+        : 'Başbaşa döngüsü 12 saat içinde kapanıyor. Hâlâ eşleşme havuzundasın.',
+      data: { event: 'CYCLE_CLOSING_SOON', meetingType },
     });
   }
 

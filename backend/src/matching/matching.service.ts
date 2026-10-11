@@ -34,6 +34,7 @@ type EligibleUser = {
     primaryCity: string | null;
     venueCategories: string[];
     venuePreference: 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE' | null;
+    topicPreferences: string[];
   } | null;
   oceanScore: OceanScoreData | null;
   contactBlocks: { hashedPhone: string }[];
@@ -337,7 +338,7 @@ export class MatchingService {
         status: true,
         phoneHash: true,
         activeCity: true,
-        profile: { select: { firstName: true, lastName: true, gender: true, city: true, district: true, primaryCity: true, venueCategories: true, venuePreference: true } },
+        profile: { select: { firstName: true, lastName: true, gender: true, city: true, district: true, primaryCity: true, venueCategories: true, venuePreference: true, topicPreferences: true } },
         oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
         contactBlocks: { select: { hashedPhone: true } },
       },
@@ -481,8 +482,17 @@ export class MatchingService {
     return (
       this.calcOcean(a.oceanScore, b.oceanScore) +
       this.calcVenue(a.profile?.venueCategories ?? [], b.profile?.venueCategories ?? []) +
-      this.calcCity(this.effectiveCity(a), a.profile?.district ?? null, this.effectiveCity(b), b.profile?.district ?? null)
+      this.calcCity(this.effectiveCity(a), a.profile?.district ?? null, this.effectiveCity(b), b.profile?.district ?? null) +
+      this.calcTopic(a.profile?.topicPreferences ?? [], b.profile?.topicPreferences ?? [])
     );
+  }
+
+  private calcTopic(a: string[], b: string[]): number {
+    if (!a.length || !b.length) return 0;
+    const setA = new Set(a);
+    const union = new Set([...a, ...b]).size;
+    const intersection = b.filter((x) => setA.has(x)).length;
+    return (intersection / union) * WEIGHTS.TOPIC;
   }
 
   private calcOcean(a: OceanScoreData | null, b: OceanScoreData | null): number {

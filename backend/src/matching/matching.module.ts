@@ -8,12 +8,14 @@ import { MATCHING_QUEUE } from "./matching.constants";
 import { PrismaModule } from "../prisma/prisma.module";
 import { NotificationModule } from "../notification/notification.module";
 import { MeetingsModule } from "../meetings/meetings.module";
+import { ConfigModule } from "@nestjs/config";
 
 @Module({
   imports: [
     PrismaModule,
     NotificationModule,
     MeetingsModule,
+    ConfigModule,
     BullModule.registerQueue({ name: MATCHING_QUEUE }),
   ],
   controllers: [MatchingController],

@@ -19,6 +19,7 @@ import {
 } from "@prisma/client";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "../payment/payment.constants";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
+import { NotificationService } from "../notification/notification.service";
 import { StorageService } from "../storage/storage.service";
 
 const PIONEER_MAX_QUOTA = 500;
@@ -29,6 +30,7 @@ export class AdminService {
     private prisma: PrismaService,
     private whatsapp: WhatsappNotifyService,
     public storage: StorageService,
+    private notifications: NotificationService,
   ) {}
 
   // ─── Dashboard ───────────────────────────────────────────────────────────
@@ -370,18 +372,30 @@ export class AdminService {
     meetingId: string,
     data: { locationText?: string; locationUrl?: string; scheduledAt?: string },
   ) {
-    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: { participants: { select: { userId: true } } },
+    });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
 
-    return this.prisma.meeting.update({
+    const updated = await this.prisma.meeting.update({
       where: { id: meetingId },
       data: {
         locationText: data.locationText,
         locationUrl: data.locationUrl,
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
       },
-      select: { id: true, locationText: true, locationUrl: true, scheduledAt: true },
+      select: { id: true, locationText: true, locationUrl: true, scheduledAt: true, type: true },
     });
+
+    if (data.locationText && updated.locationText) {
+      const scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : meeting.scheduledAt;
+      for (const p of meeting.participants) {
+        await this.notifications.notifyMeetingVenueSet(p.userId, meetingId, updated.locationText, scheduledAt);
+      }
+    }
+
+    return updated;
   }
 
   async updateMeetingVenuePhotos(
