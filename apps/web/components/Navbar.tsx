@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 
 /* ── Avatar ─────────────────────────────────────────────────────────── */
@@ -74,7 +74,6 @@ function CapsuleBtn({ label, leftBg, outerBorder, outerGlow, icon, href, onClick
         alignItems: 'center',
       }}
     >
-      {/* Sol: renkli label */}
       <span
         className="flex items-center justify-center whitespace-nowrap"
         style={{
@@ -83,25 +82,18 @@ function CapsuleBtn({ label, leftBg, outerBorder, outerGlow, icon, href, onClick
           borderRadius: '999px',
           background: leftBg,
           color: '#FFF7F4',
-          fontSize: '11px',
+          fontSize: '12px',
           fontWeight: 600,
           letterSpacing: '0.01em',
           boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.14)',
           flexShrink: 0,
         }}
       >
-        <span className="hidden sm:inline" style={{ fontSize: '12px' }}>{label}</span>
-        <span className="sm:hidden" style={{ fontSize: '10px' }}>{label}</span>
+        {label}
       </span>
-      {/* Sağ: ikon */}
       <span
         className="flex items-center justify-center"
-        style={{
-          width: '30px',
-          height: '30px',
-          flexShrink: 0,
-          color: '#F7D9D5',
-        }}
+        style={{ width: '30px', height: '30px', flexShrink: 0, color: '#F7D9D5' }}
       >
         {icon}
       </span>
@@ -147,12 +139,20 @@ const IkonCikis = (
   </svg>
 );
 
+const navLinks = [
+  { label: 'Nasıl Çalışır?', href: '#how-it-works' },
+  { label: 'Buluşmalar',     href: '#cities' },
+  { label: 'Test',           href: '/kayit' },
+  { label: 'Hikayemiz',      href: '/hikayemiz' },
+];
+
 /* ── Navbar ──────────────────────────────────────────────────────────── */
 export default function Navbar() {
   const pathname = usePathname();
   const router   = useRouter();
-  const [navUser,  setNavUser]  = useState<NavUser | null>(null);
-  const [checked,  setChecked]  = useState(false);
+  const [navUser,   setNavUser]   = useState<NavUser | null>(null);
+  const [checked,   setChecked]   = useState(false);
+  const [menuOpen,  setMenuOpen]  = useState(false);
 
   useEffect(() => {
     setNavUser(null);
@@ -165,82 +165,209 @@ export default function Navbar() {
       .finally(() => setChecked(true));
   }, [pathname]);
 
+  // Rota değişince drawer'ı kapat
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+
   function handleLogout() {
     api.clearToken();
+    setMenuOpen(false);
     router.push('/');
   }
 
+  const showGiris  = !navUser && !(['/giris', '/sifremi-unuttum', '/sifremi-sifirla'].includes(pathname));
+  const showKayit  = !navUser && pathname !== '/kayit';
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-bg/80 border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 h-[52px] flex items-center justify-between">
+    <>
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-bg/80 border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 h-[52px] flex items-center justify-between">
 
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-          <Image src="/logo.webp" alt="Ahenk" width={28} height={28} className="rounded-full" />
-          <span className="font-sans font-semibold text-sm tracking-[0.12em] text-text">AHENK</span>
-        </Link>
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+            <Image src="/logo.webp" alt="Ahenk" width={28} height={28} className="rounded-full" />
+            <span className="font-sans font-semibold text-sm tracking-[0.12em] text-text">AHENK</span>
+          </Link>
 
-        {/* Orta linkler — sadece desktop */}
-        <div className="hidden md:flex items-center gap-8">
-          {[
-            { label: 'Nasıl Çalışır?', href: '#how-it-works' },
-            { label: 'Buluşmalar',     href: '#cities' },
-            { label: 'Test',           href: '/kayit' },
-            { label: 'Hikayemiz',     href: '/hikayemiz' },
-          ].map(item => (
-            <a key={item.label} href={item.href} className="text-sm text-muted hover:text-text transition-colors">
-              {item.label}
-            </a>
-          ))}
-        </div>
+          {/* Orta linkler — sadece desktop */}
+          <div className="hidden md:flex items-center gap-8">
+            {navLinks.map(item => (
+              <a key={item.label} href={item.href} className="text-sm text-muted hover:text-text transition-colors">
+                {item.label}
+              </a>
+            ))}
+          </div>
 
-        {/* Sağ alan */}
-        <div className="flex items-center gap-2">
-          {!checked ? null : navUser ? (
-            /* Giriş yapmış: Avatar + Çıkış Yap */
-            <>
-              <Link href="/profil" className="cursor-pointer flex-shrink-0">
+          {/* Sağ alan */}
+          <div className="flex items-center gap-2">
+            {/* Desktop auth butonları */}
+            {checked && (
+              <div className="hidden md:flex items-center gap-2">
+                {navUser ? (
+                  <>
+                    <Link href="/profil" className="cursor-pointer flex-shrink-0">
+                      <NavAvatar user={navUser} />
+                    </Link>
+                    <CapsuleBtn
+                      label="Çıkış Yap"
+                      leftBg="linear-gradient(115deg,#1a1a1a 0%,#111 100%)"
+                      outerBorder="rgba(255,255,255,0.18)"
+                      outerGlow="inset 0 1px 1px rgba(255,255,255,0.05), 0 0 6px rgba(255,255,255,0.06)"
+                      icon={IkonCikis}
+                      onClick={handleLogout}
+                    />
+                  </>
+                ) : (
+                  <>
+                    {showGiris && (
+                      <CapsuleBtn
+                        label="Giriş Yap"
+                        href="/giris"
+                        leftBg="linear-gradient(115deg,#1a5c2a 0%,#27ae60 100%)"
+                        outerBorder="rgba(39,174,96,0.75)"
+                        outerGlow="inset 0 1px 1px rgba(255,255,255,0.08), 0 0 6px rgba(39,174,96,0.22)"
+                        icon={IkonGiris}
+                      />
+                    )}
+                    {showKayit && (
+                      <CapsuleBtn
+                        label="Kayıt Ol"
+                        href="/kayit"
+                        leftBg="linear-gradient(115deg,#E83F3D 0%,#FF6669 100%)"
+                        outerBorder="rgba(255,85,90,0.8)"
+                        outerGlow="inset 0 1px 1px rgba(255,125,110,0.10), 0 0 6px rgba(255,55,65,0.22)"
+                        icon={IkonKayit}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Mobil: avatar (giriş yapmışsa) + hamburger */}
+            {checked && navUser && (
+              <Link href="/profil" className="md:hidden cursor-pointer flex-shrink-0">
                 <NavAvatar user={navUser} />
               </Link>
-              <CapsuleBtn
-                label="Çıkış Yap"
-                leftBg="linear-gradient(115deg,#1a1a1a 0%,#111 100%)"
-                outerBorder="rgba(255,255,255,0.18)"
-                outerGlow="inset 0 1px 1px rgba(255,255,255,0.05), 0 0 6px rgba(255,255,255,0.06), 0 0 14px rgba(255,255,255,0.04)"
-                icon={IkonCikis}
-                onClick={handleLogout}
+            )}
+            <button
+              className="md:hidden flex flex-col justify-center items-center gap-[5px] p-1.5"
+              onClick={() => setMenuOpen(v => !v)}
+              aria-label="Menü"
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              <motion.span
+                animate={menuOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }}
+                transition={{ duration: 0.22 }}
+                style={{ display: 'block', width: 20, height: 1.5, background: '#ccc', borderRadius: 2, transformOrigin: 'center' }}
               />
-            </>
-          ) : (
-            /* Giriş yapmamış: Giriş Yap + Kayıt Ol */
-            <>
-              {/* /giris, /sifremi-unuttum, /sifremi-sifirla sayfalarında Giriş Yap gizlenir */}
-              {!['/giris', '/sifremi-unuttum', '/sifremi-sifirla'].includes(pathname) && (
-                <CapsuleBtn
-                  label="Giriş Yap"
-                  href="/giris"
-                  leftBg="linear-gradient(115deg,#1a5c2a 0%,#27ae60 100%)"
-                  outerBorder="rgba(39,174,96,0.75)"
-                  outerGlow="inset 0 1px 1px rgba(255,255,255,0.08), 0 0 6px rgba(39,174,96,0.22), 0 0 16px rgba(39,174,96,0.12)"
-                  icon={IkonGiris}
-                />
-              )}
-              {/* /kayit sayfasında Kayıt Ol gizlenir */}
-              {pathname !== '/kayit' && (
-                <CapsuleBtn
-                  label="Kayıt Ol"
-                  href="/kayit"
-                  leftBg="linear-gradient(115deg,#E83F3D 0%,#FF6669 100%)"
-                  outerBorder="rgba(255,85,90,0.8)"
-                  outerGlow="inset 0 1px 1px rgba(255,125,110,0.10), 0 0 6px rgba(255,55,65,0.22), 0 0 16px rgba(255,45,55,0.12)"
-                  icon={IkonKayit}
-                />
-              )}
-            </>
-          )}
-        </div>
+              <motion.span
+                animate={menuOpen ? { opacity: 0 } : { opacity: 1 }}
+                transition={{ duration: 0.15 }}
+                style={{ display: 'block', width: 20, height: 1.5, background: '#ccc', borderRadius: 2 }}
+              />
+              <motion.span
+                animate={menuOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }}
+                transition={{ duration: 0.22 }}
+                style={{ display: 'block', width: 20, height: 1.5, background: '#ccc', borderRadius: 2, transformOrigin: 'center' }}
+              />
+            </button>
+          </div>
 
-      </div>
-    </nav>
+        </div>
+      </nav>
+
+      {/* Mobil drawer overlay + panel */}
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            {/* Karartma */}
+            <motion.div
+              className="md:hidden fixed inset-0 z-40"
+              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.22 }}
+              onClick={() => setMenuOpen(false)}
+            />
+
+            {/* Drawer panel */}
+            <motion.div
+              className="md:hidden fixed top-0 right-0 bottom-0 z-50 flex flex-col"
+              style={{
+                width: '33.333vw',
+                minWidth: 200,
+                background: 'linear-gradient(160deg,#111010 0%,#0d0b0b 60%,#120808 100%)',
+                borderLeft: '1px solid rgba(255,255,255,0.07)',
+                boxShadow: '-8px 0 32px rgba(0,0,0,0.6)',
+                paddingTop: 52,
+              }}
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween', duration: 0.28, ease: 'easeInOut' }}
+            >
+              {/* Nav linkleri */}
+              <div className="flex flex-col px-4 pt-6 gap-1">
+                {navLinks.map((item, i) => (
+                  <motion.a
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="text-sm py-3 px-2 rounded-lg transition-colors"
+                    style={{ color: '#aaa', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.04 + i * 0.05, duration: 0.22 }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#aaa'; }}
+                  >
+                    {item.label}
+                  </motion.a>
+                ))}
+              </div>
+
+              {/* Auth butonları */}
+              {checked && (
+                <div className="flex flex-col px-4 pt-6 gap-3">
+                  {navUser ? (
+                    <button
+                      onClick={handleLogout}
+                      className="w-full py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc' }}
+                    >
+                      Çıkış Yap
+                    </button>
+                  ) : (
+                    <>
+                      {showGiris && (
+                        <Link
+                          href="/giris"
+                          onClick={() => setMenuOpen(false)}
+                          className="w-full py-2.5 rounded-xl text-sm font-medium text-center transition-colors"
+                          style={{ background: 'linear-gradient(115deg,#1a5c2a,#27ae60)', color: '#fff', boxShadow: '0 0 12px rgba(39,174,96,0.3)' }}
+                        >
+                          Giriş Yap
+                        </Link>
+                      )}
+                      {showKayit && (
+                        <Link
+                          href="/kayit"
+                          onClick={() => setMenuOpen(false)}
+                          className="w-full py-2.5 rounded-xl text-sm font-medium text-center transition-colors"
+                          style={{ background: 'linear-gradient(115deg,#E83F3D,#FF6669)', color: '#fff', boxShadow: '0 0 12px rgba(232,63,61,0.35)' }}
+                        >
+                          Kayıt Ol
+                        </Link>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
