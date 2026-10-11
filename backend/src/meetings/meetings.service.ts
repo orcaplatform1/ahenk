@@ -29,6 +29,7 @@ export class MeetingsService {
           select: {
             id: true,
             type: true,
+            status: true,
             scheduledAt: true,
             maxParticipants: true,
             locationText: true,
@@ -63,6 +64,7 @@ export class MeetingsService {
     return {
       id: m.id,
       type: m.type,
+      status: m.status,
       scheduledAt: m.scheduledAt,
       maxParticipants: m.maxParticipants,
       locationName: m.locationText ?? null,
