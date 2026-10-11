@@ -61,53 +61,7 @@ const plans = [
   },
 ];
 
-const faqs: { q: string; a: string }[] = [
-  { q: 'Kim kimle eşleşiyor?', a: 'OCEAN kişilik testine göre uyumlu, aynı şehirde buluşmak isteyen kişiler.' },
-  { q: 'Buluşmalar nerede yapılıyor?', a: 'Şehrinizde önceden seçilmiş kaliteli mekanlarda gerçekleşir.' },
-  { q: 'Kayıt ücretli mi?', a: 'Kayıt ve kişilik testi tamamen ücretsizdir. Ödeme sadece buluşma paketleri için gereklidir.' },
-  { q: 'İstediğim şehirde hizmet var mı?', a: 'İstanbul, Ankara, İzmir, Antalya, Muğla, Aydın, Balıkesir ve Konya\'da aktifiz.' },
-  { q: 'Güvenlik nasıl sağlanıyor?', a: 'Tüm kullanıcılar kimlik doğrulamasından geçer.' },
-];
 
-const features = [
-  {
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15M14.25 3.104c.251.023.501.05.75.082M19.8 15l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.607L5 14.5m14.8.5l.34 1.36a2.25 2.25 0 01-2.18 2.79H6.04a2.25 2.25 0 01-2.18-2.79L4.2 15" />
-      </svg>
-    ),
-    title: 'Bilimsel Eşleştirme',
-    desc: 'OCEAN kişilik testi ile uyumlu insanlarla tanış.',
-  },
-  {
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-      </svg>
-    ),
-    title: 'Haftalık Buluşmalar',
-    desc: 'Özenle planlanan grup ve başbaşa etkinlikler.',
-  },
-  {
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-      </svg>
-    ),
-    title: 'Türkiye Odaklı',
-    desc: 'Kendi şehrinde, gerçek insanlarla.',
-  },
-  {
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-      </svg>
-    ),
-    title: 'Güvenli ve Özenli',
-    desc: 'Doğrulanmış profiller ve kontrollü katılım.',
-  },
-];
 
 /* ─── Çift halka ─────────────────────────────────────────────────────────── */
 
@@ -204,7 +158,6 @@ function getPlanCardState(cardKey: string, activePlan: ActivePlan) {
 
 export default function Home() {
   const router = useRouter();
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [activeCity, setActiveCity] = useState('İstanbul');
   const [activePlan, setActivePlan] = useState<ActivePlan>(null);
   const [authState, setAuthState] = useState<{ loggedIn: boolean; kycApproved: boolean } | null>(null);
@@ -317,23 +270,6 @@ export default function Home() {
             <div className="flex items-center justify-center" style={{ height: '440px' }}>
               <DualRings />
             </div>
-          </div>
-        </section>
-
-        {/* ── Özellikler şeridi ──────────────────────────────────────────── */}
-        <section style={{ background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(16px)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((f) => (
-              <div key={f.title} className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-white" style={{ background: 'linear-gradient(135deg, #c0392b 0%, #e74c3c 100%)', boxShadow: '0 0 18px rgba(192,57,43,0.45)' }}>
-                  {f.icon}
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-[#f5f5f5] mb-0.5">{f.title}</h3>
-                  <p className="text-xs text-[#888] leading-relaxed">{f.desc}</p>
-                </div>
-              </div>
-            ))}
           </div>
         </section>
 
@@ -551,39 +487,6 @@ export default function Home() {
                 <div key={plan.name} className="flex flex-col">{inner}</div>
               );
             })}
-          </div>
-        </section>
-
-        {/* ── SSS ────────────────────────────────────────────────────────── */}
-        <section id="faq" className="max-w-2xl mx-auto px-6 py-24">
-          <div className="text-center mb-12">
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5]">
-              <RedLast text="Sık Sorulan Sorular" />
-            </h2>
-          </div>
-          <div className="flex flex-col gap-3">
-            {faqs.map((faq, i) => (
-              <div
-                key={i}
-                className="rounded-2xl overflow-hidden transition-all duration-200"
-                style={{
-                  background: openFaq === i ? 'rgba(255,60,40,0.08)' : 'rgba(255,60,40,0.06)',
-                  border: openFaq === i ? '1px solid rgba(192,57,43,0.35)' : '1px solid rgba(255,255,255,0.12)',
-                  backdropFilter: 'blur(20px)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
-                }}
-              >
-                <button className="w-full text-left px-6 py-5 flex items-center justify-between gap-4" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                  <span className="font-medium text-sm sm:text-base text-[#f5f5f5]">{faq.q}</span>
-                  <span className="text-xl flex-shrink-0 transition-transform duration-200" style={{ color: openFaq === i ? '#c0392b' : '#888', transform: openFaq === i ? 'rotate(45deg)' : 'rotate(0deg)' }}>+</span>
-                </button>
-                {openFaq === i && (
-                  <div className="px-6 pb-5 text-sm leading-relaxed" style={{ color: '#aaa', borderTop: '1px solid rgba(192,57,43,0.15)' }}>
-                    <p className="pt-4">{faq.a}</p>
-                  </div>
-                )}
-              </div>
-            ))}
           </div>
         </section>
 
