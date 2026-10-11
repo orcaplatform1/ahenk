@@ -139,25 +139,22 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
       {error && <p className="text-accent text-sm">{error}</p>}
 
       <style>{`
-        @keyframes _pRotBorder{to{transform:rotate(360deg)}}
-        .p-tercih-wrap{position:relative;display:inline-flex;}
-        .p-tercih-wrap::before{content:'';position:absolute;inset:-1.5px;border-radius:9999px;background:conic-gradient(from 0deg,transparent 0%,transparent 65%,#ff6b6b 75%,#c0392b 82%,transparent 92%);animation:_pRotBorder 2.2s linear infinite;z-index:0;}
-        .p-tercih-inner{position:relative;z-index:1;background:#0a0a0a;border-radius:9999px;padding:4px 12px;font-size:0.75rem;font-weight:600;color:#fff;}
+        @keyframes _pCardGoldBorder{to{transform:rotate(360deg)}}
+        .p-feat-wrap{position:relative;border-radius:18px;padding:2px;overflow:hidden;}
+        .p-feat-wrap::before{content:'';position:absolute;inset:-60%;background:conic-gradient(from 0deg,transparent 68%,#c9a227 78%,#e8c84a 84%,transparent 93%);animation:_pCardGoldBorder 3s linear infinite;z-index:0;}
+        .p-feat-inner{position:relative;z-index:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;flex:1;}
       `}</style>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {PLANS.map((plan) => (
-          <div
-            key={plan.key}
-            className="relative rounded-2xl flex flex-col overflow-hidden"
-            style={plan.featured ? {
-              border: '1px solid rgba(192,57,43,0.5)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5), 0 0 32px rgba(192,57,43,0.2)',
-            } : {
-              border: '1px solid rgba(255,255,255,0.12)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
-            }}
-          >
+        {PLANS.map((plan) => {
+          const cardBody = (
+            <div
+              className={plan.featured ? 'p-feat-inner' : 'relative rounded-2xl flex flex-col overflow-hidden flex-1'}
+              style={!plan.featured ? {
+                border: '1px solid rgba(255,255,255,0.12)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
+              } : undefined}
+            >
             {/* Arka plan görseli */}
             <div
               className="absolute inset-0"
@@ -169,13 +166,16 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
             />
             {/* Karartma katmanı */}
             <div className="absolute inset-0" style={{
-              background: 'linear-gradient(160deg, rgba(10,5,5,0.3) 0%, rgba(10,5,5,0.82) 55%)',
+              background: plan.featured
+                ? 'linear-gradient(to top, rgba(10,5,5,0.92) 0%, rgba(10,5,5,0.55) 40%, rgba(10,5,5,0.08) 100%)'
+                : 'linear-gradient(160deg, rgba(10,5,5,0.3) 0%, rgba(10,5,5,0.82) 55%)',
             }} />
 
             {plan.featured && (
-              <div className="p-tercih-wrap absolute top-4 right-4 z-10">
-                <span className="p-tercih-inner">Tercih Edilen</span>
-              </div>
+              <span className="absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
+                style={{ background: 'rgba(10,5,5,0.7)', border: '1px solid rgba(255,255,255,0.18)' }}>
+                Tercih Edilen
+              </span>
             )}
 
             <div className="relative z-10 p-6 flex flex-col gap-3 flex-1">
@@ -225,7 +225,16 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
               </div>
             </div>
           </div>
-        ))}
+          );
+
+          return plan.featured ? (
+            <div key={plan.key} className="p-feat-wrap flex flex-col" style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+              {cardBody}
+            </div>
+          ) : (
+            <div key={plan.key} className="flex flex-col">{cardBody}</div>
+          );
+        })}
       </div>
     </div>
   );

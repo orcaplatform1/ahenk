@@ -398,88 +398,78 @@ export default function Home() {
               <RedLast text="Paketler" />
             </h2>
           </div>
+          <style>{`
+            @keyframes _cardGoldBorder{to{transform:rotate(360deg)}}
+            .lp-feat-wrap{position:relative;border-radius:18px;padding:2px;overflow:hidden;}
+            .lp-feat-wrap::before{content:'';position:absolute;inset:-60%;background:conic-gradient(from 0deg,transparent 68%,#c9a227 78%,#e8c84a 84%,transparent 93%);animation:_cardGoldBorder 3s linear infinite;z-index:0;}
+            .lp-feat-inner{position:relative;z-index:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;}
+          `}</style>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                className="relative rounded-2xl flex flex-col overflow-hidden"
-                style={plan.featured ? {
-                  border: '1px solid rgba(192,57,43,0.5)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5), 0 0 32px rgba(192,57,43,0.2)',
-                } : {
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
-                }}
-              >
-                {/* Arka plan görseli */}
+            {plans.map((plan) => {
+              const inner = (
                 <div
-                  className="absolute inset-0"
-                  style={{
-                    backgroundImage: `url(${plan.bgImage})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }}
-                />
-                {/* Karartma katmanı */}
-                <div className="absolute inset-0" style={{
-                  background: 'linear-gradient(160deg, rgba(10,5,5,0.3) 0%, rgba(10,5,5,0.82) 55%)',
-                }} />
-
-                {plan.featured && (
-                  <>
-                    <style>{`
-                      @keyframes _rotBorder{to{transform:rotate(360deg)}}
-                      .tercih-wrap{position:relative;display:inline-flex;}
-                      .tercih-wrap::before{content:'';position:absolute;inset:-1.5px;border-radius:9999px;background:conic-gradient(from 0deg,transparent 0%,transparent 65%,#ff6b6b 75%,#c0392b 82%,transparent 92%);animation:_rotBorder 2.2s linear infinite;z-index:0;}
-                      .tercih-inner{position:relative;z-index:1;background:#0a0a0a;border-radius:9999px;padding:4px 12px;font-size:0.75rem;font-weight:600;color:#fff;}
-                    `}</style>
-                    <div className="tercih-wrap absolute top-4 right-4 z-10">
-                      <span className="tercih-inner">Tercih Edilen</span>
+                  className={plan.featured ? 'lp-feat-inner flex-1' : 'relative rounded-2xl flex flex-col overflow-hidden flex-1'}
+                  style={!plan.featured ? {
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
+                  } : undefined}
+                >
+                  <div className="absolute inset-0" style={{ backgroundImage: `url(${plan.bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                  <div className="absolute inset-0" style={{
+                    background: plan.featured
+                      ? 'linear-gradient(to top, rgba(10,5,5,0.92) 0%, rgba(10,5,5,0.55) 40%, rgba(10,5,5,0.08) 100%)'
+                      : 'linear-gradient(160deg, rgba(10,5,5,0.3) 0%, rgba(10,5,5,0.82) 55%)',
+                  }} />
+                  {plan.featured && (
+                    <span className="absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
+                      style={{ background: 'rgba(10,5,5,0.7)', border: '1px solid rgba(255,255,255,0.18)' }}>
+                      Tercih Edilen
+                    </span>
+                  )}
+                  <div className="relative z-10 p-7 flex flex-col gap-4 flex-1">
+                    <div>
+                      <h3 className="font-serif text-2xl text-[#f5f5f5] mb-2">{plan.name}</h3>
+                      <div className="flex items-end gap-1 mb-1">
+                        <span className="text-4xl font-bold text-[#f5f5f5]">{plan.price}</span>
+                        <span className="text-lg text-[#888] mb-1">₺</span>
+                      </div>
+                      <p className="text-[#888] text-sm">{plan.desc}</p>
                     </div>
-                  </>
-                )}
-
-                <div className="relative z-10 p-7 flex flex-col gap-4 flex-1">
-
-                  <div>
-                    <h3 className="font-serif text-2xl text-[#f5f5f5] mb-2">{plan.name}</h3>
-                    <div className="flex items-end gap-1 mb-1">
-                      <span className="text-4xl font-bold text-[#f5f5f5]">{plan.price}</span>
-                      <span className="text-lg text-[#888] mb-1">₺</span>
-                    </div>
-                    <p className="text-[#888] text-sm">{plan.desc}</p>
+                    <ul className="flex flex-col gap-2 flex-1">
+                      {plan.features.map((f) => (
+                        <li key={f} className="flex items-center gap-2 text-sm text-[#ccc]">
+                          <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0" style={{ color: '#c0392b' }}>
+                            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                          </svg>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      className="mt-2 w-full py-3 rounded-xl text-sm font-medium transition-all duration-200"
+                      style={plan.featured ? {
+                        background: 'linear-gradient(90deg, #b8960c 0%, #e8c84a 45%, #c9a227 100%)',
+                        color: '#1a1100', fontWeight: 700,
+                        boxShadow: '0 4px 18px rgba(200,160,30,0.35)',
+                      } : {
+                        background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)',
+                        color: '#fff', boxShadow: '0 4px 16px rgba(192,57,43,0.35)',
+                      }}
+                    >
+                      Paketi Seç
+                    </button>
                   </div>
-
-                  {/* Feature list */}
-                  <ul className="flex flex-col gap-2 flex-1">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2 text-sm text-[#ccc]">
-                        <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0" style={{ color: '#c0392b' }}>
-                          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                        </svg>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <button
-                    className="mt-2 w-full py-3 rounded-xl text-sm font-medium transition-all duration-200"
-                    style={plan.featured ? {
-                      background: 'linear-gradient(90deg, #b8960c 0%, #e8c84a 45%, #c9a227 100%)',
-                      color: '#1a1100',
-                      fontWeight: 700,
-                      boxShadow: '0 4px 18px rgba(200,160,30,0.35)',
-                    } : {
-                      background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)',
-                      color: '#fff',
-                      boxShadow: '0 4px 16px rgba(192,57,43,0.35)',
-                    }}
-                  >
-                    Paketi Seç
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+
+              return plan.featured ? (
+                <div key={plan.name} className="lp-feat-wrap flex flex-col" style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                  {inner}
+                </div>
+              ) : (
+                <div key={plan.name} className="flex flex-col">{inner}</div>
+              );
+            })}
           </div>
         </section>
 
