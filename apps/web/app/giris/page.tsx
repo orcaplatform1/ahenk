@@ -177,7 +177,8 @@ export default function GirisPage() {
                   type="button"
                   onClick={handleSendOtp}
                   disabled={loading || !phoneValid}
-                  className="w-full py-2.5 text-sm btn-grad mt-1 disabled:opacity-40"
+                  className="mx-auto block py-2.5 text-sm btn-grad mt-1 disabled:opacity-40"
+                  style={{ width: '72%' }}
                 >
                   {loading ? 'Gönderiliyor…' : 'Kod Gönder'}
                 </button>
@@ -277,7 +278,8 @@ export default function GirisPage() {
                   type="button"
                   onClick={handleEmailLogin}
                   disabled={loading || !canSubmit}
-                  className="w-full py-3.5 text-sm btn-grad mt-1 disabled:opacity-40"
+                  className="mx-auto block py-2.5 text-sm btn-grad mt-1 disabled:opacity-40"
+                  style={{ width: '72%' }}
                 >
                   {loading ? 'Giriş yapılıyor…' : 'Giriş Yap'}
                 </button>
@@ -287,11 +289,11 @@ export default function GirisPage() {
         </AnimatePresence>
 
         {/* Alt linkler */}
-        <div className="mt-4 flex flex-col items-center">
+        <div className="mt-4 flex justify-center">
           <Link
             href="/sifremi-unuttum"
-            className="w-full text-center py-2.5 text-sm font-medium rounded-xl transition-all"
-            style={{ border: '1px solid #c0392b', color: '#c0392b', background: 'transparent' }}
+            className="text-center py-2.5 text-sm font-medium rounded-xl transition-all"
+            style={{ width: '72%', border: '1px solid #c0392b', color: '#c0392b', background: 'transparent' }}
           >
             Şifremi Unuttum
           </Link>
