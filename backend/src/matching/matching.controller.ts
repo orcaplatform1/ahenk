@@ -49,4 +49,9 @@ export class MatchingController {
   deleteBot(@Param("id") id: string) {
     return this.matchingService.deleteBot(id);
   }
+
+  @Post("admin/run-matching")
+  runMatching() {
+    return this.matchingService.runHourlyMatching();
+  }
 }
