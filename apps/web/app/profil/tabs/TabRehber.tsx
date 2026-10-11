@@ -3,8 +3,17 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
-interface ServerBlock { id: string; createdAt: string; }
+interface ServerBlock { id: string; phoneHash?: string; createdAt: string; }
 interface LocalBlock { id: string; display: string; }
+
+const LS_KEY = 'ahenk_contact_block_map';
+
+function loadHashMap(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) ?? '{}'); } catch { return {}; }
+}
+function saveHashMap(map: Record<string, string>) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(map)); } catch {}
+}
 
 async function sha256hex(text: string): Promise<string | null> {
   if (typeof crypto === 'undefined' || !crypto.subtle) return null;
@@ -17,6 +26,7 @@ async function sha256hex(text: string): Promise<string | null> {
 export function TabRehber() {
   const [serverBlocks, setServerBlocks] = useState<ServerBlock[]>([]);
   const [localBlocks, setLocalBlocks] = useState<LocalBlock[]>([]);
+  const [hashMap, setHashMap] = useState<Record<string, string>>({});
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -29,7 +39,10 @@ export function TabRehber() {
       .catch(() => {});
   }
 
-  useEffect(() => { loadBlocks(); }, []);
+  useEffect(() => {
+    setHashMap(loadHashMap());
+    loadBlocks();
+  }, []);
 
   const totalCount = serverBlocks.length + localBlocks.length;
 
@@ -45,11 +58,17 @@ export function TabRehber() {
     setSaved(false);
   }
 
-  async function handleServerDelete(id: string) {
-    setDeleting(id);
+  async function handleServerDelete(b: ServerBlock) {
+    setDeleting(b.id);
     try {
-      await api.delete(`/contact-blocks/${id}`);
-      setServerBlocks(prev => prev.filter(b => b.id !== id));
+      await api.delete(`/contact-blocks/${b.id}`);
+      setServerBlocks(prev => prev.filter(x => x.id !== b.id));
+      if (b.phoneHash) {
+        const map = loadHashMap();
+        delete map[b.phoneHash];
+        saveHashMap(map);
+        setHashMap({ ...map });
+      }
     } catch (e) { setError((e as Error).message); }
     finally { setDeleting(null); }
   }
@@ -58,21 +77,35 @@ export function TabRehber() {
     if (localBlocks.length === 0) { setError('Eklenecek numara yok.'); return; }
     setSaving(true); setError('');
     try {
-      const hashes = (await Promise.all(
-        localBlocks.map(b => sha256hex(b.display))
-      )).filter((h): h is string => h !== null);
+      const pairs: { hash: string; display: string }[] = (
+        await Promise.all(localBlocks.map(async b => {
+          const h = await sha256hex(b.display);
+          return h ? { hash: h, display: b.display } : null;
+        }))
+      ).filter((p): p is { hash: string; display: string } => p !== null);
 
-      if (hashes.length === 0) {
+      if (pairs.length === 0) {
         setError("Numaralar hash'lenemedi. HTTPS bağlantısı gereklidir.");
         return;
       }
 
-      await api.post('/contact-blocks/sync', { hashedPhones: hashes });
+      // Kaydetmeden önce localStorage'a yaz
+      const map = loadHashMap();
+      pairs.forEach(p => { map[p.hash] = p.display; });
+      saveHashMap(map);
+      setHashMap({ ...map });
+
+      await api.post('/contact-blocks/sync', { hashedPhones: pairs.map(p => p.hash) });
       setSaved(true);
       setLocalBlocks([]);
       loadBlocks();
     } catch (e) { setError((e as Error).message); }
     finally { setSaving(false); }
+  }
+
+  function resolveDisplay(b: ServerBlock, i: number): string {
+    if (b.phoneHash && hashMap[b.phoneHash]) return hashMap[b.phoneHash];
+    return `Engellenen Numara #${i + 1}`;
   }
 
   return (
@@ -84,7 +117,7 @@ export function TabRehber() {
           {totalCount}<span className="text-sm font-normal text-[#888]">/50</span>
         </p>
         <p className="text-xs text-[#888] mt-1">
-          Numaralar SHA-256 ile hash'lenerek saklanır; ham numara görüntülenemez.
+          Numaralar SHA-256 ile hash'lenerek saklanır; ham numara sunucuda tutulmaz.
         </p>
       </div>
 
@@ -123,13 +156,13 @@ export function TabRehber() {
           {serverBlocks.map((b, i) => (
             <div key={b.id} className="flex items-center justify-between glass-card px-4 py-3">
               <div>
-                <span className="text-sm text-[#f5f5f5]">Engellenen Numara #{i + 1}</span>
+                <span className="text-sm text-[#f5f5f5]">{resolveDisplay(b, i)}</span>
                 <span className="block text-xs text-[#555] mt-0.5">
                   {new Date(b.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </span>
               </div>
               <button
-                onClick={() => handleServerDelete(b.id)}
+                onClick={() => handleServerDelete(b)}
                 disabled={deleting === b.id}
                 className="text-xs text-[#888] hover:text-[#ff6b6b] transition-colors disabled:opacity-40"
               >
@@ -144,7 +177,7 @@ export function TabRehber() {
       {localBlocks.length > 0 && (
         <div className="flex flex-col gap-2">
           <p className="text-xs text-[#555] uppercase tracking-wide mb-1">Yeni Eklenenler</p>
-          {localBlocks.map((b, i) => (
+          {localBlocks.map((b) => (
             <div key={b.id} className="flex items-center justify-between glass-card px-4 py-3" style={{ borderColor: 'rgba(192,57,43,0.2)' }}>
               <span className="text-sm text-[#888]">{b.display}</span>
               <button

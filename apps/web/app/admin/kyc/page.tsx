@@ -33,8 +33,8 @@ export default function AdminKyc() {
   const [rejectOpen, setRejectOpen] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get<KycApplication[]>('/admin/kyc/pending')
-      .then(setItems)
+    api.get<{ items: KycApplication[]; total: number }>('/kyc/admin?status=PENDING&limit=50')
+      .then(r => setItems(r.items ?? []))
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -42,7 +42,7 @@ export default function AdminKyc() {
   async function approve(id: string) {
     setProcessing(p => ({ ...p, [id]: 'approve' }));
     try {
-      await api.patch(`/admin/kyc/${id}/approve`, {});
+      await api.patch(`/kyc/admin/${id}/review`, { status: 'APPROVED' });
       setItems(prev => prev.filter(x => x.id !== id));
     } catch (e) {
       setError((e as Error).message);
@@ -54,7 +54,7 @@ export default function AdminKyc() {
   async function reject(id: string) {
     setProcessing(p => ({ ...p, [id]: 'reject' }));
     try {
-      await api.patch(`/admin/kyc/${id}/reject`, { rejectReason: rejectNote[id] ?? '' });
+      await api.patch(`/kyc/admin/${id}/review`, { status: 'REJECTED', rejectReason: rejectNote[id] ?? '' });
       setItems(prev => prev.filter(x => x.id !== id));
       setRejectOpen(null);
     } catch (e) {

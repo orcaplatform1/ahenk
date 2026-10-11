@@ -203,8 +203,8 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
       {/* Sadakat Programı kartı */}
       <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 flex flex-col gap-3">
         <p className="text-xs font-medium text-muted uppercase tracking-wide">Sadakat Programı</p>
-        <div className="flex gap-2">
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
+        <div className="flex flex-col gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
             <span style={{ color: '#555', fontSize: 14, marginRight: 4 }}>+90</span>
             <input
               type="tel"
@@ -218,7 +218,7 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
           <button
             onClick={sendReferralInvite}
             disabled={referralSending}
-            className="px-4 py-2 text-sm btn-grad disabled:opacity-50 whitespace-nowrap"
+            className="w-full py-2.5 text-sm btn-grad disabled:opacity-50"
           >
             {referralSending ? '…' : 'Davet Gönder'}
           </button>

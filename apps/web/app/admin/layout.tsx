@@ -5,7 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api';
-import SiteFooter from '@/components/SiteFooter';
 
 function decodeJwtRole(token: string): string | null {
   try {
@@ -16,6 +15,11 @@ function decodeJwtRole(token: string): string | null {
     return null;
   }
 }
+
+const NAV_TOP = [
+  { href: '/',       label: 'Anasayfa' },
+  { href: '/profil', label: 'Profilim' },
+];
 
 const NAV = [
   { href: '/admin/stats',   label: 'İstatistikler' },
@@ -56,27 +60,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Image src="/logo.webp" alt="Ahenk" width={24} height={24} className="rounded-full" />
           <span className="text-xs font-semibold tracking-[0.15em] text-[#888]">AHENK ADMIN</span>
         </div>
-        <nav className="flex flex-col gap-1 p-3 flex-1">
-          {NAV.map((n) => {
-            const active = pathname.startsWith(n.href);
-            return (
+        <nav className="flex flex-col p-3 flex-1">
+          {/* Anasayfa + Profilim */}
+          <div className="flex flex-col gap-1 pb-3 mb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            {NAV_TOP.map((n) => (
               <Link
                 key={n.href}
                 href={n.href}
                 className="px-3 py-2.5 rounded-xl text-sm transition-all"
-                style={active ? {
-                  background: 'linear-gradient(135deg,rgba(192,57,43,0.2),rgba(192,57,43,0.08))',
-                  color: '#ff6b6b',
-                  border: '1px solid rgba(192,57,43,0.25)',
-                } : {
-                  color: '#666',
-                  border: '1px solid transparent',
-                }}
+                style={{ color: '#555', border: '1px solid transparent' }}
               >
                 {n.label}
               </Link>
-            );
-          })}
+            ))}
+          </div>
+          {/* Admin menüsü */}
+          <div className="flex flex-col gap-1">
+            {NAV.map((n) => {
+              const active = pathname.startsWith(n.href);
+              return (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  className="px-3 py-2.5 rounded-xl text-sm transition-all"
+                  style={active ? {
+                    background: 'linear-gradient(135deg,rgba(192,57,43,0.2),rgba(192,57,43,0.08))',
+                    color: '#ff6b6b',
+                    border: '1px solid rgba(192,57,43,0.25)',
+                  } : {
+                    color: '#666',
+                    border: '1px solid transparent',
+                  }}
+                >
+                  {n.label}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
         <div className="p-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <button
@@ -92,8 +112,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main className="flex-1 min-w-0 overflow-x-hidden" style={{ paddingBottom: '36px' }}>
         {children}
       </main>
-
-      <SiteFooter />
     </div>
   );
 }

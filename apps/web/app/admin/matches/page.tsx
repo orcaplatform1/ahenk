@@ -347,7 +347,7 @@ function DetailPanel({ detail: d, onCancel }: { detail: MeetingDetail; onCancel:
 
       <div className="flex gap-4 text-xs text-[#666]">
         <span>{TYPE_LABEL[d.type] ?? d.type}</span>
-        <span>{d._count.participants} katılımcı</span>
+        <span>{d.participants?.length ?? 0} katılımcı</span>
         {avgRating && <span>★ {avgRating}</span>}
       </div>
 

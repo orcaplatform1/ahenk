@@ -431,17 +431,11 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
           </div>
         )}
 
-        {(user.occupationSector || user.profile?.birthDate) && (
-          <div className="flex items-center justify-between">
-            {user.occupationSector && (
-              <span className="text-sm text-text">{user.occupationSector}</span>
-            )}
-            {user.profile?.birthDate && (
-              <span className="text-sm text-muted">
-                {Math.floor((Date.now() - new Date(user.profile.birthDate).getTime()) / (365.25 * 24 * 3600 * 1000))} yaş
-              </span>
-            )}
-          </div>
+        {user.occupationSector && (
+          <Row label="Meslek" value={user.occupationSector} />
+        )}
+        {user.profile?.birthDate && (
+          <Row label="Yaş" value={`${Math.floor((Date.now() - new Date(user.profile.birthDate).getTime()) / (365.25 * 24 * 3600 * 1000))} yaş`} />
         )}
         {user.profile?.gender && (
           <Row label="Cinsiyet" value={user.profile.gender === 'MALE' ? 'Erkek' : 'Kadın'} />
@@ -579,8 +573,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
 
       {/* Sadakat Programı */}
       <Card title="SADAKAT PROGRAMI">
-        <div className="flex gap-2 mb-3">
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
+        <div className="flex flex-col gap-2 mb-3">
+          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
             <span style={{ color: '#555', fontSize: 14, marginRight: 4 }}>+90</span>
             <input
               type="tel"
@@ -594,7 +588,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
           <button
             onClick={sendReferralInvite}
             disabled={referralSending}
-            className="px-4 py-2 text-sm btn-grad disabled:opacity-50 whitespace-nowrap"
+            className="w-full py-2.5 text-sm btn-grad disabled:opacity-50"
           >
             {referralSending ? '…' : 'Davet Gönder'}
           </button>

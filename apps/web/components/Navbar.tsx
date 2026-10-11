@@ -338,6 +338,36 @@ export default function Navbar() {
                 ))}
               </div>
 
+              {/* Profil sekmeleri (giriş yapılmışsa) */}
+              {checked && navUser && (
+                <div className="flex flex-col px-4 pt-3 gap-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <p className="text-xs text-[#444] uppercase tracking-[0.1em] px-2 py-1.5">Profilim</p>
+                  {([
+                    { key: 'profil',  label: 'Profilim' },
+                    { key: 'test',    label: 'Kişilik Testim' },
+                    { key: 'masalar', label: 'Masalarım' },
+                    { key: 'paket',   label: 'Paketim' },
+                    { key: 'kyc',     label: 'Kimlik Doğrulama' },
+                    { key: 'rehber',  label: 'Numara Engelleme' },
+                  ] as { key: string; label: string }[]).map((tab, i) => (
+                    <motion.a
+                      key={tab.key}
+                      href={`/profil?tab=${tab.key}`}
+                      onClick={() => setMenuOpen(false)}
+                      className="text-sm py-2.5 px-2 rounded-lg transition-colors"
+                      style={{ color: '#888', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.08 + i * 0.04, duration: 0.22 }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#888'; }}
+                    >
+                      {tab.label}
+                    </motion.a>
+                  ))}
+                </div>
+              )}
+
               {/* Auth butonları */}
               {checked && (
                 <div className="flex flex-col px-4 pt-6 gap-3">
