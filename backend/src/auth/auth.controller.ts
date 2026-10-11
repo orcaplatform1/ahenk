@@ -17,6 +17,7 @@ import {
 } from "@nestjs/swagger";
 import { Response, Request } from "express";
 import { ConfigService } from "@nestjs/config";
+import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -29,6 +30,7 @@ const REFRESH_COOKIE = "refresh_token";
 
 @ApiTags("Auth")
 @Controller("auth")
+@Throttle({ default: { ttl: 60000, limit: 10 } })
 export class AuthController {
   constructor(
     private authService: AuthService,
@@ -114,6 +116,12 @@ export class AuthController {
   @ApiOperation({ summary: "WhatsApp OTP doğrula" })
   async verifyOtp(@Body() dto: VerifyOtpDto) {
     return this.authService.verifyOtp(dto.phone, dto.code);
+  }
+
+  @Get("cities")
+  @ApiOperation({ summary: "Aktif şehirleri listele (public)" })
+  getCities() {
+    return this.authService.getActiveCities();
   }
 
   // ─── Yardımcılar ─────────────────────────────────────────────────────────

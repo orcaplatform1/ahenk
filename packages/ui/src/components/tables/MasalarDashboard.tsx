@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MasaDetayKarti, type MasaDetayData } from './MasaDetayKarti';
+import { MasaBeklemeKarti } from './MasaBeklemeKarti';
 
 // ── Sabitler ───────────────────────────────────────────────────────────────
 const RADAR_SZ   = 320;
@@ -61,25 +63,20 @@ export function buildInitials(firstName?: string | null, lastName?: string | nul
 
 // ── Perşembe 23:59 sayacı ──────────────────────────────────────────────────
 
-/** Bir sonraki Perşembe 23:59 TR (UTC+3) zamanını UTC Date olarak döndürür. */
 function nextThursdayClosing(): Date {
   const now = Date.now();
-  // "sahte" TR takvimi: UTC offsetini ekleyerek getUTC* metodlarını TR saati gibi kullan
   const nowTRms = now + 3 * 60 * 60 * 1000;
   const nowTR   = new Date(nowTRms);
 
-  const dayTR          = nowTR.getUTCDay();               // 0=Paz … 4=Per
+  const dayTR          = nowTR.getUTCDay();
   const daysToThursday = (4 - dayTR + 7) % 7;
 
-  // Bu Perşembe 23:59:00 TR
   const tgtTR = new Date(nowTRms);
   tgtTR.setUTCDate(tgtTR.getUTCDate() + daysToThursday);
   tgtTR.setUTCHours(23, 59, 0, 0);
 
-  // Gerçek UTC'ye çevir (TR - 3h)
   const tgtUTC = new Date(tgtTR.getTime() - 3 * 60 * 60 * 1000);
 
-  // Geçtiyse bir sonraki haftaya
   if (tgtUTC.getTime() <= now) {
     tgtUTC.setUTCDate(tgtUTC.getUTCDate() + 7);
   }
@@ -140,7 +137,6 @@ function ThursdayCountdown() {
 
   return (
     <div style={{ textAlign: 'center', marginBottom: 14 }}>
-      {/* CSS pulse keyframes — sadece urgent durumunda aktif */}
       {isUrgent && (
         <style>{`
           @keyframes cdPulse { 0%,100%{opacity:.7} 50%{opacity:1} }
@@ -148,7 +144,6 @@ function ThursdayCountdown() {
         `}</style>
       )}
 
-      {/* Etiket */}
       <p style={{
         margin: 0,
         fontSize: 9,
@@ -161,7 +156,6 @@ function ThursdayCountdown() {
         KAPANIŞA KALAN
       </p>
 
-      {/* Sayaç */}
       <span
         className={isUrgent ? 'cd-pulse' : undefined}
         style={{
@@ -184,7 +178,7 @@ function ThursdayCountdown() {
 // ── Tipler ─────────────────────────────────────────────────────────────────
 export interface Participant {
   id?: string;
-  initials: string;         // "A.Y." formatında — backend'den gelir
+  initials: string;
   gender: 'MALE' | 'FEMALE' | string | null;
 }
 
@@ -201,11 +195,31 @@ export interface MasaData {
   participants: Participant[];
 }
 
+// Dashboard API response tipi
+interface DashboardResponse {
+  phase: 'SCANNING' | 'WAITING' | 'REVEALED';
+  meeting?: {
+    id: string;
+    type?: 'GROUP' | 'ONE_ON_ONE';
+    maxParticipants?: number;
+    scheduledAt: string;
+    participants: Participant[];
+    sat10UTC?: string;
+    // REVEALED alanları
+    venueName?: string;
+    venueAddress?: string;
+    venueMapsUrl?: string;
+    venuePhotos?: Array<{ url: string; caption?: string }>;
+  };
+}
+
 interface Props {
-  masa?: MasaData;
+  masa?: MasaData;                // eski prop — SCANNING ekranını direkt beslemek için
   apiBase?: string;
   token?: string;
   pollIntervalMs?: number;
+  /** true geçilirse /meetings/dashboard kullanır, false ise /meetings/my-current */
+  useDashboardApi?: boolean;
 }
 
 // ── Avatar bileşeni ────────────────────────────────────────────────────────
@@ -229,13 +243,10 @@ function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
     ? 'drop-shadow(0 0 5px rgba(244,143,177,0.45))'
     : 'drop-shadow(0 0 5px rgba(79,195,247,0.5))';
 
-  // "A.Y." formatını garanti et — eğer tek harf gelirse ekle
   const label = (() => {
     const raw = (participant.initials ?? '').trim();
     if (!raw) return '?.';
-    // Zaten "A.Y." gibi bir formattaysa olduğu gibi döndür
     if (/^[A-ZÇĞİÖŞÜa-zçğışöşü]\.[A-ZÇĞİÖŞÜa-zçğışöşü]\.?$/.test(raw)) return raw.toUpperCase();
-    // "AY" gibi gelirse "A.Y." yap
     if (raw.length === 2 && !raw.includes('.')) return `${raw[0].toUpperCase()}.${raw[1].toUpperCase()}.`;
     return raw.toUpperCase();
   })();
@@ -261,7 +272,6 @@ function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
       >
         <circle cx={AV_R} cy={AV_R} r={AV_R - 1} fill={bg} />
 
-        {/* Border çizme animasyonu */}
         <motion.circle
           cx={AV_R} cy={AV_R} r={AV_BR}
           fill="none"
@@ -275,7 +285,6 @@ function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
           transition={{ delay: ds + 0.65, duration: 0.9, ease: 'easeOut' }}
         />
 
-        {/* Pulse border */}
         <motion.circle
           cx={AV_R} cy={AV_R} r={AV_BR}
           fill="none"
@@ -293,7 +302,6 @@ function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
         />
       </svg>
 
-      {/* İsim soyisim baş harfleri */}
       <div
         style={{
           position: 'absolute',
@@ -316,58 +324,15 @@ function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
   );
 }
 
-// ── Ana bileşen ─────────────────────────────────────────────────────────────
-export function MasalarDashboard({
-  masa: propMasa,
-  apiBase,
-  token,
-  pollIntervalMs = 30000,
-}: Props) {
-  const [masa, setMasa] = useState<MasaData | null>(propMasa ?? null);
-  const [loading, setLoading]   = useState(!propMasa && !!apiBase);
+// ── SCANNING ekranı (radar) ──────────────────────────────────────────────────
+function ScanningView({ masa }: { masa: MasaData | null }) {
   const seenIds = useRef<Set<string>>(new Set());
 
-  const fetchMasa = async () => {
-    if (!apiBase) return;
-    try {
-      const res = await fetch(`${apiBase}/meetings/my-current`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) { setMasa(null); return; }
-      setMasa(await res.json());
-    } catch { setMasa(null); }
-  };
-
-  useEffect(() => {
-    if (propMasa || !apiBase) return;
-    setLoading(true);
-    fetchMasa().finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiBase, token]);
-
-  useEffect(() => {
-    if (!apiBase || propMasa) return;
-    const id = setInterval(fetchMasa, pollIntervalMs);
-    return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiBase, token, propMasa, pollIntervalMs]);
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}>
-        <style>{`@keyframes _spin{to{transform:rotate(360deg)}}`}</style>
-        <div style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${SCAN_CLR}`, borderTopColor: 'transparent', animation: '_spin 0.8s linear infinite' }} />
-      </div>
-    );
-  }
-
-  // ── Hesaplamalar ──────────────────────────────────────────────────────────
   const maxP       = masa?.maxParticipants ?? (masa?.type === 'ONE_ON_ONE' ? 2 : 6);
   const rawParts   = masa?.participants ?? [];
   const isOneOnOne = masa?.type === 'ONE_ON_ONE';
   const title      = isOneOnOne ? 'BAŞ BAŞA MASA' : 'GRUP MASASI';
 
-  // M-F-M-F sıralama
   const males   = rawParts.filter(p => p.gender === 'MALE');
   const females = rawParts.filter(p => p.gender === 'FEMALE');
   const others  = rawParts.filter(p => p.gender !== 'MALE' && p.gender !== 'FEMALE');
@@ -382,7 +347,6 @@ export function MasalarDashboard({
   const isFull  = ordered.length >= maxP;
   const positions = orbitPts(maxP);
 
-  // Reveal gecikmeleri
   const delays: number[] = ordered.map((p, i) => {
     const key = p.id ?? `${p.initials}-${i}`;
     if (seenIds.current.has(key)) return 0;
@@ -390,20 +354,8 @@ export function MasalarDashboard({
     return FIRST_DELAY + i * STAGGER;
   });
 
-  const cardStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
-    borderRadius: 16,
-    padding: '28px 20px 20px',
-    maxWidth: 380,
-    margin: '0 auto',
-  };
-
   return (
-    <div style={cardStyle}>
+    <div>
       {/* Başlık */}
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
         <h2 style={{
@@ -418,7 +370,6 @@ export function MasalarDashboard({
           {title}
         </h2>
 
-        {/* Durum */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           <motion.span
             style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: isFull ? '#27ae60' : SCAN_CLR }}
@@ -454,17 +405,14 @@ export function MasalarDashboard({
           viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`}
           style={{ position: 'absolute', inset: 0 }}
         >
-          {/* Sönük ızgara */}
           {[30, 62, 93, ORBIT_R].map(r => (
             <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.05} />
           ))}
           <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke={SCAN_CLR} strokeWidth={0.5} opacity={0.04} />
           <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke={SCAN_CLR} strokeWidth={0.5} opacity={0.04} />
 
-          {/* Merkez nokta */}
           <circle cx={CX} cy={CY} r={5} fill={SCAN_CLR} opacity={0.85} />
 
-          {/* Dönen tarama kolu */}
           <defs>
             <radialGradient id="swpRG" cx="50%" cy="50%" r="50%">
               <stop offset="0%"   stopColor={SCAN_CLR} stopOpacity={0} />
@@ -486,7 +434,6 @@ export function MasalarDashboard({
           </motion.g>
         </svg>
 
-        {/* Avatar baloncukları */}
         <AnimatePresence>
           {ordered.map((p, i) => {
             const pos = positions[i];
@@ -521,6 +468,127 @@ export function MasalarDashboard({
           <span style={{ fontWeight: 700, color: SCAN_CLR }}>{maxP}</span>
         </span>
       </div>
+    </div>
+  );
+}
+
+// ── Ana bileşen (akıllı container) ──────────────────────────────────────────
+export function MasalarDashboard({
+  masa: propMasa,
+  apiBase,
+  token,
+  pollIntervalMs = 30000,
+  useDashboardApi = true,
+}: Props) {
+  const [dashData, setDashData]   = useState<DashboardResponse | null>(null);
+  const [legacyMasa, setLegacyMasa] = useState<MasaData | null>(propMasa ?? null);
+  const [loading, setLoading]     = useState(!propMasa && !!apiBase);
+
+  const fetchDashboard = async () => {
+    if (!apiBase) return;
+    try {
+      const endpoint = useDashboardApi ? '/meetings/dashboard' : '/meetings/my-current';
+      const res = await fetch(`${apiBase}${endpoint}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        if (useDashboardApi) setDashData({ phase: 'SCANNING' });
+        else setLegacyMasa(null);
+        return;
+      }
+      const data = await res.json();
+      if (useDashboardApi) setDashData(data as DashboardResponse);
+      else setLegacyMasa(data as MasaData);
+    } catch {
+      if (useDashboardApi) setDashData({ phase: 'SCANNING' });
+      else setLegacyMasa(null);
+    }
+  };
+
+  useEffect(() => {
+    if (propMasa || !apiBase) return;
+    setLoading(true);
+    fetchDashboard().finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiBase, token]);
+
+  useEffect(() => {
+    if (!apiBase || propMasa) return;
+    const id = setInterval(fetchDashboard, pollIntervalMs);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiBase, token, propMasa, pollIntervalMs]);
+
+  const cardStyle: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
+    borderRadius: 16,
+    padding: '28px 20px 20px',
+    maxWidth: 380,
+    margin: '0 auto',
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}>
+        <style>{`@keyframes _spin{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${SCAN_CLR}`, borderTopColor: 'transparent', animation: '_spin 0.8s linear infinite' }} />
+      </div>
+    );
+  }
+
+  // ── Dashboard API modu ────────────────────────────────────────────────────
+  if (useDashboardApi && dashData) {
+    const { phase, meeting } = dashData;
+
+    if (phase === 'REVEALED' && meeting?.venueName) {
+      const detayData: MasaDetayData = {
+        id:             meeting.id,
+        type:           meeting.type,
+        maxParticipants: meeting.maxParticipants,
+        scheduledAt:    meeting.scheduledAt,
+        venueName:      meeting.venueName,
+        venueAddress:   meeting.venueAddress,
+        venueMapsUrl:   meeting.venueMapsUrl,
+        venuePhotos:    meeting.venuePhotos,
+        participants:   meeting.participants,
+      };
+      return <MasaDetayKarti masa={detayData} />;
+    }
+
+    if (phase === 'WAITING' && meeting?.sat10UTC) {
+      return (
+        <MasaBeklemeKarti
+          sat10UTC={meeting.sat10UTC}
+          maxParticipants={meeting.maxParticipants}
+          participantCount={meeting.participants?.length}
+        />
+      );
+    }
+
+    // SCANNING — radar göster
+    const scanMasa: MasaData | null = meeting ? {
+      id:             meeting.id,
+      type:           meeting.type,
+      scheduledAt:    meeting.scheduledAt,
+      maxParticipants: meeting.maxParticipants,
+      participants:   meeting.participants,
+    } : null;
+
+    return (
+      <div style={cardStyle}>
+        <ScanningView masa={scanMasa} />
+      </div>
+    );
+  }
+
+  // ── Eski /my-current modu (useDashboardApi=false) ─────────────────────────
+  return (
+    <div style={cardStyle}>
+      <ScanningView masa={legacyMasa} />
     </div>
   );
 }

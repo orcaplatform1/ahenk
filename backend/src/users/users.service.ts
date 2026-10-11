@@ -28,4 +28,15 @@ export class UsersService {
       include: { profile: true },
     });
   }
+
+  async saveCities(userId: string, primaryCityId: string, secondaryCityId?: string) {
+    await this.prisma.profile.update({
+      where: { userId },
+      data: {
+        primaryCity: primaryCityId,
+        secondaryCity: secondaryCityId ?? null,
+      },
+    });
+    return { ok: true };
+  }
 }

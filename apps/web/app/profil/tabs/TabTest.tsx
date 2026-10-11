@@ -1,51 +1,185 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
-import Link from 'next/link';
 
-interface OceanScore {
+interface Scores {
   openness: number;
   conscientiousness: number;
   extraversion: number;
   agreeableness: number;
   neuroticism: number;
-  completedAt: string;
-  nextTestAt: string;
 }
 
-const DIMENSIONS: { key: keyof OceanScore; label: string }[] = [
-  { key: 'openness',          label: 'Açıklık' },
-  { key: 'conscientiousness', label: 'Öz-Disiplin' },
-  { key: 'extraversion',      label: 'Dışadönüklük' },
-  { key: 'agreeableness',     label: 'Uyumluluk' },
-  { key: 'neuroticism',       label: 'Nevrotiklik' },
+interface TestResult {
+  completed: boolean;
+  completedAt?: string;
+  retakeAvailableAt?: string | null;
+  scores?: Scores;
+}
+
+const DIMENSIONS = [
+  { key: 'openness'          as keyof Scores, label: 'Açıklık',       radarLabel: 'Açıklık' },
+  { key: 'conscientiousness' as keyof Scores, label: 'Öz-Disiplin',   radarLabel: 'Özdisiplin' },
+  { key: 'extraversion'      as keyof Scores, label: 'Dışadönüklük',  radarLabel: 'Dışadönüklük' },
+  { key: 'agreeableness'     as keyof Scores, label: 'Uyumluluk',     radarLabel: 'Uyumluluk' },
+  { key: 'neuroticism'       as keyof Scores, label: 'Nevrotiklik',   radarLabel: 'Denge' },
 ];
 
+function fmtDate(val?: string | null) {
+  if (!val) return '—';
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('tr-TR');
+}
+
+/* ── Radar Chart ──────────────────────────────────────────────────────── */
+function RadarChart({ scores }: { scores: Scores }) {
+  const size = 240;
+  const cx = size / 2;
+  const cy = size / 2;
+  const maxR = 90;
+  const gridLevels = [0.25, 0.5, 0.75, 1];
+
+  const axes = DIMENSIONS.map((_, i) => {
+    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+    return { cos: Math.cos(angle), sin: Math.sin(angle) };
+  });
+
+  const vals = DIMENSIONS.map(d => Math.min(100, Math.max(0, scores[d.key] ?? 50)) / 100);
+  const points = vals.map((v, i) => ({
+    x: cx + axes[i].cos * v * maxR,
+    y: cy + axes[i].sin * v * maxR,
+  }));
+  const polyStr = points.map(p => `${p.x},${p.y}`).join(' ');
+
+  // Path string for stroke-dasharray animation
+  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+
+  const labelR = maxR + 22;
+  const axisLabels = DIMENSIONS.map((d, i) => ({
+    label: d.radarLabel,
+    x: cx + axes[i].cos * labelR,
+    y: cy + axes[i].sin * labelR,
+  }));
+
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} className="w-full" style={{ maxWidth: 260 }}>
+      <defs>
+        <radialGradient id="tabRadarFill" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#c0392b" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#c0392b" stopOpacity="0.06" />
+        </radialGradient>
+        <filter id="tabRadarGlow">
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+
+      {/* Grid circles — stagger fade in */}
+      {gridLevels.map((l, i) => (
+        <motion.circle
+          key={i}
+          cx={cx} cy={cy} r={l * maxR}
+          fill="none"
+          stroke="rgba(255,255,255,0.07)"
+          strokeWidth="1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: i * 0.08, duration: 0.4 }}
+        />
+      ))}
+
+      {/* Axis lines */}
+      {axes.map((a, i) => (
+        <motion.line
+          key={i}
+          x1={cx} y1={cy}
+          x2={cx + a.cos * maxR} y2={cy + a.sin * maxR}
+          stroke="rgba(255,255,255,0.07)"
+          strokeWidth="1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 + i * 0.06, duration: 0.3 }}
+        />
+      ))}
+
+      {/* Polygon fill */}
+      <motion.polygon
+        points={polyStr}
+        fill="url(#tabRadarFill)"
+        initial={{ opacity: 0, scale: 0.2 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.5, duration: 0.6, ease: 'easeOut' }}
+        style={{ transformOrigin: `${cx}px ${cy}px` }}
+      />
+
+      {/* Polygon stroke — pathLength (stroke-dasharray effect) */}
+      <motion.path
+        d={pathD}
+        fill="none"
+        stroke="#ff6b6b"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        filter="url(#tabRadarGlow)"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ delay: 0.55, duration: 1.1, ease: 'easeInOut' }}
+      />
+
+      {/* Vertex dots */}
+      {points.map((p, i) => (
+        <motion.circle
+          key={i}
+          cx={p.x} cy={p.y} r={3.5}
+          fill="#ff6b6b"
+          filter="url(#tabRadarGlow)"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 1.0 + i * 0.07, duration: 0.25 }}
+          style={{ transformOrigin: `${p.x}px ${p.y}px` }}
+        />
+      ))}
+
+      {/* Axis labels */}
+      {axisLabels.map((l, i) => (
+        <text
+          key={i}
+          x={l.x} y={l.y}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="#666"
+          fontSize="9"
+          fontFamily="Inter, sans-serif"
+        >
+          {l.label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+/* ── Ana bileşen ──────────────────────────────────────────────────────── */
 export function TabTest() {
-  const [score, setScore] = useState<OceanScore | null>(null);
-  const [noTest, setNoTest] = useState(false);
+  const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get<OceanScore>('/test/result')
-      .then(setScore)
-      .catch((e: Error) => {
-        if (e.message.includes('404') || e.message.toLowerCase().includes('bulunamadı') || e.message.toLowerCase().includes('tamamlanmamış')) {
-          setNoTest(true);
-        } else {
-          setError(e.message);
-        }
-      })
+    api.get<TestResult>('/test/result')
+      .then(setResult)
+      .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <SkeletonBlock lines={6} />;
   if (error) return <p className="text-accent text-sm">{error}</p>;
 
-  if (noTest) {
+  if (!result || !result.completed || !result.scores) {
     return (
       <div className="glass-card p-8 flex flex-col items-center gap-4 text-center">
         <p className="text-[#888] text-sm">Henüz kişilik testini yapmadın.</p>
@@ -56,25 +190,43 @@ export function TabTest() {
     );
   }
 
-  if (!score) return null;
+  const { scores, completedAt, retakeAvailableAt } = result;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
+      {/* Radar chart */}
+      <div className="glass-card p-5 flex flex-col items-center gap-1">
+        <p className="text-xs font-semibold tracking-[0.18em] text-[#555] uppercase self-start mb-3">KİŞİLİK PROFİLİ</p>
+        <RadarChart scores={scores} />
+      </div>
+
+      {/* Progress bar skorlar */}
       <div className="glass-card p-5">
-        <h3 className="font-medium text-sm text-[#888] uppercase tracking-wide mb-5">OCEAN Skorum</h3>
-        <div className="flex flex-col gap-5">
-          {DIMENSIONS.map(({ key, label }) => {
-            const val = score[key] as number;
+        <h3 className="text-xs font-semibold tracking-[0.16em] text-[#555] uppercase mb-4">OCEAN SKORUM</h3>
+        <div className="flex flex-col gap-4">
+          {DIMENSIONS.map(({ key, label }, i) => {
+            const val = scores[key];
+            const pct = Math.min(100, Math.max(0, Math.round(val)));
             return (
               <div key={key}>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-[#f5f5f5]">{label}</span>
-                  <span className="text-sm font-semibold" style={{ background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{Math.round(val)}</span>
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-sm text-[#ccc]">{label}</span>
+                  <motion.span
+                    className="text-sm font-semibold"
+                    style={{ color: '#ff6b6b' }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 + i * 0.08 }}
+                  >
+                    {pct}
+                  </motion.span>
                 </div>
-                <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                  <div
-                    className="h-full progress-grad rounded-full transition-all duration-500"
-                    style={{ width: `${val}%` }}
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <motion.div
+                    className="h-full progress-grad rounded-full"
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ delay: 0.4 + i * 0.08, duration: 0.7, ease: 'easeOut' }}
                   />
                 </div>
               </div>
@@ -83,14 +235,15 @@ export function TabTest() {
         </div>
       </div>
 
-      <div className="glass-card p-5 flex flex-col gap-2">
+      {/* Tarihler */}
+      <div className="glass-card p-5 flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted">Test Tarihi</span>
-          <span className="text-sm text-text">{new Date(score.completedAt).toLocaleDateString('tr-TR')}</span>
+          <span className="text-sm text-[#ccc]">{fmtDate(completedAt)}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted">Sonraki Test</span>
-          <span className="text-sm text-text">{new Date(score.nextTestAt).toLocaleDateString('tr-TR')}</span>
+          <span className="text-sm text-[#ccc]">{retakeAvailableAt ? fmtDate(retakeAvailableAt) : 'Şimdi yapabilirsin'}</span>
         </div>
       </div>
     </div>

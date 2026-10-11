@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OceanRadar, OceanScores } from '../ocean/OceanRadar';
 
@@ -141,6 +141,29 @@ function CompatBadge({ score }: { score: number | null }) {
 
 // ─── Ana bileşen ──────────────────────────────────────────────────────────────
 
+// ── Fotoğraf upload durumu ───────────────────────────────────────────────────
+
+interface PhotoSlotState {
+  url: string;
+  caption: string;
+  uploading: boolean;
+  error: string;
+}
+
+interface TablePhotoState {
+  expanded: boolean;
+  saving: boolean;
+  slots: [PhotoSlotState, PhotoSlotState, PhotoSlotState];
+}
+
+function emptySlot(): PhotoSlotState {
+  return { url: '', caption: '', uploading: false, error: '' };
+}
+
+function emptyPhotoState(): TablePhotoState {
+  return { expanded: false, saving: false, slots: [emptySlot(), emptySlot(), emptySlot()] };
+}
+
 export function AdminMatchManager({ apiBase = '', token }: Props) {
   const [tables, setTables] = useState<MatchTable[]>([]);
   const [bots, setBots] = useState<AvailableBot[]>([]);
@@ -150,6 +173,8 @@ export function AdminMatchManager({ apiBase = '', token }: Props) {
   const [approvingAll, setApprovingAll] = useState(false);
   const [placingBot, setPlacingBot] = useState<string | null>(null);
   const [toast, setToast] = useState('');
+  const [photoStates, setPhotoStates] = useState<Record<string, TablePhotoState>>({});
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -228,6 +253,87 @@ export function AdminMatchManager({ apiBase = '', token }: Props) {
       showToast((e as Error).message);
     } finally {
       setPlacingBot(null);
+    }
+  }
+
+  // ── Fotoğraf yardımcıları ──────────────────────────────────────────────────
+
+  function getPhotoState(tableId: string): TablePhotoState {
+    return photoStates[tableId] ?? emptyPhotoState();
+  }
+
+  function setPhotoState(tableId: string, updater: (prev: TablePhotoState) => TablePhotoState) {
+    setPhotoStates(prev => ({ ...prev, [tableId]: updater(prev[tableId] ?? emptyPhotoState()) }));
+  }
+
+  function togglePhotoExpand(tableId: string) {
+    setPhotoState(tableId, prev => ({ ...prev, expanded: !prev.expanded }));
+  }
+
+  async function handlePhotoFile(tableId: string, slotIdx: 0 | 1 | 2, file: File) {
+    setPhotoState(tableId, prev => {
+      const slots = [...prev.slots] as TablePhotoState['slots'];
+      slots[slotIdx] = { ...slots[slotIdx], uploading: true, error: '' };
+      return { ...prev, slots };
+    });
+
+    try {
+      const { uploadUrl, publicUrl } = await apiFetch<{ uploadUrl: string; publicUrl: string | null; key: string }>(
+        `${apiBase}/api/v1/admin/meetings/venue-photo-upload-url`,
+        token,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            meetingId: tableId,
+            slot: slotIdx + 1,
+            contentType: file.type || 'image/jpeg',
+            contentLength: file.size,
+          }),
+        },
+      );
+
+      await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type || 'image/jpeg' },
+      });
+
+      const finalUrl = publicUrl ?? uploadUrl.split('?')[0];
+      setPhotoState(tableId, prev => {
+        const slots = [...prev.slots] as TablePhotoState['slots'];
+        slots[slotIdx] = { ...slots[slotIdx], uploading: false, url: finalUrl };
+        return { ...prev, slots };
+      });
+    } catch (e) {
+      setPhotoState(tableId, prev => {
+        const slots = [...prev.slots] as TablePhotoState['slots'];
+        slots[slotIdx] = { ...slots[slotIdx], uploading: false, error: (e as Error).message };
+        return { ...prev, slots };
+      });
+    }
+  }
+
+  async function handleSavePhotos(tableId: string) {
+    const ps = getPhotoState(tableId);
+    setPhotoState(tableId, prev => ({ ...prev, saving: true }));
+    try {
+      const [s1, s2, s3] = ps.slots;
+      await apiFetch(`${apiBase}/api/v1/admin/meetings/${tableId}/venue-photos`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          venuePhotoUrl:      s1.url || undefined,
+          venuePhotoCaption1: s1.caption || undefined,
+          venuePhoto2Url:     s2.url || undefined,
+          venuePhotoCaption2: s2.caption || undefined,
+          venuePhoto3Url:     s3.url || undefined,
+          venuePhotoCaption3: s3.caption || undefined,
+        }),
+      });
+      showToast('Fotoğraflar kaydedildi');
+      setPhotoState(tableId, prev => ({ ...prev, expanded: false, saving: false }));
+    } catch (e) {
+      showToast((e as Error).message);
+      setPhotoState(tableId, prev => ({ ...prev, saving: false }));
     }
   }
 
@@ -335,6 +441,125 @@ export function AdminMatchManager({ apiBase = '', token }: Props) {
                 >
                   {approving === table.id ? 'Onaylanıyor…' : 'Bu Masayı Onayla'}
                 </motion.button>
+
+                {/* Fotoğraf yükleme bölümü */}
+                <div>
+                  <button
+                    onClick={() => togglePhotoExpand(table.id)}
+                    className="w-full py-1.5 rounded-lg border text-xs font-medium transition-colors"
+                    style={{
+                      borderColor: getPhotoState(table.id).expanded ? 'rgba(79,195,247,0.4)' : 'rgba(255,255,255,0.08)',
+                      background: getPhotoState(table.id).expanded ? 'rgba(79,195,247,0.08)' : 'transparent',
+                      color: getPhotoState(table.id).expanded ? '#4fc3f7' : '#666',
+                    }}
+                  >
+                    {getPhotoState(table.id).expanded ? '▲ Fotoğraf Yükle' : '▼ Fotoğraf Yükle'}
+                  </button>
+
+                  <AnimatePresence>
+                    {getPhotoState(table.id).expanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        style={{ overflow: 'hidden' }}
+                      >
+                        <div className="mt-3 flex flex-col gap-3">
+                          {([0, 1, 2] as const).map((slotIdx) => {
+                            const slot = getPhotoState(table.id).slots[slotIdx];
+                            const refKey = `${table.id}-${slotIdx}`;
+                            const labels = ['Ana Salon', 'Bar', 'Teras'];
+                            return (
+                              <div
+                                key={slotIdx}
+                                className="rounded-xl border border-border p-3 flex flex-col gap-2"
+                                style={{ background: 'rgba(255,255,255,0.02)' }}
+                              >
+                                <span className="text-[10px] text-muted uppercase tracking-wider">
+                                  Fotoğraf {slotIdx + 1}
+                                </span>
+
+                                {/* Fotoğraf önizleme veya yükle butonu */}
+                                {slot.url ? (
+                                  <div className="relative">
+                                    <img
+                                      src={slot.url}
+                                      alt={`Fotoğraf ${slotIdx + 1}`}
+                                      className="w-full h-24 object-cover rounded-lg"
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        setPhotoState(table.id, prev => {
+                                          const slots = [...prev.slots] as TablePhotoState['slots'];
+                                          slots[slotIdx] = emptySlot();
+                                          return { ...prev, slots };
+                                        });
+                                      }}
+                                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white text-xs flex items-center justify-center"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <input
+                                      ref={el => { fileRefs.current[refKey] = el; }}
+                                      type="file"
+                                      accept="image/*"
+                                      style={{ display: 'none' }}
+                                      onChange={e => {
+                                        const f = e.target.files?.[0];
+                                        if (f) handlePhotoFile(table.id, slotIdx, f);
+                                      }}
+                                    />
+                                    <button
+                                      onClick={() => fileRefs.current[refKey]?.click()}
+                                      disabled={slot.uploading}
+                                      className="w-full h-16 rounded-lg border border-dashed text-xs transition-colors disabled:opacity-50"
+                                      style={{ borderColor: 'rgba(255,255,255,0.15)', color: '#666' }}
+                                    >
+                                      {slot.uploading ? 'Yükleniyor…' : '+ Fotoğraf Seç'}
+                                    </button>
+                                    {slot.error && (
+                                      <p className="text-[10px] text-red-400 mt-1">{slot.error}</p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Caption */}
+                                <input
+                                  type="text"
+                                  placeholder={labels[slotIdx]}
+                                  value={slot.caption}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    setPhotoState(table.id, prev => {
+                                      const slots = [...prev.slots] as TablePhotoState['slots'];
+                                      slots[slotIdx] = { ...slots[slotIdx], caption: val };
+                                      return { ...prev, slots };
+                                    });
+                                  }}
+                                  className="w-full px-2 py-1.5 rounded-lg text-xs bg-transparent border border-border text-text placeholder:text-muted/50 focus:outline-none focus:border-primary/50"
+                                />
+                              </div>
+                            );
+                          })}
+
+                          <motion.button
+                            onClick={() => handleSavePhotos(table.id)}
+                            disabled={getPhotoState(table.id).saving}
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.97 }}
+                            className="w-full py-2 rounded-xl text-xs font-semibold text-white disabled:opacity-40"
+                            style={{ background: 'linear-gradient(135deg, #27ae60, #2ecc71)' }}
+                          >
+                            {getPhotoState(table.id).saving ? 'Kaydediliyor…' : 'Fotoğrafları Kaydet'}
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </motion.div>
             ))}
           </div>

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1016" height="640" viewBox="0 0 1016 640" role="img" aria-labelledby="title desc">
+  <title id="title">KYC Demo Identity Card Template</title>
+  <desc id="desc">Fictional identity-card mockup for KYC interface testing. Not a government document.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4f5fb"/>
+      <stop offset=".52" stop-color="#e6f4f2"/>
+      <stop offset="1" stop-color="#f7edf3"/>
+    </linearGradient>
+    <linearGradient id="photo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d7e0e8"/>
+      <stop offset="1" stop-color="#aab9c7"/>
+    </linearGradient>
+    <pattern id="lines" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(25)">
+      <path d="M0 0V16" stroke="#4f91a2" stroke-width="1" opacity=".13"/>
+    </pattern>
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="7" fill="none" stroke="#8b9eb0" stroke-width="1" opacity=".22"/>
+    </pattern>
+  </defs>
+  <rect x="8" y="8" width="1000" height="624" rx="30" fill="url(#bg)" stroke="#aab9c6" stroke-width="3"/>
+  <rect x="12" y="12" width="992" height="616" rx="26" fill="url(#lines)"/>
+  <rect x="12" y="12" width="992" height="616" rx="26" fill="url(#dots)"/>
+  <path d="M20 210 Q180 60 340 210 T660 210 T990 210" fill="none" stroke="#7c9cae" stroke-width="3" opacity=".22"/>
+  <path d="M20 230 Q180 80 340 230 T660 230 T990 230" fill="none" stroke="#7c9cae" stroke-width="2" opacity=".18"/>
+  <text x="42" y="64" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700" fill="#253746">KYC DEMO IDENTITY CARD</text>
+  <text x="43" y="94" font-family="Arial, Helvetica, sans-serif" font-size="16" letter-spacing="2" fill="#526875">FICTIONAL TEST TEMPLATE</text>
+  <rect x="42" y="122" width="226" height="300" rx="12" fill="url(#photo)" stroke="#9aabb8" stroke-width="2"/>
+  <circle cx="155" cy="218" r="48" fill="#edf1f4" stroke="#91a2b0" stroke-width="2"/>
+  <path d="M73 385 Q79 303 155 303 Q231 303 237 385 Z" fill="#edf1f4" stroke="#91a2b0" stroke-width="2"/>
+  <text x="155" y="452" font-family="Arial, Helvetica, sans-serif" font-size="15" text-anchor="middle" fill="#526875">PHOTO PLACEHOLDER</text>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#263b49">
+    <text x="310" y="151" font-size="15" fill="#5c7280">DOCUMENT ID</text>
+    <rect x="310" y="164" width="285" height="42" rx="7" fill="#ffffff" fill-opacity=".72" stroke="#9aabb8" stroke-dasharray="5 4"/>
+    <text x="325" y="191" font-size="20" fill="#8b9aa4">[ blank ]</text>
+    <text x="310" y="239" font-size="15" fill="#5c7280">SURNAME</text>
+    <rect x="310" y="252" width="285" height="42" rx="7" fill="#ffffff" fill-opacity=".72" stroke="#9aabb8" stroke-dasharray="5 4"/>
+    <text x="325" y="279" font-size="20" fill="#8b9aa4">[ blank ]</text>
+    <text x="310" y="327" font-size="15" fill="#5c7280">GIVEN NAME(S)</text>
+    <rect x="310" y="340" width="285" height="42" rx="7" fill="#ffffff" fill-opacity=".72" stroke="#9aabb8" stroke-dasharray="5 4"/>
+    <text x="325" y="367" font-size="20" fill="#8b9aa4">[ blank ]</text>
+    <text x="310" y="415" font-size="15" fill="#5c7280">DATE OF BIRTH</text>
+    <rect x="310" y="428" width="285" height="42" rx="7" fill="#ffffff" fill-opacity=".72" stroke="#9aabb8" stroke-dasharray="5 4"/>
+    <text x="325" y="455" font-size="20" fill="#8b9aa4">[ blank ]</text>
+    <text x="635" y="239" font-size="15" fill="#5c7280">NATIONALITY</text>
+    <rect x="635" y="252" width="330" height="42" rx="7" fill="#ffffff" fill-opacity=".72" stroke="#9aabb8" stroke-dasharray="5 4"/>
+    <text x="650" y="279" font-size="20" fill="#8b9aa4">[ blank ]</text>
+    <text x="635" y="327" font-size="15" fill="#5c7280">GENDER</text>
+    <rect x="635" y="340" width="150" height="42" rx="7" fill="#ffffff" fill-opacity=".72" stroke="#9aabb8" stroke-dasharray="5 4"/>
+    <text x="650" y="367" font-size="20" fill="#8b9aa4">[ blank ]</text>
+    <text x="805" y="327" font-size="15" fill="#5c7280">VALID UNTIL</text>
+    <rect x="805" y="340" width="160" height="42" rx="7" fill="#ffffff" fill-opacity=".72" stroke="#9aabb8" stroke-dasharray="5 4"/>
+    <text x="820" y="367" font-size="20" fill="#8b9aa4">[ blank ]</text>
+  </g>
+  <g transform="rotate(-17 510 330)">
+    <rect x="160" y="270" width="700" height="100" rx="16" fill="#ffffff" fill-opacity=".68" stroke="#bd4a59" stroke-width="3"/>
+    <text x="510" y="312" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" letter-spacing="3" fill="#b83245">DEMO • GEÇERSİZDİR</text>
+    <text x="510" y="344" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="2" fill="#b83245">NOT A GOVERNMENT DOCUMENT</text>
+  </g>
+  <rect x="42" y="510" width="923" height="74" rx="10" fill="#ffffff" fill-opacity=".75" stroke="#9aabb8" stroke-width="1.5"/>
+  <text x="60" y="538" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#5c7280">KYC TEST DATA / MACHINE-READABLE AREA PLACEHOLDER</text>
+  <text x="60" y="565" font-family="monospace" font-size="20" letter-spacing="2" fill="#536977">DEMO&lt;&lt;SAMPLE&lt;&lt;NOT&lt;&lt;VALID&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</text>
+  <text x="962" y="608" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#647987">SAMPLE ARTWORK ONLY</text>
+</svg>

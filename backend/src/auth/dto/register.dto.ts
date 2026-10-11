@@ -4,8 +4,8 @@ import {
   MinLength,
   MaxLength,
   IsOptional,
-  Matches,
   IsBoolean,
+  IsArray,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
@@ -14,9 +14,9 @@ export class RegisterDto {
   @IsEmail({}, { message: "Geçerli bir e-posta adresi girin" })
   email: string;
 
-  @ApiProperty({ example: "Güçlü1Şifre!" })
+  @ApiProperty()
   @IsString()
-  @MinLength(8, { message: "Şifre en az 8 karakter olmalı" })
+  @MinLength(6, { message: "Şifre en az 6 karakter olmalı" })
   @MaxLength(20, { message: "Şifre en fazla 20 karakter olabilir" })
   password: string;
 
@@ -32,17 +32,23 @@ export class RegisterDto {
   @MaxLength(50)
   lastName: string;
 
-  @ApiPropertyOptional({ example: "+905551234567" })
-  @IsOptional()
-  @Matches(/^\+90[0-9]{10}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
-  phone?: string;
-
   @ApiProperty({ description: "Kullanım şartları kabul edildi" })
   @IsBoolean({ message: "Kullanım şartlarını kabul etmelisiniz" })
   acceptTerms: boolean;
 
-  @ApiPropertyOptional({ description: "Pazarlama iletişimlerine onay" })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsBoolean()
-  acceptMarketing?: boolean;
+  @IsString()
+  primaryCityId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  secondaryCityId?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  contactPhoneHashes?: string[];
 }

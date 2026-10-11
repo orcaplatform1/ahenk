@@ -6,6 +6,8 @@ export * from './components/ocean/OceanRadar';
 
 // Tables
 export * from './components/tables/MasalarDashboard';
+export * from './components/tables/MasaDetayKarti';
+export * from './components/tables/MasaBeklemeKarti';
 
 // Admin
 export * from './components/admin/AdminQualityControl';

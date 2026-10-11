@@ -8,18 +8,22 @@ import { api } from '@/lib/api';
 interface Question {
   id: string;
   text: string;
-  section?: number;
-  sectionName?: string;
-  trait?: string;
-  reverse?: boolean;
+  orderNum: number;
+  section: number;
+  sectionTitle: string;
+}
+
+interface QuestionsResponse {
+  totalQuestions: number;
+  sections: { section: number; title: string; questions: Question[] }[];
 }
 
 const LIKERT = [
-  { v: 1, label: 'Hiç\nkatılmıyorum' },
+  { v: 1, label: 'Hiç katılmıyorum' },
   { v: 2, label: 'Katılmıyorum' },
   { v: 3, label: 'Kararsızım' },
   { v: 4, label: 'Katılıyorum' },
-  { v: 5, label: 'Tamamen\nkatılıyorum' },
+  { v: 5, label: 'Tamamen katılıyorum' },
 ];
 
 export default function TestPage() {
@@ -37,15 +41,18 @@ export default function TestPage() {
     const t = api.getToken();
     if (!t) { router.replace('/giris'); return; }
 
-    api.get<Question[]>('/test/questions')
-      .then(setQuestions)
+    api.get<QuestionsResponse>('/test/questions')
+      .then((res) => {
+        const flat = res.sections.flatMap(s => s.questions);
+        setQuestions(flat);
+      })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [router]);
 
   const q = questions[current];
   const total = questions.length;
-  const progress = total > 0 ? ((Object.keys(answers).length) / total) * 100 : 0;
+  const progress = total > 0 ? (Object.keys(answers).length / total) * 100 : 0;
   const hasAnswer = q ? answers[q.id] !== undefined : false;
   const isLast = current === total - 1;
 
@@ -72,7 +79,7 @@ export default function TestPage() {
     setError('');
     try {
       await api.post('/test/submit', {
-        answers: questions.map(q => ({ questionId: q.id, value: answers[q.id] ?? 3 })),
+        answers: questions.map(q => ({ questionId: q.id, score: answers[q.id] ?? 3 })),
       });
       setDone(true);
     } catch (e) {
@@ -81,7 +88,6 @@ export default function TestPage() {
     }
   }, [questions, answers]);
 
-  /* ── Yüklenme ──────────────────────────────────────────────────── */
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -90,7 +96,6 @@ export default function TestPage() {
     );
   }
 
-  /* ── Tamamlandı — 180 gün kilit ───────────────────────────────── */
   if (done) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
@@ -100,7 +105,6 @@ export default function TestPage() {
           transition={{ duration: 0.6 }}
           className="max-w-sm w-full text-center"
         >
-          {/* Kilit animasyonu */}
           <motion.div
             initial={{ scale: 0.7, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -108,7 +112,6 @@ export default function TestPage() {
             className="mx-auto mb-8 w-24 h-24 flex items-center justify-center rounded-full relative"
             style={{ background: 'rgba(192,57,43,0.1)', border: '1px solid rgba(192,57,43,0.3)' }}
           >
-            {/* Dış halka */}
             <motion.div
               className="absolute inset-0 rounded-full"
               style={{ border: '2px solid rgba(192,57,43,0.5)' }}
@@ -148,7 +151,6 @@ export default function TestPage() {
     );
   }
 
-  /* ── Hata ──────────────────────────────────────────────────────── */
   if (error && questions.length === 0) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
@@ -162,14 +164,8 @@ export default function TestPage() {
 
   if (!q) return null;
 
-  const sectionNum = q.section ?? 1;
-  const sectionName = q.sectionName ?? 'KİŞİLİK TESTİ';
-  const traitLabel = q.trait ?? '';
-
-  /* ── Test UI ───────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
-      {/* Arka plan glow */}
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '20%', right: '-5%', width: '40vw', height: '40vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.1) 0%, transparent 65%)', filter: 'blur(40px)' }} />
         <div style={{ position: 'absolute', bottom: '10%', left: '-5%', width: '35vw', height: '35vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.07) 0%, transparent 65%)', filter: 'blur(40px)' }} />
@@ -179,13 +175,13 @@ export default function TestPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold tracking-[0.18em] text-[#888] uppercase">
-            BÖLÜM {String(sectionNum).padStart(2, '0')} — {sectionName}
+            BÖLÜM {String(q.section).padStart(2, '0')} — {q.sectionTitle}
           </span>
           <span className="text-xs font-mono text-[#888]">{current + 1} / {total}</span>
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 rounded-full mb-5 overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+        <div className="h-1 rounded-full mb-6 overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
           <motion.div
             className="h-full rounded-full"
             style={{ background: 'linear-gradient(90deg, #c0392b 0%, #ff6b6b 100%)', boxShadow: '0 0 8px rgba(192,57,43,0.6)' }}
@@ -194,15 +190,7 @@ export default function TestPage() {
           />
         </div>
 
-        {/* Trait label */}
-        {traitLabel && (
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#c0392b', boxShadow: '0 0 6px rgba(192,57,43,0.8)' }} />
-            <span className="text-xs font-semibold tracking-[0.16em] text-[#c0392b] uppercase">{traitLabel}</span>
-          </div>
-        )}
-
-        {/* Soru kartı — AnimatePresence */}
+        {/* Soru kartı */}
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={current}
@@ -216,23 +204,15 @@ export default function TestPage() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.28, ease: 'easeInOut' }}
-            className="flex flex-col gap-5"
+            className="flex flex-col gap-4"
           >
             {/* Soru metni */}
-            <div
-              className="rounded-2xl p-6"
-              style={{
-                background: 'rgba(255,60,40,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                backdropFilter: 'blur(20px)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.5)',
-              }}
-            >
+            <div className="glass-card p-6">
               <p className="text-xs text-[#555] mb-3 font-mono">Soru {current + 1}</p>
               <p className="font-serif text-2xl sm:text-3xl text-[#f5f5f5] leading-snug">{q.text}</p>
             </div>
 
-            {/* Likert scale */}
+            {/* Likert seçenekleri */}
             <div className="flex flex-col gap-2">
               {LIKERT.map(({ v, label }) => {
                 const selected = answers[q.id] === v;
@@ -241,35 +221,20 @@ export default function TestPage() {
                     key={v}
                     type="button"
                     onClick={() => pickAnswer(v)}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full px-5 py-4 rounded-xl text-left text-sm font-medium transition-all duration-200 flex items-center gap-4"
+                    whileTap={{ scale: 0.99 }}
+                    className="w-full px-5 py-4 rounded-xl text-left text-sm transition-all duration-200"
                     style={selected ? {
-                      background: 'rgba(192,57,43,0.14)',
-                      border: '1px solid rgba(192,57,43,0.6)',
+                      background: 'rgba(192,57,43,0.12)',
+                      border: '1px solid rgba(192,57,43,0.55)',
                       color: '#ff6b6b',
-                      boxShadow: '0 0 18px rgba(192,57,43,0.25)',
+                      boxShadow: '0 0 14px rgba(192,57,43,0.18)',
                     } : {
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      color: '#aaa',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                      color: '#888',
                     }}
                   >
-                    {/* Circle */}
-                    <div
-                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200"
-                      style={selected ? {
-                        background: 'linear-gradient(135deg,#c0392b,#ff6b6b)',
-                        boxShadow: '0 0 12px rgba(192,57,43,0.6)',
-                        color: '#fff',
-                      } : {
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        color: '#555',
-                        background: 'transparent',
-                      }}
-                    >
-                      {v}
-                    </div>
-                    <span className="whitespace-pre-line leading-tight">{label}</span>
+                    {label}
                   </motion.button>
                 );
               })}

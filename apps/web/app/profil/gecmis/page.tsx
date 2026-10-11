@@ -43,7 +43,7 @@ export default function GecmisPage() {
               </svg>
             </Link>
             <Link href="/" className="flex items-center gap-2">
-              <Image src="/logo.png" alt="Ahenk" width={26} height={26} className="rounded-full" />
+              <Image src="/logo.webp" alt="Ahenk" width={26} height={26} className="rounded-full" />
               <span className="font-sans font-semibold tracking-[0.1em] text-sm">AHENK</span>
             </Link>
           </div>

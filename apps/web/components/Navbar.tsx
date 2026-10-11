@@ -9,7 +9,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
-          <Image src="/logo.png" alt="Ahenk" width={36} height={36} className="rounded-full" />
+          <Image src="/logo.webp" alt="Ahenk" width={36} height={36} className="rounded-full" />
           <span className="font-sans font-semibold text-lg tracking-[0.12em] text-text">AHENK</span>
         </Link>
 

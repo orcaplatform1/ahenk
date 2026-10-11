@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 
 interface City { id: string; name: string; }
@@ -12,77 +12,141 @@ interface RegisterResponse {
   user: { id: string; firstName: string; lastName: string };
 }
 
-async function sha256(text: string): Promise<string> {
-  const enc = new TextEncoder();
-  const buf = await crypto.subtle.digest('SHA-256', enc.encode(text));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+interface Question {
+  id: string;
+  text: string;
+  orderNum: number;
+  section: number;
+  sectionTitle: string;
+}
+
+interface QuestionsResponse {
+  totalQuestions: number;
+  sections: { section: number; title: string; questions: Question[] }[];
+}
+
+async function sha256(text: string): Promise<string | null> {
+  if (!text || typeof crypto === 'undefined' || !crypto.subtle) return null;
+  try {
+    const enc = new TextEncoder();
+    const buf = await crypto.subtle.digest('SHA-256', enc.encode(text));
+    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return null;
+  }
 }
 
 function formatPhone(digits: string): string { return `+90${digits}`; }
 
-const TOPICS = [
-  'Teknoloji', 'Sanat', 'Spor', 'Seyahat', 'Müzik',
-  'Sinema', 'Edebiyat', 'Gastronomi', 'Girişimcilik', 'Bilim',
+const STEPS = ['Temel Bilgiler', 'Şehir Seçimi', 'OCEAN (Big Five) Testi', 'Numara Engelleme'];
+
+const LIKERT = [
+  { v: 1, label: 'Hiç katılmıyorum' },
+  { v: 2, label: 'Katılmıyorum' },
+  { v: 3, label: 'Kararsızım' },
+  { v: 4, label: 'Katılıyorum' },
+  { v: 5, label: 'Tamamen katılıyorum' },
 ];
 
-const STEPS = ['Temel Bilgiler', 'Şehir Seçimi', 'Konu Tercihleri', 'Rehber Engelleme'];
-
 interface FormState {
-  firstName: string; lastName: string; email: string; password: string;
+  firstName: string; lastName: string; email: string; password: string; confirmPassword: string;
   birthDate: string; gender: 'MALE' | 'FEMALE' | '';
   primaryCityId: string; secondaryCityId: string;
-  topics: string[]; contactNumbers: string[]; contactInput: string;
+  contactNumbers: string[]; contactInput: string;
 }
 
 export default function KayitPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  const [stepDir, setStepDir] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cities, setCities] = useState<City[]>([]);
 
   const [form, setForm] = useState<FormState>({
-    firstName: '', lastName: '', email: '', password: '',
+    firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
     birthDate: '', gender: '', primaryCityId: '', secondaryCityId: '',
-    topics: [], contactNumbers: [], contactInput: '',
+    contactNumbers: [], contactInput: '',
   });
+
+  const [testQuestions, setTestQuestions] = useState<Question[]>([]);
+  const [testAnswers, setTestAnswers] = useState<Record<string, number>>({});
+  const [testCurrent, setTestCurrent] = useState(0);
+  const [testDirection, setTestDirection] = useState(1);
+  const [testSubmitting, setTestSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const set = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setError('');
   }, []);
 
-  async function handleRegister() {
+  useState(() => {
+    api.get<City[]>('/auth/cities').then(setCities).catch(() => {});
+  });
+
+  function handleStep1() {
     if (!form.firstName || !form.lastName || !form.email || !form.password) { setError('Tüm alanları doldurun.'); return; }
-    if (form.password.length < 6) { setError('Şifre en az 6 karakter olmalı.'); return; }
+    if (form.password.length < 6 || form.password.length > 20) { setError('Şifre 6-20 karakter arasında olmalı.'); return; }
+    if (form.password !== form.confirmPassword) { setError('Şifreler eşleşmiyor.'); return; }
     if (!form.gender) { setError('Cinsiyet seçin.'); return; }
+    setError(''); setStepDir(1); setStep(1);
+  }
+
+  async function handleStep2() {
+    if (!form.primaryCityId) { setError('Ana şehir seçin.'); return; }
     setLoading(true); setError('');
     try {
       const data = await api.post<RegisterResponse>('/auth/register', {
-        firstName: form.firstName, lastName: form.lastName,
-        email: form.email, password: form.password, acceptTerms: true,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        password: form.password,
+        acceptTerms: true,
+        primaryCityId: form.primaryCityId || undefined,
+        secondaryCityId: form.secondaryCityId || undefined,
       });
       api.setToken(data.accessToken);
-      const cityData = await api.get<City[]>('/admin/cities');
-      setCities(cityData);
-      setStep(1);
+
+      const res = await api.get<QuestionsResponse>('/test/questions');
+      const flat = res.sections.flatMap(s => s.questions);
+      setTestQuestions(flat);
+      setTestCurrent(0);
+      setTestAnswers({});
+      setStepDir(1); setStep(2);
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
   }
 
-  async function handleCities() {
-    if (!form.primaryCityId) { setError('Ana şehir seçin.'); return; }
-    setStep(2);
+  function pickAnswer(val: number) {
+    const q = testQuestions[testCurrent];
+    if (!q) return;
+    setTestAnswers(prev => ({ ...prev, [q.id]: val }));
   }
 
-  async function handleTopics() {
-    if (form.topics.length === 0) { setError('En az bir konu seçin.'); return; }
-    setLoading(true); setError('');
+  function testGoNext() {
+    const q = testQuestions[testCurrent];
+    if (!q || testAnswers[q.id] === undefined) return;
+    if (testCurrent === testQuestions.length - 1) { submitTest(); return; }
+    setTestDirection(1);
+    setTestCurrent(c => c + 1);
+  }
+
+  function testGoPrev() {
+    if (testCurrent === 0) return;
+    setTestDirection(-1);
+    setTestCurrent(c => c - 1);
+  }
+
+  async function submitTest() {
+    setTestSubmitting(true); setError('');
     try {
-      await api.post('/users/topics', { topics: form.topics });
-      setStep(3);
+      await api.post('/test/submit', {
+        answers: testQuestions.map(q => ({ questionId: q.id, score: testAnswers[q.id] ?? 3 })),
+      });
+      setStepDir(1); setStep(3);
     } catch (e) { setError((e as Error).message); }
-    finally { setLoading(false); }
+    finally { setTestSubmitting(false); }
   }
 
   function addContact() {
@@ -99,161 +163,354 @@ export default function KayitPage() {
     setLoading(true); setError('');
     try {
       if (!skip && form.contactNumbers.length > 0) {
-        const hashes = await Promise.all(form.contactNumbers.map(sha256));
-        await api.post('/contact-blocks/sync', { phoneHashes: hashes });
+        const results = await Promise.all(form.contactNumbers.map(n => sha256(n)));
+        const hashes = results.filter((h): h is string => h !== null);
+        if (hashes.length > 0) {
+          await api.post('/contact-blocks/sync', { hashes }).catch(() => {});
+        }
       }
-      router.push('/profil');
+      setShowSuccess(true);
+      setTimeout(() => router.push('/dashboard'), 2000);
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
   }
 
+  const tq = testQuestions[testCurrent];
+  const tTotal = testQuestions.length;
+  const tProgress = tTotal > 0 ? (Object.keys(testAnswers).length / tTotal) * 100 : 0;
+  const tHasAnswer = tq ? testAnswers[tq.id] !== undefined : false;
+  const tIsLast = testCurrent === tTotal - 1;
+
   return (
-    <>
-      <Navbar />
-      <main
-        className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
-        style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(192,57,43,0.08) 0%, transparent 60%)' }}
-      >
-        <div className="w-full max-w-md">
-          {/* Adım göstergesi */}
-          <div className="flex items-center gap-2 mb-6">
-            {STEPS.map((label, i) => (
-              <div key={i} className="flex items-center gap-2 flex-1">
+    <div className="min-h-screen flex flex-col" style={{ background: '#0a0a0a' }}>
+      {/* Başarı overlay */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 flex flex-col items-center justify-center"
+            style={{ background: '#0a0a0a', zIndex: 100 }}
+          >
+            <div className="fixed inset-0 pointer-events-none">
+              <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: '60vw', height: '60vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.12) 0%, transparent 60%)', filter: 'blur(60px)' }} />
+            </div>
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: [0, 1.2, 1], opacity: 1 }}
+              transition={{ duration: 0.5, ease: 'easeOut', times: [0, 0.7, 1] }}
+              className="flex items-center justify-center mb-8"
+              style={{ width: 88, height: 88, borderRadius: '50%', background: 'linear-gradient(135deg,#c0392b,#ff6b6b)' }}
+            >
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <motion.path
+                  d="M8 20 L17 29 L32 13"
+                  stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.4, delay: 0.3, ease: 'easeOut' }}
+                />
+              </svg>
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.4, ease: 'easeOut' }}
+              className="font-serif text-4xl text-[#f5f5f5] mb-3"
+            >
+              Hoş geldin!
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7, duration: 0.4 }}
+              className="text-[#777] text-sm"
+            >
+              Masanı bekliyoruz.
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Arka plan glow */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        <div style={{ position: 'absolute', top: '-5%', left: '50%', transform: 'translateX(-50%)', width: '80vw', height: '60vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.08) 0%, transparent 60%)', filter: 'blur(60px)' }} />
+      </div>
+
+      <div className="relative flex flex-col flex-1 max-w-xl mx-auto w-full px-5 py-10" style={{ zIndex: 1 }}>
+
+        {/* Adım göstergesi */}
+        <div className="flex justify-center items-center gap-0 mb-10">
+          {STEPS.map((_, i) => (
+            <div key={i} className="flex items-center">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
+                style={
+                  i < step
+                    ? { background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff' }
+                    : i === step
+                    ? { border: '2px solid #c0392b', color: '#c0392b', background: 'transparent' }
+                    : { border: '1px solid rgba(255,255,255,0.1)', color: '#444', background: 'transparent' }
+                }
+              >
+                {i < step ? '✓' : i + 1}
+              </div>
+              {i < STEPS.length - 1 && (
                 <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
-                  style={
-                    i < step
-                      ? { background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff' }
-                      : i === step
-                      ? { border: '2px solid #c0392b', color: '#c0392b', background: 'transparent' }
-                      : { border: '1px solid rgba(255,255,255,0.08)', color: '#888', background: 'transparent' }
-                  }
-                >
-                  {i < step ? '✓' : i + 1}
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div
-                    className="h-px flex-1"
-                    style={{ background: i < step ? 'linear-gradient(90deg,#c0392b,#ff6b6b)' : 'rgba(255,255,255,0.08)' }}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="glass-card p-8">
-            <h1 className="font-serif text-3xl mb-2 text-[#f5f5f5]">{STEPS[step]}</h1>
-            <p className="text-[#888] text-sm mb-8">
-              {step === 0 && 'Hesabını oluştur.'}
-              {step === 1 && 'Buluşmak istediğin şehri seç.'}
-              {step === 2 && 'İlgi alanlarını seç (en az 1).'}
-              {step === 3 && 'Tanıdıklarınla karşılaşmak istemiyorsan numara ekleyebilirsin.'}
-            </p>
-
-            {/* ── Adım 1 ── */}
-            {step === 0 && (
-              <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Ad" value={form.firstName} onChange={(v) => set('firstName', v)} placeholder="Ayşe" />
-                  <Field label="Soyad" value={form.lastName} onChange={(v) => set('lastName', v)} placeholder="Yılmaz" />
-                </div>
-                <Field label="E-posta" type="email" value={form.email} onChange={(v) => set('email', v)} placeholder="ornek@eposta.com" />
-                <Field label="Şifre" type="password" value={form.password} onChange={(v) => set('password', v)} placeholder="En az 6 karakter" maxLength={20} />
-                <Field label="Doğum tarihi" type="date" value={form.birthDate} onChange={(v) => set('birthDate', v)} />
-                <div>
-                  <label className="block text-sm text-[#888] mb-2">Cinsiyet</label>
-                  <div className="flex gap-4">
-                    {(['MALE', 'FEMALE'] as const).map((g) => (
-                      <label key={g} className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="gender" value={g} checked={form.gender === g} onChange={() => set('gender', g)} className="accent-[#c0392b]" />
-                        <span className="text-sm text-[#f5f5f5]">{g === 'MALE' ? 'Erkek' : 'Kadın'}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-                <Btn label="Devam Et" loading={loading} onClick={handleRegister} />
-              </div>
-            )}
-
-            {/* ── Adım 2 ── */}
-            {step === 1 && (
-              <div className="flex flex-col gap-4">
-                <GlassSelect label="Ana Şehir *" value={form.primaryCityId} onChange={(v) => set('primaryCityId', v)} cities={cities} />
-                <GlassSelect label="İkinci Şehir (opsiyonel)" value={form.secondaryCityId} onChange={(v) => set('secondaryCityId', v)} cities={cities.filter((c) => c.id !== form.primaryCityId)} optional />
-                {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-                <Btn label="Devam Et" loading={loading} onClick={handleCities} />
-              </div>
-            )}
-
-            {/* ── Adım 3 ── */}
-            {step === 2 && (
-              <div className="flex flex-col gap-6">
-                <div className="flex flex-wrap gap-2">
-                  {TOPICS.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => set('topics', form.topics.includes(t) ? form.topics.filter((x) => x !== t) : [...form.topics, t])}
-                      className="px-4 py-2 rounded-full text-sm transition-all"
-                      style={
-                        form.topics.includes(t)
-                          ? { background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff', border: 'none', boxShadow: '0 0 12px rgba(192,57,43,0.4)' }
-                          : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#888' }
-                      }
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-                {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-                <Btn label="Devam Et" loading={loading} onClick={handleTopics} />
-              </div>
-            )}
-
-            {/* ── Adım 4 ── */}
-            {step === 3 && (
-              <div className="flex flex-col gap-4">
-                <div className="flex gap-2">
-                  <div className="flex items-center input-glass px-3 text-[#888] text-sm w-auto" style={{ borderRadius: 12 }}>+90</div>
-                  <input
-                    type="tel"
-                    value={form.contactInput}
-                    onChange={(e) => set('contactInput', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    placeholder="5XX XXX XX XX"
-                    className="input-glass flex-1 px-4 py-3 text-sm"
-                    onKeyDown={(e) => e.key === 'Enter' && addContact()}
-                  />
-                  <button type="button" onClick={addContact} className="px-4 py-3 text-sm text-[#f5f5f5] hover:text-white transition-colors glass-card" style={{ borderRadius: 12 }}>
-                    Ekle
-                  </button>
-                </div>
-                {form.contactNumbers.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    {form.contactNumbers.map((n) => (
-                      <div key={n} className="flex items-center justify-between glass-card px-4 py-2">
-                        <span className="text-sm text-[#888]">{n}</span>
-                        <button type="button" onClick={() => set('contactNumbers', form.contactNumbers.filter((x) => x !== n))} className="text-[#888] hover:text-[#ff6b6b] text-lg leading-none transition-colors">×</button>
-                      </div>
-                    ))}
-                    <p className="text-xs text-[#888]">{form.contactNumbers.length}/50 numara eklendi</p>
-                  </div>
-                )}
-                {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => handleFinish(true)} disabled={loading} className="flex-1 py-3 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors disabled:opacity-50" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>
-                    Atla
-                  </button>
-                  <button type="button" onClick={() => handleFinish(false)} disabled={loading} className="flex-1 py-3 text-sm btn-grad">
-                    {loading ? 'Kaydediliyor…' : 'Tamamla'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+                  className="w-10 h-px"
+                  style={{ background: i < step ? 'linear-gradient(90deg,#c0392b,#ff6b6b)' : 'rgba(255,255,255,0.08)' }}
+                />
+              )}
+            </div>
+          ))}
         </div>
-      </main>
-    </>
+
+        <AnimatePresence mode="wait" custom={stepDir}>
+          <motion.div
+            key={step}
+            custom={stepDir}
+            variants={{
+              enter: (d: number) => ({ x: d * 40, opacity: 0 }),
+              center: { x: 0, opacity: 1 },
+              exit: (d: number) => ({ x: d * -40, opacity: 0 }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          >
+
+        {/* ── Adım 1: Temel Bilgiler ── */}
+        {step === 0 && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.18em] text-[#555] uppercase mb-1">ADIM 1</p>
+              <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Temel Bilgiler</h1>
+              <p className="text-[#555] text-sm">Hesabını oluştur.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Ad" value={form.firstName} onChange={(v) => set('firstName', v)} />
+              <Field label="Soyad" value={form.lastName} onChange={(v) => set('lastName', v)} />
+            </div>
+            <Field label="E-posta" type="email" value={form.email} onChange={(v) => set('email', v)} />
+            <PasswordField label="Şifre" value={form.password} onChange={(v) => set('password', v)} placeholder="6-20 karakter" />
+            <PasswordField label="Şifre Tekrar" value={form.confirmPassword} onChange={(v) => set('confirmPassword', v)} />
+            <DateField label="Doğum tarihi" value={form.birthDate} onChange={(v) => set('birthDate', v)} />
+            <div>
+              <label className="block text-sm text-[#555] mb-2">Cinsiyet</label>
+              <div className="flex gap-4">
+                {(['MALE', 'FEMALE'] as const).map((g) => (
+                  <label key={g} className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="gender" value={g} checked={form.gender === g} onChange={() => set('gender', g)} className="accent-[#c0392b]" />
+                    <span className="text-sm text-[#888]">{g === 'MALE' ? 'Erkek' : 'Kadın'}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+            <button type="button" onClick={handleStep1} disabled={loading} className="w-full py-3.5 text-sm btn-grad">
+              Devam Et
+            </button>
+          </div>
+        )}
+
+        {/* ── Adım 2: Şehir Seçimi ── */}
+        {step === 1 && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.18em] text-[#555] uppercase mb-1">ADIM 2</p>
+              <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Şehir Seçimi</h1>
+              <p className="text-[#555] text-sm">Buluşmak istediğin şehri seç.</p>
+            </div>
+            <GlassSelect label="Ana Şehir *" value={form.primaryCityId} onChange={(v) => set('primaryCityId', v)} cities={cities} />
+            <GlassSelect label="İkinci Şehir (opsiyonel)" value={form.secondaryCityId} onChange={(v) => set('secondaryCityId', v)} cities={cities.filter((c) => c.id !== form.primaryCityId)} optional />
+            {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+            <div className="flex gap-3 mt-1">
+              <button type="button" onClick={() => { setStepDir(-1); setStep(0); setError(''); }} className="px-5 py-3.5 text-sm text-[#555] hover:text-[#888] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: 9999 }}>
+                ← Geri
+              </button>
+              <button type="button" onClick={handleStep2} disabled={loading} className="flex-1 py-3.5 text-sm btn-grad">
+                {loading ? 'Kaydediliyor…' : 'Devam Et'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Adım 3: OCEAN Testi ── */}
+        {step === 2 && (
+          <div className="flex flex-col gap-4">
+            {testQuestions.length === 0 ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-8 h-8 rounded-full border-2 border-[#c0392b] border-t-transparent animate-spin" />
+              </div>
+            ) : (
+              <>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold tracking-[0.15em] text-[#555] uppercase">
+                    BÖLÜM {String(tq?.section ?? 1).padStart(2, '0')} — {tq?.sectionTitle ?? ''}
+                  </span>
+                  <span className="text-xs font-mono text-[#555]">{testCurrent + 1} / {tTotal}</span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="h-[3px] rounded-full overflow-hidden mb-2" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: 'linear-gradient(90deg,#c0392b 0%,#ff6b6b 100%)', boxShadow: '0 0 6px rgba(192,57,43,0.5)' }}
+                    animate={{ width: `${tProgress}%` }}
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                  />
+                </div>
+
+                {/* Soru + yanıtlar */}
+                <AnimatePresence mode="wait" custom={testDirection}>
+                  <motion.div
+                    key={testCurrent}
+                    custom={testDirection}
+                    variants={{
+                      enter: (d: number) => ({ x: d * 40, opacity: 0, filter: 'blur(3px)' }),
+                      center: { x: 0, opacity: 1, filter: 'blur(0px)' },
+                      exit: (d: number) => ({ x: d * -40, opacity: 0, filter: 'blur(3px)' }),
+                    }}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.25, ease: 'easeInOut' }}
+                    className="flex flex-col gap-3"
+                  >
+                    {/* Soru kartı */}
+                    <div
+                      className="rounded-2xl p-5"
+                      style={{
+                        background: 'rgba(255,50,30,0.07)',
+                        border: '1px solid rgba(255,255,255,0.09)',
+                        backdropFilter: 'blur(20px)',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07), 0 8px 32px rgba(0,0,0,0.5)',
+                      }}
+                    >
+                      <p className="text-xs text-[#444] mb-2 font-mono tracking-widest">SORU {testCurrent + 1}</p>
+                      <p className="font-serif text-xl text-[#f5f5f5] leading-snug">{tq?.text}</p>
+                    </div>
+
+                    {/* Yanıt butonları */}
+                    <div className="flex flex-col gap-2">
+                      {LIKERT.map(({ v, label }) => {
+                        const selected = tq ? testAnswers[tq.id] === v : false;
+                        return (
+                          <motion.button
+                            key={v}
+                            type="button"
+                            onClick={() => pickAnswer(v)}
+                            whileTap={{ scale: 0.99 }}
+                            className="w-full px-5 py-3.5 rounded-xl text-left text-sm transition-all duration-200"
+                            style={selected ? {
+                              background: 'rgba(192,57,43,0.12)',
+                              border: '1px solid rgba(192,57,43,0.55)',
+                              color: '#ff6b6b',
+                              boxShadow: '0 0 14px rgba(192,57,43,0.18)',
+                            } : {
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid rgba(255,255,255,0.07)',
+                              color: '#888',
+                            }}
+                          >
+                            {label}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+
+                {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+
+                <div className="flex items-center gap-3 mt-1">
+                  <button
+                    type="button"
+                    onClick={testGoPrev}
+                    disabled={testCurrent === 0}
+                    className="px-5 py-3.5 text-sm text-[#555] hover:text-[#888] transition-colors disabled:opacity-30"
+                    style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: 9999 }}
+                  >
+                    ← Geri
+                  </button>
+                  <button
+                    type="button"
+                    onClick={testGoNext}
+                    disabled={!tHasAnswer || testSubmitting}
+                    className="flex-1 py-3.5 text-sm font-medium text-white transition-all disabled:opacity-30"
+                    style={{
+                      background: tHasAnswer ? 'linear-gradient(135deg,#c0392b,#ff6b6b)' : 'rgba(255,255,255,0.05)',
+                      borderRadius: 9999,
+                      border: tHasAnswer ? 'none' : '1px solid rgba(255,255,255,0.07)',
+                      boxShadow: tHasAnswer ? '0 0 20px rgba(192,57,43,0.3)' : 'none',
+                      color: tHasAnswer ? '#fff' : '#444',
+                    }}
+                  >
+                    {testSubmitting ? '…' : tIsLast ? 'Testi Bitir' : 'İleri →'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── Adım 4: Numara Engelleme ── */}
+        {step === 3 && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.18em] text-[#555] uppercase mb-1">ADIM 4</p>
+              <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Numara Engelleme</h1>
+              <p className="text-[#555] text-sm">Tanıdıklarınla karşılaşmak istemiyorsan numara ekleyebilirsin.</p>
+            </div>
+            <div className="flex gap-2">
+              <div
+                className="flex items-center px-4 text-[#555] text-sm select-none flex-shrink-0"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}
+              >
+                +90
+              </div>
+              <input
+                type="tel"
+                value={form.contactInput}
+                onChange={(e) => set('contactInput', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="5XX XXX XX XX"
+                className="input-glass flex-1 px-4 py-3 text-sm"
+                onKeyDown={(e) => e.key === 'Enter' && addContact()}
+              />
+              <button type="button" onClick={addContact} className="px-4 py-3 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}>
+                Ekle
+              </button>
+            </div>
+            {form.contactNumbers.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {form.contactNumbers.map((n) => (
+                  <div key={n} className="flex items-center justify-between px-4 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <span className="text-sm text-[#555]">{n}</span>
+                    <button type="button" onClick={() => set('contactNumbers', form.contactNumbers.filter((x) => x !== n))} className="text-[#555] hover:text-[#ff6b6b] text-lg leading-none transition-colors">×</button>
+                  </div>
+                ))}
+                <p className="text-xs text-[#444]">{form.contactNumbers.length}/50 numara eklendi</p>
+              </div>
+            )}
+            {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+            <div className="flex gap-3 mt-1">
+              <button type="button" onClick={() => handleFinish(true)} disabled={loading} className="flex-1 py-3.5 text-sm text-[#555] hover:text-[#888] transition-colors disabled:opacity-50" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 9999 }}>
+                Atla
+              </button>
+              <button type="button" onClick={() => handleFinish(false)} disabled={loading} className="flex-1 py-3.5 text-sm btn-grad">
+                {loading ? 'Kaydediliyor…' : 'Tamamla →'}
+              </button>
+            </div>
+          </div>
+        )}
+
+          </motion.div>
+        </AnimatePresence>
+
+      </div>
+    </div>
   );
 }
 
@@ -263,11 +520,66 @@ function Field({ label, value, onChange, type = 'text', placeholder, maxLength }
 }) {
   return (
     <div>
-      <label className="block text-sm text-[#888] mb-2">{label}</label>
+      <label className="block text-xs text-[#555] mb-1.5">{label}</label>
       <input
         type={type} value={value} onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder} maxLength={maxLength}
         className="input-glass px-4 py-3 text-sm"
+      />
+    </div>
+  );
+}
+
+function PasswordField({ label, value, onChange, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div>
+      <label className="block text-xs text-[#555] mb-1.5">{label}</label>
+      <div className="relative">
+        <input
+          type={show ? 'text' : 'password'}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          maxLength={20}
+          className="input-glass px-4 py-3 text-sm pr-12"
+        />
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444] hover:text-[#c0392b] transition-colors"
+          tabIndex={-1}
+        >
+          {show ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DateField({ label, value, onChange }: {
+  label: string; value: string; onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs text-[#555] mb-1.5">{label}</label>
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="input-glass px-4 py-3 text-sm"
+        style={{ colorScheme: 'dark' }}
       />
     </div>
   );
@@ -278,24 +590,16 @@ function GlassSelect({ label, value, onChange, cities, optional }: {
 }) {
   return (
     <div>
-      <label className="block text-xs text-[#888] mb-1">{label}</label>
+      <label className="block text-xs text-[#555] mb-1.5">{label}</label>
       <select
         value={value} onChange={(e) => onChange(e.target.value)}
         className="input-glass px-3 py-3 text-sm"
-        style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12 }}
+        style={{ borderRadius: 12 }}
       >
         {optional && <option value="">Seçmek istemiyorum</option>}
         {!optional && <option value="">Şehir seç</option>}
         {cities.map((c) => <option key={c.id} value={c.id} style={{ background: '#0a0a0a' }}>{c.name}</option>)}
       </select>
     </div>
-  );
-}
-
-function Btn({ label, loading, onClick }: { label: string; loading: boolean; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} disabled={loading} className="w-full py-3 text-sm btn-grad">
-      {loading ? 'Yükleniyor…' : label}
-    </button>
   );
 }

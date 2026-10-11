@@ -59,6 +59,7 @@ const plans = [
     price: '349',
     desc: 'Aylık grup buluşma hakkı',
     featured: false,
+    bgImage: '/plan-masada.webp',
     features: ['1 masa buluşması', 'Kişilik eşleşmesi', 'Şehir içi etkinlikler'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
@@ -71,6 +72,7 @@ const plans = [
     price: '449',
     desc: 'Tek kullanımlık başbaşa buluşma',
     featured: false,
+    bgImage: '/plan-karsimda.webp',
     features: ['1 özel buluşma', 'Kişilik ve ilgi uyumu', 'Premium mekanlar'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
@@ -83,6 +85,7 @@ const plans = [
     price: '679',
     desc: '1 ay Masada + 1 Karşımda hakkı',
     featured: true,
+    bgImage: '/plan-icerde.webp',
     features: ['1 grup + 1 özel buluşma', 'Kişilik ve ilgi uyumu', 'Öncelikli masa seçimi', 'Premium mekanlar'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
@@ -145,24 +148,21 @@ const features = [
 function DualRings() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.15) 0%, transparent 65%)' }} />
-      <motion.div className="absolute" style={{ width: '90%', height: '90%' }} animate={{ rotate: 360 }} transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}>
-        <svg viewBox="0 0 400 400" className="w-full h-full" style={{ overflow: 'visible' }}>
-          <circle cx="200" cy="200" r="188" fill="none" stroke="#c0392b" strokeWidth="2" strokeDasharray="300 900" strokeLinecap="round" opacity="0.85" style={{ filter: 'drop-shadow(0 0 8px #c0392b)' }} />
-        </svg>
-      </motion.div>
-      <motion.div className="absolute" style={{ width: '62%', height: '62%' }} animate={{ rotate: -360 }} transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}>
-        <svg viewBox="0 0 400 400" className="w-full h-full" style={{ overflow: 'visible' }}>
-          <circle cx="200" cy="200" r="188" fill="none" stroke="#ff6b6b" strokeWidth="1.5" strokeDasharray="120 1058" strokeLinecap="round" opacity="0.6" style={{ filter: 'drop-shadow(0 0 6px rgba(255,107,107,0.6))' }} />
-        </svg>
-      </motion.div>
-      <div className="absolute" style={{ width: '28%', height: '28%', zIndex: 10 }}>
-        <Image src="/logo.png" alt="Ahenk" fill className="object-contain" style={{ filter: 'drop-shadow(0 0 20px rgba(192,57,43,0.55))' }} />
-      </div>
-      <motion.div className="absolute" style={{ width: '37%', height: '37%' }} animate={{ rotate: 360 }} transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}>
-        <svg viewBox="0 0 400 400" className="w-full h-full">
-          <circle cx="200" cy="200" r="184" fill="none" stroke="#ff6b6b" strokeWidth="1.5" strokeDasharray="55 1145" strokeLinecap="round" opacity="0.5" />
-        </svg>
+      {/* Kırmızı glow arka plan */}
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.18) 0%, transparent 65%)' }} />
+      {/* Dönen logo */}
+      <motion.div
+        className="absolute"
+        style={{ width: '32%', height: '32%', zIndex: 10 }}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0, rotate: 360 }}
+        transition={{
+          opacity: { delay: 0.4, duration: 0.6, ease: 'easeOut' },
+          y: { delay: 0.4, duration: 0.6, ease: 'easeOut' },
+          rotate: { duration: 8, repeat: Infinity, ease: 'linear', delay: 0 },
+        }}
+      >
+        <Image src="/logo.webp" alt="Ahenk" fill className="object-contain" style={{ filter: 'drop-shadow(0 0 24px rgba(192,57,43,0.65))' }} />
       </motion.div>
     </div>
   );
@@ -189,35 +189,70 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] overflow-x-hidden">
       {/* Sayfa geneli kırmızı glow'lar */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+      <motion.div
+        className="fixed inset-0 pointer-events-none"
+        style={{ zIndex: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, ease: 'easeOut' }}
+      >
         <div style={{ position: 'absolute', top: '10%', right: '-10%', width: '50vw', height: '50vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.12) 0%, transparent 65%)', filter: 'blur(40px)' }} />
         <div style={{ position: 'absolute', bottom: '30%', left: '-10%', width: '45vw', height: '45vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.08) 0%, transparent 65%)', filter: 'blur(40px)' }} />
         <div style={{ position: 'absolute', top: '60%', right: '10%', width: '35vw', height: '35vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.07) 0%, transparent 65%)', filter: 'blur(40px)' }} />
-      </div>
+      </motion.div>
 
       <div className="relative" style={{ zIndex: 1 }}>
         <Navbar />
 
         {/* ── Hero ──────────────────────────────────────────────────────── */}
-        <section id="hero" className="relative overflow-hidden" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
+        <section id="hero" className="relative overflow-hidden" style={{ minHeight: '70vh', display: 'flex', alignItems: 'center' }}>
           <div className="hero-bg absolute inset-0" />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
           <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-16 w-full py-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-            <motion.div initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, ease: 'easeOut' }} style={{ opacity: 1 }} className="flex flex-col gap-5 lg:max-w-lg">
-              <span className="text-xs font-semibold tracking-[0.22em] text-[#888] uppercase">Daha Anlamlı Buluşmalar İçin</span>
+            <div className="flex flex-col gap-5 lg:max-w-lg">
+              <motion.span
+                className="text-xs font-semibold tracking-[0.22em] text-[#888] uppercase"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7, duration: 0.4, ease: 'easeOut' }}
+              >
+                Daha Anlamlı Buluşmalar İçin
+              </motion.span>
               <div>
-                <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl leading-[0.9] tracking-tight text-[#f5f5f5] mb-3">Ahenk</h1>
-                <p className="font-sans text-lg sm:text-xl font-light leading-snug">
+                <motion.h1
+                  className="font-serif text-5xl sm:text-6xl lg:text-7xl leading-[0.9] tracking-tight text-[#f5f5f5] mb-3"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8, duration: 0.45, ease: 'easeOut' }}
+                >
+                  Ahenk
+                </motion.h1>
+                <motion.p
+                  className="font-sans text-lg sm:text-xl font-light leading-snug"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.9, duration: 0.45, ease: 'easeOut' }}
+                >
                   <span className="text-[#f5f5f5]">Sana Uygun İnsanlarla,</span><br />
                   <span className="text-[#c0392b] font-normal">Gerçek Buluşmalar.</span>
-                </p>
+                </motion.p>
               </div>
-              <p className="text-[#888] text-sm sm:text-base leading-relaxed">
+              <motion.p
+                className="text-[#888] text-sm sm:text-base leading-relaxed"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.0, duration: 0.45, ease: 'easeOut' }}
+              >
                 OCEAN kişilik testine dayalı eşleştirme ile Türkiye'de her hafta özenle planlanan sosyal buluşmalara katıl.
-              </p>
-              <div className="flex flex-wrap items-center gap-4 pt-1">
+              </motion.p>
+              <motion.div
+                className="flex flex-wrap items-center gap-4 pt-1"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1.15, duration: 0.45, ease: 'easeOut' }}
+              >
                 <Link href="/kayit" className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-base font-medium text-white transition-all"
                   style={{ background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', boxShadow: '0 0 24px rgba(192,57,43,0.45)' }}
                   onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.1)')}
@@ -231,8 +266,8 @@ export default function Home() {
                   </span>
                   Nasıl Çalışır?
                 </a>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
 
             <div className="flex items-center justify-center" style={{ height: '440px' }}>
               <DualRings />
@@ -367,19 +402,42 @@ export default function Home() {
                   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
                 }}
               >
-                {/* Karartılmış arka plan görseli */}
+                {/* Arka plan görseli */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url(${plan.bgImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                />
+                {/* Karartma katmanı */}
                 <div className="absolute inset-0" style={{
                   background: plan.featured
-                    ? 'linear-gradient(160deg, rgba(120,20,10,0.55) 0%, rgba(10,5,5,0.92) 55%)'
-                    : 'linear-gradient(160deg, rgba(80,15,10,0.45) 0%, rgba(10,5,5,0.92) 55%)',
+                    ? 'linear-gradient(160deg, rgba(120,20,10,0.45) 0%, rgba(10,5,5,0.85) 55%)'
+                    : 'linear-gradient(160deg, rgba(80,15,10,0.35) 0%, rgba(10,5,5,0.85) 55%)',
                 }} />
                 {/* Sağ üst smoke */}
-                <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(192,57,43,0.3) 0%, transparent 65%)' }} />
+                {plan.featured ? (
+                  <motion.div
+                    className="absolute top-0 right-0 w-40 h-40 pointer-events-none"
+                    style={{ background: 'radial-gradient(ellipse at top right, rgba(192,57,43,0.45) 0%, transparent 65%)' }}
+                    animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                ) : (
+                  <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(192,57,43,0.3) 0%, transparent 65%)' }} />
+                )}
 
                 {plan.featured && (
-                  <span className="absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white" style={{ background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)' }}>
+                  <motion.span
+                    className="absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
+                    style={{ background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)' }}
+                    animate={{ opacity: [0.75, 1, 0.75], scale: [1, 1.04, 1] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  >
                     Tercih Edilen
-                  </span>
+                  </motion.span>
                 )}
 
                 <div className="relative z-10 p-7 flex flex-col gap-4 flex-1">
@@ -464,19 +522,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Footer ─────────────────────────────────────────────────────── */}
-        <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm" style={{ color: '#555' }}>
-            <div className="flex items-center gap-2">
-              <Image src="/logo.png" alt="Ahenk" width={20} height={20} className="rounded-full opacity-50" />
-              <span>Ahenk © 2026</span>
-            </div>
-            <div className="flex gap-6">
-              <a href="#" className="hover:text-[#f5f5f5] transition-colors">Gizlilik Politikası</a>
-              <a href="#" className="hover:text-[#f5f5f5] transition-colors">Kullanım Koşulları</a>
-            </div>
-          </div>
-        </footer>
       </div>
     </main>
   );

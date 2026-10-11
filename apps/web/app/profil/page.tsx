@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import { api } from '@/lib/api';
 import { TabProfilim, TabProfilimSkeleton } from './tabs/TabProfilim';
@@ -35,7 +36,7 @@ const TABS = [
   { key: 'masalar',  label: 'Masalarım' },
   { key: 'paket',    label: 'Paketim' },
   { key: 'kyc',      label: 'KYC Doğrulama' },
-  { key: 'rehber',   label: 'Rehber Engelleme' },
+  { key: 'rehber',   label: 'Numara Engelleme' },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -53,7 +54,7 @@ export default function ProfilPage() {
 
     Promise.all([
       api.get<UserData>('/auth/me'),
-      api.get<City[]>('/admin/cities').catch(() => [] as City[]),
+      api.get<City[]>('/auth/cities').catch(() => [] as City[]),
     ])
       .then(([u, c]) => { setUser(u); setCities(c); })
       .catch(() => { api.clearToken(); router.replace('/giris'); })
@@ -109,18 +110,28 @@ export default function ProfilPage() {
           </div>
 
           {/* Tab içeriği */}
-          {activeTab === 'profil' && (
-            <TabProfilim
-              user={user}
-              cities={cities}
-              onGoKyc={() => setActiveTab('kyc')}
-            />
-          )}
-          {activeTab === 'test'    && <TabTest />}
-          {activeTab === 'masalar' && <TabMasalar />}
-          {activeTab === 'paket'   && <TabPaket kycApproved={kycApproved} onGoKyc={() => setActiveTab('kyc')} />}
-          {activeTab === 'kyc'     && <TabKyc />}
-          {activeTab === 'rehber'  && <TabRehber />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+            >
+              {activeTab === 'profil' && (
+                <TabProfilim
+                  user={user}
+                  cities={cities}
+                  onGoKyc={() => setActiveTab('kyc')}
+                />
+              )}
+              {activeTab === 'test'    && <TabTest />}
+              {activeTab === 'masalar' && <TabMasalar />}
+              {activeTab === 'paket'   && <TabPaket kycApproved={kycApproved} onGoKyc={() => setActiveTab('kyc')} />}
+              {activeTab === 'kyc'     && <TabKyc />}
+              {activeTab === 'rehber'  && <TabRehber />}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </>

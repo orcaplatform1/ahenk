@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Param, Body, Req, UseGuards } from "@nestjs/common";
 import { Request } from "express";
 import { MeetingsService } from "./meetings.service";
-import { BlockUsersDto } from "./dto/meetings.dto";
+import { BlockUsersDto, ReviewMeetingDto } from "./dto/meetings.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @Controller("meetings")
@@ -14,6 +14,12 @@ export class MeetingsController {
   getMyCurrent(@Req() req: Request) {
     const user = req.user as { id: string };
     return this.meetingsService.getMyCurrent(user.id);
+  }
+
+  @Get("dashboard")
+  getDashboard(@Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.meetingsService.getDashboardTable(user.id);
   }
 
   // Kullanıcının geçmiş masaları
@@ -46,5 +52,22 @@ export class MeetingsController {
   rematchBlock(@Param("id") id: string, @Req() req: Request) {
     const user = req.user as { id: string };
     return this.meetingsService.rematchBlock(id, user.id);
+  }
+
+  // Buluşma değerlendirmesi
+  @Post(":id/review")
+  submitReview(
+    @Param("id") id: string,
+    @Body() dto: ReviewMeetingDto,
+    @Req() req: Request,
+  ) {
+    const user = req.user as { id: string };
+    return this.meetingsService.submitReview(
+      id,
+      user.id,
+      dto.rating,
+      dto.blockedUserIds ?? [],
+      dto.comment,
+    );
   }
 }

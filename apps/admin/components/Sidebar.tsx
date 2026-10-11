@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation';
 
 const LINKS = [
   { href: '/',            label: 'Dashboard' },
+  { href: '/stats',       label: 'İstatistikler' },
+  { href: '/matches',     label: 'Eşleştirme' },
+  { href: '/quality',     label: 'Kalite Kontrol' },
   { href: '/kyc',         label: 'KYC' },
   { href: '/kullanicilar',label: 'Kullanıcılar' },
   { href: '/botlar',      label: 'Botlar' },

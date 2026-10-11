@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { DM_Serif_Display, Inter } from 'next/font/google';
 import './globals.css';
+import CookieBanner from '@/components/CookieBanner';
+import SiteFooter from '@/components/SiteFooter';
 
 const dmSerifDisplay = DM_Serif_Display({
   subsets: ['latin'],
@@ -20,8 +22,12 @@ export const metadata: Metadata = {
   description:
     'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. İster Grup masasında, istersen başbaşa bir yemek veya kahve. Doğru insanlar, doğru zamanda.',
   icons: {
-    icon: '/favicon.png',
-    apple: '/favicon.png',
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   openGraph: {
     title: 'Ahenk — Sana Uygun İnsanlarla Buluş',
@@ -58,7 +64,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="tr" className={`${dmSerifDisplay.variable} ${inter.variable}`}>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased" style={{}}>
+        {children}
+        <SiteFooter />
+        <CookieBanner />
+      </body>
     </html>
   );
 }

@@ -36,41 +36,35 @@ export class AuthService {
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) throw new ConflictException("Bu e-posta zaten kullanılıyor");
 
-    if (dto.phone) {
-      const existingPhone = await this.usersService.findByPhone(dto.phone);
-      if (existingPhone) throw new ConflictException("Bu telefon numarası zaten kullanılıyor");
-    }
-
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        phone: dto.phone,
-        passwordHash,
-        role: UserRole.USER,
-        profile: {
-          create: {
-            firstName: dto.firstName,
-            lastName: dto.lastName,
+    const user = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email: dto.email,
+          passwordHash,
+          role: UserRole.USER,
+          profile: {
+            create: {
+              firstName: dto.firstName,
+              lastName: dto.lastName,
+              primaryCity: dto.primaryCityId ?? null,
+              secondaryCity: dto.secondaryCityId ?? null,
+            },
+          },
+          consents: {
+            createMany: {
+              data: [
+                { type: ConsentType.TERMS_OF_SERVICE, accepted: true, ip, userAgent },
+                { type: ConsentType.PRIVACY_POLICY, accepted: true, ip, userAgent },
+              ],
+            },
           },
         },
-        consents: {
-          createMany: {
-            data: [
-              { type: ConsentType.TERMS_OF_SERVICE, accepted: true, ip, userAgent },
-              { type: ConsentType.PRIVACY_POLICY, accepted: true, ip, userAgent },
-              ...(dto.acceptMarketing
-                ? [
-                    { type: ConsentType.MARKETING_EMAIL, accepted: true, ip, userAgent },
-                    { type: ConsentType.MARKETING_SMS, accepted: true, ip, userAgent },
-                  ]
-                : []),
-            ],
-          },
-        },
-      },
-      include: { profile: true },
+        include: { profile: true },
+      });
+
+      return created;
     });
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
@@ -197,5 +191,13 @@ export class AuthService {
       ...safe,
       isKycVerified: kyc?.status === "APPROVED",
     };
+  }
+
+  getActiveCities() {
+    return this.prisma.city.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
   }
 }

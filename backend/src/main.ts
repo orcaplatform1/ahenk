@@ -18,11 +18,21 @@ async function bootstrap() {
     })
   );
 
+  const allowedOrigins = [
+    process.env.APP_URL ?? "http://localhost:3000",
+    process.env.ADMIN_URL ?? "http://localhost:3001",
+    "https://ahenk.tr",
+    "https://www.ahenk.tr",
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: [
-      process.env.APP_URL ?? "http://localhost:3000",
-      process.env.ADMIN_URL ?? "http://localhost:3001",
-    ],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: ${origin} izin listesinde değil`));
+      }
+    },
     credentials: true,
   });
 

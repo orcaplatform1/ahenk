@@ -38,10 +38,13 @@ model User {
   payments       Payment[]
   fcmToken         String?    // Firebase Cloud Messaging cihaz token'ı
   quarantineUntil  DateTime?  // Karantina bitiş tarihi
+  phoneHash        String?
   blocksGiven      UserBlock[] @relation("BlockerRelation")
   blocksReceived   UserBlock[] @relation("BlockedRelation")
   reportsMade      Report[]   @relation("ReportsByUser")
   reportsReceived  Report[]   @relation("ReportsAgainstUser")
+  meetingReviews   MeetingReview[] @relation("MeetingReviewer")
+  contactBlocks    ContactBlock[]
 }
 
 enum UserRole {
@@ -183,14 +186,35 @@ model Meeting {
   endsAt          DateTime?
   status          MeetingStatus @default(PENDING)
   maxParticipants Int           @default(6)
-  venuePhotoUrl        String?       // Mekan fotoğrafı URL
-  locationUrl          String?       // Online toplantı linki
-  locationText         String?       // Fiziksel mekan adı/adresi
+  venuePhotoUrl        String?       // Mekan fotoğrafı 1 URL
+  venuePhoto2Url       String?       // Mekan fotoğrafı 2 URL
+  venuePhoto3Url       String?       // Mekan fotoğrafı 3 URL
+  venuePhotoCaption1   String?       // Fotoğraf 1 başlığı (örn. "Ana Salon")
+  venuePhotoCaption2   String?       // Fotoğraf 2 başlığı (örn. "Bar")
+  venuePhotoCaption3   String?       // Fotoğraf 3 başlığı (örn. "Teras")
+  venueAddress         String?       // Mekan adresi (ayrı alan)
+  locationUrl          String?       // Google Maps URL
+  locationText         String?       // Fiziksel mekan adı
   registrationDeadline DateTime?     // Kayıt kapanış (Cumartesi 10:00, uzatılabilir)
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
   participants MeetingParticipant[]
+  reviews      MeetingReview[]
+}
+
+model MeetingReview {
+  id             String   @id @default(cuid())
+  meetingId      String
+  meeting        Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  reviewerId     String
+  reviewer       User     @relation("MeetingReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  rating         Int
+  comment        String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  @@unique([meetingId, reviewerId])
+  @@index([meetingId])
 }
 
 enum MeetingType {
@@ -478,6 +502,21 @@ model UserBlock {
 }
 
 // ─────────────────────────────────────────────
+// REHBER ENGELLEMESİ
+// ─────────────────────────────────────────────
+
+model ContactBlock {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hashedPhone String
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, hashedPhone])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────
 // ŞİKAYET / RAPOR
 // ─────────────────────────────────────────────
 
@@ -502,4 +541,64 @@ enum ReportStatus {
   PENDING
   REVIEWED
   DISMISSED
+}
+
+// ─────────────────────────────────────────────
+// MEKAN ORTAKLIK BAŞVURUSU
+// ─────────────────────────────────────────────
+
+model PartnershipApplication {
+  id            String   @id @default(cuid())
+  businessName  String
+  contactName   String
+  email         String
+  phone         String
+  city          String
+  venueType     String
+  capacity      Int
+  description   String?  @db.Text
+  websiteOrSocial String?
+  status        PartnershipStatus @default(PENDING)
+  adminNote     String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PartnershipStatus {
+  PENDING
+  REVIEWED
+  APPROVED
+  REJECTED
+}
+
+// ─────────────────────────────────────────────
+// KARİYER BAŞVURUSU
+// ─────────────────────────────────────────────
+
+model CareerApplication {
+  id           String        @id @default(cuid())
+  fullName     String
+  email        String
+  phone        String
+  city         String
+  linkedinOrCv String?
+  motivation   String        @db.Text
+  hearFrom     String?
+  status       CareerStatus  @default(PENDING)
+  adminNote    String?       @db.Text
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum CareerStatus {
+  PENDING
+  REVIEWED
+  SHORTLISTED
+  REJECTED
 }

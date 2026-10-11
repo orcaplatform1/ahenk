@@ -4,10 +4,11 @@ import { AdminController } from "./admin.controller";
 import { PrismaModule } from "../prisma/prisma.module";
 import { PaymentModule } from "../payment/payment.module";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
+import { StorageService } from "../storage/storage.service";
 
 @Module({
   imports: [PrismaModule, PaymentModule],
   controllers: [AdminController],
-  providers: [AdminService, WhatsappNotifyService],
+  providers: [AdminService, WhatsappNotifyService, StorageService],
 })
 export class AdminModule {}

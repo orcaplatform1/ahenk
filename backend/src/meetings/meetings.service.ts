@@ -81,6 +81,96 @@ export class MeetingsService {
     };
   }
 
+  // ─── Dashboard endpoint ───────────────────────────────────────────────────────
+  // phase: SCANNING (masa yok) | WAITING (masa var, bilgi henüz açık değil) | REVEALED (Cumartesi 10:00+)
+
+  async getDashboardTable(userId: string) {
+    const part = await this.prisma.meetingParticipant.findFirst({
+      where: {
+        userId,
+        meeting: {
+          status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] },
+          scheduledAt: { gte: new Date() },
+        },
+      },
+      orderBy: { meeting: { scheduledAt: 'asc' } },
+      select: {
+        meeting: {
+          select: {
+            id: true,
+            type: true,
+            status: true,
+            scheduledAt: true,
+            maxParticipants: true,
+            locationText: true,
+            locationUrl: true,
+            venueAddress: true,
+            venuePhotoUrl: true,
+            venuePhoto2Url: true,
+            venuePhoto3Url: true,
+            venuePhotoCaption1: true,
+            venuePhotoCaption2: true,
+            venuePhotoCaption3: true,
+            participants: {
+              select: {
+                user: {
+                  select: {
+                    isBot: true,
+                    profile: { select: { firstName: true, lastName: true, gender: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!part) return { phase: 'SCANNING' as const };
+
+    const m = part.meeting;
+
+    // Cumartesi 10:00 TR = Saturday 07:00 UTC (scheduledAt = Saturday 17:00 UTC = 20:00 TR)
+    // scheduledAt Cumartesi 20:00 TR → -10h = Cumartesi 10:00 TR → -3h = Cumartesi 07:00 UTC
+    const sat10UTC = new Date(m.scheduledAt.getTime() - 10 * 60 * 60 * 1000);
+    const isRevealed = !!m.locationText && new Date() >= sat10UTC;
+
+    const participants = m.participants
+      .filter((p) => !p.user.isBot)
+      .map((p) => {
+        const f = p.user.profile?.firstName ?? '';
+        const l = p.user.profile?.lastName ?? '';
+        return {
+          initials: `${(f[0] ?? '?').toUpperCase()}.${(l[0] ?? '?').toUpperCase()}.`,
+          gender: p.user.profile?.gender ?? null,
+        };
+      });
+
+    const photos = [
+      { url: m.venuePhotoUrl,  caption: m.venuePhotoCaption1 ?? 'Alan 1' },
+      { url: m.venuePhoto2Url, caption: m.venuePhotoCaption2 ?? 'Alan 2' },
+      { url: m.venuePhoto3Url, caption: m.venuePhotoCaption3 ?? 'Alan 3' },
+    ].filter((p) => !!p.url);
+
+    return {
+      phase: isRevealed ? ('REVEALED' as const) : ('WAITING' as const),
+      meeting: {
+        id: m.id,
+        type: m.type,
+        maxParticipants: m.maxParticipants,
+        scheduledAt: m.scheduledAt,
+        participants,
+        sat10UTC,           // frontend sayaç için
+        ...(isRevealed && {
+          venueName: m.locationText,
+          venueAddress: m.venueAddress,
+          venueMapsUrl: m.locationUrl,
+          venuePhotos: photos,
+        }),
+      },
+    };
+  }
+
   // ─── Geçmiş masalar ─────────────────────────────────────────────────────────
 
   async getMyHistory(userId: string) {

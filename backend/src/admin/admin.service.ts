@@ -17,6 +17,7 @@ import {
 } from "@prisma/client";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "../payment/payment.constants";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
+import { StorageService } from "../storage/storage.service";
 
 const PIONEER_MAX_QUOTA = 500;
 
@@ -25,6 +26,7 @@ export class AdminService {
   constructor(
     private prisma: PrismaService,
     private whatsapp: WhatsappNotifyService,
+    public storage: StorageService,
   ) {}
 
   // ─── Dashboard ───────────────────────────────────────────────────────────
@@ -286,14 +288,42 @@ export class AdminService {
         participants: {
           include: {
             user: {
-              select: { id: true, email: true, profile: { select: { firstName: true, lastName: true, city: true } } },
+              select: {
+                id: true,
+                email: true,
+                profile: { select: { firstName: true, lastName: true, city: true } },
+                oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
+                subscriptions: { select: { plan: true }, orderBy: { createdAt: 'desc' }, take: 1 },
+              },
+            },
+          },
+        },
+        reviews: {
+          include: {
+            reviewer: {
+              select: { id: true, profile: { select: { firstName: true, lastName: true } } },
             },
           },
         },
       },
     });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
-    return meeting;
+
+    // Bu masanın katılımcıları arasındaki UserBlock'lar
+    const participantIds = meeting.participants.map((p) => p.userId);
+    const blocks = await this.prisma.userBlock.findMany({
+      where: {
+        blockerId: { in: participantIds },
+        blockedId: { in: participantIds },
+      },
+      select: {
+        blockerId: true,
+        blockedId: true,
+        createdAt: true,
+      },
+    });
+
+    return { ...meeting, blocks };
   }
 
   // ─── Manuel masa kur ─────────────────────────────────────────────────────
@@ -349,6 +379,37 @@ export class AdminService {
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
       },
       select: { id: true, locationText: true, locationUrl: true, scheduledAt: true },
+    });
+  }
+
+  async updateMeetingVenuePhotos(
+    meetingId: string,
+    data: {
+      venueAddress?: string;
+      venuePhotoUrl?: string;  venuePhotoCaption1?: string;
+      venuePhoto2Url?: string; venuePhotoCaption2?: string;
+      venuePhoto3Url?: string; venuePhotoCaption3?: string;
+    },
+  ) {
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
+    if (!meeting) throw new NotFoundException("Masa bulunamadı");
+    return this.prisma.meeting.update({
+      where: { id: meetingId },
+      data: {
+        venueAddress:       data.venueAddress,
+        venuePhotoUrl:      data.venuePhotoUrl,
+        venuePhotoCaption1: data.venuePhotoCaption1,
+        venuePhoto2Url:     data.venuePhoto2Url,
+        venuePhotoCaption2: data.venuePhotoCaption2,
+        venuePhoto3Url:     data.venuePhoto3Url,
+        venuePhotoCaption3: data.venuePhotoCaption3,
+      },
+      select: {
+        id: true, venueAddress: true,
+        venuePhotoUrl: true, venuePhotoCaption1: true,
+        venuePhoto2Url: true, venuePhotoCaption2: true,
+        venuePhoto3Url: true, venuePhotoCaption3: true,
+      },
     });
   }
 

@@ -38,7 +38,7 @@ export default function DashboardPage() {
       <header className="sticky top-0 z-40 bg-[#0A0A0A]/80 backdrop-blur-md border-b border-[#1f1f1f]">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Ahenk" width={28} height={28} className="rounded-full" />
+            <Image src="/logo.webp" alt="Ahenk" width={28} height={28} className="rounded-full" />
             <span className="font-sans font-semibold tracking-[0.1em] text-sm">AHENK</span>
           </Link>
           <div className="flex items-center gap-3">

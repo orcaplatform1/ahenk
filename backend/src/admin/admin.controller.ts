@@ -151,6 +151,27 @@ export class AdminController {
     return this.adminService.updateMeetingVenue(id, dto);
   }
 
+  @Patch("meetings/:id/venue-photos")
+  updateMeetingVenuePhotos(@Param("id") id: string, @Body() dto: {
+    venueAddress?: string;
+    venuePhotoUrl?: string;  venuePhotoCaption1?: string;
+    venuePhoto2Url?: string; venuePhotoCaption2?: string;
+    venuePhoto3Url?: string; venuePhotoCaption3?: string;
+  }) {
+    return this.adminService.updateMeetingVenuePhotos(id, dto);
+  }
+
+  @Post("meetings/venue-photo-upload-url")
+  async getVenuePhotoUploadUrl(
+    @Body() dto: { meetingId: string; slot: 1 | 2 | 3; contentType: string; contentLength: number },
+  ) {
+    const ext = dto.contentType.split('/')[1] ?? 'jpg';
+    const key = `venues/${dto.meetingId}/photo${dto.slot}-${Date.now()}.${ext}`;
+    const url = await this.adminService.storage.presignedPutUrl(key, dto.contentType, dto.contentLength);
+    const publicBase = process.env.R2_PUBLIC_URL ?? '';
+    return { uploadUrl: url, publicUrl: publicBase ? `${publicBase}/${key}` : null, key };
+  }
+
   @Patch("meetings/:id/extend-deadline")
   extendMeetingDeadline(@Param("id") id: string, @Body() dto: ExtendMeetingDeadlineDto) {
     return this.adminService.extendMeetingDeadline(id, dto.extraHours);

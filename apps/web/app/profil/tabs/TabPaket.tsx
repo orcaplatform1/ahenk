@@ -61,7 +61,8 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
       const data = await api.post<InitCheckoutResponse>('/payment/init', {
         plan,
         platform: 'WEB',
-        callbackUrl: `${window.location.origin}/odeme/sonuc`,
+        callbackUrl: `${window.location.origin}/odeme/basarili`,
+        failCallbackUrl: `${window.location.origin}/odeme/basarisiz`,
       });
       const form = document.createElement('div');
       form.innerHTML = data.checkoutFormContent;
