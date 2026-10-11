@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 
 interface LoginResponse {
   accessToken: string;
-  user: { id: string; firstName: string };
+  user: { id: string; firstName: string; lastName: string };
 }
 
 type Method = 'whatsapp' | 'email';
@@ -32,6 +32,7 @@ export default function GirisPage() {
 
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
+  const [welcomeUser, setWelcomeUser] = useState<{ firstName: string; lastName: string } | null>(null);
 
   /* ── Validasyon ─────────────────────────────────────────────── */
   const phoneDigits  = phone.replace(/\D/g, '');
@@ -57,7 +58,8 @@ export default function GirisPage() {
     try {
       const data = await api.post<LoginResponse>('/auth/verify-login-otp', { phone: `+90${phoneDigits}`, code });
       api.setToken(data.accessToken);
-      router.push('/profil');
+      setWelcomeUser({ firstName: data.user.firstName, lastName: data.user.lastName ?? '' });
+      setTimeout(() => router.push('/profil'), 2000);
     } catch (e) {
       setError((e as Error).message);
       setOtpShake(true);
@@ -72,7 +74,8 @@ export default function GirisPage() {
     try {
       const data = await api.post<LoginResponse>('/auth/login', { email, password });
       api.setToken(data.accessToken);
-      router.push('/profil');
+      setWelcomeUser({ firstName: data.user.firstName, lastName: data.user.lastName ?? '' });
+      setTimeout(() => router.push('/profil'), 2000);
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
   }
@@ -106,6 +109,45 @@ export default function GirisPage() {
       className="min-h-screen flex flex-col items-center justify-center md:justify-start px-6 pt-[52px] md:pt-[80px]"
       style={{ background: '#0a0a0a' }}
     >
+      <AnimatePresence>
+        {welcomeUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 flex flex-col items-center justify-center z-[100]"
+            style={{ background: '#0a0a0a' }}
+          >
+            <div className="fixed inset-0 pointer-events-none">
+              <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: '60vw', height: '60vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.12) 0%, transparent 60%)', filter: 'blur(60px)' }} />
+            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1, duration: 0.4, ease: 'easeOut' }}
+              className="flex flex-col items-center gap-2 mb-8"
+            >
+              <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
+              <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4, ease: 'easeOut' }}
+              className="font-serif text-4xl text-[#f5f5f5] mb-1"
+            >
+              Hoş geldin,
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55, duration: 0.35, ease: 'easeOut' }}
+              className="font-serif text-4xl text-[#f5f5f5]"
+            >
+              {welcomeUser.firstName} {welcomeUser.lastName}
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)', width: '70vw', height: '70vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.09) 0%, transparent 60%)', filter: 'blur(60px)' }} />
       </div>

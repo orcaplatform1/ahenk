@@ -240,37 +240,37 @@ export default function KayitPage() {
               <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: '60vw', height: '60vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.12) 0%, transparent 60%)', filter: 'blur(60px)' }} />
             </div>
             <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: [0, 1.2, 1], opacity: 1 }}
-              transition={{ duration: 0.5, ease: 'easeOut', times: [0, 0.7, 1] }}
-              className="flex items-center justify-center mb-8"
-              style={{ width: 88, height: 88, borderRadius: '50%', background: 'linear-gradient(135deg,#c0392b,#ff6b6b)' }}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1, duration: 0.4, ease: 'easeOut' }}
+              className="flex flex-col items-center gap-2 mb-8"
             >
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                <motion.path
-                  d="M8 20 L17 29 L32 13"
-                  stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 0.4, delay: 0.3, ease: 'easeOut' }}
-                />
-              </svg>
+              <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
+              <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
             </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.4, ease: 'easeOut' }}
-              className="font-serif text-4xl text-[#f5f5f5] mb-3"
+              transition={{ delay: 0.4, duration: 0.4, ease: 'easeOut' }}
+              className="font-serif text-4xl text-[#f5f5f5] mb-1"
             >
-              Hoş geldin!
+              Hoş geldin,
             </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55, duration: 0.35, ease: 'easeOut' }}
+              className="font-serif text-4xl text-[#f5f5f5] mb-6"
+            >
+              {form.firstName} {form.lastName}
+            </motion.p>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.7, duration: 0.4 }}
-              className="text-[#777] text-sm"
+              transition={{ delay: 0.75, duration: 0.4 }}
+              className="text-[#555] text-sm"
             >
-              Masanı bekliyoruz.
+              Seni Masalarda Görmek İsteriz.
             </motion.p>
           </motion.div>
         )}
@@ -510,6 +510,10 @@ export default function KayitPage() {
                 </AnimatePresence>
 
                 {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+
+                <p className="text-xs text-[#444] leading-relaxed">
+                  Bu test, size en uygun kişilerle eşleştirmek için kullanılır. Lütfen, doğru cevaplar kullanın. Yeni test 6 ay boyunca tekrar yapılamaz.
+                </p>
 
                 <div className="flex items-center gap-3 mt-1">
                   <button
