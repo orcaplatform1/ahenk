@@ -696,34 +696,59 @@ export class AdminService {
     const [
       activeUsers,
       kycPending,
-      thisWeekRevenue,
-      prevWeekRevenue,
       thisWeekMeetings,
       prevWeekMeetings,
       referralRegisteredCount,
+      groupMeetings,
+      oneOnOneMeetings,
+      completedMeetings,
+      cancelledMeetings,
+      subMasada,
+      subKarsimda,
+      subIcerde,
     ] = await Promise.all([
-      this.prisma.user.count({ where: { isBot: false, status: UserStatus.ACTIVE } }),
+      // Bot dahil tüm aktif kullanıcılar
+      this.prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
       this.prisma.kycSubmission.count({ where: { status: "PENDING" } }),
-      this.prisma.payment.aggregate({
-        where: { status: "SUCCESS", paidAt: { gte: weekStart } },
-        _sum: { amountKurus: true },
-      }),
-      this.prisma.payment.aggregate({
-        where: { status: "SUCCESS", paidAt: { gte: prevWeekStart, lt: weekStart } },
-        _sum: { amountKurus: true },
-      }),
       this.prisma.meeting.count({ where: { status: MeetingStatus.COMPLETED, scheduledAt: { gte: weekStart } } }),
       this.prisma.meeting.count({ where: { status: MeetingStatus.COMPLETED, scheduledAt: { gte: prevWeekStart, lt: weekStart } } }),
       this.prisma.referral.count({ where: { status: { in: [ReferralStatus.KYC_APPROVED, ReferralStatus.DISCOUNT_USED] } } }),
+      this.prisma.meeting.count({ where: { type: MeetingType.GROUP } }),
+      this.prisma.meeting.count({ where: { type: MeetingType.ONE_ON_ONE } }),
+      this.prisma.meeting.count({ where: { status: MeetingStatus.COMPLETED } }),
+      this.prisma.meeting.count({ where: { status: MeetingStatus.CANCELLED } }),
+      this.prisma.subscription.count({ where: { plan: SubscriptionPlan.MASADA, status: SubscriptionStatus.ACTIVE } }),
+      this.prisma.subscription.count({ where: { plan: SubscriptionPlan.KARSIMDA, status: SubscriptionStatus.ACTIVE } }),
+      this.prisma.subscription.count({ where: { plan: SubscriptionPlan.ICERDE, status: SubscriptionStatus.ACTIVE } }),
     ]);
 
-    const totalRevenue = (thisWeekRevenue._sum.amountKurus ?? 0) / 100;
-    const netCommission = totalRevenue * 0.15;
+    // Ciro: aktif abonelikler × plan fiyatı (bot dahil)
+    const totalRevenue = subMasada * 349 + subKarsimda * 449 + subIcerde * 679;
+    const netCommission = Math.round(totalRevenue * 0.15 * 100) / 100;
 
     const matchRateThisWeek =
       prevWeekMeetings > 0
         ? Math.round(((thisWeekMeetings - prevWeekMeetings) / prevWeekMeetings) * 100)
+        : thisWeekMeetings > 0 ? 100 : 0;
+
+    const totalMeetings = groupMeetings + oneOnOneMeetings;
+    const algorithmSuccessRate =
+      (completedMeetings + cancelledMeetings) > 0
+        ? Math.round((completedMeetings / (completedMeetings + cancelledMeetings)) * 100)
         : 0;
+
+    const totalSubs = subMasada + subKarsimda + subIcerde;
+    const packageDistribution = totalSubs > 0 ? {
+      masadaPct: Math.round((subMasada / totalSubs) * 100),
+      karsimdaPct: Math.round((subKarsimda / totalSubs) * 100),
+      icerdePct: Math.round((subIcerde / totalSubs) * 100),
+      masadaCount: subMasada,
+      karsimdaCount: subKarsimda,
+      icerdeCount: subIcerde,
+    } : {
+      masadaPct: 0, karsimdaPct: 0, icerdePct: 0,
+      masadaCount: 0, karsimdaCount: 0, icerdeCount: 0,
+    };
 
     // DISCOUNT_USED referral'lardan toplam indirim tutarını hesapla
     const discountUsedReferrals = await this.prisma.referral.findMany({
@@ -739,19 +764,23 @@ export class AdminService {
         select: { amountKurus: true },
       });
       if (payment) {
-        // Ödenen tutar zaten indirimli; indirim miktarı = ödenen * (1/9)
         referralTotalDiscountTL += (payment.amountKurus / 9) / 100;
       }
     }
 
     return {
       totalRevenue,
-      netCommission: Math.round(netCommission * 100) / 100,
+      netCommission,
       activeUsers,
       kycPending,
       matchRateThisWeek,
       referralRegisteredCount,
       referralTotalDiscountTL: Math.round(referralTotalDiscountTL * 100) / 100,
+      totalMeetings,
+      groupMeetings,
+      oneOnOneMeetings,
+      algorithmSuccessRate,
+      packageDistribution,
     };
   }
 
