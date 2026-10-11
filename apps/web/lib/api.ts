@@ -77,12 +77,28 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
   return res.json() as Promise<T>;
 }
 
+async function silentFetch<T>(path: string): Promise<T | null> {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(`${PREFIX}${path}`, {
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      credentials: 'include',
+    });
+    if (!res.ok) return null;
+    return res.json() as Promise<T>;
+  } catch {
+    return null;
+  }
+}
+
 export const api = {
   get: <T>(path: string) => apiFetch<T>(path),
   post: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST', body }),
   put: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PUT', body }),
   patch: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PATCH', body }),
   delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
+  silentGet: <T>(path: string) => silentFetch<T>(path),
   setToken,
   clearToken,
   getToken,

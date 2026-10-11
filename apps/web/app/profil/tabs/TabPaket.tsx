@@ -4,6 +4,26 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 
+type ActivePlan = 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
+
+function getPlanCardState(cardKey: string, activePlan: ActivePlan) {
+  if (!activePlan) return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+  if (activePlan === 'ICERDE') {
+    return { dimmed: true, badge: 'Bu paketin tüm özelliklerine sahipsiniz.', badgeRed: false, showButton: false };
+  }
+  if (activePlan === 'MASADA') {
+    if (cardKey === 'MASADA') return { dimmed: true, badge: 'Aktif Paketiniz', badgeRed: true, showButton: false };
+    if (cardKey === 'KARSIMDA') return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+    return { dimmed: true, badge: 'Bu paketin özelliğinden birine zaten sahipsiniz.', badgeRed: false, showButton: false };
+  }
+  if (activePlan === 'KARSIMDA') {
+    if (cardKey === 'KARSIMDA') return { dimmed: true, badge: 'Aktif Paketiniz', badgeRed: true, showButton: false };
+    if (cardKey === 'MASADA') return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+    return { dimmed: true, badge: 'Bu paketin özelliğinden birine zaten sahipsiniz.', badgeRed: false, showButton: false };
+  }
+  return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+}
+
 interface Subscription {
   id: string;
   plan: string;
@@ -66,7 +86,7 @@ interface Props { kycApproved: boolean; onGoKyc: () => void; }
 
 export function TabPaket({ kycApproved, onGoKyc }: Props) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [hasSubscription, setHasSubscription] = useState(false);
+  const [activePlan, setActivePlan] = useState<ActivePlan>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [buying, setBuying] = useState('');
@@ -74,10 +94,16 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
   const [refundMsg, setRefundMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
-    api.get<{ subscriptions: Subscription[] }>('/payment/subscriptions')
+    api.get<{ subscriptions: Subscription[]; hasMasada?: boolean; hasKarsimda?: boolean }>('/payment/subscriptions')
       .then((d) => {
-        const subs = d.subscriptions ?? (d as any);
-        if (Array.isArray(subs) && subs.length > 0) { setSubscription(subs[0]); setHasSubscription(true); }
+        const subs: Subscription[] = Array.isArray(d) ? d : (d.subscriptions ?? []);
+        if (subs.length > 0) {
+          setSubscription(subs[0]);
+          const hasIcerde = subs.some(s => s.plan === 'ICERDE');
+          const hasMasada = subs.some(s => s.plan === 'MASADA' || s.plan === 'ICERDE');
+          const hasKarsimda = subs.some(s => s.plan === 'KARSIMDA' || s.plan === 'ICERDE');
+          setActivePlan(hasIcerde ? 'ICERDE' : hasMasada ? 'MASADA' : hasKarsimda ? 'KARSIMDA' : null);
+        }
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -133,36 +159,26 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
 
   if (loading) return <SkeletonBlock lines={4} />;
 
-  if (hasSubscription && subscription) {
-    const refundType = getRefundType(subscription);
-    const canRefund = refundType !== null;
-    return (
-      <div className="flex flex-col gap-4">
-        <div className="glass-card p-5 flex flex-col gap-3">
-          <h3 className="font-medium text-sm text-muted uppercase tracking-wide">Aktif Paket</h3>
+  const refundType = subscription ? getRefundType(subscription) : null;
+  const canRefund = refundType !== null;
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Aktif abonelik varsa iade bölümü */}
+      {subscription && (
+        <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted">Paket</span>
+            <span className="text-xs font-medium text-muted uppercase tracking-wide">Aktif Paket</span>
             <span className="text-sm font-semibold text-text">{PLAN_LABEL[subscription.plan] ?? subscription.plan}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted">Platform</span>
-            <span className="text-sm text-text">{PLATFORM_LABEL[subscription.platform] ?? subscription.platform}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted">Başlangıç</span>
-            <span className="text-sm text-text">{new Date(subscription.startedAt).toLocaleDateString('tr-TR')}</span>
           </div>
           {subscription.expiresAt && (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted">Bitiş</span>
-              <span className="text-sm text-text">{new Date(subscription.expiresAt).toLocaleDateString('tr-TR')}</span>
+              <span className="text-xs text-muted">Bitiş</span>
+              <span className="text-xs text-text">{new Date(subscription.expiresAt).toLocaleDateString('tr-TR')}</span>
             </div>
           )}
-        </div>
-
-        <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 flex flex-col gap-3">
-          <p className="text-xs text-[#555] leading-relaxed">
-            Eşleşme 4 döngü boyunca gerçekleşmezse iade talep edebilirsiniz. İade talepleri 5 iş günü içinde değerlendirilir. Masa kurulduğu halde katılım sağlanmamışsa iade yapılmaz.
+          <p className="text-xs text-[#555] leading-relaxed border-t border-white/5 pt-3 mt-1">
+            Eşleşme 4 döngü boyunca gerçekleşmezse iade talep edebilirsiniz. İade talepleri 5 iş günü içinde değerlendirilir.
           </p>
           {refundMsg ? (
             <p className={`text-sm ${refundMsg.ok ? 'text-green-400' : 'text-accent'}`}>{refundMsg.text}</p>
@@ -188,18 +204,8 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
             <p className="text-xs text-[#444]">4 kaçırılmış döngü gerekli (mevcut: grup {subscription.missedGroupCycles ?? 0}, başbaşa {subscription.missedOneonOneCycles ?? 0})</p>
           )}
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-5">
-      {!kycApproved && (
-        <div className="flex items-center justify-between gap-4 bg-yellow-900/20 border border-yellow-800/40 rounded-2xl px-5 py-4">
-          <p className="text-sm text-yellow-300">Paket almak için kimlik doğrulaması gereklidir.</p>
-          <button onClick={onGoKyc} className="text-sm text-yellow-300 hover:text-yellow-100 font-medium whitespace-nowrap">Doğrula →</button>
-        </div>
       )}
+
       {error && <p className="text-accent text-sm">{error}</p>}
 
       <style>{`
@@ -211,23 +217,20 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {PLANS.map((plan) => {
+          const cs = getPlanCardState(plan.key, activePlan);
           const cardBody = (
             <div
               className={plan.featured ? 'p-feat-inner' : 'relative rounded-2xl flex flex-col overflow-hidden flex-1'}
-              style={!plan.featured ? {
-                border: '1px solid rgba(255,255,255,0.12)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
-              } : undefined}
+              style={{
+                ...((!plan.featured) ? {
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
+                } : {}),
+                ...(cs.dimmed ? { opacity: 0.45, pointerEvents: 'none' as const } : {}),
+              }}
             >
             {/* Arka plan görseli */}
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `url(${plan.bgImage})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
-            />
+            <div className="absolute inset-0" style={{ backgroundImage: `url(${plan.bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
             {/* Karartma katmanı */}
             <div className="absolute inset-0" style={{
               background: plan.featured
@@ -235,10 +238,21 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
                 : 'linear-gradient(160deg, rgba(10,5,5,0.3) 0%, rgba(10,5,5,0.82) 55%)',
             }} />
 
-            {plan.featured && (
+            {plan.featured && !cs.badge && (
               <span className="absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
                 style={{ background: 'rgba(10,5,5,0.7)', border: '1px solid rgba(255,255,255,0.18)' }}>
                 Tercih Edilen
+              </span>
+            )}
+            {cs.badge && (
+              <span className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-2 py-1 text-xs font-semibold rounded-full text-center leading-tight"
+                style={{
+                  maxWidth: '90%',
+                  ...(cs.badgeRed
+                    ? { background: 'rgba(192,57,43,0.85)', color: '#fff', border: '1px solid rgba(192,57,43,0.6)' }
+                    : { background: 'rgba(40,40,40,0.85)', color: '#aaa', border: '1px solid rgba(255,255,255,0.12)' }),
+                }}>
+                {cs.badge}
               </span>
             )}
 
@@ -263,30 +277,29 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
                 ))}
               </ul>
 
-              <div className="flex flex-col gap-2 mt-2">
-                <button
-                  onClick={() => kycApproved && handleBuy(plan.key)}
-                  disabled={!kycApproved || buying === plan.key}
-                  className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${!kycApproved ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  style={plan.featured ? {
-                    background: 'linear-gradient(90deg, #b8960c 0%, #e8c84a 45%, #c9a227 100%)',
-                    color: '#1a1100',
-                    fontWeight: 700,
-                    boxShadow: '0 4px 18px rgba(200,160,30,0.35)',
-                  } : {
-                    background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)',
-                    color: '#fff',
-                    boxShadow: '0 4px 16px rgba(192,57,43,0.35)',
-                  }}
-                >
-                  {buying === plan.key ? 'Yönlendiriliyor…' : 'Paketi Seç'}
-                </button>
-                {!kycApproved && (
-                  <p className="text-center text-xs" style={{ color: 'rgba(192,57,43,0.8)' }}>
-                    KYC doğrulaması gerekli
-                  </p>
-                )}
-              </div>
+              {cs.showButton && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <button
+                    onClick={() => kycApproved ? handleBuy(plan.key) : onGoKyc()}
+                    disabled={buying === plan.key}
+                    className="w-full py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
+                    style={!kycApproved ? {
+                      background: 'rgba(192,57,43,0.12)',
+                      color: '#e74c3c',
+                      border: '1px solid rgba(192,57,43,0.4)',
+                    } : plan.featured ? {
+                      background: 'linear-gradient(90deg, #b8960c 0%, #e8c84a 45%, #c9a227 100%)',
+                      color: '#1a1100', fontWeight: 700,
+                      boxShadow: '0 4px 18px rgba(200,160,30,0.35)',
+                    } : {
+                      background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)',
+                      color: '#fff', boxShadow: '0 4px 16px rgba(192,57,43,0.35)',
+                    }}
+                  >
+                    {buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Kimlik Doğrula →' : 'Paketi Seç'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           );

@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
 
 const steps = [
@@ -186,11 +188,60 @@ function RedLast({ text }: { text: string }) {
   );
 }
 
+/* ─── Kart durum yardımcısı ──────────────────────────────────────────────── */
+
+type ActivePlan = 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
+
+function getPlanCardState(cardKey: string, activePlan: ActivePlan) {
+  if (!activePlan) return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+  if (activePlan === 'ICERDE') {
+    return { dimmed: true, badge: 'Bu paketin tüm özelliklerine sahipsiniz.', badgeRed: false, showButton: false };
+  }
+  if (activePlan === 'MASADA') {
+    if (cardKey === 'MASADA') return { dimmed: true, badge: 'Aktif Paketiniz', badgeRed: true, showButton: false };
+    if (cardKey === 'KARSIMDA') return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+    return { dimmed: true, badge: 'Bu paketin özelliğinden birine zaten sahipsiniz.', badgeRed: false, showButton: false };
+  }
+  if (activePlan === 'KARSIMDA') {
+    if (cardKey === 'KARSIMDA') return { dimmed: true, badge: 'Aktif Paketiniz', badgeRed: true, showButton: false };
+    if (cardKey === 'MASADA') return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+    return { dimmed: true, badge: 'Bu paketin özelliğinden birine zaten sahipsiniz.', badgeRed: false, showButton: false };
+  }
+  return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+}
+
 /* ─── Ana bileşen ────────────────────────────────────────────────────────── */
 
 export default function Home() {
+  const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [activeCity, setActiveCity] = useState('İstanbul');
+  const [activePlan, setActivePlan] = useState<ActivePlan>(null);
+  const [authState, setAuthState] = useState<{ loggedIn: boolean; kycApproved: boolean } | null>(null);
+
+  useEffect(() => {
+    api.silentGet<{ activePlan: ActivePlan; isKycVerified?: boolean }>('/auth/me').then((d) => {
+      if (d) {
+        if (d.activePlan) setActivePlan(d.activePlan);
+        setAuthState({ loggedIn: true, kycApproved: !!d.isKycVerified });
+      } else {
+        setAuthState({ loggedIn: false, kycApproved: false });
+      }
+    });
+  }, []);
+
+  function handlePlanSelect(planKey: string) {
+    if (!authState?.loggedIn) {
+      router.push('/giris');
+      return;
+    }
+    if (!authState.kycApproved) {
+      router.push('/profil');
+      return;
+    }
+    // Giriş yapmış + KYC onaylı → profil paket sekmesine
+    router.push('/profil');
+  }
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] overflow-x-hidden">
@@ -406,13 +457,18 @@ export default function Home() {
           `}</style>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {plans.map((plan) => {
+              const cardKey = plan.name === 'Masada' ? 'MASADA' : plan.name === 'Karşımda' ? 'KARSIMDA' : 'ICERDE';
+              const cs = getPlanCardState(cardKey, activePlan);
               const inner = (
                 <div
                   className={plan.featured ? 'lp-feat-inner flex-1' : 'relative rounded-2xl flex flex-col overflow-hidden flex-1'}
-                  style={!plan.featured ? {
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
-                  } : undefined}
+                  style={{
+                    ...((!plan.featured) ? {
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
+                    } : {}),
+                    ...(cs.dimmed ? { opacity: 0.45, pointerEvents: 'none' as const } : {}),
+                  }}
                 >
                   <div className="absolute inset-0" style={{ backgroundImage: `url(${plan.bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
                   <div className="absolute inset-0" style={{
@@ -420,10 +476,18 @@ export default function Home() {
                       ? 'linear-gradient(to top, rgba(10,5,5,0.92) 0%, rgba(10,5,5,0.55) 40%, rgba(10,5,5,0.08) 100%)'
                       : 'linear-gradient(160deg, rgba(10,5,5,0.3) 0%, rgba(10,5,5,0.82) 55%)',
                   }} />
-                  {plan.featured && (
+                  {plan.featured && !cs.badge && (
                     <span className="absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
                       style={{ background: 'rgba(10,5,5,0.7)', border: '1px solid rgba(255,255,255,0.18)' }}>
                       Tercih Edilen
+                    </span>
+                  )}
+                  {cs.badge && (
+                    <span className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap"
+                      style={cs.badgeRed
+                        ? { background: 'rgba(192,57,43,0.85)', color: '#fff', border: '1px solid rgba(192,57,43,0.6)' }
+                        : { background: 'rgba(40,40,40,0.85)', color: '#aaa', border: '1px solid rgba(255,255,255,0.12)' }}>
+                      {cs.badge}
                     </span>
                   )}
                   <div className="relative z-10 p-7 flex flex-col gap-4 flex-1">
@@ -445,19 +509,22 @@ export default function Home() {
                         </li>
                       ))}
                     </ul>
-                    <button
-                      className="mt-2 w-full py-3 rounded-xl text-sm font-medium transition-all duration-200"
-                      style={plan.featured ? {
-                        background: 'linear-gradient(90deg, #b8960c 0%, #e8c84a 45%, #c9a227 100%)',
-                        color: '#1a1100', fontWeight: 700,
-                        boxShadow: '0 4px 18px rgba(200,160,30,0.35)',
-                      } : {
-                        background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)',
-                        color: '#fff', boxShadow: '0 4px 16px rgba(192,57,43,0.35)',
-                      }}
-                    >
-                      Paketi Seç
-                    </button>
+                    {cs.showButton && (
+                      <button
+                        onClick={() => handlePlanSelect(cardKey)}
+                        className="mt-2 w-full py-3 rounded-xl text-sm font-medium transition-all duration-200"
+                        style={plan.featured ? {
+                          background: 'linear-gradient(90deg, #b8960c 0%, #e8c84a 45%, #c9a227 100%)',
+                          color: '#1a1100', fontWeight: 700,
+                          boxShadow: '0 4px 18px rgba(200,160,30,0.35)',
+                        } : {
+                          background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)',
+                          color: '#fff', boxShadow: '0 4px 16px rgba(192,57,43,0.35)',
+                        }}
+                      >
+                        Paketi Seç
+                      </button>
+                    )}
                   </div>
                 </div>
               );

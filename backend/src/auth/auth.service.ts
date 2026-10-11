@@ -14,7 +14,7 @@ import { UsersService } from "../users/users.service";
 import { OtpService } from "./otp/otp.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { ConsentType, UserRole } from "@prisma/client";
+import { ConsentType, UserRole, SubscriptionStatus } from "@prisma/client";
 
 @Injectable()
 export class AuthService {
@@ -231,14 +231,23 @@ export class AuthService {
   }
 
   async getMe(user: any) {
-    const [primaryCity, secondaryCity] = await Promise.all([
+    const [primaryCity, secondaryCity, activeSubs] = await Promise.all([
       user.profile?.primaryCity
         ? this.prisma.city.findUnique({ where: { id: user.profile.primaryCity }, select: { id: true, name: true } })
         : Promise.resolve(null),
       user.profile?.secondaryCity
         ? this.prisma.city.findUnique({ where: { id: user.profile.secondaryCity }, select: { id: true, name: true } })
         : Promise.resolve(null),
+      this.prisma.subscription.findMany({
+        where: { userId: user.id, status: SubscriptionStatus.ACTIVE },
+        select: { plan: true },
+      }),
     ]);
+
+    const hasIcerde = activeSubs.some((s) => s.plan === 'ICERDE');
+    const hasMasada = activeSubs.some((s) => s.plan === 'MASADA' || s.plan === 'ICERDE');
+    const hasKarsimda = activeSubs.some((s) => s.plan === 'KARSIMDA' || s.plan === 'ICERDE');
+    const activePlan = hasIcerde ? 'ICERDE' : hasMasada ? 'MASADA' : hasKarsimda ? 'KARSIMDA' : null;
 
     const { passwordHash, kyc, profile, ...safe } = user;
     return {
@@ -247,6 +256,7 @@ export class AuthService {
       lastName: profile?.lastName ?? '',
       isKycVerified: kyc?.status === 'APPROVED',
       kyc: kyc ? { status: kyc.status } : undefined,
+      activePlan,
       profile: profile ? {
         gender: profile.gender,
         birthDate: profile.birthDate,
