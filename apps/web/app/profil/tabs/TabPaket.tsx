@@ -48,7 +48,7 @@ const PLANS = [
     desc: 'Aylık grup buluşma hakkı',
     featured: false,
     bgImage: '/plan-masada.webp',
-    features: ['1 masa buluşması', 'Kişilik eşleşmesi', 'Şehir içi etkinlikler'],
+    features: ['Her Hafta Grup Masası', 'Doğrulanmış Profiller', 'OCEAN Kişilik Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'],
   },
   {
     key: 'KARSIMDA',
@@ -57,7 +57,7 @@ const PLANS = [
     desc: 'Tek kullanımlık başbaşa buluşma',
     featured: false,
     bgImage: '/plan-karsimda.webp',
-    features: ['1 özel buluşma', 'Kişilik ve ilgi uyumu', 'Premium mekanlar'],
+    features: ['Tek Seferlik Baş Başa Masa', 'Doğrulanmış Profiller', 'OCEAN + Yaş Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'],
   },
   {
     key: 'ICERDE',
@@ -66,7 +66,7 @@ const PLANS = [
     desc: '1 ay Masada + 1 Karşımda hakkı',
     featured: true,
     bgImage: '/plan-icerde.webp',
-    features: ['1 grup + 1 özel buluşma', 'Kişilik ve ilgi uyumu', 'Öncelikli masa seçimi', 'Premium mekanlar'],
+    features: ['4 Grup Masası + 1 Baş Başa Masa', 'Tüm Özellikler Dahil'],
   },
 ];
 
@@ -286,7 +286,7 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
         @keyframes _pCardGoldBorder{to{transform:rotate(360deg)}}
         .p-feat-wrap{position:relative;border-radius:18px;padding:2px;overflow:hidden;}
         .p-feat-wrap::before{content:'';position:absolute;inset:-60%;background:conic-gradient(from 0deg,transparent 68%,#c9a227 78%,#e8c84a 84%,transparent 93%);animation:_pCardGoldBorder 3s linear infinite;z-index:0;}
-        .p-feat-inner{position:relative;z-index:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;flex:1;}
+        .p-feat-inner{position:relative;z-index:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:row;flex:1;}
       `}</style>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -294,8 +294,11 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
           const cs = getPlanCardState(plan.key, activePlan);
           const cardBody = (
             <div
-              className={plan.featured ? 'p-feat-inner' : 'relative rounded-2xl flex flex-col overflow-hidden flex-1'}
+              className={plan.featured ? 'p-feat-inner' : 'relative rounded-2xl overflow-hidden flex-1'}
               style={{
+                display: 'flex',
+                flexDirection: 'row',
+                minHeight: 240,
                 ...((!plan.featured) ? {
                   border: '1px solid rgba(255,255,255,0.12)',
                   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
@@ -303,56 +306,42 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
                 ...(cs.dimmed ? { opacity: 0.45, pointerEvents: 'none' as const } : {}),
               }}
             >
-            {/* Arka plan görseli */}
-            <div className="absolute inset-0" style={{ backgroundImage: `url(${plan.bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-            {/* Karartma katmanı — sadece featured (İçerde) için */}
-            {plan.featured && (
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,5,5,0.92) 0%, rgba(10,5,5,0.55) 40%, rgba(10,5,5,0.08) 100%)' }} />
-            )}
-
-            {plan.featured && !cs.badge && (
-              <span className="absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
-                style={{ background: 'rgba(10,5,5,0.7)', border: '1px solid rgba(255,255,255,0.18)' }}>
-                Tercih Edilen
-              </span>
-            )}
-            {cs.badge && (
-              <span className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-2 py-1 text-xs font-semibold rounded-full text-center leading-tight"
-                style={{
-                  maxWidth: '90%',
-                  ...(cs.badgeRed
-                    ? { background: 'rgba(192,57,43,0.85)', color: '#fff', border: '1px solid rgba(192,57,43,0.6)' }
-                    : { background: 'rgba(40,40,40,0.85)', color: '#aaa', border: '1px solid rgba(255,255,255,0.12)' }),
-                }}>
-                {cs.badge}
-              </span>
-            )}
-
-            <div className="relative z-10 p-6 flex flex-col gap-3 flex-1">
-              <div>
-                <h4 className="font-serif text-xl text-[#f5f5f5] mb-1">{plan.name}</h4>
+            {/* Sol: metin */}
+            <div style={{ width: '55%', flexShrink: 0, background: '#0c0909', display: 'flex', flexDirection: 'column', padding: '16px 12px', gap: 8, position: 'relative' }}>
+              {cs.badge && (
+                <span className="absolute top-2 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 text-xs font-semibold rounded-full text-center leading-tight whitespace-nowrap"
+                  style={{
+                    ...(cs.badgeRed
+                      ? { background: 'rgba(192,57,43,0.85)', color: '#fff', border: '1px solid rgba(192,57,43,0.6)' }
+                      : { background: 'rgba(40,40,40,0.85)', color: '#aaa', border: '1px solid rgba(255,255,255,0.12)' }),
+                  }}>
+                  {cs.badge}
+                </span>
+              )}
+              <div style={{ marginTop: cs.badge ? 20 : 0 }}>
+                <h4 className="font-serif text-[#f5f5f5]" style={{ fontSize: '1rem', marginBottom: 3 }}>{plan.name}</h4>
                 {hasReferralDiscount ? (
                   <>
-                    <div className="flex items-end gap-2 mb-0.5">
-                      <span className="text-3xl font-bold text-[#f5f5f5]">{discountedPrice(plan.price)}</span>
-                      <span className="text-base text-[#888] mb-0.5">₺</span>
-                      <span className="text-sm text-[#555] line-through mb-0.5">{plan.price}₺</span>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
+                      <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.5rem' }}>{discountedPrice(plan.price)}</span>
+                      <span style={{ color: '#888', fontSize: '0.85rem', marginBottom: 1 }}>₺</span>
+                      <span style={{ color: '#555', fontSize: '0.75rem', textDecoration: 'line-through', marginBottom: 1 }}>{plan.price}₺</span>
                     </div>
-                    <p className="text-xs text-[#4ade80] mb-1">Kalan İndirim Hakkı: {discountInfo!.referralCount}</p>
+                    <p style={{ color: '#4ade80', fontSize: '0.68rem', marginBottom: 2 }}>Kalan İndirim Hakkı: {discountInfo!.referralCount}</p>
                   </>
                 ) : (
-                  <div className="flex items-end gap-1 mb-1">
-                    <span className="text-3xl font-bold text-[#f5f5f5]">{plan.price}</span>
-                    <span className="text-base text-[#888] mb-0.5">₺</span>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
+                    <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.5rem' }}>{plan.price}</span>
+                    <span style={{ color: '#888', fontSize: '0.85rem', marginBottom: 1 }}>₺</span>
                   </div>
                 )}
-                <p className="text-[#888] text-sm">{plan.desc}</p>
+                <p style={{ color: '#666', fontSize: '0.68rem' }}>{plan.desc}</p>
               </div>
 
-              <ul className="flex flex-col gap-1.5 flex-1">
+              <ul style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-[#ccc]">
-                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0" style={{ color: '#c0392b' }}>
+                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.7rem', color: '#ccc', lineHeight: 1.3 }}>
+                    <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: 11, height: 11, flexShrink: 0, color: '#c0392b' }}>
                       <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
                     </svg>
                     {f}
@@ -361,27 +350,46 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
               </ul>
 
               {cs.showButton && (
-                <div className="flex flex-col gap-2 mt-2">
-                  <button
-                    onClick={() => kycApproved ? handleBuy(plan.key) : onGoKyc()}
-                    disabled={buying === plan.key}
-                    className="w-full py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
-                    style={!kycApproved ? {
-                      background: 'rgba(192,57,43,0.12)',
-                      color: '#e74c3c',
-                      border: '1px solid rgba(192,57,43,0.4)',
-                    } : plan.featured ? {
-                      background: 'linear-gradient(90deg, #b8960c 0%, #e8c84a 45%, #c9a227 100%)',
-                      color: '#1a1100', fontWeight: 700,
-                      boxShadow: '0 4px 18px rgba(200,160,30,0.35)',
-                    } : {
-                      background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)',
-                      color: '#fff', boxShadow: '0 4px 16px rgba(192,57,43,0.35)',
-                    }}
-                  >
-                    {buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : 'Paketi Seç'}
-                  </button>
-                </div>
+                <button
+                  onClick={() => kycApproved ? handleBuy(plan.key) : onGoKyc()}
+                  disabled={buying === plan.key}
+                  style={!kycApproved ? {
+                    background: 'rgba(192,57,43,0.12)',
+                    color: '#e74c3c',
+                    border: '1px solid rgba(192,57,43,0.4)',
+                    borderRadius: 10,
+                    padding: '7px 0',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    width: '100%',
+                  } : {
+                    background: 'linear-gradient(90deg,#c0392b 0%,#e74c3c 100%)',
+                    color: '#fff',
+                    boxShadow: '0 4px 16px rgba(192,57,43,0.35)',
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '7px 0',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    width: '100%',
+                  }}
+                >
+                  {buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : 'Paketi Seç'}
+                </button>
+              )}
+            </div>
+
+            {/* Sağ: görsel */}
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={plan.bgImage} alt={plan.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+              {plan.featured && !cs.badge && (
+                <span className="absolute top-3 right-2 z-10 px-2 py-0.5 text-xs font-semibold rounded-full text-white"
+                  style={{ background: 'rgba(10,5,5,0.75)', border: '1px solid rgba(255,255,255,0.18)' }}>
+                  Tercih Edilen
+                </span>
               )}
             </div>
           </div>

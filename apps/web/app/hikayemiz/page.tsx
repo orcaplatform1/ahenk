@@ -136,9 +136,6 @@ export default function HikayemizPage() {
           >
             Sen de gel.
           </h2>
-          <p className="mt-4 text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
-            Ahenk bir Traders.TR ticari markasıdır.
-          </p>
           <Link
             href="/kayit"
             className="inline-flex items-center gap-2 rounded-full font-medium text-white mt-8 transition-all"
