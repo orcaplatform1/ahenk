@@ -177,4 +177,12 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsBoolean()
   matchingEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  botSystemActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  maintenanceMode?: boolean;
 }

@@ -245,6 +245,8 @@ export class AdminController {
     return this.adminService.updateSettings({
       weeklyTableLimit: dto.weeklyTableLimit,
       matchingEnabled: dto.matchingEnabled,
+      botSystemActive: dto.botSystemActive,
+      maintenanceMode: dto.maintenanceMode,
     });
   }
 
@@ -313,4 +315,25 @@ export class AdminController {
   banUser(@Param("id") id: string) {
     return this.adminService.banUser(id);
   }
+
+  @Get("partnerships")
+  listPartnerships() {
+    return this.adminService.listPartnerships();
+  }
+
+  @Patch("partnerships/:id")
+  updatePartnership(@Param("id") id: string, @Body() body: { status?: string; adminNote?: string }) {
+    return this.adminService.updatePartnership(id, body);
+  }
+
+  @Get("careers")
+  listCareers() {
+    return this.adminService.listCareers();
+  }
+
+  @Patch("careers/:id")
+  updateCareer(@Param("id") id: string, @Body() body: { status?: string; adminNote?: string }) {
+    return this.adminService.updateCareer(id, body);
+  }
+
 }

@@ -557,14 +557,12 @@ export class AdminService {
     return Object.fromEntries(configs.map((c) => [c.key, c.value]));
   }
 
-  async updateSettings(data: { weeklyTableLimit?: number; matchingEnabled?: boolean }) {
+  async updateSettings(data: { weeklyTableLimit?: number; matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean }) {
     const updates: Array<{ key: string; value: string }> = [];
-    if (data.weeklyTableLimit !== undefined) {
-      updates.push({ key: "WEEKLY_TABLE_LIMIT", value: String(data.weeklyTableLimit) });
-    }
-    if (data.matchingEnabled !== undefined) {
-      updates.push({ key: "MATCHING_ENABLED", value: String(data.matchingEnabled) });
-    }
+    if (data.weeklyTableLimit !== undefined) updates.push({ key: "WEEKLY_TABLE_LIMIT", value: String(data.weeklyTableLimit) });
+    if (data.matchingEnabled !== undefined) updates.push({ key: "MATCHING_ENABLED", value: String(data.matchingEnabled) });
+    if (data.botSystemActive !== undefined) updates.push({ key: "BOT_SYSTEM_ACTIVE", value: String(data.botSystemActive) });
+    if (data.maintenanceMode !== undefined) updates.push({ key: "MAINTENANCE_MODE", value: String(data.maintenanceMode) });
     for (const u of updates) {
       await this.prisma.appConfig.upsert({
         where: { key: u.key },
@@ -974,5 +972,21 @@ export class AdminService {
       data: { status, adminNote: adminNote ?? refund.adminNote },
     });
     return { ok: true };
+  }
+
+  async listPartnerships() {
+    return this.prisma.partnershipApplication.findMany({ orderBy: { createdAt: 'desc' } });
+  }
+
+  async updatePartnership(id: string, data: { status?: string; adminNote?: string }) {
+    return this.prisma.partnershipApplication.update({ where: { id }, data: data as any });
+  }
+
+  async listCareers() {
+    return this.prisma.careerApplication.findMany({ orderBy: { createdAt: 'desc' } });
+  }
+
+  async updateCareer(id: string, data: { status?: string; adminNote?: string }) {
+    return this.prisma.careerApplication.update({ where: { id }, data: data as any });
   }
 }
