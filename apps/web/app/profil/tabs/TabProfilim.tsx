@@ -9,6 +9,20 @@ const TOPICS_LIST = [
   'Sinema', 'Edebiyat', 'Gastronomi', 'Girişimcilik', 'Bilim',
 ];
 
+type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
+
+const VENUE_OPTIONS: { value: VenuePreference; emoji: string; label: string; description: string }[] = [
+  { value: 'ALCOHOLIC',     emoji: '🍷', label: 'Alkollü Mekan',  description: 'Alkollü içecek servisi olan restoran veya bar' },
+  { value: 'NON_ALCOHOLIC', emoji: '☕', label: 'Alkolsüz Mekan', description: 'Kafe veya alkolsüz restoran' },
+  { value: 'NO_PREFERENCE', emoji: '✨', label: 'Fark Etmez',     description: 'Her iki mekan türü de uygundur' },
+];
+
+const VENUE_LABELS: Record<VenuePreference, string> = {
+  ALCOHOLIC:     '🍷 Alkollü Mekan',
+  NON_ALCOHOLIC: '☕ Alkolsüz Mekan',
+  NO_PREFERENCE: '✨ Fark Etmez',
+};
+
 const KYC_BADGE: Record<string, { label: string; cls: string }> = {
   PENDING:    { label: 'Doğrulama Bekleniyor', cls: 'bg-surface text-muted border-border' },
   APPROVED:   { label: 'Doğrulandı ✓',        cls: 'bg-green-900/40 text-green-400 border-green-800' },
@@ -30,6 +44,7 @@ interface UserData {
     primaryCity?: City;
     secondaryCity?: City;
     topics?: string[];
+    venuePreference?: VenuePreference;
   };
   kyc?: { status: string };
 }
@@ -43,9 +58,11 @@ interface Props {
 export function TabProfilim({ user, onGoKyc, cities }: Props) {
   const [editingCities, setEditingCities] = useState(false);
   const [editingTopics, setEditingTopics] = useState(false);
+  const [editingVenue, setEditingVenue] = useState(false);
   const [primaryCityId, setPrimaryCityId] = useState(user.profile?.primaryCity?.id ?? '');
   const [secondaryCityId, setSecondaryCityId] = useState(user.profile?.secondaryCity?.id ?? '');
   const [topics, setTopics] = useState<string[]>(user.profile?.topics ?? []);
+  const [venuePreference, setVenuePreference] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
@@ -68,6 +85,15 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
     try {
       await api.put('/users/topics', { topics });
       setEditingTopics(false);
+    } catch (e) { setSaveError((e as Error).message); }
+    finally { setSaving(false); }
+  }
+
+  async function saveVenuePreference() {
+    setSaving(true); setSaveError('');
+    try {
+      await api.patch('/users/venue-preference', { venuePreference });
+      setEditingVenue(false);
     } catch (e) { setSaveError((e as Error).message); }
     finally { setSaving(false); }
   }
@@ -167,6 +193,52 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
               : <span className="text-sm text-muted">Henüz konu seçilmedi.</span>
             }
           </div>
+        )}
+      </Card>
+
+      {/* Mekan tercihi */}
+      <Card title="Mekan Tercihi" action={!editingVenue ? { label: 'Düzenle', onClick: () => setEditingVenue(true) } : undefined}>
+        {editingVenue ? (
+          <div className="flex flex-col gap-3">
+            {VENUE_OPTIONS.map((opt) => {
+              const selected = venuePreference === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setVenuePreference(opt.value)}
+                  className="w-full text-left rounded-xl p-4 transition-all"
+                  style={selected ? {
+                    background: 'rgba(192,57,43,0.10)',
+                    border: '1.5px solid rgba(192,57,43,0.5)',
+                  } : {
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{opt.emoji}</span>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: selected ? '#ff6b6b' : '#f5f5f5' }}>{opt.label}</p>
+                      <p className="text-xs text-[#666] mt-0.5">{opt.description}</p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+            {saveError && <p className="text-accent text-sm">{saveError}</p>}
+            <div className="flex gap-2 mt-1">
+              <button onClick={() => setEditingVenue(false)} className="flex-1 py-2 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>İptal</button>
+              <button onClick={saveVenuePreference} disabled={saving} className="flex-1 py-2 text-sm btn-grad">
+                {saving ? 'Kaydediliyor…' : 'Kaydet'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <Row
+            label="Tercih"
+            value={VENUE_LABELS[user.profile?.venuePreference ?? 'NO_PREFERENCE']}
+          />
         )}
       </Card>
     </div>

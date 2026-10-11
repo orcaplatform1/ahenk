@@ -12,7 +12,7 @@ import {
   MaxLength,
   ArrayMinSize,
 } from "class-validator";
-import { UserStatus, UserRole, SubscriptionPlan, VenueCategory } from "@prisma/client";
+import { UserStatus, UserRole, SubscriptionPlan, VenueCategory, VenueType } from "@prisma/client";
 
 // ─── Kullanıcı ────────────────────────────────────────────────────────────────
 
@@ -96,6 +96,10 @@ export class CreateVenueDto {
   @IsEnum(VenueCategory)
   category: VenueCategory;
 
+  @IsOptional()
+  @IsEnum(VenueType)
+  venueType?: VenueType;
+
   @IsString()
   cityId: string;
 
@@ -118,6 +122,10 @@ export class UpdateVenueDto {
   @IsOptional()
   @IsEnum(VenueCategory)
   category?: VenueCategory;
+
+  @IsOptional()
+  @IsEnum(VenueType)
+  venueType?: VenueType;
 
   @IsOptional()
   @IsString()

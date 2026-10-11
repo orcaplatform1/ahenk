@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { VenuePreference } from "@prisma/client";
 
 @Injectable()
 export class UsersService {
@@ -38,5 +39,25 @@ export class UsersService {
       },
     });
     return { ok: true };
+  }
+
+  async updateVenuePreference(userId: string, venuePreference: VenuePreference) {
+    await this.prisma.profile.update({
+      where: { userId },
+      data: { venuePreference },
+    });
+    return { ok: true };
+  }
+
+  async getProfile(userId: string) {
+    return this.prisma.profile.findUnique({
+      where: { userId },
+      select: {
+        firstName: true, lastName: true, gender: true, bio: true,
+        city: true, primaryCity: true, secondaryCity: true,
+        venuePreference: true, topicPreferences: true, venueCategories: true,
+        isPioneer: true, isPublic: true, avatarUrl: true,
+      },
+    });
   }
 }

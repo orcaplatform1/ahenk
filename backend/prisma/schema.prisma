@@ -82,10 +82,17 @@ model Profile {
   district          String?     // İlçe
   venueCategories   String[]    // Mekan tercihleri (ör: "kafe", "park", "kütüphane")
   topicPreferences  String[]    // Konu tercihleri (ör: "teknoloji", "müzik", "spor")
+  venuePreference   VenuePreference @default(NO_PREFERENCE)
   isPioneer         Boolean  @default(false) // Öncü rozeti — admin tarafından atanır
   isPublic          Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum VenuePreference {
+  ALCOHOLIC
+  NON_ALCOHOLIC
+  NO_PREFERENCE
 }
 
 enum Gender {
@@ -469,6 +476,7 @@ model Venue {
   name        String
   description String?       @db.Text
   category    VenueCategory
+  venueType   VenueType     @default(NON_ALCOHOLIC)
   cityId      String
   city        City          @relation(fields: [cityId], references: [id])
   address     String?
@@ -483,6 +491,11 @@ enum VenueCategory {
   SADE
   ORTA
   PREMIUM
+}
+
+enum VenueType {
+  ALCOHOLIC
+  NON_ALCOHOLIC
 }
 
 // ─────────────────────────────────────────────

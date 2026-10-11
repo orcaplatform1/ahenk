@@ -32,6 +32,7 @@ type EligibleUser = {
     district: string | null;
     venueCategories: string[];
     topicPreferences: string[];
+    venuePreference: 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE' | null;
   } | null;
   oceanScore: OceanScoreData | null;
   contactBlocks: { hashedPhone: string }[];
@@ -334,7 +335,7 @@ export class MatchingService {
         isBot: true,
         status: true,
         phoneHash: true,
-        profile: { select: { firstName: true, lastName: true, gender: true, city: true, district: true, venueCategories: true, topicPreferences: true } },
+        profile: { select: { firstName: true, lastName: true, gender: true, city: true, district: true, venueCategories: true, topicPreferences: true, venuePreference: true } },
         oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
         contactBlocks: { select: { hashedPhone: true } },
       },
@@ -358,7 +359,8 @@ export class MatchingService {
     const pickBest = (pool: EligibleUser[], n: number, anchor: EligibleUser, existing: EligibleUser[] = []): EligibleUser[] => {
       const a = avail(pool).filter((u) => {
         if (this.areBlocked(anchor.id, u.id, blockedSet)) return false;
-        return existing.every((e) => !this.areBlocked(e.id, u.id, blockedSet));
+        if (this.areVenueIncompatible(anchor, u)) return false;
+        return existing.every((e) => !this.areBlocked(e.id, u.id, blockedSet) && !this.areVenueIncompatible(e, u));
       });
       if (a.length < n) return [];
       return [...a].sort((x, y) => this.scoreTwo(anchor, y) - this.scoreTwo(anchor, x)).slice(0, n);
@@ -394,7 +396,7 @@ export class MatchingService {
       const group: EligibleUser[] = [anchor];
       for (const c of pool.slice(1)) {
         if (group.length >= TABLE_SIZE_SMALL) break;
-        if (group.every((g) => !this.areBlocked(g.id, c.id, blockedSet))) group.push(c);
+        if (group.every((g) => !this.areBlocked(g.id, c.id, blockedSet) && !this.areVenueIncompatible(g, c))) group.push(c);
       }
       if (group.length < TABLE_SIZE_SMALL) break;
       mark(group);
@@ -428,7 +430,7 @@ export class MatchingService {
     // Önce M+F çiftleri
     while (males().length >= 1 && females().length >= 1) {
       const m = males()[0];
-      const f = females().find((w) => !this.areBlocked(m.id, w.id, blockedSet));
+      const f = females().find((w) => !this.areBlocked(m.id, w.id, blockedSet) && !this.areVenueIncompatible(m, w));
       if (!f) break;
       used.add(m.id); used.add(f.id);
       pairs.push([m, f]);
@@ -437,7 +439,7 @@ export class MatchingService {
     // Kalan eşcinsel çiftler
     const rem = avail();
     for (let i = 0; i + 1 < rem.length; i += 2) {
-      if (!this.areBlocked(rem[i].id, rem[i + 1].id, blockedSet)) {
+      if (!this.areBlocked(rem[i].id, rem[i + 1].id, blockedSet) && !this.areVenueIncompatible(rem[i], rem[i + 1])) {
         used.add(rem[i].id); used.add(rem[i + 1].id);
         pairs.push([rem[i], rem[i + 1]]);
       }
@@ -459,6 +461,14 @@ export class MatchingService {
 
   private areBlocked(aId: string, bId: string, blocks: Set<string>): boolean {
     return blocks.has(`${aId}:${bId}`) || blocks.has(`${bId}:${aId}`);
+  }
+
+  // ALCOHOLIC ↔ NON_ALCOHOLIC çifti uyumsuz; NO_PREFERENCE her ikiyle de uyumlu
+  private areVenueIncompatible(a: EligibleUser, b: EligibleUser): boolean {
+    const pa = a.profile?.venuePreference ?? 'NO_PREFERENCE';
+    const pb = b.profile?.venuePreference ?? 'NO_PREFERENCE';
+    return (pa === 'ALCOHOLIC' && pb === 'NON_ALCOHOLIC') ||
+           (pa === 'NON_ALCOHOLIC' && pb === 'ALCOHOLIC');
   }
 
   private scoreTwo(a: EligibleUser, b: EligibleUser): number {

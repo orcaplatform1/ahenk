@@ -14,6 +14,7 @@ import {
   MeetingStatus,
   MeetingType,
   VenueCategory,
+  VenueType,
 } from "@prisma/client";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "../payment/payment.constants";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
@@ -458,6 +459,7 @@ export class AdminService {
     name: string;
     description?: string;
     category: VenueCategory;
+    venueType?: VenueType;
     cityId: string;
     address?: string;
   }) {
@@ -470,6 +472,7 @@ export class AdminService {
     name?: string;
     description?: string;
     category?: VenueCategory;
+    venueType?: VenueType;
     address?: string;
     isActive?: boolean;
   }) {

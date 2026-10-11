@@ -38,7 +38,7 @@ async function sha256(text: string): Promise<string | null> {
 
 function formatPhone(digits: string): string { return `+90${digits}`; }
 
-const STEPS = ['Temel Bilgiler', 'Şehir Seçimi', 'OCEAN (Big Five) Testi', 'Numara Engelleme'];
+const STEPS = ['Temel Bilgiler', 'Şehir Seçimi', 'OCEAN (Big Five) Testi', 'Mekan Tercihi', 'Numara Engelleme'];
 
 const LIKERT = [
   { v: 1, label: 'Hiç katılmıyorum' },
@@ -48,12 +48,21 @@ const LIKERT = [
   { v: 5, label: 'Tamamen katılıyorum' },
 ];
 
+type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE' | '';
+
 interface FormState {
   firstName: string; lastName: string; email: string; password: string; confirmPassword: string;
   birthDate: string; gender: 'MALE' | 'FEMALE' | '';
   primaryCityId: string; secondaryCityId: string;
+  venuePreference: VenuePreference;
   contactNumbers: string[]; contactInput: string;
 }
+
+const VENUE_OPTIONS: { value: VenuePreference; emoji: string; label: string; description: string }[] = [
+  { value: 'ALCOHOLIC',     emoji: '🍷', label: 'Alkollü Mekan',  description: 'Alkollü içecek servisi olan restoran veya bar' },
+  { value: 'NON_ALCOHOLIC', emoji: '☕', label: 'Alkolsüz Mekan', description: 'Kafe veya alkolsüz restoran' },
+  { value: 'NO_PREFERENCE', emoji: '✨', label: 'Fark Etmez',     description: 'Her iki mekan türü de uygundur' },
+];
 
 export default function KayitPage() {
   const router = useRouter();
@@ -66,6 +75,7 @@ export default function KayitPage() {
   const [form, setForm] = useState<FormState>({
     firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
     birthDate: '', gender: '', primaryCityId: '', secondaryCityId: '',
+    venuePreference: '',
     contactNumbers: [], contactInput: '',
   });
 
@@ -147,6 +157,16 @@ export default function KayitPage() {
       setStepDir(1); setStep(3);
     } catch (e) { setError((e as Error).message); }
     finally { setTestSubmitting(false); }
+  }
+
+  async function handleStep3() {
+    if (!form.venuePreference) { setError('Lütfen bir mekan tercihi seçin.'); return; }
+    setLoading(true); setError('');
+    try {
+      await api.patch('/users/venue-preference', { venuePreference: form.venuePreference });
+      setStepDir(1); setStep(4);
+    } catch (e) { setError((e as Error).message); }
+    finally { setLoading(false); }
   }
 
   function addContact() {
@@ -456,11 +476,85 @@ export default function KayitPage() {
           </div>
         )}
 
-        {/* ── Adım 4: Numara Engelleme ── */}
+        {/* ── Adım 4: Mekan Tercihi ── */}
         {step === 3 && (
           <div className="flex flex-col gap-5">
             <div>
               <p className="text-xs font-semibold tracking-[0.18em] text-[#555] uppercase mb-1">ADIM 4</p>
+              <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1 leading-tight">
+                Eşleşmenizin yapılacağı mekan ortamı nasıl olsun istersiniz?
+              </h1>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {VENUE_OPTIONS.map((opt) => {
+                const selected = form.venuePreference === opt.value;
+                return (
+                  <motion.button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => set('venuePreference', opt.value)}
+                    whileTap={{ scale: 0.99 }}
+                    className="w-full text-left rounded-2xl p-5 transition-all duration-200"
+                    style={selected ? {
+                      background: 'rgba(192,57,43,0.10)',
+                      border: '1.5px solid rgba(192,57,43,0.6)',
+                      boxShadow: '0 0 18px rgba(192,57,43,0.14)',
+                    } : {
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    <div className="flex items-start gap-4">
+                      <span className="text-2xl flex-shrink-0 mt-0.5">{opt.emoji}</span>
+                      <div>
+                        <p className="font-medium text-[#f5f5f5] text-[15px] mb-1"
+                          style={{ color: selected ? '#ff6b6b' : '#f5f5f5' }}>
+                          {opt.label}
+                        </p>
+                        <p className="text-sm text-[#666]">{opt.description}</p>
+                      </div>
+                      {selected && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                          className="ml-auto flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{ background: 'linear-gradient(135deg,#c0392b,#ff6b6b)' }}
+                        >
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <path d="M2 5 L4 7 L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+
+            <p className="text-xs text-[#444] leading-relaxed">
+              Bu tercih, sizi doğru mekan ortamındaki kişilerle eşleştirmek için kullanılır. İstediğiniz zaman profilinizden değiştirebilirsiniz.
+            </p>
+
+            <button
+              type="button"
+              onClick={handleStep3}
+              disabled={loading || !form.venuePreference}
+              className="w-full py-3.5 text-sm btn-grad disabled:opacity-40"
+            >
+              {loading ? 'Kaydediliyor…' : 'Devam Et'}
+            </button>
+          </div>
+        )}
+
+        {/* ── Adım 5: Numara Engelleme ── */}
+        {step === 4 && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.18em] text-[#555] uppercase mb-1">ADIM 5</p>
               <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Numara Engelleme</h1>
               <p className="text-[#555] text-sm">Tanıdıklarınla karşılaşmak istemiyorsan numara ekleyebilirsin.</p>
             </div>
