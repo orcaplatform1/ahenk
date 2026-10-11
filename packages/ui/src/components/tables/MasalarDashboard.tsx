@@ -127,8 +127,8 @@ function ThursdayCountdown() {
     isCritical ? '#e74c3c' :
     urgency === 'red' ? '#c0392b' :
     urgency === 'orange' ? '#e67e22' :
-    urgency === 'day' ? '#888' :
-    '#555';
+    urgency === 'day' ? '#bbb' :
+    '#aaa';
 
   const filter =
     isCritical ? 'drop-shadow(0 0 10px rgba(231,76,60,0.7))' :
@@ -147,7 +147,7 @@ function ThursdayCountdown() {
       <p style={{
         margin: 0,
         fontSize: 9,
-        color: '#333',
+        color: '#666',
         letterSpacing: '0.15em',
         textTransform: 'uppercase',
         fontFamily: 'Inter, sans-serif',
@@ -438,11 +438,13 @@ function ScanningView({ masa }: { masa: MasaData | null }) {
           viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`}
           style={{ position: 'absolute', inset: 0 }}
         >
-          {[30, 62, 93, ORBIT_R].map(r => (
-            <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.05} />
+          {[30, 62, 93, ORBIT_R].map((r, i) => (
+            <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke={SCAN_CLR}
+              strokeWidth={i === 3 ? 1 : 0.8}
+              opacity={i === 3 ? 0.35 : 0.18} />
           ))}
-          <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke={SCAN_CLR} strokeWidth={0.5} opacity={0.04} />
-          <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke={SCAN_CLR} strokeWidth={0.5} opacity={0.04} />
+          <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.14} />
+          <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.14} />
 
           <circle cx={CX} cy={CY} r={5} fill={SCAN_CLR} opacity={0.85} />
 
