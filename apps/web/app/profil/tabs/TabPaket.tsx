@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 
@@ -19,21 +20,45 @@ interface InitCheckoutResponse {
 }
 
 const PLANS = [
-  { key: 'MASADA',   name: 'Masada',   price: '349', featured: false },
-  { key: 'KARSIMDA', name: 'Karşımda', price: '449', featured: false },
-  { key: 'ICERDE',   name: 'İçerde',   price: '679', featured: true  },
+  {
+    key: 'MASADA',
+    name: 'Masada',
+    price: '349',
+    desc: 'Aylık grup buluşma hakkı',
+    featured: false,
+    bgImage: '/plan-masada.webp',
+    features: ['1 masa buluşması', 'Kişilik eşleşmesi', 'Şehir içi etkinlikler'],
+  },
+  {
+    key: 'KARSIMDA',
+    name: 'Karşımda',
+    price: '449',
+    desc: 'Tek kullanımlık başbaşa buluşma',
+    featured: false,
+    bgImage: '/plan-karsimda.webp',
+    features: ['1 özel buluşma', 'Kişilik ve ilgi uyumu', 'Premium mekanlar'],
+  },
+  {
+    key: 'ICERDE',
+    name: 'İçerde',
+    price: '679',
+    desc: '1 ay Masada + 1 Karşımda hakkı',
+    featured: true,
+    bgImage: '/plan-icerde.webp',
+    features: ['1 grup + 1 özel buluşma', 'Kişilik ve ilgi uyumu', 'Öncelikli masa seçimi', 'Premium mekanlar'],
+  },
 ];
 
 const PLAN_LABEL: Record<string, string> = {
-  MASADA:   'Masada',
+  MASADA: 'Masada',
   KARSIMDA: 'Karşımda',
-  ICERDE:   'İçerde',
+  ICERDE: 'İçerde',
 };
 
 const PLATFORM_LABEL: Record<string, string> = {
-  WEB:    'Web',
+  WEB: 'Web',
   GOOGLE: 'Google Play',
-  APPLE:  'App Store',
+  APPLE: 'App Store',
 };
 
 interface Props { kycApproved: boolean; onGoKyc: () => void; }
@@ -113,49 +138,98 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
         </div>
       )}
       {error && <p className="text-accent text-sm">{error}</p>}
+
       <style>{`
         @keyframes _pRotGrad{to{transform:rotate(360deg)}}
-        .paket-featured-wrap{position:relative;}
-        .paket-featured-wrap::before{content:'';position:absolute;inset:-1.5px;border-radius:18px;background:conic-gradient(#c0392b,#ff6b6b,#e74c3c,#c0392b);animation:_pRotGrad 3s linear infinite;z-index:0;}
-        .paket-featured-inner{position:relative;z-index:1;border-radius:16px;}
-        .tercih-chip{position:relative;}
-        .tercih-chip::before{content:'';position:absolute;inset:-1px;border-radius:9999px;background:conic-gradient(#c0392b,#ff6b6b,#c0392b);animation:_pRotGrad 3s linear infinite;z-index:-1;}
+        .p-tercih-badge::before{content:'';position:absolute;inset:-1.5px;border-radius:9999px;background:conic-gradient(#c0392b,#ff6b6b,#e74c3c,#c0392b);animation:_pRotGrad 3s linear infinite;z-index:-1;}
       `}</style>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {PLANS.map((plan) => (
           <div
             key={plan.key}
-            className={plan.featured ? 'paket-featured-wrap' : ''}
+            className="relative rounded-2xl flex flex-col overflow-hidden"
+            style={plan.featured ? {
+              border: '1px solid rgba(192,57,43,0.5)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5), 0 0 32px rgba(192,57,43,0.2)',
+            } : {
+              border: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
+            }}
           >
+            {/* Arka plan görseli */}
             <div
-              className={`paket-featured-inner p-6 flex flex-col gap-3 ${!plan.featured ? 'glass-card' : ''}`}
-              style={plan.featured ? {
-                background: 'rgba(255,255,255,0.05)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
-              } : {}}
-            >
-              {plan.featured && (
-                <span
-                  className="tercih-chip self-start px-3 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap"
-                  style={{ background: '#0a0a0a', color: '#ff6b6b' }}
-                >
-                  Tercih Edilen
-                </span>
-              )}
-              <h4 className="font-serif text-xl text-[#f5f5f5]">{plan.name}</h4>
-              <div className="text-3xl font-bold text-[#f5f5f5] font-variant-numeric tabular-nums">
-                {plan.price}<span className="text-base font-normal text-[#888]">₺</span>
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url(${plan.bgImage})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            />
+            {/* Karartma katmanı */}
+            <div className="absolute inset-0" style={{
+              background: plan.featured
+                ? 'linear-gradient(160deg, rgba(120,20,10,0.45) 0%, rgba(10,5,5,0.85) 55%)'
+                : 'linear-gradient(160deg, rgba(80,15,10,0.35) 0%, rgba(10,5,5,0.85) 55%)',
+            }} />
+            {/* Sağ üst smoke */}
+            {plan.featured ? (
+              <motion.div
+                className="absolute top-0 right-0 w-40 h-40 pointer-events-none"
+                style={{ background: 'radial-gradient(ellipse at top right, rgba(192,57,43,0.45) 0%, transparent 65%)' }}
+                animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            ) : (
+              <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ background: 'radial-gradient(ellipse at top right, rgba(192,57,43,0.3) 0%, transparent 65%)' }} />
+            )}
+
+            {plan.featured && (
+              <span
+                className="p-tercih-badge absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
+                style={{ background: '#0a0a0a' }}
+              >
+                Tercih Edilen
+              </span>
+            )}
+
+            <div className="relative z-10 p-6 flex flex-col gap-3 flex-1">
+              <div>
+                <h4 className="font-serif text-xl text-[#f5f5f5] mb-1">{plan.name}</h4>
+                <div className="flex items-end gap-1 mb-1">
+                  <span className="text-3xl font-bold text-[#f5f5f5]">{plan.price}</span>
+                  <span className="text-base text-[#888] mb-0.5">₺</span>
+                </div>
+                <p className="text-[#888] text-sm">{plan.desc}</p>
               </div>
-              <div className="relative group mt-auto">
+
+              <ul className="flex flex-col gap-1.5 flex-1">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-[#ccc]">
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0" style={{ color: '#c0392b' }}>
+                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="relative group mt-2">
                 <button
                   onClick={() => kycApproved && handleBuy(plan.key)}
                   disabled={!kycApproved || buying === plan.key}
-                  className={`w-full py-2.5 text-sm font-medium transition-all disabled:opacity-50 ${
-                    plan.featured ? 'btn-grad' : ''
-                  } ${!kycApproved ? 'cursor-not-allowed' : ''}`}
-                  style={!plan.featured ? { border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9999, color: '#f5f5f5', background: 'transparent' } : {}}
+                  className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 ${!kycApproved ? 'cursor-not-allowed' : ''}`}
+                  style={plan.featured ? {
+                    background: 'linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)',
+                    color: '#fff',
+                    boxShadow: '0 4px 16px rgba(192,57,43,0.4)',
+                  } : {
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    color: '#aaa',
+                    background: 'rgba(255,255,255,0.04)',
+                  }}
+                  onMouseEnter={e => { if (!plan.featured && kycApproved) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(192,57,43,0.5)'; (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; } }}
+                  onMouseLeave={e => { if (!plan.featured) { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.15)'; (e.currentTarget as HTMLElement).style.color = '#aaa'; } }}
                 >
                   {buying === plan.key ? 'Yönlendiriliyor…' : 'Satın Al'}
                 </button>

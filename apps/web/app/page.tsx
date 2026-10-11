@@ -430,7 +430,6 @@ export default function Home() {
                     <style>{`
                       @keyframes _rotGrad{to{transform:rotate(360deg)}}
                       .tercih-badge::before{content:'';position:absolute;inset:-1.5px;border-radius:9999px;background:conic-gradient(#c0392b,#ff6b6b,#e74c3c,#c0392b);animation:_rotGrad 3s linear infinite;z-index:-1;}
-                      .tercih-badge{position:relative;}
                     `}</style>
                     <span
                       className="tercih-badge absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
