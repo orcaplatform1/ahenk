@@ -48,7 +48,7 @@ const sections = [
         <SubTitle>Kayıt Sırasında</SubTitle>
         <List items={['Ad ve soyad', 'E-posta adresi', 'Doğum tarihi', 'Cinsiyet', 'Şehir tercihi']} />
 
-        <SubTitle style={{ marginTop: '1.25rem' }}>Kimlik Doğrulama (KYC) Sırasında</SubTitle>
+        <SubTitle style={{ marginTop: '1.25rem' }}>Kimlik Doğrulama Sırasında</SubTitle>
         <p style={{ color: '#888', fontSize: '0.82rem', marginBottom: '0.6rem' }}>
           Aşağıdaki veriler <strong style={{ color: '#f5f5f5' }}>özel nitelikli kişisel veri</strong> kapsamındadır ve açık rıza alınarak işlenir.
         </p>
@@ -82,7 +82,7 @@ const sections = [
       <List
         items={[
           'Kullanıcı hesabının oluşturulması ve yönetilmesi',
-          'Kimlik doğrulama (KYC) sürecinin yürütülmesi ve güvenli platform ortamının sağlanması',
+          'Kimlik doğrulama sürecinin yürütülmesi ve güvenli platform ortamının sağlanması',
           'OCEAN kişilik modeline dayalı algoritmik eşleştirme ile uyumlu masa buluşmalarının organize edilmesi',
           'OCEAN skorlarının yapay zeka destekli analizi ile masa uyum raporu oluşturulması (yalnızca toplu skor verisi kullanılır; bireysel kimlik bilgisi yapay zeka sistemine aktarılmaz)',
           'Abonelik ve ödeme işlemlerinin gerçekleştirilmesi',
@@ -139,7 +139,7 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
         {[
           ['Kullanıcı hesap verileri', 'Hesap silinene kadar + 2 yıl'],
-          ['KYC belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl — yasal yükümlülük'],
+          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl — yasal yükümlülük'],
           ['OCEAN testi sonuçları', 'Hesap aktif olduğu sürece'],
           ['Ödeme kayıtları', '10 yıl — Vergi Usul Kanunu'],
           ['Hash\'lenmiş telefon numaraları', 'Kullanıcı silene kadar'],

@@ -30,7 +30,7 @@ const sections = [
           'Platforma üye olmak için 18 yaşını doldurmuş olmak zorunludur.',
           'Gerçek kimlik bilgileriyle kayıt yapılması gerekir; sahte veya başkasına ait bilgilerle kayıt yasaktır.',
           'Her kullanıcı yalnızca bir hesap açabilir — birden fazla hesap tespitinde tüm hesaplar kapatılır.',
-          'KYC kimlik doğrulama süreci zorunludur; doğrulama tamamlanmadan paket satın alınamaz ve masa eşleştirmesine dahil olunamaz.',
+          'kimlik doğrulama süreci zorunludur; doğrulama tamamlanmadan paket satın alınamaz ve masa eşleştirmesine dahil olunamaz.',
           'Üyelik sırasında verilen bilgilerin güncel ve doğru tutulması kullanıcının sorumluluğundadır.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
@@ -47,7 +47,7 @@ const sections = [
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
           'Platforma kayıt sırasında gerçek ad, soyad, doğum tarihi ve cinsiyet bilgilerini doğru olarak girmek.',
-          'KYC sürecinde gerçek kimlik belgesini ve liveness videosunu yüklemek.',
+          'kimlik doğrulama sürecinde gerçek kimlik belgesini ve liveness videosunu yüklemek.',
           'OCEAN kişilik testini dürüstçe ve gerçek kişiliği yansıtacak şekilde yanıtlamak.',
           'Buluşmalarda diğer katılımcılara saygılı ve dürüst davranmak.',
           'Platform kurallarına ve Türkiye Cumhuriyeti yasalarına uymak.',
@@ -133,7 +133,7 @@ const sections = [
           'Kullanıcı istediği zaman aboneliğini iptal edebilir.',
           'İptal işlemi mevcut abonelik dönemi sona erene kadar geçerli olmaz; hizmet dönem sonuna kadar aktif kalmaya devam eder.',
           'Mevcut dönem için iade yapılmaz.',
-          'KYC doğrulaması tamamlanmamış kullanıcılar eşleştirmeye dahil edilmez; bu nedenle iade talep edilemez.',
+          'kimlik doğrulaması tamamlanmamış kullanıcılar eşleştirmeye dahil edilmez; bu nedenle iade talep edilemez.',
           'Hesabın Ahenk tarafından kural ihlali nedeniyle kapatılması durumunda kalan abonelik süresi için iade yapılmaz.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>

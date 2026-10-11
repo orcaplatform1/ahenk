@@ -109,8 +109,8 @@ const sections = [
         {[
           'Ödemenin onaylanmasının ardından abonelik anında aktifleşir ve kullanıcı hesabına tanımlanır.',
           'Hizmet tamamen dijital niteliktedir; fiziksel ürün veya teslimat söz konusu değildir.',
-          'Kullanıcının abonelik dönemi boyunca hizmetten yararlanabilmesi için KYC kimlik doğrulamasını tamamlamış olması zorunludur.',
-          'KYC doğrulaması tamamlanmadan eşleştirmeye dahil olunamaz.',
+          'Kullanıcının abonelik dönemi boyunca hizmetten yararlanabilmesi için kimlik doğrulamasını tamamlamış olması zorunludur.',
+          'Kimlik doğrulaması tamamlanmadan eşleştirmeye dahil olunamaz.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}

@@ -35,13 +35,10 @@ export class UsersService {
     });
   }
 
-  async saveCities(userId: string, primaryCityId: string, secondaryCityId?: string) {
+  async saveCities(userId: string, primaryCityId: string) {
     await this.prisma.profile.update({
       where: { userId },
-      data: {
-        primaryCity: primaryCityId,
-        secondaryCity: secondaryCityId ?? null,
-      },
+      data: { primaryCity: primaryCityId },
     });
     return { ok: true };
   }
@@ -95,7 +92,7 @@ export class UsersService {
       where: { userId },
       select: {
         firstName: true, lastName: true, gender: true, bio: true,
-        city: true, primaryCity: true, secondaryCity: true,
+        city: true, primaryCity: true,
         venuePreference: true, topicPreferences: true, venueCategories: true,
         isPioneer: true, isPublic: true, avatarUrl: true,
       },

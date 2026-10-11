@@ -35,7 +35,7 @@ const TABS = [
   { key: 'test',     label: 'Kişilik Testim' },
   { key: 'masalar',  label: 'Masalarım' },
   { key: 'paket',    label: 'Paketim' },
-  { key: 'kyc',      label: 'KYC Doğrulama' },
+  { key: 'kyc',      label: 'Kimlik Doğrulama' },
   { key: 'rehber',   label: 'Numara Engelleme' },
 ] as const;
 
@@ -116,7 +116,7 @@ export default function ProfilPage() {
           >
             <div>
               <p className="text-sm font-medium text-[#f5f5f5]">Kimlik Doğrulaması Gerekiyor</p>
-              <p className="text-xs text-[#888] mt-0.5">Masaya katılmak için KYC doğrulamasını tamamla.</p>
+              <p className="text-xs text-[#888] mt-0.5">Masaya katılmak için kimlik doğrulamasını tamamla.</p>
             </div>
             <button
               onClick={() => changeTab('kyc')}

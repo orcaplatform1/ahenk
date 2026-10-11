@@ -51,19 +51,37 @@ const LIKERT = [
 
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE' | '';
 
+const OCCUPATION_SECTORS = [
+  'Teknoloji & Yazılım',
+  'Finans & Bankacılık',
+  'Sağlık & Tıp',
+  'Hukuk',
+  'Eğitim & Akademi',
+  'Mühendislik',
+  'Pazarlama & Reklam',
+  'Medya & İletişim',
+  'Sanat & Tasarım',
+  'Girişimcilik & İş Dünyası',
+  'Kamu & Devlet',
+  'Turizm & Hizmet',
+  'Öğrenci',
+  'Diğer',
+] as const;
+
 interface FormState {
   firstName: string; lastName: string; email: string; password: string; confirmPassword: string;
   phoneNumber: string;
   birthDate: string; gender: 'MALE' | 'FEMALE' | '';
-  primaryCityId: string; secondaryCityId: string;
+  occupationSector: string;
+  primaryCityId: string;
   venuePreference: VenuePreference;
   contactNumbers: string[]; contactInput: string;
 }
 
-const VENUE_OPTIONS: { value: VenuePreference; emoji: string; label: string; description: string }[] = [
-  { value: 'ALCOHOLIC',     emoji: '🍷', label: 'Alkollü Mekan',  description: 'Alkollü içecek servisi olan restoran veya bar' },
-  { value: 'NON_ALCOHOLIC', emoji: '☕', label: 'Alkolsüz Mekan', description: 'Kafe veya alkolsüz restoran' },
-  { value: 'NO_PREFERENCE', emoji: '✨', label: 'Fark Etmez',     description: 'Her iki mekan türü de uygundur' },
+const VENUE_OPTIONS: { value: VenuePreference; label: string; description: string }[] = [
+  { value: 'ALCOHOLIC',     label: 'Alkollü Mekan',      description: 'Alkollü içecek servisi olan restoran veya bar' },
+  { value: 'NON_ALCOHOLIC', label: 'Alkolsüz Mekan',     description: 'Kafe veya alkolsüz restoran' },
+  { value: 'NO_PREFERENCE', label: 'Her ikisi de uygun', description: 'Her iki mekan türü de uygundur' },
 ];
 
 export default function KayitPage() {
@@ -78,7 +96,9 @@ export default function KayitPage() {
   const [form, setForm] = useState<FormState>({
     firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
     phoneNumber: '',
-    birthDate: '', gender: '', primaryCityId: '', secondaryCityId: '',
+    birthDate: '', gender: '',
+    occupationSector: '',
+    primaryCityId: '',
     venuePreference: '',
     contactNumbers: [], contactInput: '',
   });
@@ -122,6 +142,7 @@ export default function KayitPage() {
     }
     if (!form.birthDate) { setError('Doğum tarihinizi seçin.'); return; }
     if (!form.gender) { setError('Cinsiyet seçin.'); return; }
+    if (!form.occupationSector) { setError('Meslek alanı seçin.'); return; }
     setError(''); setStepDir(1); setStep(1);
   }
 
@@ -137,8 +158,8 @@ export default function KayitPage() {
         password: form.password,
         phoneNumber: phoneDigits.length === 10 ? `+90${phoneDigits}` : undefined,
         acceptTerms: true,
+        occupationSector: form.occupationSector,
         primaryCityId: form.primaryCityId || undefined,
-        secondaryCityId: form.secondaryCityId || undefined,
       });
       api.setToken(data.accessToken);
 
@@ -203,14 +224,28 @@ export default function KayitPage() {
     set('contactInput', '');
   }
 
+  async function hashPhones(phones: string[]): Promise<string[]> {
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+      const results = await Promise.all(phones.map(n => sha256(n)));
+      return results.filter((h): h is string => h !== null);
+    }
+    // HTTP bağlamında crypto.subtle yok — sunucu tarafında hash'le
+    const res = await fetch('/api/hash-phones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phones }),
+    });
+    const data = await res.json() as { hashes: string[] };
+    return data.hashes ?? [];
+  }
+
   async function handleFinish(skip: boolean) {
     setLoading(true); setError('');
     try {
       if (!skip && form.contactNumbers.length > 0) {
-        const results = await Promise.all(form.contactNumbers.map(n => sha256(n)));
-        const hashes = results.filter((h): h is string => h !== null);
+        const hashes = await hashPhones(form.contactNumbers);
         if (hashes.length > 0) {
-          await api.post('/contact-blocks/sync', { hashedPhones: hashes }).catch(() => {});
+          await api.post('/contact-blocks/sync', { hashedPhones: hashes });
         }
       }
       setShowSuccess(true);
@@ -366,6 +401,7 @@ export default function KayitPage() {
             <PasswordField label="Şifre" value={form.password} onChange={(v) => { set('password', v); setPwError(''); }} error={pwError} />
             <PasswordField label="Şifre Tekrar" value={form.confirmPassword} onChange={(v) => { set('confirmPassword', v); setPwConfirmError(''); }} shakeKey={confirmShake} error={pwConfirmError} />
             <DateField label="Doğum tarihi" value={form.birthDate} onChange={(v) => set('birthDate', v)} />
+            <OccupationField label="Meslek Alanı" value={form.occupationSector} onChange={(v) => set('occupationSector', v)} />
             <div>
               <label className="block text-sm text-[#555] mb-2">Cinsiyet</label>
               <div className="flex gap-4">
@@ -405,9 +441,8 @@ export default function KayitPage() {
               <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Şehir Seçimi</h1>
               <p className="text-[#555] text-sm">Hangi şehirde buluşmak istediğini seç. Yaşadığın şehir değil, katılmak istediğin şehir.</p>
             </div>
-            <GlassSelect label="Ana Şehir *" value={form.primaryCityId} onChange={(v) => set('primaryCityId', v)} cities={cities} />
-            <GlassSelect label="İkinci Şehir (opsiyonel)" value={form.secondaryCityId} onChange={(v) => set('secondaryCityId', v)} cities={cities.filter((c) => c.id !== form.primaryCityId)} optional />
-            <p className="text-xs text-[#444] leading-relaxed">
+            <CityPickerField label="Ana Şehir *" value={form.primaryCityId} onChange={(v) => set('primaryCityId', v)} cities={cities} title="Ana şehir seç" />
+            <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5 }}>
               Farklı bir şehirde olduğun haftalarda profilindeki "Bu Hafta Hangi Şehirdesiniz?" kartından geçici şehir seçebilirsin.
             </p>
             {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
@@ -557,6 +592,10 @@ export default function KayitPage() {
               </h1>
             </div>
 
+            <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5 }}>
+              Bu tercih, sizi doğru mekan ortamındaki kişilerle eşleştirmek için kullanılır. İstediğiniz zaman profilinizden değiştirebilirsiniz.
+            </p>
+
             <div className="flex flex-col gap-3">
               {VENUE_OPTIONS.map((opt) => {
                 const selected = form.venuePreference === opt.value;
@@ -577,7 +616,6 @@ export default function KayitPage() {
                     }}
                   >
                     <div className="flex items-start gap-4">
-                      <span className="text-2xl flex-shrink-0 mt-0.5">{opt.emoji}</span>
                       <div>
                         <p className="font-medium text-[#f5f5f5] text-[15px] mb-1"
                           style={{ color: selected ? '#ff6b6b' : '#f5f5f5' }}>
@@ -605,10 +643,6 @@ export default function KayitPage() {
             </div>
 
             {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-
-            <p className="text-xs text-[#444] leading-relaxed">
-              Bu tercih, sizi doğru mekan ortamındaki kişilerle eşleştirmek için kullanılır. İstediğiniz zaman profilinizden değiştirebilirsiniz.
-            </p>
 
             <button
               type="button"
@@ -885,6 +919,113 @@ function DatePickerModal({ value, onChange, onClose }: {
   );
 }
 
+/* ── OccupationPickerModal ───────────────────────────────────────────────── */
+
+function OccupationPickerModal({ value, onChange, onClose }: {
+  value: string; onChange: (v: string) => void; onClose: () => void;
+}) {
+  const [tmp, setTmp] = useState(value);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 999,
+        background: 'rgba(0,0,0,0.72)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'flex-end',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%',
+          background: '#111',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          padding: '20px 16px 36px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: '#888' }}>Meslek alanı seç</p>
+          <button onClick={onClose} style={{ color: '#555', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>×</button>
+        </div>
+        <div style={{ overflowY: 'auto', maxHeight: 300, scrollbarWidth: 'none' }}>
+          {OCCUPATION_SECTORS.map(s => {
+            const isSel = s === tmp;
+            return (
+              <div
+                key={s}
+                onClick={() => setTmp(s)}
+                style={{
+                  padding: '13px 14px',
+                  fontSize: 15,
+                  color: isSel ? '#ff6b6b' : '#ccc',
+                  fontWeight: isSel ? 600 : 400,
+                  background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  WebkitTapHighlightColor: 'transparent',
+                  transition: 'color 0.1s, background 0.1s',
+                }}
+              >
+                {s}
+              </div>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => { if (tmp) { onChange(tmp); onClose(); } }}
+          disabled={!tmp}
+          style={{
+            width: '100%', marginTop: 16,
+            padding: '15px', borderRadius: 14,
+            background: tmp ? 'linear-gradient(135deg,#c0392b,#ff6b6b)' : 'rgba(255,255,255,0.06)',
+            color: tmp ? '#fff' : '#555', fontSize: 15, fontWeight: 600,
+            outline: 'none', cursor: tmp ? 'pointer' : 'default',
+            WebkitTapHighlightColor: 'transparent',
+            transition: 'background 0.2s',
+          }}
+        >
+          Seç
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function OccupationField({ label, value, onChange }: {
+  label: string; value: string; onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <label className="block text-xs text-[#555] mb-1.5">{label}</label>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{
+          width: '100%',
+          background: 'rgba(255,255,255,0.05)',
+          border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`,
+          borderRadius: 12,
+          padding: '14px 16px',
+          fontSize: 14,
+          color: value ? '#f5f5f5' : '#555',
+          textAlign: 'left',
+          cursor: 'pointer',
+          outline: 'none',
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        {value || 'Meslek alanı seç'}
+      </button>
+      {open && <OccupationPickerModal value={value} onChange={onChange} onClose={() => setOpen(false)} />}
+    </div>
+  );
+}
+
 function DateField({ label, value, onChange }: {
   label: string; value: string; onChange: (v: string) => void;
 }) {
@@ -923,21 +1064,93 @@ function DateField({ label, value, onChange }: {
   );
 }
 
-function GlassSelect({ label, value, onChange, cities, optional }: {
-  label: string; value: string; onChange: (v: string) => void; cities: City[]; optional?: boolean;
+const CITY_ORDER = ['İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Balıkesir', 'Aydın', 'Muğla'];
+
+function cityLabel(name: string) {
+  return name === 'Balıkesir' ? 'Balıkesir (Ayvalık / Akçay)' : name;
+}
+
+function sortCities(cities: City[]): City[] {
+  return [...cities].sort((a, b) => {
+    const ia = CITY_ORDER.indexOf(a.name);
+    const ib = CITY_ORDER.indexOf(b.name);
+    if (ia === -1 && ib === -1) return a.name.localeCompare(b.name, 'tr');
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+}
+
+function CityPickerModal({ cities, value, onChange, onClose, optional, title }: {
+  cities: City[]; value: string; onChange: (v: string) => void; onClose: () => void;
+  optional?: boolean; title: string;
 }) {
+  const [tmp, setTmp] = useState(value);
+  const sorted = sortCities(cities);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ width: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '20px 16px 36px' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: '#888' }}>{title}</p>
+          <button onClick={onClose} style={{ color: '#555', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>×</button>
+        </div>
+        <div style={{ overflowY: 'auto', maxHeight: 300, scrollbarWidth: 'none' }}>
+          {optional && (
+            <div
+              onClick={() => setTmp('')}
+              style={{ padding: '13px 14px', fontSize: 15, color: tmp === '' ? '#ff6b6b' : '#888', fontWeight: tmp === '' ? 600 : 400, background: tmp === '' ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}
+            >
+              Seçmek istemiyorum
+            </div>
+          )}
+          {sorted.map(c => {
+            const isSel = c.id === tmp;
+            return (
+              <div
+                key={c.id}
+                onClick={() => setTmp(c.id)}
+                style={{ padding: '13px 14px', fontSize: 15, color: isSel ? '#ff6b6b' : '#ccc', fontWeight: isSel ? 600 : 400, background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}
+              >
+                {cityLabel(c.name)}
+              </div>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => { onChange(tmp); onClose(); }}
+          style={{ width: '100%', marginTop: 16, padding: '15px', borderRadius: 14, background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff', fontSize: 15, fontWeight: 600, outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
+        >
+          Seç
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CityPickerField({ label, value, onChange, cities, optional, title }: {
+  label: string; value: string; onChange: (v: string) => void; cities: City[]; optional?: boolean; title?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const found = cities.find(c => c.id === value);
+  const display = found ? cityLabel(found.name) : (optional ? 'Seçmek istemiyorum' : 'Şehir seç');
   return (
     <div>
       <label className="block text-xs text-[#555] mb-1.5">{label}</label>
-      <select
-        value={value} onChange={(e) => onChange(e.target.value)}
-        className="input-glass px-3 py-3 text-sm"
-        style={{ borderRadius: 12 }}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`, borderRadius: 12, padding: '14px 16px', fontSize: 14, color: value ? '#f5f5f5' : '#555', textAlign: 'left', cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent' }}
       >
-        {optional && <option value="">Seçmek istemiyorum</option>}
-        {!optional && <option value="">Şehir seç</option>}
-        {cities.map((c) => <option key={c.id} value={c.id} style={{ background: '#0a0a0a' }}>{c.name}</option>)}
-      </select>
+        {display}
+      </button>
+      {open && <CityPickerModal cities={cities} value={value} onChange={onChange} onClose={() => setOpen(false)} optional={optional} title={title ?? 'Şehir seç'} />}
     </div>
   );
 }

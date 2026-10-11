@@ -482,11 +482,9 @@ export default function Home() {
                   }}
                 >
                   <div className="absolute inset-0" style={{ backgroundImage: `url(${plan.bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-                  <div className="absolute inset-0" style={{
-                    background: plan.featured
-                      ? 'linear-gradient(to top, rgba(10,5,5,0.92) 0%, rgba(10,5,5,0.55) 40%, rgba(10,5,5,0.08) 100%)'
-                      : 'linear-gradient(160deg, rgba(10,5,5,0.3) 0%, rgba(10,5,5,0.82) 55%)',
-                  }} />
+                  {plan.featured && (
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,5,5,0.92) 0%, rgba(10,5,5,0.55) 40%, rgba(10,5,5,0.08) 100%)' }} />
+                  )}
                   {plan.featured && !cs.badge && (
                     <span className="absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full text-white"
                       style={{ background: 'rgba(10,5,5,0.7)', border: '1px solid rgba(255,255,255,0.18)' }}>

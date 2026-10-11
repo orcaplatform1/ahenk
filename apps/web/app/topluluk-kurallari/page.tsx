@@ -23,7 +23,7 @@ const sections = [
         {[
           'Gerçek kimliğinizle kayıt olun — sahte isim, fotoğraf veya bilgi kullanmak yasaktır ve hesabınızın kalıcı olarak kapatılmasına neden olur.',
           'OCEAN kişilik testini dürüstçe yanıtlayın — manipüle edilmiş sonuçlar eşleştirme kalitesini düşürür ve topluluğun tamamına zarar verir.',
-          'KYC kimlik doğrulama sürecini eksiksiz tamamlayın — bu hem sizin hem de diğer kullanıcıların güvenliği içindir.',
+          'kimlik doğrulama sürecini eksiksiz tamamlayın — bu hem sizin hem de diğer kullanıcıların güvenliği içindir.',
           'Buluşma daveti aldığınızda katılıp katılmayacağınıza zamanında karar verin — son dakika iptalleri diğer katılımcıları olumsuz etkiler. Katılamayacaksanız en az 24 saat öncesinden platform üzerinden bildirin.',
           'Buluşma lokasyonunu ve saatini önceden not alın — Ahenk sistem bildirimleri gönderir ancak takip sorumluluğu size aittir.',
           'Buluşmaya gitmeden önce kendinize ait herhangi bir beklenti veya ön yargıyı bir kenara bırakmaya çalışın — her insan sürpriz yapabilir.',

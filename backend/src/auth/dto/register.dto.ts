@@ -49,9 +49,11 @@ export class RegisterDto {
   primaryCityId?: string;
 
   @ApiPropertyOptional()
-  @IsOptional()
+
+  @ApiProperty()
   @IsString()
-  secondaryCityId?: string;
+  @MinLength(1, { message: "Meslek alanı seçin" })
+  occupationSector: string;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()

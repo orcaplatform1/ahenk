@@ -4,7 +4,6 @@ import { NotificationService } from "../notification/notification.service";
 import {
   WEIGHTS,
   OCEAN_MAX_DISTANCE,
-  CITY_SCORE,
   TABLE_SIZE_LARGE,
   TABLE_SIZE_SMALL,
   MEETING_HOUR_UTC,
@@ -25,6 +24,7 @@ type EligibleUser = {
   status: UserStatus;
   phoneHash: string | null;
   activeCity: string | null;
+  occupationSector: string | null;
   profile: {
     firstName: string | null;
     lastName: string | null;
@@ -34,7 +34,7 @@ type EligibleUser = {
     primaryCity: string | null;
     venueCategories: string[];
     venuePreference: 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE' | null;
-    topicPreferences: string[];
+    birthDate: string | null;
   } | null;
   oceanScore: OceanScoreData | null;
   contactBlocks: { hashedPhone: string }[];
@@ -338,7 +338,8 @@ export class MatchingService {
         status: true,
         phoneHash: true,
         activeCity: true,
-        profile: { select: { firstName: true, lastName: true, gender: true, city: true, district: true, primaryCity: true, venueCategories: true, venuePreference: true, topicPreferences: true } },
+        occupationSector: true,
+        profile: { select: { firstName: true, lastName: true, gender: true, city: true, district: true, primaryCity: true, venueCategories: true, venuePreference: true, birthDate: true } },
         oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
         contactBlocks: { select: { hashedPhone: true } },
       },
@@ -433,7 +434,7 @@ export class MatchingService {
     // Önce M+F çiftleri
     while (males().length >= 1 && females().length >= 1) {
       const m = males()[0];
-      const f = females().find((w) => !this.areBlocked(m.id, w.id, blockedSet) && !this.areVenueIncompatible(m, w));
+      const f = females().find((w) => !this.areBlocked(m.id, w.id, blockedSet) && !this.areVenueIncompatible(m, w) && !this.areAgeGapTooLarge(m, w));
       if (!f) break;
       used.add(m.id); used.add(f.id);
       pairs.push([m, f]);
@@ -442,7 +443,7 @@ export class MatchingService {
     // Kalan eşcinsel çiftler
     const rem = avail();
     for (let i = 0; i + 1 < rem.length; i += 2) {
-      if (!this.areBlocked(rem[i].id, rem[i + 1].id, blockedSet) && !this.areVenueIncompatible(rem[i], rem[i + 1])) {
+      if (!this.areBlocked(rem[i].id, rem[i + 1].id, blockedSet) && !this.areVenueIncompatible(rem[i], rem[i + 1]) && !this.areAgeGapTooLarge(rem[i], rem[i + 1])) {
         used.add(rem[i].id); used.add(rem[i + 1].id);
         pairs.push([rem[i], rem[i + 1]]);
       }
@@ -466,6 +467,15 @@ export class MatchingService {
     return blocks.has(`${aId}:${bId}`) || blocks.has(`${bId}:${aId}`);
   }
 
+  private areAgeGapTooLarge(a: EligibleUser, b: EligibleUser): boolean {
+    const bd = (u: EligibleUser) => u.profile?.birthDate ? new Date(u.profile.birthDate) : null;
+    const da = bd(a); const db = bd(b);
+    if (!da || !db) return false;
+    const ageA = Math.floor((Date.now() - da.getTime()) / (365.25 * 24 * 3600 * 1000));
+    const ageB = Math.floor((Date.now() - db.getTime()) / (365.25 * 24 * 3600 * 1000));
+    return Math.abs(ageA - ageB) > 12;
+  }
+
   // ALCOHOLIC ↔ NON_ALCOHOLIC çifti uyumsuz; NO_PREFERENCE her ikiyle de uyumlu
   private areVenueIncompatible(a: EligibleUser, b: EligibleUser): boolean {
     const pa = a.profile?.venuePreference ?? 'NO_PREFERENCE';
@@ -474,25 +484,17 @@ export class MatchingService {
            (pa === 'NON_ALCOHOLIC' && pb === 'ALCOHOLIC');
   }
 
-  private effectiveCity(u: EligibleUser): string | null {
-    return u.activeCity ?? u.profile?.primaryCity ?? u.profile?.city ?? null;
-  }
-
   private scoreTwo(a: EligibleUser, b: EligibleUser): number {
     return (
       this.calcOcean(a.oceanScore, b.oceanScore) +
-      this.calcVenue(a.profile?.venueCategories ?? [], b.profile?.venueCategories ?? []) +
-      this.calcCity(this.effectiveCity(a), a.profile?.district ?? null, this.effectiveCity(b), b.profile?.district ?? null) +
-      this.calcTopic(a.profile?.topicPreferences ?? [], b.profile?.topicPreferences ?? [])
+      this.calcOccupation(a.occupationSector, b.occupationSector)
     );
   }
 
-  private calcTopic(a: string[], b: string[]): number {
-    if (!a.length || !b.length) return 0;
-    const setA = new Set(a);
-    const union = new Set([...a, ...b]).size;
-    const intersection = b.filter((x) => setA.has(x)).length;
-    return (intersection / union) * WEIGHTS.TOPIC;
+  private calcOccupation(a: string | null, b: string | null): number {
+    if (!a || !b) return 0;
+    if (a === 'Öğrenci' || a === 'Diğer' || b === 'Öğrenci' || b === 'Diğer') return 0;
+    return a === b ? WEIGHTS.OCCUPATION : 0;
   }
 
   private calcOcean(a: OceanScoreData | null, b: OceanScoreData | null): number {
@@ -505,25 +507,6 @@ export class MatchingService {
       (a.neuroticism - b.neuroticism) ** 2,
     );
     return (1 - d / OCEAN_MAX_DISTANCE) * WEIGHTS.OCEAN;
-  }
-
-  private calcVenue(a: string[], b: string[]): number {
-    if (!a.length || !b.length) return 0;
-    const setA = new Set(a);
-    const union = new Set([...a, ...b]).size;
-    const intersection = b.filter((x) => setA.has(x)).length;
-    return (intersection / union) * WEIGHTS.VENUE;
-  }
-
-  private calcCity(
-    cityA: string | null,
-    districtA: string | null,
-    cityB: string | null,
-    districtB: string | null,
-  ): number {
-    if (!cityA || !cityB || cityA !== cityB) return CITY_SCORE.DIFFERENT;
-    if (districtA && districtB && districtA === districtB) return CITY_SCORE.SAME_CITY_AND_DISTRICT;
-    return CITY_SCORE.SAME_CITY_ONLY;
   }
 
   // ─── Bot yönetimi ─────────────────────────────────────────────────────────

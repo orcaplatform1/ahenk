@@ -36,6 +36,7 @@ model User {
   waitlistEntries MatchingWaitlist[]
   subscriptions   Subscription[]
   payments        Payment[]
+  occupationSector String  @default("")
   fcmToken        String? // Firebase Cloud Messaging cihaz token'ı
   quarantineUntil DateTime? // Karantina bitiş tarihi
   phoneHash       String?
@@ -78,7 +79,6 @@ model Profile {
   gender           Gender?
   city             String? // İkamet şehri (gösterim amaçlı)
   primaryCity      String? // Katılım birincil şehri (eşleştirmede kullanılır, zorunlu)
-  secondaryCity    String? // Katılım ikincil şehri (opsiyonel, birincilde eşleşme yoksa)
   bio              String?         @db.Text
   avatarUrl        String?
   interests        String[]

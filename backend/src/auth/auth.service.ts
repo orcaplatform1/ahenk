@@ -50,12 +50,12 @@ export class AuthService {
           passwordHash,
           phone: dto.phoneNumber ?? null,
           role: UserRole.USER,
+          occupationSector: dto.occupationSector,
           profile: {
             create: {
               firstName: dto.firstName,
               lastName: dto.lastName,
               primaryCity: dto.primaryCityId ?? null,
-              secondaryCity: dto.secondaryCityId ?? null,
             },
           },
           consents: {
@@ -231,12 +231,9 @@ export class AuthService {
   }
 
   async getMe(user: any) {
-    const [primaryCity, secondaryCity, activeSubs] = await Promise.all([
+    const [primaryCity, activeSubs] = await Promise.all([
       user.profile?.primaryCity
         ? this.prisma.city.findUnique({ where: { id: user.profile.primaryCity }, select: { id: true, name: true } })
-        : Promise.resolve(null),
-      user.profile?.secondaryCity
-        ? this.prisma.city.findUnique({ where: { id: user.profile.secondaryCity }, select: { id: true, name: true } })
         : Promise.resolve(null),
       this.prisma.subscription.findMany({
         where: { userId: user.id, status: SubscriptionStatus.ACTIVE },
@@ -261,7 +258,6 @@ export class AuthService {
         gender: profile.gender,
         birthDate: profile.birthDate,
         primaryCity: primaryCity ?? undefined,
-        secondaryCity: secondaryCity ?? undefined,
         topics: profile.topicPreferences ?? [],
         venuePreference: profile.venuePreference,
       } : undefined,

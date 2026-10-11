@@ -24,7 +24,7 @@ const SITE_MAP = [
     icon: '🎯',
     pages: [
       { label: 'Dashboard', href: '/dashboard', desc: 'Aktif masanı ve bildirimlerini gör' },
-      { label: 'Profilim', href: '/profil', desc: 'Profil düzenleme, KYC ve paket yönetimi' },
+      { label: 'Profilim', href: '/profil', desc: 'Profil düzenleme, Kimlik Doğrulama ve paket yönetimi' },
       { label: 'Kişilik Testi', href: '/test', desc: 'Big Five OCEAN kişilik testi' },
       { label: 'Test Sonucu', href: '/test/sonuc', desc: 'Kişilik analizi ve OCEAN skoru' },
     ],

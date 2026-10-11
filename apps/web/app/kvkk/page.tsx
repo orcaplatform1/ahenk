@@ -107,7 +107,7 @@ const sections = [
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.55rem' }}>
         {[
           'Üyelik sözleşmesinin kurulması ve ifası',
-          'KYC kimlik doğrulama sürecinin yürütülmesi ve platform güvenliğinin sağlanması',
+          'kimlik doğrulama sürecinin yürütülmesi ve platform güvenliğinin sağlanması',
           'OCEAN kişilik modeline dayalı algoritmik eşleştirme ile kullanıcıya uygun masa buluşmalarının organize edilmesi',
           'Abonelik ve ödeme işlemlerinin iyzico altyapısı üzerinden gerçekleştirilmesi',
           'Kullanıcıyla sistem bildirimleri ve e-posta aracılığıyla iletişim kurulması',
@@ -130,7 +130,7 @@ const sections = [
         {[
           {
             basis: 'Açık Rıza — Madde 5/1 ve 6/2',
-            desc: 'OCEAN kişilik testi sonuçları, kimlik belgesi görselleri ve liveness videosu — kullanıcı kayıt ve KYC sürecinde açık onay verir.',
+            desc: 'OCEAN kişilik testi sonuçları, kimlik belgesi görselleri ve liveness videosu — kullanıcı kayıt ve kimlik doğrulama sürecinde açık onay verir.',
           },
           {
             basis: 'Sözleşmenin Kurulması veya İfası — Madde 5/2-c',
@@ -171,7 +171,7 @@ const sections = [
         </p>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.55rem' }}>
           {[
-            'Yalnızca KYC kimlik doğrulama amacıyla işlenir',
+            'Yalnızca kimlik doğrulama amacıyla işlenir',
             'Kullanıcının açık rızasıyla alınır',
             'Cloudflare R2 private bucket\'ta AES-256 şifrelemeyle saklanır',
             'Yalnızca imzalı URL ile yetkili admin personeli tarafından erişilebilir',
@@ -199,7 +199,7 @@ const sections = [
         <p style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666', marginBottom: '0.6rem' }}>Yurt Dışı Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#e8e8e8' }}>Cloudflare Inc. (ABD)</strong>
-          {' '}— KYC belgeleri ve liveness videosu R2 private bucket'ta saklanır. Bu aktarım AB Standart Sözleşme Maddeleri (SCCs) ve Cloudflare'in veri işleme sözleşmesi kapsamında gerçekleştirilir.
+          {' '}— kimlik belgeleri ve liveness videosu R2 private bucket'ta saklanır. Bu aktarım AB Standart Sözleşme Maddeleri (SCCs) ve Cloudflare'in veri işleme sözleşmesi kapsamında gerçekleştirilir.
         </p>
         <div
           style={{
@@ -223,7 +223,7 @@ const sections = [
       <div>
         {[
           ['Kullanıcı hesap ve profil verileri', 'Hesap silinene kadar + 2 yıl'],
-          ['KYC belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl — yasal yükümlülük'],
+          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl — yasal yükümlülük'],
           ['OCEAN test sonuçları', 'Hesap aktif olduğu sürece; hesap silindiğinde imha edilir'],
           ['Ödeme ve fatura kayıtları', '10 yıl — Vergi Usul Kanunu'],
           ['Hash\'lenmiş telefon numaraları', 'Kullanıcı tarafından silinene kadar'],

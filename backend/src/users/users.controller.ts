@@ -9,10 +9,6 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 class SaveCitiesDto {
   @IsString()
   primaryCityId: string;
-
-  @IsOptional()
-  @IsString()
-  secondaryCityId?: string;
 }
 
 class UpdateVenuePreferenceDto {
@@ -56,7 +52,7 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Şehir tercihlerini kaydet" })
   saveCities(@CurrentUser() user: any, @Body() dto: SaveCitiesDto) {
-    return this.usersService.saveCities(user.id, dto.primaryCityId, dto.secondaryCityId);
+    return this.usersService.saveCities(user.id, dto.primaryCityId);
   }
 
   @Patch("venue-preference")

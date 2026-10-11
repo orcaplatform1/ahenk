@@ -6,23 +6,23 @@ import { SkeletonBlock } from '@/components/ui/Skeleton';
 
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
 
-const VENUE_OPTIONS: { value: VenuePreference; emoji: string; label: string; description: string }[] = [
-  { value: 'ALCOHOLIC',     emoji: '🍷', label: 'Alkollü Mekan',  description: 'Alkollü içecek servisi olan restoran veya bar' },
-  { value: 'NON_ALCOHOLIC', emoji: '☕', label: 'Alkolsüz Mekan', description: 'Kafe veya alkolsüz restoran' },
-  { value: 'NO_PREFERENCE', emoji: '✨', label: 'Fark Etmez',     description: 'Her iki mekan türü de uygundur' },
+const VENUE_OPTIONS: { value: VenuePreference; label: string; description: string }[] = [
+  { value: 'ALCOHOLIC',     label: 'Alkollü Mekan',      description: 'Alkollü içecek servisi olan restoran veya bar' },
+  { value: 'NON_ALCOHOLIC', label: 'Alkolsüz Mekan',     description: 'Kafe veya alkolsüz restoran' },
+  { value: 'NO_PREFERENCE', label: 'Her ikisi de uygun', description: 'Her iki mekan türü de uygundur' },
 ];
 
 const VENUE_LABELS: Record<VenuePreference, string> = {
-  ALCOHOLIC:     '🍷 Alkollü Mekan',
-  NON_ALCOHOLIC: '☕ Alkolsüz Mekan',
-  NO_PREFERENCE: '✨ Fark Etmez',
+  ALCOHOLIC:     'Alkollü Mekan',
+  NON_ALCOHOLIC: 'Alkolsüz Mekan',
+  NO_PREFERENCE: 'Her ikisi de uygun',
 };
 
-const KYC_BADGE: Record<string, { label: string; cls: string }> = {
-  PENDING:    { label: 'Doğrulama Bekleniyor', cls: 'bg-surface text-muted border-border' },
-  APPROVED:   { label: 'Doğrulandı ✓',        cls: 'bg-green-900/40 text-green-400 border-green-800' },
-  REJECTED:   { label: 'Reddedildi',           cls: 'bg-red-900/40 text-accent border-red-800' },
-  SUSPICIOUS: { label: 'İnceleniyor',          cls: 'bg-orange-900/40 text-orange-400 border-orange-800' },
+const KYC_BADGE: Record<string, { label: string; approved: boolean }> = {
+  PENDING:    { label: 'Doğrulanmamış', approved: false },
+  APPROVED:   { label: 'Doğrulandı',   approved: true  },
+  REJECTED:   { label: 'Doğrulanmamış', approved: false },
+  SUSPICIOUS: { label: 'Doğrulanmamış', approved: false },
 };
 
 interface City { id: string; name: string; }
@@ -34,11 +34,12 @@ interface UserData {
   email: string;
   phone?: string;
   activeCity?: string | null;
+  occupationSector?: string;
   profile?: {
     gender?: string;
     birthDate?: string;
     primaryCity?: City;
-    secondaryCity?: City;
+
     venuePreference?: VenuePreference;
   };
   kyc?: { status: string };
@@ -54,9 +55,12 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
   const [editingCities, setEditingCities] = useState(false);
   const [editingVenue, setEditingVenue] = useState(false);
   const [primaryCityId, setPrimaryCityId] = useState(user.profile?.primaryCity?.id ?? '');
-  const [secondaryCityId, setSecondaryCityId] = useState(user.profile?.secondaryCity?.id ?? '');
+  const [displayPrimaryCity, setDisplayPrimaryCity] = useState<City | null>(user.profile?.primaryCity ?? null);
   const [venuePreference, setVenuePreference] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
+  const [displayVenuePreference, setDisplayVenuePreference] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
   const [activeCity, setActiveCity] = useState<string>(user.activeCity ?? '');
+  const [activeCityConfirm, setActiveCityConfirm] = useState(false);
+  const [pendingActiveCity, setPendingActiveCity] = useState<string | null>(null);
   const [savingActiveCity, setSavingActiveCity] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -126,7 +130,8 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
     if (!primaryCityId) { setSaveError('Ana şehir zorunlu.'); return; }
     setSaving(true); setSaveError('');
     try {
-      await api.post('/users/cities', { primaryCityId, secondaryCityId: secondaryCityId || undefined });
+      await api.post('/users/cities', { primaryCityId });
+      setDisplayPrimaryCity(cities.find(c => c.id === primaryCityId) ?? null);
       setEditingCities(false);
     } catch (e) { setSaveError((e as Error).message); }
     finally { setSaving(false); }
@@ -145,6 +150,7 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
     setSaving(true); setSaveError('');
     try {
       await api.patch('/users/venue-preference', { venuePreference });
+      setDisplayVenuePreference(venuePreference);
       setEditingVenue(false);
     } catch (e) { setSaveError((e as Error).message); }
     finally { setSaving(false); }
@@ -164,6 +170,20 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
 
       {/* Temel bilgiler */}
       <Card title="Hesap Bilgileri">
+        {/* Kimlik Doğrulama durumu — en üstte */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted">Kimlik Doğrulama</span>
+          <span
+            className="text-xs px-3 py-1 rounded-full"
+            style={badge.approved
+              ? { border: '1.5px solid #22c55e', color: '#4ade80', background: 'rgba(34,197,94,0.08)' }
+              : { border: '1.5px solid #c0392b', color: '#ff6b6b', background: 'rgba(192,57,43,0.08)' }
+            }
+          >
+            {badge.label}
+          </span>
+        </div>
+
         <Row label="Ad Soyad" value={`${user.firstName} ${user.lastName}`} />
 
         {/* E-posta */}
@@ -236,22 +256,51 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
           </div>
         )}
 
-        {user.profile?.birthDate && (
-          <Row label="Doğum Tarihi" value={new Date(user.profile.birthDate).toLocaleDateString('tr-TR')} />
+        {(user.occupationSector || user.profile?.birthDate) && (
+          <div className="flex items-center justify-between">
+            {user.occupationSector && (
+              <span className="text-sm text-text">{user.occupationSector}</span>
+            )}
+            {user.profile?.birthDate && (
+              <span className="text-sm text-muted">
+                {Math.floor((Date.now() - new Date(user.profile.birthDate).getTime()) / (365.25 * 24 * 3600 * 1000))} yaş
+              </span>
+            )}
+          </div>
         )}
         {user.profile?.gender && (
           <Row label="Cinsiyet" value={user.profile.gender === 'MALE' ? 'Erkek' : 'Kadın'} />
         )}
-        <div className="flex items-center justify-between pt-1">
-          <span className="text-sm text-muted">KYC Durumu</span>
-          <span className={`text-xs px-3 py-1 rounded-full border ${badge.cls}`}>{badge.label}</span>
-        </div>
       </Card>
 
       {/* Bu hafta aktif şehir */}
+      {activeCityConfirm && (
+        <div onClick={() => setActiveCityConfirm(false)} style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '24px 20px 36px' }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5', marginBottom: 10 }}>Dikkat</p>
+            <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, marginBottom: 20 }}>
+              Bu haftaki eşleşme süreciniz <span style={{ color: '#f5f5f5' }}>{displayPrimaryCity?.name ?? 'ana şehriniz'}</span> üzerinden devam etmektedir. Şehri değiştirirseniz bu haftaki sıranıza yeniden gireceksiniz.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => { setActiveCityConfirm(false); saveActiveCity(pendingActiveCity); }}
+                style={{ width: '100%', padding: '14px', borderRadius: 12, background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', outline: 'none' }}
+              >
+                Kabul Ediyorum
+              </button>
+              <button
+                onClick={() => setActiveCityConfirm(false)}
+                style={{ width: '100%', padding: '14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#888', fontSize: 14, cursor: 'pointer', outline: 'none' }}
+              >
+                Kabul Etmiyorum
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <Card title="Bu Hafta Hangi Şehirdesiniz?">
         <p className="text-xs text-[#555] mb-3">
-          Her hafta Pazartesi sıfırlanır. Belirtmezseniz ana şehriniz kullanılır.
+          Bu şehirlerden birinde tatilde veya seyahatteyseniz, oradaki grup masası veya baş başa masasına katılabilirsiniz.
         </p>
         <div className="flex gap-2">
           <Select
@@ -261,9 +310,10 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
             cities={cities}
             optional
             placeholder="Bu hafta şehir seç"
+            title="Bu hafta hangi şehirdesiniz?"
           />
           <button
-            onClick={() => saveActiveCity(activeCity || null)}
+            onClick={() => { setPendingActiveCity(activeCity || null); setActiveCityConfirm(true); }}
             disabled={savingActiveCity}
             className="px-4 py-2 text-sm btn-grad disabled:opacity-50 whitespace-nowrap"
           >
@@ -291,14 +341,7 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
       <Card title="Şehir Tercihleri" action={!editingCities ? { label: 'Düzenle', onClick: () => setEditingCities(true) } : undefined}>
         {editingCities ? (
           <div className="flex flex-col gap-3">
-            <Select label="Ana Şehir *" value={primaryCityId} onChange={setPrimaryCityId} cities={cities} />
-            <Select
-              label="İkinci Şehir (opsiyonel)"
-              value={secondaryCityId}
-              onChange={setSecondaryCityId}
-              cities={cities.filter((c) => c.id !== primaryCityId)}
-              optional
-            />
+            <Select label="Ana Şehir *" value={primaryCityId} onChange={setPrimaryCityId} cities={cities} title="Ana şehir seç" />
             {saveError && <p className="text-accent text-sm">{saveError}</p>}
             <div className="flex gap-2">
               <button onClick={() => setEditingCities(false)} className="flex-1 py-2 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>İptal</button>
@@ -309,8 +352,7 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
           </div>
         ) : (
           <>
-            <Row label="Ana Şehir" value={user.profile?.primaryCity?.name ?? '—'} />
-            <Row label="İkinci Şehir" value={user.profile?.secondaryCity?.name ?? 'Seçilmedi'} />
+            <Row label="Ana Şehir" value={displayPrimaryCity?.name ?? '—'} />
           </>
         )}
       </Card>
@@ -336,7 +378,6 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">{opt.emoji}</span>
                     <div>
                       <p className="text-sm font-medium" style={{ color: selected ? '#ff6b6b' : '#f5f5f5' }}>{opt.label}</p>
                       <p className="text-xs text-[#666] mt-0.5">{opt.description}</p>
@@ -356,7 +397,7 @@ export function TabProfilim({ user, onGoKyc, cities }: Props) {
         ) : (
           <Row
             label="Tercih"
-            value={VENUE_LABELS[user.profile?.venuePreference ?? 'NO_PREFERENCE']}
+            value={VENUE_LABELS[displayVenuePreference]}
           />
         )}
       </Card>
@@ -405,17 +446,76 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Select({ label, value, onChange, cities, optional, placeholder }: {
-  label: string; value: string; onChange: (v: string) => void; cities: City[]; optional?: boolean; placeholder?: string;
+const CITY_ORDER_P = ['İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Balıkesir', 'Aydın', 'Muğla'];
+
+function cityLabelP(name: string) {
+  return name === 'Balıkesir' ? 'Balıkesir (Ayvalık / Akçay)' : name;
+}
+
+function sortCitiesP(cities: City[]): City[] {
+  return [...cities].sort((a, b) => {
+    const ia = CITY_ORDER_P.indexOf(a.name);
+    const ib = CITY_ORDER_P.indexOf(b.name);
+    if (ia === -1 && ib === -1) return a.name.localeCompare(b.name, 'tr');
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+}
+
+function CityPickerModalP({ cities, value, onChange, onClose, optional, title }: {
+  cities: City[]; value: string; onChange: (v: string) => void; onClose: () => void;
+  optional?: boolean; title: string;
 }) {
+  const [tmp, setTmp] = useState(value);
+  const sorted = sortCitiesP(cities);
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '20px 16px 36px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: '#888' }}>{title}</p>
+          <button onClick={onClose} style={{ color: '#555', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>×</button>
+        </div>
+        <div style={{ overflowY: 'auto', maxHeight: 300, scrollbarWidth: 'none' }}>
+          {optional && (
+            <div onClick={() => setTmp('')} style={{ padding: '13px 14px', fontSize: 15, color: tmp === '' ? '#ff6b6b' : '#888', fontWeight: tmp === '' ? 600 : 400, background: tmp === '' ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}>
+              Seçmek istemiyorum
+            </div>
+          )}
+          {sorted.map(c => {
+            const isSel = c.id === tmp;
+            return (
+              <div key={c.id} onClick={() => setTmp(c.id)} style={{ padding: '13px 14px', fontSize: 15, color: isSel ? '#ff6b6b' : '#ccc', fontWeight: isSel ? 600 : 400, background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}>
+                {cityLabelP(c.name)}
+              </div>
+            );
+          })}
+        </div>
+        <button onClick={() => { onChange(tmp); onClose(); }} style={{ width: '100%', marginTop: 16, padding: '15px', borderRadius: 14, background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff', fontSize: 15, fontWeight: 600, outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+          Seç
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Select({ label, value, onChange, cities, optional, placeholder, title }: {
+  label: string; value: string; onChange: (v: string) => void; cities: City[]; optional?: boolean; placeholder?: string; title?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const found = cities.find(c => c.id === value);
+  const display = found ? cityLabelP(found.name) : (optional ? (placeholder ?? 'Seçmek istemiyorum') : 'Şehir seç');
   return (
     <div className="flex-1">
       {label && <label className="block text-xs text-muted mb-1">{label}</label>}
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-bg border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:border-primary">
-        {optional && <option value="">{placeholder ?? 'Seçmek istemiyorum'}</option>}
-        {!optional && <option value="">Şehir seç</option>}
-        {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-      </select>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`, borderRadius: 12, padding: '11px 14px', fontSize: 14, color: value ? '#f5f5f5' : '#555', textAlign: 'left', cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent' }}
+      >
+        {display}
+      </button>
+      {open && <CityPickerModalP cities={cities} value={value} onChange={onChange} onClose={() => setOpen(false)} optional={optional} title={title ?? 'Şehir seç'} />}
     </div>
   );
 }

@@ -170,7 +170,7 @@ export default function KariyerPage() {
                 {[
                   'Şehrindeki mekan ortaklarıyla düzenli iletişim kurarak buluşma lokasyonlarını koordine etmek.',
                   'Her hafta gerçekleşen masa buluşmalarının sorunsuz ilerlemesini sağlamak ve kalite kontrolünü yapmak.',
-                  'KYC başvurularını incelemek, kullanıcı kimlik doğrulama süreçlerini yönetmek.',
+                  'kimlik doğrulama başvurularını incelemek, kullanıcı kimlik doğrulama süreçlerini yönetmek.',
                   'Kullanıcı şikâyet ve taleplerini çözüme kavuşturmak, platform deneyimini iyileştirici geri bildirimler toplamak.',
                   'Yeni mekan ortaklıkları için sahada keşif yapmak ve ilk görüşmeleri gerçekleştirmek.',
                   'Şehir bazlı haftalık rapor hazırlamak ve merkeze iletmek.',

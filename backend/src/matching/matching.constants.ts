@@ -1,16 +1,7 @@
-// Ağırlıklar (toplam 85)
+// Ağırlıklar (toplam 100)
 export const WEIGHTS = {
-  OCEAN: 35,
-  VENUE: 25,
-  CITY: 15,
-  TOPIC: 10,
-} as const;
-
-// Şehir/İlçe puanları
-export const CITY_SCORE = {
-  SAME_CITY_AND_DISTRICT: 15,
-  SAME_CITY_ONLY: 10,
-  DIFFERENT: 0,
+  OCEAN: 65,
+  OCCUPATION: 35,
 } as const;
 
 // OCEAN maksimum Öklid mesafesi: sqrt(5 × 100²)

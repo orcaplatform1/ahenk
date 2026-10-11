@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Profilim — Ahenk',
-  description: 'Profilini düzenle, KYC doğrulamanı yap, paket al.',
+  description: 'Profilini düzenle, kimlik doğrulamanı yap, paket al.',
   robots: { index: false, follow: false },
 };
 
