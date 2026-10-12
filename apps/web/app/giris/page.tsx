@@ -59,7 +59,7 @@ export default function GirisPage() {
       const data = await api.post<LoginResponse>('/auth/verify-login-otp', { phone: `+90${phoneDigits}`, code });
       api.setToken(data.accessToken);
       setWelcomeUser({ firstName: data.user.firstName, lastName: data.user.lastName ?? '' });
-      setTimeout(() => router.push('/profil'), 2000);
+      setTimeout(() => router.push('/dashboard'), 2000);
     } catch (e) {
       setError((e as Error).message);
       setOtpShake(true);
@@ -75,7 +75,7 @@ export default function GirisPage() {
       const data = await api.post<LoginResponse>('/auth/login', { email, password });
       api.setToken(data.accessToken);
       setWelcomeUser({ firstName: data.user.firstName, lastName: data.user.lastName ?? '' });
-      setTimeout(() => router.push('/profil'), 2000);
+      setTimeout(() => router.push('/dashboard'), 2000);
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
   }

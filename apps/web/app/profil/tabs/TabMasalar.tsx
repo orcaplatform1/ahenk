@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmedRadarView } from '@ahenk/ui';
 
 interface Meeting {
   id: string;
@@ -53,6 +54,8 @@ export function TabMasalar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [pendingParticipants, setPendingParticipants] = useState<Participant[]>([]);
+
   const [previewMeeting, setPreviewMeeting] = useState<Meeting | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -65,10 +68,14 @@ export function TabMasalar() {
       api.get<Meeting[]>('/meetings/my-history').catch(() => [] as Meeting[]),
     ])
       .then(([cur, hist]) => {
-        // PENDING masalar dashboard'da gösterilir; burada sadece CONFIRMED/COMPLETED
-        const filteredCurrent = cur && cur.status !== 'PENDING' ? cur : null;
-        setCurrent(filteredCurrent);
+        setCurrent(cur);
         setHistory(Array.isArray(hist) ? hist : []);
+        // PENDING masa varsa katılımcıları çek (masa kuruldu kartı için)
+        if (cur && cur.status === 'PENDING') {
+          api.get<Participant[]>(`/meetings/${cur.id}/participants-preview`)
+            .then(setPendingParticipants)
+            .catch(() => {});
+        }
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -104,6 +111,8 @@ export function TabMasalar() {
 
   if (loading) return <SkeletonBlock lines={5} />;
   if (error) return <p className="text-[#ff6b6b] text-sm">{error}</p>;
+
+  // PENDING masa ve geçmiş de yoksa boş mesaj
   if (!current && history.length === 0) {
     return (
       <div className="glass-card p-10 flex flex-col items-center text-center gap-2">
@@ -113,11 +122,40 @@ export function TabMasalar() {
     );
   }
 
+  const isPending = current?.status === 'PENDING';
+
   return (
     <>
       <div className="flex flex-col gap-4">
-        {/* Bu haftanın masası (PENDING olanlar dashboard'da gösterilir) */}
-        {current && (
+        {/* PENDING masa — masa kuruldu kartı */}
+        {isPending && pendingParticipants.length > 0 && (
+          <div style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
+            borderRadius: 16,
+            padding: '28px 20px 24px',
+          }}>
+            <ConfirmedRadarView
+              participants={pendingParticipants}
+              maxParticipants={current?.maxParticipants}
+              type={current?.type}
+              scheduledAt={current?.scheduledAt ?? new Date().toISOString()}
+              infoText={
+                current?.type === 'ONE_ON_ONE'
+                  ? "Pazar günü saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."
+                  : "Cumartesi günü saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."
+              }
+            />
+          </div>
+        )}
+
+        {/* PENDING ama katılımcı yoksa (henüz taranıyor) — kart gösterme */}
+
+        {/* CONFIRMED/ACTIVE masa */}
+        {current && !isPending && (
           <MeetingCard
             meeting={current}
             label="Bu Hafta"

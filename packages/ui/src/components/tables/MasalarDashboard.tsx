@@ -17,7 +17,6 @@ const CIRCUMF    = 2 * Math.PI * AV_BR;
 const SCAN_CLR   = '#c0392b';
 const MALE_CLR   = '#4fc3f7';
 const FEMALE_CLR = '#f48fb1';
-const OTHER_CLR  = '#888888';
 
 const SCAN_DUR    = 1.8;
 const FIRST_DELAY = 1800;
@@ -43,14 +42,12 @@ const SWEEP_PATH = buildSweepPath();
 
 // ── Cinsiyet yardımcıları ──────────────────────────────────────────────────
 function gColor(g?: string | null) {
-  if (g === 'MALE')   return MALE_CLR;
   if (g === 'FEMALE') return FEMALE_CLR;
-  return OTHER_CLR;
+  return MALE_CLR;
 }
 function gBg(g?: string | null) {
-  if (g === 'MALE')   return 'rgba(79,195,247,0.12)';
   if (g === 'FEMALE') return 'rgba(244,143,177,0.12)';
-  return 'rgba(136,136,136,0.08)';
+  return 'rgba(79,195,247,0.12)';
 }
 
 // ── Baş harf üretimi ── "Ayşe Yılmaz" → "A.Y." ─────────────────────────────

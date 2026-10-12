@@ -338,11 +338,6 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         </div>
       )}
 
-      {/* Havuz ekranı — sadece abonelerde */}
-      {activePlan && (
-        <PoolScreen activePlan={activePlan} />
-      )}
-
       {/* Temel bilgiler */}
       <Card title="Hesap Bilgileri">
         {/* Kimlik Doğrulama durumu — en üstte */}

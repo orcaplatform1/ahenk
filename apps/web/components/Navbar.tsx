@@ -148,9 +148,9 @@ const navLinks = [
 
 const profileLinks = [
   { key: 'dashboard', label: 'Dashboard',          href: '/dashboard' },
-  { key: 'profil',    label: 'Profilim',            href: '/profil?tab=profil' },
-  { key: 'test',      label: 'Kişilik Testim',      href: '/profil?tab=test' },
   { key: 'masalar',   label: 'Masalarım',           href: '/profil?tab=masalar' },
+  { key: 'test',      label: 'Kişilik Testim',      href: '/profil?tab=test' },
+  { key: 'profil',    label: 'Profilim',            href: '/profil?tab=profil' },
   { key: 'paket',     label: 'Paketim',             href: '/profil?tab=paket' },
   { key: 'gecmis',    label: 'Ahenk Geçmişim',      href: '/profil/gecmis' },
   { key: 'kyc',       label: 'Kimlik Doğrulama',    href: '/profil?tab=kyc' },
@@ -270,6 +270,22 @@ export default function Navbar() {
               {checked && navUser && (
                 <div className="flex flex-col px-4 pt-4 gap-0.5">
                   <p className="text-xs text-[#444] uppercase tracking-[0.1em] px-2 py-1.5">Hesabım</p>
+                  {/* Yönetim Paneli — sadece admin/superadmin */}
+                  {(navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
+                    <motion.a
+                      href="/admin"
+                      onClick={() => setMenuOpen(false)}
+                      className="text-sm py-2.5 px-2 rounded-lg transition-colors"
+                      style={{ color: '#c0392b', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.04, duration: 0.22 }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; }}
+                    >
+                      Yönetim Paneli
+                    </motion.a>
+                  )}
                   {profileLinks.map((item, i) => (
                     <motion.a
                       key={item.key}
@@ -279,7 +295,7 @@ export default function Navbar() {
                       style={{ color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                       initial={{ opacity: 0, x: 16 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.04 + i * 0.04, duration: 0.22 }}
+                      transition={{ delay: 0.08 + i * 0.04, duration: 0.22 }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#ccc'; }}
                     >
@@ -315,16 +331,6 @@ export default function Navbar() {
                 <div className="flex flex-col px-4 pt-5 pb-6 gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 8 }}>
                   {navUser ? (
                     <>
-                      {(navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
-                        <Link
-                          href="/admin"
-                          onClick={() => setMenuOpen(false)}
-                          className="w-full py-2.5 rounded-xl text-sm font-medium text-center transition-colors"
-                          style={{ background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.35)', color: '#c0392b' }}
-                        >
-                          Yönetim Paneli
-                        </Link>
-                      )}
                       <button
                         onClick={handleLogout}
                         className="w-full py-2.5 rounded-xl text-sm font-medium transition-colors"
