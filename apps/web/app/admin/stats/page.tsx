@@ -32,6 +32,7 @@ interface CityRow {
   trend: string;
 }
 
+
 function useCountUp(target: number, duration = 1200) {
   const [val, setVal] = useState(0);
   const raf = useRef<number>(0);
@@ -176,13 +177,6 @@ export default function AdminStats() {
       {/* Başlık */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-serif text-2xl text-[#f5f5f5]">Admin · İstatistikler</h1>
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 text-xs text-[#888]">
-            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#c0392b', boxShadow: '0 0 4px #c0392b' }} />
-            Perşembe döngüsü
-          </span>
-          <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: '#c0392b', color: '#fff' }}>Aktif</span>
-        </div>
       </div>
 
       {error && <p className="text-[#ff6b6b] text-sm mb-5">{error}</p>}
@@ -233,39 +227,41 @@ export default function AdminStats() {
 
       {/* Şehir tablosu */}
       <div className="glass-card overflow-hidden mb-4">
-        <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <p className="text-xs text-[#888] uppercase tracking-[0.14em]">Şehir Bazlı Performans</p>
         </div>
         {loading ? (
-          <div className="p-5 flex flex-col gap-3">{[0,1,2,3].map(i => <Skel key={i} h="h-10" />)}</div>
+          <div className="p-4 flex flex-col gap-3">{[0,1,2,3].map(i => <Skel key={i} h="h-10" />)}</div>
         ) : cities.length > 0 ? (
-          <table className="w-full">
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                {['Şehir', 'Masa', 'Üye', 'Ciro', 'Trend'].map(h => (
-                  <th key={h} className="px-5 py-3 text-left text-xs text-[#555] uppercase tracking-[0.1em] font-medium">{h}</th>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[340px]">
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  {['Şehir', 'Masa', 'Üye', 'Ciro', 'Trend'].map(h => (
+                    <th key={h} className="px-3 py-2.5 text-left text-xs text-[#555] uppercase tracking-[0.08em] font-medium">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {cities.map((row, i) => (
+                  <motion.tr key={row.city}
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05, duration: 0.25 }}
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                  >
+                    <td className="px-3 py-3 text-sm font-semibold text-[#f5f5f5]">{row.city}</td>
+                    <td className="px-3 py-3 text-sm text-[#888]">{row.totalTables}</td>
+                    <td className="px-3 py-3 text-sm text-[#888]">{row.activeMembers}</td>
+                    <td className="px-3 py-3 text-sm text-[#888]">₺{fmtK(row.revenue)}</td>
+                    <td className="px-3 py-3 text-sm font-medium"
+                      style={{ color: String(row.trend).startsWith('-') ? '#ff6b6b' : '#4ade80' }}>
+                      {String(row.trend).startsWith('-') ? '↓ ' : '↑ '}{String(row.trend).replace('-', '')}
+                    </td>
+                  </motion.tr>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {cities.map((row, i) => (
-                <motion.tr key={row.city}
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05, duration: 0.25 }}
-                  style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                >
-                  <td className="px-5 py-3.5 text-sm font-semibold text-[#f5f5f5]">{row.city}</td>
-                  <td className="px-5 py-3.5 text-sm text-[#888]">{row.totalTables}</td>
-                  <td className="px-5 py-3.5 text-sm text-[#888]">{row.activeMembers}</td>
-                  <td className="px-5 py-3.5 text-sm text-[#888]">₺{fmtK(row.revenue)}</td>
-                  <td className="px-5 py-3.5 text-sm font-medium"
-                    style={{ color: String(row.trend).startsWith('-') ? '#ff6b6b' : '#4ade80' }}>
-                    {String(row.trend).startsWith('-') ? '↓ ' : '↑ '}{String(row.trend).replace('-', '')}
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         ) : (
           <p className="p-6 text-sm text-[#555]">Veri yok.</p>
         )}

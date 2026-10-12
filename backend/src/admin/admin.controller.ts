@@ -71,10 +71,11 @@ export class AdminController {
   listUsers(
     @Query("search") search?: string,
     @Query("status") status?: string,
+    @Query("type") type?: string,
     @Query("page", new DefaultValuePipe(1), ParseIntPipe) page?: number,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit?: number,
   ) {
-    return this.adminService.listUsers({ search, status, page, limit });
+    return this.adminService.listUsers({ search, status, type, page, limit });
   }
 
   @Get("users/:id")
@@ -113,6 +114,12 @@ export class AdminController {
     @Body() dto: GrantFreeSubscriptionDto,
   ) {
     return this.adminService.grantFreeSubscription(id, dto.plan, dto.expiresAt);
+  }
+
+  @Post("users/:id/kyc-approve")
+  quickApproveKyc(@Param("id") userId: string, @Req() req: Request) {
+    const actor = req.user as { id: string };
+    return this.adminService.quickApproveKyc(userId, actor.id);
   }
 
   @Patch("users/:id/test-lock-reset")
@@ -192,6 +199,11 @@ export class AdminController {
   @Delete("meetings/:id")
   cancelMeeting(@Param("id") id: string) {
     return this.adminService.cancelMeeting(id);
+  }
+
+  @Delete("meetings/:id/participants/:userId")
+  removeParticipant(@Param("id") meetingId: string, @Param("userId") userId: string) {
+    return this.adminService.removeParticipant(meetingId, userId);
   }
 
   // ─── Mekan yönetimi ───────────────────────────────────────────────────────

@@ -75,13 +75,21 @@ export class AdminService {
 
   // ─── Kullanıcı listesi ────────────────────────────────────────────────────
 
-  async listUsers(params: { search?: string; status?: string; page?: number; limit?: number }) {
+  async listUsers(params: { search?: string; status?: string; type?: string; page?: number; limit?: number }) {
     const page = params.page ?? 1;
     const limit = Math.min(params.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = { isBot: false };
     if (params.status) where.status = params.status;
+
+    // Rol / paket tipi filtresi
+    if (params.type === 'ADMIN')       where.role = 'ADMIN';
+    else if (params.type === 'SUPERADMIN') where.role = 'SUPERADMIN';
+    else if (params.type === 'MASADA')  where.subscriptions = { some: { plan: 'MASADA' } };
+    else if (params.type === 'KARSIMDA') where.subscriptions = { some: { plan: 'KARSIMDA' } };
+    else if (params.type === 'ICERDE')  where.subscriptions = { some: { plan: 'ICERDE' } };
+    else if (params.type === 'NO_PLAN') where.subscriptions = { none: {} };
     if (params.search) {
       where.OR = [
         { email: { contains: params.search, mode: "insensitive" } },
@@ -103,18 +111,17 @@ export class AdminService {
           phone: true,
           role: true,
           status: true,
-          emailVerified: true,
-          phoneVerified: true,
           createdAt: true,
           profile: { select: { firstName: true, lastName: true, city: true, isPioneer: true } },
           kyc: { select: { status: true } },
-          oceanScore: { select: { completedAt: true } },
+          oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
+          subscriptions: { select: { plan: true }, orderBy: { createdAt: 'desc' as const }, take: 3 },
         },
       }),
       this.prisma.user.count({ where }),
     ]);
 
-    return { items, total, page, totalPages: Math.ceil(total / limit) };
+    return { data: items, total, page, totalPages: Math.ceil(total / limit) };
   }
 
   // ─── Kullanıcı detay ──────────────────────────────────────────────────────
@@ -225,6 +232,32 @@ export class AdminService {
     });
 
     return { subscription: sub, planLabel: PLAN_CONFIG[plan].nametr };
+  }
+
+  // ─── Katılımcı çıkart ────────────────────────────────────────────────────
+
+  async removeParticipant(meetingId: string, userId: string) {
+    const participant = await this.prisma.meetingParticipant.findUnique({
+      where: { meetingId_userId: { meetingId, userId } },
+    });
+    if (!participant) throw new NotFoundException('Katılımcı bu masada yok');
+    await this.prisma.meetingParticipant.delete({
+      where: { meetingId_userId: { meetingId, userId } },
+    });
+    return { removed: true, meetingId, userId };
+  }
+
+  // ─── KYC hızlı onayla ────────────────────────────────────────────────────
+
+  async quickApproveKyc(userId: string, reviewerId: string) {
+    const kyc = await this.prisma.kycSubmission.findUnique({ where: { userId } });
+    if (!kyc) throw new NotFoundException('KYC başvurusu bulunamadı');
+    if (kyc.status === 'APPROVED') throw new BadRequestException('KYC zaten onaylı');
+    return this.prisma.kycSubmission.update({
+      where: { userId },
+      data: { status: 'APPROVED', reviewedById: reviewerId, reviewedAt: new Date() },
+      select: { id: true, status: true },
+    });
   }
 
   // ─── Test kilidi sıfırla ─────────────────────────────────────────────────
@@ -554,7 +587,13 @@ export class AdminService {
 
   async getSettings() {
     const configs = await this.prisma.appConfig.findMany();
-    return Object.fromEntries(configs.map((c) => [c.key, c.value]));
+    const map = Object.fromEntries(configs.map((c) => [c.key, c.value]));
+    return {
+      weeklyTableLimit: parseInt(map['WEEKLY_TABLE_LIMIT'] ?? '0', 10) || 0,
+      matchingEnabled: map['MATCHING_ENABLED'] !== 'false',
+      botSystemActive: map['BOT_SYSTEM_ACTIVE'] !== 'false',
+      maintenanceMode: map['MAINTENANCE_MODE'] === 'true',
+    };
   }
 
   async updateSettings(data: { weeklyTableLimit?: number; matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean }) {
@@ -801,45 +840,49 @@ export class AdminService {
       },
     });
 
+    const PLAN_PRICE: Record<string, number> = { MASADA: 349, KARSIMDA: 449, ICERDE: 679 };
+
     const results = await Promise.all(
       cities.map(async (city) => {
-        const [totalTables, activeMembers, thisWeekRev, prevWeekRev] = await Promise.all([
+        const [totalTables, activeMembers, activeSubs, thisWeekSubs, prevWeekSubs] = await Promise.all([
           this.prisma.meeting.count({
             where: { status: MeetingStatus.COMPLETED, locationText: { contains: city.name } },
           }),
           this.prisma.profile.count({
             where: { primaryCity: city.name, user: { status: UserStatus.ACTIVE, isBot: false } },
           }),
-          this.prisma.payment.aggregate({
+          this.prisma.subscription.findMany({
             where: {
-              status: "SUCCESS",
-              paidAt: { gte: weekStart },
-              user: { profile: { primaryCity: city.name } },
+              status: SubscriptionStatus.ACTIVE,
+              user: { profile: { primaryCity: city.name }, isBot: false },
             },
-            _sum: { amountKurus: true },
+            select: { plan: true },
           }),
-          this.prisma.payment.aggregate({
+          this.prisma.subscription.count({
             where: {
-              status: "SUCCESS",
-              paidAt: { gte: prevWeekStart, lt: weekStart },
-              user: { profile: { primaryCity: city.name } },
+              createdAt: { gte: weekStart },
+              user: { profile: { primaryCity: city.name }, isBot: false },
             },
-            _sum: { amountKurus: true },
+          }),
+          this.prisma.subscription.count({
+            where: {
+              createdAt: { gte: prevWeekStart, lt: weekStart },
+              user: { profile: { primaryCity: city.name }, isBot: false },
+            },
           }),
         ]);
 
-        const thisRev = (thisWeekRev._sum.amountKurus ?? 0) / 100;
-        const prevRev = (prevWeekRev._sum.amountKurus ?? 0) / 100;
+        const revenue = activeSubs.reduce((sum, s) => sum + (PLAN_PRICE[s.plan] ?? 0), 0);
         const trend =
-          prevRev > 0
-            ? `${Math.round(((thisRev - prevRev) / prevRev) * 100)}%`
-            : "0%";
+          prevWeekSubs > 0
+            ? `${Math.round(((thisWeekSubs - prevWeekSubs) / prevWeekSubs) * 100)}%`
+            : thisWeekSubs > 0 ? "+100%" : "0%";
 
         return {
           city: city.name,
           totalTables,
           activeMembers,
-          revenue: thisRev,
+          revenue,
           trend,
         };
       }),

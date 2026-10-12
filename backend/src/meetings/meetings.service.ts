@@ -84,10 +84,26 @@ export class MeetingsService {
   }
 
   // ─── Dashboard endpoint ───────────────────────────────────────────────────────
-  // phase: SCANNING (masa yok) | WAITING (masa var, bilgi henüz açık değil) | REVEALED (Cumartesi 10:00+)
-
+  // items: [] → SCANNING | items: [{phase:WAITING|REVEALED, meeting}] → aktif masalar
   async getDashboardTable(userId: string) {
-    const part = await this.prisma.meetingParticipant.findFirst({
+    const meetingSelect = {
+      id: true, type: true, status: true, scheduledAt: true, maxParticipants: true,
+      locationText: true, locationUrl: true, venueAddress: true,
+      venuePhotoUrl: true, venuePhoto2Url: true, venuePhoto3Url: true,
+      venuePhotoCaption1: true, venuePhotoCaption2: true, venuePhotoCaption3: true,
+      participants: {
+        select: {
+          user: {
+            select: {
+              isBot: true,
+              profile: { select: { firstName: true, lastName: true, gender: true } },
+            },
+          },
+        },
+      },
+    } as const;
+
+    const parts = await this.prisma.meetingParticipant.findMany({
       where: {
         userId,
         meeting: {
@@ -95,92 +111,64 @@ export class MeetingsService {
           scheduledAt: { gte: new Date() },
         },
       },
-      orderBy: { meeting: { scheduledAt: 'asc' } },
-      select: {
-        meeting: {
-          select: {
-            id: true,
-            type: true,
-            status: true,
-            scheduledAt: true,
-            maxParticipants: true,
-            locationText: true,
-            locationUrl: true,
-            venueAddress: true,
-            venuePhotoUrl: true,
-            venuePhoto2Url: true,
-            venuePhoto3Url: true,
-            venuePhotoCaption1: true,
-            venuePhotoCaption2: true,
-            venuePhotoCaption3: true,
-            participants: {
-              select: {
-                user: {
-                  select: {
-                    isBot: true,
-                    profile: { select: { firstName: true, lastName: true, gender: true } },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      orderBy: [{ meeting: { type: 'asc' } }, { meeting: { scheduledAt: 'asc' } }],
+      select: { meeting: { select: meetingSelect } },
     });
 
-    if (!part) return { phase: 'SCANNING' as const };
+    if (parts.length === 0) return { items: [] };
 
-    const m = part.meeting;
+    const items = await Promise.all(
+      parts.map(async ({ meeting: m }) => {
+        const sat10UTC = new Date(m.scheduledAt.getTime() - 10 * 60 * 60 * 1000);
+        const isRevealed = !!m.locationText && new Date() >= sat10UTC;
 
-    // Cumartesi 10:00 TR = Saturday 07:00 UTC (scheduledAt = Saturday 17:00 UTC = 20:00 TR)
-    // scheduledAt Cumartesi 20:00 TR → -10h = Cumartesi 10:00 TR → -3h = Cumartesi 07:00 UTC
-    const sat10UTC = new Date(m.scheduledAt.getTime() - 10 * 60 * 60 * 1000);
-    const isRevealed = !!m.locationText && new Date() >= sat10UTC;
+        const participants = m.participants
+          .map((p) => {
+            const f = p.user.profile?.firstName ?? '';
+            const l = p.user.profile?.lastName ?? '';
+            return {
+              initials: `${(f[0] ?? '?').toUpperCase()}.${(l[0] ?? '?').toUpperCase()}.`,
+              gender: p.user.profile?.gender ?? null,
+            };
+          });
 
-    const participants = m.participants
-      .filter((p) => !p.user.isBot)
-      .map((p) => {
-        const f = p.user.profile?.firstName ?? '';
-        const l = p.user.profile?.lastName ?? '';
+        const photos = [
+          { url: m.venuePhotoUrl,  caption: m.venuePhotoCaption1 ?? 'Alan 1' },
+          { url: m.venuePhoto2Url, caption: m.venuePhotoCaption2 ?? 'Alan 2' },
+          { url: m.venuePhoto3Url, caption: m.venuePhotoCaption3 ?? 'Alan 3' },
+        ].filter((p) => !!p.url);
+
+        let aiReport = null;
+        if (isRevealed) {
+          const report = await this.prisma.meetingAiReport.findUnique({
+            where: { meetingId: m.id },
+            select: { content: true, uyumSkoru: true, generatedAt: true },
+          });
+          if (report) aiReport = report;
+        }
+
         return {
-          initials: `${(f[0] ?? '?').toUpperCase()}.${(l[0] ?? '?').toUpperCase()}.`,
-          gender: p.user.profile?.gender ?? null,
+          phase: isRevealed ? ('REVEALED' as const) : ('WAITING' as const),
+          meeting: {
+            id: m.id,
+            type: m.type,
+            maxParticipants: m.maxParticipants,
+            scheduledAt: m.scheduledAt,
+            participants,
+            sat10UTC,
+            ...(isRevealed && {
+              venueName: m.locationText,
+              venueAddress: m.venueAddress,
+              venueMapsUrl: m.locationUrl,
+              venuePhotos: photos,
+              aiReport,
+            }),
+          },
         };
-      });
+      }),
+    );
 
-    const photos = [
-      { url: m.venuePhotoUrl,  caption: m.venuePhotoCaption1 ?? 'Alan 1' },
-      { url: m.venuePhoto2Url, caption: m.venuePhotoCaption2 ?? 'Alan 2' },
-      { url: m.venuePhoto3Url, caption: m.venuePhotoCaption3 ?? 'Alan 3' },
-    ].filter((p) => !!p.url);
-
-    let aiReport = null;
-    if (isRevealed) {
-      const report = await this.prisma.meetingAiReport.findUnique({
-        where: { meetingId: m.id },
-        select: { content: true, uyumSkoru: true, generatedAt: true },
-      });
-      if (report) aiReport = report;
-    }
-
-    return {
-      phase: isRevealed ? ('REVEALED' as const) : ('WAITING' as const),
-      meeting: {
-        id: m.id,
-        type: m.type,
-        maxParticipants: m.maxParticipants,
-        scheduledAt: m.scheduledAt,
-        participants,
-        sat10UTC,           // frontend sayaç için
-        ...(isRevealed && {
-          venueName: m.locationText,
-          venueAddress: m.venueAddress,
-          venueMapsUrl: m.locationUrl,
-          venuePhotos: photos,
-          aiReport,
-        }),
-      },
-    };
+    return { items };
   }
 
   // ─── Geçmiş masalar ─────────────────────────────────────────────────────────

@@ -6,10 +6,8 @@ import { api } from '@/lib/api';
 
 interface Bot {
   id: string;
-  firstName: string;
-  lastName: string;
-  isActive?: boolean;
-  status?: string;
+  status: string;
+  profile?: { firstName?: string | null; lastName?: string | null } | null;
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
@@ -42,7 +40,7 @@ export default function AdminBots() {
   useEffect(() => { load(); }, []);
 
   function openAdd() { setForm({ firstName: '', lastName: '' }); setModal('add'); }
-  function openEdit(b: Bot) { setEditing(b); setForm({ firstName: b.firstName, lastName: b.lastName }); setModal('edit'); }
+  function openEdit(b: Bot) { setEditing(b); setForm({ firstName: b.profile?.firstName ?? '', lastName: b.profile?.lastName ?? '' }); setModal('edit'); }
 
   async function save() {
     setSaving(true);
@@ -57,8 +55,8 @@ export default function AdminBots() {
   }
 
   async function toggleStatus(b: Bot) {
-    const active = b.isActive !== false && b.status !== 'INACTIVE';
-    await api.patch(`/matching/admin/bots/${b.id}/status`, { isActive: !active }).catch(() => {});
+    const active = b.status === 'ACTIVE';
+    await api.patch(`/matching/admin/bots/${b.id}/status`, { active: !active }).catch(() => {});
     load();
   }
 
@@ -86,14 +84,16 @@ export default function AdminBots() {
       ) : (
         <div className="flex flex-col gap-2">
           {bots.map((b, i) => {
-            const active = b.isActive !== false && b.status !== 'INACTIVE';
+            const active = b.status === 'ACTIVE';
+            const firstName = b.profile?.firstName ?? '';
+            const lastName = b.profile?.lastName ?? '';
             return (
               <motion.div key={b.id}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                 className="glass-card px-4 py-3 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-[#f5f5f5]">{b.firstName} {b.lastName}</p>
+                    <p className="text-sm font-medium text-[#f5f5f5]">{firstName} {lastName}</p>
                     <span className="text-xs px-2 py-0.5 rounded-full"
                       style={active ? { background: 'rgba(74,222,128,0.1)', color: '#4ade80' } : { background: 'rgba(255,255,255,0.05)', color: '#555' }}>
                       {active ? 'Aktif' : 'Pasif'}

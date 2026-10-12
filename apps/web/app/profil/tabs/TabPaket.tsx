@@ -7,21 +7,25 @@ import { SkeletonBlock } from '@/components/ui/Skeleton';
 type ActivePlan = 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
 
 function getPlanCardState(cardKey: string, activePlan: ActivePlan) {
-  if (!activePlan) return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
-  if (activePlan === 'ICERDE') {
-    return { dimmed: true, badge: 'Bu paketin tüm özelliklerine sahipsiniz.', badgeRed: false, showButton: false };
-  }
+  const none = { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+  if (!activePlan) return none;
+
   if (activePlan === 'MASADA') {
-    if (cardKey === 'MASADA') return { dimmed: true, badge: 'Aktif Paketiniz', badgeRed: true, showButton: false };
-    if (cardKey === 'KARSIMDA') return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
-    return { dimmed: true, badge: 'Bu paketin özelliğinden birine zaten sahipsiniz.', badgeRed: false, showButton: false };
+    if (cardKey === 'MASADA')   return { dimmed: true,  badge: 'Aktif Paketiniz',        badgeRed: true,  showButton: false };
+    if (cardKey === 'KARSIMDA') return { dimmed: false, badge: null,                      badgeRed: false, showButton: true  };
+    /* ICERDE */                return { dimmed: true,  badge: 'Grup Masasına Sahipsin',  badgeRed: false, showButton: false };
   }
   if (activePlan === 'KARSIMDA') {
-    if (cardKey === 'KARSIMDA') return { dimmed: true, badge: 'Aktif Paketiniz', badgeRed: true, showButton: false };
-    if (cardKey === 'MASADA') return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
-    return { dimmed: true, badge: 'Bu paketin özelliğinden birine zaten sahipsiniz.', badgeRed: false, showButton: false };
+    if (cardKey === 'KARSIMDA') return { dimmed: true,  badge: 'Aktif Paketiniz',              badgeRed: true,  showButton: false };
+    if (cardKey === 'MASADA')   return { dimmed: false, badge: null,                            badgeRed: false, showButton: true  };
+    /* ICERDE */                return { dimmed: true,  badge: 'Baş Başa Masasına Sahipsin',   badgeRed: false, showButton: false };
   }
-  return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+  if (activePlan === 'ICERDE') {
+    if (cardKey === 'ICERDE')   return { dimmed: true,  badge: 'Aktif Paketiniz',              badgeRed: true,  showButton: false };
+    if (cardKey === 'MASADA')   return { dimmed: true,  badge: 'Grup Masasına Sahipsin',       badgeRed: false, showButton: false };
+    /* KARSIMDA */              return { dimmed: true,  badge: 'Baş Başa Masasına Sahipsin',   badgeRed: false, showButton: false };
+  }
+  return none;
 }
 
 interface Subscription {
@@ -222,6 +226,9 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
           >
             {referralSending ? '…' : 'Davet Gönder'}
           </button>
+          <p className="text-[0.65rem] leading-relaxed" style={{ color: '#444', marginTop: 2 }}>
+            <span style={{ color: '#555', fontWeight: 600 }}>BİLGİ:</span> Davet ettiğiniz arkadaşınız, telefon numarasını ve kimlik doğrulamasını yaptıktan sonra sistem size otomatik indirim hakkı tanımlar. Arkadaşınız da başka arkadaşlarını davet edip bu şartlar yerine geldiğinde o da indirim hakkı kazanır. İndirim hakları toplu olarak kullanılamaz ve devredilemez. Her bir indirim hakkı, yalnızca bir paket satın alımında geçerlidir.
+          </p>
         </div>
         {referralMsg && (
           <p className="text-xs" style={{ color: referralMsg.includes('başarı') ? '#4ade80' : '#ff6b6b' }}>{referralMsg}</p>
@@ -285,7 +292,7 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
       <style>{`
         @keyframes _pCardGoldBorder{to{transform:rotate(360deg)}}
         .p-feat-wrap{position:relative;border-radius:18px;padding:2px;overflow:hidden;}
-        .p-feat-wrap::before{content:'';position:absolute;inset:-60%;background:conic-gradient(from 0deg,transparent 68%,#c9a227 78%,#e8c84a 84%,transparent 93%);animation:_pCardGoldBorder 3s linear infinite;z-index:0;}
+        .p-feat-wrap::before{content:'';position:absolute;width:300%;height:300%;top:-100%;left:-100%;background:conic-gradient(from 0deg,transparent 68%,#c9a227 78%,#e8c84a 84%,transparent 93%);animation:_pCardGoldBorder 3s linear infinite;z-index:0;}
         .p-feat-inner{position:relative;z-index:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:row;flex:1;}
       `}</style>
 
@@ -309,8 +316,9 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
             {/* Sol: metin */}
             <div style={{ width: '55%', flexShrink: 0, background: '#0c0909', display: 'flex', flexDirection: 'column', padding: '16px 12px', gap: 8, position: 'relative' }}>
               {cs.badge && (
-                <span className="absolute top-2 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 text-xs font-semibold rounded-full text-center leading-tight whitespace-nowrap"
+                <span className="absolute top-2 inset-x-2 z-10 px-2 py-0.5 text-center leading-tight rounded-full"
                   style={{
+                    fontSize: '0.65rem', fontWeight: 600,
                     ...(cs.badgeRed
                       ? { background: 'rgba(192,57,43,0.85)', color: '#fff', border: '1px solid rgba(192,57,43,0.6)' }
                       : { background: 'rgba(40,40,40,0.85)', color: '#aaa', border: '1px solid rgba(255,255,255,0.12)' }),

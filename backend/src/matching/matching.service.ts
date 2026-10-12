@@ -521,9 +521,10 @@ export class MatchingService {
   async updateBotName(botId: string, firstName: string, lastName: string) {
     const bot = await this.prisma.user.findFirst({ where: { id: botId, isBot: true } });
     if (!bot) throw new NotFoundException("Bot bulunamadı");
-    return this.prisma.profile.update({
+    return this.prisma.profile.upsert({
       where: { userId: botId },
-      data: { firstName, lastName },
+      update: { firstName, lastName },
+      create: { userId: botId, firstName, lastName, isPublic: false },
       select: { userId: true, firstName: true, lastName: true },
     });
   }

@@ -135,15 +135,17 @@ export class KycService {
 
   // ─── Admin: Listele ───────────────────────────────────────────────────────
 
-  async adminList(status?: KycStatus, page = 1, limit = 20) {
+  async adminList(status?: KycStatus, page: number | string = 1, limit: number | string = 20) {
     const where = status ? { status } : {};
-    const skip = (page - 1) * limit;
+    const p = Math.max(1, parseInt(String(page), 10) || 1);
+    const l = Math.max(1, parseInt(String(limit), 10) || 20);
+    const skip = (p - 1) * l;
 
     const [items, total] = await Promise.all([
       this.prisma.kycSubmission.findMany({
         where,
         skip,
-        take: limit,
+        take: l,
         orderBy: { submittedAt: "asc" },
         include: {
           user: { select: { id: true, email: true, profile: true } },
@@ -153,7 +155,7 @@ export class KycService {
       this.prisma.kycSubmission.count({ where }),
     ]);
 
-    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return { items, total, page: p, limit: l, totalPages: Math.ceil(total / l) };
   }
 
   // ─── Admin: Tek başvuru + imzalı URL'ler ─────────────────────────────────

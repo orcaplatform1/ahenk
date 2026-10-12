@@ -2,25 +2,32 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { MasalarDashboard } from '@ahenk/ui';
+import { MasalarDashboard, buildInitials } from '@ahenk/ui';
 import { api } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
+interface MeData {
+  firstName: string;
+  lastName: string;
+  activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
+  profile?: { gender?: string | null };
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
+  const [me, setMe] = useState<MeData | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const t = api.getToken();
-    if (!t) {
-      router.replace('/giris');
-      return;
-    }
+    if (!t) { router.replace('/giris'); return; }
     setToken(t);
-    setMounted(true);
+    api.get<MeData>('/auth/me')
+      .then(setMe)
+      .catch(() => {})
+      .finally(() => setMounted(true));
   }, [router]);
 
   if (!mounted) {
@@ -31,9 +38,12 @@ export default function DashboardPage() {
     );
   }
 
+  const selfParticipant = me
+    ? { initials: buildInitials(me.firstName, me.lastName), gender: me.profile?.gender ?? null }
+    : undefined;
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-[#f5f5f5] pt-[52px]">
-      {/* Arka plan glow */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,0.1) 0%, transparent 70%)' }}
@@ -48,8 +58,9 @@ export default function DashboardPage() {
         <MasalarDashboard
           apiBase={`${API_BASE}/api/v1`}
           token={token ?? undefined}
+          selfParticipant={selfParticipant}
+          activePlan={me?.activePlan ?? null}
         />
-
       </main>
     </div>
   );

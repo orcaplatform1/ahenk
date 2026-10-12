@@ -206,21 +206,25 @@ function StatCards() {
 type ActivePlan = 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
 
 function getPlanCardState(cardKey: string, activePlan: ActivePlan) {
-  if (!activePlan) return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
-  if (activePlan === 'ICERDE') {
-    return { dimmed: true, badge: 'Bu paketin tüm özelliklerine sahipsiniz.', badgeRed: false, showButton: false };
-  }
+  const none = { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+  if (!activePlan) return none;
+
   if (activePlan === 'MASADA') {
-    if (cardKey === 'MASADA') return { dimmed: true, badge: 'Aktif Paketiniz', badgeRed: true, showButton: false };
-    if (cardKey === 'KARSIMDA') return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
-    return { dimmed: true, badge: 'Bu paketin özelliğinden birine zaten sahipsiniz.', badgeRed: false, showButton: false };
+    if (cardKey === 'MASADA')   return { dimmed: true,  badge: 'Aktif Paketiniz',        badgeRed: true,  showButton: false };
+    if (cardKey === 'KARSIMDA') return { dimmed: false, badge: null,                      badgeRed: false, showButton: true  };
+    /* ICERDE */                return { dimmed: true,  badge: 'Grup Masasına Sahipsin',  badgeRed: false, showButton: false };
   }
   if (activePlan === 'KARSIMDA') {
-    if (cardKey === 'KARSIMDA') return { dimmed: true, badge: 'Aktif Paketiniz', badgeRed: true, showButton: false };
-    if (cardKey === 'MASADA') return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
-    return { dimmed: true, badge: 'Bu paketin özelliğinden birine zaten sahipsiniz.', badgeRed: false, showButton: false };
+    if (cardKey === 'KARSIMDA') return { dimmed: true,  badge: 'Aktif Paketiniz',              badgeRed: true,  showButton: false };
+    if (cardKey === 'MASADA')   return { dimmed: false, badge: null,                            badgeRed: false, showButton: true  };
+    /* ICERDE */                return { dimmed: true,  badge: 'Baş Başa Masasına Sahipsin',   badgeRed: false, showButton: false };
   }
-  return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
+  if (activePlan === 'ICERDE') {
+    if (cardKey === 'ICERDE')   return { dimmed: true,  badge: 'Aktif Paketiniz',              badgeRed: true,  showButton: false };
+    if (cardKey === 'MASADA')   return { dimmed: true,  badge: 'Grup Masasına Sahipsin',       badgeRed: false, showButton: false };
+    /* KARSIMDA */              return { dimmed: true,  badge: 'Baş Başa Masasına Sahipsin',   badgeRed: false, showButton: false };
+  }
+  return none;
 }
 
 /* ─── Ana bileşen ────────────────────────────────────────────────────────── */
@@ -526,7 +530,7 @@ export default function Home() {
           <style>{`
             @keyframes _cardGoldBorder{to{transform:rotate(360deg)}}
             .lp-feat-wrap{position:relative;border-radius:18px;padding:2px;overflow:hidden;}
-            .lp-feat-wrap::before{content:'';position:absolute;inset:-60%;background:conic-gradient(from 0deg,transparent 68%,#c9a227 78%,#e8c84a 84%,transparent 93%);animation:_cardGoldBorder 3s linear infinite;z-index:0;}
+            .lp-feat-wrap::before{content:'';position:absolute;width:300%;height:300%;top:-100%;left:-100%;background:conic-gradient(from 0deg,transparent 68%,#c9a227 78%,#e8c84a 84%,transparent 93%);animation:_cardGoldBorder 3s linear infinite;z-index:0;}
             .lp-feat-inner{position:relative;z-index:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:row;flex:1;}
           `}</style>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -550,10 +554,13 @@ export default function Home() {
                   {/* Sol: metin */}
                   <div style={{ width: '55%', flexShrink: 0, background: '#0c0909', display: 'flex', flexDirection: 'column', padding: '18px 14px', gap: 10, position: 'relative' }}>
                     {cs.badge && (
-                      <span className="absolute top-3 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap"
-                        style={cs.badgeRed
-                          ? { background: 'rgba(192,57,43,0.85)', color: '#fff', border: '1px solid rgba(192,57,43,0.6)' }
-                          : { background: 'rgba(40,40,40,0.85)', color: '#aaa', border: '1px solid rgba(255,255,255,0.12)' }}>
+                      <span className="absolute top-3 inset-x-2 z-10 px-2 py-0.5 text-center leading-tight rounded-full"
+                        style={{
+                          fontSize: '0.65rem', fontWeight: 600,
+                          ...(cs.badgeRed
+                            ? { background: 'rgba(192,57,43,0.85)', color: '#fff', border: '1px solid rgba(192,57,43,0.6)' }
+                            : { background: 'rgba(40,40,40,0.85)', color: '#aaa', border: '1px solid rgba(255,255,255,0.12)' }),
+                        }}>
                         {cs.badge}
                       </span>
                     )}
