@@ -6,15 +6,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { Modal } from '@/components/ui/Modal';
+import { ConfirmedRadarView } from '@ahenk/ui';
 
 interface Meeting {
   id: string;
   scheduledAt: string;
+  type?: 'GROUP' | 'ONE_ON_ONE';
   locationName?: string | null;
   locationText?: string | null;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   _count?: { participants?: number };
   participantCount?: number;
+  maxParticipants?: number;
   isReviewed?: boolean;
 }
 
@@ -51,6 +54,8 @@ export function TabMasalar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [currentParticipants, setCurrentParticipants] = useState<Participant[]>([]);
+
   const [previewMeeting, setPreviewMeeting] = useState<Meeting | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -65,6 +70,11 @@ export function TabMasalar() {
       .then(([cur, hist]) => {
         setCurrent(cur);
         setHistory(Array.isArray(hist) ? hist : []);
+        if (cur && (cur.status === 'PENDING' || cur.status === 'CONFIRMED')) {
+          api.get<Participant[]>(`/meetings/${cur.id}/participants-preview`)
+            .then(setCurrentParticipants)
+            .catch(() => {});
+        }
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -113,13 +123,37 @@ export function TabMasalar() {
     <>
       <div className="flex flex-col gap-4">
         {/* Bu haftanın masası */}
-        {current && (
+        {current && current.status === 'PENDING' && currentParticipants.length > 0 ? (
+          <div
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
+              borderRadius: 16,
+              padding: '28px 20px 24px',
+            }}
+          >
+            <ConfirmedRadarView
+              participants={currentParticipants}
+              maxParticipants={current.maxParticipants}
+              type={current.type}
+              scheduledAt={current.scheduledAt}
+              infoText={
+                current.type === 'ONE_ON_ONE'
+                  ? "Pazar saat 10:00'da Masa detayı paylaşılacak olup, bildirim göndereceğiz."
+                  : "Cumartesi 10:00'da Masa detayı paylaşılacak olup, bildirim göndereceğiz."
+              }
+            />
+          </div>
+        ) : current ? (
           <MeetingCard
             meeting={current}
             label="Bu Hafta"
             onPreview={openPreview}
           />
-        )}
+        ) : null}
 
         {/* Geçmiş masalar */}
         {history.length > 0 && (

@@ -175,6 +175,19 @@ function ThursdayCountdown() {
   );
 }
 
+// ── Tarih formatlama ────────────────────────────────────────────────────────
+function formatMasaDate(isoStr: string): string {
+  try {
+    return new Date(isoStr).toLocaleDateString('tr-TR', {
+      day: 'numeric', month: 'long', year: 'numeric',
+      weekday: 'long', hour: '2-digit', minute: '2-digit',
+      timeZone: 'Europe/Istanbul',
+    });
+  } catch {
+    return isoStr;
+  }
+}
+
 // ── Tipler ─────────────────────────────────────────────────────────────────
 export interface Participant {
   id?: string;
@@ -322,6 +335,126 @@ function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
         {label}
       </div>
     </motion.div>
+  );
+}
+
+// ── Onaylı Radar Görünümü ─────────────────────────────────────────────────────
+interface ConfirmedRadarProps {
+  participants: Participant[];
+  maxParticipants?: number;
+  type?: 'GROUP' | 'ONE_ON_ONE';
+  scheduledAt: string;
+  infoText: string;
+}
+
+export function ConfirmedRadarView({ participants, maxParticipants, type, scheduledAt, infoText }: ConfirmedRadarProps) {
+  const isOneOnOne = type === 'ONE_ON_ONE';
+  const title      = isOneOnOne ? 'BAŞ BAŞA MASA' : 'GRUP MASASI';
+  const maxP       = maxParticipants ?? (isOneOnOne ? 2 : 6);
+
+  const males   = participants.filter(p => p.gender === 'MALE');
+  const females = participants.filter(p => p.gender === 'FEMALE');
+  const others  = participants.filter(p => p.gender !== 'MALE' && p.gender !== 'FEMALE');
+  const ordered: Participant[] = [];
+  const mfLen = Math.max(males.length, females.length);
+  for (let i = 0; i < mfLen; i++) {
+    if (i < males.length)   ordered.push(males[i]);
+    if (i < females.length) ordered.push(females[i]);
+  }
+  ordered.push(...others);
+
+  const positions = orbitPts(maxP);
+
+  return (
+    <div>
+      {/* Başlık */}
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <h2 style={{
+          fontFamily: 'var(--font-serif, "DM Serif Display", serif)',
+          fontSize: 22, fontWeight: 400, color: '#f5f5f5',
+          letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 8px',
+        }}>
+          {title}
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#27ae60' }} />
+          <span style={{
+            fontSize: 11, fontWeight: 600, letterSpacing: '0.12em',
+            color: '#27ae60', fontFamily: 'Inter, sans-serif',
+          }}>
+            MASA OLUŞTURULDU
+          </span>
+        </div>
+      </div>
+
+      {/* Radar alanı */}
+      <div style={{ position: 'relative', width: RADAR_SZ, height: RADAR_SZ, margin: '0 auto' }}>
+        <svg
+          width={RADAR_SZ} height={RADAR_SZ}
+          viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`}
+          style={{ position: 'absolute', inset: 0 }}
+        >
+          {[30, 62, 93, ORBIT_R].map((r, i) => (
+            <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke="#27ae60"
+              strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.35 : 0.12} />
+          ))}
+          <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke="#27ae60" strokeWidth={0.6} opacity={0.1} />
+          <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke="#27ae60" strokeWidth={0.6} opacity={0.1} />
+          <circle cx={CX} cy={CY} r={5} fill="#27ae60" opacity={0.7} />
+        </svg>
+
+        <AnimatePresence>
+          {ordered.map((p, i) => {
+            const pos = positions[i];
+            if (!pos) return null;
+            return (
+              <AvatarBubble
+                key={p.id ?? `${p.initials}-${i}`}
+                participant={p}
+                cx={pos.x}
+                cy={pos.y}
+                delayMs={i * 120}
+              />
+            );
+          })}
+        </AnimatePresence>
+      </div>
+
+      {/* Katılımcı sayısı */}
+      <div style={{ textAlign: 'center', marginTop: 18 }}>
+        <span style={{ fontSize: 14, color: '#666', fontFamily: 'Inter, sans-serif' }}>
+          Katılımcı:{' '}
+          <span style={{ fontWeight: 700, color: '#27ae60' }}>{ordered.length}</span>
+          <span style={{ color: '#444', margin: '0 4px' }}>/</span>
+          <span style={{ fontWeight: 700, color: '#27ae60' }}>{maxP}</span>
+        </span>
+      </div>
+
+      {/* Onay bilgisi */}
+      <div style={{ textAlign: 'center', marginTop: 20, padding: '0 4px' }}>
+        <p style={{
+          margin: '0 0 6px',
+          fontFamily: 'var(--font-serif, "DM Serif Display", serif)',
+          fontSize: 18, fontWeight: 400, color: '#27ae60',
+        }}>
+          Masanız Kuruldu!
+        </p>
+        <p style={{
+          margin: '0 0 8px',
+          fontSize: 12, color: '#888', fontFamily: 'Inter, sans-serif',
+          letterSpacing: '0.01em',
+        }}>
+          Masa bulunma tarihi: {formatMasaDate(scheduledAt)}
+        </p>
+        <p style={{
+          margin: 0,
+          fontSize: 12, color: '#555', fontFamily: 'Inter, sans-serif',
+          lineHeight: 1.55,
+        }}>
+          {infoText}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -585,13 +718,17 @@ export function MasalarDashboard({
       return <MasaDetayKarti masa={detayData} />;
     }
 
-    if (phase === 'WAITING' && meeting?.sat10UTC) {
+    if (phase === 'WAITING' && meeting) {
       return (
-        <MasaBeklemeKarti
-          sat10UTC={meeting.sat10UTC}
-          maxParticipants={meeting.maxParticipants}
-          participantCount={meeting.participants?.length}
-        />
+        <div style={cardStyle}>
+          <ConfirmedRadarView
+            participants={meeting.participants ?? []}
+            maxParticipants={meeting.maxParticipants}
+            type={meeting.type}
+            scheduledAt={meeting.scheduledAt}
+            infoText="Masalar bölümünden detaylı bilgiye ulaşabilirsiniz."
+          />
+        </div>
       );
     }
 
