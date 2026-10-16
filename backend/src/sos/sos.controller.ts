@@ -4,6 +4,7 @@ import { SosService } from "./sos.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
+import { Throttle } from "@nestjs/throttler";
 import { UserRole } from "@prisma/client";
 import { IsArray, IsNumber, IsOptional, IsString, ArrayMinSize } from "class-validator";
 
@@ -44,6 +45,7 @@ export class SosController {
   constructor(private sos: SosService) {}
 
   @Post(":meetingId/report")
+  @Throttle({ sos: { ttl: 300000, limit: 5 } })
   create(@Param("meetingId") meetingId: string, @Body() dto: CreateSosDto, @Req() req: Request) {
     const user = req.user as { id: string };
     return this.sos.createReport(user.id, meetingId, dto.threats, dto.lat, dto.lng, dto.accuracy);

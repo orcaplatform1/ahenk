@@ -5,15 +5,21 @@ import {
   BadRequestException,
   ConflictException,
 } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bull";
+import { Queue } from "bull";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
-import { MeetingStatus, MeetingType, LeaveReason, ParticipantStatus } from "@prisma/client";
+import { Gender, MeetingStatus, MeetingType, LeaveReason, ParticipantStatus } from "@prisma/client";
+import { BOT_FILL_QUEUE, JOB_FILL_SPOT } from "./bot-fill.processor";
+
+const ONE_HOUR_MS = 60 * 60 * 1000;
 
 @Injectable()
 export class MeetingsService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationService,
+    @InjectQueue(BOT_FILL_QUEUE) private botFillQueue: Queue,
   ) {}
 
   // ─── Aktif / bekleyen masa ────────────────────────────────────────────────────
@@ -529,6 +535,19 @@ export class MeetingsService {
           data: { type: 'PARTICIPANT_LEFT', meetingId },
         }),
       ),
+    );
+
+    // İptal eden kişinin cinsiyetini bul; 1 saat sonra bot doldurma job'u
+    const cancelledUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { profile: { select: { gender: true } } },
+    });
+    const missingGender = cancelledUser?.profile?.gender ?? null;
+
+    await this.botFillQueue.add(
+      JOB_FILL_SPOT,
+      { meetingId, missingGender },
+      { delay: ONE_HOUR_MS, removeOnComplete: true },
     );
 
     return { success: true };

@@ -1,18 +1,48 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001') + '/api/v1';
+
 interface LoginResponse {
   accessToken: string;
   user: { id: string; firstName: string; lastName: string };
 }
 
+interface SanctionPayload {
+  type: 'WARNING' | 'SUSPENSION' | 'BAN';
+  reason: string;
+  expiresAt: string | null;
+  message: string;
+}
+
 type Method = 'whatsapp' | 'email';
+
+async function authPost<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = data as Partial<SanctionPayload> & { message?: string | string[] };
+    if (res.status === 403 && (err.type === 'SUSPENSION' || err.type === 'BAN' || err.type === 'WARNING')) {
+      const e = new Error(err.message as string ?? 'Erişim engellendi') as Error & { sanction?: SanctionPayload };
+      e.sanction = err as SanctionPayload;
+      throw e;
+    }
+    const msg = Array.isArray(err.message) ? err.message[0] : (err.message ?? 'Bir hata oluştu');
+    throw new Error(msg);
+  }
+  return data as T;
+}
 
 export default function GirisPage() {
   const router = useRouter();
@@ -30,8 +60,9 @@ export default function GirisPage() {
   const [password,    setPassword]    = useState('');
   const [showPass,    setShowPass]    = useState(false);
 
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState('');
+  const [sanction,    setSanction]    = useState<SanctionPayload | null>(null);
   const [welcomeUser, setWelcomeUser] = useState<{ firstName: string; lastName: string } | null>(null);
 
   /* ── Validasyon ─────────────────────────────────────────────── */
@@ -45,38 +76,56 @@ export default function GirisPage() {
   async function handleSendOtp() {
     setLoading(true); setError('');
     try {
-      await api.post('/auth/send-login-otp', { phone: `+90${phoneDigits}` });
+      await authPost('/auth/send-login-otp', { phone: `+90${phoneDigits}` });
       setOtpStep(true);
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
   }
 
+  async function afterLogin(data: LoginResponse) {
+    api.setToken(data.accessToken);
+    // WARNING uyarısı varsa: giriş başarılı ama uyarıyı göster
+    try {
+      const me = await api.get<{ activeSanction?: SanctionPayload | null }>('/auth/me');
+      if (me?.activeSanction?.type === 'WARNING') {
+        setSanction(me.activeSanction);
+        return; // dashboard'a geçmeden uyarıyı göster
+      }
+    } catch { /* yoksa devam */ }
+    setWelcomeUser({ firstName: data.user.firstName, lastName: data.user.lastName ?? '' });
+    setTimeout(() => router.push('/dashboard'), 2000);
+  }
+
   /* ── WhatsApp: Kod Doğrula ──────────────────────────────────── */
   async function handleVerifyOtp() {
     const code = otp.join('');
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setSanction(null);
     try {
-      const data = await api.post<LoginResponse>('/auth/verify-login-otp', { phone: `+90${phoneDigits}`, code });
-      api.setToken(data.accessToken);
-      setWelcomeUser({ firstName: data.user.firstName, lastName: data.user.lastName ?? '' });
-      setTimeout(() => router.push('/dashboard'), 2000);
+      const data = await authPost<LoginResponse>('/auth/verify-login-otp', { phone: `+90${phoneDigits}`, code });
+      await afterLogin(data);
     } catch (e) {
-      setError((e as Error).message);
-      setOtpShake(true);
-      setTimeout(() => setOtpShake(false), 500);
+      const err = e as Error & { sanction?: SanctionPayload };
+      if (err.sanction) { setSanction(err.sanction); }
+      else {
+        setError(err.message);
+        setOtpShake(true);
+        setTimeout(() => setOtpShake(false), 500);
+      }
     }
     finally { setLoading(false); }
   }
 
   /* ── E-posta: Giriş ─────────────────────────────────────────── */
   async function handleEmailLogin() {
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setSanction(null);
     try {
-      const data = await api.post<LoginResponse>('/auth/login', { email, password });
-      api.setToken(data.accessToken);
-      setWelcomeUser({ firstName: data.user.firstName, lastName: data.user.lastName ?? '' });
-      setTimeout(() => router.push('/dashboard'), 2000);
-    } catch (e) { setError((e as Error).message); }
+      const data = await authPost<LoginResponse>('/auth/login', { email, password });
+      await afterLogin(data);
+    } catch (e) {
+      const err = e as Error & { sanction?: SanctionPayload };
+      if (err.sanction) setSanction(err.sanction);
+      else setError(err.message);
+    }
     finally { setLoading(false); }
   }
 
@@ -109,6 +158,75 @@ export default function GirisPage() {
       className="min-h-screen flex flex-col items-center justify-center md:justify-start px-6 pt-[52px] md:pt-[80px]"
       style={{ background: '#0a0a0a' }}
     >
+      {/* Yaptırım modalı */}
+      <AnimatePresence>
+        {sanction && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center z-[200] px-6"
+            style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-sm rounded-2xl p-6 flex flex-col gap-4"
+              style={{ background: '#1a0505', border: '1px solid rgba(192,57,43,0.5)' }}
+            >
+              <div className="flex flex-col gap-1">
+                <h2 className="text-lg font-semibold text-[#ff6b6b]">
+                  {sanction.type === 'WARNING'    && 'Uyarı'}
+                  {sanction.type === 'SUSPENSION' && 'Hesap Askıya Alındı'}
+                  {sanction.type === 'BAN'        && 'Hesap Engellendi'}
+                </h2>
+                {sanction.expiresAt && (
+                  <p className="text-xs text-[#888]">
+                    Bitiş: {new Date(sanction.expiresAt).toLocaleString('tr-TR')}
+                  </p>
+                )}
+              </div>
+              <p className="text-sm text-[#ccc] leading-relaxed">{sanction.reason}</p>
+              <p className="text-xs text-[#666]">
+                Hatalı olduğunu düşünüyorsan{' '}
+                <a href="mailto:bilgi@ahenk.co" className="text-[#c0392b] underline">bilgi@ahenk.co</a>{' '}
+                adresiyle iletişime geç.
+              </p>
+              {sanction.type === 'WARNING' ? (
+                <div className="flex gap-3 mt-1">
+                  <button
+                    onClick={() => { api.clearToken(); setSanction(null); }}
+                    className="flex-1 py-2.5 text-sm rounded-xl"
+                    style={{ background: 'rgba(255,255,255,0.06)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }}
+                  >
+                    İptal
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSanction(null);
+                      router.push('/dashboard');
+                    }}
+                    className="flex-1 py-2.5 text-sm rounded-xl font-medium"
+                    style={{ background: 'rgba(192,57,43,0.25)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.5)' }}
+                  >
+                    Devam Et
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setSanction(null)}
+                  className="w-full py-2.5 text-sm rounded-xl mt-1"
+                  style={{ background: 'rgba(255,255,255,0.06)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  Kapat
+                </button>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {welcomeUser && (
           <motion.div

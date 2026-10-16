@@ -42,7 +42,10 @@ import { SosModule } from "./sos/sos.module";
       inject: [ConfigService],
     }),
     ThrottlerModule.forRoot([
-      { name: 'global', ttl: 60000, limit: 60 },
+      { name: 'global',  ttl: 60000,  limit: 60  },
+      { name: 'auth',    ttl: 60000,  limit: 10  }, // OTP: dakikada 10
+      { name: 'sos',     ttl: 300000, limit: 5   }, // SOS: 5 dakikada 5
+      { name: 'strict',  ttl: 60000,  limit: 5   }, // Kritik: dakikada 5
     ]),
     PrismaModule,
     RedisModule,

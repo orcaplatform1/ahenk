@@ -677,6 +677,7 @@ model AdminAlert {
 enum AdminAlertType {
   MISSED_GROUP_CYCLES
   MISSED_ONEONE_CYCLES
+  SOS_ALERT
 }
 
 // ─────────────────────────────────────────────

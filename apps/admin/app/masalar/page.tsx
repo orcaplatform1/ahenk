@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { AdminShell } from '@/components/AdminShell';
 import { Modal } from '@/components/Modal';
 import { useToast } from '@/components/Toast';
@@ -195,18 +196,24 @@ export default function MasalarPage() {
                     ))}
                   </div>
                 )}
-                {(m.status === 'PENDING' || m.status === 'ACTIVE') && (
-                  <div className="flex gap-2">
-                    <button onClick={() => openVenueModal(m)}
-                      className="px-3 py-1.5 rounded-lg bg-green-900/30 text-green-400 border border-green-800 text-xs hover:bg-green-900/50">
-                      Mekan Ata / Onayla
-                    </button>
-                    <button onClick={() => handleCancel(m.id)} disabled={acting === m.id}
-                      className="px-3 py-1.5 rounded-lg bg-red-900/30 text-accent border border-red-800 text-xs hover:bg-red-900/50 disabled:opacity-50">
-                      {acting === m.id ? '…' : 'İptal'}
-                    </button>
-                  </div>
-                )}
+                <div className="flex gap-2 flex-wrap">
+                  <Link href={`/masalar/${m.id}`}
+                    className="px-3 py-1.5 rounded-lg bg-surface border border-border text-xs hover:bg-bg text-muted hover:text-text">
+                    Detay / Sohbet
+                  </Link>
+                  {(m.status === 'PENDING' || m.status === 'ACTIVE') && (
+                    <>
+                      <button onClick={() => openVenueModal(m)}
+                        className="px-3 py-1.5 rounded-lg bg-green-900/30 text-green-400 border border-green-800 text-xs hover:bg-green-900/50">
+                        Mekan Ata / Onayla
+                      </button>
+                      <button onClick={() => handleCancel(m.id)} disabled={acting === m.id}
+                        className="px-3 py-1.5 rounded-lg bg-red-900/30 text-accent border border-red-800 text-xs hover:bg-red-900/50 disabled:opacity-50">
+                        {acting === m.id ? '…' : 'İptal'}
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}

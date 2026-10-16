@@ -102,6 +102,7 @@ export class AuthController {
 
   @Post("send-login-otp")
   @HttpCode(HttpStatus.OK)
+  @Throttle({ auth: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: "WhatsApp OTP ile giriş — kod gönder (public)" })
   async sendLoginOtp(@Body() dto: SendLoginOtpDto) {
     return this.authService.sendLoginOtp(dto.phone);
@@ -109,6 +110,7 @@ export class AuthController {
 
   @Post("verify-login-otp")
   @HttpCode(HttpStatus.OK)
+  @Throttle({ auth: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: "WhatsApp OTP ile giriş — kodu doğrula (public)" })
   async verifyLoginOtp(
     @Body() dto: VerifyLoginOtpDto,
@@ -121,6 +123,7 @@ export class AuthController {
 
   @Post("send-otp")
   @HttpCode(HttpStatus.OK)
+  @Throttle({ auth: { ttl: 60000, limit: 5 } })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "WhatsApp OTP gönder (telefon doğrulama)" })

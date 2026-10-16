@@ -1,8 +1,9 @@
 import { Injectable, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
+import { FcmService } from "../notification/fcm/fcm.service";
 import { Logger } from "@nestjs/common";
-import { UserRole } from "@prisma/client";
+import { AdminAlertType, UserRole } from "@prisma/client";
 
 const THREAT_LABELS: Record<string, string> = {
   LIFE_DANGER:      "Hayatım tehlikede",
@@ -18,6 +19,7 @@ export class SosService {
   constructor(
     private prisma: PrismaService,
     private whatsapp: WhatsappNotifyService,
+    private fcm: FcmService,
   ) {}
 
   // ─── Rapor oluştur ────────────────────────────────────────────────────────
@@ -209,8 +211,8 @@ export class SosService {
     lng?: number,
   ) {
     const admins = await this.prisma.user.findMany({
-      where: { role: { in: [UserRole.ADMIN, UserRole.SUPERADMIN] }, phone: { not: null } },
-      select: { phone: true, profile: true },
+      where: { role: { in: [UserRole.ADMIN, UserRole.SUPERADMIN] } },
+      select: { id: true, phone: true, fcmToken: true, profile: { select: { firstName: true, lastName: true } } },
     });
 
     const reporter = await this.prisma.user.findUnique({
@@ -221,17 +223,34 @@ export class SosService {
     const name     = reporter?.profile ? `${reporter.profile.firstName} ${reporter.profile.lastName}` : reporter?.email ?? userId;
     const threatTx = threats.map((t) => THREAT_LABELS[t] ?? t).join(", ");
     const locTx    = lat && lng ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : "Konum alınamadı";
-    const message  = `🚨 ACİL YARDIM\n${name} (${reporter?.phone ?? reporter?.email}) acil yardım talebinde bulundu.\nTehdit: ${threatTx}\nKonum: ${locTx}\nMasa: ${meetingId}\nRapor ID: ${reportId}`;
+    const logMsg   = `[ACİL YARDIM] ${name} (${reporter?.phone ?? reporter?.email}) — Tehdit: ${threatTx} — Konum: ${locTx} — Masa: ${meetingId} — Rapor: ${reportId}`;
 
-    for (const admin of admins) {
-      if (!admin.phone) continue;
-      // Template tabanlı WA yerine doğrudan metin mesajı gönder (stub modda log yazar)
-      try {
-        await this.whatsapp.send(admin.phone, "ahenk_sos_alert", [name, threatTx, locTx]);
-      } catch {
-        this.logger.warn(`Admin ${admin.phone} WhatsApp bildirimi başarısız`);
+    this.logger.error(logMsg);
+
+    for (const adm of admins) {
+      // 1. WhatsApp
+      if (adm.phone) {
+        try {
+          await this.whatsapp.send(adm.phone, "ahenk_sos_alert", [name, threatTx, locTx]);
+        } catch {
+          this.logger.warn(`Admin ${adm.phone} WhatsApp bildirimi başarısız`);
+        }
       }
-      this.logger.log(`[ACİL YARDIM] ${message}`);
+
+      // 2. FCM push (fallback)
+      if (adm.fcmToken) {
+        await this.fcm.sendToToken({
+          token: adm.fcmToken,
+          title: "🚨 ACİL YARDIM TALEBİ",
+          body:  `${name} — ${threatTx}`,
+          data:  { reportId, meetingId, type: "SOS_ALERT" },
+        });
+      }
+
+      // 3. AdminAlert kaydı (panel bildirim)
+      await this.prisma.adminAlert.create({
+        data: { userId: adm.id, alertType: AdminAlertType.SOS_ALERT },
+      });
     }
   }
 }
