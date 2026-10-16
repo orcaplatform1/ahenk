@@ -11,6 +11,6 @@ import { PaymentModule } from "../payment/payment.module";
   imports: [PrismaModule, PaymentModule],
   controllers: [NotificationController],
   providers: [NotificationService, NotificationScheduler, FcmService, WhatsappNotifyService],
-  exports: [NotificationService],
+  exports: [NotificationService, WhatsappNotifyService],
 })
 export class NotificationModule {}

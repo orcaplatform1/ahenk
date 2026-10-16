@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
   ForbiddenException,
+  HttpException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
@@ -14,7 +15,7 @@ import { UsersService } from "../users/users.service";
 import { OtpService } from "./otp/otp.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus } from "@prisma/client";
+import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus, SanctionType } from "@prisma/client";
 
 @Injectable()
 export class AuthService {
@@ -25,6 +26,42 @@ export class AuthService {
     private config: ConfigService,
     private otpService: OtpService,
   ) {}
+
+  // ─── Aktif yaptırım kontrolü ─────────────────────────────────────────────
+
+  private async checkSanction(userId: string, status: string): Promise<void> {
+    if (status === 'DELETED') throw new ForbiddenException("Bu hesap silinmiş");
+
+    if (status === 'BANNED' || status === 'SUSPENDED') {
+      const sanction = await this.prisma.userSanction.findFirst({
+        where: {
+          userId,
+          liftedAt: null,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { type: true, reason: true, expiresAt: true },
+      });
+
+      const type = sanction?.type ?? (status === 'BANNED' ? SanctionType.BAN : SanctionType.SUSPENSION);
+      const reason = sanction?.reason ?? 'Yönetici tarafından uygulandı';
+      const expiresAt = sanction?.expiresAt ?? null;
+
+      throw new HttpException(
+        {
+          statusCode: 403,
+          type,
+          reason,
+          expiresAt,
+          message:
+            type === SanctionType.BAN
+              ? 'Hesabınız kalıcı olarak engellendi'
+              : 'Hesabınız geçici olarak askıya alındı',
+        },
+        403,
+      );
+    }
+  }
 
   // ─── Kayıt ───────────────────────────────────────────────────────────────
 
@@ -124,8 +161,7 @@ export class AuthService {
     });
 
     if (!user) throw new UnauthorizedException("E-posta veya şifre hatalı");
-    if (user.status === "DELETED") throw new ForbiddenException("Bu hesap silinmiş");
-    if (user.status === "SUSPENDED") throw new ForbiddenException("Bu hesap askıya alınmış");
+    await this.checkSanction(user.id, user.status);
 
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatch) throw new UnauthorizedException("E-posta veya şifre hatalı");
@@ -177,8 +213,7 @@ export class AuthService {
   async sendLoginOtp(phone: string) {
     const user = await this.prisma.user.findUnique({ where: { phone } });
     if (!user) throw new UnauthorizedException("Bu telefon numarasıyla kayıtlı hesap bulunamadı");
-    if (user.status === "DELETED") throw new ForbiddenException("Bu hesap silinmiş");
-    if (user.status === "SUSPENDED") throw new ForbiddenException("Bu hesap askıya alınmış");
+    await this.checkSanction(user.id, user.status);
     await this.otpService.send(phone);
     return { message: "Doğrulama kodu gönderildi" };
   }
@@ -189,8 +224,7 @@ export class AuthService {
       include: { profile: true },
     });
     if (!user) throw new UnauthorizedException("Hesap bulunamadı");
-    if (user.status === "DELETED") throw new ForbiddenException("Bu hesap silinmiş");
-    if (user.status === "SUSPENDED") throw new ForbiddenException("Bu hesap askıya alınmış");
+    await this.checkSanction(user.id, user.status);
 
     await this.otpService.verify(phone, code);
 
@@ -272,13 +306,22 @@ export class AuthService {
   }
 
   async getMe(user: any) {
-    const [primaryCity, activeSubs] = await Promise.all([
+    const [primaryCity, activeSubs, activeSanction] = await Promise.all([
       user.profile?.primaryCity
         ? this.prisma.city.findUnique({ where: { id: user.profile.primaryCity }, select: { id: true, name: true } })
         : Promise.resolve(null),
       this.prisma.subscription.findMany({
         where: { userId: user.id, status: SubscriptionStatus.ACTIVE },
         select: { plan: true },
+      }),
+      this.prisma.userSanction.findFirst({
+        where: {
+          userId: user.id,
+          liftedAt: null,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, type: true, reason: true, expiresAt: true, createdAt: true },
       }),
     ]);
 
@@ -295,6 +338,7 @@ export class AuthService {
       isKycVerified: kyc?.status === 'APPROVED',
       kyc: kyc ? { status: kyc.status } : undefined,
       activePlan,
+      activeSanction: activeSanction ?? null,
       profile: profile ? {
         gender: profile.gender,
         birthDate: profile.birthDate,

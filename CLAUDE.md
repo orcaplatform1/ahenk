@@ -236,3 +236,57 @@ Endpoint'ler:
   - POST /contact-blocks/sync — dizi hash alır, upsert (JWT zorunlu)
   - GET /contact-blocks — kullanıcının hash listesi (JWT zorunlu)
   - DELETE /contact-blocks/:id — tekil silme (JWT zorunlu)
+
+SOHBET SİSTEMİ (Modül 11):
+Kural: Masa onaylandığı an (REVEALED) masa kartı açılınca sohbet direkt açılır. Onay sorulmaz. Her iki masa türü için geçerli.
+Kapanış:
+  - Grup masası sohbeti: Cumartesi 23:59'da kapanır
+  - Baş başa sohbeti: Cuma 23:59'da kapanır (tarama bitişiyle aynı)
+Kapanınca:
+  - Kullanıcı tarafında mesajlar silinir (görünmez olur)
+  - Admin panelinde mesajlar kalıcı olarak saklanır
+Admin erişimi:
+  - Masa detayında sohbet geçmişi salt okunur görünür
+  - Şikayet edilen mesajlar ayrıca işaretli görünür
+Şikayet sistemi:
+  - Her mesajın yanında "Şikayet et" butonu
+  - Her şikayet anında admin paneline düşer (eşik yok)
+  - Şikayet: mesaj içeriği + şikayetçi + şikayet zamanı admin görür
+Prisma modeli:
+  - ChatMessage { id, meetingId, senderId, content, createdAt, deletedAt? }
+  - ChatReport { id, messageId, reporterId, createdAt }
+Endpoint'ler:
+  - GET /chat/:meetingId/messages — mesaj listesi (JWT zorunlu, masa katılımcısı olmalı)
+  - POST /chat/:meetingId/messages — mesaj gönder (JWT, kapanış saati kontrolü)
+  - POST /chat/messages/:messageId/report — şikayet et (JWT)
+  - GET /admin/chat/:meetingId — admin sohbet geçmişi (ADMIN guard)
+  - GET /admin/chat/reports — tüm şikayetler listesi (ADMIN guard)
+
+REZERVASYON İPTALİ KURALLARI (güncelleme):
+  - Grup masası: Perşembe 20:00'a kadar iptal butonu aktif
+  - Baş başa: Cuma 20:00'a kadar iptal butonu aktif (CLAUDE.md Modül 3'teki mevcut kurala ek)
+  - İptal anında admin masa detayına log düşer: "K.A. — 18:34'te rezervasyonu iptal etti"
+  - İptal sonrası son 1 saate kadar sistem yeni kişi arar
+  - 1 saat içinde bulunamazsa: eksik cinsiyete göre bot eklenir
+  - Grup dengesi zorunlu: 3E + 3K; bot da bu dengeyi koruyarak girer (kız eksikse kız bot, erkek eksikse erkek bot)
+  - Baş başa iptalinde de aynı mantık: yeni eşleşme arar, bulamazsa bot
+
+KULLANICI UYARI / ASKIYA ALMA / BANLAMA SİSTEMİ:
+Admin işlemleri (masa detayında veya kullanıcı profilinde):
+  - Katılımcılar admin panelinde K.A. gibi kısaltmayla gösterilir
+  - K.A.'ya tıklayınca o kullanıcının tam profili + geçmişi açılır
+  - Uyarı ver: sebep zorunlu, kullanıcı giriş yapabilir ama uyarı mesajı görür ve devam edebilir
+  - Askıya al: sebep + süre zorunlu; kullanıcı o süre boyunca giriş yapamaz
+  - Banla: sebep zorunlu; kullanıcı kalıcı olarak giriş yapamaz
+Kullanıcı giriş ekranında:
+  - Uyarı varsa: uyarı metni gösterilir, "Devam et" butonu ile geçilebilir
+  - Askıya alınmışsa: askıya alma nedeni + süre gösterilir, giriş engellenir
+  - Banlıysa: banlama nedeni gösterilir, giriş engellenir
+  - Her iki durumda da: "Hatalı olduğunu düşünüyorsan bilgi@ahenk.co adresiyle iletişime geç" mesajı
+Prisma modeli:
+  - UserSanction { id, userId, type (WARNING|SUSPENSION|BAN), reason, expiresAt?, createdAt, adminId }
+  - User.activeSanction ilişkisi (en son aktif yaptırım)
+Endpoint'ler:
+  - POST /admin/users/:id/sanction — yaptırım uygula { type, reason, expiresAt? }
+  - DELETE /admin/users/:id/sanction/:sanctionId — yaptırım kaldır
+  - GET /auth/me → activeSanction alanı döner (giriş ekranında kontrol için)

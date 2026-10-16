@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const LINKS = [
+  { href: '/acil-yardim', label: '🚨 Acil Yardım', sos: true },
   { href: '/',            label: 'Dashboard' },
   { href: '/stats',       label: 'İstatistikler' },
   { href: '/matches',     label: 'Eşleştirme' },
@@ -46,11 +47,20 @@ export function Sidebar() {
       <nav className="flex-1 py-4 flex flex-col gap-0.5 px-2">
         {LINKS.map((l) => {
           const active = l.href === '/' ? pathname === '/' : pathname.startsWith(l.href);
+          const isSos = (l as any).sos;
           return (
             <Link
               key={l.href}
               href={l.href}
-              className={`px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between ${active ? 'bg-primary/10 text-primary' : 'text-muted hover:text-text hover:bg-bg'}`}
+              className={`px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between ${
+                isSos
+                  ? active
+                    ? 'bg-red-900/40 text-red-400 font-bold'
+                    : 'text-red-500 hover:bg-red-900/20 font-semibold'
+                  : active
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted hover:text-text hover:bg-bg'
+              }`}
             >
               <span>{l.label}</span>
               {l.href === '/uyarilar' && unreadAlerts > 0 && (

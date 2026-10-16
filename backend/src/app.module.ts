@@ -20,6 +20,8 @@ import { ContactBlocksModule } from "./contact-blocks/contact-blocks.module";
 import { PartnershipsModule } from "./partnerships/partnerships.module";
 import { CareersModule } from "./careers/careers.module";
 import { ReferralModule } from "./referral/referral.module";
+import { ChatModule } from "./chat/chat.module";
+import { SosModule } from "./sos/sos.module";
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { ReferralModule } from "./referral/referral.module";
     PartnershipsModule,
     ReferralModule,
     CareersModule,
+    ChatModule,
+    SosModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -1,4 +1,15 @@
-import { IsArray, IsString, ArrayMinSize, IsInt, Min, Max, IsOptional, MaxLength } from "class-validator";
+import {
+  IsArray,
+  IsString,
+  ArrayMinSize,
+  IsInt,
+  Min,
+  Max,
+  IsOptional,
+  MaxLength,
+  IsEnum,
+} from "class-validator";
+import { LeaveReason } from "@prisma/client";
 
 export class BlockUsersDto {
   @IsArray()
@@ -22,4 +33,14 @@ export class ReviewMeetingDto {
   @IsString()
   @MaxLength(300)
   comment?: string;
+}
+
+export class CancelRegistrationDto {
+  @IsEnum(LeaveReason)
+  reason: LeaveReason;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
 }

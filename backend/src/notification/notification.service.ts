@@ -210,6 +210,15 @@ export class NotificationService {
     });
   }
 
+  // ─── Genel kullanım için public wrapper ──────────────────────────────────
+
+  async sendToUser(
+    userId: string,
+    payload: { title: string; body: string; data?: Record<string, string> },
+  ): Promise<void> {
+    await this.send({ userId, ...payload });
+  }
+
   // ─── FCM token kayıt ─────────────────────────────────────────────────────
 
   async registerFcmToken(userId: string, token: string): Promise<void> {

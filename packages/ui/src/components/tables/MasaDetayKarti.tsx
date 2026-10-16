@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ── Tipler ──────────────────────────────────────────────────────────────────
@@ -33,10 +33,26 @@ export interface MasaDetayData {
   aiReport?: AiReport | null;
 }
 
+interface ChatMsg {
+  id: string;
+  content: string;
+  createdAt: string;
+  isOwn: boolean;
+  senderInitials: string;
+  reportedByMe: boolean;
+}
+
+interface Props {
+  masa: MasaDetayData;
+  apiBase?: string;
+  token?: string;
+}
+
 // ── Renkler ─────────────────────────────────────────────────────────────────
 const MALE_CLR   = '#4fc3f7';
 const FEMALE_CLR = '#f48fb1';
 const GREEN      = '#27ae60';
+const RED        = '#c0392b';
 
 function gColor(g?: string | null) {
   if (g === 'FEMALE') return FEMALE_CLR;
@@ -47,7 +63,6 @@ function gBg(g?: string | null) {
   return 'rgba(79,195,247,0.12)';
 }
 
-// ── E-K-E-K sıralama (boşluksuz — masa kuruldu, tüm katılımcılar mevcut) ────
 function buildOrdered(participants: DetayParticipant[]): DetayParticipant[] {
   const males   = participants.filter(p => p.gender === 'MALE');
   const females = participants.filter(p => p.gender === 'FEMALE');
@@ -61,7 +76,6 @@ function buildOrdered(participants: DetayParticipant[]): DetayParticipant[] {
   return [...ordered, ...others];
 }
 
-// ── Saat formatı ─────────────────────────────────────────────────────────────
 function formatMeetingTime(isoStr: string): string {
   try {
     const d = new Date(isoStr);
@@ -74,14 +88,13 @@ function formatMeetingTime(isoStr: string): string {
   } catch { return ''; }
 }
 
-// ── Google Maps URL ───────────────────────────────────────────────────────────
 function mapsUrl(url?: string | null, address?: string | null): string | null {
   if (url) return url;
   if (address) return `https://maps.google.com/?q=${encodeURIComponent(address)}`;
   return null;
 }
 
-// ── Avatar (48×48px) ─────────────────────────────────────────────────────────
+// ── Avatar ─────────────────────────────────────────────────────────────────
 const AV_D = 48;
 const AV_R = AV_D / 2;
 const AV_BR = AV_R - 2.5;
@@ -139,7 +152,7 @@ function DetayAvatar({ participant, delay }: { participant: DetayParticipant; de
   );
 }
 
-// ── Lightbox ─────────────────────────────────────────────────────────────────
+// ── Lightbox ──────────────────────────────────────────────────────────────
 function Lightbox({ photos, startIdx, onClose }: { photos: VenuePhoto[]; startIdx: number; onClose: () => void }) {
   const [idx, setIdx] = useState(startIdx);
 
@@ -194,9 +207,363 @@ function Lightbox({ photos, startIdx, onClose }: { photos: VenuePhoto[]; startId
   );
 }
 
+// ── SOS Modal ─────────────────────────────────────────────────────────────
+const SOS_THREATS = [
+  { value: 'LIFE_DANGER',       label: 'Hayatım tehlikede' },
+  { value: 'PHYSICAL_VIOLENCE', label: 'Fiziksel şiddet gördüm' },
+  { value: 'ABDUCTION',         label: 'Zorla alıkoyuluyorum' },
+  { value: 'HARASSMENT',        label: 'Taciz veya istismara uğradım' },
+] as const;
+
+function SosModal({
+  selectedThreats,
+  onToggle,
+  onConfirm,
+  onClose,
+  loading,
+  locError,
+}: {
+  selectedThreats: string[];
+  onToggle: (t: string) => void;
+  onConfirm: () => void;
+  onClose: () => void;
+  loading: boolean;
+  locError: 'off' | 'denied' | null;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(10,0,0,0.92)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+      }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+        transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 380,
+          background: '#0f0808',
+          border: '1.5px solid rgba(192,57,43,0.7)',
+          borderRadius: 16, padding: '24px 20px 20px',
+          boxShadow: '0 0 40px rgba(192,57,43,0.25)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <span style={{ fontSize: 22 }}>🚨</span>
+          <span style={{ fontSize: 16, fontWeight: 800, color: '#ff6b6b', fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em' }}>
+            Acil Yardım
+          </span>
+        </div>
+        <div style={{ height: 1, background: 'rgba(192,57,43,0.3)', margin: '10px 0 16px' }} />
+
+        <p style={{ margin: '0 0 12px', fontSize: 12, color: 'rgba(255,107,107,0.7)', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
+          Yaşadığın durumu seç (birden fazla seçebilirsin):
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+          {SOS_THREATS.map(t => {
+            const selected = selectedThreats.includes(t.value);
+            return (
+              <button
+                key={t.value}
+                onClick={() => onToggle(t.value)}
+                style={{
+                  textAlign: 'left', padding: '11px 14px', borderRadius: 9, cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: selected ? 600 : 400,
+                  background: selected ? 'rgba(192,57,43,0.2)' : 'rgba(255,255,255,0.04)',
+                  border: selected ? '1px solid rgba(192,57,43,0.6)' : '1px solid rgba(255,255,255,0.08)',
+                  color: selected ? '#ff6b6b' : '#ccc',
+                  transition: 'all 0.15s',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}
+              >
+                <span style={{
+                  width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: selected ? '1.5px solid #ff6b6b' : '1.5px solid rgba(255,255,255,0.2)',
+                  background: selected ? 'rgba(192,57,43,0.3)' : 'transparent',
+                  fontSize: 10,
+                }}>
+                  {selected ? '✓' : ''}
+                </span>
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <p style={{ margin: '0 0 16px', fontSize: 11, color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif', fontStyle: 'italic', lineHeight: 1.5 }}>
+          Yukarıdaki eylemlerin ihtimali olsa dahi lütfen işaretleyin (birden fazla seçeneği işaretleyebilirsin)
+        </p>
+
+        {locError === 'denied' && (
+          <div style={{ padding: '10px 12px', background: 'rgba(255,165,0,0.08)', border: '1px solid rgba(255,165,0,0.3)', borderRadius: 8, marginBottom: 12 }}>
+            <p style={{ margin: 0, fontSize: 11.5, color: '#ffb347', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
+              ⚠ Konuma erişim engellendi. Tarayıcı adres çubuğundaki kilit simgesine tıklayarak konum iznini ver, ardından tekrar dene.
+            </p>
+          </div>
+        )}
+        {locError === 'off' && (
+          <div style={{ padding: '10px 12px', background: 'rgba(255,165,0,0.08)', border: '1px solid rgba(255,165,0,0.3)', borderRadius: 8, marginBottom: 12 }}>
+            <p style={{ margin: 0, fontSize: 11.5, color: '#ffb347', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
+              ⚠ Cihaz konumu kapalı. Konum servisini açtıktan sonra tekrar dene.
+            </p>
+          </div>
+        )}
+
+        <button
+          onClick={onConfirm}
+          disabled={selectedThreats.length === 0 || loading}
+          style={{
+            width: '100%', padding: '14px 0', borderRadius: 10, cursor: selectedThreats.length ? 'pointer' : 'not-allowed',
+            background: 'linear-gradient(135deg, #7b0000 0%, #c0392b 60%, #ff6b6b 100%)',
+            border: 'none',
+            color: '#fff', fontSize: 14, fontWeight: 800,
+            fontFamily: 'Inter, sans-serif', letterSpacing: '0.08em',
+            opacity: (selectedThreats.length === 0 || loading) ? 0.45 : 1,
+            transition: 'opacity 0.2s',
+            boxShadow: selectedThreats.length ? '0 0 16px rgba(192,57,43,0.5)' : 'none',
+          }}
+        >
+          {loading ? 'Konum alınıyor…' : 'İhbarda Bulun'}
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ── İptal Modal ───────────────────────────────────────────────────────────
+const LEAVE_REASONS = [
+  { value: 'VENUE_NOT_SUITABLE', label: 'Mekan uygun değil' },
+  { value: 'TIME_CHANGED',       label: 'Zaman değişti' },
+  { value: 'PERSONAL',           label: 'Kişisel sebep' },
+  { value: 'OTHER',              label: 'Diğer' },
+] as const;
+
+function CancelModal({
+  onConfirm,
+  onClose,
+  loading,
+}: {
+  onConfirm: () => void;
+  onClose: () => void;
+  loading: boolean;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9998,
+        background: 'rgba(20,4,4,0.88)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+      }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 360,
+          background: 'rgba(30,8,8,0.97)',
+          border: '1px solid rgba(192,57,43,0.35)',
+          borderRadius: 16, padding: '28px 22px 22px',
+          textAlign: 'center',
+        }}
+      >
+        <p style={{
+          margin: '0 0 22px',
+          fontSize: 15, lineHeight: 1.6, fontWeight: 500,
+          color: '#f5f5f5', fontFamily: 'Inter, sans-serif',
+        }}>
+          Bu haftaki eşleşmeden ayrılırsanız önümüzdeki haftaya kadar tekrar eşleşemezsiniz. Onaylıyor musunuz?
+        </p>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: '13px 0', borderRadius: 10, cursor: 'pointer',
+              background: 'rgba(39,174,96,0.18)', border: '1px solid rgba(39,174,96,0.45)',
+              color: '#27ae60', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Hayır
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            style={{
+              flex: 1, padding: '13px 0', borderRadius: 10, cursor: loading ? 'not-allowed' : 'pointer',
+              background: 'rgba(192,57,43,0.25)', border: '1px solid rgba(192,57,43,0.55)',
+              color: '#ff6b6b', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              opacity: loading ? 0.5 : 1,
+            }}
+          >
+            {loading ? '…' : 'Evet'}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ── Sohbet Bölümü ─────────────────────────────────────────────────────────
+function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase: string; token: string }) {
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [isClosed, setIsClosed] = useState(false);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+  const fetchMessages = useCallback(async () => {
+    try {
+      const res = await fetch(`${apiBase}/chat/${meetingId}/messages`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { setLoadError(true); return; }
+      const data = await res.json() as { isClosed: boolean; messages: ChatMsg[] };
+      setIsClosed(data.isClosed);
+      setMessages(data.messages);
+    } catch { setLoadError(true); }
+  }, [meetingId, apiBase, token]);
+
+  useEffect(() => {
+    fetchMessages();
+    const id = setInterval(fetchMessages, 8000);
+    return () => clearInterval(id);
+  }, [fetchMessages]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
+
+  async function sendMessage() {
+    const trimmed = input.trim();
+    if (!trimmed || sending || isClosed) return;
+    setSending(true);
+    try {
+      const res = await fetch(`${apiBase}/chat/${meetingId}/messages`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ content: trimmed }),
+      });
+      if (res.ok) {
+        const msg = await res.json() as ChatMsg;
+        setMessages(prev => [...prev, msg]);
+        setInput('');
+      }
+    } finally { setSending(false); }
+  }
+
+  async function reportMessage(messageId: string) {
+    await fetch(`${apiBase}/chat/messages/${messageId}/report`, { method: 'POST', headers });
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reportedByMe: true } : m));
+  }
+
+  const dividerStyle: React.CSSProperties = {
+    height: 1, background: 'rgba(255,255,255,0.07)', margin: '20px 0',
+  };
+
+  if (loadError) return null;
+
+  return (
+    <div>
+      <div style={dividerStyle} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+        <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: isClosed ? '#555' : GREEN }} />
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', color: isClosed ? '#555' : GREEN }}>
+          {isClosed ? 'SOHBET KAPANDI' : 'GRUP SOHBETİ'}
+        </span>
+      </div>
+
+      <div style={{
+        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 10, overflow: 'hidden',
+      }}>
+        <div style={{ maxHeight: 260, overflowY: 'auto', padding: '12px 12px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {messages.length === 0 && (
+            <p style={{ margin: 0, fontSize: 12, color: '#444', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+              {isClosed ? 'Sohbet sona erdi.' : 'Henüz mesaj yok. İlk mesajı sen gönder.'}
+            </p>
+          )}
+          {messages.map(msg => (
+            <div key={msg.id} style={{ display: 'flex', flexDirection: msg.isOwn ? 'row-reverse' : 'row', gap: 6, alignItems: 'flex-end' }}>
+              {!msg.isOwn && (
+                <span style={{ fontSize: 9, color: '#555', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap', marginBottom: 2 }}>
+                  {msg.senderInitials}
+                </span>
+              )}
+              <div style={{ maxWidth: '72%' }}>
+                <div style={{
+                  padding: '8px 11px', borderRadius: msg.isOwn ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                  background: msg.isOwn ? 'rgba(192,57,43,0.2)' : 'rgba(255,255,255,0.06)',
+                  border: msg.isOwn ? '1px solid rgba(192,57,43,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                  fontSize: 13, color: '#f0f0f0', fontFamily: 'Inter, sans-serif', lineHeight: 1.45,
+                  wordBreak: 'break-word',
+                }}>
+                  {msg.content}
+                </div>
+                {!msg.isOwn && !isClosed && (
+                  <button
+                    onClick={() => !msg.reportedByMe && reportMessage(msg.id)}
+                    style={{
+                      background: 'none', border: 'none', cursor: msg.reportedByMe ? 'default' : 'pointer',
+                      fontSize: 10, color: msg.reportedByMe ? '#333' : '#444', fontFamily: 'Inter, sans-serif',
+                      padding: '2px 0', marginTop: 2,
+                    }}
+                  >
+                    {msg.reportedByMe ? '✓ Şikayet edildi' : 'Şikayet et'}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          <div ref={bottomRef} />
+        </div>
+
+        {!isClosed && (
+          <div style={{ display: 'flex', gap: 8, padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value.slice(0, 1000))}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+              placeholder="Mesaj yaz…"
+              style={{
+                flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 8, padding: '8px 10px', fontSize: 13, color: '#f5f5f5',
+                fontFamily: 'Inter, sans-serif', outline: 'none',
+              }}
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim() || sending}
+              style={{
+                padding: '0 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                background: 'rgba(192,57,43,0.22)', color: '#ff6b6b',
+                fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif',
+                opacity: (!input.trim() || sending) ? 0.4 : 1, transition: 'opacity 0.2s',
+              }}
+            >
+              Gönder
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Ana Bileşen ──────────────────────────────────────────────────────────────
-export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
-  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+export function MasaDetayKarti({ masa, apiBase, token }: Props) {
+  const [lightboxIdx,   setLightboxIdx]   = useState<number | null>(null);
+  const [onMyWayDone,   setOnMyWayDone]   = useState(false);
+  const [onMyWayLoading,setOnMyWayLoading]= useState(false);
+  const [showCancel,    setShowCancel]    = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelled,     setCancelled]     = useState(false);
 
   const isOneOnOne = masa.type === 'ONE_ON_ONE';
   const photos     = masa.venuePhotos ?? [];
@@ -204,11 +571,168 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
   const mapLink    = mapsUrl(masa.venueMapsUrl, masa.venueAddress);
   const ordered    = buildOrdered(masa.participants);
 
+  const authHeaders = apiBase && token
+    ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+    : null;
+
+  async function handleOnMyWay() {
+    if (!authHeaders || onMyWayDone || onMyWayLoading) return;
+    setOnMyWayLoading(true);
+    try {
+      await fetch(`${apiBase}/meetings/${masa.id}/on-my-way`, { method: 'POST', headers: authHeaders });
+      setOnMyWayDone(true);
+    } finally { setOnMyWayLoading(false); }
+  }
+
+  async function handleCancel() {
+    if (!authHeaders) return;
+    setCancelLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/meetings/${masa.id}/cancel-registration`, {
+        method: 'POST', headers: authHeaders,
+        body: JSON.stringify({ reason: 'OTHER' }),
+      });
+      if (res.ok) { setCancelled(true); setShowCancel(false); }
+    } finally { setCancelLoading(false); }
+  }
+
+  const hasChat = !!(apiBase && token);
+
+  // İptal deadline kontrolü (tarayıcı tarafı - yalnızca buton görünümü için)
+  const now = new Date();
+  const nowTR = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  const dayTR = nowTR.getUTCDay();
+  const hourTR = nowTR.getUTCHours();
+  const cancelDeadlinePassed = isOneOnOne
+    ? (dayTR > 5 || (dayTR === 5 && hourTR >= 20))
+    : (dayTR > 4 || (dayTR === 4 && hourTR >= 20));
+
+  // SOS görünürlük: masa saatinden (scheduledAt) sonraki gün 10:00 TR'ye kadar
+  const scheduledTR = new Date(new Date(masa.scheduledAt).getTime() + 3 * 60 * 60 * 1000);
+  const nextDay10 = new Date(scheduledTR);
+  nextDay10.setUTCDate(nextDay10.getUTCDate() + 1);
+  nextDay10.setUTCHours(7, 0, 0, 0); // 07:00 UTC = 10:00 TR
+  const sosVisible = authHeaders && now >= new Date(masa.scheduledAt) && now < nextDay10;
+
+  // SOS state
+  const [showSos,    setShowSos]    = useState(false);
+  const [sosLoading, setSosLoading] = useState(false);
+  const [sosDone,    setSosDone]    = useState(false);
+  const [sosReportId, setSosReportId] = useState<string | null>(null);
+  const [selectedThreats, setSelectedThreats] = useState<string[]>([]);
+  const [locError, setLocError] = useState<'off' | 'denied' | null>(null);
+
+  function toggleThreat(t: string) {
+    setSelectedThreats(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  }
+
+  async function handleSos() {
+    if (!authHeaders || selectedThreats.length === 0 || sosLoading) return;
+    setSosLoading(true);
+    setLocError(null);
+
+    const doSubmit = async (lat?: number, lng?: number, accuracy?: number) => {
+      try {
+        const res = await fetch(`${apiBase}/sos/${masa.id}/report`, {
+          method: 'POST', headers: authHeaders,
+          body: JSON.stringify({ threats: selectedThreats, lat, lng, accuracy }),
+        });
+        if (res.ok) {
+          const data = await res.json() as { reportId: string };
+          setSosReportId(data.reportId);
+          setSosDone(true);
+          setShowSos(false);
+          if (lat && lng) startLiveLocation(data.reportId);
+        }
+      } finally { setSosLoading(false); }
+    };
+
+    if (!navigator.geolocation) {
+      setLocError('off');
+      setSosLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => doSubmit(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+      (err) => {
+        setSosLoading(false);
+        if (err.code === 1) setLocError('denied');
+        else setLocError('off');
+      },
+      { timeout: 8000, enableHighAccuracy: true },
+    );
+  }
+
+  function startLiveLocation(reportId: string) {
+    if (!navigator.geolocation || !authHeaders) return;
+    navigator.geolocation.watchPosition(
+      async (pos) => {
+        await fetch(`${apiBase}/sos/reports/${reportId}/location`, {
+          method: 'POST', headers: authHeaders,
+          body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+        });
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 10000 },
+    );
+  }
+
+  // Masa aktifken tüm üyeler için 30s konum takibi (izin varsa)
+  useEffect(() => {
+    if (!sosVisible || !authHeaders || !navigator.geolocation) return;
+    let watchId: number | null = null;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let lastPos: GeolocationPosition | null = null;
+
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => { lastPos = pos; },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 15000 },
+    );
+
+    intervalId = setInterval(async () => {
+      if (!lastPos) return;
+      try {
+        await fetch(`${apiBase}/sos/${masa.id}/participant-location`, {
+          method: 'POST', headers: authHeaders,
+          body: JSON.stringify({
+            lat: lastPos.coords.latitude,
+            lng: lastPos.coords.longitude,
+            accuracy: lastPos.coords.accuracy,
+          }),
+        });
+      } catch { /* sessiz */ }
+    }, 30000);
+
+    return () => {
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      if (intervalId !== null) clearInterval(intervalId);
+    };
+  }, [sosVisible, apiBase, masa.id]); // authHeaders dependency'den çıkarıldı — string ref stabil değil
+
   return (
     <>
       <AnimatePresence>
         {lightboxIdx !== null && (
           <Lightbox photos={photos} startIdx={lightboxIdx} onClose={() => setLightboxIdx(null)} />
+        )}
+        {showCancel && (
+          <CancelModal
+            onConfirm={() => handleCancel()}
+            onClose={() => setShowCancel(false)}
+            loading={cancelLoading}
+          />
+        )}
+        {showSos && (
+          <SosModal
+            selectedThreats={selectedThreats}
+            onToggle={toggleThreat}
+            onConfirm={handleSos}
+            onClose={() => { setShowSos(false); setLocError(null); setSelectedThreats([]); }}
+            loading={sosLoading}
+            locError={locError}
+          />
         )}
       </AnimatePresence>
 
@@ -218,7 +742,6 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
         transition={{ duration: 0.5, ease: 'easeOut' }}
         style={{ position: 'relative', overflow: 'hidden' }}
       >
-        {/* Açılış shimmer */}
         <motion.div
           initial={{ opacity: 0.6, x: '-100%' }}
           animate={{ opacity: 0, x: '200%' }}
@@ -229,7 +752,6 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
           }}
         />
 
-        {/* ── MASA DETAYI etiketi ── */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -242,7 +764,6 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
           </span>
         </motion.div>
 
-        {/* ── Mekan adı ── */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -259,7 +780,6 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
           </h2>
         </motion.div>
 
-        {/* ── Adres ── */}
         {masa.venueAddress && (
           <motion.p
             initial={{ opacity: 0 }}
@@ -271,7 +791,6 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
           </motion.p>
         )}
 
-        {/* ── Fotoğraflar (3 eşit sütun) ── */}
         {photos.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -306,14 +825,12 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
           </motion.div>
         )}
 
-        {/* ── Divider ── */}
         <motion.div
           initial={{ scaleX: 0 }} animate={{ scaleX: 1 }}
           transition={{ delay: 0.35, duration: 0.45, ease: 'easeOut' }}
           style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '0 0 16px', transformOrigin: 'left' }}
         />
 
-        {/* ── Buluşma zamanı ── */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -329,7 +846,6 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
           </span>
         </motion.div>
 
-        {/* ── Katılımcılar ── */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -346,7 +862,6 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
           </div>
         </motion.div>
 
-        {/* ── Yapay Zeka Masa Raporu ── */}
         {masa.aiReport && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
@@ -358,7 +873,6 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
               borderRadius: 12, padding: '14px 16px', marginBottom: 14,
             }}
           >
-            {/* Başlık */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
               <div style={{
                 width: 34, height: 34, borderRadius: 8,
@@ -374,11 +888,7 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
                 YAPAY ZEKA MASA RAPORU
               </span>
             </div>
-
-            {/* Divider */}
             <div style={{ height: 1, background: 'rgba(100,130,200,0.12)', marginBottom: 12 }} />
-
-            {/* Uyum skoru */}
             <div style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>
@@ -400,8 +910,6 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
                 />
               </div>
             </div>
-
-            {/* İçerik */}
             <p style={{
               margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.65)',
               fontFamily: 'Inter, sans-serif', lineHeight: 1.65,
@@ -411,7 +919,6 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
           </motion.div>
         )}
 
-        {/* ── Rezervasyon notu ── */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -420,7 +927,7 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
             background: 'rgba(255,255,255,0.04)',
             border: '1px solid rgba(255,255,255,0.07)',
             borderRadius: 10, padding: '12px 14px',
-            marginBottom: mapLink ? 16 : 0,
+            marginBottom: 16,
           }}
         >
           <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
@@ -428,13 +935,81 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
           </p>
         </motion.div>
 
-        {/* ── Haritada Gör ── */}
+        {/* Yola Çıktım butonu */}
+        {authHeaders && !cancelled && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: masa.aiReport ? 0.78 : 0.68, duration: 0.4 }}
+            style={{ marginBottom: 10 }}
+          >
+            <button
+              onClick={handleOnMyWay}
+              disabled={onMyWayDone || onMyWayLoading}
+              style={{
+                width: '100%', padding: '13px 0',
+                background: onMyWayDone ? 'rgba(39,174,96,0.12)' : 'rgba(255,255,255,0.05)',
+                border: onMyWayDone ? '1px solid rgba(39,174,96,0.35)' : '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 9999,
+                color: onMyWayDone ? '#27ae60' : '#f5f5f5',
+                fontSize: 12, fontWeight: 700,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                fontFamily: 'Inter, sans-serif', cursor: onMyWayDone ? 'default' : 'pointer',
+                transition: 'all 0.25s',
+              }}
+            >
+              {onMyWayDone ? '✓ Yola çıktığını bildirdin' : onMyWayLoading ? 'Bildiriliyor…' : 'Yola Çıktım'}
+            </button>
+          </motion.div>
+        )}
+
+        {/* Rezervasyon iptal butonu */}
+        {authHeaders && !cancelled && !cancelDeadlinePassed && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: masa.aiReport ? 0.84 : 0.74, duration: 0.4 }}
+            style={{ marginBottom: mapLink ? 16 : 10 }}
+          >
+            <button
+              onClick={() => setShowCancel(true)}
+              style={{
+                width: '100%', padding: '13px 0',
+                background: 'rgba(192,57,43,0.2)', border: '1px solid rgba(192,57,43,0.5)',
+                borderRadius: 9999, cursor: 'pointer',
+                color: '#ff6b6b', fontSize: 12, fontWeight: 700,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                fontFamily: 'Inter, sans-serif', transition: 'background 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(192,57,43,0.3)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(192,57,43,0.2)')}
+            >
+              Rezervasyon İptal
+            </button>
+          </motion.div>
+        )}
+
+        {cancelled && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            style={{
+              padding: '12px 14px', borderRadius: 10,
+              background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.2)',
+              marginBottom: 16, textAlign: 'center',
+            }}
+          >
+            <p style={{ margin: 0, fontSize: 13, color: '#c0392b', fontFamily: 'Inter, sans-serif' }}>
+              Rezervasyonunuz iptal edildi.
+            </p>
+          </motion.div>
+        )}
+
         {mapLink && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: masa.aiReport ? 0.8 : 0.7, duration: 0.4 }}
-            style={{ marginTop: 16 }}
+            transition={{ delay: masa.aiReport ? 0.9 : 0.8, duration: 0.4 }}
+            style={{ marginTop: 4 }}
           >
             <a
               href={mapLink}
@@ -465,6 +1040,65 @@ export function MasaDetayKarti({ masa }: { masa: MasaDetayData }) {
               <span style={{ fontSize: 14 }}>📍</span>
               HARİTADA GÖR
             </a>
+          </motion.div>
+        )}
+
+        {/* Sohbet bölümü */}
+        {hasChat && !cancelled && (
+          <ChatSection meetingId={masa.id} apiBase={apiBase!} token={token!} />
+        )}
+
+        {/* SOS Acil Yardım */}
+        {sosVisible && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            style={{ marginTop: 24 }}
+          >
+            {sosDone ? (
+              <div style={{
+                padding: '14px 16px', borderRadius: 12,
+                background: 'rgba(192,57,43,0.12)', border: '1.5px solid rgba(192,57,43,0.5)',
+                textAlign: 'center',
+              }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#ff6b6b', fontFamily: 'Inter, sans-serif' }}>
+                  🚨 Acil yardım talebiniz alındı.
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,107,107,0.7)', fontFamily: 'Inter, sans-serif' }}>
+                  Konumunuz anlık olarak güncelleniyor. Güvende kalın.
+                </p>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => setShowSos(true)}
+                  style={{
+                    width: '100%', padding: '15px 0', borderRadius: 12,
+                    background: 'linear-gradient(135deg, #7b0000 0%, #c0392b 50%, #ff6b6b 100%)',
+                    border: 'none', cursor: 'pointer',
+                    color: '#fff', fontSize: 14, fontWeight: 800,
+                    letterSpacing: '0.12em', textTransform: 'uppercase',
+                    fontFamily: 'Inter, sans-serif',
+                    boxShadow: '0 0 20px rgba(192,57,43,0.45)',
+                  }}
+                >
+                  Acil Yardım
+                </button>
+                <div style={{
+                  marginTop: 10, padding: '10px 12px',
+                  background: 'rgba(192,57,43,0.07)', border: '1px solid rgba(192,57,43,0.22)',
+                  borderRadius: 8,
+                }}>
+                  <p style={{
+                    margin: 0, fontSize: 10.5, lineHeight: 1.55,
+                    color: 'rgba(255,107,107,0.65)', fontFamily: 'Inter, sans-serif',
+                  }}>
+                    Masada veya masadan sonrasında, masadaki birisi tarafından fiziksel şiddet, alıkoyulma, taciz veya istismar eylemiyle karşı karşıya kalırsan ya da kalma ihtimali yaşarsan hemen butona bas ve eylemin türünü seçerek onayla. Konum bilgisi ve masadaki kişilerin kimlik bilgileri emniyet birimleriyle anında paylaşılır. <strong style={{ color: 'rgba(255,107,107,0.85)' }}>Güvenliğin bizim için çok önemli.</strong>
+                  </p>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </motion.div>

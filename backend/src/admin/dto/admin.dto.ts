@@ -11,8 +11,9 @@ import {
   MinLength,
   MaxLength,
   ArrayMinSize,
+  IsNotEmpty,
 } from "class-validator";
-import { UserStatus, UserRole, SubscriptionPlan, VenueCategory, VenueType } from "@prisma/client";
+import { UserStatus, UserRole, SubscriptionPlan, VenueCategory, VenueType, SanctionType } from "@prisma/client";
 
 // ─── Kullanıcı ────────────────────────────────────────────────────────────────
 
@@ -106,6 +107,12 @@ export class CreateVenueDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  @IsOptional()
+  latitude?: number;
+
+  @IsOptional()
+  longitude?: number;
 }
 
 export class UpdateVenueDto {
@@ -134,6 +141,12 @@ export class UpdateVenueDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  latitude?: number;
+
+  @IsOptional()
+  longitude?: number;
 }
 
 // ─── Şehir ─────────────────────────────────────────────────────────────────────
@@ -185,4 +198,18 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsBoolean()
   maintenanceMode?: boolean;
+}
+
+
+export class CreateSanctionDto {
+  @IsEnum(['WARNING', 'SUSPENSION', 'BAN'])
+  type: 'WARNING' | 'SUSPENSION' | 'BAN';
+
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
+
+  @IsOptional()
+  @IsDateString()
+  expiresAt?: string;
 }

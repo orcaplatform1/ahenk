@@ -2,7 +2,7 @@ import { Controller, Get, Post, Param, Body, Req, UseGuards } from "@nestjs/comm
 import { Request } from "express";
 import { MeetingsService } from "./meetings.service";
 import { AiReportService } from "./ai-report.service";
-import { BlockUsersDto, ReviewMeetingDto } from "./dto/meetings.dto";
+import { BlockUsersDto, ReviewMeetingDto, CancelRegistrationDto } from "./dto/meetings.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @Controller("meetings")
@@ -56,6 +56,22 @@ export class MeetingsController {
   rematchBlock(@Param("id") id: string, @Req() req: Request) {
     const user = req.user as { id: string };
     return this.meetingsService.rematchBlock(id, user.id);
+  }
+
+  @Post(":id/on-my-way")
+  onMyWay(@Param("id") id: string, @Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.meetingsService.onMyWay(id, user.id);
+  }
+
+  @Post(":id/cancel-registration")
+  cancelRegistration(
+    @Param("id") id: string,
+    @Body() dto: CancelRegistrationDto,
+    @Req() req: Request,
+  ) {
+    const user = req.user as { id: string };
+    return this.meetingsService.cancelRegistration(id, user.id, dto.reason, dto.note);
   }
 
   // AI masa raporu

@@ -52,6 +52,12 @@ model User {
   referralDiscountAvailable Boolean    @default(false)
   referralsSent             Referral[] @relation("ReferralsSent")
   referralsReceived         Referral[] @relation("ReferralsReceived")
+  chatMessages              ChatMessage[]  @relation("ChatMessageSender")
+  chatReports               ChatReport[]   @relation("ChatReportSender")
+  sanctions                 UserSanction[]
+  sanctionsGiven            UserSanction[] @relation("SanctionAdmin")
+  sosReports                SosReport[]
+  participantLocations      ParticipantLocation[]
 }
 
 enum UserRole {
@@ -212,9 +218,12 @@ model Meeting {
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 
-  participants MeetingParticipant[]
-  reviews      MeetingReview[]
-  aiReport     MeetingAiReport?
+  participants         MeetingParticipant[]
+  reviews              MeetingReview[]
+  aiReport             MeetingAiReport?
+  chatMessages         ChatMessage[]
+  sosReports           SosReport[]
+  participantLocations ParticipantLocation[]
 }
 
 model MeetingAiReport {
@@ -253,15 +262,19 @@ enum MeetingStatus {
 }
 
 model MeetingParticipant {
-  id         String            @id @default(cuid())
-  meetingId  String
-  meeting    Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  userId     String
-  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status     ParticipantStatus @default(INVITED)
-  matchScore Float? // OCEAN uyumluluk skoru (0-100)
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  id          String             @id @default(cuid())
+  meetingId   String
+  meeting     Meeting            @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      ParticipantStatus  @default(INVITED)
+  matchScore  Float?
+  onMyWayAt   DateTime?
+  leaveReason LeaveReason?
+  leaveNote   String?            @db.Text
+  cancelledAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
   @@unique([meetingId, userId])
   @@index([userId])
@@ -271,8 +284,16 @@ enum ParticipantStatus {
   INVITED
   ACCEPTED
   DECLINED
+  CANCELLED
   ATTENDED
   NO_SHOW
+}
+
+enum LeaveReason {
+  VENUE_NOT_SUITABLE
+  TIME_CHANGED
+  PERSONAL
+  OTHER
 }
 
 // ─────────────────────────────────────────────
@@ -499,6 +520,8 @@ model Venue {
   cityId      String
   city        City          @relation(fields: [cityId], references: [id])
   address     String?
+  latitude    Float?
+  longitude   Float?
   isActive    Boolean       @default(true)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -713,4 +736,116 @@ model Referral {
 
   @@index([referrerId])
   @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// SOHBET SİSTEMİ
+// ─────────────────────────────────────────────
+
+model ChatMessage {
+  id        String       @id @default(cuid())
+  meetingId String
+  meeting   Meeting      @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User         @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  content   String       @db.Text
+  deletedAt DateTime?
+  createdAt DateTime     @default(now())
+  reports   ChatReport[]
+
+  @@index([meetingId, createdAt])
+  @@index([senderId])
+}
+
+model ChatReport {
+  id         String      @id @default(cuid())
+  messageId  String
+  message    ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reporterId String
+  reporter   User        @relation("ChatReportSender", fields: [reporterId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+
+  @@unique([messageId, reporterId])
+  @@index([messageId])
+}
+
+// ─────────────────────────────────────────────
+// KULLANICI YAPTIRIM SİSTEMİ
+// ─────────────────────────────────────────────
+
+model UserSanction {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminId   String
+  admin     User         @relation("SanctionAdmin", fields: [adminId], references: [id])
+  type      SanctionType
+  reason    String       @db.Text
+  expiresAt DateTime?
+  liftedAt  DateTime?
+  createdAt DateTime     @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum SanctionType {
+  WARNING
+  SUSPENSION
+  BAN
+}
+
+// ─────────────────────────────────────────────
+// ACİL YARDIM SİSTEMİ
+// ─────────────────────────────────────────────
+
+model SosReport {
+  id                  String              @id @default(cuid())
+  userId              String
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meetingId           String
+  meeting             Meeting             @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  threats             String[]
+  lat                 Float?
+  lng                 Float?
+  accuracy            Float?
+  participantSnapshot Json
+  resolvedAt          DateTime?
+  createdAt           DateTime            @default(now())
+  locationUpdates     SosLocationUpdate[]
+
+  @@index([meetingId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model SosLocationUpdate {
+  id        String    @id @default(cuid())
+  reportId  String
+  report    SosReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  lat       Float
+  lng       Float
+  accuracy  Float?
+  timestamp DateTime  @default(now())
+
+  @@index([reportId, timestamp])
+}
+
+// ─────────────────────────────────────────────
+// KATILIMCI KONUM TAKİBİ (Acil Yardım Dönemi)
+// ─────────────────────────────────────────────
+
+model ParticipantLocation {
+  id         String   @id @default(cuid())
+  meetingId  String
+  userId     String
+  lat        Float
+  lng        Float
+  accuracy   Float?
+  timestamp  DateTime @default(now())
+
+  meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, userId, timestamp])
+  @@index([timestamp])
 }

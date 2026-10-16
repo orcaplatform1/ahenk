@@ -17,6 +17,7 @@ import {
   VenueType,
   RefundStatus,
   ReferralStatus,
+  SanctionType,
 } from "@prisma/client";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "../payment/payment.constants";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
@@ -1031,5 +1032,89 @@ export class AdminService {
 
   async updateCareer(id: string, data: { status?: string; adminNote?: string }) {
     return this.prisma.careerApplication.update({ where: { id }, data: data as any });
+  }
+
+  // ─── Kullanıcı Yaptırım Sistemi ───────────────────────────────────────────
+
+  async createSanction(
+    userId: string,
+    adminId: string,
+    type: SanctionType,
+    reason: string,
+    expiresAt?: Date,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, status: true },
+    });
+    if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
+
+    const sanction = await this.prisma.userSanction.create({
+      data: { userId, adminId, type, reason, expiresAt: expiresAt ?? null },
+    });
+
+    if (type === SanctionType.BAN) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { status: UserStatus.BANNED },
+      });
+      await this.prisma.subscription.updateMany({
+        where: { userId, status: SubscriptionStatus.ACTIVE },
+        data: { status: SubscriptionStatus.CANCELLED, cancelNote: `Banlama: ${reason}` },
+      });
+    } else if (type === SanctionType.SUSPENSION) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { status: UserStatus.SUSPENDED },
+      });
+    }
+
+    return sanction;
+  }
+
+  async liftSanction(userId: string, sanctionId: string) {
+    const sanction = await this.prisma.userSanction.findUnique({
+      where: { id: sanctionId },
+      select: { userId: true, type: true, liftedAt: true },
+    });
+    if (!sanction) throw new NotFoundException("Yaptırım bulunamadı");
+    if (sanction.userId !== userId) throw new ForbiddenException("Kullanıcı eşleşmiyor");
+    if (sanction.liftedAt) throw new BadRequestException("Yaptırım zaten kaldırılmış");
+
+    await this.prisma.userSanction.update({
+      where: { id: sanctionId },
+      data: { liftedAt: new Date() },
+    });
+
+    const remaining = await this.prisma.userSanction.findFirst({
+      where: {
+        userId,
+        id: { not: sanctionId },
+        liftedAt: null,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        type: { in: [SanctionType.BAN, SanctionType.SUSPENSION] },
+      },
+    });
+
+    if (!remaining) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { status: UserStatus.ACTIVE },
+      });
+    }
+
+    return { lifted: true };
+  }
+
+  async getUserSanctions(userId: string) {
+    return this.prisma.userSanction.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, type: true, reason: true,
+        expiresAt: true, liftedAt: true, createdAt: true,
+        admin: { select: { profile: { select: { firstName: true, lastName: true } } } },
+      },
+    });
   }
 }

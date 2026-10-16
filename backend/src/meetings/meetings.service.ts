@@ -6,11 +6,15 @@ import {
   ConflictException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { MeetingStatus, MeetingType } from "@prisma/client";
+import { NotificationService } from "../notification/notification.service";
+import { MeetingStatus, MeetingType, LeaveReason, ParticipantStatus } from "@prisma/client";
 
 @Injectable()
 export class MeetingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationService,
+  ) {}
 
   // ─── Aktif / bekleyen masa ────────────────────────────────────────────────────
 
@@ -403,5 +407,130 @@ export class MeetingsService {
     ]);
 
     return { rematchBlocked: true, pairedUserId: otherId };
+  }
+
+  // ─── Yola Çıktım ─────────────────────────────────────────────────────────────
+
+  async onMyWay(meetingId: string, userId: string) {
+    const participant = await this.prisma.meetingParticipant.findUnique({
+      where: { meetingId_userId: { meetingId, userId } },
+      include: {
+        meeting: {
+          include: {
+            participants: { select: { userId: true } },
+          },
+        },
+        user: {
+          select: {
+            profile: { select: { firstName: true, lastName: true } },
+          },
+        },
+      },
+    });
+
+    if (!participant) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    if (participant.status === ParticipantStatus.CANCELLED) {
+      throw new ForbiddenException("İptal edilmiş rezervasyon");
+    }
+
+    await this.prisma.meetingParticipant.update({
+      where: { meetingId_userId: { meetingId, userId } },
+      data: { onMyWayAt: new Date() },
+    });
+
+    const firstName = participant.user.profile?.firstName ?? '';
+    const lastName = participant.user.profile?.lastName ?? '';
+    const initials = `${firstName[0] ?? '?'}.${lastName[0] ?? '?'}.`;
+    const notifBody = `${initials} yola çıktığını bildirdi.`;
+
+    const otherUserIds = participant.meeting.participants
+      .map((p) => p.userId)
+      .filter((id) => id !== userId);
+
+    await Promise.all(
+      otherUserIds.map((uid) =>
+        this.notifications.sendToUser(uid, {
+          title: 'Yola Çıktı',
+          body: notifBody,
+          data: { type: 'ON_MY_WAY', meetingId },
+        }),
+      ),
+    );
+
+    return { success: true };
+  }
+
+  // ─── Rezervasyon İptali ───────────────────────────────────────────────────────
+
+  async cancelRegistration(
+    meetingId: string,
+    userId: string,
+    reason: LeaveReason,
+    note?: string,
+  ) {
+    const participant = await this.prisma.meetingParticipant.findUnique({
+      where: { meetingId_userId: { meetingId, userId } },
+      include: {
+        meeting: {
+          include: {
+            participants: { select: { userId: true } },
+          },
+        },
+      },
+    });
+
+    if (!participant) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    if (participant.status === ParticipantStatus.CANCELLED) {
+      throw new ConflictException("Rezervasyon zaten iptal edilmiş");
+    }
+
+    const now = new Date();
+    const nowTR = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+    const dayTR = nowTR.getUTCDay(); // 0=Paz, 4=Per, 5=Cum
+
+    const meeting = participant.meeting;
+    const isGroup = meeting.type === MeetingType.GROUP;
+
+    // Grup: Perşembe 20:00'a kadar iptal (4=Perşembe). Baş başa: Cuma 20:00'a kadar (5=Cuma)
+    const deadlineDay = isGroup ? 4 : 5;
+    const deadlineHour = 20;
+
+    const pastDeadline =
+      dayTR > deadlineDay ||
+      (dayTR === deadlineDay && nowTR.getUTCHours() >= deadlineHour);
+
+    if (pastDeadline) {
+      throw new ForbiddenException(
+        isGroup
+          ? "Grup masası iptal süresi doldu (Perşembe 20:00)"
+          : "Baş başa masası iptal süresi doldu (Cuma 20:00)",
+      );
+    }
+
+    await this.prisma.meetingParticipant.update({
+      where: { meetingId_userId: { meetingId, userId } },
+      data: {
+        status: ParticipantStatus.CANCELLED,
+        leaveReason: reason,
+        leaveNote: note ?? null,
+        cancelledAt: now,
+      },
+    });
+
+    const otherUserIds = meeting.participants
+      .map((p) => p.userId)
+      .filter((id) => id !== userId);
+
+    await Promise.all(
+      otherUserIds.map((uid) =>
+        this.notifications.sendToUser(uid, {
+          title: 'Masa Güncellendi',
+          body: '1 kişi masadan ayrıldı.',
+          data: { type: 'PARTICIPANT_LEFT', meetingId },
+        }),
+      ),
+    );
+
+    return { success: true };
   }
 }

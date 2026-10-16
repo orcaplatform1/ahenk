@@ -30,6 +30,7 @@ import {
   UpdateCityDto,
   CancelSubscriptionDto,
   UpdateSettingsDto,
+  CreateSanctionDto,
 } from "./dto/admin.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -326,6 +327,32 @@ export class AdminController {
   @Post("users/:id/ban")
   banUser(@Param("id") id: string) {
     return this.adminService.banUser(id);
+  }
+
+  @Post("users/:id/sanction")
+  createSanction(
+    @Param("id") id: string,
+    @Body() dto: CreateSanctionDto,
+    @Req() req: Request,
+  ) {
+    const admin = req.user as { id: string };
+    return this.adminService.createSanction(
+      id,
+      admin.id,
+      dto.type as any,
+      dto.reason,
+      dto.expiresAt ? new Date(dto.expiresAt) : undefined,
+    );
+  }
+
+  @Delete("users/:id/sanction/:sanctionId")
+  liftSanction(@Param("id") id: string, @Param("sanctionId") sanctionId: string) {
+    return this.adminService.liftSanction(id, sanctionId);
+  }
+
+  @Get("users/:id/sanctions")
+  getUserSanctions(@Param("id") id: string) {
+    return this.adminService.getUserSanctions(id);
   }
 
   @Get("partnerships")
