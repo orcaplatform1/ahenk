@@ -5,11 +5,21 @@ import { useParams, useRouter } from 'next/navigation';
 import { AdminShell } from '@/components/AdminShell';
 import { api } from '@/lib/api';
 
+const LEAVE_REASON_TR: Record<string, string> = {
+  VENUE_NOT_SUITABLE: 'Mekan uygun değil',
+  TIME_CHANGED:       'Zaman değişti',
+  PERSONAL:           'Kişisel sebep',
+  OTHER:              'Diğer',
+};
+
 interface Participant {
   userId: string;
   initials: string;
   gender: string;
   status: string;
+  cancelledAt?: string | null;
+  leaveReason?: string | null;
+  leaveNote?: string | null;
 }
 
 interface Meeting {
@@ -28,10 +38,10 @@ interface ChatMessage {
   content: string;
   createdAt: string;
   deletedAt: string | null;
-  senderName: string;
+  senderInitials: string;
   senderId: string;
   reportCount: number;
-  reports?: { reporterName: string; createdAt: string }[];
+  reports?: { reporterInitials: string; createdAt: string }[];
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -110,11 +120,20 @@ export default function MasaDetayPage() {
                 <p className="text-xs text-muted mb-2">Katılımcılar</p>
                 <div className="flex flex-wrap gap-2">
                   {meeting.participants.map((p) => (
-                    <span key={p.userId} className={`px-2.5 py-1 rounded-full text-xs border ${
-                      p.status === 'CANCELLED' ? 'border-red-800 text-red-400 line-through opacity-50' : 'border-border text-text'
-                    }`}>
-                      {p.initials} ({p.gender === 'MALE' ? 'E' : p.gender === 'FEMALE' ? 'K' : '?'})
-                    </span>
+                    <div key={p.userId} className="flex flex-col gap-0.5">
+                      <span className={`px-2.5 py-1 rounded-full text-xs border ${
+                        p.status === 'CANCELLED' ? 'border-red-800 text-red-400 line-through opacity-50' : 'border-border text-text'
+                      }`}>
+                        {p.initials} ({p.gender === 'MALE' ? 'E' : p.gender === 'FEMALE' ? 'K' : '?'})
+                      </span>
+                      {p.status === 'CANCELLED' && p.cancelledAt && (
+                        <span className="text-[10px] text-red-400/70 pl-1">
+                          {new Date(p.cancelledAt).toLocaleString('tr-TR')}
+                          {p.leaveReason && ` — ${LEAVE_REASON_TR[p.leaveReason] ?? p.leaveReason}`}
+                          {p.leaveNote && ` (${p.leaveNote})`}
+                        </span>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -150,7 +169,7 @@ export default function MasaDetayPage() {
                   msg.reportCount > 0 ? 'border-amber-700' : 'border-border'
                 } ${msg.deletedAt ? 'opacity-50' : ''}`}>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-primary">{msg.senderName}</span>
+                    <span className="text-xs font-medium text-primary">{msg.senderInitials}</span>
                     <div className="flex items-center gap-2">
                       {msg.reportCount > 0 && (
                         <span className="px-1.5 py-0.5 rounded-md bg-amber-900/40 text-amber-400 text-xs border border-amber-800">
@@ -172,7 +191,7 @@ export default function MasaDetayPage() {
                     <div className="mt-1 flex flex-col gap-0.5 border-t border-amber-900/30 pt-1">
                       {msg.reports.map((r, i) => (
                         <span key={i} className="text-xs text-muted">
-                          {r.reporterName} — {new Date(r.createdAt).toLocaleString('tr-TR')}
+                          {r.reporterInitials} — {new Date(r.createdAt).toLocaleString('tr-TR')}
                         </span>
                       ))}
                     </div>

@@ -8,24 +8,32 @@ import { PrismaService } from "../prisma/prisma.service";
 import { MeetingStatus, MeetingType, ParticipantStatus } from "@prisma/client";
 
 function chatCloseTime(type: MeetingType, scheduledAt: Date): Date {
-  const sat = new Date(scheduledAt);
-  // GROUP: Cumartesi 23:59 TR = Cumartesi 20:59 UTC
-  // ONE_ON_ONE: Cuma 23:59 TR = Cuma 20:59 UTC
+  const TR = 3 * 3600_000; // UTC+3 offset
+  // Hesaplamayı TR gününe göre yap (UTC gün değil)
+  const trMs = scheduledAt.getTime() + TR;
+  const dayTR = new Date(trMs).getUTCDay(); // gerçek TR gün
+
+  let closeUTC: Date;
+
   if (type === MeetingType.GROUP) {
-    const day = sat.getUTCDay();
-    const daysUntilSat = (6 - day + 7) % 7;
-    sat.setUTCDate(sat.getUTCDate() + daysUntilSat);
-    sat.setUTCHours(20, 59, 0, 0);
-    return sat;
+    // Cumartesi 23:59 TR = 20:59 UTC
+    const daysUntilSat = (6 - dayTR + 7) % 7;
+    const satTR = new Date(trMs + daysUntilSat * 86_400_000);
+    satTR.setUTCHours(23, 59, 0, 0);
+    closeUTC = new Date(satTR.getTime() - TR);
   } else {
-    // Cuma 23:59 TR
-    const fri = new Date(scheduledAt);
-    const day = fri.getUTCDay();
-    const daysUntilFri = (5 - day + 7) % 7;
-    fri.setUTCDate(fri.getUTCDate() + daysUntilFri);
-    fri.setUTCHours(20, 59, 0, 0);
-    return fri;
+    // Cuma 23:59 TR = 20:59 UTC — masanın TR haftasındaki Cuma (geri bak)
+    const daysSinceFri = (dayTR - 5 + 7) % 7;
+    const friTR = new Date(trMs - daysSinceFri * 86_400_000);
+    friTR.setUTCHours(23, 59, 0, 0);
+    closeUTC = new Date(friTR.getTime() - TR);
   }
+
+  // Sadece GROUP için gece yarısı güvenliği: Cumartesi masasında closeUTC=scheduledAt olabilir
+  if (type === MeetingType.GROUP && closeUTC <= scheduledAt) {
+    return new Date(scheduledAt.getTime() + 4 * 3600_000);
+  }
+  return closeUTC;
 }
 
 @Injectable()

@@ -423,7 +423,10 @@ export class MeetingsService {
       include: {
         meeting: {
           include: {
-            participants: { select: { userId: true } },
+            participants: {
+              where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
+              select: { userId: true },
+            },
           },
         },
         user: {
@@ -479,7 +482,10 @@ export class MeetingsService {
       include: {
         meeting: {
           include: {
-            participants: { select: { userId: true } },
+            participants: {
+              where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
+              select: { userId: true },
+            },
           },
         },
       },
@@ -490,11 +496,19 @@ export class MeetingsService {
       throw new ConflictException("Rezervasyon zaten iptal edilmiş");
     }
 
+    const meeting = participant.meeting;
+
+    // Tamamlanmış veya iptal edilmiş masalarda işlem yapılamaz
+    if (meeting.status === MeetingStatus.COMPLETED || meeting.status === MeetingStatus.CANCELLED) {
+      throw new ForbiddenException("Bu masa artık aktif değil");
+    }
+
     const now = new Date();
     const nowTR = new Date(now.getTime() + 3 * 60 * 60 * 1000);
-    const dayTR = nowTR.getUTCDay(); // 0=Paz, 4=Per, 5=Cum
+    const dayTRRaw = nowTR.getUTCDay(); // 0=Paz, 4=Per, 5=Cum
+    // Pazar (0) matematiksel olarak haftanın sonu: 7 olarak değerlendir
+    const dayTR = dayTRRaw === 0 ? 7 : dayTRRaw;
 
-    const meeting = participant.meeting;
     const isGroup = meeting.type === MeetingType.GROUP;
 
     // Grup: Perşembe 20:00'a kadar iptal (4=Perşembe). Baş başa: Cuma 20:00'a kadar (5=Cuma)

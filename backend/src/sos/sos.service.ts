@@ -32,11 +32,14 @@ export class SosService {
     lng?: number,
     accuracy?: number,
   ) {
-    // Kullanıcı bu masanın katılımcısı mı?
+    // Kullanıcı bu masanın aktif katılımcısı mı?
     const participation = await this.prisma.meetingParticipant.findUnique({
       where: { meetingId_userId: { meetingId, userId } },
     });
-    if (!participation) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    const inactiveStatuses = ['CANCELLED', 'DECLINED', 'NO_SHOW'];
+    if (!participation || inactiveStatuses.includes(participation.status)) {
+      throw new ForbiddenException("Bu masanın aktif katılımcısı değilsiniz");
+    }
 
     // Masa + tüm katılımcıların tam bilgisi (snapshot)
     const meeting = await this.prisma.meeting.findUnique({
@@ -120,6 +123,7 @@ export class SosService {
   async adminListReports() {
     return this.prisma.sosReport.findMany({
       orderBy: { createdAt: "desc" },
+      take: 200,
       include: {
         user: {
           select: {
@@ -239,18 +243,26 @@ export class SosService {
 
       // 2. FCM push (fallback)
       if (adm.fcmToken) {
-        await this.fcm.sendToToken({
-          token: adm.fcmToken,
-          title: "🚨 ACİL YARDIM TALEBİ",
-          body:  `${name} — ${threatTx}`,
-          data:  { reportId, meetingId, type: "SOS_ALERT" },
-        });
+        try {
+          await this.fcm.sendToToken({
+            token: adm.fcmToken,
+            title: "🚨 ACİL YARDIM TALEBİ",
+            body:  `${name} — ${threatTx}`,
+            data:  { reportId, meetingId, type: "SOS_ALERT" },
+          });
+        } catch {
+          this.logger.warn(`Admin ${adm.id} FCM bildirimi başarısız`);
+        }
       }
 
       // 3. AdminAlert kaydı (panel bildirim)
-      await this.prisma.adminAlert.create({
-        data: { userId: adm.id, alertType: AdminAlertType.SOS_ALERT },
-      });
+      try {
+        await this.prisma.adminAlert.create({
+          data: { userId: adm.id, alertType: AdminAlertType.SOS_ALERT },
+        });
+      } catch (e) {
+        this.logger.error(`AdminAlert oluşturulamadı (admin: ${adm.id}): ${e}`);
+      }
     }
   }
 }

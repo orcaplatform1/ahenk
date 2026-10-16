@@ -43,6 +43,12 @@ export class AuthService {
         select: { type: true, reason: true, expiresAt: true },
       });
 
+      // Aktif yaptırım kalmamış ama status güncellenmemiş → otomatik kaldır
+      if (!sanction && (status === 'SUSPENDED' || status === 'BANNED')) {
+        await this.prisma.user.update({ where: { id: userId }, data: { status: 'ACTIVE' } });
+        return;
+      }
+
       const type = sanction?.type ?? (status === 'BANNED' ? SanctionType.BAN : SanctionType.SUSPENSION);
       const reason = sanction?.reason ?? 'Yönetici tarafından uygulandı';
       const expiresAt = sanction?.expiresAt ?? null;

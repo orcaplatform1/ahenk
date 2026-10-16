@@ -131,27 +131,41 @@ function LiveBadge({ ts }: { ts: string }) {
 }
 
 const addrCache = new Map<string, string>();
-
+const addrPending = new Map<string, Promise<string>>();
+const ADDR_CACHE_MAX = 200;
+// Nominatim ToS: max 1 istek/saniye — seri kuyruk; aynı key için tek istek (dedup)
+let _geoQueue = Promise.resolve();
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
   if (addrCache.has(key)) return addrCache.get(key)!;
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`,
-      { headers: { 'User-Agent': 'Ahenk-Admin/1.0' } },
-    );
-    const data = await res.json();
-    const a = data.address ?? {};
-    const parts = [
-      a.road ?? a.pedestrian ?? a.path,
-      a.neighbourhood ?? a.suburb ?? a.quarter,
-      a.district ?? a.county,
-      a.city ?? a.town ?? a.village ?? a.state,
-    ].filter(Boolean);
-    const addr = parts.join(', ') || data.display_name?.split(',').slice(0, 3).join(',').trim() || '';
-    addrCache.set(key, addr);
-    return addr;
-  } catch { return ''; }
+  if (addrPending.has(key)) return addrPending.get(key)!;
+  const p = new Promise<string>((resolve) => {
+    _geoQueue = _geoQueue.then(async () => {
+      try {
+        if (addrCache.has(key)) { resolve(addrCache.get(key)!); return; }
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`,
+          { headers: { 'User-Agent': 'Ahenk-Admin/1.0' } },
+        );
+        const data = await res.json();
+        const a = data.address ?? {};
+        const parts = [
+          a.road ?? a.pedestrian ?? a.path,
+          a.neighbourhood ?? a.suburb ?? a.quarter,
+          a.district ?? a.county,
+          a.city ?? a.town ?? a.village ?? a.state,
+        ].filter(Boolean);
+        const addr = parts.join(', ') || data.display_name?.split(',').slice(0, 3).join(',').trim() || '';
+        if (addrCache.size >= ADDR_CACHE_MAX) addrCache.clear();
+        addrCache.set(key, addr);
+        addrPending.delete(key);
+        resolve(addr);
+      } catch { addrPending.delete(key); resolve(''); }
+      await new Promise(r => setTimeout(r, 1100));
+    });
+  });
+  addrPending.set(key, p);
+  return p;
 }
 
 function CoordRow({ loc, isRequester }: { loc: ParticipantLoc; isRequester: boolean }) {
@@ -252,7 +266,9 @@ function ReportCard({ report, index }: { report: SosReport; index: number }) {
 
   const requester     = report.participantSnapshot.find(p => p.isRequester);
   const reqName       = requester?.firstName ? `${requester.firstName} ${requester.lastName}` : report.user.email;
-  const latest        = report.locationUpdates[detail ? detail.locationUpdates.length - 1 : report.locationUpdates.length - 1];
+  const latest        = detail
+    ? detail.locationUpdates[detail.locationUpdates.length - 1]
+    : report.locationUpdates[report.locationUpdates.length - 1];
   const displayLat    = latest?.lat ?? report.lat;
   const displayLng    = latest?.lng ?? report.lng;
   const elapsedMin    = Math.floor((Date.now() - new Date(report.createdAt).getTime()) / 60000);
@@ -494,8 +510,6 @@ export default function AcilYardimPage() {
   const [reports, setReports] = useState<SosReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastFetch, setLastFetch] = useState('');
-  const tickRef = useRef(0);
-
   const fetchReports = useCallback(async () => {
     try {
       const data = await api.get<SosReport[]>('/sos/admin/reports');
@@ -510,7 +524,7 @@ export default function AcilYardimPage() {
 
   useEffect(() => {
     fetchReports();
-    const id = setInterval(() => { tickRef.current++; fetchReports(); }, 15000);
+    const id = setInterval(fetchReports, 15000);
     return () => clearInterval(id);
   }, [fetchReports]);
 

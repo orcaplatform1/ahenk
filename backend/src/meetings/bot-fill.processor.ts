@@ -44,45 +44,61 @@ export class BotFillProcessor {
       return;
     }
 
-    // Eklenecek cinsiyet
-    let targetGender = missingGender;
-
-    // Grup masasında denge: 3E+3K
-    if (meeting.type === MeetingType.GROUP && targetGender === null) {
+    // Grup masasında cinsiyet dengesi her zaman hesapla (iptal edenin cinsiyetine bakma)
+    let targetGender: Gender | null = null;
+    if (meeting.type === MeetingType.GROUP) {
       const maleCount   = meeting.participants.filter((p) => p.user.profile?.gender === Gender.MALE).length;
       const femaleCount = meeting.participants.filter((p) => p.user.profile?.gender === Gender.FEMALE).length;
       targetGender = maleCount <= femaleCount ? Gender.MALE : Gender.FEMALE;
+    }
+    // ONE_ON_ONE: iptal edenin cinsiyetiyle aynı cinsiyet (MALE/FEMALE ise; OTHER/PREFER için null)
+    if (meeting.type !== MeetingType.GROUP) {
+      targetGender = (missingGender === Gender.MALE || missingGender === Gender.FEMALE) ? missingGender : null;
     }
 
     // Uygun botu bul (masada olmayan, aktif bot)
     const existingUserIds = meeting.participants.map((p) => p.userId);
 
-    const botQuery: any = {
+    const botWhere: any = {
       isBot: true,
       status: "ACTIVE",
       id: { notIn: existingUserIds },
     };
-
+    // Profile'sız botları dışlamak için: profile is relation filter
     if (targetGender === Gender.MALE || targetGender === Gender.FEMALE) {
-      botQuery.profile = { gender: targetGender };
+      botWhere.profile = { is: { gender: targetGender } };
     }
 
-    const bot = await this.prisma.user.findFirst({
-      where: botQuery,
+    let bot = await this.prisma.user.findFirst({
+      where: botWhere,
       include: { profile: true },
     });
+
+    // Profile'sız veya yanlış cinsiyetli bot yoksa herhangi biri dene
+    if (!bot && (targetGender === Gender.MALE || targetGender === Gender.FEMALE)) {
+      bot = await this.prisma.user.findFirst({
+        where: { isBot: true, status: "ACTIVE", id: { notIn: existingUserIds } },
+        include: { profile: true },
+      });
+    }
 
     if (!bot) {
       this.logger.warn(`Uygun bot bulunamadı: masa ${meetingId}, cinsiyet ${targetGender ?? "herhangi"}`);
       return;
     }
 
-    await this.prisma.meetingParticipant.create({
-      data: {
-        meetingId,
-        userId: bot.id,
-        status: "ACCEPTED",
-      },
+    // Transaction: kapasite kontrolü + ekleme atomik
+    await this.prisma.$transaction(async (tx) => {
+      const currentCount = await tx.meetingParticipant.count({
+        where: { meetingId, status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
+      });
+      if (currentCount >= maxCount) {
+        this.logger.log(`Race condition engellendi: masa ${meetingId} dolu (${currentCount}/${maxCount})`);
+        return;
+      }
+      await tx.meetingParticipant.create({
+        data: { meetingId, userId: bot.id, status: "ACCEPTED" },
+      });
     });
 
     const name = bot.profile ? `${bot.profile.firstName} ${bot.profile.lastName}` : bot.id;

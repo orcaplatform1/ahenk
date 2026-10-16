@@ -290,3 +290,65 @@ Endpoint'ler:
   - POST /admin/users/:id/sanction — yaptırım uygula { type, reason, expiresAt? }
   - DELETE /admin/users/:id/sanction/:sanctionId — yaptırım kaldır
   - GET /auth/me → activeSanction alanı döner (giriş ekranında kontrol için)
+Otomatik geri alma:
+  - SUSPENDED: askı süresi dolan kullanıcı giriş yapınca aktif UserSanction yoksa status → ACTIVE otomatik
+  - BANNED: aynı kural — admin tüm BAN kayıtlarını kaldırırsa status → ACTIVE otomatik (manuel status düzeltmesi gerekmez)
+  - Bu mantık checkSanction() içinde uygulanır, her giriş denemesinde kontrol edilir
+WhatsApp OTP giriş yolunda (send-login-otp) da sanction kontrolü yapılır; 403 dönünce frontend sanction modal'ını gösterir
+
+ACİL YARDIM (SOS) SİSTEMİ (Modül 12):
+Kapsam: Masanın aktif katılımcısı tehlike anında acil yardım talebinde bulunabilir.
+Guard: CANCELLED, DECLINED, NO_SHOW statüsündeki katılımcılar SOS açamaz.
+Prisma modeli:
+  - SosReport { id, userId, meetingId, threats[], lat?, lng?, accuracy?, resolvedAt?, participantSnapshot (JSON), createdAt }
+  - SosLocationUpdate { id, reportId, lat, lng, accuracy?, timestamp }
+  - ParticipantLocation { id, meetingId, userId, lat, lng, accuracy?, timestamp }
+  - AdminAlertType enum'a SOS_ALERT eklendi
+Tehdit tipleri: LIFE_DANGER, PHYSICAL_VIOLENCE, ABDUCTION, HARASSMENT
+Admin bildirim zinciri (per-admin, her biri ayrı try/catch):
+  1. WhatsApp (telefon varsa)
+  2. FCM push (fcmToken varsa)
+  3. AdminAlert DB kaydı (panel bildirim)
+  Bir admin'in başarısız kanalı diğer adminleri etkilemez.
+Kullanıcı konumu: masa katılımcıları SOS sırasında konum paylaşabilir (ParticipantLocation tablosu).
+Admin SOS sayfası: /acil-yardim — canlı rapor listesi, 15s otomatik yenileme.
+  Nominatim (OpenStreetMap) reverse geocoding: TR dili, max 1 istek/saniye (seri kuyruk), adres cache max 200 kayıt.
+Endpoint'ler:
+  - POST /sos/:meetingId/report — SOS raporu oluştur {threats[], lat?, lng?, accuracy?} (JWT)
+  - POST /sos/:reportId/location — canlı konum güncelle {lat, lng, accuracy?} (JWT)
+  - POST /sos/:meetingId/participant-location — tüm katılımcı konumu gönder (JWT)
+  - GET /sos/admin/reports — tüm raporlar listesi (ADMIN guard)
+  - GET /sos/admin/reports/:id — rapor detayı + konum geçmişi (ADMIN guard)
+
+BOT DOLDURMA DETAYLARI:
+Bot doldurma kuyruğu: BOT_FILL_QUEUE ("bot-fill"), JOB_FILL_SPOT ("fill-spot")
+İptal anında 1 saat gecikmeli Bull job eklenir.
+İş çalışınca:
+  - Masa PENDING veya ACTIVE değilse işlem yapılmaz.
+  - Kapasite dolu ise (anlık sayım) işlem yapılmaz.
+  - Kapasite kontrolü + bot ekleme Prisma $transaction içinde atomik yapılır (race condition önlemi).
+  - Grup masası: mevcut MALE/FEMALE sayısına bakarak hedef cinsiyet belirlenir (iptal edenin cinsiyetine bakılmaz).
+  - ONE_ON_ONE: iptal edenin cinsiyeti hedef (MALE/FEMALE ise); OTHER/PREFER_NOT_TO_SAY ise herhangi bot.
+  - Hedef cinsiyette profile'lı bot bulunamazsa herhangi aktif bot fallback olarak denenir.
+
+REZERVASYON İPTALİ EK KURALLAR:
+  - cancelRegistration bildirim listesi: CANCELLED, DECLINED, NO_SHOW statüsündeki katılımcılar "1 kişi ayrıldı" bildiriminden çıkarılır.
+  - Admin masalar/[id] sayfasında iptal eden katılımcının cancelledAt tarihi ve leaveReason metni gösterilir.
+  - MeetingParticipant.cancelledAt alanı iptal anında set edilir.
+
+SOHBET SİSTEMİ EK KURALLAR:
+  - chatCloseTime hesaplaması TR timezone (UTC+3 sabit offset) ile yapılır.
+  - Grup masası gece yarısı güvenliği: scheduledAt >= kapanış saati ise closeTime = scheduledAt + 4 saat.
+  - Bu güvenlik sadece GROUP için geçerlidir; ONE_ON_ONE için uygulanmaz (Cuma kapanışı geçtiyse sohbet zaten kapalıdır).
+  - Chat controller'da literal route (admin/reports/list) her zaman parametrik route'tan (admin/:meetingId) önce tanımlanmalıdır; aksi halde route shadow oluşur.
+  - MeetingStatus.REVEALED henüz şemada yok; spec'te var ama migration bekleniyor. Şu an sohbet sadece ACTIVE masalar için açık.
+
+RATE LIMITING:
+  - ThrottlerModule backend'e eklenmiştir.
+  - 4 ayrı named throttler: short (10 req/3s), medium (30 req/10s), long (100 req/1m), auth (5 req/1m).
+  - Auth endpoint'leri (login, register, OTP) auth throttler ile korunur.
+
+API CLIENT KURALLAR (web):
+  - apps/web/lib/api.ts içinde PREFIX sabiti API_PREFIX olarak export edilir.
+  - Özel fetch ihtiyacı olan sayfalarda (örn. giris/page.tsx) API_PREFIX import edilir; çift tanım yapılmaz.
+  - api.ts'den setToken/clearToken/getToken da export edilir; localStorage token yönetimi buradan yapılır.

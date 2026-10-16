@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '@/lib/api';
+import { api, API_PREFIX } from '@/lib/api';
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001') + '/api/v1';
+const API_BASE = API_PREFIX;
 
 interface LoginResponse {
   accessToken: string;
@@ -74,11 +74,15 @@ export default function GirisPage() {
 
   /* ── WhatsApp: Kod Gönder ───────────────────────────────────── */
   async function handleSendOtp() {
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setSanction(null);
     try {
       await authPost('/auth/send-login-otp', { phone: `+90${phoneDigits}` });
       setOtpStep(true);
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) {
+      const err = e as Error & { sanction?: SanctionPayload };
+      if (err.sanction) { setSanction(err.sanction); }
+      else { setError(err.message); }
+    }
     finally { setLoading(false); }
   }
 

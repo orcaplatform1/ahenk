@@ -348,10 +348,14 @@ function CancelModal({
   onClose,
   loading,
 }: {
-  onConfirm: () => void;
+  onConfirm: (reason: string, note: string) => void;
   onClose: () => void;
   loading: boolean;
 }) {
+  const [reason, setReason] = useState<string>('');
+  const [note,   setNote]   = useState('');
+  const canSubmit = reason !== '' && (reason !== 'OTHER' || note.trim().length > 0);
+
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -367,20 +371,55 @@ function CancelModal({
         transition={{ type: 'spring', damping: 28, stiffness: 320 }}
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 360,
+          width: '100%', maxWidth: 380,
           background: 'rgba(30,8,8,0.97)',
           border: '1px solid rgba(192,57,43,0.35)',
           borderRadius: 16, padding: '28px 22px 22px',
-          textAlign: 'center',
         }}
       >
         <p style={{
-          margin: '0 0 22px',
+          margin: '0 0 18px',
           fontSize: 15, lineHeight: 1.6, fontWeight: 500,
-          color: '#f5f5f5', fontFamily: 'Inter, sans-serif',
+          color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center',
         }}>
-          Bu haftaki eşleşmeden ayrılırsanız önümüzdeki haftaya kadar tekrar eşleşemezsiniz. Onaylıyor musunuz?
+          Bu haftaki eşleşmeden ayrılırsanız önümüzdeki haftaya kadar tekrar eşleşemezsiniz.
         </p>
+        <p style={{ margin: '0 0 10px', fontSize: 13, color: 'rgba(245,245,245,0.6)', fontFamily: 'Inter, sans-serif' }}>
+          Ayrılma sebebiniz:
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+          {LEAVE_REASONS.map(r => (
+            <button
+              key={r.value}
+              onClick={() => setReason(r.value)}
+              style={{
+                padding: '10px 14px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                background: reason === r.value ? 'rgba(192,57,43,0.25)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${reason === r.value ? 'rgba(192,57,43,0.6)' : 'rgba(255,255,255,0.1)'}`,
+                color: reason === r.value ? '#ff6b6b' : '#c0c0c0',
+                fontSize: 14, fontFamily: 'Inter, sans-serif', fontWeight: reason === r.value ? 600 : 400,
+              }}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+        {reason === 'OTHER' && (
+          <textarea
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="Lütfen açıklayın…"
+            maxLength={300}
+            rows={3}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              padding: '10px 12px', borderRadius: 10, marginBottom: 16,
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)',
+              color: '#f5f5f5', fontSize: 13, fontFamily: 'Inter, sans-serif', resize: 'none',
+              outline: 'none',
+            }}
+          />
+        )}
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={onClose}
@@ -390,19 +429,20 @@ function CancelModal({
               color: '#27ae60', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif',
             }}
           >
-            Hayır
+            Vazgeç
           </button>
           <button
-            onClick={onConfirm}
-            disabled={loading}
+            onClick={() => canSubmit && onConfirm(reason, note)}
+            disabled={loading || !canSubmit}
             style={{
-              flex: 1, padding: '13px 0', borderRadius: 10, cursor: loading ? 'not-allowed' : 'pointer',
+              flex: 1, padding: '13px 0', borderRadius: 10,
+              cursor: (loading || !canSubmit) ? 'not-allowed' : 'pointer',
               background: 'rgba(192,57,43,0.25)', border: '1px solid rgba(192,57,43,0.55)',
               color: '#ff6b6b', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif',
-              opacity: loading ? 0.5 : 1,
+              opacity: (loading || !canSubmit) ? 0.45 : 1,
             }}
           >
-            {loading ? '…' : 'Evet'}
+            {loading ? '…' : 'İptal Et'}
           </button>
         </div>
       </motion.div>
@@ -584,13 +624,13 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
     } finally { setOnMyWayLoading(false); }
   }
 
-  async function handleCancel() {
+  async function handleCancel(reason: string, note: string) {
     if (!authHeaders) return;
     setCancelLoading(true);
     try {
       const res = await fetch(`${apiBase}/meetings/${masa.id}/cancel-registration`, {
         method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ reason: 'OTHER' }),
+        body: JSON.stringify({ reason, note: note || undefined }),
       });
       if (res.ok) { setCancelled(true); setShowCancel(false); }
     } finally { setCancelLoading(false); }
@@ -601,7 +641,8 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
   // İptal deadline kontrolü (tarayıcı tarafı - yalnızca buton görünümü için)
   const now = new Date();
   const nowTR = new Date(now.getTime() + 3 * 60 * 60 * 1000);
-  const dayTR = nowTR.getUTCDay();
+  const dayTRRaw = nowTR.getUTCDay();
+  const dayTR  = dayTRRaw === 0 ? 7 : dayTRRaw; // Pazar(0) → 7
   const hourTR = nowTR.getUTCHours();
   const cancelDeadlinePassed = isOneOnOne
     ? (dayTR > 5 || (dayTR === 5 && hourTR >= 20))
@@ -719,7 +760,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
         )}
         {showCancel && (
           <CancelModal
-            onConfirm={() => handleCancel()}
+            onConfirm={(reason, note) => handleCancel(reason, note)}
             onClose={() => setShowCancel(false)}
             loading={cancelLoading}
           />

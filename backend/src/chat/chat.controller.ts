@@ -33,17 +33,17 @@ export class ChatController {
     return this.chatService.reportMessage(messageId, user.id);
   }
 
-  @Get("admin/:meetingId")
-  @UseGuards(RolesGuard)
-  @Roles("ADMIN", "SUPERADMIN")
-  adminGetMessages(@Param("meetingId") meetingId: string) {
-    return this.chatService.adminGetMessages(meetingId);
-  }
-
   @Get("admin/reports/list")
   @UseGuards(RolesGuard)
   @Roles("ADMIN", "SUPERADMIN")
   adminGetReports() {
     return this.chatService.adminGetReports();
+  }
+
+  @Get("admin/:meetingId")
+  @UseGuards(RolesGuard)
+  @Roles("ADMIN", "SUPERADMIN")
+  adminGetMessages(@Param("meetingId") meetingId: string) {
+    return this.chatService.adminGetMessages(meetingId);
   }
 }

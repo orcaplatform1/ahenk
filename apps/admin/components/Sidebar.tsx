@@ -6,7 +6,8 @@ import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-const LINKS = [
+interface NavLink { href: string; label: string; sos?: boolean; }
+const LINKS: NavLink[] = [
   { href: '/acil-yardim', label: '🚨 Acil Yardım', sos: true },
   { href: '/',            label: 'Dashboard' },
   { href: '/stats',       label: 'İstatistikler' },
@@ -47,7 +48,7 @@ export function Sidebar() {
       <nav className="flex-1 py-4 flex flex-col gap-0.5 px-2">
         {LINKS.map((l) => {
           const active = l.href === '/' ? pathname === '/' : pathname.startsWith(l.href);
-          const isSos = (l as any).sos;
+          const isSos = l.sos;
           return (
             <Link
               key={l.href}

@@ -92,6 +92,8 @@ async function silentFetch<T>(path: string): Promise<T | null> {
   }
 }
 
+export const API_PREFIX = PREFIX;
+
 export const api = {
   get: <T>(path: string) => apiFetch<T>(path),
   post: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST', body }),
