@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MasaDetayKarti, type MasaDetayData } from './MasaDetayKarti';
 
 // ── Sabitler ───────────────────────────────────────────────────────────────
-const RADAR_SZ   = 320;
+const RADAR_SZ   = 340;
 const CX         = RADAR_SZ / 2;
 const CY         = RADAR_SZ / 2;
 const ORBIT_R    = 118;
@@ -33,7 +33,7 @@ function orbitPts(n: number): Array<{ x: number; y: number }> {
 
 // ── Sweep path ──────────────────────────────────────────────────────────────
 function buildSweepPath(): string {
-  const startRad = (-160 * Math.PI) / 180;
+  const startRad = (-210 * Math.PI) / 180;
   const sx = CX + ORBIT_R * Math.cos(startRad);
   const sy = CY + ORBIT_R * Math.sin(startRad);
   return `M ${CX},${CY} L ${sx.toFixed(1)},${sy.toFixed(1)} A ${ORBIT_R},${ORBIT_R} 0 0,1 ${CX},${CY - ORBIT_R} Z`;
@@ -59,7 +59,7 @@ export function buildInitials(firstName?: string | null, lastName?: string | nul
 
 // ── Kapanış sayacı — GROUP=Perşembe, ONE_ON_ONE=Cuma ─────────────────────────
 function nextDeadline(type: 'GROUP' | 'ONE_ON_ONE'): Date {
-  const targetDay = type === 'GROUP' ? 4 : 5; // 4=Perşembe, 5=Cuma
+  const targetDay = type === 'GROUP' ? 4 : 5;
   const now = Date.now();
   const nowTRms = now + 3 * 60 * 60 * 1000;
   const nowTR   = new Date(nowTRms);
@@ -190,9 +190,7 @@ interface Props {
   apiBase?: string;
   token?: string;
   pollIntervalMs?: number;
-  /** Kullanıcının kendi profil bilgisi — scanning ekranında kendi avatarı gösterilir */
   selfParticipant?: Participant;
-  /** Aktif plan: 'MASADA'=sadece GROUP, 'KARSIMDA'=sadece ONE_ON_ONE, 'ICERDE'=ikisi de */
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
 }
 
@@ -290,7 +288,7 @@ function RadarSweep({ running, cx, cy, sweepPath }: { running: boolean; cx: numb
   );
 }
 
-// ── Slot tabanlı E-K-E-K yerleşim (tarama ekranı — boşluklu) ────────────────
+// ── Slot tabanlı E-K-E-K yerleşim ────────────────────────────────────────────
 function buildScanningSlots(allParts: Participant[], maxP: number): Array<Participant | null> {
   const slots: Array<Participant | null> = Array(maxP).fill(null);
   const males   = allParts.filter(p => p.gender === 'MALE');
@@ -320,7 +318,6 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant }: {
   const maxP = type === 'ONE_ON_ONE' ? 2 : 6;
   const title = type === 'ONE_ON_ONE' ? 'BAŞ BAŞA MASA' : 'GRUP MASASI';
 
-  // Kendi avatarı participants içinde yoksa başa ekle (cinsiyetine uygun slota girer)
   const rawParts = participants ?? [];
   const allParts: Participant[] = (() => {
     if (!selfParticipant) return rawParts;
@@ -328,7 +325,6 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant }: {
     return alreadyIn ? rawParts : [selfParticipant, ...rawParts];
   })();
 
-  // Slot tabanlı: erkek çift, kadın tek slotlarda — boşluklar korunur
   const slots = buildScanningSlots(allParts, maxP);
   const filledCount = slots.filter(Boolean).length;
   const isFull    = filledCount >= maxP;
@@ -511,7 +507,125 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
   );
 }
 
-// ── Tek kart içeriği (scanning veya confirmed/revealed) ────────────────────
+// ── Kilitli ekran (yanlış/eksik paket) ────────────────────────────────────────
+const LOCK_CLR      = '#e8850c';
+const LOCK_ICON_CLR = '#7bc67e';
+
+function LockedView({ type = 'GROUP' }: { type?: 'GROUP' | 'ONE_ON_ONE'; neededPlan?: 'MASADA' | 'KARSIMDA' | null }) {
+  const isGroup = type === 'GROUP';
+
+  const line1 = isGroup
+    ? 'Eşleşme taraması aktif.'
+    : 'Eşleşme taraması daha derin ve hassas çalışıyor.';
+  const line2 = isGroup
+    ? 'Kişilik testiniz ile uyumlu insanlarla eşleşmenizi görmek için paket almalısınız.'
+    : 'Kişilik testi ve Yaşınızla uyumlu bir insanla eşleşmenizi görmek için paket almalısınız.';
+
+  return (
+    <div>
+      <style>{`
+        @keyframes lockDot   { 0%,100%{opacity:.35} 50%{opacity:1} }
+        @keyframes lockSweep { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes lockShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 50%{transform:translateX(0)} 75%{transform:translateX(3px)} }
+      `}</style>
+
+      {/* Başlık */}
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <h2 style={{
+          fontFamily: 'var(--font-serif, "DM Serif Display", serif)',
+          fontSize: 22, fontWeight: 400, color: '#f5f5f5',
+          letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 8px',
+        }}>
+          {isGroup ? 'GRUP MASASI' : 'BAŞ BAŞA MASA'}
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <span style={{
+            display: 'inline-block', width: 7, height: 7, borderRadius: '50%',
+            background: LOCK_CLR, animation: 'lockDot 1.2s ease-in-out infinite',
+          }} />
+          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', color: LOCK_CLR, fontFamily: 'Inter, sans-serif' }}>
+            TARAMA DEVAM EDİYOR
+          </span>
+        </div>
+      </div>
+
+      {/* Kırmızı radar + kilit ikonu */}
+      <div style={{ position: 'relative', width: RADAR_SZ, height: RADAR_SZ, margin: '0 auto' }}>
+        <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
+          {[30, 62, 93, ORBIT_R].map((r, i) => (
+            <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke={SCAN_CLR}
+              strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.3 : 0.14} />
+          ))}
+          <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.12} />
+          <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.12} />
+          <defs>
+            <radialGradient id="lockSwpRG" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stopColor={SCAN_CLR} stopOpacity={0} />
+              <stop offset="45%"  stopColor={SCAN_CLR} stopOpacity={0.05} />
+              <stop offset="100%" stopColor={SCAN_CLR} stopOpacity={0.22} />
+            </radialGradient>
+            <filter id="lockIconGlow" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="4" result="blur1" />
+              <feGaussianBlur stdDeviation="8" result="blur2" />
+              <feMerge>
+                <feMergeNode in="blur2" />
+                <feMergeNode in="blur1" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <g style={{ animation: `lockSweep ${SCAN_DUR}s linear infinite`, transformOrigin: `${CX}px ${CY}px` }}>
+            <path d={SWEEP_PATH} fill="url(#lockSwpRG)" />
+            <line x1={CX} y1={CY} x2={CX} y2={CY - ORBIT_R} stroke={SCAN_CLR} strokeWidth={1.5} opacity={0.85} />
+            <circle cx={CX} cy={CY - ORBIT_R} r={3.5} fill={SCAN_CLR} />
+          </g>
+          {/* Kilit ikonu — merkez, titreyen, neon yeşil */}
+          <g style={{ animation: 'lockShake 0.8s ease-in-out infinite' }} filter="url(#lockIconGlow)">
+            <path
+              d={`M ${CX-9},${CY-3} L ${CX-9},${CY-14} A 9,9 0 0 1 ${CX+9},${CY-14} L ${CX+9},${CY-3}`}
+              fill="none" stroke={LOCK_ICON_CLR} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"
+            />
+            <rect x={CX-12} y={CY-3} width={24} height={19} rx={3.5}
+              fill="rgba(123,198,126,0.15)" stroke={LOCK_ICON_CLR} strokeWidth={3} />
+            <circle cx={CX} cy={CY+7.5} r={3} fill={LOCK_ICON_CLR} />
+            <line x1={CX} y1={CY+10.5} x2={CX} y2={CY+13.5} stroke={LOCK_ICON_CLR} strokeWidth={2.5} strokeLinecap="round" />
+          </g>
+        </svg>
+      </div>
+
+      {/* Alt yazı + buton */}
+      <div style={{ textAlign: 'center', marginTop: 20, padding: '0 8px' }}>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#888', lineHeight: 1.65, margin: '0 0 4px' }}>
+          {line1}
+        </p>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#555', lineHeight: 1.65, margin: '0 0 22px' }}>
+          {line2}
+        </p>
+        <a
+          href="/profil?tab=paket"
+          style={{
+            display: 'inline-block',
+            padding: '13px 36px',
+            background: 'linear-gradient(135deg, #c0392b, #e74c3c)',
+            borderRadius: 9999,
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: 'Inter, sans-serif',
+            letterSpacing: '0.04em',
+            textDecoration: 'none',
+            boxShadow: '0 0 28px rgba(192,57,43,0.45), 0 4px 16px rgba(0,0,0,0.4)',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          Paket Seç
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ── Tek kart içeriği ──────────────────────────────────────────────────────────
 function MasaKarti({
   type, item, selfParticipant,
 }: {
@@ -554,6 +668,102 @@ function MasaKarti({
   return <ScanningView type={type} participants={item.meeting.participants} selfParticipant={selfParticipant} />;
 }
 
+// ── Premium Toggle ─────────────────────────────────────────────────────────────
+function PremiumToggle({
+  activeTab,
+  onSwitch,
+  shineKey,
+}: {
+  activeTab: 'GROUP' | 'ONE_ON_ONE';
+  onSwitch: (tab: 'GROUP' | 'ONE_ON_ONE') => void;
+  shineKey: number;
+}) {
+  const tabs = [
+    { key: 'GROUP' as const,      label: 'Grup Masası' },
+    { key: 'ONE_ON_ONE' as const, label: 'Baş Başa' },
+  ];
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+      <style>{`
+        @keyframes toggleShine {
+          0%   { left: -60%; }
+          100% { left: 140%; }
+        }
+      `}</style>
+      <div style={{
+        position: 'relative',
+        display: 'flex',
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 100,
+        padding: 4,
+        gap: 2,
+        boxShadow: '0 0 40px rgba(192,57,43,0.08), inset 0 1px 0 rgba(255,255,255,0.05)',
+      }}>
+        {tabs.map(({ key, label }) => {
+          const isActive = activeTab === key;
+          return (
+            <button
+              key={key}
+              onClick={() => onSwitch(key)}
+              style={{
+                position: 'relative',
+                padding: '11px 26px',
+                borderRadius: 100,
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 13,
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? '#fff' : '#444',
+                letterSpacing: isActive ? '0.04em' : '0.01em',
+                transition: 'color 0.3s, font-weight 0.2s',
+                WebkitTapHighlightColor: 'transparent',
+                zIndex: 1,
+                overflow: 'hidden',
+              }}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="activeTabBg"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: 100,
+                    background: 'linear-gradient(135deg, #c0392b 0%, #e8472e 50%, #ff6b6b 100%)',
+                    boxShadow: '0 0 28px rgba(192,57,43,0.65), 0 0 60px rgba(192,57,43,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    overflow: 'hidden',
+                  }}
+                  transition={{ type: 'spring', stiffness: 480, damping: 36, mass: 0.8 }}
+                >
+                  {/* Shine sweep on tab change */}
+                  <motion.div
+                    key={shineKey}
+                    style={{
+                      position: 'absolute',
+                      top: '-20%',
+                      width: '45%',
+                      height: '140%',
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)',
+                      transform: 'skewX(-15deg)',
+                    }}
+                    initial={{ left: '-60%' }}
+                    animate={{ left: '140%' }}
+                    transition={{ duration: 0.55, ease: 'easeOut' }}
+                  />
+                </motion.div>
+              )}
+              <span style={{ position: 'relative', zIndex: 1 }}>{label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Ana bileşen ──────────────────────────────────────────────────────────────
 export function MasalarDashboard({
   apiBase,
@@ -562,11 +772,11 @@ export function MasalarDashboard({
   selfParticipant,
   activePlan,
 }: Props) {
-  const [dashData, setDashData] = useState<DashboardResponse | null>(null);
-  const [loading, setLoading]   = useState(!!apiBase);
+  const [dashData, setDashData]   = useState<DashboardResponse | null>(null);
+  const [loading, setLoading]     = useState(!!apiBase);
   const [activeTab, setActiveTab] = useState<'GROUP' | 'ONE_ON_ONE'>('GROUP');
-
-  const isIcerde = activePlan === 'ICERDE';
+  const [tabDir, setTabDir]       = useState(1);
+  const [shineKey, setShineKey]   = useState(0);
 
   const fetchDashboard = async () => {
     if (!apiBase) return;
@@ -596,6 +806,13 @@ export function MasalarDashboard({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiBase, token, pollIntervalMs]);
 
+  function handleTabSwitch(tab: 'GROUP' | 'ONE_ON_ONE') {
+    if (tab === activeTab) return;
+    setTabDir(tab === 'ONE_ON_ONE' ? 1 : -1);
+    setShineKey(k => k + 1);
+    setActiveTab(tab);
+  }
+
   const cardStyle: React.CSSProperties = {
     background: 'rgba(255,255,255,0.05)',
     border: '1px solid rgba(255,255,255,0.08)',
@@ -617,62 +834,55 @@ export function MasalarDashboard({
     );
   }
 
-  const items = dashData?.items ?? [];
+  const items        = dashData?.items ?? [];
   const groupItem    = items.find(i => i.meeting.type === 'GROUP');
   const oneOnOneItem = items.find(i => i.meeting.type === 'ONE_ON_ONE');
 
-  // İçerde: toggle ile iki kart arası geçiş
-  if (isIcerde) {
-    const currentItem = activeTab === 'GROUP' ? groupItem : oneOnOneItem;
+  // Aktif tab'ın içeriğini belirle
+  function getTabContent(tab: 'GROUP' | 'ONE_ON_ONE') {
+    // Abonelik yok → her iki tab da kilitli
+    if (!activePlan) return <LockedView type={tab} neededPlan={null} />;
 
-    return (
+    if (activePlan === 'ICERDE') {
+      const item = tab === 'GROUP' ? groupItem : oneOnOneItem;
+      return <MasaKarti type={tab} item={item} selfParticipant={selfParticipant} />;
+    }
+
+    if (activePlan === 'MASADA') {
+      if (tab === 'GROUP') return <MasaKarti type="GROUP" item={groupItem} selfParticipant={selfParticipant} />;
+      return <LockedView type="ONE_ON_ONE" neededPlan="KARSIMDA" />;
+    }
+
+    if (activePlan === 'KARSIMDA') {
+      if (tab === 'ONE_ON_ONE') return <MasaKarti type="ONE_ON_ONE" item={oneOnOneItem} selfParticipant={selfParticipant} />;
+      return <LockedView type="GROUP" neededPlan="MASADA" />;
+    }
+
+    return <LockedView type={tab} neededPlan={null} />;
+  }
+
+  return (
+    <div style={{ maxWidth: 400, margin: '0 auto' }}>
       <div style={cardStyle}>
-        {/* Tab toggle */}
-        <div style={{
-          display: 'flex', background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12,
-          padding: 3, marginBottom: 20, gap: 2,
-        }}>
-          {(['GROUP', 'ONE_ON_ONE'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                flex: 1, padding: '8px 0', borderRadius: 9, border: 'none', cursor: 'pointer',
-                fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: '0.03em',
-                transition: 'all 0.2s',
-                background: activeTab === tab ? 'rgba(192,57,43,0.18)' : 'transparent',
-                color: activeTab === tab ? '#f5f5f5' : '#555',
-                boxShadow: activeTab === tab ? 'inset 0 1px 0 rgba(255,255,255,0.06)' : 'none',
-              }}
-            >
-              {tab === 'GROUP' ? 'Grup Masası' : 'Baş Başa Masası'}
-            </button>
-          ))}
-        </div>
-
-        <AnimatePresence mode="wait">
+        <PremiumToggle activeTab={activeTab} onSwitch={handleTabSwitch} shineKey={shineKey} />
+        <AnimatePresence mode="wait" custom={tabDir}>
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, x: activeTab === 'GROUP' ? -16 : 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: activeTab === 'GROUP' ? 16 : -16 }}
-            transition={{ duration: 0.22, ease: 'easeInOut' }}
+            custom={tabDir}
+            variants={{
+              enter: (d: number) => ({ x: d * 55, opacity: 0, scale: 0.96, filter: 'blur(4px)' }),
+              center: { x: 0, opacity: 1, scale: 1, filter: 'blur(0px)' },
+              exit:  (d: number) => ({ x: d * -55, opacity: 0, scale: 0.96, filter: 'blur(4px)' }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
           >
-            <MasaKarti type={activeTab} item={currentItem} selfParticipant={selfParticipant} />
+            {getTabContent(activeTab)}
           </motion.div>
         </AnimatePresence>
       </div>
-    );
-  }
-
-  // MASADA veya KARSIMDA: tek kart
-  const singleType: 'GROUP' | 'ONE_ON_ONE' = activePlan === 'KARSIMDA' ? 'ONE_ON_ONE' : 'GROUP';
-  const singleItem = singleType === 'GROUP' ? groupItem : oneOnOneItem;
-
-  return (
-    <div style={cardStyle}>
-      <MasaKarti type={singleType} item={singleItem} selfParticipant={selfParticipant} />
     </div>
   );
 }

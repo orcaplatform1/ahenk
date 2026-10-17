@@ -172,7 +172,7 @@ export default function Navbar() {
     if (!token) { setChecked(true); return; }
     api.get<NavUser>('/auth/me')
       .then(u => setNavUser(u))
-      .catch(() => {})
+      .catch(() => { api.clearToken(); setNavUser(null); })
       .finally(() => setChecked(true));
   }, [pathname]);
 
@@ -181,6 +181,7 @@ export default function Navbar() {
 
   function handleLogout() {
     api.clearToken();
+    setNavUser(null);
     setMenuOpen(false);
     router.push('/');
   }
