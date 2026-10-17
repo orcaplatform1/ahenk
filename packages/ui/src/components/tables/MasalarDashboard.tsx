@@ -383,9 +383,9 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant }: {
 
       <DeadlineCountdown type={type} />
 
-      <div ref={radarWrapRef} style={{ width: '100%' }}>
+      <div ref={radarWrapRef} style={{ width: '100%', display: 'flex', justifyContent: 'center', overflow: 'visible' }}>
         <div style={{
-          position: 'relative', width: RADAR_SZ, height: RADAR_SZ, margin: '0 auto',
+          position: 'relative', width: RADAR_SZ, height: RADAR_SZ, flexShrink: 0,
           transform: `scale(${radarScale})`, transformOrigin: 'top center',
           marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
         }}>
@@ -489,9 +489,9 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
         </div>
       </div>
 
-      <div ref={radarWrapRef} style={{ width: '100%' }}>
+      <div ref={radarWrapRef} style={{ width: '100%', display: 'flex', justifyContent: 'center', overflow: 'visible' }}>
         <div style={{
-          position: 'relative', width: RADAR_SZ, height: RADAR_SZ, margin: '0 auto',
+          position: 'relative', width: RADAR_SZ, height: RADAR_SZ, flexShrink: 0,
           transform: `scale(${radarScale})`, transformOrigin: 'top center',
           marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
         }}>
@@ -581,9 +581,9 @@ function LockedView({ type = 'GROUP' }: { type?: 'GROUP' | 'ONE_ON_ONE'; neededP
       </div>
 
       {/* Kırmızı radar + kilit ikonu */}
-      <div ref={radarWrapRef} style={{ width: '100%' }}>
+      <div ref={radarWrapRef} style={{ width: '100%', display: 'flex', justifyContent: 'center', overflow: 'visible' }}>
         <div style={{
-          position: 'relative', width: RADAR_SZ, height: RADAR_SZ, margin: '0 auto',
+          position: 'relative', width: RADAR_SZ, height: RADAR_SZ, flexShrink: 0,
           transform: `scale(${radarScale})`, transformOrigin: 'top center',
           marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
         }}>

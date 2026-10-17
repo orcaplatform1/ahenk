@@ -138,6 +138,23 @@ export default function ProfilPage() {
           </div>
         )}
 
+        {/* Sekme butonları */}
+        <div className="flex gap-1 mb-6 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => changeTab(tab.key)}
+              className="text-xs font-medium whitespace-nowrap px-3 py-2 rounded-lg transition-all flex-shrink-0"
+              style={activeTab === tab.key
+                ? { background: 'rgba(192,57,43,0.18)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.35)' }
+                : { background: 'rgba(255,255,255,0.04)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }
+              }
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* Sekme içeriği */}
         <AnimatePresence mode="wait">
           <motion.div
@@ -149,7 +166,7 @@ export default function ProfilPage() {
           >
             {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} activePlan={user.activePlan ?? null} />}
             {activeTab === 'test'    && <TabTest />}
-            {activeTab === 'masalar' && <TabMasalar />}
+            {activeTab === 'masalar' && <TabMasalar activePlan={user.activePlan ?? null} />}
             {activeTab === 'paket'   && <TabPaket kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
             {activeTab === 'kyc'     && <TabKyc />}
             {activeTab === 'rehber'  && <TabRehber />}

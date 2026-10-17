@@ -55,7 +55,6 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
   if (res.status === 401) {
     const newToken = await refreshToken();
     if (!newToken) {
-      if (typeof window !== 'undefined') window.location.href = '/giris';
       throw new Error('Oturum süresi doldu');
     }
     headers['Authorization'] = `Bearer ${newToken}`;

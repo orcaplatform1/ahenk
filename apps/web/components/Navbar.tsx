@@ -166,21 +166,16 @@ export default function Navbar() {
   const initialized = useRef(false);
 
   useEffect(() => {
-    const token = api.getToken();
-
-    // İlk kontrol henüz yapılmamışsa yüklenme durumu göster (flash önleme)
     if (!initialized.current) setChecked(false);
 
-    if (!token) {
-      setNavUser(null);
-      setChecked(true);
-      initialized.current = true;
-      return;
-    }
-
     api.get<NavUser>('/auth/me')
-      .then(u => setNavUser(u))
-      .catch(() => {})
+      .then(u => {
+        setNavUser(u);
+        // refresh sonrası token'ı cookie'ye de yaz
+        const t = api.getToken();
+        if (t) api.setToken(t);
+      })
+      .catch(() => { setNavUser(null); })
       .finally(() => { setChecked(true); initialized.current = true; });
   }, [pathname]);
 
