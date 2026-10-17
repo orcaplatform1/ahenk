@@ -166,7 +166,7 @@ export function TabRehber() {
                 disabled={deleting === b.id}
                 className="text-xs text-[#888] hover:text-[#ff6b6b] transition-colors disabled:opacity-40"
               >
-                {deleting === b.id ? '…' : 'Kaldır'}
+                {deleting === b.id ? '…' : 'Sil'}
               </button>
             </div>
           ))}

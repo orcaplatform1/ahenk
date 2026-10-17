@@ -254,6 +254,12 @@ function KayitPageInner() {
       if (!skip && form.contactNumbers.length > 0) {
         const hashes = await hashPhones(form.contactNumbers);
         if (hashes.length > 0) {
+          // hash→numara eşleştirmesini localStorage'a kaydet (TabRehber'de görüntülenmek için)
+          try {
+            const map: Record<string, string> = JSON.parse(localStorage.getItem('ahenk_contact_block_map') ?? '{}');
+            hashes.forEach((h, i) => { if (form.contactNumbers[i]) map[h] = form.contactNumbers[i]; });
+            localStorage.setItem('ahenk_contact_block_map', JSON.stringify(map));
+          } catch {}
           await api.post('/contact-blocks/sync', { hashedPhones: hashes });
         }
       }
