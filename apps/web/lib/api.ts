@@ -35,6 +35,9 @@ async function refreshToken(): Promise<string | null> {
       const data = await res.json() as { accessToken: string };
       setToken(data.accessToken);
       return data.accessToken;
+    } catch {
+      clearToken();
+      return null;
     } finally {
       _refreshPromise = null;
     }
