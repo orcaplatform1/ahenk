@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
-import { AccountTabBar } from '@/components/AccountTabBar';
 import { TabProfilim, TabProfilimSkeleton } from './tabs/TabProfilim';
 import { TabTest } from './tabs/TabTest';
 import { TabMasalar } from './tabs/TabMasalar';
@@ -95,7 +94,6 @@ function ProfilPage() {
 
   return (
     <main className="min-h-screen bg-bg text-text pt-[52px]">
-      <AccountTabBar activeKey={activeTab} />
       <div className="max-w-4xl mx-auto px-4 py-8">
 
         {/* Başlık */}
@@ -134,6 +132,23 @@ function ProfilPage() {
             </button>
           </div>
         )}
+
+        {/* Sekme butonları */}
+        <div className="flex gap-1 mb-6 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => changeTab(tab.key)}
+              className="text-xs font-medium whitespace-nowrap px-3 py-2 rounded-lg transition-all flex-shrink-0"
+              style={activeTab === tab.key
+                ? { background: 'rgba(192,57,43,0.18)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.35)' }
+                : { background: 'rgba(255,255,255,0.04)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }
+              }
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
         {/* Sekme içeriği */}
         <AnimatePresence mode="wait">
