@@ -11,9 +11,9 @@ interface KycStatus {
 }
 
 interface UploadUrls {
-  idFront:  { url: string; key: string };
-  idBack:   { url: string; key: string };
-  liveness: { url: string; key: string };
+  idFront:  { uploadUrl: string; key: string };
+  idBack:   { uploadUrl: string; key: string };
+  liveness: { uploadUrl: string; key: string };
 }
 
 async function putToR2(url: string, file: File | Blob, mimeType: string, onProgress: (pct: number) => void): Promise<void> {
@@ -78,17 +78,6 @@ function ImageUploader({
             />
             {/* Karartma overlay */}
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', borderRadius: '12px' }} />
-            {/* Örnek etiketi */}
-            <span
-              style={{
-                position: 'absolute', top: '8px', left: '8px',
-                fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em',
-                color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase',
-                background: 'rgba(0,0,0,0.45)', borderRadius: '4px', padding: '2px 5px',
-              }}
-            >
-              Örnek
-            </span>
           </motion.div>
         ) : (
           <motion.div
@@ -255,7 +244,6 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-[#888]">Liveness Videosu</p>
 
       {/* Kamera canlı görüntü */}
       {(phase === 'preview' || phase === 'countdown' || phase === 'recording') && (
@@ -324,14 +312,25 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
 
       {/* Butonlar */}
       {!done && (
-        <div className="flex gap-2">
+        <>
+          {(phase === 'idle' || phase === 'error') && (
+            <>
+              <img
+                src="/kyc-liveness-demo.png"
+                alt="Canlı video örneği"
+                className="w-full rounded-xl"
+                style={{ maxHeight: '180px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.06)' }}
+              />
+            </>
+          )}
+          <div className="flex gap-2">
           {(phase === 'idle' || phase === 'error') && (
             <button
               onClick={openCamera}
               className="flex-1 py-2.5 text-sm font-medium rounded-xl transition-all"
-              style={{ border: '1px solid rgba(255,255,255,0.1)', color: '#f5f5f5', background: 'rgba(255,255,255,0.04)' }}
+              style={{ border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b', background: 'rgba(192,57,43,0.06)' }}
             >
-              Kamerayı Aç
+              Canlı Video Yükle
             </button>
           )}
           {phase === 'preview' && (
@@ -339,7 +338,15 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
               Kaydı Başlat
             </button>
           )}
-        </div>
+          </div>
+          {(phase === 'idle' || phase === 'error') && (
+            <div className="w-full rounded-xl px-4 py-3" style={{ background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.3)' }}>
+              <p className="text-xs" style={{ color: 'rgba(192,57,43,0.85)', lineHeight: 1.6 }}>
+                Ekibimiz hesap doğrulama talebinizi inceleyene kadar bilgiler saklanır. Doğrulama onaylanır veya reddedilir ise, tüm bilgiler veritabanından silinir ve depolanmaz. Doğrulama, sahte profillerin platformu kullanmasını engellemek için bir filtredir.
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -395,9 +402,9 @@ export function TabKyc() {
         livenessSize: liveness.blob.size,
       });
 
-      await putToR2(urls.idFront.url, files.idFront, files.idFront.type, (p) => setProgress(prev => ({ ...prev, idFront: p })));
-      await putToR2(urls.idBack.url,  files.idBack,  files.idBack.type,  (p) => setProgress(prev => ({ ...prev, idBack: p })));
-      await putToR2(urls.liveness.url, livenessFile,  liveness.mime,      (p) => setProgress(prev => ({ ...prev, liveness: p })));
+      await putToR2(urls.idFront.uploadUrl, files.idFront, files.idFront.type, (p) => setProgress(prev => ({ ...prev, idFront: p })));
+      await putToR2(urls.idBack.uploadUrl,  files.idBack,  files.idBack.type,  (p) => setProgress(prev => ({ ...prev, idBack: p })));
+      await putToR2(urls.liveness.uploadUrl, livenessFile,  liveness.mime,      (p) => setProgress(prev => ({ ...prev, liveness: p })));
 
       await api.post('/kyc/submit', {
         idFrontKey:  urls.idFront.key,
@@ -451,7 +458,7 @@ export function TabKyc() {
 
       {showForm && (
         <>
-          <h3 className="font-medium text-sm text-muted uppercase tracking-wide">Kimlik Belgelerini Yükle</h3>
+          <h3 className="font-medium text-sm text-muted uppercase tracking-wide">KİMLİK DOĞRULAMA</h3>
 
           <ImageUploader
             svgSrc="/kyc_demo_identity_card.svg"
