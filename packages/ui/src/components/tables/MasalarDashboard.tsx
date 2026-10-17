@@ -8,7 +8,7 @@ import { MasaDetayKarti, type MasaDetayData } from './MasaDetayKarti';
 const RADAR_SZ   = 340;
 const CX         = RADAR_SZ / 2;
 const CY         = RADAR_SZ / 2;
-const ORBIT_R    = 118;
+const ORBIT_R    = 142;
 const AV_D       = 52;
 const AV_R       = AV_D / 2;
 const AV_BR      = AV_R - 3;
@@ -390,7 +390,7 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant }: {
           marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
         }}>
           <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
-            {[30, 62, 93, ORBIT_R].map((r, i) => (
+            {[36, 75, 112, ORBIT_R].map((r, i) => (
               <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke={SCAN_CLR}
                 strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.35 : 0.18} />
             ))}
@@ -496,7 +496,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
           marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
         }}>
           <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
-            {[30, 62, 93, ORBIT_R].map((r, i) => (
+            {[36, 75, 112, ORBIT_R].map((r, i) => (
               <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke="#27ae60"
                 strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.35 : 0.12} />
             ))}
@@ -588,7 +588,7 @@ function LockedView({ type = 'GROUP' }: { type?: 'GROUP' | 'ONE_ON_ONE'; neededP
           marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
         }}>
           <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
-            {[30, 62, 93, ORBIT_R].map((r, i) => (
+            {[36, 75, 112, ORBIT_R].map((r, i) => (
               <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke={SCAN_CLR}
                 strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.3 : 0.14} />
             ))}

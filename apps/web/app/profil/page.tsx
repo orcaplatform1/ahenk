@@ -67,17 +67,15 @@ export default function ProfilPage() {
   }
 
   useEffect(() => {
-    const token = api.getToken();
-    if (!token) { router.replace('/giris'); return; }
-
+    // Token kontrolü yapmıyoruz — apiFetch 401 alınca refresh token ile yeniliyor.
+    // localStorage token yoksa bile refresh cookie varsa oturum devam eder.
     Promise.all([
       api.get<UserData>('/auth/me'),
       api.get<City[]>('/auth/cities').catch(() => [] as City[]),
     ])
       .then(([u, c]) => { setUser(u); setCities(c); })
       .catch(() => {
-        // 401 durumunda apiFetch zaten window.location.href='/giris' yapıyor.
-        // Diğer hatalarda (network, 500) kullanıcıyı gereksiz çıkarmıyoruz.
+        // apiFetch 401 → refresh dener → başarısızsa window.location.href='/giris'
       })
       .finally(() => setLoading(false));
   }, [router]);
@@ -92,7 +90,10 @@ export default function ProfilPage() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    if (typeof window !== 'undefined') window.location.href = '/giris';
+    return null;
+  }
 
   const kycApproved = user.kyc?.status === 'APPROVED';
 

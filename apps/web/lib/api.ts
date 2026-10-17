@@ -3,17 +3,22 @@ const PREFIX = `${BASE}/api/v1`;
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('token');
+  try {
+    const ls = localStorage.getItem('token');
+    if (ls) return ls;
+  } catch {}
+  const m = document.cookie.match(/(?:^|;\s*)ahenk_token=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
 }
 
 function setToken(token: string) {
-  localStorage.setItem('token', token);
-  document.cookie = 'auth=1; path=/; max-age=604800; samesite=lax'; // 7 gün (refresh token ile eşleşir)
+  try { localStorage.setItem('token', token); } catch {}
+  document.cookie = `ahenk_token=${encodeURIComponent(token)}; path=/; max-age=604800; samesite=lax`;
 }
 
 function clearToken() {
-  localStorage.removeItem('token');
-  document.cookie = 'auth=; path=/; max-age=0';
+  try { localStorage.removeItem('token'); } catch {}
+  document.cookie = 'ahenk_token=; path=/; max-age=0';
 }
 
 async function refreshToken(): Promise<string | null> {

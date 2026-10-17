@@ -180,7 +180,7 @@ export default function Navbar() {
 
     api.get<NavUser>('/auth/me')
       .then(u => setNavUser(u))
-      .catch(() => { api.clearToken(); setNavUser(null); })
+      .catch(() => {})
       .finally(() => { setChecked(true); initialized.current = true; });
   }, [pathname]);
 
