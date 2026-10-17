@@ -287,6 +287,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
     setEmailSaving(true); setEmailError('');
     try {
       await api.patch('/users/change-email', { email: newEmail, currentPassword: emailPassword });
+      api.clearMeCache();
       setCurrentEmail(newEmail);
       setEmailMode(false); setNewEmail(''); setEmailPassword('');
     } catch (e) { setEmailError((e as Error).message); }
@@ -301,6 +302,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
     setSaving(true); setSaveError('');
     try {
       await api.post('/users/cities', { primaryCityId });
+      api.clearMeCache();
       setDisplayPrimaryCity(cities.find(c => c.id === primaryCityId) ?? null);
       setEditingCities(false);
     } catch (e) { setSaveError((e as Error).message); }
@@ -311,6 +313,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
     setSavingActiveCity(true);
     try {
       await api.patch('/users/active-city', { activeCityId: cityId });
+      api.clearMeCache();
       setActiveCity(cityId ?? '');
     } catch (e) { setSaveError((e as Error).message); }
     finally { setSavingActiveCity(false); }
@@ -320,6 +323,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
     setSaving(true); setSaveError('');
     try {
       await api.patch('/users/venue-preference', { venuePreference });
+      api.clearMeCache();
       setDisplayVenuePreference(venuePreference);
       setEditingVenue(false);
     } catch (e) { setSaveError((e as Error).message); }

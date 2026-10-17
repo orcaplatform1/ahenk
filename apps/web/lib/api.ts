@@ -13,9 +13,42 @@ function setToken(token: string) {
 
 function clearToken() {
   document.cookie = 'ahenk_token=; path=/; max-age=0';
+  clearMeCache();
 }
 
 let _refreshPromise: Promise<string | null> | null = null;
+
+let _meCache: { data: unknown; ts: number; token: string } | null = null;
+let _meFlight: Promise<unknown> | null = null;
+let _meGen = 0;
+
+function getMeCached<T>(path: string): Promise<T> {
+  const now = Date.now();
+  const token = getToken();
+  if (_meCache && token && _meCache.token === token && now - _meCache.ts < 30000) {
+    return Promise.resolve(_meCache.data as T);
+  }
+  if (_meFlight) return _meFlight as Promise<T>;
+  const capturedToken = token ?? '';
+  const capturedGen = _meGen;
+  _meFlight = apiFetch<T>(path).then(data => {
+    if (_meGen === capturedGen) {
+      _meCache = { data, ts: Date.now(), token: capturedToken };
+      _meFlight = null;
+    }
+    return data;
+  }).catch(err => {
+    if (_meGen === capturedGen) _meFlight = null;
+    throw err;
+  });
+  return _meFlight as Promise<T>;
+}
+
+function clearMeCache() {
+  _meCache = null;
+  _meFlight = null;
+  _meGen++;
+}
 
 async function refreshToken(): Promise<string | null> {
   if (_refreshPromise) return _refreshPromise;
@@ -108,13 +141,14 @@ async function silentFetch<T>(path: string): Promise<T | null> {
 export const API_PREFIX = PREFIX;
 
 export const api = {
-  get: <T>(path: string) => apiFetch<T>(path),
+  get: <T>(path: string) => path === '/auth/me' ? getMeCached<T>(path) : apiFetch<T>(path),
   post: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST', body }),
   put: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PUT', body }),
   patch: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PATCH', body }),
   delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
   silentGet: <T>(path: string) => silentFetch<T>(path),
-  setToken,
+  setToken: (token: string) => { clearMeCache(); setToken(token); },
   clearToken,
   getToken,
+  clearMeCache,
 };

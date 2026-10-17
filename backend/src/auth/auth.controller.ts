@@ -17,7 +17,7 @@ import {
 } from "@nestjs/swagger";
 import { Response, Request } from "express";
 import { ConfigService } from "@nestjs/config";
-import { Throttle } from "@nestjs/throttler";
+import { Throttle, SkipThrottle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -94,6 +94,7 @@ export class AuthController {
 
   @Get("me")
   @UseGuards(JwtAuthGuard)
+  @Throttle({ global: { ttl: 60000, limit: 60 }, auth: { ttl: 60000, limit: 60 }, sos: { ttl: 300000, limit: 300 }, strict: { ttl: 60000, limit: 60 } })
   @ApiBearerAuth()
   @ApiOperation({ summary: "Mevcut kullanıcı bilgisi" })
   me(@CurrentUser() user: any) {
