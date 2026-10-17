@@ -558,9 +558,11 @@ function MasaBlock({
   );
 }
 
-export function TabMasalar({ activePlan, userInfo }: {
+export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
   activePlan: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
   userInfo?: UserInfo;
+  kycApproved?: boolean;
+  onGoKyc?: () => void;
 }) {
   const [dashItems, setDashItems] = useState<DashboardItem[]>([]);
   const [history,   setHistory]   = useState<HistoryMeeting[]>([]);
@@ -591,6 +593,30 @@ export function TabMasalar({ activePlan, userInfo }: {
 
   return (
     <div className="flex flex-col gap-6">
+      {!kycApproved && (
+        <div
+          className="flex items-center justify-between gap-4 px-5 py-4 rounded-2xl"
+          style={{
+            background: '#000',
+            border: '1px solid #722F37',
+          }}
+        >
+          <p className="text-sm leading-snug" style={{ color: '#FF8C00' }}>
+            Masaya katılmak için kimlik doğrulaması gereklidir.
+          </p>
+          <button
+            onClick={onGoKyc}
+            className="text-sm font-semibold whitespace-nowrap flex-shrink-0 px-4 py-2 rounded-xl transition-all"
+            style={{
+              background: '#B8860B',
+              color: '#fff',
+              border: 'none',
+            }}
+          >
+            Doğrula
+          </button>
+        </div>
+      )}
       {locked && (
         <a
           href="/profil?tab=paket"

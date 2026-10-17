@@ -10,6 +10,7 @@ import { TabMasalar } from './tabs/TabMasalar';
 import { TabPaket } from './tabs/TabPaket';
 import { TabKyc } from './tabs/TabKyc';
 import { TabRehber } from './tabs/TabRehber';
+import { AccountTabBar } from '@/components/AccountTabBar';
 
 interface City { id: string; name: string; }
 
@@ -124,6 +125,7 @@ function ProfilPage() {
 
   return (
     <main className="min-h-screen bg-bg text-text pt-[52px]">
+      <AccountTabBar activeKey={activeTab} />
       <div className="max-w-4xl mx-auto px-4 py-8">
 
         {/* Başlık */}
@@ -131,53 +133,6 @@ function ProfilPage() {
           <h1 className="font-serif text-2xl text-[#f5f5f5]">
             {user.firstName} {user.lastName}
           </h1>
-        </div>
-
-        {/* KYC banner */}
-        {user.kyc?.status && user.kyc.status !== 'APPROVED' && (
-          <div
-            className="flex items-center justify-between gap-4 mb-6 px-5 py-4 rounded-2xl"
-            style={{
-              background: 'linear-gradient(135deg, rgba(12,8,4,0.85) 0%, rgba(20,12,6,0.9) 100%)',
-              border: '1px solid rgba(232,133,12,0.25)',
-              borderLeft: '3px solid #e8850c',
-              boxShadow: '0 2px 24px rgba(232,133,12,0.10), inset 0 1px 0 rgba(255,255,255,0.04)',
-              backdropFilter: 'blur(12px)',
-            }}
-          >
-            <p className="text-sm leading-snug" style={{ color: '#e8850c' }}>
-              Masalara katılabilmeniz için kimliğinizi doğrulamalısınız.
-            </p>
-            <button
-              onClick={() => changeTab('kyc')}
-              className="text-sm font-semibold whitespace-nowrap flex-shrink-0 px-4 py-2 rounded-xl transition-all"
-              style={{
-                background: 'linear-gradient(135deg,#1a5c2a,#27ae60)',
-                color: '#fff',
-                boxShadow: '0 0 14px rgba(39,174,96,0.35)',
-                border: 'none',
-              }}
-            >
-              Doğrula
-            </button>
-          </div>
-        )}
-
-        {/* Sekme butonları */}
-        <div className="flex gap-1 mb-6 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => changeTab(tab.key)}
-              className="text-xs font-medium whitespace-nowrap px-3 py-2 rounded-lg transition-all flex-shrink-0"
-              style={activeTab === tab.key
-                ? { background: 'rgba(192,57,43,0.18)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.35)' }
-                : { background: 'rgba(255,255,255,0.04)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }
-              }
-            >
-              {tab.label}
-            </button>
-          ))}
         </div>
 
         {/* Sekme içeriği */}
@@ -191,7 +146,7 @@ function ProfilPage() {
           >
             {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} activePlan={user.activePlan ?? null} />}
             {activeTab === 'test'    && <TabTest />}
-            {activeTab === 'masalar' && <TabMasalar activePlan={user.activePlan ?? null} userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender }} />}
+            {activeTab === 'masalar' && <TabMasalar activePlan={user.activePlan ?? null} userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender }} kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
             {activeTab === 'paket'   && <TabPaket kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
             {activeTab === 'kyc'     && <TabKyc />}
             {activeTab === 'rehber'  && <TabRehber />}
