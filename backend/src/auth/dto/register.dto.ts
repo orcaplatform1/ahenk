@@ -64,5 +64,15 @@ export class RegisterDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  gender?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  birthDate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   referralCode?: string;
 }

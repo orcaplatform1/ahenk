@@ -259,6 +259,22 @@ function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
   );
 }
 
+// ── Responsive radar scale hook ──────────────────────────────────────────────
+function useRadarScale() {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => setScale(Math.min(1, el.offsetWidth / RADAR_SZ));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return { wrapRef, scale };
+}
+
 // ── Radar sweep ──────────────────────────────────────────────────────────────
 function RadarSweep({ running, cx, cy, sweepPath }: { running: boolean; cx: number; cy: number; sweepPath: string }) {
   const gRef = useRef<SVGGElement>(null);
@@ -314,6 +330,7 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant }: {
   selfParticipant?: Participant;
 }) {
   const seenIds = useRef<Set<string>>(new Set());
+  const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale();
 
   const maxP = type === 'ONE_ON_ONE' ? 2 : 6;
   const title = type === 'ONE_ON_ONE' ? 'BAŞ BAŞA MASA' : 'GRUP MASASI';
@@ -366,38 +383,44 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant }: {
 
       <DeadlineCountdown type={type} />
 
-      <div style={{ position: 'relative', width: RADAR_SZ, height: RADAR_SZ, margin: '0 auto' }}>
-        <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
-          {[30, 62, 93, ORBIT_R].map((r, i) => (
-            <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke={SCAN_CLR}
-              strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.35 : 0.18} />
-          ))}
-          <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.14} />
-          <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.14} />
-          <circle cx={CX} cy={CY} r={5} fill={SCAN_CLR} opacity={0.85} />
-          <defs>
-            <radialGradient id="swpRG" cx="50%" cy="50%" r="50%">
-              <stop offset="0%"   stopColor={SCAN_CLR} stopOpacity={0} />
-              <stop offset="45%"  stopColor={SCAN_CLR} stopOpacity={0.05} />
-              <stop offset="100%" stopColor={SCAN_CLR} stopOpacity={0.28} />
-            </radialGradient>
-          </defs>
-          <RadarSweep running={!isFull} cx={CX} cy={CY} sweepPath={SWEEP_PATH} />
-        </svg>
+      <div ref={radarWrapRef} style={{ width: '100%' }}>
+        <div style={{
+          position: 'relative', width: RADAR_SZ, height: RADAR_SZ, margin: '0 auto',
+          transform: `scale(${radarScale})`, transformOrigin: 'top center',
+          marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
+        }}>
+          <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
+            {[30, 62, 93, ORBIT_R].map((r, i) => (
+              <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke={SCAN_CLR}
+                strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.35 : 0.18} />
+            ))}
+            <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.14} />
+            <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.14} />
+            <circle cx={CX} cy={CY} r={5} fill={SCAN_CLR} opacity={0.85} />
+            <defs>
+              <radialGradient id="swpRG" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"   stopColor={SCAN_CLR} stopOpacity={0} />
+                <stop offset="45%"  stopColor={SCAN_CLR} stopOpacity={0.05} />
+                <stop offset="100%" stopColor={SCAN_CLR} stopOpacity={0.28} />
+              </radialGradient>
+            </defs>
+            <RadarSweep running={!isFull} cx={CX} cy={CY} sweepPath={SWEEP_PATH} />
+          </svg>
 
-        <AnimatePresence>
-          {slots.map((p, i) => {
-            if (!p) return null;
-            const pos = positions[i];
-            if (!pos) return null;
-            return (
-              <AvatarBubble
-                key={p.id ?? `${p.initials}-${i}`}
-                participant={p} cx={pos.x} cy={pos.y} delayMs={slotDelays[i] ?? 0}
-              />
-            );
-          })}
-        </AnimatePresence>
+          <AnimatePresence>
+            {slots.map((p, i) => {
+              if (!p) return null;
+              const pos = positions[i];
+              if (!pos) return null;
+              return (
+                <AvatarBubble
+                  key={p.id ?? `${p.initials}-${i}`}
+                  participant={p} cx={pos.x} cy={pos.y} delayMs={slotDelays[i] ?? 0}
+                />
+              );
+            })}
+          </AnimatePresence>
+        </div>
       </div>
 
       <div style={{ textAlign: 'center', marginTop: 18 }}>
@@ -433,6 +456,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
   const isOneOnOne = type === 'ONE_ON_ONE';
   const title      = isOneOnOne ? 'BAŞ BAŞA MASA' : 'GRUP MASASI';
   const maxP       = maxParticipants ?? (isOneOnOne ? 2 : 6);
+  const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale();
 
   const males   = participants.filter(p => p.gender === 'MALE');
   const females = participants.filter(p => p.gender === 'FEMALE');
@@ -465,23 +489,29 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
         </div>
       </div>
 
-      <div style={{ position: 'relative', width: RADAR_SZ, height: RADAR_SZ, margin: '0 auto' }}>
-        <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
-          {[30, 62, 93, ORBIT_R].map((r, i) => (
-            <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke="#27ae60"
-              strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.35 : 0.12} />
-          ))}
-          <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke="#27ae60" strokeWidth={0.6} opacity={0.1} />
-          <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke="#27ae60" strokeWidth={0.6} opacity={0.1} />
-          <circle cx={CX} cy={CY} r={5} fill="#27ae60" opacity={0.7} />
-        </svg>
-        <AnimatePresence>
-          {ordered.map((p, i) => {
-            const pos = positions[i];
-            if (!pos) return null;
-            return <AvatarBubble key={p.id ?? `${p.initials}-${i}`} participant={p} cx={pos.x} cy={pos.y} delayMs={i * 120} />;
-          })}
-        </AnimatePresence>
+      <div ref={radarWrapRef} style={{ width: '100%' }}>
+        <div style={{
+          position: 'relative', width: RADAR_SZ, height: RADAR_SZ, margin: '0 auto',
+          transform: `scale(${radarScale})`, transformOrigin: 'top center',
+          marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
+        }}>
+          <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
+            {[30, 62, 93, ORBIT_R].map((r, i) => (
+              <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke="#27ae60"
+                strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.35 : 0.12} />
+            ))}
+            <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke="#27ae60" strokeWidth={0.6} opacity={0.1} />
+            <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke="#27ae60" strokeWidth={0.6} opacity={0.1} />
+            <circle cx={CX} cy={CY} r={5} fill="#27ae60" opacity={0.7} />
+          </svg>
+          <AnimatePresence>
+            {ordered.map((p, i) => {
+              const pos = positions[i];
+              if (!pos) return null;
+              return <AvatarBubble key={p.id ?? `${p.initials}-${i}`} participant={p} cx={pos.x} cy={pos.y} delayMs={i * 120} />;
+            })}
+          </AnimatePresence>
+        </div>
       </div>
 
       <div style={{ textAlign: 'center', marginTop: 18 }}>
@@ -513,6 +543,7 @@ const LOCK_ICON_CLR = '#7bc67e';
 
 function LockedView({ type = 'GROUP' }: { type?: 'GROUP' | 'ONE_ON_ONE'; neededPlan?: 'MASADA' | 'KARSIMDA' | null }) {
   const isGroup = type === 'GROUP';
+  const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale();
 
   const line1 = isGroup
     ? 'Eşleşme taraması aktif.'
@@ -550,47 +581,39 @@ function LockedView({ type = 'GROUP' }: { type?: 'GROUP' | 'ONE_ON_ONE'; neededP
       </div>
 
       {/* Kırmızı radar + kilit ikonu */}
-      <div style={{ position: 'relative', width: RADAR_SZ, height: RADAR_SZ, margin: '0 auto' }}>
-        <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
-          {[30, 62, 93, ORBIT_R].map((r, i) => (
-            <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke={SCAN_CLR}
-              strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.3 : 0.14} />
-          ))}
-          <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.12} />
-          <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.12} />
-          <defs>
-            <radialGradient id="lockSwpRG" cx="50%" cy="50%" r="50%">
-              <stop offset="0%"   stopColor={SCAN_CLR} stopOpacity={0} />
-              <stop offset="45%"  stopColor={SCAN_CLR} stopOpacity={0.05} />
-              <stop offset="100%" stopColor={SCAN_CLR} stopOpacity={0.22} />
-            </radialGradient>
-            <filter id="lockIconGlow" x="-60%" y="-60%" width="220%" height="220%">
-              <feGaussianBlur stdDeviation="4" result="blur1" />
-              <feGaussianBlur stdDeviation="8" result="blur2" />
-              <feMerge>
-                <feMergeNode in="blur2" />
-                <feMergeNode in="blur1" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <g style={{ animation: `lockSweep ${SCAN_DUR}s linear infinite`, transformOrigin: `${CX}px ${CY}px` }}>
-            <path d={SWEEP_PATH} fill="url(#lockSwpRG)" />
-            <line x1={CX} y1={CY} x2={CX} y2={CY - ORBIT_R} stroke={SCAN_CLR} strokeWidth={1.5} opacity={0.85} />
-            <circle cx={CX} cy={CY - ORBIT_R} r={3.5} fill={SCAN_CLR} />
-          </g>
-          {/* Kilit ikonu — merkez, titreyen, neon yeşil */}
-          <g style={{ animation: 'lockShake 0.8s ease-in-out infinite' }} filter="url(#lockIconGlow)">
-            <path
-              d={`M ${CX-9},${CY-3} L ${CX-9},${CY-14} A 9,9 0 0 1 ${CX+9},${CY-14} L ${CX+9},${CY-3}`}
-              fill="none" stroke={LOCK_ICON_CLR} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"
+      <div ref={radarWrapRef} style={{ width: '100%' }}>
+        <div style={{
+          position: 'relative', width: RADAR_SZ, height: RADAR_SZ, margin: '0 auto',
+          transform: `scale(${radarScale})`, transformOrigin: 'top center',
+          marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
+        }}>
+          <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
+            {[30, 62, 93, ORBIT_R].map((r, i) => (
+              <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke={SCAN_CLR}
+                strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.3 : 0.14} />
+            ))}
+            <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.12} />
+            <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.12} />
+            <defs>
+              <radialGradient id="lockSwpRG" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"   stopColor={SCAN_CLR} stopOpacity={0} />
+                <stop offset="45%"  stopColor={SCAN_CLR} stopOpacity={0.05} />
+                <stop offset="100%" stopColor={SCAN_CLR} stopOpacity={0.22} />
+              </radialGradient>
+            </defs>
+            <g style={{ animation: `lockSweep ${SCAN_DUR}s linear infinite`, transformOrigin: `${CX}px ${CY}px` }}>
+              <path d={SWEEP_PATH} fill="url(#lockSwpRG)" />
+              <line x1={CX} y1={CY} x2={CX} y2={CY - ORBIT_R} stroke={SCAN_CLR} strokeWidth={1.5} opacity={0.85} />
+              <circle cx={CX} cy={CY - ORBIT_R} r={3.5} fill={SCAN_CLR} />
+            </g>
+            {/* Kilit ikonu — merkez, titreyen, PNG */}
+            <image
+              href="/lock-icon.png"
+              x={CX - 28} y={CY - 28} width={56} height={56}
+              style={{ animation: 'lockShake 0.8s ease-in-out infinite' }}
             />
-            <rect x={CX-12} y={CY-3} width={24} height={19} rx={3.5}
-              fill="rgba(123,198,126,0.15)" stroke={LOCK_ICON_CLR} strokeWidth={3} />
-            <circle cx={CX} cy={CY+7.5} r={3} fill={LOCK_ICON_CLR} />
-            <line x1={CX} y1={CY+10.5} x2={CX} y2={CY+13.5} stroke={LOCK_ICON_CLR} strokeWidth={2.5} strokeLinecap="round" />
-          </g>
-        </svg>
+          </svg>
+        </div>
       </div>
 
       {/* Alt yazı + buton */}

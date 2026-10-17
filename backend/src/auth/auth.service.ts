@@ -15,7 +15,7 @@ import { UsersService } from "../users/users.service";
 import { OtpService } from "./otp/otp.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus, SanctionType } from "@prisma/client";
+import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus, SanctionType, Gender } from "@prisma/client";
 
 @Injectable()
 export class AuthService {
@@ -99,6 +99,8 @@ export class AuthService {
               firstName: dto.firstName,
               lastName: dto.lastName,
               primaryCity: dto.primaryCityId ?? null,
+              gender: (dto.gender as Gender) ?? null,
+              birthDate: dto.birthDate ? new Date(dto.birthDate) : null,
             },
           },
           consents: {

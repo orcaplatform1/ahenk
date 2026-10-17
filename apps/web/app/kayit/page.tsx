@@ -160,6 +160,8 @@ function KayitPageInner() {
         password: form.password,
         phoneNumber: phoneDigits.length === 10 ? `+90${phoneDigits}` : undefined,
         acceptTerms: true,
+        gender: form.gender || undefined,
+        birthDate: form.birthDate || undefined,
         occupationSector: form.occupationSector,
         primaryCityId: form.primaryCityId || undefined,
         referralCode,
@@ -252,7 +254,7 @@ function KayitPageInner() {
         }
       }
       setShowSuccess(true);
-      setTimeout(() => router.push('/profil'), 2000);
+      setTimeout(() => router.push('/dashboard'), 2000);
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
   }
