@@ -146,15 +146,6 @@ const navLinks = [
   { label: 'Hikayemiz',      href: '/hikayemiz' },
 ];
 
-const profileLinks = [
-  { key: 'dashboard', label: 'Dashboard',           href: '/dashboard' },
-  { key: 'masalar',   label: 'Masalarım',            href: '/profil?tab=masalar' },
-  { key: 'profil',    label: 'Profilim',             href: '/profil?tab=profil' },
-  { key: 'test',      label: 'Kişilik Testim',       href: '/profil?tab=test' },
-  { key: 'paket',     label: 'Paketim',              href: '/profil?tab=paket' },
-  { key: 'kyc',       label: 'Kimlik Doğrulama',     href: '/profil?tab=kyc' },
-  { key: 'rehber',    label: 'Numara Engelleme',      href: '/profil?tab=rehber' },
-];
 
 /* ── Navbar ──────────────────────────────────────────────────────────── */
 export default function Navbar() {
@@ -257,46 +248,25 @@ export default function Navbar() {
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'tween', duration: 0.28, ease: 'easeInOut' }}
             >
-              {/* Hesabım linkleri */}
-              {checked && navUser && (
+              {/* Admin linki */}
+              {checked && navUser && (navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
                 <div className="flex flex-col px-4 pt-4 gap-0.5">
-                  <p className="text-xs text-[#444] uppercase tracking-[0.1em] px-2 py-1.5">Hesabım</p>
-                  {(navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
-                    <motion.a
-                      href="/admin" onClick={() => setMenuOpen(false)}
-                      className="text-sm py-2.5 px-2 rounded-lg transition-colors"
-                      style={{ color: '#c0392b', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                      initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.04, duration: 0.22 }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; }}
-                    >
-                      Yönetim Paneli
-                    </motion.a>
-                  )}
-                  {profileLinks.map((item, i) => (
-                    <Link
-                      key={item.key} href={item.href} onClick={() => setMenuOpen(false)}
-                      className="text-sm py-2.5 px-2 rounded-lg transition-colors"
-                      style={{ color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'block', textDecoration: 'none' }}
-                    >
-                      <motion.span
-                        initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.08 + i * 0.04, duration: 0.22 }}
-                        style={{ display: 'block' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#ccc'; }}
-                      >
-                        {item.label}
-                      </motion.span>
-                    </Link>
-                  ))}
+                  <motion.a
+                    href="/admin" onClick={() => setMenuOpen(false)}
+                    className="text-sm py-2.5 px-2 rounded-lg transition-colors"
+                    style={{ color: '#c0392b', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                    initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.04, duration: 0.22 }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; }}
+                  >
+                    Yönetim Paneli
+                  </motion.a>
                 </div>
               )}
 
-              {/* Keşfet linkleri */}
-              <div className="flex flex-col px-4 pt-4 gap-1" style={{ borderTop: checked && navUser ? '1px solid rgba(255,255,255,0.06)' : undefined, marginTop: checked && navUser ? 8 : 0 }}>
-                <p className="text-xs text-[#444] uppercase tracking-[0.1em] px-2 py-1.5">Keşfet</p>
+              {/* Site linkleri */}
+              <div className="flex flex-col px-4 pt-4 gap-1">
                 {navLinks.map((item, i) => (
                   <motion.a
                     key={item.label} href={item.href} onClick={() => setMenuOpen(false)}
