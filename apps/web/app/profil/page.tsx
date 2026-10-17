@@ -128,13 +128,6 @@ function ProfilPage() {
       <AccountTabBar activeKey={activeTab} kycApproved={kycApproved} />
       <div className="max-w-4xl mx-auto px-4 py-8">
 
-        {/* Başlık */}
-        <div className="mb-6">
-          <h1 className="font-serif text-2xl text-[#f5f5f5]">
-            {user.firstName} {user.lastName}
-          </h1>
-        </div>
-
         {/* Sekme içeriği */}
         <AnimatePresence mode="wait">
           <motion.div

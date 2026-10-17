@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
-interface ServerBlock { id: string; phoneHash?: string; createdAt: string; }
+interface ServerBlock { id: string; hashedPhone?: string; createdAt: string; }
 
 const LS_KEY = 'ahenk_contact_block_map';
 
@@ -66,9 +66,9 @@ export function TabRehber() {
     try {
       await api.delete(`/contact-blocks/${b.id}`);
       setServerBlocks(prev => prev.filter(x => x.id !== b.id));
-      if (b.phoneHash) {
-        const map = loadHashMap();
-        delete map[b.phoneHash];
+      if (b.hashedPhone) {
+const map = loadHashMap();
+        delete map[b.hashedPhone!];
         saveHashMap(map);
         setHashMap({ ...map });
       }
@@ -77,7 +77,7 @@ export function TabRehber() {
   }
 
   function resolveDisplay(b: ServerBlock, i: number): string {
-    if (b.phoneHash && hashMap[b.phoneHash]) return hashMap[b.phoneHash];
+    if (b.hashedPhone && hashMap[b.hashedPhone]) return hashMap[b.hashedPhone];
     return `Engellenen Numara #${i + 1}`;
   }
 

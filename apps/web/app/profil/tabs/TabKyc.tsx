@@ -478,9 +478,10 @@ export function TabKyc() {
           <button
             onClick={handleSubmit}
             disabled={submitting || !files.idFront || !files.idBack || !liveness}
-            className="w-full py-3 text-sm btn-grad disabled:opacity-50"
+            className="w-full py-3 text-sm font-semibold rounded-xl disabled:opacity-50"
+            style={{ background: 'linear-gradient(115deg,#1a5c2a,#27ae60)', color: '#fff', boxShadow: '0 0 16px rgba(39,174,96,0.35)', border: 'none' }}
           >
-            {submitting ? 'Yükleniyor…' : 'Başvuruyu Gönder'}
+            {submitting ? 'Yükleniyor…' : 'Kimliğimi Doğrula'}
           </button>
         </>
       )}

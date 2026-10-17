@@ -193,8 +193,8 @@ function EmptyMasaCard({
         <img
           src="/lock-icon.png"
           alt="Kilitli"
-          width={32}
-          height={32}
+          width={56}
+          height={56}
           style={{ position: 'absolute', top: 16, right: 16, zIndex: 2, opacity: 0.85 }}
         />
       )}
@@ -601,14 +601,14 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
             border: '1px solid #722F37',
           }}
         >
-          <p className="text-sm leading-snug" style={{ color: '#FF8C00' }}>
+          <p className="text-sm leading-snug" style={{ color: 'rgba(192,57,43,0.85)' }}>
             Masaya katılmak için kimlik doğrulaması gereklidir.
           </p>
           <button
             onClick={onGoKyc}
             className="text-sm font-semibold whitespace-nowrap flex-shrink-0 px-4 py-2 rounded-xl transition-all"
             style={{
-              background: '#B8860B',
+              background: 'linear-gradient(115deg,#1a5c2a,#27ae60)',
               color: '#fff',
               border: 'none',
             }}

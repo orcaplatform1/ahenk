@@ -10,7 +10,7 @@ export class ContactBlocksService {
   async list(userId: string) {
     const blocks = await this.prisma.contactBlock.findMany({
       where: { userId },
-      select: { id: true, createdAt: true },
+      select: { id: true, hashedPhone: true, createdAt: true },
       orderBy: { createdAt: "desc" },
     });
     return { count: blocks.length, items: blocks };
