@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { usePathname } from 'next/navigation';
 
 const TABS = [
   { key: 'dashboard', label: 'Eşleşme Paneli', href: '/dashboard' },
@@ -14,16 +13,14 @@ const TABS = [
   { key: 'rehber',    label: 'Numara Engelleme', href: '/profil?tab=rehber' },
 ];
 
-function Bar() {
-  const pathname    = usePathname();
-  const searchParams = useSearchParams();
-  const tab         = searchParams.get('tab');
+export function AccountTabBar({ activeKey }: { activeKey?: string }) {
+  const pathname = usePathname();
 
   function isActive(key: string) {
     if (key === 'dashboard') return pathname === '/dashboard';
     if (pathname !== '/profil') return false;
-    if (key === 'profil') return !tab || tab === 'profil';
-    return tab === key;
+    if (!activeKey || activeKey === 'profil') return key === 'profil';
+    return key === activeKey;
   }
 
   return (
@@ -54,13 +51,5 @@ function Bar() {
         ))}
       </div>
     </div>
-  );
-}
-
-export function AccountTabBar() {
-  return (
-    <Suspense fallback={null}>
-      <Bar />
-    </Suspense>
   );
 }
