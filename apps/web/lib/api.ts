@@ -21,18 +21,25 @@ function clearToken() {
   document.cookie = 'ahenk_token=; path=/; max-age=0';
 }
 
+let _refreshPromise: Promise<string | null> | null = null;
+
 async function refreshToken(): Promise<string | null> {
-  const res = await fetch(`${PREFIX}/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-  if (!res.ok) {
-    clearToken();
-    return null;
-  }
-  const data = await res.json() as { accessToken: string };
-  setToken(data.accessToken);
-  return data.accessToken;
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${PREFIX}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) { clearToken(); return null; }
+      const data = await res.json() as { accessToken: string };
+      setToken(data.accessToken);
+      return data.accessToken;
+    } finally {
+      _refreshPromise = null;
+    }
+  })();
+  return _refreshPromise;
 }
 
 type FetchOptions = Omit<RequestInit, 'body'> & { body?: unknown };
