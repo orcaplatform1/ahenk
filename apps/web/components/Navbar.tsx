@@ -168,9 +168,20 @@ export default function Navbar() {
   useEffect(() => {
     if (!initialized.current) setChecked(false);
 
+    const token = document.cookie.split('; ').find(r => r.startsWith('ahenk_token='))?.split('=')[1];
+    if (!token) {
+      setNavUser(null);
+      setChecked(true);
+      initialized.current = true;
+      return;
+    }
+
     api.get<NavUser>('/auth/me')
       .then(u => { setNavUser(u); })
-      .catch(() => { setNavUser(null); })
+      .catch(() => {
+        const tokenGone = !document.cookie.split('; ').find(r => r.startsWith('ahenk_token='))?.split('=')[1];
+        if (tokenGone) setNavUser(null);
+      })
       .finally(() => { setChecked(true); initialized.current = true; });
   }, [pathname]);
 
@@ -264,17 +275,21 @@ export default function Navbar() {
                     </motion.a>
                   )}
                   {profileLinks.map((item, i) => (
-                    <motion.a
+                    <Link
                       key={item.key} href={item.href} onClick={() => setMenuOpen(false)}
                       className="text-sm py-2.5 px-2 rounded-lg transition-colors"
-                      style={{ color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                      initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.08 + i * 0.04, duration: 0.22 }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#ccc'; }}
+                      style={{ color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'block', textDecoration: 'none' }}
                     >
-                      {item.label}
-                    </motion.a>
+                      <motion.span
+                        initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.08 + i * 0.04, duration: 0.22 }}
+                        style={{ display: 'block' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#ccc'; }}
+                      >
+                        {item.label}
+                      </motion.span>
+                    </Link>
                   ))}
                 </div>
               )}

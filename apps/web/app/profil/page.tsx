@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { TabProfilim, TabProfilimSkeleton } from './tabs/TabProfilim';
@@ -43,42 +43,38 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]['key'];
 
-function readTabFromUrl(): TabKey {
-  if (typeof window === 'undefined') return 'profil';
-  const p = new URLSearchParams(window.location.search).get('tab');
-  return (TABS.find(t => t.key === p)?.key) ?? 'profil';
-}
-
-export default function ProfilPage() {
+function ProfilPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<UserData | null>(null);
   const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabKey>('profil');
 
-  // URL'den sekmeyi oku (client-only)
-  useEffect(() => { setActiveTab(readTabFromUrl()); }, []);
+  const activeTab: TabKey = useMemo(() => {
+    const p = searchParams.get('tab');
+    return (TABS.find(t => t.key === p)?.key) ?? 'profil';
+  }, [searchParams]);
 
   function changeTab(key: TabKey) {
-    setActiveTab(key);
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', key);
-    window.history.replaceState({}, '', url.toString());
+    router.replace(`/profil?tab=${key}`, { scroll: false });
   }
 
   useEffect(() => {
-    // Token kontrolü yapmıyoruz — apiFetch 401 alınca refresh token ile yeniliyor.
-    // localStorage token yoksa bile refresh cookie varsa oturum devam eder.
     Promise.all([
       api.get<UserData>('/auth/me'),
       api.get<City[]>('/auth/cities').catch(() => [] as City[]),
     ])
       .then(([u, c]) => { setUser(u); setCities(c); })
-      .catch(() => {
-        // apiFetch 401 → refresh dener → başarısızsa window.location.href='/giris'
-      })
+      .catch(() => {})
       .finally(() => setLoading(false));
-  }, [router]);
+  }, []);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      api.clearToken();
+      window.location.href = '/giris';
+    }
+  }, [loading, user]);
 
   if (loading) {
     return (
@@ -90,10 +86,7 @@ export default function ProfilPage() {
     );
   }
 
-  if (!user) {
-    if (typeof window !== 'undefined') window.location.href = '/giris';
-    return null;
-  }
+  if (!user) return null;
 
   const kycApproved = user.kyc?.status === 'APPROVED';
 
@@ -166,7 +159,7 @@ export default function ProfilPage() {
           >
             {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} activePlan={user.activePlan ?? null} />}
             {activeTab === 'test'    && <TabTest />}
-            {activeTab === 'masalar' && <TabMasalar activePlan={user.activePlan ?? null} />}
+            {activeTab === 'masalar' && <TabMasalar activePlan={user.activePlan ?? null} userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender }} />}
             {activeTab === 'paket'   && <TabPaket kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
             {activeTab === 'kyc'     && <TabKyc />}
             {activeTab === 'rehber'  && <TabRehber />}
@@ -174,5 +167,13 @@ export default function ProfilPage() {
         </AnimatePresence>
       </div>
     </main>
+  );
+}
+
+export default function ProfilPageWrapper() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-bg text-text pt-[52px]"><div className="max-w-4xl mx-auto px-4 py-8"><TabProfilimSkeleton /></div></main>}>
+      <ProfilPage />
+    </Suspense>
   );
 }
