@@ -392,22 +392,8 @@ export class MatchingService {
       tables.push({ users: this.interleaveMF([...mg], [...fg]) });
     }
 
-    // Phase 3: karma 4'lü
-    const mixPool = () => [...avail(males), ...avail(females), ...avail(neutrals)];
-    while (mixPool().length >= TABLE_SIZE_SMALL) {
-      const pool = mixPool();
-      const anchor = pool[0];
-      const group: EligibleUser[] = [anchor];
-      for (const c of pool.slice(1)) {
-        if (group.length >= TABLE_SIZE_SMALL) break;
-        if (group.every((g) => !this.areBlocked(g.id, c.id, blockedSet) && !this.areVenueIncompatible(g, c))) group.push(c);
-      }
-      if (group.length < TABLE_SIZE_SMALL) break;
-      mark(group);
-      tables.push({ users: group });
-    }
-
-    // Nötr artakalanları mevcut masalara ekle (max 6)
+    // Phase 3 KALDIRILDI — cinsiyet dengesi sert: sadece 3E+3K veya 2E+2K masalar kurulur.
+    // Nötr (OTHER/PREFER_NOT_TO_SAY) kullanıcılar mevcut masalara boş slota eklenir.
     for (const table of tables) {
       while (table.users.length < TABLE_SIZE_LARGE && avail(neutrals).length > 0) {
         const n = avail(neutrals)[0];

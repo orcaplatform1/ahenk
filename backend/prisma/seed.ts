@@ -1,4 +1,4 @@
-import { PrismaClient, OceanDimension, UserRole } from "@prisma/client";
+import { PrismaClient, OceanDimension, UserRole, Gender } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -246,6 +246,7 @@ async function main() {
             firstName: "Ahenk",
             lastName: "Botu",
             isPublic: false,
+            gender: Gender.FEMALE,
           },
         },
       },
