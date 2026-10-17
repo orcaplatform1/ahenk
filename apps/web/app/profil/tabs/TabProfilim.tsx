@@ -430,7 +430,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
           <Row label="Meslek" value={user.occupationSector} />
         )}
         {user.profile?.birthDate && (
-          <Row label="Yaş" value={`${Math.floor((Date.now() - new Date(user.profile.birthDate).getTime()) / (365.25 * 24 * 3600 * 1000))} yaş`} />
+          <Row label="Yaş" value={`${Math.floor((Date.now() - new Date(user.profile.birthDate).getTime()) / (365.25 * 24 * 3600 * 1000))}`} />
         )}
         {user.profile?.gender && (
           <Row label="Cinsiyet" value={user.profile.gender === 'MALE' ? 'Erkek' : 'Kadın'} />

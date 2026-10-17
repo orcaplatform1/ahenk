@@ -1,4 +1,4 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
 const PREFIX = `${BASE}/api/v1`;
 
 function getToken(): string | null {
@@ -8,7 +8,7 @@ function getToken(): string | null {
 
 function setToken(token: string) {
   localStorage.setItem('token', token);
-  document.cookie = 'auth=1; path=/; max-age=86400; samesite=lax';
+  document.cookie = 'auth=1; path=/; max-age=604800; samesite=lax'; // 7 gün (refresh token ile eşleşir)
 }
 
 function clearToken() {

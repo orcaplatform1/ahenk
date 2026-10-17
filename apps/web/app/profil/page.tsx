@@ -75,7 +75,10 @@ export default function ProfilPage() {
       api.get<City[]>('/auth/cities').catch(() => [] as City[]),
     ])
       .then(([u, c]) => { setUser(u); setCities(c); })
-      .catch(() => { api.clearToken(); router.replace('/giris'); })
+      .catch(() => {
+        // 401 durumunda apiFetch zaten window.location.href='/giris' yapıyor.
+        // Diğer hatalarda (network, 500) kullanıcıyı gereksiz çıkarmıyoruz.
+      })
       .finally(() => setLoading(false));
   }, [router]);
 
@@ -104,30 +107,32 @@ export default function ProfilPage() {
           </h1>
         </div>
 
-        {/* KYC banner — premium koyu stil */}
+        {/* KYC banner */}
         {user.kyc?.status && user.kyc.status !== 'APPROVED' && (
           <div
             className="flex items-center justify-between gap-4 mb-6 px-5 py-4 rounded-2xl"
             style={{
-              background: 'rgba(15,5,5,0.6)',
-              border: '1px solid rgba(192,57,43,0.3)',
-              borderLeft: '3px solid #c0392b',
-              boxShadow: '0 0 20px rgba(192,57,43,0.08)',
+              background: 'linear-gradient(135deg, rgba(12,8,4,0.85) 0%, rgba(20,12,6,0.9) 100%)',
+              border: '1px solid rgba(232,133,12,0.25)',
+              borderLeft: '3px solid #e8850c',
+              boxShadow: '0 2px 24px rgba(232,133,12,0.10), inset 0 1px 0 rgba(255,255,255,0.04)',
               backdropFilter: 'blur(12px)',
             }}
           >
-            <div>
-              <p className="text-sm font-medium text-[#f5f5f5]">Kimlik Doğrulaması Gerekiyor</p>
-              <p className="text-xs text-[#888] mt-0.5">Masaya katılmak için kimlik doğrulamasını tamamla.</p>
-            </div>
+            <p className="text-sm leading-snug" style={{ color: '#e8850c' }}>
+              Masalara katılabilmeniz için kimliğinizi doğrulamalısınız.
+            </p>
             <button
               onClick={() => changeTab('kyc')}
-              className="text-sm font-medium whitespace-nowrap transition-colors"
-              style={{ color: '#c0392b' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#ff6b6b')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#c0392b')}
+              className="text-sm font-semibold whitespace-nowrap flex-shrink-0 px-4 py-2 rounded-xl transition-all"
+              style={{
+                background: 'linear-gradient(135deg,#1a5c2a,#27ae60)',
+                color: '#fff',
+                boxShadow: '0 0 14px rgba(39,174,96,0.35)',
+                border: 'none',
+              }}
             >
-              Doğrula →
+              Doğrula
             </button>
           </div>
         )}

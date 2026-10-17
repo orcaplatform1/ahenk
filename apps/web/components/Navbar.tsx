@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
@@ -147,14 +147,13 @@ const navLinks = [
 ];
 
 const profileLinks = [
-  { key: 'dashboard', label: 'Dashboard',          href: '/dashboard' },
-  { key: 'masalar',   label: 'Masalarım',           href: '/profil?tab=masalar' },
-  { key: 'test',      label: 'Kişilik Testim',      href: '/profil?tab=test' },
-  { key: 'profil',    label: 'Profilim',            href: '/profil?tab=profil' },
-  { key: 'paket',     label: 'Paketim',             href: '/profil?tab=paket' },
-  { key: 'gecmis',    label: 'Ahenk Geçmişim',      href: '/profil/gecmis' },
-  { key: 'kyc',       label: 'Kimlik Doğrulama',    href: '/profil?tab=kyc' },
-  { key: 'rehber',    label: 'Numara Engelleme',     href: '/profil?tab=rehber' },
+  { key: 'dashboard', label: 'Dashboard',           href: '/dashboard' },
+  { key: 'masalar',   label: 'Masalarım',            href: '/profil?tab=masalar' },
+  { key: 'profil',    label: 'Profilim',             href: '/profil?tab=profil' },
+  { key: 'test',      label: 'Kişilik Testim',       href: '/profil?tab=test' },
+  { key: 'paket',     label: 'Paketim',              href: '/profil?tab=paket' },
+  { key: 'kyc',       label: 'Kimlik Doğrulama',     href: '/profil?tab=kyc' },
+  { key: 'rehber',    label: 'Numara Engelleme',      href: '/profil?tab=rehber' },
 ];
 
 /* ── Navbar ──────────────────────────────────────────────────────────── */
@@ -164,16 +163,25 @@ export default function Navbar() {
   const [navUser,   setNavUser]   = useState<NavUser | null>(null);
   const [checked,   setChecked]   = useState(false);
   const [menuOpen,  setMenuOpen]  = useState(false);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    setNavUser(null);
-    setChecked(false);
     const token = api.getToken();
-    if (!token) { setChecked(true); return; }
+
+    // İlk kontrol henüz yapılmamışsa yüklenme durumu göster (flash önleme)
+    if (!initialized.current) setChecked(false);
+
+    if (!token) {
+      setNavUser(null);
+      setChecked(true);
+      initialized.current = true;
+      return;
+    }
+
     api.get<NavUser>('/auth/me')
       .then(u => setNavUser(u))
       .catch(() => { api.clearToken(); setNavUser(null); })
-      .finally(() => setChecked(true));
+      .finally(() => { setChecked(true); initialized.current = true; });
   }, [pathname]);
 
   // Rota değişince drawer'ı kapat

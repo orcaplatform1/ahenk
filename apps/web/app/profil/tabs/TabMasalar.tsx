@@ -140,7 +140,7 @@ export function TabMasalar() {
         <>
           {dashItems.length > 0 && (
             <p className="text-xs font-semibold tracking-[0.14em] text-[#444] uppercase mt-2">
-              Geçmiş Masalar
+              Geçmiş Masalarım
             </p>
           )}
           {history.map((m, i) => (
