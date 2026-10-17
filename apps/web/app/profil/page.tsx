@@ -96,7 +96,7 @@ function ProfilPage() {
   return (
     <main className="min-h-screen bg-bg text-text pt-[52px]">
       <AccountTabBar />
-      <div className="max-w-4xl mx-auto px-4 py-8" style={{ paddingTop: 52 }}>
+      <div className="max-w-4xl mx-auto px-4 py-8">
 
         {/* Başlık */}
         <div className="mb-6">

@@ -46,7 +46,7 @@ export default function DashboardPage() {
         className="fixed inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,0.1) 0%, transparent 70%)' }}
       />
-      <main className="relative z-10 max-w-5xl mx-auto px-4 py-10" style={{ paddingTop: 52 }}>
+      <main className="relative z-10 max-w-5xl mx-auto px-4 py-10">
         <div className="mb-8">
           <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Bu Haftanın Masası</h1>
         </div>

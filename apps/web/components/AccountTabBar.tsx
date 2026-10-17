@@ -28,16 +28,17 @@ function Bar() {
 
   return (
     <div
-      className="fixed left-0 right-0 z-40 overflow-x-auto"
+      className="overflow-x-auto"
       style={{
+        position: 'sticky',
         top: 52,
-        background: 'rgba(10,10,10,0.92)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        zIndex: 40,
+        background: 'rgba(10,10,10,0.95)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
         scrollbarWidth: 'none',
       }}
     >
-      <div className="flex gap-1 px-3 py-1.5 max-w-5xl mx-auto" style={{ minWidth: 'max-content' }}>
+      <div className="flex gap-1 px-3 py-2" style={{ minWidth: 'max-content' }}>
         {TABS.map(t => (
           <Link
             key={t.key}
