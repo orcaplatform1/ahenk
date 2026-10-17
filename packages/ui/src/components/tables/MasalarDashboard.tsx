@@ -703,7 +703,7 @@ function PremiumToggle({
 }) {
   const tabs = [
     { key: 'GROUP' as const,      label: 'Grup Masası' },
-    { key: 'ONE_ON_ONE' as const, label: 'Baş Başa' },
+    { key: 'ONE_ON_ONE' as const, label: 'Baş Başa Masa' },
   ];
 
   return (
@@ -718,11 +718,11 @@ function PremiumToggle({
         position: 'relative',
         display: 'flex',
         background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1px solid rgba(114,47,55,0.55)',
         borderRadius: 100,
         padding: 4,
         gap: 2,
-        boxShadow: '0 0 40px rgba(192,57,43,0.08), inset 0 1px 0 rgba(255,255,255,0.05)',
+        boxShadow: '0 0 40px rgba(114,47,55,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
       }}>
         {tabs.map(({ key, label }) => {
           const isActive = activeTab === key;
@@ -755,8 +755,8 @@ function PremiumToggle({
                     position: 'absolute',
                     inset: 0,
                     borderRadius: 100,
-                    background: 'linear-gradient(135deg, #c0392b 0%, #e8472e 50%, #ff6b6b 100%)',
-                    boxShadow: '0 0 28px rgba(192,57,43,0.65), 0 0 60px rgba(192,57,43,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    background: 'linear-gradient(135deg, #722F37 0%, #8B1A2A 50%, #9B2335 100%)',
+                    boxShadow: '0 0 28px rgba(114,47,55,0.65), 0 0 60px rgba(114,47,55,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
                     overflow: 'hidden',
                   }}
                   transition={{ type: 'spring', stiffness: 480, damping: 36, mass: 0.8 }}

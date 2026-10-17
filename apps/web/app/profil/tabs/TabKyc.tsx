@@ -37,9 +37,7 @@ function ImageUploader({
   file?: File | null; progress: number;
   onChange: (f: File | null) => void;
 }) {
-  const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef  = useRef<HTMLInputElement>(null);
-  const [showChoice, setShowChoice] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,7 +49,7 @@ function ImageUploader({
 
   function pick(f: File) {
     onChange(f);
-    setShowChoice(false);
+
   }
 
   return (
@@ -127,48 +125,12 @@ function ImageUploader({
       ) : (
         <div className="flex flex-col gap-2">
           <button
-            onClick={() => setShowChoice(v => !v)}
+            onClick={() => cameraRef.current?.click()}
             className="w-full py-2.5 text-sm font-medium rounded-xl transition-all"
             style={{ border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b', background: 'rgba(192,57,43,0.06)' }}
           >
             {uploadLabel}
           </button>
-
-          <AnimatePresence>
-            {showChoice && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.15 }}
-                className="flex gap-2"
-              >
-                <button
-                  onClick={() => cameraRef.current?.click()}
-                  className="flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5"
-                  style={{ border: '1px solid rgba(255,255,255,0.1)', color: '#ccc', background: 'rgba(255,255,255,0.03)' }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
-                  Kamera Aç
-                </button>
-                <button
-                  onClick={() => galleryRef.current?.click()}
-                  className="flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5"
-                  style={{ border: '1px solid rgba(255,255,255,0.1)', color: '#ccc', background: 'rgba(255,255,255,0.03)' }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                  Galeriden Yükle
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       )}
 
@@ -184,13 +146,6 @@ function ImageUploader({
         type="file"
         accept="image/*"
         capture="environment"
-        className="hidden"
-        onChange={(e) => e.target.files?.[0] && pick(e.target.files[0])}
-      />
-      <input
-        ref={galleryRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
         className="hidden"
         onChange={(e) => e.target.files?.[0] && pick(e.target.files[0])}
       />
