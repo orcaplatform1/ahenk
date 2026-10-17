@@ -12,6 +12,7 @@ interface MeData {
   lastName: string;
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
   profile?: { gender?: string | null };
+  kyc?: { status: string };
 }
 
 export default function DashboardPage() {
@@ -41,7 +42,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-[#f5f5f5] pt-[52px]">
-      <AccountTabBar />
+      <AccountTabBar kycApproved={me?.kyc?.status === 'APPROVED'} />
       <div
         className="fixed inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,0.1) 0%, transparent 70%)' }}

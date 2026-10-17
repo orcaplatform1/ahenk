@@ -162,9 +162,16 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
   const chunksRef   = useRef<Blob[]>([]);
 
   const [phase,     setPhase]     = useState<'idle' | 'preview' | 'countdown' | 'recording' | 'done' | 'error'>('idle');
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(3);
   const [camError,  setCamError]  = useState('');
   const [done,      setDone]      = useState(false);
+
+  useEffect(() => {
+    if ((phase === 'preview' || phase === 'countdown' || phase === 'recording') && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [phase]);
 
   function stopStream() {
     streamRef.current?.getTracks().forEach(t => t.stop());
@@ -187,10 +194,6 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
         audio: true,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
-      }
       setPhase('preview');
     } catch (err) {
       const e = err as DOMException;
@@ -230,16 +233,16 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
     recorder.start();
 
     setPhase('countdown');
-    setCountdown(5);
+    setCountdown(3);
 
-    let remaining = 5;
+    let remaining = 3;
     const tick = setInterval(() => {
       remaining -= 1;
       setCountdown(remaining);
       if (remaining <= 0) {
         clearInterval(tick);
         setPhase('recording');
-        setTimeout(() => recorder.stop(), 300);
+        setTimeout(() => recorder.stop(), 5000);
       }
     }, 1000);
   }

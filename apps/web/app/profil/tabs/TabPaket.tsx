@@ -226,9 +226,11 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
           >
             {referralSending ? '…' : 'Davet Gönder'}
           </button>
-          <p className="text-[0.65rem] leading-relaxed" style={{ color: '#444', marginTop: 2 }}>
-            <span style={{ color: '#555', fontWeight: 600 }}>BİLGİ:</span> Davet ettiğiniz arkadaşınız, telefon numarasını ve kimlik doğrulamasını yaptıktan sonra sistem size otomatik indirim hakkı tanımlar. Arkadaşınız da başka arkadaşlarını davet edip bu şartlar yerine geldiğinde o da indirim hakkı kazanır. İndirim hakları toplu olarak kullanılamaz ve devredilemez. Her bir indirim hakkı, yalnızca bir paket satın alımında geçerlidir.
-          </p>
+          <div style={{ background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: 12, padding: '12px 14px' }}>
+            <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5, margin: 0 }}>
+              <span style={{ fontWeight: 700 }}>BİLGİ:</span> Davet ettiğiniz arkadaşınız, telefon numarasını ve kimlik doğrulamasını yaptıktan sonra sistem size otomatik indirim hakkı tanımlar. Arkadaşınız da başka arkadaşlarını davet edip bu şartlar yerine geldiğinde o da indirim hakkı kazanır. İndirim hakları toplu olarak kullanılamaz ve devredilemez. Her bir indirim hakkı, yalnızca bir paket satın alımında geçerlidir.
+            </p>
+          </div>
         </div>
         {referralMsg && (
           <p className="text-xs" style={{ color: referralMsg.includes('başarı') ? '#4ade80' : '#ff6b6b' }}>{referralMsg}</p>

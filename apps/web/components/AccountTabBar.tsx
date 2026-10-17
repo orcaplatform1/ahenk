@@ -13,8 +13,9 @@ const TABS = [
   { key: 'rehber',    label: 'Numara Engelleme', href: '/profil?tab=rehber' },
 ];
 
-export function AccountTabBar({ activeKey }: { activeKey?: string }) {
+export function AccountTabBar({ activeKey, kycApproved }: { activeKey?: string; kycApproved?: boolean }) {
   const pathname = usePathname();
+  const tabs = TABS.filter(t => !(t.key === 'kyc' && kycApproved));
 
   function isActive(key: string) {
     if (key === 'dashboard') return pathname === '/dashboard';
@@ -36,7 +37,7 @@ export function AccountTabBar({ activeKey }: { activeKey?: string }) {
       }}
     >
       <div className="flex gap-1 px-3 py-2" style={{ minWidth: 'max-content' }}>
-        {TABS.map(t => (
+        {tabs.map(t => (
           <Link
             key={t.key}
             href={t.href}
