@@ -67,7 +67,7 @@ const SECTION_TITLE: React.CSSProperties = {
   marginBottom: 10,
 };
 
-/* Boş placeholder kart */
+/* Boş placeholder kart — MasaDetayKarti yapısını taklit eder */
 function EmptyMasaCard({
   locked,
   infoText,
@@ -75,22 +75,74 @@ function EmptyMasaCard({
   locked: boolean;
   infoText?: string;
 }) {
+  const pCount = 6;
   return (
-    <div style={{ ...CARD_STYLE, position: 'relative', minHeight: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ ...CARD_STYLE, position: 'relative', overflow: 'hidden' }}>
+      {/* Kilit overlay */}
       {locked && (
-        <img
-          src="/lock-icon.png"
-          alt="Kilitli"
-          width={36}
-          height={36}
-          style={{ position: 'absolute', top: 16, right: 16, opacity: 0.6 }}
-        />
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 10, borderRadius: 16,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(10,10,10,0.5)', backdropFilter: 'blur(3px)',
+        }}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+            stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+        </div>
       )}
-      {!locked && infoText && (
-        <p style={{ fontSize: 13, color: '#555', textAlign: 'center', lineHeight: 1.65, padding: '0 8px' }}>
-          {infoText}
+
+      {/* MASA DETAYI başlık */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+        <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.12)', letterSpacing: '0.18em', textTransform: 'uppercase' as const, fontFamily: 'Inter, sans-serif' }}>
+          MASA DETAYI
+        </span>
+      </div>
+
+      {/* Mekan adı placeholder */}
+      <div style={{ height: 26, background: 'rgba(255,255,255,0.05)', borderRadius: 6, marginBottom: 8, width: '60%' }} />
+      {/* Adres placeholder */}
+      <div style={{ height: 13, background: 'rgba(255,255,255,0.04)', borderRadius: 4, marginBottom: 16, width: '75%' }} />
+
+      {/* Ayraç */}
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '0 0 16px' }} />
+
+      {/* Saat satırı */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.12)', fontFamily: 'Inter, sans-serif' }}>Buluşma</span>
+        </div>
+        <div style={{ height: 14, width: 90, background: 'rgba(255,255,255,0.05)', borderRadius: 4 }} />
+      </div>
+
+      {/* Katılımcılar */}
+      <div style={{ marginBottom: 16 }}>
+        <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.1)', letterSpacing: '0.14em', textTransform: 'uppercase' as const, fontFamily: 'Inter, sans-serif' }}>
+          {'KATILIMCILAR'}
         </p>
-      )}
+        <div style={{ display: 'flex', gap: 10 }}>
+          {Array.from({ length: pCount }).map((_, i) => (
+            <div key={i} style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, background: 'rgba(255,255,255,0.04)', border: '2px solid rgba(255,255,255,0.07)' }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Bilgi kutusu */}
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '12px 14px' }}>
+        {infoText ? (
+          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.28)', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
+            {infoText}
+          </p>
+        ) : (
+          <>
+            <div style={{ height: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 4, marginBottom: 6, width: '90%' }} />
+            <div style={{ height: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 4, width: '65%' }} />
+          </>
+        )}
+      </div>
     </div>
   );
 }
