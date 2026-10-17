@@ -120,9 +120,9 @@ function KayitPageInner() {
     setError('');
   }, []);
 
-  useState(() => {
+  useEffect(() => {
     api.get<City[]>('/auth/cities').then(setCities).catch(() => {});
-  });
+  }, []);
 
   function handleStep1() {
     setPwError(''); setPwConfirmError('');
