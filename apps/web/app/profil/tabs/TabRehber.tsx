@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
 interface ServerBlock { id: string; phoneHash?: string; createdAt: string; }
-interface LocalBlock { id: string; display: string; }
 
 const LS_KEY = 'ahenk_contact_block_map';
 
@@ -25,12 +24,10 @@ async function sha256hex(text: string): Promise<string | null> {
 
 export function TabRehber() {
   const [serverBlocks, setServerBlocks] = useState<ServerBlock[]>([]);
-  const [localBlocks, setLocalBlocks] = useState<LocalBlock[]>([]);
   const [hashMap, setHashMap] = useState<Record<string, string>>({});
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   function loadBlocks() {
@@ -44,18 +41,24 @@ export function TabRehber() {
     loadBlocks();
   }, []);
 
-  const totalCount = serverBlocks.length + localBlocks.length;
-
-  function handleAdd() {
+  async function handleAdd() {
     const digits = input.replace(/\D/g, '');
     if (digits.length !== 10) { setError('10 haneli numara girin.'); return; }
-    if (totalCount >= 50) { setError('En fazla 50 numara ekleyebilirsiniz.'); return; }
+    if (serverBlocks.length >= 50) { setError('En fazla 50 numara ekleyebilirsiniz.'); return; }
     const display = `+90${digits}`;
-    if (localBlocks.some(b => b.display === display)) { setError('Bu numara zaten eklendi.'); return; }
-    setLocalBlocks(prev => [...prev, { id: `${Date.now()}`, display }]);
-    setInput('');
-    setError('');
-    setSaved(false);
+    setAdding(true); setError('');
+    try {
+      const h = await sha256hex(display);
+      if (!h) { setError("Hash'lenemedi. HTTPS bağlantısı gereklidir."); return; }
+      const map = loadHashMap();
+      map[h] = display;
+      saveHashMap(map);
+      setHashMap({ ...map });
+      await api.post('/contact-blocks/sync', { hashedPhones: [h] });
+      setInput('');
+      loadBlocks();
+    } catch (e) { setError((e as Error).message); }
+    finally { setAdding(false); }
   }
 
   async function handleServerDelete(b: ServerBlock) {
@@ -73,36 +76,6 @@ export function TabRehber() {
     finally { setDeleting(null); }
   }
 
-  async function handleSave() {
-    if (localBlocks.length === 0) { setError('Eklenecek numara yok.'); return; }
-    setSaving(true); setError('');
-    try {
-      const pairs: { hash: string; display: string }[] = (
-        await Promise.all(localBlocks.map(async b => {
-          const h = await sha256hex(b.display);
-          return h ? { hash: h, display: b.display } : null;
-        }))
-      ).filter((p): p is { hash: string; display: string } => p !== null);
-
-      if (pairs.length === 0) {
-        setError("Numaralar hash'lenemedi. HTTPS bağlantısı gereklidir.");
-        return;
-      }
-
-      // Kaydetmeden önce localStorage'a yaz
-      const map = loadHashMap();
-      pairs.forEach(p => { map[p.hash] = p.display; });
-      saveHashMap(map);
-      setHashMap({ ...map });
-
-      await api.post('/contact-blocks/sync', { hashedPhones: pairs.map(p => p.hash) });
-      setSaved(true);
-      setLocalBlocks([]);
-      loadBlocks();
-    } catch (e) { setError((e as Error).message); }
-    finally { setSaving(false); }
-  }
-
   function resolveDisplay(b: ServerBlock, i: number): string {
     if (b.phoneHash && hashMap[b.phoneHash]) return hashMap[b.phoneHash];
     return `Engellenen Numara #${i + 1}`;
@@ -114,7 +87,7 @@ export function TabRehber() {
       <div className="glass-card p-5">
         <p className="text-sm text-[#888] mb-1">Engellenen numaralar</p>
         <p className="text-2xl font-semibold text-[#f5f5f5]">
-          {totalCount}<span className="text-sm font-normal text-[#888]">/50</span>
+          {serverBlocks.length}<span className="text-sm font-normal text-[#888]">/50</span>
         </p>
         <p className="text-xs text-[#888] mt-1">
           Numaralar SHA-256 ile hash'lenerek saklanır; ham numara sunucuda tutulmaz.
@@ -139,20 +112,19 @@ export function TabRehber() {
         />
         <button
           onClick={handleAdd}
-          disabled={totalCount >= 50}
+          disabled={adding || serverBlocks.length >= 50}
           className="px-4 py-3 text-sm btn-grad disabled:opacity-50"
         >
-          Ekle
+          {adding ? '…' : 'Ekle'}
         </button>
       </div>
 
       {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-      {totalCount >= 50 && <p className="text-[#ff6b6b] text-xs">Maksimum 50 numaraya ulaştınız.</p>}
+      {serverBlocks.length >= 50 && <p className="text-[#ff6b6b] text-xs">Maksimum 50 numaraya ulaştınız.</p>}
 
-      {/* Kaydedilmiş engeller (serverBlocks) */}
+      {/* Kaydedilmiş engeller */}
       {serverBlocks.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-[#555] uppercase tracking-wide mb-1">Kayıtlı Engeller</p>
           {serverBlocks.map((b, i) => (
             <div key={b.id} className="flex items-center justify-between glass-card px-4 py-3">
               <div>
@@ -173,35 +145,7 @@ export function TabRehber() {
         </div>
       )}
 
-      {/* Yeni eklenenler (henüz kaydedilmedi) */}
-      {localBlocks.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="text-xs text-[#555] uppercase tracking-wide mb-1">Yeni Eklenenler</p>
-          {localBlocks.map((b) => (
-            <div key={b.id} className="flex items-center justify-between glass-card px-4 py-3" style={{ borderColor: 'rgba(192,57,43,0.2)' }}>
-              <span className="text-sm text-[#888]">{b.display}</span>
-              <button
-                onClick={() => setLocalBlocks(prev => prev.filter(x => x.id !== b.id))}
-                className="text-xs text-[#888] hover:text-[#ff6b6b] transition-colors"
-              >
-                Sil
-              </button>
-            </div>
-          ))}
-          <div className="flex items-center justify-between mt-1">
-            <p className="text-xs text-[#555]">{localBlocks.length} numara bekliyor</p>
-            <button
-              onClick={handleSave}
-              disabled={saving || saved}
-              className="text-xs px-4 py-2 btn-grad disabled:opacity-50"
-            >
-              {saving ? 'Kaydediliyor…' : saved ? '✓ Kaydedildi' : 'Kaydet'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {serverBlocks.length === 0 && localBlocks.length === 0 && (
+      {serverBlocks.length === 0 && (
         <p className="text-sm text-[#555] text-center py-4">Henüz engellenen numara yok.</p>
       )}
     </div>

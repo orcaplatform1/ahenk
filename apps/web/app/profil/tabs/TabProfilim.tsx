@@ -332,16 +332,6 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* KYC banner */}
-      {kycStatus !== 'APPROVED' && (
-        <div className="flex items-center justify-between gap-4 bg-yellow-900/20 border border-yellow-800/40 rounded-2xl px-5 py-4">
-          <p className="text-sm text-yellow-300">Masaya katılmak için kimlik doğrulaması gereklidir.</p>
-          <button onClick={onGoKyc} className="text-sm text-yellow-300 hover:text-yellow-100 font-medium whitespace-nowrap">
-            Doğrula →
-          </button>
-        </div>
-      )}
-
       {/* Temel bilgiler */}
       <Card title="Hesap Bilgileri">
         {/* Kimlik Doğrulama durumu — en üstte */}
