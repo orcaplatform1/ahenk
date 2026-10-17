@@ -1,18 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { MasalarDashboard, buildInitials } from '@ahenk/ui';
 import { api } from '@/lib/api';
-
-const PROFIL_TABS = [
-  { key: 'profil',   label: 'Profilim' },
-  { key: 'test',     label: 'Kişilik Testim' },
-  { key: 'masalar',  label: 'Masalarım' },
-  { key: 'paket',    label: 'Paketim' },
-  { key: 'kyc',      label: 'Kimlik Doğrulama' },
-  { key: 'rehber',   label: 'Numara Engelleme' },
-];
+import { AccountTabBar } from '@/components/AccountTabBar';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
 
@@ -50,25 +41,12 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-[#f5f5f5] pt-[52px]">
+      <AccountTabBar />
       <div
         className="fixed inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,0.1) 0%, transparent 70%)' }}
       />
-      <main className="relative z-10 max-w-5xl mx-auto px-4 py-10">
-        {/* Profil sekmeleri */}
-        <div className="flex gap-1 mb-6 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {PROFIL_TABS.map(tab => (
-            <Link
-              key={tab.key}
-              href={`/profil?tab=${tab.key}`}
-              className="text-xs font-medium whitespace-nowrap px-3 py-2 rounded-lg flex-shrink-0"
-              style={{ background: 'rgba(255,255,255,0.04)', color: '#888', border: '1px solid rgba(255,255,255,0.08)', textDecoration: 'none' }}
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </div>
-
+      <main className="relative z-10 max-w-5xl mx-auto px-4 py-10" style={{ paddingTop: 52 }}>
         <div className="mb-8">
           <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Bu Haftanın Masası</h1>
         </div>

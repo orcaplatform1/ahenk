@@ -248,33 +248,20 @@ export default function Navbar() {
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'tween', duration: 0.28, ease: 'easeInOut' }}
             >
-              {/* Hesap linkleri */}
-              {checked && navUser && (
+              {/* Admin linki */}
+              {checked && navUser && (navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
                 <div className="flex flex-col px-4 pt-4 gap-0.5">
                   <motion.a
-                    href="/dashboard" onClick={() => setMenuOpen(false)}
+                    href="/admin" onClick={() => setMenuOpen(false)}
                     className="text-sm py-2.5 px-2 rounded-lg transition-colors"
-                    style={{ color: '#f5f5f5', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                    style={{ color: '#c0392b', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                     initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.04, duration: 0.22 }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; }}
                   >
-                    Eşleşme Paneli
+                    Yönetim Paneli
                   </motion.a>
-                  {(navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
-                    <motion.a
-                      href="/admin" onClick={() => setMenuOpen(false)}
-                      className="text-sm py-2.5 px-2 rounded-lg transition-colors"
-                      style={{ color: '#c0392b', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                      initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.06, duration: 0.22 }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; }}
-                    >
-                      Yönetim Paneli
-                    </motion.a>
-                  )}
                 </div>
               )}
 
