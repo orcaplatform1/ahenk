@@ -124,6 +124,10 @@ function KayitPageInner() {
     api.get<City[]>('/auth/cities').then(setCities).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }, [step]);
+
   function handleStep1() {
     setPwError(''); setPwConfirmError('');
     if (!form.firstName || !form.lastName || !form.email || !form.password) { setError('Tüm alanları doldurun.'); return; }
@@ -304,14 +308,6 @@ function KayitPageInner() {
             >
               {form.firstName} {form.lastName}
             </motion.p>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.75, duration: 0.4 }}
-              className="text-[#555] text-sm"
-            >
-              Seni Masalarda Görmek İsteriz.
-            </motion.p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -447,9 +443,11 @@ function KayitPageInner() {
               <p className="text-[#555] text-sm">Hangi şehirde buluşmak istediğini seç. Yaşadığın şehir değil, katılmak istediğin şehir.</p>
             </div>
             <CityPickerField label="Ana Şehir *" value={form.primaryCityId} onChange={(v) => set('primaryCityId', v)} cities={cities} title="Ana şehir seç" />
-            <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5 }}>
-              Farklı bir şehirde olduğun haftalarda profilindeki "Bu Hafta Hangi Şehirdesiniz?" kartından geçici şehir seçebilirsin.
-            </p>
+            <div style={{ background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: 12, padding: '12px 14px' }}>
+              <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5, margin: 0 }}>
+                Farklı bir şehirde olduğun haftalarda profilindeki "Bu Hafta Hangi Şehirdesiniz?" kartından geçici şehir seçebilirsin.
+              </p>
+            </div>
             {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
             <div className="flex gap-3 mt-1">
               <button type="button" onClick={() => { setStepDir(-1); setStep(0); setError(''); }} className="px-5 py-3.5 text-sm text-[#555] hover:text-[#888] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: 9999 }}>
@@ -490,9 +488,11 @@ function KayitPageInner() {
                 </div>
 
                 {/* Test uyarısı */}
-                <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5 }}>
-                  Bu test, size en uygun kişilerle eşleştirmek için kullanılır. Lütfen gerçek yanıtlarınızı seçin. Yeni test 6 ay boyunca tekrar yapılamaz.
-                </p>
+                <div style={{ background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: 12, padding: '12px 14px' }}>
+                  <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5, margin: 0 }}>
+                    Bu test, size en uygun kişilerle eşleştirmek için kullanılır. Lütfen gerçek yanıtlarınızı seçin. Yeni test 6 ay boyunca tekrar yapılamaz.
+                  </p>
+                </div>
 
                 {/* Soru + yanıtlar */}
                 <AnimatePresence mode="wait" custom={testDirection}>
@@ -597,9 +597,11 @@ function KayitPageInner() {
               </h1>
             </div>
 
-            <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5 }}>
-              Bu tercih, sizi doğru mekan ortamındaki kişilerle eşleştirmek için kullanılır. İstediğiniz zaman profilinizden değiştirebilirsiniz.
-            </p>
+            <div style={{ background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: 12, padding: '12px 14px' }}>
+              <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5, margin: 0 }}>
+                Bu tercih, sizi doğru mekan ortamındaki kişilerle eşleştirmek için kullanılır. İstediğiniz zaman profilinizden değiştirebilirsiniz.
+              </p>
+            </div>
 
             <div className="flex flex-col gap-3">
               {VENUE_OPTIONS.map((opt) => {

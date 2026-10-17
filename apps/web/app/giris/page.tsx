@@ -267,14 +267,6 @@ export default function GirisPage() {
             >
               {welcomeUser.firstName} {welcomeUser.lastName}
             </motion.p>
-            <motion.p
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.75, duration: 0.35, ease: 'easeOut' }}
-              className="text-sm text-[#888] mt-3"
-            >
-              Bu hafta yeni masalar kuruluyor.
-            </motion.p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -339,7 +331,6 @@ export default function GirisPage() {
                     value={phone}
                     onChange={(e) => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setError(''); }}
                     placeholder="5XX XXX XX XX"
-                    autoFocus
                     onKeyDown={(e) => e.key === 'Enter' && phoneValid && handleSendOtp()}
                     className="input-glass flex-1 px-4 py-3.5 text-sm"
                   />
@@ -415,7 +406,6 @@ export default function GirisPage() {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(''); }}
                   placeholder="E-posta adresin"
-                  autoFocus
                   className="input-glass px-4 py-3.5 text-sm"
                 />
                 <div className="relative">
