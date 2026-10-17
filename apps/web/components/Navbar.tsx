@@ -160,26 +160,20 @@ const profileLinks = [
 export default function Navbar() {
   const pathname = usePathname();
   const router   = useRouter();
-  const [navUser,   setNavUser]   = useState<NavUser | null>(null);
-  const [checked,   setChecked]   = useState(false);
-  const [menuOpen,  setMenuOpen]  = useState(false);
+  const [navUser,  setNavUser]  = useState<NavUser | null>(null);
+  const [checked,  setChecked]  = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const initialized = useRef(false);
 
   useEffect(() => {
     if (!initialized.current) setChecked(false);
 
     api.get<NavUser>('/auth/me')
-      .then(u => {
-        setNavUser(u);
-        // refresh sonrası token'ı cookie'ye de yaz
-        const t = api.getToken();
-        if (t) api.setToken(t);
-      })
+      .then(u => { setNavUser(u); })
       .catch(() => { setNavUser(null); })
       .finally(() => { setChecked(true); initialized.current = true; });
   }, [pathname]);
 
-  // Rota değişince drawer'ı kapat
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   function handleLogout() {
@@ -189,8 +183,8 @@ export default function Navbar() {
     router.push('/');
   }
 
-  const showGiris  = !navUser && !(['/giris', '/sifremi-unuttum', '/sifremi-sifirla'].includes(pathname));
-  const showKayit  = !navUser && pathname !== '/kayit';
+  const showGiris = !navUser && !(['/giris', '/sifremi-unuttum', '/sifremi-sifirla'].includes(pathname));
+  const showKayit = !navUser && pathname !== '/kayit';
 
   return (
     <>
@@ -205,57 +199,41 @@ export default function Navbar() {
 
           {/* Sağ alan */}
           <div className="flex items-center gap-2">
-            {/* Avatar (giriş yapmışsa) */}
             {checked && navUser && (
               <Link href="/profil" className="cursor-pointer flex-shrink-0">
                 <NavAvatar user={navUser} />
               </Link>
             )}
 
-            {/* Hamburger butonu — her ekranda */}
             <button
               className="flex flex-col justify-center items-center gap-[5px] p-1.5"
               onClick={() => setMenuOpen(v => !v)}
               aria-label="Menü"
               style={{ background: 'none', border: 'none', cursor: 'pointer' }}
             >
-              <motion.span
-                animate={menuOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }}
-                transition={{ duration: 0.22 }}
-                style={{ display: 'block', width: 20, height: 1.5, background: '#ccc', borderRadius: 2, transformOrigin: 'center' }}
-              />
-              <motion.span
-                animate={menuOpen ? { opacity: 0 } : { opacity: 1 }}
-                transition={{ duration: 0.15 }}
-                style={{ display: 'block', width: 20, height: 1.5, background: '#ccc', borderRadius: 2 }}
-              />
-              <motion.span
-                animate={menuOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }}
-                transition={{ duration: 0.22 }}
-                style={{ display: 'block', width: 20, height: 1.5, background: '#ccc', borderRadius: 2, transformOrigin: 'center' }}
-              />
+              <motion.span animate={menuOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }} transition={{ duration: 0.22 }}
+                style={{ display: 'block', width: 20, height: 1.5, background: '#ccc', borderRadius: 2, transformOrigin: 'center' }} />
+              <motion.span animate={menuOpen ? { opacity: 0 } : { opacity: 1 }} transition={{ duration: 0.15 }}
+                style={{ display: 'block', width: 20, height: 1.5, background: '#ccc', borderRadius: 2 }} />
+              <motion.span animate={menuOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }} transition={{ duration: 0.22 }}
+                style={{ display: 'block', width: 20, height: 1.5, background: '#ccc', borderRadius: 2, transformOrigin: 'center' }} />
             </button>
           </div>
 
         </div>
       </nav>
 
-      {/* Drawer overlay + panel */}
       <AnimatePresence>
         {menuOpen && (
           <>
-            {/* Karartma */}
             <motion.div
               className="fixed inset-0 z-40"
               style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)' }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.22 }}
               onClick={() => setMenuOpen(false)}
             />
 
-            {/* Drawer panel */}
             <motion.div
               className="fixed top-0 right-0 bottom-0 z-50 flex flex-col overflow-y-auto"
               style={{
@@ -265,24 +243,19 @@ export default function Navbar() {
                 boxShadow: '-8px 0 32px rgba(0,0,0,0.6)',
                 paddingTop: 52,
               }}
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'tween', duration: 0.28, ease: 'easeInOut' }}
             >
-              {/* Profil linkleri — üstte (giriş yapılmışsa) */}
+              {/* Hesabım linkleri */}
               {checked && navUser && (
                 <div className="flex flex-col px-4 pt-4 gap-0.5">
                   <p className="text-xs text-[#444] uppercase tracking-[0.1em] px-2 py-1.5">Hesabım</p>
-                  {/* Yönetim Paneli — sadece admin/superadmin */}
                   {(navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
                     <motion.a
-                      href="/admin"
-                      onClick={() => setMenuOpen(false)}
+                      href="/admin" onClick={() => setMenuOpen(false)}
                       className="text-sm py-2.5 px-2 rounded-lg transition-colors"
                       style={{ color: '#c0392b', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                      initial={{ opacity: 0, x: 16 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.04, duration: 0.22 }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; }}
@@ -292,13 +265,10 @@ export default function Navbar() {
                   )}
                   {profileLinks.map((item, i) => (
                     <motion.a
-                      key={item.key}
-                      href={item.href}
-                      onClick={() => setMenuOpen(false)}
+                      key={item.key} href={item.href} onClick={() => setMenuOpen(false)}
                       className="text-sm py-2.5 px-2 rounded-lg transition-colors"
                       style={{ color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                      initial={{ opacity: 0, x: 16 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.08 + i * 0.04, duration: 0.22 }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#ccc'; }}
@@ -309,18 +279,15 @@ export default function Navbar() {
                 </div>
               )}
 
-              {/* Normal nav linkleri */}
+              {/* Keşfet linkleri */}
               <div className="flex flex-col px-4 pt-4 gap-1" style={{ borderTop: checked && navUser ? '1px solid rgba(255,255,255,0.06)' : undefined, marginTop: checked && navUser ? 8 : 0 }}>
                 <p className="text-xs text-[#444] uppercase tracking-[0.1em] px-2 py-1.5">Keşfet</p>
                 {navLinks.map((item, i) => (
                   <motion.a
-                    key={item.label}
-                    href={item.href}
-                    onClick={() => setMenuOpen(false)}
+                    key={item.label} href={item.href} onClick={() => setMenuOpen(false)}
                     className="text-sm py-3 px-2 rounded-lg transition-colors"
                     style={{ color: '#aaa', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                    initial={{ opacity: 0, x: 16 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 + i * 0.05, duration: 0.22 }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#aaa'; }}
@@ -334,21 +301,17 @@ export default function Navbar() {
               {checked && (
                 <div className="flex flex-col px-4 pt-5 pb-6 gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 8 }}>
                   {navUser ? (
-                    <>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full py-2.5 rounded-xl text-sm font-medium transition-colors"
-                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc' }}
-                      >
-                        Çıkış Yap
-                      </button>
-                    </>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc' }}
+                    >
+                      Çıkış Yap
+                    </button>
                   ) : (
                     <>
                       {showGiris && (
-                        <Link
-                          href="/giris"
-                          onClick={() => setMenuOpen(false)}
+                        <Link href="/giris" onClick={() => setMenuOpen(false)}
                           className="w-full py-2.5 rounded-xl text-sm font-medium text-center transition-colors"
                           style={{ background: 'linear-gradient(115deg,#1a5c2a,#27ae60)', color: '#fff', boxShadow: '0 0 12px rgba(39,174,96,0.3)' }}
                         >
@@ -356,9 +319,7 @@ export default function Navbar() {
                         </Link>
                       )}
                       {showKayit && (
-                        <Link
-                          href="/kayit"
-                          onClick={() => setMenuOpen(false)}
+                        <Link href="/kayit" onClick={() => setMenuOpen(false)}
                           className="w-full py-2.5 rounded-xl text-sm font-medium text-center transition-colors"
                           style={{ background: 'linear-gradient(115deg,#E83F3D,#FF6669)', color: '#fff', boxShadow: '0 0 12px rgba(232,63,61,0.35)' }}
                         >

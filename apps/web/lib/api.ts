@@ -3,21 +3,15 @@ const PREFIX = `${BASE}/api/v1`;
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
-  try {
-    const ls = localStorage.getItem('token');
-    if (ls) return ls;
-  } catch {}
   const m = document.cookie.match(/(?:^|;\s*)ahenk_token=([^;]+)/);
   return m ? decodeURIComponent(m[1]) : null;
 }
 
 function setToken(token: string) {
-  try { localStorage.setItem('token', token); } catch {}
   document.cookie = `ahenk_token=${encodeURIComponent(token)}; path=/; max-age=604800; samesite=lax`;
 }
 
 function clearToken() {
-  try { localStorage.removeItem('token'); } catch {}
   document.cookie = 'ahenk_token=; path=/; max-age=0';
 }
 
@@ -65,6 +59,7 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
   if (res.status === 401) {
     const newToken = await refreshToken();
     if (!newToken) {
+      if (typeof window !== 'undefined') window.location.href = '/giris';
       throw new Error('Oturum süresi doldu');
     }
     headers['Authorization'] = `Bearer ${newToken}`;
