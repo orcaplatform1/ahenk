@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { AhenkHistory } from '@ahenk/ui';
 import { api } from '@/lib/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
 
 export default function GecmisPage() {
   const router = useRouter();

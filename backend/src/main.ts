@@ -23,6 +23,8 @@ async function bootstrap() {
     process.env.ADMIN_URL ?? "http://localhost:3001",
     "https://ahenk.tr",
     "https://www.ahenk.tr",
+    "https://ahenk.co",
+    "https://www.ahenk.co",
   ].filter(Boolean);
 
   app.enableCors({

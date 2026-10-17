@@ -96,7 +96,7 @@ export default function IsOrtakligiPage() {
     setSubmitting(true);
     setError('');
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+      const API = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
       const res = await fetch(`${API}/partnerships/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
