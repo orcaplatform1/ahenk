@@ -88,6 +88,7 @@ export default function GirisPage() {
 
   async function afterLogin(data: LoginResponse) {
     api.setToken(data.accessToken);
+    window.dispatchEvent(new Event('ahenk:auth'));
     // WARNING uyarısı varsa: giriş başarılı ama uyarıyı göster
     try {
       const me = await api.get<{ activeSanction?: SanctionPayload | null }>('/auth/me');

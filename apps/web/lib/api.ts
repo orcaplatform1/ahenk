@@ -76,6 +76,10 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
     return retry.json() as Promise<T>;
   }
 
+  if (res.status === 429) {
+    throw new Error('__rate_limit__');
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: 'Bir hata oluştu' }));
     throw new Error((err as { message?: string | string[] }).message instanceof Array

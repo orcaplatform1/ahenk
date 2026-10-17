@@ -49,6 +49,7 @@ function ProfilPage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   const activeTab: TabKey = useMemo(() => {
     const p = searchParams.get('tab');
@@ -63,9 +64,21 @@ function ProfilPage() {
     api.get<UserData>('/auth/me')
       .then(u => {
         setUser(u);
+        setFetchError(false);
         api.get<City[]>('/auth/cities').then(c => setCities(c)).catch(() => {});
       })
-      .catch(() => {})
+      .catch((e: Error) => {
+        if (e.message === '__rate_limit__') {
+          setTimeout(() => {
+            api.get<UserData>('/auth/me')
+              .then(u => { setUser(u); setFetchError(false); })
+              .catch(() => setFetchError(true))
+              .finally(() => setLoading(false));
+          }, 1500);
+          return;
+        }
+        setFetchError(true);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -83,6 +96,23 @@ function ProfilPage() {
       <main className="min-h-screen bg-bg text-text pt-[52px]">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <TabProfilimSkeleton />
+        </div>
+      </main>
+    );
+  }
+
+  if (fetchError && !user) {
+    return (
+      <main className="min-h-screen bg-bg text-text pt-[52px] flex items-center justify-center">
+        <div className="text-center px-6">
+          <p className="text-[#888] text-sm mb-4">Profil yüklenemedi. Lütfen tekrar deneyin.</p>
+          <button
+            onClick={() => { setFetchError(false); setLoading(true); api.get<UserData>('/auth/me').then(u => setUser(u)).catch(() => setFetchError(true)).finally(() => setLoading(false)); }}
+            className="text-sm px-4 py-2 rounded-xl"
+            style={{ background: 'rgba(192,57,43,0.15)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.3)' }}
+          >
+            Yeniden Dene
+          </button>
         </div>
       </main>
     );
