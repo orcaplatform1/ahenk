@@ -60,19 +60,21 @@ function ProfilPage() {
   }
 
   useEffect(() => {
-    Promise.all([
-      api.get<UserData>('/auth/me'),
-      api.get<City[]>('/auth/cities').catch(() => [] as City[]),
-    ])
-      .then(([u, c]) => { setUser(u); setCities(c); })
+    api.get<UserData>('/auth/me')
+      .then(u => {
+        setUser(u);
+        api.get<City[]>('/auth/cities').then(c => setCities(c)).catch(() => {});
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     if (!loading && !user) {
-      api.clearToken();
-      window.location.href = '/giris';
+      // sadece token gerçekten yoksa yönlendir (sunucu hatalarında yanlış logout olmasın)
+      if (!api.getToken()) {
+        window.location.href = '/giris';
+      }
     }
   }, [loading, user]);
 
