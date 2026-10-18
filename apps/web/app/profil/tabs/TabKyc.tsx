@@ -16,16 +16,89 @@ interface UploadUrls {
   liveness: { uploadUrl: string; key: string };
 }
 
-async function putToR2(url: string, file: File | Blob, mimeType: string, onProgress: (pct: number) => void): Promise<void> {
+async function uploadKyc(
+  idFront: File,
+  idBack: File,
+  livenessBlob: Blob,
+  livenessMime: string,
+  onProgress: (pct: number) => void,
+): Promise<void> {
+  const form = new FormData();
+  form.append('idFront', idFront);
+  form.append('idBack', idBack);
+  form.append('liveness', new File([livenessBlob], `liveness.${livenessMime === 'video/mp4' ? 'mp4' : 'webm'}`, { type: livenessMime }));
+
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('PUT', url);
-    xhr.setRequestHeader('Content-Type', mimeType);
+    const token = document.cookie.match(/(?:^|;\s*)ahenk_token=([^;]+)/)?.[1];
+    xhr.open('POST', `${process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co'}/api/v1/kyc/upload`);
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${decodeURIComponent(token)}`);
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); };
-    xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error(`Yükleme başarısız (${xhr.status})`));
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else {
+        try { reject(new Error(JSON.parse(xhr.responseText)?.message ?? `Hata (${xhr.status})`)); }
+        catch { reject(new Error(`Yükleme başarısız (${xhr.status})`)); }
+      }
+    };
     xhr.onerror = () => reject(new Error('Ağ hatası'));
-    xhr.send(file);
+    xhr.send(form);
   });
+}
+
+/* ── IndexedDB: KYC taslak kalıcılığı ───────────────────────────────────── */
+
+const KYC_DB_NAME  = 'ahenk-kyc-draft';
+const KYC_DB_STORE = 'files';
+
+function openKycDb(): Promise<IDBDatabase> {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(KYC_DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(KYC_DB_STORE);
+    req.onsuccess = () => res(req.result);
+    req.onerror   = () => rej(req.error);
+  });
+}
+async function kycDbSet(key: string, value: unknown) {
+  try {
+    const db = await openKycDb();
+    await new Promise<void>((res, rej) => {
+      const tx = db.transaction(KYC_DB_STORE, 'readwrite');
+      tx.objectStore(KYC_DB_STORE).put(value, key);
+      tx.oncomplete = () => res();
+      tx.onerror    = () => rej(tx.error);
+    });
+  } catch {}
+}
+async function kycDbGet<T>(key: string): Promise<T | undefined> {
+  try {
+    const db = await openKycDb();
+    return new Promise((res) => {
+      const req = db.transaction(KYC_DB_STORE, 'readonly').objectStore(KYC_DB_STORE).get(key);
+      req.onsuccess = () => res(req.result as T);
+      req.onerror   = () => res(undefined);
+    });
+  } catch { return undefined; }
+}
+async function kycDbDel(key: string) {
+  try {
+    const db = await openKycDb();
+    await new Promise<void>((res) => {
+      const tx = db.transaction(KYC_DB_STORE, 'readwrite');
+      tx.objectStore(KYC_DB_STORE).delete(key);
+      tx.oncomplete = () => res();
+    });
+  } catch {}
+}
+async function kycDbClear() {
+  try {
+    const db = await openKycDb();
+    await new Promise<void>((res) => {
+      const tx = db.transaction(KYC_DB_STORE, 'readwrite');
+      tx.objectStore(KYC_DB_STORE).clear();
+      tx.oncomplete = () => res();
+    });
+  } catch {}
 }
 
 /* ── Görsel Yükleyici ────────────────────────────────────────────────────── */
@@ -103,12 +176,12 @@ function ImageUploader({
       {file ? (
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
           <span className="text-green-400">✓</span>
-          <p className="text-xs text-green-400">Görsel Yüklendi</p>
+          <p className="text-xs text-green-400">Fotoğraf Yüklendi</p>
           <button
             onClick={() => onChange(null as unknown as File)}
             className="ml-auto text-xs text-[#555] hover:text-[#888] transition-colors"
           >
-            Değiştir
+            Tekrar Çek
           </button>
         </div>
       ) : (
@@ -144,16 +217,21 @@ function ImageUploader({
 
 /* ── Liveness Kaydedici ──────────────────────────────────────────────────── */
 
-function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string) => void }) {
+function LivenessRecorder({ onCapture, initialDone }: { onCapture: (blob: Blob, mime: string) => void; initialDone?: boolean }) {
   const videoRef    = useRef<HTMLVideoElement>(null);
   const streamRef   = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef   = useRef<Blob[]>([]);
 
-  const [phase,     setPhase]     = useState<'idle' | 'preview' | 'countdown' | 'recording' | 'done' | 'error'>('idle');
+  const [phase,     setPhase]     = useState<'idle' | 'preview' | 'countdown' | 'recording' | 'done' | 'error'>(initialDone ? 'done' : 'idle');
   const [countdown, setCountdown] = useState(3);
+  const [recCountdown, setRecCountdown] = useState(5);
   const [camError,  setCamError]  = useState('');
-  const [done,      setDone]      = useState(false);
+  const [done,      setDone]      = useState(initialDone ?? false);
+
+  useEffect(() => {
+    if (initialDone) { setDone(true); setPhase('done'); }
+  }, [initialDone]);
 
   useEffect(() => {
     if ((phase === 'preview' || phase === 'countdown' || phase === 'recording') && videoRef.current && streamRef.current) {
@@ -231,6 +309,13 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
       if (remaining <= 0) {
         clearInterval(tick);
         setPhase('recording');
+        setRecCountdown(5);
+        let recRemaining = 5;
+        const recTick = setInterval(() => {
+          recRemaining -= 1;
+          setRecCountdown(recRemaining);
+          if (recRemaining <= 0) clearInterval(recTick);
+        }, 1000);
         setTimeout(() => recorder.stop(), 5000);
       }
     }, 1000);
@@ -251,33 +336,47 @@ function LivenessRecorder({ onCapture }: { onCapture: (blob: Blob, mime: string)
           <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
 
           <AnimatePresence>
-            {(phase === 'countdown' || phase === 'recording') && (
+            {phase === 'countdown' && (
               <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 flex flex-col items-center justify-center gap-3"
-                style={{ background: 'rgba(0,0,0,0.45)' }}
+                className="absolute inset-0 flex items-center justify-center"
               >
-                {phase === 'countdown' && (
-                  <motion.span
-                    key={countdown}
-                    initial={{ scale: 1.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.25 }}
-                    className="text-7xl font-bold"
-                    style={{ color: '#c0392b', fontVariantNumeric: 'tabular-nums' }}
-                  >
-                    {countdown}
-                  </motion.span>
-                )}
-                {phase === 'recording' && (
-                  <motion.div
-                    animate={{ opacity: [1, 0.3, 1] }}
-                    transition={{ duration: 0.6, repeat: Infinity }}
-                    className="w-4 h-4 rounded-full"
-                    style={{ background: '#c0392b' }}
-                  />
-                )}
-                <p className="text-sm text-white font-medium px-6 text-center">
-                  Adınızı ve soyadınızı söyleyin
+                <motion.span
+                  key={countdown}
+                  initial={{ scale: 1.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                  className="text-7xl font-bold"
+                  style={{ color: '#c0392b', fontVariantNumeric: 'tabular-nums', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}
+                >
+                  {countdown}
+                </motion.span>
+              </motion.div>
+            )}
+            {phase === 'recording' && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 flex flex-col justify-between p-3"
+              >
+                {/* Sol üst: KAYIT BAŞLADI + altında geri sayım */}
+                <div className="flex flex-col items-start gap-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <motion.div
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 0.6, repeat: Infinity }}
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ background: '#27ae60' }}
+                    />
+                    <span className="text-xs font-bold" style={{ color: '#2ecc71', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                      KAYIT BAŞLADI
+                    </span>
+                  </div>
+                  <span className="text-2xl font-bold" style={{ color: '#2ecc71', textShadow: '0 1px 6px rgba(0,0,0,0.9)', lineHeight: 1, paddingLeft: '2px' }}>
+                    {recCountdown}
+                  </span>
+                </div>
+                {/* Alt: söyleme talimatı */}
+                <p className="text-xs font-medium text-center px-2" style={{ color: '#2ecc71', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                  Kayıt başladığında 5 sn. içinde adınızı ve soyadınızı söyleyin.
                 </p>
               </motion.div>
             )}
@@ -359,14 +458,35 @@ export function TabKyc() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [progress,  setProgress]  = useState({ idFront: 0, idBack: 0, liveness: 0 });
+  const [progress,  setProgress]  = useState(0);
 
   const [files,    setFiles]    = useState<{ idFront?: File; idBack?: File }>({});
   const [liveness, setLiveness] = useState<{ blob: Blob; mime: string } | null>(null);
 
   const handleCapture = useCallback((blob: Blob, mime: string) => {
-    if (blob.size === 0) { setLiveness(null); return; }
+    if (blob.size === 0) {
+      setLiveness(null);
+      kycDbDel('livenessBlob');
+      kycDbDel('livenessMime');
+      return;
+    }
     setLiveness({ blob, mime });
+    kycDbSet('livenessBlob', blob);
+    kycDbSet('livenessMime', mime);
+  }, []);
+
+  useEffect(() => {
+    async function restore() {
+      try {
+        const front   = await kycDbGet<File>('idFront');
+        const back    = await kycDbGet<File>('idBack');
+        const livBlob = await kycDbGet<Blob>('livenessBlob');
+        const livMime = await kycDbGet<string>('livenessMime');
+        if (front || back) setFiles({ idFront: front, idBack: back });
+        if (livBlob && livMime && livBlob.size > 0) setLiveness({ blob: livBlob, mime: livMime });
+      } catch {}
+    }
+    restore();
   }, []);
 
   useEffect(() => {
@@ -390,32 +510,12 @@ export function TabKyc() {
     setSubmitting(true);
     setError('');
     try {
-      const ext = liveness.mime === 'video/mp4' ? 'mp4' : 'webm';
-      const livenessFile = new File([liveness.blob], `liveness.${ext}`, { type: liveness.mime });
-
-      const urls = await api.post<UploadUrls>('/kyc/request-upload', {
-        idFrontMime:  files.idFront.type,
-        idFrontSize:  files.idFront.size,
-        idBackMime:   files.idBack.type,
-        idBackSize:   files.idBack.size,
-        livenessMime: liveness.mime,
-        livenessSize: liveness.blob.size,
-      });
-
-      await putToR2(urls.idFront.uploadUrl, files.idFront, files.idFront.type, (p) => setProgress(prev => ({ ...prev, idFront: p })));
-      await putToR2(urls.idBack.uploadUrl,  files.idBack,  files.idBack.type,  (p) => setProgress(prev => ({ ...prev, idBack: p })));
-      await putToR2(urls.liveness.uploadUrl, livenessFile,  liveness.mime,      (p) => setProgress(prev => ({ ...prev, liveness: p })));
-
-      await api.post('/kyc/submit', {
-        idFrontKey:  urls.idFront.key,
-        idBackKey:   urls.idBack.key,
-        livenessKey: urls.liveness.key,
-      });
-
+      await uploadKyc(files.idFront, files.idBack, liveness.blob, liveness.mime, setProgress);
+      await kycDbClear();
       setKycStatus({ status: 'PENDING' });
       setFiles({});
       setLiveness(null);
-      setProgress({ idFront: 0, idBack: 0, liveness: 0 });
+      setProgress(0);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -438,9 +538,28 @@ export function TabKyc() {
 
   if (kycStatus?.status === 'PENDING') {
     return (
-      <div className="glass-card p-8 flex flex-col items-center gap-3 text-center">
-        <p className="font-medium text-[#f5f5f5]">Belgeleriniz inceleniyor</p>
-        <p className="text-sm text-[#888]">Başvurunuz değerlendiriliyor. Bu süreç genellikle 24-48 saat sürer.</p>
+      <div className="glass-card flex flex-col items-center gap-4 text-center overflow-hidden" style={{ paddingBottom: '2rem' }}>
+        {/* Şarap kırmızısı top animasyonu */}
+        <div className="w-full relative overflow-hidden" style={{ height: '36px' }}>
+          <style>{`
+            @keyframes ballRoll {
+              0%   { transform: translateX(-120px); }
+              100% { transform: translateX(calc(100vw + 40px)); }
+            }
+            .kyc-ball { position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; background: #722f37; transform: translateY(-50%); animation: ballRoll 3s linear infinite; }
+            .kyc-ball:nth-child(1) { animation-delay: 0s; }
+            .kyc-ball:nth-child(2) { animation-delay: 1s; }
+            .kyc-ball:nth-child(3) { animation-delay: 2s; }
+          `}</style>
+          <div className="kyc-ball" />
+          <div className="kyc-ball" />
+          <div className="kyc-ball" />
+        </div>
+        <p className="font-semibold text-[#f5f5f5] text-base px-6">Doğrulama incelemeye alındı</p>
+        <p className="text-sm text-[#888] px-6">
+          Başvurunuz değerlendiriliyor.<br />
+          Bu süreç genellikle 1 saat içinde tamamlanır.
+        </p>
       </div>
     );
   }
@@ -465,8 +584,11 @@ export function TabKyc() {
             svgAlt="Kimlik ön yüz örneği"
             uploadLabel="Ön Yüzü Yükle"
             file={files.idFront}
-            progress={progress.idFront}
-            onChange={(f) => setFiles(p => ({ ...p, idFront: f || undefined }))}
+            progress={0}
+            onChange={(f) => {
+              setFiles(p => ({ ...p, idFront: f || undefined }));
+              if (f) kycDbSet('idFront', f); else kycDbDel('idFront');
+            }}
           />
 
           <ImageUploader
@@ -474,11 +596,14 @@ export function TabKyc() {
             svgAlt="Kimlik arka yüz örneği"
             uploadLabel="Arka Yüzü Yükle"
             file={files.idBack}
-            progress={progress.idBack}
-            onChange={(f) => setFiles(p => ({ ...p, idBack: f || undefined }))}
+            progress={0}
+            onChange={(f) => {
+              setFiles(p => ({ ...p, idBack: f || undefined }));
+              if (f) kycDbSet('idBack', f); else kycDbDel('idBack');
+            }}
           />
 
-          <LivenessRecorder onCapture={handleCapture} />
+          <LivenessRecorder onCapture={handleCapture} initialDone={!!liveness} />
 
           {error && <p className="text-accent text-sm">{error}</p>}
 
@@ -490,6 +615,12 @@ export function TabKyc() {
           >
             {submitting ? 'Yükleniyor…' : 'Kimliğimi Doğrula'}
           </button>
+
+          {submitting && progress > 0 && (
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <div className="h-full transition-all" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#1a5c2a,#27ae60)' }} />
+            </div>
+          )}
         </>
       )}
     </div>
