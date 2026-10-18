@@ -111,25 +111,159 @@ function MediaCarousel() {
 
         <div className="carousel-track" style={{ alignItems: 'center' }}>
           {items.map((name, i) => (
-            <img
+            <span
               key={i}
-              src=""
-              alt={name}
               className="carousel-logo"
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 height: 32,
-                width: 110,
-                objectFit: 'contain',
-                filter: 'brightness(0) invert(1)',
+                minWidth: 110,
                 background: 'rgba(255,255,255,0.08)',
                 borderRadius: 6,
-                padding: '6px 12px',
+                padding: '0 12px',
+                color: 'rgba(255,255,255,0.7)',
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: '0.05em',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
-            />
+            >
+              {name}
+            </span>
           ))}
         </div>
       </div>
     </section>
+  );
+}
+
+/* ─── İlk Masalarımızdan Sesler ─────────────────────────────────────────── */
+function Testimonials() {
+  return (
+    <section className="max-w-4xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
+      <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl italic text-[#f5f5f5] mb-16">
+        İlk Masalarımızdan Sesler
+      </h2>
+      <div className="flex flex-col gap-14">
+        {[
+          { quote: 'İlk başta açıkçası buluşmaya gitmekten çekindim çünkü ne ile karşılaşacağımı bilmiyordum ama iyi ki gitmişim. Masadaki insanların birkaçıyla şuan iyi arkadaşlık kurduk.', name: 'Sümeyye K.', city: 'İstanbul' },
+          { quote: 'Konsepti çok değişik buldum önce ama şimdi hafta sonları aktiviteleri için sürekli kullanıyorum.', name: 'Nursena Y.', city: 'İstanbul' },
+          { quote: 'Tanımadığım bir kızla baş başa buluştuk. Çekingen olmama rağmen resmen benim aynadaki eşim gibiydi, yabancılık çekmedim.', name: 'Çağrı Ş.', city: 'İstanbul' },
+          { quote: 'Grup masasında eşleştim, kaliteli ve düzgün insanlar geldi. Sohbet akıcı ve güzeldi, sanki daha önceden tanışıyormuşuz gibiydi.', name: 'Bengü A.', city: 'İstanbul' },
+          { quote: 'Baş başa masa kurulsun, sohbet edecek biri bulalım derken tam dediğim gibi oldu. Efsane eğlenceliydi.', name: 'Burak G.', city: 'İstanbul' },
+        ].map((item, i) => (
+          <div key={i}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: 72, lineHeight: 0.75, color: 'rgba(192,57,43,0.45)', flexShrink: 0, userSelect: 'none', marginTop: 4 }} aria-hidden>"</span>
+              <p className="font-serif italic" style={{ fontSize: 'clamp(15px, 2.2vw, 20px)', fontWeight: 300, color: 'rgba(245,245,245,0.82)', lineHeight: 1.75 }}>
+                {item.quote}
+              </p>
+            </div>
+            <div style={{ borderTop: '1px solid rgba(192,57,43,0.2)', marginTop: 16, paddingTop: 12, textAlign: 'right' }}>
+              <span style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.14em', color: 'rgba(245,245,245,0.3)', textTransform: 'uppercase' }}>
+                — {item.name}, {item.city}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─── FAQ + Şehirler + CTA ───────────────────────────────────────────────── */
+function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:string;sub?:string}[]; activeCity: string; setActiveCity: (c:string)=>void }) {
+  return (
+    <>
+      {/* ── Şehirler */}
+      <section id="cities" className="max-w-5xl mx-auto px-6 py-24">
+        <div className="text-center mb-10">
+          <h2 className="font-serif text-3xl sm:text-4xl mb-3 text-[#f5f5f5]"><RedLast text="Aktif Olduğumuz Şehirler" /></h2>
+          <p className="text-[#888] text-sm">Aşağıdaki şehirlerde her hafta masalar kuruluyor.</p>
+        </div>
+        <div className="flex flex-wrap justify-center gap-3">
+          {cities.map((city) => {
+            const isActive = activeCity === city.name;
+            return (
+              <button key={city.name} type="button" onClick={() => setActiveCity(city.name)}
+                className="px-5 py-2 rounded-full font-medium transition-all duration-200 flex items-center gap-1.5"
+                style={isActive ? { border: '1px solid rgba(192,57,43,0.8)', background: 'rgba(192,57,43,0.12)', color: '#ff6b6b', boxShadow: '0 0 16px rgba(192,57,43,0.3)' } : { border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: '#aaa' }}
+              >
+                {isActive && (
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 flex-shrink-0">
+                    <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
+                  </svg>
+                )}
+                <span className="flex flex-col items-center leading-tight">
+                  <span className="text-sm">{city.name}</span>
+                  {city.sub && <span className="text-[10px] font-normal opacity-60 tracking-wide">{city.sub}</span>}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Alıntı */}
+      <section className="py-16 px-6 text-center">
+        <p className="font-serif italic text-white leading-snug" style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)' }}>
+          "Her hafta, şehrinde, sana uygun bir masa."
+        </p>
+        <div className="mx-auto mt-5 rounded-full" style={{ width: 90, height: 2, background: 'linear-gradient(90deg,#c0392b,#ff6b6b)' }} />
+      </section>
+
+      {/* ── Ahenk Seni Nasıl Tanır? */}
+      <section id="how-it-knows-you" className="max-w-3xl mx-auto px-6 py-24">
+        <div className="text-center mb-12">
+          <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5] mb-3"><RedLast text="Ahenk Seni Nasıl Tanır?" /></h2>
+        </div>
+        <AccordionGroup items={[
+          { title: 'Bir test değil, bir profil.', body: 'Ahenk\'e katılmadan önce doldurduğun sorular sıradan bir anket değil. Her cevap, seni tanımlamak için tasarlanmış bir sinyal. Düşünce tarzın, sosyal enerjin, masada üstlendiğin rol, mekân tercihin hepsi birleşerek sana özgü bir profil oluşturuyor.' },
+          { title: 'OCEAN modeli nedir?', body: 'Eşleştirme motorumuz, psikoloji araştırmalarının altın standardı olan OCEAN (Big Five) modelini kullanır. 1980\'lerden bu yana milyonlarca kişi üzerinde doğrulanmış bu model; kişiliğin beş temel boyutunu ölçer: Açıklık, Özdisiplin, Dışadönüklük, Uyumluluk ve Duygusal Denge. Bunlar bir kutup değil, birer spektrum ve senin yerinle başkasının yeri asla aynı değil.' },
+          { title: 'Algoritma ne yapıyor?', body: 'Profilini oluşturduktan sonra algoritma devreye girer. Seni sadece sana benzer insanlarla değil, seninle gerçek bir ahenk kurabilecek insanlarla eşleştirir. Meslek alanın, yaşın ve mekan tercihin de hesaba katılır ama bunlar yardımcı faktörler. Asıl ağırlık kişilik uyumunda.' },
+          { title: 'Masa nasıl kurulur?', body: 'Her hafta belirli bir gün eşleşmeler kapanır. Algoritma o ana kadar biriken profilleri değerlendirir, en yüksek uyum skoruna sahip grupları veya iki kişiyi bir araya getirir ve masayı kurar. Sen sadece onayı beklersin.' },
+          { title: 'Buluşma sonrası ne olur?', body: 'Her buluşmanın ardından Ahenk, masa hakkında kısa bir yapay zeka raporu oluşturur. Grubun genel uyum skoru, öne çıkan kişilik dinamikleri ve masa enerjisi hakkında bir özet; sadece senin için, sadece o akşam için.' },
+          { title: 'Başbaşa buluşmalar farklı mı?', body: 'Grup masalarında ahenk aranır, başbaşa buluşmalarda ise derinlik. İki kişilik eşleşmelerde algoritma çok daha hassas çalışır: yaş uyumu, kişilik dengesi ve beklenti örtüşmesi ön plana çıkar. Karşındaki kişi rastgele değil, seninle birebir örtüşen biri.' },
+          { title: '180 günde bir yenilenir.', body: 'Kişilik sabit, ama bağlam değişir. Bu yüzden OCEAN profilin 180 günde bir güncellenir; o dönemki sen, o dönemki ahenginle buluşur.' },
+        ]} />
+      </section>
+
+      {/* ── Neden Rahat Hissedersin? */}
+      <section id="why-safe" className="max-w-3xl mx-auto px-6 py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="text-center mb-12">
+          <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5] mb-3"><RedLast text="Neden Rahat Hissedersin?" /></h2>
+        </div>
+        <AccordionGroup items={[
+          { title: 'Yabancıyla tanışmak bu kadar zor mu olmalı?', body: 'Bir arkadaşının arkadaşıyla tanışırsın; sormadan, araştırmadan, sadece güvenirsin. Ahenk tam bunu yapıyor. Aramana gerek yok, seçmene gerek yok. Algoritma seçer, sen sadece gelirsin.' },
+          { title: 'Kim olduğunu biliyoruz.', body: 'Platforma katılmak için telefon numaranı doğruluyor, kimliğin kontrol ediliyor ve kısa bir video doğrulaması yapılıyor. Masanda oturan herkes aynı süreçten geçti. Anonim hesap yok, sahte profil yok.' },
+          { title: 'Nerede buluşuyorsunuz?', body: 'Her buluşma şehrindeki restoran ve kafelerden gerçekleşir. Kişilik profiline ve mekan tercihine göre o haftaki buluşma yeri belirlenir. Adres ve saat bilgisi buluşmadan önce sana iletilir. Özel bir anlaşma veya ekstra ücret yok; sadece kendi hesabını ödersin.' },
+          { title: 'Yalnız değilsin.', body: 'Grup masaları 5-6 kişiden oluşuyor. Başbaşa buluşmalarda ise eşleşme çift yönlü onaylanmış; karşındaki kişi de aynı süreci tamamlamış, aynı şartları kabul etmiş biri.' },
+          { title: 'Kimseyi tanımak zorunda değilsin.', body: 'Masadaki diğer kişilerin soyadını, mesleğini, yaşını önceden göremezsin; onlar da seninkini göremez. Buluşma anında tanışırsınız. Bu hem heyecan hem de eşitlik demek.' },
+          { title: 'Bir sorun olursa?', body: 'Buluşma sonrası değerlendirme sistemi var. Bir daha eşleşmek istemediğin biri varsa belirtirsin; bir daha o kişiyle asla karşılaşmazsın. Ciddi bir durum bildirirsen kürasyon ekibimiz devreye girerek inceler ve o kişinin hesabı süresiz yasaklanır, tekrar kayıt yapmasına bir daha izin verilmez.' },
+        ]} />
+      </section>
+
+      {/* ── CTA */}
+      <section className="relative overflow-hidden py-28 px-6">
+        <div className="absolute inset-0" style={{ backgroundImage: 'url(/cta-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.62)' }} />
+        <div className="relative z-10 flex flex-col items-start gap-5 max-w-5xl mx-auto">
+          <h2 className="font-serif text-white font-light" style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)', lineHeight: 1.15 }}>
+            Senin masanı kuruyoruz.
+          </h2>
+          <Link href="/kayit" className="inline-flex items-center gap-2 rounded-full font-medium text-white transition-all"
+            style={{ background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', boxShadow: '0 0 28px rgba(192,57,43,0.4)', padding: '14px 40px', fontSize: '1rem' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 44px rgba(192,57,43,0.75)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 28px rgba(192,57,43,0.4)'; }}
+          >
+            Hemen Katıl →
+          </Link>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -529,6 +663,9 @@ export default function Home() {
           <HeroCountdown />
         </div>
 
+        {/* ── İstatistik kartları ───────────────────────────────────────── */}
+        <StatCards />
+
         {/* ── Bunu daha önce denemedin ─────────────────────────────────── */}
         <section className="max-w-6xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
           <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl italic text-[#f5f5f5] mb-14 lg:mb-18">
@@ -587,6 +724,9 @@ export default function Home() {
             </Link>
           </div>
         </section>
+
+        {/* ── İlk Masalarımızdan Sesler ────────────────────────────────── */}
+        <Testimonials />
 
         {/* ── OCEAN Big5 ───────────────────────────────────────────────── */}
         <section
@@ -678,234 +818,14 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── İstatistik kartları ───────────────────────────────────────── */}
-        <StatCards />
-
-        {/* ── Şehirler ───────────────────────────────────────────────────── */}
-        <section id="cities" className="max-w-5xl mx-auto px-6 py-24">
-          <div className="text-center mb-10">
-            <h2 className="font-serif text-3xl sm:text-4xl mb-3 text-[#f5f5f5]">
-              <RedLast text="Aktif Olduğumuz Şehirler" />
-            </h2>
-            <p className="text-[#888] text-sm">Aşağıdaki şehirlerde her hafta masalar kuruluyor.</p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3">
-            {cities.map((city) => {
-              const isActive = activeCity === city.name;
-              return (
-                <button
-                  key={city.name}
-                  type="button"
-                  onClick={() => setActiveCity(city.name)}
-                  className="px-5 py-2 rounded-full font-medium transition-all duration-200 flex items-center gap-1.5"
-                  style={isActive ? {
-                    border: '1px solid rgba(192,57,43,0.8)',
-                    background: 'rgba(192,57,43,0.12)',
-                    color: '#ff6b6b',
-                    boxShadow: '0 0 16px rgba(192,57,43,0.3)',
-                  } : {
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    background: 'rgba(255,255,255,0.03)',
-                    color: '#aaa',
-                  }}
-                >
-                  {isActive && (
-                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 flex-shrink-0">
-                      <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  <span className="flex flex-col items-center leading-tight">
-                    <span className="text-sm">{city.name}</span>
-                    {city.sub && (
-                      <span className="text-[10px] font-normal opacity-60 tracking-wide">{city.sub}</span>
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ── Alıntı bölümü ─────────────────────────────────────────────── */}
-        <section className="py-16 px-6 text-center">
-          <p
-            className="font-serif italic text-white leading-snug"
-            style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)' }}
-          >
-            "Her hafta, şehrinde, sana uygun bir masa."
-          </p>
-          <div
-            className="mx-auto mt-5 rounded-full"
-            style={{ width: 90, height: 2, background: 'linear-gradient(90deg,#c0392b,#ff6b6b)' }}
-          />
-        </section>
-
-        {/* ── Ahenk Seni Nasıl Tanır? ────────────────────────────────────── */}
-        <section id="how-it-knows-you" className="max-w-3xl mx-auto px-6 py-24">
-          <div className="text-center mb-12">
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5] mb-3">
-              <RedLast text="Ahenk Seni Nasıl Tanır?" />
-            </h2>
-          </div>
-          <AccordionGroup items={[
-            {
-              title: 'Bir test değil, bir profil.',
-              body: 'Ahenk\'e katılmadan önce doldurduğun sorular sıradan bir anket değil. Her cevap, seni tanımlamak için tasarlanmış bir sinyal. Düşünce tarzın, sosyal enerjin, masada üstlendiğin rol, mekân tercihin hepsi birleşerek sana özgü bir profil oluşturuyor.',
-            },
-            {
-              title: 'OCEAN modeli nedir?',
-              body: 'Eşleştirme motorumuz, psikoloji araştırmalarının altın standardı olan OCEAN (Big Five) modelini kullanır. 1980\'lerden bu yana milyonlarca kişi üzerinde doğrulanmış bu model; kişiliğin beş temel boyutunu ölçer: Açıklık, Özdisiplin, Dışadönüklük, Uyumluluk ve Duygusal Denge. Bunlar bir kutup değil, birer spektrum ve senin yerinle başkasının yeri asla aynı değil.',
-            },
-            {
-              title: 'Algoritma ne yapıyor?',
-              body: 'Profilini oluşturduktan sonra algoritma devreye girer. Seni sadece sana benzer insanlarla değil, seninle gerçek bir ahenk kurabilecek insanlarla eşleştirir. Meslek alanın, yaşın ve mekan tercihin de hesaba katılır ama bunlar yardımcı faktörler. Asıl ağırlık kişilik uyumunda.',
-            },
-            {
-              title: 'Masa nasıl kurulur?',
-              body: 'Her hafta belirli bir gün eşleşmeler kapanır. Algoritma o ana kadar biriken profilleri değerlendirir, en yüksek uyum skoruna sahip grupları veya iki kişiyi bir araya getirir ve masayı kurar. Sen sadece onayı beklersin.',
-            },
-            {
-              title: 'Buluşma sonrası ne olur?',
-              body: 'Her buluşmanın ardından Ahenk, masa hakkında kısa bir yapay zeka raporu oluşturur. Grubun genel uyum skoru, öne çıkan kişilik dinamikleri ve masa enerjisi hakkında bir özet; sadece senin için, sadece o akşam için.',
-            },
-            {
-              title: 'Başbaşa buluşmalar farklı mı?',
-              body: 'Grup masalarında ahenk aranır, başbaşa buluşmalarda ise derinlik. İki kişilik eşleşmelerde algoritma çok daha hassas çalışır: yaş uyumu, kişilik dengesi ve beklenti örtüşmesi ön plana çıkar. Karşındaki kişi rastgele değil, seninle birebir örtüşen biri.',
-            },
-            {
-              title: '180 günde bir yenilenir.',
-              body: 'Kişilik sabit, ama bağlam değişir. Bu yüzden OCEAN profilin 180 günde bir güncellenir; o dönemki sen, o dönemki ahenginle buluşur.',
-            },
-          ]} />
-        </section>
-
-        {/* ── Neden Rahat Hissedersin? ────────────────────────────────────── */}
-        <section id="why-safe" className="max-w-3xl mx-auto px-6 py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="text-center mb-12">
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5] mb-3">
-              <RedLast text="Neden Rahat Hissedersin?" />
-            </h2>
-          </div>
-          <AccordionGroup items={[
-            {
-              title: 'Yabancıyla tanışmak bu kadar zor mu olmalı?',
-              body: 'Bir arkadaşının arkadaşıyla tanışırsın; sormadan, araştırmadan, sadece güvenirsin. Ahenk tam bunu yapıyor. Aramana gerek yok, seçmene gerek yok. Algoritma seçer, sen sadece gelirsin.',
-            },
-            {
-              title: 'Kim olduğunu biliyoruz.',
-              body: 'Platforma katılmak için telefon numaranı doğruluyor, kimliğin kontrol ediliyor ve kısa bir video doğrulaması yapılıyor. Masanda oturan herkes aynı süreçten geçti. Anonim hesap yok, sahte profil yok.',
-            },
-            {
-              title: 'Nerede buluşuyorsunuz?',
-              body: 'Her buluşma şehrindeki restoran ve kafelerden gerçekleşir. Kişilik profiline ve mekan tercihine göre o haftaki buluşma yeri belirlenir. Adres ve saat bilgisi buluşmadan önce sana iletilir. Özel bir anlaşma veya ekstra ücret yok; sadece kendi hesabını ödersin.',
-            },
-            {
-              title: 'Yalnız değilsin.',
-              body: 'Grup masaları 5-6 kişiden oluşuyor. Başbaşa buluşmalarda ise eşleşme çift yönlü onaylanmış; karşındaki kişi de aynı süreci tamamlamış, aynı şartları kabul etmiş biri.',
-            },
-            {
-              title: 'Kimseyi tanımak zorunda değilsin.',
-              body: 'Masadaki diğer kişilerin soyadını, mesleğini, yaşını önceden göremezsin; onlar da seninkini göremez. Buluşma anında tanışırsınız. Bu hem heyecan hem de eşitlik demek.',
-            },
-            {
-              title: 'Bir sorun olursa?',
-              body: 'Buluşma sonrası değerlendirme sistemi var. Bir daha eşleşmek istemediğin biri varsa belirtirsin; bir daha o kişiyle asla karşılaşmazsın. Ciddi bir durum bildirirsen kürasyon ekibimiz devreye girerek inceler ve o kişinin hesabı süresiz yasaklanır, tekrar kayıt yapmasına bir daha izin verilmez.',
-            },
-          ]} />
-        </section>
-
-        {/* ── CTA bölümü ────────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden py-28 px-6">
-          <div className="absolute inset-0" style={{ backgroundImage: 'url(/cta-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
-          <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.62)' }} />
-          <div className="relative z-10 flex flex-col items-start gap-5 max-w-5xl mx-auto">
-            <h2
-              className="font-serif text-white font-light"
-              style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)', lineHeight: 1.15 }}
-            >
-              Senin masanı kuruyoruz.
-            </h2>
-            <Link
-              href="/kayit"
-              className="inline-flex items-center gap-2 rounded-full font-medium text-white transition-all"
-              style={{
-                background: 'linear-gradient(135deg,#c0392b,#ff6b6b)',
-                boxShadow: '0 0 28px rgba(192,57,43,0.4)',
-                padding: '14px 40px',
-                fontSize: '1rem',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 44px rgba(192,57,43,0.75)'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 28px rgba(192,57,43,0.4)'; }}
-            >
-              Hemen Katıl →
-            </Link>
-          </div>
-        </section>
-
-        {/* ── İlk Masalarımızdan Sesler ────────────────────────────────── */}
-        <section className="max-w-4xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
-          <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl italic text-[#f5f5f5] mb-16">
-            İlk Masalarımızdan Sesler
-          </h2>
-          <div className="flex flex-col gap-14">
-            {[
-              { quote: 'İlk başta açıkçası buluşmaya gitmekten çekindim çünkü ne ile karşılaşacağımı bilmiyordum ama iyi ki gitmişim. Masadaki insanların birkaçıyla şuan iyi arkadaşlık kurduk.', name: 'Sümeyye K.', city: 'İstanbul' },
-              { quote: 'Konsepti çok değişik buldum önce ama şimdi hafta sonları aktiviteleri için sürekli kullanıyorum.', name: 'Nursena Y.', city: 'İstanbul' },
-              { quote: 'Tanımadığım bir kızla baş başa buluştuk. Çekingen olmama rağmen resmen benim aynadaki eşim gibiydi, yabancılık çekmedim.', name: 'Çağrı Ş.', city: 'İstanbul' },
-              { quote: 'Grup masasında eşleştim, kaliteli ve düzgün insanlar geldi. Sohbet akıcı ve güzeldi, sanki daha önceden tanışıyormuşuz gibiydi.', name: 'Bengü A.', city: 'İstanbul' },
-              { quote: 'Baş başa masa kurulsun, sohbet edecek biri bulalım derken tam dediğim gibi oldu. Efsane eğlenceliydi.', name: 'Burak G.', city: 'İstanbul' },
-            ].map((item, i) => (
-              <div key={i}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-                  <span
-                    style={{
-                      fontFamily: 'Georgia, serif',
-                      fontSize: 72,
-                      lineHeight: 0.75,
-                      color: 'rgba(192,57,43,0.45)',
-                      flexShrink: 0,
-                      userSelect: 'none',
-                      marginTop: 4,
-                    }}
-                    aria-hidden
-                  >
-                    "
-                  </span>
-                  <p
-                    className="font-serif italic"
-                    style={{
-                      fontSize: 'clamp(15px, 2.2vw, 20px)',
-                      fontWeight: 300,
-                      color: 'rgba(245,245,245,0.82)',
-                      lineHeight: 1.75,
-                    }}
-                  >
-                    {item.quote}
-                  </p>
-                </div>
-                <div style={{ borderTop: '1px solid rgba(192,57,43,0.2)', marginTop: 16, paddingTop: 12, textAlign: 'right' }}>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 400,
-                      letterSpacing: '0.14em',
-                      color: 'rgba(245,245,245,0.3)',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    — {item.name}, {item.city}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* ── Bu Hafta Kurulan Masalar ─────────────────────────────────── */}
         <WeeklyTables />
 
         {/* ── Her Yerde Biz Varız ──────────────────────────────────────── */}
         <MediaCarousel />
+
+        {/* ── FAQ + Şehirler + CTA ─────────────────────────────────────── */}
+        <FAQSections cities={cities} activeCity={activeCity} setActiveCity={setActiveCity} />
 
         {/* ── Paketler ───────────────────────────────────────────────────── */}
         <section id="pricing" className="max-w-5xl mx-auto px-6 py-24">
