@@ -56,9 +56,9 @@ function CountdownRow({ label, targetDay }: { label: string; targetDay: number }
   return (
     <div style={{ padding: '14px 16px' }}>
       <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginBottom: 10 }}>
-        {label} kurulmasına kaldı
+        {label} kurulmasına
       </p>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
         {values.map((val, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 44 }}>
@@ -74,6 +74,9 @@ function CountdownRow({ label, targetDay }: { label: string; targetDay: number }
             )}
           </div>
         ))}
+        <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.35)', marginLeft: 10, letterSpacing: '0.06em' }}>
+          kaldı
+        </span>
       </div>
     </div>
   );
@@ -89,8 +92,14 @@ export function HeroCountdown() {
       backdropFilter: 'blur(4px)',
       WebkitBackdropFilter: 'blur(4px)',
     }}>
+      <p style={{ fontSize: 11, fontStyle: 'italic', color: 'rgba(255,255,255,0.28)', padding: '12px 16px 0', lineHeight: 1.4, margin: 0 }}>
+        Kaliteli bir çevre şans değil, seçimdir.
+      </p>
       <CountdownRow label="Grup Masası" targetDay={4} />
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '0 16px' }} />
+      <p style={{ fontSize: 11, fontStyle: 'italic', color: 'rgba(255,255,255,0.28)', padding: '12px 16px 0', lineHeight: 1.4, margin: 0 }}>
+        Bazı akşamlar takvimde kalır, bazıları hafızanda.
+      </p>
       <CountdownRow label="Baş Başa Masa" targetDay={5} />
     </div>
   );
