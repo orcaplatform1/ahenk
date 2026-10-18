@@ -12,7 +12,7 @@ interface MeData {
   lastName: string;
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
   profile?: { gender?: string | null };
-  kyc?: { status: string };
+  kyc?: { status: string; rejectReason?: string | null };
 }
 
 export default function DashboardPage() {
@@ -47,8 +47,17 @@ export default function DashboardPage() {
         className="fixed inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,0.1) 0%, transparent 70%)' }}
       />
-      <main className="relative z-10 max-w-5xl mx-auto px-4 py-10">
-        <div className="mb-8">
+      <main className="relative z-10 max-w-5xl mx-auto px-4 py-3">
+        {me?.kyc?.status === 'REJECTED' && (
+          <div className="mb-4 rounded-2xl px-4 py-4" style={{ background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.35)' }}>
+            <p className="text-sm font-semibold text-[#ff6b6b] mb-1">Kimlik doğrulamanız reddedildi</p>
+            {me.kyc.rejectReason && (
+              <p className="text-sm text-[#ccc]">Red nedeni: {me.kyc.rejectReason}</p>
+            )}
+            <p className="text-xs text-[#888] mt-2">Profilim → Kimlik Doğrulama sekmesinden yeniden başvurabilirsiniz.</p>
+          </div>
+        )}
+        <div className="mb-3">
           <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Bu Haftanın Masası</h1>
         </div>
         <MasalarDashboard

@@ -237,7 +237,7 @@ export default function GirisPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 flex flex-col items-center justify-center z-[100]"
+            className="fixed inset-0 flex flex-col items-center justify-start pt-[18%] z-[100]"
             style={{ background: '#0a0a0a' }}
           >
             <div className="fixed inset-0 pointer-events-none">
