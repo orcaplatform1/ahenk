@@ -34,7 +34,7 @@ export function OceanRadar({ scores, size = 200 }: Props) {
 
   const cx = size / 2;
   const cy = size / 2;
-  const maxR = size * 0.38;
+  const maxR = size * 0.44;
   const STEPS = 4;
 
   // Grid rings
@@ -76,13 +76,13 @@ export function OceanRadar({ scores, size = 200 }: Props) {
         {rings.map((r, i) => (
           <polygon key={i}
             points={AXES.map((_, j) => { const a = (j * 360) / AXES.length; const p = polarToXY(a, r, cx, cy); return `${p.x},${p.y}`; }).join(' ')}
-            fill="none" stroke="rgba(192,57,43,0.22)" strokeWidth="1"
+            fill="none" stroke="rgba(192,57,43,0.55)" strokeWidth="1"
           />
         ))}
 
         {/* Axis lines */}
         {axisPoints.map((p, i) => (
-          <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(192,57,43,0.14)" strokeWidth="1" />
+          <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(192,57,43,0.35)" strokeWidth="1" />
         ))}
 
         {/* Score polygon — spring from center */}
@@ -111,8 +111,8 @@ export function OceanRadar({ scores, size = 200 }: Props) {
               style={{ cursor: 'default' }}>
               <circle cx={hitP.x} cy={hitP.y} r={maxR * 0.5} fill="transparent" />
               <text x={lp.x} y={lp.y - size * 0.028} textAnchor="middle" dominantBaseline="middle"
-                fontSize={size * 0.048} fill="rgba(255,255,255,0.45)" fontFamily="Inter, sans-serif"
-                fontWeight="600" style={{ letterSpacing: '0.09em' }}>
+                fontSize={size * 0.048} fill="#e87070" fontFamily="Inter, sans-serif"
+                fontWeight="700" style={{ letterSpacing: '0.09em' }}>
                 {ax.label.toUpperCase()}
               </text>
               <text x={lp.x} y={lp.y + size * 0.042} textAnchor="middle" dominantBaseline="middle"
