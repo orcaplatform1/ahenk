@@ -176,7 +176,7 @@ function EmptyMasaCard({
   const participants: MockP[] = cardType === 'basbasa'
     ? [
         { initials, gender: uGender },
-        { initials: '?.', gender: oppGender, check: true },
+        { initials: '?.', gender: oppGender },
       ]
     : [
         { initials, gender: uGender ?? 'MALE' },
@@ -190,13 +190,16 @@ function EmptyMasaCard({
   return (
     <div style={{ ...CARD_STYLE, position: 'relative' }}>
       {locked && (
-        <img
-          src="/lock-icon.png"
-          alt="Kilitli"
-          width={56}
-          height={56}
-          style={{ position: 'absolute', top: 16, right: 16, zIndex: 2, opacity: 0.85 }}
-        />
+        <>
+          <style>{`@keyframes lockShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}50%{transform:translateX(0)}75%{transform:translateX(3px)}}`}</style>
+          <img
+            src="/lock-icon.png"
+            alt="Kilitli"
+            width={56}
+            height={56}
+            style={{ position: 'absolute', top: 16, right: 16, zIndex: 2, opacity: 0.85, animation: 'lockShake 0.8s ease-in-out infinite' }}
+          />
+        </>
       )}
 
       <motion.div
@@ -276,6 +279,27 @@ function EmptyMasaCard({
           </div>
         </motion.div>
 
+        {/* Haritada Gör */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          style={{ marginBottom: 18 }}
+        >
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            width: '100%', padding: '13px 0',
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 9999, color: '#f5f5f5',
+            fontSize: 12, fontWeight: 700,
+            letterSpacing: '0.12em', textTransform: 'uppercase',
+            fontFamily: 'Inter, sans-serif', opacity: 0.5,
+          }}>
+            <span style={{ fontSize: 14 }}>📍</span>
+            HARİTADA GÖR
+          </div>
+        </motion.div>
+
         {/* Çizgi */}
         <motion.div
           initial={{ scaleX: 0 }} animate={{ scaleX: 1 }}
@@ -307,7 +331,7 @@ function EmptyMasaCard({
           <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#555', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
             {cardType === 'basbasa' ? 'BAŞ BAŞA' : 'KATILIMCILAR'}
           </p>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={cardType === 'group' ? { display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gap: 10 } : { display: 'flex', gap: 10 }}>
             {participants.map((p, i) => (
               <MockAvatar
                 key={i}
@@ -418,27 +442,6 @@ function EmptyMasaCard({
           >
             Rezervasyon İptal
           </button>
-        </motion.div>
-
-        {/* Haritada Gör */}
-        <motion.div
-          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9, duration: 0.4 }}
-          style={{ marginBottom: 20 }}
-        >
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            width: '100%', padding: '13px 0',
-            background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 9999, color: '#f5f5f5',
-            fontSize: 12, fontWeight: 700,
-            letterSpacing: '0.12em', textTransform: 'uppercase',
-            fontFamily: 'Inter, sans-serif', opacity: 0.5,
-          }}>
-            <span style={{ fontSize: 14 }}>📍</span>
-            HARİTADA GÖR
-          </div>
         </motion.div>
 
         {/* Sohbet bölümü */}

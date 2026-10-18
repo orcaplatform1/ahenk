@@ -866,6 +866,45 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
           </motion.div>
         )}
 
+        {mapLink && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            style={{ marginBottom: 18 }}
+          >
+            <a
+              href={mapLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                width: '100%', padding: '13px 0',
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 9999,
+                color: '#f5f5f5', textDecoration: 'none',
+                fontSize: 12, fontWeight: 700,
+                letterSpacing: '0.12em', textTransform: 'uppercase',
+                fontFamily: 'Inter, sans-serif', transition: 'border-color 0.2s, background 0.2s',
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.borderColor = 'rgba(255,255,255,0.28)';
+                el.style.background = 'rgba(255,255,255,0.04)';
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.borderColor = 'rgba(255,255,255,0.12)';
+                el.style.background = 'transparent';
+              }}
+            >
+              <span style={{ fontSize: 14 }}>📍</span>
+              HARİTADA GÖR
+            </a>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ scaleX: 0 }} animate={{ scaleX: 1 }}
           transition={{ delay: 0.35, duration: 0.45, ease: 'easeOut' }}
@@ -896,7 +935,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
           <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#555', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
             {isOneOnOne ? 'BAŞ BAŞA' : 'KATILIMCILAR'}
           </p>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={isOneOnOne ? { display: 'flex', gap: 10, flexWrap: 'wrap' } : { display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gap: 10 }}>
             {ordered.map((p, i) => (
               <DetayAvatar key={`${p.initials}-${i}`} participant={p} delay={0.52 + i * 0.1} />
             ))}
@@ -1042,45 +1081,6 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
             <p style={{ margin: 0, fontSize: 13, color: '#c0392b', fontFamily: 'Inter, sans-serif' }}>
               Rezervasyonunuz iptal edildi.
             </p>
-          </motion.div>
-        )}
-
-        {mapLink && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: masa.aiReport ? 0.9 : 0.8, duration: 0.4 }}
-            style={{ marginTop: 4 }}
-          >
-            <a
-              href={mapLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                width: '100%', padding: '13px 0',
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 9999,
-                color: '#f5f5f5', textDecoration: 'none',
-                fontSize: 12, fontWeight: 700,
-                letterSpacing: '0.12em', textTransform: 'uppercase',
-                fontFamily: 'Inter, sans-serif', transition: 'border-color 0.2s, background 0.2s',
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                el.style.borderColor = 'rgba(255,255,255,0.28)';
-                el.style.background = 'rgba(255,255,255,0.04)';
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                el.style.borderColor = 'rgba(255,255,255,0.12)';
-                el.style.background = 'transparent';
-              }}
-            >
-              <span style={{ fontSize: 14 }}>📍</span>
-              HARİTADA GÖR
-            </a>
           </motion.div>
         )}
 
