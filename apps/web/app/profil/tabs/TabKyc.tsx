@@ -355,10 +355,10 @@ function LivenessRecorder({ onCapture, initialDone }: { onCapture: (blob: Blob, 
             {phase === 'recording' && (
               <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 flex flex-col justify-between p-3"
+                className="absolute inset-0 flex flex-col justify-between items-start p-3"
               >
                 {/* Sol üst: KAYIT BAŞLADI + altında geri sayım ortalı */}
-                <div className="flex flex-col items-center gap-0">
+                <div className="flex flex-col items-center gap-0 w-fit">
                   <div className="flex items-center gap-1">
                     <motion.div
                       animate={{ opacity: [1, 0.3, 1] }}
@@ -366,7 +366,7 @@ function LivenessRecorder({ onCapture, initialDone }: { onCapture: (blob: Blob, 
                       className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                       style={{ background: '#27ae60' }}
                     />
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#2ecc71', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
                       KAYIT BAŞLADI
                     </span>
                   </div>
@@ -401,8 +401,8 @@ function LivenessRecorder({ onCapture, initialDone }: { onCapture: (blob: Blob, 
 
       {/* Açıklama */}
       {phase === 'preview' && (
-        <p className="text-xs text-[#555] text-center">
-          Kayıt başlayınca adınızı ve soyadınızı yüksek sesle söyleyin.
+        <p className="text-xs text-center" style={{ color: '#2ecc71' }}>
+          Kayıt başladığında 5 sn. içinde adınızı ve soyadınızı söyleyin.
         </p>
       )}
 
@@ -601,12 +601,6 @@ export function TabKyc() {
           />
 
           <LivenessRecorder onCapture={handleCapture} initialDone={!!liveness} />
-
-          {!liveness && (
-            <p className="text-xs text-center" style={{ color: '#2ecc71' }}>
-              Kayıt başladığında 5 sn. içinde adınızı ve soyadınızı söyleyin.
-            </p>
-          )}
 
           {error && <p className="text-accent text-sm">{error}</p>}
 
