@@ -513,6 +513,7 @@ export function TabKyc() {
       setFiles({});
       setLiveness(null);
       setProgress(0);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e) {
       setError((e as Error).message);
     } finally {
