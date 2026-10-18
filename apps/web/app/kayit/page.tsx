@@ -283,7 +283,7 @@ function KayitPageInner() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 flex flex-col items-center justify-center"
+            className="fixed inset-0 flex flex-col items-center justify-start pt-[18%]"
             style={{ background: '#0a0a0a', zIndex: 100 }}
           >
             <div className="fixed inset-0 pointer-events-none">
