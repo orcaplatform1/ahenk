@@ -344,7 +344,7 @@ export class AuthService {
       firstName: profile?.firstName ?? '',
       lastName: profile?.lastName ?? '',
       isKycVerified: kyc?.status === 'APPROVED',
-      kyc: kyc ? { status: kyc.status } : undefined,
+      kyc: kyc ? { status: kyc.status, rejectReason: kyc.rejectReason ?? null } : undefined,
       activePlan,
       activeSanction: activeSanction ?? null,
       profile: profile ? {

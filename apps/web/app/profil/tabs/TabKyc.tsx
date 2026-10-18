@@ -492,6 +492,8 @@ export function TabKyc() {
       .catch((e: Error) => {
         if (e.message.includes('404') || e.message.toLowerCase().includes('bulunamadı')) {
           setKycStatus({ status: 'PENDING' });
+        } else if (e.message === '__rate_limit__') {
+          setError('Çok fazla istek gönderildi. Lütfen sayfayı yeniden yükleyin.');
         } else {
           setError(e.message);
         }

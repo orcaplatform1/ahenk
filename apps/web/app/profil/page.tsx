@@ -58,8 +58,13 @@ function ProfilPage() {
   }, [searchParams]);
 
   function changeTab(key: TabKey) {
+    window.scrollTo({ top: 0, behavior: 'instant' });
     router.replace(`/profil?tab=${key}`, { scroll: false });
   }
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
 
   useEffect(() => {
     api.get<UserData>('/auth/me')

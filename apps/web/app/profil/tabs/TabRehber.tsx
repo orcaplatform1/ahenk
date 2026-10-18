@@ -3,28 +3,10 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
-interface ServerBlock { id: string; hashedPhone?: string; createdAt: string; }
-
-const LS_KEY = 'ahenk_contact_block_map';
-
-function loadHashMap(): Record<string, string> {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) ?? '{}'); } catch { return {}; }
-}
-function saveHashMap(map: Record<string, string>) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(map)); } catch {}
-}
-
-async function sha256hex(text: string): Promise<string | null> {
-  if (typeof crypto === 'undefined' || !crypto.subtle) return null;
-  try {
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-  } catch { return null; }
-}
+interface ServerBlock { id: string; phoneNumber?: string; hashedPhone?: string; createdAt: string; }
 
 export function TabRehber() {
   const [serverBlocks, setServerBlocks] = useState<ServerBlock[]>([]);
-  const [hashMap, setHashMap] = useState<Record<string, string>>({});
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(false);
@@ -33,11 +15,10 @@ export function TabRehber() {
   function loadBlocks() {
     api.get<{ count: number; items: ServerBlock[] }>('/contact-blocks')
       .then(r => setServerBlocks(r.items ?? []))
-      .catch(() => {});
+      .catch((e: Error) => setError(e.message));
   }
 
   useEffect(() => {
-    setHashMap(loadHashMap());
     loadBlocks();
   }, []);
 
@@ -48,13 +29,7 @@ export function TabRehber() {
     const display = `+90${digits}`;
     setAdding(true); setError('');
     try {
-      const h = await sha256hex(display);
-      if (!h) { setError("Hash'lenemedi. HTTPS bağlantısı gereklidir."); return; }
-      const map = loadHashMap();
-      map[h] = display;
-      saveHashMap(map);
-      setHashMap({ ...map });
-      await api.post('/contact-blocks/sync', { hashedPhones: [h] });
+      await api.post('/contact-blocks/sync', { hashedPhones: [display] });
       setInput('');
       loadBlocks();
     } catch (e) { setError((e as Error).message); }
@@ -66,18 +41,13 @@ export function TabRehber() {
     try {
       await api.delete(`/contact-blocks/${b.id}`);
       setServerBlocks(prev => prev.filter(x => x.id !== b.id));
-      if (b.hashedPhone) {
-const map = loadHashMap();
-        delete map[b.hashedPhone!];
-        saveHashMap(map);
-        setHashMap({ ...map });
-      }
     } catch (e) { setError((e as Error).message); }
     finally { setDeleting(null); }
   }
 
   function resolveDisplay(b: ServerBlock, i: number): string {
-    if (b.hashedPhone && hashMap[b.hashedPhone]) return hashMap[b.hashedPhone];
+    const val = b.phoneNumber ?? b.hashedPhone ?? '';
+    if (val.startsWith('+90') || /^\d{10,}$/.test(val)) return val;
     return `Engellenen Numara #${i + 1}`;
   }
 
@@ -90,7 +60,7 @@ const map = loadHashMap();
           {serverBlocks.length}<span className="text-sm font-normal text-[#888]">/50</span>
         </p>
         <p className="text-xs text-[#888] mt-1">
-          Numaralar SHA-256 ile hash'lenerek saklanır; ham numara sunucuda tutulmaz.
+          Bu numaralarla eşleştirilmezsiniz.
         </p>
       </div>
 

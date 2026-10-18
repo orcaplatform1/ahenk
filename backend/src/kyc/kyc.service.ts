@@ -3,107 +3,99 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
-  UnprocessableEntityException,
+  StreamableFile,
 } from "@nestjs/common";
+import { Response } from "express";
+import * as fs from "fs";
+import * as path from "path";
 import { PrismaService } from "../prisma/prisma.service";
-import { StorageService } from "../storage/storage.service";
 import { NotificationService } from "../notification/notification.service";
-import { RequestUploadDto } from "./dto/request-upload.dto";
-import { SubmitKycDto } from "./dto/submit-kyc.dto";
 import { ReviewKycDto } from "./dto/review-kyc.dto";
 import { KycStatus, ReferralStatus } from "@prisma/client";
 
-// Başvuru tekrar gönderilebilir durumlar
+const UPLOAD_DIR = path.join(process.cwd(), "..", "uploads", "kyc");
+
+const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_VIDEO = ["video/mp4", "video/webm", "video/quicktime"];
+const MAX_IMAGE = 5 * 1024 * 1024;
+const MAX_VIDEO = 80 * 1024 * 1024;
+
 const RESUBMITTABLE: KycStatus[] = [KycStatus.REJECTED, KycStatus.SUSPICIOUS];
 
 @Injectable()
 export class KycService {
   constructor(
     private prisma: PrismaService,
-    private storage: StorageService,
     private notifications: NotificationService,
   ) {}
 
-  // ─── Presigned URL al ─────────────────────────────────────────────────────
+  // ─── Dosya yükle + başvuru oluştur ───────────────────────────────────────
 
-  async requestUploadUrls(userId: string, dto: RequestUploadDto) {
+  async uploadAndSubmit(
+    userId: string,
+    files: {
+      idFront?: Express.Multer.File[];
+      idBack?: Express.Multer.File[];
+      liveness?: Express.Multer.File[];
+    },
+  ) {
+    const front = files.idFront?.[0];
+    const back = files.idBack?.[0];
+    const video = files.liveness?.[0];
+
+    if (!front || !back || !video) {
+      throw new BadRequestException("idFront, idBack ve liveness dosyaları zorunlu");
+    }
+
+    if (!ALLOWED_IMAGE.includes(front.mimetype)) throw new BadRequestException("Kimlik ön yüzü için JPEG, PNG veya WebP gerekli");
+    if (!ALLOWED_IMAGE.includes(back.mimetype))  throw new BadRequestException("Kimlik arka yüzü için JPEG, PNG veya WebP gerekli");
+    if (!ALLOWED_VIDEO.includes(video.mimetype)) throw new BadRequestException("Liveness için MP4, WebM veya MOV gerekli");
+    if (front.size > MAX_IMAGE) throw new BadRequestException("Fotoğraf en fazla 5 MB olabilir");
+    if (back.size  > MAX_IMAGE) throw new BadRequestException("Fotoğraf en fazla 5 MB olabilir");
+    if (video.size > MAX_VIDEO) throw new BadRequestException("Video en fazla 80 MB olabilir");
+
     const existing = await this.prisma.kycSubmission.findUnique({ where: { userId } });
-
     if (existing && !RESUBMITTABLE.includes(existing.status)) {
       throw new ConflictException(
         existing.status === KycStatus.PENDING
-          ? "KYC başvurunuz inceleniyor, lütfen bekleyin"
+          ? "KYC başvurunuz inceleniyor"
           : "KYC başvurunuz onaylanmış",
       );
     }
 
-    const idFrontKey = this.storage.buildKycKey(userId, "id-front", dto.idFrontMime);
-    const idBackKey = this.storage.buildKycKey(userId, "id-back", dto.idBackMime);
-    const livenessKey = this.storage.buildKycKey(userId, "liveness", dto.livenessMime);
+    // Kullanıcı dizini
+    const userDir = path.join(UPLOAD_DIR, userId);
+    fs.mkdirSync(userDir, { recursive: true });
 
-    const [idFrontUrl, idBackUrl, livenessUrl] = await Promise.all([
-      this.storage.presignedPutUrl(idFrontKey, dto.idFrontMime, dto.idFrontSize),
-      this.storage.presignedPutUrl(idBackKey, dto.idBackMime, dto.idBackSize),
-      this.storage.presignedPutUrl(livenessKey, dto.livenessMime, dto.livenessSize),
-    ]);
-
-    return {
-      idFront: { uploadUrl: idFrontUrl, key: idFrontKey },
-      idBack: { uploadUrl: idBackUrl, key: idBackKey },
-      liveness: { uploadUrl: livenessUrl, key: livenessKey },
-      expiresInSeconds: 15 * 60,
-    };
-  }
-
-  // ─── KYC başvurusu gönder ─────────────────────────────────────────────────
-
-  async submit(userId: string, dto: SubmitKycDto) {
-    // Anahtarların userId ile eşleştiğini doğrula
-    this.assertKeysOwnedByUser(userId, dto);
-
-    // R2'de gerçekten var mı?
-    const [frontExists, backExists, livenessExists] = await Promise.all([
-      this.storage.exists(dto.idFrontKey),
-      this.storage.exists(dto.idBackKey),
-      this.storage.exists(dto.livenessKey),
-    ]);
-
-    if (!frontExists || !backExists || !livenessExists) {
-      throw new UnprocessableEntityException(
-        "Dosyalar henüz yüklenmemiş, önce tüm dosyaları yükleyin",
-      );
+    // Eski dosyaları temizle
+    if (existing) {
+      for (const f of [existing.idFrontKey, existing.idBackKey, existing.livenessKey]) {
+        try { fs.unlinkSync(f); } catch {}
+      }
     }
 
-    const existing = await this.prisma.kycSubmission.findUnique({ where: { userId } });
+    const extOf = (mime: string) => mime.split("/")[1].replace("quicktime", "mov");
+    const frontPath    = path.join(userDir, `id-front.${extOf(front.mimetype)}`);
+    const backPath     = path.join(userDir, `id-back.${extOf(back.mimetype)}`);
+    const livenessPath = path.join(userDir, `liveness.${extOf(video.mimetype)}`);
+
+    fs.writeFileSync(frontPath, front.buffer);
+    fs.writeFileSync(backPath,  back.buffer);
+    fs.writeFileSync(livenessPath, video.buffer);
 
     if (existing) {
-      if (!RESUBMITTABLE.includes(existing.status)) {
-        throw new ConflictException(
-          existing.status === KycStatus.PENDING
-            ? "KYC başvurunuz zaten inceleniyor"
-            : "KYC başvurunuz zaten onaylanmış",
-        );
-      }
-
-      // Eski dosyaları R2'den sil
-      await Promise.allSettled([
-        this.storage.delete(existing.idFrontKey),
-        this.storage.delete(existing.idBackKey),
-        this.storage.delete(existing.livenessKey),
-      ]);
-
       return this.prisma.kycSubmission.update({
         where: { userId },
         data: {
-          idFrontKey: dto.idFrontKey,
-          idBackKey: dto.idBackKey,
-          livenessKey: dto.livenessKey,
+          idFrontKey: frontPath,
+          idBackKey:  backPath,
+          livenessKey: livenessPath,
           status: KycStatus.PENDING,
           reviewedById: null,
-          reviewedAt: null,
+          reviewedAt:   null,
           rejectReason: null,
-          adminNote: null,
-          submittedAt: new Date(),
+          adminNote:    null,
+          submittedAt:  new Date(),
         },
       });
     }
@@ -111,24 +103,22 @@ export class KycService {
     return this.prisma.kycSubmission.create({
       data: {
         userId,
-        idFrontKey: dto.idFrontKey,
-        idBackKey: dto.idBackKey,
-        livenessKey: dto.livenessKey,
+        idFrontKey:  frontPath,
+        idBackKey:   backPath,
+        livenessKey: livenessPath,
       },
     });
   }
 
-  // ─── Kendi KYC durumunu gör ───────────────────────────────────────────────
+  // ─── Kendi KYC durumu ─────────────────────────────────────────────────────
 
   async getMyStatus(userId: string) {
     const kyc = await this.prisma.kycSubmission.findUnique({ where: { userId } });
     if (!kyc) return { status: null, message: "Henüz KYC başvurusu yapılmadı" };
-
     return {
       status: kyc.status,
       submittedAt: kyc.submittedAt,
-      reviewedAt: kyc.reviewedAt,
-      // Ret/şüphe nedeni kullanıcıya gösterilir
+      reviewedAt:  kyc.reviewedAt,
       rejectReason: kyc.status !== KycStatus.APPROVED ? kyc.rejectReason : null,
     };
   }
@@ -139,16 +129,15 @@ export class KycService {
     const where = status ? { status } : {};
     const p = Math.max(1, parseInt(String(page), 10) || 1);
     const l = Math.max(1, parseInt(String(limit), 10) || 20);
-    const skip = (p - 1) * l;
 
     const [items, total] = await Promise.all([
       this.prisma.kycSubmission.findMany({
         where,
-        skip,
+        skip: (p - 1) * l,
         take: l,
         orderBy: { submittedAt: "asc" },
         include: {
-          user: { select: { id: true, email: true, profile: true } },
+          user: { select: { id: true, email: true, phone: true, profile: true } },
           reviewedBy: { select: { id: true, email: true } },
         },
       }),
@@ -158,7 +147,7 @@ export class KycService {
     return { items, total, page: p, limit: l, totalPages: Math.ceil(total / l) };
   }
 
-  // ─── Admin: Tek başvuru + imzalı URL'ler ─────────────────────────────────
+  // ─── Admin: Tek başvuru ───────────────────────────────────────────────────
 
   async adminGetOne(id: string) {
     const kyc = await this.prisma.kycSubmission.findUnique({
@@ -170,16 +159,43 @@ export class KycService {
     });
     if (!kyc) throw new NotFoundException("KYC başvurusu bulunamadı");
 
-    const [idFrontUrl, idBackUrl, livenessUrl] = await Promise.all([
-      this.storage.presignedGetUrl(kyc.idFrontKey),
-      this.storage.presignedGetUrl(kyc.idBackKey),
-      this.storage.presignedGetUrl(kyc.livenessKey),
-    ]);
-
     return {
       ...kyc,
-      signedUrls: { idFrontUrl, idBackUrl, livenessUrl, expiresInSeconds: 3600 },
+      fileUrls: {
+        idFront:  `/api/v1/kyc/admin/file/${id}/front`,
+        idBack:   `/api/v1/kyc/admin/file/${id}/back`,
+        liveness: `/api/v1/kyc/admin/file/${id}/liveness`,
+      },
     };
+  }
+
+  // ─── Admin: Dosya sun ─────────────────────────────────────────────────────
+
+  async serveAdminFile(submissionId: string, type: string, res: Response) {
+    const kyc = await this.prisma.kycSubmission.findUnique({ where: { id: submissionId } });
+    if (!kyc) throw new NotFoundException("KYC başvurusu bulunamadı");
+
+    const fileMap: Record<string, string> = {
+      front:    kyc.idFrontKey,
+      back:     kyc.idBackKey,
+      liveness: kyc.livenessKey,
+    };
+
+    const filePath = fileMap[type];
+    if (!filePath) throw new BadRequestException("Geçersiz dosya tipi (front | back | liveness)");
+    if (!fs.existsSync(filePath)) throw new NotFoundException("Dosya bulunamadı");
+
+    const ext  = path.extname(filePath).toLowerCase();
+    const mime = ext === ".mp4" ? "video/mp4"
+               : ext === ".webm" ? "video/webm"
+               : ext === ".mov"  ? "video/quicktime"
+               : ext === ".png"  ? "image/png"
+               : ext === ".webp" ? "image/webp"
+               : "image/jpeg";
+
+    res.set({ "Content-Type": mime, "Cache-Control": "no-store" });
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
   }
 
   // ─── Admin: İncele ────────────────────────────────────────────────────────
@@ -197,36 +213,23 @@ export class KycService {
       data: {
         status: dto.status,
         reviewedById: reviewerId,
-        reviewedAt: new Date(),
+        reviewedAt:   new Date(),
         rejectReason: dto.rejectReason ?? null,
-        adminNote: dto.adminNote ?? null,
+        adminNote:    dto.adminNote ?? null,
       },
     });
 
-    // Bildirim gönder (fire-and-forget)
     this.notifications
       .notifyKycReviewed(kyc.userId, dto.status, dto.rejectReason)
       .catch(() => {});
 
-    // KYC onaylandıysa: bu kullanıcıyı davet eden referrer'ın REGISTERED referral'ını KYC_APPROVED'a yükselt
     if (dto.status === KycStatus.APPROVED) {
       this.prisma.referral.updateMany({
         where: { referredId: kyc.userId, status: ReferralStatus.REGISTERED },
-        data: { status: ReferralStatus.KYC_APPROVED },
+        data:  { status: ReferralStatus.KYC_APPROVED },
       }).catch(() => {});
     }
 
     return updated;
-  }
-
-  // ─── Yardımcı ─────────────────────────────────────────────────────────────
-
-  private assertKeysOwnedByUser(userId: string, dto: SubmitKycDto) {
-    const keys = [dto.idFrontKey, dto.idBackKey, dto.livenessKey];
-    for (const key of keys) {
-      if (!key.startsWith(`kyc/${userId}/`)) {
-        throw new BadRequestException("Dosya anahtarları size ait değil");
-      }
-    }
   }
 }

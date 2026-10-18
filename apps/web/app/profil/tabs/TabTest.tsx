@@ -177,7 +177,7 @@ export function TabTest() {
   }, []);
 
   if (loading) return <SkeletonBlock lines={6} />;
-  if (error) return <p className="text-accent text-sm">{error}</p>;
+  if (error) return <p className="text-accent text-sm">{error === '__rate_limit__' ? 'Çok fazla istek gönderildi. Lütfen sayfayı yeniden yükleyin.' : error}</p>;
 
   if (!result || !result.completed || !result.scores) {
     return (

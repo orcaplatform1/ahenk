@@ -76,13 +76,13 @@ export function OceanRadar({ scores, size = 200 }: Props) {
         {rings.map((r, i) => (
           <polygon key={i}
             points={AXES.map((_, j) => { const a = (j * 360) / AXES.length; const p = polarToXY(a, r, cx, cy); return `${p.x},${p.y}`; }).join(' ')}
-            fill="none" stroke="#1f1f1f" strokeWidth="1"
+            fill="none" stroke="rgba(192,57,43,0.22)" strokeWidth="1"
           />
         ))}
 
         {/* Axis lines */}
         {axisPoints.map((p, i) => (
-          <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#1f1f1f" strokeWidth="1" />
+          <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(192,57,43,0.14)" strokeWidth="1" />
         ))}
 
         {/* Score polygon — spring from center */}
@@ -100,18 +100,24 @@ export function OceanRadar({ scores, size = 200 }: Props) {
         {/* Axis labels + hover targets */}
         {AXES.map((ax, i) => {
           const angle = (i * 360) / AXES.length;
-          const labelR = maxR + 18;
+          const labelR = maxR + 22;
           const lp = polarToXY(angle, labelR, cx, cy);
           const hitP = polarToXY(angle, maxR * 0.5, cx, cy);
+          const score = Math.round(scores[ax.key]);
           return (
             <g key={ax.key}
               onMouseEnter={() => setHovered(ax)}
               onMouseLeave={() => setHovered(null)}
               style={{ cursor: 'default' }}>
               <circle cx={hitP.x} cy={hitP.y} r={maxR * 0.5} fill="transparent" />
-              <text x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle"
-                fontSize={size * 0.055} fill="#888888" fontFamily="Inter, sans-serif">
-                {ax.label}
+              <text x={lp.x} y={lp.y - size * 0.028} textAnchor="middle" dominantBaseline="middle"
+                fontSize={size * 0.048} fill="rgba(255,255,255,0.45)" fontFamily="Inter, sans-serif"
+                fontWeight="600" style={{ letterSpacing: '0.09em' }}>
+                {ax.label.toUpperCase()}
+              </text>
+              <text x={lp.x} y={lp.y + size * 0.042} textAnchor="middle" dominantBaseline="middle"
+                fontSize={size * 0.072} fill="#c0392b" fontFamily="Inter, sans-serif" fontWeight="800">
+                {score}
               </text>
             </g>
           );

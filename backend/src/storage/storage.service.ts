@@ -35,6 +35,8 @@ export class StorageService implements OnModuleInit {
         accessKeyId: this.config.get<string>("R2_ACCESS_KEY_ID") ?? "placeholder",
         secretAccessKey: this.config.get<string>("R2_SECRET_ACCESS_KEY") ?? "placeholder",
       },
+      requestChecksumCalculation: "when_required" as never,
+      responseChecksumValidation: "when_required" as never,
     });
 
     this.logger.log(`R2 başlatıldı: ${this.bucket}`);

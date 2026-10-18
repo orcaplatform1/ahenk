@@ -168,7 +168,7 @@ function EmptyMasaCard({
 }) {
   const initials = userInfo
     ? `${(userInfo.firstName[0] ?? '?').toUpperCase()}.${(userInfo.lastName[0] ?? '?').toUpperCase()}.`
-    : '?.';
+    : '?';
   const uGender   = userInfo?.gender ?? null;
   const oppGender = uGender === 'FEMALE' ? 'MALE' : 'FEMALE';
 
@@ -176,15 +176,15 @@ function EmptyMasaCard({
   const participants: MockP[] = cardType === 'basbasa'
     ? [
         { initials, gender: uGender },
-        { initials: '?.', gender: oppGender },
+        { initials: '?', gender: oppGender },
       ]
     : [
         { initials, gender: uGender ?? 'MALE' },
-        { initials: '?.', gender: oppGender },
-        { initials: '?.', gender: uGender ?? 'MALE' },
-        { initials: '?.', gender: oppGender },
-        { initials: '?.', gender: uGender ?? 'MALE' },
-        { initials: '?.', gender: oppGender },
+        { initials: '?', gender: oppGender },
+        { initials: '?', gender: uGender ?? 'MALE' },
+        { initials: '?', gender: oppGender },
+        { initials: '?', gender: uGender ?? 'MALE' },
+        { initials: '?', gender: oppGender },
       ];
 
   return (
