@@ -203,7 +203,8 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <Image src="/logo.webp" alt="Ahenk" width={28} height={28} className="rounded-full" />
+            <style>{`@keyframes navbar-logo-spin{to{transform:rotate(360deg)}}`}</style>
+            <Image src="/logo.webp" alt="Ahenk" width={28} height={28} className="rounded-full" style={{ animation: 'navbar-logo-spin 10s linear infinite' }} />
             <span className="font-sans font-semibold text-sm tracking-[0.12em] text-text">AHENK</span>
           </Link>
 

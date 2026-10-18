@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { HeroCountdown } from '@/components/HeroCountdown';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
 
 
@@ -63,30 +64,6 @@ const plans = [
 
 
 
-/* ─── Çift halka ─────────────────────────────────────────────────────────── */
-
-function DualRings() {
-  return (
-    <div className="relative w-full h-full flex items-center justify-center">
-      {/* Kırmızı glow arka plan */}
-      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.18) 0%, transparent 65%)' }} />
-      {/* Dönen logo */}
-      <motion.div
-        className="absolute"
-        style={{ width: '32%', height: '32%', zIndex: 10 }}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0, rotate: 360 }}
-        transition={{
-          opacity: { delay: 0.4, duration: 0.6, ease: 'easeOut' },
-          y: { delay: 0.4, duration: 0.6, ease: 'easeOut' },
-          rotate: { duration: 8, repeat: Infinity, ease: 'linear', delay: 0 },
-        }}
-      >
-        <Image src="/logo.webp" alt="Ahenk" fill className="object-contain" style={{ filter: 'drop-shadow(0 0 24px rgba(192,57,43,0.65))' }} />
-      </motion.div>
-    </div>
-  );
-}
 
 /* ─── Red last word helper ───────────────────────────────────────────────── */
 function AccordionGroup({ items }: { items: { title: string; body: string }[] }) {
@@ -276,18 +253,11 @@ export default function Home() {
 
       <div className="relative" style={{ zIndex: 1 }}>
         {/* ── Hero ──────────────────────────────────────────────────────── */}
-        <section id="hero" className="relative overflow-hidden pt-[52px] min-h-[60vh] lg:min-h-[70vh]" style={{ display: 'flex', alignItems: 'center' }}>
+        <section id="hero" className="relative overflow-hidden pt-[52px] min-h-[70vh]" style={{ display: 'flex', alignItems: 'center' }}>
           <div className="hero-bg absolute inset-0" />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
-          {/* Dönen logo — absolute, hero sağ üst */}
-          <div className="absolute pointer-events-none hidden lg:block" style={{ top: '10%', right: '6%', width: 480, height: 480, zIndex: 5 }}>
-            <DualRings />
-          </div>
-          <div className="absolute pointer-events-none block lg:hidden" style={{ top: '20%', right: '5%', width: 180, height: 180, zIndex: 5 }}>
-            <DualRings />
-          </div>
 
           <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-16 w-full py-12">
             <div className="flex flex-col gap-5 lg:max-w-lg">
@@ -352,9 +322,19 @@ export default function Home() {
                   Nasıl Çalışır?
                 </a>
               </motion.div>
+
+              {/* Geri sayım — desktop */}
+              <div className="hidden md:block pt-2">
+                <HeroCountdown />
+              </div>
             </div>
           </div>
         </section>
+
+        {/* Geri sayım — mobil */}
+        <div className="block md:hidden px-6 py-6" style={{ background: 'rgba(0,0,0,0.6)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <HeroCountdown />
+        </div>
 
         {/* ── İstatistik kartları ───────────────────────────────────────── */}
         <StatCards />
