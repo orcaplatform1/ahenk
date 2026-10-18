@@ -38,10 +38,10 @@ function fmtDate(val?: string | null) {
 
 /* ── Radar Chart ──────────────────────────────────────────────────────── */
 function RadarChart({ scores }: { scores: Scores }) {
-  const size = 240;
+  const size = 280;
   const cx = size / 2;
   const cy = size / 2;
-  const maxR = 104;
+  const maxR = 96;
   const gridLevels = [0.25, 0.5, 0.75, 1];
 
   const axes = DIMENSIONS.map((_, i) => {
@@ -56,10 +56,9 @@ function RadarChart({ scores }: { scores: Scores }) {
   }));
   const polyStr = points.map(p => `${p.x},${p.y}`).join(' ');
 
-  // Path string for stroke-dasharray animation
   const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
 
-  const labelR = maxR + 22;
+  const labelR = maxR + 26;
   const axisLabels = DIMENSIONS.map((d, i) => ({
     label: d.radarLabel,
     x: cx + axes[i].cos * labelR,
@@ -67,11 +66,11 @@ function RadarChart({ scores }: { scores: Scores }) {
   }));
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="w-full" style={{ maxWidth: 260 }}>
+    <svg viewBox={`0 0 ${size} ${size}`} className="w-full" style={{ maxWidth: 300 }}>
       <defs>
         <radialGradient id="tabRadarFill" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#c0392b" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#c0392b" stopOpacity="0.06" />
+          <stop offset="0%" stopColor="#22c55e" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="#16a34a" stopOpacity="0.08" />
         </radialGradient>
         <filter id="tabRadarGlow">
           <feGaussianBlur stdDeviation="2.5" result="blur" />
@@ -121,7 +120,7 @@ function RadarChart({ scores }: { scores: Scores }) {
       <motion.path
         d={pathD}
         fill="none"
-        stroke="#ff6b6b"
+        stroke="#22c55e"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -136,7 +135,7 @@ function RadarChart({ scores }: { scores: Scores }) {
         <motion.circle
           key={i}
           cx={p.x} cy={p.y} r={3.5}
-          fill="#ff6b6b"
+          fill="#22c55e"
           filter="url(#tabRadarGlow)"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
