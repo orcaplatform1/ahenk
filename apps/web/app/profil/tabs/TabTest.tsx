@@ -41,7 +41,7 @@ function RadarChart({ scores }: { scores: Scores }) {
   const size = 240;
   const cx = size / 2;
   const cy = size / 2;
-  const maxR = 90;
+  const maxR = 104;
   const gridLevels = [0.25, 0.5, 0.75, 1];
 
   const axes = DIMENSIONS.map((_, i) => {
@@ -85,7 +85,7 @@ function RadarChart({ scores }: { scores: Scores }) {
           key={i}
           cx={cx} cy={cy} r={l * maxR}
           fill="none"
-          stroke="rgba(255,255,255,0.07)"
+          stroke="rgba(192,57,43,0.55)"
           strokeWidth="1"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -99,7 +99,7 @@ function RadarChart({ scores }: { scores: Scores }) {
           key={i}
           x1={cx} y1={cy}
           x2={cx + a.cos * maxR} y2={cy + a.sin * maxR}
-          stroke="rgba(255,255,255,0.07)"
+          stroke="rgba(192,57,43,0.35)"
           strokeWidth="1"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -152,9 +152,10 @@ function RadarChart({ scores }: { scores: Scores }) {
           x={l.x} y={l.y}
           textAnchor="middle"
           dominantBaseline="middle"
-          fill="#666"
+          fill="#e87070"
           fontSize="9"
           fontFamily="Inter, sans-serif"
+          fontWeight="700"
         >
           {l.label}
         </text>
