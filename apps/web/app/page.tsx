@@ -65,6 +65,212 @@ const plans = [
 
 
 
+/* ─── Her Yerde Biz Varız carousel ──────────────────────────────────────── */
+const MEDIA_LOGOS = [
+  'Hürriyet', 'Milliyet', 'Sabah', 'NTV', 'CNN Türk',
+  'Habertürk', 'TRT', 'Sözcü', 'Yeni Şafak', 'BirGün',
+];
+
+function MediaCarousel() {
+  const items = [...MEDIA_LOGOS, ...MEDIA_LOGOS];
+  return (
+    <section className="max-w-6xl mx-auto px-6 lg:px-16 py-16 lg:py-24">
+      <style>{`
+        @keyframes carousel-scroll {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .carousel-track {
+          display: flex;
+          gap: 56px;
+          width: max-content;
+          animation: carousel-scroll 28s linear infinite;
+        }
+        .carousel-track:hover { animation-play-state: paused; }
+        .carousel-logo { opacity: 0.5; transition: opacity 0.25s; flex-shrink: 0; }
+        .carousel-logo:hover { opacity: 1; }
+      `}</style>
+
+      <h2 className="font-serif italic text-4xl sm:text-5xl text-[#f5f5f5] mb-12">
+        Her Yerde Biz Varız
+      </h2>
+
+      <div style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Sol fade */}
+        <div style={{
+          position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, zIndex: 2,
+          background: 'linear-gradient(to right, #0a0a0a, transparent)',
+          pointerEvents: 'none',
+        }} />
+        {/* Sağ fade */}
+        <div style={{
+          position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, zIndex: 2,
+          background: 'linear-gradient(to left, #0a0a0a, transparent)',
+          pointerEvents: 'none',
+        }} />
+
+        <div className="carousel-track" style={{ alignItems: 'center' }}>
+          {items.map((name, i) => (
+            <img
+              key={i}
+              src=""
+              alt={name}
+              className="carousel-logo"
+              style={{
+                height: 32,
+                width: 110,
+                objectFit: 'contain',
+                filter: 'brightness(0) invert(1)',
+                background: 'rgba(255,255,255,0.08)',
+                borderRadius: 6,
+                padding: '6px 12px',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Bu Hafta Kurulan Masalar ───────────────────────────────────────────── */
+function getWeekNumber(date: Date): number {
+  const trDate = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+  const jan1 = new Date(Date.UTC(trDate.getUTCFullYear(), 0, 1));
+  return Math.ceil(((trDate.getTime() - jan1.getTime()) / 86400000 + jan1.getUTCDay() + 1) / 7);
+}
+
+function seededRand(seed: number, min: number, max: number): number {
+  const x = Math.sin(seed) * 10000;
+  return min + Math.floor((x - Math.floor(x)) * (max - min + 1));
+}
+
+function isTRDayPast(targetDay: number, targetHour: number, targetMin: number): boolean {
+  const now = new Date();
+  const trNow = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  const day = trNow.getUTCDay(); // 0=Paz,6=Cmt
+  if (day !== targetDay) return day > targetDay || (targetDay === 6 && day === 0);
+  return trNow.getUTCHours() > targetHour || (trNow.getUTCHours() === targetHour && trNow.getUTCMinutes() >= targetMin);
+}
+
+function WeeklyTables() {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  const week = getWeekNumber(new Date());
+  const grupDone = isTRDayPast(6, 23, 59);   // Cumartesi 23:59
+  const bbDone   = isTRDayPast(0, 23, 59);   // Pazar 23:59
+
+  const cities = [
+    {
+      name: 'İstanbul',
+      grup:   { min: 5, max: 8,  seed: week * 31 + 1 },
+      bb:     { min: 4, max: 8,  seed: week * 31 + 2 },
+    },
+    {
+      name: 'Ankara',
+      grup:   { min: 4, max: 7,  seed: week * 31 + 3 },
+      bb:     { min: 3, max: 6,  seed: week * 31 + 4 },
+    },
+    {
+      name: 'İzmir',
+      grup:   { min: 3, max: 6,  seed: week * 31 + 5 },
+      bb:     { min: 2, max: 5,  seed: week * 31 + 6 },
+    },
+  ];
+
+  return (
+    <section className="max-w-6xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
+      <style>{`
+        @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.5)} }
+        .pulse-dot { width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse-dot 1.8s ease-in-out infinite;flex-shrink:0; }
+      `}</style>
+
+      <h2
+        style={{
+          fontWeight: 300,
+          fontSize: 'clamp(26px, 4vw, 44px)',
+          letterSpacing: '0.12em',
+          color: '#f5f5f5',
+          marginBottom: 40,
+          textTransform: 'uppercase',
+        }}
+      >
+        Bu Hafta Kurulan Masalar
+      </h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-12">
+        {cities.map((city) => {
+          const grupCount = seededRand(city.grup.seed, city.grup.min, city.grup.max);
+          const bbCount   = seededRand(city.bb.seed,   city.bb.min,   city.bb.max);
+          return (
+            <div
+              key={city.name}
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 12,
+                padding: '24px 20px',
+              }}
+            >
+              <p
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  letterSpacing: '0.22em',
+                  textTransform: 'uppercase',
+                  color: '#f5f5f5',
+                  marginBottom: 12,
+                }}
+              >
+                {city.name}
+              </p>
+              <div style={{ borderTop: '1px solid rgba(192,57,43,0.25)', marginBottom: 16 }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* Grup */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="pulse-dot" />
+                  {grupDone ? (
+                    <span style={{ fontSize: 11, color: 'rgba(245,245,245,0.35)', fontStyle: 'italic' }}>
+                      Bu haftanın grup masaları doldu.
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 12, color: 'rgba(245,245,245,0.5)' }}>
+                      <span style={{ fontSize: 18, fontWeight: 700, color: '#c0392b', marginRight: 4 }}>{grupCount}</span>
+                      masa aktif
+                    </span>
+                  )}
+                </div>
+                {/* Baş Başa */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="pulse-dot" />
+                  {bbDone ? (
+                    <span style={{ fontSize: 11, color: 'rgba(245,245,245,0.35)', fontStyle: 'italic' }}>
+                      Bu haftanın eşleşmeleri tamamlandı.
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 12, color: 'rgba(245,245,245,0.5)' }}>
+                      <span style={{ fontSize: 18, fontWeight: 700, color: '#c0392b', marginRight: 4 }}>{bbCount}</span>
+                      eşleşme kaldı
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="font-serif italic text-center" style={{ color: '#c0392b', fontSize: 15 }}>
+        Masalar dolmadan yerinizi alın.
+      </p>
+    </section>
+  );
+}
+
 /* ─── Red last word helper ───────────────────────────────────────────────── */
 function AccordionGroup({ items }: { items: { title: string; body: string }[] }) {
   const [open, setOpen] = useState<number | null>(null);
@@ -336,6 +542,155 @@ export default function Home() {
           <HeroCountdown />
         </div>
 
+        {/* ── Bunu daha önce denemedin ─────────────────────────────────── */}
+        <section className="max-w-6xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
+          <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl italic text-[#f5f5f5] mb-14 lg:mb-18">
+            Bunu daha önce denemedin.
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-16">
+            {[
+              {
+                title: 'Yalnız Değilsin',
+                body: 'Grup masasında yeni yüzlerle, ya da baş başa masada tek bir insanla. İkisi de seni bekliyor.',
+              },
+              {
+                title: 'Planın Hazır',
+                body: 'Randevu, mekan ve rezervasyon hepsi ayarlandı. Sadece yola çıkman kaldı.',
+              },
+              {
+                title: 'Şans Değil',
+                body: 'Rastgele değil. Seninle gerçekten ahenk kuracak insanlarla aynı masada oturacaksın.',
+              },
+            ].map((card) => (
+              <div
+                key={card.title}
+                style={{
+                  borderLeft: '2px solid #c0392b',
+                  paddingLeft: 20,
+                  background: 'linear-gradient(90deg, rgba(192,57,43,0.04) 0%, transparent 80%)',
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 250,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: '#f5f5f5',
+                    marginBottom: 10,
+                  }}
+                >
+                  {card.title}
+                </p>
+                <p style={{ fontSize: 13, color: 'rgba(245,245,245,0.45)', lineHeight: 1.7 }}>
+                  {card.body}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-center mt-14">
+            <Link
+              href="/kayit"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-sm font-medium text-white transition-all"
+              style={{ background: 'linear-gradient(135deg,#c0392b,#e74c3c)', boxShadow: '0 0 20px rgba(192,57,43,0.35)' }}
+              onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.filter = '')}
+            >
+              Masanı Seç →
+            </Link>
+          </div>
+        </section>
+
+        {/* ── OCEAN Big5 ───────────────────────────────────────────────── */}
+        <section
+          style={{
+            background: 'linear-gradient(160deg, rgba(80,8,18,0.55) 0%, rgba(40,4,10,0.72) 50%, rgba(20,2,6,0.8) 100%)',
+            borderTop: '1px solid rgba(192,57,43,0.12)',
+            borderBottom: '1px solid rgba(192,57,43,0.12)',
+          }}
+          className="w-full py-24 lg:py-32 px-6"
+        >
+          <div className="max-w-6xl mx-auto">
+            {/* Başlık */}
+            <h2 className="font-serif italic text-4xl sm:text-5xl lg:text-6xl text-[#f5f5f5] text-center mb-8">
+              Neden bazı insanlarla ilk dakikadan anlaşırsın?
+            </h2>
+            {/* Paragraf */}
+            <p
+              className="text-center mx-auto mb-16"
+              style={{ maxWidth: 540, fontSize: 15, fontWeight: 300, color: 'rgba(245,245,245,0.5)', lineHeight: 1.8 }}
+            >
+              Bazı insanlarla saatlerce konuşursun, kahve soğur fark etmezsin. Bazılarıyla aynı masada oturmak bile yorar. Bu rastlantı değil. Biz bilimi masana taşıyoruz.
+            </p>
+            {/* 5 kart */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-5 mb-16">
+              {[
+                { letter: 'O', word: 'Açıklık',      desc: 'Yeni fikirlere, yeni yüzlere, yeni akşamlara ne kadar açıksın?' },
+                { letter: 'C', word: 'Özen',         desc: 'Hayatına ne kadar düzen ve anlam katıyorsun?' },
+                { letter: 'E', word: 'Dışadönüklük', desc: 'Bir odaya girdiğinde enerji mi alırsın, yoksa verirmisin?' },
+                { letter: 'A', word: 'Uyumluluk',    desc: 'İnsanlarla köprü mü kurarsın, yoksa mesafe mi?' },
+                { letter: 'N', word: 'Denge',        desc: 'Duygularınla nasıl bir ilişkin var?' },
+              ].map((item) => (
+                <div
+                  key={item.letter}
+                  className="col-span-1 last:col-span-2 last:col-start-1 lg:last:col-span-1 lg:last:col-start-auto"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.09)',
+                    borderRadius: 12,
+                    padding: '20px 16px',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: 'Georgia, serif',
+                      fontSize: 40,
+                      fontWeight: 700,
+                      color: '#c0392b',
+                      lineHeight: 1,
+                      marginBottom: 10,
+                    }}
+                  >
+                    {item.letter}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 500,
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      color: '#f5f5f5',
+                      marginBottom: 8,
+                    }}
+                  >
+                    — {item.word}
+                  </div>
+                  <p
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 300,
+                      fontStyle: 'italic',
+                      color: 'rgba(245,245,245,0.38)',
+                      lineHeight: 1.65,
+                    }}
+                  >
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+            {/* Alt kapanış */}
+            <p
+              className="font-serif italic text-center"
+              style={{ fontSize: 'clamp(15px, 2vw, 19px)', color: '#c0392b' }}
+            >
+              Ocean Big5 kişilik testini hemen şimdi doldur, gerisini Ahenk halleder.
+            </p>
+          </div>
+        </section>
+
         {/* ── İstatistik kartları ───────────────────────────────────────── */}
         <StatCards />
 
@@ -499,6 +854,71 @@ export default function Home() {
             </Link>
           </div>
         </section>
+
+        {/* ── İlk Masalarımızdan Sesler ────────────────────────────────── */}
+        <section className="max-w-4xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
+          <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl italic text-[#f5f5f5] mb-16">
+            İlk Masalarımızdan Sesler
+          </h2>
+          <div className="flex flex-col gap-14">
+            {[
+              { quote: 'İlk başta açıkçası buluşmaya gitmekten çekindim çünkü ne ile karşılaşacağımı bilmiyordum ama iyi ki gitmişim. Masadaki insanların birkaçıyla şuan iyi arkadaşlık kurduk.', name: 'Sümeyye K.', city: 'İstanbul' },
+              { quote: 'Konsepti çok değişik buldum önce ama şimdi hafta sonları aktiviteleri için sürekli kullanıyorum.', name: 'Nursena Y.', city: 'İstanbul' },
+              { quote: 'Tanımadığım bir kızla baş başa buluştuk. Çekingen olmama rağmen resmen benim aynadaki eşim gibiydi, yabancılık çekmedim.', name: 'Çağrı Ş.', city: 'İstanbul' },
+              { quote: 'Grup masasında eşleştim, kaliteli ve düzgün insanlar geldi. Sohbet akıcı ve güzeldi, sanki daha önceden tanışıyormuşuz gibiydi.', name: 'Bengü A.', city: 'İstanbul' },
+              { quote: 'Baş başa masa kurulsun, sohbet edecek biri bulalım derken tam dediğim gibi oldu. Efsane eğlenceliydi.', name: 'Burak G.', city: 'İstanbul' },
+            ].map((item, i) => (
+              <div key={i}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                  <span
+                    style={{
+                      fontFamily: 'Georgia, serif',
+                      fontSize: 72,
+                      lineHeight: 0.75,
+                      color: 'rgba(192,57,43,0.45)',
+                      flexShrink: 0,
+                      userSelect: 'none',
+                      marginTop: 4,
+                    }}
+                    aria-hidden
+                  >
+                    "
+                  </span>
+                  <p
+                    className="font-serif italic"
+                    style={{
+                      fontSize: 'clamp(15px, 2.2vw, 20px)',
+                      fontWeight: 300,
+                      color: 'rgba(245,245,245,0.82)',
+                      lineHeight: 1.75,
+                    }}
+                  >
+                    {item.quote}
+                  </p>
+                </div>
+                <div style={{ borderTop: '1px solid rgba(192,57,43,0.2)', marginTop: 16, paddingTop: 12, textAlign: 'right' }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 400,
+                      letterSpacing: '0.14em',
+                      color: 'rgba(245,245,245,0.3)',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    — {item.name}, {item.city}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Bu Hafta Kurulan Masalar ─────────────────────────────────── */}
+        <WeeklyTables />
+
+        {/* ── Her Yerde Biz Varız ──────────────────────────────────────── */}
+        <MediaCarousel />
 
         {/* ── Paketler ───────────────────────────────────────────────────── */}
         <section id="pricing" className="max-w-5xl mx-auto px-6 py-24">
