@@ -462,25 +462,12 @@ export default function Home() {
         <section id="hero" className="relative overflow-hidden pt-[52px] min-h-[70vh]" style={{ display: 'flex', alignItems: 'center' }}>
           <div className="hero-bg absolute inset-0" />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
+          <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 100%)', zIndex: 1 }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
 
           <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-16 w-full py-12">
             <div className="flex flex-col gap-5 lg:max-w-lg">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.4, ease: 'easeOut' }}
-                style={{ width: 52, height: 52, position: 'relative' }}
-              >
-                <motion.div
-                  style={{ width: 52, height: 52, position: 'relative' }}
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-                >
-                  <Image src="/logo.webp" alt="Ahenk" fill className="object-contain" style={{ filter: 'drop-shadow(0 0 14px rgba(192,57,43,0.7))' }} />
-                </motion.div>
-              </motion.div>
               <div>
                 <motion.h1
                   className="font-serif text-5xl sm:text-6xl lg:text-7xl leading-[0.9] tracking-tight text-[#f5f5f5] mb-3"
@@ -538,7 +525,7 @@ export default function Home() {
         </section>
 
         {/* Geri sayım — mobil */}
-        <div className="block md:hidden px-6 py-6" style={{ background: 'rgba(0,0,0,0.6)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="block md:hidden px-6 py-6" style={{ background: 'transparent' }}>
           <HeroCountdown />
         </div>
 
