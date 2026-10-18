@@ -357,27 +357,24 @@ function LivenessRecorder({ onCapture, initialDone }: { onCapture: (blob: Blob, 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="absolute inset-0 flex flex-col justify-between p-3"
               >
-                {/* Sol üst: KAYIT BAŞLADI + altında geri sayım */}
-                <div className="flex flex-col items-start gap-0.5">
-                  <div className="flex items-center gap-1.5">
+                {/* Sol üst: KAYIT BAŞLADI + altında geri sayım ortalı */}
+                <div className="flex flex-col items-center gap-0">
+                  <div className="flex items-center gap-1">
                     <motion.div
                       animate={{ opacity: [1, 0.3, 1] }}
                       transition={{ duration: 0.6, repeat: Infinity }}
-                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                       style={{ background: '#27ae60' }}
                     />
-                    <span className="text-xs font-bold" style={{ color: '#2ecc71', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
                       KAYIT BAŞLADI
                     </span>
                   </div>
-                  <span className="text-2xl font-bold" style={{ color: '#2ecc71', textShadow: '0 1px 6px rgba(0,0,0,0.9)', lineHeight: 1, paddingLeft: '2px' }}>
+                  <span className="font-bold text-center" style={{ fontSize: '18px', color: '#2ecc71', textShadow: '0 1px 6px rgba(0,0,0,0.9)', lineHeight: 1 }}>
                     {recCountdown}
                   </span>
                 </div>
-                {/* Alt: söyleme talimatı */}
-                <p className="text-xs font-medium text-center px-2" style={{ color: '#2ecc71', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                  Kayıt başladığında 5 sn. içinde adınızı ve soyadınızı söyleyin.
-                </p>
+                <div />
               </motion.div>
             )}
           </AnimatePresence>
@@ -604,6 +601,12 @@ export function TabKyc() {
           />
 
           <LivenessRecorder onCapture={handleCapture} initialDone={!!liveness} />
+
+          {!liveness && (
+            <p className="text-xs text-center" style={{ color: '#2ecc71' }}>
+              Kayıt başladığında 5 sn. içinde adınızı ve soyadınızı söyleyin.
+            </p>
+          )}
 
           {error && <p className="text-accent text-sm">{error}</p>}
 
