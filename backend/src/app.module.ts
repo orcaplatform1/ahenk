@@ -2,8 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { BullModule } from "@nestjs/bull";
 import { ScheduleModule } from "@nestjs/schedule";
-import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
-import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { PrismaModule } from "./prisma/prisma.module";
 import { RedisModule } from "./redis/redis.module";
 import { StorageModule } from "./storage/storage.module";
@@ -66,8 +65,6 @@ import { SosModule } from "./sos/sos.module";
     ChatModule,
     SosModule,
   ],
-  providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
-  ],
+  providers: [],
 })
 export class AppModule {}

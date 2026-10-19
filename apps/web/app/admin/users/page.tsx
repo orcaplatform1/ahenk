@@ -191,8 +191,8 @@ export default function AdminUsers() {
       {error && <p className="text-[#ff6b6b] text-sm mb-4">{error}</p>}
 
       {/* Tablo */}
-      <div className="glass-card overflow-hidden mb-6">
-        <table className="w-full">
+      <div className="glass-card overflow-x-auto mb-6">
+        <table className="w-full min-w-[520px]">
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
               {['Kullanıcı', 'Şehir', 'Paket', 'OCEAN Ort.', 'Durum', ''].map(h => (
@@ -216,8 +216,8 @@ export default function AdminUsers() {
                       style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
                     >
                       <td className="px-4 py-3">
-                        <p className="text-sm text-[#f5f5f5] font-medium">{u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}</p>
-                        <p className="text-xs text-[#555]">{u.email}</p>
+                        <p className="text-sm text-[#f5f5f5] font-medium truncate max-w-[140px]">{u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}</p>
+                        <p className="text-xs text-[#555] truncate max-w-[140px]">{u.email}</p>
                       </td>
                       <td className="px-4 py-3 text-sm text-[#888]">{u.profile?.city ?? '—'}</td>
                       <td className="px-4 py-3 text-sm text-[#888]">{activePlan(u)}</td>
