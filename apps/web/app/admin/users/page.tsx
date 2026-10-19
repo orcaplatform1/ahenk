@@ -71,9 +71,11 @@ export default function AdminUsers() {
   // Kullanıcı detay modalı
   interface AdminUserDetail {
     id: string; email: string; phone: string | null; role: string; status: string;
-    profile: { firstName: string | null; lastName: string | null; city: string | null } | null;
+    profile: { firstName: string | null; lastName: string | null; city: string | null; birthDate: string | null; occupation: string | null } | null;
     kyc: { status: string } | null;
     subscriptions: { id: string; plan: string; status: string }[];
+    groupCount: number;
+    oneOnOneCount: number;
   }
   const [userModal, setUserModal] = useState<AdminUserDetail | null>(null);
   const [userModalLoading, setUserModalLoading] = useState(false);
@@ -294,6 +296,20 @@ export default function AdminUsers() {
                       <p className="text-xs text-[#444] mt-0.5">{userModal.role}</p>
                     </div>
                     <button onClick={() => setUserModal(null)} className="text-[#555] hover:text-[#f5f5f5] text-lg leading-none">✕</button>
+                  </div>
+
+                  {/* Yaş, meslek, masa sayıları */}
+                  <div className="flex flex-wrap gap-2 text-xs pt-1">
+                    {userModal.profile?.birthDate && (
+                      <span className="text-[#888]">
+                        {Math.floor((Date.now() - new Date(userModal.profile.birthDate).getTime()) / 31557600000)} yaş
+                      </span>
+                    )}
+                    {userModal.profile?.occupation && (
+                      <span className="text-[#888]">{userModal.profile.occupation}</span>
+                    )}
+                    <span className="text-[#555]">Grup: <span className="text-[#93c5fd]">{userModal.groupCount}</span></span>
+                    <span className="text-[#555]">Başbaşa: <span className="text-[#93c5fd]">{userModal.oneOnOneCount}</span></span>
                   </div>
 
                   <div className="flex flex-wrap gap-2 text-xs">
