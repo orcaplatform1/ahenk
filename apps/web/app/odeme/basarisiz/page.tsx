@@ -57,8 +57,7 @@ export default function OdemeBasarisizPage() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.35, ease: 'easeOut' }}
           onClick={() => router.push('/profil')}
-          className="px-8 py-3 text-sm font-medium mt-2 transition-colors"
-          style={{ border: '1px solid rgba(255,255,255,0.15)', borderRadius: 9999, color: '#f5f5f5', background: 'transparent' }}
+          className="btn-ghost mt-2"
         >
           Paketime Dön
         </motion.button>

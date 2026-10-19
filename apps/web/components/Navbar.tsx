@@ -295,28 +295,18 @@ export default function Navbar() {
               {checked && (
                 <div className="flex flex-col px-4 pt-5 pb-6 gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 8 }}>
                   {navUser ? (
-                    <button
-                      onClick={handleLogout}
-                      className="w-full py-2.5 rounded-xl text-sm font-medium transition-colors"
-                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc' }}
-                    >
+                    <button onClick={handleLogout} className="w-full btn-ghost justify-center">
                       Çıkış Yap
                     </button>
                   ) : (
                     <>
                       {showGiris && (
-                        <Link href="/giris" onClick={() => setMenuOpen(false)}
-                          className="w-full py-2.5 rounded-xl text-sm font-medium text-center transition-colors"
-                          style={{ background: 'linear-gradient(115deg,#1a5c2a,#27ae60)', color: '#fff', boxShadow: '0 0 12px rgba(39,174,96,0.3)' }}
-                        >
+                        <Link href="/giris" onClick={() => setMenuOpen(false)} className="w-full btn-ghost justify-center">
                           Giriş Yap
                         </Link>
                       )}
                       {showKayit && (
-                        <Link href="/kayit" onClick={() => setMenuOpen(false)}
-                          className="w-full py-2.5 rounded-xl text-sm font-medium text-center transition-colors"
-                          style={{ background: 'linear-gradient(115deg,#E83F3D,#FF6669)', color: '#fff', boxShadow: '0 0 12px rgba(232,63,61,0.35)' }}
-                        >
+                        <Link href="/kayit" onClick={() => setMenuOpen(false)} className="w-full btn-primary justify-center">
                           Kayıt Ol
                         </Link>
                       )}

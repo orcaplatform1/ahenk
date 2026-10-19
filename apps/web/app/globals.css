@@ -44,7 +44,7 @@ body {
   border-radius: 16px;
 }
 
-/* ── Gradient birincil buton ────────────────────────── */
+/* ── Gradient birincil buton (eski) ─────────────────── */
 .btn-grad {
   background: linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%);
   box-shadow: 0 0 20px rgba(192, 57, 43, 0.35);
@@ -60,6 +60,94 @@ body {
 }
 .btn-grad:disabled {
   opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Monolith Crimson Notch Pill — Primary ──────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #0E1018;
+  border-radius: 9999px;
+  border: none;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 9px 24px;
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(235, 228, 220, 0.78);
+  cursor: pointer;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              letter-spacing 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-primary::before {
+  content: '';
+  flex-shrink: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #A21A26;
+  transition: box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-primary:active {
+  color: #8B1A1A;
+  letter-spacing: 0.42em;
+}
+.btn-primary:active::before {
+  box-shadow: 0 0 0 3px rgba(162, 26, 38, 0.18), 0 0 10px 2px rgba(162, 26, 38, 0.5);
+}
+.btn-primary:disabled,
+.btn-primary.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Monolith Crimson Notch Ghost — Secondary ───────── */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border-radius: 9999px;
+  border: none;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 9px 24px;
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(235, 228, 220, 0.75);
+  cursor: pointer;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              letter-spacing 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-ghost::before {
+  content: '';
+  flex-shrink: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(230, 225, 218, 0.5);
+  transition: background 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-ghost:active {
+  color: #8B1A1A;
+  letter-spacing: 0.42em;
+}
+.btn-ghost:active::before {
+  background: rgba(215, 208, 202, 0.85);
+}
+.btn-ghost:disabled,
+.btn-ghost.disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 

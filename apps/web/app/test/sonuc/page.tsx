@@ -316,15 +316,11 @@ export default function TestSonucPage() {
         >
           <button
             onClick={() => router.push('/dashboard')}
-            className="w-full py-4 rounded-2xl text-sm font-medium text-white btn-grad"
+            className="w-full btn-primary"
           >
             Dashboard'a Git →
           </button>
-          <button
-            onClick={() => router.push('/profil')}
-            className="w-full py-3 rounded-2xl text-sm text-[#888] hover:text-[#f5f5f5] transition-colors"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-          >
+          <button onClick={() => router.push('/profil')} className="w-full btn-ghost justify-center">
             Profile Dön
           </button>
         </motion.div>

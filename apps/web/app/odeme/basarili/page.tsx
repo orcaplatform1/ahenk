@@ -63,7 +63,7 @@ export default function OdemeBasariliPage() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.35, ease: 'easeOut' }}
           onClick={() => router.push('/dashboard')}
-          className="btn-grad px-8 py-3 text-sm font-medium mt-2"
+          className="btn-primary mt-2"
         >
           Dashboard&apos;a Git
         </motion.button>

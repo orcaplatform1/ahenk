@@ -69,7 +69,7 @@ function SifremiSifirlaForm() {
               type="button"
               onClick={handleSubmit}
               disabled={loading}
-              className="w-full py-3.5 text-sm btn-grad mt-1"
+              className="w-full btn-primary mt-1"
             >
               {loading ? 'Kaydediliyor…' : 'Şifremi Sıfırla'}
             </button>
@@ -140,11 +140,7 @@ export default function SifremiSifirlaPage() {
         </Suspense>
 
         <div className="mt-8 flex justify-center">
-          <Link
-            href="/giris"
-            className="text-xs px-4 py-2 rounded-xl transition-all text-[#666] hover:text-[#aaa]"
-            style={{ border: '1px solid rgba(255,255,255,0.07)' }}
-          >
+          <Link href="/giris" className="btn-ghost">
             Girişe Dön
           </Link>
         </div>

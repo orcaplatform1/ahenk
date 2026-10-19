@@ -249,7 +249,7 @@ export default function DegerlendirmePage() {
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full py-3.5 text-sm btn-grad disabled:opacity-50"
+                className="w-full btn-primary disabled:opacity-50"
               >
                 {submitting ? 'Gönderiliyor…' : 'Değerlendirmeyi Gönder'}
               </button>

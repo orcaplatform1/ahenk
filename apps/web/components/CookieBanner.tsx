@@ -6,31 +6,8 @@ import Link from 'next/link';
 
 type Prefs = { analitik: boolean; pazarlama: boolean };
 
-const BTN_OUTLINE: React.CSSProperties = {
-  padding: '0.55rem 1.1rem',
-  background: 'transparent',
-  border: '1px solid rgba(255,255,255,0.14)',
-  borderRadius: '9999px',
-  color: '#aaa',
-  fontSize: '0.8rem',
-  cursor: 'pointer',
-  whiteSpace: 'nowrap',
-  transition: 'border-color 0.2s, color 0.2s',
-};
-
-const BTN_PRIMARY: React.CSSProperties = {
-  padding: '0.55rem 1.4rem',
-  background: 'linear-gradient(135deg, #c0392b 0%, #e74c3c 100%)',
-  border: 'none',
-  borderRadius: '9999px',
-  color: '#fff',
-  fontSize: '0.8rem',
-  fontWeight: 600,
-  cursor: 'pointer',
-  boxShadow: '0 4px 14px rgba(192,57,43,0.35)',
-  whiteSpace: 'nowrap',
-  transition: 'filter 0.2s',
-};
+const BTN_OUTLINE = 'btn-ghost';
+const BTN_PRIMARY = 'btn-primary';
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -131,28 +108,13 @@ export default function CookieBanner() {
                     {' '}sayfalarımızı inceleyebilirsiniz.
                   </p>
                   <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <button
-                      onClick={() => setManaging(true)}
-                      style={BTN_OUTLINE}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(192,57,43,0.5)'; (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.14)'; (e.currentTarget as HTMLElement).style.color = '#aaa'; }}
-                    >
-                      ⚙ Tercihleri Yönet
+                    <button onClick={() => setManaging(true)} className={BTN_OUTLINE}>
+                      Tercihleri Yönet
                     </button>
-                    <button
-                      onClick={reject}
-                      style={BTN_OUTLINE}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.3)'; (e.currentTarget as HTMLElement).style.color = '#ccc'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.14)'; (e.currentTarget as HTMLElement).style.color = '#aaa'; }}
-                    >
+                    <button onClick={reject} className={BTN_OUTLINE}>
                       Reddet
                     </button>
-                    <button
-                      onClick={acceptAll}
-                      style={BTN_PRIMARY}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.1)'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1)'; }}
-                    >
+                    <button onClick={acceptAll} className={BTN_PRIMARY}>
                       Tümünü Kabul Et
                     </button>
                   </div>
@@ -207,20 +169,10 @@ export default function CookieBanner() {
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.55rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                    <button
-                      onClick={reject}
-                      style={BTN_OUTLINE}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.3)'; (e.currentTarget as HTMLElement).style.color = '#ccc'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.14)'; (e.currentTarget as HTMLElement).style.color = '#aaa'; }}
-                    >
+                    <button onClick={reject} className={BTN_OUTLINE}>
                       Tümünü Reddet
                     </button>
-                    <button
-                      onClick={savePrefs}
-                      style={BTN_PRIMARY}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.1)'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1)'; }}
-                    >
+                    <button onClick={savePrefs} className={BTN_PRIMARY}>
                       Tercihleri Kaydet
                     </button>
                   </div>

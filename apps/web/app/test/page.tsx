@@ -132,18 +132,10 @@ export default function TestPage() {
             ⏱ Sonraki test: 180 gün sonra
           </p>
 
-          <button
-            onClick={() => router.push('/test/sonuc')}
-            className="w-full py-4 rounded-2xl text-sm font-medium text-white mb-3"
-            style={{ background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', boxShadow: '0 0 24px rgba(192,57,43,0.4)' }}
-          >
-            Profilimi Gör →
+          <button onClick={() => router.push('/test/sonuc')} className="w-full btn-primary justify-center mb-3">
+            Profilimi Gör
           </button>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="w-full py-3 rounded-2xl text-sm text-[#888] hover:text-[#f5f5f5] transition-colors"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-          >
+          <button onClick={() => router.push('/dashboard')} className="w-full btn-ghost justify-center">
             Dashboard'a Dön
           </button>
         </motion.div>
@@ -244,22 +236,12 @@ export default function TestPage() {
 
         {/* Alt butonlar */}
         <div className="flex items-center justify-between mt-6 gap-3">
-          <button
-            onClick={goPrev}
-            disabled={current === 0}
-            className="px-6 py-3 rounded-xl text-sm text-[#888] hover:text-[#f5f5f5] transition-colors disabled:opacity-30"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            ← Geri
+          <button onClick={goPrev} disabled={current === 0} className="btn-ghost disabled:opacity-30">
+            Geri
           </button>
 
-          <button
-            onClick={goNext}
-            disabled={!hasAnswer || submitting}
-            className="flex-1 py-3 rounded-xl text-sm font-medium text-white transition-all duration-200 disabled:opacity-30"
-            style={{ background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', boxShadow: hasAnswer ? '0 0 20px rgba(192,57,43,0.4)' : 'none' }}
-          >
-            {submitting ? '…' : isLast ? 'Testi Bitir' : 'İleri →'}
+          <button onClick={goNext} disabled={!hasAnswer || submitting} className="flex-1 btn-primary justify-center disabled:opacity-30">
+            {submitting ? '…' : isLast ? 'Testi Bitir' : 'İleri'}
           </button>
         </div>
 

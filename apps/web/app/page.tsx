@@ -254,12 +254,8 @@ function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:stri
           <h2 className="font-serif text-white font-light" style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)', lineHeight: 1.15 }}>
             Senin masanı kuruyoruz.
           </h2>
-          <Link href="/kayit" className="inline-flex items-center gap-2 rounded-full font-medium text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', boxShadow: '0 0 28px rgba(192,57,43,0.4)', padding: '14px 40px', fontSize: '1rem' }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 44px rgba(192,57,43,0.75)'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 28px rgba(192,57,43,0.4)'; }}
-          >
-            Hemen Katıl →
+          <Link href="/kayit" className="btn-primary">
+            Hemen Katıl
           </Link>
         </div>
       </section>
@@ -635,17 +631,10 @@ export default function Home() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 1.15, duration: 0.45, ease: 'easeOut' }}
               >
-                <Link href="/kayit" className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-base font-medium text-white transition-all"
-                  style={{ background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', boxShadow: '0 0 24px rgba(192,57,43,0.45)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.1)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.filter = '')}>
+                <Link href="/kayit" className="btn-primary">
                   Hemen Katıl
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" /></svg>
                 </Link>
-                <a href="#how-it-knows-you" className="inline-flex items-center gap-2.5 px-6 py-4 rounded-full text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.12)' }}>
-                  <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ border: '1px solid rgba(255,255,255,0.12)' }}>
-                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" /></svg>
-                  </span>
+                <a href="#how-it-knows-you" className="btn-ghost">
                   Nasıl Çalışır?
                 </a>
               </motion.div>
@@ -713,14 +702,8 @@ export default function Home() {
             ))}
           </div>
           <div className="flex justify-center mt-14">
-            <Link
-              href="/kayit"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-sm font-medium text-white transition-all"
-              style={{ background: 'linear-gradient(135deg,#c0392b,#e74c3c)', boxShadow: '0 0 20px rgba(192,57,43,0.35)' }}
-              onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.1)')}
-              onMouseLeave={(e) => (e.currentTarget.style.filter = '')}
-            >
-              Masanı Seç →
+            <Link href="/kayit" className="btn-primary">
+              Masanı Seç
             </Link>
           </div>
         </section>
@@ -892,18 +875,8 @@ export default function Home() {
                     {cs.showButton && (
                       <button
                         onClick={() => handlePlanSelect(cardKey)}
-                        style={{
-                          background: 'linear-gradient(90deg,#c0392b 0%,#e74c3c 100%)',
-                          color: '#fff',
-                          boxShadow: '0 4px 16px rgba(192,57,43,0.35)',
-                          border: 'none',
-                          borderRadius: 10,
-                          padding: '8px 0',
-                          fontSize: '0.78rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          width: '100%',
-                        }}
+                        className="btn-primary w-full"
+                        style={{ justifyContent: 'center' }}
                       >
                         Paketi Seç
                       </button>

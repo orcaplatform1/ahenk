@@ -64,7 +64,7 @@ export default function SifremiUnuttumPage() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="mx-auto block py-2.5 text-sm btn-grad mt-1"
+                className="mx-auto block btn-primary mt-1"
                 style={{ width: '72%' }}
               >
                 {loading ? 'Gönderiliyor…' : 'Şimdi Sıfırla'}
@@ -95,11 +95,7 @@ export default function SifremiUnuttumPage() {
         </AnimatePresence>
 
         <div className="mt-4 flex justify-center">
-          <Link
-            href="/giris"
-            className="text-center py-2.5 text-sm font-medium rounded-xl transition-all"
-            style={{ width: '72%', border: '1px solid #c0392b', color: '#c0392b', background: 'transparent' }}
-          >
+          <Link href="/giris" className="btn-ghost">
             Girişe Dön
           </Link>
         </div>

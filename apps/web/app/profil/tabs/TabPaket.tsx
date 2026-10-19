@@ -222,7 +222,7 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
           <button
             onClick={sendReferralInvite}
             disabled={referralSending}
-            className="w-full py-2.5 text-sm btn-grad disabled:opacity-50"
+            className="w-full btn-primary disabled:opacity-50"
           >
             {referralSending ? '…' : 'Davet Gönder'}
           </button>

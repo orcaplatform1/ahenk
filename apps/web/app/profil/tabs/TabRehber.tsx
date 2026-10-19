@@ -83,7 +83,7 @@ export function TabRehber() {
         <button
           onClick={handleAdd}
           disabled={adding || serverBlocks.length >= 50}
-          className="px-4 py-3 text-sm btn-grad disabled:opacity-50"
+          className="btn-primary disabled:opacity-50"
         >
           {adding ? '…' : 'Ekle'}
         </button>

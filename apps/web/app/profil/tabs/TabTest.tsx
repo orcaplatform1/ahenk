@@ -183,7 +183,7 @@ export function TabTest() {
     return (
       <div className="glass-card p-8 flex flex-col items-center gap-4 text-center">
         <p className="text-[#888] text-sm">Henüz kişilik testini yapmadın.</p>
-        <Link href="/test" className="px-6 py-3 text-sm btn-grad">
+        <Link href="/test" className="btn-primary">
           Teste Başla →
         </Link>
       </div>

@@ -434,7 +434,7 @@ function KayitPageInner() {
                 </motion.p>
               )}
             </AnimatePresence>
-            <button type="button" onClick={handleStep1} disabled={loading} className="w-full py-3.5 text-sm btn-grad">
+            <button type="button" onClick={handleStep1} disabled={loading} className="w-full btn-primary">
               Devam Et
             </button>
           </div>
@@ -456,10 +456,10 @@ function KayitPageInner() {
             </div>
             {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
             <div className="flex gap-3 mt-1">
-              <button type="button" onClick={() => { setStepDir(-1); setStep(0); setError(''); }} className="px-5 py-3.5 text-sm text-[#555] hover:text-[#888] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: 9999 }}>
-                ← Geri
+              <button type="button" onClick={() => { setStepDir(-1); setStep(0); setError(''); }} className="btn-ghost">
+                Geri
               </button>
-              <button type="button" onClick={handleStep2} disabled={loading} className="flex-1 py-3.5 text-sm btn-grad">
+              <button type="button" onClick={handleStep2} disabled={loading} className="flex-1 btn-primary">
                 {loading ? 'Kaydediliyor…' : 'Devam Et'}
               </button>
             </div>
@@ -661,7 +661,7 @@ function KayitPageInner() {
               type="button"
               onClick={handleStep3}
               disabled={loading || !form.venuePreference}
-              className="w-full py-3.5 text-sm btn-grad disabled:opacity-40"
+              className="w-full btn-primary disabled:opacity-40"
             >
               {loading ? 'Kaydediliyor…' : 'Devam Et'}
             </button>
@@ -707,7 +707,7 @@ function KayitPageInner() {
               </div>
             )}
             {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-            <button type="button" onClick={() => handleFinish(false)} disabled={loading} className="w-full py-3.5 text-sm btn-grad mt-1">
+            <button type="button" onClick={() => handleFinish(false)} disabled={loading} className="w-full btn-primary mt-1">
               {loading ? 'Kaydediliyor…' : 'Tamamla →'}
             </button>
           </div>

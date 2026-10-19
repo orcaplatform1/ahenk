@@ -358,8 +358,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
             <input type="password" value={emailPassword} onChange={e => { setEmailPassword(e.target.value); setEmailError(''); }} placeholder="Mevcut şifreniz" className="input-glass px-4 py-3 text-sm w-full" />
             {emailError && <p className="text-[#ff6b6b] text-xs">{emailError}</p>}
             <div className="flex gap-2">
-              <button onClick={() => { setEmailMode(false); setEmailError(''); }} className="flex-1 py-2 text-xs text-[#888]" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>İptal</button>
-              <button onClick={saveEmail} disabled={emailSaving} className="flex-1 py-2 text-xs btn-grad">{emailSaving ? '…' : 'Kaydet'}</button>
+              <button onClick={() => { setEmailMode(false); setEmailError(''); }} className="flex-1 btn-ghost justify-center">İptal</button>
+              <button onClick={saveEmail} disabled={emailSaving} className="flex-1 btn-primary">{emailSaving ? '…' : 'Kaydet'}</button>
             </div>
           </div>
         ) : (
@@ -393,8 +393,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
             </div>
             {phoneError && <p className="text-[#ff6b6b] text-xs">{phoneError}</p>}
             <div className="flex gap-2">
-              <button onClick={() => { setPhoneMode('idle'); setPhoneError(''); setNewPhone(''); }} className="flex-1 py-2 text-xs text-[#888]" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>İptal</button>
-              <button onClick={sendPhoneOtp} disabled={phoneSaving} className="flex-1 py-2 text-xs btn-grad">{phoneSaving ? '…' : 'Kod Gönder'}</button>
+              <button onClick={() => { setPhoneMode('idle'); setPhoneError(''); setNewPhone(''); }} className="flex-1 btn-ghost justify-center">İptal</button>
+              <button onClick={sendPhoneOtp} disabled={phoneSaving} className="flex-1 btn-primary">{phoneSaving ? '…' : 'Kod Gönder'}</button>
             </div>
           </div>
         )}
@@ -414,8 +414,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
             </div>
             {phoneError && <p className="text-[#ff6b6b] text-xs text-center">{phoneError}</p>}
             <div className="flex gap-2">
-              <button onClick={() => { setPhoneMode('enter'); setPhoneError(''); setPhoneOtp(['', '', '', '', '', '']); }} className="flex-1 py-2 text-xs text-[#888]" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>← Geri</button>
-              <button onClick={verifyPhoneOtp} disabled={phoneSaving || phoneOtp.join('').length !== 6} className="flex-1 py-2 text-xs btn-grad disabled:opacity-40">{phoneSaving ? '…' : 'Doğrula'}</button>
+              <button onClick={() => { setPhoneMode('enter'); setPhoneError(''); setPhoneOtp(['', '', '', '', '', '']); }} className="flex-1 btn-ghost justify-center">Geri</button>
+              <button onClick={verifyPhoneOtp} disabled={phoneSaving || phoneOtp.join('').length !== 6} className="flex-1 btn-primary disabled:opacity-40">{phoneSaving ? '…' : 'Doğrula'}</button>
             </div>
           </div>
         )}
@@ -473,7 +473,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
           <button
             onClick={() => { setPendingActiveCity(activeCity || null); setActiveCityConfirm(true); }}
             disabled={savingActiveCity}
-            className="px-4 py-2 text-sm btn-grad disabled:opacity-50 whitespace-nowrap"
+            className="btn-primary disabled:opacity-50 whitespace-nowrap"
           >
             {savingActiveCity ? '…' : 'Kaydet'}
           </button>
@@ -502,8 +502,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
             <Select label="Ana Şehir *" value={primaryCityId} onChange={setPrimaryCityId} cities={cities} title="Ana şehir seç" />
             {saveError && <p className="text-accent text-sm">{saveError}</p>}
             <div className="flex gap-2">
-              <button onClick={() => setEditingCities(false)} className="flex-1 py-2 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>İptal</button>
-              <button onClick={saveCities} disabled={saving} className="flex-1 py-2 text-sm btn-grad">
+              <button onClick={() => setEditingCities(false)} className="flex-1 btn-ghost justify-center">İptal</button>
+              <button onClick={saveCities} disabled={saving} className="flex-1 btn-primary">
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
             </div>
@@ -546,8 +546,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
             })}
             {saveError && <p className="text-accent text-sm">{saveError}</p>}
             <div className="flex gap-2 mt-1">
-              <button onClick={() => setEditingVenue(false)} className="flex-1 py-2 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>İptal</button>
-              <button onClick={saveVenuePreference} disabled={saving} className="flex-1 py-2 text-sm btn-grad">
+              <button onClick={() => setEditingVenue(false)} className="flex-1 btn-ghost justify-center">İptal</button>
+              <button onClick={saveVenuePreference} disabled={saving} className="flex-1 btn-primary">
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
             </div>
@@ -577,7 +577,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
           <button
             onClick={sendReferralInvite}
             disabled={referralSending}
-            className="w-full py-2.5 text-sm btn-grad disabled:opacity-50"
+            className="w-full btn-primary disabled:opacity-50"
           >
             {referralSending ? '…' : 'Davet Gönder'}
           </button>
@@ -686,7 +686,7 @@ function CityPickerModalP({ cities, value, onChange, onClose, optional, title }:
             );
           })}
         </div>
-        <button onClick={() => { onChange(tmp); onClose(); }} style={{ width: '100%', marginTop: 16, padding: '15px', borderRadius: 14, background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff', fontSize: 15, fontWeight: 600, outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+        <button onClick={() => { onChange(tmp); onClose(); }} className="btn-primary w-full justify-center" style={{ marginTop: 16 }}>
           Seç
         </button>
       </div>

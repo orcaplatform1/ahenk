@@ -200,30 +200,15 @@ export default function GirisPage() {
               </p>
               {sanction.type === 'WARNING' ? (
                 <div className="flex gap-3 mt-1">
-                  <button
-                    onClick={() => { api.clearToken(); setSanction(null); }}
-                    className="flex-1 py-2.5 text-sm rounded-xl"
-                    style={{ background: 'rgba(255,255,255,0.06)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }}
-                  >
+                  <button onClick={() => { api.clearToken(); setSanction(null); }} className="flex-1 btn-ghost justify-center">
                     İptal
                   </button>
-                  <button
-                    onClick={() => {
-                      setSanction(null);
-                      router.push('/dashboard');
-                    }}
-                    className="flex-1 py-2.5 text-sm rounded-xl font-medium"
-                    style={{ background: 'rgba(192,57,43,0.25)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.5)' }}
-                  >
+                  <button onClick={() => { setSanction(null); router.push('/dashboard'); }} className="flex-1 btn-primary justify-center">
                     Devam Et
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => setSanction(null)}
-                  className="w-full py-2.5 text-sm rounded-xl mt-1"
-                  style={{ background: 'rgba(255,255,255,0.06)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }}
-                >
+                <button onClick={() => setSanction(null)} className="w-full btn-ghost justify-center mt-1">
                   Kapat
                 </button>
               )}
@@ -341,7 +326,7 @@ export default function GirisPage() {
                   type="button"
                   onClick={handleSendOtp}
                   disabled={loading || !phoneValid}
-                  className="mx-auto block py-2.5 text-sm btn-grad mt-1 disabled:opacity-40"
+                  className="mx-auto block btn-primary mt-1 disabled:opacity-40"
                   style={{ width: '72%' }}
                 >
                   {loading ? 'Gönderiliyor…' : 'Kod Gönder'}
@@ -385,7 +370,7 @@ export default function GirisPage() {
                   type="button"
                   onClick={handleVerifyOtp}
                   disabled={loading || !canSubmit}
-                  className="w-full py-3.5 text-sm btn-grad disabled:opacity-40"
+                  className="w-full btn-primary disabled:opacity-40"
                 >
                   {loading ? 'Doğrulanıyor…' : 'Giriş Yap'}
                 </button>
@@ -441,7 +426,7 @@ export default function GirisPage() {
                   type="button"
                   onClick={handleEmailLogin}
                   disabled={loading || !canSubmit}
-                  className="mx-auto block py-2.5 text-sm btn-grad mt-1 disabled:opacity-40"
+                  className="mx-auto block btn-primary mt-1 disabled:opacity-40"
                   style={{ width: '72%' }}
                 >
                   {loading ? 'Giriş yapılıyor…' : 'Giriş Yap'}

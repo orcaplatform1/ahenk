@@ -430,7 +430,7 @@ function LivenessRecorder({ onCapture, initialDone }: { onCapture: (blob: Blob, 
             </button>
           )}
           {phase === 'preview' && (
-            <button onClick={startRecording} className="flex-1 py-2.5 text-sm font-medium btn-grad">
+            <button onClick={startRecording} className="flex-1 btn-primary">
               Kaydı Başlat
             </button>
           )}
