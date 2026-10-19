@@ -4,12 +4,43 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 
-async function openAuthFile(path: string) {
-  const token = document.cookie.match(/(?:^|;\s*)ahenk_token=([^;]+)/)?.[1];
-  const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${decodeURIComponent(token)}` } : {} });
-  if (!res.ok) return;
-  const blob = await res.blob();
-  window.open(URL.createObjectURL(blob), '_blank');
+function getToken() {
+  return document.cookie.match(/(?:^|;\s*)ahenk_token=([^;]+)/)?.[1] ?? null;
+}
+
+async function fetchBlob(path: string): Promise<string | null> {
+  try {
+    const token = getToken();
+    const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${decodeURIComponent(token)}` } : {} });
+    if (!res.ok) return null;
+    return URL.createObjectURL(await res.blob());
+  } catch { return null; }
+}
+
+function MediaPreview({ url, label, isVideo }: { url: string | null; label: string; isVideo?: boolean }) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!url) return;
+    fetchBlob(url).then(setBlobUrl);
+  }, [url]);
+
+  return (
+    <div className="rounded-xl overflow-hidden flex flex-col" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+      <div style={{ aspectRatio: '16/9', position: 'relative' }}>
+        {blobUrl ? (
+          isVideo
+            ? <video src={blobUrl} controls preload="metadata" className="w-full h-full object-cover" style={{ display: 'block' }} />
+            : <img src={blobUrl} alt={label} className="w-full h-full object-cover cursor-pointer" onClick={() => window.open(blobUrl, '_blank')} />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-xs text-[#444]">{url ? 'Yükleniyor…' : `${label} yüklenmemiş`}</p>
+          </div>
+        )}
+      </div>
+      <p className="text-xs text-[#555] px-2 py-1">{label}</p>
+    </div>
+  );
 }
 
 interface KycApplication {
@@ -114,20 +145,9 @@ export default function AdminKyc() {
 
             {/* Kimlik görselleri */}
             <div className="grid grid-cols-3 gap-3 mb-4">
-              {[{ url: item.idFrontUrl, label: 'Ön Yüz' }, { url: item.idBackUrl, label: 'Arka Yüz' }, { url: item.livenessUrl, label: 'Video' }].map(({ url, label }) => (
-                <div key={label} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', aspectRatio: '16/9' }}>
-                  {url ? (
-                    <button onClick={() => openAuthFile(url)} className="block w-full h-full flex items-center justify-center">
-                      <span className="text-xs text-[#aaa] hover:text-white transition-colors">📎 {label} Görüntüle</span>
-                    </button>
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-xs text-[#444]">{label} yüklenmemiş</p>
-                    </div>
-                  )}
-                  <p className="text-xs text-[#555] px-2 py-1">{label}</p>
-                </div>
-              ))}
+              <MediaPreview url={item.idFrontUrl} label="Ön Yüz" />
+              <MediaPreview url={item.idBackUrl} label="Arka Yüz" />
+              <MediaPreview url={item.livenessUrl} label="Video" isVideo />
             </div>
 
             {/* Reddet notu */}
