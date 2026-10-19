@@ -20,7 +20,8 @@ const NAV_TOP = [
   { href: '/profil', label: 'Profilim' },
 ];
 
-const NAV: { href: string; label: string; alertKey?: boolean }[] = [
+const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean }[] = [
+  { href: '/admin/acil-yardim',  label: '🚨 Acil Yardım', sos: true },
   { href: '/admin/stats',        label: 'İstatistikler' },
   { href: '/admin/matches',      label: 'Masalar' },
   { href: '/admin/kyc',          label: 'KYC Bekleyenler' },
@@ -52,13 +53,17 @@ function NavLinks({ pathname, onClose, onLogout, unread }: {
       <div className="flex flex-col gap-0.5 flex-1">
         {NAV.map((n) => {
           const active = pathname === n.href || pathname.startsWith(n.href + '/');
+          const linkStyle = n.sos
+            ? active
+              ? { background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', fontWeight: 700 }
+              : { color: '#ef4444', border: '1px solid transparent', fontWeight: 600 }
+            : active
+              ? { background: 'linear-gradient(135deg,rgba(192,57,43,0.2),rgba(192,57,43,0.08))', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.25)' }
+              : { color: '#666', border: '1px solid transparent' };
           return (
             <Link key={n.href} href={n.href} onClick={onClose}
               className="px-3 py-2 rounded-xl text-sm transition-all flex items-center justify-between"
-              style={active ? {
-                background: 'linear-gradient(135deg,rgba(192,57,43,0.2),rgba(192,57,43,0.08))',
-                color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.25)',
-              } : { color: '#666', border: '1px solid transparent' }}
+              style={linkStyle}
             >
               {n.label}
               {n.alertKey && unread > 0 && (

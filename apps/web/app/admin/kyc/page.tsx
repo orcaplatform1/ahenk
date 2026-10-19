@@ -1,18 +1,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
+
+async function openAuthFile(path: string) {
+  const token = document.cookie.match(/(?:^|;\s*)ahenk_token=([^;]+)/)?.[1];
+  const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${decodeURIComponent(token)}` } : {} });
+  if (!res.ok) return;
+  const blob = await res.blob();
+  window.open(URL.createObjectURL(blob), '_blank');
+}
 
 interface KycApplication {
   id: string;
   userId: string;
   firstName: string;
   lastName: string;
-  createdAt: string;
-  frontImageUrl: string | null;
-  backImageUrl: string | null;
+  submittedAt: string;
+  idFrontUrl: string | null;
+  idBackUrl: string | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPICIOUS';
 }
 
@@ -98,7 +105,7 @@ export default function AdminKyc() {
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
                 <p className="text-sm font-semibold text-[#f5f5f5]">{item.firstName} {item.lastName}</p>
-                <p className="text-xs text-[#555] mt-0.5">{fmtDate(item.createdAt)}</p>
+                <p className="text-xs text-[#555] mt-0.5">{fmtDate(item.submittedAt)}</p>
                 <p className="text-xs text-[#444] font-mono mt-0.5">{item.userId}</p>
               </div>
               <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', color: '#fbbf24' }}>
@@ -108,12 +115,12 @@ export default function AdminKyc() {
 
             {/* Kimlik görselleri */}
             <div className="grid grid-cols-2 gap-3 mb-4">
-              {[{ url: item.frontImageUrl, label: 'Ön Yüz' }, { url: item.backImageUrl, label: 'Arka Yüz' }].map(({ url, label }) => (
+              {[{ url: item.idFrontUrl, label: 'Ön Yüz' }, { url: item.idBackUrl, label: 'Arka Yüz' }].map(({ url, label }) => (
                 <div key={label} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', aspectRatio: '16/9' }}>
                   {url ? (
-                    <a href={url} target="_blank" rel="noreferrer" className="block w-full h-full relative">
-                      <Image src={url} alt={label} fill className="object-cover hover:opacity-90 transition-opacity" sizes="(max-width: 768px) 100vw, 300px" />
-                    </a>
+                    <button onClick={() => openAuthFile(url)} className="block w-full h-full flex items-center justify-center">
+                      <span className="text-xs text-[#aaa] hover:text-white transition-colors">📎 {label} Görüntüle</span>
+                    </button>
                   ) : (
                     <div className="flex items-center justify-center h-full">
                       <p className="text-xs text-[#444]">{label} yüklenmemiş</p>
