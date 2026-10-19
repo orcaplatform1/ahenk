@@ -129,7 +129,7 @@ function ProfilPage() {
 
   return (
     <main className="min-h-screen bg-bg text-text pt-[52px]">
-      <AccountTabBar activeKey={activeTab} kycApproved={kycApproved} />
+      <AccountTabBar activeKey={activeTab} kycApproved={kycApproved} role={user.role} />
       <div className="max-w-4xl mx-auto px-4 py-8">
 
         {/* Sekme içeriği */}

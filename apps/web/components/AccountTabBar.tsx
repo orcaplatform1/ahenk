@@ -13,9 +13,13 @@ const TABS = [
   { key: 'rehber',    label: 'Numara Engelleme', href: '/profil?tab=rehber' },
 ];
 
-export function AccountTabBar({ activeKey, kycApproved }: { activeKey?: string; kycApproved?: boolean }) {
+export function AccountTabBar({ activeKey, kycApproved, role }: { activeKey?: string; kycApproved?: boolean; role?: string }) {
   const pathname = usePathname();
-  const tabs = TABS.filter(t => !(t.key === 'kyc' && kycApproved));
+  const isAdmin = role === 'ADMIN' || role === 'SUPERADMIN';
+  const tabs = [
+    ...(isAdmin ? [{ key: 'manage', label: 'Yönetim Paneli', href: '/manage' }] : []),
+    ...TABS.filter(t => !(t.key === 'kyc' && kycApproved)),
+  ];
 
   function isActive(key: string) {
     if (key === 'dashboard') return pathname === '/dashboard';
