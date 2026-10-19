@@ -596,8 +596,8 @@ export default function Home() {
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
 
-          <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-16 w-full py-12">
-            <div className="flex flex-col gap-5 lg:max-w-lg">
+          <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-16 w-full py-12 flex lg:block justify-center">
+            <div className="flex flex-col gap-5 w-full max-w-[320px] lg:max-w-lg">
               <div>
                 <motion.h1
                   className="font-serif text-5xl sm:text-6xl lg:text-7xl leading-[0.9] tracking-tight text-[#f5f5f5] mb-3"
