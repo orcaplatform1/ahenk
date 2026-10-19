@@ -211,10 +211,34 @@ export default function Navbar() {
           {/* Sağ alan */}
           <div className="flex items-center gap-2">
             {checked && navUser && (navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
-              <Link href="/admin" className="text-xs font-medium px-3 py-1.5 rounded-lg flex-shrink-0"
-                style={{ background: 'rgba(192,57,43,0.18)', color: '#c0392b', border: '1px solid rgba(192,57,43,0.3)' }}>
-                {navUser.role === 'SUPERADMIN' ? 'Süper Admin' : 'Admin'}
-              </Link>
+              <>
+                <style>{`
+                  @keyframes navAdminPulse {
+                    0%, 100% { box-shadow: 0 0 10px rgba(59,130,246,0.2); border-color: #1a3a5c; }
+                    50% { box-shadow: 0 0 18px rgba(59,130,246,0.4); border-color: #3b82f6; }
+                  }
+                  @keyframes navAdminDot {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.35; }
+                  }
+                `}</style>
+                <Link href="/admin" style={{ textDecoration: 'none' }}>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700,
+                    background: 'linear-gradient(135deg, #0a1628 0%, #0d1f3c 100%)',
+                    border: '1px solid #1a3a5c', color: '#93c5fd',
+                    animation: 'navAdminPulse 2.5s ease-in-out infinite',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    <span style={{
+                      width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', flexShrink: 0,
+                      animation: 'navAdminDot 2.5s ease-in-out infinite',
+                    }} />
+                    Yönetim Paneli
+                  </span>
+                </Link>
+              </>
             )}
             {checked && navUser && (
               <Link href="/profil" className="cursor-pointer flex-shrink-0">
