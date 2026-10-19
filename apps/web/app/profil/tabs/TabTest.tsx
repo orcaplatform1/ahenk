@@ -212,7 +212,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
           position: 'absolute', top: 10, right: 0, width: 148,
           display: 'flex', flexDirection: 'column', gap: 4, padding: '0 8px', zIndex: 4,
         }}>
-          <div style={{ fontSize: 8, color: '#5a2030', letterSpacing: '0.09em', textTransform: 'uppercase', marginBottom: 2, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>
+          <div style={{ fontSize: 8, color: '#e05c4c', letterSpacing: '0.09em', textTransform: 'uppercase', marginBottom: 2, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>
             Kişilik Boyutları
           </div>
           {DIMENSIONS.map((d, i) => (
@@ -221,19 +221,19 @@ function PersonalityAura({ scores }: { scores: Scores }) {
               onClick={() => handleSelect(i)}
               onMouseEnter={() => handleSelect(i)}
               style={{
-                background: activeId === i ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
+                background: 'rgba(255,255,255,0.04)',
                 border: 'none',
                 borderLeft: `3px solid ${activeId === i ? '#e05c4c' : 'transparent'}`,
                 borderRadius: 7, padding: '5px 7px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4,
-                cursor: 'pointer', transition: 'background .2s, border-left-color .2s',
+                cursor: 'pointer', transition: 'border-left-color .2s',
               }}
             >
               <div>
-                <div style={{ fontSize: 10, fontWeight: 600, color: '#d4a0aa', lineHeight: 1.2, fontFamily: 'Inter, sans-serif' }}>{d.label}</div>
-                <div style={{ fontSize: 8, color: '#6b3040', marginTop: 1, fontFamily: 'Inter, sans-serif' }}>{d.sub}</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: '#e05c4c', lineHeight: 1.2, fontFamily: 'Inter, sans-serif' }}>{d.label}</div>
+                <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.45)', marginTop: 1, fontFamily: 'Inter, sans-serif' }}>{d.sub}</div>
               </div>
-              <span style={{ fontSize: 10, fontWeight: 700, color: activeId === i ? '#e05c4c' : '#9b1e3a', flexShrink: 0, fontFamily: 'Inter, sans-serif' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#e05c4c', flexShrink: 0, fontFamily: 'Inter, sans-serif' }}>
                 {Math.round(ocean[i].value * 100)}%
               </span>
             </div>
