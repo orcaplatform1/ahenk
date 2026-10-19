@@ -144,7 +144,14 @@ export class KycService {
       this.prisma.kycSubmission.count({ where }),
     ]);
 
-    return { items, total, page: p, limit: l, totalPages: Math.ceil(total / l) };
+    const itemsWithUrls = items.map((item) => ({
+      ...item,
+      idFrontUrl:   `/api/v1/kyc/admin/file/${item.id}/front`,
+      idBackUrl:    `/api/v1/kyc/admin/file/${item.id}/back`,
+      livenessUrl:  `/api/v1/kyc/admin/file/${item.id}/liveness`,
+    }));
+
+    return { items: itemsWithUrls, total, page: p, limit: l, totalPages: Math.ceil(total / l) };
   }
 
   // ─── Admin: Tek başvuru ───────────────────────────────────────────────────

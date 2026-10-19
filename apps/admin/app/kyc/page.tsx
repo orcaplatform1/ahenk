@@ -12,7 +12,7 @@ interface KycItem {
   id: string;
   userId: string;
   status: KycStatusFilter;
-  createdAt: string;
+  submittedAt: string;
   rejectReason?: string;
   user: { firstName: string; lastName: string; phone?: string };
   idFrontUrl?: string;
@@ -90,7 +90,7 @@ export default function KycPage() {
                 <tr key={item.id} className="border-b border-border hover:bg-surface/50 transition-colors">
                   <td className="py-3 px-2">{item.user.firstName} {item.user.lastName}</td>
                   <td className="py-3 px-2 text-muted">{item.user.phone ?? '—'}</td>
-                  <td className="py-3 px-2 text-muted">{new Date(item.createdAt).toLocaleDateString('tr-TR')}</td>
+                  <td className="py-3 px-2 text-muted">{new Date(item.submittedAt).toLocaleDateString('tr-TR')}</td>
                   <td className="py-3 px-2">
                     <div className="flex gap-2">
                       {item.idFrontUrl && <a href={item.idFrontUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Ön</a>}
