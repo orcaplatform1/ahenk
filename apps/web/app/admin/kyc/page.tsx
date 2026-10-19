@@ -15,12 +15,12 @@ async function openAuthFile(path: string) {
 interface KycApplication {
   id: string;
   userId: string;
-  firstName: string;
-  lastName: string;
   submittedAt: string;
   idFrontUrl: string | null;
   idBackUrl: string | null;
+  livenessUrl: string | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPICIOUS';
+  user: { email: string; phone: string | null; profile: { firstName: string; lastName: string } | null };
 }
 
 function fmtDate(val: string) {
@@ -104,9 +104,8 @@ export default function AdminKyc() {
           >
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
-                <p className="text-sm font-semibold text-[#f5f5f5]">{item.firstName} {item.lastName}</p>
+                <p className="text-sm font-semibold text-[#f5f5f5]">{item.user?.profile?.firstName} {item.user?.profile?.lastName}</p>
                 <p className="text-xs text-[#555] mt-0.5">{fmtDate(item.submittedAt)}</p>
-                <p className="text-xs text-[#444] font-mono mt-0.5">{item.userId}</p>
               </div>
               <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', color: '#fbbf24' }}>
                 Bekliyor
@@ -114,8 +113,8 @@ export default function AdminKyc() {
             </div>
 
             {/* Kimlik görselleri */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {[{ url: item.idFrontUrl, label: 'Ön Yüz' }, { url: item.idBackUrl, label: 'Arka Yüz' }].map(({ url, label }) => (
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[{ url: item.idFrontUrl, label: 'Ön Yüz' }, { url: item.idBackUrl, label: 'Arka Yüz' }, { url: item.livenessUrl, label: 'Video' }].map(({ url, label }) => (
                 <div key={label} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', aspectRatio: '16/9' }}>
                   {url ? (
                     <button onClick={() => openAuthFile(url)} className="block w-full h-full flex items-center justify-center">
