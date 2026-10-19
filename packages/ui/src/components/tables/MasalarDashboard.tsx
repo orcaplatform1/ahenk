@@ -75,62 +75,125 @@ function nextDeadline(type: 'GROUP' | 'ONE_ON_ONE'): Date {
   return tgtUTC;
 }
 
-type Urgency = 'far' | 'day' | 'orange' | 'red' | 'critical';
 
-function formatCountdown(ms: number): { text: string; urgency: Urgency } {
-  if (ms <= 0) return { text: '00sn', urgency: 'critical' };
-  const totalSec = Math.floor(ms / 1000);
+
+function CenterCountdown({ type }: { type: 'GROUP' | 'ONE_ON_ONE' }) {
+  const [msLeft, setMsLeft] = useState(() => Math.max(0, nextDeadline(type).getTime() - Date.now()));
+
+  useEffect(() => {
+    const id = setInterval(() => setMsLeft(Math.max(0, nextDeadline(type).getTime() - Date.now())), 1000);
+    return () => clearInterval(id);
+  }, [type]);
+
+  const totalSec = Math.floor(msLeft / 1000);
   const days  = Math.floor(totalSec / 86400);
   const hours = Math.floor((totalSec % 86400) / 3600);
   const mins  = Math.floor((totalSec % 3600) / 60);
   const secs  = totalSec % 60;
-  const pad = (n: number) => String(n).padStart(2, '0');
-  if (days >= 1) return { text: `${days}g ${hours}sa ${pad(mins)}dk`, urgency: 'far' };
-  if (totalSec > 3600) return { text: `${hours}sa ${pad(mins)}dk`, urgency: 'day' };
-  if (totalSec > 600)  return { text: `${pad(mins)}dk ${pad(secs)}sn`, urgency: 'orange' };
-  if (totalSec > 60)   return { text: `${pad(mins)}dk ${pad(secs)}sn`, urgency: 'red' };
-  return { text: `${pad(secs)}sn`, urgency: 'critical' };
-}
+  const pad   = (n: number) => String(n).padStart(2, '0');
 
-function DeadlineCountdown({ type }: { type: 'GROUP' | 'ONE_ON_ONE' }) {
-  const [msLeft, setMsLeft] = useState(() => nextDeadline(type).getTime() - Date.now());
+  const isDay      = totalSec < 86400;  // son 1 gün
+  const is12h      = totalSec < 43200;  // son 12 saat
+  const isHour     = totalSec < 3600;   // son 1 saat
+  const is15min    = totalSec < 900;    // son 15 dakika
 
-  useEffect(() => {
-    const id = setInterval(() => setMsLeft(nextDeadline(type).getTime() - Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [type]);
+  const numColor =
+    is15min ? '#e74c3c' :
+    isHour  ? '#c0392b' :
+    is12h   ? '#e67e22' :
+    isDay   ? '#c9a227' :
+    '#f5f5f5';
 
-  const { text, urgency } = formatCountdown(Math.max(0, msLeft));
-  const isUrgent   = urgency === 'red' || urgency === 'critical';
-  const isCritical = urgency === 'critical';
+  const glowColor =
+    is15min ? 'rgba(231,76,60,0.55)' :
+    isHour  ? 'rgba(192,57,43,0.4)'  :
+    is12h   ? 'rgba(230,126,34,0.4)' :
+    isDay   ? 'rgba(201,162,39,0.35)' :
+    'rgba(192,57,43,0.18)';
 
-  const fontSize = isCritical ? 20 : urgency === 'red' ? 17 : 13;
-  const color =
-    isCritical ? '#e74c3c' :
-    urgency === 'red' ? '#c0392b' :
-    urgency === 'orange' ? '#e67e22' :
-    urgency === 'day' ? '#bbb' : '#aaa';
-  const filter =
-    isCritical ? 'drop-shadow(0 0 10px rgba(231,76,60,0.7))' :
-    urgency === 'red' ? 'drop-shadow(0 0 6px rgba(192,57,43,0.5))' : 'none';
+  const isPulse = is15min;
+
+  const units = [
+    { val: pad(days),  lbl: 'GÜN' },
+    { val: pad(hours), lbl: 'SA'  },
+    { val: pad(mins),  lbl: 'DK'  },
+    { val: pad(secs),  lbl: 'SN'  },
+  ];
 
   return (
-    <div style={{ textAlign: 'center', marginBottom: 14 }}>
-      {isUrgent && (
-        <style>{`@keyframes cdPulse{0%,100%{opacity:.7}50%{opacity:1}}.cd-pulse{animation:cdPulse ${isCritical ? 0.8 : 1.1}s ease-in-out infinite}`}</style>
-      )}
-      <p style={{ margin: 0, fontSize: 9, color: '#666', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', marginBottom: 4 }}>
-        KAPANIŞA KALAN
-      </p>
-      <span
-        className={isUrgent ? 'cd-pulse' : undefined}
-        style={{ display: 'inline-block', fontFamily: '"SF Mono","Fira Code",monospace,Inter', fontSize, fontWeight: 700, letterSpacing: '0.06em', color, filter, transition: 'color 0.5s, font-size 0.3s' }}
-      >
-        {text}
-      </span>
+    <div style={{ textAlign: 'center' }}>
+      <style>{`
+        @keyframes _cdglow{0%,100%{opacity:.85}50%{opacity:1}}
+        .cd-ctr-pulse{animation:_cdglow 0.6s ease-in-out infinite}
+      `}</style>
+      {/* Arka plan: cam efekti */}
+      <div style={{
+        background: 'rgba(8,3,3,0.72)',
+        border: `1px solid ${glowColor}`,
+        borderRadius: 14,
+        padding: '10px 14px 8px',
+        boxShadow: `0 0 22px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.06)`,
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        minWidth: 148,
+      }}>
+        {/* Üst etiket */}
+        <p style={{
+          margin: '0 0 7px',
+          fontSize: 8,
+          fontWeight: 700,
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+          fontFamily: 'Inter, sans-serif',
+          color: 'rgba(192,57,43,0.85)',
+        }}>
+          KAPANIŞA KALAN
+        </p>
+        {/* 4 birim */}
+        <div style={{ display: 'flex', gap: 0, alignItems: 'flex-end', justifyContent: 'center' }}>
+          {units.map(({ val, lbl }, i) => (
+            <div key={lbl} style={{ display: 'flex', alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <span
+                  className={isPulse ? 'cd-ctr-pulse' : undefined}
+                  style={{
+                    fontFamily: '"SF Mono","Fira Code",monospace',
+                    fontSize: 22,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    color: numColor,
+                    letterSpacing: '-0.02em',
+                    textShadow: isHour ? `0 0 12px ${numColor}` : 'none',
+                    transition: 'color 0.4s',
+                  }}
+                >
+                  {val}
+                </span>
+                <span style={{
+                  fontSize: 7,
+                  fontWeight: 600,
+                  letterSpacing: '0.14em',
+                  color: 'rgba(255,255,255,0.35)',
+                  fontFamily: 'Inter, sans-serif',
+                  marginTop: 3,
+                }}>
+                  {lbl}
+                </span>
+              </div>
+              {i < 3 && (
+                <span style={{
+                  fontSize: 16, fontWeight: 700, color: 'rgba(192,57,43,0.45)',
+                  fontFamily: 'monospace', lineHeight: 1, marginBottom: 14, padding: '0 2px',
+                }}>:</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
+
 
 // ── Tarih formatlama ────────────────────────────────────────────────────────
 function formatMasaDate(isoStr: string): string {
@@ -393,8 +456,6 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant, isDesktop
         </div>
       </div>
 
-      <DeadlineCountdown type={type} />
-
       <div ref={radarWrapRef} style={{ width: '100%', display: 'flex', justifyContent: 'center', overflow: 'visible' }}>
         <div style={{
           position: 'relative', width: RADAR_SZ, height: RADAR_SZ, flexShrink: 0,
@@ -408,7 +469,6 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant, isDesktop
             ))}
             <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.14} />
             <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke={SCAN_CLR} strokeWidth={0.6} opacity={0.14} />
-            <circle cx={CX} cy={CY} r={5} fill={SCAN_CLR} opacity={0.85} />
             <defs>
               <radialGradient id="swpRG" cx="50%" cy="50%" r="50%">
                 <stop offset="0%"   stopColor={SCAN_CLR} stopOpacity={0} />
@@ -418,6 +478,17 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant, isDesktop
             </defs>
             <RadarSweep running={!isFull} cx={CX} cy={CY} sweepPath={SWEEP_PATH} />
           </svg>
+
+          {/* Premium merkez sayaç */}
+          <div style={{
+            position: 'absolute',
+            top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 6,
+            pointerEvents: 'none',
+          }}>
+            <CenterCountdown type={type} />
+          </div>
 
           <AnimatePresence>
             {slots.map((p, i) => {
@@ -641,30 +712,6 @@ function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ON
         </a>
       </div>
 
-      {/* Fake sohbet önizlemesi */}
-      <div style={{ marginTop: 24, position: 'relative' }}>
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 2,
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
-          borderRadius: 10,
-          background: 'rgba(10,4,4,0.25)',
-        }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#c0392b' }} />
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', color: '#c0392b' }}>
-            {isGroup ? 'GRUP SOHBETİ' : 'SOHBET'}
-          </span>
-        </div>
-        <div style={{
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 10, padding: '12px 12px',
-        }}>
-          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-            Henüz mesaj yok. İlk mesajı sen gönder.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
