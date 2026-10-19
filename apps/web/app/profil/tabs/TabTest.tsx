@@ -221,13 +221,12 @@ function PersonalityAura({ scores }: { scores: Scores }) {
               onClick={() => handleSelect(i)}
               onMouseEnter={() => handleSelect(i)}
               style={{
-                background: activeId === i ? 'rgba(107,26,42,0.42)' : 'rgba(50,8,18,0.6)',
-                border: '1px solid rgba(107,26,42,0.22)',
+                background: activeId === i ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
+                border: 'none',
                 borderLeft: `3px solid ${activeId === i ? '#c0394f' : 'transparent'}`,
-                boxShadow: activeId === i ? 'inset 0 0 10px rgba(192,57,79,0.12)' : 'none',
                 borderRadius: 7, padding: '5px 7px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4,
-                cursor: 'pointer', transition: 'background .2s, border-left-color .2s, box-shadow .2s',
+                cursor: 'pointer', transition: 'background .2s, border-left-color .2s',
               }}
             >
               <div>
@@ -254,7 +253,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
 
       {/* Açıklama kartı */}
       <div style={{
-        background: 'rgba(40,6,14,0.93)', borderTop: '1px solid rgba(155,30,58,0.2)',
+        background: 'rgba(255,255,255,0.04)', borderTop: '1px solid rgba(255,255,255,0.07)',
         borderRadius: '10px 10px 0 0', padding: '9px 12px 13px',
         opacity: cardShow ? 1 : 0, transform: cardShow ? 'translateY(0)' : 'translateY(5px)',
         transition: 'opacity .3s, transform .3s',
@@ -263,7 +262,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
           <div style={{ width: 2, borderRadius: 2, background: '#c0394f', alignSelf: 'stretch', flexShrink: 0, minHeight: 22 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: '#c0394f', letterSpacing: '0.03em', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>{cardTitle}</p>
-            <p style={{ fontSize: 10, color: '#7a4050', lineHeight: 1.55, margin: 0, fontFamily: 'Inter, sans-serif' }}>{cardText}</p>
+            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55, margin: 0, fontFamily: 'Inter, sans-serif' }}>{cardText}</p>
           </div>
         </div>
       </div>
