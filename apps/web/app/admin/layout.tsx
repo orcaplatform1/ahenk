@@ -9,8 +9,8 @@ import { api } from '@/lib/api';
 
 function decodeJwtRole(token: string): string | null {
   try {
-    const payload = token.split('.')[1];
-    const decoded = JSON.parse(atob(payload));
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = JSON.parse(atob(b64));
     return (decoded.role as string) ?? null;
   } catch { return null; }
 }
