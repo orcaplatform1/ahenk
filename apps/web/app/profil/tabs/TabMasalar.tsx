@@ -616,17 +616,7 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
         </div>
       )}
       {locked && (
-        <a
-          href="/profil?tab=paket"
-          style={{
-            display: 'block', textAlign: 'center',
-            padding: '12px 0', borderRadius: 12,
-            background: 'linear-gradient(115deg,#c0392b,#ff6b6b)',
-            color: '#fff', fontWeight: 600, fontSize: 14,
-            boxShadow: '0 0 16px rgba(192,57,43,0.35)',
-            textDecoration: 'none',
-          }}
-        >
+        <a href="/profil?tab=paket" className="btn-primary w-full justify-center">
           Paket Seç
         </a>
       )}

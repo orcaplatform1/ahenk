@@ -438,11 +438,7 @@ export default function GirisPage() {
 
         {/* Alt linkler */}
         <div className="mt-4 flex justify-center">
-          <Link
-            href="/sifremi-unuttum"
-            className="text-center py-2.5 text-sm font-medium rounded-xl transition-all"
-            style={{ width: '72%', border: '1px solid #c0392b', color: '#c0392b', background: 'transparent' }}
-          >
+          <Link href="/sifremi-unuttum" className="btn-ghost">
             Şifremi Unuttum
           </Link>
         </div>

@@ -363,28 +363,7 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
                 <button
                   onClick={() => kycApproved ? handleBuy(plan.key) : onGoKyc()}
                   disabled={buying === plan.key}
-                  style={!kycApproved ? {
-                    background: 'rgba(192,57,43,0.12)',
-                    color: '#e74c3c',
-                    border: '1px solid rgba(192,57,43,0.4)',
-                    borderRadius: 10,
-                    padding: '7px 0',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    width: '100%',
-                  } : {
-                    background: 'linear-gradient(90deg,#c0392b 0%,#e74c3c 100%)',
-                    color: '#fff',
-                    boxShadow: '0 4px 16px rgba(192,57,43,0.35)',
-                    border: 'none',
-                    borderRadius: 10,
-                    padding: '7px 0',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    width: '100%',
-                  }}
+                  className="btn-primary w-full justify-center disabled:opacity-50"
                 >
                   {buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : 'Paketi Seç'}
                 </button>
