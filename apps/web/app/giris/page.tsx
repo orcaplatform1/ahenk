@@ -97,7 +97,7 @@ export default function GirisPage() {
         return; // dashboard'a geçmeden uyarıyı göster
       }
       if (me?.role === 'ADMIN' || me?.role === 'SUPERADMIN') {
-        window.location.href = '/manage';
+        window.location.href = '/admin';
         return;
       }
     } catch { /* yoksa devam */ }
