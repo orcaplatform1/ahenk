@@ -210,6 +210,12 @@ export default function Navbar() {
 
           {/* Sağ alan */}
           <div className="flex items-center gap-2">
+            {checked && navUser && (navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
+              <Link href="/admin" className="text-xs font-medium px-3 py-1.5 rounded-lg flex-shrink-0"
+                style={{ background: 'rgba(192,57,43,0.18)', color: '#c0392b', border: '1px solid rgba(192,57,43,0.3)' }}>
+                {navUser.role === 'SUPERADMIN' ? 'Süper Admin' : 'Admin'}
+              </Link>
+            )}
             {checked && navUser && (
               <Link href="/profil" className="cursor-pointer flex-shrink-0">
                 <NavAvatar user={navUser} />
@@ -257,23 +263,6 @@ export default function Navbar() {
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'tween', duration: 0.28, ease: 'easeInOut' }}
             >
-              {/* Admin linki */}
-              {checked && navUser && (navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
-                <div className="flex flex-col px-4 pt-4 gap-0.5">
-                  <motion.a
-                    href="/admin" onClick={() => setMenuOpen(false)}
-                    className="text-sm py-2.5 px-2 rounded-lg transition-colors"
-                    style={{ color: '#c0392b', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
-                    initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.04, duration: 0.22 }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; }}
-                  >
-                    Yönetim Paneli
-                  </motion.a>
-                </div>
-              )}
-
               {/* Site linkleri */}
               <div className="flex flex-col px-4 pt-4 gap-1">
                 {navLinks.map((item, i) => (

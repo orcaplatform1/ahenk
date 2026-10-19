@@ -23,7 +23,7 @@ export default function GirisPage() {
         return;
       }
       api.setToken(data.accessToken);
-      router.push('/');
+      router.push('/matches');
     } catch (e) {
       setError((e as Error).message);
     } finally {

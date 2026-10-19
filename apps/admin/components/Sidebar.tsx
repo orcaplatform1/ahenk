@@ -9,9 +9,9 @@ import { useEffect, useState } from 'react';
 interface NavLink { href: string; label: string; sos?: boolean; }
 const LINKS: NavLink[] = [
   { href: '/acil-yardim', label: '🚨 Acil Yardım', sos: true },
+  { href: '/matches',     label: 'Eşleştirme' },
   { href: '/',            label: 'Dashboard' },
   { href: '/stats',       label: 'İstatistikler' },
-  { href: '/matches',     label: 'Eşleştirme' },
   { href: '/quality',     label: 'Kalite Kontrol' },
   { href: '/kyc',         label: 'KYC' },
   { href: '/uyarilar',    label: 'Uyarılar' },
