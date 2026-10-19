@@ -632,15 +632,19 @@ export default function Home() {
           </div>
 
           {/* Stats */}
-          <div className="relative z-10" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.45)' }}>
+          <div className="relative z-10 lg:hidden" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.45)' }}>
             <StatCards />
           </div>
 
           {/* ── Sayaç ─────────────────────────────────────────────────────── */}
-          <div className="relative z-10 px-6 lg:px-16 py-8" style={{ borderBottom: '1px solid rgba(192,57,43,0.2)' }}>
+          <div className="relative z-10 px-6 lg:px-16 py-8 lg:flex lg:justify-start" style={{ borderBottom: '1px solid rgba(192,57,43,0.2)' }}>
             <HeroCountdown />
           </div>
         </section>
+
+        <div className="hidden lg:block" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.45)' }}>
+          <StatCards />
+        </div>
 
         {/* ── Bunu daha önce denemedin ─────────────────────────────────── */}
         <section className="max-w-6xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
