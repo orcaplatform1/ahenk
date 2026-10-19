@@ -631,16 +631,16 @@ export default function Home() {
             </motion.div>
           </div>
 
+          {/* Stats */}
+          <div className="relative z-10" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.45)' }}>
+            <StatCards />
+          </div>
+
           {/* ── Sayaç ─────────────────────────────────────────────────────── */}
           <div className="relative z-10 px-6 lg:px-16 py-8" style={{ background: '#0d0404', borderBottom: '1px solid rgba(192,57,43,0.2)' }}>
             <HeroCountdown />
           </div>
         </section>
-
-        {/* Stats */}
-        <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.45)' }}>
-          <StatCards />
-        </div>
 
         {/* ── Bunu daha önce denemedin ─────────────────────────────────── */}
         <section className="max-w-6xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
