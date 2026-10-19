@@ -36,39 +36,42 @@ const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean }[] 
   { href: '/admin/settings',     label: 'Ayarlar' },
 ];
 
+const BG      = '#020c1b';
+const SURFACE = '#0a1628';
+const BORDER  = '#1a3a5c';
+const RED     = '#ef4444';
+const TEXT    = '#e2e8f0';
+const MUTED   = '#64748b';
+
 function NavLinks({ pathname, onClose, onLogout, unread }: {
   pathname: string; onClose?: () => void; onLogout: () => void; unread: number;
 }) {
   return (
-    <nav className="flex flex-col p-3 flex-1 overflow-y-auto">
-      <div className="flex flex-col gap-0.5 pb-3 mb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
+    <nav style={{ display: 'flex', flexDirection: 'column', padding: 12, flex: 1, overflowY: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingBottom: 12, marginBottom: 12, borderBottom: `1px solid ${BORDER}` }}>
         {NAV_TOP.map((n) => (
           <Link key={n.href} href={n.href} onClick={onClose}
-            className="px-3 py-2 rounded-xl text-sm transition-all"
-            style={{ color: '#555', border: '1px solid transparent' }}>
+            style={{ padding: '8px 12px', borderRadius: 10, fontSize: 13, color: MUTED, border: '1px solid transparent', transition: 'color 0.15s' }}>
             {n.label}
           </Link>
         ))}
       </div>
-      <div className="flex flex-col gap-0.5 flex-1">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
         {NAV.map((n) => {
           const active = pathname === n.href || pathname.startsWith(n.href + '/');
-          const linkStyle = n.sos
+          const style = n.sos
             ? active
-              ? { background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', fontWeight: 700 }
-              : { color: '#ef4444', border: '1px solid transparent', fontWeight: 600 }
+              ? { background: 'rgba(239,68,68,0.2)', color: RED, border: `1px solid rgba(239,68,68,0.4)`, fontWeight: 700 }
+              : { color: RED, border: '1px solid transparent', fontWeight: 600 }
             : active
-              ? { background: 'linear-gradient(135deg,rgba(192,57,43,0.2),rgba(192,57,43,0.08))', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.25)' }
-              : { color: '#666', border: '1px solid transparent' };
+              ? { background: 'rgba(59,130,246,0.15)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.3)' }
+              : { color: MUTED, border: '1px solid transparent' };
           return (
             <Link key={n.href} href={n.href} onClick={onClose}
-              className="px-3 py-2 rounded-xl text-sm transition-all flex items-center justify-between"
-              style={linkStyle}
-            >
+              style={{ padding: '8px 12px', borderRadius: 10, fontSize: 13, transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'space-between', ...style }}>
               {n.label}
               {n.alertKey && unread > 0 && (
-                <span className="text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
-                  style={{ background: '#c0392b', color: '#fff', fontSize: 10 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 99, background: RED, color: '#fff', minWidth: 18, textAlign: 'center' }}>
                   {unread > 99 ? '99+' : unread}
                 </span>
               )}
@@ -76,9 +79,9 @@ function NavLinks({ pathname, onClose, onLogout, unread }: {
           );
         })}
       </div>
-      <div className="pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
+      <div style={{ paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
         <button onClick={onLogout}
-          className="w-full px-3 py-2 text-xs text-[#555] hover:text-[#ff6b6b] transition-colors text-left rounded-xl">
+          style={{ width: '100%', padding: '8px 12px', fontSize: 12, color: MUTED, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderRadius: 10 }}>
           Çıkış
         </button>
       </div>
@@ -108,55 +111,51 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!ready) {
     return (
-      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#c0392b] border-t-transparent animate-spin" />
+      <div style={{ minHeight: '100vh', background: BG, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${RED}`, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#121212] text-[#f5f5f5] flex flex-col">
-      <header className="flex items-center gap-3 px-4 h-12 flex-shrink-0 sticky top-0 z-30"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.10)', background: 'rgba(10,10,10,0.92)', backdropFilter: 'blur(10px)' }}>
-        <button className="md:hidden flex flex-col justify-center items-center gap-[5px] flex-shrink-0"
-          onClick={() => setDrawerOpen(v => !v)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }} aria-label="Menü">
-          <span style={{ display: 'block', width: 18, height: 1.5, background: '#888', borderRadius: 2 }} />
-          <span style={{ display: 'block', width: 18, height: 1.5, background: '#888', borderRadius: 2 }} />
-          <span style={{ display: 'block', width: 18, height: 1.5, background: '#888', borderRadius: 2 }} />
+    <div style={{ minHeight: '100vh', background: BG, color: TEXT, display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <header style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', height: 52, flexShrink: 0, position: 'sticky', top: 0, zIndex: 30, background: SURFACE, borderBottom: `1px solid ${BORDER}`, boxShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>
+        <button className="md:hidden" onClick={() => setDrawerOpen(v => !v)}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', flexDirection: 'column', gap: 5 }} aria-label="Menü">
+          <span style={{ display: 'block', width: 18, height: 1.5, background: MUTED, borderRadius: 2 }} />
+          <span style={{ display: 'block', width: 18, height: 1.5, background: MUTED, borderRadius: 2 }} />
+          <span style={{ display: 'block', width: 18, height: 1.5, background: MUTED, borderRadius: 2 }} />
         </button>
-        <Link href="/admin" className="flex items-center gap-2 flex-shrink-0">
-          <Image src="/logo.webp" alt="Ahenk" width={22} height={22} className="rounded-full" />
-          <span className="text-xs font-semibold tracking-[0.15em] text-[#888]">AHENK ADMIN</span>
+        <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, textDecoration: 'none' }}>
+          <Image src="/logo.webp" alt="Ahenk" width={22} height={22} style={{ borderRadius: '50%' }} />
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', color: MUTED }}>AHENK ADMIN</span>
         </Link>
         {unread > 0 && (
-          <Link href="/admin/alerts" className="md:hidden ml-auto">
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-              style={{ background: '#c0392b', color: '#fff' }}>
+          <Link href="/admin/alerts" className="md:hidden" style={{ marginLeft: 'auto', textDecoration: 'none' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 99, background: RED, color: '#fff' }}>
               {unread} uyarı
             </span>
           </Link>
         )}
       </header>
 
-      <div className="flex flex-1 min-h-0">
-        <aside className="hidden md:flex w-52 flex-shrink-0 flex-col sticky top-12 h-[calc(100vh-48px)]"
-          style={{ borderRight: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.02)' }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        {/* Sidebar (desktop) */}
+        <aside className="hidden md:flex" style={{ width: 208, flexShrink: 0, flexDirection: 'column', position: 'sticky', top: 52, height: 'calc(100vh - 52px)', background: SURFACE, borderRight: `1px solid ${BORDER}` }}>
           <NavLinks pathname={pathname} onLogout={handleLogout} unread={unread} />
         </aside>
-        <main className="flex-1 min-w-0 overflow-x-hidden">{children}</main>
+        <main style={{ flex: 1, minWidth: 0, overflowX: 'hidden', background: BG }}>{children}</main>
       </div>
 
       <AnimatePresence>
         {drawerOpen && (
           <>
-            <motion.div className="md:hidden fixed inset-0 z-40"
-              style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }}
+            <motion.div className="md:hidden" style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(2px)' }}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }} onClick={() => setDrawerOpen(false)} />
-            <motion.div className="md:hidden fixed top-0 left-0 bottom-0 z-50 flex flex-col"
-              style={{ width: 200, background: 'linear-gradient(160deg,#111010 0%,#0d0b0b 60%,#120808 100%)',
-                borderRight: '1px solid rgba(255,255,255,0.08)', boxShadow: '8px 0 32px rgba(0,0,0,0.7)', paddingTop: 48 }}
+            <motion.div className="md:hidden" style={{ position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50, width: 208, background: SURFACE, borderRight: `1px solid ${BORDER}`, boxShadow: '8px 0 32px rgba(0,0,0,0.7)', paddingTop: 52, display: 'flex', flexDirection: 'column' }}
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}>
               <NavLinks pathname={pathname} onClose={() => setDrawerOpen(false)} onLogout={handleLogout} unread={unread} />
