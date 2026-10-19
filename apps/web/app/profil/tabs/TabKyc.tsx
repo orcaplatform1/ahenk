@@ -188,8 +188,7 @@ function ImageUploader({
         <div className="flex flex-col gap-2">
           <button
             onClick={() => cameraRef.current?.click()}
-            className="w-full py-2.5 text-sm font-medium rounded-xl transition-all"
-            style={{ border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b', background: 'rgba(192,57,43,0.06)' }}
+            className="w-full btn-ghost justify-center"
           >
             {uploadLabel}
           </button>
@@ -423,8 +422,7 @@ function LivenessRecorder({ onCapture, initialDone }: { onCapture: (blob: Blob, 
           {(phase === 'idle' || phase === 'error') && (
             <button
               onClick={openCamera}
-              className="flex-1 py-2.5 text-sm font-medium rounded-xl transition-all"
-              style={{ border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b', background: 'rgba(192,57,43,0.06)' }}
+              className="flex-1 btn-ghost"
             >
               Canlı Video Yükle
             </button>
@@ -610,8 +608,7 @@ export function TabKyc() {
           <button
             onClick={handleSubmit}
             disabled={submitting || !files.idFront || !files.idBack || !liveness}
-            className="w-full py-3 text-sm font-semibold rounded-xl disabled:opacity-50"
-            style={{ background: 'linear-gradient(115deg,#1a5c2a,#27ae60)', color: '#fff', boxShadow: '0 0 16px rgba(39,174,96,0.35)', border: 'none' }}
+            className="w-full btn-primary justify-center disabled:opacity-50"
           >
             {submitting ? 'Yükleniyor…' : 'Kimliğimi Doğrula'}
           </button>

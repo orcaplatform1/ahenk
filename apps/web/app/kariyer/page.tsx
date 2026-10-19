@@ -130,7 +130,7 @@ export default function KariyerPage() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42 }}>
-            <button onClick={scrollToForm} style={{ ...btnGrad, padding: '0.85rem 2.25rem', fontSize: '0.95rem' }}>
+            <button onClick={scrollToForm} className="btn-primary">
               Başvuru Formuna Git ↓
             </button>
           </motion.div>
@@ -287,7 +287,7 @@ export default function KariyerPage() {
                   {error && <p style={{ color: '#ff6b6b', fontSize: '0.85rem', textAlign: 'center' }}>{error}</p>}
 
                   <button type="submit" disabled={submitting}
-                    style={{ ...btnGrad, padding: '0.95rem', fontSize: '0.95rem', width: '100%', marginTop: '0.5rem', opacity: submitting ? 0.7 : 1 }}>
+                    className="btn-primary w-full justify-center mt-2 disabled:opacity-70">
                     {submitting ? 'Gönderiliyor...' : 'Başvurumu Gönder →'}
                   </button>
                 </form>

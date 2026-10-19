@@ -567,8 +567,7 @@ function KayitPageInner() {
                     type="button"
                     onClick={testGoPrev}
                     disabled={testCurrent === 0}
-                    className="px-5 py-3.5 text-sm text-[#555] hover:text-[#888] transition-colors disabled:opacity-30"
-                    style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: 9999 }}
+                    className="btn-ghost disabled:opacity-30"
                   >
                     ← Geri
                   </button>
@@ -576,14 +575,7 @@ function KayitPageInner() {
                     type="button"
                     onClick={testGoNext}
                     disabled={!tHasAnswer || testSubmitting}
-                    className="flex-1 py-3.5 text-sm font-medium text-white transition-all disabled:opacity-30"
-                    style={{
-                      background: tHasAnswer ? 'linear-gradient(135deg,#c0392b,#ff6b6b)' : 'rgba(255,255,255,0.05)',
-                      borderRadius: 9999,
-                      border: tHasAnswer ? 'none' : '1px solid rgba(255,255,255,0.07)',
-                      boxShadow: tHasAnswer ? '0 0 20px rgba(192,57,43,0.3)' : 'none',
-                      color: tHasAnswer ? '#fff' : '#444',
-                    }}
+                    className="flex-1 btn-primary justify-center disabled:opacity-30"
                   >
                     {testSubmitting ? '…' : tIsLast ? 'Testi Bitir' : 'İleri →'}
                   </button>
@@ -916,14 +908,8 @@ function DatePickerModal({ value, onChange, onClose }: {
         {/* Onayla */}
         <button
           onClick={confirm}
-          style={{
-            width: '100%', marginTop: 20,
-            padding: '15px', borderRadius: 14,
-            background: 'linear-gradient(135deg,#c0392b,#ff6b6b)',
-            color: '#fff', fontSize: 15, fontWeight: 600,
-            outline: 'none', cursor: 'pointer',
-            WebkitTapHighlightColor: 'transparent',
-          }}
+          className="btn-primary w-full justify-center"
+          style={{ marginTop: 20 }}
         >
           Seç
         </button>
@@ -991,15 +977,8 @@ function OccupationPickerModal({ value, onChange, onClose }: {
         <button
           onClick={() => { if (tmp) { onChange(tmp); onClose(); } }}
           disabled={!tmp}
-          style={{
-            width: '100%', marginTop: 16,
-            padding: '15px', borderRadius: 14,
-            background: tmp ? 'linear-gradient(135deg,#c0392b,#ff6b6b)' : 'rgba(255,255,255,0.06)',
-            color: tmp ? '#fff' : '#555', fontSize: 15, fontWeight: 600,
-            outline: 'none', cursor: tmp ? 'pointer' : 'default',
-            WebkitTapHighlightColor: 'transparent',
-            transition: 'background 0.2s',
-          }}
+          className="btn-primary w-full justify-center disabled:opacity-40"
+          style={{ marginTop: 16 }}
         >
           Seç
         </button>
@@ -1138,7 +1117,8 @@ function CityPickerModal({ cities, value, onChange, onClose, optional, title }: 
         </div>
         <button
           onClick={() => { onChange(tmp); onClose(); }}
-          style={{ width: '100%', marginTop: 16, padding: '15px', borderRadius: 14, background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff', fontSize: 15, fontWeight: 600, outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
+          className="btn-primary w-full justify-center"
+          style={{ marginTop: 16 }}
         >
           Seç
         </button>

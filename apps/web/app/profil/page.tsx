@@ -114,8 +114,7 @@ function ProfilPage() {
           <p className="text-[#888] text-sm mb-4">Profil yüklenemedi. Lütfen tekrar deneyin.</p>
           <button
             onClick={() => { setFetchError(false); setLoading(true); api.get<UserData>('/auth/me').then(u => setUser(u)).catch(() => setFetchError(true)).finally(() => setLoading(false)); }}
-            className="text-sm px-4 py-2 rounded-xl"
-            style={{ background: 'rgba(192,57,43,0.15)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.3)' }}
+            className="btn-ghost"
           >
             Yeniden Dene
           </button>

@@ -316,18 +316,7 @@ export default function CerezPolitikasiPage() {
         >
           <button
             onClick={resetConsent}
-            style={{
-              padding: '0.75rem 2rem',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: '9999px',
-              color: '#ccc',
-              fontSize: '0.87rem',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)'; }}
-            onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; }}
+            className="btn-ghost"
           >
             Çerez Tercihlerimi Güncelle
           </button>

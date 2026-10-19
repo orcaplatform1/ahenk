@@ -609,12 +609,7 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
           </p>
           <button
             onClick={onGoKyc}
-            className="text-sm font-semibold whitespace-nowrap flex-shrink-0 px-4 py-2 rounded-xl transition-all"
-            style={{
-              background: 'linear-gradient(115deg,#1a5c2a,#27ae60)',
-              color: '#fff',
-              border: 'none',
-            }}
+            className="btn-primary whitespace-nowrap flex-shrink-0"
           >
             Doğrula
           </button>

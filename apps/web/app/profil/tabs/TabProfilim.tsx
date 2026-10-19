@@ -442,13 +442,13 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => { setActiveCityConfirm(false); saveActiveCity(pendingActiveCity); }}
-                style={{ width: '100%', padding: '14px', borderRadius: 12, background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', outline: 'none' }}
+                className="btn-primary w-full justify-center"
               >
                 Kabul Ediyorum
               </button>
               <button
                 onClick={() => setActiveCityConfirm(false)}
-                style={{ width: '100%', padding: '14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#888', fontSize: 14, cursor: 'pointer', outline: 'none' }}
+                className="btn-ghost w-full justify-center"
               >
                 Kabul Etmiyorum
               </button>
