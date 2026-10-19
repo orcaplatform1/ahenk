@@ -95,7 +95,7 @@ export default function SifremiUnuttumPage() {
         </AnimatePresence>
 
         <div className="mt-4 flex justify-center">
-          <Link href="/giris" className="btn-ghost">
+          <Link href="/giris" className="mx-auto block btn-ghost" style={{ width: '72%' }}>
             Girişe Dön
           </Link>
         </div>

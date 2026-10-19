@@ -437,7 +437,7 @@ function EmptyMasaCard({
             borderRadius: 10, overflow: 'hidden',
           }}>
             <div style={{ padding: '16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ margin: 0, fontSize: 12, color: '#444', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+              <p style={{ margin: 0, fontSize: 12, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
                 Henüz mesaj yok. İlk mesajı sen gönder.
               </p>
             </div>
@@ -447,7 +447,6 @@ function EmptyMasaCard({
                 borderRadius: 8, padding: '8px 10px', fontSize: 13, color: '#555',
                 fontFamily: 'Inter, sans-serif',
               }}>
-                Mesaj yaz…
               </div>
               <button disabled className="btn-primary">
                 Gönder

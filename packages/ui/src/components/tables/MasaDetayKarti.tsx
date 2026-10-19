@@ -525,7 +525,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
       }}>
         <div style={{ maxHeight: 260, overflowY: 'auto', padding: '12px 12px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {messages.length === 0 && (
-            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 12, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
               {isClosed ? 'Sohbet sona erdi.' : 'Henüz mesaj yok. İlk mesajı sen gönder.'}
             </p>
           )}
@@ -570,7 +570,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
               value={input}
               onChange={e => setInput(e.target.value.slice(0, 1000))}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-              placeholder="Mesaj yaz…"
+              placeholder=""
               className="ahenk-chat-input"
               style={{
                 flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
