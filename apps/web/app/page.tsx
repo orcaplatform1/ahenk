@@ -596,7 +596,7 @@ export default function Home() {
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
 
-          <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-16 w-full py-12 lg:flex lg:items-end lg:justify-between lg:gap-8">
+          <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-16 w-full py-12">
             <div className="flex flex-col gap-5 lg:max-w-lg">
               <div>
                 <motion.h1
@@ -631,10 +631,10 @@ export default function Home() {
                 </a>
               </motion.div>
 
-            </div>
-            {/* Geri sayım — desktop, sağ taraf */}
-            <div className="hidden lg:block flex-shrink-0">
-              <HeroCountdown />
+              {/* Geri sayım — desktop */}
+              <div className="hidden lg:block pt-2" style={{ width: 'fit-content' }}>
+                <HeroCountdown />
+              </div>
             </div>
           </div>
         </section>
