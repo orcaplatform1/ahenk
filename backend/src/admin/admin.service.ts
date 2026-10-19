@@ -139,12 +139,16 @@ export class AdminService {
         participations: {
           orderBy: { createdAt: "desc" },
           take: 5,
-          include: { meeting: { select: { id: true, title: true, scheduledAt: true, status: true } } },
+          include: { meeting: { select: { id: true, title: true, scheduledAt: true, status: true, type: true } } },
         },
       },
     });
     if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
-    return user;
+    const [groupCount, oneOnOneCount] = await Promise.all([
+      this.prisma.meetingParticipant.count({ where: { userId, meeting: { type: 'GROUP' } } }),
+      this.prisma.meetingParticipant.count({ where: { userId, meeting: { type: 'ONE_ON_ONE' } } }),
+    ]);
+    return { ...user, groupCount, oneOnOneCount };
   }
 
   // ─── Hesap askıya al/aktifleştir ─────────────────────────────────────────
