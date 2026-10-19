@@ -589,15 +589,15 @@ export default function Home() {
 
       <div className="relative" style={{ zIndex: 1 }}>
         {/* ── Hero ──────────────────────────────────────────────────────── */}
-        <section id="hero" className="relative overflow-hidden pt-[52px]" style={{ display: 'flex', alignItems: 'flex-start' }}>
+        <section id="hero" className="relative overflow-hidden pt-[52px] lg:min-h-[65vh]" style={{ display: 'flex', alignItems: 'flex-start' }}>
           <div className="hero-bg absolute inset-0" />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 100%)', zIndex: 1 }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
 
-          <div className="relative z-10 w-full pt-16 pb-10 px-6 lg:px-16 flex items-start justify-center gap-10">
-            {/* Sol: başlık + alt yazı + buton */}
+          <div className="relative z-10 w-full pt-16 pb-10 px-6 lg:px-16 flex flex-col lg:flex-row items-start lg:justify-center gap-6 lg:gap-10">
+            {/* Başlık + alt yazı */}
             <div className="flex flex-col gap-5 min-w-0">
               <div>
                 <motion.h1
@@ -618,8 +618,9 @@ export default function Home() {
                   <span className="text-[#c0392b] font-normal">Gerçek Buluşmalar.</span>
                 </motion.p>
               </div>
+              {/* CTA — sadece desktop */}
               <motion.div
-                className="flex flex-wrap items-center gap-4 pt-1"
+                className="hidden lg:flex flex-wrap items-center gap-4 pt-1"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 1.15, duration: 0.45, ease: 'easeOut' }}
@@ -633,10 +634,25 @@ export default function Home() {
               </motion.div>
             </div>
 
-            {/* Sağ: sayaç */}
-            <div className="flex-shrink-0">
+            {/* Sayaç */}
+            <div className="flex-shrink-0 w-full lg:w-auto">
               <HeroCountdown />
             </div>
+
+            {/* CTA — sadece mobil, sayacın altında */}
+            <motion.div
+              className="flex lg:hidden flex-wrap items-center gap-4"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.15, duration: 0.45, ease: 'easeOut' }}
+            >
+              <Link href="/kayit" className="btn-primary">
+                Hemen Katıl
+              </Link>
+              <a href="#how-it-knows-you" className="btn-ghost">
+                Nasıl Çalışır?
+              </a>
+            </motion.div>
           </div>
         </section>
 
