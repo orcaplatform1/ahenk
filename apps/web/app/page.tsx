@@ -589,7 +589,7 @@ export default function Home() {
 
       <div className="relative" style={{ zIndex: 1 }}>
         {/* ── Hero ──────────────────────────────────────────────────────── */}
-        <section id="hero" className="relative overflow-hidden pt-[52px] min-h-[70vh]" style={{ display: 'flex', alignItems: 'flex-start' }}>
+        <section id="hero" className="relative overflow-hidden pt-[52px]" style={{ display: 'flex', alignItems: 'flex-start' }}>
           <div className="hero-bg absolute inset-0" />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 100%)', zIndex: 1 }} />

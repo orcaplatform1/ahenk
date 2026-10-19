@@ -20,7 +20,7 @@ body {
 @media (min-width: 768px) {
   .hero-bg {
     background-image: url('/hero-bg-desktop.webp');
-    background-position: center;
+    background-position: right center;
   }
 }
 
