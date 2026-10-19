@@ -648,10 +648,13 @@ function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ON
         <h2 style={{
           fontFamily: 'var(--font-serif, "DM Serif Display", serif)',
           fontSize: 22, fontWeight: 400, color: '#f5f5f5',
-          letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 8px',
+          letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 12px',
         }}>
           {isGroup ? 'GRUP MASASI' : 'BAŞ BAŞA MASA'}
         </h2>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          <CenterCountdown type={type} />
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           <span style={{
             display: 'inline-block', width: 7, height: 7, borderRadius: '50%',
