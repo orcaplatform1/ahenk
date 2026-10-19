@@ -596,52 +596,28 @@ export default function Home() {
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
 
-          <div className="relative z-10 w-full pt-16 pb-10 px-6 lg:px-16 flex flex-col lg:flex-row items-start lg:justify-center gap-6 lg:gap-10">
-            {/* Başlık + alt yazı */}
-            <div className="flex flex-col gap-5 min-w-0">
-              <div>
-                <motion.h1
-                  className="font-serif text-5xl sm:text-6xl lg:text-7xl leading-[0.9] tracking-tight text-[#f5f5f5] mb-3"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8, duration: 0.45, ease: 'easeOut' }}
-                >
-                  Ahenk
-                </motion.h1>
-                <motion.p
-                  className="font-sans text-lg sm:text-xl font-light leading-snug"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.9, duration: 0.45, ease: 'easeOut' }}
-                >
-                  <span className="text-[#f5f5f5]">Sana Uygun İnsanlarla,</span><br />
-                  <span className="text-[#c0392b] font-normal">Gerçek Buluşmalar.</span>
-                </motion.p>
-              </div>
-              {/* CTA — sadece desktop */}
-              <motion.div
-                className="hidden lg:flex flex-wrap items-center gap-4 pt-1"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1.15, duration: 0.45, ease: 'easeOut' }}
+          <div className="relative z-10 w-full pt-16 pb-10 px-6 lg:px-16 flex flex-col gap-6">
+            <div>
+              <motion.h1
+                className="font-serif text-5xl sm:text-6xl lg:text-7xl leading-[0.9] tracking-tight text-[#f5f5f5] mb-3"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8, duration: 0.45, ease: 'easeOut' }}
               >
-                <Link href="/kayit" className="btn-primary">
-                  Hemen Katıl
-                </Link>
-                <a href="#how-it-knows-you" className="btn-ghost">
-                  Nasıl Çalışır?
-                </a>
-              </motion.div>
+                Ahenk
+              </motion.h1>
+              <motion.p
+                className="font-sans text-lg sm:text-xl font-light leading-snug"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9, duration: 0.45, ease: 'easeOut' }}
+              >
+                <span className="text-[#f5f5f5]">Sana Uygun İnsanlarla,</span><br />
+                <span className="text-[#c0392b] font-normal">Gerçek Buluşmalar.</span>
+              </motion.p>
             </div>
-
-            {/* Sayaç */}
-            <div className="flex-shrink-0 w-full lg:w-auto">
-              <HeroCountdown />
-            </div>
-
-            {/* CTA — sadece mobil, sayacın altında */}
             <motion.div
-              className="flex lg:hidden flex-wrap items-center gap-4"
+              className="flex flex-wrap items-center gap-4"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.15, duration: 0.45, ease: 'easeOut' }}
@@ -655,6 +631,11 @@ export default function Home() {
             </motion.div>
           </div>
         </section>
+
+        {/* ── Sayaç ─────────────────────────────────────────────────────── */}
+        <div className="px-6 lg:px-16 py-8" style={{ background: '#0d0404' }}>
+          <HeroCountdown />
+        </div>
 
         {/* ── İstatistik kartları ───────────────────────────────────────── */}
         <section style={{
