@@ -210,5 +210,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 @media (max-width: 768px) {
   .hero-countdown-box {
     background: #1a1a1a;
+    margin: 16px;
   }
 }
