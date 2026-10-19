@@ -580,12 +580,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
             <button
               onClick={sendMessage}
               disabled={!input.trim() || sending}
-              style={{
-                padding: '0 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                background: 'rgba(192,57,43,0.22)', color: '#ff6b6b',
-                fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif',
-                opacity: (!input.trim() || sending) ? 0.4 : 1, transition: 'opacity 0.2s',
-              }}
+              className="btn-primary"
             >
               Gönder
             </button>
@@ -877,29 +872,9 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
               href={mapLink}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                width: '100%', padding: '13px 0',
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 9999,
-                color: '#f5f5f5', textDecoration: 'none',
-                fontSize: 12, fontWeight: 700,
-                letterSpacing: '0.12em', textTransform: 'uppercase',
-                fontFamily: 'Inter, sans-serif', transition: 'border-color 0.2s, background 0.2s',
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                el.style.borderColor = 'rgba(255,255,255,0.28)';
-                el.style.background = 'rgba(255,255,255,0.04)';
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                el.style.borderColor = 'rgba(255,255,255,0.12)';
-                el.style.background = 'transparent';
-              }}
+              className="btn-primary"
+              style={{ width: '100%', justifyContent: 'center' }}
             >
-              <span style={{ fontSize: 14 }}>📍</span>
               HARİTADA GÖR
             </a>
           </motion.div>
@@ -1026,17 +1001,16 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
             <button
               onClick={handleOnMyWay}
               disabled={onMyWayDone || onMyWayLoading}
-              style={{
+              className={onMyWayDone ? undefined : 'btn-primary'}
+              style={onMyWayDone ? {
                 width: '100%', padding: '13px 0',
-                background: onMyWayDone ? 'rgba(39,174,96,0.12)' : 'rgba(255,255,255,0.05)',
-                border: onMyWayDone ? '1px solid rgba(39,174,96,0.35)' : '1px solid rgba(255,255,255,0.12)',
+                background: 'rgba(39,174,96,0.12)',
+                border: '1px solid rgba(39,174,96,0.35)',
                 borderRadius: 9999,
-                color: onMyWayDone ? '#27ae60' : '#f5f5f5',
-                fontSize: 12, fontWeight: 700,
+                color: '#27ae60', fontSize: 12, fontWeight: 700,
                 letterSpacing: '0.1em', textTransform: 'uppercase',
-                fontFamily: 'Inter, sans-serif', cursor: onMyWayDone ? 'default' : 'pointer',
-                transition: 'all 0.25s',
-              }}
+                fontFamily: 'Inter, sans-serif', cursor: 'default',
+              } : { width: '100%', justifyContent: 'center' }}
             >
               {onMyWayDone ? '✓ Yola çıktığını bildirdin' : onMyWayLoading ? 'Bildiriliyor…' : 'Yola Çıktım'}
             </button>

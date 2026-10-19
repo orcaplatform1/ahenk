@@ -285,19 +285,9 @@ function EmptyMasaCard({
           transition={{ delay: 0.3, duration: 0.4 }}
           style={{ marginBottom: 18 }}
         >
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            width: '100%', padding: '13px 0',
-            background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 9999, color: '#f5f5f5',
-            fontSize: 12, fontWeight: 700,
-            letterSpacing: '0.12em', textTransform: 'uppercase',
-            fontFamily: 'Inter, sans-serif', opacity: 0.5,
-          }}>
-            <span style={{ fontSize: 14 }}>📍</span>
+          <button disabled className="btn-primary w-full justify-center">
             HARİTADA GÖR
-          </div>
+          </button>
         </motion.div>
 
         {/* Çizgi */}
@@ -407,18 +397,7 @@ function EmptyMasaCard({
           transition={{ delay: 0.78, duration: 0.4 }}
           style={{ marginBottom: 10 }}
         >
-          <button
-            disabled
-            style={{
-              width: '100%', padding: '13px 0',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 9999, color: '#f5f5f5',
-              fontSize: 12, fontWeight: 700,
-              letterSpacing: '0.1em', textTransform: 'uppercase',
-              fontFamily: 'Inter, sans-serif', cursor: 'default', opacity: 0.5,
-            }}
-          >
+          <button disabled className="btn-primary w-full justify-center">
             Yola Çıktım
           </button>
         </motion.div>
@@ -470,14 +449,7 @@ function EmptyMasaCard({
               }}>
                 Mesaj yaz…
               </div>
-              <button
-                disabled
-                style={{
-                  padding: '0 14px', borderRadius: 8, border: 'none', cursor: 'default',
-                  background: 'rgba(192,57,43,0.22)', color: '#ff6b6b',
-                  fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', opacity: 0.4,
-                }}
-              >
+              <button disabled className="btn-primary">
                 Gönder
               </button>
             </div>

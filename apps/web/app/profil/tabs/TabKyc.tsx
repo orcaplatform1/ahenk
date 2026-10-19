@@ -179,7 +179,7 @@ function ImageUploader({
           <p className="text-xs text-green-400">Fotoğraf Yüklendi</p>
           <button
             onClick={() => onChange(null as unknown as File)}
-            className="ml-auto text-xs text-[#555] hover:text-[#888] transition-colors"
+            className="ml-auto btn-ghost"
           >
             Tekrar Çek
           </button>
@@ -392,7 +392,7 @@ function LivenessRecorder({ onCapture, initialDone }: { onCapture: (blob: Blob, 
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
           <span className="text-green-400">✓</span>
           <p className="text-xs text-green-400">Video Yüklendi</p>
-          <button onClick={retake} className="ml-auto text-xs text-[#555] hover:text-[#888] transition-colors">
+          <button onClick={retake} className="ml-auto btn-ghost">
             Tekrar Çek
           </button>
         </div>

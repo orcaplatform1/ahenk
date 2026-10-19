@@ -260,18 +260,29 @@ function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
 }
 
 // ── Responsive radar scale hook ──────────────────────────────────────────────
-function useRadarScale() {
+function useIsDesktop() {
+  const [v, setV] = useState(false);
+  useEffect(() => {
+    const check = () => setV(window.innerWidth >= 1024);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return v;
+}
+
+function useRadarScale(maxScale = 1) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const measure = () => setScale(Math.min(1, el.offsetWidth / RADAR_SZ));
+    const measure = () => setScale(Math.min(maxScale, Math.max(0.5, el.offsetWidth / RADAR_SZ)));
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [maxScale]);
   return { wrapRef, scale };
 }
 
@@ -324,13 +335,14 @@ function buildScanningSlots(allParts: Participant[], maxP: number): Array<Partic
 }
 
 // ── SCANNING ekranı ──────────────────────────────────────────────────────────
-function ScanningView({ type = 'GROUP', participants, selfParticipant }: {
+function ScanningView({ type = 'GROUP', participants, selfParticipant, isDesktop }: {
   type?: 'GROUP' | 'ONE_ON_ONE';
   participants?: Participant[];
   selfParticipant?: Participant;
+  isDesktop?: boolean;
 }) {
   const seenIds = useRef<Set<string>>(new Set());
-  const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale();
+  const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale(isDesktop ? 1.5 : 1);
 
   const maxP = type === 'ONE_ON_ONE' ? 2 : 6;
   const title = type === 'ONE_ON_ONE' ? 'BAŞ BAŞA MASA' : 'GRUP MASASI';
@@ -387,7 +399,7 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant }: {
         <div style={{
           position: 'relative', width: RADAR_SZ, height: RADAR_SZ, flexShrink: 0,
           transform: `scale(${radarScale})`, transformOrigin: 'top center',
-          marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
+          marginBottom: RADAR_SZ * (radarScale - 1),
         }}>
           <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
             {[36, 75, 112, ORBIT_R].map((r, i) => (
@@ -452,11 +464,11 @@ interface ConfirmedRadarProps {
   infoText: string;
 }
 
-export function ConfirmedRadarView({ participants, maxParticipants, type, scheduledAt, infoText }: ConfirmedRadarProps) {
+export function ConfirmedRadarView({ participants, maxParticipants, type, scheduledAt, infoText, isDesktop }: ConfirmedRadarProps & { isDesktop?: boolean }) {
   const isOneOnOne = type === 'ONE_ON_ONE';
   const title      = isOneOnOne ? 'BAŞ BAŞA MASA' : 'GRUP MASASI';
   const maxP       = maxParticipants ?? (isOneOnOne ? 2 : 6);
-  const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale();
+  const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale(isDesktop ? 1.5 : 1);
 
   const males   = participants.filter(p => p.gender === 'MALE');
   const females = participants.filter(p => p.gender === 'FEMALE');
@@ -493,7 +505,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
         <div style={{
           position: 'relative', width: RADAR_SZ, height: RADAR_SZ, flexShrink: 0,
           transform: `scale(${radarScale})`, transformOrigin: 'top center',
-          marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
+          marginBottom: RADAR_SZ * (radarScale - 1),
         }}>
           <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
             {[36, 75, 112, ORBIT_R].map((r, i) => (
@@ -541,9 +553,9 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
 const LOCK_CLR      = '#e8850c';
 const LOCK_ICON_CLR = '#7bc67e';
 
-function LockedView({ type = 'GROUP' }: { type?: 'GROUP' | 'ONE_ON_ONE'; neededPlan?: 'MASADA' | 'KARSIMDA' | null }) {
+function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ONE'; neededPlan?: 'MASADA' | 'KARSIMDA' | null; isDesktop?: boolean }) {
   const isGroup = type === 'GROUP';
-  const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale();
+  const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale(isDesktop ? 1.5 : 1);
 
   const line1 = isGroup
     ? 'Eşleşme taraması aktif.'
@@ -585,7 +597,7 @@ function LockedView({ type = 'GROUP' }: { type?: 'GROUP' | 'ONE_ON_ONE'; neededP
         <div style={{
           position: 'relative', width: RADAR_SZ, height: RADAR_SZ, flexShrink: 0,
           transform: `scale(${radarScale})`, transformOrigin: 'top center',
-          marginBottom: radarScale < 1 ? -(RADAR_SZ * (1 - radarScale)) : 0,
+          marginBottom: RADAR_SZ * (radarScale - 1),
         }}>
           <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
             {[36, 75, 112, ORBIT_R].map((r, i) => (
@@ -624,23 +636,7 @@ function LockedView({ type = 'GROUP' }: { type?: 'GROUP' | 'ONE_ON_ONE'; neededP
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#555', lineHeight: 1.65, margin: '0 0 22px' }}>
           {line2}
         </p>
-        <a
-          href="/profil?tab=paket"
-          style={{
-            display: 'inline-block',
-            padding: '13px 36px',
-            background: 'linear-gradient(135deg, #c0392b, #e74c3c)',
-            borderRadius: 9999,
-            color: '#fff',
-            fontSize: 13,
-            fontWeight: 700,
-            fontFamily: 'Inter, sans-serif',
-            letterSpacing: '0.04em',
-            textDecoration: 'none',
-            boxShadow: '0 0 28px rgba(192,57,43,0.45), 0 4px 16px rgba(0,0,0,0.4)',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
+        <a href="/profil?tab=paket" className="btn-primary">
           Paket Seç
         </a>
       </div>
@@ -650,14 +646,15 @@ function LockedView({ type = 'GROUP' }: { type?: 'GROUP' | 'ONE_ON_ONE'; neededP
 
 // ── Tek kart içeriği ──────────────────────────────────────────────────────────
 function MasaKarti({
-  type, item, selfParticipant,
+  type, item, selfParticipant, isDesktop,
 }: {
   type: 'GROUP' | 'ONE_ON_ONE';
   item?: DashboardItem;
   selfParticipant?: Participant;
+  isDesktop?: boolean;
 }) {
   if (!item) {
-    return <ScanningView type={type} participants={[]} selfParticipant={selfParticipant} />;
+    return <ScanningView type={type} participants={[]} selfParticipant={selfParticipant} isDesktop={isDesktop} />;
   }
 
   if (item.phase === 'REVEALED' && item.meeting.venueName) {
@@ -684,11 +681,12 @@ function MasaKarti({
         type={item.meeting.type}
         scheduledAt={item.meeting.scheduledAt}
         infoText="Masalar bölümünden detaylı bilgiye ulaşabilirsiniz."
+        isDesktop={isDesktop}
       />
     );
   }
 
-  return <ScanningView type={type} participants={item.meeting.participants} selfParticipant={selfParticipant} />;
+  return <ScanningView type={type} participants={item.meeting.participants} selfParticipant={selfParticipant} isDesktop={isDesktop} />;
 }
 
 // ── Premium Toggle ─────────────────────────────────────────────────────────────
@@ -800,6 +798,7 @@ export function MasalarDashboard({
   const [activeTab, setActiveTab] = useState<'GROUP' | 'ONE_ON_ONE'>('GROUP');
   const [tabDir, setTabDir]       = useState(1);
   const [shineKey, setShineKey]   = useState(0);
+  const isDesktop = useIsDesktop();
 
   const fetchDashboard = async () => {
     if (!apiBase) return;
@@ -843,8 +842,8 @@ export function MasalarDashboard({
     WebkitBackdropFilter: 'blur(20px)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
     borderRadius: 16,
-    padding: '28px 20px 20px',
-    maxWidth: 380,
+    padding: isDesktop ? '36px 48px 32px' : '28px 20px 20px',
+    maxWidth: isDesktop ? undefined : 380,
     margin: '0 auto',
   };
 
@@ -864,28 +863,28 @@ export function MasalarDashboard({
   // Aktif tab'ın içeriğini belirle
   function getTabContent(tab: 'GROUP' | 'ONE_ON_ONE') {
     // Abonelik yok → her iki tab da kilitli
-    if (!activePlan) return <LockedView type={tab} neededPlan={null} />;
+    if (!activePlan) return <LockedView type={tab} neededPlan={null} isDesktop={isDesktop} />;
 
     if (activePlan === 'ICERDE') {
       const item = tab === 'GROUP' ? groupItem : oneOnOneItem;
-      return <MasaKarti type={tab} item={item} selfParticipant={selfParticipant} />;
+      return <MasaKarti type={tab} item={item} selfParticipant={selfParticipant} isDesktop={isDesktop} />;
     }
 
     if (activePlan === 'MASADA') {
-      if (tab === 'GROUP') return <MasaKarti type="GROUP" item={groupItem} selfParticipant={selfParticipant} />;
-      return <LockedView type="ONE_ON_ONE" neededPlan="KARSIMDA" />;
+      if (tab === 'GROUP') return <MasaKarti type="GROUP" item={groupItem} selfParticipant={selfParticipant} isDesktop={isDesktop} />;
+      return <LockedView type="ONE_ON_ONE" neededPlan="KARSIMDA" isDesktop={isDesktop} />;
     }
 
     if (activePlan === 'KARSIMDA') {
-      if (tab === 'ONE_ON_ONE') return <MasaKarti type="ONE_ON_ONE" item={oneOnOneItem} selfParticipant={selfParticipant} />;
-      return <LockedView type="GROUP" neededPlan="MASADA" />;
+      if (tab === 'ONE_ON_ONE') return <MasaKarti type="ONE_ON_ONE" item={oneOnOneItem} selfParticipant={selfParticipant} isDesktop={isDesktop} />;
+      return <LockedView type="GROUP" neededPlan="MASADA" isDesktop={isDesktop} />;
     }
 
-    return <LockedView type={tab} neededPlan={null} />;
+    return <LockedView type={tab} neededPlan={null} isDesktop={isDesktop} />;
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '0 auto' }}>
+    <div style={{ maxWidth: isDesktop ? undefined : 400, margin: '0 auto' }}>
       <div style={cardStyle}>
         <PremiumToggle activeTab={activeTab} onSwitch={handleTabSwitch} shineKey={shineKey} />
         <AnimatePresence mode="wait" custom={tabDir}>
