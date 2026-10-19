@@ -638,7 +638,7 @@ export default function Home() {
           </div>
         </section>
 
-        <div style={{ background: 'linear-gradient(135deg, #5c1a1a 0%, #3d0f0f 100%)' }}><StatCards /></div>
+        <div style={{ background: 'linear-gradient(135deg, #2a0a0a 0%, #1a0508 100%)' }}><StatCards /></div>
 
         {/* ── Bunu daha önce denemedin ─────────────────────────────────── */}
         <section className="max-w-6xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
