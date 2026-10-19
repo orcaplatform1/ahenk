@@ -130,12 +130,12 @@ function CenterCountdown({ type }: { type: 'GROUP' | 'ONE_ON_ONE' }) {
       <div style={{
         background: 'rgba(8,3,3,0.72)',
         border: `1px solid ${glowColor}`,
-        borderRadius: 14,
-        padding: '10px 14px 8px',
+        borderRadius: 12,
+        padding: '7px 10px 6px',
         boxShadow: `0 0 22px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.06)`,
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
-        minWidth: 148,
+        minWidth: 116,
       }}>
         {/* Üst etiket */}
         <p style={{
@@ -158,7 +158,7 @@ function CenterCountdown({ type }: { type: 'GROUP' | 'ONE_ON_ONE' }) {
                   className={isPulse ? 'cd-ctr-pulse' : undefined}
                   style={{
                     fontFamily: '"SF Mono","Fira Code",monospace',
-                    fontSize: 22,
+                    fontSize: 16,
                     fontWeight: 700,
                     lineHeight: 1,
                     color: numColor,
@@ -182,8 +182,8 @@ function CenterCountdown({ type }: { type: 'GROUP' | 'ONE_ON_ONE' }) {
               </div>
               {i < 3 && (
                 <span style={{
-                  fontSize: 16, fontWeight: 700, color: 'rgba(192,57,43,0.45)',
-                  fontFamily: 'monospace', lineHeight: 1, marginBottom: 14, padding: '0 2px',
+                  fontSize: 12, fontWeight: 700, color: 'rgba(192,57,43,0.45)',
+                  fontFamily: 'monospace', lineHeight: 1, marginBottom: 10, padding: '0 1px',
                 }}>:</span>
               )}
             </div>
@@ -432,16 +432,16 @@ const RadarCanvas = forwardRef<RadarCanvasHandle, {
       ctx.clearRect(0, 0, RADAR_SZ, RADAR_SZ);
 
       const bg = ctx.createRadialGradient(CX, CY, 40, CX, CY, CANVAS_R);
-      bg.addColorStop(0,   'rgba(192,57,43,0.08)');
-      bg.addColorStop(0.7, 'rgba(192,57,43,0.04)');
-      bg.addColorStop(1,   'rgba(192,57,43,0.12)');
+      bg.addColorStop(0,   'rgba(180,20,45,0.18)');
+      bg.addColorStop(0.7, 'rgba(180,20,45,0.09)');
+      bg.addColorStop(1,   'rgba(180,20,45,0.28)');
       ctx.fillStyle = bg;
       ctx.beginPath(); ctx.arc(CX, CY, CANVAS_R, 0, Math.PI * 2); ctx.fill();
 
       [36, 75, 112, CANVAS_R - 2].forEach((r, i) => {
         ctx.beginPath(); ctx.arc(CX, CY, r, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(192,57,43,0.14)';
-        ctx.lineWidth = i === 3 ? 1 : 0.8; ctx.stroke();
+        ctx.strokeStyle = i === 3 ? 'rgba(200,30,50,0.55)' : 'rgba(200,30,50,0.30)';
+        ctx.lineWidth = i === 3 ? 1.5 : 0.8; ctx.stroke();
       });
 
       ctx.strokeStyle = 'rgba(192,57,43,0.10)'; ctx.lineWidth = 0.7;
@@ -454,14 +454,14 @@ const RadarCanvas = forwardRef<RadarCanvasHandle, {
       ctx.rotate(s.sweepAngle);
       const SPREAD = Math.PI / 5;
       const cg = ctx.createLinearGradient(0, 0, CANVAS_R, 0);
-      cg.addColorStop(0,   'rgba(192,57,43,0)');
-      cg.addColorStop(0.5, 'rgba(192,57,43,0.18)');
-      cg.addColorStop(1,   'rgba(192,57,43,0.32)');
+      cg.addColorStop(0,   'rgba(180,20,45,0)');
+      cg.addColorStop(0.5, 'rgba(180,20,45,0.35)');
+      cg.addColorStop(1,   'rgba(180,20,45,0.65)');
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, CANVAS_R, 0, SPREAD); ctx.closePath();
       ctx.fillStyle = cg; ctx.fill();
       ctx.beginPath(); ctx.moveTo(0, 0);
       ctx.lineTo(CANVAS_R * Math.cos(SPREAD), CANVAS_R * Math.sin(SPREAD));
-      ctx.strokeStyle = 'rgba(192,57,43,0.7)'; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.strokeStyle = 'rgba(200,30,50,1.0)'; ctx.lineWidth = 1.2; ctx.stroke();
       ctx.restore();
 
       s.particles.forEach(p => {
@@ -471,7 +471,7 @@ const RadarCanvas = forwardRef<RadarCanvasHandle, {
         const px = CX + p.r * Math.cos(p.angle);
         const py = CY + p.r * Math.sin(p.angle);
         ctx.beginPath(); ctx.arc(px, py, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(192,57,43,${p.alpha * 0.85})`; ctx.fill();
+        ctx.fillStyle = `rgba(200,30,50,${p.alpha * 1.0})`; ctx.fill();
       });
 
       s.connections.forEach(({ slotIdx, alpha }) => {
@@ -813,7 +813,7 @@ function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ON
             display: 'inline-block', width: 7, height: 7, borderRadius: '50%',
             background: LOCK_CLR, animation: 'lockDot 1.2s ease-in-out infinite',
           }} />
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', color: LOCK_CLR, fontFamily: 'Inter, sans-serif' }}>
+          <span style={{ fontSize: 11, fontWeight: 300, letterSpacing: '0.08em', color: LOCK_CLR, fontFamily: 'Inter, sans-serif' }}>
             TARAMA DEVAM EDİYOR
           </span>
         </div>
@@ -1049,7 +1049,7 @@ export function MasalarDashboard({
     WebkitBackdropFilter: 'blur(20px)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
     borderRadius: 16,
-    padding: isDesktop ? '36px 48px 32px' : '28px 20px 20px',
+    padding: isDesktop ? '24px 48px 32px' : '14px 20px 20px',
     maxWidth: isDesktop ? undefined : 380,
     margin: '0 auto',
   };
