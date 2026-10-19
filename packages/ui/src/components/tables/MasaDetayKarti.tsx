@@ -525,7 +525,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
       }}>
         <div style={{ maxHeight: 260, overflowY: 'auto', padding: '12px 12px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {messages.length === 0 && (
-            <p style={{ margin: 0, fontSize: 12, color: '#444', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
               {isClosed ? 'Sohbet sona erdi.' : 'Henüz mesaj yok. İlk mesajı sen gönder.'}
             </p>
           )}
@@ -571,6 +571,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
               onChange={e => setInput(e.target.value.slice(0, 1000))}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
               placeholder="Mesaj yaz…"
+              className="ahenk-chat-input"
               style={{
                 flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 8, padding: '8px 10px', fontSize: 13, color: '#f5f5f5',
@@ -821,7 +822,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.4 }}
-            style={{ margin: '0 0 16px', fontSize: 13, color: '#666', fontFamily: 'Inter, sans-serif', lineHeight: 1.4 }}
+            style={{ margin: '0 0 16px', fontSize: 13, color: 'rgba(255,255,255,0.72)', fontFamily: 'Inter, sans-serif', lineHeight: 1.4 }}
           >
             {masa.venueAddress}
           </motion.p>
@@ -894,7 +895,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: GREEN, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: '#888', fontFamily: 'Inter, sans-serif' }}>Buluşma</span>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif' }}>Buluşma</span>
           </div>
           <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>
             {meetTime}
@@ -907,7 +908,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
           transition={{ delay: 0.48, duration: 0.4 }}
           style={{ marginBottom: 20 }}
         >
-          <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#555', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
+          <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#f5f5f5', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
             {isOneOnOne ? 'BAŞ BAŞA' : 'KATILIMCILAR'}
           </p>
           <div style={isOneOnOne ? { display: 'flex', gap: 10, flexWrap: 'wrap' } : { display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gap: 10 }}>

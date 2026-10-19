@@ -181,6 +181,8 @@ body {
 }
 
 /* ── Scrollbar gizle ────────────────────────────────── */
+.ahenk-chat-input::placeholder { color: rgba(255,255,255,0.45); }
+
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 

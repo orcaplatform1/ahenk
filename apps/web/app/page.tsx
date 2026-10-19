@@ -394,7 +394,7 @@ function WeeklyTables() {
         })}
       </div>
 
-      <p className="font-serif italic text-center" style={{ color: '#c0392b', fontSize: 15 }}>
+      <p className="font-serif italic text-center" style={{ color: '#f5f5f5', fontSize: 15 }}>
         Masalar dolmadan yerinizi alın.
       </p>
     </section>
@@ -491,9 +491,9 @@ function StatCards() {
     <>
       <style>{`
         @keyframes _statRedBorder{to{transform:rotate(360deg)}}
-        .stat-wrap{position:relative;border-radius:16px;padding:2px;overflow:hidden;}
+        .stat-wrap{position:relative;border-radius:16px;padding:1px;overflow:hidden;}
         .stat-wrap::before{content:'';position:absolute;inset:-80%;background:conic-gradient(from 0deg,transparent 62%,#c0392b 76%,#ff6b6b 83%,transparent 92%);animation:_statRedBorder 3s linear infinite;z-index:0;}
-        .stat-inner{position:relative;z-index:1;border-radius:14px;background:rgba(12,8,8,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;}
+        .stat-inner{position:relative;z-index:1;border-radius:14px;background:rgba(12,8,8,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 12px;}
       `}</style>
       <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="grid grid-cols-3 gap-4">
@@ -506,7 +506,7 @@ function StatCards() {
                 >
                   {stat.value.toLocaleString('tr-TR')}
                 </span>
-                <span className="text-xs sm:text-sm mt-1.5" style={{ color: '#f5f5f5' }}>{stat.label}</span>
+                <span className="text-xs sm:text-sm mt-1.5 whitespace-nowrap" style={{ color: '#f5f5f5' }}>{stat.label}</span>
               </div>
             </div>
           ))}
@@ -569,7 +569,7 @@ export default function Home() {
       return;
     }
     // Giriş yapmış + KYC onaylı → profil paket sekmesine
-    router.push('/profil');
+    router.push('/profil?tab=paket');
   }
 
   return (
@@ -596,7 +596,7 @@ export default function Home() {
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
 
-          <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-16 w-full py-12">
+          <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-16 w-full py-12 lg:flex lg:items-end lg:justify-between lg:gap-8">
             <div className="flex flex-col gap-5 lg:max-w-lg">
               <div>
                 <motion.h1
@@ -617,14 +617,6 @@ export default function Home() {
                   <span className="text-[#c0392b] font-normal">Gerçek Buluşmalar.</span>
                 </motion.p>
               </div>
-              <motion.p
-                className="text-[#f5f5f5] text-sm sm:text-base leading-relaxed"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.0, duration: 0.45, ease: 'easeOut' }}
-              >
-                OCEAN kişilik testine dayalı eşleştirme ile Türkiye'de her hafta özenle planlanan sosyal buluşmalara katıl.
-              </motion.p>
               <motion.div
                 className="flex flex-wrap items-center gap-4 pt-1"
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -639,10 +631,10 @@ export default function Home() {
                 </a>
               </motion.div>
 
-              {/* Geri sayım — desktop */}
-              <div className="hidden md:block pt-2" style={{ width: 'fit-content' }}>
-                <HeroCountdown />
-              </div>
+            </div>
+            {/* Geri sayım — desktop, sağ taraf */}
+            <div className="hidden lg:block flex-shrink-0">
+              <HeroCountdown />
             </div>
           </div>
         </section>
@@ -653,7 +645,22 @@ export default function Home() {
         </div>
 
         {/* ── İstatistik kartları ───────────────────────────────────────── */}
-        <StatCards />
+        <section style={{
+          position: 'relative',
+          background: 'linear-gradient(180deg, #0d0404 0%, #070202 50%, #0d0404 100%)',
+          borderTop: '1px solid rgba(192,57,43,0.2)',
+          borderBottom: '1px solid rgba(192,57,43,0.2)',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '70%', height: '180%',
+            background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.07) 0%, transparent 65%)',
+            pointerEvents: 'none',
+          }} />
+          <StatCards />
+        </section>
 
         {/* ── Bunu daha önce denemedin ─────────────────────────────────── */}
         <section className="max-w-6xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
@@ -728,7 +735,7 @@ export default function Home() {
             {/* Paragraf */}
             <p
               className="text-center mx-auto mb-16"
-              style={{ maxWidth: 540, fontSize: 15, fontWeight: 300, color: 'rgba(245,245,245,0.5)', lineHeight: 1.8 }}
+              style={{ maxWidth: 540, fontSize: 15, fontWeight: 300, color: 'rgba(245,245,245,0.88)', lineHeight: 1.8 }}
             >
               Bazı insanlarla saatlerce konuşursun, kahve soğur fark etmezsin. Bazılarıyla aynı masada oturmak bile yorar. Bu rastlantı değil. Biz bilimi masana taşıyoruz.
             </p>
@@ -782,7 +789,7 @@ export default function Home() {
                       fontSize: 11,
                       fontWeight: 300,
                       fontStyle: 'italic',
-                      color: 'rgba(245,245,245,0.38)',
+                      color: 'rgba(245,245,245,0.75)',
                       lineHeight: 1.65,
                     }}
                   >
@@ -794,7 +801,7 @@ export default function Home() {
             {/* Alt kapanış */}
             <p
               className="font-serif italic text-center"
-              style={{ fontSize: 'clamp(15px, 2vw, 19px)', color: '#c0392b' }}
+              style={{ fontSize: 'clamp(15px, 2vw, 19px)', color: '#f5f5f5' }}
             >
               Ocean Big5 kişilik testini hemen şimdi doldur, gerisini Ahenk halleder.
             </p>
@@ -814,7 +821,7 @@ export default function Home() {
         <section id="pricing" className="max-w-5xl mx-auto px-6 py-24">
           <div className="text-center mb-12">
             <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5]">
-              <RedLast text="Paketler" />
+              Paketler
             </h2>
           </div>
           <style>{`
@@ -878,7 +885,7 @@ export default function Home() {
                         className="btn-primary w-full"
                         style={{ justifyContent: 'center' }}
                       >
-                        Paketi Seç
+                        Paket Seç
                       </button>
                     )}
                   </div>

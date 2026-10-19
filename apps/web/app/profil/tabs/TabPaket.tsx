@@ -345,7 +345,7 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
                     <span style={{ color: '#888', fontSize: '0.85rem', marginBottom: 1 }}>₺</span>
                   </div>
                 )}
-                <p style={{ color: '#666', fontSize: '0.68rem' }}>{plan.desc}</p>
+                <p style={{ color: '#f5f5f5', fontSize: '0.68rem' }}>{plan.desc}</p>
               </div>
 
               <ul style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>

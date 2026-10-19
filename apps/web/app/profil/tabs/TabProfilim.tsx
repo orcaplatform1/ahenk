@@ -706,7 +706,7 @@ function Select({ label, value, onChange, cities, optional, placeholder, title }
       <button
         type="button"
         onClick={() => setOpen(true)}
-        style={{ width: '100%', background: 'rgba(255,255,255,0.10)', border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 12, padding: '11px 14px', fontSize: 14, color: value ? '#f5f5f5' : '#555', textAlign: 'left', cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent' }}
+        style={{ width: '100%', background: 'rgba(255,255,255,0.10)', border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 12, padding: '11px 14px', fontSize: 14, color: value ? '#f5f5f5' : 'rgba(255,255,255,0.55)', textAlign: 'left', cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent' }}
       >
         {display}
       </button>

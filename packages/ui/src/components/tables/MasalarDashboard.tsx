@@ -640,6 +640,31 @@ function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ON
           Paket Seç
         </a>
       </div>
+
+      {/* Fake sohbet önizlemesi */}
+      <div style={{ marginTop: 24, position: 'relative' }}>
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 2,
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          borderRadius: 10,
+          background: 'rgba(10,4,4,0.25)',
+        }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#c0392b' }} />
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', color: '#c0392b' }}>
+            {isGroup ? 'GRUP SOHBETİ' : 'SOHBET'}
+          </span>
+        </div>
+        <div style={{
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 10, padding: '12px 12px',
+        }}>
+          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+            Henüz mesaj yok. İlk mesajı sen gönder.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -738,7 +763,7 @@ function PremiumToggle({
                 fontFamily: 'Inter, sans-serif',
                 fontSize: 13,
                 fontWeight: isActive ? 700 : 500,
-                color: isActive ? '#fff' : '#444',
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.55)',
                 letterSpacing: isActive ? '0.04em' : '0.01em',
                 transition: 'color 0.3s, font-weight 0.2s',
                 WebkitTapHighlightColor: 'transparent',
