@@ -589,7 +589,7 @@ export default function Home() {
 
       <div className="relative" style={{ zIndex: 1 }}>
         {/* ── Hero ──────────────────────────────────────────────────────── */}
-        <section id="hero" className="hero-section relative overflow-hidden pt-[52px]" style={{ display: 'flex', flexDirection: 'column' }}>
+        <section id="hero" className="hero-section relative overflow-hidden pt-[52px]" style={{ display: 'flex', flexDirection: 'column', height: 'auto' }}>
           <div className="hero-bg absolute inset-0" />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 100%)', zIndex: 1 }} />
@@ -631,12 +631,11 @@ export default function Home() {
             </motion.div>
           </div>
 
+          {/* ── Sayaç ─────────────────────────────────────────────────────── */}
+          <div className="relative z-10 px-6 lg:px-16 py-8" style={{ background: '#0d0404', borderBottom: '1px solid rgba(192,57,43,0.2)' }}>
+            <HeroCountdown />
+          </div>
         </section>
-
-        {/* ── Sayaç ─────────────────────────────────────────────────────── */}
-        <div className="px-6 lg:px-16 py-8" style={{ background: '#0d0404', borderBottom: '1px solid rgba(192,57,43,0.2)' }}>
-          <HeroCountdown />
-        </div>
 
         {/* Stats */}
         <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.45)' }}>
