@@ -223,7 +223,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
               style={{
                 background: activeId === i ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
                 border: 'none',
-                borderLeft: `3px solid ${activeId === i ? '#c0394f' : 'transparent'}`,
+                borderLeft: `3px solid ${activeId === i ? '#e05c4c' : 'transparent'}`,
                 borderRadius: 7, padding: '5px 7px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4,
                 cursor: 'pointer', transition: 'background .2s, border-left-color .2s',
@@ -233,7 +233,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
                 <div style={{ fontSize: 10, fontWeight: 600, color: '#d4a0aa', lineHeight: 1.2, fontFamily: 'Inter, sans-serif' }}>{d.label}</div>
                 <div style={{ fontSize: 8, color: '#6b3040', marginTop: 1, fontFamily: 'Inter, sans-serif' }}>{d.sub}</div>
               </div>
-              <span style={{ fontSize: 10, fontWeight: 700, color: activeId === i ? '#e05070' : '#9b1e3a', flexShrink: 0, fontFamily: 'Inter, sans-serif' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: activeId === i ? '#e05c4c' : '#9b1e3a', flexShrink: 0, fontFamily: 'Inter, sans-serif' }}>
                 {Math.round(ocean[i].value * 100)}%
               </span>
             </div>
@@ -259,9 +259,9 @@ function PersonalityAura({ scores }: { scores: Scores }) {
         transition: 'opacity .3s, transform .3s',
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-          <div style={{ width: 2, borderRadius: 2, background: '#c0394f', alignSelf: 'stretch', flexShrink: 0, minHeight: 22 }} />
+          <div style={{ width: 2, borderRadius: 2, background: '#e05c4c', alignSelf: 'stretch', flexShrink: 0, minHeight: 22 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#c0394f', letterSpacing: '0.03em', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>{cardTitle}</p>
+            <p style={{ fontSize: 13, fontWeight: 400, color: '#e05c4c', letterSpacing: '0.01em', marginBottom: 3, fontFamily: 'var(--font-serif, "DM Serif Display", serif)' }}>{cardTitle}</p>
             <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55, margin: 0, fontFamily: 'Inter, sans-serif' }}>{cardText}</p>
           </div>
         </div>
