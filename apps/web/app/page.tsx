@@ -588,8 +588,8 @@ export default function Home() {
       </motion.div>
 
       <div className="relative" style={{ zIndex: 1 }}>
-        {/* ── Hero (StatCards dahil) ────────────────────────────────────── */}
-        <section id="hero" className="relative overflow-hidden pt-[52px]" style={{ display: 'flex', flexDirection: 'column' }}>
+        {/* ── Hero ──────────────────────────────────────────────────────── */}
+        <section id="hero" className="relative overflow-hidden pt-[52px] lg:min-h-[65vh]" style={{ display: 'flex', alignItems: 'flex-start' }}>
           <div className="hero-bg absolute inset-0" />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 100%)', zIndex: 1 }} />
@@ -629,11 +629,23 @@ export default function Home() {
               </a>
             </motion.div>
           </div>
+        </section>
 
-          {/* StatCards hero arka planı üzerinde */}
-          <div className="relative z-10" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <StatCards />
-          </div>
+        {/* ── İstatistik kartları ───────────────────────────────────────── */}
+        <section style={{
+          position: 'relative',
+          background: 'linear-gradient(180deg, #0d0404 0%, #070202 50%, #0d0404 100%)',
+          borderBottom: '1px solid rgba(192,57,43,0.2)',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '70%', height: '180%',
+            background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.07) 0%, transparent 65%)',
+            pointerEvents: 'none',
+          }} />
+          <StatCards />
         </section>
 
         {/* ── Sayaç ─────────────────────────────────────────────────────── */}
