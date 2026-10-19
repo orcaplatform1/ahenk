@@ -91,10 +91,14 @@ export default function GirisPage() {
     window.dispatchEvent(new Event('ahenk:auth'));
     // WARNING uyarısı varsa: giriş başarılı ama uyarıyı göster
     try {
-      const me = await api.get<{ activeSanction?: SanctionPayload | null }>('/auth/me');
+      const me = await api.get<{ role?: string; activeSanction?: SanctionPayload | null }>('/auth/me');
       if (me?.activeSanction?.type === 'WARNING') {
         setSanction(me.activeSanction);
         return; // dashboard'a geçmeden uyarıyı göster
+      }
+      if (me?.role === 'ADMIN' || me?.role === 'SUPERADMIN') {
+        window.location.href = '/admin';
+        return;
       }
     } catch { /* yoksa devam */ }
     setWelcomeUser({ firstName: data.user.firstName, lastName: data.user.lastName ?? '' });
