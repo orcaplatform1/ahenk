@@ -25,6 +25,14 @@ const TAB_LABEL: Record<KycStatusFilter, string> = {
   PENDING: 'Bekleyen', APPROVED: 'Onaylı', REJECTED: 'Reddedilen', SUSPICIOUS: 'Şüpheli',
 };
 
+async function openFile(url: string) {
+  const token = localStorage.getItem('admin_token');
+  const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!res.ok) return;
+  const blob = await res.blob();
+  window.open(URL.createObjectURL(blob), '_blank');
+}
+
 export default function KycPage() {
   const toast = useToast();
   const [tab, setTab] = useState<KycStatusFilter>('PENDING');
@@ -93,9 +101,9 @@ export default function KycPage() {
                   <td className="py-3 px-2 text-muted">{new Date(item.submittedAt).toLocaleDateString('tr-TR')}</td>
                   <td className="py-3 px-2">
                     <div className="flex gap-2">
-                      {item.idFrontUrl && <a href={item.idFrontUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Ön</a>}
-                      {item.idBackUrl  && <a href={item.idBackUrl}  target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Arka</a>}
-                      {item.livenessUrl && <a href={item.livenessUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Video</a>}
+                      {item.idFrontUrl  && <button onClick={() => openFile(item.idFrontUrl!)}  className="text-xs text-primary hover:underline">Ön</button>}
+                      {item.idBackUrl   && <button onClick={() => openFile(item.idBackUrl!)}   className="text-xs text-primary hover:underline">Arka</button>}
+                      {item.livenessUrl && <button onClick={() => openFile(item.livenessUrl!)} className="text-xs text-primary hover:underline">Video</button>}
                     </div>
                   </td>
                   {tab === 'PENDING' && (
