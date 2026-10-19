@@ -91,6 +91,8 @@ export function HeroCountdown() {
       overflow: 'hidden',
       backdropFilter: 'blur(4px)',
       WebkitBackdropFilter: 'blur(4px)',
+      maxWidth: 480,
+      margin: '0 auto',
     }}>
       <p style={{ fontSize: 11, fontStyle: 'italic', color: 'rgba(255,255,255,0.62)', padding: '12px 16px 0', lineHeight: 1.4, margin: 0 }}>
         Kaliteli bir çevre şans değil, seçimdir.
