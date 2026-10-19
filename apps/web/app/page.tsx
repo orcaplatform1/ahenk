@@ -596,9 +596,9 @@ export default function Home() {
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
 
-          <div className="relative z-10 w-full pt-16 pb-10 px-6 lg:px-16 flex items-start gap-4">
+          <div className="relative z-10 w-full pt-16 pb-10 px-6 lg:px-16 flex items-start justify-center gap-10">
             {/* Sol: başlık + alt yazı + buton */}
-            <div className="flex flex-col gap-5 flex-1 min-w-0">
+            <div className="flex flex-col gap-5 min-w-0">
               <div>
                 <motion.h1
                   className="font-serif text-5xl sm:text-6xl lg:text-7xl leading-[0.9] tracking-tight text-[#f5f5f5] mb-3"
