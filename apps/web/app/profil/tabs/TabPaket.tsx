@@ -205,10 +205,10 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
   return (
     <div className="flex flex-col gap-5">
       {/* Sadakat Programı kartı */}
-      <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 flex flex-col gap-3">
+      <div className="rounded-2xl border border-white/10 p-4 flex flex-col gap-3" style={{ background: '#1a1a1a' }}>
         <p className="text-xs font-medium text-muted uppercase tracking-wide">Sadakat Programı</p>
         <div className="flex flex-col gap-2">
-          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
             <span style={{ color: '#555', fontSize: 14, marginRight: 4 }}>+90</span>
             <input
               type="tel"
@@ -237,11 +237,11 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
         )}
         <div className="flex gap-6 pt-1 border-t border-white/5">
           <div>
-            <p className="text-xs text-[#555]">Davetli Arkadaş</p>
+            <p className="text-xs text-[#f5f5f5]">Davetli Arkadaş</p>
             <p className="text-base font-semibold text-text">{referralStats?.totalInvites ?? '—'} kişi</p>
           </div>
           <div>
-            <p className="text-xs text-[#555]">Toplam %10 İndirim Hakkı</p>
+            <p className="text-xs text-[#f5f5f5]">Toplam %10 İndirim Hakkı</p>
             <p className="text-base font-semibold text-text">{referralStats?.availableDiscounts ?? '—'} Adet</p>
           </div>
         </div>

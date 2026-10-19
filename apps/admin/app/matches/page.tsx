@@ -21,7 +21,7 @@ function MatchesContent() {
     <div className="p-6 min-h-screen">
       <div className="mb-6">
         <h1 className="font-serif text-2xl text-[#f5f5f5]">Eşleştirme Yönetimi</h1>
-        <p className="text-sm text-[#888] mt-1">Bekleyen masaları incele, onayla veya bot ekle.</p>
+        <p className="text-sm text-muted mt-1">Bekleyen masaları incele, onayla veya bot ekle.</p>
       </div>
       <AdminMatchManager
         apiBase={`${API_BASE}/api/v1`}

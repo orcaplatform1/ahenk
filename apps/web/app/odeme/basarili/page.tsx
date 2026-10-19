@@ -15,7 +15,7 @@ export default function OdemeBasariliPage() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-6"
-      style={{ background: '#0a0a0a' }}
+      style={{ background: '#121212' }}
     >
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)', width: '70vw', height: '70vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.12) 0%, transparent 60%)', filter: 'blur(60px)' }} />

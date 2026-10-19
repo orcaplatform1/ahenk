@@ -99,13 +99,13 @@ function MediaCarousel() {
         {/* Sol fade */}
         <div style={{
           position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, zIndex: 2,
-          background: 'linear-gradient(to right, #0a0a0a, transparent)',
+          background: 'linear-gradient(to right, #121212, transparent)',
           pointerEvents: 'none',
         }} />
         {/* Sağ fade */}
         <div style={{
           position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, zIndex: 2,
-          background: 'linear-gradient(to left, #0a0a0a, transparent)',
+          background: 'linear-gradient(to left, #121212, transparent)',
           pointerEvents: 'none',
         }} />
 
@@ -163,7 +163,7 @@ function Testimonials() {
               </p>
             </div>
             <div style={{ borderTop: '1px solid rgba(192,57,43,0.2)', marginTop: 16, paddingTop: 12, textAlign: 'right' }}>
-              <span style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.14em', color: 'rgba(245,245,245,0.3)', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.14em', color: '#c0392b', textTransform: 'uppercase' }}>
                 — {item.name}, {item.city}
               </span>
             </div>
@@ -190,7 +190,7 @@ function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:stri
             return (
               <button key={city.name} type="button" onClick={() => setActiveCity(city.name)}
                 className="px-5 py-2 rounded-full font-medium transition-all duration-200 flex items-center gap-1.5"
-                style={isActive ? { border: '1px solid rgba(192,57,43,0.8)', background: 'rgba(192,57,43,0.12)', color: '#ff6b6b', boxShadow: '0 0 16px rgba(192,57,43,0.3)' } : { border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: '#aaa' }}
+                style={isActive ? { border: '1px solid rgba(192,57,43,0.8)', background: 'rgba(192,57,43,0.12)', color: '#ff6b6b', boxShadow: '0 0 16px rgba(192,57,43,0.3)' } : { border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.07)', color: '#aaa' }}
               >
                 {isActive && (
                   <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 flex-shrink-0">
@@ -232,7 +232,7 @@ function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:stri
       </section>
 
       {/* ── Neden Rahat Hissedersin? */}
-      <section id="why-safe" className="max-w-3xl mx-auto px-6 py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <section id="why-safe" className="max-w-3xl mx-auto px-6 py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
         <div className="text-center mb-12">
           <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5] mb-3"><RedLast text="Neden Rahat Hissedersin?" /></h2>
         </div>
@@ -340,7 +340,7 @@ function WeeklyTables() {
             <div
               key={city.name}
               style={{
-                background: 'rgba(255,255,255,0.03)',
+                background: 'rgba(255,255,255,0.07)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 12,
                 padding: '24px 20px',
@@ -405,9 +405,9 @@ function WeeklyTables() {
 function AccordionGroup({ items }: { items: { title: string; body: string }[] }) {
   const [open, setOpen] = useState<number | null>(null);
   return (
-    <div className="flex flex-col" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+    <div className="flex flex-col" style={{ borderTop: '1px solid rgba(255,255,255,0.12)', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
       {items.map((item, i) => (
-        <div key={i} style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.07)' }}>
+        <div key={i} style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.12)' }}>
           <button
             onClick={() => setOpen(open === i ? null : i)}
             className="w-full flex items-center justify-between py-5 text-left"
@@ -426,7 +426,7 @@ function AccordionGroup({ items }: { items: { title: string; body: string }[] })
             </svg>
           </button>
           {open === i && (
-            <p className="text-sm leading-relaxed pb-5" style={{ color: '#888' }}>{item.body}</p>
+            <p className="text-sm leading-relaxed pb-5" style={{ color: '#f5f5f5' }}>{item.body}</p>
           )}
         </div>
       ))}
@@ -506,7 +506,7 @@ function StatCards() {
                 >
                   {stat.value.toLocaleString('tr-TR')}
                 </span>
-                <span className="text-xs sm:text-sm mt-1.5" style={{ color: '#666' }}>{stat.label}</span>
+                <span className="text-xs sm:text-sm mt-1.5" style={{ color: '#f5f5f5' }}>{stat.label}</span>
               </div>
             </div>
           ))}
@@ -573,7 +573,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] overflow-x-hidden">
+    <main className="min-h-screen bg-[#121212] text-[#f5f5f5] overflow-x-hidden">
       {/* Sayfa geneli kırmızı glow'lar */}
       <motion.div
         className="fixed inset-0 pointer-events-none"
@@ -618,7 +618,7 @@ export default function Home() {
                 </motion.p>
               </div>
               <motion.p
-                className="text-[#888] text-sm sm:text-base leading-relaxed"
+                className="text-[#f5f5f5] text-sm sm:text-base leading-relaxed"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1.0, duration: 0.45, ease: 'easeOut' }}
@@ -745,7 +745,7 @@ export default function Home() {
                   key={item.letter}
                   className="col-span-1 last:col-span-2 last:col-start-1 lg:last:col-span-1 lg:last:col-start-auto"
                   style={{
-                    background: 'rgba(255,255,255,0.04)',
+                    background: 'rgba(255,255,255,0.08)',
                     border: '1px solid rgba(255,255,255,0.09)',
                     borderRadius: 12,
                     padding: '20px 16px',
@@ -860,7 +860,7 @@ export default function Home() {
                         <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.7rem' }}>{plan.price}</span>
                         <span className="text-[#888]" style={{ fontSize: '0.9rem', marginBottom: 2 }}>₺</span>
                       </div>
-                      <p style={{ color: '#666', fontSize: '0.7rem' }}>{plan.desc}</p>
+                      <p style={{ color: '#f5f5f5', fontSize: '0.7rem' }}>{plan.desc}</p>
                     </div>
                     <ul style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1 }}>
                       {plan.features.map((f) => (

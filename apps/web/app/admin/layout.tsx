@@ -40,7 +40,7 @@ function NavLinks({ pathname, onClose, onLogout, unread }: {
 }) {
   return (
     <nav className="flex flex-col p-3 flex-1 overflow-y-auto">
-      <div className="flex flex-col gap-0.5 pb-3 mb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="flex flex-col gap-0.5 pb-3 mb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
         {NAV_TOP.map((n) => (
           <Link key={n.href} href={n.href} onClick={onClose}
             className="px-3 py-2 rounded-xl text-sm transition-all"
@@ -71,7 +71,7 @@ function NavLinks({ pathname, onClose, onLogout, unread }: {
           );
         })}
       </div>
-      <div className="pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
         <button onClick={onLogout}
           className="w-full px-3 py-2 text-xs text-[#555] hover:text-[#ff6b6b] transition-colors text-left rounded-xl">
           Çıkış
@@ -103,16 +103,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!ready) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-[#c0392b] border-t-transparent animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] flex flex-col">
+    <div className="min-h-screen bg-[#121212] text-[#f5f5f5] flex flex-col">
       <header className="flex items-center gap-3 px-4 h-12 flex-shrink-0 sticky top-0 z-30"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(10,10,10,0.92)', backdropFilter: 'blur(10px)' }}>
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.10)', background: 'rgba(10,10,10,0.92)', backdropFilter: 'blur(10px)' }}>
         <button className="md:hidden flex flex-col justify-center items-center gap-[5px] flex-shrink-0"
           onClick={() => setDrawerOpen(v => !v)}
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }} aria-label="Menü">
@@ -136,7 +136,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <div className="flex flex-1 min-h-0">
         <aside className="hidden md:flex w-52 flex-shrink-0 flex-col sticky top-12 h-[calc(100vh-48px)]"
-          style={{ borderRight: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
+          style={{ borderRight: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.02)' }}>
           <NavLinks pathname={pathname} onLogout={handleLogout} unread={unread} />
         </aside>
         <main className="flex-1 min-w-0 overflow-x-hidden">{children}</main>

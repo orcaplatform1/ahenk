@@ -276,7 +276,7 @@ function KayitPageInner() {
   const tIsLast = testCurrent === tTotal - 1;
 
   return (
-    <div className="min-h-screen flex flex-col pt-[52px]" style={{ background: '#0a0a0a' }}>
+    <div className="min-h-screen flex flex-col pt-[52px]" style={{ background: '#121212' }}>
       {/* Başarı overlay */}
       <AnimatePresence>
         {showSuccess && (
@@ -284,7 +284,7 @@ function KayitPageInner() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="fixed inset-0 flex flex-col items-center justify-start pt-[18%]"
-            style={{ background: '#0a0a0a', zIndex: 100 }}
+            style={{ background: '#121212', zIndex: 100 }}
           >
             <div className="fixed inset-0 pointer-events-none">
               <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: '60vw', height: '60vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.12) 0%, transparent 60%)', filter: 'blur(60px)' }} />
@@ -392,7 +392,7 @@ function KayitPageInner() {
               <div className="flex gap-2">
                 <div
                   className="flex items-center px-4 text-[#555] text-sm select-none flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}
                 >
                   +90
                 </div>
@@ -484,7 +484,7 @@ function KayitPageInner() {
                 </div>
 
                 {/* Progress bar */}
-                <div className="h-[3px] rounded-full overflow-hidden mb-2" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <div className="h-[3px] rounded-full overflow-hidden mb-2" style={{ background: 'rgba(255,255,255,0.10)' }}>
                   <motion.div
                     className="h-full rounded-full"
                     style={{ background: 'linear-gradient(90deg,#c0392b 0%,#ff6b6b 100%)', boxShadow: '0 0 6px rgba(192,57,43,0.5)' }}
@@ -523,7 +523,7 @@ function KayitPageInner() {
                         background: 'rgba(255,50,30,0.07)',
                         border: '1px solid rgba(255,255,255,0.09)',
                         backdropFilter: 'blur(20px)',
-                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07), 0 8px 32px rgba(0,0,0,0.5)',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 32px rgba(0,0,0,0.5)',
                       }}
                     >
                       <p className="text-xs text-[#444] mb-2 font-mono tracking-widest">SORU {testCurrent + 1}</p>
@@ -548,7 +548,7 @@ function KayitPageInner() {
                               boxShadow: '0 0 14px rgba(192,57,43,0.18)',
                             } : {
                               background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.07)',
+                              border: '1px solid rgba(255,255,255,0.12)',
                               color: '#888',
                             }}
                           >
@@ -616,7 +616,7 @@ function KayitPageInner() {
                       border: '1.5px solid rgba(192,57,43,0.6)',
                       boxShadow: '0 0 18px rgba(192,57,43,0.14)',
                     } : {
-                      background: 'rgba(255,255,255,0.03)',
+                      background: 'rgba(255,255,255,0.07)',
                       border: '1px solid rgba(255,255,255,0.08)',
                     }}
                   >
@@ -671,7 +671,7 @@ function KayitPageInner() {
             <div className="flex gap-2">
               <div
                 className="flex items-center px-4 text-[#555] text-sm select-none flex-shrink-0"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}
               >
                 +90
               </div>
@@ -683,14 +683,14 @@ function KayitPageInner() {
                 className="input-glass flex-1 px-4 py-3 text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && addContact()}
               />
-              <button type="button" onClick={addContact} className="px-4 py-3 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}>
+              <button type="button" onClick={addContact} className="px-4 py-3 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}>
                 Ekle
               </button>
             </div>
             {form.contactNumbers.length > 0 && (
               <div className="flex flex-col gap-2">
                 {form.contactNumbers.map((n) => (
-                  <div key={n} className="flex items-center justify-between px-4 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div key={n} className="flex items-center justify-between px-4 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
                     <span className="text-sm text-[#555]">{n}</span>
                     <button type="button" onClick={() => set('contactNumbers', form.contactNumbers.filter((x) => x !== n))} className="text-[#555] hover:text-[#ff6b6b] text-lg leading-none transition-colors">×</button>
                   </div>
@@ -882,7 +882,7 @@ function DatePickerModal({ value, onChange, onClose }: {
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%',
-          background: '#111',
+          background: '#1a1a1a',
           border: '1px solid rgba(255,255,255,0.08)',
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
@@ -939,7 +939,7 @@ function OccupationPickerModal({ value, onChange, onClose }: {
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%',
-          background: '#111',
+          background: '#1a1a1a',
           border: '1px solid rgba(255,255,255,0.08)',
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
@@ -999,8 +999,8 @@ function OccupationField({ label, value, onChange }: {
         onClick={() => setOpen(true)}
         style={{
           width: '100%',
-          background: 'rgba(255,255,255,0.05)',
-          border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`,
+          background: 'rgba(255,255,255,0.10)',
+          border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.12)'}`,
           borderRadius: 12,
           padding: '14px 16px',
           fontSize: 14,
@@ -1037,8 +1037,8 @@ function DateField({ label, value, onChange }: {
         onClick={() => setOpen(true)}
         style={{
           width: '100%',
-          background: 'rgba(255,255,255,0.05)',
-          border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`,
+          background: 'rgba(255,255,255,0.10)',
+          border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.12)'}`,
           borderRadius: 12,
           padding: '14px 16px',
           fontSize: 14,
@@ -1087,7 +1087,7 @@ function CityPickerModal({ cities, value, onChange, onClose, optional, title }: 
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ width: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '20px 16px 36px' }}
+        style={{ width: '100%', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '20px 16px 36px' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <p style={{ fontSize: 13, color: '#888' }}>{title}</p>
@@ -1139,7 +1139,7 @@ function CityPickerField({ label, value, onChange, cities, optional, title }: {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`, borderRadius: 12, padding: '14px 16px', fontSize: 14, color: value ? '#f5f5f5' : '#555', textAlign: 'left', cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent' }}
+        style={{ width: '100%', background: 'rgba(255,255,255,0.10)', border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 12, padding: '14px 16px', fontSize: 14, color: value ? '#f5f5f5' : '#555', textAlign: 'left', cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent' }}
       >
         {display}
       </button>

@@ -32,7 +32,7 @@ export function AccountTabBar({ activeKey, kycApproved }: { activeKey?: string; 
         top: 52,
         zIndex: 40,
         background: 'rgba(10,10,10,0.95)',
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        borderBottom: '1px solid rgba(255,255,255,0.12)',
         scrollbarWidth: 'none',
       }}
     >

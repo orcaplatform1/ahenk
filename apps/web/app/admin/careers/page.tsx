@@ -48,7 +48,7 @@ export default function AdminCareers() {
       <h1 className="font-serif text-2xl text-[#f5f5f5] mb-6">Kariyer Başvuruları</h1>
 
       {loading ? (
-        <div className="flex flex-col gap-3">{[0,1,2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />)}</div>
+        <div className="flex flex-col gap-3">{[0,1,2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />)}</div>
       ) : items.length === 0 ? (
         <p className="text-[#555] text-sm">Başvuru yok.</p>
       ) : (
@@ -68,13 +68,13 @@ export default function AdminCareers() {
                 </div>
                 <button onClick={() => setExpanded(e => e === c.id ? null : c.id)}
                   className="text-xs px-2.5 py-1 rounded-lg flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.05)', color: '#666', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  style={{ background: 'rgba(255,255,255,0.10)', color: '#666', border: '1px solid rgba(255,255,255,0.12)' }}>
                   {expanded === c.id ? '▲ Kapat' : '▼ Detay'}
                 </button>
               </div>
 
               {expanded === c.id && (
-                <div className="mt-3 pt-3 flex flex-col gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="mt-3 pt-3 flex flex-col gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
                   {c.phone && <p className="text-xs text-[#666]">Tel: {c.phone}</p>}
                   {c.linkedinOrCv && <p className="text-xs text-[#666]">LinkedIn/CV: {c.linkedinOrCv}</p>}
                   {c.hearFrom && <p className="text-xs text-[#666]">Nasıl duydunuz: {c.hearFrom}</p>}

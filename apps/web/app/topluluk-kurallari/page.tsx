@@ -56,7 +56,7 @@ const sections = [
             </li>
           ))}
         </ul>
-        <div style={{ padding: '1rem 1.25rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px' }}>
+        <div style={{ padding: '1rem 1.25rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '10px' }}>
           <p style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666', marginBottom: '0.6rem' }}>Masada kaçınılacak konular</p>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.4rem' }}>
             {[
@@ -148,7 +148,7 @@ const sections = [
             { level: 'Askıya Alma', desc: 'Hesabı geçici olarak kapatma — 1-30 gün arası.' },
             { level: 'Kalıcı Kapatma', desc: 'Hesabı kalıcı olarak kapatma ve platforma erişimi engelleme.' },
           ].map((row) => (
-            <div key={row.level} style={{ display: 'flex', gap: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', alignItems: 'flex-start' }}>
+            <div key={row.level} style={{ display: 'flex', gap: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '10px', alignItems: 'flex-start' }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', color: '#c0392b', minWidth: '100px', paddingTop: '0.1rem' }}>{row.level.toUpperCase()}</span>
               <span style={{ color: '#ccc', fontSize: '0.85rem', lineHeight: 1.55 }}>{row.desc}</span>
             </div>
@@ -218,7 +218,7 @@ const fadeUp = {
 
 export default function ToplulukKurallariPage() {
   return (
-    <main style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f5f5', fontFamily: 'var(--font-sans, system-ui)', position: 'relative' as const, overflow: 'hidden' }}>
+    <main style={{ minHeight: '100vh', background: '#121212', color: '#f5f5f5', fontFamily: 'var(--font-sans, system-ui)', position: 'relative' as const, overflow: 'hidden' }}>
       <div style={{ position: 'fixed' as const, top: -120, left: '50%', transform: 'translateX(-50%)', width: 700, height: 340, background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.22) 0%, transparent 70%)', pointerEvents: 'none' as const, zIndex: 0 }} />
 
       <div style={{ position: 'relative' as const, zIndex: 1, maxWidth: '760px', margin: '0 auto', padding: '3rem 1.5rem 4rem' }}>
@@ -246,7 +246,7 @@ export default function ToplulukKurallariPage() {
               initial="hidden"
               animate="show"
               variants={fadeUp}
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)', borderRadius: '16px', padding: '1.75rem' }}
+              style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)', borderRadius: '16px', padding: '1.75rem' }}
             >
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1.25rem' }}>
                 <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', color: '#c0392b' }}>{sec.n}</span>

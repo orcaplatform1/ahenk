@@ -40,7 +40,7 @@ export default function AdminAlerts() {
 
       {loading ? (
         <div className="flex flex-col gap-3">
-          {[0,1,2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />)}
+          {[0,1,2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />)}
         </div>
       ) : alerts.length === 0 ? (
         <p className="text-[#555] text-sm">Uyarı yok.</p>

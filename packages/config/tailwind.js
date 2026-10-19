@@ -4,8 +4,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        bg: '#0a0a0a',
-        surface: '#141414',
+        bg: '#121212',
+        surface: '#222222',
         border: '#1f1f1f',
         primary: '#c0392b',
         'primary-hover': '#e74c3c',

@@ -21,7 +21,7 @@ function fmtDate(val: string) {
 }
 
 function Skel() {
-  return <div className="h-48 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }} />;
+  return <div className="h-48 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.10)' }} />;
 }
 
 export default function AdminKyc() {
@@ -109,7 +109,7 @@ export default function AdminKyc() {
             {/* Kimlik görselleri */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[{ url: item.frontImageUrl, label: 'Ön Yüz' }, { url: item.backImageUrl, label: 'Arka Yüz' }].map(({ url, label }) => (
-                <div key={label} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', aspectRatio: '16/9' }}>
+                <div key={label} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', aspectRatio: '16/9' }}>
                   {url ? (
                     <a href={url} target="_blank" rel="noreferrer" className="block w-full h-full relative">
                       <Image src={url} alt={label} fill className="object-cover hover:opacity-90 transition-opacity" sizes="(max-width: 768px) 100vw, 300px" />
@@ -178,7 +178,7 @@ export default function AdminKyc() {
                 <button
                   onClick={() => setRejectOpen(null)}
                   className="px-4 py-2.5 text-sm text-[#555] hover:text-[#888] transition-colors rounded-xl"
-                  style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+                  style={{ border: '1px solid rgba(255,255,255,0.12)' }}
                 >
                   İptal
                 </button>

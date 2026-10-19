@@ -50,7 +50,7 @@ export default function AdminPartnerships() {
       <h1 className="font-serif text-2xl text-[#f5f5f5] mb-6">İş Ortaklığı Başvuruları</h1>
 
       {loading ? (
-        <div className="flex flex-col gap-3">{[0,1,2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />)}</div>
+        <div className="flex flex-col gap-3">{[0,1,2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />)}</div>
       ) : items.length === 0 ? (
         <p className="text-[#555] text-sm">Başvuru yok.</p>
       ) : (
@@ -70,13 +70,13 @@ export default function AdminPartnerships() {
                 </div>
                 <button onClick={() => setExpanded(e => e === p.id ? null : p.id)}
                   className="text-xs px-2.5 py-1 rounded-lg flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.05)', color: '#666', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  style={{ background: 'rgba(255,255,255,0.10)', color: '#666', border: '1px solid rgba(255,255,255,0.12)' }}>
                   {expanded === p.id ? '▲ Kapat' : '▼ Detay'}
                 </button>
               </div>
 
               {expanded === p.id && (
-                <div className="mt-3 pt-3 flex flex-col gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="mt-3 pt-3 flex flex-col gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
                   {p.phone && <p className="text-xs text-[#666]">Tel: {p.phone}</p>}
                   {p.capacity && <p className="text-xs text-[#666]">Kapasite: {p.capacity}</p>}
                   {p.websiteOrSocial && <p className="text-xs text-[#666]">Web/Sosyal: {p.websiteOrSocial}</p>}

@@ -68,7 +68,7 @@ export default function SiteHaritasiPage() {
     <main
       style={{
         minHeight: '100vh',
-        background: '#0a0a0a',
+        background: '#121212',
         color: '#f5f5f5',
         fontFamily: 'var(--font-sans, system-ui)',
       }}
@@ -76,7 +76,7 @@ export default function SiteHaritasiPage() {
       {/* Header */}
       <div
         style={{
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: '1px solid rgba(255,255,255,0.10)',
           padding: '3rem 1.5rem 2rem',
           textAlign: 'center',
         }}
@@ -116,8 +116,8 @@ export default function SiteHaritasiPage() {
             animate="show"
             variants={fadeUp}
             style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.07)',
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.12)',
               borderRadius: '14px',
               padding: '1.5rem',
             }}

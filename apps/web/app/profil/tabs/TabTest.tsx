@@ -204,7 +204,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
   }, []);
 
   return (
-    <div style={{ background: '#111214', borderRadius: 12, overflow: 'hidden' }}>
+    <div style={{ background: '#1a1a1a', borderRadius: 12, overflow: 'hidden' }}>
       {/* Canvas + sağ liste */}
       <div ref={topRef} style={{ position: 'relative', width: '100%', height: 290 }}>
         <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }} />
@@ -221,7 +221,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
               onClick={() => handleSelect(i)}
               onMouseEnter={() => handleSelect(i)}
               style={{
-                background: 'rgba(255,255,255,0.04)',
+                background: 'rgba(255,255,255,0.08)',
                 border: 'none',
                 borderLeft: `3px solid ${activeId === i ? '#e05c4c' : 'transparent'}`,
                 borderRadius: 7, padding: '5px 7px',
@@ -231,7 +231,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
             >
               <div>
                 <div style={{ fontSize: 10, fontWeight: 600, color: '#e05c4c', lineHeight: 1.2, fontFamily: 'Inter, sans-serif' }}>{d.label}</div>
-                <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.45)', marginTop: 1, fontFamily: 'Inter, sans-serif' }}>{d.sub}</div>
+                <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.62)', marginTop: 1, fontFamily: 'Inter, sans-serif' }}>{d.sub}</div>
               </div>
               <span style={{ fontSize: 10, fontWeight: 700, color: '#e05c4c', flexShrink: 0, fontFamily: 'Inter, sans-serif' }}>
                 {Math.round(ocean[i].value * 100)}%
@@ -253,7 +253,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
 
       {/* Açıklama kartı */}
       <div style={{
-        background: 'rgba(255,255,255,0.04)', borderTop: '1px solid rgba(255,255,255,0.07)',
+        background: 'rgba(255,255,255,0.08)', borderTop: '1px solid rgba(255,255,255,0.12)',
         borderRadius: '10px 10px 0 0', padding: '9px 12px 13px',
         opacity: cardShow ? 1 : 0, transform: cardShow ? 'translateY(0)' : 'translateY(5px)',
         transition: 'opacity .3s, transform .3s',
@@ -262,7 +262,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
           <div style={{ width: 2, borderRadius: 2, background: '#e05c4c', alignSelf: 'stretch', flexShrink: 0, minHeight: 22 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 13, fontWeight: 400, color: '#e05c4c', letterSpacing: '0.01em', marginBottom: 3, fontFamily: 'var(--font-serif, "DM Serif Display", serif)' }}>{cardTitle}</p>
-            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55, margin: 0, fontFamily: 'Inter, sans-serif' }}>{cardText}</p>
+            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.62)', lineHeight: 1.55, margin: 0, fontFamily: 'Inter, sans-serif' }}>{cardText}</p>
           </div>
         </div>
       </div>

@@ -18,7 +18,7 @@ export default function ErrorPage({ error }: { error: Error & { digest?: string 
   const is404 = error?.message?.includes('404') || error?.digest?.includes('404');
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: '#0a0a0a' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: '#121212' }}>
       <div className="fixed inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 60% 40% at 50% 20%, rgba(192,57,43,0.1) 0%, transparent 65%)' }} />
 
       <motion.div
@@ -34,7 +34,7 @@ export default function ErrorPage({ error }: { error: Error & { digest?: string 
 
         <div
           className="w-full rounded-2xl px-8 py-10 flex flex-col items-center gap-4"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           <p className="font-serif text-7xl font-bold" style={{ color: '#c0392b' }}>
             {is404 ? '404' : '500'}

@@ -24,7 +24,7 @@ function useCountUp(target: number, duration = 1600, start = false) {
 
 /* ── Styles helpers ───────────────────────────────────────────── */
 const glassCard: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.05)',
+  background: 'rgba(255,255,255,0.10)',
   border: '1px solid rgba(255,255,255,0.08)',
   backdropFilter: 'blur(20px)',
   WebkitBackdropFilter: 'blur(20px)',
@@ -112,7 +112,7 @@ export default function IsOrtakligiPage() {
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f5f5', fontFamily: 'var(--font-sans, system-ui)', overflowX: 'hidden' }}>
+    <main style={{ minHeight: '100vh', background: '#121212', color: '#f5f5f5', fontFamily: 'var(--font-sans, system-ui)', overflowX: 'hidden' }}>
 
       {/* ── Hero ──────────────────────────────────────────────── */}
       <section style={{ position: 'relative', padding: 'clamp(5rem,12vw,9rem) 1.5rem clamp(4rem,8vw,7rem)', textAlign: 'center' }}>
@@ -261,7 +261,7 @@ export default function IsOrtakligiPage() {
                 <p style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: 1.75, marginBottom: '1rem' }}>
                   Ahenk, mekan ortaklarıyla <strong style={{ color: '#f5f5f5' }}>gelir paylaşımı</strong> veya <strong style={{ color: '#f5f5f5' }}>sabit rezervasyon ücreti</strong> modeliyle çalışır. Detaylar mekânın kapasitesine, şehrine ve haftalık rezervasyon yoğunluğuna göre belirlenir. Tüm koşullar ortaklık görüşmesinde şeffaf biçimde paylaşılır.
                 </p>
-                <div style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px' }}>
+                <div style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '10px' }}>
                   <p style={{ color: '#888', fontSize: '0.82rem', lineHeight: 1.6 }}>
                     Ahenk kullanıcıları yemek ve içecek bedelini doğrudan mekâna öder — Ahenk sadece organizasyon ve eşleştirme hizmeti sunar.
                   </p>
@@ -288,7 +288,7 @@ export default function IsOrtakligiPage() {
                   '📉  Düşük komisyon oranı',
                   '🔥  Platform içi öne çıkarılma',
                 ].map((item) => (
-                  <div key={item} style={{ padding: '0.65rem 1.2rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '9999px', color: '#ccc', fontSize: '0.85rem' }}>
+                  <div key={item} style={{ padding: '0.65rem 1.2rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '9999px', color: '#ccc', fontSize: '0.85rem' }}>
                     {item}
                   </div>
                 ))}
@@ -363,7 +363,7 @@ export default function IsOrtakligiPage() {
       </div>
 
       {/* ── Footer ────────────────────────────────────────────── */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '2.5rem 1.5rem' }}>
+      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.10)', padding: '2.5rem 1.5rem' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
           <p style={{ color: '#e8e8e8', fontSize: '0.85rem', fontWeight: 500 }}>© 2026 Ahenk. Tüm hakları saklıdır.</p>
           <p style={{ color: '#888', fontSize: '0.8rem' }}>
@@ -404,7 +404,7 @@ function Field({ label, type = 'text', value, onChange, required, placeholder }:
         onChange={(e) => onChange(e.target.value)}
         required={required}
         placeholder={placeholder}
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' }}
       />
     </label>
   );
@@ -420,7 +420,7 @@ function SelectField({ label, value, options, onChange, required }: {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: value ? '#f5f5f5' : '#666', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box', appearance: 'none' }}
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: value ? '#f5f5f5' : '#666', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box', appearance: 'none' }}
       >
         <option value="" style={{ background: '#1a1a1a' }}>Seçin...</option>
         {options.map((o) => <option key={o} value={o} style={{ background: '#1a1a1a' }}>{o}</option>)}
@@ -440,7 +440,7 @@ function TextareaField({ label, value, onChange, maxLength }: {
         onChange={(e) => onChange(e.target.value)}
         maxLength={maxLength}
         rows={3}
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', resize: 'vertical', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }}
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', resize: 'vertical', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }}
       />
       {maxLength && (
         <span style={{ fontSize: '0.72rem', color: '#555', alignSelf: 'flex-end' }}>{value.length}/{maxLength}</span>

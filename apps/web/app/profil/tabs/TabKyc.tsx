@@ -145,7 +145,7 @@ function ImageUploader({
               className="w-full h-full object-contain"
               style={{
                 filter: 'brightness(0.6) contrast(1.05)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.10)',
                 borderRadius: '12px',
               }}
             />
@@ -196,7 +196,7 @@ function ImageUploader({
       )}
 
       {progress > 0 && progress < 100 && (
-        <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>
           <div className="h-full transition-all" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#c0392b,#ff6b6b)' }} />
         </div>
       )}
@@ -414,7 +414,7 @@ function LivenessRecorder({ onCapture, initialDone }: { onCapture: (blob: Blob, 
                 src="/kyc-liveness-demo.png"
                 alt="Canlı video örneği"
                 className="w-full rounded-xl"
-                style={{ maxHeight: '180px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.06)' }}
+                style={{ maxHeight: '180px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.10)' }}
               />
             </>
           )}
@@ -614,7 +614,7 @@ export function TabKyc() {
           </button>
 
           {submitting && progress > 0 && (
-            <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>
               <div className="h-full transition-all" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#1a5c2a,#27ae60)' }} />
             </div>
           )}

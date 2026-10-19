@@ -30,7 +30,7 @@ export default function DashboardPage() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-[#c0392b] border-t-transparent animate-spin" />
       </div>
     );
@@ -41,7 +41,7 @@ export default function DashboardPage() {
     : undefined;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#f5f5f5] pt-[52px]">
+    <div className="min-h-screen bg-[#121212] text-[#f5f5f5] pt-[52px]">
       <AccountTabBar kycApproved={me?.kyc?.status === 'APPROVED'} />
       <div
         className="fixed inset-0 pointer-events-none"

@@ -93,8 +93,8 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
   if (!status) {
     return (
       <div className="glass-card p-5">
-        <h3 className="font-medium text-sm text-[#888] uppercase tracking-wide mb-4">Eşleşme Havuzu</h3>
-        <div className="h-32 animate-pulse rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }} />
+        <h3 className="font-medium text-sm text-[#f5f5f5] uppercase tracking-wide mb-4">Eşleşme Havuzu</h3>
+        <div className="h-32 animate-pulse rounded-xl" style={{ background: 'rgba(255,255,255,0.08)' }} />
       </div>
     );
   }
@@ -105,7 +105,7 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
       : null;
     return (
       <div className="glass-card p-5">
-        <h3 className="font-medium text-sm text-[#888] uppercase tracking-wide mb-4">Eşleşme Havuzu</h3>
+        <h3 className="font-medium text-sm text-[#f5f5f5] uppercase tracking-wide mb-4">Eşleşme Havuzu</h3>
         <div className="flex flex-col items-center gap-4 py-4">
           <div style={{ position: 'relative', width: 80, height: 80 }}>
             <div style={{
@@ -119,8 +119,8 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
           </div>
           <div className="text-center">
             <p className="text-sm font-semibold text-[#4ade80]">Masanız Kuruldu!</p>
-            {date && <p className="text-xs text-[#666] mt-1">{date}</p>}
-            <p className="text-xs text-[#555] mt-1">Masalar sekmesinden detayları görebilirsiniz.</p>
+            {date && <p className="text-xs text-[rgba(255,255,255,0.62)] mt-1">{date}</p>}
+            <p className="text-xs text-[rgba(255,255,255,0.62)] mt-1">Masalar sekmesinden detayları görebilirsiniz.</p>
           </div>
         </div>
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
@@ -133,7 +133,7 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
   return (
     <div className="glass-card p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium text-sm text-[#888] uppercase tracking-wide">Eşleşme Havuzu</h3>
+        <h3 className="font-medium text-sm text-[#f5f5f5] uppercase tracking-wide">Eşleşme Havuzu</h3>
         <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', color: '#ff6b6b' }}>
           {PLAN_LABEL[activePlan] ?? activePlan}
         </span>
@@ -153,7 +153,7 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           }}>
             <span style={{ fontSize: 22, fontWeight: 700, color: '#f5f5f5', lineHeight: 1 }}>{size}</span>
-            <span style={{ fontSize: 9, color: '#555', marginTop: 2 }}>KİŞİ</span>
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.50)', marginTop: 2 }}>KİŞİ</span>
           </div>
         </div>
 
@@ -162,12 +162,12 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
           {status.inPool ? (
             <>
               <p className="text-sm font-semibold text-[#f5f5f5]">Havuzdasın</p>
-              <p className="text-xs text-[#555] mt-1">Algoritma her saat eşleşme arıyor.</p>
+              <p className="text-xs text-[rgba(255,255,255,0.62)] mt-1">Algoritma her saat eşleşme arıyor.</p>
             </>
           ) : (
             <>
-              <p className="text-sm font-semibold text-[#888]">Bekleme dışında</p>
-              <p className="text-xs text-[#555] mt-1">OCEAN testi veya KYC eksik olabilir.</p>
+              <p className="text-sm font-semibold text-[#f5f5f5]">Bekleme dışında</p>
+              <p className="text-xs text-[rgba(255,255,255,0.62)] mt-1">OCEAN testi veya KYC eksik olabilir.</p>
             </>
           )}
         </div>
@@ -336,7 +336,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
       <Card title="Hesap Bilgileri">
         {/* Kimlik Doğrulama durumu — en üstte */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted">Kimlik Doğrulama</span>
+          <span className="text-sm text-[#f5f5f5]">Kimlik Doğrulama</span>
           <span
             className="text-xs px-3 py-1 rounded-full"
             style={badge.approved
@@ -353,7 +353,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         {/* E-posta */}
         {emailMode ? (
           <div className="flex flex-col gap-2 pt-1">
-            <p className="text-xs text-[#555]">Yeni e-posta adresi</p>
+            <p className="text-xs text-[rgba(255,255,255,0.62)]">Yeni e-posta adresi</p>
             <input type="email" value={newEmail} onChange={e => { setNewEmail(e.target.value); setEmailError(''); }} placeholder="yeni@eposta.com" className="input-glass px-4 py-3 text-sm w-full" />
             <input type="password" value={emailPassword} onChange={e => { setEmailPassword(e.target.value); setEmailError(''); }} placeholder="Mevcut şifreniz" className="input-glass px-4 py-3 text-sm w-full" />
             {emailError && <p className="text-[#ff6b6b] text-xs">{emailError}</p>}
@@ -364,7 +364,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted">E-posta</span>
+            <span className="text-sm text-[#f5f5f5]">E-posta</span>
             <div className="flex items-center gap-2">
               <span className="text-sm text-text">{currentEmail}</span>
               <button onClick={() => setEmailMode(true)} className="text-xs text-[#888] hover:text-[#f5f5f5] transition-colors px-2 py-0.5" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}>Değiştir</button>
@@ -375,7 +375,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         {/* Telefon */}
         {phoneMode === 'idle' && (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted">Telefon</span>
+            <span className="text-sm text-[#f5f5f5]">Telefon</span>
             <div className="flex items-center gap-2">
               <span className="text-sm text-text">{currentPhone || '—'}</span>
               <button onClick={() => setPhoneMode('enter')} className="text-xs text-[#888] hover:text-[#f5f5f5] transition-colors px-2 py-0.5" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}>
@@ -386,9 +386,9 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         )}
         {phoneMode === 'enter' && (
           <div className="flex flex-col gap-2 pt-1">
-            <p className="text-xs text-[#555]">{currentPhone ? 'Yeni telefon numarası' : 'Telefon numarası ekle'}</p>
+            <p className="text-xs text-[rgba(255,255,255,0.62)]">{currentPhone ? 'Yeni telefon numarası' : 'Telefon numarası ekle'}</p>
             <div className="flex gap-2">
-              <div className="flex items-center px-3 text-[#555] text-sm select-none" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}>+90</div>
+              <div className="flex items-center px-3 text-[rgba(255,255,255,0.62)] text-sm select-none" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}>+90</div>
               <input type="tel" value={newPhone} onChange={e => { setNewPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setPhoneError(''); }} placeholder="5XX XXX XX XX" className="input-glass flex-1 px-4 py-3 text-sm" />
             </div>
             {phoneError && <p className="text-[#ff6b6b] text-xs">{phoneError}</p>}
@@ -400,7 +400,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         )}
         {phoneMode === 'otp' && (
           <div className="flex flex-col gap-2 pt-1">
-            <p className="text-xs text-[#555]">+90{newPhone} numarasına WhatsApp kodu gönderildi.</p>
+            <p className="text-xs text-[rgba(255,255,255,0.62)]">+90{newPhone} numarasına WhatsApp kodu gönderildi.</p>
             <div className="flex gap-1.5 justify-center">
               {phoneOtp.map((d, i) => (
                 <input key={i} ref={el => { otpRefs.current[i] = el; }} type="tel" inputMode="numeric" maxLength={1} value={d}
@@ -434,7 +434,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
       {/* Bu hafta aktif şehir */}
       {activeCityConfirm && (
         <div onClick={() => setActiveCityConfirm(false)} style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '24px 20px 36px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '24px 20px 36px' }}>
             <p style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5', marginBottom: 10 }}>Dikkat</p>
             <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, marginBottom: 20 }}>
               Bu haftaki eşleşme süreciniz <span style={{ color: '#f5f5f5' }}>{displayPrimaryCity?.name ?? 'ana şehriniz'}</span> üzerinden devam etmektedir. Şehri değiştirirseniz bu haftaki sıranıza yeniden gireceksiniz.
@@ -457,7 +457,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         </div>
       )}
       <Card title="Bu Hafta Hangi Şehirdesiniz?">
-        <p className="text-xs text-[#555] mb-3">
+        <p className="text-xs text-[rgba(255,255,255,0.62)] mb-3">
           Bu şehirlerden birinde tatilde veya seyahatteyseniz, oradaki grup masası veya baş başa masasına katılabilirsiniz.
         </p>
         <div className="flex gap-2">
@@ -480,7 +480,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         </div>
         {activeCity && (
           <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-[#555]">
+            <span className="text-xs text-[rgba(255,255,255,0.62)]">
               Aktif: <span className="text-[#f5f5f5]">{cities.find(c => c.id === activeCity)?.name ?? '—'}</span>
             </span>
             <button
@@ -532,13 +532,13 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
                     border: '1.5px solid rgba(192,57,43,0.5)',
                   } : {
                     background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.07)',
+                    border: '1px solid rgba(255,255,255,0.12)',
                   }}
                 >
                   <div className="flex items-center gap-3">
                     <div>
                       <p className="text-sm font-medium" style={{ color: selected ? '#ff6b6b' : '#f5f5f5' }}>{opt.label}</p>
-                      <p className="text-xs text-[#666] mt-0.5">{opt.description}</p>
+                      <p className="text-xs text-[rgba(255,255,255,0.62)] mt-0.5">{opt.description}</p>
                     </div>
                   </div>
                 </button>
@@ -563,8 +563,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
       {/* Sadakat Programı */}
       <Card title="SADAKAT PROGRAMI">
         <div className="flex flex-col gap-2 mb-3">
-          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
-            <span style={{ color: '#555', fontSize: 14, marginRight: 4 }}>+90</span>
+          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
+            <span style={{ color: 'rgba(255,255,255,0.62)', fontSize: 14, marginRight: 4 }}>+90</span>
             <input
               type="tel"
               inputMode="numeric"
@@ -587,11 +587,11 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         )}
         <div className="flex gap-6 pt-3 border-t border-white/5">
           <div>
-            <p className="text-xs text-[#555]">Davetli Arkadaş</p>
+            <p className="text-xs text-[#f5f5f5]">Davetli Arkadaş</p>
             <p className="text-base font-semibold text-text">{referralStats?.totalInvites ?? '—'} kişi</p>
           </div>
           <div>
-            <p className="text-xs text-[#555]">Toplam %10 İndirim Hakkı</p>
+            <p className="text-xs text-[#f5f5f5]">Toplam %10 İndirim Hakkı</p>
             <p className="text-base font-semibold text-text">{referralStats?.availableDiscounts ?? '—'} Adet</p>
           </div>
         </div>
@@ -616,7 +616,7 @@ function Card({ title, children, action }: { title: string; children: React.Reac
   return (
     <div className="glass-card p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium text-sm text-[#888] uppercase tracking-wide">{title}</h3>
+        <h3 className="font-medium text-sm text-[#f5f5f5] uppercase tracking-wide">{title}</h3>
         {action && (
           <button
             onClick={action.onClick}
@@ -635,7 +635,7 @@ function Card({ title, children, action }: { title: string; children: React.Reac
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-muted">{label}</span>
+      <span className="text-sm text-[#f5f5f5]">{label}</span>
       <span className="text-sm text-text">{value}</span>
     </div>
   );
@@ -666,7 +666,7 @@ function CityPickerModalP({ cities, value, onChange, onClose, optional, title }:
   const sorted = sortCitiesP(cities);
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '20px 16px 36px' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '20px 16px 36px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <p style={{ fontSize: 13, color: '#888' }}>{title}</p>
           <button onClick={onClose} style={{ color: '#555', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>×</button>
@@ -702,11 +702,11 @@ function Select({ label, value, onChange, cities, optional, placeholder, title }
   const display = found ? cityLabelP(found.name) : (optional ? (placeholder ?? 'Seçmek istemiyorum') : 'Şehir seç');
   return (
     <div className="flex-1">
-      {label && <label className="block text-xs text-muted mb-1">{label}</label>}
+      {label && <label className="block text-xs text-[#f5f5f5] mb-1">{label}</label>}
       <button
         type="button"
         onClick={() => setOpen(true)}
-        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)'}`, borderRadius: 12, padding: '11px 14px', fontSize: 14, color: value ? '#f5f5f5' : '#555', textAlign: 'left', cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent' }}
+        style={{ width: '100%', background: 'rgba(255,255,255,0.10)', border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 12, padding: '11px 14px', fontSize: 14, color: value ? '#f5f5f5' : '#555', textAlign: 'left', cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent' }}
       >
         {display}
       </button>

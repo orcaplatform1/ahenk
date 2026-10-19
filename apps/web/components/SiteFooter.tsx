@@ -52,7 +52,7 @@ function NavGroup({ title, links }: { title: string; links: { label: string; hre
 
 export default function SiteFooter() {
   return (
-    <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.5)', padding: '2.5rem 1.5rem 2rem' }}>
+    <footer style={{ borderTop: '1px solid rgba(255,255,255,0.10)', background: 'rgba(0,0,0,0.5)', padding: '2.5rem 1.5rem 2rem' }}>
       <div style={{ maxWidth: '56rem', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem', textAlign: 'center' }}>
 
         {/* Kategorili linkler */}
@@ -62,14 +62,14 @@ export default function SiteFooter() {
         </div>
 
         {/* Ayırıcı */}
-        <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+        <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.10)' }} />
 
         {/* Copyright */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          <p style={{ color: '#555', fontSize: '0.78rem', lineHeight: '1.5' }}>
+          <p style={{ color: '#f5f5f5', fontSize: '0.78rem', lineHeight: '1.5' }}>
             © 2026{' '}Ahenk. Tüm hakları saklıdır.
           </p>
-          <p style={{ color: '#555', fontSize: '0.78rem', lineHeight: '1.5' }}>
+          <p style={{ color: '#f5f5f5', fontSize: '0.78rem', lineHeight: '1.5' }}>
             Ahenk bir{' '}
             <span style={{ color: '#e8e8e8', fontWeight: 700 }}>Traders</span>
             <span style={{ color: '#4a90d9', fontWeight: 800 }}>.TR</span>

@@ -9,7 +9,7 @@ const sections = [
     title: 'Taraflar',
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1rem' }}>
-        <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px' }}>
+        <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '12px' }}>
           <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666', marginBottom: '0.6rem' }}>Satıcı</p>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.35rem' }}>
             <p style={{ color: '#e8e8e8', fontWeight: 600 }}>Ahenk Platformu</p>
@@ -18,7 +18,7 @@ const sections = [
             <p style={{ fontSize: '0.86rem' }}><a href="tel:+905403060080" style={{ color: '#c0392b' }}>0540 306 0080</a></p>
           </div>
         </div>
-        <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px' }}>
+        <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '12px' }}>
           <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666', marginBottom: '0.6rem' }}>Alıcı</p>
           <p style={{ color: '#ccc', fontSize: '0.87rem', lineHeight: 1.65 }}>
             Platforma kayıtlı ve paket satın alma işlemi gerçekleştiren kullanıcı. Alıcının adı, soyadı, e-posta adresi ve adresi kayıt sırasında sisteme girilmiş bilgilerden alınır.
@@ -64,7 +64,7 @@ const sections = [
               ],
             },
           ].map((pkg) => (
-            <div key={pkg.name} style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px' }}>
+            <div key={pkg.name} style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.7rem' }}>
                 <span style={{ fontWeight: 700, color: '#e8e8e8', fontSize: '0.92rem' }}>{pkg.name}</span>
                 <span style={{ color: '#ff6b6b', fontWeight: 700, fontSize: '0.9rem' }}>{pkg.price}</span>
@@ -253,7 +253,7 @@ export default function MesafeliSatisSozlesmesiPage() {
     <main
       style={{
         minHeight: '100vh',
-        background: '#0a0a0a',
+        background: '#121212',
         color: '#f5f5f5',
         fontFamily: 'var(--font-sans, system-ui)',
         position: 'relative' as const,
@@ -308,7 +308,7 @@ export default function MesafeliSatisSozlesmesiPage() {
               animate="show"
               variants={fadeUp}
               style={{
-                background: 'rgba(255,255,255,0.05)',
+                background: 'rgba(255,255,255,0.10)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',

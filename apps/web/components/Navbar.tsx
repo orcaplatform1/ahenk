@@ -22,7 +22,7 @@ function initials(u: NavUser) {
 function genderTheme(g?: string) {
   if (g === 'MALE')   return { color: '#4fc3f7', bg: 'rgba(79,195,247,0.12)',  shadow: 'drop-shadow(0 0 5px rgba(79,195,247,0.5))',   pulseMin: 0.45, pulseMax: 1.0,  pulseDur: 2.4 };
   if (g === 'FEMALE') return { color: '#f48fb1', bg: 'rgba(244,143,177,0.12)', shadow: 'drop-shadow(0 0 5px rgba(244,143,177,0.45))', pulseMin: 0.4,  pulseMax: 0.95, pulseDur: 2.8 };
-  return { color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.06)', shadow: 'drop-shadow(0 0 4px rgba(255,255,255,0.2))', pulseMin: 0.3, pulseMax: 0.7, pulseDur: 2.6 };
+  return { color: 'rgba(255,255,255,0.88)', bg: 'rgba(255,255,255,0.10)', shadow: 'drop-shadow(0 0 4px rgba(255,255,255,0.2))', pulseMin: 0.3, pulseMax: 0.7, pulseDur: 2.6 };
 }
 
 function NavAvatar({ user }: { user: NavUser }) {
@@ -250,7 +250,7 @@ export default function Navbar() {
               style={{
                 width: 'min(280px, 80vw)',
                 background: 'linear-gradient(160deg,#111010 0%,#0d0b0b 60%,#120808 100%)',
-                borderLeft: '1px solid rgba(255,255,255,0.07)',
+                borderLeft: '1px solid rgba(255,255,255,0.12)',
                 boxShadow: '-8px 0 32px rgba(0,0,0,0.6)',
                 paddingTop: 52,
               }}
@@ -263,7 +263,7 @@ export default function Navbar() {
                   <motion.a
                     href="/admin" onClick={() => setMenuOpen(false)}
                     className="text-sm py-2.5 px-2 rounded-lg transition-colors"
-                    style={{ color: '#c0392b', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                    style={{ color: '#c0392b', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
                     initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.04, duration: 0.22 }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ff6b6b'; }}
@@ -280,7 +280,7 @@ export default function Navbar() {
                   <motion.a
                     key={item.label} href={item.href} onClick={() => setMenuOpen(false)}
                     className="text-sm py-3 px-2 rounded-lg transition-colors"
-                    style={{ color: '#aaa', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                    style={{ color: '#aaa', borderBottom: '1px solid rgba(255,255,255,0.10)' }}
                     initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 + i * 0.05, duration: 0.22 }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
@@ -293,7 +293,7 @@ export default function Navbar() {
 
               {/* Auth butonları */}
               {checked && (
-                <div className="flex flex-col px-4 pt-5 pb-6 gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 8 }}>
+                <div className="flex flex-col px-4 pt-5 pb-6 gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)', marginTop: 8 }}>
                   {navUser ? (
                     <button onClick={handleLogout} className="w-full btn-ghost justify-center">
                       Çıkış Yap

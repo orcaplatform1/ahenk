@@ -102,7 +102,7 @@ const sections = [
             { name: 'Karşımda', price: '449₺/ay', desc: 'Başbaşa masa eşleştirmesi' },
             { name: 'İçerde', price: '679₺/ay', desc: 'Hem grup hem başbaşa masa eşleştirmesi, öncelikli eşleştirme' },
           ].map((pkg) => (
-            <div key={pkg.name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1.1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px' }}>
+            <div key={pkg.name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1.1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px' }}>
               <span style={{ fontWeight: 700, color: '#e8e8e8', minWidth: '90px', fontSize: '0.9rem' }}>{pkg.name}</span>
               <span style={{ color: '#ff6b6b', fontWeight: 700, fontSize: '0.9rem', minWidth: '80px' }}>{pkg.price}</span>
               <span style={{ color: '#888', fontSize: '0.83rem' }}>{pkg.desc}</span>
@@ -243,7 +243,7 @@ export default function KullanimKosullariPage() {
     <main
       style={{
         minHeight: '100vh',
-        background: '#0a0a0a',
+        background: '#121212',
         color: '#f5f5f5',
         fontFamily: 'var(--font-sans, system-ui)',
         position: 'relative' as const,
@@ -295,7 +295,7 @@ export default function KullanimKosullariPage() {
               animate="show"
               variants={fadeUp}
               style={{
-                background: 'rgba(255,255,255,0.05)',
+                background: 'rgba(255,255,255,0.10)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',

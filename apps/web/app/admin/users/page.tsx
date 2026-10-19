@@ -52,7 +52,7 @@ function activePlan(u: AdminUser): string {
 }
 
 function Skel() {
-  return <div className="h-16 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }} />;
+  return <div className="h-16 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.10)' }} />;
 }
 
 export default function AdminUsers() {
@@ -194,7 +194,7 @@ export default function AdminUsers() {
       <div className="glass-card overflow-hidden mb-6">
         <table className="w-full">
           <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
               {['Kullanıcı', 'Şehir', 'Paket', 'OCEAN Ort.', 'Durum', ''].map(h => (
                 <th key={h} className="px-4 py-3 text-left text-xs text-[#555] uppercase tracking-[0.1em] font-medium">{h}</th>
               ))}
@@ -213,7 +213,7 @@ export default function AdminUsers() {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04, duration: 0.25, ease: 'easeOut' }}
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
                     >
                       <td className="px-4 py-3">
                         <p className="text-sm text-[#f5f5f5] font-medium">{u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}</p>
@@ -276,10 +276,10 @@ export default function AdminUsers() {
               transition={{ duration: 0.2 }}
               onClick={e => e.stopPropagation()}
               className="glass-card p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto flex flex-col gap-4"
-              style={{ background: '#111' }}>
+              style={{ background: '#1a1a1a' }}>
 
               {userModalLoading && [0,1,2,3].map(i => (
-                <div key={i} className="h-12 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />
+                <div key={i} className="h-12 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />
               ))}
 
               {userModal && !userModalLoading && (
@@ -307,7 +307,7 @@ export default function AdminUsers() {
                     </span>
                     <span className="px-2 py-0.5 rounded-full"
                       style={{
-                        background: userModal.kyc?.status === 'APPROVED' ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.05)',
+                        background: userModal.kyc?.status === 'APPROVED' ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.10)',
                         color: userModal.kyc?.status === 'APPROVED' ? '#4ade80' : '#666',
                         border: '1px solid rgba(255,255,255,0.08)',
                       }}>
@@ -322,7 +322,7 @@ export default function AdminUsers() {
                   </div>
 
                   {/* Hesap işlemleri */}
-                  <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
                     <p className="text-xs text-[#555] uppercase tracking-[0.1em]">Hesap İşlemleri</p>
                     <div className="flex flex-wrap gap-2">
                       {userModal.status !== 'SUSPENDED' && (
@@ -351,7 +351,7 @@ export default function AdminUsers() {
 
                   {/* KYC onayla */}
                   {userModal.kyc && userModal.kyc.status !== 'APPROVED' && (
-                    <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
                       <p className="text-xs text-[#555] uppercase tracking-[0.1em]">KYC</p>
                       <button onClick={modalApproveKyc} disabled={!!userAction}
                         className="py-2 rounded-xl text-sm font-medium disabled:opacity-50"
@@ -362,7 +362,7 @@ export default function AdminUsers() {
                   )}
 
                   {/* Abonelik ver */}
-                  <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
                     <p className="text-xs text-[#555] uppercase tracking-[0.1em]">Ücretsiz Abonelik Ver</p>
                     <div className="flex gap-2">
                       <select value={grantPlan} onChange={e => setGrantPlan(e.target.value)}

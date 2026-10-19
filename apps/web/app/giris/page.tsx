@@ -161,7 +161,7 @@ export default function GirisPage() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center md:justify-start px-6 pt-[52px] md:pt-[80px]"
-      style={{ background: '#0a0a0a' }}
+      style={{ background: '#121212' }}
     >
       {/* Yaptırım modalı */}
       <AnimatePresence>
@@ -223,7 +223,7 @@ export default function GirisPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="fixed inset-0 flex flex-col items-center justify-start pt-[18%] z-[100]"
-            style={{ background: '#0a0a0a' }}
+            style={{ background: '#121212' }}
           >
             <div className="fixed inset-0 pointer-events-none">
               <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: '60vw', height: '60vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.12) 0%, transparent 60%)', filter: 'blur(60px)' }} />
@@ -273,7 +273,7 @@ export default function GirisPage() {
         {/* Toggle */}
         <div
           className="flex mb-8 p-1 rounded-2xl"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
         >
           {(['whatsapp', 'email'] as Method[]).map((m) => (
             <button
@@ -308,7 +308,7 @@ export default function GirisPage() {
                 <div className="flex gap-2">
                   <div
                     className="flex items-center px-4 text-[#555] text-sm select-none flex-shrink-0"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 }}
+                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}
                   >
                     +90
                   </div>

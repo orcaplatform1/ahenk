@@ -105,7 +105,7 @@ function RadarChart({ scores }: { scores: OceanScore }) {
         </defs>
 
         {gridCircles.map((r, i) => (
-          <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
+          <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
         ))}
 
         {axes.map((a, i) => (
@@ -202,7 +202,7 @@ function TraitCard({ label, score, delay }: { label: string; score: number; dela
         <span className="text-sm text-[#f5f5f5] font-medium">{label}</span>
         <span className="text-lg font-bold font-mono" style={{ color: '#ff6b6b' }}>{score}</span>
       </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.12)' }}>
         <motion.div
           className="h-full rounded-full progress-grad"
           initial={{ width: '0%' }}
@@ -241,7 +241,7 @@ export default function TestSonucPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-[#c0392b] border-t-transparent animate-spin" />
       </div>
     );
@@ -249,7 +249,7 @@ export default function TestSonucPage() {
 
   if (error || !score) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center px-6">
         <div className="text-center">
           <p className="text-[#ff6b6b] mb-4">{error || 'Sonuç bulunamadı.'}</p>
           <button onClick={() => router.push('/profil')} className="text-sm text-[#888]">← Profile Dön</button>
@@ -259,7 +259,7 @@ export default function TestSonucPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] overflow-x-hidden">
+    <div className="min-h-screen bg-[#121212] text-[#f5f5f5] overflow-x-hidden">
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', width: '60vw', height: '60vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.12) 0%, transparent 60%)', filter: 'blur(60px)' }} />
       </div>

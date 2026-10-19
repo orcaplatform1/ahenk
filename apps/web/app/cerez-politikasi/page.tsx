@@ -34,7 +34,7 @@ const sections = [
               { name: 'session-id', desc: 'Oturum kimliği — güvenli bağlantı için gereklidir.' },
               { name: 'csrf-token', desc: 'Siteler arası istek sahteciliğini önler — güvenlik için zorunludur.' },
             ].map((c) => (
-              <div key={c.name} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px' }}>
+              <div key={c.name} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '10px' }}>
                 <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#ff6b6b', display: 'block', marginBottom: '0.2rem' }}>{c.name}</span>
                 <span style={{ color: '#888', fontSize: '0.83rem' }}>{c.desc}</span>
               </div>
@@ -51,7 +51,7 @@ const sections = [
             <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666' }}>
               Tercih Çerezleri
             </span>
-            <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.6rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', color: '#888', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.6rem', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', color: '#888', fontWeight: 600 }}>
               Opsiyonel
             </span>
           </div>
@@ -60,7 +60,7 @@ const sections = [
               { name: 'cookie-consent', desc: 'Çerez tercihlerinizi hatırlar — 1 yıl geçerlidir.' },
               { name: 'theme-preference', desc: 'Tema tercihinizi hatırlar.' },
             ].map((c) => (
-              <div key={c.name} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px' }}>
+              <div key={c.name} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '10px' }}>
                 <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#aaa', display: 'block', marginBottom: '0.2rem' }}>{c.name}</span>
                 <span style={{ color: '#888', fontSize: '0.83rem' }}>{c.desc}</span>
               </div>
@@ -74,7 +74,7 @@ const sections = [
             <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666' }}>
               Analitik Çerezler
             </span>
-            <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.6rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', color: '#888', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.6rem', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', color: '#888', fontWeight: 600 }}>
               Opsiyonel
             </span>
           </div>
@@ -97,13 +97,13 @@ const sections = [
     title: 'Üçüncü Taraf Çerezleri',
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1rem' }}>
-        <div style={{ padding: '1rem 1.25rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px' }}>
+        <div style={{ padding: '1rem 1.25rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '10px' }}>
           <p style={{ fontWeight: 600, color: '#e8e8e8', marginBottom: '0.4rem', fontSize: '0.9rem' }}>iyzico Ödeme Sistemi</p>
           <p style={{ color: '#888', fontSize: '0.85rem', lineHeight: 1.6 }}>
             Paket satın alma sayfasında iyzico kendi güvenlik ve dolandırıcılık önleme çerezlerini kullanır. Bu çerezler iyzico'nun gizlilik politikası kapsamındadır ve Ahenk tarafından kontrol edilmez.
           </p>
         </div>
-        <div style={{ padding: '1rem 1.25rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px' }}>
+        <div style={{ padding: '1rem 1.25rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '10px' }}>
           <p style={{ fontWeight: 600, color: '#e8e8e8', marginBottom: '0.4rem', fontSize: '0.9rem' }}>Cloudflare</p>
           <p style={{ color: '#888', fontSize: '0.85rem', lineHeight: 1.6 }}>
             DDoS koruması ve güvenlik için Cloudflare teknik çerezler kullanabilir.
@@ -124,7 +124,7 @@ const sections = [
             ['Firefox', 'Ayarlar → Gizlilik ve Güvenlik → Çerezler'],
             ['Safari', 'Tercihler → Gizlilik → Çerezler'],
           ].map(([browser, path]) => (
-            <div key={browser} style={{ display: 'flex', gap: '1rem', padding: '0.7rem 1rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px' }}>
+            <div key={browser} style={{ display: 'flex', gap: '1rem', padding: '0.7rem 1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '8px' }}>
               <span style={{ color: '#e8e8e8', fontWeight: 600, fontSize: '0.87rem', minWidth: '70px' }}>{browser}</span>
               <span style={{ color: '#888', fontSize: '0.85rem' }}>{path}</span>
             </div>
@@ -226,7 +226,7 @@ export default function CerezPolitikasiPage() {
     <main
       style={{
         minHeight: '100vh',
-        background: '#0a0a0a',
+        background: '#121212',
         color: '#f5f5f5',
         fontFamily: 'var(--font-sans, system-ui)',
         position: 'relative' as const,
@@ -285,7 +285,7 @@ export default function CerezPolitikasiPage() {
               animate="show"
               variants={fadeUp}
               style={{
-                background: 'rgba(255,255,255,0.05)',
+                background: 'rgba(255,255,255,0.10)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',

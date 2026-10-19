@@ -95,11 +95,11 @@ function MasaCard({ total, group, oneOnOne }: { total: number; group: number; on
       <p className="text-xs text-[#888] uppercase tracking-[0.14em]">Kurulan Masa</p>
       <p className="font-serif text-4xl font-bold" style={{ color: '#c0392b' }}>{vTotal.toLocaleString('tr-TR')}</p>
       <div className="grid grid-cols-2 gap-3 mt-1">
-        <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
           <p className="text-xs text-[#555] mb-1">Grup</p>
           <p className="text-xl font-semibold text-[#f5f5f5]">{vGroup.toLocaleString('tr-TR')}</p>
         </div>
-        <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
           <p className="text-xs text-[#555] mb-1">Başbaşa</p>
           <p className="text-xl font-semibold text-[#f5f5f5]">{vOne.toLocaleString('tr-TR')}</p>
         </div>
@@ -133,7 +133,7 @@ function PackageBar({ label, pct, count, delay }: { label: string; pct: number; 
           <span className="text-sm font-medium text-[#f5f5f5]">%{pct}</span>
         </div>
       </div>
-      <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+      <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>
         <motion.div
           className="h-full rounded-full"
           style={{ background: 'linear-gradient(90deg,#c0392b,#ff6b6b)' }}
@@ -149,7 +149,7 @@ function PackageBar({ label, pct, count, delay }: { label: string; pct: number; 
 function Skel({ h = 'h-24' }: { h?: string }) {
   return (
     <div className={`${h} rounded-2xl animate-pulse`}
-      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }} />
+      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.10)' }} />
   );
 }
 
@@ -227,7 +227,7 @@ export default function AdminStats() {
 
       {/* Şehir tablosu */}
       <div className="glass-card overflow-hidden mb-4">
-        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
           <p className="text-xs text-[#888] uppercase tracking-[0.14em]">Şehir Bazlı Performans</p>
         </div>
         {loading ? (
@@ -236,7 +236,7 @@ export default function AdminStats() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[340px]">
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
                   {['Şehir', 'Masa', 'Üye', 'Ciro', 'Trend'].map(h => (
                     <th key={h} className="px-3 py-2.5 text-left text-xs text-[#555] uppercase tracking-[0.08em] font-medium">{h}</th>
                   ))}
@@ -247,7 +247,7 @@ export default function AdminStats() {
                   <motion.tr key={row.city}
                     initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05, duration: 0.25 }}
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
                   >
                     <td className="px-3 py-3 text-sm font-semibold text-[#f5f5f5]">{row.city}</td>
                     <td className="px-3 py-3 text-sm text-[#888]">{row.totalTables}</td>

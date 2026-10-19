@@ -79,7 +79,7 @@ export default function DegerlendirmePage() {
     new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0a0a0a' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: '#121212' }}>
       {/* Glow */}
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '-8%', left: '50%', transform: 'translateX(-50%)', width: '70vw', height: '70vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.09) 0%, transparent 60%)', filter: 'blur(60px)' }} />
@@ -92,7 +92,7 @@ export default function DegerlendirmePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="fixed inset-0 flex flex-col items-center justify-center"
-            style={{ background: '#0a0a0a', zIndex: 100 }}
+            style={{ background: '#121212', zIndex: 100 }}
           >
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
@@ -138,7 +138,7 @@ export default function DegerlendirmePage() {
 
         {loading ? (
           <div className="flex flex-col gap-4">
-            {[0,1,2].map(i => <div key={i} className="h-20 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />)}
+            {[0,1,2].map(i => <div key={i} className="h-20 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />)}
           </div>
         ) : (
           <div className="flex flex-col gap-6">
@@ -207,8 +207,8 @@ export default function DegerlendirmePage() {
                           key={p.userId}
                           className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors"
                           style={{
-                            background: blockedIds.has(p.userId) ? 'rgba(192,57,43,0.08)' : 'rgba(255,255,255,0.03)',
-                            border: `1px solid ${blockedIds.has(p.userId) ? 'rgba(192,57,43,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                            background: blockedIds.has(p.userId) ? 'rgba(192,57,43,0.08)' : 'rgba(255,255,255,0.07)',
+                            border: `1px solid ${blockedIds.has(p.userId) ? 'rgba(192,57,43,0.3)' : 'rgba(255,255,255,0.12)'}`,
                           }}
                         >
                           <input

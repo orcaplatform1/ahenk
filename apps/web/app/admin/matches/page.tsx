@@ -70,7 +70,7 @@ function oceanAvg(o: OceanScore | null) {
 }
 
 function Skel() {
-  return <div className="h-14 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />;
+  return <div className="h-14 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />;
 }
 
 function Sec({ title, children }: { title: string; children: React.ReactNode }) {
@@ -250,7 +250,7 @@ export default function AdminMatches() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[380px]">
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
                 {['Tarih', 'Tip', 'Kişi', 'Mekan', 'Durum', ''].map(h => (
                   <th key={h} className="px-3 py-2.5 text-left text-xs text-[#555] uppercase tracking-[0.08em] font-medium">{h}</th>
                 ))}
@@ -268,7 +268,7 @@ export default function AdminMatches() {
                         transition={{ delay: i * 0.04, duration: 0.2, ease: 'easeOut' }}
                         onClick={() => openDetail(m)}
                         className="cursor-pointer transition-colors"
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: isActive ? 'rgba(192,57,43,0.07)' : undefined }}>
+                        style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: isActive ? 'rgba(192,57,43,0.07)' : undefined }}>
                         <td className="px-3 py-2.5 text-xs text-[#f5f5f5] whitespace-nowrap">{fmtDate(m.scheduledAt)}</td>
                         <td className="px-3 py-2.5 text-xs text-[#888]">{TYPE_LABEL[m.type] ?? m.type}</td>
                         <td className="px-3 py-2.5 text-xs text-[#888] text-center">{m._count.participants}</td>
@@ -358,7 +358,7 @@ export default function AdminMatches() {
               <div className="flex flex-col">
                 {selected.participants.map(p => (
                   <div key={p.userId} className="flex items-center justify-between py-2 gap-3"
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
                     <button onClick={() => openUser(p.user.id)} className="text-left flex-1 min-w-0 hover:opacity-80 transition-opacity">
                       <p className="text-sm text-[#f5f5f5] font-medium">
                         {p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.user.email}
@@ -384,7 +384,7 @@ export default function AdminMatches() {
             {selected.reviews.length > 0 && (
               <Sec title={`Değerlendirmeler (${selected.reviews.length})`}>
                 {selected.reviews.map(r => (
-                  <div key={r.id} className="py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div key={r.id} className="py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-xs text-[#888]">{r.reviewer.profile ? `${r.reviewer.profile.firstName} ${r.reviewer.profile.lastName[0]}.` : '—'}</p>
                       <span className="text-sm">{[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= r.rating ? '#c0392b' : 'rgba(255,255,255,0.12)' }}>★</span>)}</span>
@@ -416,7 +416,7 @@ export default function AdminMatches() {
             onClick={() => setCancelConfirm(false)}>
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
               onClick={e => e.stopPropagation()}
-              className="glass-card p-6 w-80 flex flex-col gap-5" style={{ background: '#111' }}>
+              className="glass-card p-6 w-80 flex flex-col gap-5" style={{ background: '#1a1a1a' }}>
               <div>
                 <p className="font-medium text-[#f5f5f5] mb-1">Masayı iptal et</p>
                 <p className="text-sm text-[#777]">{selected && fmtDate(selected.scheduledAt)} tarihli masa iptal edilecek. Bu işlem geri alınamaz.</p>
@@ -447,7 +447,7 @@ export default function AdminMatches() {
               transition={{ duration: 0.2 }}
               onClick={e => e.stopPropagation()}
               className="glass-card p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto flex flex-col gap-4"
-              style={{ background: '#111' }}>
+              style={{ background: '#1a1a1a' }}>
 
               {userLoading && [0,1,2,3].map(i => <Skel key={i} />)}
 
@@ -478,7 +478,7 @@ export default function AdminMatches() {
                     </span>
                     <span className="px-2 py-0.5 rounded-full"
                       style={{
-                        background: userModal.kyc?.status === 'APPROVED' ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.05)',
+                        background: userModal.kyc?.status === 'APPROVED' ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.10)',
                         color: userModal.kyc?.status === 'APPROVED' ? '#4ade80' : '#666',
                         border: '1px solid rgba(255,255,255,0.08)',
                       }}>
@@ -493,7 +493,7 @@ export default function AdminMatches() {
                   </div>
 
                   {/* Hesap işlemleri */}
-                  <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
                     <p className="text-xs text-[#555] uppercase tracking-[0.1em]">Hesap İşlemleri</p>
                     <div className="flex flex-wrap gap-2">
                       {userModal.status !== 'SUSPENDED' && (
@@ -522,7 +522,7 @@ export default function AdminMatches() {
 
                   {/* KYC onayla */}
                   {userModal.kyc && userModal.kyc.status !== 'APPROVED' && (
-                    <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
                       <p className="text-xs text-[#555] uppercase tracking-[0.1em]">KYC</p>
                       <button onClick={userApproveKyc} disabled={!!userAction}
                         className="py-2 rounded-xl text-sm font-medium disabled:opacity-50"
@@ -533,7 +533,7 @@ export default function AdminMatches() {
                   )}
 
                   {/* Abonelik ver */}
-                  <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
                     <p className="text-xs text-[#555] uppercase tracking-[0.1em]">Ücretsiz Abonelik Ver</p>
                     <div className="flex gap-2">
                       <select value={grantPlan} onChange={e => setGrantPlan(e.target.value)}

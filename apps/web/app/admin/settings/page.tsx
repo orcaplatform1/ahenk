@@ -60,8 +60,8 @@ export default function AdminSettings() {
   if (loading) {
     return (
       <div className="p-6 max-w-lg mx-auto">
-        <div className="h-8 w-40 rounded-xl animate-pulse mb-6" style={{ background: 'rgba(255,255,255,0.04)' }} />
-        {[0,1,2,3].map(i => <div key={i} className="h-14 rounded-xl animate-pulse mb-3" style={{ background: 'rgba(255,255,255,0.04)' }} />)}
+        <div className="h-8 w-40 rounded-xl animate-pulse mb-6" style={{ background: 'rgba(255,255,255,0.08)' }} />
+        {[0,1,2,3].map(i => <div key={i} className="h-14 rounded-xl animate-pulse mb-3" style={{ background: 'rgba(255,255,255,0.08)' }} />)}
       </div>
     );
   }
@@ -84,7 +84,7 @@ export default function AdminSettings() {
           />
         </div>
 
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16 }} className="flex flex-col gap-4">
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', paddingTop: 16 }} className="flex flex-col gap-4">
           <Toggle
             label="Eşleştirme Aktif"
             desc="Perşembe döngüsü çalışsın mı"

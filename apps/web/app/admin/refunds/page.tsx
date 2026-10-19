@@ -38,7 +38,7 @@ export default function AdminRefunds() {
 
       {loading ? (
         <div className="flex flex-col gap-3">
-          {[0,1,2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />)}
+          {[0,1,2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />)}
         </div>
       ) : refunds.length === 0 ? (
         <p className="text-[#555] text-sm">İade talebi yok.</p>
@@ -82,7 +82,7 @@ function RefundRow({ refund, delay, statusColor, onUpdate }: {
           {refund.status === 'PENDING' && (
             <button onClick={() => setOpen(o => !o)}
               className="text-xs px-3 py-1 rounded-full"
-              style={{ background: 'rgba(255,255,255,0.06)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }}>
+              style={{ background: 'rgba(255,255,255,0.10)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }}>
               İncele
             </button>
           )}

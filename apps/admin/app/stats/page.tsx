@@ -21,7 +21,7 @@ function StatsContent() {
     <div className="p-6 min-h-screen">
       <div className="mb-6">
         <h1 className="font-serif text-2xl text-[#f5f5f5]">İstatistikler</h1>
-        <p className="text-sm text-[#888] mt-1">Platform metrikleri ve şehir bazlı dağılım.</p>
+        <p className="text-sm text-muted mt-1">Platform metrikleri ve şehir bazlı dağılım.</p>
       </div>
       <AdminStatsDashboard
         apiBase={`${API_BASE}/api/v1`}

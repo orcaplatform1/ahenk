@@ -630,10 +630,10 @@ function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ON
 
       {/* Alt yazı + buton */}
       <div style={{ textAlign: 'center', marginTop: 20, padding: '0 8px' }}>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#888', lineHeight: 1.65, margin: '0 0 4px' }}>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#f5f5f5', lineHeight: 1.65, margin: '0 0 4px' }}>
           {line1}
         </p>
-        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#555', lineHeight: 1.65, margin: '0 0 22px' }}>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.62)', lineHeight: 1.65, margin: '0 0 22px' }}>
           {line2}
         </p>
         <a href="/profil?tab=paket" className="btn-primary">
@@ -836,7 +836,7 @@ export function MasalarDashboard({
   }
 
   const cardStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.05)',
+    background: '#1a1a1a',
     border: '1px solid rgba(255,255,255,0.08)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',

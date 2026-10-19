@@ -24,7 +24,7 @@ function useCountUp(target: number, duration = 1600, start = false) {
 
 /* ── Shared styles ────────────────────────────────────────────── */
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.05)',
+  background: 'rgba(255,255,255,0.10)',
   border: '1px solid rgba(255,255,255,0.08)',
   backdropFilter: 'blur(20px)',
   WebkitBackdropFilter: 'blur(20px)',
@@ -85,7 +85,7 @@ export default function KariyerPage() {
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f5f5f5', fontFamily: 'var(--font-sans, system-ui)', overflowX: 'hidden' }}>
+    <main style={{ minHeight: '100vh', background: '#121212', color: '#f5f5f5', fontFamily: 'var(--font-sans, system-ui)', overflowX: 'hidden' }}>
 
       {/* ── Hero ──────────────────────────────────────────────── */}
       <section style={{ position: 'relative', padding: 'clamp(5rem,12vw,9rem) 1.5rem clamp(4rem,8vw,7rem)', textAlign: 'center' }}>
@@ -317,7 +317,7 @@ export default function KariyerPage() {
       </div>
 
       {/* ── Footer ──────────────────────────────────────────────── */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '2.5rem 1.5rem' }}>
+      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.10)', padding: '2.5rem 1.5rem' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
           <p style={{ color: '#e8e8e8', fontSize: '0.85rem', fontWeight: 500 }}>© 2026 Ahenk. Tüm hakları saklıdır.</p>
           <p style={{ color: '#888', fontSize: '0.8rem' }}>
@@ -353,7 +353,7 @@ function Field({ label, type = 'text', value, onChange, required, placeholder }:
     <label style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
       <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>{label}</span>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} placeholder={placeholder}
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
     </label>
   );
 }
@@ -365,7 +365,7 @@ function SelectField({ label, value, options, onChange, required }: {
     <label style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
       <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>{label}</span>
       <select value={value} onChange={(e) => onChange(e.target.value)} required={required}
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: value ? '#f5f5f5' : '#666', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box', appearance: 'none' }}>
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: value ? '#f5f5f5' : '#666', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box', appearance: 'none' }}>
         <option value="" style={{ background: '#1a1a1a' }}>Seçin...</option>
         {options.map((o) => <option key={o} value={o} style={{ background: '#1a1a1a' }}>{o}</option>)}
       </select>
@@ -380,7 +380,7 @@ function TextareaField({ label, value, onChange, maxLength, required }: {
     <label style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
       <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>{label}</span>
       <textarea value={value} onChange={(e) => onChange(e.target.value)} maxLength={maxLength} required={required} rows={4}
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', resize: 'vertical', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', resize: 'vertical', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }} />
       {maxLength && <span style={{ fontSize: '0.72rem', color: '#555', alignSelf: 'flex-end' }}>{value.length}/{maxLength}</span>}
     </label>
   );

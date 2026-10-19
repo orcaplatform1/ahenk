@@ -84,7 +84,7 @@ export default function CookieBanner() {
             WebkitBackdropFilter: 'blur(24px)',
             border: '1px solid rgba(192,57,43,0.28)',
             borderRadius: '28px',
-            boxShadow: '0 -8px 40px rgba(0,0,0,0.7), 0 0 40px rgba(192,57,43,0.1), inset 0 1px 0 rgba(255,255,255,0.05)',
+            boxShadow: '0 -8px 40px rgba(0,0,0,0.7), 0 0 40px rgba(192,57,43,0.1), inset 0 1px 0 rgba(255,255,255,0.10)',
             padding: '1.5rem 1.6rem',
           }}>
 
@@ -141,7 +141,7 @@ export default function CookieBanner() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.2rem' }}>
                     {/* Zorunlu — her zaman açık */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
                       <div>
                         <p style={{ margin: 0, fontSize: '0.83rem', fontWeight: 500, color: '#e0e0e0' }}>Zorunlu Çerezler</p>
                         <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#555', lineHeight: 1.4 }}>Oturum ve güvenlik işlemleri için zorunludur.</p>
@@ -150,7 +150,7 @@ export default function CookieBanner() {
                     </div>
 
                     {/* Analitik */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
                       <div>
                         <p style={{ margin: 0, fontSize: '0.83rem', fontWeight: 500, color: '#e0e0e0' }}>Analitik Çerezler</p>
                         <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#555', lineHeight: 1.4 }}>Platform kullanımını anlamamıza ve iyileştirmemize yardımcı olur.</p>
@@ -159,7 +159,7 @@ export default function CookieBanner() {
                     </div>
 
                     {/* Pazarlama */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
                       <div>
                         <p style={{ margin: 0, fontSize: '0.83rem', fontWeight: 500, color: '#e0e0e0' }}>Pazarlama Çerezleri</p>
                         <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#555', lineHeight: 1.4 }}>Size uygun içerik ve kampanya önerileri sunmak için kullanılır.</p>

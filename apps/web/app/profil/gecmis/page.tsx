@@ -26,15 +26,15 @@ export default function GecmisPage() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-[#c0392b] border-t-transparent animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#f5f5f5]">
-      <header className="sticky top-0 z-40 bg-[#0A0A0A]/80 backdrop-blur-md border-b border-[#1f1f1f]">
+    <div className="min-h-screen bg-[#121212] text-[#f5f5f5]">
+      <header className="sticky top-0 z-40 bg-[#121212]/80 backdrop-blur-md border-b border-[#1f1f1f]">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/dashboard" className="text-[#888] hover:text-[#f5f5f5] transition-colors">

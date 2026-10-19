@@ -54,7 +54,7 @@ function getParticipantCount(m: HistoryMeeting): number | null {
 }
 
 const CARD_STYLE: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.05)',
+  background: 'rgba(255,255,255,0.10)',
   border: '1px solid rgba(255,255,255,0.08)',
   backdropFilter: 'blur(20px)',
   WebkitBackdropFilter: 'blur(20px)',
@@ -266,7 +266,7 @@ function EmptyMasaCard({
             {[0, 1, 2].map(i => (
               <div key={i} style={{
                 borderRadius: 8, aspectRatio: '4/3',
-                background: 'rgba(255,255,255,0.04)',
+                background: 'rgba(255,255,255,0.08)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -294,7 +294,7 @@ function EmptyMasaCard({
         <motion.div
           initial={{ scaleX: 0 }} animate={{ scaleX: 1 }}
           transition={{ delay: 0.35, duration: 0.45, ease: 'easeOut' }}
-          style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '0 0 16px', transformOrigin: 'left' }}
+          style={{ height: 1, background: 'rgba(255,255,255,0.12)', margin: '0 0 16px', transformOrigin: 'left' }}
         />
 
         {/* Buluşma saati */}
@@ -362,16 +362,16 @@ function EmptyMasaCard({
           <div style={{ height: 1, background: 'rgba(100,130,200,0.12)', marginBottom: 12 }} />
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.88)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>
                 UYUM SKORU
               </span>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0', fontFamily: 'Inter, sans-serif' }}>
                 %—
               </span>
             </div>
-            <div style={{ height: 5, borderRadius: 99, background: 'rgba(255,255,255,0.07)' }} />
+            <div style={{ height: 5, borderRadius: 99, background: 'rgba(255,255,255,0.12)' }} />
           </div>
-          <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.3)', fontFamily: 'Inter, sans-serif', lineHeight: 1.65 }}>
+          <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', lineHeight: 1.65 }}>
             Masa kurulduktan sonra yapay zeka uyum raporu burada görünecek.
           </p>
         </motion.div>
@@ -381,12 +381,12 @@ function EmptyMasaCard({
           initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.72, duration: 0.4 }}
           style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.07)',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 10, padding: '12px 14px', marginBottom: 16,
           }}
         >
-          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
+          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
             Rezervasyonunuz tamamlandı. Girişte görevliye isminizi söylediğinizde masanıza yönlendirileceksiniz. İyi eğlenceler.
           </p>
         </motion.div>
@@ -425,7 +425,7 @@ function EmptyMasaCard({
 
         {/* Sohbet bölümü */}
         <div>
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '0 0 20px' }} />
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', margin: '0 0 20px' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#555' }} />
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', color: '#555' }}>
@@ -433,7 +433,7 @@ function EmptyMasaCard({
             </span>
           </div>
           <div style={{
-            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 10, overflow: 'hidden',
           }}>
             <div style={{ padding: '16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -441,9 +441,9 @@ function EmptyMasaCard({
                 Henüz mesaj yok. İlk mesajı sen gönder.
               </p>
             </div>
-            <div style={{ display: 'flex', gap: 8, padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', gap: 8, padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.10)' }}>
               <div style={{
-                flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                flex: 1, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 8, padding: '8px 10px', fontSize: 13, color: '#555',
                 fontFamily: 'Inter, sans-serif',
               }}>
@@ -684,7 +684,7 @@ function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
           ) : (
             <span
               className="text-xs px-3 py-1.5 text-[#555]"
-              style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: 9999 }}
+              style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 9999 }}
             >
               ✓ Değerlendirildi
             </span>

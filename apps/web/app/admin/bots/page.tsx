@@ -14,7 +14,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-        className="glass-card w-full max-w-sm p-5" style={{ background: '#111' }}>
+        className="glass-card w-full max-w-sm p-5" style={{ background: '#1a1a1a' }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-serif text-lg text-[#f5f5f5]">{title}</h2>
           <button onClick={onClose} className="text-[#555] hover:text-[#f5f5f5] text-lg">✕</button>
@@ -78,7 +78,7 @@ export default function AdminBots() {
       </div>
 
       {loading ? (
-        <div className="flex flex-col gap-3">{[0,1,2].map(i => <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />)}</div>
+        <div className="flex flex-col gap-3">{[0,1,2].map(i => <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />)}</div>
       ) : bots.length === 0 ? (
         <p className="text-[#555] text-sm">Bot yok.</p>
       ) : (
@@ -95,7 +95,7 @@ export default function AdminBots() {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-[#f5f5f5]">{firstName} {lastName}</p>
                     <span className="text-xs px-2 py-0.5 rounded-full"
-                      style={active ? { background: 'rgba(74,222,128,0.1)', color: '#4ade80' } : { background: 'rgba(255,255,255,0.05)', color: '#555' }}>
+                      style={active ? { background: 'rgba(74,222,128,0.1)', color: '#4ade80' } : { background: 'rgba(255,255,255,0.10)', color: '#555' }}>
                       {active ? 'Aktif' : 'Pasif'}
                     </span>
                   </div>
@@ -103,13 +103,13 @@ export default function AdminBots() {
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button onClick={() => toggleStatus(b)}
                     className="text-xs px-2.5 py-1 rounded-lg"
-                    style={active ? { background: 'rgba(255,255,255,0.05)', color: '#555', border: '1px solid rgba(255,255,255,0.07)' }
+                    style={active ? { background: 'rgba(255,255,255,0.10)', color: '#555', border: '1px solid rgba(255,255,255,0.12)' }
                       : { background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}>
                     {active ? 'Pasifleştir' : 'Aktifleştir'}
                   </button>
                   <button onClick={() => openEdit(b)}
                     className="text-xs px-2.5 py-1 rounded-lg"
-                    style={{ background: 'rgba(255,255,255,0.05)', color: '#888', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    style={{ background: 'rgba(255,255,255,0.10)', color: '#888', border: '1px solid rgba(255,255,255,0.12)' }}>
                     İsim
                   </button>
                   <button onClick={() => deleteBot(b.id)}

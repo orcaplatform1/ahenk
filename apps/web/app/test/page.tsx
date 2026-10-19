@@ -90,7 +90,7 @@ export default function TestPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-[#c0392b] border-t-transparent animate-spin" />
       </div>
     );
@@ -98,7 +98,7 @@ export default function TestPage() {
 
   if (done) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -145,7 +145,7 @@ export default function TestPage() {
 
   if (error && questions.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center px-6">
         <div className="text-center">
           <p className="text-[#ff6b6b] mb-4">{error}</p>
           <button onClick={() => router.push('/dashboard')} className="text-sm text-[#888]">← Dashboard</button>
@@ -157,7 +157,7 @@ export default function TestPage() {
   if (!q) return null;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+    <div className="min-h-screen bg-[#121212] flex flex-col">
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '20%', right: '-5%', width: '40vw', height: '40vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.1) 0%, transparent 65%)', filter: 'blur(40px)' }} />
         <div style={{ position: 'absolute', bottom: '10%', left: '-5%', width: '35vw', height: '35vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.07) 0%, transparent 65%)', filter: 'blur(40px)' }} />
@@ -173,7 +173,7 @@ export default function TestPage() {
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 rounded-full mb-6 overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+        <div className="h-1 rounded-full mb-6 overflow-hidden" style={{ background: 'rgba(255,255,255,0.12)' }}>
           <motion.div
             className="h-full rounded-full"
             style={{ background: 'linear-gradient(90deg, #c0392b 0%, #ff6b6b 100%)', boxShadow: '0 0 8px rgba(192,57,43,0.6)' }}
@@ -222,7 +222,7 @@ export default function TestPage() {
                       boxShadow: '0 0 14px rgba(192,57,43,0.18)',
                     } : {
                       background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.12)',
                       color: '#888',
                     }}
                   >

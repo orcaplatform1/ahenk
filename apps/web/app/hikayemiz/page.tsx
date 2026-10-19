@@ -25,7 +25,7 @@ function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 function TwoCol({ title, body }: { title: string; body: string }) {
   return (
     <FadeIn>
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8 md:gap-16 max-w-5xl mx-auto px-6 py-20" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8 md:gap-16 max-w-5xl mx-auto px-6 py-20" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
         <h2
           className="font-serif text-2xl sm:text-3xl md:text-4xl leading-tight"
           style={{ background: 'linear-gradient(135deg,#c0392b,#e8925a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
@@ -42,7 +42,7 @@ function TwoCol({ title, body }: { title: string; body: string }) {
 function FullQuote({ text }: { text: string }) {
   return (
     <FadeIn>
-      <div className="py-20 px-6 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="py-20 px-6 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
         <p
           className="font-serif italic text-white mx-auto"
           style={{ fontSize: 'clamp(1.3rem, 3.5vw, 2rem)', maxWidth: 720, lineHeight: 1.4 }}
@@ -61,7 +61,7 @@ function FullQuote({ text }: { text: string }) {
 /* ─── Sayfa ──────────────────────────────────────────────────────────────── */
 export default function HikayemizPage() {
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] overflow-x-hidden pt-[52px]">
+    <main className="min-h-screen bg-[#121212] text-[#f5f5f5] overflow-x-hidden pt-[52px]">
 
       {/* Tam ekran açılış */}
       <FadeIn>
@@ -129,7 +129,7 @@ export default function HikayemizPage() {
 
       {/* Kapanış */}
       <FadeIn>
-        <section className="flex flex-col items-center justify-center text-center py-32 px-6" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <section className="flex flex-col items-center justify-center text-center py-32 px-6" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
           <h2
             className="font-serif font-bold text-white"
             style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)' }}

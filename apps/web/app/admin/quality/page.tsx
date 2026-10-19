@@ -49,7 +49,7 @@ export default function AdminQuality() {
       <p className="text-sm text-[#555] mb-6">Bekleyen şikayet raporları</p>
 
       {loading ? (
-        <div className="flex flex-col gap-3">{[0,1,2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />)}</div>
+        <div className="flex flex-col gap-3">{[0,1,2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />)}</div>
       ) : reports.length === 0 ? (
         <p className="text-[#555] text-sm">Bekleyen şikayet yok.</p>
       ) : (
@@ -73,13 +73,13 @@ export default function AdminQuality() {
                 </div>
                 <button onClick={() => setExpanded(e => e === r.id ? null : r.id)}
                   className="text-xs px-2.5 py-1 rounded-lg flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.05)', color: '#666', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  style={{ background: 'rgba(255,255,255,0.10)', color: '#666', border: '1px solid rgba(255,255,255,0.12)' }}>
                   {expanded === r.id ? '▲' : '▼'}
                 </button>
               </div>
 
               {expanded === r.id && (
-                <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
                   {r.detail && <p className="text-xs text-[#888] mb-3 italic">"{r.detail}"</p>}
                   <div className="flex gap-2">
                     <button onClick={() => quarantine(r.userId)} disabled={actionLoading !== null}

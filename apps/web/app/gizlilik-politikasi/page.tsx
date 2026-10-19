@@ -16,8 +16,8 @@ const sections = [
           style={{
             marginTop: '1rem',
             padding: '1.25rem 1.5rem',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.10)',
             borderRadius: '12px',
             display: 'flex',
             flexDirection: 'column' as const,
@@ -120,8 +120,8 @@ const sections = [
             key={row.basis}
             style={{
               padding: '1rem 1.25rem',
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.10)',
               borderRadius: '10px',
             }}
           >
@@ -152,7 +152,7 @@ const sections = [
               alignItems: 'flex-start',
               gap: '1rem',
               padding: '0.85rem 0',
-              borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+              borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.10)' : 'none',
             }}
           >
             <span style={{ color: '#ccc', fontSize: '0.87rem', flex: 1 }}>{label}</span>
@@ -323,7 +323,7 @@ export default function GizlilikPolitikasiPage() {
     <main
       style={{
         minHeight: '100vh',
-        background: '#0a0a0a',
+        background: '#121212',
         color: '#f5f5f5',
         fontFamily: 'var(--font-sans, system-ui)',
         position: 'relative' as const,
@@ -378,7 +378,7 @@ export default function GizlilikPolitikasiPage() {
               animate="show"
               variants={fadeUp}
               style={{
-                background: 'rgba(255,255,255,0.05)',
+                background: 'rgba(255,255,255,0.10)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
