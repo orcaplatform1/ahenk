@@ -84,8 +84,7 @@ function CountdownRow({ label, targetDay }: { label: string; targetDay: number }
 
 export function HeroCountdown() {
   return (
-    <div style={{
-      background: '#1a1a1a',
+    <div className="hero-countdown-box" style={{
       border: '1px solid rgba(192,57,43,0.25)',
       borderRadius: 10,
       overflow: 'hidden',

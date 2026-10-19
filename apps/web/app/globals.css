@@ -17,10 +17,18 @@ body {
   background-position: center top;
 }
 
+/* Hero section: görselin tam boyutunda, kırpmasız */
+.hero-section {
+  aspect-ratio: 850 / 1850;
+}
+
 @media (min-width: 768px) {
   .hero-bg {
     background-image: url('/hero-bg-desktop.webp');
     background-position: right center;
+  }
+  .hero-section {
+    aspect-ratio: 1672 / 941;
   }
 }
 
@@ -194,4 +202,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
+}
+
+.hero-countdown-box {
+  background: rgba(26,26,26,0.55);
+}
+@media (max-width: 768px) {
+  .hero-countdown-box {
+    background: #1a1a1a;
+  }
 }
