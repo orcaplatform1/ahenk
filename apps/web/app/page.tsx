@@ -632,28 +632,13 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Sayaç ─────────────────────────────────────────────────────── */}
-        <div className="px-6 lg:px-16 py-8" style={{ background: '#0d0404' }}>
-          <HeroCountdown />
-        </div>
-
-        {/* ── İstatistik kartları ───────────────────────────────────────── */}
-        <section style={{
-          position: 'relative',
-          background: 'linear-gradient(180deg, #0d0404 0%, #070202 50%, #0d0404 100%)',
-          borderTop: '1px solid rgba(192,57,43,0.2)',
-          borderBottom: '1px solid rgba(192,57,43,0.2)',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '70%', height: '180%',
-            background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.07) 0%, transparent 65%)',
-            pointerEvents: 'none',
-          }} />
+        {/* ── Sayaç + İstatistik kartları ──────────────────────────────── */}
+        <div style={{ background: '#0d0404', borderBottom: '1px solid rgba(192,57,43,0.2)' }}>
+          <div className="px-6 lg:px-16 py-8">
+            <HeroCountdown />
+          </div>
           <StatCards />
-        </section>
+        </div>
 
         {/* ── Bunu daha önce denemedin ─────────────────────────────────── */}
         <section className="max-w-6xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
