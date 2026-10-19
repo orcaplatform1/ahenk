@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 
@@ -516,11 +516,11 @@ export default function AcilYardimPage() {
       setReports(data);
       setLastFetch(new Date().toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul' }));
     } catch {
-      router.replace('/giris');
+      // sessiz hata — layout zaten auth kontrolü yapıyor
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     fetchReports();
