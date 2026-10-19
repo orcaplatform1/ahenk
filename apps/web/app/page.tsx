@@ -633,7 +633,7 @@ export default function Home() {
 
           {/* Stats */}
           {/* ── Sayaç ─────────────────────────────────────────────────────── */}
-          <div className="relative z-10 px-6 lg:px-16 py-8 md:absolute md:bottom-8 md:left-16" style={{ borderBottom: '1px solid rgba(192,57,43,0.2)' }}>
+          <div className="relative z-10 px-6 lg:px-16 py-8 md:absolute md:bottom-8 md:right-8 md:scale-90 md:origin-bottom-right">
             <HeroCountdown />
           </div>
         </section>
