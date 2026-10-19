@@ -589,13 +589,14 @@ export default function Home() {
 
       <div className="relative" style={{ zIndex: 1 }}>
         {/* ── Hero ──────────────────────────────────────────────────────── */}
-        <section id="hero" className="relative overflow-hidden pt-[52px] lg:min-h-[65vh]" style={{ display: 'flex', alignItems: 'flex-start' }}>
+        <section id="hero" className="relative overflow-hidden pt-[52px]" style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
           <div className="hero-bg absolute inset-0" />
           <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 100%)', zIndex: 1 }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
-          <div className="relative z-10 w-full pt-16 pb-10 px-6 lg:px-16 flex flex-col gap-6">
+          {/* Başlık + butonlar — üstte */}
+          <div className="relative z-10 w-full pt-16 pb-10 px-6 lg:px-16 flex flex-col gap-6 flex-1">
             <div>
               <motion.h1
                 className="font-serif text-5xl sm:text-6xl lg:text-7xl leading-[0.9] tracking-tight text-[#f5f5f5] mb-3"
@@ -629,23 +630,11 @@ export default function Home() {
               </a>
             </motion.div>
           </div>
-        </section>
 
-        {/* ── İstatistik kartları ───────────────────────────────────────── */}
-        <section style={{
-          position: 'relative',
-          background: 'linear-gradient(180deg, #0d0404 0%, #070202 50%, #0d0404 100%)',
-          borderBottom: '1px solid rgba(192,57,43,0.2)',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '70%', height: '180%',
-            background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.07) 0%, transparent 65%)',
-            pointerEvents: 'none',
-          }} />
-          <StatCards />
+          {/* Stats — hero'nun en altı */}
+          <div className="relative z-10" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.45)' }}>
+            <StatCards />
+          </div>
         </section>
 
         {/* ── Sayaç ─────────────────────────────────────────────────────── */}
