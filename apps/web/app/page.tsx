@@ -637,7 +637,7 @@ export default function Home() {
           </div>
 
           {/* ── Sayaç ─────────────────────────────────────────────────────── */}
-          <div className="relative z-10 px-6 lg:px-16 py-8" style={{ background: '#0d0404', borderBottom: '1px solid rgba(192,57,43,0.2)' }}>
+          <div className="relative z-10 px-6 lg:px-16 py-8" style={{ borderBottom: '1px solid rgba(192,57,43,0.2)' }}>
             <HeroCountdown />
           </div>
         </section>
