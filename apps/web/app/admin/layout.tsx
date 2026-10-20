@@ -130,7 +130,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </button>
         <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, textDecoration: 'none' }}>
           <Image src="/logo.webp" alt="Ahenk" width={22} height={22} style={{ borderRadius: '50%' }} />
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', color: MUTED }}>AHENK ADMIN</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', color: MUTED }}>AHENK YÖNETİM PANELİ</span>
         </Link>
         {unread > 0 && (
           <Link href="/admin/alerts" className="md:hidden" style={{ marginLeft: 'auto', textDecoration: 'none' }}>
