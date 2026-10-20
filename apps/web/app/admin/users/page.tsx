@@ -1,47 +1,60 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 
+const BG     = '#020c1b';
+const SURFACE = '#0a1628';
+const CARD   = '#0d1f3c';
+const BORDER = '#1a3a5c';
+const TEXT   = '#e2e8f0';
+const MUTED  = '#64748b';
+const GREEN  = '#22c55e';
+const RED    = '#ef4444';
+const BLUE   = '#3b82f6';
+const AMBER  = '#f59e0b';
+const CYAN   = '#22d3ee';
+const SANS   = 'Inter, system-ui, sans-serif';
+const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
+
+const inputStyle: React.CSSProperties = {
+  background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8,
+  padding: '7px 12px', fontSize: 12, color: TEXT,
+  outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
+};
+
 interface AdminUser {
-  id: string;
-  email: string;
-  phone?: string;
-  role: string;
+  id: string; email: string; phone?: string; role: string;
   status: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
-  profile?: {
-    firstName?: string;
-    lastName?: string;
-    city?: string | null;
-    isPioneer?: boolean;
-  } | null;
+  profile?: { firstName?: string; lastName?: string; city?: string | null; isPioneer?: boolean } | null;
   kyc?: { status: string } | null;
-  oceanScore?: {
-    openness: number; conscientiousness: number; extraversion: number;
-    agreeableness: number; neuroticism: number;
-  } | null;
+  oceanScore?: { openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number } | null;
   subscriptions?: { plan: string }[];
 }
 
 interface UsersResponse {
-  data: AdminUser[];
-  total: number;
-  page: number;
-  totalPages: number;
+  data: AdminUser[]; total: number; page: number; totalPages: number;
 }
 
-const STATUS_STYLE: Record<string, { label: string; color: string; border: string }> = {
-  ACTIVE:    { label: 'Aktif',    color: '#4ade80', border: 'rgba(74,222,128,0.3)' },
-  SUSPENDED: { label: 'Karantina', color: '#fbbf24', border: 'rgba(251,191,36,0.3)' },
-  DELETED:   { label: 'Silindi',  color: '#888',    border: 'rgba(255,255,255,0.1)' },
+interface AdminUserDetail {
+  id: string; email: string; phone: string | null; role: string; status: string;
+  profile: { firstName: string | null; lastName: string | null; city: string | null; birthDate: string | null; occupation: string | null } | null;
+  kyc: { status: string } | null;
+  subscriptions: { id: string; plan: string; status: string }[];
+  groupCount: number; oneOnOneCount: number;
+}
+
+const STATUS_STYLE: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  ACTIVE:    { label: 'Aktif',     color: GREEN,  bg: 'rgba(34,197,94,0.1)',   border: 'rgba(34,197,94,0.3)'  },
+  SUSPENDED: { label: 'Karantina', color: AMBER,  bg: 'rgba(251,191,36,0.1)',  border: 'rgba(251,191,36,0.3)' },
+  DELETED:   { label: 'Silindi',   color: MUTED,  bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.3)' },
 };
 
 const PLAN_LABEL: Record<string, string> = {
   MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde',
 };
 
-function oceanAvg(o: { openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number } | null | undefined): string {
+function oceanAvg(o: AdminUser['oceanScore']): string {
   if (!o) return '—';
   return ((o.openness + o.conscientiousness + o.extraversion + o.agreeableness + o.neuroticism) / 5).toFixed(0);
 }
@@ -51,32 +64,17 @@ function activePlan(u: AdminUser): string {
   return u.subscriptions.map(s => PLAN_LABEL[s.plan] ?? s.plan).join(', ');
 }
 
-function Skel() {
-  return <div className="h-16 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.10)' }} />;
-}
-
 export default function AdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [page, setPage] = useState(1);
-
   const [processing, setProcessing] = useState<Record<string, boolean>>({});
 
-  // Kullanıcı detay modalı
-  interface AdminUserDetail {
-    id: string; email: string; phone: string | null; role: string; status: string;
-    profile: { firstName: string | null; lastName: string | null; city: string | null; birthDate: string | null; occupation: string | null } | null;
-    kyc: { status: string } | null;
-    subscriptions: { id: string; plan: string; status: string }[];
-    groupCount: number;
-    oneOnOneCount: number;
-  }
   const [userModal, setUserModal] = useState<AdminUserDetail | null>(null);
   const [userModalLoading, setUserModalLoading] = useState(false);
   const [userAction, setUserAction] = useState<string | null>(null);
@@ -101,11 +99,8 @@ export default function AdminUsers() {
     try {
       await api.patch(`/admin/users/${userId}/status`, { status });
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, status } : u));
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setProcessing(p => { const n = { ...p }; delete n[userId]; return n; });
-    }
+    } catch (e) { setError((e as Error).message); }
+    finally { setProcessing(p => { const n = { ...p }; delete n[userId]; return n; }); }
   }
 
   async function openUserModal(userId: string) {
@@ -113,8 +108,7 @@ export default function AdminUsers() {
     setUserModal(null);
     try {
       const u = await api.get<AdminUserDetail>(`/admin/users/${userId}`);
-      setUserModal(u);
-      setGrantPlan('');
+      setUserModal(u); setGrantPlan('');
     } catch { setError('Kullanıcı yüklenemedi'); }
     finally { setUserModalLoading(false); }
   }
@@ -153,32 +147,30 @@ export default function AdminUsers() {
   const totalPages = Math.ceil(total / 20);
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="mb-8">
-        <p className="text-xs text-[#555] uppercase tracking-[0.14em]">Admin</p>
-        <h1 className="font-serif text-2xl text-[#f5f5f5]">Kullanıcılar</h1>
+    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
+
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>Kullanıcılar</h1>
       </div>
 
       {/* Filtreler */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
         <input
-          type="text"
-          value={search}
+          type="text" value={search}
           onChange={e => { setSearch(e.target.value); setPage(1); }}
           placeholder="Ad, soyad veya e-posta..."
-          className="input-glass flex-1 px-4 py-2.5 text-sm"
+          style={{ ...inputStyle, flex: 1, minWidth: 160 }}
         />
         <input
-          type="text"
-          value={cityFilter}
+          type="text" value={cityFilter}
           onChange={e => { setCityFilter(e.target.value); setPage(1); }}
           placeholder="Şehir..."
-          className="input-glass sm:w-32 px-4 py-2.5 text-sm"
+          style={{ ...inputStyle, width: 120 }}
         />
         <select
           value={typeFilter}
           onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
-          className="input-glass sm:w-44 px-3 py-2.5 text-sm"
+          style={{ ...inputStyle, width: 160 }}
         >
           <option value="">Tüm üyeler</option>
           <option value="NO_PLAN">Aboneliksiz</option>
@@ -190,217 +182,270 @@ export default function AdminUsers() {
         </select>
       </div>
 
-      {error && <p className="text-[#ff6b6b] text-sm mb-4">{error}</p>}
+      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
 
       {/* Tablo */}
-      <div className="glass-card overflow-x-auto mb-6">
-        <table className="w-full min-w-[520px]">
-          <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
-              {['Kullanıcı', 'Şehir', 'Paket', 'OCEAN Ort.', 'Durum', ''].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs text-[#555] uppercase tracking-[0.1em] font-medium">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading
-              ? [0,1,2,3,4].map(i => (
-                  <tr key={i}><td colSpan={6} className="px-4 py-2"><Skel /></td></tr>
-                ))
-              : users.map((u, i) => {
-                  const s = STATUS_STYLE[u.status] ?? STATUS_STYLE.ACTIVE;
-                  return (
-                    <motion.tr
-                      key={u.id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04, duration: 0.25, ease: 'easeOut' }}
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
-                    >
-                      <td className="px-4 py-3">
-                        <p className="text-sm text-[#f5f5f5] font-medium truncate max-w-[140px]">{u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}</p>
-                        <p className="text-xs text-[#555] truncate max-w-[140px]">{u.email}</p>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[#888]">{u.profile?.city ?? '—'}</td>
-                      <td className="px-4 py-3 text-sm text-[#888]">{activePlan(u)}</td>
-                      <td className="px-4 py-3 text-sm text-[#888]">{oceanAvg(u.oceanScore)}</td>
-                      <td className="px-4 py-3">
-                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: s.color, border: `1px solid ${s.border}` }}>
-                          {s.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => openUserModal(u.id)}
-                          className="text-xs px-2.5 py-1 rounded-lg transition-colors"
-                          style={{ border: '1px solid rgba(255,255,255,0.1)', color: '#888' }}
-                        >
-                          Detay
-                        </button>
-                      </td>
-                    </motion.tr>
-                  );
-                })
-            }
-          </tbody>
-        </table>
-
-        {!loading && users.length === 0 && (
-          <p className="p-6 text-sm text-[#555] text-center">Kullanıcı bulunamadı.</p>
-        )}
+      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+        <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 2, height: 12, borderRadius: 1, background: BLUE }} />
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: BLUE }}>KULLANICILAR</span>
+          <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{total} kayıt</span>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', minWidth: 520, borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                {['Kullanıcı', 'Şehir', 'Paket', 'OCEAN Ort.', 'Durum', ''].map(h => (
+                  <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: MUTED }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading
+                ? [0,1,2,3,4].map(i => (
+                    <tr key={i}><td colSpan={6} style={{ padding: '8px 14px' }}>
+                      <div style={{ height: 32, background: SURFACE, borderRadius: 6, opacity: 0.5 }} />
+                    </td></tr>
+                  ))
+                : users.map((u, i) => {
+                    const s = STATUS_STYLE[u.status] ?? STATUS_STYLE.ACTIVE;
+                    return (
+                      <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none' }}>
+                        <td style={{ padding: '10px 14px' }}>
+                          <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: TEXT, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}
+                          </p>
+                          <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</p>
+                        </td>
+                        <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{u.profile?.city ?? '—'}</td>
+                        <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{activePlan(u)}</td>
+                        <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED, fontFamily: MONO }}>{oceanAvg(u.oceanScore)}</td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{
+                            fontSize: 9, fontWeight: 800, letterSpacing: '0.08em',
+                            padding: '2px 8px', borderRadius: 99,
+                            background: s.bg, border: `1px solid ${s.border}`, color: s.color,
+                          }}>
+                            {s.label}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <button
+                            onClick={() => openUserModal(u.id)}
+                            style={{
+                              padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+                              background: 'transparent', border: `1px solid ${BORDER}`,
+                              fontSize: 10, color: MUTED, fontFamily: SANS,
+                            }}
+                          >
+                            Detay
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+              }
+            </tbody>
+          </table>
+          {!loading && users.length === 0 && (
+            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: MUTED }}>Kullanıcı bulunamadı.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Sayfalama */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-            className="px-4 py-2 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors disabled:opacity-30"
-            style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            style={{
+              padding: '6px 16px', borderRadius: 99, cursor: page === 1 ? 'not-allowed' : 'pointer',
+              background: 'transparent', border: `1px solid ${BORDER}`,
+              fontSize: 11, color: MUTED, fontFamily: SANS, opacity: page === 1 ? 0.4 : 1,
+            }}
+          >
             ← Önceki
           </button>
-          <span className="text-sm text-[#555]">{page} / {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-            className="px-4 py-2 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors disabled:opacity-30"
-            style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9999 }}>
+          <span style={{ fontSize: 11, color: MUTED, fontFamily: MONO }}>{page} / {totalPages}</span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+            style={{
+              padding: '6px 16px', borderRadius: 99, cursor: page === totalPages ? 'not-allowed' : 'pointer',
+              background: 'transparent', border: `1px solid ${BORDER}`,
+              fontSize: 11, color: MUTED, fontFamily: SANS, opacity: page === totalPages ? 0.4 : 1,
+            }}
+          >
             Sonraki →
           </button>
         </div>
       )}
 
       {/* Kullanıcı detay modalı */}
-      <AnimatePresence>
-        {(userModalLoading || userModal) && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center z-50 p-4"
-            style={{ background: 'rgba(0,0,0,0.75)' }}
-            onClick={() => setUserModal(null)}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={e => e.stopPropagation()}
-              className="glass-card p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto flex flex-col gap-4"
-              style={{ background: '#1a1a1a' }}>
+      {(userModalLoading || userModal) && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setUserModal(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, width: '100%', maxWidth: 360, maxHeight: '85vh', overflowY: 'auto', padding: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 16 }}
+          >
+            {userModalLoading && [0,1,2,3].map(i => (
+              <div key={i} style={{ height: 40, background: SURFACE, borderRadius: 8, opacity: 0.5 }} />
+            ))}
 
-              {userModalLoading && [0,1,2,3].map(i => (
-                <div key={i} className="h-12 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />
-              ))}
-
-              {userModal && !userModalLoading && (
-                <>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-[#f5f5f5]">
-                        {userModal.profile ? `${userModal.profile.firstName} ${userModal.profile.lastName}` : userModal.email}
-                      </p>
-                      <p className="text-xs text-[#555] mt-0.5">{userModal.email}</p>
-                      {userModal.phone && <p className="text-xs text-[#555]">{userModal.phone}</p>}
-                      <p className="text-xs text-[#444] mt-0.5">{userModal.role}</p>
-                    </div>
-                    <button onClick={() => setUserModal(null)} className="text-[#555] hover:text-[#f5f5f5] text-lg leading-none">✕</button>
+            {userModal && !userModalLoading && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: TEXT }}>
+                      {userModal.profile ? `${userModal.profile.firstName} ${userModal.profile.lastName}` : userModal.email}
+                    </p>
+                    <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>{userModal.email}</p>
+                    {userModal.phone && <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>{userModal.phone}</p>}
+                    <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED }}>{userModal.role}</p>
                   </div>
+                  <button
+                    onClick={() => setUserModal(null)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: MUTED, padding: 4, flexShrink: 0 }}
+                  >✕</button>
+                </div>
 
-                  {/* Yaş, meslek, masa sayıları */}
-                  <div className="flex flex-wrap gap-2 text-xs pt-1">
-                    {userModal.profile?.birthDate && (
-                      <span className="text-[#888]">
-                        {Math.floor((Date.now() - new Date(userModal.profile.birthDate).getTime()) / 31557600000)} yaş
-                      </span>
-                    )}
-                    {userModal.profile?.occupation && (
-                      <span className="text-[#888]">{userModal.profile.occupation}</span>
-                    )}
-                    <span className="text-[#555]">Grup: <span className="text-[#93c5fd]">{userModal.groupCount}</span></span>
-                    <span className="text-[#555]">Başbaşa: <span className="text-[#93c5fd]">{userModal.oneOnOneCount}</span></span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="px-2 py-0.5 rounded-full"
-                      style={{
-                        background: userModal.status === 'ACTIVE' ? 'rgba(74,222,128,0.1)' : 'rgba(255,107,107,0.1)',
-                        color: userModal.status === 'ACTIVE' ? '#4ade80' : '#ff6b6b',
-                        border: `1px solid ${userModal.status === 'ACTIVE' ? 'rgba(74,222,128,0.2)' : 'rgba(255,107,107,0.2)'}`,
-                      }}>
-                      {userModal.status === 'ACTIVE' ? 'Aktif' : userModal.status === 'SUSPENDED' ? 'Askıda' : 'Silinmiş'}
+                {/* Yaş, meslek, masa sayıları */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {userModal.profile?.birthDate && (
+                    <span style={{ fontSize: 11, color: MUTED }}>
+                      {Math.floor((Date.now() - new Date(userModal.profile.birthDate).getTime()) / 31557600000)} yaş
                     </span>
-                    <span className="px-2 py-0.5 rounded-full"
-                      style={{
-                        background: userModal.kyc?.status === 'APPROVED' ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.10)',
-                        color: userModal.kyc?.status === 'APPROVED' ? '#4ade80' : '#666',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                      }}>
-                      KYC: {userModal.kyc?.status === 'APPROVED' ? 'Onaylı ✓' : userModal.kyc?.status ?? 'Yok'}
-                    </span>
-                    {userModal.subscriptions[0] && (
-                      <span className="px-2 py-0.5 rounded-full"
-                        style={{ background: 'rgba(192,57,43,0.1)', color: '#ff9999', border: '1px solid rgba(192,57,43,0.2)' }}>
-                        {{ MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde' }[userModal.subscriptions[0].plan] ?? userModal.subscriptions[0].plan}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Hesap işlemleri */}
-                  <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
-                    <p className="text-xs text-[#555] uppercase tracking-[0.1em]">Hesap İşlemleri</p>
-                    <div className="flex flex-wrap gap-2">
-                      {userModal.status !== 'SUSPENDED' && (
-                        <button onClick={() => modalUpdateStatus('SUSPENDED')} disabled={!!userAction}
-                          className="text-xs px-3 py-1.5 rounded-xl disabled:opacity-50"
-                          style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>
-                          {userAction === 'SUSPENDED' ? '…' : 'Askıya Al'}
-                        </button>
-                      )}
-                      {userModal.status === 'SUSPENDED' && (
-                        <button onClick={() => modalUpdateStatus('ACTIVE')} disabled={!!userAction}
-                          className="text-xs px-3 py-1.5 rounded-xl disabled:opacity-50"
-                          style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}>
-                          {userAction === 'ACTIVE' ? '…' : 'Aktifleştir'}
-                        </button>
-                      )}
-                      {userModal.status !== 'DELETED' && (
-                        <button onClick={() => modalUpdateStatus('DELETED')} disabled={!!userAction}
-                          className="text-xs px-3 py-1.5 rounded-xl disabled:opacity-50"
-                          style={{ background: 'rgba(192,57,43,0.1)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.2)' }}>
-                          {userAction === 'DELETED' ? '…' : 'Hesabı Sil'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* KYC onayla */}
-                  {userModal.kyc && userModal.kyc.status !== 'APPROVED' && (
-                    <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
-                      <p className="text-xs text-[#555] uppercase tracking-[0.1em]">KYC</p>
-                      <button onClick={modalApproveKyc} disabled={!!userAction}
-                        className="py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-                        style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}>
-                        {userAction === 'kyc' ? 'Onaylanıyor…' : "KYC'yi Onayla"}
-                      </button>
-                    </div>
                   )}
+                  {userModal.profile?.occupation && (
+                    <span style={{ fontSize: 11, color: MUTED }}>{userModal.profile.occupation}</span>
+                  )}
+                  <span style={{ fontSize: 11, color: MUTED }}>Grup: <span style={{ color: '#93c5fd' }}>{userModal.groupCount}</span></span>
+                  <span style={{ fontSize: 11, color: MUTED }}>Başbaşa: <span style={{ color: '#93c5fd' }}>{userModal.oneOnOneCount}</span></span>
+                </div>
 
-                  {/* Abonelik ver */}
-                  <div className="flex flex-col gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
-                    <p className="text-xs text-[#555] uppercase tracking-[0.1em]">Ücretsiz Abonelik Ver</p>
-                    <div className="flex gap-2">
-                      <select value={grantPlan} onChange={e => setGrantPlan(e.target.value)}
-                        className="flex-1 input-glass px-3 py-2 text-sm">
-                        <option value="">Paket seç…</option>
-                        <option value="MASADA">Masada</option>
-                        <option value="KARSIMDA">Karşımda</option>
-                        <option value="ICERDE">İçerde</option>
-                      </select>
-                      <button onClick={modalGrantSubscription} disabled={!!userAction || !grantPlan}
-                        className="px-4 py-2 text-sm rounded-xl font-medium disabled:opacity-50"
-                        style={{ background: 'rgba(192,57,43,0.15)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.25)' }}>
-                        {userAction === 'sub' ? '…' : 'Ver'}
+                {/* Durum badge'leri */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {(() => {
+                    const s = STATUS_STYLE[userModal.status] ?? STATUS_STYLE.ACTIVE;
+                    return (
+                      <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99, background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>
+                        {s.label}
+                      </span>
+                    );
+                  })()}
+                  <span style={{
+                    fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99,
+                    background: userModal.kyc?.status === 'APPROVED' ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)',
+                    color: userModal.kyc?.status === 'APPROVED' ? GREEN : MUTED,
+                    border: `1px solid ${userModal.kyc?.status === 'APPROVED' ? 'rgba(34,197,94,0.3)' : BORDER}`,
+                  }}>
+                    KYC: {userModal.kyc?.status === 'APPROVED' ? 'Onaylı ✓' : userModal.kyc?.status ?? 'Yok'}
+                  </span>
+                  {userModal.subscriptions[0] && (
+                    <span style={{
+                      fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99,
+                      background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)',
+                    }}>
+                      {{ MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde' }[userModal.subscriptions[0].plan] ?? userModal.subscriptions[0].plan}
+                    </span>
+                  )}
+                </div>
+
+                {/* Hesap işlemleri */}
+                <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>HESAP İŞLEMLERİ</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {userModal.status !== 'SUSPENDED' && (
+                      <button
+                        onClick={() => modalUpdateStatus('SUSPENDED')} disabled={!!userAction}
+                        style={{
+                          padding: '5px 12px', borderRadius: 8, cursor: userAction ? 'not-allowed' : 'pointer',
+                          background: 'rgba(245,158,11,0.1)', color: AMBER, border: '1px solid rgba(245,158,11,0.3)',
+                          fontSize: 11, fontWeight: 600, fontFamily: SANS, opacity: userAction ? 0.5 : 1,
+                        }}
+                      >
+                        {userAction === 'SUSPENDED' ? '…' : 'Askıya Al'}
                       </button>
-                    </div>
+                    )}
+                    {userModal.status === 'SUSPENDED' && (
+                      <button
+                        onClick={() => modalUpdateStatus('ACTIVE')} disabled={!!userAction}
+                        style={{
+                          padding: '5px 12px', borderRadius: 8, cursor: userAction ? 'not-allowed' : 'pointer',
+                          background: 'rgba(34,197,94,0.1)', color: GREEN, border: '1px solid rgba(34,197,94,0.3)',
+                          fontSize: 11, fontWeight: 600, fontFamily: SANS, opacity: userAction ? 0.5 : 1,
+                        }}
+                      >
+                        {userAction === 'ACTIVE' ? '…' : 'Aktifleştir'}
+                      </button>
+                    )}
+                    {userModal.status !== 'DELETED' && (
+                      <button
+                        onClick={() => modalUpdateStatus('DELETED')} disabled={!!userAction}
+                        style={{
+                          padding: '5px 12px', borderRadius: 8, cursor: userAction ? 'not-allowed' : 'pointer',
+                          background: 'rgba(239,68,68,0.1)', color: RED, border: '1px solid rgba(239,68,68,0.3)',
+                          fontSize: 11, fontWeight: 600, fontFamily: SANS, opacity: userAction ? 0.5 : 1,
+                        }}
+                      >
+                        {userAction === 'DELETED' ? '…' : 'Hesabı Sil'}
+                      </button>
+                    )}
                   </div>
-                </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                </div>
+
+                {/* KYC onayla */}
+                {userModal.kyc && userModal.kyc.status !== 'APPROVED' && (
+                  <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>KYC</span>
+                    <button
+                      onClick={modalApproveKyc} disabled={!!userAction}
+                      style={{
+                        padding: '8px', borderRadius: 8, cursor: userAction ? 'not-allowed' : 'pointer',
+                        background: 'rgba(34,197,94,0.1)', color: GREEN, border: '1px solid rgba(34,197,94,0.3)',
+                        fontSize: 12, fontWeight: 600, fontFamily: SANS, opacity: userAction ? 0.5 : 1,
+                      }}
+                    >
+                      {userAction === 'kyc' ? 'Onaylanıyor…' : "KYC'yi Onayla"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Abonelik ver */}
+                <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>ÜCRETSİZ ABONELİK VER</span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <select
+                      value={grantPlan} onChange={e => setGrantPlan(e.target.value)}
+                      style={{ flex: 1, background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 10px', fontSize: 12, color: TEXT, outline: 'none', fontFamily: SANS }}
+                    >
+                      <option value="">Paket seç…</option>
+                      <option value="MASADA">Masada</option>
+                      <option value="KARSIMDA">Karşımda</option>
+                      <option value="ICERDE">İçerde</option>
+                    </select>
+                    <button
+                      onClick={modalGrantSubscription} disabled={!!userAction || !grantPlan}
+                      style={{
+                        padding: '7px 16px', borderRadius: 8, cursor: (userAction || !grantPlan) ? 'not-allowed' : 'pointer',
+                        background: 'rgba(34,211,238,0.1)', color: CYAN, border: '1px solid rgba(34,211,238,0.3)',
+                        fontSize: 12, fontWeight: 600, fontFamily: SANS,
+                        opacity: (userAction || !grantPlan) ? 0.5 : 1,
+                      }}
+                    >
+                      {userAction === 'sub' ? '…' : 'Ver'}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
