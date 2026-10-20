@@ -1,11 +1,23 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { OceanRadar, OceanScores } from '../ocean/OceanRadar';
 
-// ─── Tipler ──────────────────────────────────────────────────────────────────
+// ─── Renk sabitleri ───────────────────────────────────────────────────────────
+const SURFACE = '#0a1628';
+const CARD    = '#0d1f3c';
+const BORDER  = '#1a3a5c';
+const TEXT    = '#e2e8f0';
+const MUTED   = '#64748b';
+const GREEN   = '#22c55e';
+const RED     = '#ef4444';
+const BLUE    = '#3b82f6';
+const CYAN    = '#22d3ee';
+const AMBER   = '#f59e0b';
+const SANS    = 'Inter, system-ui, sans-serif';
+const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
+// ─── Tipler ───────────────────────────────────────────────────────────────────
 type SeatType = 'REAL' | 'BOT' | 'EMPTY';
 
 interface Seat {
@@ -36,7 +48,16 @@ interface Props {
   token?: string;
 }
 
-// ─── Yardımcılar ─────────────────────────────────────────────────────────────
+interface PhotoSlotState {
+  url: string; caption: string; uploading: boolean; error: string;
+}
+interface TablePhotoState {
+  expanded: boolean; saving: boolean;
+  slots: [PhotoSlotState, PhotoSlotState, PhotoSlotState];
+}
+
+function emptySlot(): PhotoSlotState { return { url: '', caption: '', uploading: false, error: '' }; }
+function emptyPhotoState(): TablePhotoState { return { expanded: false, saving: false, slots: [emptySlot(), emptySlot(), emptySlot()] }; }
 
 async function apiFetch<T>(url: string, token: string | undefined, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -55,124 +76,89 @@ async function apiFetch<T>(url: string, token: string | undefined, init?: Reques
 }
 
 // ─── Koltuk bileşeni ─────────────────────────────────────────────────────────
-
-function SeatBadge({
-  seat,
-  onClick,
-  isTarget,
-}: {
-  seat: Seat;
-  onClick?: () => void;
-  isTarget?: boolean;
-}) {
-  const baseRing = 'absolute inset-0 rounded-xl border-2';
-
+function SeatBadge({ seat, onClick, isTarget }: { seat: Seat; onClick?: () => void; isTarget?: boolean }) {
   if (seat.type === 'EMPTY') {
     return (
-      <motion.button
+      <button
         onClick={onClick}
-        whileHover={onClick ? { scale: 1.04 } : undefined}
-        className={`relative flex flex-col items-center justify-center gap-1 rounded-xl p-3 cursor-${onClick ? 'pointer' : 'default'} ${
-          isTarget ? 'bg-amber-900/30' : 'bg-transparent'
-        }`}
-        style={{ minHeight: 72 }}
+        style={{
+          position: 'relative',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+          borderRadius: 8, padding: 10, minHeight: 68, width: '100%',
+          background: isTarget ? 'rgba(245,158,11,0.12)' : 'transparent',
+          border: `1.5px dashed ${isTarget ? AMBER : 'rgba(245,158,11,0.4)'}`,
+          cursor: onClick ? 'pointer' : 'default',
+          fontFamily: SANS,
+        }}
       >
-        <div className={`${baseRing} border-dashed border-amber-500/60 animate-pulse`} />
-        <span className="text-amber-500/70 text-xs">BOŞ</span>
-      </motion.button>
+        <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(245,158,11,0.7)', letterSpacing: '0.1em' }}>BOŞ</span>
+      </button>
     );
   }
 
   const isBotSeat = seat.type === 'BOT';
-  const ringColor = isBotSeat ? '#3b82f6' : '#c0392b';
-  const bgColor = isBotSeat ? 'rgba(59,130,246,0.08)' : 'rgba(192,57,43,0.08)';
+  const ringColor = isBotSeat ? BLUE : '#c0392b';
+  const bgColor   = isBotSeat ? 'rgba(59,130,246,0.08)' : 'rgba(192,57,43,0.08)';
 
   return (
-    <motion.div
-      className="relative flex flex-col items-center justify-center gap-1 rounded-xl p-3"
-      style={{ minHeight: 72, background: bgColor }}
-    >
-      <div className={`${baseRing}`} style={{ borderColor: ringColor + '60' }} />
-      {/* Avatar halka */}
-      <svg width={36} height={36} viewBox="0 0 36 36" className="flex-shrink-0">
+    <div style={{
+      position: 'relative',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+      borderRadius: 8, padding: 10, minHeight: 68,
+      background: bgColor,
+      border: `1px solid ${ringColor}55`,
+    }}>
+      <svg width={36} height={36} viewBox="0 0 36 36" style={{ flexShrink: 0 }}>
         <circle cx="18" cy="18" r="15" fill="none" stroke="#1f1f1f" strokeWidth="2" />
-        <motion.circle
-          cx="18" cy="18" r="15" fill="none"
-          stroke={ringColor} strokeWidth="2"
-          strokeLinecap="round"
-          strokeDasharray="94.2"
-          strokeDashoffset="24"
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 6, ease: 'linear' }}
-          style={{ transformOrigin: '18px 18px' }}
-        />
+        <circle cx="18" cy="18" r="15" fill="none" stroke={ringColor} strokeWidth="2" strokeLinecap="round"
+          strokeDasharray="94.2" strokeDashoffset="24" />
         <text x="18" y="18" textAnchor="middle" dominantBaseline="central"
           fontSize="8" fontFamily="Inter, sans-serif" fill="#f5f5f5" fontWeight="600">
           {seat.initials ?? '??'}
         </text>
       </svg>
-      <span className="text-xs" style={{ color: isBotSeat ? '#93c5fd' : '#f5f5f5' }}>
+      <span style={{ fontSize: 10, color: isBotSeat ? '#93c5fd' : TEXT }}>
         {seat.gender === 'MALE' ? 'E' : seat.gender === 'FEMALE' ? 'K' : '—'}
       </span>
       {isBotSeat && (
-        <span className="text-[9px] px-1 rounded bg-blue-900/40 text-blue-400 border border-blue-800">BOT</span>
+        <span style={{
+          fontSize: 8, fontWeight: 800, letterSpacing: '0.1em',
+          padding: '1px 5px', borderRadius: 99,
+          background: 'rgba(59,130,246,0.15)', color: '#93c5fd',
+          border: '1px solid rgba(59,130,246,0.3)',
+        }}>BOT</span>
       )}
-    </motion.div>
+    </div>
   );
 }
 
 // ─── Uyum badge ──────────────────────────────────────────────────────────────
-
 function CompatBadge({ score }: { score: number | null }) {
-  if (score === null) return <span className="text-xs text-muted">—</span>;
+  if (score === null) return <span style={{ fontSize: 10, color: MUTED }}>—</span>;
   const isGood = score >= 80;
   return (
-    <span
-      className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
-        isGood
-          ? 'bg-green-900/30 text-green-400 border-green-800'
-          : 'bg-amber-900/30 text-amber-400 border-amber-800'
-      }`}
-    >
+    <span style={{
+      fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
+      background: isGood ? 'rgba(34,197,94,0.12)' : 'rgba(245,158,11,0.12)',
+      border: `1px solid ${isGood ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.35)'}`,
+      color: isGood ? GREEN : AMBER,
+      fontFamily: MONO,
+    }}>
       {score}% uyum
     </span>
   );
 }
 
 // ─── Ana bileşen ──────────────────────────────────────────────────────────────
-
-// ── Fotoğraf upload durumu ───────────────────────────────────────────────────
-
-interface PhotoSlotState {
-  url: string;
-  caption: string;
-  uploading: boolean;
-  error: string;
-}
-
-interface TablePhotoState {
-  expanded: boolean;
-  saving: boolean;
-  slots: [PhotoSlotState, PhotoSlotState, PhotoSlotState];
-}
-
-function emptySlot(): PhotoSlotState {
-  return { url: '', caption: '', uploading: false, error: '' };
-}
-
-function emptyPhotoState(): TablePhotoState {
-  return { expanded: false, saving: false, slots: [emptySlot(), emptySlot(), emptySlot()] };
-}
-
 export function AdminMatchManager({ apiBase = '', token }: Props) {
-  const [tables, setTables] = useState<MatchTable[]>([]);
-  const [bots, setBots] = useState<AvailableBot[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tables, setTables]           = useState<MatchTable[]>([]);
+  const [bots, setBots]               = useState<AvailableBot[]>([]);
+  const [loading, setLoading]         = useState(true);
   const [selectedEmpty, setSelectedEmpty] = useState<{ tableId: string; seatIdx: number } | null>(null);
-  const [approving, setApproving] = useState<string | null>(null);
+  const [approving, setApproving]     = useState<string | null>(null);
   const [approvingAll, setApprovingAll] = useState(false);
-  const [placingBot, setPlacingBot] = useState<string | null>(null);
-  const [toast, setToast] = useState('');
+  const [placingBot, setPlacingBot]   = useState<string | null>(null);
+  const [toast, setToast]             = useState('');
   const [photoStates, setPhotoStates] = useState<Record<string, TablePhotoState>>({});
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -189,16 +175,7 @@ export function AdminMatchManager({ apiBase = '', token }: Props) {
     ])
       .then(([t, b]) => {
         setTables(t);
-        // Sadece aktif botları havuza koy
-        setBots(
-          b
-            .filter((bot) => bot.oceanScore)
-            .map((bot) => ({
-              id: bot.id,
-              initials: bot.initials,
-              oceanScore: bot.oceanScore,
-            })),
-        );
+        setBots(b.filter((bot) => bot.oceanScore).map((bot) => ({ id: bot.id, initials: bot.initials, oceanScore: bot.oceanScore })));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -212,28 +189,18 @@ export function AdminMatchManager({ apiBase = '', token }: Props) {
       await apiFetch(`${apiBase}/api/v1/admin/matches/${tableId}/approve`, token, { method: 'PATCH' });
       setTables((prev) => prev.filter((t) => t.id !== tableId));
       showToast('Masa onaylandı');
-    } catch (e) {
-      showToast((e as Error).message);
-    } finally {
-      setApproving(null);
-    }
+    } catch (e) { showToast((e as Error).message); }
+    finally { setApproving(null); }
   }
 
   async function handleApproveAll() {
     setApprovingAll(true);
     try {
-      await Promise.all(
-        tables.map((t) =>
-          apiFetch(`${apiBase}/api/v1/admin/matches/${t.id}/approve`, token, { method: 'PATCH' }),
-        ),
-      );
+      await Promise.all(tables.map((t) => apiFetch(`${apiBase}/api/v1/admin/matches/${t.id}/approve`, token, { method: 'PATCH' })));
       setTables([]);
       showToast(`${tables.length} masa onaylandı`);
-    } catch (e) {
-      showToast((e as Error).message);
-    } finally {
-      setApprovingAll(false);
-    }
+    } catch (e) { showToast((e as Error).message); }
+    finally { setApprovingAll(false); }
   }
 
   async function handlePlaceBot(bot: AvailableBot) {
@@ -241,31 +208,22 @@ export function AdminMatchManager({ apiBase = '', token }: Props) {
     setPlacingBot(bot.id);
     try {
       await apiFetch(`${apiBase}/api/v1/admin/matches/${selectedEmpty.tableId}/bot`, token, {
-        method: 'POST',
-        body: JSON.stringify({ botUserId: bot.id }),
+        method: 'POST', body: JSON.stringify({ botUserId: bot.id }),
       });
-      // Listeyi yenile
       load();
       setBots((prev) => prev.filter((b) => b.id !== bot.id));
       setSelectedEmpty(null);
       showToast('Bot yerleştirildi');
-    } catch (e) {
-      showToast((e as Error).message);
-    } finally {
-      setPlacingBot(null);
-    }
+    } catch (e) { showToast((e as Error).message); }
+    finally { setPlacingBot(null); }
   }
-
-  // ── Fotoğraf yardımcıları ──────────────────────────────────────────────────
 
   function getPhotoState(tableId: string): TablePhotoState {
     return photoStates[tableId] ?? emptyPhotoState();
   }
-
   function setPhotoState(tableId: string, updater: (prev: TablePhotoState) => TablePhotoState) {
     setPhotoStates(prev => ({ ...prev, [tableId]: updater(prev[tableId] ?? emptyPhotoState()) }));
   }
-
   function togglePhotoExpand(tableId: string) {
     setPhotoState(tableId, prev => ({ ...prev, expanded: !prev.expanded }));
   }
@@ -276,28 +234,12 @@ export function AdminMatchManager({ apiBase = '', token }: Props) {
       slots[slotIdx] = { ...slots[slotIdx], uploading: true, error: '' };
       return { ...prev, slots };
     });
-
     try {
       const { uploadUrl, publicUrl } = await apiFetch<{ uploadUrl: string; publicUrl: string | null; key: string }>(
-        `${apiBase}/api/v1/admin/meetings/venue-photo-upload-url`,
-        token,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            meetingId: tableId,
-            slot: slotIdx + 1,
-            contentType: file.type || 'image/jpeg',
-            contentLength: file.size,
-          }),
-        },
+        `${apiBase}/api/v1/admin/meetings/venue-photo-upload-url`, token,
+        { method: 'POST', body: JSON.stringify({ meetingId: tableId, slot: slotIdx + 1, contentType: file.type || 'image/jpeg', contentLength: file.size }) },
       );
-
-      await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type || 'image/jpeg' },
-      });
-
+      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type || 'image/jpeg' } });
       const finalUrl = publicUrl ?? uploadUrl.split('?')[0];
       setPhotoState(tableId, prev => {
         const slots = [...prev.slots] as TablePhotoState['slots'];
@@ -321,12 +263,9 @@ export function AdminMatchManager({ apiBase = '', token }: Props) {
       await apiFetch(`${apiBase}/api/v1/admin/meetings/${tableId}/venue-photos`, token, {
         method: 'PATCH',
         body: JSON.stringify({
-          venuePhotoUrl:      s1.url || undefined,
-          venuePhotoCaption1: s1.caption || undefined,
-          venuePhoto2Url:     s2.url || undefined,
-          venuePhotoCaption2: s2.caption || undefined,
-          venuePhoto3Url:     s3.url || undefined,
-          venuePhotoCaption3: s3.caption || undefined,
+          venuePhotoUrl:      s1.url || undefined, venuePhotoCaption1: s1.caption || undefined,
+          venuePhoto2Url:     s2.url || undefined, venuePhotoCaption2: s2.caption || undefined,
+          venuePhoto3Url:     s3.url || undefined, venuePhotoCaption3: s3.caption || undefined,
         }),
       });
       showToast('Fotoğraflar kaydedildi');
@@ -337,283 +276,306 @@ export function AdminMatchManager({ apiBase = '', token }: Props) {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-col gap-4">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="h-36 rounded-2xl bg-surface border border-border animate-pulse" />
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: SANS }}>
+
       {/* Toast */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="fixed top-4 right-4 z-50 px-4 py-2 rounded-xl bg-surface border border-border text-sm text-text shadow-xl"
-            style={{ backdropFilter: 'blur(12px)' }}
-          >
-            {toast}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {tables.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
-          <p className="text-muted text-sm">Onay bekleyen masa yok.</p>
-          <p className="text-muted/60 text-xs">Algoritma her Perşembe 23:59'da çalışır.</p>
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 16, right: 16, zIndex: 50,
+          padding: '8px 16px', borderRadius: 8,
+          background: CARD, border: `1px solid ${BORDER}`,
+          fontSize: 12, color: TEXT, fontFamily: SANS,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+        }}>
+          {toast}
         </div>
-      ) : (
-        <div className="flex gap-6 items-start">
-          {/* ── Sol kolon: masa listesi ── */}
-          <div className="flex-1 flex flex-col gap-4 min-w-0">
-            {/* Tümünü onayla */}
-            <motion.button
-              onClick={handleApproveAll}
-              disabled={approvingAll}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-opacity"
-              style={{ background: 'linear-gradient(135deg, #c0392b, #b5651d)' }}
-            >
-              {approvingAll ? 'Onaylanıyor…' : `TÜM MASALARI ONAYLA (${tables.length})`}
-            </motion.button>
+      )}
 
-            {tables.map((table, ti) => (
-              <motion.div
-                key={table.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: ti * 0.07, type: 'spring', stiffness: 180, damping: 22 }}
-                className="rounded-2xl border border-border p-5 flex flex-col gap-4"
-                style={{ background: 'rgba(20,20,20,0.6)', backdropFilter: 'blur(12px)' }}
-              >
-                {/* Başlık satırı */}
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-medium text-text truncate">
-                      {table.locationName ??
-                        new Date(table.scheduledAt).toLocaleDateString('tr-TR', {
-                          weekday: 'short', day: 'numeric', month: 'short',
-                        })}
-                    </span>
-                    <span className="text-xs text-muted flex-shrink-0">
-                      {new Date(table.scheduledAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <CompatBadge score={table.avgCompatibilityScore} />
-                </div>
-
-                {/* Koltuklar */}
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  {table.seats.map((seat, si) => (
-                    <SeatBadge
-                      key={si}
-                      seat={seat}
-                      isTarget={selectedEmpty?.tableId === table.id && selectedEmpty.seatIdx === si}
-                      onClick={
-                        seat.type === 'EMPTY'
-                          ? () =>
-                              setSelectedEmpty(
-                                selectedEmpty?.tableId === table.id && selectedEmpty.seatIdx === si
-                                  ? null
-                                  : { tableId: table.id, seatIdx: si },
-                              )
-                          : undefined
-                      }
-                    />
-                  ))}
-                </div>
-
-                {/* Onay butonu */}
-                <motion.button
-                  onClick={() => handleApprove(table.id)}
-                  disabled={approving === table.id}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="w-full py-2 rounded-xl border border-primary/40 bg-primary/10 text-primary text-sm font-medium disabled:opacity-40 hover:bg-primary/20 transition-colors"
-                >
-                  {approving === table.id ? 'Onaylanıyor…' : 'Bu Masayı Onayla'}
-                </motion.button>
-
-                {/* Fotoğraf yükleme bölümü */}
-                <div>
-                  <button
-                    onClick={() => togglePhotoExpand(table.id)}
-                    className="w-full py-1.5 rounded-lg border text-xs font-medium transition-colors"
-                    style={{
-                      borderColor: getPhotoState(table.id).expanded ? 'rgba(79,195,247,0.4)' : 'rgba(255,255,255,0.08)',
-                      background: getPhotoState(table.id).expanded ? 'rgba(79,195,247,0.08)' : 'transparent',
-                      color: getPhotoState(table.id).expanded ? '#4fc3f7' : '#666',
-                    }}
-                  >
-                    {getPhotoState(table.id).expanded ? '▲ Fotoğraf Yükle' : '▼ Fotoğraf Yükle'}
-                  </button>
-
-                  <AnimatePresence>
-                    {getPhotoState(table.id).expanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        style={{ overflow: 'hidden' }}
-                      >
-                        <div className="mt-3 flex flex-col gap-3">
-                          {([0, 1, 2] as const).map((slotIdx) => {
-                            const slot = getPhotoState(table.id).slots[slotIdx];
-                            const refKey = `${table.id}-${slotIdx}`;
-                            const labels = ['Ana Salon', 'Bar', 'Teras'];
-                            return (
-                              <div
-                                key={slotIdx}
-                                className="rounded-xl border border-border p-3 flex flex-col gap-2"
-                                style={{ background: 'rgba(255,255,255,0.02)' }}
-                              >
-                                <span className="text-[10px] text-muted uppercase tracking-wider">
-                                  Fotoğraf {slotIdx + 1}
-                                </span>
-
-                                {/* Fotoğraf önizleme veya yükle butonu */}
-                                {slot.url ? (
-                                  <div className="relative">
-                                    <img
-                                      src={slot.url}
-                                      alt={`Fotoğraf ${slotIdx + 1}`}
-                                      className="w-full h-24 object-cover rounded-lg"
-                                    />
-                                    <button
-                                      onClick={() => {
-                                        setPhotoState(table.id, prev => {
-                                          const slots = [...prev.slots] as TablePhotoState['slots'];
-                                          slots[slotIdx] = emptySlot();
-                                          return { ...prev, slots };
-                                        });
-                                      }}
-                                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white text-xs flex items-center justify-center"
-                                    >
-                                      ×
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div>
-                                    <input
-                                      ref={el => { fileRefs.current[refKey] = el; }}
-                                      type="file"
-                                      accept="image/*"
-                                      style={{ display: 'none' }}
-                                      onChange={e => {
-                                        const f = e.target.files?.[0];
-                                        if (f) handlePhotoFile(table.id, slotIdx, f);
-                                      }}
-                                    />
-                                    <button
-                                      onClick={() => fileRefs.current[refKey]?.click()}
-                                      disabled={slot.uploading}
-                                      className="w-full h-16 rounded-lg border border-dashed text-xs transition-colors disabled:opacity-50"
-                                      style={{ borderColor: 'rgba(255,255,255,0.15)', color: '#666' }}
-                                    >
-                                      {slot.uploading ? 'Yükleniyor…' : '+ Fotoğraf Seç'}
-                                    </button>
-                                    {slot.error && (
-                                      <p className="text-[10px] text-red-400 mt-1">{slot.error}</p>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Caption */}
-                                <input
-                                  type="text"
-                                  placeholder={labels[slotIdx]}
-                                  value={slot.caption}
-                                  onChange={e => {
-                                    const val = e.target.value;
-                                    setPhotoState(table.id, prev => {
-                                      const slots = [...prev.slots] as TablePhotoState['slots'];
-                                      slots[slotIdx] = { ...slots[slotIdx], caption: val };
-                                      return { ...prev, slots };
-                                    });
-                                  }}
-                                  className="w-full px-2 py-1.5 rounded-lg text-xs bg-transparent border border-border text-text placeholder:text-muted/50 focus:outline-none focus:border-primary/50"
-                                />
-                              </div>
-                            );
-                          })}
-
-                          <motion.button
-                            onClick={() => handleSavePhotos(table.id)}
-                            disabled={getPhotoState(table.id).saving}
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.97 }}
-                            className="w-full py-2 rounded-xl text-xs font-semibold text-white disabled:opacity-40"
-                            style={{ background: 'linear-gradient(135deg, #27ae60, #2ecc71)' }}
-                          >
-                            {getPhotoState(table.id).saving ? 'Kaydediliyor…' : 'Fotoğrafları Kaydet'}
-                          </motion.button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
+      {loading ? (
+        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 2, height: 12, borderRadius: 1, background: BLUE }} />
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: BLUE }}>EŞLEŞİM YÖNETİMİ</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 16 }}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ height: 140, background: SURFACE, borderRadius: 8, opacity: 0.5 }} />
             ))}
           </div>
+        </div>
+      ) : tables.length === 0 ? (
+        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 2, height: 12, borderRadius: 1, background: BLUE }} />
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: BLUE }}>EŞLEŞİM YÖNETİMİ</span>
+          </div>
+          <div style={{ padding: '48px 20px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: GREEN }}>Onay bekleyen masa yok</p>
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: MUTED, fontFamily: MONO }}>Algoritma her Perşembe 23:59'da çalışır</p>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
 
-          {/* ── Sağ kolon: bot havuzu ── */}
-          <div
-            className="w-64 flex-shrink-0 rounded-2xl border border-border p-4 flex flex-col gap-3 sticky top-4"
-            style={{ background: 'rgba(20,20,20,0.7)', backdropFilter: 'blur(16px)' }}
-          >
-            <h3 className="text-xs text-muted uppercase tracking-wide">Bot Havuzu</h3>
-            {selectedEmpty && (
-              <p className="text-xs text-amber-400 bg-amber-900/20 border border-amber-800 rounded-lg px-2 py-1.5">
-                Boş koltuk seçildi — bot tıkla
-              </p>
-            )}
+          {/* ── Sol: masa listesi ── */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
 
-            {bots.length === 0 ? (
-              <p className="text-xs text-muted">Müsait bot yok.</p>
-            ) : (
-              <div className="flex flex-col gap-2 overflow-y-auto max-h-[70vh]">
-                {bots.map((bot) => (
-                  <motion.div
-                    key={bot.id}
-                    className="rounded-xl border border-border bg-surface p-3 flex flex-col gap-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg,#3b82f6,#1d4ed8)' }}>
-                        {bot.initials}
-                      </div>
-                      <span className="text-xs text-text font-medium flex-1 truncate">{bot.initials}</span>
-                      <span className="text-[9px] px-1 rounded bg-blue-900/40 text-blue-400 border border-blue-800">BOT</span>
+            <button
+              onClick={handleApproveAll}
+              disabled={approvingAll}
+              style={{
+                width: '100%', padding: '11px',
+                borderRadius: 8, cursor: approvingAll ? 'not-allowed' : 'pointer',
+                background: approvingAll ? SURFACE : 'rgba(59,130,246,0.15)',
+                border: `1px solid ${approvingAll ? BORDER : 'rgba(59,130,246,0.4)'}`,
+                fontSize: 12, fontWeight: 700, letterSpacing: '0.08em',
+                color: approvingAll ? MUTED : BLUE, fontFamily: SANS,
+                opacity: approvingAll ? 0.6 : 1,
+              }}
+            >
+              {approvingAll ? 'Onaylanıyor…' : `TÜM MASALARI ONAYLA (${tables.length})`}
+            </button>
+
+            {tables.map((table) => {
+              const ps = getPhotoState(table.id);
+              return (
+                <div key={table.id} style={{
+                  background: CARD, border: `1px solid ${BORDER}`,
+                  borderRadius: 10, padding: '16px 18px',
+                  display: 'flex', flexDirection: 'column', gap: 14,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {table.locationName ?? new Date(table.scheduledAt).toLocaleDateString('tr-TR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                      </span>
+                      <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, flexShrink: 0 }}>
+                        {new Date(table.scheduledAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
+                    <CompatBadge score={table.avgCompatibilityScore} />
+                  </div>
 
-                    <OceanRadar scores={bot.oceanScore} size={100} />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6 }}>
+                    {table.seats.map((seat, si) => (
+                      <SeatBadge
+                        key={si} seat={seat}
+                        isTarget={selectedEmpty?.tableId === table.id && selectedEmpty.seatIdx === si}
+                        onClick={seat.type === 'EMPTY' ? () => setSelectedEmpty(
+                          selectedEmpty?.tableId === table.id && selectedEmpty.seatIdx === si
+                            ? null : { tableId: table.id, seatIdx: si }
+                        ) : undefined}
+                      />
+                    ))}
+                  </div>
 
-                    <motion.button
-                      onClick={() => handlePlaceBot(bot)}
-                      disabled={!selectedEmpty || placingBot === bot.id}
-                      whileHover={selectedEmpty ? { scale: 1.02 } : undefined}
-                      whileTap={selectedEmpty ? { scale: 0.96 } : undefined}
-                      className="w-full py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-40"
-                      style={
-                        selectedEmpty
-                          ? { borderColor: '#3b82f680', background: 'rgba(59,130,246,0.12)', color: '#93c5fd' }
-                          : { borderColor: '#1f1f1f', background: 'transparent', color: '#888' }
-                      }
+                  <button
+                    onClick={() => handleApprove(table.id)}
+                    disabled={approving === table.id}
+                    style={{
+                      width: '100%', padding: '8px', borderRadius: 8,
+                      cursor: approving === table.id ? 'not-allowed' : 'pointer',
+                      background: 'rgba(34,197,94,0.1)',
+                      border: '1px solid rgba(34,197,94,0.3)',
+                      fontSize: 12, fontWeight: 600, color: GREEN,
+                      fontFamily: SANS,
+                      opacity: approving === table.id ? 0.4 : 1,
+                    }}
+                  >
+                    {approving === table.id ? 'Onaylanıyor…' : 'Bu Masayı Onayla'}
+                  </button>
+
+                  {/* Fotoğraf bölümü */}
+                  <div>
+                    <button
+                      onClick={() => togglePhotoExpand(table.id)}
+                      style={{
+                        width: '100%', padding: '6px', borderRadius: 6, cursor: 'pointer',
+                        background: ps.expanded ? 'rgba(34,211,238,0.08)' : 'transparent',
+                        border: `1px solid ${ps.expanded ? 'rgba(34,211,238,0.3)' : BORDER}`,
+                        fontSize: 10, fontWeight: 600,
+                        color: ps.expanded ? CYAN : MUTED,
+                        fontFamily: SANS,
+                      }}
                     >
-                      {placingBot === bot.id ? '…' : 'BOT YERLEŞTİR'}
-                    </motion.button>
-                  </motion.div>
-                ))}
-              </div>
-            )}
+                      {ps.expanded ? '▲ Fotoğraf Yükle' : '▼ Fotoğraf Yükle'}
+                    </button>
+
+                    {ps.expanded && (
+                      <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {([0, 1, 2] as const).map((slotIdx) => {
+                          const slot = ps.slots[slotIdx];
+                          const refKey = `${table.id}-${slotIdx}`;
+                          const labels = ['Ana Salon', 'Bar', 'Teras'];
+                          return (
+                            <div key={slotIdx} style={{
+                              borderRadius: 8, border: `1px solid ${BORDER}`,
+                              padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8,
+                              background: 'rgba(255,255,255,0.02)',
+                            }}>
+                              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.14em', color: MUTED }}>
+                                FOTOĞRAF {slotIdx + 1}
+                              </span>
+                              {slot.url ? (
+                                <div style={{ position: 'relative' }}>
+                                  <img src={slot.url} alt={`Fotoğraf ${slotIdx + 1}`}
+                                    style={{ width: '100%', height: 96, objectFit: 'cover', borderRadius: 6 }} />
+                                  <button
+                                    onClick={() => {
+                                      setPhotoState(table.id, prev => {
+                                        const slots = [...prev.slots] as TablePhotoState['slots'];
+                                        slots[slotIdx] = emptySlot();
+                                        return { ...prev, slots };
+                                      });
+                                    }}
+                                    style={{
+                                      position: 'absolute', top: 4, right: 4,
+                                      width: 22, height: 22, borderRadius: '50%',
+                                      background: 'rgba(0,0,0,0.7)', border: 'none',
+                                      color: TEXT, fontSize: 12, cursor: 'pointer',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    }}
+                                  >×</button>
+                                </div>
+                              ) : (
+                                <div>
+                                  <input ref={el => { fileRefs.current[refKey] = el; }} type="file" accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoFile(table.id, slotIdx, f); }} />
+                                  <button
+                                    onClick={() => fileRefs.current[refKey]?.click()}
+                                    disabled={slot.uploading}
+                                    style={{
+                                      width: '100%', height: 60, borderRadius: 6, cursor: 'pointer',
+                                      background: 'transparent',
+                                      border: `1.5px dashed ${BORDER}`,
+                                      fontSize: 10, color: MUTED, fontFamily: SANS,
+                                      opacity: slot.uploading ? 0.5 : 1,
+                                    }}
+                                  >
+                                    {slot.uploading ? 'Yükleniyor…' : '+ Fotoğraf Seç'}
+                                  </button>
+                                  {slot.error && <p style={{ margin: '4px 0 0', fontSize: 9, color: RED }}>{slot.error}</p>}
+                                </div>
+                              )}
+                              <input type="text" placeholder={labels[slotIdx]} value={slot.caption}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setPhotoState(table.id, prev => {
+                                    const slots = [...prev.slots] as TablePhotoState['slots'];
+                                    slots[slotIdx] = { ...slots[slotIdx], caption: val };
+                                    return { ...prev, slots };
+                                  });
+                                }}
+                                style={{
+                                  width: '100%', background: 'transparent',
+                                  border: `1px solid ${BORDER}`, borderRadius: 6,
+                                  padding: '5px 8px', fontSize: 11, color: TEXT,
+                                  outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
+                        <button
+                          onClick={() => handleSavePhotos(table.id)}
+                          disabled={ps.saving}
+                          style={{
+                            width: '100%', padding: '8px', borderRadius: 8, cursor: ps.saving ? 'not-allowed' : 'pointer',
+                            background: ps.saving ? SURFACE : 'rgba(34,197,94,0.12)',
+                            border: `1px solid ${ps.saving ? BORDER : 'rgba(34,197,94,0.3)'}`,
+                            fontSize: 11, fontWeight: 700, color: ps.saving ? MUTED : GREEN,
+                            fontFamily: SANS, opacity: ps.saving ? 0.5 : 1,
+                          }}
+                        >
+                          {ps.saving ? 'Kaydediliyor…' : 'Fotoğrafları Kaydet'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── Sağ: bot havuzu ── */}
+          <div style={{
+            width: 220, flexShrink: 0,
+            background: CARD, border: `1px solid ${BORDER}`,
+            borderRadius: 10, overflow: 'hidden',
+            position: 'sticky', top: 16,
+          }}>
+            <div style={{ padding: '12px 14px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 2, height: 12, borderRadius: 1, background: BLUE }} />
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: BLUE }}>BOT HAVUZU</span>
+            </div>
+
+            <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {selectedEmpty && (
+                <div style={{
+                  padding: '7px 10px', borderRadius: 6,
+                  background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)',
+                  fontSize: 10, color: AMBER, fontFamily: SANS,
+                }}>
+                  Boş koltuk seçildi — bot tıkla
+                </div>
+              )}
+
+              {bots.length === 0 ? (
+                <div style={{ padding: '20px 8px', textAlign: 'center' }}>
+                  <p style={{ margin: 0, fontSize: 11, color: MUTED }}>Müsait bot yok.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', maxHeight: '70vh' }}>
+                  {bots.map((bot) => (
+                    <div key={bot.id} style={{
+                      borderRadius: 8, border: `1px solid ${BORDER}`,
+                      background: SURFACE, padding: '10px',
+                      display: 'flex', flexDirection: 'column', gap: 8,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{
+                          width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 9, fontWeight: 700, color: TEXT,
+                          background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                        }}>
+                          {bot.initials}
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: TEXT, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {bot.initials}
+                        </span>
+                        <span style={{
+                          fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 99,
+                          background: 'rgba(59,130,246,0.15)', color: '#93c5fd',
+                          border: '1px solid rgba(59,130,246,0.3)',
+                        }}>BOT</span>
+                      </div>
+
+                      <OceanRadar scores={bot.oceanScore} size={100} />
+
+                      <button
+                        onClick={() => handlePlaceBot(bot)}
+                        disabled={!selectedEmpty || placingBot === bot.id}
+                        style={{
+                          width: '100%', padding: '6px', borderRadius: 6,
+                          cursor: selectedEmpty && placingBot !== bot.id ? 'pointer' : 'not-allowed',
+                          background: selectedEmpty ? 'rgba(59,130,246,0.12)' : 'transparent',
+                          border: `1px solid ${selectedEmpty ? 'rgba(59,130,246,0.35)' : BORDER}`,
+                          fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
+                          color: selectedEmpty ? '#93c5fd' : MUTED,
+                          fontFamily: SANS,
+                          opacity: !selectedEmpty || placingBot === bot.id ? 0.4 : 1,
+                        }}
+                      >
+                        {placingBot === bot.id ? '…' : 'BOT YERLEŞTİR'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
