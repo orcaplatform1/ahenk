@@ -7,6 +7,21 @@ import { Modal } from '@/components/Modal';
 import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
+// ─── Renk sabitleri ───────────────────────────────────────────────────────────
+const SURFACE  = '#0a1628';
+const CARD     = '#0d1f3c';
+const BORDER   = '#1a3a5c';
+const TEXT     = '#e2e8f0';
+const MUTED    = '#64748b';
+const GREEN    = '#22c55e';
+const RED      = '#ef4444';
+const BLUE     = '#3b82f6';
+const CYAN     = '#22d3ee';
+const AMBER    = '#f59e0b';
+const MONO     = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
+const SANS     = 'Inter, system-ui, sans-serif';
+
+// ─── Tipler ───────────────────────────────────────────────────────────────────
 interface Meeting {
   id: string;
   status: string;
@@ -29,6 +44,51 @@ function emptySlot(): PhotoSlot {
   return { file: null, url: '', caption: '', uploading: false };
 }
 
+const STATUS_COLOR: Record<string, string> = {
+  PENDING:   AMBER,
+  ACTIVE:    GREEN,
+  COMPLETED: MUTED,
+  CANCELLED: RED,
+};
+const STATUS_BG: Record<string, string> = {
+  PENDING:   'rgba(245,158,11,0.12)',
+  ACTIVE:    'rgba(34,197,94,0.12)',
+  COMPLETED: 'rgba(100,116,139,0.12)',
+  CANCELLED: 'rgba(239,68,68,0.12)',
+};
+const STATUS_BORDER: Record<string, string> = {
+  PENDING:   'rgba(245,158,11,0.35)',
+  ACTIVE:    'rgba(34,197,94,0.3)',
+  COMPLETED: 'rgba(100,116,139,0.3)',
+  CANCELLED: 'rgba(239,68,68,0.3)',
+};
+const GENDER_TR: Record<string, string> = { MALE: 'E', FEMALE: 'K' };
+
+// ─── Input stil yardımcısı ────────────────────────────────────────────────────
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  background: '#020c1b',
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  padding: '8px 12px',
+  fontSize: 12,
+  color: TEXT,
+  outline: 'none',
+  fontFamily: SANS,
+  boxSizing: 'border-box',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: 9,
+  fontWeight: 800,
+  letterSpacing: '0.14em',
+  color: MUTED,
+  marginBottom: 6,
+  fontFamily: SANS,
+};
+
+// ─── Sayfa ────────────────────────────────────────────────────────────────────
 export default function MasalarPage() {
   const toast = useToast();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -146,88 +206,148 @@ export default function MasalarPage() {
     finally { setActing(''); }
   }
 
-  const STATUS_CLS: Record<string, string> = {
-    PENDING: 'text-muted border-border', ACTIVE: 'text-green-400 border-green-800',
-    COMPLETED: 'text-primary border-red-800', CANCELLED: 'text-accent border-accent/30',
-  };
-
   const isUploading = photos.some((p) => p.uploading);
 
   return (
     <AdminShell>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 className="font-serif text-3xl">Masalar</h1>
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-muted">Hafta offset:</label>
-          <input type="number" value={week} onChange={(e) => setWeek(Number(e.target.value))}
-            className="w-20 bg-surface border border-border rounded-xl px-3 py-1.5 text-sm text-text focus:outline-none" />
+      <div style={{ fontFamily: SANS }}>
+        {/* Başlık */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>Masalar</h1>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 11, color: MUTED }}>Hafta offset:</span>
+            <input
+              type="number"
+              value={week}
+              onChange={(e) => setWeek(Number(e.target.value))}
+              style={{ ...inputStyle, width: 72, padding: '5px 10px' }}
+            />
+          </div>
         </div>
+
+        {/* İçerik */}
+        {loading ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} style={{ height: 140, background: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, opacity: 0.5 }} />
+            ))}
+          </div>
+        ) : meetings.length === 0 ? (
+          <p style={{ fontSize: 12, color: MUTED }}>Masa yok.</p>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            {meetings.map((m) => {
+              const sc = STATUS_COLOR[m.status] ?? MUTED;
+              const sbg = STATUS_BG[m.status] ?? 'transparent';
+              const sbo = STATUS_BORDER[m.status] ?? BORDER;
+              return (
+                <div key={m.id} style={{
+                  background: CARD,
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 10,
+                  padding: '16px 18px',
+                }}>
+                  {/* Üst satır */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div>
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: TEXT }}>
+                        {new Date(m.scheduledAt).toLocaleDateString('tr-TR', {
+                          day: 'numeric', month: 'long', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit',
+                        })}
+                      </p>
+                      {m.city && (
+                        <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED }}>{m.city.name}</p>
+                      )}
+                      {m.locationText && (
+                        <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED }}>{m.locationText}</p>
+                      )}
+                    </div>
+                    <span style={{
+                      fontSize: 9, fontWeight: 800, letterSpacing: '0.12em',
+                      padding: '2px 8px', borderRadius: 99,
+                      background: sbg, color: sc, border: `1px solid ${sbo}`,
+                      flexShrink: 0,
+                    }}>
+                      {m.status}
+                    </span>
+                  </div>
+
+                  {/* Katılımcılar */}
+                  {m.participants && m.participants.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 12 }}>
+                      {m.participants.map((p, i) => (
+                        <span key={i} style={{
+                          fontSize: 10, padding: '2px 8px', borderRadius: 99,
+                          background: '#020c1b', border: `1px solid ${BORDER}`,
+                          color: MUTED, fontFamily: MONO,
+                        }}>
+                          {p.initials} ({GENDER_TR[p.gender] ?? '?'})
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Butonlar */}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <Link href={`/masalar/${m.id}`} style={{
+                      padding: '5px 12px', borderRadius: 6,
+                      background: SURFACE, border: `1px solid ${BORDER}`,
+                      fontSize: 11, color: MUTED, textDecoration: 'none',
+                    }}>
+                      Detay / Sohbet
+                    </Link>
+                    {(m.status === 'PENDING' || m.status === 'ACTIVE') && (
+                      <>
+                        <button
+                          onClick={() => openVenueModal(m)}
+                          style={{
+                            padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
+                            background: 'rgba(34,197,94,0.1)',
+                            border: '1px solid rgba(34,197,94,0.35)',
+                            fontSize: 11, color: GREEN, fontFamily: SANS,
+                          }}
+                        >
+                          Mekan Ata / Onayla
+                        </button>
+                        <button
+                          onClick={() => handleCancel(m.id)}
+                          disabled={acting === m.id}
+                          style={{
+                            padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
+                            background: 'rgba(239,68,68,0.1)',
+                            border: '1px solid rgba(239,68,68,0.35)',
+                            fontSize: 11, color: RED, fontFamily: SANS,
+                            opacity: acting === m.id ? 0.5 : 1,
+                          }}
+                        >
+                          {acting === m.id ? '…' : 'İptal'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[...Array(6)].map((_, i) => <div key={i} className="h-36 bg-surface rounded-2xl animate-pulse" />)}
-        </div>
-      ) : meetings.length === 0 ? <p className="text-muted text-sm">Masa yok.</p> : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {meetings.map((m) => {
-            const sc = STATUS_CLS[m.status] ?? 'text-muted border-border';
-            return (
-              <div key={m.id} className="bg-surface border border-border rounded-2xl p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-medium">
-                      {new Date(m.scheduledAt).toLocaleDateString('tr-TR', {
-                        day: 'numeric', month: 'long', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit',
-                      })}
-                    </p>
-                    {m.city && <p className="text-xs text-muted">{m.city.name}</p>}
-                    {m.locationText && <p className="text-xs text-muted mt-0.5">{m.locationText}</p>}
-                  </div>
-                  <span className={`text-xs px-2.5 py-1 rounded-full border ${sc}`}>{m.status}</span>
-                </div>
-                {m.participants && m.participants.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {m.participants.map((p, i) => (
-                      <span key={i} className="text-xs bg-bg border border-border rounded-full px-2 py-0.5 text-muted">
-                        {p.initials} ({p.gender === 'MALE' ? 'E' : p.gender === 'FEMALE' ? 'K' : '?'})
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="flex gap-2 flex-wrap">
-                  <Link href={`/masalar/${m.id}`}
-                    className="px-3 py-1.5 rounded-lg bg-surface border border-border text-xs hover:bg-bg text-muted hover:text-text">
-                    Detay / Sohbet
-                  </Link>
-                  {(m.status === 'PENDING' || m.status === 'ACTIVE') && (
-                    <>
-                      <button onClick={() => openVenueModal(m)}
-                        className="px-3 py-1.5 rounded-lg bg-green-900/30 text-green-400 border border-green-800 text-xs hover:bg-green-900/50">
-                        Mekan Ata / Onayla
-                      </button>
-                      <button onClick={() => handleCancel(m.id)} disabled={acting === m.id}
-                        className="px-3 py-1.5 rounded-lg bg-red-900/30 text-accent border border-red-800 text-xs hover:bg-red-900/50 disabled:opacity-50">
-                        {acting === m.id ? '…' : 'İptal'}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
+      {/* Modal */}
       <Modal open={!!venueModal} onClose={() => setVenueModal(null)} title="Mekan Ata ve Onayla">
         {venueModal && (
-          <div className="flex flex-col gap-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
             {/* Mekan seç */}
             <div>
-              <label className="block text-xs text-muted mb-1">Mekan</label>
-              <select value={selectedVenue} onChange={(e) => setSelectedVenue(e.target.value)}
-                className="w-full bg-bg border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none">
+              <label style={labelStyle}>MEKAN</label>
+              <select
+                value={selectedVenue}
+                onChange={(e) => setSelectedVenue(e.target.value)}
+                style={inputStyle}
+              >
                 <option value="">Seç</option>
                 {venueModal.venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
@@ -235,45 +355,66 @@ export default function MasalarPage() {
 
             {/* Tarih/Saat */}
             <div>
-              <label className="block text-xs text-muted mb-1">Tarih / Saat</label>
-              <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)}
-                className="w-full bg-bg border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none" />
+              <label style={labelStyle}>TARİH / SAAT</label>
+              <input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                style={inputStyle}
+              />
             </div>
 
             {/* Adres */}
             <div>
-              <label className="block text-xs text-muted mb-1">Mekan Adresi</label>
+              <label style={labelStyle}>MEKAN ADRESİ</label>
               <input
                 type="text"
                 value={venueAddress}
                 onChange={(e) => setVenueAddress(e.target.value)}
                 placeholder="Örn: Cevdetpaşa Cad. No:51, Bebek · Beşiktaş / İstanbul"
-                className="w-full bg-bg border border-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none"
+                style={inputStyle}
               />
-              <p className="text-xs text-muted mt-1">Haritada Gör butonu bu adresi Google Maps'te açar.</p>
+              <p style={{ margin: '5px 0 0', fontSize: 10, color: MUTED }}>
+                Haritada Gör butonu bu adresi Google Maps'te açar.
+              </p>
             </div>
 
             {/* Mekan Fotoğrafları */}
             <div>
-              <label className="block text-xs text-muted mb-2">Mekan Fotoğrafları (en fazla 3)</label>
-              <div className="flex flex-col gap-3">
+              <label style={labelStyle}>MEKAN FOTOĞRAFLARI (en fazla 3)</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {([0, 1, 2] as const).map((idx) => {
                   const slot = photos[idx];
                   return (
-                    <div key={idx} className="flex flex-col gap-2 p-3 bg-bg border border-border rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted w-6 flex-shrink-0">#{idx + 1}</span>
+                    <div key={idx} style={{
+                      display: 'flex', flexDirection: 'column', gap: 8,
+                      padding: '10px 12px',
+                      background: '#020c1b',
+                      border: `1px solid ${BORDER}`,
+                      borderRadius: 8,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, width: 20, flexShrink: 0 }}>
+                          #{idx + 1}
+                        </span>
                         {slot.url && (
                           <img
                             src={slot.url}
                             alt={`Fotoğraf ${idx + 1}`}
-                            className="w-14 h-10 object-cover rounded-lg flex-shrink-0"
+                            style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
                           />
                         )}
                         <button
                           type="button"
                           onClick={() => fileRefs[idx].current?.click()}
-                          className="flex-1 py-1.5 text-xs border border-dashed border-border rounded-lg text-muted hover:text-text hover:border-text/30 transition-colors"
+                          style={{
+                            flex: 1, padding: '5px 10px',
+                            fontSize: 11, color: MUTED,
+                            background: 'none',
+                            border: `1px dashed ${BORDER}`,
+                            borderRadius: 6, cursor: 'pointer',
+                            fontFamily: SANS,
+                          }}
                         >
                           {slot.file ? slot.file.name : 'Fotoğraf seç…'}
                         </button>
@@ -281,10 +422,12 @@ export default function MasalarPage() {
                           ref={fileRefs[idx]}
                           type="file"
                           accept="image/*"
-                          className="hidden"
+                          style={{ display: 'none' }}
                           onChange={(e) => handleFileChange(idx, e.target.files?.[0] ?? null)}
                         />
-                        {slot.uploading && <span className="text-xs text-muted">Yükleniyor…</span>}
+                        {slot.uploading && (
+                          <span style={{ fontSize: 10, color: MUTED }}>Yükleniyor…</span>
+                        )}
                       </div>
                       {slot.file && (
                         <input
@@ -292,7 +435,7 @@ export default function MasalarPage() {
                           value={slot.caption}
                           onChange={(e) => updatePhoto(idx, { caption: e.target.value })}
                           placeholder={`Fotoğraf ${idx + 1} başlığı (örn. Ana Salon)`}
-                          className="w-full bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-text focus:outline-none"
+                          style={{ ...inputStyle, fontSize: 11 }}
                         />
                       )}
                     </div>
@@ -301,10 +444,20 @@ export default function MasalarPage() {
               </div>
             </div>
 
+            {/* Onayla */}
             <button
               onClick={handleApprove}
               disabled={!!acting || isUploading}
-              className="w-full py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-sm font-medium disabled:opacity-50"
+              style={{
+                width: '100%', padding: '10px',
+                borderRadius: 8, cursor: 'pointer',
+                background: acting || isUploading ? SURFACE : 'rgba(59,130,246,0.18)',
+                border: `1px solid ${acting || isUploading ? BORDER : 'rgba(59,130,246,0.4)'}`,
+                color: acting || isUploading ? MUTED : BLUE,
+                fontSize: 13, fontWeight: 600,
+                fontFamily: SANS,
+                opacity: acting || isUploading ? 0.6 : 1,
+              }}
             >
               {acting || isUploading ? 'Kaydediliyor…' : 'Onayla'}
             </button>

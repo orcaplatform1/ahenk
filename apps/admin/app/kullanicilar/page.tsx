@@ -6,6 +6,28 @@ import { Modal } from '@/components/Modal';
 import { useToast } from '@/components/Toast';
 import { api } from '@/lib/api';
 
+// ─── Renk sabitleri ───────────────────────────────────────────────────────────
+const SURFACE = '#0a1628';
+const CARD    = '#0d1f3c';
+const BORDER  = '#1a3a5c';
+const TEXT    = '#e2e8f0';
+const MUTED   = '#64748b';
+const GREEN   = '#22c55e';
+const RED     = '#ef4444';
+const BLUE    = '#3b82f6';
+const AMBER   = '#f59e0b';
+const CYAN    = '#22d3ee';
+const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
+const SANS    = 'Inter, system-ui, sans-serif';
+
+const KYC_COLOR: Record<string, string> = {
+  APPROVED:   GREEN,
+  REJECTED:   RED,
+  PENDING:    AMBER,
+  SUSPICIOUS: '#fb923c',
+};
+
+// ─── Tipler ───────────────────────────────────────────────────────────────────
 interface User {
   id: string;
   email: string;
@@ -22,10 +44,7 @@ interface UserDetail extends User {
   subscriptions?: { plan: string; expiresAt?: string }[];
 }
 
-const KYC_CLS: Record<string, string> = {
-  APPROVED: 'text-green-400', REJECTED: 'text-accent', PENDING: 'text-muted', SUSPICIOUS: 'text-orange-400',
-};
-
+// ─── Sayfa ────────────────────────────────────────────────────────────────────
 export default function KullanicilarPage() {
   const toast = useToast();
   const [users, setUsers] = useState<User[]>([]);
@@ -75,108 +94,254 @@ export default function KullanicilarPage() {
 
   return (
     <AdminShell>
-      <h1 className="font-serif text-3xl mb-6">Kullanıcılar</h1>
+      <div style={{ fontFamily: SANS }}>
 
-      <div className="flex gap-3 mb-6">
-        <input
-          value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); setPage(1); } }}
-          placeholder="İsim veya telefon ara…"
-          className="flex-1 max-w-sm bg-surface border border-border rounded-xl px-4 py-2 text-sm text-text focus:outline-none focus:border-primary"
-        />
-        <button onClick={() => { setSearch(searchInput); setPage(1); }}
-          className="px-4 py-2 bg-primary hover:bg-primary-hover rounded-xl text-sm transition-colors">
-          Ara
-        </button>
-        {search && <button onClick={() => { setSearch(''); setSearchInput(''); setPage(1); }} className="px-4 py-2 rounded-xl border border-border text-sm text-muted hover:text-text">Temizle</button>}
+        {/* Başlık */}
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>
+            Kullanıcılar
+          </h1>
+          {total > 0 && (
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: MUTED }}>
+              {total.toLocaleString('tr-TR')} kullanıcı
+            </p>
+          )}
+        </div>
+
+        {/* Arama */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+          <input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { setSearch(searchInput); setPage(1); } }}
+            placeholder="İsim veya telefon ara…"
+            style={{
+              flex: 1, maxWidth: 320,
+              background: SURFACE,
+              border: `1px solid ${BORDER}`,
+              borderRadius: 8,
+              padding: '7px 12px',
+              fontSize: 12, color: TEXT,
+              outline: 'none', fontFamily: SANS,
+            }}
+          />
+          <button
+            onClick={() => { setSearch(searchInput); setPage(1); }}
+            style={{
+              padding: '7px 16px', borderRadius: 8, cursor: 'pointer',
+              background: 'rgba(59,130,246,0.15)',
+              border: '1px solid rgba(59,130,246,0.35)',
+              fontSize: 12, color: BLUE, fontFamily: SANS,
+            }}
+          >
+            Ara
+          </button>
+          {search && (
+            <button
+              onClick={() => { setSearch(''); setSearchInput(''); setPage(1); }}
+              style={{
+                padding: '7px 16px', borderRadius: 8, cursor: 'pointer',
+                background: 'transparent',
+                border: `1px solid ${BORDER}`,
+                fontSize: 12, color: MUTED, fontFamily: SANS,
+              }}
+            >
+              Temizle
+            </button>
+          )}
+        </div>
+
+        {/* Tablo */}
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {[...Array(8)].map((_, i) => (
+              <div key={i} style={{ height: 44, background: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, opacity: 0.5 }} />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: SANS }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                    {['Ad Soyad', 'Telefon', 'Şehir', 'KYC', 'Kayıt', ''].map((h) => (
+                      <th key={h} style={{
+                        textAlign: 'left',
+                        padding: '0 12px 10px',
+                        fontSize: 9, fontWeight: 800,
+                        letterSpacing: '0.14em', color: MUTED,
+                      }}>
+                        {h.toUpperCase()}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => {
+                    const kycColor = KYC_COLOR[u.kyc?.status ?? ''] ?? MUTED;
+                    return (
+                      <tr
+                        key={u.id}
+                        onClick={() => openDetail(u.id)}
+                        style={{ borderBottom: `1px solid rgba(26,58,92,0.5)`, cursor: 'pointer' }}
+                      >
+                        <td style={{ padding: '11px 12px', fontSize: 12, fontWeight: 600, color: TEXT }}>
+                          {u.profile?.firstName} {u.profile?.lastName}
+                        </td>
+                        <td style={{ padding: '11px 12px', fontSize: 11, color: MUTED, fontFamily: MONO }}>
+                          {u.phone ?? '—'}
+                        </td>
+                        <td style={{ padding: '11px 12px', fontSize: 11, color: MUTED }}>
+                          {u.profile?.primaryCity?.name ?? '—'}
+                        </td>
+                        <td style={{ padding: '11px 12px' }}>
+                          {u.kyc?.status ? (
+                            <span style={{
+                              fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
+                              padding: '2px 7px', borderRadius: 99,
+                              background: `${kycColor}18`,
+                              border: `1px solid ${kycColor}55`,
+                              color: kycColor,
+                            }}>
+                              {u.kyc.status}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 11, color: MUTED }}>—</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '11px 12px', fontSize: 11, color: MUTED, fontFamily: MONO }}>
+                          {new Date(u.createdAt).toLocaleDateString('tr-TR')}
+                        </td>
+                        <td style={{ padding: '11px 12px', fontSize: 11, color: CYAN }}>
+                          Detay →
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Sayfalama */}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', gap: 8, marginTop: 16, alignItems: 'center' }}>
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  style={{
+                    padding: '5px 12px', borderRadius: 6, cursor: page === 1 ? 'not-allowed' : 'pointer',
+                    background: 'transparent', border: `1px solid ${BORDER}`,
+                    fontSize: 11, color: MUTED, fontFamily: SANS,
+                    opacity: page === 1 ? 0.4 : 1,
+                  }}
+                >
+                  ← Önceki
+                </button>
+                <span style={{ fontSize: 11, color: MUTED, fontFamily: MONO }}>
+                  {page} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  style={{
+                    padding: '5px 12px', borderRadius: 6, cursor: page === totalPages ? 'not-allowed' : 'pointer',
+                    background: 'transparent', border: `1px solid ${BORDER}`,
+                    fontSize: 11, color: MUTED, fontFamily: SANS,
+                    opacity: page === totalPages ? 0.4 : 1,
+                  }}
+                >
+                  Sonraki →
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
-      {loading ? (
-        <div className="flex flex-col gap-2">{[...Array(8)].map((_, i) => <div key={i} className="h-12 bg-surface rounded-xl animate-pulse" />)}</div>
-      ) : (
-        <>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted text-xs uppercase">
-                  <th className="text-left py-3 px-2">Ad Soyad</th>
-                  <th className="text-left py-3 px-2">Telefon</th>
-                  <th className="text-left py-3 px-2">Şehir</th>
-                  <th className="text-left py-3 px-2">KYC</th>
-                  <th className="text-left py-3 px-2">Kayıt</th>
-                  <th className="py-3 px-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id} className="border-b border-border hover:bg-surface/50 transition-colors cursor-pointer" onClick={() => openDetail(u.id)}>
-                    <td className="py-3 px-2">{u.profile?.firstName} {u.profile?.lastName}</td>
-                    <td className="py-3 px-2 text-muted">{u.phone ?? '—'}</td>
-                    <td className="py-3 px-2 text-muted">{u.profile?.primaryCity?.name ?? '—'}</td>
-                    <td className={`py-3 px-2 text-xs font-medium ${KYC_CLS[u.kyc?.status ?? ''] ?? 'text-muted'}`}>{u.kyc?.status ?? '—'}</td>
-                    <td className="py-3 px-2 text-muted">{new Date(u.createdAt).toLocaleDateString('tr-TR')}</td>
-                    <td className="py-3 px-2 text-primary text-xs">Detay →</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex gap-2 mt-4 items-center">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                className="px-3 py-1.5 rounded-lg border border-border text-sm text-muted disabled:opacity-40">← Önceki</button>
-              <span className="text-sm text-muted">{page} / {totalPages}</span>
-              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                className="px-3 py-1.5 rounded-lg border border-border text-sm text-muted disabled:opacity-40">Sonraki →</button>
-            </div>
-          )}
-        </>
-      )}
-
+      {/* Detay Modal */}
       <Modal open={detailLoading || !!detail} onClose={() => setDetail(null)} title="Kullanıcı Detayı">
-        {detailLoading && <p className="text-muted text-sm">Yükleniyor…</p>}
+        {detailLoading && (
+          <p style={{ fontSize: 12, color: MUTED, fontFamily: SANS }}>Yükleniyor…</p>
+        )}
         {detail && (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Row label="Ad Soyad" value={`${detail.profile?.firstName} ${detail.profile?.lastName}`} />
-              <Row label="E-posta" value={detail.email} />
-              <Row label="Telefon" value={detail.phone ?? '—'} />
-              <Row label="Rol" value={detail.role} />
-              <Row label="KYC" value={detail.kyc?.status ?? '—'} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: SANS }}>
+
+            {/* Temel bilgiler */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <DetailRow label="Ad Soyad" value={`${detail.profile?.firstName ?? ''} ${detail.profile?.lastName ?? ''}`} />
+              <DetailRow label="E-posta"  value={detail.email} mono />
+              <DetailRow label="Telefon"  value={detail.phone ?? '—'} mono />
+              <DetailRow label="Rol"      value={detail.role} />
+              <DetailRow label="KYC"      value={detail.kyc?.status ?? '—'} color={KYC_COLOR[detail.kyc?.status ?? ''] ?? MUTED} />
             </div>
 
+            {/* OCEAN Skoru */}
             {detail.oceanScore && (
-              <div className="border-t border-border pt-4">
-                <p className="text-xs text-muted uppercase mb-3">OCEAN Skoru</p>
-                {[
-                  ['Açıklık', detail.oceanScore.openness],
-                  ['Öz-Disiplin', detail.oceanScore.conscientiousness],
-                  ['Dışadönüklük', detail.oceanScore.extraversion],
-                  ['Uyumluluk', detail.oceanScore.agreeableness],
-                  ['Nevrotiklik', detail.oceanScore.neuroticism],
-                ].map(([label, val]) => (
-                  <div key={label as string} className="flex items-center gap-3 mb-2">
-                    <span className="text-xs text-muted w-28">{label as string}</span>
-                    <div className="flex-1 h-1.5 bg-bg rounded-full overflow-hidden">
-                      <div className="h-full bg-primary" style={{ width: `${val}%` }} />
+              <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>
+                    OCEAN SKORU
+                  </span>
+                </div>
+                {([
+                  ['Açıklık',       detail.oceanScore.openness],
+                  ['Öz-Disiplin',   detail.oceanScore.conscientiousness],
+                  ['Dışadönüklük',  detail.oceanScore.extraversion],
+                  ['Uyumluluk',     detail.oceanScore.agreeableness],
+                  ['Nevrotiklik',   detail.oceanScore.neuroticism],
+                ] as [string, number][]).map(([label, val]) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, color: MUTED, minWidth: 100 }}>{label}</span>
+                    <div style={{ flex: 1, height: 4, background: '#020c1b', borderRadius: 99, overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${val}%`,
+                        background: `linear-gradient(90deg, ${BLUE}, ${CYAN})`,
+                        borderRadius: 99,
+                      }} />
                     </div>
-                    <span className="text-xs text-muted w-8 text-right">{Math.round(val as number)}</span>
+                    <span style={{ fontSize: 11, color: MUTED, fontFamily: MONO, minWidth: 28, textAlign: 'right' }}>
+                      {Math.round(val)}
+                    </span>
                   </div>
                 ))}
               </div>
             )}
 
+            {/* Aktif Paket */}
             {detail.subscriptions && detail.subscriptions.length > 0 && (
-              <div className="border-t border-border pt-4">
-                <p className="text-xs text-muted uppercase mb-2">Aktif Paket</p>
-                <p className="text-sm text-text">{detail.subscriptions[0].plan}</p>
+              <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 2, height: 12, borderRadius: 1, background: GREEN }} />
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: GREEN }}>
+                    AKTİF PAKET
+                  </span>
+                </div>
+                <span style={{
+                  fontSize: 10, fontWeight: 800, letterSpacing: '0.1em',
+                  padding: '3px 10px', borderRadius: 99,
+                  background: 'rgba(34,197,94,0.12)',
+                  border: '1px solid rgba(34,197,94,0.3)',
+                  color: GREEN,
+                }}>
+                  {detail.subscriptions[0].plan}
+                </span>
               </div>
             )}
 
+            {/* SUPERADMIN işlemleri */}
             {myRole === 'SUPERADMIN' && (
-              <button onClick={() => resetOcean(detail.id)}
-                className="mt-2 w-full py-2 rounded-xl border border-border text-sm text-muted hover:text-text hover:border-muted transition-colors">
+              <button
+                onClick={() => resetOcean(detail.id)}
+                style={{
+                  marginTop: 4, width: '100%', padding: '8px',
+                  borderRadius: 8, cursor: 'pointer',
+                  background: 'transparent',
+                  border: `1px solid ${BORDER}`,
+                  fontSize: 12, color: MUTED, fontFamily: SANS,
+                }}
+              >
                 OCEAN Kilidini Sıfırla
               </button>
             )}
@@ -187,11 +352,13 @@ export default function KullanicilarPage() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value, mono, color }: { label: string; value: string; mono?: boolean; color?: string }) {
   return (
-    <div className="flex justify-between">
-      <span className="text-sm text-muted">{label}</span>
-      <span className="text-sm text-text">{value}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+      <span style={{ fontSize: 11, color: MUTED, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 11, color: color ?? TEXT, fontFamily: mono ? MONO : SANS, textAlign: 'right' }}>
+        {value}
+      </span>
     </div>
   );
 }

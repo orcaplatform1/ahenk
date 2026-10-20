@@ -18,10 +18,11 @@ function QualityContent() {
   const token = typeof window !== 'undefined' ? api.getToken() : null;
 
   return (
-    <div className="p-6 min-h-screen">
-      <div className="mb-6">
-        <h1 className="font-serif text-2xl text-[#f5f5f5]">Kalite Kontrol</h1>
-        <p className="text-sm text-muted mt-1">Bekleyen şikayetleri incele, karantina veya ban uygula.</p>
+    <div style={{ padding: 24, minHeight: '100vh', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#e2e8f0', letterSpacing: '-0.01em' }}>
+          Kalite Kontrol
+        </h1>
       </div>
       <AdminQualityControl
         apiBase={`${API_BASE}/api/v1`}
