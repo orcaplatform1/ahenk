@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 
 export interface OverviewStats {
   totalRevenue: number;
@@ -52,18 +51,36 @@ async function fetchJSON<T>(url: string, token?: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// ─── Renk sabitleri (acil-yardım ile aynı) ────────────────────────────────────
+const SURFACE = '#0a1628';
+const CARD    = '#0d1f3c';
+const BORDER  = '#1a3a5c';
+const TEXT    = '#e2e8f0';
+const MUTED   = '#64748b';
+const GREEN   = '#22c55e';
+const AMBER   = '#f59e0b';
+const RED     = '#ef4444';
+const BLUE    = '#3b82f6';
+const CYAN    = '#22d3ee';
+const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
+const SANS    = 'Inter, system-ui, sans-serif';
+
+function trendColor(t: string) {
+  if (t.startsWith('+')) return GREEN;
+  if (t.startsWith('-')) return RED;
+  return MUTED;
+}
+
 export function AdminStatsDashboard({ apiBase = '', token }: Props) {
   const [overview, setOverview] = useState<OverviewStats>(MOCK_OVERVIEW);
   const [cities,   setCities]   = useState<CityStats[]>(MOCK_CITIES);
 
   useEffect(() => {
     if (!apiBase) return;
-
     function load() {
       fetchJSON<OverviewStats>(`${apiBase}/api/v1/admin/stats/overview`, token).then(setOverview).catch(() => {});
       fetchJSON<CityStats[]>(`${apiBase}/api/v1/admin/stats/cities`, token).then(setCities).catch(() => {});
     }
-
     load();
     const timer = setInterval(load, 30_000);
     return () => clearInterval(timer);
@@ -72,124 +89,129 @@ export function AdminStatsDashboard({ apiBase = '', token }: Props) {
   const maxMembers = Math.max(...cities.map((c) => c.activeMembers), 1);
 
   const METRICS = [
-    { label: 'Toplam Gelir',      value: `₺${overview.totalRevenue.toLocaleString('tr-TR')}`, color: '#c0392b' },
-    { label: 'Net Komisyon',      value: `₺${overview.netCommission.toLocaleString('tr-TR')}`, color: '#b5651d' },
-    { label: 'Aktif Kullanıcı',   value: overview.activeUsers.toLocaleString('tr-TR'),         color: '#c0392b' },
-    { label: 'KYC Bekleyen',      value: overview.kycPending.toLocaleString('tr-TR'),           color: '#888888' },
+    { label: 'TOPLAM GELİR',     value: `₺${overview.totalRevenue.toLocaleString('tr-TR')}`,  color: CYAN  },
+    { label: 'NET KOMİSYON',     value: `₺${overview.netCommission.toLocaleString('tr-TR')}`, color: GREEN },
+    { label: 'AKTİF KULLANICI',  value: overview.activeUsers.toLocaleString('tr-TR'),          color: BLUE  },
+    { label: 'KYC BEKLİYOR',     value: overview.kycPending.toLocaleString('tr-TR'),           color: overview.kycPending > 0 ? AMBER : MUTED },
   ];
 
-  const trendColor = (t: string) => {
-    if (t.startsWith('+')) return '#4ade80';
-    if (t.startsWith('-')) return '#f87171';
-    return '#888888';
-  };
+  const matchColor = overview.matchRateThisWeek > 0 ? GREEN : overview.matchRateThisWeek < 0 ? RED : MUTED;
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* 4 Metrik kartı — glassmorphism */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {METRICS.map((m, i) => (
-          <motion.div
-            key={m.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1, type: 'spring', stiffness: 200, damping: 22 }}
-            className="relative overflow-hidden rounded-2xl border border-border p-5"
-            style={{ background: 'rgba(20,20,20,0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
-          >
-            <div className="absolute inset-0 opacity-10 pointer-events-none"
-              style={{ background: `radial-gradient(circle at 80% 20%, ${m.color}, transparent 70%)` }} />
-            <p className="text-xs text-muted mb-2">{m.label}</p>
-            <motion.p
-              className="text-2xl font-bold text-text"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              transition={{ delay: i * 0.1 + 0.15 }}
-            >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: SANS }}>
+
+      {/* 4 Metrik kartı */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        {METRICS.map((m) => (
+          <div key={m.label} style={{
+            background: CARD,
+            border: `1px solid ${BORDER}`,
+            borderRadius: 10,
+            padding: '14px 16px',
+          }}>
+            <p style={{ margin: '0 0 6px', fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', color: MUTED, fontFamily: SANS }}>
+              {m.label}
+            </p>
+            <p style={{ margin: 0, fontSize: 28, fontWeight: 900, color: m.color, fontFamily: MONO }}>
               {m.value}
-            </motion.p>
-          </motion.div>
+            </p>
+          </div>
         ))}
       </div>
 
-      {/* Sadakat Programı kartı */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, type: 'spring', stiffness: 200, damping: 22 }}
-        className="relative overflow-hidden rounded-2xl border border-border p-5"
-        style={{ background: 'rgba(20,20,20,0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
-      >
-        <div className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{ background: 'radial-gradient(circle at 80% 20%, #c0392b, transparent 70%)' }} />
-        <p className="text-xs text-muted uppercase tracking-wide mb-4">Sadakat Programı</p>
-        <div className="flex gap-8">
-          <div>
-            <p className="text-xs text-muted mb-1">Davet ile Kayıt</p>
-            <p className="text-2xl font-bold text-text">
-              {(overview.referralRegisteredCount ?? 0).toLocaleString('tr-TR')}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-1">Toplam İndirim</p>
-            <p className="text-2xl font-bold text-text">
-              ₺{(overview.referralTotalDiscountTL ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
-          </div>
-        </div>
-      </motion.div>
+      {/* Sadakat Programı + Eşleşme oranı */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
 
-      {/* Haftalık eşleşme oranı */}
-      <div className="bg-surface border border-border rounded-2xl p-5 flex items-center gap-4">
-        <div className="flex-1">
-          <p className="text-xs text-muted mb-1">Bu Hafta Eşleşme Oranı</p>
-          <p className="text-3xl font-bold" style={{ color: trendColor(overview.matchRateThisWeek >= 0 ? `+${overview.matchRateThisWeek}` : String(overview.matchRateThisWeek)) }}>
-            {overview.matchRateThisWeek >= 0 ? '+' : ''}{overview.matchRateThisWeek}%
+        {/* Sadakat */}
+        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px' }}>
+          <p style={{ margin: '0 0 12px', fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', color: MUTED, fontFamily: SANS }}>
+            SADAKAT PROGRAMI
           </p>
+          <div style={{ display: 'flex', gap: 32 }}>
+            <div>
+              <p style={{ margin: '0 0 4px', fontSize: 10, color: MUTED }}>Davet ile Kayıt</p>
+              <p style={{ margin: 0, fontSize: 28, fontWeight: 900, color: CYAN, fontFamily: MONO }}>
+                {(overview.referralRegisteredCount ?? 0).toLocaleString('tr-TR')}
+              </p>
+            </div>
+            <div>
+              <p style={{ margin: '0 0 4px', fontSize: 10, color: MUTED }}>Toplam İndirim</p>
+              <p style={{ margin: 0, fontSize: 28, fontWeight: 900, color: GREEN, fontFamily: MONO }}>
+                ₺{(overview.referralTotalDiscountTL ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
+          </div>
         </div>
-        <p className="text-xs text-muted">geçen haftaya göre</p>
+
+        {/* Eşleşme oranı */}
+        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', color: MUTED, fontFamily: SANS }}>
+              BU HAFTA EŞLEŞİM ORANI
+            </p>
+            <p style={{ margin: 0, fontSize: 36, fontWeight: 900, color: matchColor, fontFamily: MONO }}>
+              {overview.matchRateThisWeek >= 0 ? '+' : ''}{overview.matchRateThisWeek}%
+            </p>
+          </div>
+          <p style={{ fontSize: 10, color: MUTED, margin: 0 }}>geçen haftaya göre</p>
+        </div>
       </div>
 
       {/* Şehir tablosu */}
-      <div className="bg-surface border border-border rounded-2xl p-5">
-        <h3 className="text-sm text-muted uppercase tracking-wide mb-4">Şehir Dağılımı</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '16px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <div style={{ width: 2, height: 12, borderRadius: 1, background: BLUE }} />
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: BLUE, fontFamily: SANS }}>
+            ŞEHİR DAĞILIMI
+          </span>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: SANS }}>
             <thead>
-              <tr className="text-left text-muted text-xs uppercase tracking-wide border-b border-border">
-                <th className="pb-2 pr-4">Şehir</th>
-                <th className="pb-2 pr-4">Masalar</th>
-                <th className="pb-2 pr-4">Üyeler</th>
-                <th className="pb-2 pr-4">Gelir</th>
-                <th className="pb-2">Trend</th>
+              <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                {['Şehir', 'Masalar', 'Üyeler', 'Gelir', 'Trend'].map((h) => (
+                  <th key={h} style={{
+                    paddingBottom: 10, paddingRight: 16,
+                    textAlign: 'left', fontSize: 9, fontWeight: 800,
+                    letterSpacing: '0.14em', color: MUTED,
+                  }}>
+                    {h.toUpperCase()}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {cities.map((c, i) => (
-                <motion.tr
-                  key={c.city}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="border-b border-border/50 last:border-0"
-                >
-                  <td className="py-3 pr-4 text-text font-medium">{c.city}</td>
-                  <td className="py-3 pr-4 text-muted">{c.totalTables}</td>
-                  <td className="py-3 pr-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-text">{c.activeMembers}</span>
-                      <div className="h-1 flex-1 max-w-16 bg-bg rounded-full overflow-hidden">
-                        <motion.div className="h-full rounded-full"
-                          style={{ background: 'linear-gradient(90deg, #c0392b, #b5651d)' }}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(c.activeMembers / maxMembers) * 100}%` }}
-                          transition={{ delay: i * 0.05 + 0.2, duration: 0.6, ease: 'easeOut' }}
-                        />
+              {cities.map((c) => (
+                <tr key={c.city} style={{ borderBottom: `1px solid rgba(26,58,92,0.5)` }}>
+                  <td style={{ padding: '11px 16px 11px 0', fontSize: 12, fontWeight: 600, color: TEXT }}>
+                    {c.city}
+                  </td>
+                  <td style={{ padding: '11px 16px 11px 0', fontSize: 12, color: MUTED, fontFamily: MONO }}>
+                    {c.totalTables}
+                  </td>
+                  <td style={{ padding: '11px 16px 11px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 12, color: TEXT, fontFamily: MONO, minWidth: 32 }}>
+                        {c.activeMembers}
+                      </span>
+                      <div style={{ height: 4, width: 64, background: SURFACE, borderRadius: 99, overflow: 'hidden', flexShrink: 0 }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${(c.activeMembers / maxMembers) * 100}%`,
+                          background: `linear-gradient(90deg, ${BLUE}, ${CYAN})`,
+                          borderRadius: 99,
+                        }} />
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 pr-4 text-muted">₺{c.revenue.toLocaleString('tr-TR')}</td>
-                  <td className="py-3 font-medium text-sm" style={{ color: trendColor(c.trend) }}>{c.trend}</td>
-                </motion.tr>
+                  <td style={{ padding: '11px 16px 11px 0', fontSize: 12, color: MUTED, fontFamily: MONO }}>
+                    ₺{c.revenue.toLocaleString('tr-TR')}
+                  </td>
+                  <td style={{ padding: '11px 0', fontSize: 12, fontWeight: 700, color: trendColor(c.trend), fontFamily: MONO }}>
+                    {c.trend}
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>

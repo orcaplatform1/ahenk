@@ -14,14 +14,22 @@ export default function StatsPage() {
   );
 }
 
+const MUTED = '#64748b';
+const TEXT  = '#e2e8f0';
+const SANS  = 'Inter, system-ui, sans-serif';
+
 function StatsContent() {
   const token = typeof window !== 'undefined' ? api.getToken() : null;
 
   return (
-    <div className="p-6 min-h-screen">
-      <div className="mb-6">
-        <h1 className="font-serif text-2xl text-[#f5f5f5]">İstatistikler</h1>
-        <p className="text-sm text-muted mt-1">Platform metrikleri ve şehir bazlı dağılım.</p>
+    <div style={{ padding: 24, minHeight: '100vh', fontFamily: SANS }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>
+          İstatistikler
+        </h1>
+        <p style={{ margin: '4px 0 0', fontSize: 12, color: MUTED }}>
+          Platform metrikleri ve şehir bazlı dağılım.
+        </p>
       </div>
       <AdminStatsDashboard
         apiBase={`${API_BASE}/api/v1`}

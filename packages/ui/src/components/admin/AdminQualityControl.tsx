@@ -1,8 +1,26 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 
+// ─── Renk sabitleri ───────────────────────────────────────────────────────────
+const SURFACE = '#0a1628';
+const CARD    = '#0d1f3c';
+const BORDER  = '#1a3a5c';
+const TEXT    = '#e2e8f0';
+const MUTED   = '#64748b';
+const GREEN   = '#22c55e';
+const RED     = '#ef4444';
+const BLUE    = '#3b82f6';
+const CYAN    = '#22d3ee';
+const ORANGE  = '#fb923c';
+const SANS    = 'Inter, system-ui, sans-serif';
+const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
+
+const SEV_COLOR: Record<string, string>  = { CRITICAL: RED,    MEDIUM: ORANGE };
+const SEV_BG:    Record<string, string>  = { CRITICAL: 'rgba(239,68,68,0.12)',   MEDIUM: 'rgba(251,146,60,0.12)' };
+const SEV_BORDER:Record<string, string>  = { CRITICAL: 'rgba(239,68,68,0.35)',   MEDIUM: 'rgba(251,146,60,0.35)' };
+
+// ─── Tipler ───────────────────────────────────────────────────────────────────
 export interface QcItem {
   id: string;
   userId: string;
@@ -14,13 +32,9 @@ export interface QcItem {
 }
 
 interface ApiReportItem {
-  id: string;
-  userId: string;
-  userName: string;
-  riskLevel: 'CRITICAL' | 'MEDIUM';
-  reason: string;
-  detail?: string;
-  createdAt: string;
+  id: string; userId: string; userName: string;
+  riskLevel: 'CRITICAL' | 'MEDIUM'; reason: string;
+  detail?: string; createdAt: string;
 }
 
 interface Props {
@@ -42,17 +56,13 @@ async function postAction(apiBase: string, token: string | undefined, userId: st
   return res.json();
 }
 
-const BADGE_CLS: Record<QcItem['severity'], string> = {
-  CRITICAL: 'bg-red-900/40 text-accent border border-red-800',
-  MEDIUM:   'bg-orange-900/30 text-orange-400 border border-orange-800',
-};
-
+// ─── Bileşen ──────────────────────────────────────────────────────────────────
 export function AdminQualityControl({ items: propItems, apiBase = '', token, onAction }: Props) {
-  const [items, setItems] = useState<QcItem[]>(propItems ?? []);
+  const [items, setItems]     = useState<QcItem[]>(propItems ?? []);
   const [selected, setSelected] = useState<QcItem | null>(null);
-  const [acting, setActing] = useState<'quarantine' | 'ban' | null>(null);
-  const [error, setError] = useState('');
-  const [done, setDone] = useState<Set<string>>(new Set());
+  const [acting, setActing]   = useState<'quarantine' | 'ban' | null>(null);
+  const [error, setError]     = useState('');
+  const [done, setDone]       = useState<Set<string>>(new Set());
 
   const loadReports = useCallback(() => {
     if (!apiBase || propItems) return;
@@ -62,13 +72,9 @@ export function AdminQualityControl({ items: propItems, apiBase = '', token, onA
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data: ApiReportItem[]) => {
         const mapped: QcItem[] = data.map((r) => ({
-          id: r.id,
-          userId: r.userId,
-          userName: r.userName,
-          severity: r.riskLevel,
-          reason: r.reason,
-          detail: r.detail,
-          createdAt: r.createdAt,
+          id: r.id, userId: r.userId, userName: r.userName,
+          severity: r.riskLevel, reason: r.reason,
+          detail: r.detail, createdAt: r.createdAt,
         }));
         setItems(mapped);
         setSelected((prev) => mapped.find((m) => m.id === prev?.id) ?? mapped[0] ?? null);
@@ -92,7 +98,6 @@ export function AdminQualityControl({ items: propItems, apiBase = '', token, onA
       await postAction(apiBase, token, selected.userId, action);
       setDone((prev) => new Set([...prev, selected.id]));
       onAction?.(selected.userId, action);
-      // Listeyi yenile
       loadReports();
       const next = items.find((i) => !done.has(i.id) && i.id !== selected.id);
       setSelected(next ?? null);
@@ -104,96 +109,188 @@ export function AdminQualityControl({ items: propItems, apiBase = '', token, onA
   }
 
   return (
-    <div className="flex gap-4 h-full min-h-96">
-      {/* Sol liste */}
-      <div className="w-64 flex-shrink-0 flex flex-col gap-1 overflow-y-auto">
-        {items.map((item) => (
-          <motion.button
-            key={item.id}
-            onClick={() => setSelected(item)}
-            whileHover={{ x: 2 }}
-            className={`w-full text-left px-3 py-3 rounded-xl border transition-colors ${
-              selected?.id === item.id
-                ? 'bg-primary/10 border-primary/40 text-text'
-                : done.has(item.id)
-                ? 'opacity-40 border-border text-muted'
-                : 'border-border hover:bg-surface text-muted hover:text-text'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium truncate">{item.userName}</span>
-              <span className={`text-xs px-1.5 py-0.5 rounded-md flex-shrink-0 ml-2 ${BADGE_CLS[item.severity]}`}>
-                {item.severity}
-              </span>
+    <div style={{ display: 'flex', gap: 12, minHeight: 400, fontFamily: SANS }}>
+
+      {/* Sol liste kartı */}
+      <div style={{
+        width: 240, flexShrink: 0,
+        background: CARD, border: `1px solid ${BORDER}`,
+        borderRadius: 10, overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Liste başlığı */}
+        <div style={{
+          padding: '12px 14px', borderBottom: `1px solid ${BORDER}`,
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <div style={{ width: 2, height: 12, borderRadius: 1, background: ORANGE }} />
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: ORANGE }}>
+            ŞİKAYET RAPORLARI
+          </span>
+          <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>
+            {items.length}
+          </span>
+        </div>
+
+        {/* Liste içeriği */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {items.length === 0 ? (
+            <div style={{ padding: '32px 12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>✅</div>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: GREEN }}>
+                Şikayet yok
+              </p>
+              <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
+                Tüm kayıtlar temiz
+              </p>
             </div>
-            <p className="text-xs text-muted truncate">{item.reason}</p>
-          </motion.button>
-        ))}
-        {items.length === 0 && <p className="text-sm text-muted px-3">Kayıt yok.</p>}
+          ) : (
+            items.map((item) => {
+              const isSelected = selected?.id === item.id;
+              const isDone     = done.has(item.id);
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setSelected(item)}
+                  style={{
+                    width: '100%', textAlign: 'left',
+                    padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+                    background: isSelected ? 'rgba(59,130,246,0.12)' : 'transparent',
+                    border: `1px solid ${isSelected ? 'rgba(59,130,246,0.3)' : 'transparent'}`,
+                    opacity: isDone ? 0.35 : 1,
+                    fontFamily: SANS,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: isSelected ? TEXT : MUTED, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.userName}
+                    </span>
+                    <span style={{
+                      fontSize: 8, fontWeight: 800, letterSpacing: '0.1em', flexShrink: 0,
+                      padding: '1px 6px', borderRadius: 99,
+                      background: SEV_BG[item.severity],
+                      border: `1px solid ${SEV_BORDER[item.severity]}`,
+                      color: SEV_COLOR[item.severity],
+                    }}>
+                      {item.severity}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 10, color: MUTED, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.reason}
+                  </p>
+                </button>
+              );
+            })
+          )}
+        </div>
       </div>
 
-      {/* Sağ detay */}
-      <div className="flex-1 relative">
-        <AnimatePresence mode="wait">
-          {selected ? (
-            <motion.div
-              key={selected.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-              className="bg-surface border border-border rounded-2xl p-6 h-full flex flex-col gap-5"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-serif text-xl text-text">{selected.userName}</h3>
-                  <p className="text-xs text-muted mt-0.5">{new Date(selected.createdAt).toLocaleDateString('tr-TR')}</p>
+      {/* Sağ detay kartı */}
+      <div style={{ flex: 1 }}>
+        {selected ? (
+          <div style={{
+            background: CARD, border: `1px solid ${BORDER}`,
+            borderRadius: 10, padding: '20px 22px',
+            height: '100%', display: 'flex', flexDirection: 'column', gap: 18,
+            boxSizing: 'border-box',
+          }}>
+            {/* Üst: isim + badge */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+              <div>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: TEXT }}>
+                  {selected.userName}
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
+                  {new Date(selected.createdAt).toLocaleDateString('tr-TR')}
+                </p>
+              </div>
+              <span style={{
+                fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', flexShrink: 0,
+                padding: '3px 10px', borderRadius: 99,
+                background: SEV_BG[selected.severity],
+                border: `1px solid ${SEV_BORDER[selected.severity]}`,
+                color: SEV_COLOR[selected.severity],
+              }}>
+                {selected.severity}
+              </span>
+            </div>
+
+            {/* Sebep */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <div style={{ width: 2, height: 10, borderRadius: 1, background: MUTED }} />
+                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>SEBEP</span>
+              </div>
+              <p style={{ margin: 0, fontSize: 13, color: TEXT }}>{selected.reason}</p>
+            </div>
+
+            {/* Detay */}
+            {selected.detail && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 2, height: 10, borderRadius: 1, background: MUTED }} />
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>DETAY</span>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-md ${BADGE_CLS[selected.severity]}`}>{selected.severity}</span>
+                <p style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.6 }}>{selected.detail}</p>
               </div>
+            )}
 
-              <div className="flex flex-col gap-1">
-                <p className="text-xs text-muted uppercase tracking-wide">Sebep</p>
-                <p className="text-sm text-text">{selected.reason}</p>
-              </div>
+            {/* Hata */}
+            {error && (
+              <p style={{ margin: 0, fontSize: 12, color: RED }}>{error}</p>
+            )}
 
-              {selected.detail && (
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-muted uppercase tracking-wide">Detay</p>
-                  <p className="text-sm text-muted leading-relaxed">{selected.detail}</p>
-                </div>
-              )}
-
-              {error && <p className="text-accent text-sm">{error}</p>}
-
-              <div className="flex gap-3 mt-auto">
-                <motion.button
-                  onClick={() => handleAction('quarantine')}
-                  disabled={!!acting || done.has(selected.id)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex-1 py-2.5 rounded-xl border border-orange-800 bg-orange-900/20 text-orange-400 text-sm font-medium disabled:opacity-40 transition-colors hover:bg-orange-900/40"
-                >
-                  {acting === 'quarantine' ? '…' : 'Karantina'}
-                </motion.button>
-                <motion.button
-                  onClick={() => handleAction('ban')}
-                  disabled={!!acting || done.has(selected.id)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex-1 py-2.5 rounded-xl border border-red-800 bg-red-900/20 text-accent text-sm font-medium disabled:opacity-40 transition-colors hover:bg-red-900/40"
-                >
-                  {acting === 'ban' ? '…' : 'Banla'}
-                </motion.button>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="flex items-center justify-center h-full">
-              <p className="text-muted text-sm">Tüm kayıtlar işlendi.</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {/* Aksiyonlar */}
+            <div style={{ display: 'flex', gap: 10, marginTop: 'auto' }}>
+              <button
+                onClick={() => handleAction('quarantine')}
+                disabled={!!acting || done.has(selected.id)}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: 8,
+                  cursor: acting || done.has(selected.id) ? 'not-allowed' : 'pointer',
+                  background: 'rgba(251,146,60,0.1)',
+                  border: '1px solid rgba(251,146,60,0.35)',
+                  fontSize: 12, fontWeight: 600, color: ORANGE,
+                  fontFamily: SANS,
+                  opacity: acting || done.has(selected.id) ? 0.4 : 1,
+                }}
+              >
+                {acting === 'quarantine' ? '…' : 'Karantina'}
+              </button>
+              <button
+                onClick={() => handleAction('ban')}
+                disabled={!!acting || done.has(selected.id)}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: 8,
+                  cursor: acting || done.has(selected.id) ? 'not-allowed' : 'pointer',
+                  background: 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.35)',
+                  fontSize: 12, fontWeight: 600, color: RED,
+                  fontFamily: SANS,
+                  opacity: acting || done.has(selected.id) ? 0.4 : 1,
+                }}
+              >
+                {acting === 'ban' ? '…' : 'Banla'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Boş detay — kart içinde */
+          <div style={{
+            background: CARD, border: `1px solid ${BORDER}`,
+            borderRadius: 10, height: '100%', minHeight: 300,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'column', gap: 8,
+          }}>
+            <div style={{ fontSize: 32 }}>✅</div>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: GREEN }}>
+              Tüm kayıtlar işlendi
+            </p>
+            <p style={{ margin: 0, fontSize: 11, color: MUTED, fontFamily: MONO }}>
+              Bekleyen şikayet yok
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
