@@ -591,8 +591,6 @@ export default function Home() {
         {/* ── Hero ──────────────────────────────────────────────────────── */}
         <section id="hero" className="hero-section relative pt-[52px]" style={{ display: 'flex', flexDirection: 'column', height: 'auto' }}>
           <div className="hero-bg absolute inset-0" />
-          <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
-          <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 100%)', zIndex: 1 }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 55% 65% at 78% 50%, rgba(192,57,43,0.28) 0%, transparent 65%)' }} />
 
           {/* Başlık + butonlar — üstte */}
