@@ -1,18 +1,122 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
 
+const BG     = '#020c1b';
+const SURFACE = '#0a1628';
+const CARD   = '#0d1f3c';
+const BORDER = '#1a3a5c';
+const TEXT   = '#e2e8f0';
+const MUTED  = '#64748b';
+const GREEN  = '#22c55e';
+const RED    = '#ef4444';
+const AMBER  = '#f59e0b';
+const SANS   = 'Inter, system-ui, sans-serif';
+const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
+
 interface RefundItem {
-  id: string;
-  userId: string;
-  refundType: string;
-  status: string;
-  adminNote?: string;
-  createdAt: string;
+  id: string; userId: string; refundType: string; status: string;
+  adminNote?: string; createdAt: string;
   user?: { profile?: { firstName?: string; lastName?: string } };
   subscription?: { plan?: string };
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  PENDING: AMBER, APPROVED: GREEN, REJECTED: RED,
+};
+const STATUS_BG: Record<string, string> = {
+  PENDING: 'rgba(245,158,11,0.12)', APPROVED: 'rgba(34,197,94,0.12)', REJECTED: 'rgba(239,68,68,0.12)',
+};
+const STATUS_BORDER: Record<string, string> = {
+  PENDING: 'rgba(245,158,11,0.35)', APPROVED: 'rgba(34,197,94,0.3)', REJECTED: 'rgba(239,68,68,0.3)',
+};
+
+function RefundRow({ refund, onUpdate }: { refund: RefundItem; onUpdate: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [note, setNote] = useState('');
+  const [open, setOpen] = useState(false);
+
+  async function update(status: 'APPROVED' | 'REJECTED') {
+    setLoading(true);
+    await api.patch(`/admin/refunds/${refund.id}`, { status, adminNote: note || undefined }).catch(() => {});
+    setLoading(false);
+    setOpen(false);
+    onUpdate();
+  }
+
+  return (
+    <div style={{ borderBottom: `1px solid rgba(26,58,92,0.5)` }}>
+      <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>
+            {refund.user?.profile?.firstName ?? ''} {refund.user?.profile?.lastName ?? ''}
+          </p>
+          <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
+            {refund.refundType}{refund.subscription?.plan ? ` · ${refund.subscription.plan}` : ''} · {new Date(refund.createdAt).toLocaleString('tr-TR')}
+          </p>
+          {refund.adminNote && (
+            <p style={{ margin: '4px 0 0', fontSize: 10, color: MUTED, fontStyle: 'italic' }}>{refund.adminNote}</p>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span style={{
+            fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99,
+            background: STATUS_BG[refund.status] ?? 'transparent',
+            border: `1px solid ${STATUS_BORDER[refund.status] ?? BORDER}`,
+            color: STATUS_COLOR[refund.status] ?? MUTED,
+          }}>
+            {refund.status}
+          </span>
+          {refund.status === 'PENDING' && (
+            <button
+              onClick={() => setOpen(o => !o)}
+              style={{
+                padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+                background: open ? 'rgba(34,211,238,0.08)' : 'transparent',
+                border: `1px solid ${open ? 'rgba(34,211,238,0.3)' : BORDER}`,
+                fontSize: 10, color: MUTED, fontFamily: SANS,
+              }}
+            >
+              {open ? '▲' : 'İncele'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {open && (
+        <div style={{ margin: '0 18px 14px', padding: '12px 16px', borderRadius: 8, background: SURFACE, border: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <input
+            value={note} onChange={e => setNote(e.target.value)}
+            placeholder="Admin notu (opsiyonel)"
+            style={{ width: '100%', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 12px', fontSize: 11, color: TEXT, outline: 'none', fontFamily: SANS, boxSizing: 'border-box' }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => update('APPROVED')} disabled={loading}
+              style={{
+                flex: 1, padding: '7px', borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer',
+                background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
+                fontSize: 11, fontWeight: 600, color: GREEN, fontFamily: SANS, opacity: loading ? 0.5 : 1,
+              }}
+            >
+              Onayla
+            </button>
+            <button
+              onClick={() => update('REJECTED')} disabled={loading}
+              style={{
+                flex: 1, padding: '7px', borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer',
+                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                fontSize: 11, fontWeight: 600, color: RED, fontFamily: SANS, opacity: loading ? 0.5 : 1,
+              }}
+            >
+              Reddet
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function AdminRefunds() {
@@ -28,85 +132,38 @@ export default function AdminRefunds() {
 
   useEffect(() => { load(); }, []);
 
-  const statusColor: Record<string, string> = {
-    PENDING: '#f59e0b', APPROVED: '#4ade80', REJECTED: '#ff6b6b',
-  };
-
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="font-serif text-2xl text-[#f5f5f5] mb-6">İade Talepleri</h1>
+    <div style={{ padding: 24, maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
 
-      {loading ? (
-        <div className="flex flex-col gap-3">
-          {[0,1,2].map(i => <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />)}
-        </div>
-      ) : refunds.length === 0 ? (
-        <p className="text-[#555] text-sm">İade talebi yok.</p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {refunds.map((r, i) => (
-            <RefundRow key={r.id} refund={r} delay={i * 0.04} statusColor={statusColor} onUpdate={load} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function RefundRow({ refund, delay, statusColor, onUpdate }: {
-  refund: RefundItem; delay: number; statusColor: Record<string, string>; onUpdate: () => void;
-}) {
-  const [loading, setLoading] = useState(false);
-  const [note, setNote] = useState('');
-  const [open, setOpen] = useState(false);
-
-  async function update(status: 'APPROVED' | 'REJECTED') {
-    setLoading(true);
-    await api.patch(`/admin/refunds/${refund.id}`, { status, adminNote: note || undefined }).catch(() => {});
-    setLoading(false);
-    setOpen(false);
-    onUpdate();
-  }
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
-      className="glass-card px-4 py-3">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm text-[#f5f5f5] font-medium">{refund.user?.profile?.firstName ?? ''} {refund.user?.profile?.lastName ?? ''}</p>
-          <p className="text-xs text-[#555]">{refund.refundType}{refund.subscription?.plan ? ` · ${refund.subscription.plan}` : ''} · {new Date(refund.createdAt).toLocaleString('tr-TR')}</p>
-          {refund.adminNote && <p className="text-xs text-[#666] mt-1 italic">{refund.adminNote}</p>}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold" style={{ color: statusColor[refund.status] ?? '#888' }}>{refund.status}</span>
-          {refund.status === 'PENDING' && (
-            <button onClick={() => setOpen(o => !o)}
-              className="text-xs px-3 py-1 rounded-full"
-              style={{ background: 'rgba(255,255,255,0.10)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }}>
-              İncele
-            </button>
-          )}
-        </div>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>İade Talepleri</h1>
       </div>
-      {open && (
-        <div className="mt-3 flex flex-col gap-2">
-          <input value={note} onChange={e => setNote(e.target.value)} placeholder="Admin notu (opsiyonel)"
-            className="w-full bg-transparent border rounded-xl px-3 py-2 text-sm text-[#f5f5f5] outline-none"
-            style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-          <div className="flex gap-2">
-            <button onClick={() => update('APPROVED')} disabled={loading}
-              className="flex-1 py-1.5 rounded-xl text-sm font-medium"
-              style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}>
-              Onayla
-            </button>
-            <button onClick={() => update('REJECTED')} disabled={loading}
-              className="flex-1 py-1.5 rounded-xl text-sm font-medium"
-              style={{ background: 'rgba(192,57,43,0.12)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.2)' }}>
-              Reddet
-            </button>
-          </div>
+
+      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 2, height: 12, borderRadius: 1, background: AMBER }} />
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: AMBER }}>İADE TALEPLERİ</span>
+          {!loading && <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{refunds.length} kayıt</span>}
         </div>
-      )}
-    </motion.div>
+
+        {loading ? (
+          <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {[0,1,2].map(i => <div key={i} style={{ height: 48, background: SURFACE, borderRadius: 8, opacity: 0.5 }} />)}
+          </div>
+        ) : refunds.length === 0 ? (
+          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: MUTED }}>İade talebi yok.</p>
+          </div>
+        ) : (
+          <div>
+            {refunds.map((r, i) => (
+              <div key={r.id} style={i === refunds.length - 1 ? { borderBottom: 'none' } : undefined}>
+                <RefundRow refund={r} onUpdate={load} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

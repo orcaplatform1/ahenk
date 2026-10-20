@@ -1,8 +1,21 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
+
+const BG     = '#020c1b';
+const SURFACE = '#0a1628';
+const CARD   = '#0d1f3c';
+const BORDER = '#1a3a5c';
+const TEXT   = '#e2e8f0';
+const MUTED  = '#64748b';
+const GREEN  = '#22c55e';
+const RED    = '#ef4444';
+const BLUE   = '#3b82f6';
+const AMBER  = '#f59e0b';
+const CYAN   = '#22d3ee';
+const SANS   = 'Inter, system-ui, sans-serif';
+const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 interface PackageDist {
   masadaPct: number; karsimdaPct: number; icerdePct: number;
@@ -32,7 +45,6 @@ interface CityRow {
   trend: string;
 }
 
-
 function useCountUp(target: number, duration = 1200) {
   const [val, setVal] = useState(0);
   const raf = useRef<number>(0);
@@ -58,98 +70,40 @@ function fmtK(n: number) {
   return n.toLocaleString('tr-TR');
 }
 
-const RED_CARD = {
-  background: 'rgba(192,57,43,0.06)',
-  border: '1px solid rgba(192,57,43,0.18)',
-};
-
-function BigCard({ label, value, sub, prefix = '', fmtFn }: {
-  label: string; value: number; sub?: string; prefix?: string; fmtFn?: (n: number) => string;
+function StatCard({ label, value, sub, prefix = '', fmtFn, accent }: {
+  label: string; value: number; sub?: string; prefix?: string;
+  fmtFn?: (n: number) => string; accent?: string;
 }) {
   const v = useCountUp(value);
+  const color = accent ?? CYAN;
   return (
-    <motion.div
-      className="glass-card p-5 flex flex-col gap-1"
-      style={RED_CARD}
-      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
-    >
-      <p className="text-xs text-[#888] uppercase tracking-[0.14em] mb-1">{label}</p>
-      <p className="font-serif text-3xl font-bold leading-tight" style={{ color: '#c0392b' }}>
+    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+        <div style={{ width: 2, height: 12, borderRadius: 1, background: color }} />
+        <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color }}>{label.toUpperCase()}</span>
+      </div>
+      <p style={{ margin: 0, fontSize: 32, fontWeight: 800, color: TEXT, fontFamily: MONO, letterSpacing: '-0.02em' }}>
         {prefix}{fmtFn ? fmtFn(v) : v.toLocaleString('tr-TR')}
       </p>
-      {sub && <p className="text-xs text-[#666] mt-1">{sub}</p>}
-    </motion.div>
-  );
-}
-
-function MasaCard({ total, group, oneOnOne }: { total: number; group: number; oneOnOne: number }) {
-  const vTotal = useCountUp(total);
-  const vGroup = useCountUp(group);
-  const vOne = useCountUp(oneOnOne);
-  return (
-    <motion.div
-      className="glass-card p-5 flex flex-col gap-3"
-      style={RED_CARD}
-      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
-    >
-      <p className="text-xs text-[#888] uppercase tracking-[0.14em]">Kurulan Masa</p>
-      <p className="font-serif text-4xl font-bold" style={{ color: '#c0392b' }}>{vTotal.toLocaleString('tr-TR')}</p>
-      <div className="grid grid-cols-2 gap-3 mt-1">
-        <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
-          <p className="text-xs text-[#555] mb-1">Grup</p>
-          <p className="text-xl font-semibold text-[#f5f5f5]">{vGroup.toLocaleString('tr-TR')}</p>
-        </div>
-        <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
-          <p className="text-xs text-[#555] mb-1">Başbaşa</p>
-          <p className="text-xl font-semibold text-[#f5f5f5]">{vOne.toLocaleString('tr-TR')}</p>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-function AlgoCard({ rate }: { rate: number }) {
-  const v = useCountUp(rate);
-  return (
-    <motion.div
-      className="glass-card p-5 flex flex-col gap-2"
-      style={RED_CARD}
-      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}
-    >
-      <p className="text-xs text-[#888] uppercase tracking-[0.14em]">Algoritma Başarısı</p>
-      <p className="font-serif text-4xl font-bold" style={{ color: '#c0392b' }}>%{v}</p>
-      <p className="text-xs text-[#555]">Tamamlanan / toplam masa oranı</p>
-    </motion.div>
-  );
-}
-
-function PackageBar({ label, pct, count, delay }: { label: string; pct: number; count: number; delay: number }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-[#ccc]">{label}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[#555]">{count} abone</span>
-          <span className="text-sm font-medium text-[#f5f5f5]">%{pct}</span>
-        </div>
-      </div>
-      <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>
-        <motion.div
-          className="h-full rounded-full"
-          style={{ background: 'linear-gradient(90deg,#c0392b,#ff6b6b)' }}
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.8, delay, ease: 'easeOut' }}
-        />
-      </div>
+      {sub && <p style={{ margin: '4px 0 0', fontSize: 11, color: MUTED }}>{sub}</p>}
     </div>
   );
 }
 
-function Skel({ h = 'h-24' }: { h?: string }) {
+function PackageBar({ label, pct, count, color }: { label: string; pct: number; count: number; color: string }) {
   return (
-    <div className={`${h} rounded-2xl animate-pulse`}
-      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.10)' }} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 12, color: TEXT }}>{label}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO }}>{count} abone</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: TEXT, fontFamily: MONO }}>%{pct}</span>
+        </div>
+      </div>
+      <div style={{ height: 6, borderRadius: 99, background: SURFACE, overflow: 'hidden' }}>
+        <div style={{ height: '100%', borderRadius: 99, background: color, width: `${pct}%`, transition: 'width 0.8s ease' }} />
+      </div>
+    </div>
   );
 }
 
@@ -171,118 +125,146 @@ export default function AdminStats() {
 
   const pkg = data?.packageDistribution;
 
-  return (
-    <div className="p-6 max-w-4xl mx-auto">
+  const totalMeetingsAnim    = useCountUp(data?.totalMeetings ?? 0);
+  const groupMeetingsAnim    = useCountUp(data?.groupMeetings ?? 0);
+  const oneOnOneAnim         = useCountUp(data?.oneOnOneMeetings ?? 0);
+  const algoSuccessAnim      = useCountUp(data?.algorithmSuccessRate ?? 0);
 
-      {/* Başlık */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-serif text-2xl text-[#f5f5f5]">Admin · İstatistikler</h1>
+  return (
+    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
+
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>İstatistikler</h1>
       </div>
 
-      {error && <p className="text-[#ff6b6b] text-sm mb-5">{error}</p>}
+      {error && <p style={{ margin: '0 0 20px', fontSize: 12, color: RED }}>{error}</p>}
 
       {loading ? (
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-4"><Skel h="h-28" /><Skel h="h-28" /></div>
-          <Skel h="h-36" /><Skel h="h-28" />
-          <Skel h="h-40" /><Skel h="h-32" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {[0,1,2,3].map(i => <div key={i} style={{ height: 88, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, opacity: 0.5 }} />)}
         </div>
       ) : data && (
         <>
-          {/* Brüt Ciro + Aktif Üye */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <BigCard
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 12 }}>
+            <StatCard
               label="Brüt Ciro"
               value={data.totalRevenue}
               prefix="₺"
               fmtFn={fmtK}
+              accent={GREEN}
               sub={data.matchRateThisWeek !== 0
                 ? `${data.matchRateThisWeek > 0 ? '↑' : '↓'} %${Math.abs(data.matchRateThisWeek)} bu hafta`
                 : undefined}
             />
-            <BigCard
+            <StatCard
               label="Aktif Üye"
               value={data.activeUsers}
+              accent={BLUE}
               sub={data.kycPending > 0 ? `${data.kycPending} KYC bekliyor` : undefined}
             />
           </div>
 
           {/* Kurulan Masa */}
-          <div className="mb-4">
-            <MasaCard total={data.totalMeetings} group={data.groupMeetings} oneOnOne={data.oneOnOneMeetings} />
+          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>KURULAN MASA</span>
+            </div>
+            <p style={{ margin: '0 0 16px', fontSize: 36, fontWeight: 800, color: TEXT, fontFamily: MONO, letterSpacing: '-0.02em' }}>
+              {totalMeetingsAnim.toLocaleString('tr-TR')}
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+              <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 16px' }}>
+                <p style={{ margin: '0 0 4px', fontSize: 10, color: MUTED }}>Grup</p>
+                <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: TEXT, fontFamily: MONO }}>{groupMeetingsAnim.toLocaleString('tr-TR')}</p>
+              </div>
+              <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 16px' }}>
+                <p style={{ margin: '0 0 4px', fontSize: 10, color: MUTED }}>Başbaşa</p>
+                <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: TEXT, fontFamily: MONO }}>{oneOnOneAnim.toLocaleString('tr-TR')}</p>
+              </div>
+            </div>
           </div>
 
-          {/* Algoritma Başarısı */}
-          <div className="mb-4">
-            <AlgoCard rate={data.algorithmSuccessRate} />
+          {/* Algoritma */}
+          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <div style={{ width: 2, height: 12, borderRadius: 1, background: AMBER }} />
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: AMBER }}>ALGORİTMA BAŞARISI</span>
+            </div>
+            <p style={{ margin: '0 0 4px', fontSize: 36, fontWeight: 800, color: TEXT, fontFamily: MONO }}>%{algoSuccessAnim}</p>
+            <p style={{ margin: 0, fontSize: 11, color: MUTED }}>Tamamlanan / toplam masa oranı</p>
           </div>
 
-          {/* Referans Kayıt + Toplam İndirim (kırmızı BigCard) */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <BigCard label="Referans Kayıt" value={data.referralRegisteredCount} />
-            <BigCard label="Toplam İndirim" value={data.referralTotalDiscountTL} prefix="₺" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 12 }}>
+            <StatCard label="Referans Kayıt" value={data.referralRegisteredCount} accent={CYAN} />
+            <StatCard label="Toplam İndirim" value={data.referralTotalDiscountTL} prefix="₺" accent={AMBER} />
           </div>
         </>
       )}
 
       {/* Şehir tablosu */}
-      <div className="glass-card overflow-hidden mb-4">
-        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
-          <p className="text-xs text-[#888] uppercase tracking-[0.14em]">Şehir Bazlı Performans</p>
+      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', marginBottom: 12 }}>
+        <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 2, height: 12, borderRadius: 1, background: BLUE }} />
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: BLUE }}>ŞEHİR BAZLI PERFORMANS</span>
         </div>
         {loading ? (
-          <div className="p-4 flex flex-col gap-3">{[0,1,2,3].map(i => <Skel key={i} h="h-10" />)}</div>
+          <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {[0,1,2,3].map(i => <div key={i} style={{ height: 32, background: SURFACE, borderRadius: 6, opacity: 0.5 }} />)}
+          </div>
         ) : cities.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[340px]">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: 380, borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
+                <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
                   {['Şehir', 'Masa', 'Üye', 'Ciro', 'Trend'].map(h => (
-                    <th key={h} className="px-3 py-2.5 text-left text-xs text-[#555] uppercase tracking-[0.08em] font-medium">{h}</th>
+                    <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: MUTED }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {cities.map((row, i) => (
-                  <motion.tr key={row.city}
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05, duration: 0.25 }}
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
-                  >
-                    <td className="px-3 py-3 text-sm font-semibold text-[#f5f5f5]">{row.city}</td>
-                    <td className="px-3 py-3 text-sm text-[#888]">{row.totalTables}</td>
-                    <td className="px-3 py-3 text-sm text-[#888]">{row.activeMembers}</td>
-                    <td className="px-3 py-3 text-sm text-[#888]">₺{fmtK(row.revenue)}</td>
-                    <td className="px-3 py-3 text-sm font-medium"
-                      style={{ color: String(row.trend).startsWith('-') ? '#ff6b6b' : '#4ade80' }}>
+                  <tr key={row.city} style={{ borderBottom: i < cities.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none' }}>
+                    <td style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: TEXT }}>{row.city}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{row.totalTables}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{row.activeMembers}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>₺{fmtK(row.revenue)}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: String(row.trend).startsWith('-') ? RED : GREEN }}>
                       {String(row.trend).startsWith('-') ? '↓ ' : '↑ '}{String(row.trend).replace('-', '')}
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <p className="p-6 text-sm text-[#555]">Veri yok.</p>
+          <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 12, color: MUTED }}>Veri yok</p>
+          </div>
         )}
       </div>
 
-      {/* Paket Dağılımı */}
-      <div className="glass-card p-5">
-        <p className="text-xs text-[#888] uppercase tracking-[0.14em] mb-4">Paket Dağılımı</p>
+      {/* Paket dağılımı */}
+      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>
+          <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>PAKET DAĞILIMI</span>
+        </div>
         {!loading && pkg ? (
-          <div className="flex flex-col gap-4">
-            <PackageBar label="Masada" pct={pkg.masadaPct} count={pkg.masadaCount} delay={0} />
-            <PackageBar label="Karşımda" pct={pkg.karsimdaPct} count={pkg.karsimdaCount} delay={0.1} />
-            <PackageBar label="İçerde" pct={pkg.icerdePct} count={pkg.icerdeCount} delay={0.2} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <PackageBar label="Masada"   pct={pkg.masadaPct}   count={pkg.masadaCount}   color={BLUE}  />
+            <PackageBar label="Karşımda" pct={pkg.karsimdaPct} count={pkg.karsimdaCount} color={CYAN}  />
+            <PackageBar label="İçerde"   pct={pkg.icerdePct}   count={pkg.icerdeCount}   color={GREEN} />
           </div>
         ) : loading ? (
-          <div className="flex flex-col gap-4">{[0,1,2].map(i => <Skel key={i} h="h-8" />)}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[0,1,2].map(i => <div key={i} style={{ height: 32, background: SURFACE, borderRadius: 6, opacity: 0.5 }} />)}
+          </div>
         ) : (
-          <div className="flex flex-col gap-4">
-            <PackageBar label="Masada" pct={0} count={0} delay={0} />
-            <PackageBar label="Karşımda" pct={0} count={0} delay={0.1} />
-            <PackageBar label="İçerde" pct={0} count={0} delay={0.2} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <PackageBar label="Masada"   pct={0} count={0} color={BLUE}  />
+            <PackageBar label="Karşımda" pct={0} count={0} color={CYAN}  />
+            <PackageBar label="İçerde"   pct={0} count={0} color={GREEN} />
           </div>
         )}
       </div>
