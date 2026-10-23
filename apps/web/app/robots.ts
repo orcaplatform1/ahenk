@@ -6,9 +6,9 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin', '/api'],
+        disallow: ['/admin', '/api', '/dashboard', '/test', '/profil'],
       },
     ],
-    sitemap: 'https://ahenk.tr/sitemap.xml',
+    sitemap: 'https://ahenk.co/sitemap.xml',
   };
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
+import MaintenanceNotice from '@/components/MaintenanceNotice';
 
 type ActivePlan = 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
 
@@ -88,9 +89,9 @@ const PLATFORM_LABEL: Record<string, string> = {
 
 interface DiscountInfo { referralDiscount: boolean; referralCount: number; inviteeDiscount: boolean; }
 
-interface Props { kycApproved: boolean; onGoKyc: () => void; }
+interface Props { kycApproved: boolean; onGoKyc: () => void; maintenanceMode?: boolean; }
 
-export function TabPaket({ kycApproved, onGoKyc }: Props) {
+export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Props) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [activePlan, setActivePlan] = useState<ActivePlan>(null);
   const [loading, setLoading] = useState(true);
@@ -173,15 +174,25 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
       const data = await api.post<InitCheckoutResponse>('/payment/init', {
         plan,
         platform: 'WEB',
-        callbackUrl: `${window.location.origin}/odeme/basarili`,
-        failCallbackUrl: `${window.location.origin}/odeme/basarisiz`,
         ...(useDiscount ? { useDiscount } : {}),
       });
-      const form = document.createElement('div');
-      form.innerHTML = data.checkoutFormContent;
-      document.body.appendChild(form);
-      const script = form.querySelector('script');
-      if (script) { const s = document.createElement('script'); s.src = script.src; document.body.appendChild(s); }
+      // iyzico formu bu div'e yerleşir
+      let container = document.getElementById('iyzipay-checkout-form');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'iyzipay-checkout-form';
+        container.className = 'popup';
+        document.body.appendChild(container);
+      }
+      // innerHTML ile eklenen script çalışmaz; her script yeniden oluşturulup eklenir
+      const tmp = document.createElement('div');
+      tmp.innerHTML = data.checkoutFormContent;
+      tmp.querySelectorAll('script').forEach((old) => {
+        const s = document.createElement('script');
+        if (old.src) s.src = old.src;
+        else s.text = old.textContent ?? '';
+        document.body.appendChild(s);
+      });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -204,6 +215,7 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
+      {maintenanceMode && <MaintenanceNotice />}
       {/* Sadakat Programı kartı */}
       <div className="rounded-2xl border border-white/10 p-4 flex flex-col gap-3" style={{ background: '#1a1a1a' }}>
         <p className="text-xs font-medium text-muted uppercase tracking-wide">Sadakat Programı</p>
@@ -362,7 +374,7 @@ export function TabPaket({ kycApproved, onGoKyc }: Props) {
               {cs.showButton && (
                 <button
                   onClick={() => kycApproved ? handleBuy(plan.key) : onGoKyc()}
-                  disabled={buying === plan.key}
+                  disabled={buying === plan.key || maintenanceMode}
                   className="btn-primary w-full justify-center disabled:opacity-50"
                 >
                   {buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : 'Paketi Seç'}

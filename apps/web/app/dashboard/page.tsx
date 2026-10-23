@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { MasalarDashboard, buildInitials } from '@ahenk/ui';
 import { api } from '@/lib/api';
 import { AccountTabBar } from '@/components/AccountTabBar';
+import MaintenanceNotice from '@/components/MaintenanceNotice';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
 
@@ -13,6 +14,7 @@ interface MeData {
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
   profile?: { gender?: string | null };
   kyc?: { status: string; rejectReason?: string | null };
+  maintenanceMode?: boolean;
 }
 
 export default function DashboardPage() {
@@ -57,6 +59,7 @@ export default function DashboardPage() {
             <p className="text-xs text-[#888] mt-2">Profilim → Kimlik Doğrulama sekmesinden yeniden başvurabilirsiniz.</p>
           </div>
         )}
+        {me?.maintenanceMode && <MaintenanceNotice />}
         <div className="mb-3">
           <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Bu Haftanın Masası</h1>
         </div>
@@ -65,6 +68,7 @@ export default function DashboardPage() {
           token={token ?? undefined}
           selfParticipant={selfParticipant}
           activePlan={me?.activePlan ?? null}
+          kycApproved={me?.kyc?.status === 'APPROVED'}
         />
       </main>
     </div>

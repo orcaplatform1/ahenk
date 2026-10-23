@@ -7,8 +7,10 @@ import {
   Max,
   IsOptional,
   MaxLength,
+  MinLength,
   IsEnum,
 } from "class-validator";
+import { Transform } from "class-transformer";
 import { LeaveReason } from "@prisma/client";
 
 export class BlockUsersDto {
@@ -29,10 +31,18 @@ export class ReviewMeetingDto {
   @IsString({ each: true })
   blockedUserIds?: string[];
 
+  // Masaya katılmadığı bildirilen kullanıcılar
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  noShowUserIds?: string[];
+
+  // "Masa beklentilerini karşıladı mı?" — zorunlu
+  @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
   @IsString()
-  @MaxLength(300)
-  comment?: string;
+  @MinLength(20, { message: "Beklenti yorumu en az 20 karakter olmalı" })
+  @MaxLength(300, { message: "Beklenti yorumu en fazla 300 karakter olabilir" })
+  comment: string;
 }
 
 export class CancelRegistrationDto {

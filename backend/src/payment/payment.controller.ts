@@ -5,11 +5,13 @@ import {
   Body,
   Query,
   Req,
+  Res,
   UseGuards,
-  HttpCode,
   HttpStatus,
+  Logger,
 } from "@nestjs/common";
-import { Request } from "express";
+import { Request, Response } from "express";
+import { ConfigService } from "@nestjs/config";
 import { IsEnum } from "class-validator";
 import { PaymentService } from "./payment.service";
 import { InitCheckoutDto } from "./dto/init-checkout.dto";
@@ -25,7 +27,12 @@ class RequestRefundDto {
 
 @Controller("payment")
 export class PaymentController {
-  constructor(private paymentService: PaymentService) {}
+  private readonly logger = new Logger(PaymentController.name);
+
+  constructor(
+    private paymentService: PaymentService,
+    private config: ConfigService,
+  ) {}
 
   // Herkese açık — paket listesi
   @Get("plans")
@@ -55,7 +62,7 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, TestCompletedGuard, KycGuard)
   initCheckout(@Req() req: Request, @Body() dto: InitCheckoutDto) {
     const user = req.user as { id: string };
-    return this.paymentService.initCheckout(user.id, dto.plan, dto.platform, dto.callbackUrl, dto.useDiscount);
+    return this.paymentService.initCheckout(user.id, dto.plan, dto.platform, dto.useDiscount);
   }
 
   // İade talebi
@@ -66,12 +73,24 @@ export class PaymentController {
     return this.paymentService.requestRefund(user.id, dto.refundType);
   }
 
-  // iyzico callback — iyzico'dan POST gelir (auth yok, token ile doğrulama yapılır)
+  // iyzico callback — kullanıcının tarayıcısı iyzico'dan buraya POST eder (auth yok, token iyzico'dan doğrulanır).
+  // Sonuca göre kullanıcı web'deki başarılı / başarısız sayfasına yönlendirilir.
   @Post("callback")
-  @HttpCode(HttpStatus.OK)
-  async handleCallback(@Query("token") token: string, @Body() body: Record<string, string>) {
+  async handleCallback(
+    @Query("token") token: string,
+    @Body() body: Record<string, string>,
+    @Res() res: Response,
+  ) {
+    const appUrl = this.config.get<string>("APP_URL") ?? "https://ahenk.co";
     const t = token ?? body?.token;
-    if (!t) return { success: false, message: "Token eksik" };
-    return this.paymentService.handleCallback(t);
+    let success = false;
+    if (t) {
+      try {
+        success = (await this.paymentService.handleCallback(t)).success;
+      } catch (err) {
+        this.logger.error(`iyzico callback hatası: ${err}`);
+      }
+    }
+    return res.redirect(HttpStatus.SEE_OTHER, `${appUrl}/odeme/${success ? "basarili" : "basarisiz"}`);
   }
 }

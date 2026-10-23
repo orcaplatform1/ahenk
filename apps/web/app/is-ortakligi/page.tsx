@@ -368,7 +368,7 @@ export default function IsOrtakligiPage() {
           <p style={{ color: '#e8e8e8', fontSize: '0.85rem', fontWeight: 500 }}>© 2026 Ahenk. Tüm hakları saklıdır.</p>
           <p style={{ color: '#888', fontSize: '0.8rem' }}>
             Ahenk bir{' '}
-            <a href="https://ahenk.tr" style={{ textDecoration: 'none' }}>
+            <a href="https://ahenk.co" style={{ textDecoration: 'none' }}>
               <span style={{ color: '#f5f5f5', fontWeight: 600 }}>Traders</span>
               <span style={{ color: '#1e90ff', fontWeight: 700 }}>.TR</span>
             </a>

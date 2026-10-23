@@ -21,7 +21,7 @@ import { Throttle, SkipThrottle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { SendOtpDto, VerifyOtpDto, SendLoginOtpDto, VerifyLoginOtpDto } from "./dto/send-otp.dto";
+import { SendOtpDto, VerifyOtpDto, SendLoginOtpDto, VerifyLoginOtpDto, ForgotPasswordDto, ResetPasswordDto } from "./dto/send-otp.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 import { CurrentUser } from "./decorators/current-user.decorator";
@@ -94,16 +94,32 @@ export class AuthController {
 
   @Get("me")
   @UseGuards(JwtAuthGuard)
-  @Throttle({ global: { ttl: 60000, limit: 60 }, auth: { ttl: 60000, limit: 60 }, sos: { ttl: 300000, limit: 300 }, strict: { ttl: 60000, limit: 60 } })
+  @Throttle({ default: { ttl: 60000, limit: 60 } })
   @ApiBearerAuth()
   @ApiOperation({ summary: "Mevcut kullanıcı bilgisi" })
   me(@CurrentUser() user: any) {
     return this.authService.getMe(user);
   }
 
+  @Post("forgot-password")
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @ApiOperation({ summary: "Şifre sıfırlama — WhatsApp kodu gönder (public)" })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.phone);
+  }
+
+  @Post("reset-password")
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @ApiOperation({ summary: "Şifre sıfırlama — kod + yeni şifre (public)" })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.phone, dto.code, dto.newPassword);
+  }
+
   @Post("send-login-otp")
   @HttpCode(HttpStatus.OK)
-  @Throttle({ auth: { ttl: 60000, limit: 5 } })
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: "WhatsApp OTP ile giriş — kod gönder (public)" })
   async sendLoginOtp(@Body() dto: SendLoginOtpDto) {
     return this.authService.sendLoginOtp(dto.phone);
@@ -111,7 +127,7 @@ export class AuthController {
 
   @Post("verify-login-otp")
   @HttpCode(HttpStatus.OK)
-  @Throttle({ auth: { ttl: 60000, limit: 10 } })
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: "WhatsApp OTP ile giriş — kodu doğrula (public)" })
   async verifyLoginOtp(
     @Body() dto: VerifyLoginOtpDto,
@@ -124,7 +140,7 @@ export class AuthController {
 
   @Post("send-otp")
   @HttpCode(HttpStatus.OK)
-  @Throttle({ auth: { ttl: 60000, limit: 5 } })
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "WhatsApp OTP gönder (telefon doğrulama)" })

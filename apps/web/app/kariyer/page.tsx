@@ -304,8 +304,8 @@ export default function KariyerPage() {
                 Hâlâ aklında sorular mı var?
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.5rem' }}>
-                <a href="mailto:bilgi@ahenk.tr" style={{ color: '#c0392b', fontSize: '0.95rem', textDecoration: 'none', fontWeight: 500 }}>
-                  bilgi@ahenk.tr
+                <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b', fontSize: '0.95rem', textDecoration: 'none', fontWeight: 500 }}>
+                  bilgi@ahenk.co
                 </a>
                 <a href="tel:+905403060080" style={{ color: '#888', fontSize: '0.9rem', textDecoration: 'none' }}>
                   0540 306 0080
@@ -322,7 +322,7 @@ export default function KariyerPage() {
           <p style={{ color: '#e8e8e8', fontSize: '0.85rem', fontWeight: 500 }}>© 2026 Ahenk. Tüm hakları saklıdır.</p>
           <p style={{ color: '#888', fontSize: '0.8rem' }}>
             Ahenk bir{' '}
-            <a href="https://ahenk.tr" style={{ textDecoration: 'none' }}>
+            <a href="https://ahenk.co" style={{ textDecoration: 'none' }}>
               <span style={{ color: '#f5f5f5', fontWeight: 600 }}>Traders</span>
               <span style={{ color: '#1e90ff', fontWeight: 700 }}>.TR</span>
             </a>

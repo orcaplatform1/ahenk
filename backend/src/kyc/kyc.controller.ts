@@ -44,7 +44,7 @@ export class KycController {
         { name: "idBack",   maxCount: 1 },
         { name: "liveness", maxCount: 1 },
       ],
-      { limits: { fileSize: 80 * 1024 * 1024 } },
+      { limits: { fileSize: 100 * 1024 * 1024, files: 3 } },
     ),
   )
   upload(

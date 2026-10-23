@@ -13,7 +13,10 @@ import {
   DefaultValuePipe,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { IsEnum, IsOptional, IsString } from "class-validator";
 import { Request } from "express";
 import { AdminService } from "./admin.service";
@@ -31,12 +34,18 @@ import {
   CancelSubscriptionDto,
   UpdateSettingsDto,
   CreateSanctionDto,
+  SanctionReasonDto,
+  PlaceBotDto,
+  UpdateVenuePhotosDto,
+  UpdatePartnershipDto,
+  UpdateCareerDto,
 } from "./dto/admin.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { UserRole, RefundStatus } from "@prisma/client";
 import { SkipThrottle } from "@nestjs/throttler";
+import { SANCTION_REASONS } from "./sanction-reasons";
 
 class UpdateRefundDto {
   @IsEnum(RefundStatus)
@@ -93,7 +102,7 @@ export class AdminController {
     @Req() req: Request,
   ) {
     const actor = req.user as { id: string };
-    return this.adminService.updateUserStatus(id, actor.id, dto.status);
+    return this.adminService.updateUserStatus(id, actor.id, dto.status, dto.reason);
   }
 
   @Patch("users/:id/role")
@@ -137,6 +146,17 @@ export class AdminController {
     return this.adminService.getUserSubscriptions(id);
   }
 
+  @Get("subscriptions")
+  listSubscriptions(
+    @Query("status") status?: string,
+    @Query("plan") plan?: string,
+    @Query("search") search?: string,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query("limit", new DefaultValuePipe(25), ParseIntPipe) limit?: number,
+  ) {
+    return this.adminService.listSubscriptions({ status, plan, search, page, limit });
+  }
+
   @Patch("subscriptions/:id/cancel")
   cancelSubscription(
     @Param("id") id: string,
@@ -174,24 +194,19 @@ export class AdminController {
   }
 
   @Patch("meetings/:id/venue-photos")
-  updateMeetingVenuePhotos(@Param("id") id: string, @Body() dto: {
-    venueAddress?: string;
-    venuePhotoUrl?: string;  venuePhotoCaption1?: string;
-    venuePhoto2Url?: string; venuePhotoCaption2?: string;
-    venuePhoto3Url?: string; venuePhotoCaption3?: string;
-  }) {
+  updateMeetingVenuePhotos(@Param("id") id: string, @Body() dto: UpdateVenuePhotosDto) {
     return this.adminService.updateMeetingVenuePhotos(id, dto);
   }
 
-  @Post("meetings/venue-photo-upload-url")
-  async getVenuePhotoUploadUrl(
-    @Body() dto: { meetingId: string; slot: 1 | 2 | 3; contentType: string; contentLength: number },
+  // Mekan fotoğrafı yükle (multipart: file + slot 1|2|3) — sunucu diskine kaydedilir
+  @Post("meetings/:id/venue-photo")
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }))
+  uploadVenuePhoto(
+    @Param("id") id: string,
+    @Query("slot", ParseIntPipe) slot: number,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    const ext = dto.contentType.split('/')[1] ?? 'jpg';
-    const key = `venues/${dto.meetingId}/photo${dto.slot}-${Date.now()}.${ext}`;
-    const url = await this.adminService.storage.presignedPutUrl(key, dto.contentType, dto.contentLength);
-    const publicBase = process.env.R2_PUBLIC_URL ?? '';
-    return { uploadUrl: url, publicUrl: publicBase ? `${publicBase}/${key}` : null, key };
+    return this.adminService.saveVenuePhoto(id, slot, file);
   }
 
   @Patch("meetings/:id/extend-deadline")
@@ -258,7 +273,6 @@ export class AdminController {
   @Patch("settings")
   updateSettings(@Body() dto: UpdateSettingsDto) {
     return this.adminService.updateSettings({
-      weeklyTableLimit: dto.weeklyTableLimit,
       matchingEnabled: dto.matchingEnabled,
       botSystemActive: dto.botSystemActive,
       maintenanceMode: dto.maintenanceMode,
@@ -278,8 +292,8 @@ export class AdminController {
   }
 
   @Post("matches/:id/bot")
-  placeBot(@Param("id") id: string, @Body() body: { botUserId: string }) {
-    return this.adminService.placeBot(id, body.botUserId);
+  placeBot(@Param("id") id: string, @Body() dto: PlaceBotDto) {
+    return this.adminService.placeBot(id, dto.botUserId);
   }
 
   // ─── Uyarılar & İade Talepleri ────────────────────────────────────────────
@@ -322,13 +336,15 @@ export class AdminController {
   // ─── Karantina & Ban ─────────────────────────────────────────────────────
 
   @Post("users/:id/quarantine")
-  quarantineUser(@Param("id") id: string) {
-    return this.adminService.quarantineUser(id);
+  quarantineUser(@Param("id") id: string, @Body() dto: SanctionReasonDto, @Req() req: Request) {
+    const actor = req.user as { id: string };
+    return this.adminService.quarantineUser(id, actor.id, dto.reason);
   }
 
   @Post("users/:id/ban")
-  banUser(@Param("id") id: string) {
-    return this.adminService.banUser(id);
+  banUser(@Param("id") id: string, @Body() dto: SanctionReasonDto, @Req() req: Request) {
+    const actor = req.user as { id: string };
+    return this.adminService.banUser(id, actor.id, dto.reason);
   }
 
   @Post("users/:id/sanction")
@@ -348,8 +364,14 @@ export class AdminController {
   }
 
   @Delete("users/:id/sanction/:sanctionId")
-  liftSanction(@Param("id") id: string, @Param("sanctionId") sanctionId: string) {
-    return this.adminService.liftSanction(id, sanctionId);
+  liftSanction(@Param("id") id: string, @Param("sanctionId") sanctionId: string, @Req() req: Request) {
+    const actor = req.user as { id: string };
+    return this.adminService.liftSanction(id, sanctionId, actor.id);
+  }
+
+  @Get("sanction-reasons")
+  getSanctionReasons() {
+    return SANCTION_REASONS;
   }
 
   @Get("users/:id/sanctions")
@@ -363,7 +385,7 @@ export class AdminController {
   }
 
   @Patch("partnerships/:id")
-  updatePartnership(@Param("id") id: string, @Body() body: { status?: string; adminNote?: string }) {
+  updatePartnership(@Param("id") id: string, @Body() body: UpdatePartnershipDto) {
     return this.adminService.updatePartnership(id, body);
   }
 
@@ -373,7 +395,7 @@ export class AdminController {
   }
 
   @Patch("careers/:id")
-  updateCareer(@Param("id") id: string, @Body() body: { status?: string; adminNote?: string }) {
+  updateCareer(@Param("id") id: string, @Body() body: UpdateCareerDto) {
     return this.adminService.updateCareer(id, body);
   }
 

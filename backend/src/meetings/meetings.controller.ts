@@ -34,6 +34,13 @@ export class MeetingsController {
   }
 
   // Katılımcı önizlemesi — ad+soyad baş harfi + cinsiyet
+  // Değerlendirme sayfası başlığı: mekan adı + tarih
+  @Get(":id/info")
+  getMeetingInfo(@Param("id") id: string, @Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.meetingsService.getMeetingInfo(id, user.id);
+  }
+
   @Get(":id/participants-preview")
   getParticipantsPreview(@Param("id") id: string, @Req() req: Request) {
     const user = req.user as { id: string };
@@ -76,8 +83,9 @@ export class MeetingsController {
 
   // AI masa raporu
   @Get(":id/ai-report")
-  getAiReport(@Param("id") id: string) {
-    return this.aiReportService.getReport(id);
+  getAiReport(@Param("id") id: string, @Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.aiReportService.getReport(id, user.id);
   }
 
   // Buluşma değerlendirmesi
@@ -94,6 +102,7 @@ export class MeetingsController {
       dto.rating,
       dto.blockedUserIds ?? [],
       dto.comment,
+      dto.noShowUserIds ?? [],
     );
   }
 }

@@ -1,7 +1,6 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
-import { NotificationService } from "../notification/notification.service";
 import { ReferralStatus } from "@prisma/client";
 import { ConfigService } from "@nestjs/config";
 
@@ -10,7 +9,6 @@ export class ReferralService {
   constructor(
     private prisma: PrismaService,
     private whatsapp: WhatsappNotifyService,
-    private notification: NotificationService,
     private config: ConfigService,
   ) {}
 
@@ -33,34 +31,13 @@ export class ReferralService {
       data: { referrerId: userId, invitedPhone: phoneNumber, status: ReferralStatus.PENDING },
     });
 
-    const appUrl = this.config.get<string>("APP_URL") ?? "https://ahenk.tr";
+    const appUrl = this.config.get<string>("APP_URL") ?? "https://ahenk.co";
     const inviteLink = `${appUrl}/kayit?ref=${referral.inviteCode}`;
     const fullName = `${user.profile?.firstName ?? ""} ${user.profile?.lastName ?? ""}`.trim();
 
     await this.whatsapp.send(phoneNumber, "ahenk_referral_invite", [fullName, inviteLink]);
 
     return { ok: true, inviteCode: referral.inviteCode };
-  }
-
-  async handleReferralOnRegister(newUserId: string, inviteCode: string) {
-    const referral = await this.prisma.referral.findUnique({
-      where: { inviteCode },
-      include: { referrer: { include: { profile: true } } },
-    });
-    if (!referral || referral.status !== ReferralStatus.PENDING) return;
-
-    await this.prisma.$transaction([
-      this.prisma.referral.update({
-        where: { id: referral.id },
-        data: { referredId: newUserId, status: ReferralStatus.REGISTERED },
-      }),
-      this.prisma.user.update({
-        where: { id: newUserId },
-        data: { referralDiscountAvailable: true },
-      }),
-    ]);
-
-    await this.notification.notifyReferralRegistered(referral.referrerId);
   }
 
   async applyReferrerDiscount(userId: string): Promise<{ referralId: string; discountKurus: number; originalKurus: number } | null> {

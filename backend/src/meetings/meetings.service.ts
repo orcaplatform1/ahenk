@@ -14,6 +14,29 @@ import { BOT_FILL_QUEUE, JOB_FILL_SPOT } from "./bot-fill.processor";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
+// Admin ayrı harita linki girmediyse mekan adı + adresle Google Maps araması
+function googleMapsUrl(name?: string | null, address?: string | null): string | null {
+  const q = [name, address].filter(Boolean).join(", ");
+  return q ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` : null;
+}
+
+// Değerlendirme penceresi (TR saati, UTC+3): buluşmanın ertesi günü 10:00 → buluşmadan 4 gün sonra 23:59
+// Grup (Cumartesi) → Pazar 10:00 – Çarşamba 23:59; Başbaşa (Pazar) → Pazartesi 10:00 – Perşembe 23:59
+function reviewWindow(scheduledAt: Date): { opensAt: Date; closesAt: Date } {
+  const tr = new Date(scheduledAt.getTime() + 3 * 60 * 60 * 1000);
+  const y = tr.getUTCFullYear(), m = tr.getUTCMonth(), d = tr.getUTCDate();
+  return {
+    opensAt: new Date(Date.UTC(y, m, d + 1, 10 - 3, 0, 0, 0)),
+    closesAt: new Date(Date.UTC(y, m, d + 4, 23 - 3, 59, 59, 999)),
+  };
+}
+
+// Rezervasyon iptalinin son anı: masa gününden 2 gün önce 20:00 (TR, UTC+3)
+function cancelDeadline(scheduledAt: Date): Date {
+  const tr = new Date(scheduledAt.getTime() + 3 * 60 * 60 * 1000);
+  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() - 2, 20 - 3, 0, 0, 0));
+}
+
 @Injectable()
 export class MeetingsService {
   constructor(
@@ -169,7 +192,7 @@ export class MeetingsService {
             ...(isRevealed && {
               venueName: m.locationText,
               venueAddress: m.venueAddress,
-              venueMapsUrl: m.locationUrl,
+              venueMapsUrl: m.locationUrl ?? googleMapsUrl(m.locationText, m.venueAddress),
               venuePhotos: photos,
               aiReport,
             }),
@@ -264,48 +287,80 @@ export class MeetingsService {
     reviewerId: string,
     rating: number,
     blockedUserIds: string[] = [],
-    comment?: string,
+    comment: string,
+    noShowUserIds: string[] = [],
   ) {
     // Katılımcı kontrolü
     const participation = await this.prisma.meetingParticipant.findUnique({
       where: { meetingId_userId: { meetingId, userId: reviewerId } },
+      select: { meeting: { select: { scheduledAt: true } } },
     });
     if (!participation) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
 
-    // Zaten değerlendirmiş mi?
+    // Değerlendirme penceresi
+    const { opensAt, closesAt } = reviewWindow(participation.meeting.scheduledAt);
+    const now = new Date();
+    if (now < opensAt) throw new BadRequestException("Değerlendirme henüz açılmadı");
+    if (now > closesAt) throw new BadRequestException("Değerlendirme süresi doldu");
+
+    // Zaten değerlendirmiş mi? (değerlendirme bir kez yapılır, düzeltilemez)
     const existing = await this.prisma.meetingReview.findUnique({
       where: { meetingId_reviewerId: { meetingId, reviewerId } },
     });
     if (existing) throw new ConflictException("Bu masayı zaten değerlendirdiniz");
 
-    // Review kaydet
-    await this.prisma.meetingReview.create({
-      data: { meetingId, reviewerId, rating, comment },
+    const meetingParticipants = await this.prisma.meetingParticipant.findMany({
+      where: { meetingId },
+      select: { userId: true },
     });
+    const validIds = new Set(meetingParticipants.map((p) => p.userId));
+    const onlyOthers = (ids: string[]) => [...new Set(ids)].filter((id) => validIds.has(id) && id !== reviewerId);
+    const toBlock = onlyOthers(blockedUserIds);
+    const toReport = onlyOthers(noShowUserIds);
 
-    // Engelleme işlemleri
-    if (blockedUserIds.length > 0) {
-      const meetingParticipants = await this.prisma.meetingParticipant.findMany({
-        where: { meetingId },
-        select: { userId: true },
-      });
-      const validIds = new Set(meetingParticipants.map((p) => p.userId));
-      const toBlock = blockedUserIds.filter((id) => validIds.has(id) && id !== reviewerId);
-
-      if (toBlock.length > 0) {
-        await Promise.all(
-          toBlock.map((blockedId) =>
-            this.prisma.userBlock.upsert({
-              where: { blockerId_blockedId: { blockerId: reviewerId, blockedId } },
-              update: {},
-              create: { blockerId: reviewerId, blockedId },
-            }),
-          ),
-        );
-      }
-    }
+    await this.prisma.$transaction([
+      this.prisma.meetingReview.create({
+        data: { meetingId, reviewerId, rating, comment },
+      }),
+      // Engelleme (geri alınamaz)
+      ...toBlock.map((blockedId) =>
+        this.prisma.userBlock.upsert({
+          where: { blockerId_blockedId: { blockerId: reviewerId, blockedId } },
+          update: {},
+          create: { blockerId: reviewerId, blockedId },
+        }),
+      ),
+      // Masaya katılmadı bildirimi
+      ...toReport.map((reportedId) =>
+        this.prisma.noShowReport.create({
+          data: { meetingId, reporterId: reviewerId, reportedId },
+        }),
+      ),
+    ]);
 
     return { success: true };
+  }
+
+  // ─── Masa bilgisi (değerlendirme başlığı) ────────────────────────────────
+
+  async getMeetingInfo(meetingId: string, requesterId: string) {
+    const participation = await this.prisma.meetingParticipant.findUnique({
+      where: { meetingId_userId: { meetingId, userId: requesterId } },
+      select: { meeting: { select: { locationText: true, scheduledAt: true } } },
+    });
+    if (!participation) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    const reviewed = await this.prisma.meetingReview.findUnique({
+      where: { meetingId_reviewerId: { meetingId, reviewerId: requesterId } },
+      select: { id: true },
+    });
+    const { opensAt, closesAt } = reviewWindow(participation.meeting.scheduledAt);
+    return {
+      locationName: participation.meeting.locationText,
+      scheduledAt: participation.meeting.scheduledAt,
+      reviewOpensAt: opensAt,
+      reviewClosesAt: closesAt,
+      reviewed: !!reviewed,
+    };
   }
 
   // ─── Katılımcı önizlemesi (baş harfi + cinsiyet) ──────────────────────────
@@ -503,21 +558,12 @@ export class MeetingsService {
       throw new ForbiddenException("Bu masa artık aktif değil");
     }
 
-    const now = new Date();
-    const nowTR = new Date(now.getTime() + 3 * 60 * 60 * 1000);
-    const dayTRRaw = nowTR.getUTCDay(); // 0=Paz, 4=Per, 5=Cum
-    // Pazar (0) matematiksel olarak haftanın sonu: 7 olarak değerlendir
-    const dayTR = dayTRRaw === 0 ? 7 : dayTRRaw;
-
     const isGroup = meeting.type === MeetingType.GROUP;
 
-    // Grup: Perşembe 20:00'a kadar iptal (4=Perşembe). Baş başa: Cuma 20:00'a kadar (5=Cuma)
-    const deadlineDay = isGroup ? 4 : 5;
-    const deadlineHour = 20;
-
-    const pastDeadline =
-      dayTR > deadlineDay ||
-      (dayTR === deadlineDay && nowTR.getUTCHours() >= deadlineHour);
+    // İptal süresi masa tarihinden hesaplanır: masa gününden 2 gün önce 20:00 (TR)
+    // Grup (Cumartesi) → Perşembe 20:00, Başbaşa (Pazar) → Cuma 20:00
+    const now = new Date();
+    const pastDeadline = now >= cancelDeadline(meeting.scheduledAt);
 
     if (pastDeadline) {
       throw new ForbiddenException(

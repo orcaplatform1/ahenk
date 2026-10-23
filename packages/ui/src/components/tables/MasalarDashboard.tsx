@@ -77,6 +77,21 @@ function nextDeadline(type: 'GROUP' | 'ONE_ON_ONE'): Date {
 
 
 
+// ── Eşleşme kapalı mı? (TR saati) — Grup: Perşembe 23:59 → Pazar 23:59, Başbaşa: Cuma 23:59 → Pazar 23:59 ──
+function isMatchingClosed(type: 'GROUP' | 'ONE_ON_ONE'): boolean {
+  const dayTR = new Date(Date.now() + 3 * 60 * 60 * 1000).getUTCDay(); // 0=Pazar … 6=Cumartesi
+  return type === 'GROUP' ? (dayTR === 5 || dayTR === 6 || dayTR === 0) : (dayTR === 6 || dayTR === 0);
+}
+
+// Yeni taramanın başlayacağı Pazar 23:59 (TR) — örn. "1 Kasım Pazar 23:59"
+function nextScanStartLabel(): string {
+  const nowTR = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  const sunTR = new Date(nowTR);
+  sunTR.setUTCDate(nowTR.getUTCDate() + ((7 - nowTR.getUTCDay()) % 7));
+  const date = sunTR.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long', timeZone: 'UTC' });
+  return `${date} 23:59`;
+}
+
 function CenterCountdown({ type }: { type: 'GROUP' | 'ONE_ON_ONE' }) {
   const [msLeft, setMsLeft] = useState(() => Math.max(0, nextDeadline(type).getTime() - Date.now()));
 
@@ -255,6 +270,7 @@ interface Props {
   pollIntervalMs?: number;
   selfParticipant?: Participant;
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
+  kycApproved?: boolean;
 }
 
 // ── Avatar bileşeni ────────────────────────────────────────────────────────
@@ -773,6 +789,62 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
   );
 }
 
+// ── Kapalı ekran (kapanıştan sonra, masası olmayan aboneler) ─────────────────
+function ClosedView({ type = 'GROUP', isDesktop, icon = '/clock-icon.png', message, action }: {
+  type?: 'GROUP' | 'ONE_ON_ONE';
+  isDesktop?: boolean;
+  icon?: string;
+  message?: React.ReactNode;
+  action?: { label: string; href: string };
+}) {
+  const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale(isDesktop ? 1.5 : 1);
+  const c = RADAR_SZ / 2;
+
+  return (
+    <div>
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <h2 style={{
+          fontFamily: 'var(--font-serif, "DM Serif Display", serif)',
+          fontSize: 22, fontWeight: 400, color: '#f5f5f5',
+          letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0,
+        }}>
+          {type === 'ONE_ON_ONE' ? 'BAŞ BAŞA MASA' : 'GRUP MASASI'}
+        </h2>
+      </div>
+
+      {/* Hareketsiz radar */}
+      <div ref={radarWrapRef} style={{ width: '100%', display: 'flex', justifyContent: 'center', overflow: 'visible' }}>
+        <div style={{
+          transform: `scale(${radarScale})`, transformOrigin: 'top center',
+          marginBottom: RADAR_SZ * (radarScale - 1), flexShrink: 0,
+        }}>
+          <div style={{ position: 'relative', width: RADAR_SZ, height: RADAR_SZ }}>
+            <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} aria-hidden>
+              {[0.92, 0.68, 0.44, 0.2].map((f, i) => (
+                <circle key={i} cx={c} cy={c} r={c * f} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={1} />
+              ))}
+              <line x1={c} y1={c * 0.08} x2={c} y2={RADAR_SZ - c * 0.08} stroke="rgba(255,255,255,0.04)" />
+              <line x1={c * 0.08} y1={c} x2={RADAR_SZ - c * 0.08} y2={c} stroke="rgba(255,255,255,0.04)" />
+            </svg>
+            {/* Saat ikonu */}
+            <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={icon} width={64} height={64} style={{ display: 'block' }} alt="" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ textAlign: 'center', marginTop: 20, padding: '0 8px' }}>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.65, margin: action ? '0 0 22px' : 0 }}>
+          {message ?? <>Yeni eşleşme taraması <span style={{ color: '#f5f5f5', fontWeight: 600 }}>{nextScanStartLabel()}</span>&apos;da başlayacak.</>}
+        </p>
+        {action && <a href={action.href} className="btn-primary">{action.label}</a>}
+      </div>
+    </div>
+  );
+}
+
 // ── Kilitli ekran (yanlış/eksik paket) ────────────────────────────────────────
 const LOCK_CLR      = '#e8850c';
 const LOCK_ICON_CLR = '#7bc67e';
@@ -861,6 +933,7 @@ function MasaKarti({
   isDesktop?: boolean;
 }) {
   if (!item) {
+    if (isMatchingClosed(type)) return <ClosedView type={type} isDesktop={isDesktop} />;
     return <ScanningView type={type} participants={[]} selfParticipant={selfParticipant} isDesktop={isDesktop} />;
   }
 
@@ -999,6 +1072,7 @@ export function MasalarDashboard({
   pollIntervalMs = 15000,
   selfParticipant,
   activePlan,
+  kycApproved = true,
 }: Props) {
   const [dashData, setDashData]   = useState<DashboardResponse | null>(null);
   const [loading, setLoading]     = useState(!!apiBase);
@@ -1071,6 +1145,20 @@ export function MasalarDashboard({
   function getTabContent(tab: 'GROUP' | 'ONE_ON_ONE') {
     // Abonelik yok → her iki tab da kilitli
     if (!activePlan) return <LockedView type={tab} neededPlan={null} isDesktop={isDesktop} />;
+
+    // Paket olsa bile (admin vermiş olsa dahi) KYC onaylı değilse eşleşme taraması yapılmaz
+    const tabItem = tab === 'GROUP' ? groupItem : oneOnOneItem;
+    if (!kycApproved && !tabItem) {
+      return (
+        <ClosedView
+          type={tab}
+          isDesktop={isDesktop}
+          icon="/lock-icon.png"
+          message="Eşleşme taramasına katılabilmek için kimlik doğrulamanızı (KYC) tamamlamalısınız."
+          action={{ label: 'Kimliğimi Doğrula', href: '/profil?tab=kyc' }}
+        />
+      );
+    }
 
     if (activePlan === 'ICERDE') {
       const item = tab === 'GROUP' ? groupItem : oneOnOneItem;

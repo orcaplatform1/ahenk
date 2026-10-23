@@ -25,9 +25,3 @@ export const SATURDAY_NOTIFY_HOUR_UTC = 7;
 
 // Bull queue adı
 export const MATCHING_QUEUE = "matching";
-
-// Job adları
-export const JOB_RUN_HOURLY_MATCHING = "run-hourly-matching";
-export const JOB_THURSDAY_CLOSING    = "thursday-closing";
-export const JOB_SATURDAY_NOTIFY     = "saturday-notify";
-export const JOB_CHECK_DEADLINE      = "check-table-deadline";

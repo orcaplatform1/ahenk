@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
+import { randomInt } from "crypto";
 import { RedisService } from "../../redis/redis.service";
 import { WhatsappService } from "../whatsapp/whatsapp.service";
 
@@ -31,13 +32,36 @@ export class OtpService {
     await this.redis.set(this.key(phone), JSON.stringify(entry), ttl);
   }
 
-  // OTP bypass aktif — gerçek WhatsApp API key gelince kaldır
-  async send(_phone: string): Promise<void> {
-    return;
+  async send(phone: string): Promise<void> {
+    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+    await this.saveEntry(phone, { code, attempts: 0 });
+    try {
+      await this.whatsapp.sendOtp(phone, code);
+    } catch (err) {
+      // Gönderilemeyen kod geçerli kalmasın
+      await this.redis.del(this.key(phone));
+      throw err;
+    }
   }
 
-  async verify(_phone: string, _code: string): Promise<void> {
-    return;
+  async verify(phone: string, code: string): Promise<void> {
+    const entry = await this.getEntry(phone);
+    if (!entry) {
+      throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
+    }
+
+    if (entry.code !== code) {
+      const attempts = entry.attempts + 1;
+      if (attempts >= MAX_ATTEMPTS) {
+        await this.redis.del(this.key(phone));
+        throw new BadRequestException("Çok fazla hatalı deneme, yeni kod isteyin");
+      }
+      const ttl = await this.redis.ttl(this.key(phone));
+      await this.saveEntry(phone, { ...entry, attempts }, ttl > 0 ? ttl : OTP_TTL_SECONDS);
+      throw new BadRequestException(`Kod hatalı. Kalan deneme hakkı: ${MAX_ATTEMPTS - attempts}`);
+    }
+
+    await this.redis.del(this.key(phone));
   }
 
   private async getRemainingTtl(phone: string): Promise<number> {

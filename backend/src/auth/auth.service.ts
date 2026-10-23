@@ -5,12 +5,14 @@ import {
   BadRequestException,
   ForbiddenException,
   HttpException,
+  NotFoundException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
+import { isMaintenanceMode } from "../admin/app-settings";
 import { UsersService } from "../users/users.service";
 import { OtpService } from "./otp/otp.service";
 import { RegisterDto } from "./dto/register.dto";
@@ -80,6 +82,11 @@ export class AuthService {
     if (existing) throw new ConflictException("Bu e-posta zaten kullanılıyor");
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
+
+    if (dto.primaryCityId) {
+      const city = await this.prisma.city.findUnique({ where: { id: dto.primaryCityId }, select: { isActive: true } });
+      if (!city?.isActive) throw new BadRequestException("Seçilen şehir şu an aktif değil");
+    }
 
     if (dto.phoneNumber) {
       const phoneExists = await this.prisma.user.findUnique({ where: { phone: dto.phoneNumber } });
@@ -169,10 +176,11 @@ export class AuthService {
     });
 
     if (!user) throw new UnauthorizedException("E-posta veya şifre hatalı");
-    await this.checkSanction(user.id, user.status);
 
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatch) throw new UnauthorizedException("E-posta veya şifre hatalı");
+    // Yaptırım bilgisi sadece şifre doğruysa gösterilir
+    await this.checkSanction(user.id, user.status);
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
     return { user: this.sanitizeUser(user), ...tokens };
@@ -221,9 +229,34 @@ export class AuthService {
   async sendLoginOtp(phone: string) {
     const user = await this.prisma.user.findUnique({ where: { phone } });
     if (!user) throw new UnauthorizedException("Bu telefon numarasıyla kayıtlı hesap bulunamadı");
-    await this.checkSanction(user.id, user.status);
+    // Yaptırım kontrolü kod doğrulandıktan sonra yapılır (verifyLoginOtp)
     await this.otpService.send(phone);
     return { message: "Doğrulama kodu gönderildi" };
+  }
+
+  // ─── Şifre sıfırlama (WhatsApp kodu) ──────────────────────────────────────
+
+  async forgotPassword(phone: string) {
+    const user = await this.prisma.user.findUnique({ where: { phone }, select: { id: true, isBot: true } });
+    if (!user || user.isBot) throw new NotFoundException("Bu telefon numarasıyla kayıtlı hesap bulunamadı");
+    await this.otpService.send(phone);
+    return { message: "Doğrulama kodu gönderildi" };
+  }
+
+  async resetPassword(phone: string, code: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { phone }, select: { id: true, isBot: true } });
+    if (!user || user.isBot) throw new NotFoundException("Bu telefon numarasıyla kayıtlı hesap bulunamadı");
+
+    await this.otpService.verify(phone, code);
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+    // Tüm oturumlar kapatılır
+    await this.prisma.refreshToken.updateMany({
+      where: { userId: user.id, revoked: false },
+      data: { revoked: true },
+    });
+    return { message: "Şifre güncellendi" };
   }
 
   async verifyLoginOtp(phone: string, code: string) {
@@ -232,9 +265,10 @@ export class AuthService {
       include: { profile: true },
     });
     if (!user) throw new UnauthorizedException("Hesap bulunamadı");
-    await this.checkSanction(user.id, user.status);
 
     await this.otpService.verify(phone, code);
+    // Yaptırım bilgisi sadece kod doğruysa gösterilir
+    await this.checkSanction(user.id, user.status);
 
     await this.prisma.user.update({
       where: { id: user.id },
@@ -314,7 +348,7 @@ export class AuthService {
   }
 
   async getMe(user: any) {
-    const [primaryCity, activeSubs, activeSanction] = await Promise.all([
+    const [primaryCity, activeSubs, activeSanction, maintenanceMode] = await Promise.all([
       user.profile?.primaryCity
         ? this.prisma.city.findUnique({ where: { id: user.profile.primaryCity }, select: { id: true, name: true } })
         : Promise.resolve(null),
@@ -331,6 +365,7 @@ export class AuthService {
         orderBy: { createdAt: 'desc' },
         select: { id: true, type: true, reason: true, expiresAt: true, createdAt: true },
       }),
+      isMaintenanceMode(this.prisma),
     ]);
 
     const hasIcerde = activeSubs.some((s) => s.plan === 'ICERDE');
@@ -347,6 +382,7 @@ export class AuthService {
       kyc: kyc ? { status: kyc.status, rejectReason: kyc.rejectReason ?? null } : undefined,
       activePlan,
       activeSanction: activeSanction ?? null,
+      maintenanceMode,
       profile: profile ? {
         gender: profile.gender,
         birthDate: profile.birthDate,

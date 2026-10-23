@@ -2,6 +2,7 @@ import { Processor, Process } from "@nestjs/bull";
 import { Logger } from "@nestjs/common";
 import { Job } from "bull";
 import { PrismaService } from "../prisma/prisma.service";
+import { isBotSystemActive } from "../admin/app-settings";
 import { Gender, MeetingType } from "@prisma/client";
 
 export const BOT_FILL_QUEUE = "bot-fill";
@@ -21,6 +22,10 @@ export class BotFillProcessor {
   @Process(JOB_FILL_SPOT)
   async handleFillSpot(job: Job<FillSpotData>) {
     const { meetingId, missingGender } = job.data;
+    if (!(await isBotSystemActive(this.prisma))) {
+      this.logger.log(`Bot sistemi kapalı, bot eklenmedi: masa ${meetingId}`);
+      return;
+    }
     this.logger.log(`Bot doldurma kontrolü: masa ${meetingId}, cinsiyet ${missingGender ?? "herhangi"}`);
 
     const meeting = await this.prisma.meeting.findUnique({

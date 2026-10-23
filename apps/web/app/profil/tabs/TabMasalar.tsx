@@ -22,13 +22,11 @@ interface DashboardItem {
   };
 }
 
+// GET /meetings/my-history yanıtı (sadece tamamlanmış masalar)
 interface HistoryMeeting {
   id: string;
-  scheduledAt: string;
-  type?: 'GROUP' | 'ONE_ON_ONE';
-  locationName?: string | null;
-  locationText?: string | null;
-  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  date: string;
+  venueName: string | null;
   _count?: { participants?: number };
   participantCount?: number;
   isReviewed?: boolean;
@@ -646,14 +644,14 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
 }
 
 function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
-  const location = m.locationName ?? m.locationText ?? null;
+  const location = m.venueName;
   const pCount   = getParticipantCount(m);
 
   return (
     <div className="glass-card p-5 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1 min-w-0">
-          <p className="text-sm font-medium text-[#f5f5f5]">{fmtDate(m.scheduledAt)}</p>
+          <p className="text-sm font-medium text-[#f5f5f5]">{fmtDate(m.date)}</p>
           <p className="text-xs text-[#888] truncate">{location ?? 'Mekan bilgisi yok'}</p>
           {pCount !== null && (
             <p className="text-xs text-[#555]">{pCount} kişi ile buluşma</p>
@@ -667,29 +665,27 @@ function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
         </span>
       </div>
 
-      {m.status === 'COMPLETED' && (
-        <div className="flex gap-2 flex-wrap">
-          {!m.isReviewed ? (
-            <a
-              href={`/degerlendirme/${m.id}`}
-              className="text-xs px-3 py-1.5 font-medium"
-              style={{
-                background: 'linear-gradient(135deg,#c0392b,#ff6b6b)',
-                borderRadius: 9999, color: '#fff',
-              }}
-            >
-              Değerlendir
-            </a>
-          ) : (
-            <span
-              className="text-xs px-3 py-1.5 text-[#555]"
-              style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 9999 }}
-            >
-              ✓ Değerlendirildi
-            </span>
-          )}
-        </div>
-      )}
+      <div className="flex gap-2 flex-wrap">
+        {!m.isReviewed ? (
+          <a
+            href={`/degerlendirme/${m.id}`}
+            className="text-xs px-3 py-1.5 font-medium"
+            style={{
+              background: 'linear-gradient(135deg,#c0392b,#ff6b6b)',
+              borderRadius: 9999, color: '#fff',
+            }}
+          >
+            Değerlendir
+          </a>
+        ) : (
+          <span
+            className="text-xs px-3 py-1.5 text-[#555]"
+            style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 9999 }}
+          >
+            ✓ Değerlendirildi
+          </span>
+        )}
+      </div>
     </div>
   );
 }

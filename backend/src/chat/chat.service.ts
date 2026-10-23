@@ -193,6 +193,7 @@ export class ChatService {
       createdAt: m.createdAt,
       deletedAt: m.deletedAt,
       senderInitials: `${m.sender.profile?.firstName?.[0] ?? '?'}.${m.sender.profile?.lastName?.[0] ?? '?'}.`,
+      senderName: `${m.sender.profile?.firstName ?? ''} ${m.sender.profile?.lastName ?? ''}`.trim() || null,
       senderId: m.senderId,
       reportCount: m.reports.length,
       reports: m.reports.map((r) => ({

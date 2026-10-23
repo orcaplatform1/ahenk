@@ -1,25 +1,33 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
 
+function errorText(e: unknown): string {
+  const msg = (e as Error).message;
+  return msg === '__rate_limit__' ? 'Çok fazla deneme yapıldı. Lütfen bir dakika sonra tekrar dene.' : msg;
+}
+
 export default function SifremiUnuttumPage() {
-  const [email, setEmail] = useState('');
+  const router = useRouter();
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [sent, setSent] = useState(false);
+
+  const phoneValid = phone.length === 10 && phone.startsWith('5');
 
   async function handleSubmit() {
-    if (!email.trim()) { setError('E-posta adresinizi girin.'); return; }
+    if (!phoneValid) { setError('Geçerli bir telefon numarası girin.'); return; }
     setLoading(true); setError('');
     try {
-      await api.post('/auth/forgot-password', { email: email.trim() });
-      setSent(true);
-    } catch (e) { setError((e as Error).message); }
-    finally { setLoading(false); }
+      const full = `+90${phone}`;
+      await api.post('/auth/forgot-password', { phone: full });
+      router.push(`/sifremi-sifirla?phone=${encodeURIComponent(full)}`);
+    } catch (e) { setError(errorText(e)); setLoading(false); }
   }
 
   return (
@@ -40,59 +48,44 @@ export default function SifremiUnuttumPage() {
           <h1 className="font-serif text-4xl text-[#f5f5f5]">Şifre Sıfırla</h1>
         </div>
 
-        <AnimatePresence mode="wait">
-          {!sent ? (
-            <motion.div
-              key="form"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="flex flex-col gap-3"
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="flex flex-col gap-3"
+        >
+          <p className="text-[#666] text-sm text-center mb-1">
+            Kayıtlı telefon numarana WhatsApp ile 6 haneli bir kod göndereceğiz.
+          </p>
+          <div className="flex gap-2">
+            <div
+              className="flex items-center px-4 text-[#555] text-sm select-none flex-shrink-0"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}
             >
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                placeholder="E-posta adresin"
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                className="input-glass px-4 py-3.5 text-sm w-full"
-              />
-              {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="mx-auto block btn-primary mt-1"
-                style={{ width: '72%' }}
-              >
-                {loading ? 'Gönderiliyor…' : 'Şimdi Sıfırla'}
-              </button>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="glass-card p-6 text-center flex flex-col items-center gap-4"
-            >
-              <div
-                className="flex items-center justify-center"
-                style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg,#c0392b,#ff6b6b)' }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-[#f5f5f5] font-semibold mb-1">E-postanı kontrol et</p>
-                <p className="text-[#666] text-sm">Sıfırlama bağlantısını <span className="text-[#888]">{email}</span> adresine gönderdik.</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              +90
+            </div>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              onChange={(e) => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setError(''); }}
+              placeholder="5XX XXX XX XX"
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && phoneValid && handleSubmit()}
+              className="input-glass flex-1 px-4 py-3.5 text-sm"
+            />
+          </div>
+          {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading || !phoneValid}
+            className="mx-auto block btn-primary mt-1 disabled:opacity-40"
+            style={{ width: '72%' }}
+          >
+            {loading ? 'Gönderiliyor…' : 'Kod Gönder'}
+          </button>
+        </motion.div>
 
         <div className="mt-4 flex justify-center">
           <Link href="/giris" className="mx-auto block btn-ghost" style={{ width: '72%' }}>

@@ -12,14 +12,21 @@ import {
   MaxLength,
   ArrayMinSize,
   IsNotEmpty,
+  IsIn,
 } from "class-validator";
-import { UserStatus, UserRole, SubscriptionPlan, VenueCategory, VenueType, SanctionType } from "@prisma/client";
+import { SANCTION_REASONS } from "../sanction-reasons";
+import { UserStatus, UserRole, SubscriptionPlan, VenueCategory, VenueType, SanctionType, PartnershipStatus, CareerStatus } from "@prisma/client";
 
 // ─── Kullanıcı ────────────────────────────────────────────────────────────────
 
 export class UpdateUserStatusDto {
   @IsEnum(UserStatus)
   status: UserStatus;
+
+  // SUSPENDED / BANNED için seçilen sebep (boşsa "Yönetici kararı")
+  @IsOptional()
+  @IsIn(SANCTION_REASONS, { message: "Geçersiz sebep" })
+  reason?: string;
 }
 
 export class UpdateUserRoleDto {
@@ -136,6 +143,10 @@ export class UpdateVenueDto {
 
   @IsOptional()
   @IsString()
+  cityId?: string;
+
+  @IsOptional()
+  @IsString()
   address?: string;
 
   @IsOptional()
@@ -162,11 +173,6 @@ export class UpdateCityDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  weeklyTableLimit?: number;
 }
 
 // ─── Abonelik ──────────────────────────────────────────────────────────────────
@@ -181,12 +187,6 @@ export class CancelSubscriptionDto {
 // ─── Sistem ayarları ───────────────────────────────────────────────────────────
 
 export class UpdateSettingsDto {
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(10000)
-  weeklyTableLimit?: number;
-
   @IsOptional()
   @IsBoolean()
   matchingEnabled?: boolean;
@@ -212,4 +212,57 @@ export class CreateSanctionDto {
   @IsOptional()
   @IsDateString()
   expiresAt?: string;
+}
+
+// ─── Mekan fotoğrafları / adres ─────────────────────────────────────────────
+// Boş string → alan temizlenir
+
+export class UpdateVenuePhotosDto {
+  @IsOptional() @IsString() @MaxLength(300) venueAddress?: string;
+  @IsOptional() @IsString() @MaxLength(500) venuePhotoUrl?: string;
+  @IsOptional() @IsString() @MaxLength(80)  venuePhotoCaption1?: string;
+  @IsOptional() @IsString() @MaxLength(500) venuePhoto2Url?: string;
+  @IsOptional() @IsString() @MaxLength(80)  venuePhotoCaption2?: string;
+  @IsOptional() @IsString() @MaxLength(500) venuePhoto3Url?: string;
+  @IsOptional() @IsString() @MaxLength(80)  venuePhotoCaption3?: string;
+}
+
+// ─── Masaya bot yerleştir ────────────────────────────────────────────────────
+
+export class PlaceBotDto {
+  @IsString()
+  @IsNotEmpty()
+  botUserId: string;
+}
+
+// ─── Karantina / Ban sebebi ──────────────────────────────────────────────────
+
+export class SanctionReasonDto {
+  @IsOptional()
+  @IsIn(SANCTION_REASONS, { message: "Geçersiz sebep" })
+  reason?: string;
+}
+
+// ─── Başvurular ────────────────────────────────────────────────────────────────
+
+export class UpdatePartnershipDto {
+  @IsOptional()
+  @IsEnum(PartnershipStatus)
+  status?: PartnershipStatus;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  adminNote?: string;
+}
+
+export class UpdateCareerDto {
+  @IsOptional()
+  @IsEnum(CareerStatus)
+  status?: CareerStatus;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  adminNote?: string;
 }

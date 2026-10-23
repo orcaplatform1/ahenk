@@ -33,7 +33,6 @@ const SITE_MAP = [
     group: 'Buluşma',
     icon: '🤝',
     pages: [
-      { label: 'Değerlendirme', href: '/degerlendirme/[id]', desc: 'Buluşma sonrası değerlendirme' },
     ],
   },
   {

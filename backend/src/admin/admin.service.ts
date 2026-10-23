@@ -5,6 +5,8 @@ import {
   ForbiddenException,
   ConflictException,
 } from "@nestjs/common";
+import * as fs from "fs";
+import * as path from "path";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   UserStatus,
@@ -18,42 +20,57 @@ import {
   RefundStatus,
   ReferralStatus,
   SanctionType,
+  PartnershipStatus,
+  CareerStatus,
+  Prisma,
 } from "@prisma/client";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "../payment/payment.constants";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { NotificationService } from "../notification/notification.service";
-import { StorageService } from "../storage/storage.service";
+import { consumeOneOnOneRights } from "../matching/one-on-one-right";
+import { DEFAULT_SANCTION_REASON, suspensionEndDate } from "./sanction-reasons";
 
 const PIONEER_MAX_QUOTA = 500;
+
+// Mekan fotoğrafları: /root/ahenk/uploads/venues/<meetingId>/ — MediaController ile herkese açık sunulur
+export const VENUE_UPLOAD_DIR = path.join(process.cwd(), "..", "uploads", "venues");
+export const VENUE_PUBLIC_PREFIX = "/api/v1/media/venues";
+const VENUE_PHOTO_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
 @Injectable()
 export class AdminService {
   constructor(
     private prisma: PrismaService,
     private whatsapp: WhatsappNotifyService,
-    public storage: StorageService,
     private notifications: NotificationService,
   ) {}
 
   // ─── Dashboard ───────────────────────────────────────────────────────────
 
   async getDashboard() {
+    // Hafta Pazartesi 00:00'da başlar
     const now = new Date();
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
     weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     const [
       totalUsers,
       kycPending,
       activeMeetingsThisWeek,
+      groupThisWeek,
       pioneerCount,
       cityDistribution,
     ] = await Promise.all([
       this.prisma.user.count({ where: { isBot: false, status: { not: "DELETED" } } }),
       this.prisma.kycSubmission.count({ where: { status: "PENDING" } }),
+      // Bu hafta buluşacak kurulmuş masalar (bekleyen + onaylı)
       this.prisma.meeting.count({
-        where: { status: "ACTIVE", scheduledAt: { gte: weekStart } },
+        where: { status: { in: ["PENDING", "ACTIVE"] }, scheduledAt: { gte: weekStart, lt: weekEnd } },
+      }),
+      this.prisma.meeting.count({
+        where: { type: "GROUP", status: { in: ["PENDING", "ACTIVE"] }, scheduledAt: { gte: weekStart, lt: weekEnd } },
       }),
       this.prisma.profile.count({ where: { isPioneer: true } }),
       this.prisma.profile.groupBy({
@@ -69,6 +86,8 @@ export class AdminService {
       totalUsers,
       kycPending,
       activeMeetingsThisWeek,
+      groupMeetingsThisWeek: groupThisWeek,
+      oneOnOneMeetingsThisWeek: activeMeetingsThisWeek - groupThisWeek,
       pioneer: { count: pioneerCount, remaining: Math.max(0, PIONEER_MAX_QUOTA - pioneerCount) },
       cityDistribution: cityDistribution.map((c) => ({ city: c.city, count: c._count.city })),
     };
@@ -141,23 +160,77 @@ export class AdminService {
           take: 5,
           include: { meeting: { select: { id: true, title: true, scheduledAt: true, status: true, type: true } } },
         },
+        // Değerlendirmelerde "masaya katılmadı" bildirimleri
+        noShowReportsReceived: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            createdAt: true,
+            meeting: { select: { id: true, scheduledAt: true, type: true, locationText: true } },
+            reporter: { select: { id: true, profile: { select: { firstName: true, lastName: true } } } },
+          },
+        },
       },
     });
     if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
+    // Hassas alanlar admin yanıtına konmaz
+    const { passwordHash, fcmToken, phoneHash, ...safeUser } = user;
     const [groupCount, oneOnOneCount] = await Promise.all([
       this.prisma.meetingParticipant.count({ where: { userId, meeting: { type: 'GROUP' } } }),
       this.prisma.meetingParticipant.count({ where: { userId, meeting: { type: 'ONE_ON_ONE' } } }),
     ]);
-    return { ...user, groupCount, oneOnOneCount };
+    return { ...safeUser, groupCount, oneOnOneCount };
+  }
+
+  // ─── Yaptırım yetkisi ────────────────────────────────────────────────────
+
+  // SUPERADMIN'e kimse işlem yapamaz; ADMIN'e sadece SUPERADMIN işlem yapabilir
+  private async assertCanSanction(targetId: string, actorId: string) {
+    if (targetId === actorId) throw new BadRequestException("Kendi hesabınızı değiştiremezsiniz");
+    const [target, actor] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: targetId }, select: { role: true } }),
+      this.prisma.user.findUnique({ where: { id: actorId }, select: { role: true } }),
+    ]);
+    if (!target) throw new NotFoundException("Kullanıcı bulunamadı");
+    if (
+      target.role === UserRole.SUPERADMIN ||
+      (target.role === UserRole.ADMIN && actor?.role !== UserRole.SUPERADMIN)
+    ) {
+      throw new ForbiddenException("Bu hesaba işlem yetkiniz yok");
+    }
   }
 
   // ─── Hesap askıya al/aktifleştir ─────────────────────────────────────────
 
-  async updateUserStatus(targetId: string, actorId: string, status: UserStatus) {
+  async updateUserStatus(targetId: string, actorId: string, status: UserStatus, reason?: string) {
     const target = await this.prisma.user.findUnique({ where: { id: targetId } });
     if (!target) throw new NotFoundException("Kullanıcı bulunamadı");
-    if (target.id === actorId) throw new BadRequestException("Kendi hesabınızı değiştiremezsiniz");
+    await this.assertCanSanction(targetId, actorId);
     if (target.isBot) throw new BadRequestException("Bot durumunu /matching/admin/bots/:id/status kullanın");
+
+    // Askı / ban yaptırım kaydıyla uygulanır; aksi halde girişte otomatik kalkar
+    if (status === UserStatus.SUSPENDED || status === UserStatus.BANNED) {
+      const isBan = status === UserStatus.BANNED;
+      await this.createSanction(
+        targetId,
+        actorId,
+        isBan ? SanctionType.BAN : SanctionType.SUSPENSION,
+        reason ?? DEFAULT_SANCTION_REASON,
+        isBan ? undefined : suspensionEndDate(),
+      );
+      return { id: targetId, status };
+    }
+
+    // Aktifleştirme: aktif askı / ban kayıtları kaldırılır
+    if (status === UserStatus.ACTIVE) {
+      await this.prisma.userSanction.updateMany({
+        where: {
+          userId: targetId,
+          liftedAt: null,
+          type: { in: [SanctionType.BAN, SanctionType.SUSPENSION] },
+        },
+        data: { liftedAt: new Date() },
+      });
+    }
 
     return this.prisma.user.update({
       where: { id: targetId },
@@ -313,6 +386,7 @@ export class AdminService {
           maxParticipants: true,
           locationText: true,
           registrationDeadline: true,
+          city: { select: { name: true } },
           _count: { select: { participants: true } },
         },
       }),
@@ -334,6 +408,7 @@ export class AdminService {
               select: {
                 id: true,
                 email: true,
+                isBot: true,
                 profile: { select: { firstName: true, lastName: true, city: true } },
                 oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
                 subscriptions: { select: { plan: true }, orderBy: { createdAt: 'desc' }, take: 1 },
@@ -348,6 +423,7 @@ export class AdminService {
             },
           },
         },
+        noShowReports: { select: { reporterId: true, reportedId: true, createdAt: true } },
       },
     });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
@@ -386,22 +462,28 @@ export class AdminService {
       throw new BadRequestException("Bazı kullanıcılar bulunamadı veya aktif değil");
     }
 
-    return this.prisma.meeting.create({
-      data: {
-        type: data.participantIds.length === 2 ? MeetingType.ONE_ON_ONE : MeetingType.GROUP,
-        title: data.title,
-        scheduledAt: new Date(data.scheduledAt),
-        maxParticipants: data.participantIds.length,
-        locationText: data.locationText,
-        locationUrl: data.locationUrl,
-        status: MeetingStatus.ACTIVE,
-        participants: {
-          createMany: {
-            data: data.participantIds.map((id) => ({ userId: id, status: "INVITED" })),
+    const type = data.participantIds.length === 2 ? MeetingType.ONE_ON_ONE : MeetingType.GROUP;
+    return this.prisma.$transaction(async (tx) => {
+      const meeting = await tx.meeting.create({
+        data: {
+          type,
+          title: data.title,
+          scheduledAt: new Date(data.scheduledAt),
+          maxParticipants: data.participantIds.length,
+          locationText: data.locationText,
+          locationUrl: data.locationUrl,
+          status: MeetingStatus.ACTIVE,
+          participants: {
+            createMany: {
+              data: data.participantIds.map((id) => ({ userId: id, status: "INVITED" })),
+            },
           },
         },
-      },
-      include: { participants: { select: { userId: true, status: true } } },
+        include: { participants: { select: { userId: true, status: true } } },
+      });
+      // Başbaşa hakkı masa kurulduğu anda harcanır
+      if (type === MeetingType.ONE_ON_ONE) await consumeOneOnOneRights(tx, data.participantIds);
+      return meeting;
     });
   }
 
@@ -448,16 +530,18 @@ export class AdminService {
   ) {
     const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
+    // undefined → dokunma, boş string → temizle
+    const v = (x?: string) => (x === undefined ? undefined : x.trim() === "" ? null : x.trim());
     return this.prisma.meeting.update({
       where: { id: meetingId },
       data: {
-        venueAddress:       data.venueAddress,
-        venuePhotoUrl:      data.venuePhotoUrl,
-        venuePhotoCaption1: data.venuePhotoCaption1,
-        venuePhoto2Url:     data.venuePhoto2Url,
-        venuePhotoCaption2: data.venuePhotoCaption2,
-        venuePhoto3Url:     data.venuePhoto3Url,
-        venuePhotoCaption3: data.venuePhotoCaption3,
+        venueAddress:       v(data.venueAddress),
+        venuePhotoUrl:      v(data.venuePhotoUrl),
+        venuePhotoCaption1: v(data.venuePhotoCaption1),
+        venuePhoto2Url:     v(data.venuePhoto2Url),
+        venuePhotoCaption2: v(data.venuePhotoCaption2),
+        venuePhoto3Url:     v(data.venuePhoto3Url),
+        venuePhotoCaption3: v(data.venuePhotoCaption3),
       },
       select: {
         id: true, venueAddress: true,
@@ -466,6 +550,34 @@ export class AdminService {
         venuePhoto3Url: true, venuePhotoCaption3: true,
       },
     });
+  }
+
+  // ─── Mekan fotoğrafı yükle (sunucu diski) ─────────────────────────────────
+
+  async saveVenuePhoto(meetingId: string, slot: number, file?: Express.Multer.File) {
+    if (![1, 2, 3].includes(slot)) throw new BadRequestException("Geçersiz fotoğraf alanı (1, 2 veya 3)");
+    if (!file) throw new BadRequestException("Fotoğraf dosyası gerekli");
+    const ext = VENUE_PHOTO_TYPES[file.mimetype];
+    if (!ext) throw new BadRequestException("JPEG, PNG veya WebP yükleyin");
+
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
+    if (!meeting) throw new NotFoundException("Masa bulunamadı");
+
+    const field = (["venuePhotoUrl", "venuePhoto2Url", "venuePhoto3Url"] as const)[slot - 1];
+    const dir = path.join(VENUE_UPLOAD_DIR, meetingId);
+    fs.mkdirSync(dir, { recursive: true });
+    const fileName = `photo${slot}-${Date.now()}.${ext}`;
+    fs.writeFileSync(path.join(dir, fileName), file.buffer);
+
+    // Aynı alandaki eski yerel dosyayı sil
+    const old = meeting[field];
+    if (old?.startsWith(`${VENUE_PUBLIC_PREFIX}/${meetingId}/`)) {
+      try { fs.unlinkSync(path.join(dir, path.basename(old))); } catch {}
+    }
+
+    const url = `${VENUE_PUBLIC_PREFIX}/${meetingId}/${fileName}`;
+    await this.prisma.meeting.update({ where: { id: meetingId }, data: { [field]: url } });
+    return { slot, url };
   }
 
   // ─── Kapanış süresini uzat ────────────────────────────────────────────────
@@ -529,9 +641,14 @@ export class AdminService {
     venueType?: VenueType;
     address?: string;
     isActive?: boolean;
+    cityId?: string;
   }) {
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) throw new NotFoundException("Mekan bulunamadı");
+    if (data.cityId && data.cityId !== venue.cityId) {
+      const city = await this.prisma.city.findUnique({ where: { id: data.cityId }, select: { id: true } });
+      if (!city) throw new BadRequestException("Şehir bulunamadı");
+    }
     return this.prisma.venue.update({ where: { id: venueId }, data });
   }
 
@@ -557,7 +674,7 @@ export class AdminService {
     return this.prisma.city.create({ data: { name } });
   }
 
-  async updateCity(cityId: string, data: { isActive?: boolean; weeklyTableLimit?: number }) {
+  async updateCity(cityId: string, data: { isActive?: boolean }) {
     const city = await this.prisma.city.findUnique({ where: { id: cityId } });
     if (!city) throw new NotFoundException("Şehir bulunamadı");
     return this.prisma.city.update({ where: { id: cityId }, data });
@@ -573,6 +690,52 @@ export class AdminService {
       orderBy: { createdAt: "desc" },
       include: { payment: { select: { amountKurus: true, paidAt: true, platform: true } } },
     });
+  }
+
+  async listSubscriptions(params: { status?: string; plan?: string; search?: string; page?: number; limit?: number }) {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(Math.max(1, params.limit ?? 25), 100);
+    const where: Prisma.SubscriptionWhereInput = {};
+    if (params.status) {
+      if (!Object.values(SubscriptionStatus).includes(params.status as SubscriptionStatus)) {
+        throw new BadRequestException("Geçersiz abonelik durumu");
+      }
+      where.status = params.status as SubscriptionStatus;
+    }
+    if (params.plan) {
+      if (!Object.values(SubscriptionPlan).includes(params.plan as SubscriptionPlan)) {
+        throw new BadRequestException("Geçersiz paket");
+      }
+      where.plan = params.plan as SubscriptionPlan;
+    }
+    if (params.search?.trim()) {
+      const q = params.search.trim();
+      where.user = {
+        OR: [
+          { email: { contains: q, mode: "insensitive" } },
+          { phone: { contains: q } },
+          { profile: { firstName: { contains: q, mode: "insensitive" } } },
+          { profile: { lastName: { contains: q, mode: "insensitive" } } },
+        ],
+      };
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.subscription.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true, plan: true, status: true, startsAt: true, expiresAt: true, usedAt: true,
+          cancelNote: true, missedGroupCycles: true, missedOneonOneCycles: true, createdAt: true, updatedAt: true,
+          user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
+          payment: { select: { platform: true, amountKurus: true, paidAt: true } },
+        },
+      }),
+      this.prisma.subscription.count({ where }),
+    ]);
+    return { items, total, page, totalPages: Math.ceil(total / limit) };
   }
 
   async cancelSubscription(subscriptionId: string, cancelNote?: string) {
@@ -594,16 +757,14 @@ export class AdminService {
     const configs = await this.prisma.appConfig.findMany();
     const map = Object.fromEntries(configs.map((c) => [c.key, c.value]));
     return {
-      weeklyTableLimit: parseInt(map['WEEKLY_TABLE_LIMIT'] ?? '0', 10) || 0,
       matchingEnabled: map['MATCHING_ENABLED'] !== 'false',
       botSystemActive: map['BOT_SYSTEM_ACTIVE'] !== 'false',
       maintenanceMode: map['MAINTENANCE_MODE'] === 'true',
     };
   }
 
-  async updateSettings(data: { weeklyTableLimit?: number; matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean }) {
+  async updateSettings(data: { matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean }) {
     const updates: Array<{ key: string; value: string }> = [];
-    if (data.weeklyTableLimit !== undefined) updates.push({ key: "WEEKLY_TABLE_LIMIT", value: String(data.weeklyTableLimit) });
     if (data.matchingEnabled !== undefined) updates.push({ key: "MATCHING_ENABLED", value: String(data.matchingEnabled) });
     if (data.botSystemActive !== undefined) updates.push({ key: "BOT_SYSTEM_ACTIVE", value: String(data.botSystemActive) });
     if (data.maintenanceMode !== undefined) updates.push({ key: "MAINTENANCE_MODE", value: String(data.maintenanceMode) });
@@ -706,13 +867,21 @@ export class AdminService {
     const [meeting, bot] = await Promise.all([
       this.prisma.meeting.findUnique({
         where: { id: meetingId },
-        include: { participants: { select: { userId: true } } },
+        include: { participants: { select: { userId: true, status: true } } },
       }),
-      this.prisma.user.findUnique({ where: { id: botUserId, isBot: true }, select: { id: true } }),
+      this.prisma.user.findUnique({ where: { id: botUserId, isBot: true }, select: { id: true, status: true } }),
     ]);
     if (!meeting) throw new NotFoundException('Masa bulunamadı');
     if (!bot) throw new NotFoundException('Bot bulunamadı');
-    if (meeting.participants.length >= meeting.maxParticipants) {
+    if (bot.status !== UserStatus.ACTIVE) throw new BadRequestException('Bot pasif');
+    if (meeting.status === MeetingStatus.CANCELLED || meeting.status === MeetingStatus.COMPLETED) {
+      throw new BadRequestException('Bu masa artık aktif değil');
+    }
+    // İptal eden / gelmeyen katılımcılar koltuk tutmaz
+    const activeCount = meeting.participants.filter(
+      (p) => !['CANCELLED', 'DECLINED', 'NO_SHOW'].includes(p.status),
+    ).length;
+    if (activeCount >= meeting.maxParticipants) {
       throw new BadRequestException('Masada boş koltuk yok');
     }
     const alreadyIn = meeting.participants.some((p) => p.userId === botUserId);
@@ -929,7 +1098,7 @@ export class AdminService {
 
   // ─── Karantina ───────────────────────────────────────────────────────────
 
-  async quarantineUser(userId: string) {
+  async quarantineUser(userId: string, adminId: string, reason?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, phone: true, status: true },
@@ -939,12 +1108,13 @@ export class AdminService {
       throw new BadRequestException("Kullanıcı zaten banlı");
     }
 
-    const quarantineUntil = new Date();
-    quarantineUntil.setDate(quarantineUntil.getDate() + 30);
+    const quarantineUntil = suspensionEndDate();
 
+    // Yaptırım kaydı (askı: 1 ay) — status'u SUSPENDED yapar
+    await this.createSanction(userId, adminId, SanctionType.SUSPENSION, reason ?? DEFAULT_SANCTION_REASON, quarantineUntil);
     await this.prisma.user.update({
       where: { id: userId },
-      data: { quarantineUntil, status: UserStatus.SUSPENDED },
+      data: { quarantineUntil },
     });
 
     if (user.phone) {
@@ -958,7 +1128,7 @@ export class AdminService {
 
   // ─── Ban ─────────────────────────────────────────────────────────────────
 
-  async banUser(userId: string) {
+  async banUser(userId: string, adminId: string, reason?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, status: true, subscriptions: { where: { status: SubscriptionStatus.ACTIVE }, select: { id: true } } },
@@ -968,19 +1138,9 @@ export class AdminService {
       throw new BadRequestException("Kullanıcı zaten banlı");
     }
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { status: UserStatus.BANNED },
-    });
-
+    // Süresiz BAN yaptırım kaydı — status'u BANNED yapar, aktif abonelikleri DB'de iptal eder
     // TODO: iyzico abonelik iptali entegrasyonu
-    // Aktif abonelikler DB'de iptal edilir
-    if (user.subscriptions.length > 0) {
-      await this.prisma.subscription.updateMany({
-        where: { userId, status: SubscriptionStatus.ACTIVE },
-        data: { status: SubscriptionStatus.CANCELLED, cancelNote: "Admin tarafından banlama sebebiyle iptal edildi" },
-      });
-    }
+    await this.createSanction(userId, adminId, SanctionType.BAN, reason ?? DEFAULT_SANCTION_REASON);
 
     return { banned: true, cancelledSubscriptions: user.subscriptions.length };
   }
@@ -992,13 +1152,13 @@ export class AdminService {
       this.prisma.adminAlert.findMany({
         orderBy: { createdAt: "desc" },
         include: {
-          user: { include: { profile: { select: { firstName: true, lastName: true } } } },
+          user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
         },
       }),
       this.prisma.refundRequest.findMany({
         orderBy: { createdAt: "desc" },
         include: {
-          user: { include: { profile: { select: { firstName: true, lastName: true } } } },
+          user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
           subscription: { select: { plan: true, createdAt: true } },
         },
       }),
@@ -1026,16 +1186,22 @@ export class AdminService {
     return this.prisma.partnershipApplication.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
-  async updatePartnership(id: string, data: { status?: string; adminNote?: string }) {
-    return this.prisma.partnershipApplication.update({ where: { id }, data: data as any });
+  async updatePartnership(id: string, data: { status?: PartnershipStatus; adminNote?: string }) {
+    return this.prisma.partnershipApplication.update({
+      where: { id },
+      data: { status: data.status, adminNote: data.adminNote },
+    });
   }
 
   async listCareers() {
     return this.prisma.careerApplication.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
-  async updateCareer(id: string, data: { status?: string; adminNote?: string }) {
-    return this.prisma.careerApplication.update({ where: { id }, data: data as any });
+  async updateCareer(id: string, data: { status?: CareerStatus; adminNote?: string }) {
+    return this.prisma.careerApplication.update({
+      where: { id },
+      data: { status: data.status, adminNote: data.adminNote },
+    });
   }
 
   // ─── Kullanıcı Yaptırım Sistemi ───────────────────────────────────────────
@@ -1052,6 +1218,7 @@ export class AdminService {
       select: { id: true, status: true },
     });
     if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
+    await this.assertCanSanction(userId, adminId);
 
     const sanction = await this.prisma.userSanction.create({
       data: { userId, adminId, type, reason, expiresAt: expiresAt ?? null },
@@ -1076,7 +1243,8 @@ export class AdminService {
     return sanction;
   }
 
-  async liftSanction(userId: string, sanctionId: string) {
+  async liftSanction(userId: string, sanctionId: string, actorId: string) {
+    await this.assertCanSanction(userId, actorId);
     const sanction = await this.prisma.userSanction.findUnique({
       where: { id: sanctionId },
       select: { userId: true, type: true, liftedAt: true },

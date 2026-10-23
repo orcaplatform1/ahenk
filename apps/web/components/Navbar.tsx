@@ -185,8 +185,8 @@ export default function Navbar() {
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
-  function handleLogout() {
-    api.clearToken();
+  async function handleLogout() {
+    await api.logout();
     setNavUser(null);
     setMenuOpen(false);
     window.dispatchEvent(new Event('ahenk:auth'));

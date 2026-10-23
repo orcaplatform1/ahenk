@@ -1,8 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /dashboard
-Disallow: /test
-Disallow: /profil
-Disallow: /api/
-
-Sitemap: https://ahenk.tr/sitemap.xml

@@ -7,6 +7,10 @@ import { AppModule } from "./app.module";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: true });
 
+  // Gerçek istemci IP'si nginx'in X-Forwarded-For başlığından alınır (rate limit için).
+  // Sadece loopback'ten (nginx) gelen istekte güvenilir; dışarıdan sahte başlık dikkate alınmaz.
+  app.getHttpAdapter().getInstance().set("trust proxy", "loopback");
+
   app.use(cookieParser());
   app.setGlobalPrefix("api/v1");
 
@@ -20,9 +24,6 @@ async function bootstrap() {
 
   const allowedOrigins = [
     process.env.APP_URL ?? "http://localhost:3000",
-    process.env.ADMIN_URL ?? "http://localhost:3001",
-    "https://ahenk.tr",
-    "https://www.ahenk.tr",
     "https://ahenk.co",
     "https://www.ahenk.co",
   ].filter(Boolean);
@@ -38,21 +39,25 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle("Ahenk API")
-    .setDescription("Ahenk — Haftalık Sosyal Buluşma Platformu API")
-    .setVersion("1.0")
-    .addBearerAuth()
-    .addCookieAuth("refresh_token")
-    .build();
+  // Swagger sadece geliştirme ortamında açık; canlıda /api/docs yok
+  const isProduction = process.env.NODE_ENV === "production";
+  if (!isProduction) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle("Ahenk API")
+      .setDescription("Ahenk — Haftalık Sosyal Buluşma Platformu API")
+      .setVersion("1.0")
+      .addBearerAuth()
+      .addCookieAuth("refresh_token")
+      .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup("api/docs", app, document);
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup("api/docs", app, document);
+  }
 
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
   console.log(`Ahenk API çalışıyor: http://localhost:${port}/api/v1`);
-  console.log(`Swagger: http://localhost:${port}/api/docs`);
+  if (!isProduction) console.log(`Swagger: http://localhost:${port}/api/docs`);
 }
 
 bootstrap();

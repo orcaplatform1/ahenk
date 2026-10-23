@@ -45,7 +45,7 @@ export class SosController {
   constructor(private sos: SosService) {}
 
   @Post(":meetingId/report")
-  @Throttle({ sos: { ttl: 300000, limit: 5 } })
+  @Throttle({ default: { ttl: 300000, limit: 5 } })
   create(@Param("meetingId") meetingId: string, @Body() dto: CreateSosDto, @Req() req: Request) {
     const user = req.user as { id: string };
     return this.sos.createReport(user.id, meetingId, dto.threats, dto.lat, dto.lng, dto.accuracy);

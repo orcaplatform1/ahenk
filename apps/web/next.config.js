@@ -7,17 +7,18 @@ const securityHeaders = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(self), microphone=(self), geolocation=(), interest-cohort=()',
+    value: 'camera=(self), microphone=(self), geolocation=(self), interest-cohort=()',
   },
   {
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.iyzipay.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.iyzipay.com",
+      "font-src 'self' https://fonts.gstatic.com https://*.iyzipay.com",
       "img-src 'self' data: blob: https:",
-      `connect-src 'self' ${API_URL} https://ahenk.tr`,
+      `connect-src 'self' ${API_URL} https://ahenk.tr https://*.iyzipay.com`,
+      "frame-src https://*.iyzipay.com",
       "media-src 'self' blob:",
       "frame-ancestors 'none'",
     ].join('; '),

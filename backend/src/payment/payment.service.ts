@@ -4,12 +4,14 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import { IyzicoService } from "./iyzico/iyzico.service";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "./payment.constants";
-import { SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType, ReferralStatus } from "@prisma/client";
+import { isMaintenanceMode } from "../admin/app-settings";
+import { SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType, ReferralStatus, PaymentDiscountType } from "@prisma/client";
 
 @Injectable()
 export class PaymentService {
@@ -75,38 +77,39 @@ export class PaymentService {
     userId: string,
     plan: SubscriptionPlan,
     platform: PaymentPlatform,
-    callbackOverride?: string,
     useDiscount?: 'REFERRER' | 'INVITEE',
   ) {
+    if (await isMaintenanceMode(this.prisma)) {
+      throw new ServiceUnavailableException("Kısa bir bakım çalışması yapıyoruz. Paket satın alma geçici olarak durduruldu.");
+    }
+
     if (platform === PaymentPlatform.IOS) {
       return { stub: true, message: "iOS ödemesi henüz aktif değil. StoreKit 2 desteği yakında gelecek." };
     }
 
     const planCfg = PLAN_CONFIG[plan];
     let amountKurus = planCfg.amountKurus;
+    let discountType: PaymentDiscountType | null = null;
 
+    // İndirim burada sadece kontrol edilir; hak ödeme başarılı olunca harcanır
     if (useDiscount === 'REFERRER') {
       const referral = await this.prisma.referral.findFirst({
         where: { referrerId: userId, status: ReferralStatus.KYC_APPROVED },
       });
       if (referral) {
         amountKurus = Math.round(amountKurus * 0.9);
-        await this.prisma.referral.update({
-          where: { id: referral.id },
-          data: { discountUsedAt: new Date(), status: ReferralStatus.DISCOUNT_USED },
-        });
+        discountType = PaymentDiscountType.REFERRER;
       }
     } else if (useDiscount === 'INVITEE') {
       const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { referralDiscountAvailable: true } });
       if (user?.referralDiscountAvailable) {
         amountKurus = Math.round(amountKurus * 0.9);
-        await this.prisma.user.update({ where: { id: userId }, data: { referralDiscountAvailable: false } });
+        discountType = PaymentDiscountType.INVITEE;
       }
     }
 
     const conversationId = `ahenk-${userId}-${Date.now()}`;
-    const callbackUrl =
-      callbackOverride ?? this.config.get<string>("IYZICO_CALLBACK_URL") ?? "http://localhost:3001/odeme/callback";
+    const callbackUrl = this.config.getOrThrow<string>("IYZICO_CALLBACK_URL");
 
     // Önceki PENDING payment varsa temizle
     await this.prisma.payment.deleteMany({
@@ -122,6 +125,7 @@ export class PaymentService {
         status: PaymentStatus.PENDING,
         platform,
         iyzicoConversationId: conversationId,
+        discountType,
       },
     });
 
@@ -185,34 +189,73 @@ export class PaymentService {
       return { success: true, message: "Ödeme zaten tamamlandı" };
     }
 
+    if (payment.status !== PaymentStatus.PENDING) {
+      return { success: false, message: "Ödeme başarısız" };
+    }
+
     const result = await this.iyzico.retrieveCheckoutForm(token);
 
-    if (result.status !== "success") {
-      await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: PaymentStatus.FAILED,
-          failureReason: result.errorMessage,
-        },
+    // API çağrısının başarılı olması yetmez: ödeme durumu, sepet ve tutar da tutmalı
+    const expectedPrice = payment.amountKurus / 100;
+    const verified =
+      result.status === "success" &&
+      result.paymentStatus === "SUCCESS" &&
+      result.basketId === payment.id &&
+      Number(result.price) === expectedPrice;
+
+    if (!verified) {
+      const reason =
+        result.errorMessage ??
+        (result.status === "success" && result.paymentStatus === "SUCCESS"
+          ? `Doğrulama uyuşmazlığı (sepet: ${result.basketId}, tutar: ${result.price})`
+          : `Ödeme durumu: ${result.paymentStatus ?? result.status}`);
+      if (result.status === "success" && result.paymentStatus === "SUCCESS") {
+        this.logger.error(`iyzico doğrulama uyuşmazlığı: payment=${payment.id} ${reason}`);
+      }
+      await this.prisma.payment.updateMany({
+        where: { id: payment.id, status: PaymentStatus.PENDING },
+        data: { status: PaymentStatus.FAILED, failureReason: reason },
       });
       return { success: false, message: result.errorMessage ?? "Ödeme başarısız" };
     }
 
-    // Ödeme başarılı — abonelik oluştur
-    await this.prisma.$transaction(async (tx) => {
-      await tx.payment.update({
-        where: { id: payment.id },
+    // Ödeme başarılı — abonelik oluştur, indirimi harca
+    const processed = await this.prisma.$transaction(async (tx) => {
+      // Sadece PENDING ise işle: aynı token için ikinci callback abonelik oluşturmaz
+      const { count } = await tx.payment.updateMany({
+        where: { id: payment.id, status: PaymentStatus.PENDING },
         data: {
           status: PaymentStatus.SUCCESS,
           iyzicoPaymentId: result.paymentId,
           paidAt: new Date(),
         },
       });
+      if (count === 0) return false;
 
       await this.createSubscriptions(tx, payment.userId, payment.plan, payment.id);
+
+      if (payment.discountType === PaymentDiscountType.REFERRER) {
+        const referral = await tx.referral.findFirst({
+          where: { referrerId: payment.userId, status: ReferralStatus.KYC_APPROVED },
+        });
+        if (referral) {
+          await tx.referral.update({
+            where: { id: referral.id },
+            data: { discountUsedAt: new Date(), status: ReferralStatus.DISCOUNT_USED },
+          });
+        }
+      } else if (payment.discountType === PaymentDiscountType.INVITEE) {
+        await tx.user.update({
+          where: { id: payment.userId },
+          data: { referralDiscountAvailable: false },
+        });
+      }
+      return true;
     });
 
-    return { success: true, message: "Ödeme başarıyla tamamlandı" };
+    return processed
+      ? { success: true, message: "Ödeme başarıyla tamamlandı" }
+      : { success: true, message: "Ödeme zaten tamamlandı" };
   }
 
   // ─── Abonelik oluşturma (transaction içinde) ──────────────────────────────

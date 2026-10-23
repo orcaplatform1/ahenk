@@ -5,11 +5,9 @@
   "packageManager": "pnpm@12.6.0",
   "scripts": {
     "dev:web": "pnpm --filter @ahenk/web dev",
-    "dev:admin": "pnpm --filter @ahenk/admin dev",
     "dev:mobile": "pnpm --filter @ahenk/mobile start",
     "dev:backend": "pnpm --filter @ahenk/backend start:dev",
     "build:web": "pnpm --filter @ahenk/web build",
-    "build:admin": "pnpm --filter @ahenk/admin build",
     "build:backend": "pnpm --filter @ahenk/backend build",
     "lint": "pnpm -r lint",
     "type-check": "pnpm -r type-check"

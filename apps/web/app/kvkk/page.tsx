@@ -23,7 +23,7 @@ const sections = [
           }}
         >
           <p><span style={{ color: '#888' }}>Adres:</span>{' '}Metropol İstanbul, Atatürk Mah. Ataşehir Bulvarı, Ertuğrul Gazi Sokak, Ataşehir / İstanbul</p>
-          <p><span style={{ color: '#888' }}>E-posta:</span>{' '}<a href="mailto:bilgi@ahenk.tr" style={{ color: '#c0392b' }}>bilgi@ahenk.tr</a></p>
+          <p><span style={{ color: '#888' }}>E-posta:</span>{' '}<a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a></p>
           <p><span style={{ color: '#888' }}>Telefon:</span>{' '}<a href="tel:+905403060080" style={{ color: '#c0392b' }}>0540 306 0080</a></p>
         </div>
       </>
@@ -279,7 +279,7 @@ const sections = [
       <>
         <p style={{ marginBottom: '1rem' }}>
           Haklarınızı kullanmak için{' '}
-          <a href="mailto:bilgi@ahenk.tr" style={{ color: '#c0392b' }}>bilgi@ahenk.tr</a>
+          <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a>
           {' '}adresine e-posta gönderin.
         </p>
         <p style={{ marginBottom: '0.6rem', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666' }}>
