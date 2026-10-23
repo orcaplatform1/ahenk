@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, API_PREFIX } from '@/lib/api';
+import OtpInput from '@/components/ui/OtpInput';
 
 const API_BASE = API_PREFIX;
 
@@ -53,7 +54,6 @@ export default function GirisPage() {
   const [otpStep,  setOtpStep]  = useState(false);
   const [otp,      setOtp]      = useState(['', '', '', '', '', '']);
   const [otpShake, setOtpShake] = useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   /* E-posta akışı */
   const [email,       setEmail]       = useState('');
@@ -136,17 +136,6 @@ export default function GirisPage() {
       else setError(err.message);
     }
     finally { setLoading(false); }
-  }
-
-  function handleOtpInput(index: number, value: string) {
-    const digit = value.replace(/\D/g, '').slice(-1);
-    const next = [...otp]; next[index] = digit;
-    setOtp(next); setError('');
-    if (digit && index < 5) inputRefs.current[index + 1]?.focus();
-  }
-
-  function handleOtpKey(index: number, e: React.KeyboardEvent) {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) inputRefs.current[index - 1]?.focus();
   }
 
   function switchMethod(m: Method) {
@@ -344,31 +333,11 @@ export default function GirisPage() {
                 <p className="text-[#666] text-sm text-center">
                   +90{phoneDigits} numarasına gönderilen 6 haneli kodu gir.
                 </p>
-                <motion.div
-                  className="flex gap-2 justify-center"
-                  animate={otpShake ? { x: [0, -8, 8, -8, 8, 0] } : { x: 0 }}
-                  transition={{ duration: 0.4, ease: 'easeInOut' }}
-                >
-                  {otp.map((digit, i) => (
-                    <input
-                      key={i}
-                      ref={(el) => { inputRefs.current[i] = el; }}
-                      type="tel"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpInput(i, e.target.value)}
-                      onKeyDown={(e) => handleOtpKey(i, e)}
-                      autoFocus={i === 0}
-                      className="text-center input-glass text-xl font-semibold"
-                      style={{
-                        borderRadius: 12, width: 48, height: 60,
-                        border: otpShake ? '1px solid rgba(192,57,43,1)' : '1px solid rgba(255,255,255,0.08)',
-                        transition: 'border-color 0.3s ease',
-                      }}
-                    />
-                  ))}
-                </motion.div>
+                <OtpInput
+                  value={otp.join('')}
+                  onChange={(code) => { setOtp(Array.from({ length: 6 }, (_, i) => code[i] ?? '')); setError(''); }}
+                  error={otpShake}
+                />
                 {error && <p className="text-[#ff6b6b] text-sm text-center">{error}</p>}
                 <button
                   type="button"

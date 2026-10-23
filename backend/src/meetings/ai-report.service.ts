@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, ForbiddenException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import Anthropic from "@anthropic-ai/sdk";
@@ -12,7 +12,23 @@ export class AiReportService {
     private config: ConfigService,
   ) {}
 
-  async getReport(meetingId: string) {
+  // Sadece masanın iptal etmemiş katılımcısı, masa açıldıktan sonra görebilir
+  // (açılış: mekan atanmış ve buluşmadan 10 saat önce — grup Cumartesi 10:00, başbaşa Pazar 10:00)
+  async getReport(meetingId: string, userId: string) {
+    const participant = await this.prisma.meetingParticipant.findUnique({
+      where: { meetingId_userId: { meetingId, userId } },
+      select: {
+        status: true,
+        meeting: { select: { scheduledAt: true, locationText: true } },
+      },
+    });
+    if (!participant || ["CANCELLED", "DECLINED", "NO_SHOW"].includes(participant.status)) {
+      throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    }
+
+    const revealAt = new Date(participant.meeting.scheduledAt.getTime() - 10 * 60 * 60 * 1000);
+    if (!participant.meeting.locationText || new Date() < revealAt) return null;
+
     const report = await this.prisma.meetingAiReport.findUnique({
       where: { meetingId },
     });
@@ -30,13 +46,13 @@ export class AiReportService {
       where: { id: meetingId },
       include: {
         participants: {
-          where: { status: "ATTENDED" },
+          // Rapor buluşmadan önce üretilir: iptal etmeyen katılımcılar
+          where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
           include: {
             user: {
               include: {
                 profile: { select: { firstName: true, gender: true } },
                 oceanScore: true,
-                isBot: true,
               } as any,
             },
           },
@@ -46,16 +62,15 @@ export class AiReportService {
 
     if (!meeting) return;
 
-    const humanParticipants = meeting.participants.filter(
-      (p) => !(p.user as any).isBot && (p.user as any).oceanScore,
-    );
+    // Botlar gerçek kullanıcı gibi sayılır; raporda bot olduğu asla belirtilmez
+    const reportParticipants = meeting.participants.filter((p) => (p.user as any).oceanScore);
 
-    if (humanParticipants.length < 2) {
+    if (reportParticipants.length < 2) {
       this.logger.log(`Masa ${meetingId}: yeterli katılımcı yok, rapor atlandı`);
       return;
     }
 
-    const scores = humanParticipants.map((p) => {
+    const scores = reportParticipants.map((p) => {
       const o = (p.user as any).oceanScore;
       return {
         openness: o.openness as number,
@@ -77,7 +92,7 @@ export class AiReportService {
       "neuroticism",
     ];
 
-    const scoreLines = humanParticipants
+    const scoreLines = reportParticipants
       .map((p, i) => {
         const s = scores[i];
         const name = (p.user as any).profile?.firstName ?? "Anonim";
@@ -90,7 +105,7 @@ Bu buluşmanın katılımcılarının OCEAN (Büyük Beşli) kişilik skorları:
 
 ${scoreLines}
 
-Katılımcı sayısı: ${humanParticipants.length}
+Katılımcı sayısı: ${reportParticipants.length}
 Toplam uyum skoru: ${uyumSkoru}/100
 
 Lütfen bu gruba özgü, samimi, motive edici, kısa bir masa raporu yaz (2-3 cümle). Türkçe yaz.

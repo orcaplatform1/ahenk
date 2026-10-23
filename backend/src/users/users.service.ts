@@ -35,7 +35,14 @@ export class UsersService {
     });
   }
 
+  // Sadece aktif şehir seçilebilir (pasif şehirler kayıtta ve profilde listelenmez)
+  private async assertActiveCity(cityId: string) {
+    const city = await this.prisma.city.findUnique({ where: { id: cityId }, select: { isActive: true } });
+    if (!city?.isActive) throw new BadRequestException("Bu şehir şu an aktif değil");
+  }
+
   async saveCities(userId: string, primaryCityId: string) {
+    await this.assertActiveCity(primaryCityId);
     await this.prisma.profile.update({
       where: { userId },
       data: { primaryCity: primaryCityId },
@@ -52,6 +59,7 @@ export class UsersService {
   }
 
   async updateActiveCity(userId: string, activeCityId: string | null) {
+    if (activeCityId) await this.assertActiveCity(activeCityId);
     await this.prisma.user.update({
       where: { id: userId },
       data: { activeCity: activeCityId },
@@ -81,10 +89,6 @@ export class UsersService {
     if (existing && existing.id !== userId) throw new ConflictException("Bu e-posta adresi kullanılmaktadır.");
     await this.prisma.user.update({ where: { id: userId }, data: { email: newEmail } });
     return { ok: true };
-  }
-
-  async resetAllActiveCities() {
-    await this.prisma.user.updateMany({ data: { activeCity: null } });
   }
 
   async getProfile(userId: string) {

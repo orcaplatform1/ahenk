@@ -35,11 +35,11 @@ export const metadata: Metadata = {
     description:
       'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. İster Grup masasında, istersen başbaşa bir yemek veya kahve. Doğru insanlar, doğru zamanda.',
     type: 'website',
-    url: 'https://ahenk.tr',
+    url: 'https://ahenk.co',
     siteName: 'Ahenk',
     images: [
       {
-        url: 'https://ahenk.tr/og-image.jpg',
+        url: 'https://ahenk.co/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Ahenk — Sana Uygun İnsanlarla Buluş',
@@ -51,10 +51,10 @@ export const metadata: Metadata = {
     title: 'Ahenk — Sana Uygun İnsanlarla Buluş',
     description:
       'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. Doğru insanlar, doğru zamanda.',
-    images: ['https://ahenk.tr/og-image.jpg'],
+    images: ['https://ahenk.co/og-image.jpg'],
   },
   alternates: {
-    canonical: 'https://ahenk.tr',
+    canonical: 'https://ahenk.co',
   },
 };
 

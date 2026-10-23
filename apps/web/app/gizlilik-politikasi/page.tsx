@@ -30,7 +30,7 @@ const sections = [
           </p>
           <p>
             <span style={{ color: '#888' }}>E-posta:</span>{' '}
-            <a href="mailto:bilgi@ahenk.tr" style={{ color: '#c0392b' }}>bilgi@ahenk.tr</a>
+            <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a>
           </p>
           <p>
             <span style={{ color: '#888' }}>Telefon:</span>{' '}
@@ -202,7 +202,7 @@ const sections = [
       <>
         <p style={{ marginBottom: '1rem' }}>
           Kullanıcılar{' '}
-          <a href="mailto:bilgi@ahenk.tr" style={{ color: '#c0392b' }}>bilgi@ahenk.tr</a>
+          <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a>
           {' '}adresine yazılı başvurarak şu haklarını kullanabilir:
         </p>
         <List
@@ -256,7 +256,7 @@ const sections = [
     content: (
       <p>
         Bu politika gerektiğinde güncellenebilir. Önemli değişiklikler kayıtlı e-posta adresinize bildirilir. Güncel politikaya her zaman{' '}
-        <Link href="/gizlilik-politikasi" style={{ color: '#c0392b' }}>ahenk.tr/gizlilik-politikasi</Link>
+        <Link href="/gizlilik-politikasi" style={{ color: '#c0392b' }}>ahenk.co/gizlilik-politikasi</Link>
         {' '}adresinden ulaşabilirsiniz.
       </p>
     ),
@@ -268,7 +268,7 @@ const sections = [
       <>
         <p>
           Her türlü soru, talep ve şikayetleriniz için:{' '}
-          <a href="mailto:bilgi@ahenk.tr" style={{ color: '#c0392b' }}>bilgi@ahenk.tr</a>
+          <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a>
         </p>
         <p style={{ marginTop: '0.75rem', color: '#888', fontSize: '0.87rem' }}>
           Bu politikadan doğan uyuşmazlıklarda <strong style={{ color: '#f5f5f5' }}>İstanbul Mahkemeleri ve İcra Müdürlükleri</strong> yetkilidir.

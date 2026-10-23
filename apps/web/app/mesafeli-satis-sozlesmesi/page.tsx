@@ -14,7 +14,7 @@ const sections = [
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.35rem' }}>
             <p style={{ color: '#e8e8e8', fontWeight: 600 }}>Ahenk Platformu</p>
             <p style={{ color: '#888', fontSize: '0.86rem' }}>Metropol İstanbul, Atatürk Mah. Ataşehir Bulvarı, Ertuğrul Gazi Sokak, Ataşehir / İstanbul</p>
-            <p style={{ fontSize: '0.86rem' }}><a href="mailto:bilgi@ahenk.tr" style={{ color: '#c0392b' }}>bilgi@ahenk.tr</a></p>
+            <p style={{ fontSize: '0.86rem' }}><a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a></p>
             <p style={{ fontSize: '0.86rem' }}><a href="tel:+905403060080" style={{ color: '#c0392b' }}>0540 306 0080</a></p>
           </div>
         </div>
@@ -145,7 +145,7 @@ const sections = [
             'Kullanıcı aboneliğini profil sayfasındaki Paketim sekmesinden istediği zaman iptal edebilir.',
             'İptal işlemi mevcut abonelik döneminin sonunda geçerli olur; kalan süre için hizmet aktif kalmaya devam eder.',
             'Mevcut dönem için kısmi veya tam iade yapılmaz.',
-            'Teknik arıza veya Ahenk kaynaklı hizmet kesintisi durumunda iade değerlendirilebilir; talep için bilgi@ahenk.tr adresine başvurulmalıdır.',
+            'Teknik arıza veya Ahenk kaynaklı hizmet kesintisi durumunda iade değerlendirilebilir; talep için bilgi@ahenk.co adresine başvurulmalıdır.',
             'Hesabın kural ihlali nedeniyle Ahenk tarafından kapatılması durumunda kalan abonelik süresi için iade yapılmaz.',
           ].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
@@ -211,7 +211,7 @@ const sections = [
       <>
         <p style={{ marginBottom: '1rem', lineHeight: 1.75 }}>
           Tüketici olarak yasal haklarınız saklıdır. Şikâyetleriniz için öncelikle{' '}
-          <a href="mailto:bilgi@ahenk.tr" style={{ color: '#c0392b' }}>bilgi@ahenk.tr</a>
+          <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a>
           {' '}adresine başvurabilirsiniz.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>

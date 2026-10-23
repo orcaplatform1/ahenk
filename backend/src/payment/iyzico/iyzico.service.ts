@@ -13,6 +13,8 @@ export type IyzicoCheckoutResult = {
 
 export type IyzicoCallbackResult = {
   status: string;
+  paymentStatus?: string;
+  basketId?: string;
   paymentId?: string;
   conversationId?: string;
   price?: string;

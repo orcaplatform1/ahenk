@@ -1,28 +1,31 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
+
+const BG     = '#020c1b';
+const SURFACE = '#0a1628';
+const CARD   = '#0d1f3c';
+const BORDER = '#1a3a5c';
+const TEXT   = '#e2e8f0';
+const MUTED  = '#64748b';
+const GREEN  = '#22c55e';
+const RED    = '#ef4444';
+const CYAN   = '#22d3ee';
+const SANS   = 'Inter, system-ui, sans-serif';
+const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', background: BG,
+  border: `1px solid ${BORDER}`, borderRadius: 8,
+  padding: '7px 12px', fontSize: 12, color: TEXT,
+  outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
+};
 
 interface Bot {
   id: string;
   status: string;
   profile?: { firstName?: string | null; lastName?: string | null } | null;
-}
-
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-        className="glass-card w-full max-w-sm p-5" style={{ background: '#1a1a1a' }}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-lg text-[#f5f5f5]">{title}</h2>
-          <button onClick={onClose} className="text-[#555] hover:text-[#f5f5f5] text-lg">✕</button>
-        </div>
-        {children}
-      </motion.div>
-    </div>
-  );
 }
 
 export default function AdminBots() {
@@ -67,82 +70,149 @@ export default function AdminBots() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-serif text-2xl text-[#f5f5f5]">Bot Yönetimi</h1>
-        <button onClick={openAdd}
-          className="px-4 py-1.5 rounded-xl text-sm font-medium"
-          style={{ background: 'linear-gradient(135deg,#c0392b,#922b21)', color: '#fff' }}>
+    <div style={{ padding: 24, maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
+
+      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>
+          Bot Yönetimi
+        </h1>
+        <button
+          onClick={openAdd}
+          style={{
+            padding: '6px 16px', borderRadius: 8, cursor: 'pointer',
+            background: 'rgba(34,211,238,0.1)', border: `1px solid rgba(34,211,238,0.3)`,
+            fontSize: 12, fontWeight: 600, color: CYAN, fontFamily: SANS,
+          }}
+        >
           + Bot Ekle
         </button>
       </div>
 
       {loading ? (
-        <div className="flex flex-col gap-3">{[0,1,2].map(i => <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />)}</div>
-      ) : bots.length === 0 ? (
-        <p className="text-[#555] text-sm">Bot yok.</p>
+        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>BOTLAR</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 16 }}>
+            {[0, 1, 2].map(i => (
+              <div key={i} style={{ height: 48, background: SURFACE, borderRadius: 8, opacity: 0.5 }} />
+            ))}
+          </div>
+        </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          {bots.map((b, i) => {
-            const active = b.status === 'ACTIVE';
-            const firstName = b.profile?.firstName ?? '';
-            const lastName = b.profile?.lastName ?? '';
-            return (
-              <motion.div key={b.id}
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="glass-card px-4 py-3 flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-[#f5f5f5]">{firstName} {lastName}</p>
-                    <span className="text-xs px-2 py-0.5 rounded-full"
-                      style={active ? { background: 'rgba(74,222,128,0.1)', color: '#4ade80' } : { background: 'rgba(255,255,255,0.10)', color: '#555' }}>
-                      {active ? 'Aktif' : 'Pasif'}
-                    </span>
+        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>BOTLAR</span>
+            <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>
+              {bots.length} kayıt
+            </span>
+          </div>
+
+          {bots.length === 0 ? (
+            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: MUTED }}>Bot yok</p>
+              <p style={{ margin: '4px 0 0', fontSize: 11, color: MUTED, fontFamily: MONO }}>Yeni bot eklemek için + Bot Ekle butonunu kullan</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {bots.map((b, i) => {
+                const active = b.status === 'ACTIVE';
+                const firstName = b.profile?.firstName ?? '';
+                const lastName = b.profile?.lastName ?? '';
+                return (
+                  <div
+                    key={b.id}
+                    style={{
+                      padding: '12px 18px',
+                      borderBottom: i < bots.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none',
+                      display: 'flex', alignItems: 'center', gap: 12,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{firstName} {lastName}</span>
+                        <span style={{
+                          fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
+                          padding: '2px 7px', borderRadius: 99,
+                          background: active ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)',
+                          border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.25)'}`,
+                          color: active ? GREEN : MUTED,
+                        }}>
+                          {active ? 'AKTİF' : 'PASİF'}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <button
+                        onClick={() => toggleStatus(b)}
+                        style={{
+                          padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+                          background: active ? 'rgba(100,116,139,0.1)' : 'rgba(34,197,94,0.1)',
+                          border: `1px solid ${active ? 'rgba(100,116,139,0.25)' : 'rgba(34,197,94,0.3)'}`,
+                          fontSize: 10, color: active ? MUTED : GREEN, fontFamily: SANS,
+                        }}
+                      >
+                        {active ? 'Pasifleştir' : 'Aktifleştir'}
+                      </button>
+                      <button
+                        onClick={() => openEdit(b)}
+                        style={{
+                          padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+                          background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)',
+                          fontSize: 10, color: '#93c5fd', fontFamily: SANS,
+                        }}
+                      >
+                        İsim
+                      </button>
+                      <button
+                        onClick={() => deleteBot(b.id)}
+                        style={{
+                          padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+                          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                          fontSize: 10, color: RED, fontFamily: SANS,
+                        }}
+                      >
+                        Sil
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button onClick={() => toggleStatus(b)}
-                    className="text-xs px-2.5 py-1 rounded-lg"
-                    style={active ? { background: 'rgba(255,255,255,0.10)', color: '#555', border: '1px solid rgba(255,255,255,0.12)' }
-                      : { background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}>
-                    {active ? 'Pasifleştir' : 'Aktifleştir'}
-                  </button>
-                  <button onClick={() => openEdit(b)}
-                    className="text-xs px-2.5 py-1 rounded-lg"
-                    style={{ background: 'rgba(255,255,255,0.10)', color: '#888', border: '1px solid rgba(255,255,255,0.12)' }}>
-                    İsim
-                  </button>
-                  <button onClick={() => deleteBot(b.id)}
-                    className="text-xs px-2.5 py-1 rounded-lg"
-                    style={{ background: 'rgba(192,57,43,0.1)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.15)' }}>
-                    Sil
-                  </button>
-                </div>
-              </motion.div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      <AnimatePresence>
-        {modal && (
-          <Modal title={modal === 'add' ? 'Yeni Bot' : 'İsim Düzenle'} onClose={() => setModal(null)}>
-            <div className="flex flex-col gap-3">
-              <input value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} placeholder="Ad"
-                className="w-full bg-transparent border rounded-xl px-3 py-2 text-sm text-[#f5f5f5] outline-none"
-                style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-              <input value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} placeholder="Soyad"
-                className="w-full bg-transparent border rounded-xl px-3 py-2 text-sm text-[#f5f5f5] outline-none"
-                style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-              <button onClick={save} disabled={saving || !form.firstName || !form.lastName}
-                className="w-full py-2 rounded-xl text-sm font-medium"
-                style={{ background: 'linear-gradient(135deg,#c0392b,#922b21)', color: '#fff', opacity: saving ? 0.6 : 1 }}>
+      {modal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, width: '100%', maxWidth: 360, padding: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: TEXT }}>
+                {modal === 'add' ? 'Yeni Bot' : 'İsim Düzenle'}
+              </h2>
+              <button onClick={() => setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: MUTED, padding: 4 }}>✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <input value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} placeholder="Ad" style={inputStyle} />
+              <input value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} placeholder="Soyad" style={inputStyle} />
+              <button
+                onClick={save}
+                disabled={saving || !form.firstName || !form.lastName}
+                style={{
+                  width: '100%', padding: '9px', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer',
+                  background: 'rgba(34,211,238,0.1)', border: `1px solid rgba(34,211,238,0.3)`,
+                  fontSize: 12, fontWeight: 700, color: CYAN, fontFamily: SANS,
+                  opacity: saving || !form.firstName || !form.lastName ? 0.5 : 1,
+                }}
+              >
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
             </div>
-          </Modal>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

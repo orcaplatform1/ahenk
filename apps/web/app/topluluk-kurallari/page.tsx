@@ -82,7 +82,7 @@ const sections = [
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.7rem' }}>
         {[
           'Değerlendirmenizi dürüstçe yapın — puanlarınız ve yorumlarınız algoritmanın gelişmesine ve topluluğun kalitesine doğrudan katkı sunar.',
-          'Bir katılımcının davranışı sizi rahatsız ettiyse değerlendirme ekranında bildirin veya bilgi@ahenk.tr adresine yazın — her bildirim gizlilik içinde değerlendirilir.',
+          'Bir katılımcının davranışı sizi rahatsız ettiyse değerlendirme ekranında bildirin veya bilgi@ahenk.co adresine yazın — her bildirim gizlilik içinde değerlendirilir.',
           'Masa arkadaşlarınızın iletişim bilgilerini onların onayı olmadan üçüncü taraflarla paylaşmayın.',
           'Buluşmada edindiğiniz kişisel bilgileri kötüye kullanmayın — bu bilgiler size güven ortamında paylaşılmıştır.',
           'Bir katılımcıyla tekrar eşleşmek istemiyorsanız Rehber Engelleme veya değerlendirme ekranındaki bloklama özelliğini kullanın — taciz veya misilleme niteliğindeki davranışlar hesap kapatma sebebidir.',
@@ -171,7 +171,7 @@ const sections = [
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.55rem', marginBottom: '1rem' }}>
           {[
             'Değerlendirme ekranından bildirebilirsiniz.',
-            <span key="email"><a href="mailto:bilgi@ahenk.tr" style={{ color: '#c0392b' }}>bilgi@ahenk.tr</a> adresine e-posta gönderebilirsiniz.</span>,
+            <span key="email"><a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a> adresine e-posta gönderebilirsiniz.</span>,
           ].map((item, i) => (
             <li key={i} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -199,7 +199,7 @@ const sections = [
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.4rem' }}>
         <p>Sorularınız için:</p>
-        <p><a href="mailto:bilgi@ahenk.tr" style={{ color: '#c0392b' }}>bilgi@ahenk.tr</a></p>
+        <p><a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a></p>
         <p style={{ color: '#888', fontSize: '0.87rem' }}>Metropol İstanbul, Atatürk Mah. Ataşehir Bulvarı, Ertuğrul Gazi Sokak, Ataşehir / İstanbul</p>
         <p><a href="tel:+905403060080" style={{ color: '#c0392b', fontSize: '0.87rem' }}>0540 306 0080</a></p>
         <p style={{ marginTop: '0.5rem', color: '#555', fontSize: '0.82rem' }}>Uyuşmazlıklarda İstanbul Mahkemeleri ve İcra Müdürlükleri yetkilidir.</p>

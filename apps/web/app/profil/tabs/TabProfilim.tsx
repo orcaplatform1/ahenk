@@ -431,13 +431,13 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         )}
       </Card>
 
-      {/* Bu hafta aktif şehir */}
+      {/* Aktif şehir */}
       {activeCityConfirm && (
         <div onClick={() => setActiveCityConfirm(false)} style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}>
           <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '24px 20px 36px' }}>
             <p style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5', marginBottom: 10 }}>Dikkat</p>
             <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, marginBottom: 20 }}>
-              Bu haftaki eşleşme süreciniz <span style={{ color: '#f5f5f5' }}>{displayPrimaryCity?.name ?? 'ana şehriniz'}</span> üzerinden devam etmektedir. Şehri değiştirirseniz bu haftaki sıranıza yeniden gireceksiniz.
+              Eşleşme süreciniz <span style={{ color: '#f5f5f5' }}>{displayPrimaryCity?.name ?? 'ana şehriniz'}</span> üzerinden devam etmektedir. Şehri değiştirirseniz eşleşme sıranıza yeniden gireceksiniz.
             </p>
             <div className="flex flex-col gap-2">
               <button
@@ -456,7 +456,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
           </div>
         </div>
       )}
-      <Card title="Bu Hafta Hangi Şehirdesiniz?">
+      <Card title="Hangi Şehirdeki Masalara Katılmak İstersiniz?">
         <p className="text-xs text-[rgba(255,255,255,0.62)] mb-3">
           Bu şehirlerden birinde tatilde veya seyahatteyseniz, oradaki grup masası veya baş başa masasına katılabilirsiniz.
         </p>
@@ -467,8 +467,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
             onChange={(v) => setActiveCity(v)}
             cities={cities}
             optional
-            placeholder="Bu hafta şehir seç"
-            title="Bu hafta hangi şehirdesiniz?"
+            placeholder="Şehir seç"
+            title="Hangi şehirdeki masalara katılmak istersiniz?"
           />
           <button
             onClick={() => { setPendingActiveCity(activeCity || null); setActiveCityConfirm(true); }}
@@ -491,6 +491,11 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
               Temizle
             </button>
           </div>
+        )}
+        {activeCity && (
+          <p className="text-xs text-[#888] mt-1.5">
+            Siz iptal edene kadar bu şehirdeki masalarla eşleşirsiniz.
+          </p>
         )}
         {saveError && <p className="text-accent text-sm mt-1">{saveError}</p>}
       </Card>

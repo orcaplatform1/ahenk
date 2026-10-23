@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Kayıt Ol — Ahenk',
     description: 'OCEAN kişilik testine dayalı eşleştirme ile her hafta yeni insanlarla buluş.',
-    url: 'https://ahenk.tr/kayit',
+    url: 'https://ahenk.co/kayit',
   },
 };
 

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Giriş Yap — Ahenk',
     description: 'Ahenk hesabına giriş yap.',
-    url: 'https://ahenk.tr/giris',
+    url: 'https://ahenk.co/giris',
   },
 };
 

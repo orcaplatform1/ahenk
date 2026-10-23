@@ -22,12 +22,5 @@ module.exports = {
       restart_delay: 3000,
       max_restarts: 10,
     },
-    {
-      name: 'ahenk-admin',
-      script: '/root/ahenk/start-admin.js',
-      env: { NODE_ENV: 'production' },
-      restart_delay: 3000,
-      max_restarts: 10,
-    },
   ],
 };

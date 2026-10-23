@@ -16,6 +16,14 @@ function clearToken() {
   clearMeCache();
 }
 
+// Sunucuda refresh token iptal edilir; istek başarısız olsa da yerel çıkış yapılır
+async function logout(): Promise<void> {
+  try {
+    await fetch(`${PREFIX}/auth/logout`, { method: 'POST', credentials: 'include' });
+  } catch { /* yerel çıkış yine yapılır */ }
+  clearToken();
+}
+
 let _refreshPromise: Promise<string | null> | null = null;
 
 let _meCache: { data: unknown; ts: number; token: string } | null = null;
@@ -149,6 +157,7 @@ export const api = {
   silentGet: <T>(path: string) => silentFetch<T>(path),
   setToken: (token: string) => { clearMeCache(); setToken(token); },
   clearToken,
+  logout,
   getToken,
   clearMeCache,
 };

@@ -635,14 +635,11 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
   const hasChat = !!(apiBase && token);
 
   // İptal deadline kontrolü (tarayıcı tarafı - yalnızca buton görünümü için)
+  // Masa gününden 2 gün önce 20:00 (TR): Grup → Perşembe 20:00, Başbaşa → Cuma 20:00
   const now = new Date();
-  const nowTR = new Date(now.getTime() + 3 * 60 * 60 * 1000);
-  const dayTRRaw = nowTR.getUTCDay();
-  const dayTR  = dayTRRaw === 0 ? 7 : dayTRRaw; // Pazar(0) → 7
-  const hourTR = nowTR.getUTCHours();
-  const cancelDeadlinePassed = isOneOnOne
-    ? (dayTR > 5 || (dayTR === 5 && hourTR >= 20))
-    : (dayTR > 4 || (dayTR === 4 && hourTR >= 20));
+  const schedTR = new Date(new Date(masa.scheduledAt).getTime() + 3 * 60 * 60 * 1000);
+  const cancelDeadline = new Date(Date.UTC(schedTR.getUTCFullYear(), schedTR.getUTCMonth(), schedTR.getUTCDate() - 2, 20 - 3, 0, 0, 0));
+  const cancelDeadlinePassed = now >= cancelDeadline;
 
   // SOS görünürlük: masa saatinden (scheduledAt) sonraki gün 10:00 TR'ye kadar
   const scheduledTR = new Date(new Date(masa.scheduledAt).getTime() + 3 * 60 * 60 * 1000);

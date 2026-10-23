@@ -1,4 +1,4 @@
-import { IsEnum, IsString, IsOptional } from "class-validator";
+import { IsEnum, IsOptional } from "class-validator";
 import { SubscriptionPlan, PaymentPlatform } from "@prisma/client";
 
 export class InitCheckoutDto {
@@ -7,10 +7,6 @@ export class InitCheckoutDto {
 
   @IsEnum(PaymentPlatform)
   platform: PaymentPlatform;
-
-  @IsOptional()
-  @IsString()
-  callbackUrl?: string;
 
   @IsOptional()
   @IsEnum(['REFERRER', 'INVITEE'])

@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { isBotSystemActive, isMaintenanceMode } from "../admin/app-settings";
 import { NotificationService } from "../notification/notification.service";
 import {
   WEIGHTS,
@@ -9,6 +10,7 @@ import {
   MEETING_HOUR_UTC,
 } from "./matching.constants";
 import { Gender, MeetingType, UserStatus, SubscriptionPlan, KycStatus } from "@prisma/client";
+import { consumeOneOnOneRights } from "./one-on-one-right";
 
 type OceanScoreData = {
   openness: number;
@@ -22,7 +24,7 @@ type EligibleUser = {
   id: string;
   isBot: boolean;
   status: UserStatus;
-  phoneHash: string | null;
+  phone: string | null;
   activeCity: string | null;
   occupationSector: string | null;
   profile: {
@@ -45,7 +47,9 @@ type TableGroup = {
 };
 
 function getISOWeekNumber(date: Date): { week: number; year: number } {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  // Hafta TR saatine (UTC+3) göre hesaplanır; sunucunun saat diliminden bağımsız
+  const tr = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+  const d = new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
@@ -63,18 +67,42 @@ function nextSaturdayAt(hourUTC: number): Date {
   return sat;
 }
 
+// Başbaşa buluşma: haftanın Pazar günü (Pazar günü çağrılırsa bir sonraki Pazar)
+function nextSundayAt(hourUTC: number): Date {
+  const now = new Date();
+  const daysUntilSun = (7 - now.getUTCDay()) % 7 || 7;
+  const sun = new Date(now);
+  sun.setUTCDate(now.getUTCDate() + daysUntilSun);
+  sun.setUTCHours(hourUTC, 0, 0, 0);
+  return sun;
+}
+
 function buildBlockedSet(users: EligibleUser[], blockPairs: { blockerId: string; blockedId: string }[]): Set<string> {
   const blocked = new Set(blockPairs.map((b) => `${b.blockerId}:${b.blockedId}`));
   for (const user of users) {
     for (const other of users) {
       if (other.id === user.id) continue;
-      if (other.phoneHash && user.contactBlocks.some((cb) => cb.hashedPhone === other.phoneHash))
+      // Rehber engeli: ContactBlock.hashedPhone düz "+90XXXXXXXXXX" tutar, User.phone ile karşılaştırılır
+      if (other.phone && user.contactBlocks.some((cb) => cb.hashedPhone === other.phone))
         blocked.add(`${user.id}:${other.id}`);
-      if (user.phoneHash && other.contactBlocks.some((cb) => cb.hashedPhone === user.phoneHash))
+      if (user.phone && other.contactBlocks.some((cb) => cb.hashedPhone === user.phone))
         blocked.add(`${other.id}:${user.id}`);
     }
   }
   return blocked;
+}
+
+// Kullanıcının eşleştirme şehri: aktif şehir seçtiyse o, yoksa ana şehir. Şehri olmayan eşleştirmeye alınmaz.
+function groupUsersByCity(users: EligibleUser[]): Map<string, EligibleUser[]> {
+  const byCity = new Map<string, EligibleUser[]>();
+  for (const u of users) {
+    const cityId = u.activeCity ?? u.profile?.primaryCity ?? null;
+    if (!cityId) continue;
+    const list = byCity.get(cityId) ?? [];
+    list.push(u);
+    byCity.set(cityId, list);
+  }
+  return byCity;
 }
 
 function initials(user: EligibleUser): string {
@@ -97,6 +125,8 @@ export class MatchingService {
   async runHourlyMatching(): Promise<{ tablesCreated: number }> {
     const matchingEnabled = await this.prisma.appConfig.findUnique({ where: { key: "MATCHING_ENABLED" } });
     if (matchingEnabled?.value === "false") return { tablesCreated: 0 };
+    // Bakım modunda yeni masa kurulmaz
+    if (await isMaintenanceMode(this.prisma)) return { tablesCreated: 0 };
 
     const now = new Date();
     const { week: weekNumber, year } = getISOWeekNumber(now);
@@ -106,20 +136,21 @@ export class MatchingService {
       create: { weekNumber, year, status: "RUNNING" },
     });
 
-    const weeklyTableLimit = parseInt(
-      (await this.prisma.appConfig.findUnique({ where: { key: "WEEKLY_TABLE_LIMIT" } }))?.value ?? "0",
-      10,
-    );
+    const scheduledAt = nextSaturdayAt(MEETING_HOUR_UTC);       // Grup: Cumartesi 20:00 TR
+    const oneOnOneScheduledAt = nextSundayAt(MEETING_HOUR_UTC); // Başbaşa: Pazar 20:00 TR
 
-    const currentTableCount = await this.prisma.meeting.count({
-      where: { cycleId: cycle.id, status: { in: ["PENDING", "ACTIVE"] } },
-    });
-    if (weeklyTableLimit > 0 && currentTableCount >= weeklyTableLimit) return { tablesCreated: 0 };
+    // Kapanıştan sonra o hafta için masa kurulmaz (TR saati):
+    // Grup Pazartesi–Perşembe (Perşembe 23:59 kapanış), Başbaşa Pazartesi–Cuma (Cuma 23:59 kapanış)
+    const trDay = new Date(now.getTime() + 3 * 60 * 60 * 1000).getUTCDay(); // 0=Pazar … 6=Cumartesi
+    const groupOpen = trDay >= 1 && trDay <= 4;
+    const oneOnOneOpen = trDay >= 1 && trDay <= 5;
 
-    const scheduledAt = nextSaturdayAt(MEETING_HOUR_UTC);
-
-    const groupUsers = await this.fetchEligible(cycle.id, [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE], false);
-    const oneOnOneUsers = await this.fetchEligible(cycle.id, [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE], true);
+    const groupUsers = groupOpen
+      ? await this.fetchEligible(cycle.id, [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE], false)
+      : [];
+    const oneOnOneUsers = oneOnOneOpen
+      ? await this.fetchEligible(cycle.id, [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE], true)
+      : [];
 
     const groupIds = groupUsers.map((u) => u.id);
     const oneOnOneIds = oneOnOneUsers.map((u) => u.id);
@@ -132,15 +163,20 @@ export class MatchingService {
 
     let tablesCreated = 0;
 
+    // Masalar şehir bazında kurulur: farklı şehirden kullanıcılar aynı masaya düşmez
+    const groupByCity = groupUsersByCity(groupUsers);
+    const oneOnOneByCity = groupUsersByCity(oneOnOneUsers);
+
     // GROUP masaları: en az 4 kişi gerekli
-    if (groupUsers.length >= TABLE_SIZE_SMALL) {
-      const blockedSet = buildBlockedSet(groupUsers, blockPairs);
-      const { tables } = this.formGroupTables(groupUsers, blockedSet);
+    for (const [cityId, cityUsers] of groupByCity) {
+      if (cityUsers.length < TABLE_SIZE_SMALL) continue;
+      const blockedSet = buildBlockedSet(cityUsers, blockPairs);
+      const { tables } = this.formGroupTables(cityUsers, blockedSet);
       for (const table of tables) {
-        if (weeklyTableLimit > 0 && currentTableCount + tablesCreated >= weeklyTableLimit) break;
         await this.prisma.meeting.create({
           data: {
             cycleId: cycle.id,
+            cityId,
             type: MeetingType.GROUP,
             title: `Hafta ${weekNumber} Grup Buluşması`,
             scheduledAt,
@@ -153,20 +189,25 @@ export class MatchingService {
     }
 
     // ONE_ON_ONE masaları: en az 2 kişi
-    if (oneOnOneUsers.length >= 2) {
-      const blockedSet = buildBlockedSet(oneOnOneUsers, blockPairs);
-      const pairs = this.formOneOnOnePairs(oneOnOneUsers, blockedSet);
+    for (const [cityId, cityUsers] of oneOnOneByCity) {
+      if (cityUsers.length < 2) continue;
+      const blockedSet = buildBlockedSet(cityUsers, blockPairs);
+      const pairs = this.formOneOnOnePairs(cityUsers, blockedSet);
       for (const pair of pairs) {
-        if (weeklyTableLimit > 0 && currentTableCount + tablesCreated >= weeklyTableLimit) break;
-        await this.prisma.meeting.create({
-          data: {
-            cycleId: cycle.id,
-            type: MeetingType.ONE_ON_ONE,
-            title: `Hafta ${weekNumber} Başbaşa Buluşma`,
-            scheduledAt,
-            maxParticipants: 2,
-            participants: { createMany: { data: pair.map((u) => ({ userId: u.id, status: "INVITED" })) } },
-          },
+        await this.prisma.$transaction(async (tx) => {
+          await tx.meeting.create({
+            data: {
+              cycleId: cycle.id,
+              cityId,
+              type: MeetingType.ONE_ON_ONE,
+              title: `Hafta ${weekNumber} Başbaşa Buluşma`,
+              scheduledAt: oneOnOneScheduledAt,
+              maxParticipants: 2,
+              participants: { createMany: { data: pair.map((u) => ({ userId: u.id, status: "INVITED" })) } },
+            },
+          });
+          // Başbaşa hakkı masa kurulduğu anda harcanır
+          await consumeOneOnOneRights(tx, pair.map((u) => u.id));
         });
         tablesCreated++;
       }
@@ -191,10 +232,13 @@ export class MatchingService {
       include: { participants: { select: { userId: true } } },
     });
 
-    const activeBots = await this.prisma.user.findMany({
-      where: { isBot: true, status: "ACTIVE" },
-      select: { id: true, profile: { select: { gender: true } } },
-    });
+    // Bot sistemi kapalıysa bot eklenmez
+    const activeBots = (await isBotSystemActive(this.prisma))
+      ? await this.prisma.user.findMany({
+          where: { isBot: true, status: "ACTIVE" },
+          select: { id: true, profile: { select: { gender: true } } },
+        })
+      : [];
 
     for (const meeting of pendingGroupMeetings) {
       const count = meeting.participants.length;
@@ -274,6 +318,7 @@ export class MatchingService {
     const meetings = await this.prisma.meeting.findMany({
       where: {
         cycleId: cycle.id,
+        type: MeetingType.GROUP, // başbaşa masalar Pazar 10:00'da bildirilir
         status: { in: ["PENDING", "ACTIVE"] },
         locationText: { not: null },
       },
@@ -336,7 +381,7 @@ export class MatchingService {
         id: true,
         isBot: true,
         status: true,
-        phoneHash: true,
+        phone: true,
         activeCity: true,
         occupationSector: true,
         profile: { select: { firstName: true, lastName: true, gender: true, city: true, district: true, primaryCity: true, venueCategories: true, venuePreference: true, birthDate: true } },
@@ -557,29 +602,6 @@ export class MatchingService {
     if (!bot) throw new NotFoundException("Bot bulunamadı");
     await this.prisma.user.delete({ where: { id: botId } });
     return { deleted: true, id: botId };
-  }
-
-  // ─── Geriye dönük uyumluluk ───────────────────────────────────────────────
-
-  async checkTableDeadline(meetingId: string): Promise<void> {
-    const meeting = await this.prisma.meeting.findUnique({
-      where: { id: meetingId },
-      include: { participants: true },
-    });
-    if (!meeting || meeting.status !== "PENDING") return;
-    // Kapanış anında yetersiz katılım → iptal (uzatma yok)
-    await this.prisma.meeting.update({ where: { id: meetingId }, data: { status: "CANCELLED" } });
-    this.logger.warn(`Masa iptal edildi (yetersiz katılım): ${meetingId}`);
-  }
-
-  async onParticipantAccepted(meetingId: string): Promise<void> {
-    const accepted = await this.prisma.meetingParticipant.count({
-      where: { meetingId, status: "ACCEPTED" },
-    });
-    if (accepted >= TABLE_SIZE_SMALL) {
-      await this.prisma.meeting.update({ where: { id: meetingId }, data: { status: "ACTIVE" } });
-      this.logger.log(`Masa kesinleşti (kabul): ${meetingId}`);
-    }
   }
 
   async getPoolStatus(userId: string): Promise<{

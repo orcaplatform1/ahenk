@@ -2,9 +2,11 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { MatchingService } from "./matching.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { isBotSystemActive } from "../admin/app-settings";
 import { AiReportService } from "../meetings/ai-report.service";
 import { NotificationService } from "../notification/notification.service";
-import { SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
+import { SubscriptionPlan, SubscriptionStatus, KycStatus } from "@prisma/client";
+import { consumeOneOnOneRights } from "./one-on-one-right";
 
 @Injectable()
 export class MatchingScheduler {
@@ -29,91 +31,118 @@ export class MatchingScheduler {
     }
   }
 
+  // Her saat başı: saati 6 saat geçmiş masaları kapat
+  // ACTIVE → COMPLETED (iptal etmeyen katılımcılar ATTENDED), onaylanmamış PENDING → CANCELLED
+  @Cron("0 * * * *", { timeZone: "Europe/Istanbul" })
+  async completeFinishedMeetings(): Promise<void> {
+    const threshold = new Date(Date.now() - 6 * 60 * 60 * 1000);
+    try {
+      const finished = await this.prisma.meeting.findMany({
+        where: { status: "ACTIVE", scheduledAt: { lte: threshold } },
+        select: { id: true },
+      });
+      for (const meeting of finished) {
+        await this.prisma.$transaction([
+          this.prisma.meetingParticipant.updateMany({
+            where: { meetingId: meeting.id, status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
+            data: { status: "ATTENDED" },
+          }),
+          this.prisma.meeting.update({ where: { id: meeting.id }, data: { status: "COMPLETED" } }),
+        ]);
+      }
+
+      const { count: cancelled } = await this.prisma.meeting.updateMany({
+        where: { status: "PENDING", scheduledAt: { lte: threshold } },
+        data: { status: "CANCELLED" },
+      });
+
+      if (finished.length > 0 || cancelled > 0) {
+        this.logger.log(`Masa kapanışı: ${finished.length} tamamlandı, ${cancelled} onaysız iptal`);
+      }
+    } catch (err) {
+      this.logger.error(`Masa kapanışı hatası: ${err}`);
+    }
+  }
+
+  // Her saat başı: süresi dolan abonelikleri EXPIRED yap
+  @Cron("0 * * * *", { timeZone: "Europe/Istanbul" })
+  async expireSubscriptions(): Promise<void> {
+    try {
+      const { count } = await this.prisma.subscription.updateMany({
+        where: { status: SubscriptionStatus.ACTIVE, expiresAt: { lte: new Date() } },
+        data: { status: SubscriptionStatus.EXPIRED },
+      });
+      if (count > 0) this.logger.log(`${count} aboneliğin süresi doldu`);
+    } catch (err) {
+      this.logger.error(`Abonelik süre dolumu hatası: ${err}`);
+    }
+  }
+
   // Perşembe 23:59 (TR): döngüyü kapat, bot ekle, artakalanları bekliste al
   @Cron("59 23 * * 4", { timeZone: "Europe/Istanbul" })
   async scheduleThursdayClosing(): Promise<void> {
     this.logger.log("Perşembe kapanışı başlıyor...");
     try {
       await this.matchingService.runThursdayClosing();
-      await this.updateMissedCycles();
+      await this.updateMissedCycles("GROUP");
       this.logger.log("Perşembe kapanışı tamamlandı");
     } catch (err) {
       this.logger.error(`Perşembe kapanışı hatası: ${err}`);
     }
   }
 
-  private async updateMissedCycles(): Promise<void> {
-    const now = new Date();
-    // Aktif abonelikler
-    const subs = await this.prisma.subscription.findMany({
-      where: { status: "ACTIVE" },
-      include: { user: { select: { id: true } } },
+  // İade güvencesi sayacı: bu döngüde kullanıcıya masa kurulduysa sıfırlanır, kurulamadıysa 1 artar.
+  // Katılım şartı yok; kullanıcı kendisi iptal etse de masa kurulmuş sayılır.
+  // GROUP → Perşembe kapanışında, ONE_ON_ONE → Cuma kapanışında çağrılır.
+  private async updateMissedCycles(meetingType: "GROUP" | "ONE_ON_ONE"): Promise<void> {
+    const isGroup = meetingType === "GROUP";
+    const { week: weekNumber, year } = this.getISOWeek(new Date());
+    const cycle = await this.prisma.matchingCycle.findUnique({
+      where: { weekNumber_year: { weekNumber, year } },
     });
+
+    const subs = await this.prisma.subscription.findMany({
+      where: {
+        status: SubscriptionStatus.ACTIVE,
+        // Başbaşa: sadece harcanmamış hak döngü kaçırabilir
+        ...(isGroup
+          ? { plan: { in: [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE] } }
+          : { plan: { in: [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE] }, usedAt: null }),
+      },
+      select: { id: true, userId: true, missedGroupCycles: true, missedOneonOneCycles: true },
+    });
+
+    const formedUserIds = new Set(
+      cycle
+        ? (await this.prisma.meetingParticipant.findMany({
+            where: { meeting: { cycleId: cycle.id, type: meetingType, status: { not: "CANCELLED" } } },
+            select: { userId: true },
+          })).map((p) => p.userId)
+        : [],
+    );
 
     for (const sub of subs) {
       const userId = sub.userId;
-      const hasGroup = sub.plan === "MASADA" || sub.plan === "ICERDE";
-      const hasOneone = sub.plan === "KARSIMDA" || sub.plan === "ICERDE";
-
-      // Bu haftaki grup masası katılımı var mı?
-      const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - now.getDay() + 1); // Pazartesi
-      weekStart.setHours(0, 0, 0, 0);
-
-      const groupParticipation = hasGroup
-        ? await this.prisma.meetingParticipant.findFirst({
-            where: {
-              userId,
-              meeting: { type: "GROUP", createdAt: { gte: weekStart } },
-              status: "ATTENDED",
-            },
-          })
-        : null;
-
-      const oneoneParticipation = hasOneone
-        ? await this.prisma.meetingParticipant.findFirst({
-            where: {
-              userId,
-              meeting: { type: "ONE_ON_ONE", createdAt: { gte: weekStart } },
-              status: "ATTENDED",
-            },
-          })
-        : null;
-
-      let newGroupCycles = sub.missedGroupCycles;
-      let newOneOneCycles = sub.missedOneonOneCycles;
-
-      if (hasGroup) {
-        newGroupCycles = groupParticipation ? 0 : sub.missedGroupCycles + 1;
-      }
-      if (hasOneone) {
-        newOneOneCycles = oneoneParticipation ? 0 : sub.missedOneonOneCycles + 1;
-      }
+      const current = isGroup ? sub.missedGroupCycles : sub.missedOneonOneCycles;
+      const next = formedUserIds.has(userId) ? 0 : current + 1;
 
       await this.prisma.subscription.update({
         where: { id: sub.id },
-        data: { missedGroupCycles: newGroupCycles, missedOneonOneCycles: newOneOneCycles },
+        data: isGroup ? { missedGroupCycles: next } : { missedOneonOneCycles: next },
       });
 
       // 4'e ulaşınca AdminAlert oluştur (tekrar oluşturma)
-      if (hasGroup && newGroupCycles === 4) {
+      if (next === 4) {
+        const alertType = isGroup ? "MISSED_GROUP_CYCLES" : "MISSED_ONEONE_CYCLES";
         const existing = await this.prisma.adminAlert.findFirst({
-          where: { userId, alertType: "MISSED_GROUP_CYCLES", isRead: false },
+          where: { userId, alertType, isRead: false },
         });
         if (!existing) {
-          await this.prisma.adminAlert.create({ data: { userId, alertType: "MISSED_GROUP_CYCLES" } });
-        }
-      }
-      if (hasOneone && newOneOneCycles === 4) {
-        const existing = await this.prisma.adminAlert.findFirst({
-          where: { userId, alertType: "MISSED_ONEONE_CYCLES", isRead: false },
-        });
-        if (!existing) {
-          await this.prisma.adminAlert.create({ data: { userId, alertType: "MISSED_ONEONE_CYCLES" } });
+          await this.prisma.adminAlert.create({ data: { userId, alertType } });
         }
       }
     }
-    this.logger.log("Döngü takibi güncellendi");
+    this.logger.log(`Döngü takibi güncellendi (${meetingType})`);
   }
 
   // Cumartesi 10:00 (TR): eşleşmiş kullanıcılara bildirim gönder + AI raporları oluştur
@@ -129,29 +158,27 @@ export class MatchingScheduler {
 
     this.logger.log("Cumartesi AI raporları oluşturuluyor...");
     try {
-      await this.generateSaturdayAiReports();
+      await this.generateAiReports("GROUP");
       this.logger.log("Cumartesi AI raporları tamamlandı");
     } catch (err) {
       this.logger.error(`Cumartesi AI raporu hatası: ${err}`);
     }
   }
 
-  private async generateSaturdayAiReports(): Promise<void> {
+  // Bugün (önümüzdeki 24 saat içinde) buluşacak onaylı masaların raporu
+  private async generateAiReports(meetingType: "GROUP" | "ONE_ON_ONE"): Promise<void> {
     const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay() + 1);
-    weekStart.setHours(0, 0, 0, 0);
-
     const meetings = await this.prisma.meeting.findMany({
       where: {
+        type: meetingType,
         status: "ACTIVE",
-        scheduledAt: { gte: weekStart },
+        scheduledAt: { gte: now, lte: new Date(now.getTime() + 24 * 60 * 60 * 1000) },
         aiReport: null,
       },
       select: { id: true },
     });
 
-    this.logger.log(`${meetings.length} masa için AI raporu oluşturulacak`);
+    this.logger.log(`${meetings.length} ${meetingType} masa için AI raporu oluşturulacak`);
     for (const meeting of meetings) {
       await this.aiReportService.generateReport(meeting.id);
     }
@@ -187,13 +214,14 @@ export class MatchingScheduler {
     this.logger.log("Cuma ONE_ON_ONE kapanışı başlıyor...");
     try {
       await this.runOneOnOneClosing();
+      await this.updateMissedCycles("ONE_ON_ONE");
       this.logger.log("Cuma ONE_ON_ONE kapanışı tamamlandı");
     } catch (err) {
       this.logger.error(`Cuma ONE_ON_ONE kapanışı hatası: ${err}`);
     }
   }
 
-  // Pazar 10:00 (TR): ONE_ON_ONE mekanı atanmış masaların katılımcılarına bildirim gönder
+  // Pazar 10:00 (TR): ONE_ON_ONE mekanı atanmış masaların katılımcılarına bildirim gönder + AI raporları oluştur
   @Cron("0 10 * * 0", { timeZone: "Europe/Istanbul" })
   async scheduleSundayOneOnOneNotifications(): Promise<void> {
     this.logger.log("Pazar ONE_ON_ONE bildirimleri gönderiliyor...");
@@ -202,6 +230,14 @@ export class MatchingScheduler {
       this.logger.log("Pazar ONE_ON_ONE bildirimleri tamamlandı");
     } catch (err) {
       this.logger.error(`Pazar ONE_ON_ONE bildirim hatası: ${err}`);
+    }
+
+    this.logger.log("Pazar ONE_ON_ONE AI raporları oluşturuluyor...");
+    try {
+      await this.generateAiReports("ONE_ON_ONE");
+      this.logger.log("Pazar ONE_ON_ONE AI raporları tamamlandı");
+    } catch (err) {
+      this.logger.error(`Pazar AI raporu hatası: ${err}`);
     }
   }
 
@@ -267,6 +303,8 @@ export class MatchingScheduler {
         status: 'ACTIVE',
         isBot: false,
         oceanScore: { isNot: null },
+        // KYC onaylı olmayan (admin paket vermiş olsa bile) eşleşmeye giremez
+        kyc: { status: KycStatus.APPROVED },
         subscriptions: {
           some: {
             plan: { in: plans },
@@ -314,6 +352,8 @@ export class MatchingScheduler {
         status: 'ACTIVE',
         isBot: false,
         oceanScore: { isNot: null },
+        // KYC onaylı olmayan (admin paket vermiş olsa bile) eşleşmeye giremez
+        kyc: { status: KycStatus.APPROVED },
         subscriptions: {
           some: {
             plan: { in: [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE] },
@@ -327,12 +367,15 @@ export class MatchingScheduler {
 
     const unmatched = eligible.filter((u) => !matchedIds.has(u.id));
 
-    const activeBots = await this.prisma.user.findMany({
-      where: { isBot: true, status: 'ACTIVE' },
-      select: { id: true },
-    });
+    // Bot sistemi kapalıysa bot eklenmez
+    const activeBots = (await isBotSystemActive(this.prisma))
+      ? await this.prisma.user.findMany({
+          where: { isBot: true, status: 'ACTIVE' },
+          select: { id: true },
+        })
+      : [];
 
-    const nextSat = this.nextSaturdayAt(17);
+    const nextSun = this.nextSundayAt(17); // Başbaşa: Pazar 20:00 TR
 
     for (const user of unmatched) {
       // Kaç döngüdür eşleşemedi?
@@ -341,17 +384,21 @@ export class MatchingScheduler {
       if (missedCount >= 2 && activeBots.length > 0) {
         // 3. döngüde bot ile eşleştir
         const bot = activeBots[Math.floor(Math.random() * activeBots.length)];
-        await this.prisma.meeting.create({
-          data: {
-            cycleId: cycle.id,
-            type: 'ONE_ON_ONE',
-            title: `Hafta ${weekNumber} Başbaşa Buluşma`,
-            scheduledAt: nextSat,
-            maxParticipants: 2,
-            participants: {
-              createMany: { data: [{ userId: user.id, status: 'INVITED' }, { userId: bot.id, status: 'INVITED' }] },
+        await this.prisma.$transaction(async (tx) => {
+          await tx.meeting.create({
+            data: {
+              cycleId: cycle.id,
+              type: 'ONE_ON_ONE',
+              title: `Hafta ${weekNumber} Başbaşa Buluşma`,
+              scheduledAt: nextSun,
+              maxParticipants: 2,
+              participants: {
+                createMany: { data: [{ userId: user.id, status: 'INVITED' }, { userId: bot.id, status: 'INVITED' }] },
+              },
             },
-          },
+          });
+          // Başbaşa hakkı masa kurulduğu anda harcanır
+          await consumeOneOnOneRights(tx, [user.id]);
         });
         this.logger.log(`ONE_ON_ONE bot eşleşmesi: user=${user.id} bot=${bot.id}`);
       } else {
@@ -398,7 +445,9 @@ export class MatchingScheduler {
   }
 
   private getISOWeek(date: Date): { week: number; year: number } {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    // Hafta TR saatine (UTC+3) göre hesaplanır; sunucunun saat diliminden bağımsız
+    const tr = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+    const d = new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate()));
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
@@ -406,25 +455,13 @@ export class MatchingScheduler {
     return { week, year: d.getUTCFullYear() };
   }
 
-  private nextSaturdayAt(hourUTC: number): Date {
+  // Haftanın Pazar günü (Pazar günü çağrılırsa bir sonraki Pazar)
+  private nextSundayAt(hourUTC: number): Date {
     const now = new Date();
-    const day = now.getUTCDay();
-    const daysUntilSat = (6 - day + 7) % 7 || 7;
-    const sat = new Date(now);
-    sat.setUTCDate(now.getUTCDate() + daysUntilSat);
-    sat.setUTCHours(hourUTC, 0, 0, 0);
-    return sat;
-  }
-
-  // Pazartesi 00:01 (TR): aktif şehirleri sıfırla
-  @Cron("1 0 * * 1", { timeZone: "Europe/Istanbul" })
-  async resetActiveCities(): Promise<void> {
-    this.logger.log("Aktif şehirler sıfırlanıyor...");
-    try {
-      await this.prisma.user.updateMany({ data: { activeCity: null } });
-      this.logger.log("Aktif şehirler sıfırlandı");
-    } catch (err) {
-      this.logger.error(`Aktif şehir sıfırlama hatası: ${err}`);
-    }
+    const daysUntilSun = (7 - now.getUTCDay()) % 7 || 7;
+    const sun = new Date(now);
+    sun.setUTCDate(now.getUTCDate() + daysUntilSun);
+    sun.setUTCHours(hourUTC, 0, 0, 0);
+    return sun;
   }
 }

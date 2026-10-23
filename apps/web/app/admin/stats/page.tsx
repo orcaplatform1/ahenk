@@ -107,8 +107,18 @@ function PackageBar({ label, pct, count, color }: { label: string; pct: number; 
   );
 }
 
+interface DashboardSummary {
+  totalUsers: number;
+  kycPending: number;
+  activeMeetingsThisWeek: number;
+  groupMeetingsThisWeek: number;
+  oneOnOneMeetingsThisWeek: number;
+  pioneer: { count: number; remaining: number };
+}
+
 export default function AdminStats() {
   const [data, setData] = useState<StatsOverview | null>(null);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [cities, setCities] = useState<CityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -117,8 +127,9 @@ export default function AdminStats() {
     Promise.all([
       api.get<StatsOverview>('/admin/stats/overview'),
       api.get<CityRow[]>('/admin/stats/cities').catch(() => [] as CityRow[]),
+      api.get<DashboardSummary>('/admin/dashboard').catch(() => null),
     ])
-      .then(([overview, cityRows]) => { setData(overview); setCities(cityRows); })
+      .then(([overview, cityRows, dash]) => { setData(overview); setCities(cityRows); setSummary(dash); })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -145,6 +156,30 @@ export default function AdminStats() {
         </div>
       ) : data && (
         <>
+          {/* Genel bakış */}
+          {summary && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 12 }}>
+              <StatCard
+                label="Toplam Üye"
+                value={summary.totalUsers}
+                accent={BLUE}
+                sub={summary.kycPending > 0 ? `${summary.kycPending} KYC bekliyor` : 'Bekleyen KYC yok'}
+              />
+              <StatCard
+                label="Bu Hafta Masa"
+                value={summary.activeMeetingsThisWeek}
+                accent={CYAN}
+                sub={`Grup ${summary.groupMeetingsThisWeek} · Başbaşa ${summary.oneOnOneMeetingsThisWeek}`}
+              />
+              <StatCard
+                label="Öncü Rozeti"
+                value={summary.pioneer.count}
+                accent={AMBER}
+                sub={`Kalan kota: ${summary.pioneer.remaining}`}
+              />
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 12 }}>
             <StatCard
               label="Brüt Ciro"

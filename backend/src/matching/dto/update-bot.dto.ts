@@ -1,4 +1,4 @@
-import { IsString, MinLength, MaxLength } from "class-validator";
+import { IsString, MinLength, MaxLength, IsBoolean } from "class-validator";
 
 export class UpdateBotNameDto {
   @IsString()
@@ -13,5 +13,6 @@ export class UpdateBotNameDto {
 }
 
 export class SetBotStatusDto {
+  @IsBoolean()
   active: boolean;
 }

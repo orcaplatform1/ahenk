@@ -24,38 +24,40 @@ model User {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
-  profile         Profile?
-  oceanScore      OceanScore?
-  oceanAnswers    OceanAnswer[]
-  participations  MeetingParticipant[]
-  notifications   Notification[]
-  refreshTokens   RefreshToken[]
-  consents        ConsentLog[]
-  kyc             KycSubmission?
-  kycReviews      KycSubmission[]      @relation("KycReviewer")
-  waitlistEntries MatchingWaitlist[]
-  subscriptions   Subscription[]
-  payments        Payment[]
-  occupationSector String  @default("")
-  fcmToken        String? // Firebase Cloud Messaging cihaz token'ı
-  quarantineUntil DateTime? // Karantina bitiş tarihi
-  phoneHash       String?
-  activeCity      String? // Bu haftaki aktif şehir; her Pazartesi sıfırlanır
-  blocksGiven     UserBlock[]          @relation("BlockerRelation")
-  blocksReceived  UserBlock[]          @relation("BlockedRelation")
-  reportsMade     Report[]             @relation("ReportsByUser")
-  reportsReceived Report[]             @relation("ReportsAgainstUser")
-  meetingReviews  MeetingReview[]      @relation("MeetingReviewer")
+  profile                   Profile?
+  oceanScore                OceanScore?
+  oceanAnswers              OceanAnswer[]
+  participations            MeetingParticipant[]
+  notifications             Notification[]
+  refreshTokens             RefreshToken[]
+  consents                  ConsentLog[]
+  kyc                       KycSubmission?
+  kycReviews                KycSubmission[]       @relation("KycReviewer")
+  waitlistEntries           MatchingWaitlist[]
+  subscriptions             Subscription[]
+  payments                  Payment[]
+  occupationSector          String                @default("")
+  fcmToken                  String? // Firebase Cloud Messaging cihaz token'ı
+  quarantineUntil           DateTime? // Karantina bitiş tarihi
+  phoneHash                 String?
+  activeCity                String? // Aktif şehir (seyahat/tatil); kullanıcı temizleyene kadar geçerli, eşleştirmede ana şehrin yerine geçer
+  blocksGiven               UserBlock[]           @relation("BlockerRelation")
+  blocksReceived            UserBlock[]           @relation("BlockedRelation")
+  reportsMade               Report[]              @relation("ReportsByUser")
+  reportsReceived           Report[]              @relation("ReportsAgainstUser")
+  meetingReviews            MeetingReview[]       @relation("MeetingReviewer")
+  noShowReportsGiven        NoShowReport[]        @relation("NoShowReporter")
+  noShowReportsReceived     NoShowReport[]        @relation("NoShowReported")
   contactBlocks             ContactBlock[]
   adminAlerts               AdminAlert[]
   refundRequests            RefundRequest[]
-  referralDiscountAvailable Boolean    @default(false)
-  referralsSent             Referral[] @relation("ReferralsSent")
-  referralsReceived         Referral[] @relation("ReferralsReceived")
-  chatMessages              ChatMessage[]  @relation("ChatMessageSender")
-  chatReports               ChatReport[]   @relation("ChatReportSender")
+  referralDiscountAvailable Boolean               @default(false)
+  referralsSent             Referral[]            @relation("ReferralsSent")
+  referralsReceived         Referral[]            @relation("ReferralsReceived")
+  chatMessages              ChatMessage[]         @relation("ChatMessageSender")
+  chatReports               ChatReport[]          @relation("ChatReportSender")
   sanctions                 UserSanction[]
-  sanctionsGiven            UserSanction[] @relation("SanctionAdmin")
+  sanctionsGiven            UserSanction[]        @relation("SanctionAdmin")
   sosReports                SosReport[]
   participantLocations      ParticipantLocation[]
 }
@@ -199,6 +201,8 @@ model Meeting {
   id                   String         @id @default(cuid())
   cycleId              String?
   cycle                MatchingCycle? @relation(fields: [cycleId], references: [id])
+  cityId               String? // Masanın şehri (eşleştirmede yazılır)
+  city                 City?          @relation(fields: [cityId], references: [id])
   type                 MeetingType
   title                String
   description          String?        @db.Text
@@ -221,19 +225,38 @@ model Meeting {
 
   participants         MeetingParticipant[]
   reviews              MeetingReview[]
+  noShowReports        NoShowReport[]
   aiReport             MeetingAiReport?
   chatMessages         ChatMessage[]
   sosReports           SosReport[]
   participantLocations ParticipantLocation[]
+
+  @@index([cityId])
 }
 
 model MeetingAiReport {
-  id           String   @id @default(cuid())
-  meetingId    String   @unique
-  meeting      Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  content      String   @db.Text
-  uyumSkoru    Int
-  generatedAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  meetingId   String   @unique
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  content     String   @db.Text
+  uyumSkoru   Int
+  generatedAt DateTime @default(now())
+}
+
+// Değerlendirmede "masaya katılmadı" bildirimi
+model NoShowReport {
+  id         String   @id @default(cuid())
+  meetingId  String
+  meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  reporterId String
+  reporter   User     @relation("NoShowReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedId String
+  reported   User     @relation("NoShowReported", fields: [reportedId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([meetingId, reporterId, reportedId])
+  @@index([reportedId])
+  @@index([meetingId])
 }
 
 model MeetingReview {
@@ -263,19 +286,19 @@ enum MeetingStatus {
 }
 
 model MeetingParticipant {
-  id          String             @id @default(cuid())
+  id          String            @id @default(cuid())
   meetingId   String
-  meeting     Meeting            @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meeting     Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   userId      String
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status      ParticipantStatus  @default(INVITED)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      ParticipantStatus @default(INVITED)
   matchScore  Float?
   onMyWayAt   DateTime?
   leaveReason LeaveReason?
-  leaveNote   String?            @db.Text
+  leaveNote   String?           @db.Text
   cancelledAt DateTime?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@unique([meetingId, userId])
   @@index([userId])
@@ -442,22 +465,23 @@ model Subscription {
 }
 
 model Payment {
-  id                   String           @id @default(cuid())
+  id                   String               @id @default(cuid())
   userId               String
-  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subscriptionId       String?          @unique
-  subscription         Subscription?    @relation(fields: [subscriptionId], references: [id])
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId       String?              @unique
+  subscription         Subscription?        @relation(fields: [subscriptionId], references: [id])
   plan                 SubscriptionPlan
   amountKurus          Int // 34900 = 349.00 TL (kuruş cinsinden)
-  status               PaymentStatus    @default(PENDING)
+  status               PaymentStatus        @default(PENDING)
   platform             PaymentPlatform
   iyzicoToken          String? // checkout form token
   iyzicoPaymentId      String? // onay sonrası iyzico payment ID
   iyzicoConversationId String?
-  failureReason        String?          @db.Text
+  failureReason        String?              @db.Text
+  discountType         PaymentDiscountType? // init'te uygulanan indirim; ödeme başarılı olunca harcanır
   paidAt               DateTime?
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
   @@index([userId])
   @@index([iyzicoToken])
@@ -488,12 +512,17 @@ enum PaymentPlatform {
   IOS
 }
 
+enum PaymentDiscountType {
+  REFERRER
+  INVITEE
+}
+
 // ─────────────────────────────────────────────
 // SİSTEM AYARLARI
 // ─────────────────────────────────────────────
 
 model AppConfig {
-  key       String   @id // ör: "WEEKLY_TABLE_LIMIT", "MATCHING_ENABLED"
+  key       String   @id // ör: "MATCHING_ENABLED"
   value     String
   updatedAt DateTime @updatedAt
 }
@@ -503,13 +532,13 @@ model AppConfig {
 // ─────────────────────────────────────────────
 
 model City {
-  id               String   @id @default(cuid())
-  name             String   @unique
-  isActive         Boolean  @default(true)
-  weeklyTableLimit Int      @default(0) // 0 = global AppConfig değerini kullan
+  id               String    @id @default(cuid())
+  name             String    @unique
+  isActive         Boolean   @default(true)
   venues           Venue[]
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  meetings         Meeting[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 model Venue {
@@ -728,7 +757,7 @@ model Referral {
   id             String         @id @default(cuid())
   createdAt      DateTime       @default(now())
   referrerId     String
-  referrer       User           @relation("ReferralsSent",     fields: [referrerId], references: [id], onDelete: Cascade)
+  referrer       User           @relation("ReferralsSent", fields: [referrerId], references: [id], onDelete: Cascade)
   referredId     String?
   referred       User?          @relation("ReferralsReceived", fields: [referredId], references: [id])
   inviteCode     String         @unique @default(cuid())
@@ -837,16 +866,16 @@ model SosLocationUpdate {
 // ─────────────────────────────────────────────
 
 model ParticipantLocation {
-  id         String   @id @default(cuid())
-  meetingId  String
-  userId     String
-  lat        Float
-  lng        Float
-  accuracy   Float?
-  timestamp  DateTime @default(now())
+  id        String   @id @default(cuid())
+  meetingId String
+  userId    String
+  lat       Float
+  lng       Float
+  accuracy  Float?
+  timestamp DateTime @default(now())
 
-  meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([meetingId, userId, timestamp])
   @@index([timestamp])

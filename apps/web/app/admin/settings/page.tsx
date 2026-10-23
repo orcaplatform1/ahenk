@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
-const BG     = '#020c1b';
 const SURFACE = '#0a1628';
 const CARD   = '#0d1f3c';
 const BORDER = '#1a3a5c';
@@ -12,10 +11,8 @@ const MUTED  = '#64748b';
 const GREEN  = '#22c55e';
 const RED    = '#ef4444';
 const SANS   = 'Inter, system-ui, sans-serif';
-const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 interface Settings {
-  weeklyTableLimit: number;
   matchingEnabled: boolean;
   botSystemActive: boolean;
   maintenanceMode: boolean;
@@ -53,11 +50,10 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [limitInput, setLimitInput] = useState('');
 
   useEffect(() => {
     api.get<Settings>('/admin/settings')
-      .then(d => { setSettings(d); setLimitInput(String(d.weeklyTableLimit ?? 0)); })
+      .then(d => setSettings(d))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -65,11 +61,10 @@ export default function AdminSettings() {
   async function save() {
     if (!settings) return;
     setSaving(true);
-    const body: Partial<Settings> & { weeklyTableLimit?: number } = {
+    const body: Partial<Settings> = {
       matchingEnabled: settings.matchingEnabled,
       botSystemActive: settings.botSystemActive,
       maintenanceMode: settings.maintenanceMode,
-      weeklyTableLimit: parseInt(limitInput, 10) || 0,
     };
     await api.patch('/admin/settings', body).catch(() => {});
     setSaving(false);
@@ -96,27 +91,8 @@ export default function AdminSettings() {
         <>
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-            {/* Haftalık masa limiti */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <div style={{ width: 2, height: 12, borderRadius: 1, background: MUTED }} />
-                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>HAFTALIK MASA LİMİTİ</span>
-              </div>
-              <p style={{ margin: '0 0 8px', fontSize: 10, color: MUTED }}>Tüm şehirler için global limit (0 = limitsiz)</p>
-              <input
-                type="number" min={0} max={10000}
-                value={limitInput}
-                onChange={e => setLimitInput(e.target.value)}
-                style={{
-                  width: 120, background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-                  padding: '7px 12px', fontSize: 14, color: TEXT,
-                  outline: 'none', fontFamily: MONO, boxSizing: 'border-box',
-                }}
-              />
-            </div>
-
             {/* Toggle'lar */}
-            <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <Toggle
                 label="Eşleştirme Aktif"
                 desc="Perşembe döngüsü çalışsın mı"

@@ -3,6 +3,18 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 
+// Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
+function canSanction(target: { id: string; role: string }): boolean {
+  const token = api.getToken();
+  if (!token) return false;
+  try {
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const me = JSON.parse(atob(b64)) as { sub?: string; role?: string };
+    if (me.sub === target.id || target.role === 'SUPERADMIN') return false;
+    return target.role !== 'ADMIN' || me.role === 'SUPERADMIN';
+  } catch { return false; }
+}
+
 const BG     = '#020c1b';
 const SURFACE = '#0a1628';
 const CARD   = '#0d1f3c';
@@ -42,6 +54,12 @@ interface AdminUserDetail {
   kyc: { status: string } | null;
   subscriptions: { id: string; plan: string; status: string }[];
   groupCount: number; oneOnOneCount: number;
+  oceanScore?: { completedAt: string; adminCanReset: boolean } | null;
+  noShowReportsReceived?: {
+    createdAt: string;
+    meeting: { id: string; scheduledAt: string; type: string; locationText: string | null };
+    reporter: { id: string; profile: { firstName: string | null; lastName: string | null } | null };
+  }[];
 }
 
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -78,6 +96,8 @@ export default function AdminUsers() {
   const [userModal, setUserModal] = useState<AdminUserDetail | null>(null);
   const [userModalLoading, setUserModalLoading] = useState(false);
   const [userAction, setUserAction] = useState<string | null>(null);
+  const [sanctionReasons, setSanctionReasons] = useState<string[]>([]);
+  const [sanctionReason, setSanctionReason] = useState('');
   const [grantPlan, setGrantPlan] = useState('');
 
   const load = useCallback(() => {
@@ -93,6 +113,7 @@ export default function AdminUsers() {
   }, [search, cityFilter, typeFilter, page]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { api.get<string[]>('/admin/sanction-reasons').then(setSanctionReasons).catch(() => {}); }, []);
 
   async function updateStatus(userId: string, status: 'ACTIVE' | 'SUSPENDED' | 'DELETED') {
     setProcessing(p => ({ ...p, [userId]: true }));
@@ -117,10 +138,20 @@ export default function AdminUsers() {
     if (!userModal) return;
     setUserAction(status);
     try {
-      await api.patch(`/admin/users/${userModal.id}/status`, { status });
+      await api.patch(`/admin/users/${userModal.id}/status`, status === 'SUSPENDED' && sanctionReason ? { status, reason: sanctionReason } : { status });
       setUserModal(u => u ? { ...u, status } : null);
       setUsers(prev => prev.map(u => u.id === userModal.id ? { ...u, status: status as 'ACTIVE' | 'SUSPENDED' | 'DELETED' } : u));
     } catch { setError('İşlem başarısız'); }
+    finally { setUserAction(null); }
+  }
+
+  async function modalResetTestLock() {
+    if (!userModal) return;
+    setUserAction('test');
+    try {
+      await api.patch(`/admin/users/${userModal.id}/test-lock-reset`, {});
+      setUserModal(u => u && u.oceanScore ? { ...u, oceanScore: { ...u.oceanScore, adminCanReset: true } } : u);
+    } catch { setError('Test kilidi sıfırlanamadı'); }
     finally { setUserAction(null); }
   }
 
@@ -355,9 +386,43 @@ export default function AdminUsers() {
                   )}
                 </div>
 
+                {/* Gelmedi bildirimleri */}
+                {(userModal.noShowReportsReceived?.length ?? 0) > 0 && (
+                  <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: RED }}>
+                      GELMEDİ BİLDİRİMLERİ ({userModal.noShowReportsReceived!.length})
+                    </span>
+                    {userModal.noShowReportsReceived!.map((n, i) => (
+                      <p key={i} style={{ margin: 0, fontSize: 11, color: MUTED }}>
+                        {new Date(n.meeting.scheduledAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        {' · '}{n.meeting.type === 'ONE_ON_ONE' ? 'Başbaşa' : 'Grup'}
+                        {n.meeting.locationText ? ` · ${n.meeting.locationText}` : ''}
+                        {' — bildiren: '}
+                        <span style={{ color: TEXT }}>
+                          {n.reporter.profile ? `${n.reporter.profile.firstName ?? ''} ${n.reporter.profile.lastName ?? ''}`.trim() : '—'}
+                        </span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+
                 {/* Hesap işlemleri */}
                 <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>HESAP İŞLEMLERİ</span>
+                  {canSanction(userModal) ? (<>
+                  {userModal.status !== 'SUSPENDED' && (
+                    <select
+                      value={sanctionReason}
+                      onChange={e => setSanctionReason(e.target.value)}
+                      style={{
+                        padding: '6px 10px', borderRadius: 8, background: SURFACE, border: `1px solid ${BORDER}`,
+                        fontSize: 11, color: TEXT, fontFamily: SANS, outline: 'none',
+                      }}
+                    >
+                      <option value="">Askı sebebi (boşsa: Yönetici kararı)</option>
+                      {sanctionReasons.map(x => <option key={x} value={x}>{x}</option>)}
+                    </select>
+                  )}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {userModal.status !== 'SUSPENDED' && (
                       <button
@@ -368,7 +433,7 @@ export default function AdminUsers() {
                           fontSize: 11, fontWeight: 600, fontFamily: SANS, opacity: userAction ? 0.5 : 1,
                         }}
                       >
-                        {userAction === 'SUSPENDED' ? '…' : 'Askıya Al'}
+                        {userAction === 'SUSPENDED' ? '…' : 'Askıya Al (1 ay)'}
                       </button>
                     )}
                     {userModal.status === 'SUSPENDED' && (
@@ -396,7 +461,33 @@ export default function AdminUsers() {
                       </button>
                     )}
                   </div>
+                  </>) : (
+                    <p style={{ margin: 0, fontSize: 11, color: MUTED, fontFamily: SANS }}>Bu hesaba işlem yetkiniz yok</p>
+                  )}
                 </div>
+
+                {/* Kişilik testi kilidi */}
+                {userModal.oceanScore && (
+                  <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>KİŞİLİK TESTİ</span>
+                    <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
+                      Son test: {new Date(userModal.oceanScore.completedAt).toLocaleDateString('tr-TR')}
+                      {userModal.oceanScore.adminCanReset ? ' · Kilit açık, kullanıcı testi yeniden yapabilir' : ' · 180 gün kilitli'}
+                    </p>
+                    {!userModal.oceanScore.adminCanReset && (
+                      <button
+                        onClick={modalResetTestLock} disabled={!!userAction}
+                        style={{
+                          alignSelf: 'flex-start', padding: '5px 12px', borderRadius: 8, cursor: userAction ? 'not-allowed' : 'pointer',
+                          background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.3)',
+                          fontSize: 11, fontWeight: 600, fontFamily: SANS, opacity: userAction ? 0.5 : 1,
+                        }}
+                      >
+                        {userAction === 'test' ? '…' : 'Test Kilidini Sıfırla'}
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {/* KYC onayla */}
                 {userModal.kyc && userModal.kyc.status !== 'APPROVED' && (
@@ -418,6 +509,11 @@ export default function AdminUsers() {
                 {/* Abonelik ver */}
                 <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>ÜCRETSİZ ABONELİK VER</span>
+                  {userModal.kyc?.status !== 'APPROVED' && (
+                    <p style={{ margin: 0, fontSize: 10, color: RED }}>
+                      KYC onaylı değil: paket verilse bile kullanıcı KYC tamamlanana kadar eşleşmeye katılamaz.
+                    </p>
+                  )}
                   <div style={{ display: 'flex', gap: 8 }}>
                     <select
                       value={grantPlan} onChange={e => setGrantPlan(e.target.value)}

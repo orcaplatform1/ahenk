@@ -26,9 +26,11 @@ const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean }[] 
   { href: '/admin/matches',      label: 'Masalar' },
   { href: '/admin/kyc',          label: 'KYC Bekleyenler' },
   { href: '/admin/users',        label: 'Kullanıcılar' },
+  { href: '/admin/subscriptions', label: 'Abonelikler' },
   { href: '/admin/alerts',       label: 'Uyarılar', alertKey: true },
   { href: '/admin/refunds',      label: 'İade Talepleri' },
   { href: '/admin/venues',       label: 'Mekanlar' },
+  { href: '/admin/cities',       label: 'Şehirler' },
   { href: '/admin/bots',         label: 'Bot Yönetimi' },
   { href: '/admin/quality',      label: 'Şikayetler' },
   { href: '/admin/partnerships', label: 'İş Ortaklığı' },
@@ -107,7 +109,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
-  function handleLogout() { api.clearToken(); router.push('/'); }
+  async function handleLogout() { await api.logout(); router.push('/'); }
 
   if (!ready) {
     return (
