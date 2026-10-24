@@ -31,6 +31,7 @@ export interface MasaDetayData {
   venuePhotos?: VenuePhoto[];
   participants: DetayParticipant[];
   aiReport?: AiReport | null;
+  cancelRightUsed?: boolean; // grup: bu abonelik döneminde iptal hakkı kullanıldı
 }
 
 interface ChatMsg {
@@ -347,10 +348,14 @@ function CancelModal({
   onConfirm,
   onClose,
   loading,
+  isOneOnOne,
+  error,
 }: {
   onConfirm: (reason: string, note: string) => void;
   onClose: () => void;
   loading: boolean;
+  isOneOnOne: boolean;
+  error: string;
 }) {
   const [reason, setReason] = useState<string>('');
   const [note,   setNote]   = useState('');
@@ -382,7 +387,9 @@ function CancelModal({
           fontSize: 15, lineHeight: 1.6, fontWeight: 500,
           color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center',
         }}>
-          Bu haftaki eşleşmeden ayrılırsanız önümüzdeki haftaya kadar tekrar eşleşemezsiniz.
+          {isOneOnOne
+            ? 'Başbaşa masanız kurulduğu için paket hakkınız kullanılmış sayılır; iptal etmeniz durumunda hakkınız iade edilmez. Kurulan masaya katılmama durumunda ilk uyarıyı alırsınız, 3 uyarı tamamlandığında hesabınız 1 ay askıya alınacaktır.'
+            : 'Rezervasyon iptali diğer kullanıcıları da doğrudan etkilediğinden, kurulan bir masada tekrar iptal hakkınız bulunmayacaktır ve kurulan masaya katılmama durumunda ilk uyarıyı alırsınız, 3 uyarı tamamlandığında hesabınız 1 ay askıya alınacaktır.'}
         </p>
         <p style={{ margin: '0 0 10px', fontSize: 13, color: 'rgba(245,245,245,0.6)', fontFamily: 'Inter, sans-serif' }}>
           Ayrılma sebebiniz:
@@ -445,6 +452,11 @@ function CancelModal({
             {loading ? '…' : 'İptal Et'}
           </button>
         </div>
+        {error && (
+          <p style={{ margin: '12px 0 0', fontSize: 13, color: '#ff6b6b', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+            {error}
+          </p>
+        )}
       </motion.div>
     </motion.div>
   );
@@ -600,6 +612,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
   const [showCancel,    setShowCancel]    = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelled,     setCancelled]     = useState(false);
+  const [cancelError,   setCancelError]   = useState('');
 
   const isOneOnOne = masa.type === 'ONE_ON_ONE';
   const photos     = masa.venuePhotos ?? [];
@@ -623,12 +636,18 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
   async function handleCancel(reason: string, note: string) {
     if (!authHeaders) return;
     setCancelLoading(true);
+    setCancelError('');
     try {
       const res = await fetch(`${apiBase}/meetings/${masa.id}/cancel-registration`, {
         method: 'POST', headers: authHeaders,
         body: JSON.stringify({ reason, note: note || undefined }),
       });
-      if (res.ok) { setCancelled(true); setShowCancel(false); }
+      if (res.ok) { setCancelled(true); setShowCancel(false); return; }
+      const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
+      const msg = Array.isArray(err?.message) ? err?.message[0] : err?.message;
+      setCancelError(msg ?? 'İptal edilemedi, lütfen tekrar deneyin.');
+    } catch {
+      setCancelError('İptal edilemedi, lütfen tekrar deneyin.');
     } finally { setCancelLoading(false); }
   }
 
@@ -754,8 +773,10 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
         {showCancel && (
           <CancelModal
             onConfirm={(reason, note) => handleCancel(reason, note)}
-            onClose={() => setShowCancel(false)}
+            onClose={() => { setShowCancel(false); setCancelError(''); }}
             loading={cancelLoading}
+            isOneOnOne={isOneOnOne}
+            error={cancelError}
           />
         )}
         {showSos && (
@@ -1016,7 +1037,12 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
         )}
 
         {/* Rezervasyon iptal butonu */}
-        {authHeaders && !cancelled && !cancelDeadlinePassed && (
+        {authHeaders && !cancelled && !cancelDeadlinePassed && masa.cancelRightUsed && (
+          <p style={{ margin: '0 0 16px', fontSize: 12, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+            Bu abonelik döneminde iptal hakkınızı kullandınız.
+          </p>
+        )}
+        {authHeaders && !cancelled && !cancelDeadlinePassed && !masa.cancelRightUsed && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}

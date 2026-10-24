@@ -40,46 +40,68 @@ export default function AdminVenues() {
   const [editing, setEditing] = useState<Venue | null>(null);
   const [form, setForm] = useState({ name: '', category: 'SADE', cityId: '', address: '', description: '' });
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [modalError, setModalError] = useState('');
 
   function loadVenues(cityId?: string) {
     const q = cityId ? `?cityId=${cityId}` : '';
-    api.get<Venue[]>(`/admin/venues${q}`).then(setVenues).catch(() => {}).finally(() => setLoading(false));
+    api.get<Venue[]>(`/admin/venues${q}`).then(setVenues)
+      .catch((e: Error) => setError(`Mekanlar yüklenemedi: ${e.message}`))
+      .finally(() => setLoading(false));
   }
 
   useEffect(() => {
-    api.get<City[]>('/admin/cities').then(setCities).catch(() => {});
+    api.get<City[]>('/admin/cities').then(setCities).catch((e: Error) => setError(`Şehirler yüklenemedi: ${e.message}`));
     loadVenues();
   }, []);
 
   function openAdd() {
     setForm({ name: '', category: 'SADE', cityId: cities[0]?.id ?? '', address: '', description: '' });
+    setModalError('');
     setModal('add');
   }
 
   function openEdit(v: Venue) {
     setEditing(v);
     setForm({ name: v.name, category: v.category, cityId: v.city.id, address: v.address ?? '', description: v.description ?? '' });
+    setModalError('');
     setModal('edit');
   }
 
   async function save() {
     setSaving(true);
     const body = { name: form.name, category: form.category, cityId: form.cityId, address: form.address || undefined, description: form.description || undefined };
-    if (modal === 'add') await api.post('/admin/venues', body).catch(() => {});
-    else if (editing) await api.patch(`/admin/venues/${editing.id}`, body).catch(() => {});
-    setSaving(false);
-    setModal(null);
-    loadVenues(selectedCity || undefined);
+    setModalError('');
+    try {
+      if (modal === 'add') await api.post('/admin/venues', body);
+      else if (editing) await api.patch(`/admin/venues/${editing.id}`, body);
+      setModal(null);
+      loadVenues(selectedCity || undefined);
+    } catch (e) {
+      setModalError(`Kaydedilemedi: ${(e as Error).message}`);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function deleteVenue(id: string) {
     if (!confirm('Mekanı sil?')) return;
-    await api.delete(`/admin/venues/${id}`).catch(() => {});
+    setError('');
+    try {
+      await api.delete(`/admin/venues/${id}`);
+    } catch (e) {
+      setError(`Silinemedi: ${(e as Error).message}`);
+    }
     loadVenues(selectedCity || undefined);
   }
 
   async function toggleActive(v: Venue) {
-    await api.patch(`/admin/venues/${v.id}`, { isActive: !v.isActive }).catch(() => {});
+    setError('');
+    try {
+      await api.patch(`/admin/venues/${v.id}`, { isActive: !v.isActive });
+    } catch (e) {
+      setError(`Güncellenemedi: ${(e as Error).message}`);
+    }
     loadVenues(selectedCity || undefined);
   }
 
@@ -101,6 +123,8 @@ export default function AdminVenues() {
           + Mekan Ekle
         </button>
       </div>
+
+      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
 
       {/* Şehir filtresi */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
@@ -249,6 +273,7 @@ export default function AdminVenues() {
               >
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
+              {modalError && <p style={{ margin: '8px 0 0', fontSize: 12, color: RED }}>{modalError}</p>}
             </div>
           </div>
         </div>

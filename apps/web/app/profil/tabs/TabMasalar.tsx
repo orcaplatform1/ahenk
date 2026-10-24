@@ -19,6 +19,7 @@ interface DashboardItem {
     venueMapsUrl?: string;
     venuePhotos?: Array<{ url: string; caption?: string }>;
     aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
+    cancelRightUsed?: boolean;
   };
 }
 
@@ -493,6 +494,7 @@ function MasaBlock({
       venuePhotos: meeting.venuePhotos,
       participants: meeting.participants,
       aiReport: meeting.aiReport,
+      cancelRightUsed: meeting.cancelRightUsed,
     };
     content = (
       <div style={CARD_STYLE}>

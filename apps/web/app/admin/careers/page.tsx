@@ -52,19 +52,28 @@ export default function AdminCareers() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
   function load() {
-    api.get<Career[]>('/admin/careers').then(setItems).catch(() => {}).finally(() => setLoading(false));
+    api.get<Career[]>('/admin/careers').then(setItems)
+      .catch((e: Error) => setError(`Başvurular yüklenemedi: ${e.message}`))
+      .finally(() => setLoading(false));
   }
 
   useEffect(() => { load(); }, []);
 
   async function update(id: string, status: string) {
     setSaving(id);
-    await api.patch(`/admin/careers/${id}`, { status, adminNote: notes[id] || undefined }).catch(() => {});
-    setSaving(null);
-    setExpanded(null);
-    load();
+    setError('');
+    try {
+      await api.patch(`/admin/careers/${id}`, { status, adminNote: notes[id] || undefined });
+      setExpanded(null);
+      load();
+    } catch (e) {
+      setError(`Güncellenemedi: ${(e as Error).message}`);
+    } finally {
+      setSaving(null);
+    }
   }
 
   return (
@@ -76,6 +85,8 @@ export default function AdminCareers() {
           Kariyer Başvuruları
         </h1>
       </div>
+
+      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
 
       {loading ? (
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>

@@ -16,6 +16,7 @@ import {
   UseInterceptors,
   UploadedFile,
 } from "@nestjs/common";
+import { HideEmailForAdminInterceptor, KeepEmails } from "./hide-email.interceptor";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { IsEnum, IsOptional, IsString } from "class-validator";
 import { Request } from "express";
@@ -35,6 +36,8 @@ import {
   UpdateSettingsDto,
   CreateSanctionDto,
   SanctionReasonDto,
+  NoShowWarningDto,
+  AdminUpdateUserDto,
   PlaceBotDto,
   UpdateVenuePhotosDto,
   UpdatePartnershipDto,
@@ -60,6 +63,7 @@ class UpdateRefundDto {
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+@UseInterceptors(HideEmailForAdminInterceptor)
 export class AdminController {
   constructor(private adminService: AdminService) {}
 
@@ -83,16 +87,23 @@ export class AdminController {
   listUsers(
     @Query("search") search?: string,
     @Query("status") status?: string,
+    @Query("city") city?: string,
     @Query("type") type?: string,
     @Query("page", new DefaultValuePipe(1), ParseIntPipe) page?: number,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit?: number,
   ) {
-    return this.adminService.listUsers({ search, status, type, page, limit });
+    return this.adminService.listUsers({ search, status, city, type, page, limit });
   }
 
   @Get("users/:id")
-  getUser(@Param("id") id: string) {
-    return this.adminService.getUser(id);
+  getUser(@Param("id") id: string, @Req() req: Request) {
+    return this.adminService.getUser(id, (req.user as { role: UserRole }).role);
+  }
+
+  @Patch("users/:id/profile")
+  adminUpdateUser(@Param("id") id: string, @Body() dto: AdminUpdateUserDto, @Req() req: Request) {
+    const actor = req.user as { id: string };
+    return this.adminService.adminUpdateUser(id, actor.id, dto);
   }
 
   @Patch("users/:id/status")
@@ -179,8 +190,8 @@ export class AdminController {
   }
 
   @Get("meetings/:id")
-  getMeeting(@Param("id") id: string) {
-    return this.adminService.getMeeting(id);
+  getMeeting(@Param("id") id: string, @Req() req: Request) {
+    return this.adminService.getMeeting(id, (req.user as { role: UserRole }).role);
   }
 
   @Post("meetings")
@@ -266,24 +277,24 @@ export class AdminController {
   // ─── Sistem ayarları ─────────────────────────────────────────────────────
 
   @Get("settings")
-  getSettings() {
-    return this.adminService.getSettings();
+  getSettings(@Req() req: Request) {
+    return this.adminService.getSettings((req.user as { role: UserRole }).role);
   }
 
   @Patch("settings")
-  updateSettings(@Body() dto: UpdateSettingsDto) {
+  updateSettings(@Body() dto: UpdateSettingsDto, @Req() req: Request) {
     return this.adminService.updateSettings({
       matchingEnabled: dto.matchingEnabled,
       botSystemActive: dto.botSystemActive,
       maintenanceMode: dto.maintenanceMode,
-    });
+    }, (req.user as { role: UserRole }).role);
   }
 
   // ─── Matches ─────────────────────────────────────────────────────────────
 
   @Get("matches/pending")
-  getPendingMatches() {
-    return this.adminService.getPendingMatches();
+  getPendingMatches(@Req() req: Request) {
+    return this.adminService.getPendingMatches((req.user as { role: UserRole }).role);
   }
 
   @Patch("matches/:id/approve")
@@ -292,6 +303,7 @@ export class AdminController {
   }
 
   @Post("matches/:id/bot")
+  @Roles(UserRole.SUPERADMIN)
   placeBot(@Param("id") id: string, @Body() dto: PlaceBotDto) {
     return this.adminService.placeBot(id, dto.botUserId);
   }
@@ -310,8 +322,8 @@ export class AdminController {
   }
 
   @Patch("refunds/:id")
-  updateRefund(@Param("id") id: string, @Body() dto: UpdateRefundDto) {
-    return this.adminService.updateRefundStatus(id, dto.status, dto.adminNote);
+  updateRefund(@Param("id") id: string, @Body() dto: UpdateRefundDto, @Req() req: Request) {
+    return this.adminService.updateRefundStatus(id, dto.status, req.ip ?? "", dto.adminNote);
   }
 
   // ─── Stats ───────────────────────────────────────────────────────────────
@@ -347,6 +359,12 @@ export class AdminController {
     return this.adminService.banUser(id, actor.id, dto.reason);
   }
 
+  @Post("users/:id/no-show-warning")
+  giveNoShowWarning(@Param("id") id: string, @Body() dto: NoShowWarningDto, @Req() req: Request) {
+    const actor = req.user as { id: string };
+    return this.adminService.giveNoShowWarning(id, dto.meetingId, actor.id);
+  }
+
   @Post("users/:id/sanction")
   createSanction(
     @Param("id") id: string,
@@ -375,26 +393,30 @@ export class AdminController {
   }
 
   @Get("users/:id/sanctions")
-  getUserSanctions(@Param("id") id: string) {
-    return this.adminService.getUserSanctions(id);
+  getUserSanctions(@Param("id") id: string, @Req() req: Request) {
+    return this.adminService.getUserSanctions(id, (req.user as { role: UserRole }).role);
   }
 
   @Get("partnerships")
+  @KeepEmails()
   listPartnerships() {
     return this.adminService.listPartnerships();
   }
 
   @Patch("partnerships/:id")
+  @KeepEmails()
   updatePartnership(@Param("id") id: string, @Body() body: UpdatePartnershipDto) {
     return this.adminService.updatePartnership(id, body);
   }
 
   @Get("careers")
+  @KeepEmails()
   listCareers() {
     return this.adminService.listCareers();
   }
 
   @Patch("careers/:id")
+  @KeepEmails()
   updateCareer(@Param("id") id: string, @Body() body: UpdateCareerDto) {
     return this.adminService.updateCareer(id, body);
   }

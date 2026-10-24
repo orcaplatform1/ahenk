@@ -10,6 +10,7 @@ const TEXT    = '#e2e8f0';
 const MUTED   = '#64748b';
 const GREEN   = '#22c55e';
 const AMBER   = '#f59e0b';
+const RED     = '#ef4444';
 const SANS    = 'Inter, system-ui, sans-serif';
 const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
@@ -25,17 +26,23 @@ interface AlertItem {
 export default function AdminAlerts() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     api.get<{ alerts: AlertItem[]; unreadCount: number }>('/admin/alerts')
       .then(d => setAlerts(d.alerts ?? []))
-      .catch(() => {})
+      .catch((e: Error) => setError(`Uyarılar yüklenemedi: ${e.message}`))
       .finally(() => setLoading(false));
   }, []);
 
   async function markRead(id: string) {
-    await api.patch(`/admin/alerts/${id}/read`, {});
-    setAlerts(a => a.map(x => x.id === id ? { ...x, isRead: true } : x));
+    setError('');
+    try {
+      await api.patch(`/admin/alerts/${id}/read`, {});
+      setAlerts(a => a.map(x => x.id === id ? { ...x, isRead: true } : x));
+    } catch (e) {
+      setError(`Güncellenemedi: ${(e as Error).message}`);
+    }
   }
 
   const unread = alerts.filter(a => !a.isRead).length;
@@ -48,6 +55,8 @@ export default function AdminAlerts() {
           Uyarılar
         </h1>
       </div>
+
+      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
 
       {loading ? (
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>

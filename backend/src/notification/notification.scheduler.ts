@@ -15,8 +15,8 @@ export class NotificationScheduler {
     private notifications: NotificationService,
   ) {}
 
-  // Her gün 10:00 TR saatinde abonelik hatırlatması kontrol et
-  @Cron("0 7 * * *", { timeZone: "Europe/Istanbul" })
+  // Her gün 20:00 TR: bitişine 3, 2 ve 1 gün kalan aboneliklere günde bir hatırlatma
+  @Cron("0 20 * * *", { timeZone: "Europe/Istanbul" })
   async checkExpiringSubscriptions(): Promise<void> {
     const now = new Date();
     const threshold = new Date(now);
@@ -25,7 +25,7 @@ export class NotificationScheduler {
     const expiring = await this.prisma.subscription.findMany({
       where: {
         status: SubscriptionStatus.ACTIVE,
-        expiresAt: { gte: now, lte: threshold },
+        expiresAt: { gt: now, lte: threshold },
         plan: { in: [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE] },
       },
       select: { userId: true, plan: true, expiresAt: true },

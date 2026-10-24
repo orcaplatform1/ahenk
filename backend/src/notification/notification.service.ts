@@ -28,9 +28,10 @@ export class NotificationService {
   private async send(payload: SendPayload): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { fcmToken: true, phone: true },
+      select: { fcmToken: true, phone: true, isBot: true },
     });
-    if (!user) return;
+    // Botlara hiçbir kanaldan bildirim gönderilmez
+    if (!user || user.isBot) return;
 
     // 1) IN_APP kaydı her zaman oluştur
     await this.prisma.notification.create({
@@ -133,38 +134,11 @@ export class NotificationService {
 
     await this.send({
       userId,
-      title: "Masanız kesinleşti! 🎉",
-      body: `Buluşmanız ${dateStr} tarihinde gerçekleşecek. Mekan bilgisi yakında paylaşılacak.`,
+      title: "Masa detayınız belli oldu",
+      body: `${dateStr} tarihli masanızın detayları belli oldu. Masalarım alanından kontrol edebilirsiniz.`,
       data: { event: "MEETING_CONFIRMED", meetingId },
       whatsappTemplate: "ahenk_meeting_confirmed",
       whatsappParams: [dateStr],
-    });
-  }
-
-  // ─── Mekan + saat bildirimi ───────────────────────────────────────────────
-
-  async notifyMeetingVenueSet(
-    userId: string,
-    meetingId: string,
-    venueName: string,
-    scheduledAt: Date,
-  ): Promise<void> {
-    const dateStr = scheduledAt.toLocaleDateString("tr-TR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Europe/Istanbul",
-    });
-
-    await this.send({
-      userId,
-      title: "Mekan bilgisi güncellendi 📍",
-      body: `Buluşma mekanı: ${venueName} — ${dateStr}`,
-      data: { event: "MEETING_VENUE_SET", meetingId, venueName },
-      whatsappTemplate: "ahenk_meeting_venue_set",
-      whatsappParams: [venueName, dateStr],
     });
   }
 

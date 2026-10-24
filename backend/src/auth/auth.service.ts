@@ -7,6 +7,8 @@ import {
   HttpException,
   NotFoundException,
 } from "@nestjs/common";
+import { activeNoShowWarningsWhere } from "../admin/no-show-warnings";
+import { NO_SHOW_WARNING_LIMIT } from "../admin/sanction-reasons";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
@@ -39,6 +41,8 @@ export class AuthService {
         where: {
           userId,
           liftedAt: null,
+          // Uyarılar girişi engellemez; sadece askı/ban
+          type: { in: [SanctionType.BAN, SanctionType.SUSPENSION] },
           OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         },
         orderBy: { createdAt: 'desc' },
@@ -127,8 +131,9 @@ export class AuthService {
 
     // Referral kodu ile geldiyse ilişkilendir
     if (dto.referralCode) {
+      // Davet sadece davet edilen numarayla kayıt olunca geçerli
       await this.prisma.referral.updateMany({
-        where: { inviteCode: dto.referralCode, status: ReferralStatus.PENDING },
+        where: { inviteCode: dto.referralCode, status: ReferralStatus.PENDING, invitedPhone: dto.phoneNumber ?? "" },
         data: { referredId: user.id, status: ReferralStatus.REGISTERED },
       });
       // Referral bulundu ise davet edilen kullanıcıya indirim hakkı ver
@@ -347,6 +352,37 @@ export class AuthService {
     };
   }
 
+  // Girişte gösterilecek yaptırım: önce aktif askı/ban, yoksa son askıdan sonraki kaldırılmamış en son uyarı
+  private async currentSanction(userId: string) {
+    const select = { id: true, type: true, reason: true, expiresAt: true, createdAt: true } as const;
+    const hard = await this.prisma.userSanction.findFirst({
+      where: {
+        userId,
+        liftedAt: null,
+        type: { in: [SanctionType.BAN, SanctionType.SUSPENSION] },
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+      orderBy: { createdAt: 'desc' },
+      select,
+    });
+    if (hard) return hard;
+    const lastSuspension = await this.prisma.userSanction.findFirst({
+      where: { userId, type: SanctionType.SUSPENSION },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    return this.prisma.userSanction.findFirst({
+      where: {
+        userId,
+        type: SanctionType.WARNING,
+        liftedAt: null,
+        ...(lastSuspension ? { createdAt: { gt: lastSuspension.createdAt } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      select,
+    });
+  }
+
   async getMe(user: any) {
     const [primaryCity, activeSubs, activeSanction, maintenanceMode] = await Promise.all([
       user.profile?.primaryCity
@@ -356,17 +392,11 @@ export class AuthService {
         where: { userId: user.id, status: SubscriptionStatus.ACTIVE },
         select: { plan: true },
       }),
-      this.prisma.userSanction.findFirst({
-        where: {
-          userId: user.id,
-          liftedAt: null,
-          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-        },
-        orderBy: { createdAt: 'desc' },
-        select: { id: true, type: true, reason: true, expiresAt: true, createdAt: true },
-      }),
+      this.currentSanction(user.id),
       isMaintenanceMode(this.prisma),
     ]);
+    // Profildeki sarı uyarı için gelmedi uyarı sayacı (askıdan sonra sıfırlanır)
+    const noShowCount = await this.prisma.userSanction.count({ where: await activeNoShowWarningsWhere(this.prisma, user.id) });
 
     const hasIcerde = activeSubs.some((s) => s.plan === 'ICERDE');
     const hasMasada = activeSubs.some((s) => s.plan === 'MASADA' || s.plan === 'ICERDE');
@@ -381,7 +411,12 @@ export class AuthService {
       isKycVerified: kyc?.status === 'APPROVED',
       kyc: kyc ? { status: kyc.status, rejectReason: kyc.rejectReason ?? null } : undefined,
       activePlan,
+      // Tüm aktif paketler (paket kartı kuralı: Masada + Karşımda birlikte olabilir)
+      ownedPlans: [...new Set(activeSubs.map((s) => s.plan))],
       activeSanction: activeSanction ?? null,
+      noShowWarning: noShowCount > 0
+        ? { count: noShowCount, remaining: Math.max(NO_SHOW_WARNING_LIMIT - noShowCount, 0) }
+        : null,
       maintenanceMode,
       profile: profile ? {
         gender: profile.gender,

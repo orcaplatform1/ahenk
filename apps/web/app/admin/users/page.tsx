@@ -2,6 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
+import { myRole } from '@/lib/adminRole';
+import { AdminUserEdit } from '@/components/AdminUserEdit';
+import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
+import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } from '@/components/AdminNoShowWarnings';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
 function canSanction(target: { id: string; role: string }): boolean {
@@ -50,16 +54,14 @@ interface UsersResponse {
 
 interface AdminUserDetail {
   id: string; email: string; phone: string | null; role: string; status: string;
-  profile: { firstName: string | null; lastName: string | null; city: string | null; birthDate: string | null; occupation: string | null } | null;
+  profile: { firstName: string | null; lastName: string | null; city: string | null; birthDate: string | null; occupation: string | null; gender?: string | null; primaryCity?: string | null } | null;
+  occupationSector?: string | null;
   kyc: { status: string } | null;
   subscriptions: { id: string; plan: string; status: string }[];
   groupCount: number; oneOnOneCount: number;
   oceanScore?: { completedAt: string; adminCanReset: boolean } | null;
-  noShowReportsReceived?: {
-    createdAt: string;
-    meeting: { id: string; scheduledAt: string; type: string; locationText: string | null };
-    reporter: { id: string; profile: { firstName: string | null; lastName: string | null } | null };
-  }[];
+  noShowReportsReceived?: NoShowReportItem[];
+  noShowWarnings?: NoShowWarningInfo;
 }
 
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -124,24 +126,31 @@ export default function AdminUsers() {
     finally { setProcessing(p => { const n = { ...p }; delete n[userId]; return n; }); }
   }
 
+  // Pencereyi kapatmadan detayı yeniler (düzenleme / yaptırım sonrası)
+  function refreshUserModal(userId: string) {
+    api.get<AdminUserDetail>(`/admin/users/${userId}`).then(setUserModal)
+      .catch((e: Error) => setError(`Kullanıcı yüklenemedi: ${e.message}`));
+  }
+
   async function openUserModal(userId: string) {
     setUserModalLoading(true);
     setUserModal(null);
     try {
       const u = await api.get<AdminUserDetail>(`/admin/users/${userId}`);
       setUserModal(u); setGrantPlan('');
-    } catch { setError('Kullanıcı yüklenemedi'); }
+    } catch (e) { setError(`Kullanıcı yüklenemedi: ${(e as Error).message}`); }
     finally { setUserModalLoading(false); }
   }
 
-  async function modalUpdateStatus(status: string) {
+  async function modalUpdateStatus(status: string, reasonOverride?: string) {
     if (!userModal) return;
     setUserAction(status);
+    const reason = reasonOverride ?? sanctionReason;
     try {
-      await api.patch(`/admin/users/${userModal.id}/status`, status === 'SUSPENDED' && sanctionReason ? { status, reason: sanctionReason } : { status });
+      await api.patch(`/admin/users/${userModal.id}/status`, status === 'SUSPENDED' && reason ? { status, reason } : { status });
       setUserModal(u => u ? { ...u, status } : null);
       setUsers(prev => prev.map(u => u.id === userModal.id ? { ...u, status: status as 'ACTIVE' | 'SUSPENDED' | 'DELETED' } : u));
-    } catch { setError('İşlem başarısız'); }
+    } catch (e) { setError(`İşlem başarısız: ${(e as Error).message}`); }
     finally { setUserAction(null); }
   }
 
@@ -151,7 +160,7 @@ export default function AdminUsers() {
     try {
       await api.patch(`/admin/users/${userModal.id}/test-lock-reset`, {});
       setUserModal(u => u && u.oceanScore ? { ...u, oceanScore: { ...u.oceanScore, adminCanReset: true } } : u);
-    } catch { setError('Test kilidi sıfırlanamadı'); }
+    } catch (e) { setError(`Test kilidi sıfırlanamadı: ${(e as Error).message}`); }
     finally { setUserAction(null); }
   }
 
@@ -161,7 +170,7 @@ export default function AdminUsers() {
     try {
       await api.post(`/admin/users/${userModal.id}/kyc-approve`, {});
       setUserModal(u => u ? { ...u, kyc: { status: 'APPROVED' } } : null);
-    } catch { setError('KYC onaylanamadı'); }
+    } catch (e) { setError(`KYC onaylanamadı: ${(e as Error).message}`); }
     finally { setUserAction(null); }
   }
 
@@ -171,7 +180,7 @@ export default function AdminUsers() {
     try {
       await api.post(`/admin/users/${userModal.id}/free-subscription`, { plan: grantPlan });
       setGrantPlan('');
-    } catch { setError('Abonelik verilemedi'); }
+    } catch (e) { setError(`Abonelik verilemedi: ${(e as Error).message}`); }
     finally { setUserAction(null); }
   }
 
@@ -246,7 +255,7 @@ export default function AdminUsers() {
                           <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: TEXT, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}
                           </p>
-                          <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</p>
+                          <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email ?? u.phone ?? ''}</p>
                         </td>
                         <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{u.profile?.city ?? '—'}</td>
                         <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{activePlan(u)}</td>
@@ -334,7 +343,7 @@ export default function AdminUsers() {
                     <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: TEXT }}>
                       {userModal.profile ? `${userModal.profile.firstName} ${userModal.profile.lastName}` : userModal.email}
                     </p>
-                    <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>{userModal.email}</p>
+                    {userModal.email && <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>{userModal.email}</p>}
                     {userModal.phone && <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>{userModal.phone}</p>}
                     <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED }}>{userModal.role}</p>
                   </div>
@@ -386,25 +395,23 @@ export default function AdminUsers() {
                   )}
                 </div>
 
-                {/* Gelmedi bildirimleri */}
-                {(userModal.noShowReportsReceived?.length ?? 0) > 0 && (
-                  <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: RED }}>
-                      GELMEDİ BİLDİRİMLERİ ({userModal.noShowReportsReceived!.length})
-                    </span>
-                    {userModal.noShowReportsReceived!.map((n, i) => (
-                      <p key={i} style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        {new Date(n.meeting.scheduledAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                        {' · '}{n.meeting.type === 'ONE_ON_ONE' ? 'Başbaşa' : 'Grup'}
-                        {n.meeting.locationText ? ` · ${n.meeting.locationText}` : ''}
-                        {' — bildiren: '}
-                        <span style={{ color: TEXT }}>
-                          {n.reporter.profile ? `${n.reporter.profile.firstName ?? ''} ${n.reporter.profile.lastName ?? ''}`.trim() : '—'}
-                        </span>
-                      </p>
-                    ))}
-                  </div>
-                )}
+                {/* Kişisel bilgi düzenleme */}
+                <AdminUserEdit user={userModal} canEdit={canSanction(userModal)} onSaved={() => refreshUserModal(userModal.id)} />
+
+                {/* Gelmedi bildirimleri + uyarı */}
+                <AdminNoShowWarnings
+                  userId={userModal.id}
+                  reports={userModal.noShowReportsReceived ?? []}
+                  warnings={userModal.noShowWarnings ?? { count: 0, limit: 3, warnedMeetingIds: [] }}
+                  canSanction={canSanction(userModal)}
+                  userStatus={userModal.status}
+                  suspending={userAction === 'SUSPENDED'}
+                  onChanged={w => setUserModal(u => u ? { ...u, noShowWarnings: w } : null)}
+                  onSuspend={() => modalUpdateStatus('SUSPENDED', 'Masaya katılım sağlamama')}
+                />
+
+                {/* Yaptırım geçmişi */}
+                <AdminSanctionHistory userId={userModal.id} canAct={canSanction(userModal)} onChanged={() => refreshUserModal(userModal.id)} />
 
                 {/* Hesap işlemleri */}
                 <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -436,7 +443,7 @@ export default function AdminUsers() {
                         {userAction === 'SUSPENDED' ? '…' : 'Askıya Al (1 ay)'}
                       </button>
                     )}
-                    {userModal.status === 'SUSPENDED' && (
+                    {userModal.status === 'SUSPENDED' && myRole() === 'SUPERADMIN' && (
                       <button
                         onClick={() => modalUpdateStatus('ACTIVE')} disabled={!!userAction}
                         style={{

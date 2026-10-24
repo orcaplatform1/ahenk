@@ -5,7 +5,6 @@ import {
   MaxLength,
   IsOptional,
   IsBoolean,
-  IsArray,
   Matches,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -48,18 +47,10 @@ export class RegisterDto {
   @IsString()
   primaryCityId?: string;
 
-  @ApiPropertyOptional()
-
   @ApiProperty()
   @IsString()
   @MinLength(1, { message: "Meslek alanı seçin" })
   occupationSector: string;
-
-  @ApiPropertyOptional({ type: [String] })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  contactPhoneHashes?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -175,7 +175,7 @@ export default function AdminSubscriptions() {
                       </span>
                     </div>
                     <p style={{ margin: 0, fontSize: 10, color: MUTED }}>
-                      {s.user.email}{s.user.phone ? ` · ${s.user.phone}` : ''}
+                      {[s.user.email, s.user.phone].filter(Boolean).join(' · ')}
                     </p>
                     <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
                       Başlangıç {fmtDate(s.startsAt)}

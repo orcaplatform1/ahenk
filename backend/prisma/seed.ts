@@ -230,7 +230,7 @@ async function main() {
   }
 
   // Bot kullanıcısı
-  const botEmail = "bot@ahenk.tr";
+  const botEmail = "denge1@ahenk.co";
   const existingBot = await prisma.user.findUnique({ where: { email: botEmail } });
   if (!existingBot) {
     const botPasswordHash = await bcrypt.hash("BotAhenk2024!", 12);

@@ -162,6 +162,7 @@ const sections = [
               'Başbaşa eşleşme 4 döngü boyunca gerçekleşmezse; Karşımda paketi için tam iade, İçerde paketinde başbaşa kısmı için yarım iade talep edilebilir.',
               'İçerde paketinde her iki eşleşme de gerçekleşmezse tam iade talep edilebilir.',
               'Masa kurulduğu halde kullanıcının katılım sağlamaması durumunda iade yapılmaz.',
+              'Masa kurulduktan sonra bir veya birden fazla katılımcının buluşmaya katılmaması, hizmetin ifa edilmediği anlamına gelmez ve iade sebebi teşkil etmez.',
               'İade talepleri profil sayfasındaki İade Talep Et butonu üzerinden iletilir ve 5 iş günü içinde değerlendirilir.',
             ].map((item) => (
               <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
@@ -180,6 +181,8 @@ const sections = [
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
           'Ahenk, OCEAN modeline dayalı algoritmik eşleştirme hizmeti sunar; belirli bir kişiyle eşleşme veya buluşmanın gerçekleşeceğine dair garanti vermez.',
+          'Ahenk, eşleştirme sonucunda kurulan masada yer alan katılımcıların tamamının buluşmaya katılacağını garanti etmez. Buluşmaya katılım her kullanıcının kendi iradesine bağlıdır ve Ahenk tarafından zorunlu tutulamaz.',
+          'Ahenk, masaların kurulabilmesi ve katılımcı dengesinin sağlanabilmesi amacıyla masa kompozisyonunda sistemsel düzenlemeler yapma hakkını saklı tutar.',
           'Kullanıcı sayısının yetersiz olduğu şehir veya dönemlerde eşleştirme gerçekleşmeyebilir. Bu durumda Ahenk, kullanıcıya ilgili dönem için alternatif hizmet sunmayı veya iade değerlendirmeyi kabul eder.',
           "Ahenk, buluşmaların gerçekleştiği mekânın hizmet kalitesinden sorumlu tutulamaz.",
           'Buluşmalar sırasında kullanıcılar arasında yaşanan kişisel anlaşmazlık, maddi veya manevi zararlardan Ahenk sorumlu tutulamaz.',

@@ -11,6 +11,14 @@ export type IyzicoCheckoutResult = {
   errorCode?: string;
 };
 
+export type IyzicoRefundResult = {
+  status: string;
+  paymentId?: string;
+  price?: number;
+  errorMessage?: string;
+  errorCode?: string;
+};
+
 export type IyzicoCallbackResult = {
   status: string;
   paymentStatus?: string;
@@ -31,7 +39,7 @@ export class IyzicoService {
     this.client = new Iyzipay({
       apiKey: this.config.get("IYZICO_API_KEY") ?? "sandbox_placeholder",
       secretKey: this.config.get("IYZICO_SECRET_KEY") ?? "sandbox_placeholder",
-      uri: this.config.get("IYZICO_BASE_URL") ?? "https://sandbox.iyzipay.com",
+      uri: this.config.get("IYZICO_BASE_URL") ?? "https://sandbox-api.iyzipay.com",
     });
   }
 
@@ -114,6 +122,30 @@ export class IyzicoService {
         (err: Error | null, result: IyzicoCallbackResult) => {
           if (err) {
             this.logger.error("iyzico retrieve hatası:", err);
+            resolve({ status: "failure", errorMessage: err.message });
+          } else {
+            resolve(result);
+          }
+        },
+      );
+    });
+  }
+
+  // Ödeme ID'si üzerinden (kısmi) iade yapar
+  async refundPayment(params: { paymentId: string; amountKurus: number; conversationId: string; ip: string }): Promise<IyzicoRefundResult> {
+    return new Promise((resolve) => {
+      this.client.refundV2.create(
+        {
+          locale: "tr",
+          conversationId: params.conversationId,
+          paymentId: params.paymentId,
+          price: (params.amountKurus / 100).toFixed(2),
+          currency: "TRY",
+          ip: params.ip,
+        },
+        (err: Error | null, result: IyzicoRefundResult) => {
+          if (err) {
+            this.logger.error("iyzico iade hatası:", err);
             resolve({ status: "failure", errorMessage: err.message });
           } else {
             resolve(result);

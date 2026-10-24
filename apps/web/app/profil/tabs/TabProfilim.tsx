@@ -43,7 +43,10 @@ interface UserData {
     venuePreference?: VenuePreference;
   };
   kyc?: { status: string };
+  noShowWarning?: { count: number; remaining: number } | null;
 }
+
+const ORDINAL = ['İlk', 'İkinci', 'Üçüncü'];
 
 interface Props {
   user: UserData;
@@ -334,7 +337,14 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
     <div className="flex flex-col gap-6">
       {/* Temel bilgiler */}
       <Card title="Hesap Bilgileri">
-        {/* Kimlik Doğrulama durumu — en üstte */}
+        {/* Gelmedi uyarısı — en üstte, net görünsün */}
+        {user.noShowWarning && (
+          <p className="text-sm font-medium leading-relaxed" style={{ color: '#facc15' }}>
+            Uyarı: {ORDINAL[user.noShowWarning.count - 1] ?? `${user.noShowWarning.count}.`} ihlal, masaya katılım sağlamadınız. Kalan uyarı hakkı {user.noShowWarning.remaining}
+          </p>
+        )}
+
+        {/* Kimlik Doğrulama durumu */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-[#f5f5f5]">Kimlik Doğrulama</span>
           <span

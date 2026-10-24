@@ -164,6 +164,10 @@ export class TestService {
     const score = await this.prisma.oceanScore.findUnique({ where: { userId } });
     if (!score) return { completed: false, message: "Henüz test yapılmadı" };
 
+    // 180 gün dolunca ya da admin kilidi açınca tekrar yapılabilir
+    const retakeAt = new Date(score.completedAt.getTime() + RETAKE_DAYS * 24 * 60 * 60 * 1000);
+    const canRetakeNow = score.adminCanReset || retakeAt <= new Date();
+
     return {
       completed: true,
       completedAt: score.completedAt,
@@ -175,10 +179,8 @@ export class TestService {
         neuroticism: score.neuroticism,
       },
       profile: this.describeProfile(score as any),
-      canRetakeNow: score.adminCanReset,
-      retakeAvailableAt: score.adminCanReset
-        ? null
-        : new Date(score.completedAt.getTime() + RETAKE_DAYS * 24 * 60 * 60 * 1000),
+      canRetakeNow,
+      retakeAvailableAt: canRetakeNow ? null : retakeAt,
     };
   }
 

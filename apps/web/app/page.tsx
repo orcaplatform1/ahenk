@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { getPlanCardState, type PlanKey } from '@/lib/planCards';
 import { HeroCountdown } from '@/components/HeroCountdown';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
 
@@ -516,42 +517,18 @@ function StatCards() {
   );
 }
 
-type ActivePlan = 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
-
-function getPlanCardState(cardKey: string, activePlan: ActivePlan) {
-  const none = { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
-  if (!activePlan) return none;
-
-  if (activePlan === 'MASADA') {
-    if (cardKey === 'MASADA')   return { dimmed: true,  badge: 'Aktif Paketiniz',        badgeRed: true,  showButton: false };
-    if (cardKey === 'KARSIMDA') return { dimmed: false, badge: null,                      badgeRed: false, showButton: true  };
-    /* ICERDE */                return { dimmed: true,  badge: 'Grup Masasına Sahipsin',  badgeRed: false, showButton: false };
-  }
-  if (activePlan === 'KARSIMDA') {
-    if (cardKey === 'KARSIMDA') return { dimmed: true,  badge: 'Aktif Paketiniz',              badgeRed: true,  showButton: false };
-    if (cardKey === 'MASADA')   return { dimmed: false, badge: null,                            badgeRed: false, showButton: true  };
-    /* ICERDE */                return { dimmed: true,  badge: 'Baş Başa Masasına Sahipsin',   badgeRed: false, showButton: false };
-  }
-  if (activePlan === 'ICERDE') {
-    if (cardKey === 'ICERDE')   return { dimmed: true,  badge: 'Aktif Paketiniz',              badgeRed: true,  showButton: false };
-    if (cardKey === 'MASADA')   return { dimmed: true,  badge: 'Grup Masasına Sahipsin',       badgeRed: false, showButton: false };
-    /* KARSIMDA */              return { dimmed: true,  badge: 'Baş Başa Masasına Sahipsin',   badgeRed: false, showButton: false };
-  }
-  return none;
-}
-
 /* ─── Ana bileşen ────────────────────────────────────────────────────────── */
 
 export default function Home() {
   const router = useRouter();
   const [activeCity, setActiveCity] = useState('İstanbul');
-  const [activePlan, setActivePlan] = useState<ActivePlan>(null);
+  const [ownedPlans, setOwnedPlans] = useState<Set<PlanKey>>(new Set());
   const [authState, setAuthState] = useState<{ loggedIn: boolean; kycApproved: boolean } | null>(null);
 
   useEffect(() => {
-    api.silentGet<{ activePlan: ActivePlan; isKycVerified?: boolean }>('/auth/me').then((d) => {
+    api.silentGet<{ ownedPlans?: PlanKey[]; isKycVerified?: boolean }>('/auth/me').then((d) => {
       if (d) {
-        if (d.activePlan) setActivePlan(d.activePlan);
+        setOwnedPlans(new Set(d.ownedPlans ?? []));
         setAuthState({ loggedIn: true, kycApproved: !!d.isKycVerified });
       } else {
         setAuthState({ loggedIn: false, kycApproved: false });
@@ -809,7 +786,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {plans.map((plan) => {
               const cardKey = plan.name === 'Masada' ? 'MASADA' : plan.name === 'Karşımda' ? 'KARSIMDA' : 'ICERDE';
-              const cs = getPlanCardState(cardKey, activePlan);
+              const cs = getPlanCardState(cardKey, ownedPlans);
               const inner = (
                 <div
                   className={plan.featured ? 'lp-feat-inner' : 'relative rounded-2xl overflow-hidden flex-1'}

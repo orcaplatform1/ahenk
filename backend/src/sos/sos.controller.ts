@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Param, Body, Req, UseGuards } from "@nestjs/common";
+import { Controller, Post, Get, Param, Body, Req, UseGuards, UseInterceptors } from "@nestjs/common";
+import { HideEmailForAdminInterceptor } from "../admin/hide-email.interceptor";
 import { Request } from "express";
 import { SosService } from "./sos.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -67,6 +68,7 @@ export class SosController {
   @Get("admin/reports")
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @UseInterceptors(HideEmailForAdminInterceptor)
   adminList() {
     return this.sos.adminListReports();
   }
@@ -74,6 +76,7 @@ export class SosController {
   @Get("admin/reports/:id")
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @UseInterceptors(HideEmailForAdminInterceptor)
   adminDetail(@Param("id") id: string) {
     return this.sos.adminGetReport(id);
   }

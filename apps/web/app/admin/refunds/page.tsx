@@ -17,7 +17,7 @@ const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 interface RefundItem {
   id: string; userId: string; refundType: string; status: string;
-  adminNote?: string; createdAt: string;
+  adminNote?: string; createdAt: string; refundAmountKurus?: number | null;
   user?: { profile?: { firstName?: string; lastName?: string } };
   subscription?: { plan?: string };
 }
@@ -36,13 +36,20 @@ function RefundRow({ refund, onUpdate }: { refund: RefundItem; onUpdate: () => v
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState('');
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState('');
 
   async function update(status: 'APPROVED' | 'REJECTED') {
     setLoading(true);
-    await api.patch(`/admin/refunds/${refund.id}`, { status, adminNote: note || undefined }).catch(() => {});
-    setLoading(false);
-    setOpen(false);
-    onUpdate();
+    setError('');
+    try {
+      await api.patch(`/admin/refunds/${refund.id}`, { status, adminNote: note || undefined });
+      setOpen(false);
+      onUpdate();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -55,6 +62,11 @@ function RefundRow({ refund, onUpdate }: { refund: RefundItem; onUpdate: () => v
           <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
             {refund.refundType}{refund.subscription?.plan ? ` · ${refund.subscription.plan}` : ''} · {new Date(refund.createdAt).toLocaleString('tr-TR')}
           </p>
+          {refund.refundAmountKurus != null && (
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: TEXT, fontFamily: MONO }}>
+              {refund.status === 'APPROVED' ? 'İade edildi' : 'İade tutarı'}: ₺{(refund.refundAmountKurus / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          )}
           {refund.adminNote && (
             <p style={{ margin: '4px 0 0', fontSize: 10, color: MUTED, fontStyle: 'italic' }}>{refund.adminNote}</p>
           )}
@@ -113,6 +125,7 @@ function RefundRow({ refund, onUpdate }: { refund: RefundItem; onUpdate: () => v
               Reddet
             </button>
           </div>
+          {error && <p style={{ margin: 0, fontSize: 11, color: RED }}>{error}</p>}
         </div>
       )}
     </div>
@@ -122,11 +135,12 @@ function RefundRow({ refund, onUpdate }: { refund: RefundItem; onUpdate: () => v
 export default function AdminRefunds() {
   const [refunds, setRefunds] = useState<RefundItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   function load() {
     api.get<{ alerts: unknown[]; refunds: RefundItem[] }>('/admin/alerts')
-      .then(d => setRefunds(d.refunds ?? []))
-      .catch(() => {})
+      .then(d => { setRefunds(d.refunds ?? []); setError(''); })
+      .catch((e: Error) => setError(`İade talepleri yüklenemedi: ${e.message}`))
       .finally(() => setLoading(false));
   }
 
@@ -138,6 +152,8 @@ export default function AdminRefunds() {
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>İade Talepleri</h1>
       </div>
+
+      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
 
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
         <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>

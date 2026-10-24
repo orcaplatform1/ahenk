@@ -2,32 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { getPlanCardState, type PlanKey } from '@/lib/planCards';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
-
-type ActivePlan = 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
-
-function getPlanCardState(cardKey: string, activePlan: ActivePlan) {
-  const none = { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
-  if (!activePlan) return none;
-
-  if (activePlan === 'MASADA') {
-    if (cardKey === 'MASADA')   return { dimmed: true,  badge: 'Aktif Paketiniz',        badgeRed: true,  showButton: false };
-    if (cardKey === 'KARSIMDA') return { dimmed: false, badge: null,                      badgeRed: false, showButton: true  };
-    /* ICERDE */                return { dimmed: true,  badge: 'Grup Masasına Sahipsin',  badgeRed: false, showButton: false };
-  }
-  if (activePlan === 'KARSIMDA') {
-    if (cardKey === 'KARSIMDA') return { dimmed: true,  badge: 'Aktif Paketiniz',              badgeRed: true,  showButton: false };
-    if (cardKey === 'MASADA')   return { dimmed: false, badge: null,                            badgeRed: false, showButton: true  };
-    /* ICERDE */                return { dimmed: true,  badge: 'Baş Başa Masasına Sahipsin',   badgeRed: false, showButton: false };
-  }
-  if (activePlan === 'ICERDE') {
-    if (cardKey === 'ICERDE')   return { dimmed: true,  badge: 'Aktif Paketiniz',              badgeRed: true,  showButton: false };
-    if (cardKey === 'MASADA')   return { dimmed: true,  badge: 'Grup Masasına Sahipsin',       badgeRed: false, showButton: false };
-    /* KARSIMDA */              return { dimmed: true,  badge: 'Baş Başa Masasına Sahipsin',   badgeRed: false, showButton: false };
-  }
-  return none;
-}
 
 interface Subscription {
   id: string;
@@ -37,6 +14,8 @@ interface Subscription {
   expiresAt?: string;
   missedGroupCycles: number;
   missedOneonOneCycles: number;
+  groupTableFormed?: boolean;
+  oneOnOneTableFormed?: boolean;
 }
 
 interface InitCheckoutResponse {
@@ -93,7 +72,7 @@ interface Props { kycApproved: boolean; onGoKyc: () => void; maintenanceMode?: b
 
 export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Props) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [activePlan, setActivePlan] = useState<ActivePlan>(null);
+  const [ownedPlans, setOwnedPlans] = useState<Set<PlanKey>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [buying, setBuying] = useState('');
@@ -111,10 +90,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
         const subs: Subscription[] = Array.isArray(d) ? d : (d.subscriptions ?? []);
         if (subs.length > 0) {
           setSubscription(subs[0]);
-          const hasIcerde = subs.some(s => s.plan === 'ICERDE');
-          const hasMasada = subs.some(s => s.plan === 'MASADA' || s.plan === 'ICERDE');
-          const hasKarsimda = subs.some(s => s.plan === 'KARSIMDA' || s.plan === 'ICERDE');
-          setActivePlan(hasIcerde ? 'ICERDE' : hasMasada ? 'MASADA' : hasKarsimda ? 'KARSIMDA' : null);
+          setOwnedPlans(new Set(subs.map(s => s.plan as PlanKey)));
         }
       })
       .catch((e: Error) => setError(e.message))
@@ -153,9 +129,10 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
     }
   }
 
+  // Masa kurulduysa o tür için hizmet alınmış sayılır → iade yok
   function getRefundType(sub: Subscription): string | null {
-    const g = sub.missedGroupCycles ?? 0;
-    const o = sub.missedOneonOneCycles ?? 0;
+    const g = sub.groupTableFormed ? 0 : (sub.missedGroupCycles ?? 0);
+    const o = sub.oneOnOneTableFormed ? 0 : (sub.missedOneonOneCycles ?? 0);
     if (sub.plan === 'MASADA' && g >= 4) return 'GROUP';
     if (sub.plan === 'KARSIMDA' && o >= 4) return 'ONEONE';
     if (sub.plan === 'ICERDE') {
@@ -204,6 +181,11 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
 
   const refundType = subscription ? getRefundType(subscription) : null;
   const canRefund = refundType !== null;
+  const refundBlockedByTable = !!subscription && (
+    (subscription.plan === 'MASADA' && !!subscription.groupTableFormed) ||
+    (subscription.plan === 'KARSIMDA' && !!subscription.oneOnOneTableFormed) ||
+    (subscription.plan === 'ICERDE' && !!subscription.groupTableFormed && !!subscription.oneOnOneTableFormed)
+  );
 
   const hasReferralDiscount = !!(discountInfo?.referralDiscount);
 
@@ -295,7 +277,10 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
               {refundLoading ? 'Gönderiliyor…' : 'İade Talep Et'}
             </button>
           )}
-          {!canRefund && !refundMsg && (
+          {!canRefund && !refundMsg && refundBlockedByTable && (
+            <p className="text-xs text-[#444]">Masanız kurulduğu için bu paket için iade yapılamaz.</p>
+          )}
+          {!canRefund && !refundMsg && !refundBlockedByTable && (
             <p className="text-xs text-[#444]">4 kaçırılmış döngü gerekli (mevcut: grup {subscription.missedGroupCycles ?? 0}, başbaşa {subscription.missedOneonOneCycles ?? 0})</p>
           )}
         </div>
@@ -312,7 +297,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {PLANS.map((plan) => {
-          const cs = getPlanCardState(plan.key, activePlan);
+          const cs = getPlanCardState(plan.key, ownedPlans);
           const cardBody = (
             <div
               className={plan.featured ? 'p-feat-inner' : 'relative rounded-2xl overflow-hidden flex-1'}

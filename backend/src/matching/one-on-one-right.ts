@@ -33,3 +33,35 @@ export async function consumeOneOnOneRights(db: Db, userIds: string[]): Promise<
     });
   }
 }
+
+/**
+ * Admin başbaşa masasını iptal ederse / katılımcıyı çıkarırsa harcanan hak geri verilir.
+ * Hak masa oluşturulduğu işlemde harcandığı için usedAt, masanın createdAt anına denk gelir.
+ * - KARSIMDA: usedAt temizlenir, EXPIRED → ACTIVE
+ * - ICERDE:   usedAt temizlenir (grup hakkı zaten sürüyor)
+ */
+export async function restoreOneOnOneRights(db: Db, meetingCreatedAt: Date, userIds: string[]): Promise<void> {
+  const WINDOW_MS = 5 * 60 * 1000;
+  const from = new Date(meetingCreatedAt.getTime() - WINDOW_MS);
+  const to = new Date(meetingCreatedAt.getTime() + WINDOW_MS);
+  for (const userId of userIds) {
+    const sub = await db.subscription.findFirst({
+      where: {
+        userId,
+        plan: { in: [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE] },
+        status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.EXPIRED] },
+        usedAt: { gte: from, lte: to },
+      },
+      orderBy: { usedAt: "desc" },
+      select: { id: true, plan: true },
+    });
+    if (!sub) continue;
+    await db.subscription.update({
+      where: { id: sub.id },
+      data:
+        sub.plan === SubscriptionPlan.KARSIMDA
+          ? { usedAt: null, status: SubscriptionStatus.ACTIVE }
+          : { usedAt: null },
+    });
+  }
+}

@@ -257,6 +257,7 @@ interface DashboardItem {
     venueMapsUrl?: string;
     venuePhotos?: Array<{ url: string; caption?: string }>;
     aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
+    cancelRightUsed?: boolean;
   };
 }
 
@@ -949,6 +950,7 @@ function MasaKarti({
       venuePhotos:    item.meeting.venuePhotos,
       participants:   item.meeting.participants,
       aiReport:       item.meeting.aiReport,
+      cancelRightUsed: item.meeting.cancelRightUsed,
     };
     return <MasaDetayKarti masa={detayData} />;
   }

@@ -14,7 +14,7 @@ const SANS   = 'Inter, system-ui, sans-serif';
 
 interface Settings {
   matchingEnabled: boolean;
-  botSystemActive: boolean;
+  botSystemActive?: boolean; // yalnızca SUPERADMIN'e gelir
   maintenanceMode: boolean;
 }
 
@@ -50,11 +50,12 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     api.get<Settings>('/admin/settings')
       .then(d => setSettings(d))
-      .catch(() => {})
+      .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
@@ -66,10 +67,16 @@ export default function AdminSettings() {
       botSystemActive: settings.botSystemActive,
       maintenanceMode: settings.maintenanceMode,
     };
-    await api.patch('/admin/settings', body).catch(() => {});
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setError('');
+    try {
+      await api.patch('/admin/settings', body);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      setError(`Kaydedilemedi: ${(e as Error).message}`);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -85,7 +92,7 @@ export default function AdminSettings() {
         </div>
       ) : !settings ? (
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 40, textAlign: 'center' }}>
-          <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Ayarlar yüklenemedi.</p>
+          <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Ayarlar yüklenemedi.{error ? ` ${error}` : ''}</p>
         </div>
       ) : (
         <>
@@ -99,12 +106,14 @@ export default function AdminSettings() {
                 value={settings.matchingEnabled}
                 onChange={v => setSettings(s => s ? { ...s, matchingEnabled: v } : s)}
               />
-              <Toggle
-                label="Bot Sistemi Aktif"
-                desc="Eksik masalara bot ekleme"
-                value={settings.botSystemActive}
-                onChange={v => setSettings(s => s ? { ...s, botSystemActive: v } : s)}
-              />
+              {settings.botSystemActive !== undefined && (
+                <Toggle
+                  label="Bot Sistemi Aktif"
+                  desc="Eksik masalara bot ekleme"
+                  value={settings.botSystemActive}
+                  onChange={v => setSettings(s => s ? { ...s, botSystemActive: v } : s)}
+                />
+              )}
               <Toggle
                 label="Bakım Modu"
                 desc="Platform geçici olarak kapalı"
@@ -128,6 +137,7 @@ export default function AdminSettings() {
           >
             {saving ? 'Kaydediliyor…' : saved ? 'Kaydedildi ✓' : 'Kaydet'}
           </button>
+          {error && <p style={{ margin: '8px 0 0', fontSize: 12, color: RED }}>{error}</p>}
         </>
       )}
     </div>

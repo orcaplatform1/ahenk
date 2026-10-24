@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Param, Body, Req, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Param, Body, Req, UseGuards, UseInterceptors } from "@nestjs/common";
+import { HideEmailForAdminInterceptor } from "../admin/hide-email.interceptor";
 import { Request } from "express";
 import { ChatService } from "./chat.service";
 import { SendMessageDto } from "./dto/chat.dto";
@@ -36,6 +37,7 @@ export class ChatController {
   @Get("admin/reports/list")
   @UseGuards(RolesGuard)
   @Roles("ADMIN", "SUPERADMIN")
+  @UseInterceptors(HideEmailForAdminInterceptor)
   adminGetReports() {
     return this.chatService.adminGetReports();
   }
@@ -43,6 +45,7 @@ export class ChatController {
   @Get("admin/:meetingId")
   @UseGuards(RolesGuard)
   @Roles("ADMIN", "SUPERADMIN")
+  @UseInterceptors(HideEmailForAdminInterceptor)
   adminGetMessages(@Param("meetingId") meetingId: string) {
     return this.chatService.adminGetMessages(meetingId);
   }

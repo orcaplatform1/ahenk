@@ -9,7 +9,8 @@ import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
-import { Gender, MeetingStatus, MeetingType, LeaveReason, ParticipantStatus } from "@prisma/client";
+import { cancellationNotice, initialsOf } from "./cancellation-notice";
+import { Gender, MeetingStatus, MeetingType, LeaveReason, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 import { BOT_FILL_QUEUE, JOB_FILL_SPOT } from "./bot-fill.processor";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -45,77 +46,6 @@ export class MeetingsService {
     @InjectQueue(BOT_FILL_QUEUE) private botFillQueue: Queue,
   ) {}
 
-  // ─── Aktif / bekleyen masa ────────────────────────────────────────────────────
-
-  async getMyCurrent(userId: string) {
-    const participation = await this.prisma.meetingParticipant.findFirst({
-      where: {
-        userId,
-        meeting: {
-          status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] },
-          scheduledAt: { gte: new Date() },
-        },
-      },
-      orderBy: { meeting: { scheduledAt: 'asc' } },
-      select: {
-        meeting: {
-          select: {
-            id: true,
-            type: true,
-            status: true,
-            scheduledAt: true,
-            maxParticipants: true,
-            locationText: true,
-            locationUrl: true,
-            venuePhotoUrl: true,
-            participants: {
-              select: {
-                user: {
-                  select: {
-                    profile: { select: { firstName: true, lastName: true, gender: true } },
-                    oceanScore: {
-                      select: {
-                        openness: true,
-                        conscientiousness: true,
-                        extraversion: true,
-                        agreeableness: true,
-                        neuroticism: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!participation) return null;
-
-    const m = participation.meeting;
-    return {
-      id: m.id,
-      type: m.type,
-      status: m.status,
-      scheduledAt: m.scheduledAt,
-      maxParticipants: m.maxParticipants,
-      locationName: m.locationText ?? null,
-      locationText: m.locationText ?? null,
-      venuePhotoUrl: m.venuePhotoUrl ?? null,
-      locationMapsUrl: m.locationUrl ?? null,
-      participants: m.participants.map((p) => {
-        const first = p.user.profile?.firstName ?? '';
-        const last = p.user.profile?.lastName ?? '';
-        return {
-          initials: `${first[0] ?? '?'}.${last[0] ?? '?'}.`,
-          gender: p.user.profile?.gender ?? null,
-          oceanScore: p.user.oceanScore ?? null,
-        };
-      }),
-    };
-  }
-
   // ─── Dashboard endpoint ───────────────────────────────────────────────────────
   // items: [] → SCANNING | items: [{phase:WAITING|REVEALED, meeting}] → aktif masalar
   async getDashboardTable(userId: string) {
@@ -126,6 +56,7 @@ export class MeetingsService {
       venuePhotoCaption1: true, venuePhotoCaption2: true, venuePhotoCaption3: true,
       participants: {
         select: {
+          status: true,
           user: {
             select: {
               isBot: true,
@@ -139,6 +70,8 @@ export class MeetingsService {
     const parts = await this.prisma.meetingParticipant.findMany({
       where: {
         userId,
+        // İptal eden kullanıcı masayı artık görmez
+        status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED] },
         meeting: {
           status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] },
           scheduledAt: { gte: new Date() },
@@ -149,13 +82,17 @@ export class MeetingsService {
     });
 
     if (parts.length === 0) return { items: [] };
+    const cancelRightUsed = await this.groupCancelRightUsed(userId);
 
     const items = await Promise.all(
       parts.map(async ({ meeting: m }) => {
         const sat10UTC = new Date(m.scheduledAt.getTime() - 10 * 60 * 60 * 1000);
         const isRevealed = !!m.locationText && new Date() >= sat10UTC;
 
+        // İptal eden, bildirim gittiği anda ekrandan kalkar: başbaşada hemen, grupta iptal son anında (Perşembe 20:00)
+        const hideCancelled = m.type !== MeetingType.GROUP || new Date() >= cancelDeadline(m.scheduledAt);
         const participants = m.participants
+          .filter((p) => !(p.status === ParticipantStatus.CANCELLED && hideCancelled))
           .map((p) => {
             const f = p.user.profile?.firstName ?? '';
             const l = p.user.profile?.lastName ?? '';
@@ -189,6 +126,8 @@ export class MeetingsService {
             scheduledAt: m.scheduledAt,
             participants,
             sat10UTC,
+            // Grup masasında bu abonelik döneminde iptal hakkı kullanıldı mı (kart butonu)
+            cancelRightUsed: m.type === MeetingType.GROUP ? cancelRightUsed : false,
             ...(isRevealed && {
               venueName: m.locationText,
               venueAddress: m.venueAddress,
@@ -526,6 +465,29 @@ export class MeetingsService {
 
   // ─── Rezervasyon İptali ───────────────────────────────────────────────────────
 
+  // Aktif grup aboneliği (Masada/İçerde) başladıktan sonra bir grup masası iptal edildiyse hak kullanılmıştır
+  private async groupCancelRightUsed(userId: string): Promise<boolean> {
+    const sub = await this.prisma.subscription.findFirst({
+      where: {
+        userId,
+        status: SubscriptionStatus.ACTIVE,
+        plan: { in: [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE] },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    if (!sub) return false;
+    const cancelled = await this.prisma.meetingParticipant.count({
+      where: {
+        userId,
+        status: ParticipantStatus.CANCELLED,
+        cancelledAt: { gte: sub.createdAt },
+        meeting: { type: MeetingType.GROUP },
+      },
+    });
+    return cancelled > 0;
+  }
+
   async cancelRegistration(
     meetingId: string,
     userId: string,
@@ -573,6 +535,11 @@ export class MeetingsService {
       );
     }
 
+    // Grup: abonelik dönemi başına tek iptal hakkı
+    if (isGroup && await this.groupCancelRightUsed(userId)) {
+      throw new ForbiddenException("Bu abonelik döneminde iptal hakkınızı kullandınız");
+    }
+
     await this.prisma.meetingParticipant.update({
       where: { meetingId_userId: { meetingId, userId } },
       data: {
@@ -583,19 +550,21 @@ export class MeetingsService {
       },
     });
 
-    const otherUserIds = meeting.participants
-      .map((p) => p.userId)
-      .filter((id) => id !== userId);
-
-    await Promise.all(
-      otherUserIds.map((uid) =>
-        this.notifications.sendToUser(uid, {
-          title: 'Masa Güncellendi',
-          body: '1 kişi masadan ayrıldı.',
-          data: { type: 'PARTICIPANT_LEFT', meetingId },
-        }),
-      ),
-    );
+    // Grup: anında bildirim yok, Perşembe 20:00'de toplu gider (MatchingScheduler).
+    // Başbaşa: karşı tarafa hemen gider.
+    if (!isGroup) {
+      const me = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { profile: { select: { firstName: true, lastName: true } } },
+      });
+      const notice = cancellationNotice([initialsOf(me?.profile)]);
+      const others = meeting.participants.map((p) => p.userId).filter((id) => id !== userId);
+      await Promise.all(
+        others.map((uid) =>
+          this.notifications.sendToUser(uid, { ...notice, data: { type: 'PARTICIPANT_LEFT', meetingId } }),
+        ),
+      );
+    }
 
     // İptal eden kişinin cinsiyetini bul; 1 saat sonra bot doldurma job'u
     const cancelledUser = await this.prisma.user.findUnique({
