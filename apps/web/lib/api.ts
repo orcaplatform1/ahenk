@@ -1,47 +1,60 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
 const PREFIX = `${BASE}/api/v1`;
 
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  const m = document.cookie.match(/(?:^|;\s*)ahenk_token=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : null;
+// Oturum token'ları HttpOnly çerezlerde (JS okuyamaz). JS sadece gizli değer taşımayan
+// "ahenk_session" işaretine bakar; istekler credentials: 'include' ile çerezi taşır.
+const SESSION_COOKIE = 'ahenk_session';
+const LEGACY_TOKEN_COOKIE = 'ahenk_token'; // eski sürümden kalan, JS okunabilir token çerezi
+
+function hasSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  return new RegExp(`(?:^|;\\s*)(?:${SESSION_COOKIE}|${LEGACY_TOKEN_COOKIE})=`).test(document.cookie);
 }
 
-function setToken(token: string) {
-  document.cookie = `ahenk_token=${encodeURIComponent(token)}; path=/; max-age=604800; samesite=lax`;
+function clearLegacyToken() {
+  if (typeof window === 'undefined') return;
+  document.cookie = `${LEGACY_TOKEN_COOKIE}=; path=/; max-age=0`;
 }
 
-function clearToken() {
-  document.cookie = 'ahenk_token=; path=/; max-age=0';
+// Yerel çıkış: işaret + eski token çerezi silinir (HttpOnly çerezleri backend siler)
+function clearSession() {
+  if (typeof window !== 'undefined') {
+    document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0`;
+    clearLegacyToken();
+  }
   clearMeCache();
 }
 
-// Sunucuda refresh token iptal edilir; istek başarısız olsa da yerel çıkış yapılır
+// Giriş/kayıt sonrası: backend çerezleri yazdı; önbellek ve eski token temizlenir
+function onLogin() {
+  clearLegacyToken();
+  clearMeCache();
+}
+
+// Sunucuda refresh token iptal edilir ve çerezler silinir; istek başarısız olsa da yerel çıkış yapılır
 async function logout(): Promise<void> {
   try {
     await fetch(`${PREFIX}/auth/logout`, { method: 'POST', credentials: 'include' });
   } catch { /* yerel çıkış yine yapılır */ }
-  clearToken();
+  clearSession();
 }
 
-let _refreshPromise: Promise<string | null> | null = null;
+let _refreshPromise: Promise<boolean> | null = null;
 
-let _meCache: { data: unknown; ts: number; token: string } | null = null;
+let _meCache: { data: unknown; ts: number } | null = null;
 let _meFlight: Promise<unknown> | null = null;
 let _meGen = 0;
 
 function getMeCached<T>(path: string): Promise<T> {
   const now = Date.now();
-  const token = getToken();
-  if (_meCache && token && _meCache.token === token && now - _meCache.ts < 30000) {
+  if (_meCache && hasSession() && now - _meCache.ts < 30000) {
     return Promise.resolve(_meCache.data as T);
   }
   if (_meFlight) return _meFlight as Promise<T>;
-  const capturedToken = token ?? '';
   const capturedGen = _meGen;
   _meFlight = apiFetch<T>(path).then(data => {
     if (_meGen === capturedGen) {
-      _meCache = { data, ts: Date.now(), token: capturedToken };
+      _meCache = { data, ts: Date.now() };
       _meFlight = null;
     }
     return data;
@@ -58,7 +71,8 @@ function clearMeCache() {
   _meGen++;
 }
 
-async function refreshToken(): Promise<string | null> {
+// Yeni erişim çerezi alır; başarılıysa true
+async function refreshSession(): Promise<boolean> {
   if (_refreshPromise) return _refreshPromise;
   _refreshPromise = (async () => {
     try {
@@ -66,13 +80,12 @@ async function refreshToken(): Promise<string | null> {
         method: 'POST',
         credentials: 'include',
       });
-      if (!res.ok) { clearToken(); return null; }
-      const data = await res.json() as { accessToken: string };
-      setToken(data.accessToken);
-      return data.accessToken;
+      if (!res.ok) { clearSession(); return false; }
+      clearLegacyToken();
+      return true;
     } catch {
-      clearToken();
-      return null;
+      clearSession();
+      return false;
     } finally {
       _refreshPromise = null;
     }
@@ -83,12 +96,10 @@ async function refreshToken(): Promise<string | null> {
 type FetchOptions = Omit<RequestInit, 'body'> & { body?: unknown };
 
 async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T> {
-  const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${PREFIX}${path}`, {
     ...options,
@@ -98,12 +109,11 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
   });
 
   if (res.status === 401) {
-    const newToken = await refreshToken();
-    if (!newToken) {
+    const refreshed = await refreshSession();
+    if (!refreshed) {
       if (typeof window !== 'undefined') window.location.href = '/giris';
       throw new Error('Oturum süresi doldu');
     }
-    headers['Authorization'] = `Bearer ${newToken}`;
     const retry = await fetch(`${PREFIX}${path}`, {
       ...options,
       headers,
@@ -132,11 +142,10 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
 }
 
 async function silentFetch<T>(path: string): Promise<T | null> {
-  const token = getToken();
-  if (!token) return null;
+  if (!hasSession()) return null;
   try {
     const res = await fetch(`${PREFIX}${path}`, {
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
     });
     if (!res.ok) return null;
@@ -155,9 +164,9 @@ export const api = {
   patch: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PATCH', body }),
   delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
   silentGet: <T>(path: string) => silentFetch<T>(path),
-  setToken: (token: string) => { clearMeCache(); setToken(token); },
-  clearToken,
+  onLogin,
+  clearSession,
+  hasSession,
   logout,
-  getToken,
   clearMeCache,
 };

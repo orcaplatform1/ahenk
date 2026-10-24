@@ -58,6 +58,10 @@ export const metadata: Metadata = {
   },
 };
 
+// CSP nonce'u her istekte middleware'de üretilir; Next.js scriptlere nonce'u sadece dinamik
+// render'da ekleyebildiği için tüm sayfalar istek anında render edilir
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: {

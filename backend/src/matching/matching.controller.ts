@@ -1,3 +1,4 @@
+import { AdminAction } from "../admin/admin-action-log";
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Request } from "@nestjs/common";
 import { MatchingService } from "./matching.service";
 import { BotDto, SetBotStatusDto } from "./dto/update-bot.dto";
@@ -51,10 +52,11 @@ export class MatchingController {
     return this.matchingService.deleteBot(id);
   }
 
+  @AdminAction("MATCHING_SCAN", () => "Eşleştirme taramasını elle başlattı")
   @Post("admin/run-matching")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   runMatching() {
-    return this.matchingService.runHourlyMatching();
+    return this.matchingService.requestScan();
   }
 }

@@ -15,6 +15,7 @@ import {
   SubscriptionStatus,
   MeetingStatus,
   MeetingType,
+  Gender,
   VenueCategory,
   VenueType,
   RefundStatus,
@@ -24,14 +25,21 @@ import {
   CareerStatus,
   KycStatus,
   Prisma,
+  AdminAlertType,
 } from "@prisma/client";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "../payment/payment.constants";
+import { vatOfGrossKurus } from "../payment/pricing";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { NotificationService } from "../notification/notification.service";
 import { PaymentService } from "../payment/payment.service";
 import type { AdminUpdateUserDto } from "./dto/admin.dto";
 import { KycService } from "../kyc/kyc.service";
+import { InjectQueue } from "@nestjs/bull";
+import { Queue } from "bull";
+import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "../matching/one-on-one-right";
+import { availableBots } from "../matching/bot-picker";
+import { MatchingService } from "../matching/matching.service";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
 
@@ -50,6 +58,8 @@ export class AdminService {
     private notifications: NotificationService,
     private payment: PaymentService,
     private kyc: KycService,
+    @InjectQueue(ASSIGN_QUEUE) private assignQueue: Queue,
+    private matching: MatchingService,
   ) {}
 
   // ─── Dashboard ───────────────────────────────────────────────────────────
@@ -485,6 +495,9 @@ export class AdminService {
         select: { id: true, plan: true, status: true, expiresAt: true },
       }),
     ]);
+
+    // Kişi havuza girdi: anında masaya atanır
+    await enqueueAssign(this.assignQueue, targetId);
 
     return { subscription: sub, planLabel: PLAN_CONFIG[plan].nametr };
   }
@@ -1069,34 +1082,107 @@ export class AdminService {
     });
   }
 
-  async placeBot(meetingId: string, botUserId: string) {
-    const [meeting, bot] = await Promise.all([
-      this.prisma.meeting.findUnique({
-        where: { id: meetingId },
-        include: { participants: { select: { userId: true, status: true } } },
-      }),
-      this.prisma.user.findUnique({ where: { id: botUserId, isBot: true }, select: { id: true, status: true } }),
-    ]);
-    if (!meeting) throw new NotFoundException('Masa bulunamadı');
-    if (!bot) throw new NotFoundException('Bot bulunamadı');
-    if (bot.status !== UserStatus.ACTIVE) throw new BadRequestException('Bot pasif');
-    if (meeting.status === MeetingStatus.CANCELLED || meeting.status === MeetingStatus.COMPLETED) {
-      throw new BadRequestException('Bu masa artık aktif değil');
-    }
-    // İptal eden / gelmeyen katılımcılar koltuk tutmaz
-    const activeCount = meeting.participants.filter(
-      (p) => !['CANCELLED', 'DECLINED', 'NO_SHOW'].includes(p.status),
-    ).length;
-    if (activeCount >= meeting.maxParticipants) {
-      throw new BadRequestException('Masada boş koltuk yok');
-    }
-    const alreadyIn = meeting.participants.some((p) => p.userId === botUserId);
-    if (alreadyIn) throw new BadRequestException('Bot zaten bu masada');
+  // ─── Açık masalar (bu haftanın kapanmamış masaları) ──────────────────────
+  // Bot bilgisi (isBot) ve eşi bekleyenlerdeki bot işlemleri sadece SUPERADMIN
 
+  async getOpenTables(viewerRole: UserRole) {
+    const meetings = await this.prisma.meeting.findMany({
+      where: { status: MeetingStatus.PENDING, scheduledAt: { gte: new Date() } },
+      orderBy: [{ scheduledAt: 'asc' }, { createdAt: 'asc' }],
+      select: {
+        id: true, type: true, scheduledAt: true, maxParticipants: true,
+        city: { select: { name: true } },
+        participants: {
+          where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
+          orderBy: { createdAt: 'asc' },
+          select: { user: { select: { id: true, isBot: true, profile: { select: { firstName: true, lastName: true, gender: true, birthDate: true } } } } },
+        },
+      },
+    });
+    const isSuperadmin = viewerRole === UserRole.SUPERADMIN;
+    const tables = meetings.map((m) => {
+      const males = m.participants.filter((p) => p.user.profile?.gender === Gender.MALE).length;
+      const females = m.participants.length - males;
+      const half = m.type === MeetingType.GROUP ? m.maxParticipants / 2 : 1;
+      return {
+        id: m.id,
+        type: m.type,
+        scheduledAt: m.scheduledAt,
+        city: m.city?.name ?? null,
+        maxParticipants: m.maxParticipants,
+        males,
+        females,
+        emptySeats: Math.max(0, m.maxParticipants - m.participants.length),
+        missing: { male: Math.max(0, half - males), female: Math.max(0, half - females) },
+        participants: m.participants.map((p) => ({
+          userId: p.user.id,
+          initials: `${p.user.profile?.firstName?.[0] ?? '?'}.${p.user.profile?.lastName?.[0] ?? '?'}.`,
+          gender: p.user.profile?.gender ?? null,
+          age: p.user.profile?.birthDate
+            ? Math.floor((Date.now() - p.user.profile.birthDate.getTime()) / (365.25 * 24 * 3600 * 1000))
+            : null,
+          ...(isSuperadmin ? { isBot: p.user.isBot } : {}),
+        })),
+      };
+    });
+    return {
+      group: tables.filter((t) => t.type === MeetingType.GROUP),
+      oneOnOne: tables.filter((t) => t.type === MeetingType.ONE_ON_ONE),
+      waiting: await this.matching.getOneOnOneWaiting(),
+    };
+  }
+
+  // Masaya eklenebilecek botlar: sadece eksik cinsiyet, o buluşma saatinde başka masada olmayan aktif botlar
+  async getBotsForMeeting(meetingId: string) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      select: {
+        status: true, type: true, scheduledAt: true, maxParticipants: true,
+        participants: {
+          where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
+          select: { user: { select: { profile: { select: { gender: true } } } } },
+        },
+      },
+    });
+    if (!meeting) throw new NotFoundException('Masa bulunamadı');
+    if (meeting.status !== MeetingStatus.PENDING && meeting.status !== MeetingStatus.ACTIVE) return [];
+    if (meeting.participants.length >= meeting.maxParticipants) return [];
+    const males = meeting.participants.filter((p) => p.user.profile?.gender === Gender.MALE).length;
+    const females = meeting.participants.length - males;
+    const half = meeting.type === MeetingType.GROUP ? meeting.maxParticipants / 2 : 1;
+    const genders = [
+      ...(males < half ? [Gender.MALE] : []),
+      ...(females < half ? [Gender.FEMALE] : []),
+    ];
+    const lists = await Promise.all(genders.map((gender) => availableBots(this.prisma, { gender, scheduledAt: meeting.scheduledAt })));
+    return lists.flat().map((b) => ({
+      id: b.id,
+      name: `${b.profile?.firstName ?? ''} ${b.profile?.lastName ?? ''}`.trim(),
+      gender: b.profile?.gender ?? null,
+      age: b.profile?.birthDate
+        ? Math.floor((Date.now() - b.profile.birthDate.getTime()) / (365.25 * 24 * 3600 * 1000))
+        : null,
+    }));
+  }
+
+  async placeBot(meetingId: string, botUserId: string) {
+    const allowed = await this.getBotsForMeeting(meetingId);
+    // Yanlış cinsiyet, dolu masa ya da aynı saatte başka masadaki bot ASLA eklenmez
+    if (!allowed.some((b) => b.id === botUserId)) {
+      throw new BadRequestException('Bu bot eklenemez (eksik cinsiyet değil, masa dolu ya da aynı saatte başka masada)');
+    }
     await this.prisma.meetingParticipant.create({
-      data: { meetingId, userId: botUserId, status: 'ACCEPTED' },
+      data: { meetingId, userId: botUserId, status: 'INVITED' },
     });
     return { placed: true, botUserId, meetingId };
+  }
+
+  getBotsForWaiting(userId: string) {
+    return this.matching.botsForWaiting(userId);
+  }
+
+  placeOneOnOneBot(userId: string, botUserId: string) {
+    return this.matching.addOneOnOneBotManual(userId, botUserId);
   }
 
   // ─── Stats overview ───────────────────────────────────────────────────────
@@ -1172,6 +1258,7 @@ export class AdminService {
       totalRevenue,
       totalRefund: finance.refundTL,
       netRevenue: finance.netTL,
+      vatAmount: finance.vatTL,
       netCommission,
       activeUsers,
       kycPending,
@@ -1191,7 +1278,7 @@ export class AdminService {
     const [payments, refunds] = await Promise.all([
       this.prisma.payment.findMany({
         where: { status: "SUCCESS", user: userWhere },
-        select: { plan: true, amountKurus: true, discountType: true },
+        select: { plan: true, amountKurus: true, discountType: true, listKurus: true },
       }),
       this.prisma.refundRequest.aggregate({
         where: { status: RefundStatus.APPROVED, user: userWhere },
@@ -1202,11 +1289,14 @@ export class AdminService {
     let discountKurus = 0;
     for (const p of payments) {
       grossKurus += p.amountKurus;
-      if (p.discountType) discountKurus += PLAN_CONFIG[p.plan].amountKurus - p.amountKurus;
+      // Liste fiyatı kaydı olmayan eski indirimli ödemelerde liste = tutar ÷ 0,90
+      if (p.discountType) discountKurus += (p.listKurus ?? Math.round(p.amountKurus / 0.9)) - p.amountKurus;
     }
     const refundKurus = refunds._sum.refundedKurus ?? 0;
     const tl = (k: number) => Math.round(k) / 100;
-    return { grossTL: tl(grossKurus), discountTL: tl(discountKurus), refundTL: tl(refundKurus), netTL: tl(grossKurus - refundKurus) };
+    const netKurus = grossKurus - refundKurus;
+    // Net ciro KDV dahil: içindeki %20 KDV payı ayrıca gösterilir
+    return { grossTL: tl(grossKurus), discountTL: tl(discountKurus), refundTL: tl(refundKurus), netTL: tl(netKurus), vatTL: tl(vatOfGrossKurus(netKurus)) };
   }
 
   // ─── Stats cities ─────────────────────────────────────────────────────────
@@ -1232,23 +1322,23 @@ export class AdminService {
       cities.map(async (city) => {
         const [totalTables, activeMembers, finance, thisWeekSubs, prevWeekSubs] = await Promise.all([
           this.prisma.meeting.count({
-            where: { status: MeetingStatus.COMPLETED, locationText: { contains: city.name } },
+            where: { status: MeetingStatus.COMPLETED, cityId: city.id },
           }),
           this.prisma.profile.count({
-            where: { primaryCity: city.name, user: { status: UserStatus.ACTIVE, isBot: false } },
+            // primaryCity şehir ID'si tutar
+            where: { primaryCity: city.id, user: { status: UserStatus.ACTIVE, isBot: false } },
           }),
-          // primaryCity şehir ID'si tutar
           this.financeTotals({ isBot: false, profile: { primaryCity: city.id } }),
           this.prisma.subscription.count({
             where: {
               createdAt: { gte: weekStart },
-              user: { profile: { primaryCity: city.name }, isBot: false },
+              user: { profile: { primaryCity: city.id }, isBot: false },
             },
           }),
           this.prisma.subscription.count({
             where: {
               createdAt: { gte: prevWeekStart, lt: weekStart },
-              user: { profile: { primaryCity: city.name }, isBot: false },
+              user: { profile: { primaryCity: city.id }, isBot: false },
             },
           }),
         ]);
@@ -1266,6 +1356,7 @@ export class AdminService {
           discount: finance.discountTL,
           refund: finance.refundTL,
           net: finance.netTL,
+          vat: finance.vatTL,
           trend,
         };
       }),
@@ -1356,9 +1447,13 @@ export class AdminService {
 
   // ─── Uyarılar & İade Talepleri ────────────────────────────────────────────
 
-  async getAlerts() {
+  async getAlerts(viewerRole: UserRole) {
+    // Bot uyarıları sadece SUPERADMIN'e (bot gizliliği)
+    const alertWhere: Prisma.AdminAlertWhereInput =
+      viewerRole === UserRole.SUPERADMIN ? {} : { alertType: { not: AdminAlertType.BOT_NOT_FOUND } };
     const [alerts, refunds, unreadCount] = await Promise.all([
       this.prisma.adminAlert.findMany({
+        where: alertWhere,
         orderBy: { createdAt: "desc" },
         include: {
           user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
@@ -1371,7 +1466,7 @@ export class AdminService {
           subscription: { select: { plan: true, createdAt: true, payment: { select: { amountKurus: true, status: true } } } },
         },
       }),
-      this.prisma.adminAlert.count({ where: { isRead: false } }),
+      this.prisma.adminAlert.count({ where: { ...alertWhere, isRead: false } }),
     ]);
     // Onaylananlarda iade edilen, bekleyenlerde iade edilecek tutar
     const refundsWithAmount = refunds.map(({ subscription, ...r }) => {
@@ -1382,10 +1477,15 @@ export class AdminService {
         refundAmountKurus: r.refundedKurus ?? (paid !== null ? PaymentService.refundAmountKurus(subscription.plan, r.refundType, paid) : null),
       };
     });
-    return { alerts, refunds: refundsWithAmount, unreadCount };
+    // İadeler sadece SUPERADMIN yetkisinde
+    return { alerts, refunds: viewerRole === UserRole.SUPERADMIN ? refundsWithAmount : [], unreadCount };
   }
 
-  async markAlertRead(id: string) {
+  async markAlertRead(id: string, viewerRole: UserRole) {
+    const alert = await this.prisma.adminAlert.findUnique({ where: { id }, select: { alertType: true } });
+    if (!alert || (alert.alertType === AdminAlertType.BOT_NOT_FOUND && viewerRole !== UserRole.SUPERADMIN)) {
+      throw new NotFoundException('Uyarı bulunamadı');
+    }
     await this.prisma.adminAlert.update({ where: { id }, data: { isRead: true } });
     return { ok: true };
   }
@@ -1521,4 +1621,44 @@ export class AdminService {
       },
     });
   }
+
+  // ─── ADMIN işlem kayıtları (sadece SUPERADMIN) ────────────────────────────
+
+  async listActionLogs(params: { adminId?: string; from?: string; to?: string; q?: string; page: number }) {
+    const limit = 50;
+    const page = Math.max(1, params.page || 1);
+    const where: Prisma.AdminActionLogWhereInput = {
+      ...(params.adminId ? { adminId: params.adminId } : {}),
+      ...(params.q ? { description: { contains: params.q, mode: "insensitive" } } : {}),
+      ...(params.from || params.to
+        ? {
+            createdAt: {
+              // Tarihler TR gününe göre: from günün başı, to günün sonu
+              ...(params.from ? { gte: new Date(`${params.from}T00:00:00+03:00`) } : {}),
+              ...(params.to ? { lte: new Date(`${params.to}T23:59:59.999+03:00`) } : {}),
+            },
+          }
+        : {}),
+    };
+    const [items, total, admins] = await Promise.all([
+      this.prisma.adminActionLog.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true, action: true, description: true, createdAt: true,
+          admin: { select: { id: true, profile: { select: { firstName: true, lastName: true } } } },
+        },
+      }),
+      this.prisma.adminActionLog.count({ where }),
+      this.prisma.user.findMany({
+        where: { role: UserRole.ADMIN },
+        select: { id: true, profile: { select: { firstName: true, lastName: true } } },
+        orderBy: { createdAt: "asc" },
+      }),
+    ]);
+    return { items, total, page, totalPages: Math.ceil(total / limit), admins };
+  }
+
 }

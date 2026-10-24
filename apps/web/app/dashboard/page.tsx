@@ -18,14 +18,13 @@ interface MeData {
 }
 
 export default function DashboardPage() {
-  const [token, setToken] = useState<string | null>(null);
   const [me, setMe] = useState<MeData | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // apiFetch 401 alınca refresh token deniyor — localStorage boş olsa bile oturum devam edebilir
+    // apiFetch 401 alınca refresh token deniyor (oturum HttpOnly çerezde)
     api.get<MeData>('/auth/me')
-      .then(u => { setToken(api.getToken()); setMe(u); })
+      .then(u => { setMe(u); })
       .catch(() => {})
       .finally(() => setMounted(true));
   }, []);
@@ -65,7 +64,6 @@ export default function DashboardPage() {
         </div>
         <MasalarDashboard
           apiBase={`${API_BASE}/api/v1`}
-          token={token ?? undefined}
           selfParticipant={selfParticipant}
           activePlan={me?.activePlan ?? null}
           kycApproved={me?.kyc?.status === 'APPROVED'}

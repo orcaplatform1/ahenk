@@ -2,11 +2,9 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { MatchingService } from "./matching.service";
 import { PrismaService } from "../prisma/prisma.service";
-import { isBotSystemActive } from "../admin/app-settings";
 import { AiReportService } from "../meetings/ai-report.service";
 import { NotificationService } from "../notification/notification.service";
 import { SubscriptionPlan, SubscriptionStatus, KycStatus } from "@prisma/client";
-import { consumeOneOnOneRights } from "./one-on-one-right";
 import { cancellationNotice, initialsOf } from "../meetings/cancellation-notice";
 
 @Injectable()
@@ -20,15 +18,14 @@ export class MatchingScheduler {
     private notifications: NotificationService,
   ) {}
 
-  // Her saat başı: havuzda yeterli kullanıcı birikince masa kur
+  // Her saat başı güvenlik taraması: atama anında kaçan ve saatle gevşeyen filtrelere (Perşembe 12:00 / 18:00,
+  // Cuma 10:00) takılmış kişileri masaya atar. Asıl atama kişi havuza girdiği an yapılır.
   @Cron("0 * * * *", { timeZone: "Europe/Istanbul" })
   async scheduleHourlyMatching(): Promise<void> {
-    this.logger.log("Saatlik eşleştirme başlıyor...");
     try {
-      const result = await this.matchingService.runHourlyMatching();
-      this.logger.log(`Saatlik eşleştirme: ${result.tablesCreated} masa kuruldu`);
+      await this.matchingService.requestScan();
     } catch (err) {
-      this.logger.error(`Saatlik eşleştirme hatası: ${err}`);
+      this.logger.error(`Saatlik tarama hatası: ${err}`);
     }
   }
 
@@ -79,7 +76,58 @@ export class MatchingScheduler {
     }
   }
 
-  // Perşembe 23:59 (TR): döngüyü kapat, bot ekle, artakalanları bekliste al
+  // Her gün 22:00 (TR): o akşam başlamış onaylı masaların katılımcılarına "gelmeyeni işaretle" bildirimi
+  // (uygulama içi; WhatsApp yok). İşaretleme masa kartında ertesi gün 10:00'a kadar açık.
+  @Cron("0 22 * * *", { timeZone: "Europe/Istanbul" })
+  async notifyNoShowMarking(): Promise<void> {
+    try {
+      const now = new Date();
+      const meetings = await this.prisma.meeting.findMany({
+        where: {
+          status: "ACTIVE",
+          scheduledAt: { gte: new Date(now.getTime() - 4 * 60 * 60 * 1000), lte: now },
+        },
+        select: {
+          id: true,
+          participants: { where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } }, select: { userId: true } },
+        },
+      });
+      for (const m of meetings) {
+        for (const p of m.participants) {
+          await this.notifications.sendToUser(p.userId, {
+            title: "Masana gelmeyen oldu mu?",
+            body: "Gelmeyen katılımcı varsa masa kartından işaretleyebilirsin.",
+            data: { type: "NO_SHOW_MARK", meetingId: m.id },
+          });
+        }
+      }
+      if (meetings.length > 0) this.logger.log(`Gelmeyen işaretleme bildirimi: ${meetings.length} masa`);
+    } catch (err) {
+      this.logger.error(`Gelmeyen işaretleme bildirimi hatası: ${err}`);
+    }
+  }
+
+  // Perşembe ve Cuma 23:44 (TR): son tarama — havuzdakiler atanır, yarım grup masaları birleştirilir
+  @Cron("44 23 * * 4,5", { timeZone: "Europe/Istanbul" })
+  async scheduleFinalScan(): Promise<void> {
+    try {
+      await this.matchingService.requestScan();
+    } catch (err) {
+      this.logger.error(`Son tarama hatası: ${err}`);
+    }
+  }
+
+  // Perşembe 23:45 (TR): tarama durdu → eksik grup masalarına 23:45–23:55 arası rastgele anda bot
+  @Cron("45 23 * * 4", { timeZone: "Europe/Istanbul" })
+  async scheduleGroupClosingBots(): Promise<void> {
+    try {
+      await this.matchingService.scheduleGroupBots();
+    } catch (err) {
+      this.logger.error(`Grup kapanış botu planlama hatası: ${err}`);
+    }
+  }
+
+  // Perşembe 23:59 (TR): döngüyü kapat, 1-2 kişilik masaları iptal et, artakalanları bekliste al
   @Cron("59 23 * * 4", { timeZone: "Europe/Istanbul" })
   async scheduleThursdayClosing(): Promise<void> {
     this.logger.log("Perşembe kapanışı başlıyor...");
@@ -217,6 +265,16 @@ export class MatchingScheduler {
       await this.sendGroupCancellationSummaries();
     } catch (err) {
       this.logger.error(`GROUP iptal özeti hatası: ${err}`);
+    }
+  }
+
+  // Cuma 23:45 (TR): eşi bulunamayan 2. hafta kişilerine 23:45–23:55 arası rastgele anda bot
+  @Cron("45 23 * * 5", { timeZone: "Europe/Istanbul" })
+  async scheduleOneOnOneClosingBots(): Promise<void> {
+    try {
+      await this.matchingService.scheduleOneOnOneBots();
+    } catch (err) {
+      this.logger.error(`Başbaşa kapanış botu planlama hatası: ${err}`);
     }
   }
 
@@ -381,59 +439,25 @@ export class MatchingScheduler {
           },
         },
       },
-      select: { id: true },
+      select: { id: true, profile: { select: { gender: true, birthDate: true } } },
     });
 
     const unmatched = eligible.filter((u) => !matchedIds.has(u.id));
 
-    // Bot sistemi kapalıysa bot eklenmez
-    const activeBots = (await isBotSystemActive(this.prisma))
-      ? await this.prisma.user.findMany({
-          where: { isBot: true, status: 'ACTIVE' },
-          select: { id: true },
-        })
-      : [];
-
-    const nextSun = this.nextSundayAt(17); // Başbaşa: Pazar 20:00 TR
-
+    // Botlar 23:45–23:55 arasında eklendi (2. hafta); eşi bulunamayanlar bekleme listesine + bildirim
     for (const user of unmatched) {
-      // Kaç döngüdür eşleşemedi?
-      const missedCount = await this.prisma.matchingWaitlist.count({ where: { userId: user.id } });
-
-      if (missedCount >= 2 && activeBots.length > 0) {
-        // 3. döngüde bot ile eşleştir
-        const bot = activeBots[Math.floor(Math.random() * activeBots.length)];
-        await this.prisma.$transaction(async (tx) => {
-          await tx.meeting.create({
-            data: {
-              cycleId: cycle.id,
-              type: 'ONE_ON_ONE',
-              title: `Hafta ${weekNumber} Başbaşa Buluşma`,
-              scheduledAt: nextSun,
-              maxParticipants: 2,
-              participants: {
-                createMany: { data: [{ userId: user.id, status: 'INVITED' }, { userId: bot.id, status: 'INVITED' }] },
-              },
-            },
-          });
-          // Başbaşa hakkı masa kurulduğu anda harcanır
-          await consumeOneOnOneRights(tx, [user.id]);
-        });
-        this.logger.log(`ONE_ON_ONE bot eşleşmesi: user=${user.id} bot=${bot.id}`);
-      } else {
-        // Bekliste al
-        const { week: nw, year: ny } = this.getISOWeek(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
-        const nextCycle = await this.prisma.matchingCycle.upsert({
-          where: { weekNumber_year: { weekNumber: nw, year: ny } },
-          update: {},
-          create: { weekNumber: nw, year: ny, status: 'RUNNING' },
-        });
-        await this.prisma.matchingWaitlist.upsert({
-          where: { userId_cycleId: { userId: user.id, cycleId: nextCycle.id } },
-          update: {},
-          create: { userId: user.id, cycleId: nextCycle.id, reason: 'ODD_NUMBER' },
-        });
-      }
+      const { week: nw, year: ny } = this.getISOWeek(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
+      const nextCycle = await this.prisma.matchingCycle.upsert({
+        where: { weekNumber_year: { weekNumber: nw, year: ny } },
+        update: {},
+        create: { weekNumber: nw, year: ny, status: 'RUNNING' },
+      });
+      await this.prisma.matchingWaitlist.upsert({
+        where: { userId_cycleId: { userId: user.id, cycleId: nextCycle.id } },
+        update: {},
+        create: { userId: user.id, cycleId: nextCycle.id, reason: 'ODD_NUMBER' },
+      });
+      await this.notifications.notifyMeetingNotFormed(user.id);
     }
   }
 
@@ -452,7 +476,12 @@ export class MatchingScheduler {
         status: { in: ['PENDING', 'ACTIVE'] },
         locationText: { not: null },
       },
-      include: { participants: { select: { userId: true } } },
+      include: {
+        participants: {
+          where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
+          select: { userId: true },
+        },
+      },
     });
 
     for (const meeting of meetings) {
@@ -472,15 +501,5 @@ export class MatchingScheduler {
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
     const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
     return { week, year: d.getUTCFullYear() };
-  }
-
-  // Haftanın Pazar günü (Pazar günü çağrılırsa bir sonraki Pazar)
-  private nextSundayAt(hourUTC: number): Date {
-    const now = new Date();
-    const daysUntilSun = (7 - now.getUTCDay()) % 7 || 7;
-    const sun = new Date(now);
-    sun.setUTCDate(now.getUTCDate() + daysUntilSun);
-    sun.setUTCHours(hourUTC, 0, 0, 0);
-    return sun;
   }
 }

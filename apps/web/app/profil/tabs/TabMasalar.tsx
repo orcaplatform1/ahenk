@@ -464,7 +464,6 @@ function MasaBlock({
   item,
   locked,
   infoText,
-  token,
   cardType,
   userInfo,
 }: {
@@ -472,7 +471,6 @@ function MasaBlock({
   item?: DashboardItem;
   locked: boolean;
   infoText: string;
-  token: string | null;
   cardType: 'group' | 'basbasa';
   userInfo?: UserInfo;
 }) {
@@ -501,7 +499,6 @@ function MasaBlock({
         <MasaDetayKarti
           masa={detayData}
           apiBase={API_PREFIX}
-          token={token ?? undefined}
         />
       </div>
     );
@@ -541,10 +538,8 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
   const [dashItems, setDashItems] = useState<DashboardItem[]>([]);
   const [history,   setHistory]   = useState<HistoryMeeting[]>([]);
   const [loading,   setLoading]   = useState(true);
-  const [token,     setToken]     = useState<string | null>(null);
 
   useEffect(() => {
-    setToken(api.getToken());
     Promise.all([
       api.get<{ items: DashboardItem[] }>('/meetings/dashboard').catch(() => ({ items: [] as DashboardItem[] })),
       api.get<HistoryMeeting[]>('/meetings/my-history').catch(() => [] as HistoryMeeting[]),
@@ -606,7 +601,6 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
           item={groupItem}
           locked={locked}
           infoText="Masa detayları Cumartesi saat 10:00'da burada görünecek"
-          token={token}
           cardType="group"
           userInfo={userInfo}
         />
@@ -618,7 +612,6 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
           item={oneOnOneItem}
           locked={locked}
           infoText="Masa detayları Pazar saat 10:00'da burada görünecek"
-          token={token}
           cardType="basbasa"
           userInfo={userInfo}
         />

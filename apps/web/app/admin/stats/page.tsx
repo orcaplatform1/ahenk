@@ -26,6 +26,7 @@ interface StatsOverview {
   totalRevenue: number;
   totalRefund: number;
   netRevenue: number;
+  vatAmount: number;
   netCommission: number;
   activeUsers: number;
   kycPending: number;
@@ -47,6 +48,7 @@ interface CityRow {
   discount: number;
   refund: number;
   net: number;
+  vat: number;
   trend: string;
 }
 
@@ -212,6 +214,7 @@ export default function AdminStats() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 12 }}>
             <StatCard label="İade Tutarları" value={data.totalRefund} prefix="₺" fmtFn={fmtK} accent={RED} />
             <StatCard label="Net Ciro" value={data.netRevenue} prefix="₺" fmtFn={fmtK} accent={GREEN} sub="Brüt ciro − iadeler" />
+            <StatCard label="KDV (%20)" value={data.vatAmount} prefix="₺" fmtFn={fmtK} accent={AMBER} sub="Net ciro içindeki vergi" />
           </div>
 
           {/* Kurulan Masa */}
@@ -267,7 +270,7 @@ export default function AdminStats() {
             <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  {['Şehir', 'Masa', 'Üye', 'Ciro', 'İndirim', 'İade', 'Net', 'Trend'].map(h => (
+                  {['Şehir', 'Masa', 'Üye', 'Ciro', 'İndirim', 'İade', 'Net', 'KDV', 'Trend'].map(h => (
                     <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: MUTED }}>{h}</th>
                   ))}
                 </tr>
@@ -282,6 +285,7 @@ export default function AdminStats() {
                     <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>₺{fmtK(row.discount)}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12, color: row.refund > 0 ? RED : MUTED }}>₺{fmtK(row.refund)}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: TEXT }}>₺{fmtK(row.net)}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>₺{fmtK(row.vat)}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: String(row.trend).startsWith('-') ? RED : GREEN }}>
                       {String(row.trend).startsWith('-') ? '↓ ' : '↑ '}{String(row.trend).replace('-', '')}
                     </td>

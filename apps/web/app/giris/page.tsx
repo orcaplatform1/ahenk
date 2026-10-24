@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -10,8 +10,8 @@ import OtpInput from '@/components/ui/OtpInput';
 
 const API_BASE = API_PREFIX;
 
+// Token'lar HttpOnly çerezle gelir; yanıt gövdesinde sadece kullanıcı
 interface LoginResponse {
-  accessToken: string;
   user: { id: string; firstName: string; lastName: string };
 }
 
@@ -54,6 +54,13 @@ export default function GirisPage() {
   const [otpStep,  setOtpStep]  = useState(false);
   const [otp,      setOtp]      = useState(['', '', '', '', '', '']);
   const [otpShake, setOtpShake] = useState(false);
+  // Kodu tekrar gönder: backend ile aynı 60 sn bekleme
+  const [resendIn, setResendIn] = useState(0);
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn(n => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
   /* E-posta akışı */
   const [email,       setEmail]       = useState('');
@@ -78,6 +85,8 @@ export default function GirisPage() {
     try {
       await authPost('/auth/send-login-otp', { phone: `+90${phoneDigits}` });
       setOtpStep(true);
+      setOtp(['', '', '', '', '', '']);
+      setResendIn(60);
     } catch (e) {
       const err = e as Error & { sanction?: SanctionPayload };
       if (err.sanction) { setSanction(err.sanction); }
@@ -87,7 +96,7 @@ export default function GirisPage() {
   }
 
   async function afterLogin(data: LoginResponse) {
-    api.setToken(data.accessToken);
+    api.onLogin();
     window.dispatchEvent(new Event('ahenk:auth'));
     // WARNING uyarısı varsa: giriş başarılı ama uyarıyı göster
     try {
@@ -193,7 +202,7 @@ export default function GirisPage() {
               </p>
               {sanction.type === 'WARNING' ? (
                 <div className="flex gap-3 mt-1">
-                  <button onClick={() => { api.clearToken(); setSanction(null); }} className="flex-1 btn-ghost justify-center">
+                  <button onClick={async () => { await api.logout(); setSanction(null); }} className="flex-1 btn-ghost justify-center">
                     İptal
                   </button>
                   <button onClick={() => { setSanction(null); router.push('/dashboard'); }} className="flex-1 btn-primary justify-center">
@@ -346,6 +355,14 @@ export default function GirisPage() {
                   className="w-full btn-primary disabled:opacity-40"
                 >
                   {loading ? 'Doğrulanıyor…' : 'Giriş Yap'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={resendIn > 0 || loading}
+                  className="text-sm text-[#555] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed"
+                >
+                  {resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}
                 </button>
                 <button
                   type="button"

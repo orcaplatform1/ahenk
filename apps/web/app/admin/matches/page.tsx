@@ -2,21 +2,18 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { api, API_PREFIX } from '@/lib/api';
-import { myRole } from '@/lib/adminRole';
+import { myRole, myId } from '@/lib/adminRole';
 import { AdminUserEdit } from '@/components/AdminUserEdit';
 import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
 import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } from '@/components/AdminNoShowWarnings';
+import { AdminOpenTables } from '@/components/AdminOpenTables';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
 function canSanction(target: { id: string; role: string }): boolean {
-  const token = api.getToken();
-  if (!token) return false;
-  try {
-    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const me = JSON.parse(atob(b64)) as { sub?: string; role?: string };
-    if (me.sub === target.id || target.role === 'SUPERADMIN') return false;
-    return target.role !== 'ADMIN' || me.role === 'SUPERADMIN';
-  } catch { return false; }
+  const meId = myId();
+  if (!meId) return false;
+  if (meId === target.id || target.role === 'SUPERADMIN') return false;
+  return target.role !== 'ADMIN' || myRole() === 'SUPERADMIN';
 }
 
 const BG     = '#020c1b';
@@ -80,7 +77,7 @@ interface MeetingDetail extends MeetingRow {
   noShowReports: { reporterId: string; reportedId: string; createdAt: string }[];
 }
 
-interface BotRow { id: string; status: string; profile: { firstName: string; lastName: string } | null; }
+interface BotRow { id: string; name: string; gender: string | null; age: number | null; }
 
 interface ChatMessage {
   id: string;
@@ -126,6 +123,7 @@ function oceanAvg(o: OceanScore | null) {
 }
 
 export default function AdminMatches() {
+  const [tab, setTab] = useState<'all' | 'open'>('all');
   const [items, setItems] = useState<MeetingRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -172,7 +170,10 @@ export default function AdminMatches() {
   useEffect(() => { api.get<string[]>('/admin/sanction-reasons').then(setSanctionReasons).catch(() => {}); }, []);
   // Bot listesi ve yerleştirme yalnızca SUPERADMIN
   const isSuperadmin = myRole() === 'SUPERADMIN';
-  useEffect(() => { if (isSuperadmin) api.get<BotRow[]>('/matching/admin/bots').then(setBots).catch(() => {}); }, [isSuperadmin]);
+  // Masaya eklenebilecek botlar: sadece eksik cinsiyet ve o saatte boşta olanlar (backend süzer)
+  const loadBots = (meetingId: string) => {
+    if (isSuperadmin) api.get<BotRow[]>(`/admin/matches/${meetingId}/bots`).then(setBots).catch(() => setBots([]));
+  };
 
   async function openDetail(row: MeetingRow) {
     if (selected?.id === row.id) { setSelected(null); return; }
@@ -186,6 +187,7 @@ export default function AdminMatches() {
       setSelected(d);
       setChat(messages);
       setBotToPlace('');
+      loadBots(row.id);
       setVenueInput(d.locationText ?? '');
       setVenueAddress(d.venueAddress ?? '');
       setCaptions([d.venuePhotoCaption1 ?? '', d.venuePhotoCaption2 ?? '', d.venuePhotoCaption3 ?? '']);
@@ -221,10 +223,9 @@ export default function AdminMatches() {
     try {
       const form = new FormData();
       form.append('file', file);
-      const token = api.getToken();
       const res = await fetch(`${API_PREFIX}/admin/meetings/${selected.id}/venue-photo?slot=${slot}`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
         body: form,
       });
       const data = await res.json().catch(() => ({}));
@@ -258,6 +259,7 @@ export default function AdminMatches() {
       const d = await api.get<MeetingDetail>(`/admin/meetings/${selected.id}`);
       setSelected(d);
       setBotToPlace('');
+      loadBots(selected.id);
     } catch (e) { setError((e as Error).message); }
     finally { setPlacingBot(false); }
   }
@@ -351,6 +353,24 @@ export default function AdminMatches() {
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>Masalar</h1>
       </div>
 
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {([['all', 'Tüm masalar'], ['open', 'Açık masalar']] as const).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            style={{
+              padding: '7px 16px', borderRadius: 99, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: SANS,
+              background: tab === key ? 'rgba(59,130,246,0.15)' : 'transparent',
+              border: `1px solid ${tab === key ? 'rgba(59,130,246,0.45)' : BORDER}`,
+              color: tab === key ? '#93c5fd' : MUTED,
+            }}
+          >{label}</button>
+        ))}
+      </div>
+
+      {tab === 'open' && <AdminOpenTables isSuperadmin={isSuperadmin} onUserClick={openUser} />}
+
+      {tab === 'all' && (<>
       {/* Filtreler */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
         <select
@@ -667,8 +687,7 @@ export default function AdminMatches() {
           {isSuperadmin && selected.status !== 'CANCELLED' && selected.status !== 'COMPLETED' && (() => {
             const active = selected.participants.filter(p => !['CANCELLED', 'DECLINED', 'NO_SHOW'].includes(p.status));
             const emptySeats = selected.maxParticipants - active.length;
-            const inMeeting = new Set(selected.participants.map(p => p.userId));
-            const available = bots.filter(b => b.status === 'ACTIVE' && !inMeeting.has(b.id));
+            const available = bots;
             return (
               <div>
                 <p style={{ margin: '0 0 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>
@@ -681,10 +700,10 @@ export default function AdminMatches() {
                       onChange={e => setBotToPlace(e.target.value)}
                       style={{ ...inputStyle, flex: 1, background: SURFACE }}
                     >
-                      <option value="">{available.length ? 'Bot seçin' : 'Uygun aktif bot yok'}</option>
+                      <option value="">{available.length ? 'Bot seçin (eksik cinsiyet)' : 'Uygun bot yok'}</option>
                       {available.map(b => (
                         <option key={b.id} value={b.id}>
-                          {b.profile ? `${b.profile.firstName} ${b.profile.lastName}` : b.id}
+                          {b.name || b.id} ({b.gender === 'MALE' ? 'E' : 'K'}{b.age !== null ? `, ${b.age}` : ''})
                         </option>
                       ))}
                     </select>
@@ -813,6 +832,8 @@ export default function AdminMatches() {
           )}
         </div>
       )}
+
+      </>)}
 
       {/* İptal onay modalı */}
       {cancelConfirm && (
@@ -1019,6 +1040,8 @@ export default function AdminMatches() {
                   </div>
                 )}
 
+                {/* Ücretsiz paket sadece SUPERADMIN */}
+                {myRole() === 'SUPERADMIN' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
                   <p style={{ margin: 0, fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>ÜCRETSİZ ABONELİK VER</p>
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -1046,6 +1069,7 @@ export default function AdminMatches() {
                     </button>
                   </div>
                 </div>
+                )}
               </>
             )}
           </div>

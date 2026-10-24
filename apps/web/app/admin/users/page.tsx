@@ -2,21 +2,17 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
-import { myRole } from '@/lib/adminRole';
+import { myRole, myId } from '@/lib/adminRole';
 import { AdminUserEdit } from '@/components/AdminUserEdit';
 import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
 import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } from '@/components/AdminNoShowWarnings';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
 function canSanction(target: { id: string; role: string }): boolean {
-  const token = api.getToken();
-  if (!token) return false;
-  try {
-    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const me = JSON.parse(atob(b64)) as { sub?: string; role?: string };
-    if (me.sub === target.id || target.role === 'SUPERADMIN') return false;
-    return target.role !== 'ADMIN' || me.role === 'SUPERADMIN';
-  } catch { return false; }
+  const meId = myId();
+  if (!meId) return false;
+  if (meId === target.id || target.role === 'SUPERADMIN') return false;
+  return target.role !== 'ADMIN' || myRole() === 'SUPERADMIN';
 }
 
 const BG     = '#020c1b';
@@ -513,7 +509,8 @@ export default function AdminUsers() {
                   </div>
                 )}
 
-                {/* Abonelik ver */}
+                {/* Abonelik ver — ücretsiz paket sadece SUPERADMIN */}
+                {myRole() === 'SUPERADMIN' && (
                 <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>ÜCRETSİZ ABONELİK VER</span>
                   {userModal.kyc?.status !== 'APPROVED' && (
@@ -544,6 +541,7 @@ export default function AdminUsers() {
                     </button>
                   </div>
                 </div>
+                )}
               </>
             )}
           </div>

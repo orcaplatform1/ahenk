@@ -157,8 +157,7 @@ export default function Navbar() {
   const initialized = useRef(false);
 
   useEffect(() => {
-    const token = document.cookie.split('; ').find(r => r.startsWith('ahenk_token='))?.split('=')[1];
-    if (!token) {
+    if (!api.hasSession()) {
       setNavUser(null);
       setChecked(true);
       return;
@@ -167,16 +166,14 @@ export default function Navbar() {
     api.get<NavUser>('/auth/me')
       .then(u => { setNavUser(u); })
       .catch(() => {
-        const tokenGone = !document.cookie.split('; ').find(r => r.startsWith('ahenk_token='))?.split('=')[1];
-        if (tokenGone) setNavUser(null);
+        if (!api.hasSession()) setNavUser(null);
       })
       .finally(() => { setChecked(true); });
   }, []);
 
   useEffect(() => {
     function onAuthChange() {
-      const token = document.cookie.split('; ').find(r => r.startsWith('ahenk_token='))?.split('=')[1];
-      if (!token) { setNavUser(null); return; }
+      if (!api.hasSession()) { setNavUser(null); return; }
       api.get<NavUser>('/auth/me').then(u => setNavUser(u)).catch(() => {});
     }
     window.addEventListener('ahenk:auth', onAuthChange);

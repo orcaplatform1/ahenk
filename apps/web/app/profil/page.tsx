@@ -91,8 +91,8 @@ function ProfilPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      // sadece token gerçekten yoksa yönlendir (sunucu hatalarında yanlış logout olmasın)
-      if (!api.getToken()) {
+      // sadece oturum gerçekten yoksa yönlendir (sunucu hatalarında yanlış logout olmasın)
+      if (!api.hasSession()) {
         window.location.href = '/giris';
       }
     }

@@ -98,6 +98,7 @@ export function AhenkHistory({ entries, apiBase, token }: Props) {
     setLoading(true);
     fetch(`${apiBase}/meetings/my-history`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
     })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((items: ApiHistoryItem[]) => {

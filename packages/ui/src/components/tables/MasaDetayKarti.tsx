@@ -46,7 +46,14 @@ interface ChatMsg {
 interface Props {
   masa: MasaDetayData;
   apiBase?: string;
+  // Verilirse Bearer başlığı eklenir; web oturumu HttpOnly çerezle gider (credentials: 'include')
   token?: string;
+}
+
+function jsonHeaders(token?: string): Record<string, string> {
+  return token
+    ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+    : { 'Content-Type': 'application/json' };
 }
 
 // ── Renkler ─────────────────────────────────────────────────────────────────
@@ -223,6 +230,7 @@ function SosModal({
   onClose,
   loading,
   locError,
+  error,
 }: {
   selectedThreats: string[];
   onToggle: (t: string) => void;
@@ -230,7 +238,11 @@ function SosModal({
   onClose: () => void;
   loading: boolean;
   locError: 'off' | 'denied' | null;
+  error: string;
 }) {
+  // Sahte ihbar beyanı işaretlenmeden ve en az bir tehdit türü seçilmeden talep gönderilemez
+  const [accepted, setAccepted] = useState(false);
+  const canSubmit = selectedThreats.length > 0 && accepted && !loading;
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -314,22 +326,41 @@ function SosModal({
             </p>
           </div>
         )}
+        {error && (
+          <div style={{ padding: '10px 12px', background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.5)', borderRadius: 8, marginBottom: 12 }}>
+            <p style={{ margin: 0, fontSize: 11.5, color: '#ff6b6b', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
+              ⚠ Talep gönderilemedi: {error}
+            </p>
+          </div>
+        )}
+
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 14, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={accepted}
+            onChange={e => setAccepted(e.target.checked)}
+            style={{ marginTop: 2, accentColor: '#c0392b', flexShrink: 0 }}
+          />
+          <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
+            Acil yardım talebimin sahte olmadığını ve ihbardan kaynaklı doğacak tüm yasal sorumluluğu kabul ediyorum.
+          </span>
+        </label>
 
         <button
           onClick={onConfirm}
-          disabled={selectedThreats.length === 0 || loading}
+          disabled={!canSubmit}
           style={{
-            width: '100%', padding: '14px 0', borderRadius: 10, cursor: selectedThreats.length ? 'pointer' : 'not-allowed',
+            width: '100%', padding: '14px 0', borderRadius: 10, cursor: canSubmit ? 'pointer' : 'not-allowed',
             background: 'linear-gradient(135deg, #7b0000 0%, #c0392b 60%, #ff6b6b 100%)',
             border: 'none',
             color: '#fff', fontSize: 14, fontWeight: 800,
             fontFamily: 'Inter, sans-serif', letterSpacing: '0.08em',
-            opacity: (selectedThreats.length === 0 || loading) ? 0.45 : 1,
+            opacity: canSubmit ? 1 : 0.45,
             transition: 'opacity 0.2s',
-            boxShadow: selectedThreats.length ? '0 0 16px rgba(192,57,43,0.5)' : 'none',
+            boxShadow: canSubmit ? '0 0 16px rgba(192,57,43,0.5)' : 'none',
           }}
         >
-          {loading ? 'Konum alınıyor…' : 'İhbarda Bulun'}
+          {loading ? 'Konum alınıyor…' : error ? 'Tekrar dene' : 'İhbarda Bulun'}
         </button>
       </motion.div>
     </motion.div>
@@ -463,21 +494,29 @@ function CancelModal({
 }
 
 // ── Sohbet Bölümü ─────────────────────────────────────────────────────────
-function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase: string; token: string }) {
+function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase: string; token?: string }) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isClosed, setIsClosed] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
+  const [openAt, setOpenAt] = useState<string | null>(null);
+  const [sendError, setSendError] = useState('');
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  const headers = jsonHeaders(token);
 
   const fetchMessages = useCallback(async () => {
     try {
-      const res = await fetch(`${apiBase}/chat/${meetingId}/messages`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${apiBase}/chat/${meetingId}/messages`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
+      });
       if (!res.ok) { setLoadError(true); return; }
-      const data = await res.json() as { isClosed: boolean; messages: ChatMsg[] };
+      const data = await res.json() as { isOpen: boolean; isClosed: boolean; openAt: string; messages: ChatMsg[] };
+      setIsOpen(data.isOpen);
+      setOpenAt(data.openAt);
       setIsClosed(data.isClosed);
       setMessages(data.messages);
     } catch { setLoadError(true); }
@@ -495,23 +534,29 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
 
   async function sendMessage() {
     const trimmed = input.trim();
-    if (!trimmed || sending || isClosed) return;
+    if (!trimmed || sending || isClosed || !isOpen) return;
     setSending(true);
+    setSendError('');
     try {
       const res = await fetch(`${apiBase}/chat/${meetingId}/messages`, {
-        method: 'POST', headers,
+        method: 'POST', headers, credentials: 'include',
         body: JSON.stringify({ content: trimmed }),
       });
       if (res.ok) {
         const msg = await res.json() as ChatMsg;
         setMessages(prev => [...prev, msg]);
         setInput('');
+      } else {
+        const err = await res.json().catch(() => null) as { message?: string } | null;
+        setSendError(err?.message ?? 'Mesaj gönderilemedi');
       }
+    } catch {
+      setSendError('Mesaj gönderilemedi');
     } finally { setSending(false); }
   }
 
   async function reportMessage(messageId: string) {
-    await fetch(`${apiBase}/chat/messages/${messageId}/report`, { method: 'POST', headers });
+    await fetch(`${apiBase}/chat/messages/${messageId}/report`, { method: 'POST', headers, credentials: 'include' });
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reportedByMe: true } : m));
   }
 
@@ -538,7 +583,9 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
         <div style={{ maxHeight: 260, overflowY: 'auto', padding: '12px 12px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {messages.length === 0 && (
             <p style={{ margin: 0, fontSize: 12, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-              {isClosed ? 'Sohbet sona erdi.' : 'Henüz mesaj yok. İlk mesajı sen gönder.'}
+              {!isOpen && openAt
+                ? `Sohbet ${formatMeetingTime(openAt)} itibarıyla açılacak.`
+                : isClosed ? 'Sohbet sona erdi.' : 'Henüz mesaj yok. İlk mesajı sen gönder.'}
             </p>
           )}
           {messages.map(msg => (
@@ -576,7 +623,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
           <div ref={bottomRef} />
         </div>
 
-        {!isClosed && (
+        {isOpen && !isClosed && (
           <div style={{ display: 'flex', gap: 8, padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <input
               value={input}
@@ -599,12 +646,112 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
             </button>
           </div>
         )}
+        {sendError && isOpen && !isClosed && (
+          <p style={{ margin: 0, padding: '0 10px 8px', fontSize: 12, color: '#ff6b6b', fontFamily: 'Inter, sans-serif' }}>
+            {sendError}
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
 // ── Ana Bileşen ──────────────────────────────────────────────────────────────
+// ── Masaya gelmeyen işaretleme (22:00 → ertesi gün 10:00; sonra değerlendirme formunda) ──
+interface NoShowMarking {
+  open: boolean;
+  participants: { userId: string; initials: string; gender: string | null }[];
+  markedIds: string[];
+}
+
+function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBase: string; token?: string }) {
+  const [data, setData] = useState<NoShowMarking | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const headers = jsonHeaders(token);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`${apiBase}/meetings/${meetingId}/no-show`, { headers, credentials: 'include' });
+      if (res.ok) setData(await res.json() as NoShowMarking);
+    } catch { /* sessiz */ }
+  }, [apiBase, meetingId, token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { load(); }, [load]);
+
+  if (!data?.open || data.participants.length === 0) return null;
+  const marked = new Set(data.markedIds);
+
+  async function send() {
+    if (selected.size === 0 || sending) return;
+    setSending(true); setError('');
+    try {
+      const res = await fetch(`${apiBase}/meetings/${meetingId}/no-show`, {
+        method: 'POST', headers, credentials: 'include', body: JSON.stringify({ userIds: [...selected] }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
+        setError((Array.isArray(err?.message) ? err?.message[0] : err?.message) ?? 'Gönderilemedi, tekrar dene.');
+        return;
+      }
+      setSelected(new Set());
+      await load();
+    } catch { setError('Bağlantı hatası, tekrar dene.'); }
+    finally { setSending(false); }
+  }
+
+  return (
+    <div style={{ marginTop: 24, padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>
+        Masana gelmeyen oldu mu?
+      </p>
+      <p style={{ margin: '0 0 12px', fontSize: 11.5, color: '#888', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
+        Gelmeyen kişileri işaretleyip gönder. Gönderilen bildirim geri alınamaz.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {data.participants.map(p => {
+          const locked = marked.has(p.userId);
+          const checked = locked || selected.has(p.userId);
+          return (
+            <label key={p.userId} style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10,
+              cursor: locked ? 'default' : 'pointer', fontFamily: 'Inter, sans-serif',
+              background: checked ? 'rgba(192,57,43,0.08)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${checked ? 'rgba(192,57,43,0.3)' : 'rgba(255,255,255,0.1)'}`,
+            }}>
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={locked}
+                onChange={() => setSelected(prev => {
+                  const next = new Set(prev);
+                  next.has(p.userId) ? next.delete(p.userId) : next.add(p.userId);
+                  return next;
+                })}
+                style={{ accentColor: '#c0392b' }}
+              />
+              <span style={{ fontSize: 13, color: '#ccc', fontWeight: 500 }}>{p.initials}</span>
+              {p.gender && <span style={{ fontSize: 11, color: '#666' }}>{p.gender === 'MALE' ? 'E' : 'K'}</span>}
+              {locked && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#c0392b' }}>Bildirildi</span>}
+            </label>
+          );
+        })}
+      </div>
+      {error && <p style={{ margin: '10px 0 0', fontSize: 12, color: '#ff6b6b', fontFamily: 'Inter, sans-serif' }}>{error}</p>}
+      {selected.size > 0 && (
+        <button onClick={send} disabled={sending} style={{
+          marginTop: 12, width: '100%', padding: '11px 0', borderRadius: 10, cursor: sending ? 'not-allowed' : 'pointer',
+          background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b',
+          fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', opacity: sending ? 0.6 : 1,
+        }}>
+          {sending ? 'Gönderiliyor…' : 'Gelmedi olarak bildir'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function MasaDetayKarti({ masa, apiBase, token }: Props) {
   const [lightboxIdx,   setLightboxIdx]   = useState<number | null>(null);
   const [onMyWayDone,   setOnMyWayDone]   = useState(false);
@@ -620,15 +767,13 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
   const mapLink    = mapsUrl(masa.venueMapsUrl, masa.venueAddress);
   const ordered    = buildOrdered(masa.participants);
 
-  const authHeaders = apiBase && token
-    ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-    : null;
+  const authHeaders = apiBase ? jsonHeaders(token) : null;
 
   async function handleOnMyWay() {
     if (!authHeaders || onMyWayDone || onMyWayLoading) return;
     setOnMyWayLoading(true);
     try {
-      await fetch(`${apiBase}/meetings/${masa.id}/on-my-way`, { method: 'POST', headers: authHeaders });
+      await fetch(`${apiBase}/meetings/${masa.id}/on-my-way`, { method: 'POST', headers: authHeaders, credentials: 'include' });
       setOnMyWayDone(true);
     } finally { setOnMyWayLoading(false); }
   }
@@ -639,7 +784,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
     setCancelError('');
     try {
       const res = await fetch(`${apiBase}/meetings/${masa.id}/cancel-registration`, {
-        method: 'POST', headers: authHeaders,
+        method: 'POST', headers: authHeaders, credentials: 'include',
         body: JSON.stringify({ reason, note: note || undefined }),
       });
       if (res.ok) { setCancelled(true); setShowCancel(false); return; }
@@ -651,7 +796,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
     } finally { setCancelLoading(false); }
   }
 
-  const hasChat = !!(apiBase && token);
+  const hasChat = !!apiBase;
 
   // İptal deadline kontrolü (tarayıcı tarafı - yalnızca buton görünümü için)
   // Masa gününden 2 gün önce 20:00 (TR): Grup → Perşembe 20:00, Başbaşa → Cuma 20:00
@@ -674,6 +819,8 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
   const [sosReportId, setSosReportId] = useState<string | null>(null);
   const [selectedThreats, setSelectedThreats] = useState<string[]>([]);
   const [locError, setLocError] = useState<'off' | 'denied' | null>(null);
+  const [sosError, setSosError] = useState('');
+  const liveWatchRef = useRef<number | null>(null);
 
   function toggleThreat(t: string) {
     setSelectedThreats(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
@@ -683,11 +830,13 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
     if (!authHeaders || selectedThreats.length === 0 || sosLoading) return;
     setSosLoading(true);
     setLocError(null);
+    setSosError('');
 
-    const doSubmit = async (lat?: number, lng?: number, accuracy?: number) => {
+    // Konumsuz talep oluşturulmaz: konum alınamazsa kullanıcıdan konumu açması istenir
+    const doSubmit = async (lat: number, lng: number, accuracy: number) => {
       try {
         const res = await fetch(`${apiBase}/sos/${masa.id}/report`, {
-          method: 'POST', headers: authHeaders,
+          method: 'POST', headers: authHeaders, credentials: 'include',
           body: JSON.stringify({ threats: selectedThreats, lat, lng, accuracy }),
         });
         if (res.ok) {
@@ -695,8 +844,15 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
           setSosReportId(data.reportId);
           setSosDone(true);
           setShowSos(false);
-          if (lat && lng) startLiveLocation(data.reportId);
+          startLiveLocation(data.reportId);
+          return;
         }
+        if (res.status === 429) { setSosError('Çok fazla deneme yapıldı. Lütfen birkaç dakika sonra tekrar dene.'); return; }
+        const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
+        const msg = Array.isArray(err?.message) ? err?.message[0] : err?.message;
+        setSosError(msg ?? 'Sunucu hatası. Lütfen tekrar dene.');
+      } catch {
+        setSosError('Bağlantı hatası. İnternet bağlantını kontrol edip tekrar dene.');
       } finally { setSosLoading(false); }
     };
 
@@ -717,51 +873,94 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
     );
   }
 
+  // Talep eden: talep çözülene / acil yardım süresi bitene kadar canlı konum (backend active:false dönünce durur)
   function startLiveLocation(reportId: string) {
-    if (!navigator.geolocation || !authHeaders) return;
-    navigator.geolocation.watchPosition(
+    if (!navigator.geolocation || !authHeaders || liveWatchRef.current !== null) return;
+    const headers = authHeaders;
+    liveWatchRef.current = navigator.geolocation.watchPosition(
       async (pos) => {
-        await fetch(`${apiBase}/sos/reports/${reportId}/location`, {
-          method: 'POST', headers: authHeaders,
-          body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
-        });
+        try {
+          const res = await fetch(`${apiBase}/sos/reports/${reportId}/location`, {
+            method: 'POST', headers, credentials: 'include',
+            body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+          });
+          const data = await res.json().catch(() => null) as { active?: boolean } | null;
+          if (data?.active === false && liveWatchRef.current !== null) {
+            navigator.geolocation.clearWatch(liveWatchRef.current);
+            liveWatchRef.current = null;
+          }
+        } catch { /* sessiz */ }
       },
       () => {},
       { enableHighAccuracy: true, maximumAge: 10000 },
     );
   }
 
-  // Masa aktifken tüm üyeler için 30s konum takibi (izin varsa)
+  useEffect(() => () => {
+    if (liveWatchRef.current !== null) navigator.geolocation?.clearWatch(liveWatchRef.current);
+  }, []);
+
+  // Sayfa yenilenince açık talep geri yüklenir ve canlı konum devam eder
+  useEffect(() => {
+    if (!sosVisible || !authHeaders) return;
+    fetch(`${apiBase}/sos/meetings/${masa.id}/my-report`, { headers: authHeaders, credentials: 'include' })
+      .then(r => (r.ok ? r.json() : null))
+      .then((d: { reportId: string | null } | null) => {
+        if (!d?.reportId) return;
+        setSosReportId(d.reportId);
+        setSosDone(true);
+        startLiveLocation(d.reportId);
+      })
+      .catch(() => {});
+  }, [sosVisible, apiBase, masa.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Acil yardım süresinde masa üyelerinin konumu 30 sn'de bir alınır. İzin İSTENMEZ: sadece daha önce
+  // konum izni vermiş kullanıcılarda çalışır. Backend kabul etmezse (iptal, gelmedi, talep çözüldü) durur.
   useEffect(() => {
     if (!sosVisible || !authHeaders || !navigator.geolocation) return;
+    const headers = authHeaders;
     let watchId: number | null = null;
     let intervalId: ReturnType<typeof setInterval> | null = null;
     let lastPos: GeolocationPosition | null = null;
+    let stopped = false;
 
-    watchId = navigator.geolocation.watchPosition(
-      (pos) => { lastPos = pos; },
-      () => {},
-      { enableHighAccuracy: true, maximumAge: 15000 },
-    );
-
-    intervalId = setInterval(async () => {
-      if (!lastPos) return;
-      try {
-        await fetch(`${apiBase}/sos/${masa.id}/participant-location`, {
-          method: 'POST', headers: authHeaders,
-          body: JSON.stringify({
-            lat: lastPos.coords.latitude,
-            lng: lastPos.coords.longitude,
-            accuracy: lastPos.coords.accuracy,
-          }),
-        });
-      } catch { /* sessiz */ }
-    }, 30000);
-
-    return () => {
+    const stop = () => {
+      stopped = true;
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       if (intervalId !== null) clearInterval(intervalId);
     };
+
+    const start = () => {
+      if (stopped) return;
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => { lastPos = pos; },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 15000 },
+      );
+      intervalId = setInterval(async () => {
+        if (!lastPos) return;
+        try {
+          const res = await fetch(`${apiBase}/sos/${masa.id}/participant-location`, {
+            method: 'POST', headers, credentials: 'include',
+            body: JSON.stringify({
+              lat: lastPos.coords.latitude,
+              lng: lastPos.coords.longitude,
+              accuracy: lastPos.coords.accuracy,
+            }),
+          });
+          const data = await res.json().catch(() => null) as { active?: boolean } | null;
+          if (!res.ok || data?.active === false) stop();
+        } catch { /* sessiz */ }
+      }, 30000);
+    };
+
+    if (navigator.permissions?.query) {
+      navigator.permissions.query({ name: 'geolocation' as PermissionName })
+        .then(p => { if (p.state === 'granted') start(); })
+        .catch(() => {});
+    }
+
+    return stop;
   }, [sosVisible, apiBase, masa.id]); // authHeaders dependency'den çıkarıldı — string ref stabil değil
 
   return (
@@ -784,9 +983,10 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
             selectedThreats={selectedThreats}
             onToggle={toggleThreat}
             onConfirm={handleSos}
-            onClose={() => { setShowSos(false); setLocError(null); setSelectedThreats([]); }}
+            onClose={() => { setShowSos(false); setLocError(null); setSosError(''); setSelectedThreats([]); }}
             loading={sosLoading}
             locError={locError}
+            error={sosError}
           />
         )}
       </AnimatePresence>
@@ -1084,7 +1284,12 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
 
         {/* Sohbet bölümü */}
         {hasChat && !cancelled && (
-          <ChatSection meetingId={masa.id} apiBase={apiBase!} token={token!} />
+          <ChatSection meetingId={masa.id} apiBase={apiBase!} token={token} />
+        )}
+
+        {/* Masaya gelmeyen işaretleme */}
+        {hasChat && !cancelled && (
+          <NoShowSection meetingId={masa.id} apiBase={apiBase!} token={token} />
         )}
 
         {/* SOS Acil Yardım */}
@@ -1105,7 +1310,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
                   🚨 Acil yardım talebiniz alındı.
                 </p>
                 <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,107,107,0.7)', fontFamily: 'Inter, sans-serif' }}>
-                  Konumunuz anlık olarak güncelleniyor. Güvende kalın.
+                  Güvende kalın.
                 </p>
               </div>
             ) : (

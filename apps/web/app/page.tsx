@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getPlanCardState, type PlanKey } from '@/lib/planCards';
 import { HeroCountdown } from '@/components/HeroCountdown';
+import { PlanPriceText } from '@/components/PlanPrice';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
 
 
@@ -24,7 +25,7 @@ const cities = [
 const plans = [
   {
     name: 'Masada',
-    price: '349',
+    planKey: 'MASADA' as const,
     desc: 'Aylık grup buluşma hakkı',
     featured: false,
     bgImage: '/plan-masada.webp',
@@ -37,7 +38,7 @@ const plans = [
   },
   {
     name: 'Karşımda',
-    price: '449',
+    planKey: 'KARSIMDA' as const,
     desc: 'Tek kullanımlık başbaşa buluşma',
     featured: false,
     bgImage: '/plan-karsimda.webp',
@@ -50,7 +51,7 @@ const plans = [
   },
   {
     name: 'İçerde',
-    price: '679',
+    planKey: 'ICERDE' as const,
     desc: '1 ay Masada + 1 Karşımda hakkı',
     featured: true,
     bgImage: '/plan-icerde.webp',
@@ -817,7 +818,7 @@ export default function Home() {
                     <div style={{ marginTop: cs.badge ? 22 : 0 }}>
                       <h3 className="font-serif text-[#f5f5f5]" style={{ fontSize: '1.1rem', marginBottom: 4 }}>{plan.name}</h3>
                       <div className="flex items-end gap-1" style={{ marginBottom: 2 }}>
-                        <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.7rem' }}>{plan.price}</span>
+                        <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.7rem' }}><PlanPriceText plan={plan.planKey} /></span>
                         <span className="text-[#888]" style={{ fontSize: '0.9rem', marginBottom: 2 }}>₺</span>
                       </div>
                       <p style={{ color: '#f5f5f5', fontSize: '0.7rem' }}>{plan.desc}</p>

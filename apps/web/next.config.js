@@ -1,5 +1,4 @@
 /** @type {import('next').NextConfig} */
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://167.86.103.185:4000';
 
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -9,20 +8,7 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(self), microphone=(self), geolocation=(self), interest-cohort=()',
   },
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.iyzipay.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.iyzipay.com",
-      "font-src 'self' https://fonts.gstatic.com https://*.iyzipay.com",
-      "img-src 'self' data: blob: https:",
-      `connect-src 'self' ${API_URL} https://ahenk.tr https://*.iyzipay.com`,
-      "frame-src https://*.iyzipay.com",
-      "media-src 'self' blob:",
-      "frame-ancestors 'none'",
-    ].join('; '),
-  },
+  // Content-Security-Policy middleware.ts'de (her istekte yeni nonce ile) verilir
 ];
 
 const nextConfig = {

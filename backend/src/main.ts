@@ -3,6 +3,7 @@ import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
+import { csrfOriginCheck } from "./auth/csrf-origin.middleware";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: true });
@@ -11,7 +12,14 @@ async function bootstrap() {
   // Sadece loopback'ten (nginx) gelen istekte güvenilir; dışarıdan sahte başlık dikkate alınmaz.
   app.getHttpAdapter().getInstance().set("trust proxy", "loopback");
 
+  const allowedOrigins = [
+    process.env.APP_URL ?? "http://localhost:3000",
+    "https://ahenk.co",
+    "https://www.ahenk.co",
+  ].filter(Boolean);
+
   app.use(cookieParser());
+  app.use(csrfOriginCheck(allowedOrigins));
   app.setGlobalPrefix("api/v1");
 
   app.useGlobalPipes(
@@ -21,12 +29,6 @@ async function bootstrap() {
       transform: true,
     })
   );
-
-  const allowedOrigins = [
-    process.env.APP_URL ?? "http://localhost:3000",
-    "https://ahenk.co",
-    "https://www.ahenk.co",
-  ].filter(Boolean);
 
   app.enableCors({
     origin: (origin, callback) => {

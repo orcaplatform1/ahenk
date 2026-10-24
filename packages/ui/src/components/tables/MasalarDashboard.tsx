@@ -1088,6 +1088,7 @@ export function MasalarDashboard({
     try {
       const res = await fetch(`${apiBase}/meetings/dashboard`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
       if (!res.ok) { setDashData({ items: [] }); return; }
       const data = await res.json();

@@ -6,14 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
-
-function decodeJwtRole(token: string): string | null {
-  try {
-    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const decoded = JSON.parse(atob(b64));
-    return (decoded.role as string) ?? null;
-  } catch { return null; }
-}
+import { setAdminIdentity } from '@/lib/adminRole';
 
 const NAV_TOP = [
   { href: '/',       label: 'Anasayfa' },
@@ -28,14 +21,16 @@ const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; sup
   { href: '/admin/users',        label: 'Kullanıcılar' },
   { href: '/admin/subscriptions', label: 'Abonelikler' },
   { href: '/admin/alerts',       label: 'Uyarılar', alertKey: true },
-  { href: '/admin/refunds',      label: 'İade Talepleri' },
-  { href: '/admin/venues',       label: 'Mekanlar' },
-  { href: '/admin/cities',       label: 'Şehirler' },
+  { href: '/admin/refunds',      label: 'İade Talepleri', superadminOnly: true },
+  { href: '/admin/venues',       label: 'Mekanlar', superadminOnly: true },
+  { href: '/admin/cities',       label: 'Şehirler', superadminOnly: true },
   { href: '/admin/denge',        label: 'Bot Yönetimi', superadminOnly: true },
+  { href: '/admin/fiyatlar',     label: 'Paket Fiyatları', superadminOnly: true },
+  { href: '/admin/islem-kayitlari', label: 'İşlem Kayıtları', superadminOnly: true },
   { href: '/admin/quality',      label: 'Şikayetler' },
-  { href: '/admin/partnerships', label: 'İş Ortaklığı' },
-  { href: '/admin/careers',      label: 'Kariyer' },
-  { href: '/admin/settings',     label: 'Ayarlar' },
+  { href: '/admin/partnerships', label: 'İş Ortaklığı', superadminOnly: true },
+  { href: '/admin/careers',      label: 'Kariyer', superadminOnly: true },
+  { href: '/admin/settings',     label: 'Ayarlar', superadminOnly: true },
 ];
 
 const BG      = '#020c1b';
@@ -100,13 +95,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = api.getToken();
-    if (!token) { router.replace('/giris'); return; }
-    const r = decodeJwtRole(token);
-    if (r !== 'ADMIN' && r !== 'SUPERADMIN') { router.replace('/dashboard'); return; }
-    setRole(r);
-    setReady(true);
-    api.get<{ unreadCount: number }>('/admin/alerts').then(d => setUnread(d.unreadCount ?? 0)).catch(() => {});
+    if (!api.hasSession()) { router.replace('/giris'); return; }
+    // Rol ve id /auth/me'den (token JS'ten okunamaz); oturum düşerse api.get /giris'e yönlendirir
+    let cancelled = false;
+    api.get<{ id: string; role: string }>('/auth/me').then(me => {
+      if (cancelled) return;
+      const r = me?.role;
+      if (r !== 'ADMIN' && r !== 'SUPERADMIN') { router.replace('/dashboard'); return; }
+      setAdminIdentity({ id: me.id, role: r });
+      setRole(r);
+      setReady(true);
+      api.get<{ unreadCount: number }>('/admin/alerts').then(d => setUnread(d.unreadCount ?? 0)).catch(() => {});
+    }).catch(() => { if (!cancelled) router.replace('/giris'); });
+    return () => { cancelled = true; };
   }, [router]);
 
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
@@ -115,7 +116,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const blocked = ready && role !== 'SUPERADMIN' && NAV.some((n) => n.superadminOnly && (pathname === n.href || pathname.startsWith(n.href + '/')));
   useEffect(() => { if (blocked) router.replace('/admin/stats'); }, [blocked, router]);
 
-  async function handleLogout() { await api.logout(); router.push('/'); }
+  async function handleLogout() { await api.logout(); setAdminIdentity(null); router.push('/'); }
 
   if (!ready || blocked) {
     return (

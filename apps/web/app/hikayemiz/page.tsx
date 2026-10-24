@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useRef } from 'react';
 import { useInView } from 'framer-motion';
+import { usePlanPrices } from '@/components/PlanPrice';
 
 /* ─── Fade-in wrapper ────────────────────────────────────────────────────── */
 function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -60,6 +61,8 @@ function FullQuote({ text }: { text: string }) {
 
 /* ─── Sayfa ──────────────────────────────────────────────────────────────── */
 export default function HikayemizPage() {
+  const prices = usePlanPrices();
+  const tl = (v?: number) => (v === undefined ? '—' : v);
   return (
     <main className="min-h-screen bg-[#121212] text-[#f5f5f5] overflow-x-hidden pt-[52px]">
 
@@ -118,7 +121,7 @@ export default function HikayemizPage() {
       {/* Bölüm 5 */}
       <TwoCol
         title="Fiyat mı?"
-        body="Türkiye'deki benzer platformlar çok daha yüksek ücret talep ediyor ve performans olarak bizden çok daha geride. Ahenk'te aylık grup buluşması 349 TL, tek seferlik başbaşa buluşma 449 TL. İçerde paketinde her iki tercihte de kullanabiliyorsunuz, 679 TL. Bunların dışında gizli bir ücret yok. Mekan masrafı sana ait; biz sadece masayı kuruyoruz."
+        body={`Türkiye'deki benzer platformlar çok daha yüksek ücret talep ediyor ve performans olarak bizden çok daha geride. Ahenk'te aylık grup buluşması ${tl(prices?.MASADA?.webTL)} TL, tek seferlik başbaşa buluşma ${tl(prices?.KARSIMDA?.webTL)} TL. İçerde paketinde her iki tercihte de kullanabiliyorsunuz, ${tl(prices?.ICERDE?.webTL)} TL. Bunların dışında gizli bir ücret yok. Mekan masrafı sana ait; biz sadece masayı kuruyoruz.`}
       />
 
       {/* Bölüm 6 */}

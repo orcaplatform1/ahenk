@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { PlanPriceText } from '@/components/PlanPrice';
 
 const sections = [
   {
@@ -39,7 +40,7 @@ const sections = [
           {[
             {
               name: 'Masada Paketi',
-              price: '349₺/ay',
+              price: <PlanPriceText plan="MASADA" suffix="₺/ay" />,
               items: [
                 'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle her hafta şehirde grup masası buluşması organizasyonu',
                 'Her buluşmada 4-8 kişilik grup masası',
@@ -48,7 +49,7 @@ const sections = [
             },
             {
               name: 'Karşımda Paketi',
-              price: '449₺/ay',
+              price: <PlanPriceText plan="KARSIMDA" suffix="₺" />,
               items: [
                 'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle her hafta şehirde başbaşa buluşma organizasyonu',
                 'Her buluşmada 2 kişilik masa',
@@ -57,7 +58,7 @@ const sections = [
             },
             {
               name: 'İçerde Paketi',
-              price: '679₺/ay',
+              price: <PlanPriceText plan="ICERDE" suffix="₺/ay" />,
               items: [
                 'Hem grup masası hem başbaşa buluşma seçeneği, öncelikli eşleştirme',
                 'Mekan seçimi ve rezervasyonu Ahenk tarafından yapılır',

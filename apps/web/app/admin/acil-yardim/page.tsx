@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { myRole, myId } from '@/lib/adminRole';
 
 // ─── Tipler ─────────────────────────────────────────────────────────────────
 
@@ -15,17 +16,24 @@ interface ParticipantLoc {
 
 interface Participant {
   userId: string; firstName: string | null; lastName: string | null;
-  email: string; phone: string | null; age: number | null;
+  email?: string; phone: string | null; age: number | null;
   gender: string | null; occupation: string | null; city: string | null;
   isRequester: boolean;
+  isBot?: boolean; // sadece SUPERADMIN'e gelir
 }
+
+interface AdminRef { id: string; profile: { firstName: string; lastName: string } | null }
 
 interface SosReport {
   id: string; createdAt: string; threats: string[];
   lat: number | null; lng: number | null; accuracy: number | null;
   resolvedAt: string | null;
+  restricted: boolean; // başka admin üstlendi: veri gelmez
+  claimedAt: string | null;
+  claimedBy: AdminRef | null;
+  resolvedBy?: AdminRef | null;
   participantSnapshot: Participant[];
-  user: { id: string; email: string; phone: string | null; profile: { firstName: string; lastName: string } | null };
+  user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null };
   meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null };
   locationUpdates: LocUpdate[];
   allParticipantLocations?: ParticipantLoc[];
@@ -41,10 +49,16 @@ const THREAT_LABELS: Record<string, string> = {
   HARASSMENT: 'Taciz veya istismara uğradım',
 };
 const GENDER_TR: Record<string, string> = {
-  MALE: 'E', FEMALE: 'K', OTHER: 'D', PREFER_NOT_TO_SAY: '—',
+  MALE: 'E', FEMALE: 'K',
 };
 
 // ─── Yardımcı fonksiyonlar ───────────────────────────────────────────────────
+
+const REFRESH_SEC = 15;
+
+function adminName(a: AdminRef | null | undefined) {
+  return a?.profile ? `${a.profile.firstName} ${a.profile.lastName}` : 'Bir admin';
+}
 
 function fmtTR(iso: string) {
   return new Date(iso).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'medium' });
@@ -259,13 +273,44 @@ function ProximityAlert({ requester, others }: { requester: ParticipantLoc | nul
   );
 }
 
-function ReportCard({ report, index }: { report: SosReport; index: number }) {
-  const [open, setOpen]   = useState(index === 0);
+function ReportCard({ report, index, tick, onChanged }: { report: SosReport; index: number; tick: number; onChanged: () => void }) {
+  if (report.restricted) {
+    return (
+      <div style={{ borderRadius: 12, border: `1px solid ${BORDER}`, background: SURFACE, padding: '14px 18px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+        {!report.resolvedAt && <Pulse color={AMBER} />}
+        <span style={{ fontSize: 12, color: TEXT }}>
+          {report.resolvedAt ? 'Çözülmüş talep' : 'Aktif talep'} — <strong>{adminName(report.claimedBy)}</strong> ilgileniyor
+        </span>
+        <span style={{ marginLeft: 'auto', fontSize: 9, fontFamily: MONO, color: MUTED }}>{fmtTR(report.createdAt)}</span>
+      </div>
+    );
+  }
+  return <ReportCardFull report={report} index={index} tick={tick} onChanged={onChanged} />;
+}
+
+function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport; index: number; tick: number; onChanged: () => void }) {
+  const [open, setOpen]   = useState(index === 0 && !report.resolvedAt);
   const [detail, setDetail] = useState<SosReport | null>(null);
   const [loading, setLoading] = useState(false);
+  const [acting, setActing] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const isSuperadmin = myRole() === 'SUPERADMIN';
+  const me = myId();
+  const claimedByMe = !!report.claimedBy && report.claimedBy.id === me;
+  const canClaim = !report.resolvedAt && (!report.claimedBy || (isSuperadmin && !claimedByMe));
+  const canResolve = !report.resolvedAt && (isSuperadmin || claimedByMe);
+
+  async function act(path: 'claim' | 'resolve') {
+    setActing(true); setActionError('');
+    try {
+      await api.patch(`/sos/admin/reports/${report.id}/${path}`, {});
+      onChanged();
+    } catch (e) { setActionError((e as Error).message); }
+    finally { setActing(false); }
+  }
 
   const requester     = report.participantSnapshot.find(p => p.isRequester);
-  const reqName       = requester?.firstName ? `${requester.firstName} ${requester.lastName}` : report.user.email;
+  const reqName       = requester?.firstName ? `${requester.firstName} ${requester.lastName}` : (report.user.phone ?? '—');
   const latest        = detail
     ? detail.locationUpdates[detail.locationUpdates.length - 1]
     : report.locationUpdates[report.locationUpdates.length - 1];
@@ -274,13 +319,16 @@ function ReportCard({ report, index }: { report: SosReport; index: number }) {
   const elapsedMin    = Math.floor((Date.now() - new Date(report.createdAt).getTime()) / 60000);
 
   async function loadDetail() {
-    if (detail || loading) return;
     setLoading(true);
     try {
       const d = await api.get<SosReport>(`/sos/admin/reports/${report.id}`);
       setDetail(d);
-    } finally { setLoading(false); }
+    } catch { /* yetki değiştiyse liste yenilemesi kartı kısıtlı gösterir */ }
+    finally { setLoading(false); }
   }
+
+  // Açık kart her yenilemede (sayaç / Yenile) canlı konumla birlikte güncellenir
+  useEffect(() => { if (open) loadDetail(); }, [tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleOpen() {
     const next = !open;
@@ -336,7 +384,7 @@ function ReportCard({ report, index }: { report: SosReport; index: number }) {
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: TEXT }}>
             {reqName}
             <span style={{ fontWeight: 400, color: MUTED, marginLeft: 8, fontSize: 11 }}>
-              {report.user.phone ?? report.user.email}
+              {report.user.phone ?? report.user.email ?? ''}
             </span>
           </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginTop: 5 }}>
@@ -367,7 +415,27 @@ function ReportCard({ report, index }: { report: SosReport; index: number }) {
       {/* Detay paneli */}
       {open && (
         <div style={{ padding: '18px', borderTop: `1px solid ${BORDER}` }}>
-          {loading && (
+          {/* Üstlenme / çözme */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+            <span style={{ fontSize: 11, color: MUTED }}>
+              {report.claimedBy ? <>İlgilenen: <strong style={{ color: TEXT }}>{claimedByMe ? 'Sen' : adminName(report.claimedBy)}</strong></> : 'Henüz kimse ilgilenmiyor'}
+              {report.resolvedAt && <> · Çözen: <strong style={{ color: GREEN }}>{adminName(report.resolvedBy)}</strong> ({fmtTR(report.resolvedAt)})</>}
+            </span>
+            {canClaim && (
+              <button onClick={() => act('claim')} disabled={acting}
+                style={{ marginLeft: 'auto', background: BLUE_DIM, border: '1px solid rgba(59,130,246,0.4)', color: BLUE, fontSize: 11, padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontFamily: SANS, opacity: acting ? 0.5 : 1 }}>
+                İlgileniyorum
+              </button>
+            )}
+            {canResolve && (
+              <button onClick={() => act('resolve')} disabled={acting}
+                style={{ marginLeft: canClaim ? 0 : 'auto', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: GREEN, fontSize: 11, padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontFamily: SANS, opacity: acting ? 0.5 : 1 }}>
+                Çözüldü olarak işaretle
+              </button>
+            )}
+          </div>
+          {actionError && <p style={{ margin: '0 0 12px', fontSize: 11, color: RED }}>{actionError}</p>}
+          {loading && !detail && (
             <p style={{ color: MUTED, fontSize: 12, fontFamily: MONO }}>Veriler yükleniyor…</p>
           )}
 
@@ -467,7 +535,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function PersonRow({ p, email, phone, highlight }: { p: Participant | undefined; email: string; phone: string | null; highlight?: boolean }) {
+function PersonRow({ p, email, phone, highlight }: { p: Participant | undefined; email?: string; phone: string | null; highlight?: boolean }) {
   if (!p) return <p style={{ fontSize: 11, color: MUTED }}>—</p>;
   return (
     <div style={{
@@ -479,9 +547,10 @@ function PersonRow({ p, email, phone, highlight }: { p: Participant | undefined;
         {p.firstName} {p.lastName}
         {p.age ? <span style={{ fontWeight: 400, color: MUTED, marginLeft: 6, fontSize: 10 }}>{p.age} yaş</span> : null}
         {p.gender ? <span style={{ fontWeight: 400, color: MUTED, marginLeft: 4, fontSize: 10 }}>{GENDER_TR[p.gender] ?? p.gender}</span> : null}
+        {p.isBot ? <span style={{ fontWeight: 700, color: AMBER, marginLeft: 6, fontSize: 9, letterSpacing: '0.1em' }}>BOT</span> : null}
       </p>
       <p style={{ margin: 0, fontSize: 10, color: MUTED, fontFamily: MONO }}>
-        {email} {phone ? `· ${phone}` : ''}
+        {[email, phone].filter(Boolean).join(' · ') || '—'}
       </p>
       {(p.occupation || p.city) && (
         <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED }}>
@@ -510,23 +579,30 @@ export default function AcilYardimPage() {
   const [reports, setReports] = useState<SosReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastFetch, setLastFetch] = useState('');
+  const [fetchError, setFetchError] = useState('');
+  const [left, setLeft] = useState(REFRESH_SEC);
+  const [tick, setTick] = useState(0);
   const fetchReports = useCallback(async () => {
+    setLeft(REFRESH_SEC);
+    setTick(t => t + 1); // açık kartların detayı (canlı konum) da yenilenir
     try {
       const data = await api.get<SosReport[]>('/sos/admin/reports');
       setReports(data);
+      setFetchError('');
       setLastFetch(new Date().toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul' }));
-    } catch {
-      // sessiz hata — layout zaten auth kontrolü yapıyor
+    } catch (e) {
+      setFetchError(`Yenilenemedi: ${(e as Error).message}`);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  useEffect(() => { fetchReports(); }, [fetchReports]);
   useEffect(() => {
-    fetchReports();
-    const id = setInterval(fetchReports, 15000);
+    const id = setInterval(() => setLeft(s => s - 1), 1000);
     return () => clearInterval(id);
-  }, [fetchReports]);
+  }, []);
+  useEffect(() => { if (left <= 0) fetchReports(); }, [left, fetchReports]);
 
   const active   = reports.filter(r => !r.resolvedAt);
   const resolved = reports.filter(r => !!r.resolvedAt);
@@ -552,7 +628,7 @@ export default function AcilYardimPage() {
         {/* Topbar */}
         <header style={s.topbar}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button onClick={() => router.push('/')}
+            <button onClick={() => router.push('/admin')}
               style={{ background: 'none', border: 'none', color: MUTED, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>
               ←
             </button>
@@ -575,7 +651,7 @@ export default function AcilYardimPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO }}>
-              Son: {lastFetch || '—'} · 15s yenileme
+              Son: {lastFetch || '—'} · Yenileme: {Math.max(0, left)} sn
             </span>
             <Clock />
             <button
@@ -592,13 +668,14 @@ export default function AcilYardimPage() {
         </header>
 
         <main style={s.main}>
+          {fetchError && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{fetchError}</p>}
           {/* İstatistik şeridi */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
             {[
               { label: 'AKTİF TALEP',   value: active.length,   color: active.length > 0 ? RED : GREEN },
               { label: 'TOPLAM TALEP',  value: reports.length,  color: BLUE },
               { label: 'ÇÖZÜMLENDI',    value: resolved.length, color: GREEN },
-              { label: 'ÜYE TAKİBİ',   value: active.reduce((a, r) => a + r.participantSnapshot.length, 0), color: CYAN },
+              { label: 'ÜYE TAKİBİ',   value: active.reduce((a, r) => a + (r.participantSnapshot?.length ?? 0), 0), color: CYAN },
             ].map(stat => (
               <div key={stat.label} style={{
                 background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px',
@@ -636,7 +713,7 @@ export default function AcilYardimPage() {
                       AKTİF TALEPLER — {active.length}
                     </span>
                   </div>
-                  {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} />)}
+                  {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} />)}
                 </div>
               )}
 
@@ -647,7 +724,7 @@ export default function AcilYardimPage() {
                       ÇÖZÜMLENEN — {resolved.length}
                     </span>
                   </div>
-                  {resolved.map((r, i) => <ReportCard key={r.id} report={r} index={i} />)}
+                  {resolved.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} />)}
                 </div>
               )}
             </div>

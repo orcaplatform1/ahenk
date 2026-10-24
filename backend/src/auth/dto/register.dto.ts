@@ -36,11 +36,15 @@ export class RegisterDto {
   @IsBoolean({ message: "Kullanım şartlarını kabul etmelisiniz" })
   acceptTerms: boolean;
 
-  @ApiPropertyOptional({ example: "+905551234567" })
-  @IsOptional()
+  // Zorunlu ve WhatsApp OTP ile doğrulanmış olmalı (POST /auth/register/verify-otp → phoneToken)
+  @ApiProperty({ example: "+905551234567" })
   @IsString()
   @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
-  phoneNumber?: string;
+  phoneNumber: string;
+
+  @ApiProperty({ description: "Telefon doğrulama anahtarı (register/verify-otp yanıtı)" })
+  @IsString({ message: "Telefon numaranızı doğrulayın" })
+  phoneToken: string;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -6,11 +6,12 @@ import Image from 'next/image';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { OCCUPATION_SECTORS } from '@/lib/occupations';
 import { api } from '@/lib/api';
+import OtpInput from '@/components/ui/OtpInput';
 
 interface City { id: string; name: string; }
 
+// Token'lar HttpOnly çerezle gelir; yanıt gövdesinde sadece kullanıcı
 interface RegisterResponse {
-  accessToken: string;
   user: { id: string; firstName: string; lastName: string };
 }
 
@@ -94,6 +95,54 @@ function KayitPageInner() {
   const [pwError, setPwError] = useState('');
   const [pwConfirmError, setPwConfirmError] = useState('');
 
+  // Telefon doğrulama (WhatsApp OTP) — hesap oluşmadan önce
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [otpShake, setOtpShake] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [phoneToken, setPhoneToken] = useState('');
+  const [resendIn, setResendIn] = useState(0);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn(n => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
+  function changePhone(v: string) {
+    set('phoneNumber', v);
+    // Numara değişirse doğrulama baştan yapılır
+    setOtpSent(false); setOtpCode(''); setOtpError(''); setPhoneToken('');
+  }
+
+  async function sendPhoneOtp() {
+    const digits = form.phoneNumber.replace(/\D/g, '');
+    if (digits.length !== 10 || !digits.startsWith('5')) { setOtpError('WhatsApp numaranızı girin (5 ile başlayan 10 hane).'); return; }
+    setOtpSending(true); setOtpError('');
+    try {
+      const r = await api.post<{ resendSeconds: number }>('/auth/register/send-otp', { phone: `+90${digits}` });
+      setOtpSent(true); setOtpCode(''); setResendIn(r.resendSeconds ?? 60);
+    } catch (e) {
+      const msg = (e as Error).message;
+      setOtpError(msg === '__rate_limit__' ? 'Çok fazla deneme yapıldı. Lütfen bir dakika sonra tekrar dene.' : msg);
+    } finally { setOtpSending(false); }
+  }
+
+  async function verifyPhoneOtp(code: string) {
+    setOtpVerifying(true); setOtpError('');
+    try {
+      const r = await api.post<{ phoneToken: string }>('/auth/register/verify-otp', { phone: `+90${form.phoneNumber}`, code });
+      setPhoneToken(r.phoneToken);
+    } catch (e) {
+      const msg = (e as Error).message;
+      setOtpError(msg === '__rate_limit__' ? 'Çok fazla deneme yapıldı. Lütfen bir dakika sonra tekrar dene.' : msg);
+      setOtpCode('');
+      setOtpShake(true); setTimeout(() => setOtpShake(false), 500);
+    } finally { setOtpVerifying(false); }
+  }
+
   const [testQuestions, setTestQuestions] = useState<Question[]>([]);
   const [testAnswers, setTestAnswers] = useState<Record<string, number>>({});
   const [testCurrent, setTestCurrent] = useState(0);
@@ -132,6 +181,7 @@ function KayitPageInner() {
       setError('WhatsApp numaranızı girin (5 ile başlayan 10 hane).');
       return;
     }
+    if (!phoneToken) { setError('Telefon numaranı WhatsApp koduyla doğrula.'); return; }
     if (!form.birthDate) { setError('Doğum tarihinizi seçin.'); return; }
     if (!form.gender) { setError('Cinsiyet seçin.'); return; }
     if (!form.occupationSector) { setError('Meslek alanı seçin.'); return; }
@@ -143,12 +193,13 @@ function KayitPageInner() {
     setLoading(true); setError('');
     try {
       const phoneDigits = form.phoneNumber.replace(/\D/g, '');
-      const data = await api.post<RegisterResponse>('/auth/register', {
+      await api.post<RegisterResponse>('/auth/register', {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
         password: form.password,
-        phoneNumber: phoneDigits.length === 10 ? `+90${phoneDigits}` : undefined,
+        phoneNumber: `+90${phoneDigits}`,
+        phoneToken,
         acceptTerms: true,
         gender: form.gender || undefined,
         birthDate: form.birthDate || undefined,
@@ -156,7 +207,7 @@ function KayitPageInner() {
         primaryCityId: form.primaryCityId || undefined,
         referralCode,
       });
-      api.setToken(data.accessToken);
+      api.onLogin();
 
       const res = await api.get<QuestionsResponse>('/test/questions');
       const flat = res.sections.flatMap(s => s.questions);
@@ -385,11 +436,41 @@ function KayitPageInner() {
                 <input
                   type="tel"
                   value={form.phoneNumber}
-                  onChange={(e) => set('phoneNumber', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  onChange={(e) => changePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   placeholder="5XX XXX XX XX"
-                  className="input-glass flex-1 px-4 py-3 text-sm"
+                  disabled={!!phoneToken}
+                  className="input-glass flex-1 min-w-0 px-4 py-3 text-sm disabled:opacity-60"
                 />
+                {!phoneToken && (
+                  <button
+                    type="button"
+                    onClick={sendPhoneOtp}
+                    disabled={otpSending || resendIn > 0 || form.phoneNumber.length !== 10}
+                    className="flex-shrink-0 px-3 text-xs font-medium rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ border: '1px solid rgba(192,57,43,0.5)', color: '#e74c3c', background: 'rgba(192,57,43,0.06)' }}
+                  >
+                    {otpSending ? 'Gönderiliyor…' : resendIn > 0 ? `Tekrar (${resendIn} sn)` : otpSent ? 'Tekrar gönder' : 'Kod gönder'}
+                  </button>
+                )}
               </div>
+              {phoneToken ? (
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-green-400">✓ Telefon numaran doğrulandı</p>
+                  <button type="button" onClick={() => changePhone(form.phoneNumber)} className="text-xs text-[#555] hover:text-[#888]">Numarayı değiştir</button>
+                </div>
+              ) : otpSent && (
+                <div className="mt-3 flex flex-col gap-2">
+                  <p className="text-xs text-[#666] text-center">+90{form.phoneNumber} numarasına WhatsApp ile gönderilen 6 haneli kodu gir.</p>
+                  <OtpInput
+                    value={otpCode}
+                    onChange={(c) => { setOtpCode(c); setOtpError(''); }}
+                    onComplete={verifyPhoneOtp}
+                    error={otpShake}
+                  />
+                  {otpVerifying && <p className="text-xs text-[#666] text-center">Doğrulanıyor…</p>}
+                </div>
+              )}
+              {otpError && <p className="text-xs text-[#ff6b6b] mt-2">{otpError}</p>}
             </div>
             <PasswordField label="Şifre" value={form.password} onChange={(v) => { set('password', v); setPwError(''); }} error={pwError} />
             <PasswordField label="Şifre Tekrar" value={form.confirmPassword} onChange={(v) => { set('confirmPassword', v); setPwConfirmError(''); }} shakeKey={confirmShake} error={pwConfirmError} />

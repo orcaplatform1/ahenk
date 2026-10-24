@@ -4,6 +4,8 @@ import { RedisService } from "../../redis/redis.service";
 import { WhatsappService } from "../whatsapp/whatsapp.service";
 
 const OTP_TTL_SECONDS = 5 * 60; // 5 dakika
+// Aynı numaraya yeni kod en erken 60 sn sonra (web'deki "Kodu tekrar gönder" sayacıyla aynı)
+export const OTP_RESEND_SECONDS = 60;
 const MAX_ATTEMPTS = 3;
 
 interface OtpEntry {
@@ -33,10 +35,13 @@ export class OtpService {
   }
 
   async send(phone: string): Promise<void> {
+    const wait = await this.redis.ttl(`otp:resend:${phone}`);
+    if (wait > 0) throw new BadRequestException(`Yeni kod için ${wait} saniye bekleyin.`);
     const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
     await this.saveEntry(phone, { code, attempts: 0 });
     try {
       await this.whatsapp.sendOtp(phone, code);
+      await this.redis.set(`otp:resend:${phone}`, "1", OTP_RESEND_SECONDS);
     } catch (err) {
       // Gönderilemeyen kod geçerli kalmasın
       await this.redis.del(this.key(phone));
