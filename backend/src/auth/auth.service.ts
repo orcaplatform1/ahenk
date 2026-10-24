@@ -16,7 +16,8 @@ import { randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { isMaintenanceMode } from "../admin/app-settings";
 import { UsersService } from "../users/users.service";
-import { OtpService } from "./otp/otp.service";
+import { OtpService, OTP_RESEND_SECONDS } from "./otp/otp.service";
+import { RedisService } from "../redis/redis.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus, SanctionType, Gender } from "@prisma/client";
@@ -29,7 +30,25 @@ export class AuthService {
     private jwtService: JwtService,
     private config: ConfigService,
     private otpService: OtpService,
+    private redis: RedisService,
   ) {}
+
+  // ─── Kayıt: telefon doğrulama (hesap oluşmadan önce WhatsApp OTP) ────────
+
+  async registerSendOtp(phone: string) {
+    const used = await this.prisma.user.findUnique({ where: { phone }, select: { id: true } });
+    if (used) throw new ConflictException("Bu telefon numarası zaten kullanılıyor");
+    await this.otpService.send(phone);
+    return { message: "Doğrulama kodu gönderildi", resendSeconds: OTP_RESEND_SECONDS };
+  }
+
+  // Doğru kod → 30 dk geçerli telefon anahtarı; kayıt bu anahtar olmadan yapılamaz
+  async registerVerifyOtp(phone: string, code: string) {
+    await this.otpService.verify(phone, code);
+    const phoneToken = randomUUID();
+    await this.redis.set(`regphone:${phone}`, phoneToken, 30 * 60);
+    return { phoneToken };
+  }
 
   // ─── Aktif yaptırım kontrolü ─────────────────────────────────────────────
 
@@ -92,9 +111,12 @@ export class AuthService {
       if (!city?.isActive) throw new BadRequestException("Seçilen şehir şu an aktif değil");
     }
 
-    if (dto.phoneNumber) {
-      const phoneExists = await this.prisma.user.findUnique({ where: { phone: dto.phoneNumber } });
-      if (phoneExists) throw new ConflictException("Bu telefon numarası zaten kullanılıyor");
+    const phoneExists = await this.prisma.user.findUnique({ where: { phone: dto.phoneNumber } });
+    if (phoneExists) throw new ConflictException("Bu telefon numarası zaten kullanılıyor");
+    // Telefon WhatsApp OTP ile doğrulanmış olmalı
+    const phoneToken = await this.redis.get(`regphone:${dto.phoneNumber}`);
+    if (!phoneToken || phoneToken !== dto.phoneToken) {
+      throw new BadRequestException("Telefon doğrulaması geçersiz ya da süresi doldu. Lütfen numaranı tekrar doğrula.");
     }
 
     const user = await this.prisma.$transaction(async (tx) => {
@@ -102,7 +124,8 @@ export class AuthService {
         data: {
           email: dto.email,
           passwordHash,
-          phone: dto.phoneNumber ?? null,
+          phone: dto.phoneNumber,
+          phoneVerified: true,
           role: UserRole.USER,
           occupationSector: dto.occupationSector,
           profile: {
@@ -128,12 +151,13 @@ export class AuthService {
 
       return created;
     });
+    await this.redis.del(`regphone:${dto.phoneNumber}`);
 
     // Referral kodu ile geldiyse ilişkilendir
     if (dto.referralCode) {
       // Davet sadece davet edilen numarayla kayıt olunca geçerli
       await this.prisma.referral.updateMany({
-        where: { inviteCode: dto.referralCode, status: ReferralStatus.PENDING, invitedPhone: dto.phoneNumber ?? "" },
+        where: { inviteCode: dto.referralCode, status: ReferralStatus.PENDING, invitedPhone: dto.phoneNumber },
         data: { referredId: user.id, status: ReferralStatus.REGISTERED },
       });
       // Referral bulundu ise davet edilen kullanıcıya indirim hakkı ver
@@ -198,6 +222,17 @@ export class AuthService {
       where: { userId, token: refreshTokenJti, revoked: false },
       data: { revoked: true },
     });
+  }
+
+  // Çerezdeki refresh token'ı iptal eder; imza geçersizse sessizce geçer (çerezler yine silinir)
+  async logoutByRefreshToken(rawToken: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync<{ sub: string; jti: string }>(rawToken, {
+        secret: this.config.getOrThrow("JWT_REFRESH_SECRET"),
+        ignoreExpiration: true,
+      });
+      if (payload?.sub && payload?.jti) await this.logout(payload.sub, payload.jti);
+    } catch { /* geçersiz token: iptal edilecek kayıt yok */ }
   }
 
   // ─── Token Yenile ─────────────────────────────────────────────────────────

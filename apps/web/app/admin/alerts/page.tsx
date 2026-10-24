@@ -16,12 +16,19 @@ const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 interface AlertItem {
   id: string;
-  type: string;
+  alertType: string;
   userId: string;
-  data: Record<string, unknown>;
+  user?: { profile?: { firstName?: string; lastName?: string } | null } | null;
   isRead: boolean;
   createdAt: string;
 }
+
+const ALERT_LABELS: Record<string, string> = {
+  MISSED_GROUP_CYCLES: 'Grup masası üst üste kurulamadı',
+  MISSED_ONEONE_CYCLES: 'Başbaşa masası üst üste kurulamadı',
+  SOS_ALERT: 'Acil yardım talebi',
+  BOT_NOT_FOUND: 'Uygun bot bulunamadı',
+};
 
 export default function AdminAlerts() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
@@ -103,7 +110,10 @@ export default function AdminAlerts() {
                   }}
                 >
                   <div>
-                    <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: TEXT }}>{a.type}</p>
+                    <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: TEXT }}>
+                      {ALERT_LABELS[a.alertType] ?? a.alertType}
+                      {a.user?.profile && ` — ${a.user.profile.firstName ?? ''} ${a.user.profile.lastName ?? ''}`}
+                    </p>
                     <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
                       {new Date(a.createdAt).toLocaleString('tr-TR')}
                     </p>

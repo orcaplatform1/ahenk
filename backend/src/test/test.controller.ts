@@ -1,3 +1,4 @@
+import { AdminAction } from "../admin/admin-action-log";
 import {
   Controller,
   Get,
@@ -45,6 +46,7 @@ export class TestController {
     return this.testService.getMyResult(userId);
   }
 
+  @AdminAction("TEST_LOCK_RESET", async (c) => ({ text: `${await c.userName(c.params.userId)} kullanıcısının kişilik testi kilidini açtı`, targetUserId: c.params.userId }))
   @Patch("admin/:userId/reset-lock")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN", "SUPERADMIN")

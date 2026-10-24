@@ -1,11 +1,15 @@
-import { api } from '@/lib/api';
+// Oturumdaki admin kimliği (id + rol). Token JS'ten okunamadığı için /auth/me'den gelir;
+// admin layout'u sayfaları göstermeden önce loadAdminIdentity() ile doldurur.
+let _identity: { id: string; role: string } | null = null;
 
-// Oturumdaki kullanıcının rolü (JWT içinden)
+export function setAdminIdentity(identity: { id: string; role: string } | null) {
+  _identity = identity;
+}
+
 export function myRole(): string | null {
-  const token = api.getToken();
-  if (!token) return null;
-  try {
-    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return (JSON.parse(atob(b64)) as { role?: string }).role ?? null;
-  } catch { return null; }
+  return _identity?.role ?? null;
+}
+
+export function myId(): string | null {
+  return _identity?.id ?? null;
 }

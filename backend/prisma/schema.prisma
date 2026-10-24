@@ -60,6 +60,12 @@ model User {
   sanctions                 UserSanction[]
   sanctionsGiven            UserSanction[]        @relation("SanctionAdmin")
   sosReports                SosReport[]
+  resolvedSosReports        SosReport[]           @relation("SosResolvedBy")
+  claimedSosReports         SosReport[]           @relation("SosClaimedBy")
+  identity                  UserIdentity?
+  recurringSubscriptions    RecurringSubscription[]
+  planPriceChanges          PlanPrice[]
+  adminActionLogs           AdminActionLog[]
   participantLocations      ParticipantLocation[]
 }
 
@@ -114,8 +120,6 @@ enum VenuePreference {
 enum Gender {
   MALE
   FEMALE
-  OTHER
-  PREFER_NOT_TO_SAY
 }
 
 // ─────────────────────────────────────────────
@@ -410,6 +414,82 @@ model MatchingWaitlist {
 // KİMLİK DOĞRULAMA (KYC)
 // ─────────────────────────────────────────────
 
+// TC kimlik no: KYC onayında admin kimlik görselinden girer. AES-256-GCM şifreli; sadece ödemede iyzico'ya
+// gönderilmek için çözülür, hiçbir ekranda / API yanıtında gösterilmez.
+// ADMIN rolündeki yöneticilerin veri değiştiren işlemleri (SUPERADMIN işlemleri kaydedilmez).
+// Sadece SUPERADMIN görür; kayıt silinmez ve değiştirilmez.
+model AdminActionLog {
+  id           String   @id @default(cuid())
+  adminId      String
+  admin        User     @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  action       String // işlem kodu (ör. USER_SANCTION)
+  description  String   @db.Text // Türkçe açıklama
+  targetUserId String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([adminId, createdAt])
+}
+
+// Paket fiyatı: SUPERADMIN ham (KDV hariç) fiyatı girer; web = ham × 1,20, mobil = ham × 1,20 ÷ 0,85,
+// davet indirimli = son fiyat × 0,90; hepsi tam TL'ye yuvarlanır. En son kayıt geçerli fiyattır, geçmiş silinmez.
+model PlanPrice {
+  id                    String           @id @default(cuid())
+  plan                  SubscriptionPlan
+  netKurus              Int
+  webKurus              Int
+  mobileKurus           Int
+  webDiscountKurus      Int
+  mobileDiscountKurus   Int
+  iyzicoPlanRef         String? // abonelik paketleri: iyzico normal fiyat planı
+  iyzicoDiscountPlanRef String? // abonelik paketleri: iyzico %10 indirimli fiyat planı
+  createdById           String?
+  createdBy             User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt             DateTime         @default(now())
+
+  @@index([plan, createdAt])
+}
+
+// Otomatik yenilenen abonelik (iyzico Abonelik API). Her başarılı aylık çekim yeni bir Subscription dönemi açar.
+model RecurringSubscription {
+  id                       String          @id @default(cuid())
+  userId                   String
+  user                     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                     SubscriptionPlan
+  status                   RecurringStatus @default(PENDING)
+  discounted               Boolean         @default(false) // sıradaki çekim indirimli planda mı
+  checkoutToken            String?         @unique
+  iyzicoSubscriptionRef    String?         @unique
+  iyzicoCustomerRef        String?
+  iyzicoPricingPlanRef     String?
+  initialDiscountType      PaymentDiscountType?
+  platform                 PaymentPlatform
+  cancelledAt              DateTime?
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+  periods                  Subscription[]
+  payments                 Payment[]
+
+  @@index([userId, status])
+  @@index([iyzicoCustomerRef])
+}
+
+enum RecurringStatus {
+  PENDING   // ödeme formu açıldı, henüz tamamlanmadı
+  ACTIVE    // her ay yenileniyor
+  CANCELLED // kullanıcı iptal etti: ödenmiş dönem sonuna kadar sürer, yenilenmez
+  UNPAID    // yenileme çekimi başarısız: yeni hak verilmez
+}
+
+model UserIdentity {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  identityNumberEnc String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
 model KycSubmission {
   id     String @id @default(cuid())
   userId String @unique
@@ -458,6 +538,9 @@ model Subscription {
   cancelNote           String?            @db.Text
   missedGroupCycles    Int                @default(0)
   missedOneonOneCycles Int                @default(0)
+  // Otomatik yenilenen aboneliğin bir dönemi (Masada / İçerde); tek seferlik paketlerde boş
+  recurringId          String?
+  recurring            RecurringSubscription? @relation(fields: [recurringId], references: [id])
   payment              Payment?
   refundRequests       RefundRequest[]
   createdAt            DateTime           @default(now())
@@ -481,6 +564,10 @@ model Payment {
   iyzicoConversationId String?
   failureReason        String?              @db.Text
   discountType         PaymentDiscountType? // init'te uygulanan indirim; ödeme başarılı olunca harcanır
+  recurringId          String?
+  recurring            RecurringSubscription? @relation(fields: [recurringId], references: [id])
+  iyzicoOrderRef       String?              @unique // abonelik çekimi (webhook orderReferenceCode): aynı çekim iki kez işlenmez
+  listKurus            Int? // indirimsiz liste fiyatı (o anki fiyattan); indirim tutarı istatistiği için
   paidAt               DateTime?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
@@ -710,6 +797,7 @@ enum AdminAlertType {
   MISSED_GROUP_CYCLES
   MISSED_ONEONE_CYCLES
   SOS_ALERT
+  BOT_NOT_FOUND
 }
 
 // ─────────────────────────────────────────────
@@ -848,6 +936,11 @@ model SosReport {
   accuracy            Float?
   participantSnapshot Json
   resolvedAt          DateTime?
+  resolvedById        String?
+  resolvedBy          User?               @relation("SosResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+  claimedById         String?
+  claimedBy           User?               @relation("SosClaimedBy", fields: [claimedById], references: [id], onDelete: SetNull)
+  claimedAt           DateTime?
   createdAt           DateTime            @default(now())
   locationUpdates     SosLocationUpdate[]
 

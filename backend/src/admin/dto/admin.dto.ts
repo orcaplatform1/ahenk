@@ -15,7 +15,9 @@ import {
   IsIn,
   IsEmail,
   Matches,
+  ValidateNested,
 } from "class-validator";
+import { Type } from "class-transformer";
 import { SANCTION_REASONS } from "../sanction-reasons";
 import { UserStatus, UserRole, SubscriptionPlan, VenueCategory, VenueType, SanctionType, PartnershipStatus, CareerStatus } from "@prisma/client";
 
@@ -285,4 +287,22 @@ export class UpdateCareerDto {
   @IsString()
   @MaxLength(2000)
   adminNote?: string;
+}
+
+// SUPERADMIN paket fiyatı: ham (KDV hariç) fiyat, kuruş
+export class PlanNetPriceDto {
+  @IsEnum(SubscriptionPlan)
+  plan: SubscriptionPlan;
+
+  @IsInt()
+  @Min(100, { message: "Ham fiyat en az 1 ₺ olmalı" })
+  @Max(10_000_000)
+  netKurus: number;
+}
+
+export class UpdatePricesDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PlanNetPriceDto)
+  prices: PlanNetPriceDto[];
 }

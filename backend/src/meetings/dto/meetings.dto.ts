@@ -54,3 +54,11 @@ export class CancelRegistrationDto {
   @MaxLength(500)
   note?: string;
 }
+
+// Masa kartından gelmeyen işaretleme (geri alınamaz)
+export class MarkNoShowDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  userIds: string[];
+}

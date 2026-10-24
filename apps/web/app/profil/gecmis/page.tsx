@@ -11,16 +11,13 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
 
 export default function GecmisPage() {
   const router = useRouter();
-  const [token, setToken] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const t = api.getToken();
-    if (!t) {
+    if (!api.hasSession()) {
       router.replace('/giris');
       return;
     }
-    setToken(t);
     setMounted(true);
   }, [router]);
 
@@ -59,7 +56,6 @@ export default function GecmisPage() {
       <main className="relative z-10 max-w-5xl mx-auto px-4 py-10">
         <AhenkHistory
           apiBase={`${API_BASE}/api/v1`}
-          token={token ?? undefined}
         />
       </main>
     </div>

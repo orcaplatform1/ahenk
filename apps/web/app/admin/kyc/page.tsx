@@ -16,14 +16,9 @@ const ORANGE = '#fb923c';
 const SANS   = 'Inter, system-ui, sans-serif';
 const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
-function getToken() {
-  return document.cookie.match(/(?:^|;\s*)ahenk_token=([^;]+)/)?.[1] ?? null;
-}
-
 async function fetchBlob(path: string): Promise<string | null> {
   try {
-    const token = getToken();
-    const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${decodeURIComponent(token)}` } : {} });
+    const res = await fetch(path, { credentials: 'include' });
     if (!res.ok) return null;
     return URL.createObjectURL(await res.blob());
   } catch { return null; }
@@ -66,6 +61,7 @@ interface KycApplication {
   idBackUrl: string | null;
   livenessUrl: string | null;
   user: { email: string; phone: string | null; profile: { firstName: string; lastName: string } | null };
+  hasIdentityNumber: boolean; // TC numarasının kendisi asla gelmez
 }
 
 const TABS: { key: KycStatus; label: string }[] = [
@@ -82,6 +78,23 @@ const STATUS_STYLE: Record<KycStatus, { bg: string; border: string; color: strin
   SUSPICIOUS: { bg: 'rgba(251,146,60,0.12)',  border: 'rgba(251,146,60,0.3)',   color: ORANGE, label: 'Şüpheli'    },
 };
 
+// TC kimlik no algoritması (backend isValidTckn ile aynı)
+function isValidTckn(v: string): boolean {
+  if (!/^[1-9]\d{10}$/.test(v)) return false;
+  const d = v.split('').map(Number);
+  const odd = d[0] + d[2] + d[4] + d[6] + d[8];
+  const even = d[1] + d[3] + d[5] + d[7];
+  if ((((odd * 7 - even) % 10) + 10) % 10 !== d[9]) return false;
+  return d.slice(0, 10).reduce((a, b) => a + b, 0) % 10 === d[10];
+}
+
+const tcknInputStyle: React.CSSProperties = {
+  display: 'block', width: '100%', marginBottom: 10,
+  background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
+  padding: '7px 12px', fontSize: 12, color: TEXT, letterSpacing: '0.08em',
+  outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
+};
+
 function fmtDate(val: string) {
   return new Date(val).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
@@ -94,6 +107,20 @@ export default function AdminKyc() {
   const [processing, setProcessing] = useState<Record<string, 'approve' | 'reject'>>({});
   const [rejectNote, setRejectNote] = useState<Record<string, string>>({});
   const [rejectOpen, setRejectOpen] = useState<string | null>(null);
+  // Onayda zorunlu TC kimlik no (kimlik görselinden girilir; şifreli saklanır, sadece ödemede kullanılır)
+  const [tckn, setTckn] = useState<Record<string, string>>({});
+  const [savingTckn, setSavingTckn] = useState<string | null>(null);
+
+  async function saveTckn(id: string) {
+    setSavingTckn(id); setError('');
+    try {
+      await api.patch(`/kyc/admin/${id}/identity-number`, { identityNumber: tckn[id] });
+      setItems(prev => prev.map(x => x.id === id ? { ...x, hasIdentityNumber: true } : x));
+      setTckn(prev => { const n = { ...prev }; delete n[id]; return n; });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally { setSavingTckn(null); }
+  }
 
   function loadTab(status: KycStatus) {
     setActiveTab(status);
@@ -111,7 +138,7 @@ export default function AdminKyc() {
   async function approve(id: string) {
     setProcessing(p => ({ ...p, [id]: 'approve' }));
     try {
-      await api.patch(`/kyc/admin/${id}/review`, { status: 'APPROVED' });
+      await api.patch(`/kyc/admin/${id}/review`, { status: 'APPROVED', identityNumber: tckn[id] });
       setItems(prev => prev.filter(x => x.id !== id));
     } catch (e) {
       setError((e as Error).message);
@@ -238,9 +265,51 @@ export default function AdminKyc() {
                 <MediaPreview url={item.livenessUrl} label="Video" isVideo />
               </div>
 
+              {/* Eski onaylı başvuru: TC girilmemişse ödeme açılmaz */}
+              {activeTab === 'APPROVED' && !item.hasIdentityNumber && (
+                <div>
+                  <p style={{ margin: '0 0 8px', fontSize: 11, color: AMBER }}>
+                    TC kimlik numarası girilmemiş — bu kullanıcı ödeme yapamaz. Kimlik görselinden girin.
+                  </p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      value={tckn[item.id] ?? ''}
+                      onChange={e => setTckn(prev => ({ ...prev, [item.id]: e.target.value.replace(/\D/g, '').slice(0, 11) }))}
+                      placeholder="TC Kimlik No"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      style={{ ...tcknInputStyle, marginBottom: 0, flex: 1 }}
+                    />
+                    <button
+                      onClick={() => saveTckn(item.id)}
+                      disabled={savingTckn === item.id || !isValidTckn(tckn[item.id] ?? '')}
+                      style={{
+                        padding: '8px 16px', borderRadius: 8, fontFamily: SANS, fontSize: 11, fontWeight: 600, color: GREEN,
+                        background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
+                        cursor: isValidTckn(tckn[item.id] ?? '') ? 'pointer' : 'not-allowed',
+                        opacity: isValidTckn(tckn[item.id] ?? '') ? 1 : 0.5,
+                      }}
+                    >
+                      {savingTckn === item.id ? '…' : 'Kaydet'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* PENDING işlem butonları */}
               {activeTab === 'PENDING' && (
                 <>
+                  <input
+                    value={tckn[item.id] ?? ''}
+                    onChange={e => setTckn(prev => ({ ...prev, [item.id]: e.target.value.replace(/\D/g, '').slice(0, 11) }))}
+                    placeholder="TC Kimlik No (onay için zorunlu — kimlik görselinden girin)"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    style={tcknInputStyle}
+                  />
+                  {(tckn[item.id] ?? '').length === 11 && !isValidTckn(tckn[item.id]) && (
+                    <p style={{ margin: '-4px 0 10px', fontSize: 11, color: RED }}>Geçersiz TC kimlik numarası</p>
+                  )}
                   {rejectOpen === item.id && (
                     <textarea
                       value={rejectNote[item.id] ?? ''}
@@ -260,12 +329,14 @@ export default function AdminKyc() {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       onClick={() => approve(item.id)}
-                      disabled={!!processing[item.id]}
+                      disabled={!!processing[item.id] || !isValidTckn(tckn[item.id] ?? '')}
+                      title={isValidTckn(tckn[item.id] ?? '') ? undefined : 'Önce TC kimlik numarasını girin'}
                       style={{
-                        flex: 1, padding: '8px', borderRadius: 8, cursor: processing[item.id] ? 'not-allowed' : 'pointer',
+                        flex: 1, padding: '8px', borderRadius: 8,
+                        cursor: processing[item.id] || !isValidTckn(tckn[item.id] ?? '') ? 'not-allowed' : 'pointer',
                         background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
                         fontSize: 11, fontWeight: 600, color: GREEN, fontFamily: SANS,
-                        opacity: processing[item.id] ? 0.5 : 1,
+                        opacity: processing[item.id] || !isValidTckn(tckn[item.id] ?? '') ? 0.5 : 1,
                       }}
                     >
                       {processing[item.id] === 'approve' ? '…' : 'Onayla'}

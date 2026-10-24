@@ -14,12 +14,13 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { HideEmailForAdminInterceptor } from "../admin/hide-email.interceptor";
+import { AdminAction, reasonTr } from "../admin/admin-action-log";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from "@nestjs/swagger";
 import { KycStatus } from "@prisma/client";
 import { KycService } from "./kyc.service";
-import { ReviewKycDto } from "./dto/review-kyc.dto";
+import { ReviewKycDto, SetIdentityNumberDto } from "./dto/review-kyc.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -110,8 +111,27 @@ export class KycController {
     return this.kycService.adminGetOne(id);
   }
 
+  // ─── Admin: TC ekle (TC girilmeden onaylanmış eski başvurular) ────────────
+
+  @AdminAction("KYC_IDENTITY_NUMBER", async (c) => {
+    const kyc = await c.db.kycSubmission.findUnique({ where: { id: c.params.id }, select: { userId: true } });
+    return { text: `${await c.userName(kyc?.userId)} kullanıcısının TC kimlik numarasını girdi`, targetUserId: kyc?.userId };
+  })
+  @Patch("admin/:id/identity-number")
+  @UseGuards(RolesGuard)
+  @Roles("ADMIN", "SUPERADMIN")
+  @ApiOperation({ summary: "[Admin] Onaylı başvuruya TC kimlik no ekle" })
+  adminSetIdentityNumber(@Param("id") id: string, @Body() dto: SetIdentityNumberDto) {
+    return this.kycService.setIdentityNumber(id, dto.identityNumber);
+  }
+
   // ─── Admin: İncele ────────────────────────────────────────────────────────
 
+  @AdminAction("KYC_REVIEW", async (c) => {
+    const kyc = await c.db.kycSubmission.findUnique({ where: { id: c.params.id }, select: { userId: true } });
+    const verb = { APPROVED: "onayladı", REJECTED: "reddetti", SUSPICIOUS: "şüpheli olarak işaretledi" }[String(c.body.status)] ?? "inceledi";
+    return { text: `${await c.userName(kyc?.userId)} kullanıcısının KYC başvurusunu ${verb}${reasonTr(c.body.rejectReason)}`, targetUserId: kyc?.userId };
+  })
   @Patch("admin/:id/review")
   @UseGuards(RolesGuard)
   @Roles("ADMIN", "SUPERADMIN")

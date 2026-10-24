@@ -142,20 +142,28 @@ export class NotificationService {
     });
   }
 
-  // ─── Abonelik hatırlatması ────────────────────────────────────────────────
+  // ─── Masa kurulamadı (kritik: WhatsApp) ─────────────────────────────────────
 
-  async notifySubscriptionExpiring(userId: string, expiresAt: Date, planName: string): Promise<void> {
-    const dateStr = expiresAt.toLocaleDateString("tr-TR", {
-      day: "numeric",
-      month: "long",
-      timeZone: "Europe/Istanbul",
-    });
-
+  async notifyMeetingNotFormed(userId: string): Promise<void> {
     await this.send({
       userId,
-      title: "Aboneliğiniz sona eriyor",
-      body: `${planName} aboneliğiniz ${dateStr} tarihinde sona eriyor. Yenilemek için tıklayın.`,
-      data: { event: "SUBSCRIPTION_EXPIRING", planName },
+      title: "Masanız kurulamadı",
+      body: "Çok üzgünüz, yetersiz sayıda eşleşme nedeniyle masanız kurulamadı.",
+      data: { event: "MEETING_NOT_FORMED" },
+      whatsappTemplate: "ahenk_meeting_not_formed",
+      whatsappParams: [],
+    });
+  }
+
+  // ─── Fiyat değişikliği (abonelere tek sefer, uygulama içi) ──────────────────
+
+  async notifyRenewalPrice(userId: string, renewsAt: Date, priceTL: number): Promise<void> {
+    const day = renewsAt.toLocaleDateString("tr-TR", { day: "numeric", month: "long", timeZone: "Europe/Istanbul" });
+    await this.send({
+      userId,
+      title: "Abonelik yenileme ücreti",
+      body: `Aboneliğiniz ${day} tarihinde yenilenecek ve yenileme ücreti sadece ${priceTL}₺`,
+      data: { event: "RENEWAL_PRICE" },
     });
   }
 

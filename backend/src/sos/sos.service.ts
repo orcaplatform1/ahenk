@@ -1,11 +1,18 @@
-import { Injectable, ForbiddenException, NotFoundException } from "@nestjs/common";
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { FcmService } from "../notification/fcm/fcm.service";
+import { NotificationService } from "../notification/notification.service";
 import { Logger } from "@nestjs/common";
-import { AdminAlertType, UserRole } from "@prisma/client";
+import { AdminAlertType, MeetingStatus, UserRole } from "@prisma/client";
+import { sosWindowEnd } from "../meetings/meeting-windows";
 
-const THREAT_LABELS: Record<string, string> = {
+type Viewer = { id: string; role: UserRole };
+type SnapshotPerson = { userId: string; [key: string]: unknown };
+
+const INACTIVE = ["CANCELLED", "DECLINED", "NO_SHOW"];
+
+export const THREAT_LABELS: Record<string, string> = {
   LIFE_DANGER:      "Hayatım tehlikede",
   PHYSICAL_VIOLENCE:"Fiziksel şiddet gördüm",
   ABDUCTION:        "Zorla alıkoyuluyorum",
@@ -20,7 +27,13 @@ export class SosService {
     private prisma: PrismaService,
     private whatsapp: WhatsappNotifyService,
     private fcm: FcmService,
+    private notifications: NotificationService,
   ) {}
+
+  private inSosWindow(scheduledAt: Date): boolean {
+    const now = new Date();
+    return now >= scheduledAt && now < sosWindowEnd(scheduledAt);
+  }
 
   // ─── Rapor oluştur ────────────────────────────────────────────────────────
 
@@ -36,8 +49,7 @@ export class SosService {
     const participation = await this.prisma.meetingParticipant.findUnique({
       where: { meetingId_userId: { meetingId, userId } },
     });
-    const inactiveStatuses = ['CANCELLED', 'DECLINED', 'NO_SHOW'];
-    if (!participation || inactiveStatuses.includes(participation.status)) {
+    if (!participation || INACTIVE.includes(participation.status)) {
       throw new ForbiddenException("Bu masanın aktif katılımcısı değilsiniz");
     }
 
@@ -57,6 +69,21 @@ export class SosService {
       },
     });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
+    if (meeting.status === MeetingStatus.CANCELLED) {
+      throw new ForbiddenException("İptal edilmiş masada acil yardım kullanılamaz");
+    }
+
+    // SOS süresi: masa saatinden (scheduledAt) ertesi gün 10:00 TR'ye kadar (web ile aynı kural)
+    if (!this.inSosWindow(meeting.scheduledAt)) {
+      throw new ForbiddenException("Acil yardım bu masa için şu an kullanılamaz");
+    }
+
+    // Açık talebi varsa (ör. "Tekrar dene") yeni talep açılmaz, aynı talep döner
+    const open = await this.prisma.sosReport.findFirst({
+      where: { userId, meetingId, resolvedAt: null },
+      select: { id: true },
+    });
+    if (open) return { reportId: open.id };
 
     const participantSnapshot = meeting.participants.map((p) => {
       const u = p.user;
@@ -76,6 +103,7 @@ export class SosService {
         occupation: u.occupationSector,
         city:       prof?.city ?? null,
         isRequester: u.id === userId,
+        isBot:      u.isBot,
       };
     });
 
@@ -101,9 +129,14 @@ export class SosService {
 
   // ─── Canlı konum güncelle ─────────────────────────────────────────────────
 
+  // Talep eden: talep çözülene ya da acil yardım süresi bitene kadar canlı konum; sonra { active: false } → takip durur
   async updateLocation(reportId: string, userId: string, lat: number, lng: number, accuracy?: number) {
-    const report = await this.prisma.sosReport.findUnique({ where: { id: reportId } });
+    const report = await this.prisma.sosReport.findUnique({
+      where: { id: reportId },
+      include: { meeting: { select: { scheduledAt: true } } },
+    });
     if (!report || report.userId !== userId) throw new ForbiddenException();
+    if (report.resolvedAt || !this.inSosWindow(report.meeting.scheduledAt)) return { active: false };
 
     await this.prisma.sosLocationUpdate.create({
       data: { reportId, lat, lng, accuracy: accuracy ?? null },
@@ -115,13 +148,46 @@ export class SosService {
       data: { lat, lng, accuracy: accuracy ?? null },
     });
 
-    return { ok: true };
+    return { active: true };
   }
+
+  // Sayfa yenilenince kullanıcının o masadaki açık talebi geri yüklenir (canlı konum devam eder)
+  async myOpenReport(userId: string, meetingId: string) {
+    const report = await this.prisma.sosReport.findFirst({
+      where: { userId, meetingId, resolvedAt: null },
+      orderBy: { createdAt: "desc" },
+      include: { meeting: { select: { scheduledAt: true } } },
+    });
+    if (!report || !this.inSosWindow(report.meeting.scheduledAt)) return { reportId: null };
+    return { reportId: report.id };
+  }
+
+  // ─── Admin: görünürlük ────────────────────────────────────────────────────
+  // Talebi "İlgileniyorum" ile üstlenen admin + SUPERADMIN tüm veriyi görür; diğer adminler sadece kimin ilgilendiğini.
+  // Bot bilgisi sadece SUPERADMIN'e (ADMIN listesinde bot hiç yer almaz); e-posta HideEmail interceptor ile gizlenir.
+
+  private canSee(report: { claimedById: string | null }, viewer: Viewer): boolean {
+    return viewer.role === UserRole.SUPERADMIN || !report.claimedById || report.claimedById === viewer.id;
+  }
+
+  private async botIds(userIds: string[]): Promise<Set<string>> {
+    if (userIds.length === 0) return new Set();
+    const bots = await this.prisma.user.findMany({ where: { id: { in: userIds }, isBot: true }, select: { id: true } });
+    return new Set(bots.map((b) => b.id));
+  }
+
+  private shapeSnapshot(snapshot: unknown, bots: Set<string>, viewer: Viewer) {
+    const people = (Array.isArray(snapshot) ? snapshot : []) as SnapshotPerson[];
+    if (viewer.role === UserRole.SUPERADMIN) return people.map((p) => ({ ...p, isBot: bots.has(p.userId) }));
+    return people.filter((p) => !bots.has(p.userId)).map(({ isBot: _isBot, ...p }) => p);
+  }
+
+  private adminName = { select: { id: true, profile: { select: { firstName: true, lastName: true } } } } as const;
 
   // ─── Admin: tüm raporlar ──────────────────────────────────────────────────
 
-  async adminListReports() {
-    return this.prisma.sosReport.findMany({
+  async adminListReports(viewer: Viewer) {
+    const reports = await this.prisma.sosReport.findMany({
       orderBy: { createdAt: "desc" },
       take: 200,
       include: {
@@ -135,13 +201,23 @@ export class SosService {
           select: { id: true, type: true, scheduledAt: true, locationText: true, venueAddress: true },
         },
         locationUpdates: { orderBy: { timestamp: "desc" }, take: 1 },
+        claimedBy: this.adminName,
+        resolvedBy: this.adminName,
       },
     });
+    const bots = await this.botIds(
+      reports.flatMap((r) => ((Array.isArray(r.participantSnapshot) ? r.participantSnapshot : []) as SnapshotPerson[]).map((p) => p.userId)),
+    );
+    return reports.map((r) =>
+      this.canSee(r, viewer)
+        ? { ...r, restricted: false, participantSnapshot: this.shapeSnapshot(r.participantSnapshot, bots, viewer) }
+        : { id: r.id, createdAt: r.createdAt, resolvedAt: r.resolvedAt, claimedAt: r.claimedAt, claimedBy: r.claimedBy, restricted: true },
+    );
   }
 
   // ─── Admin: rapor detayı (+ tüm katılımcı konumları) ────────────────────
 
-  async adminGetReport(id: string) {
+  async adminGetReport(id: string, viewer: Viewer) {
     const report = await this.prisma.sosReport.findUnique({
       where: { id },
       include: {
@@ -153,11 +229,14 @@ export class SosService {
         },
         meeting: true,
         locationUpdates: { orderBy: { timestamp: "asc" } },
+        claimedBy: this.adminName,
+        resolvedBy: this.adminName,
       },
     });
     if (!report) throw new NotFoundException();
+    if (!this.canSee(report, viewer)) throw new ForbiddenException("Bu talep başka bir admin tarafından takip ediliyor");
 
-    // Aynı masadaki tüm katılımcıların en güncel konumları
+    // Aynı masadaki tüm katılımcıların konumları (kayıtlar talep çözülse de durur)
     const participantLocations = await this.prisma.participantLocation.findMany({
       where: { meetingId: report.meetingId },
       orderBy: { timestamp: "desc" },
@@ -177,14 +256,44 @@ export class SosService {
       if (!latestByUser.has(loc.userId)) latestByUser.set(loc.userId, loc);
     }
 
+    const snapshot = (Array.isArray(report.participantSnapshot) ? report.participantSnapshot : []) as SnapshotPerson[];
+    const bots = await this.botIds(snapshot.map((p) => p.userId));
     return {
       ...report,
+      restricted: false,
+      participantSnapshot: this.shapeSnapshot(report.participantSnapshot, bots, viewer),
       allParticipantLocations: Array.from(latestByUser.values()),
       participantLocationHistory: participantLocations,
     };
   }
 
+  // ─── Admin: üstlen / çöz ─────────────────────────────────────────────────
+
+  async claimReport(id: string, viewer: Viewer) {
+    const report = await this.prisma.sosReport.findUnique({ where: { id }, select: { claimedById: true, resolvedAt: true } });
+    if (!report) throw new NotFoundException();
+    if (report.resolvedAt) throw new BadRequestException("Talep zaten çözülmüş");
+    if (!this.canSee(report, viewer)) throw new ForbiddenException("Bu talep başka bir admin tarafından takip ediliyor");
+    await this.prisma.sosReport.update({ where: { id }, data: { claimedById: viewer.id, claimedAt: new Date() } });
+    return { claimed: true };
+  }
+
+  // Çözülünce o masada konum alınması durur; tüm kayıtlar saklanır
+  async resolveReport(id: string, viewer: Viewer) {
+    const report = await this.prisma.sosReport.findUnique({ where: { id }, select: { claimedById: true, resolvedAt: true } });
+    if (!report) throw new NotFoundException();
+    if (report.resolvedAt) throw new BadRequestException("Talep zaten çözülmüş");
+    if (viewer.role !== UserRole.SUPERADMIN && report.claimedById !== viewer.id) {
+      throw new ForbiddenException("Önce 'İlgileniyorum' ile talebi üstlenin");
+    }
+    await this.prisma.sosReport.update({ where: { id }, data: { resolvedAt: new Date(), resolvedById: viewer.id } });
+    return { resolved: true };
+  }
+
   // ─── Tüm masa üyeleri konum güncelle ────────────────────────────────────
+  // Sadece acil yardım süresinde ve aktif katılımcıdan (iptal eden / gelmedi sayılan alınmaz).
+  // Masadaki talep çözüldüyse (açık talep kalmadıysa) konum alınmaz. Kabul edilmezse { active: false } → takip durur.
+  // Katılımcıya masa başına bir kez bilgilendirme gider.
 
   async updateParticipantLocation(
     meetingId: string,
@@ -195,13 +304,34 @@ export class SosService {
   ) {
     const participation = await this.prisma.meetingParticipant.findUnique({
       where: { meetingId_userId: { meetingId, userId } },
+      select: { status: true, meeting: { select: { status: true, scheduledAt: true } } },
     });
     if (!participation) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    if (
+      INACTIVE.includes(participation.status) ||
+      participation.meeting.status === MeetingStatus.CANCELLED ||
+      !this.inSosWindow(participation.meeting.scheduledAt)
+    ) {
+      return { active: false };
+    }
+    const [resolved, open] = await Promise.all([
+      this.prisma.sosReport.count({ where: { meetingId, resolvedAt: { not: null } } }),
+      this.prisma.sosReport.count({ where: { meetingId, resolvedAt: null } }),
+    ]);
+    if (resolved > 0 && open === 0) return { active: false };
 
+    const first = (await this.prisma.participantLocation.count({ where: { meetingId, userId } })) === 0;
     await this.prisma.participantLocation.create({
       data: { meetingId, userId, lat, lng, accuracy: accuracy ?? null },
     });
-    return { ok: true };
+    if (first) {
+      await this.notifications.sendToUser(userId, {
+        title: "Güvenliğin için",
+        body: "Masa süresince konumun, acil bir durumda kullanılmak üzere güvenlik ekibimizle paylaşılır.",
+        data: { type: "LOCATION_NOTICE", meetingId },
+      }).catch(() => undefined);
+    }
+    return { active: true };
   }
 
   // ─── İç: admin bildirim ───────────────────────────────────────────────────
@@ -255,14 +385,13 @@ export class SosService {
         }
       }
 
-      // 3. AdminAlert kaydı (panel bildirim)
-      try {
-        await this.prisma.adminAlert.create({
-          data: { userId: adm.id, alertType: AdminAlertType.SOS_ALERT },
-        });
-      } catch (e) {
-        this.logger.error(`AdminAlert oluşturulamadı (admin: ${adm.id}): ${e}`);
-      }
+    }
+
+    // 3. AdminAlert: talep başına tek kayıt, talep eden kişiye bağlı (uyarılar sayfası tüm adminlere ortak)
+    try {
+      await this.prisma.adminAlert.create({ data: { userId, alertType: AdminAlertType.SOS_ALERT } });
+    } catch (e) {
+      this.logger.error(`AdminAlert oluşturulamadı (rapor: ${reportId}): ${e}`);
     }
   }
 }

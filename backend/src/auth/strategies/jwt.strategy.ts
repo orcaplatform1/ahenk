@@ -2,7 +2,9 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { ConfigService } from "@nestjs/config";
+import { Request } from "express";
 import { UsersService } from "../../users/users.service";
+import { ACCESS_COOKIE } from "../auth-cookies";
 
 export interface JwtPayload {
   sub: string;   // userId
@@ -17,7 +19,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
     private usersService: UsersService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      // Önce Authorization: Bearer (uygulama istemcileri), yoksa HttpOnly çerez (web)
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req: Request) => req?.cookies?.[ACCESS_COOKIE] ?? null,
+      ]),
       secretOrKey: config.getOrThrow<string>("JWT_SECRET"),
       ignoreExpiration: false,
     });

@@ -10,10 +10,11 @@ import { Queue } from "bull";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { cancellationNotice, initialsOf } from "./cancellation-notice";
-import { Gender, MeetingStatus, MeetingType, LeaveReason, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
-import { BOT_FILL_QUEUE, JOB_FILL_SPOT } from "./bot-fill.processor";
+import { restoreOneOnOneRights } from "../matching/one-on-one-right";
+import { noShowCardWindow, sosWindowEnd } from "./meeting-windows";
+import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
+import { MeetingStatus, MeetingType, LeaveReason, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 
-const ONE_HOUR_MS = 60 * 60 * 1000;
 
 // Admin ayrı harita linki girmediyse mekan adı + adresle Google Maps araması
 function googleMapsUrl(name?: string | null, address?: string | null): string | null {
@@ -43,7 +44,7 @@ export class MeetingsService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationService,
-    @InjectQueue(BOT_FILL_QUEUE) private botFillQueue: Queue,
+    @InjectQueue(ASSIGN_QUEUE) private assignQueue: Queue,
   ) {}
 
   // ─── Dashboard endpoint ───────────────────────────────────────────────────────
@@ -74,12 +75,13 @@ export class MeetingsService {
         status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED] },
         meeting: {
           status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] },
-          scheduledAt: { gte: new Date() },
+          // Kart masa saatinden sonra da acil yardım süresi bitene (ertesi gün 10:00) kadar kalır
+          scheduledAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
         },
       },
       orderBy: [{ meeting: { type: 'asc' } }, { meeting: { scheduledAt: 'asc' } }],
       select: { meeting: { select: meetingSelect } },
-    });
+    }).then((rows) => rows.filter(({ meeting }) => sosWindowEnd(meeting.scheduledAt) > new Date()));
 
     if (parts.length === 0) return { items: [] };
     const cancelRightUsed = await this.groupCancelRightUsed(userId);
@@ -269,13 +271,9 @@ export class MeetingsService {
           create: { blockerId: reviewerId, blockedId },
         }),
       ),
-      // Masaya katılmadı bildirimi
-      ...toReport.map((reportedId) =>
-        this.prisma.noShowReport.create({
-          data: { meetingId, reporterId: reviewerId, reportedId },
-        }),
-      ),
     ]);
+    // Masaya katılmadı bildirimi (kartta önceden işaretlenenler tekrar gelir, çift kayıt olmaz)
+    await this.addNoShowReports(meetingId, reviewerId, toReport);
 
     return { success: true };
   }
@@ -293,13 +291,102 @@ export class MeetingsService {
       select: { id: true },
     });
     const { opensAt, closesAt } = reviewWindow(participation.meeting.scheduledAt);
+    const myNoShow = await this.prisma.noShowReport.findMany({
+      where: { meetingId, reporterId: requesterId },
+      select: { reportedId: true },
+    });
     return {
+      // Önceden bildirilen gelmeyenler formda dolu ve kilitli gelir (geri alınamaz)
+      myNoShowIds: myNoShow.map((r) => r.reportedId),
       locationName: participation.meeting.locationText,
       scheduledAt: participation.meeting.scheduledAt,
       reviewOpensAt: opensAt,
       reviewClosesAt: closesAt,
       reviewed: !!reviewed,
     };
+  }
+
+  // ─── Masaya gelmeyen işaretleme ───────────────────────────────────────────
+  // Kartta 22:00 → ertesi gün 10:00, sonra değerlendirme formunda. İşaret geri alınamaz.
+
+  async getNoShowMarking(meetingId: string, userId: string) {
+    const me = await this.prisma.meetingParticipant.findUnique({
+      where: { meetingId_userId: { meetingId, userId } },
+      select: { status: true, meeting: { select: { scheduledAt: true, status: true } } },
+    });
+    if (!me || ["CANCELLED", "DECLINED", "NO_SHOW"].includes(me.status)) {
+      throw new ForbiddenException("Bu masanın aktif katılımcısı değilsiniz");
+    }
+    const { opensAt, closesAt } = noShowCardWindow(me.meeting.scheduledAt);
+    const now = new Date();
+    const [others, mine] = await Promise.all([
+      this.prisma.meetingParticipant.findMany({
+        where: { meetingId, userId: { not: userId }, status: { notIn: ["CANCELLED", "DECLINED"] } },
+        orderBy: { createdAt: "asc" },
+        select: { userId: true, user: { select: { profile: { select: { firstName: true, lastName: true, gender: true } } } } },
+      }),
+      this.prisma.noShowReport.findMany({ where: { meetingId, reporterId: userId }, select: { reportedId: true } }),
+    ]);
+    return {
+      open: me.meeting.status === MeetingStatus.ACTIVE && now >= opensAt && now < closesAt,
+      opensAt,
+      closesAt,
+      participants: others.map((p) => ({
+        userId: p.userId,
+        initials: initialsOf(p.user.profile),
+        gender: p.user.profile?.gender ?? null,
+      })),
+      markedIds: mine.map((r) => r.reportedId),
+    };
+  }
+
+  async markNoShow(meetingId: string, userId: string, reportedIds: string[]) {
+    const marking = await this.getNoShowMarking(meetingId, userId);
+    if (!marking.open) throw new BadRequestException("Gelmeyen işaretleme şu an açık değil");
+    await this.addNoShowReports(meetingId, userId, reportedIds);
+    return { success: true };
+  }
+
+  private async addNoShowReports(meetingId: string, reporterId: string, reportedIds: string[]) {
+    const valid = new Set(
+      (await this.prisma.meetingParticipant.findMany({
+        where: { meetingId, userId: { not: reporterId }, status: { notIn: ["CANCELLED", "DECLINED"] } },
+        select: { userId: true },
+      })).map((p) => p.userId),
+    );
+    const ids = [...new Set(reportedIds)].filter((id) => valid.has(id));
+    if (ids.length === 0) return;
+    await this.prisma.noShowReport.createMany({
+      data: ids.map((reportedId) => ({ meetingId, reporterId, reportedId })),
+      skipDuplicates: true,
+    });
+    await this.applyNoShow(meetingId);
+  }
+
+  // Gelmedi kararı: başbaşada tek işaret, grupta masadaki diğer gerçek katılımcıların çoğunluğu → NO_SHOW
+  // (konumu alınmaz, admin uyarı kararına veri olur). İşaretler geri alınamadığı için karar da geri dönmez.
+  private async applyNoShow(meetingId: string) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      select: {
+        type: true,
+        participants: { select: { userId: true, status: true, user: { select: { isBot: true } } } },
+        noShowReports: { select: { reporterId: true, reportedId: true } },
+      },
+    });
+    if (!meeting) return;
+    const present = meeting.participants.filter((p) => !["CANCELLED", "DECLINED", "NO_SHOW"].includes(p.status));
+    for (const p of present) {
+      const reporters = new Set(meeting.noShowReports.filter((r) => r.reportedId === p.userId).map((r) => r.reporterId));
+      if (reporters.size === 0) continue;
+      const voters = present.filter((q) => q.userId !== p.userId && !q.user.isBot).length;
+      const noShow = meeting.type === MeetingType.ONE_ON_ONE || reporters.size * 2 > voters;
+      if (!noShow) continue;
+      await this.prisma.meetingParticipant.update({
+        where: { meetingId_userId: { meetingId, userId: p.userId } },
+        data: { status: ParticipantStatus.NO_SHOW },
+      });
+    }
   }
 
   // ─── Katılımcı önizlemesi (baş harfi + cinsiyet) ──────────────────────────
@@ -564,20 +651,14 @@ export class MeetingsService {
           this.notifications.sendToUser(uid, { ...notice, data: { type: 'PARTICIPANT_LEFT', meetingId } }),
         ),
       );
+
+      // Başbaşa masa tek kişiyle kalmaz: masa iptal, kalanın hakkı geri verilir ve tekrar taramaya girer
+      await this.prisma.$transaction(async (tx) => {
+        await tx.meeting.update({ where: { id: meetingId }, data: { status: MeetingStatus.CANCELLED } });
+        await restoreOneOnOneRights(tx, meeting.createdAt, others);
+      });
+      for (const uid of others) await enqueueAssign(this.assignQueue, uid);
     }
-
-    // İptal eden kişinin cinsiyetini bul; 1 saat sonra bot doldurma job'u
-    const cancelledUser = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { profile: { select: { gender: true } } },
-    });
-    const missingGender = cancelledUser?.profile?.gender ?? null;
-
-    await this.botFillQueue.add(
-      JOB_FILL_SPOT,
-      { meetingId, missingGender },
-      { delay: ONE_HOUR_MS, removeOnComplete: true },
-    );
 
     return { success: true };
   }

@@ -63,3 +63,23 @@ export class ResetPasswordDto {
   @MaxLength(20, { message: "Şifre en fazla 20 karakter olabilir" })
   newPassword: string;
 }
+
+// Kayıt: telefon doğrulama (hesap oluşmadan önce)
+export class RegisterSendOtpDto {
+  @ApiProperty({ example: "+905551234567" })
+  @IsString()
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  phone: string;
+}
+
+export class RegisterVerifyOtpDto {
+  @ApiProperty({ example: "+905551234567" })
+  @IsString()
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  phone: string;
+
+  @ApiProperty({ example: "123456" })
+  @IsString()
+  @Matches(/^[0-9]{6}$/, { message: "OTP 6 haneli bir sayı olmalı" })
+  code: string;
+}

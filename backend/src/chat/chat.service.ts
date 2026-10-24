@@ -5,36 +5,29 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { MeetingStatus, MeetingType, ParticipantStatus } from "@prisma/client";
+import { MeetingStatus, ParticipantStatus } from "@prisma/client";
 
-function chatCloseTime(type: MeetingType, scheduledAt: Date): Date {
-  const TR = 3 * 3600_000; // UTC+3 offset
-  // Hesaplamayı TR gününe göre yap (UTC gün değil)
-  const trMs = scheduledAt.getTime() + TR;
-  const dayTR = new Date(trMs).getUTCDay(); // gerçek TR gün
-
-  let closeUTC: Date;
-
-  if (type === MeetingType.GROUP) {
-    // Cumartesi 23:59 TR = 20:59 UTC
-    const daysUntilSat = (6 - dayTR + 7) % 7;
-    const satTR = new Date(trMs + daysUntilSat * 86_400_000);
-    satTR.setUTCHours(23, 59, 0, 0);
-    closeUTC = new Date(satTR.getTime() - TR);
-  } else {
-    // Cuma 23:59 TR = 20:59 UTC — masanın TR haftasındaki Cuma (geri bak)
-    const daysSinceFri = (dayTR - 5 + 7) % 7;
-    const friTR = new Date(trMs - daysSinceFri * 86_400_000);
-    friTR.setUTCHours(23, 59, 0, 0);
-    closeUTC = new Date(friTR.getTime() - TR);
-  }
-
-  // Sadece GROUP için gece yarısı güvenliği: Cumartesi masasında closeUTC=scheduledAt olabilir
-  if (type === MeetingType.GROUP && closeUTC <= scheduledAt) {
-    return new Date(scheduledAt.getTime() + 4 * 3600_000);
-  }
-  return closeUTC;
+// Sohbet penceresi: masanın kendi buluşma günü 10:00–20:00 TR (UTC+3 sabit offset)
+function chatWindow(scheduledAt: Date): { openAt: Date; closeAt: Date } {
+  const TR = 3 * 3600_000;
+  const dayTR = new Date(scheduledAt.getTime() + TR);
+  dayTR.setUTCHours(10, 0, 0, 0);
+  const openAt = new Date(dayTR.getTime() - TR);
+  dayTR.setUTCHours(20, 0, 0, 0);
+  const closeAt = new Date(dayTR.getTime() - TR);
+  return { openAt, closeAt };
 }
+
+// Sohbette e-posta, telefon numarası ve link paylaşımı yasak
+const EMAIL_RE = /[^\s@]+@[^\s@]+\.[^\s@]+/i;
+const PHONE_RE = /(?:\d[\s\-.()]*){10,}/;
+const LINK_RE = /(https?:\/\/|www\.|[a-z0-9-]+\.(com|net|org|tr|io|co|me|info|biz|app|dev|xyz|link|ly)\b)/i;
+
+function containsContactInfo(content: string): boolean {
+  return EMAIL_RE.test(content) || PHONE_RE.test(content) || LINK_RE.test(content);
+}
+
+const CHAT_STATUSES: MeetingStatus[] = [MeetingStatus.PENDING, MeetingStatus.ACTIVE];
 
 @Injectable()
 export class ChatService {
@@ -58,13 +51,16 @@ export class ChatService {
       select: { status: true, type: true, scheduledAt: true },
     });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
-    if (meeting.status !== MeetingStatus.ACTIVE) {
+    if (!CHAT_STATUSES.includes(meeting.status)) {
       throw new ForbiddenException("Sohbet sadece aktif masalarda açıktır");
     }
 
-    const closeTime = chatCloseTime(meeting.type, meeting.scheduledAt);
+    const { openAt, closeAt } = chatWindow(meeting.scheduledAt);
     const now = new Date();
-    const isClosed = now >= closeTime;
+    const isClosed = now >= closeAt;
+    if (now < openAt) {
+      return { isOpen: false, isClosed: false, openAt: openAt.toISOString(), closeAt: closeAt.toISOString(), messages: [] };
+    }
 
     const messages = await this.prisma.chatMessage.findMany({
       where: { meetingId, deletedAt: null },
@@ -84,8 +80,10 @@ export class ChatService {
     });
 
     return {
+      isOpen: true,
       isClosed,
-      closeAt: closeTime.toISOString(),
+      openAt: openAt.toISOString(),
+      closeAt: closeAt.toISOString(),
       messages: messages.map((m) => ({
         id: m.id,
         content: m.content,
@@ -105,13 +103,21 @@ export class ChatService {
       select: { status: true, type: true, scheduledAt: true },
     });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
-    if (meeting.status !== MeetingStatus.ACTIVE) {
+    if (!CHAT_STATUSES.includes(meeting.status)) {
       throw new ForbiddenException("Sohbet sadece aktif masalarda açıktır");
     }
 
-    const closeTime = chatCloseTime(meeting.type, meeting.scheduledAt);
-    if (new Date() >= closeTime) {
+    const { openAt, closeAt } = chatWindow(meeting.scheduledAt);
+    const now = new Date();
+    if (now < openAt) {
+      throw new ForbiddenException("Sohbet henüz açılmadı");
+    }
+    if (now >= closeAt) {
       throw new ForbiddenException("Sohbet süresi doldu");
+    }
+
+    if (containsContactInfo(content)) {
+      throw new BadRequestException("Sohbette e-posta, telefon numarası ve link paylaşılamaz");
     }
 
     const message = await this.prisma.chatMessage.create({

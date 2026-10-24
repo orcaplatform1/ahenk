@@ -2,7 +2,7 @@ import { Controller, Get, Post, Param, Body, Req, UseGuards } from "@nestjs/comm
 import { Request } from "express";
 import { MeetingsService } from "./meetings.service";
 import { AiReportService } from "./ai-report.service";
-import { BlockUsersDto, ReviewMeetingDto, CancelRegistrationDto } from "./dto/meetings.dto";
+import { BlockUsersDto, ReviewMeetingDto, CancelRegistrationDto, MarkNoShowDto } from "./dto/meetings.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @Controller("meetings")
@@ -32,6 +32,19 @@ export class MeetingsController {
   getMeetingInfo(@Param("id") id: string, @Req() req: Request) {
     const user = req.user as { id: string };
     return this.meetingsService.getMeetingInfo(id, user.id);
+  }
+
+  // Masaya gelmeyen işaretleme: masa kartında 22:00 → ertesi gün 10:00
+  @Get(":id/no-show")
+  getNoShowMarking(@Param("id") id: string, @Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.meetingsService.getNoShowMarking(id, user.id);
+  }
+
+  @Post(":id/no-show")
+  markNoShow(@Param("id") id: string, @Body() dto: MarkNoShowDto, @Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.meetingsService.markNoShow(id, user.id, dto.userIds);
   }
 
   @Get(":id/participants-preview")

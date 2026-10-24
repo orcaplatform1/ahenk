@@ -30,9 +30,8 @@ async function uploadKyc(
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const token = document.cookie.match(/(?:^|;\s*)ahenk_token=([^;]+)/)?.[1];
     xhr.open('POST', `${process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co'}/api/v1/kyc/upload`);
-    if (token) xhr.setRequestHeader('Authorization', `Bearer ${decodeURIComponent(token)}`);
+    xhr.withCredentials = true; // oturum HttpOnly çerezle gider
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve();

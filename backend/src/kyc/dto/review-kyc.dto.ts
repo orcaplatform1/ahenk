@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, MaxLength, ValidateIf } from "class-validator";
+import { IsEnum, IsOptional, IsString, Matches, MaxLength, ValidateIf } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { KycStatus } from "@prisma/client";
 
@@ -19,9 +19,21 @@ export class ReviewKycDto {
   @MaxLength(500)
   rejectReason?: string;
 
+  // Onayda zorunlu: admin kimlik görselinden girer (şifreli saklanır, sadece ödemede iyzico'ya gider)
+  @ApiPropertyOptional({ description: "TC kimlik no (onayda zorunlu)" })
+  @ValidateIf((o) => o.status === KycStatus.APPROVED)
+  @Matches(/^\d{11}$/, { message: "TC kimlik numarası 11 haneli olmalı" })
+  identityNumber?: string;
+
   @ApiPropertyOptional({ description: "İç not (kullanıcıya gösterilmez)" })
   @IsOptional()
   @IsString()
   @MaxLength(1000)
   adminNote?: string;
+}
+
+// Daha önce TC girilmeden onaylanmış başvuruya TC ekleme
+export class SetIdentityNumberDto {
+  @Matches(/^\d{11}$/, { message: "TC kimlik numarası 11 haneli olmalı" })
+  identityNumber: string;
 }

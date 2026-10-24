@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { PlanPriceText } from '@/components/PlanPrice';
 
 const sections = [
   {
@@ -98,9 +99,9 @@ const sections = [
       <>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.65rem', marginBottom: '1.25rem' }}>
           {[
-            { name: 'Masada', price: '349₺/ay', desc: 'Grup masası eşleştirmesi' },
-            { name: 'Karşımda', price: '449₺/ay', desc: 'Başbaşa masa eşleştirmesi' },
-            { name: 'İçerde', price: '679₺/ay', desc: 'Hem grup hem başbaşa masa eşleştirmesi, öncelikli eşleştirme' },
+            { name: 'Masada', price: <PlanPriceText plan="MASADA" suffix="₺/ay" />, desc: 'Grup masası eşleştirmesi' },
+            { name: 'Karşımda', price: <PlanPriceText plan="KARSIMDA" suffix="₺" />, desc: 'Başbaşa masa eşleştirmesi' },
+            { name: 'İçerde', price: <PlanPriceText plan="ICERDE" suffix="₺/ay" />, desc: 'Hem grup hem başbaşa masa eşleştirmesi, öncelikli eşleştirme' },
           ].map((pkg) => (
             <div key={pkg.name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1.1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px' }}>
               <span style={{ fontWeight: 700, color: '#e8e8e8', minWidth: '90px', fontSize: '0.9rem' }}>{pkg.name}</span>

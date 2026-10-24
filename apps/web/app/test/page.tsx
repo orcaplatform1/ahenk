@@ -38,8 +38,7 @@ export default function TestPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const t = api.getToken();
-    if (!t) { router.replace('/giris'); return; }
+    if (!api.hasSession()) { router.replace('/giris'); return; }
 
     api.get<QuestionsResponse>('/test/questions')
       .then((res) => {

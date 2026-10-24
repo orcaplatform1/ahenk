@@ -19,6 +19,7 @@ interface MeetingInfo {
   reviewOpensAt: string;
   reviewClosesAt: string;
   reviewed: boolean;
+  myNoShowIds?: string[];
 }
 
 const MALE_CLR   = '#4fc3f7';
@@ -68,6 +69,8 @@ export default function DegerlendirmePage() {
   const [hovered, setHovered] = useState(0);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const [noShowIds, setNoShowIds] = useState<Set<string>>(new Set());
+  // Masa kartından önceden bildirilen gelmeyenler: dolu ve kilitli (geri alınamaz)
+  const [lockedNoShow, setLockedNoShow] = useState<Set<string>>(new Set());
   const [comment, setComment] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -82,6 +85,9 @@ export default function DegerlendirmePage() {
     ]).then(([parts, info]) => {
       setParticipants(parts.filter((p) => !p.isRequester));
       setMeetingInfo(info);
+      const locked = new Set(info?.myNoShowIds ?? []);
+      setLockedNoShow(locked);
+      setNoShowIds(new Set(locked));
     }).catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [meetingId]);
@@ -280,7 +286,7 @@ export default function DegerlendirmePage() {
             {participants.length > 0 && (
               <motion.div {...fadeUp(0.3)} className="glass-card p-5">
                 <p className="text-sm text-[#888] mb-1 font-medium">Masaya katılmayan biri oldu mu?</p>
-                <p className="text-xs text-[#555] mb-4">Masaya gelmeyen kişileri işaretle. Bildirimin yönetim ekibine iletilir.</p>
+                <p className="text-xs text-[#555] mb-4">Masaya gelmeyen kişileri işaretle. Bildirimin yönetim ekibine iletilir ve geri alınamaz.</p>
                 <div className="flex flex-col gap-2">
                   {participants.map((p) => (
                     <label
@@ -294,6 +300,7 @@ export default function DegerlendirmePage() {
                       <input
                         type="checkbox"
                         checked={noShowIds.has(p.userId)}
+                        disabled={lockedNoShow.has(p.userId)}
                         onChange={() => toggleIn(setNoShowIds, p.userId)}
                         className="w-4 h-4 accent-[#c0392b] cursor-pointer"
                       />
@@ -301,6 +308,7 @@ export default function DegerlendirmePage() {
                       {p.gender && (
                         <span className="text-xs text-[#555]">{p.gender === 'MALE' ? 'E' : p.gender === 'FEMALE' ? 'K' : ''}</span>
                       )}
+                      {lockedNoShow.has(p.userId) && <span className="ml-auto text-xs text-[#c0392b]">Bildirildi</span>}
                     </label>
                   ))}
                 </div>

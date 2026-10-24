@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePlanPrices, type PlanKeyName } from '@/components/PlanPrice';
 import { api } from '@/lib/api';
 import { getPlanCardState, type PlanKey } from '@/lib/planCards';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
@@ -16,6 +17,7 @@ interface Subscription {
   missedOneonOneCycles: number;
   groupTableFormed?: boolean;
   oneOnOneTableFormed?: boolean;
+  recurring?: { id: string; status: 'PENDING' | 'ACTIVE' | 'CANCELLED' | 'UNPAID' } | null;
 }
 
 interface InitCheckoutResponse {
@@ -28,7 +30,6 @@ const PLANS = [
   {
     key: 'MASADA',
     name: 'Masada',
-    price: '349',
     desc: 'Aylık grup buluşma hakkı',
     featured: false,
     bgImage: '/plan-masada.webp',
@@ -37,7 +38,6 @@ const PLANS = [
   {
     key: 'KARSIMDA',
     name: 'Karşımda',
-    price: '449',
     desc: 'Tek kullanımlık başbaşa buluşma',
     featured: false,
     bgImage: '/plan-karsimda.webp',
@@ -46,7 +46,6 @@ const PLANS = [
   {
     key: 'ICERDE',
     name: 'İçerde',
-    price: '679',
     desc: '1 ay Masada + 1 Karşımda hakkı',
     featured: true,
     bgImage: '/plan-icerde.webp',
@@ -71,6 +70,7 @@ interface DiscountInfo { referralDiscount: boolean; referralCount: number; invit
 interface Props { kycApproved: boolean; onGoKyc: () => void; maintenanceMode?: boolean; }
 
 export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Props) {
+  const prices = usePlanPrices();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [ownedPlans, setOwnedPlans] = useState<Set<PlanKey>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -83,6 +83,11 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
   const [referralSending, setReferralSending] = useState(false);
   const [referralMsg, setReferralMsg] = useState('');
   const [referralStats, setReferralStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
+  // Otomatik yenilenen abonelik (Masada / İçerde): iptal edilene kadar her ay yenilenir
+  const [autoRenew, setAutoRenew] = useState<{ status: string; expiresAt?: string } | null>(null);
+  const [cancelAsk, setCancelAsk] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelMsg, setCancelMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     api.get<{ subscriptions: Subscription[]; hasMasada?: boolean; hasKarsimda?: boolean }>('/payment/subscriptions')
@@ -91,6 +96,8 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
         if (subs.length > 0) {
           setSubscription(subs[0]);
           setOwnedPlans(new Set(subs.map(s => s.plan as PlanKey)));
+          const rec = subs.find(s => s.recurring && s.recurring.status !== 'PENDING');
+          if (rec?.recurring) setAutoRenew({ status: rec.recurring.status, expiresAt: rec.expiresAt });
         }
       })
       .catch((e: Error) => setError(e.message))
@@ -114,6 +121,18 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
       setReferralStats(d);
     } catch (e) { setReferralMsg((e as Error).message || 'Gönderilemedi.'); }
     finally { setReferralSending(false); }
+  }
+
+  async function cancelAutoRenew() {
+    setCancelling(true); setCancelMsg(null);
+    try {
+      const r = await api.post<{ activeUntil: string | null }>('/payment/subscription/cancel', {});
+      setAutoRenew(a => a ? { ...a, status: 'CANCELLED', expiresAt: r.activeUntil ?? a.expiresAt } : a);
+      setCancelMsg({ ok: true, text: 'Aboneliğin iptal edildi. Bir sonraki ay ücret alınmayacak.' });
+      setCancelAsk(false);
+    } catch (e) {
+      setCancelMsg({ ok: false, text: (e as Error).message });
+    } finally { setCancelling(false); }
   }
 
   async function handleRefund(refundType: string) {
@@ -189,11 +208,8 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
 
   const hasReferralDiscount = !!(discountInfo?.referralDiscount);
 
-  function discountedPrice(price: string): string {
-    const kurus = Math.round(parseFloat(price) * 100 * 0.9);
-    const tl = kurus / 100;
-    return tl % 1 === 0 ? String(tl) : tl.toFixed(2).replace('.', ',');
-  }
+  // Fiyatlar backend'den (SUPERADMIN fiyat sayfası); indirimli fiyat da backend'de hesaplanır
+  const priceOf = (key: string) => prices?.[key as PlanKeyName];
 
   return (
     <div className="flex flex-col gap-5">
@@ -252,6 +268,43 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted">Bitiş</span>
               <span className="text-xs text-text">{new Date(subscription.expiresAt).toLocaleDateString('tr-TR')}</span>
+            </div>
+          )}
+          {autoRenew && (
+            <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted">Otomatik yenileme</span>
+                <span className={`text-xs ${autoRenew.status === 'ACTIVE' ? 'text-green-400' : 'text-[#888]'}`}>
+                  {autoRenew.status === 'ACTIVE' ? 'Açık — her ay yenilenir' : autoRenew.status === 'UNPAID' ? 'Ödeme alınamadı' : 'Kapalı'}
+                </span>
+              </div>
+              {autoRenew.status === 'CANCELLED' && autoRenew.expiresAt && (
+                <p className="text-xs text-[#666]">Paketin {new Date(autoRenew.expiresAt).toLocaleDateString('tr-TR')} tarihine kadar devam eder.</p>
+              )}
+              {cancelMsg && <p className={`text-xs ${cancelMsg.ok ? 'text-green-400' : 'text-accent'}`}>{cancelMsg.text}</p>}
+              {(autoRenew.status === 'ACTIVE' || autoRenew.status === 'UNPAID') && (cancelAsk ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-[#888]">Aboneliği iptal edersen bir sonraki ay ücret alınmaz; ödediğin dönem bitene kadar paketin devam eder. Ücret iadesi yapılmaz.</p>
+                  <div className="flex gap-2">
+                    <button onClick={cancelAutoRenew} disabled={cancelling}
+                      className="flex-1 py-2 rounded-xl text-sm font-medium"
+                      style={{ border: '1px solid rgba(192,57,43,0.6)', color: '#e74c3c', background: 'rgba(192,57,43,0.06)', opacity: cancelling ? 0.5 : 1 }}>
+                      {cancelling ? 'İptal ediliyor…' : 'Evet, iptal et'}
+                    </button>
+                    <button onClick={() => setCancelAsk(false)} disabled={cancelling}
+                      className="flex-1 py-2 rounded-xl text-sm font-medium"
+                      style={{ border: '1px solid rgba(255,255,255,0.12)', color: '#aaa' }}>
+                      Vazgeç
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setCancelAsk(true)}
+                  className="w-full py-2 rounded-xl text-sm font-medium"
+                  style={{ border: '1px solid rgba(255,255,255,0.12)', color: '#aaa' }}>
+                  Aboneliği iptal et
+                </button>
+              ))}
             </div>
           )}
           <p className="text-xs text-[#555] leading-relaxed border-t border-white/5 pt-3 mt-1">
@@ -330,15 +383,15 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
                 {hasReferralDiscount ? (
                   <>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
-                      <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.5rem' }}>{discountedPrice(plan.price)}</span>
+                      <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.5rem' }}>{priceOf(plan.key)?.webDiscountTL ?? '—'}</span>
                       <span style={{ color: '#888', fontSize: '0.85rem', marginBottom: 1 }}>₺</span>
-                      <span style={{ color: '#555', fontSize: '0.75rem', textDecoration: 'line-through', marginBottom: 1 }}>{plan.price}₺</span>
+                      <span style={{ color: '#555', fontSize: '0.75rem', textDecoration: 'line-through', marginBottom: 1 }}>{priceOf(plan.key)?.webTL ?? '—'}₺</span>
                     </div>
                     <p style={{ color: '#4ade80', fontSize: '0.68rem', marginBottom: 2 }}>Kalan İndirim Hakkı: {discountInfo!.referralCount}</p>
                   </>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
-                    <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.5rem' }}>{plan.price}</span>
+                    <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.5rem' }}>{priceOf(plan.key)?.webTL ?? '—'}</span>
                     <span style={{ color: '#888', fontSize: '0.85rem', marginBottom: 1 }}>₺</span>
                   </div>
                 )}

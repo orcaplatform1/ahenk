@@ -7,11 +7,14 @@ import { KycController } from "./kyc.controller";
 import { KycService } from "./kyc.service";
 import { KycGuard } from "./kyc.guard";
 import { NotificationModule } from "../notification/notification.module";
+import { BullModule } from "@nestjs/bull";
+import { ASSIGN_QUEUE } from "../matching/assign-queue";
 import { KYC_TMP_DIR } from "./kyc.service";
 
 @Module({
   imports: [
     NotificationModule,
+    BullModule.registerQueue({ name: ASSIGN_QUEUE }),
     // Dosyalar RAM'e değil geçici klasöre akarak yazılır; doğrulama sonrası kullanıcı klasörüne taşınır
     MulterModule.register({
       storage: diskStorage({
