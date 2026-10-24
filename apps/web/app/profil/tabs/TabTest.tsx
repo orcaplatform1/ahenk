@@ -17,6 +17,7 @@ interface TestResult {
   completed: boolean;
   completedAt?: string;
   retakeAvailableAt?: string | null;
+  canRetakeNow?: boolean;
   scores?: Scores;
 }
 
@@ -297,7 +298,7 @@ export function TabTest() {
     );
   }
 
-  const { scores, completedAt, retakeAvailableAt } = result;
+  const { scores, completedAt, retakeAvailableAt, canRetakeNow } = result;
 
   return (
     <div className="flex flex-col gap-5">
@@ -313,6 +314,17 @@ export function TabTest() {
           <span className="text-sm text-[#ccc]">{retakeAvailableAt ? fmtDate(retakeAvailableAt) : 'Şimdi yapabilirsin'}</span>
         </div>
       </div>
+
+      {/* 180 gün dolana kadar pasif */}
+      {canRetakeNow ? (
+        <Link href="/test" className="btn-primary mx-auto">
+          Tekrar Test Yap
+        </Link>
+      ) : (
+        <button type="button" disabled className="btn-primary mx-auto disabled:opacity-40 disabled:cursor-not-allowed">
+          Tekrar Test Yap
+        </button>
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import { OCCUPATION_SECTORS } from '@/lib/occupations';
 import { api } from '@/lib/api';
 
 interface City { id: string; name: string; }
@@ -51,22 +52,7 @@ const LIKERT = [
 
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE' | '';
 
-const OCCUPATION_SECTORS = [
-  'Teknoloji & Yazılım',
-  'Finans & Bankacılık',
-  'Sağlık & Tıp',
-  'Hukuk',
-  'Eğitim & Akademi',
-  'Mühendislik',
-  'Pazarlama & Reklam',
-  'Medya & İletişim',
-  'Sanat & Tasarım',
-  'Girişimcilik & İş Dünyası',
-  'Kamu & Devlet',
-  'Turizm & Hizmet',
-  'Öğrenci',
-  'Diğer',
-] as const;
+
 
 interface FormState {
   firstName: string; lastName: string; email: string; password: string; confirmPassword: string;

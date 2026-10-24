@@ -21,6 +21,7 @@ model User {
   emailVerified Boolean    @default(false)
   phoneVerified Boolean    @default(false)
   isBot         Boolean    @default(false)
+  botPhone      String?    // yalnızca bot: admin panelinde gösterilen numara (bildirim/kayıt sistemleri kullanmaz)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -226,6 +227,7 @@ model Meeting {
   participants         MeetingParticipant[]
   reviews              MeetingReview[]
   noShowReports        NoShowReport[]
+  sanctions            UserSanction[]
   aiReport             MeetingAiReport?
   chatMessages         ChatMessage[]
   sosReports           SosReport[]
@@ -723,6 +725,8 @@ model RefundRequest {
   refundType     RefundType
   status         RefundStatus @default(PENDING)
   adminNote      String?      @db.Text
+  refundedKurus  Int? // onayda iyzico'dan iade edilen tutar
+  iyzicoRefundId String? // iyzico iade yanıtındaki paymentId
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -815,7 +819,10 @@ model UserSanction {
   expiresAt DateTime?
   liftedAt  DateTime?
   createdAt DateTime     @default(now())
+  meetingId String? // gelmedi uyarısının ait olduğu masa (aynı masaya ikinci uyarı yok)
+  meeting   Meeting?     @relation(fields: [meetingId], references: [id], onDelete: SetNull)
 
+  @@unique([userId, meetingId])
   @@index([userId, createdAt])
 }
 

@@ -135,6 +135,7 @@ const sections = [
           'Mevcut dönem için iade yapılmaz.',
           'kimlik doğrulaması tamamlanmamış kullanıcılar eşleştirmeye dahil edilmez; bu nedenle iade talep edilemez.',
           'Hesabın Ahenk tarafından kural ihlali nedeniyle kapatılması durumunda kalan abonelik süresi için iade yapılmaz.',
+          'Masa kurulduktan sonra bir veya birden fazla katılımcının buluşmaya katılmaması, hizmetin ifa edilmediği anlamına gelmez ve iade sebebi teşkil etmez.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -150,6 +151,8 @@ const sections = [
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
           'Ahenk, OCEAN Big Five modeline dayalı algoritmik eşleştirme yapar ancak belirli bir kişiyle eşleşme garantisi vermez.',
+          'Ahenk, eşleştirme sonucunda kurulan masada yer alan katılımcıların tamamının buluşmaya katılacağını garanti etmez. Buluşmaya katılım her kullanıcının kendi iradesine bağlıdır ve Ahenk tarafından zorunlu tutulamaz.',
+          'Ahenk, masaların kurulabilmesi ve katılımcı dengesinin sağlanabilmesi amacıyla masa kompozisyonunda sistemsel düzenlemeler yapma hakkını saklı tutar.',
           'Ahenk, buluşma günü OCEAN uyum skorlarını yapay zeka yardımıyla analiz ederek gruba özel bir masa raporu oluşturabilir. Bu rapor yalnızca grup uyumunu özetleyen bilgilendirici bir içeriktir; herhangi bir taahhüt ya da garanti oluşturmaz.',
           'Kullanıcı sayısının yetersiz olduğu şehir veya dönemlerde eşleştirme gerçekleşmeyebilir; bu durumda ilgili dönem için iade değerlendirilebilir.',
           'Ahenk, buluşmanın gerçekleşeceği mekanın kalitesini veya hizmetini garanti etmez.',

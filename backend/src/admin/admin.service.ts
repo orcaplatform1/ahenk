@@ -22,13 +22,18 @@ import {
   SanctionType,
   PartnershipStatus,
   CareerStatus,
+  KycStatus,
   Prisma,
 } from "@prisma/client";
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "../payment/payment.constants";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { NotificationService } from "../notification/notification.service";
-import { consumeOneOnOneRights } from "../matching/one-on-one-right";
-import { DEFAULT_SANCTION_REASON, suspensionEndDate } from "./sanction-reasons";
+import { PaymentService } from "../payment/payment.service";
+import type { AdminUpdateUserDto } from "./dto/admin.dto";
+import { KycService } from "../kyc/kyc.service";
+import { consumeOneOnOneRights, restoreOneOnOneRights } from "../matching/one-on-one-right";
+import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
+import { activeNoShowWarningsWhere } from "./no-show-warnings";
 
 const PIONEER_MAX_QUOTA = 500;
 
@@ -43,6 +48,8 @@ export class AdminService {
     private prisma: PrismaService,
     private whatsapp: WhatsappNotifyService,
     private notifications: NotificationService,
+    private payment: PaymentService,
+    private kyc: KycService,
   ) {}
 
   // ─── Dashboard ───────────────────────────────────────────────────────────
@@ -95,13 +102,34 @@ export class AdminService {
 
   // ─── Kullanıcı listesi ────────────────────────────────────────────────────
 
-  async listUsers(params: { search?: string; status?: string; type?: string; page?: number; limit?: number }) {
+  async listUsers(params: { search?: string; status?: string; city?: string; type?: string; page?: number; limit?: number }) {
     const page = params.page ?? 1;
     const limit = Math.min(params.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = { isBot: false };
-    if (params.status) where.status = params.status;
+    if (params.status) {
+      if (!Object.values(UserStatus).includes(params.status as UserStatus)) {
+        throw new BadRequestException("Geçersiz kullanıcı durumu");
+      }
+      where.status = params.status;
+    }
+
+    // Şehir filtresi — ikamet şehri veya katılım şehri
+    if (params.city?.trim()) {
+      const c = params.city.trim();
+      // primaryCity şehir ID'si tutar → adı eşleşen şehirlerin ID'leri
+      const cityIds = (await this.prisma.city.findMany({
+        where: { name: { contains: c, mode: "insensitive" } },
+        select: { id: true },
+      })).map((x) => x.id);
+      where.AND = [{
+        OR: [
+          { profile: { city: { contains: c, mode: "insensitive" } } },
+          { profile: { primaryCity: { in: cityIds } } },
+        ],
+      }];
+    }
 
     // Rol / paket tipi filtresi
     if (params.type === 'ADMIN')       where.role = 'ADMIN';
@@ -146,7 +174,7 @@ export class AdminService {
 
   // ─── Kullanıcı detay ──────────────────────────────────────────────────────
 
-  async getUser(userId: string) {
+  async getUser(userId: string, viewerRole: UserRole) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -165,20 +193,89 @@ export class AdminService {
           orderBy: { createdAt: "desc" },
           select: {
             createdAt: true,
-            meeting: { select: { id: true, scheduledAt: true, type: true, locationText: true } },
+            meeting: { select: { id: true, scheduledAt: true, type: true, locationText: true, cycleId: true } },
             reporter: { select: { id: true, profile: { select: { firstName: true, lastName: true } } } },
           },
         },
       },
     });
     if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
+    if (user.role === UserRole.SUPERADMIN && viewerRole !== UserRole.SUPERADMIN) {
+      throw new ForbiddenException("Bu kullanıcıyı görüntüleme yetkiniz yok");
+    }
     // Hassas alanlar admin yanıtına konmaz
-    const { passwordHash, fcmToken, phoneHash, ...safeUser } = user;
+    const { passwordHash, fcmToken, phoneHash, isBot, botPhone, ...rest } = user;
+    // Botun panel numarası telefon olarak gösterilir (gerçek telefon alanı boştur)
+    const safeUser = { ...rest, phone: isBot ? botPhone : rest.phone };
     const [groupCount, oneOnOneCount] = await Promise.all([
       this.prisma.meetingParticipant.count({ where: { userId, meeting: { type: 'GROUP' } } }),
       this.prisma.meetingParticipant.count({ where: { userId, meeting: { type: 'ONE_ON_ONE' } } }),
     ]);
-    return { ...safeUser, groupCount, oneOnOneCount };
+    const noShowWarnings = await this.noShowWarnings(userId);
+    // Bot bilgisi yalnızca SUPERADMIN'e
+    return { ...safeUser, ...(viewerRole === UserRole.SUPERADMIN ? { isBot } : {}), groupCount, oneOnOneCount, noShowWarnings };
+  }
+
+  // ─── Gelmedi uyarısı ──────────────────────────────────────────────────────
+
+  // Sayaç son askıdan sonra verilen (kaldırılmamış) gelmedi uyarılarıdır; askı sayacı sıfırlar
+  private async noShowWarnings(userId: string) {
+    const where = await activeNoShowWarningsWhere(this.prisma, userId);
+    const [active, warnedMeetings] = await Promise.all([
+      this.prisma.userSanction.count({ where }),
+      // Daha önce uyarı verilmiş masalar (sayaç sıfırlansa da aynı masaya ikinci uyarı yok)
+      this.prisma.userSanction.findMany({
+        where: { userId, type: SanctionType.WARNING, meetingId: { not: null } },
+        select: { meetingId: true, meeting: { select: { cycleId: true } } },
+      }),
+    ]);
+    return {
+      count: active,
+      limit: NO_SHOW_WARNING_LIMIT,
+      warnedMeetingIds: warnedMeetings.map((w) => w.meetingId as string),
+      // Aynı hafta (İçerde: grup + başbaşa) tek uyarı; ikincisi tekerrür sayılmaz
+      warnedCycleIds: [...new Set(warnedMeetings.map((w) => w.meeting?.cycleId).filter((c): c is string => !!c))],
+    };
+  }
+
+  async giveNoShowWarning(userId: string, meetingId: string, adminId: string) {
+    await this.assertCanSanction(userId, adminId);
+
+    const report = await this.prisma.noShowReport.findFirst({
+      where: { meetingId, reportedId: userId },
+      select: { meeting: { select: { scheduledAt: true, cycleId: true } } },
+    });
+    if (!report) throw new BadRequestException("Bu masa için kullanıcı hakkında gelmedi bildirimi yok");
+
+    // Aynı hafta ikinci uyarı yok (İçerde: grup + başbaşa gelmeme tek uyarı sayılır)
+    if (report.meeting.cycleId) {
+      const sameWeek = await this.prisma.userSanction.findFirst({
+        where: { userId, type: SanctionType.WARNING, meeting: { cycleId: report.meeting.cycleId } },
+        select: { id: true },
+      });
+      if (sameWeek) throw new ConflictException("Bu hafta için zaten uyarı verilmiş");
+    }
+
+    const already = await this.prisma.userSanction.findUnique({
+      where: { userId_meetingId: { userId, meetingId } },
+      select: { id: true },
+    });
+    if (already) throw new ConflictException("Bu masa için zaten uyarı verilmiş");
+
+    const { count } = await this.noShowWarnings(userId);
+    const remaining = Math.max(NO_SHOW_WARNING_LIMIT - (count + 1), 0);
+    const dateStr = report.meeting.scheduledAt.toLocaleDateString("tr-TR", {
+      day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Istanbul",
+    });
+    const reason =
+      `${dateStr} tarihli masa etkinliğine masa kurulduktan sonra katılmadığınız tespit edilmiştir. ` +
+      `${NO_SHOW_WARNING_LIMIT} uyarı hesabın 1 ay askıya alınmasına neden olur. Kalan uyarı hakkı: ${remaining}`;
+
+    await this.prisma.userSanction.create({
+      data: { userId, adminId, type: SanctionType.WARNING, reason, meetingId },
+    });
+    // Otomatik askı yok: 3'e ulaşınca admin panelde askıya alma seçeneği görünür
+    return this.noShowWarnings(userId);
   }
 
   // ─── Yaptırım yetkisi ────────────────────────────────────────────────────
@@ -199,13 +296,77 @@ export class AdminService {
     }
   }
 
+  private async actorRole(actorId: string): Promise<UserRole | undefined> {
+    return (await this.prisma.user.findUnique({ where: { id: actorId }, select: { role: true } }))?.role;
+  }
+
+  // ─── Kişisel bilgi düzenleme ─────────────────────────────────────────────
+
+  // Yetki yaptırımla aynı: SUPERADMIN düzenlenemez, ADMIN'i yalnızca SUPERADMIN düzenler
+  async adminUpdateUser(targetId: string, actorId: string, dto: AdminUpdateUserDto) {
+    await this.assertCanSanction(targetId, actorId);
+    const role = await this.actorRole(actorId);
+    if (dto.email !== undefined && role !== UserRole.SUPERADMIN) {
+      throw new ForbiddenException("E-postayı yalnızca süper admin değiştirebilir");
+    }
+    const target = await this.prisma.user.findUnique({ where: { id: targetId }, select: { isBot: true } });
+    if (!target) throw new NotFoundException("Kullanıcı bulunamadı");
+
+    if (dto.cityId) {
+      const city = await this.prisma.city.findUnique({ where: { id: dto.cityId }, select: { isActive: true } });
+      if (!city?.isActive) throw new BadRequestException("Seçilen şehir aktif değil");
+    }
+    // Bot numarası ayrı alanda tutulur (bildirim/kayıt sistemleri kullanmaz)
+    if (dto.phone && !target.isBot) {
+      const other = await this.prisma.user.findFirst({ where: { phone: dto.phone, id: { not: targetId } }, select: { id: true } });
+      if (other) throw new ConflictException("Bu telefon numarası başka bir hesapta kayıtlı");
+    }
+    if (dto.email) {
+      const other = await this.prisma.user.findFirst({ where: { email: dto.email, id: { not: targetId } }, select: { id: true } });
+      if (other) throw new ConflictException("Bu e-posta başka bir hesapta kayıtlı");
+    }
+
+    const userData: Prisma.UserUpdateInput = {};
+    if (dto.phone !== undefined) {
+      if (target.isBot) userData.botPhone = dto.phone;
+      else userData.phone = dto.phone;
+    }
+    if (dto.email !== undefined) userData.email = dto.email;
+    if (dto.occupationSector !== undefined) userData.occupationSector = dto.occupationSector;
+
+    const profileData: Prisma.ProfileUpdateInput = {};
+    if (dto.firstName !== undefined) profileData.firstName = dto.firstName.trim();
+    if (dto.lastName !== undefined) profileData.lastName = dto.lastName.trim();
+    if (dto.gender !== undefined) profileData.gender = dto.gender;
+    if (dto.birthDate !== undefined) profileData.birthDate = new Date(dto.birthDate);
+    if (dto.cityId !== undefined) profileData.primaryCity = dto.cityId;
+
+    try {
+      await this.prisma.$transaction([
+        this.prisma.user.update({ where: { id: targetId }, data: userData }),
+        ...(Object.keys(profileData).length
+          ? [this.prisma.profile.update({ where: { userId: targetId }, data: profileData })]
+          : []),
+      ]);
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+        throw new ConflictException("Telefon veya e-posta başka bir hesapta kayıtlı");
+      }
+      throw e;
+    }
+    return { ok: true };
+  }
+
   // ─── Hesap askıya al/aktifleştir ─────────────────────────────────────────
 
   async updateUserStatus(targetId: string, actorId: string, status: UserStatus, reason?: string) {
     const target = await this.prisma.user.findUnique({ where: { id: targetId } });
     if (!target) throw new NotFoundException("Kullanıcı bulunamadı");
     await this.assertCanSanction(targetId, actorId);
-    if (target.isBot) throw new BadRequestException("Bot durumunu /matching/admin/bots/:id/status kullanın");
+    if (target.isBot) throw new BadRequestException("Bu hesabın durumu buradan değiştirilemez");
+    if (status === UserStatus.ACTIVE && (await this.actorRole(actorId)) !== UserRole.SUPERADMIN) {
+      throw new ForbiddenException("Yaptırımı yalnızca süper admin kaldırabilir");
+    }
 
     // Askı / ban yaptırım kaydıyla uygulanır; aksi halde girişte otomatik kalkar
     if (status === UserStatus.SUSPENDED || status === UserStatus.BANNED) {
@@ -304,10 +465,26 @@ export class AdminService {
         : new Date(Date.now() + MASADA_DURATION_DAYS * 24 * 60 * 60 * 1000);
     }
 
-    const sub = await this.prisma.subscription.create({
-      data: { userId: targetId, plan, status: "ACTIVE", expiresAt: expiry },
-      select: { id: true, plan: true, status: true, expiresAt: true },
+    // Eski aktif paketler (ücretli dahil) iade yapılmadan iptal edilir; bekleyen iade talepleri reddedilir
+    const oldSubs = await this.prisma.subscription.findMany({
+      where: { userId: targetId, status: SubscriptionStatus.ACTIVE },
+      select: { id: true },
     });
+    const oldIds = oldSubs.map((s) => s.id);
+    const [, , sub] = await this.prisma.$transaction([
+      this.prisma.subscription.updateMany({
+        where: { id: { in: oldIds } },
+        data: { status: SubscriptionStatus.CANCELLED, cancelNote: `Admin yeni paket verdi: ${PLAN_CONFIG[plan].nametr}` },
+      }),
+      this.prisma.refundRequest.updateMany({
+        where: { subscriptionId: { in: oldIds }, status: RefundStatus.PENDING },
+        data: { status: RefundStatus.REJECTED, adminNote: "Paket admin tarafından değiştirildi" },
+      }),
+      this.prisma.subscription.create({
+        data: { userId: targetId, plan, status: "ACTIVE", expiresAt: expiry },
+        select: { id: true, plan: true, status: true, expiresAt: true },
+      }),
+    ]);
 
     return { subscription: sub, planLabel: PLAN_CONFIG[plan].nametr };
   }
@@ -319,8 +496,15 @@ export class AdminService {
       where: { meetingId_userId: { meetingId, userId } },
     });
     if (!participant) throw new NotFoundException('Katılımcı bu masada yok');
-    await this.prisma.meetingParticipant.delete({
-      where: { meetingId_userId: { meetingId, userId } },
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { type: true, createdAt: true } });
+    await this.prisma.$transaction(async (tx) => {
+      // Admin çıkarırsa başbaşa hakkı yanmaz (kendi iptal etmediyse)
+      if (meeting?.type === MeetingType.ONE_ON_ONE && participant.status !== "CANCELLED") {
+        await restoreOneOnOneRights(tx, meeting.createdAt, [userId]);
+      }
+      await tx.meetingParticipant.delete({
+        where: { meetingId_userId: { meetingId, userId } },
+      });
     });
     return { removed: true, meetingId, userId };
   }
@@ -331,11 +515,9 @@ export class AdminService {
     const kyc = await this.prisma.kycSubmission.findUnique({ where: { userId } });
     if (!kyc) throw new NotFoundException('KYC başvurusu bulunamadı');
     if (kyc.status === 'APPROVED') throw new BadRequestException('KYC zaten onaylı');
-    return this.prisma.kycSubmission.update({
-      where: { userId },
-      data: { status: 'APPROVED', reviewedById: reviewerId, reviewedAt: new Date() },
-      select: { id: true, status: true },
-    });
+    // Normal onayla aynı akış: bildirim + referral güncellemesi
+    const updated = await this.kyc.adminReview(kyc.id, reviewerId, { status: KycStatus.APPROVED });
+    return { id: updated.id, status: updated.status };
   }
 
   // ─── Test kilidi sıfırla ─────────────────────────────────────────────────
@@ -359,9 +541,18 @@ export class AdminService {
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
-    if (params.status) where.status = params.status;
+    if (params.status) {
+      if (!Object.values(MeetingStatus).includes(params.status as MeetingStatus)) {
+        throw new BadRequestException("Geçersiz masa durumu");
+      }
+      where.status = params.status;
+    }
 
-    // Şehir filtresi — katılımcı profilleri üzerinden
+    // Şehir filtresi
+    if (params.city?.trim()) {
+      where.city = { name: { contains: params.city.trim(), mode: "insensitive" } };
+    }
+
     // Hafta filtresi
     if (params.week) {
       const year = new Date().getFullYear();
@@ -398,7 +589,7 @@ export class AdminService {
 
   // ─── Masa detay ──────────────────────────────────────────────────────────
 
-  async getMeeting(meetingId: string) {
+  async getMeeting(meetingId: string, viewerRole: UserRole) {
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },
       include: {
@@ -442,7 +633,11 @@ export class AdminService {
       },
     });
 
-    return { ...meeting, blocks };
+    // Bot bilgisi yalnızca SUPERADMIN'e
+    const participants = viewerRole === UserRole.SUPERADMIN
+      ? meeting.participants
+      : meeting.participants.map(({ user: { isBot, ...user }, ...p }) => ({ ...p, user }));
+    return { ...meeting, participants, blocks };
   }
 
   // ─── Manuel masa kur ─────────────────────────────────────────────────────
@@ -493,10 +688,7 @@ export class AdminService {
     meetingId: string,
     data: { locationText?: string; locationUrl?: string; scheduledAt?: string },
   ) {
-    const meeting = await this.prisma.meeting.findUnique({
-      where: { id: meetingId },
-      include: { participants: { select: { userId: true } } },
-    });
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { id: true } });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
 
     const updated = await this.prisma.meeting.update({
@@ -508,13 +700,6 @@ export class AdminService {
       },
       select: { id: true, locationText: true, locationUrl: true, scheduledAt: true, type: true },
     });
-
-    if (data.locationText && updated.locationText) {
-      const scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : meeting.scheduledAt;
-      for (const p of meeting.participants) {
-        await this.notifications.notifyMeetingVenueSet(p.userId, meetingId, updated.locationText, scheduledAt);
-      }
-    }
 
     return updated;
   }
@@ -599,15 +784,31 @@ export class AdminService {
   // ─── Masa iptal ──────────────────────────────────────────────────────────
 
   async cancelMeeting(meetingId: string) {
-    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: { participants: { select: { userId: true, status: true } } },
+    });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
     if (meeting.status === MeetingStatus.COMPLETED) {
       throw new BadRequestException("Tamamlanmış masa iptal edilemez");
     }
-    return this.prisma.meeting.update({
-      where: { id: meetingId },
-      data: { status: MeetingStatus.CANCELLED },
-      select: { id: true, status: true },
+    if (meeting.status === MeetingStatus.CANCELLED) {
+      throw new BadRequestException("Masa zaten iptal edilmiş");
+    }
+    // Admin iptalinde abonelik hakkı yanmaz: başbaşa hakkı (kendi iptal etmemiş olanlara) geri verilir.
+    // Grup: katılımcı kaydı iptal sayılmadığı için o hafta tekrar eşleşebilir, iptal hakkı da yanmaz.
+    return this.prisma.$transaction(async (tx) => {
+      if (meeting.type === MeetingType.ONE_ON_ONE) {
+        const stillIn = meeting.participants
+          .filter((p) => !["CANCELLED", "DECLINED", "NO_SHOW"].includes(p.status))
+          .map((p) => p.userId);
+        await restoreOneOnOneRights(tx, meeting.createdAt, stillIn);
+      }
+      return tx.meeting.update({
+        where: { id: meetingId },
+        data: { status: MeetingStatus.CANCELLED },
+        select: { id: true, status: true },
+      });
     });
   }
 
@@ -753,17 +954,21 @@ export class AdminService {
 
   // ─── Sistem ayarları ─────────────────────────────────────────────────────
 
-  async getSettings() {
+  async getSettings(viewerRole: UserRole) {
     const configs = await this.prisma.appConfig.findMany();
     const map = Object.fromEntries(configs.map((c) => [c.key, c.value]));
     return {
       matchingEnabled: map['MATCHING_ENABLED'] !== 'false',
-      botSystemActive: map['BOT_SYSTEM_ACTIVE'] !== 'false',
+      // Bot ayarı yalnızca SUPERADMIN'e
+      ...(viewerRole === UserRole.SUPERADMIN ? { botSystemActive: map['BOT_SYSTEM_ACTIVE'] !== 'false' } : {}),
       maintenanceMode: map['MAINTENANCE_MODE'] === 'true',
     };
   }
 
-  async updateSettings(data: { matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean }) {
+  async updateSettings(data: { matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean }, viewerRole: UserRole) {
+    if (data.botSystemActive !== undefined && viewerRole !== UserRole.SUPERADMIN) {
+      throw new ForbiddenException("Bu ayarı değiştirme yetkiniz yok");
+    }
     const updates: Array<{ key: string; value: string }> = [];
     if (data.matchingEnabled !== undefined) updates.push({ key: "MATCHING_ENABLED", value: String(data.matchingEnabled) });
     if (data.botSystemActive !== undefined) updates.push({ key: "BOT_SYSTEM_ACTIVE", value: String(data.botSystemActive) });
@@ -775,12 +980,12 @@ export class AdminService {
         create: { key: u.key, value: u.value },
       });
     }
-    return this.getSettings();
+    return this.getSettings(viewerRole);
   }
 
   // ─── Admin matches ───────────────────────────────────────────────────────
 
-  async getPendingMatches() {
+  async getPendingMatches(viewerRole: UserRole) {
     const meetings = await this.prisma.meeting.findMany({
       where: { status: MeetingStatus.PENDING },
       orderBy: { scheduledAt: 'asc' },
@@ -828,7 +1033,8 @@ export class AdminService {
         const first = p.user.profile?.firstName ?? '';
         const last = p.user.profile?.lastName ?? '';
         return {
-          type: p.user.isBot ? ('BOT' as const) : ('REAL' as const),
+          // Bot bilgisi yalnızca SUPERADMIN'e
+          type: p.user.isBot && viewerRole === UserRole.SUPERADMIN ? ('BOT' as const) : ('REAL' as const),
           userId: p.user.id,
           initials: `${first[0] ?? '?'}.${last[0] ?? '?'}.`,
           gender: p.user.profile?.gender ?? null,
@@ -933,8 +1139,9 @@ export class AdminService {
       this.prisma.subscription.count({ where: { plan: SubscriptionPlan.ICERDE, status: SubscriptionStatus.ACTIVE } }),
     ]);
 
-    // Ciro: aktif abonelikler × plan fiyatı (bot dahil)
-    const totalRevenue = subMasada * 349 + subKarsimda * 449 + subIcerde * 679;
+    // Ciro: gerçek başarılı ödemeler (ücretsiz paket ve bot hariç), indirim düşülmüş
+    const finance = await this.financeTotals({ isBot: false });
+    const totalRevenue = finance.grossTL;
     const netCommission = Math.round(totalRevenue * 0.15 * 100) / 100;
 
     const matchRateThisWeek =
@@ -961,38 +1168,45 @@ export class AdminService {
       masadaCount: 0, karsimdaCount: 0, icerdeCount: 0,
     };
 
-    // DISCOUNT_USED referral'lardan toplam indirim tutarını hesapla
-    const discountUsedReferrals = await this.prisma.referral.findMany({
-      where: { status: ReferralStatus.DISCOUNT_USED, discountUsedAt: { not: null } },
-      select: { referrerId: true, discountUsedAt: true },
-    });
-
-    let referralTotalDiscountTL = 0;
-    for (const ref of discountUsedReferrals) {
-      const payment = await this.prisma.payment.findFirst({
-        where: { userId: ref.referrerId, status: "SUCCESS", paidAt: { gte: ref.discountUsedAt! } },
-        orderBy: { paidAt: 'asc' },
-        select: { amountKurus: true },
-      });
-      if (payment) {
-        referralTotalDiscountTL += (payment.amountKurus / 9) / 100;
-      }
-    }
-
     return {
       totalRevenue,
+      totalRefund: finance.refundTL,
+      netRevenue: finance.netTL,
       netCommission,
       activeUsers,
       kycPending,
       matchRateThisWeek,
       referralRegisteredCount,
-      referralTotalDiscountTL: Math.round(referralTotalDiscountTL * 100) / 100,
+      referralTotalDiscountTL: finance.discountTL,
       totalMeetings,
       groupMeetings,
       oneOnOneMeetings,
       algorithmSuccessRate,
       packageDistribution,
     };
+  }
+
+  // Brüt (ödenen, indirim düşülmüş), indirim, onaylanan iade ve net tutarlar — TL
+  private async financeTotals(userWhere: Prisma.UserWhereInput) {
+    const [payments, refunds] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: { status: "SUCCESS", user: userWhere },
+        select: { plan: true, amountKurus: true, discountType: true },
+      }),
+      this.prisma.refundRequest.aggregate({
+        where: { status: RefundStatus.APPROVED, user: userWhere },
+        _sum: { refundedKurus: true },
+      }),
+    ]);
+    let grossKurus = 0;
+    let discountKurus = 0;
+    for (const p of payments) {
+      grossKurus += p.amountKurus;
+      if (p.discountType) discountKurus += PLAN_CONFIG[p.plan].amountKurus - p.amountKurus;
+    }
+    const refundKurus = refunds._sum.refundedKurus ?? 0;
+    const tl = (k: number) => Math.round(k) / 100;
+    return { grossTL: tl(grossKurus), discountTL: tl(discountKurus), refundTL: tl(refundKurus), netTL: tl(grossKurus - refundKurus) };
   }
 
   // ─── Stats cities ─────────────────────────────────────────────────────────
@@ -1014,24 +1228,17 @@ export class AdminService {
       },
     });
 
-    const PLAN_PRICE: Record<string, number> = { MASADA: 349, KARSIMDA: 449, ICERDE: 679 };
-
     const results = await Promise.all(
       cities.map(async (city) => {
-        const [totalTables, activeMembers, activeSubs, thisWeekSubs, prevWeekSubs] = await Promise.all([
+        const [totalTables, activeMembers, finance, thisWeekSubs, prevWeekSubs] = await Promise.all([
           this.prisma.meeting.count({
             where: { status: MeetingStatus.COMPLETED, locationText: { contains: city.name } },
           }),
           this.prisma.profile.count({
             where: { primaryCity: city.name, user: { status: UserStatus.ACTIVE, isBot: false } },
           }),
-          this.prisma.subscription.findMany({
-            where: {
-              status: SubscriptionStatus.ACTIVE,
-              user: { profile: { primaryCity: city.name }, isBot: false },
-            },
-            select: { plan: true },
-          }),
+          // primaryCity şehir ID'si tutar
+          this.financeTotals({ isBot: false, profile: { primaryCity: city.id } }),
           this.prisma.subscription.count({
             where: {
               createdAt: { gte: weekStart },
@@ -1046,7 +1253,6 @@ export class AdminService {
           }),
         ]);
 
-        const revenue = activeSubs.reduce((sum, s) => sum + (PLAN_PRICE[s.plan] ?? 0), 0);
         const trend =
           prevWeekSubs > 0
             ? `${Math.round(((thisWeekSubs - prevWeekSubs) / prevWeekSubs) * 100)}%`
@@ -1056,7 +1262,10 @@ export class AdminService {
           city: city.name,
           totalTables,
           activeMembers,
-          revenue,
+          revenue: finance.grossTL,
+          discount: finance.discountTL,
+          refund: finance.refundTL,
+          net: finance.netTL,
           trend,
         };
       }),
@@ -1159,12 +1368,21 @@ export class AdminService {
         orderBy: { createdAt: "desc" },
         include: {
           user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
-          subscription: { select: { plan: true, createdAt: true } },
+          subscription: { select: { plan: true, createdAt: true, payment: { select: { amountKurus: true, status: true } } } },
         },
       }),
       this.prisma.adminAlert.count({ where: { isRead: false } }),
     ]);
-    return { alerts, refunds, unreadCount };
+    // Onaylananlarda iade edilen, bekleyenlerde iade edilecek tutar
+    const refundsWithAmount = refunds.map(({ subscription, ...r }) => {
+      const paid = subscription.payment?.status === "SUCCESS" ? subscription.payment.amountKurus : null;
+      return {
+        ...r,
+        subscription: { plan: subscription.plan, createdAt: subscription.createdAt },
+        refundAmountKurus: r.refundedKurus ?? (paid !== null ? PaymentService.refundAmountKurus(subscription.plan, r.refundType, paid) : null),
+      };
+    });
+    return { alerts, refunds: refundsWithAmount, unreadCount };
   }
 
   async markAlertRead(id: string) {
@@ -1172,9 +1390,13 @@ export class AdminService {
     return { ok: true };
   }
 
-  async updateRefundStatus(id: string, status: RefundStatus, adminNote?: string) {
+  async updateRefundStatus(id: string, status: RefundStatus, ip: string, adminNote?: string) {
+    if (status === RefundStatus.APPROVED) {
+      return this.payment.approveRefund(id, ip, adminNote);
+    }
     const refund = await this.prisma.refundRequest.findUnique({ where: { id } });
     if (!refund) throw new NotFoundException("İade talebi bulunamadı.");
+    if (refund.status !== RefundStatus.PENDING) throw new BadRequestException("Bu iade talebi zaten sonuçlandırılmış.");
     await this.prisma.refundRequest.update({
       where: { id },
       data: { status, adminNote: adminNote ?? refund.adminNote },
@@ -1224,19 +1446,20 @@ export class AdminService {
       data: { userId, adminId, type, reason, expiresAt: expiresAt ?? null },
     });
 
-    if (type === SanctionType.BAN) {
+    if (type === SanctionType.BAN || type === SanctionType.SUSPENSION) {
+      const isBan = type === SanctionType.BAN;
       await this.prisma.user.update({
         where: { id: userId },
-        data: { status: UserStatus.BANNED },
+        data: { status: isBan ? UserStatus.BANNED : UserStatus.SUSPENDED },
       });
+      // Abonelik iptal edilir, iade yapılmaz; bekleyen iade talepleri reddedilir
       await this.prisma.subscription.updateMany({
         where: { userId, status: SubscriptionStatus.ACTIVE },
-        data: { status: SubscriptionStatus.CANCELLED, cancelNote: `Banlama: ${reason}` },
+        data: { status: SubscriptionStatus.CANCELLED, cancelNote: `${isBan ? "Banlama" : "Askı"}: ${reason}` },
       });
-    } else if (type === SanctionType.SUSPENSION) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { status: UserStatus.SUSPENDED },
+      await this.prisma.refundRequest.updateMany({
+        where: { userId, status: RefundStatus.PENDING },
+        data: { status: RefundStatus.REJECTED, adminNote: "Yaptırım nedeniyle iade yapılmaz" },
       });
     }
 
@@ -1245,6 +1468,9 @@ export class AdminService {
 
   async liftSanction(userId: string, sanctionId: string, actorId: string) {
     await this.assertCanSanction(userId, actorId);
+    if ((await this.actorRole(actorId)) !== UserRole.SUPERADMIN) {
+      throw new ForbiddenException("Yaptırımı yalnızca süper admin kaldırabilir");
+    }
     const sanction = await this.prisma.userSanction.findUnique({
       where: { id: sanctionId },
       select: { userId: true, type: true, liftedAt: true },
@@ -1278,13 +1504,19 @@ export class AdminService {
     return { lifted: true };
   }
 
-  async getUserSanctions(userId: string) {
+  async getUserSanctions(userId: string, viewerRole: UserRole) {
+    const target = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (!target) throw new NotFoundException("Kullanıcı bulunamadı");
+    if (target.role === UserRole.SUPERADMIN && viewerRole !== UserRole.SUPERADMIN) {
+      throw new ForbiddenException("Bu kullanıcıyı görüntüleme yetkiniz yok");
+    }
     return this.prisma.userSanction.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true, type: true, reason: true,
         expiresAt: true, liftedAt: true, createdAt: true,
+        meetingId: true,
         admin: { select: { profile: { select: { firstName: true, lastName: true } } } },
       },
     });

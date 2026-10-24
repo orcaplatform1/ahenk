@@ -13,11 +13,25 @@ import {
   ArrayMinSize,
   IsNotEmpty,
   IsIn,
+  IsEmail,
+  Matches,
 } from "class-validator";
 import { SANCTION_REASONS } from "../sanction-reasons";
 import { UserStatus, UserRole, SubscriptionPlan, VenueCategory, VenueType, SanctionType, PartnershipStatus, CareerStatus } from "@prisma/client";
 
 // ─── Kullanıcı ────────────────────────────────────────────────────────────────
+
+// Admin kişisel bilgi düzenleme; e-posta yalnızca SUPERADMIN
+export class AdminUpdateUserDto {
+  @IsOptional() @IsString() @MinLength(1) @MaxLength(50) firstName?: string;
+  @IsOptional() @IsString() @MinLength(1) @MaxLength(50) lastName?: string;
+  @IsOptional() @IsIn(["MALE", "FEMALE"], { message: "Geçersiz cinsiyet" }) gender?: "MALE" | "FEMALE";
+  @IsOptional() @IsDateString({}, { message: "Geçerli bir doğum tarihi girin" }) birthDate?: string;
+  @IsOptional() @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" }) phone?: string;
+  @IsOptional() @IsString() @MinLength(1) cityId?: string;
+  @IsOptional() @IsString() @MinLength(1) occupationSector?: string;
+  @IsOptional() @IsEmail({}, { message: "Geçerli bir e-posta adresi girin" }) email?: string;
+}
 
 export class UpdateUserStatusDto {
   @IsEnum(UserStatus)
@@ -241,6 +255,12 @@ export class SanctionReasonDto {
   @IsOptional()
   @IsIn(SANCTION_REASONS, { message: "Geçersiz sebep" })
   reason?: string;
+}
+
+export class NoShowWarningDto {
+  @IsString()
+  @IsNotEmpty()
+  meetingId: string;
 }
 
 // ─── Başvurular ────────────────────────────────────────────────────────────────

@@ -13,13 +13,6 @@ export class MeetingsController {
     private aiReportService: AiReportService,
   ) {}
 
-  // Kullanıcının aktif/bekleyen en yakın masası
-  @Get("my-current")
-  getMyCurrent(@Req() req: Request) {
-    const user = req.user as { id: string };
-    return this.meetingsService.getMyCurrent(user.id);
-  }
-
   @Get("dashboard")
   getDashboard(@Req() req: Request) {
     const user = req.user as { id: string };

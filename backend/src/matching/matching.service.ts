@@ -1,4 +1,5 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException, BadRequestException } from "@nestjs/common";
+import type { BotDto } from "./dto/update-bot.dto";
 import { PrismaService } from "../prisma/prisma.service";
 import { isBotSystemActive, isMaintenanceMode } from "../admin/app-settings";
 import { NotificationService } from "../notification/notification.service";
@@ -367,13 +368,23 @@ export class MatchingService {
             ...(oneOnOne ? { usedAt: null } : {}),
           },
         },
+        // Bu hafta aynı türde aktif masası olan ya da rezervasyonunu iptal eden havuza girmez
+        // (İçerde: grubu iptal eden yalnızca gruba, başbaşayı iptal eden yalnızca başbaşaya giremez)
         participations: {
           none: {
-            meeting: {
-              cycleId,
-              status: { in: ["PENDING", "ACTIVE"] },
-              ...(oneOnOne ? { type: MeetingType.ONE_ON_ONE } : { type: MeetingType.GROUP }),
-            },
+            OR: [
+              {
+                meeting: {
+                  cycleId,
+                  status: { in: ["PENDING", "ACTIVE"] },
+                  type: oneOnOne ? MeetingType.ONE_ON_ONE : MeetingType.GROUP,
+                },
+              },
+              {
+                status: "CANCELLED",
+                meeting: { cycleId, type: oneOnOne ? MeetingType.ONE_ON_ONE : MeetingType.GROUP },
+              },
+            ],
           },
         },
       },
@@ -545,19 +556,59 @@ export class MatchingService {
   async listBots() {
     return this.prisma.user.findMany({
       where: { isBot: true },
-      select: { id: true, status: true, profile: { select: { firstName: true, lastName: true } } },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true, status: true, email: true, botPhone: true, occupationSector: true,
+        profile: { select: { firstName: true, lastName: true, gender: true, birthDate: true, primaryCity: true } },
+        oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
+      },
     });
   }
 
-  async updateBotName(botId: string, firstName: string, lastName: string) {
+  // Bot şehri katılım şehridir (primaryCity = City.id); aktif şehir olmalı
+  private async assertBotCity(cityId: string) {
+    const city = await this.prisma.city.findUnique({ where: { id: cityId }, select: { isActive: true } });
+    if (!city?.isActive) throw new BadRequestException("Seçilen şehir aktif değil");
+  }
+
+  private botOcean(dto: BotDto) {
+    return {
+      openness: dto.openness,
+      conscientiousness: dto.conscientiousness,
+      extraversion: dto.extraversion,
+      agreeableness: dto.agreeableness,
+      neuroticism: dto.neuroticism,
+    };
+  }
+
+  async updateBot(botId: string, dto: BotDto) {
     const bot = await this.prisma.user.findFirst({ where: { id: botId, isBot: true } });
     if (!bot) throw new NotFoundException("Bot bulunamadı");
-    return this.prisma.profile.upsert({
-      where: { userId: botId },
-      update: { firstName, lastName },
-      create: { userId: botId, firstName, lastName, isPublic: false },
-      select: { userId: true, firstName: true, lastName: true },
-    });
+    await this.assertBotCity(dto.cityId);
+    const profile = {
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      gender: dto.gender as Gender,
+      birthDate: new Date(dto.birthDate),
+      primaryCity: dto.cityId,
+    };
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: botId },
+        data: { botPhone: dto.phone, occupationSector: dto.occupationSector },
+      }),
+      this.prisma.profile.upsert({
+        where: { userId: botId },
+        update: profile,
+        create: { userId: botId, ...profile, isPublic: false },
+      }),
+      this.prisma.oceanScore.upsert({
+        where: { userId: botId },
+        update: this.botOcean(dto),
+        create: { userId: botId, ...this.botOcean(dto) },
+      }),
+    ]);
+    return { id: botId };
   }
 
   async setBotStatus(botId: string, active: boolean) {
@@ -570,31 +621,40 @@ export class MatchingService {
     });
   }
 
-  async createBot(firstName: string, lastName: string, oceanScore?: Partial<{
-    openness: number; conscientiousness: number; extraversion: number;
-    agreeableness: number; neuroticism: number;
-  }>) {
-    const idx = Date.now();
+  async createBot(dto: BotDto) {
+    await this.assertBotCity(dto.cityId);
+    // Sıradan kullanıcı gibi görünen sıralı adres: denge1@ahenk.co, denge2@ahenk.co …
+    const existing = await this.prisma.user.findMany({
+      where: { email: { startsWith: "denge", endsWith: "@ahenk.co" } },
+      select: { email: true },
+    });
+    const idx = existing.reduce((max, u) => {
+      const n = Number(u.email.slice("denge".length, -"@ahenk.co".length));
+      return Number.isInteger(n) && n > max ? n : max;
+    }, 0) + 1;
+    // Telefon gerçek telefon alanına değil botPhone'a yazılır: bildirim gitmez, kayıt çakışmaz
     const bot = await this.prisma.user.create({
       data: {
-        email: `bot-${idx}@ahenk.tr`,
+        email: `denge${idx}@ahenk.co`,
         passwordHash: "bot-no-login",
         isBot: true,
         emailVerified: true,
-        profile: { create: { firstName, lastName, isPublic: false } },
+        botPhone: dto.phone,
+        occupationSector: dto.occupationSector,
+        profile: {
+          create: {
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            gender: dto.gender as Gender,
+            birthDate: new Date(dto.birthDate),
+            primaryCity: dto.cityId,
+            isPublic: false,
+          },
+        },
+        oceanScore: { create: this.botOcean(dto) },
       },
     });
-    await this.prisma.oceanScore.create({
-      data: {
-        userId: bot.id,
-        openness: oceanScore?.openness ?? 50,
-        conscientiousness: oceanScore?.conscientiousness ?? 50,
-        extraversion: oceanScore?.extraversion ?? 50,
-        agreeableness: oceanScore?.agreeableness ?? 50,
-        neuroticism: oceanScore?.neuroticism ?? 50,
-      },
-    });
-    return { id: bot.id, email: bot.email, firstName, lastName };
+    return { id: bot.id, email: bot.email };
   }
 
   async deleteBot(botId: string) {

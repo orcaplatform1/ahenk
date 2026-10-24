@@ -24,6 +24,8 @@ interface PackageDist {
 
 interface StatsOverview {
   totalRevenue: number;
+  totalRefund: number;
+  netRevenue: number;
   netCommission: number;
   activeUsers: number;
   kycPending: number;
@@ -42,6 +44,9 @@ interface CityRow {
   totalTables: number;
   activeMembers: number;
   revenue: number;
+  discount: number;
+  refund: number;
+  net: number;
   trend: string;
 }
 
@@ -124,12 +129,17 @@ export default function AdminStats() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Şehir tablosu ve özet ayrı ayrı düşebilir; genel bakışı engellemesin ama hata görünsün
+    const partErrors: string[] = [];
     Promise.all([
       api.get<StatsOverview>('/admin/stats/overview'),
-      api.get<CityRow[]>('/admin/stats/cities').catch(() => [] as CityRow[]),
-      api.get<DashboardSummary>('/admin/dashboard').catch(() => null),
+      api.get<CityRow[]>('/admin/stats/cities').catch((e: Error) => { partErrors.push(`Şehir tablosu yüklenemedi: ${e.message}`); return [] as CityRow[]; }),
+      api.get<DashboardSummary>('/admin/dashboard').catch((e: Error) => { partErrors.push(`Özet yüklenemedi: ${e.message}`); return null; }),
     ])
-      .then(([overview, cityRows, dash]) => { setData(overview); setCities(cityRows); setSummary(dash); })
+      .then(([overview, cityRows, dash]) => {
+        setData(overview); setCities(cityRows); setSummary(dash);
+        if (partErrors.length) setError(partErrors.join(' · '));
+      })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -199,6 +209,11 @@ export default function AdminStats() {
             />
           </div>
 
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 12 }}>
+            <StatCard label="İade Tutarları" value={data.totalRefund} prefix="₺" fmtFn={fmtK} accent={RED} />
+            <StatCard label="Net Ciro" value={data.netRevenue} prefix="₺" fmtFn={fmtK} accent={GREEN} sub="Brüt ciro − iadeler" />
+          </div>
+
           {/* Kurulan Masa */}
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
@@ -249,10 +264,10 @@ export default function AdminStats() {
           </div>
         ) : cities.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', minWidth: 380, borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  {['Şehir', 'Masa', 'Üye', 'Ciro', 'Trend'].map(h => (
+                  {['Şehir', 'Masa', 'Üye', 'Ciro', 'İndirim', 'İade', 'Net', 'Trend'].map(h => (
                     <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: MUTED }}>{h}</th>
                   ))}
                 </tr>
@@ -264,6 +279,9 @@ export default function AdminStats() {
                     <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{row.totalTables}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{row.activeMembers}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>₺{fmtK(row.revenue)}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>₺{fmtK(row.discount)}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: row.refund > 0 ? RED : MUTED }}>₺{fmtK(row.refund)}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: TEXT }}>₺{fmtK(row.net)}</td>
                     <td style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: String(row.trend).startsWith('-') ? RED : GREEN }}>
                       {String(row.trend).startsWith('-') ? '↓ ' : '↑ '}{String(row.trend).replace('-', '')}
                     </td>

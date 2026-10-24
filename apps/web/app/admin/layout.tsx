@@ -20,7 +20,7 @@ const NAV_TOP = [
   { href: '/profil', label: 'Profilim' },
 ];
 
-const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean }[] = [
+const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; superadminOnly?: boolean }[] = [
   { href: '/admin/acil-yardim',  label: '🚨 Acil Yardım', sos: true },
   { href: '/admin/stats',        label: 'İstatistikler' },
   { href: '/admin/matches',      label: 'Masalar' },
@@ -31,7 +31,7 @@ const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean }[] 
   { href: '/admin/refunds',      label: 'İade Talepleri' },
   { href: '/admin/venues',       label: 'Mekanlar' },
   { href: '/admin/cities',       label: 'Şehirler' },
-  { href: '/admin/bots',         label: 'Bot Yönetimi' },
+  { href: '/admin/denge',        label: 'Bot Yönetimi', superadminOnly: true },
   { href: '/admin/quality',      label: 'Şikayetler' },
   { href: '/admin/partnerships', label: 'İş Ortaklığı' },
   { href: '/admin/careers',      label: 'Kariyer' },
@@ -45,8 +45,8 @@ const RED     = '#ef4444';
 const TEXT    = '#e2e8f0';
 const MUTED   = '#64748b';
 
-function NavLinks({ pathname, onClose, onLogout, unread }: {
-  pathname: string; onClose?: () => void; onLogout: () => void; unread: number;
+function NavLinks({ pathname, onClose, onLogout, unread, role }: {
+  pathname: string; onClose?: () => void; onLogout: () => void; unread: number; role: string | null;
 }) {
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', padding: 12, flex: 1, overflowY: 'auto' }}>
@@ -59,7 +59,7 @@ function NavLinks({ pathname, onClose, onLogout, unread }: {
         ))}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-        {NAV.map((n) => {
+        {NAV.filter((n) => !n.superadminOnly || role === 'SUPERADMIN').map((n) => {
           const active = pathname === n.href || pathname.startsWith(n.href + '/');
           const style = n.sos
             ? active
@@ -97,21 +97,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [ready, setReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     const token = api.getToken();
     if (!token) { router.replace('/giris'); return; }
-    const role = decodeJwtRole(token);
-    if (role !== 'ADMIN' && role !== 'SUPERADMIN') { router.replace('/dashboard'); return; }
+    const r = decodeJwtRole(token);
+    if (r !== 'ADMIN' && r !== 'SUPERADMIN') { router.replace('/dashboard'); return; }
+    setRole(r);
     setReady(true);
     api.get<{ unreadCount: number }>('/admin/alerts').then(d => setUnread(d.unreadCount ?? 0)).catch(() => {});
   }, [router]);
 
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
+  // Bot sayfaları yalnızca SUPERADMIN
+  const blocked = ready && role !== 'SUPERADMIN' && NAV.some((n) => n.superadminOnly && (pathname === n.href || pathname.startsWith(n.href + '/')));
+  useEffect(() => { if (blocked) router.replace('/admin/stats'); }, [blocked, router]);
+
   async function handleLogout() { await api.logout(); router.push('/'); }
 
-  if (!ready) {
+  if (!ready || blocked) {
     return (
       <div style={{ minHeight: '100vh', background: BG, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${RED}`, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
@@ -146,7 +152,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {/* Sidebar (desktop) */}
         <aside className="hidden md:flex" style={{ width: 208, flexShrink: 0, flexDirection: 'column', position: 'sticky', top: 52, height: 'calc(100vh - 52px)', background: SURFACE, borderRight: `1px solid ${BORDER}` }}>
-          <NavLinks pathname={pathname} onLogout={handleLogout} unread={unread} />
+          <NavLinks pathname={pathname} onLogout={handleLogout} unread={unread} role={role} />
         </aside>
         <main style={{ flex: 1, minWidth: 0, overflowX: 'hidden', background: BG }}>{children}</main>
       </div>
@@ -160,7 +166,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <motion.div className="md:hidden" style={{ position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50, width: 208, background: SURFACE, borderRight: `1px solid ${BORDER}`, boxShadow: '8px 0 32px rgba(0,0,0,0.7)', paddingTop: 52, display: 'flex', flexDirection: 'column' }}
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}>
-              <NavLinks pathname={pathname} onClose={() => setDrawerOpen(false)} onLogout={handleLogout} unread={unread} />
+              <NavLinks pathname={pathname} onClose={() => setDrawerOpen(false)} onLogout={handleLogout} unread={unread} role={role} />
             </motion.div>
           </>
         )}

@@ -34,9 +34,12 @@ export default function AdminQuality() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [reasons, setReasons] = useState<string[]>([]);
   const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
 
   function load() {
-    api.get<Report[]>('/admin/reports/pending').then(setReports).catch(() => {}).finally(() => setLoading(false));
+    api.get<Report[]>('/admin/reports/pending').then(setReports)
+      .catch((e: Error) => setError(`Şikayetler yüklenemedi: ${e.message}`))
+      .finally(() => setLoading(false));
   }
 
   useEffect(() => {
@@ -46,17 +49,29 @@ export default function AdminQuality() {
 
   async function quarantine(userId: string) {
     setActionLoading(userId + '_q');
-    await api.post(`/admin/users/${userId}/quarantine`, reason ? { reason } : {}).catch(() => {});
-    setActionLoading(null);
-    load();
+    setError('');
+    try {
+      await api.post(`/admin/users/${userId}/quarantine`, reason ? { reason } : {});
+      load();
+    } catch (e) {
+      setError(`Askıya alınamadı: ${(e as Error).message}`);
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   async function ban(userId: string) {
     if (!confirm('Kullanıcıyı ban et?')) return;
     setActionLoading(userId + '_b');
-    await api.post(`/admin/users/${userId}/ban`, reason ? { reason } : {}).catch(() => {});
-    setActionLoading(null);
-    load();
+    setError('');
+    try {
+      await api.post(`/admin/users/${userId}/ban`, reason ? { reason } : {});
+      load();
+    } catch (e) {
+      setError(`Banlanamadı: ${(e as Error).message}`);
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   return (
@@ -65,6 +80,8 @@ export default function AdminQuality() {
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>Şikayetler</h1>
       </div>
+
+      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
 
       {loading ? (
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>

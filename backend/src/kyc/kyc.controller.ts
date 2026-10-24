@@ -13,6 +13,7 @@ import {
   HttpCode,
   HttpStatus,
 } from "@nestjs/common";
+import { HideEmailForAdminInterceptor } from "../admin/hide-email.interceptor";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from "@nestjs/swagger";
@@ -71,6 +72,7 @@ export class KycController {
   @Get("admin")
   @UseGuards(RolesGuard)
   @Roles("ADMIN", "SUPERADMIN")
+  @UseInterceptors(HideEmailForAdminInterceptor)
   @ApiOperation({ summary: "[Admin] KYC başvurularını listele" })
   @ApiQuery({ name: "status", enum: KycStatus, required: false })
   @ApiQuery({ name: "page",   type: Number,    required: false })
@@ -102,6 +104,7 @@ export class KycController {
   @Get("admin/:id")
   @UseGuards(RolesGuard)
   @Roles("ADMIN", "SUPERADMIN")
+  @UseInterceptors(HideEmailForAdminInterceptor)
   @ApiOperation({ summary: "[Admin] Tek başvuruyu getir" })
   adminGetOne(@Param("id") id: string) {
     return this.kycService.adminGetOne(id);

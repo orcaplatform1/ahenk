@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { OtpService } from "../auth/otp/otp.service";
-import { VenuePreference } from "@prisma/client";
+import { VenuePreference, Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 
 @Injectable()
@@ -69,14 +69,26 @@ export class UsersService {
 
   async requestPhoneChange(userId: string, newPhone: string) {
     const existing = await this.prisma.user.findUnique({ where: { phone: newPhone } });
-    if (existing && existing.id !== userId) throw new ConflictException("Bu telefon numarası kullanılmaktadır.");
+    if (existing && existing.id === userId) throw new BadRequestException("Bu numara zaten hesabınızda kayıtlı.");
+    if (existing) throw new ConflictException("Bu telefon numarası kullanılmaktadır.");
     await this.otpService.send(newPhone);
     return { ok: true };
   }
 
   async verifyPhoneChange(userId: string, newPhone: string, code: string) {
+    // Kod gönderildikten sonra numara başka hesaba geçmiş olabilir → kod harcanmadan kontrol
+    const existing = await this.prisma.user.findUnique({ where: { phone: newPhone } });
+    if (existing && existing.id !== userId) throw new ConflictException("Bu telefon numarası kullanılmaktadır.");
     await this.otpService.verify(newPhone, code);
-    await this.prisma.user.update({ where: { id: userId }, data: { phone: newPhone } });
+    try {
+      await this.prisma.user.update({ where: { id: userId }, data: { phone: newPhone } });
+    } catch (e) {
+      // Kontrol ile kayıt arasında aynı numara alınmışsa (unique ihlali)
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+        throw new ConflictException("Bu telefon numarası kullanılmaktadır.");
+      }
+      throw e;
+    }
     return { ok: true };
   }
 

@@ -7,6 +7,7 @@ import { AiReportService } from "../meetings/ai-report.service";
 import { NotificationService } from "../notification/notification.service";
 import { SubscriptionPlan, SubscriptionStatus, KycStatus } from "@prisma/client";
 import { consumeOneOnOneRights } from "./one-on-one-right";
+import { cancellationNotice, initialsOf } from "../meetings/cancellation-notice";
 
 @Injectable()
 export class MatchingScheduler {
@@ -208,6 +209,17 @@ export class MatchingScheduler {
     }
   }
 
+  // Perşembe 20:00 (TR): grup iptal son anı — o hafta iptal olan masalara toplu bildirim
+  // (başbaşada bildirim iptal anında karşı tarafa gider)
+  @Cron("0 20 * * 4", { timeZone: "Europe/Istanbul" })
+  async notifyGroupCancellations(): Promise<void> {
+    try {
+      await this.sendGroupCancellationSummaries();
+    } catch (err) {
+      this.logger.error(`GROUP iptal özeti hatası: ${err}`);
+    }
+  }
+
   // Cuma 23:59 (TR): ONE_ON_ONE döngüsünü kapat
   @Cron("59 23 * * 5", { timeZone: "Europe/Istanbul" })
   async scheduleFridayOneOnOneClosing(): Promise<void> {
@@ -241,33 +253,40 @@ export class MatchingScheduler {
     }
   }
 
-  // Pazartesi 10:00 (TR): MASADA aboneliği 7 gün içinde dolacakları bildir
-  @Cron("0 10 * * 1", { timeZone: "Europe/Istanbul" })
-  async notifySubscriptionExpiring(): Promise<void> {
-    this.logger.log("Abonelik bitiş hatırlatmaları gönderiliyor...");
-    try {
-      const now = new Date();
-      const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const expiringSubs = await this.prisma.subscription.findMany({
-        where: {
-          plan: { in: [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE] },
-          status: SubscriptionStatus.ACTIVE,
-          expiresAt: { gte: now, lte: sevenDaysLater },
-        },
-        select: { userId: true, plan: true, expiresAt: true },
-      });
-      for (const sub of expiringSubs) {
-        if (sub.expiresAt) {
-          await this.notifications.notifySubscriptionExpiring(sub.userId, sub.expiresAt, sub.plan);
-        }
-      }
-      this.logger.log(`${expiringSubs.length} abonelik bitiş hatırlatması gönderildi`);
-    } catch (err) {
-      this.logger.error(`Abonelik bitiş hatırlatması hatası: ${err}`);
-    }
-  }
-
   // ─── Yardımcılar ──────────────────────────────────────────────────────────
+
+  // Grup iptal son anında (Perşembe 20:00) kalan katılımcılara masa başına tek bildirim.
+  // Tarama ekranındaki iptal edenler de bu anda kaybolur (meetings.service getDashboardTable).
+  private async sendGroupCancellationSummaries(): Promise<void> {
+    const now = new Date();
+    const meetings = await this.prisma.meeting.findMany({
+      where: {
+        type: 'GROUP',
+        status: { in: ['PENDING', 'ACTIVE'] },
+        // Bu haftanın Cumartesi masaları
+        scheduledAt: { gt: now, lt: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) },
+      },
+      select: {
+        id: true,
+        participants: {
+          select: { userId: true, status: true, user: { select: { profile: { select: { firstName: true, lastName: true } } } } },
+        },
+      },
+    });
+
+    let notified = 0;
+    for (const m of meetings) {
+      const cancelled = m.participants.filter((p) => p.status === 'CANCELLED');
+      if (cancelled.length === 0) continue;
+      const notice = cancellationNotice(cancelled.map((p) => initialsOf(p.user.profile)));
+      const remaining = m.participants.filter((p) => !['CANCELLED', 'DECLINED', 'NO_SHOW'].includes(p.status));
+      for (const p of remaining) {
+        await this.notifications.sendToUser(p.userId, { ...notice, data: { type: 'PARTICIPANT_LEFT', meetingId: m.id } });
+      }
+      notified++;
+    }
+    this.logger.log(`GROUP iptal özeti: ${notified} masa`);
+  }
 
   private async sendCycleClosingSoonNotifications(meetingType: 'GROUP' | 'ONE_ON_ONE'): Promise<void> {
     const isGroup = meetingType === 'GROUP';
