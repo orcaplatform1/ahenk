@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { OCCUPATION_SECTORS } from '@/lib/occupations';
+import { AdminSelect } from '@/components/AdminSelect';
+import { AdminDatePicker } from '@/components/AdminDatePicker';
 
 const BG     = '#020c1b';
 const SURFACE = '#0a1628';
@@ -108,10 +110,23 @@ export default function AdminBots() {
 
   const set = (k: keyof BotForm, v: string) => setForm(f => ({ ...f, [k]: v }));
   const oceanValid = OCEAN_FIELDS.every(({ key }) => form[key] !== '' && Number(form[key]) >= 0 && Number(form[key]) <= 100);
-  const formValid = !!form.firstName && !!form.lastName && !!form.gender && !!form.occupationSector && !!form.birthDate
-    && form.phone.length === 10 && form.phone.startsWith('5') && !!form.cityId && oceanValid;
+  // Eksik / hatalı alanlar: Kaydet'e basınca kullanıcıya yazılır (buton sessizce kilitlenmez)
+  const missingFields = [
+    !form.firstName.trim() && 'Ad',
+    !form.lastName.trim() && 'Soyad',
+    !form.gender && 'Cinsiyet',
+    !form.birthDate && 'Doğum tarihi',
+    !form.occupationSector && 'Meslek alanı',
+    !(form.phone.length === 10 && form.phone.startsWith('5')) && 'Telefon (5 ile başlayan 10 hane)',
+    !form.cityId && 'Şehir',
+    !oceanValid && 'Kişilik testi skorları (0-100)',
+  ].filter(Boolean) as string[];
 
   async function save() {
+    if (missingFields.length > 0) {
+      setModalError(`Eksik veya hatalı: ${missingFields.join(', ')}`);
+      return;
+    }
     setSaving(true);
     setModalError('');
     const body = {
@@ -315,12 +330,14 @@ export default function AdminBots() {
                   <option value="MALE">Erkek</option>
                   <option value="FEMALE">Kadın</option>
                 </select>
-                <input type="date" value={form.birthDate} onChange={e => set('birthDate', e.target.value)} style={inputStyle} title="Doğum tarihi" />
+                <AdminDatePicker value={form.birthDate} onChange={v => set('birthDate', v)} />
               </div>
-              <select value={form.occupationSector} onChange={e => set('occupationSector', e.target.value)} style={inputStyle}>
-                <option value="">Meslek alanı</option>
-                {OCCUPATION_SECTORS.map(o => <option key={o} value={o}>{o}</option>)}
-              </select>
+              <AdminSelect
+                value={form.occupationSector}
+                onChange={v => set('occupationSector', v)}
+                placeholder="Meslek alanı"
+                options={OCCUPATION_SECTORS.map(o => ({ value: o, label: o }))}
+              />
               <div style={{ display: 'flex', gap: 8 }}>
                 <div style={{ ...inputStyle, width: 'auto', color: MUTED, flexShrink: 0 }}>+90</div>
                 <input
@@ -348,12 +365,12 @@ export default function AdminBots() {
               </div>
               <button
                 onClick={save}
-                disabled={saving || !formValid}
+                disabled={saving}
                 style={{
                   width: '100%', padding: '9px', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer',
                   background: 'rgba(34,211,238,0.1)', border: `1px solid rgba(34,211,238,0.3)`,
                   fontSize: 12, fontWeight: 700, color: CYAN, fontFamily: SANS,
-                  opacity: saving || !formValid ? 0.5 : 1,
+                  opacity: saving ? 0.5 : 1,
                 }}
               >
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}

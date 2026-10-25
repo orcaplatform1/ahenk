@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { AdminSelect } from '@/components/AdminSelect';
 
 const BG     = '#020c1b';
 const SURFACE = '#0a1628';
@@ -22,7 +23,15 @@ const inputStyle: React.CSSProperties = {
   outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
 };
 
-interface City { id: string; name: string; }
+interface City { id: string; name: string; isActive?: boolean; }
+
+// Önce aktif şehirler, sonra diğerleri; ikisi de Türkçe alfabetik
+function sortCities(list: City[]): City[] {
+  return [...list].sort((a, b) =>
+    Number(!!b.isActive) - Number(!!a.isActive) || a.name.localeCompare(b.name, 'tr'));
+}
+
+const labelStyle: React.CSSProperties = { fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED, margin: '0 0 4px' };
 interface Venue {
   id: string; name: string; category: string; venueType?: string;
   address?: string; description?: string; isActive: boolean;
@@ -51,7 +60,7 @@ export default function AdminVenues() {
   }
 
   useEffect(() => {
-    api.get<City[]>('/admin/cities').then(setCities).catch((e: Error) => setError(`Şehirler yüklenemedi: ${e.message}`));
+    api.get<City[]>('/admin/cities').then(list => setCities(sortCities(list))).catch((e: Error) => setError(`Şehirler yüklenemedi: ${e.message}`));
     loadVenues();
   }, []);
 
@@ -127,32 +136,17 @@ export default function AdminVenues() {
       {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
 
       {/* Şehir filtresi */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
-        <button
-          onClick={() => { setSelectedCity(''); loadVenues(); }}
-          style={{
-            padding: '4px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
-            background: selectedCity === '' ? 'rgba(59,130,246,0.15)' : 'transparent',
-            border: `1px solid ${selectedCity === '' ? 'rgba(59,130,246,0.35)' : BORDER}`,
-            color: selectedCity === '' ? BLUE : MUTED,
-          }}
-        >
-          Tümü
-        </button>
-        {cities.map(c => (
-          <button
-            key={c.id}
-            onClick={() => { setSelectedCity(c.id); loadVenues(c.id); }}
-            style={{
-              padding: '4px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
-              background: selectedCity === c.id ? 'rgba(59,130,246,0.15)' : 'transparent',
-              border: `1px solid ${selectedCity === c.id ? 'rgba(59,130,246,0.35)' : BORDER}`,
-              color: selectedCity === c.id ? BLUE : MUTED,
-            }}
-          >
-            {c.name}
-          </button>
-        ))}
+      <div style={{ marginBottom: 20, maxWidth: 280 }}>
+        <AdminSelect
+          value={selectedCity}
+          onChange={id => { setSelectedCity(id); loadVenues(id || undefined); }}
+          placeholder="Tüm şehirler"
+          title="Şehir seç"
+          options={[
+            { value: '', label: 'Tüm şehirler' },
+            ...cities.map(c => ({ value: c.id, label: c.name, group: c.isActive ? 'Aktif şehirler' : 'Diğer şehirler' })),
+          ]}
+        />
       </div>
 
       {loading ? (
@@ -253,14 +247,48 @@ export default function AdminVenues() {
               <button onClick={() => setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: MUTED, padding: 4 }}>✕</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Mekan adı" style={inputStyle} />
-              <select value={form.cityId} onChange={e => setForm(f => ({ ...f, cityId: e.target.value }))} style={{ ...inputStyle, background: SURFACE }}>
-                {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} style={{ ...inputStyle, background: SURFACE }}>
-                {CATS.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Adres (opsiyonel)" style={inputStyle} />
+              <div>
+                <p style={labelStyle}>MEKAN ADI</p>
+                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Mekan adı" style={inputStyle} />
+              </div>
+              <div>
+                <p style={labelStyle}>ŞEHİR</p>
+                <select value={form.cityId} onChange={e => setForm(f => ({ ...f, cityId: e.target.value }))} style={{ ...inputStyle, background: SURFACE }}>
+                  <optgroup label="Aktif şehirler">
+                    {cities.filter(c => c.isActive).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </optgroup>
+                  <optgroup label="Diğer şehirler">
+                    {cities.filter(c => !c.isActive).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </optgroup>
+                </select>
+              </div>
+              <div>
+                <p style={labelStyle}>KATEGORİ</p>
+                <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} style={{ ...inputStyle, background: SURFACE }}>
+                  {CATS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <p style={labelStyle}>ADRES (OPSİYONEL)</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Adres" style={inputStyle} />
+                  {/* Kaydetmeden önce adresi kontrol etmek için Google Haritalar'da açar (şehir adıyla) */}
+                  <a
+                    href={form.address.trim()
+                      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${form.address.trim()}, ${cities.find(c => c.id === form.cityId)?.name ?? ''}`)}`
+                      : undefined}
+                    target="_blank" rel="noopener noreferrer"
+                    aria-disabled={!form.address.trim()}
+                    style={{
+                      flexShrink: 0, padding: '7px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600, textDecoration: 'none',
+                      background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', color: '#93c5fd',
+                      opacity: form.address.trim() ? 1 : 0.4, pointerEvents: form.address.trim() ? 'auto' : 'none', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Haritada gör
+                  </a>
+                </div>
+              </div>
               <button
                 onClick={save}
                 disabled={saving || !form.name || !form.cityId}

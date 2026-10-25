@@ -78,11 +78,18 @@ export default function AdminFiyatlar() {
 
   return (
     <div style={{ padding: 24, maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
-      <h1 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 700, color: TEXT }}>Paket Fiyatları</h1>
-      <p style={{ margin: '0 0 20px', fontSize: 12, color: MUTED, lineHeight: 1.6 }}>
-        Ham fiyat (KDV hariç) girin. Web fiyatı = ham + %20 KDV. Mobil fiyat = ham + %20 KDV, %15 mağaza komisyonu dahil (÷ 0,85).
-        Davet indirimi %10. Tüm fiyatlar tam TL&apos;ye yuvarlanır. Abonelikte mevcut aboneler sonraki yenilemede yeni fiyata geçer ve bir kez bilgilendirilir.
-      </p>
+      <h1 style={{ margin: '0 0 14px', fontSize: 20, fontWeight: 700, color: TEXT }}>Paket Fiyatları</h1>
+      {/* Hesaplama notu */}
+      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 16px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <div style={{ width: 2, height: 12, borderRadius: 1, background: AMBER }} />
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: AMBER }}>NOT</span>
+        </div>
+        <p style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.6 }}>
+          Ham fiyat (KDV hariç) girin. Web fiyatı = ham + %20 KDV. Mobil fiyat = ham + %20 KDV, %15 mağaza komisyonu dahil (÷ 0,85).
+          Davet indirimi %10. Tüm fiyatlar tam TL&apos;ye yuvarlanır. Abonelikte mevcut aboneler sonraki yenilemede yeni fiyata geçer ve bir kez bilgilendirilir.
+        </p>
+      </div>
       {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
 
       <div style={{ display: 'grid', gap: 12 }}>
@@ -94,7 +101,10 @@ export default function AdminFiyatlar() {
             <div key={c.plan} style={{ background: CARD, border: `1px solid ${changed ? 'rgba(245,158,11,0.5)' : BORDER}`, borderRadius: 10, padding: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: TEXT, minWidth: 80 }}>{c.name}</span>
-                <span style={{ fontSize: 10, color: MUTED }}>{c.recurring ? 'Aylık abonelik' : 'Tek seferlik'}</span>
+                <span style={{
+                  fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99,
+                  background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)',
+                }}>{c.recurring ? 'Aylık Abonelik' : 'Tek Seferlik'}</span>
                 <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: MUTED }}>
                   Ham fiyat
                   <input

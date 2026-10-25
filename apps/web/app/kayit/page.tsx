@@ -911,7 +911,7 @@ function DatePickerModal({ value, onChange, onClose }: {
 }) {
   const now = new Date();
   const maxYear = now.getFullYear() - 18;
-  const minYear = now.getFullYear() - 80;
+  const minYear = 1965; // en eski doğum tarihi 01.01.1965
 
   const parts = value ? value.split('-').map(Number) : [0, 0, 0];
   const [tmpYear,  setTmpYear]  = useState(parts[0] || maxYear);

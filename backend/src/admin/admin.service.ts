@@ -42,6 +42,7 @@ import { availableBots } from "../matching/bot-picker";
 import { MatchingService } from "../matching/matching.service";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
+import { OVERLAPPING_PLANS } from "../payment/plan-overlap";
 
 const PIONEER_MAX_QUOTA = 500;
 
@@ -173,7 +174,8 @@ export class AdminService {
           profile: { select: { firstName: true, lastName: true, city: true, isPioneer: true } },
           kyc: { select: { status: true } },
           oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
-          subscriptions: { select: { plan: true }, orderBy: { createdAt: 'desc' as const }, take: 3 },
+          // Sadece aktif paketler (Abonelikler sayfasındaki "Aktif" ile aynı kural)
+          subscriptions: { where: { status: SubscriptionStatus.ACTIVE }, select: { plan: true }, orderBy: { createdAt: 'desc' as const } },
         },
       }),
       this.prisma.user.count({ where }),
@@ -191,7 +193,7 @@ export class AdminService {
         profile: true,
         kyc: true,
         oceanScore: true,
-        subscriptions: { orderBy: { createdAt: "desc" }, take: 5 },
+        subscriptions: { where: { status: SubscriptionStatus.ACTIVE }, orderBy: { createdAt: "desc" } },
         payments: { orderBy: { createdAt: "desc" }, take: 10 },
         participations: {
           orderBy: { createdAt: "desc" },
@@ -475,9 +477,10 @@ export class AdminService {
         : new Date(Date.now() + MASADA_DURATION_DAYS * 24 * 60 * 60 * 1000);
     }
 
-    // Eski aktif paketler (ücretli dahil) iade yapılmadan iptal edilir; bekleyen iade talepleri reddedilir
+    // İçeriği çakışan aktif paketler (ücretli dahil) iade yapılmadan iptal edilir; bekleyen iade talepleri reddedilir.
+    // Çakışmayan paket kalır: Masada + Karşımda birlikte olabilir; İçerde ikisini de kapsar.
     const oldSubs = await this.prisma.subscription.findMany({
-      where: { userId: targetId, status: SubscriptionStatus.ACTIVE },
+      where: { userId: targetId, status: SubscriptionStatus.ACTIVE, plan: { in: OVERLAPPING_PLANS[plan] } },
       select: { id: true },
     });
     const oldIds = oldSubs.map((s) => s.id);

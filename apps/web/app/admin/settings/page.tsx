@@ -31,7 +31,7 @@ function Toggle({ label, desc, value, onChange }: {
         onClick={() => onChange(!value)}
         style={{
           position: 'relative', flexShrink: 0, width: 44, height: 24, borderRadius: 99,
-          background: value ? RED : SURFACE, border: `1px solid ${value ? RED : BORDER}`,
+          background: value ? GREEN : SURFACE, border: `1px solid ${value ? GREEN : BORDER}`,
           cursor: 'pointer', transition: 'background 0.2s',
         }}
       >
@@ -102,7 +102,7 @@ export default function AdminSettings() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <Toggle
                 label="Eşleştirme Aktif"
-                desc="Perşembe döngüsü çalışsın mı"
+                desc="Grup ve başbaşa masa ataması yapılsın mı"
                 value={settings.matchingEnabled}
                 onChange={v => setSettings(s => s ? { ...s, matchingEnabled: v } : s)}
               />
@@ -116,7 +116,7 @@ export default function AdminSettings() {
               )}
               <Toggle
                 label="Bakım Modu"
-                desc="Platform geçici olarak kapalı"
+                desc="Platform açık kalır; masa ataması ve paket satın alma durur, üyelere bakım uyarısı gösterilir"
                 value={settings.maintenanceMode}
                 onChange={v => setSettings(s => s ? { ...s, maintenanceMode: v } : s)}
               />
