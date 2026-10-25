@@ -97,8 +97,9 @@ export class AdminController {
     @Query("type") type?: string,
     @Query("page", new DefaultValuePipe(1), ParseIntPipe) page?: number,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit?: number,
+    @Req() req?: Request,
   ) {
-    return this.adminService.listUsers({ search, status, city, type, page, limit });
+    return this.adminService.listUsers({ search, status, city, type, page, limit }, (req!.user as { role: UserRole }).role);
   }
 
   @Get("users/:id")
@@ -124,6 +125,8 @@ export class AdminController {
     return this.adminService.updateUserStatus(id, actor.id, dto.status, dto.reason);
   }
 
+  @Roles(UserRole.SUPERADMIN)
+  @AdminAction("USER_ROLE", async (c) => ({ text: `${await c.userName(c.params.id)} kullanıcısının rolünü "${String(c.body.role)}" yaptı`, targetUserId: c.params.id }))
   @Patch("users/:id/role")
   updateUserRole(
     @Param("id") id: string,
@@ -176,8 +179,9 @@ export class AdminController {
     @Query("search") search?: string,
     @Query("page", new DefaultValuePipe(1), ParseIntPipe) page?: number,
     @Query("limit", new DefaultValuePipe(25), ParseIntPipe) limit?: number,
+    @Req() req?: Request,
   ) {
-    return this.adminService.listSubscriptions({ status, plan, search, page, limit });
+    return this.adminService.listSubscriptions({ status, plan, search, page, limit }, (req!.user as { role: UserRole }).role);
   }
 
   @AdminAction("SUBSCRIPTION_CANCEL", async (c) => {

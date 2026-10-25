@@ -273,11 +273,18 @@ export class AuthService {
     const user = await this.usersService.findById(userId);
     if (!user || user.status !== "ACTIVE") throw new UnauthorizedException("Oturum geçersiz");
 
-    // Eski token'ı iptal et, yeni üret (rotation)
-    await this.prisma.refreshToken.update({
-      where: { id: storedToken.id },
+    // Eski token'ı koşullu iptal et, yeni üret (rotation) — eşzamanlı ikinci kullanım reddedilir
+    const { count } = await this.prisma.refreshToken.updateMany({
+      where: { id: storedToken.id, revoked: false },
       data: { revoked: true },
     });
+    if (count === 0) {
+      await this.prisma.refreshToken.updateMany({
+        where: { userId, revoked: false },
+        data: { revoked: true },
+      });
+      throw new UnauthorizedException("Refresh token geçersiz");
+    }
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
     return { user: this.sanitizeUser(user), ...tokens };

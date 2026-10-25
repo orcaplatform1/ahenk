@@ -69,6 +69,8 @@ model User {
   planPriceChanges          PlanPrice[]
   adminActionLogs           AdminActionLog[]
   participantLocations      ParticipantLocation[]
+
+  @@index([phoneHash])
 }
 
 enum UserRole {
@@ -667,6 +669,7 @@ model ContactBlock {
 
   @@unique([userId, hashedPhone])
   @@index([userId])
+  @@index([hashedPhone])
 }
 
 // ─────────────────────────────────────────────
@@ -789,7 +792,7 @@ model RefundRequest {
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   subscriptionId String
-  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   refundType     RefundType
   status         RefundStatus @default(PENDING)
   adminNote      String?      @db.Text
@@ -839,6 +842,7 @@ model Referral {
   status         ReferralStatus @default(PENDING)
 
   @@index([referrerId])
+  @@index([referredId])
   @@index([status])
 }
 
@@ -881,8 +885,8 @@ model UserSanction {
   id        String       @id @default(cuid())
   userId    String
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  adminId   String
-  admin     User         @relation("SanctionAdmin", fields: [adminId], references: [id])
+  adminId   String?
+  admin     User?        @relation("SanctionAdmin", fields: [adminId], references: [id], onDelete: SetNull)
   type      SanctionType
   reason    String       @db.Text
   expiresAt DateTime?
@@ -907,10 +911,10 @@ enum SanctionType {
 
 model SosReport {
   id                  String              @id @default(cuid())
-  userId              String
-  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  meetingId           String
-  meeting             Meeting             @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId              String?
+  user                User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  meetingId           String?
+  meeting             Meeting?            @relation(fields: [meetingId], references: [id], onDelete: SetNull)
   threats             String[]
   lat                 Float?
   lng                 Float?
