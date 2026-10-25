@@ -582,20 +582,31 @@ export default function AcilYardimPage() {
   const [fetchError, setFetchError] = useState('');
   const [left, setLeft] = useState(REFRESH_SEC);
   const [tick, setTick] = useState(0);
-  const fetchReports = useCallback(async () => {
+  // Yenile butonunda görünür geri bildirim: Yenileniyor… → Yenilendi ✓
+  const [refreshState, setRefreshState] = useState<'idle' | 'loading' | 'done'>('idle');
+  const fetchReports = useCallback(async (manual = false) => {
     setLeft(REFRESH_SEC);
     setTick(t => t + 1); // açık kartların detayı (canlı konum) da yenilenir
+    if (manual) setRefreshState('loading');
+    let ok = false;
     try {
       const data = await api.get<SosReport[]>('/sos/admin/reports');
       setReports(data);
       setFetchError('');
       setLastFetch(new Date().toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul' }));
+      ok = true;
     } catch (e) {
       setFetchError(`Yenilenemedi: ${(e as Error).message}`);
     } finally {
       setLoading(false);
+      if (manual) setRefreshState(ok ? 'done' : 'idle');
     }
   }, []);
+  useEffect(() => {
+    if (refreshState !== 'done') return;
+    const id = setTimeout(() => setRefreshState('idle'), 1500);
+    return () => clearTimeout(id);
+  }, [refreshState]);
 
   useEffect(() => { fetchReports(); }, [fetchReports]);
   useEffect(() => {
@@ -655,14 +666,17 @@ export default function AcilYardimPage() {
             </span>
             <Clock />
             <button
-              onClick={fetchReports}
+              onClick={() => fetchReports(true)}
+              disabled={refreshState === 'loading'}
               style={{
-                background: BLUE_DIM, border: `1px solid rgba(59,130,246,0.3)`,
-                color: BLUE, fontSize: 11, padding: '5px 12px', borderRadius: 6,
-                cursor: 'pointer', fontFamily: SANS,
+                background: refreshState === 'done' ? 'rgba(34,197,94,0.12)' : BLUE_DIM,
+                border: `1px solid ${refreshState === 'done' ? 'rgba(34,197,94,0.35)' : 'rgba(59,130,246,0.3)'}`,
+                color: refreshState === 'done' ? GREEN : BLUE, fontSize: 11, padding: '5px 12px', borderRadius: 6,
+                cursor: refreshState === 'loading' ? 'wait' : 'pointer', fontFamily: SANS, whiteSpace: 'nowrap',
+                opacity: refreshState === 'loading' ? 0.7 : 1,
               }}
             >
-              Yenile
+              {refreshState === 'loading' ? 'Yenileniyor…' : refreshState === 'done' ? 'Yenilendi ✓' : 'Yenile'}
             </button>
           </div>
         </header>

@@ -117,7 +117,13 @@ export default function AdminCities() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{c.name}</span>
-                    {!c.isActive && (
+                    {c.isActive ? (
+                      <span style={{
+                        fontSize: 8, fontWeight: 800, letterSpacing: '0.1em',
+                        padding: '1px 6px', borderRadius: 99,
+                        background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', color: GREEN,
+                      }}>AKTİF</span>
+                    ) : (
                       <span style={{
                         fontSize: 8, fontWeight: 800, letterSpacing: '0.1em',
                         padding: '1px 6px', borderRadius: 99,

@@ -14,6 +14,7 @@ import { IyzicoService, IyzicoSubscriptionWebhook } from "./iyzico/iyzico.servic
 import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "./payment.constants";
 import { PricingService } from "./pricing.service";
 import { isMaintenanceMode } from "../admin/app-settings";
+import { OVERLAPPING_PLANS } from "./plan-overlap";
 import { decryptIdentityNumber } from "../kyc/identity-number";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { Prisma, SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType, ReferralStatus, PaymentDiscountType, UserStatus, MeetingType, MeetingStatus, RecurringStatus } from "@prisma/client";
@@ -102,12 +103,7 @@ export class PaymentService {
       select: { plan: true },
     });
     const owned = new Set(active.map((s) => s.plan));
-    const blockedBy: Record<SubscriptionPlan, SubscriptionPlan[]> = {
-      [SubscriptionPlan.MASADA]: [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE],
-      [SubscriptionPlan.KARSIMDA]: [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE],
-      [SubscriptionPlan.ICERDE]: [SubscriptionPlan.MASADA, SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE],
-    };
-    if (blockedBy[plan].some((p) => owned.has(p))) {
+    if (OVERLAPPING_PLANS[plan].some((p) => owned.has(p))) {
       throw new ConflictException("Aktif paketiniz bu paketi kapsıyor; bu paketi şu an satın alamazsınız.");
     }
   }

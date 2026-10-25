@@ -176,6 +176,9 @@ export default function AdminUsers() {
     try {
       await api.post(`/admin/users/${userModal.id}/free-subscription`, { plan: grantPlan });
       setGrantPlan('');
+      // Çakışan paket iptal edilmiş olabilir: rozetler ve listedeki Paket sütunu güncellenir
+      refreshUserModal(userModal.id);
+      load();
     } catch (e) { setError(`Abonelik verilemedi: ${(e as Error).message}`); }
     finally { setUserAction(null); }
   }
@@ -381,14 +384,15 @@ export default function AdminUsers() {
                   }}>
                     KYC: {userModal.kyc?.status === 'APPROVED' ? 'Onaylı ✓' : userModal.kyc?.status ?? 'Yok'}
                   </span>
-                  {userModal.subscriptions[0] && (
-                    <span style={{
+                  {/* Tüm aktif paketler (backend sadece ACTIVE gönderir) */}
+                  {userModal.subscriptions.map(s => (
+                    <span key={s.id} style={{
                       fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99,
                       background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)',
                     }}>
-                      {{ MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde' }[userModal.subscriptions[0].plan] ?? userModal.subscriptions[0].plan}
+                      {{ MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde' }[s.plan] ?? s.plan}
                     </span>
-                  )}
+                  ))}
                 </div>
 
                 {/* Kişisel bilgi düzenleme */}
