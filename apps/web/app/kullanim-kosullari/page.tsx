@@ -94,14 +94,14 @@ const sections = [
   },
   {
     n: '06',
-    title: 'Abonelik Paketleri ve Ödeme',
+    title: 'Paketler ve Ödeme',
     content: (
       <>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.65rem', marginBottom: '1.25rem' }}>
           {[
-            { name: 'Masada', price: <PlanPriceText plan="MASADA" suffix="₺/ay" />, desc: 'Grup masası eşleştirmesi' },
-            { name: 'Karşımda', price: <PlanPriceText plan="KARSIMDA" suffix="₺" />, desc: 'Başbaşa masa eşleştirmesi' },
-            { name: 'İçerde', price: <PlanPriceText plan="ICERDE" suffix="₺/ay" />, desc: 'Hem grup hem başbaşa masa eşleştirmesi, öncelikli eşleştirme' },
+            { name: 'Masada', price: <PlanPriceText plan="MASADA" suffix="₺" />, desc: '2 grup masası hakkı, 4 döngü geçerli' },
+            { name: 'Karşımda', price: <PlanPriceText plan="KARSIMDA" suffix="₺" />, desc: '1 başbaşa masası hakkı, 4 döngü geçerli' },
+            { name: 'İçerde', price: <PlanPriceText plan="ICERDE" suffix="₺" />, desc: '2 grup + 1 başbaşa masası hakkı (her kısım 4 döngü geçerli), öncelikli eşleştirme' },
           ].map((pkg) => (
             <div key={pkg.name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1.1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px' }}>
               <span style={{ fontWeight: 700, color: '#e8e8e8', minWidth: '90px', fontSize: '0.9rem' }}>{pkg.name}</span>
@@ -113,7 +113,7 @@ const sections = [
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.5rem' }}>
           {[
             'Ödemeler iyzico Ödeme Hizmetleri A.Ş. altyapısı üzerinden kredi kartı veya banka kartıyla tahsil edilir.',
-            'Abonelik her dönem başında otomatik olarak yenilenir.',
+            'Paketler tek seferliktir; abonelik ve otomatik yenileme yoktur. Haklar kullanıldığında ya da 4 döngü (yaklaşık 1 ay) dolduğunda paket sona erer.',
             'Fiyatlar KDV dahildir.',
             'Ahenk, makul süre öncesinden bildirim yapmak kaydıyla paket fiyatlarını güncelleme hakkını saklı tutar.',
           ].map((item) => (
@@ -131,11 +131,11 @@ const sections = [
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
-          'Kullanıcı istediği zaman aboneliğini iptal edebilir.',
-          'İptal işlemi mevcut abonelik dönemi sona erene kadar geçerli olmaz; hizmet dönem sonuna kadar aktif kalmaya devam eder.',
-          'Mevcut dönem için iade yapılmaz.',
+          'Paketler tek seferlik olduğundan iptal edilecek bir abonelik yoktur.',
+          'Paketin bir kısmında 4 döngü boyunca hiç masa kurulamazsa o kısım için iade talep edilebilir (İçerde paketinde grup ve başbaşa kısımları ayrı değerlendirilir).',
+          'Bir masa kurulduysa kalan hak bulunsa dahi hizmet alınmış sayılır ve iade yapılmaz; kullanılmayan haklar için kısmi iade yapılmaz.',
           'kimlik doğrulaması tamamlanmamış kullanıcılar eşleştirmeye dahil edilmez; bu nedenle iade talep edilemez.',
-          'Hesabın Ahenk tarafından kural ihlali nedeniyle kapatılması durumunda kalan abonelik süresi için iade yapılmaz.',
+          'Hesabın Ahenk tarafından kural ihlali nedeniyle kapatılması durumunda kalan haklar için iade yapılmaz.',
           'Masa kurulduktan sonra bir veya birden fazla katılımcının buluşmaya katılmaması, hizmetin ifa edilmediği anlamına gelmez ve iade sebebi teşkil etmez.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
@@ -191,7 +191,7 @@ const sections = [
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
           'Ahenk, platform üzerinden gerçekleşen buluşmalar sırasında veya sonrasında kullanıcılar arasında yaşanan kişisel anlaşmazlıklardan, maddi veya manevi zararlardan sorumlu tutulamaz.',
-          "Ahenk'in sorumluluğu her halükarda ilgili dönemde ödenen abonelik ücreti ile sınırlıdır.",
+          "Ahenk'in sorumluluğu her halükarda ilgili paket için ödenen ücret ile sınırlıdır.",
           'Mücbir sebep halleri (doğal afet, pandemi, altyapı kesintisi vb.) nedeniyle hizmetin aksamasından Ahenk sorumlu tutulamaz.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>

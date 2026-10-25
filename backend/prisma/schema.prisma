@@ -21,7 +21,7 @@ model User {
   emailVerified Boolean    @default(false)
   phoneVerified Boolean    @default(false)
   isBot         Boolean    @default(false)
-  botPhone      String?    // yalnızca bot: admin panelinde gösterilen numara (bildirim/kayıt sistemleri kullanmaz)
+  botPhone      String? // yalnızca bot: admin panelinde gösterilen numara (bildirim/kayıt sistemleri kullanmaz)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -63,7 +63,6 @@ model User {
   resolvedSosReports        SosReport[]           @relation("SosResolvedBy")
   claimedSosReports         SosReport[]           @relation("SosClaimedBy")
   identity                  UserIdentity?
-  recurringSubscriptions    RecurringSubscription[]
   planPriceChanges          PlanPrice[]
   adminActionLogs           AdminActionLog[]
   participantLocations      ParticipantLocation[]
@@ -292,19 +291,21 @@ enum MeetingStatus {
 }
 
 model MeetingParticipant {
-  id          String            @id @default(cuid())
-  meetingId   String
-  meeting     Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status      ParticipantStatus @default(INVITED)
-  matchScore  Float?
-  onMyWayAt   DateTime?
-  leaveReason LeaveReason?
-  leaveNote   String?           @db.Text
-  cancelledAt DateTime?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  meetingId       String
+  meeting         Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          ParticipantStatus @default(INVITED)
+  matchScore      Float?
+  onMyWayAt       DateTime?
+  leaveReason     LeaveReason?
+  leaveNote       String?           @db.Text
+  cancelledAt     DateTime?
+  // Grup kilidinde hakkı düşülen paket (admin masayı iptal ederse / katılımcıyı çıkarırsa hak bu pakete iade edilir)
+  groupRightSubId String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   @@unique([meetingId, userId])
   @@index([userId])
@@ -434,51 +435,18 @@ model AdminActionLog {
 // Paket fiyatı: SUPERADMIN ham (KDV hariç) fiyatı girer; web = ham × 1,20, mobil = ham × 1,20 ÷ 0,85,
 // davet indirimli = son fiyat × 0,90; hepsi tam TL'ye yuvarlanır. En son kayıt geçerli fiyattır, geçmiş silinmez.
 model PlanPrice {
-  id                    String           @id @default(cuid())
-  plan                  SubscriptionPlan
-  netKurus              Int
-  webKurus              Int
-  mobileKurus           Int
-  webDiscountKurus      Int
-  mobileDiscountKurus   Int
-  iyzicoPlanRef         String? // abonelik paketleri: iyzico normal fiyat planı
-  iyzicoDiscountPlanRef String? // abonelik paketleri: iyzico %10 indirimli fiyat planı
-  createdById           String?
-  createdBy             User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt             DateTime         @default(now())
+  id                  String           @id @default(cuid())
+  plan                SubscriptionPlan
+  netKurus            Int
+  webKurus            Int
+  mobileKurus         Int
+  webDiscountKurus    Int
+  mobileDiscountKurus Int
+  createdById         String?
+  createdBy           User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt           DateTime         @default(now())
 
   @@index([plan, createdAt])
-}
-
-// Otomatik yenilenen abonelik (iyzico Abonelik API). Her başarılı aylık çekim yeni bir Subscription dönemi açar.
-model RecurringSubscription {
-  id                       String          @id @default(cuid())
-  userId                   String
-  user                     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan                     SubscriptionPlan
-  status                   RecurringStatus @default(PENDING)
-  discounted               Boolean         @default(false) // sıradaki çekim indirimli planda mı
-  checkoutToken            String?         @unique
-  iyzicoSubscriptionRef    String?         @unique
-  iyzicoCustomerRef        String?
-  iyzicoPricingPlanRef     String?
-  initialDiscountType      PaymentDiscountType?
-  platform                 PaymentPlatform
-  cancelledAt              DateTime?
-  createdAt                DateTime        @default(now())
-  updatedAt                DateTime        @updatedAt
-  periods                  Subscription[]
-  payments                 Payment[]
-
-  @@index([userId, status])
-  @@index([iyzicoCustomerRef])
-}
-
-enum RecurringStatus {
-  PENDING   // ödeme formu açıldı, henüz tamamlanmadı
-  ACTIVE    // her ay yenileniyor
-  CANCELLED // kullanıcı iptal etti: ödenmiş dönem sonuna kadar sürer, yenilenmez
-  UNPAID    // yenileme çekimi başarısız: yeni hak verilmez
 }
 
 model UserIdentity {
@@ -538,9 +506,11 @@ model Subscription {
   cancelNote           String?            @db.Text
   missedGroupCycles    Int                @default(0)
   missedOneonOneCycles Int                @default(0)
-  // Otomatik yenilenen aboneliğin bir dönemi (Masada / İçerde); tek seferlik paketlerde boş
-  recurringId          String?
-  recurring            RecurringSubscription? @relation(fields: [recurringId], references: [id])
+  // Paket hakları (tek seferlik paketler): Masada / İçerde 2 grup masası hakkı; başbaşa hakkı usedAt ile izlenir.
+  // Her kısım 4 döngü geçerli: döngü sayaçları her kilitte (grup / başbaşa) 1 artar.
+  groupRights          Int                @default(0)
+  groupCycles          Int                @default(0)
+  oneOnOneCycles       Int                @default(0)
   payment              Payment?
   refundRequests       RefundRequest[]
   createdAt            DateTime           @default(now())
@@ -564,9 +534,6 @@ model Payment {
   iyzicoConversationId String?
   failureReason        String?              @db.Text
   discountType         PaymentDiscountType? // init'te uygulanan indirim; ödeme başarılı olunca harcanır
-  recurringId          String?
-  recurring            RecurringSubscription? @relation(fields: [recurringId], references: [id])
-  iyzicoOrderRef       String?              @unique // abonelik çekimi (webhook orderReferenceCode): aynı çekim iki kez işlenmez
   listKurus            Int? // indirimsiz liste fiyatı (o anki fiyattan); indirim tutarı istatistiği için
   paidAt               DateTime?
   createdAt            DateTime             @default(now())
@@ -621,13 +588,13 @@ model AppConfig {
 // ─────────────────────────────────────────────
 
 model City {
-  id               String    @id @default(cuid())
-  name             String    @unique
-  isActive         Boolean   @default(true)
-  venues           Venue[]
-  meetings         Meeting[]
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  name      String    @unique
+  isActive  Boolean   @default(true)
+  venues    Venue[]
+  meetings  Meeting[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Venue {

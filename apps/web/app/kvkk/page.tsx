@@ -54,7 +54,7 @@ const sections = [
           },
           {
             cat: 'Finansal Veriler',
-            items: ['Abonelik paketi, ödeme tarihleri — kart numarası Ahenk tarafından saklanmaz, iyzico tarafından işlenir'],
+            items: ['Satın alınan paket, ödeme tarihleri — kart numarası Ahenk tarafından saklanmaz, iyzico tarafından işlenir'],
           },
           {
             cat: 'Psikolojik / Kişilik Verileri',
@@ -109,7 +109,7 @@ const sections = [
           'Üyelik sözleşmesinin kurulması ve ifası',
           'kimlik doğrulama sürecinin yürütülmesi ve platform güvenliğinin sağlanması',
           'OCEAN kişilik modeline dayalı algoritmik eşleştirme ile kullanıcıya uygun masa buluşmalarının organize edilmesi',
-          'Abonelik ve ödeme işlemlerinin iyzico altyapısı üzerinden gerçekleştirilmesi',
+          'Paket satın alma ve ödeme işlemlerinin iyzico altyapısı üzerinden gerçekleştirilmesi',
           'Kullanıcıyla sistem bildirimleri ve e-posta aracılığıyla iletişim kurulması',
           'Yasal yükümlülüklerin yerine getirilmesi, yetkili kurum ve kuruluşlara bilgi/belge sunulması',
           'Şikâyet ve taleplerin yönetilmesi',
@@ -134,7 +134,7 @@ const sections = [
           },
           {
             basis: 'Sözleşmenin Kurulması veya İfası — Madde 5/2-c',
-            desc: 'Ad, soyad, e-posta, şehir, abonelik ve ödeme verileri.',
+            desc: 'Ad, soyad, e-posta, şehir, paket ve ödeme verileri.',
           },
           {
             basis: 'Veri Sorumlusunun Meşru Menfaati — Madde 5/2-f',
@@ -194,7 +194,7 @@ const sections = [
         <p style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666', marginBottom: '0.6rem' }}>Yurt İçi Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#e8e8e8' }}>iyzico Ödeme Hizmetleri A.Ş.</strong>
-          {' '}— ödeme ve abonelik işlemleri için zorunlu finansal veriler aktarılır; iyzico kendi KVKK yükümlülüklerini yerine getirmektedir.
+          {' '}— ödeme ve paket işlemleri için zorunlu finansal veriler aktarılır; iyzico kendi KVKK yükümlülüklerini yerine getirmektedir.
         </p>
         <p style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666', marginBottom: '0.6rem' }}>Yurt Dışı Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>

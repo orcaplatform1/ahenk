@@ -34,15 +34,16 @@ const sections = [
     content: (
       <>
         <p style={{ marginBottom: '1.25rem', lineHeight: 1.75 }}>
-          İşbu sözleşme, Alıcı'nın aşağıda belirtilen dijital abonelik paketlerinden birini satın alması ve Satıcı'nın bu hizmeti sunması karşılıklı yükümlülüklerini düzenler. Hizmetler <strong style={{ color: '#f5f5f5' }}>tamamen dijital niteliktedir</strong>; fiziksel teslimat söz konusu değildir.
+          İşbu sözleşme, Alıcı'nın aşağıda belirtilen tek seferlik dijital hizmet paketlerinden birini satın alması ve Satıcı'nın bu hizmeti sunması karşılıklı yükümlülüklerini düzenler. Hizmetler <strong style={{ color: '#f5f5f5' }}>tamamen dijital niteliktedir</strong>; fiziksel teslimat söz konusu değildir.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.85rem' }}>
           {[
             {
               name: 'Masada Paketi',
-              price: <PlanPriceText plan="MASADA" suffix="₺/ay" />,
+              price: <PlanPriceText plan="MASADA" suffix="₺" />,
               items: [
-                'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle her hafta şehirde grup masası buluşması organizasyonu',
+                'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle 2 grup masası buluşması hakkı',
+                'Haklar, satın alımdan sonraki 4 grup döngüsü (yaklaşık 1 ay) içinde kullanılır',
                 'Her buluşmada 4-8 kişilik grup masası',
                 'Mekan seçimi ve rezervasyonu Ahenk tarafından yapılır',
               ],
@@ -51,16 +52,18 @@ const sections = [
               name: 'Karşımda Paketi',
               price: <PlanPriceText plan="KARSIMDA" suffix="₺" />,
               items: [
-                'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle her hafta şehirde başbaşa buluşma organizasyonu',
+                'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle 1 başbaşa masası buluşması hakkı',
+                'Hak, satın alımdan sonraki 4 başbaşa döngüsü (yaklaşık 1 ay) içinde kullanılır',
                 'Her buluşmada 2 kişilik masa',
                 'Mekan seçimi ve rezervasyonu Ahenk tarafından yapılır',
               ],
             },
             {
               name: 'İçerde Paketi',
-              price: <PlanPriceText plan="ICERDE" suffix="₺/ay" />,
+              price: <PlanPriceText plan="ICERDE" suffix="₺" />,
               items: [
-                'Hem grup masası hem başbaşa buluşma seçeneği, öncelikli eşleştirme',
+                '2 grup masası + 1 başbaşa masası buluşması hakkı, öncelikli eşleştirme',
+                'Grup ve başbaşa hakları ayrı ayrı 4\'er döngü (yaklaşık 1 ay) içinde kullanılır',
                 'Mekan seçimi ve rezervasyonu Ahenk tarafından yapılır',
               ],
             },
@@ -80,7 +83,7 @@ const sections = [
             </div>
           ))}
         </div>
-        <p style={{ marginTop: '0.85rem', color: '#555', fontSize: '0.8rem' }}>Tüm fiyatlar KDV dahildir.</p>
+        <p style={{ marginTop: '0.85rem', color: '#555', fontSize: '0.8rem' }}>Tüm fiyatlar KDV dahildir. Paketler tek seferliktir; abonelik ve otomatik yenileme yoktur.</p>
       </>
     ),
   },
@@ -92,8 +95,7 @@ const sections = [
         {[
           'Ödemeler iyzico Ödeme Hizmetleri A.Ş. altyapısı üzerinden kredi kartı veya banka kartıyla güvenli şekilde tahsil edilir.',
           'Kart bilgileri Ahenk tarafından saklanmaz — iyzico\'nun PCI-DSS uyumlu sisteminde işlenir.',
-          'Abonelik her dönem başında otomatik olarak yenilenir ve kayıtlı karta tahsilat yapılır.',
-          'Tahsilat başarısız olursa abonelik askıya alınır ve kullanıcıya bildirim gönderilir.',
+          'Paketler tek seferlik ödemeyle satın alınır; abonelik, otomatik yenileme veya kayıtlı karttan tekrar tahsilat yapılmaz.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -108,9 +110,10 @@ const sections = [
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
-          'Ödemenin onaylanmasının ardından abonelik anında aktifleşir ve kullanıcı hesabına tanımlanır.',
+          'Ödemenin onaylanmasının ardından paket anında aktifleşir ve kullanıcı hesabına tanımlanır.',
           'Hizmet tamamen dijital niteliktedir; fiziksel ürün veya teslimat söz konusu değildir.',
-          'Kullanıcının abonelik dönemi boyunca hizmetten yararlanabilmesi için kimlik doğrulamasını tamamlamış olması zorunludur.',
+          'Kullanıcının paket süresince hizmetten yararlanabilmesi için kimlik doğrulamasını tamamlamış olması zorunludur.',
+          'Bir döngü, ilgili masa türünün haftalık eşleştirme dönemidir; paket hakları kullanıldığında ya da 4 döngü dolduğunda sona erer.',
           'Kimlik doğrulaması tamamlanmadan eşleştirmeye dahil olunamaz.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
@@ -143,11 +146,10 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1.25rem' }}>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
           {[
-            'Kullanıcı aboneliğini profil sayfasındaki Paketim sekmesinden istediği zaman iptal edebilir.',
-            'İptal işlemi mevcut abonelik döneminin sonunda geçerli olur; kalan süre için hizmet aktif kalmaya devam eder.',
-            'Mevcut dönem için kısmi veya tam iade yapılmaz.',
+            'Paketler tek seferlik olduğundan iptal edilecek bir abonelik yoktur; satın alınan haklar kullanıldığında ya da 4 döngü dolduğunda kendiliğinden sona erer.',
+            'Kullanılmayan haklar için kısmi iade yapılmaz; iade yalnızca aşağıdaki "Eşleşme Gerçekleşmemesi" koşulunda yapılır.',
             'Teknik arıza veya Ahenk kaynaklı hizmet kesintisi durumunda iade değerlendirilebilir; talep için bilgi@ahenk.co adresine başvurulmalıdır.',
-            'Hesabın kural ihlali nedeniyle Ahenk tarafından kapatılması durumunda kalan abonelik süresi için iade yapılmaz.',
+            'Hesabın kural ihlali nedeniyle Ahenk tarafından kapatılması durumunda kalan haklar için iade yapılmaz.',
           ].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -159,9 +161,10 @@ const sections = [
           <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#c0392b', marginBottom: '0.85rem' }}>Eşleşme Gerçekleşmemesi Durumunda İade</p>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
             {[
-              'Grup masası eşleşmesi 4 Perşembe döngüsü boyunca gerçekleşmezse; Masada paketi için tam iade, İçerde paketinde grup masası kısmı için yarım iade talep edilebilir.',
-              'Başbaşa eşleşme 4 döngü boyunca gerçekleşmezse; Karşımda paketi için tam iade, İçerde paketinde başbaşa kısmı için yarım iade talep edilebilir.',
-              'İçerde paketinde her iki eşleşme de gerçekleşmezse tam iade talep edilebilir.',
+              'Masada paketinde 4 grup döngüsü boyunca hiç grup masası kurulamazsa tam iade talep edilebilir.',
+              'Karşımda paketinde 4 başbaşa döngüsü boyunca başbaşa masası kurulamazsa tam iade talep edilebilir.',
+              'İçerde paketinde grup ve başbaşa kısımları ayrı değerlendirilir: bir kısımda 4 döngü boyunca hiç masa kurulamazsa o kısım için paket bedelinin yarısı, her iki kısımda da kurulamazsa tamamı iade edilebilir.',
+              'Paketin bir kısmında bir masa kurulduysa, kalan hak bulunsa dahi o kısım için hizmet alınmış sayılır ve iade yapılmaz.',
               'Masa kurulduğu halde kullanıcının katılım sağlamaması durumunda iade yapılmaz.',
               'Masa kurulduktan sonra bir veya birden fazla katılımcının buluşmaya katılmaması, hizmetin ifa edilmediği anlamına gelmez ve iade sebebi teşkil etmez.',
               'İade talepleri profil sayfasındaki İade Talep Et butonu üzerinden iletilir ve 5 iş günü içinde değerlendirilir.',
@@ -237,7 +240,7 @@ const sections = [
     title: 'Sözleşmenin Yürürlüğü',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Bu sözleşme, kullanıcının ödeme işlemini onaylamasıyla birlikte yürürlüğe girer ve abonelik süresi boyunca geçerliliğini korur. Sözleşmenin bir kopyası kullanıcının kayıtlı e-posta adresine gönderilir ve profil sayfasından her zaman erişilebilir.
+        Bu sözleşme, kullanıcının ödeme işlemini onaylamasıyla birlikte yürürlüğe girer ve satın alınan paketin hakları sona erene kadar geçerliliğini korur. Sözleşmenin bir kopyası kullanıcının kayıtlı e-posta adresine gönderilir ve profil sayfasından her zaman erişilebilir.
       </p>
     ),
   },

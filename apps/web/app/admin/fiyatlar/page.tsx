@@ -17,7 +17,7 @@ const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 type PlanKey = 'MASADA' | 'KARSIMDA' | 'ICERDE';
 interface CurrentPrice {
-  plan: PlanKey; name: string; recurring: boolean;
+  plan: PlanKey; name: string;
   netKurus: number; webKurus: number; mobileKurus: number;
   webDiscountKurus: number; mobileDiscountKurus: number; updatedAt: string;
 }
@@ -42,6 +42,8 @@ function parseNet(v: string): number | null {
   return Number.isFinite(n) && n >= 1 ? Math.round(n * 100) : null;
 }
 const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde' };
+// Paket hakları (her kısım 4 döngü geçerli)
+const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '2 grup masası', KARSIMDA: '1 başbaşa masası', ICERDE: '2 grup + 1 başbaşa masası' };
 
 export default function AdminFiyatlar() {
   const [data, setData] = useState<PricesResponse | null>(null);
@@ -87,7 +89,7 @@ export default function AdminFiyatlar() {
         </div>
         <p style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.6 }}>
           Ham fiyat (KDV hariç) girin. Web fiyatı = ham + %20 KDV. Mobil fiyat = ham + %20 KDV, %15 mağaza komisyonu dahil (÷ 0,85).
-          Davet indirimi %10. Tüm fiyatlar tam TL&apos;ye yuvarlanır. Abonelikte mevcut aboneler sonraki yenilemede yeni fiyata geçer ve bir kez bilgilendirilir.
+          Davet indirimi %10. Tüm fiyatlar tam TL&apos;ye yuvarlanır. Paketler tek seferlik; yeni fiyat sadece bundan sonraki satın almalarda geçerli olur.
         </p>
       </div>
       {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
@@ -104,7 +106,8 @@ export default function AdminFiyatlar() {
                 <span style={{
                   fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99,
                   background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)',
-                }}>{c.recurring ? 'Aylık Abonelik' : 'Tek Seferlik'}</span>
+                }}>Tek Seferlik</span>
+                <span style={{ fontSize: 10, color: MUTED }}>{PLAN_RIGHTS[c.plan]}</span>
                 <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: MUTED }}>
                   Ham fiyat
                   <input
@@ -180,11 +183,9 @@ export default function AdminFiyatlar() {
                 </tbody>
               </table>
             </div>
-            {changes.some(({ c }) => c.recurring) && (
-              <p style={{ margin: '12px 0 0', fontSize: 11, color: MUTED, lineHeight: 1.5 }}>
-                Abonelik paketlerinde iyzico&apos;da yeni fiyat planı açılır. Mevcut aboneler sonraki yenilemede yeni fiyata geçer ve bir kez uygulama içi bildirim alır.
-              </p>
-            )}
+            <p style={{ margin: '12px 0 0', fontSize: 11, color: MUTED, lineHeight: 1.5 }}>
+              Yeni fiyat sadece bundan sonraki satın almalarda geçerli olur; satın alınmış paketler etkilenmez.
+            </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button onClick={save} disabled={saving}
                 style={{ flex: 1, padding: '9px', borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: SANS, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: GREEN, cursor: 'pointer', opacity: saving ? 0.5 : 1 }}>

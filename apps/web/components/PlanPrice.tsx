@@ -30,7 +30,7 @@ export function usePlanPrices(): PlanPrices | null {
   return prices;
 }
 
-// Metin içinde fiyat: <PlanPriceText plan="MASADA" suffix="₺/ay" />
+// Metin içinde fiyat: <PlanPriceText plan="MASADA" suffix="₺" />
 export function PlanPriceText({ plan, discounted = false, suffix = '' }: { plan: PlanKeyName; discounted?: boolean; suffix?: string }) {
   const prices = usePlanPrices();
   const p = prices?.[plan];

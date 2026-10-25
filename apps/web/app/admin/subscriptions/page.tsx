@@ -33,6 +33,9 @@ interface Subscription {
   cancelNote: string | null;
   missedGroupCycles: number;
   missedOneonOneCycles: number;
+  groupRights: number;
+  groupCycles: number;
+  oneOnOneCycles: number;
   updatedAt: string;
   user: { id: string; email: string; phone: string | null; profile: { firstName: string; lastName: string } | null };
   payment: { platform: string; amountKurus: number; paidAt: string | null } | null;
@@ -180,7 +183,8 @@ export default function AdminSubscriptions() {
                     <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
                       Başlangıç {fmtDate(s.startsAt)}
                       {s.expiresAt ? ` · Bitiş ${fmtDate(s.expiresAt)}` : ''}
-                      {oneOnOneRight ? ` · Başbaşa hakkı: ${s.usedAt ? `kullanıldı (${fmtDate(s.usedAt)})` : 'kullanılmadı'}` : ''}
+                      {s.plan !== 'KARSIMDA' ? ` · Grup hakkı: ${s.groupRights}/2 kaldı, döngü ${s.groupCycles}/4` : ''}
+                      {oneOnOneRight ? ` · Başbaşa hakkı: ${s.usedAt ? `kullanıldı (${fmtDate(s.usedAt)})` : `kullanılmadı, döngü ${s.oneOnOneCycles}/4`}` : ''}
                     </p>
                     <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED }}>
                       {s.payment
@@ -211,7 +215,8 @@ export default function AdminSubscriptions() {
                   {s.status === 'EXPIRED' && (
                     <span style={{ fontSize: 9, fontWeight: 800, color: MUTED, flexShrink: 0 }}>SONA ERDİ</span>
                   )}
-                  {s.status === 'ACTIVE' && (s.missedGroupCycles >= 4 || s.missedOneonOneCycles >= 4) && (
+                  {/* 4 döngü dolmuş ve masa kurulamamış ücretli paket: kullanıcı iade talep edebilir (kesin kontrol talep anında) */}
+                  {s.status !== 'CANCELLED' && !!s.payment && (s.missedGroupCycles >= 4 || s.missedOneonOneCycles >= 4) && (
                     <span style={{ fontSize: 9, fontWeight: 800, color: GREEN, flexShrink: 0 }}>İADE HAKKI</span>
                   )}
                 </div>

@@ -27,7 +27,7 @@ import {
   Prisma,
   AdminAlertType,
 } from "@prisma/client";
-import { PLAN_CONFIG, MASADA_DURATION_DAYS } from "../payment/payment.constants";
+import { PLAN_CONFIG } from "../payment/payment.constants";
 import { vatOfGrossKurus } from "../payment/pricing";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { NotificationService } from "../notification/notification.service";
@@ -43,6 +43,7 @@ import { MatchingService } from "../matching/matching.service";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
 import { OVERLAPPING_PLANS } from "../payment/plan-overlap";
+import { GROUP_RIGHTS, restoreGroupRights } from "../payment/package-rights";
 
 const PIONEER_MAX_QUOTA = 500;
 
@@ -470,12 +471,8 @@ export class AdminService {
     const user = await this.prisma.user.findUnique({ where: { id: targetId } });
     if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
 
-    let expiry: Date | null = null;
-    if (plan === SubscriptionPlan.MASADA || plan === SubscriptionPlan.ICERDE) {
-      expiry = expiresAt
-        ? new Date(expiresAt)
-        : new Date(Date.now() + MASADA_DURATION_DAYS * 24 * 60 * 60 * 1000);
-    }
+    // Tek seferlik paket: haklar + 4 döngü (package-rights.ts); admin isterse ayrıca son tarih verebilir
+    const expiry: Date | null = expiresAt ? new Date(expiresAt) : null;
 
     // İçeriği çakışan aktif paketler (ücretli dahil) iade yapılmadan iptal edilir; bekleyen iade talepleri reddedilir.
     // Çakışmayan paket kalır: Masada + Karşımda birlikte olabilir; İçerde ikisini de kapsar.
@@ -494,7 +491,7 @@ export class AdminService {
         data: { status: RefundStatus.REJECTED, adminNote: "Paket admin tarafından değiştirildi" },
       }),
       this.prisma.subscription.create({
-        data: { userId: targetId, plan, status: "ACTIVE", expiresAt: expiry },
+        data: { userId: targetId, plan, status: "ACTIVE", expiresAt: expiry, groupRights: GROUP_RIGHTS[plan] },
         select: { id: true, plan: true, status: true, expiresAt: true },
       }),
     ]);
@@ -517,6 +514,10 @@ export class AdminService {
       // Admin çıkarırsa başbaşa hakkı yanmaz (kendi iptal etmediyse)
       if (meeting?.type === MeetingType.ONE_ON_ONE && participant.status !== "CANCELLED") {
         await restoreOneOnOneRights(tx, meeting.createdAt, [userId]);
+      }
+      // Grup: kilitte düşülen grup hakkı geri verilir (kendi iptal etmediyse)
+      if (meeting?.type === MeetingType.GROUP && participant.status !== "CANCELLED") {
+        await restoreGroupRights(tx, meetingId, [userId]);
       }
       await tx.meetingParticipant.delete({
         where: { meetingId_userId: { meetingId, userId } },
@@ -811,14 +812,18 @@ export class AdminService {
     if (meeting.status === MeetingStatus.CANCELLED) {
       throw new BadRequestException("Masa zaten iptal edilmiş");
     }
-    // Admin iptalinde abonelik hakkı yanmaz: başbaşa hakkı (kendi iptal etmemiş olanlara) geri verilir.
-    // Grup: katılımcı kaydı iptal sayılmadığı için o hafta tekrar eşleşebilir, iptal hakkı da yanmaz.
+    // Admin iptalinde paket hakkı yanmaz: başbaşa hakkı ve (kilitte düşüldüyse) grup hakkı, kendi iptal etmemiş
+    // olanlara geri verilir. Grup: katılımcı kaydı iptal sayılmadığı için o hafta tekrar eşleşebilir.
     return this.prisma.$transaction(async (tx) => {
+      const stillIn = meeting.participants
+        .filter((p) => !["CANCELLED", "DECLINED", "NO_SHOW"].includes(p.status))
+        .map((p) => p.userId);
       if (meeting.type === MeetingType.ONE_ON_ONE) {
-        const stillIn = meeting.participants
-          .filter((p) => !["CANCELLED", "DECLINED", "NO_SHOW"].includes(p.status))
-          .map((p) => p.userId);
         await restoreOneOnOneRights(tx, meeting.createdAt, stillIn);
+      }
+      // Grup: kilitten sonra iptal edilirse düşülen grup hakkı geri verilir
+      if (meeting.type === MeetingType.GROUP) {
+        await restoreGroupRights(tx, meetingId, stillIn);
       }
       return tx.meeting.update({
         where: { id: meetingId },
@@ -946,6 +951,7 @@ export class AdminService {
         select: {
           id: true, plan: true, status: true, startsAt: true, expiresAt: true, usedAt: true,
           cancelNote: true, missedGroupCycles: true, missedOneonOneCycles: true, createdAt: true, updatedAt: true,
+          groupRights: true, groupCycles: true, oneOnOneCycles: true,
           user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
           payment: { select: { platform: true, amountKurus: true, paidAt: true } },
         },

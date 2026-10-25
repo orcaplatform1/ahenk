@@ -1,10 +1,12 @@
 export type PlanKey = 'MASADA' | 'KARSIMDA' | 'ICERDE';
 
-// Sahip olunan tüm aktif paketlere göre (backend assertCanBuy ile aynı kural):
-// Masada → Masada/İçerde alınamaz; Karşımda → Karşımda/İçerde; İçerde → hiçbiri
-export function getPlanCardState(cardKey: string, owned: Set<PlanKey>) {
-  const ownsGroup = owned.has('MASADA') || owned.has('ICERDE');
-  const ownsOne = owned.has('KARSIMDA') || owned.has('ICERDE');
+export interface OpenParts { group: boolean; oneOnOne: boolean }
+
+// Backend assertCanBuy ile aynı kural: grup kısmı açıksa (hak kalmış, 4 döngü dolmamış) Masada / İçerde,
+// başbaşa kısmı açıksa Karşımda / İçerde alınamaz. Sahip olunan paketin kartında "Aktif Paketiniz" yazar.
+export function getPlanCardState(cardKey: string, owned: Set<PlanKey>, open: OpenParts) {
+  const ownsGroup = open.group;
+  const ownsOne = open.oneOnOne;
   if (owned.has(cardKey as PlanKey)) return { dimmed: true, badge: 'Aktif Paketiniz', badgeRed: true, showButton: false };
   if (cardKey === 'MASADA' && ownsGroup) return { dimmed: true, badge: 'Grup Masasına Sahipsin', badgeRed: false, showButton: false };
   if (cardKey === 'KARSIMDA' && ownsOne) return { dimmed: true, badge: 'Baş Başa Masasına Sahipsin', badgeRed: false, showButton: false };

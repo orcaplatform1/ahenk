@@ -3,11 +3,9 @@ import { ACCESS_COOKIE, REFRESH_COOKIE } from "./auth-cookies";
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-// iyzico'dan gelen dönüş/webhook istekleri: kullanıcı oturumu kullanmaz, kendi doğrulamaları var
+// iyzico'dan gelen ödeme dönüşü: kullanıcı oturumu kullanmaz, token iyzico'dan doğrulanır
 const EXEMPT_PATHS = new Set([
   "/api/v1/payment/callback",
-  "/api/v1/payment/subscription/callback",
-  "/api/v1/payment/subscription-webhook",
 ]);
 
 // CSRF koruması: oturum çereziyle gelen ve veri değiştiren isteklerde kaynak (Origin, yoksa Referer)

@@ -15,6 +15,7 @@ import * as bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { isMaintenanceMode } from "../admin/app-settings";
+import { groupPartOpen, oneOnOnePartOpen } from "../payment/package-rights";
 import { UsersService } from "../users/users.service";
 import { OtpService, OTP_RESEND_SECONDS } from "./otp/otp.service";
 import { RedisService } from "../redis/redis.service";
@@ -425,7 +426,7 @@ export class AuthService {
         : Promise.resolve(null),
       this.prisma.subscription.findMany({
         where: { userId: user.id, status: SubscriptionStatus.ACTIVE },
-        select: { plan: true },
+        select: { plan: true, groupRights: true, groupCycles: true, usedAt: true, oneOnOneCycles: true },
       }),
       this.currentSanction(user.id),
       isMaintenanceMode(this.prisma),
@@ -433,9 +434,10 @@ export class AuthService {
     // Profildeki sarı uyarı için gelmedi uyarı sayacı (askıdan sonra sıfırlanır)
     const noShowCount = await this.prisma.userSanction.count({ where: await activeNoShowWarningsWhere(this.prisma, user.id) });
 
-    const hasIcerde = activeSubs.some((s) => s.plan === 'ICERDE');
-    const hasMasada = activeSubs.some((s) => s.plan === 'MASADA' || s.plan === 'ICERDE');
-    const hasKarsimda = activeSubs.some((s) => s.plan === 'KARSIMDA' || s.plan === 'ICERDE');
+    // Paketin açık kısmına göre (hak kalmış ve 4 döngü dolmamış): grup / başbaşa
+    const hasMasada = activeSubs.some(groupPartOpen);
+    const hasKarsimda = activeSubs.some(oneOnOnePartOpen);
+    const hasIcerde = hasMasada && hasKarsimda && activeSubs.some((s) => s.plan === 'ICERDE');
     const activePlan = hasIcerde ? 'ICERDE' : hasMasada ? 'MASADA' : hasKarsimda ? 'KARSIMDA' : null;
 
     const { passwordHash, kyc, profile, ...safe } = user;
@@ -448,6 +450,8 @@ export class AuthService {
       activePlan,
       // Tüm aktif paketler (paket kartı kuralı: Masada + Karşımda birlikte olabilir)
       ownedPlans: [...new Set(activeSubs.map((s) => s.plan))],
+      // Açık kısımlar (hak kalmış, 4 döngü dolmamış): satın alma kuralı bunlara göre
+      openParts: { group: hasMasada, oneOnOne: hasKarsimda },
       activeSanction: activeSanction ?? null,
       noShowWarning: noShowCount > 0
         ? { count: noShowCount, remaining: Math.max(NO_SHOW_WARNING_LIMIT - noShowCount, 0) }

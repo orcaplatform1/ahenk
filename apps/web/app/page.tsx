@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { getPlanCardState, type PlanKey } from '@/lib/planCards';
+import { getPlanCardState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { HeroCountdown } from '@/components/HeroCountdown';
 import { PlanPriceText } from '@/components/PlanPrice';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
@@ -26,10 +26,10 @@ const plans = [
   {
     name: 'Masada',
     planKey: 'MASADA' as const,
-    desc: 'Aylık grup buluşma hakkı',
+    desc: '2 grup masası hakkı · 4 döngü geçerli',
     featured: false,
     bgImage: '/plan-masada.webp',
-    features: ['Her Hafta Grup Masası', 'Doğrulanmış Profiller', 'OCEAN Kişilik Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'],
+    features: ['2 Grup Masası Hakkı', 'Doğrulanmış Profiller', 'OCEAN Kişilik Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
@@ -39,7 +39,7 @@ const plans = [
   {
     name: 'Karşımda',
     planKey: 'KARSIMDA' as const,
-    desc: 'Tek kullanımlık başbaşa buluşma',
+    desc: '1 başbaşa masası hakkı · 4 döngü geçerli',
     featured: false,
     bgImage: '/plan-karsimda.webp',
     features: ['Tek Seferlik Baş Başa Masa', 'Doğrulanmış Profiller', 'OCEAN + Yaş Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'],
@@ -52,10 +52,10 @@ const plans = [
   {
     name: 'İçerde',
     planKey: 'ICERDE' as const,
-    desc: '1 ay Masada + 1 Karşımda hakkı',
+    desc: '2 grup + 1 başbaşa masası hakkı · tek seferlik',
     featured: true,
     bgImage: '/plan-icerde.webp',
-    features: ['4 Grup Masası + 1 Baş Başa Masa', 'Tüm Özellikler Dahil'],
+    features: ['2 Grup Masası + 1 Baş Başa Masa', 'Tüm Özellikler Dahil'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
@@ -524,12 +524,14 @@ export default function Home() {
   const router = useRouter();
   const [activeCity, setActiveCity] = useState('İstanbul');
   const [ownedPlans, setOwnedPlans] = useState<Set<PlanKey>>(new Set());
+  const [openParts, setOpenParts] = useState<OpenParts>({ group: false, oneOnOne: false });
   const [authState, setAuthState] = useState<{ loggedIn: boolean; kycApproved: boolean } | null>(null);
 
   useEffect(() => {
-    api.silentGet<{ ownedPlans?: PlanKey[]; isKycVerified?: boolean }>('/auth/me').then((d) => {
+    api.silentGet<{ ownedPlans?: PlanKey[]; openParts?: OpenParts; isKycVerified?: boolean }>('/auth/me').then((d) => {
       if (d) {
         setOwnedPlans(new Set(d.ownedPlans ?? []));
+        if (d.openParts) setOpenParts(d.openParts);
         setAuthState({ loggedIn: true, kycApproved: !!d.isKycVerified });
       } else {
         setAuthState({ loggedIn: false, kycApproved: false });
@@ -787,7 +789,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {plans.map((plan) => {
               const cardKey = plan.name === 'Masada' ? 'MASADA' : plan.name === 'Karşımda' ? 'KARSIMDA' : 'ICERDE';
-              const cs = getPlanCardState(cardKey, ownedPlans);
+              const cs = getPlanCardState(cardKey, ownedPlans, openParts);
               const inner = (
                 <div
                   className={plan.featured ? 'lp-feat-inner' : 'relative rounded-2xl overflow-hidden flex-1'}
