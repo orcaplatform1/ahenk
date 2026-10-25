@@ -1,0 +1,1008 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// KULLANICI
+// ─────────────────────────────────────────────
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  phone         String?    @unique
+  passwordHash  String
+  role          UserRole   @default(USER)
+  status        UserStatus @default(ACTIVE)
+  emailVerified Boolean    @default(false)
+  phoneVerified Boolean    @default(false)
+  isBot         Boolean    @default(false)
+  botPhone      String? // yalnızca bot: admin panelinde gösterilen numara (bildirim/kayıt sistemleri kullanmaz)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  profile                   Profile?
+  oceanScore                OceanScore?
+  oceanAnswers              OceanAnswer[]
+  participations            MeetingParticipant[]
+  notifications             Notification[]
+  refreshTokens             RefreshToken[]
+  consents                  ConsentLog[]
+  kyc                       KycSubmission?
+  kycReviews                KycSubmission[]       @relation("KycReviewer")
+  waitlistEntries           MatchingWaitlist[]
+  subscriptions             Subscription[]
+  payments                  Payment[]
+  occupationSector          String                @default("")
+  fcmToken                  String? // Firebase Cloud Messaging cihaz token'ı
+  quarantineUntil           DateTime? // Karantina bitiş tarihi
+  phoneHash                 String?
+  activeCity                String? // Aktif şehir (seyahat/tatil); kullanıcı temizleyene kadar geçerli, eşleştirmede ana şehrin yerine geçer
+  blocksGiven               UserBlock[]           @relation("BlockerRelation")
+  blocksReceived            UserBlock[]           @relation("BlockedRelation")
+  reportsMade               Report[]              @relation("ReportsByUser")
+  reportsReceived           Report[]              @relation("ReportsAgainstUser")
+  meetingReviews            MeetingReview[]       @relation("MeetingReviewer")
+  noShowReportsGiven        NoShowReport[]        @relation("NoShowReporter")
+  noShowReportsReceived     NoShowReport[]        @relation("NoShowReported")
+  contactBlocks             ContactBlock[]
+  adminAlerts               AdminAlert[]
+  refundRequests            RefundRequest[]
+  referralDiscountAvailable Boolean               @default(false)
+  referralsSent             Referral[]            @relation("ReferralsSent")
+  referralsReceived         Referral[]            @relation("ReferralsReceived")
+  kankaInvitesSent          KankaInvite[]         @relation("KankaInviteSender")
+  kankaLinksA               KankaLink[]           @relation("KankaLinkA")
+  kankaLinksB               KankaLink[]           @relation("KankaLinkB")
+  chatMessages              ChatMessage[]         @relation("ChatMessageSender")
+  chatReports               ChatReport[]          @relation("ChatReportSender")
+  sanctions                 UserSanction[]
+  sanctionsGiven            UserSanction[]        @relation("SanctionAdmin")
+  sosReports                SosReport[]
+  resolvedSosReports        SosReport[]           @relation("SosResolvedBy")
+  claimedSosReports         SosReport[]           @relation("SosClaimedBy")
+  identity                  UserIdentity?
+  planPriceChanges          PlanPrice[]
+  adminActionLogs           AdminActionLog[]
+  participantLocations      ParticipantLocation[]
+}
+
+enum UserRole {
+  USER
+  COACH
+  ADMIN
+  SUPERADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETED
+}
+
+// ─────────────────────────────────────────────
+// PROFİL
+// ─────────────────────────────────────────────
+
+model Profile {
+  id               String          @id @default(cuid())
+  userId           String          @unique
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName        String
+  lastName         String
+  birthDate        DateTime?
+  gender           Gender?
+  city             String? // İkamet şehri (gösterim amaçlı)
+  primaryCity      String? // Katılım birincil şehri (eşleştirmede kullanılır, zorunlu)
+  occupation       String?
+  bio              String?         @db.Text
+  avatarUrl        String?
+  interests        String[]
+  district         String? // İlçe
+  venueCategories  String[] // Mekan tercihleri (ör: "kafe", "park", "kütüphane")
+  topicPreferences String[] // Konu tercihleri (ör: "teknoloji", "müzik", "spor")
+  venuePreference  VenuePreference @default(NO_PREFERENCE)
+  isPioneer        Boolean         @default(false) // Öncü rozeti — admin tarafından atanır
+  isPublic         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+enum VenuePreference {
+  ALCOHOLIC
+  NON_ALCOHOLIC
+  NO_PREFERENCE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+// ─────────────────────────────────────────────
+// OCEAN KİŞİLİK TESTİ
+// ─────────────────────────────────────────────
+
+model OceanScore {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  openness          Float // Açıklık (0-100)
+  conscientiousness Float // Sorumluluk (0-100)
+  extraversion      Float // Dışadönüklük (0-100)
+  agreeableness     Float // Uyumluluk (0-100)
+  neuroticism       Float // Nevrotiklik (0-100)
+  adminCanReset     Boolean  @default(false) // Admin açarsa 180 gün kilidi devre dışı
+  completedAt       DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model OceanQuestion {
+  id           String         @id @default(cuid())
+  text         String
+  dimension    OceanDimension
+  reversed     Boolean        @default(false)
+  orderNum     Int // Global sıra (1-19)
+  section      Int // Bölüm numarası (1-6)
+  sectionTitle String // Bölüm başlığı
+  active       Boolean        @default(true)
+
+  answers OceanAnswer[]
+}
+
+enum OceanDimension {
+  OPENNESS
+  CONSCIENTIOUSNESS
+  EXTRAVERSION
+  AGREEABLENESS
+  NEUROTICISM
+}
+
+model OceanAnswer {
+  id         String        @id @default(cuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String
+  question   OceanQuestion @relation(fields: [questionId], references: [id])
+  sessionId  String // Bir test oturumunun tüm cevaplarını gruplar
+  score      Int // 1-5 (Likert ölçeği)
+  createdAt  DateTime      @default(now())
+
+  @@unique([userId, questionId, sessionId])
+  @@index([userId, sessionId])
+}
+
+// ─────────────────────────────────────────────
+// HAFTALIK EŞLEŞTİRME
+// ─────────────────────────────────────────────
+
+model MatchingCycle {
+  id         String      @id @default(cuid())
+  weekNumber Int // ISO hafta numarası (1-53)
+  year       Int
+  runAt      DateTime    @default(now())
+  status     CycleStatus @default(RUNNING)
+
+  meetings Meeting[]
+  waitlist MatchingWaitlist[]
+
+  @@unique([weekNumber, year])
+}
+
+enum CycleStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// ─────────────────────────────────────────────
+// BULUŞMA
+// ─────────────────────────────────────────────
+
+model Meeting {
+  id                   String         @id @default(cuid())
+  cycleId              String?
+  cycle                MatchingCycle? @relation(fields: [cycleId], references: [id])
+  cityId               String? // Masanın şehri (eşleştirmede yazılır)
+  city                 City?          @relation(fields: [cityId], references: [id])
+  type                 MeetingType
+  title                String
+  description          String?        @db.Text
+  scheduledAt          DateTime
+  endsAt               DateTime?
+  status               MeetingStatus  @default(PENDING)
+  maxParticipants      Int            @default(6)
+  venuePhotoUrl        String? // Mekan fotoğrafı 1 URL
+  venuePhoto2Url       String? // Mekan fotoğrafı 2 URL
+  venuePhoto3Url       String? // Mekan fotoğrafı 3 URL
+  venuePhotoCaption1   String? // Fotoğraf 1 başlığı (örn. "Ana Salon")
+  venuePhotoCaption2   String? // Fotoğraf 2 başlığı (örn. "Bar")
+  venuePhotoCaption3   String? // Fotoğraf 3 başlığı (örn. "Teras")
+  venueAddress         String? // Mekan adresi (ayrı alan)
+  locationUrl          String? // Google Maps URL
+  locationText         String? // Fiziksel mekan adı
+  registrationDeadline DateTime? // Kayıt kapanış (Cumartesi 10:00, uzatılabilir)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  participants         MeetingParticipant[]
+  reviews              MeetingReview[]
+  noShowReports        NoShowReport[]
+  sanctions            UserSanction[]
+  aiReport             MeetingAiReport?
+  chatMessages         ChatMessage[]
+  sosReports           SosReport[]
+  participantLocations ParticipantLocation[]
+
+  @@index([cityId])
+}
+
+model MeetingAiReport {
+  id          String   @id @default(cuid())
+  meetingId   String   @unique
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  content     String   @db.Text
+  uyumSkoru   Int
+  generatedAt DateTime @default(now())
+}
+
+// Değerlendirmede "masaya katılmadı" bildirimi
+model NoShowReport {
+  id         String   @id @default(cuid())
+  meetingId  String
+  meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  reporterId String
+  reporter   User     @relation("NoShowReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedId String
+  reported   User     @relation("NoShowReported", fields: [reportedId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([meetingId, reporterId, reportedId])
+  @@index([reportedId])
+  @@index([meetingId])
+}
+
+model MeetingReview {
+  id         String   @id @default(cuid())
+  meetingId  String
+  meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  reviewerId String
+  reviewer   User     @relation("MeetingReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  rating     Int
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@unique([meetingId, reviewerId])
+  @@index([meetingId])
+}
+
+enum MeetingType {
+  GROUP
+  ONE_ON_ONE
+  KANKA // Kankamla: 4 kişi (2E + 2K) — iki alıcı + kankaları
+}
+
+enum MeetingStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model MeetingParticipant {
+  id              String            @id @default(cuid())
+  meetingId       String
+  meeting         Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          ParticipantStatus @default(INVITED)
+  matchScore      Float?
+  onMyWayAt       DateTime?
+  leaveReason     LeaveReason?
+  leaveNote       String?           @db.Text
+  cancelledAt     DateTime?
+  // Grup kilidinde hakkı düşülen paket (admin masayı iptal ederse / katılımcıyı çıkarırsa hak bu pakete iade edilir)
+  groupRightSubId String?
+  // Kankamla masası: katılımcının masadaki kankası (kartta "kim kimin kankası") ve hakkı düşülen alıcı paketi
+  kankaPartnerId  String?
+  kankaRightSubId String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([meetingId, userId])
+  @@index([userId])
+}
+
+enum ParticipantStatus {
+  INVITED
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  ATTENDED
+  NO_SHOW
+}
+
+enum LeaveReason {
+  VENUE_NOT_SUITABLE
+  TIME_CHANGED
+  PERSONAL
+  OTHER
+}
+
+// ─────────────────────────────────────────────
+// BİLDİRİM
+// ─────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String           @db.Text
+  data      Json?
+  read      Boolean          @default(false)
+  sentAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}
+
+enum NotificationType {
+  EMAIL
+  PUSH
+  SMS
+  IN_APP
+  WHATSAPP
+}
+
+// ─────────────────────────────────────────────
+// JWT REFRESH TOKEN
+// ─────────────────────────────────────────────
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────
+// KVKK / ONAY KAYDI
+// ─────────────────────────────────────────────
+
+model ConsentLog {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      ConsentType
+  accepted  Boolean
+  ip        String?
+  userAgent String?
+  createdAt DateTime    @default(now())
+
+  @@index([userId, type])
+}
+
+enum ConsentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+  MARKETING_EMAIL
+  MARKETING_SMS
+}
+
+// ─────────────────────────────────────────────
+// EŞLEŞTİRME BEKLİSTE
+// ─────────────────────────────────────────────
+
+model MatchingWaitlist {
+  id      String        @id @default(cuid())
+  userId  String
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycleId String // Yerleştirilemediği hafta
+  cycle   MatchingCycle @relation(fields: [cycleId], references: [id])
+  reason  String // "ODD_NUMBER" | "GENDER_IMBALANCE"
+  addedAt DateTime      @default(now())
+
+  @@unique([userId, cycleId])
+  @@index([cycleId])
+}
+
+// ─────────────────────────────────────────────
+// KİMLİK DOĞRULAMA (KYC)
+// ─────────────────────────────────────────────
+
+// TC kimlik no: KYC onayında admin kimlik görselinden girer. AES-256-GCM şifreli; sadece ödemede iyzico'ya
+// gönderilmek için çözülür, hiçbir ekranda / API yanıtında gösterilmez.
+// ADMIN rolündeki yöneticilerin veri değiştiren işlemleri (SUPERADMIN işlemleri kaydedilmez).
+// Sadece SUPERADMIN görür; kayıt silinmez ve değiştirilmez.
+model AdminActionLog {
+  id           String   @id @default(cuid())
+  adminId      String
+  admin        User     @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  action       String // işlem kodu (ör. USER_SANCTION)
+  description  String   @db.Text // Türkçe açıklama
+  targetUserId String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([adminId, createdAt])
+}
+
+// Paket fiyatı: SUPERADMIN ham (KDV hariç) fiyatı girer; web = ham × 1,20, mobil = ham × 1,20 ÷ 0,85,
+// davet indirimli = son fiyat × 0,90; hepsi tam TL'ye yuvarlanır. En son kayıt geçerli fiyattır, geçmiş silinmez.
+model PlanPrice {
+  id                  String           @id @default(cuid())
+  plan                SubscriptionPlan
+  netKurus            Int
+  webKurus            Int
+  mobileKurus         Int
+  webDiscountKurus    Int
+  mobileDiscountKurus Int
+  createdById         String?
+  createdBy           User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt           DateTime         @default(now())
+
+  @@index([plan, createdAt])
+}
+
+model UserIdentity {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  identityNumberEnc String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model KycSubmission {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Cloudflare R2 nesne anahtarları
+  idFrontKey  String // kimlik ön yüz
+  idBackKey   String // kimlik arka yüz
+  livenessKey String // canlılık videosu (6-7 sn)
+
+  status KycStatus @default(PENDING)
+
+  // İnceleme bilgisi
+  reviewedById String?
+  reviewedBy   User?     @relation("KycReviewer", fields: [reviewedById], references: [id])
+  reviewedAt   DateTime?
+  rejectReason String?   @db.Text // REJECTED veya SUSPICIOUS durumunda doldurulur
+  adminNote    String?   @db.Text // İç not (kullanıcıya gösterilmez)
+
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPICIOUS
+}
+
+// ─────────────────────────────────────────────
+// ABONELIK & ÖDEME
+// ─────────────────────────────────────────────
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                 SubscriptionPlan
+  status               SubscriptionStatus @default(ACTIVE)
+  startsAt             DateTime           @default(now())
+  expiresAt            DateTime?
+  usedAt               DateTime?
+  cancelNote           String?            @db.Text
+  missedGroupCycles    Int                @default(0)
+  missedOneonOneCycles Int                @default(0)
+  // Paket hakları (tek seferlik paketler): Masada / İçerde 2 grup masası hakkı; başbaşa hakkı usedAt ile izlenir.
+  // Her kısım 4 döngü geçerli: döngü sayaçları her kilitte (grup / başbaşa) 1 artar.
+  groupRights          Int                @default(0)
+  groupCycles          Int                @default(0)
+  oneOnOneCycles       Int                @default(0)
+  // Kankamla: 2 masa hakkı, 4 döngü (Cumartesi kilidinde sayılır)
+  kankaRights          Int                @default(0)
+  kankaCycles          Int                @default(0)
+  missedKankaCycles    Int                @default(0)
+  payment              Payment?
+  refundRequests       RefundRequest[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([userId, status])
+}
+
+model Payment {
+  id                   String               @id @default(cuid())
+  userId               String
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId       String?              @unique
+  subscription         Subscription?        @relation(fields: [subscriptionId], references: [id])
+  plan                 SubscriptionPlan
+  amountKurus          Int // 34900 = 349.00 TL (kuruş cinsinden)
+  status               PaymentStatus        @default(PENDING)
+  platform             PaymentPlatform
+  iyzicoToken          String? // checkout form token
+  iyzicoPaymentId      String? // onay sonrası iyzico payment ID
+  iyzicoConversationId String?
+  failureReason        String?              @db.Text
+  discountType         PaymentDiscountType? // init'te uygulanan indirim; ödeme başarılı olunca harcanır
+  listKurus            Int? // indirimsiz liste fiyatı (o anki fiyattan); indirim tutarı istatistiği için
+  paidAt               DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([iyzicoToken])
+}
+
+enum SubscriptionPlan {
+  MASADA // 349 TL/ay — grup buluşma
+  KARSIMDA // 449 TL/tek kullanım — başbaşa buluşma
+  ICERDE // 679 TL — MASADA (1 ay) + KARSIMDA (1 kullanım) "Tercih Edilen"
+  KANKAMLA // tek seferlik, 2 Kankamla masası hakkı; alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentPlatform {
+  WEB
+  ANDROID
+  IOS
+}
+
+enum PaymentDiscountType {
+  REFERRER
+  INVITEE
+}
+
+// ─────────────────────────────────────────────
+// SİSTEM AYARLARI
+// ─────────────────────────────────────────────
+
+model AppConfig {
+  key       String   @id // ör: "MATCHING_ENABLED"
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// ŞEHİR & MEKAN
+// ─────────────────────────────────────────────
+
+model City {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  isActive  Boolean   @default(true)
+  venues    Venue[]
+  meetings  Meeting[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Venue {
+  id          String        @id @default(cuid())
+  name        String
+  description String?       @db.Text
+  category    VenueCategory
+  venueType   VenueType     @default(NON_ALCOHOLIC)
+  cityId      String
+  city        City          @relation(fields: [cityId], references: [id])
+  address     String?
+  latitude    Float?
+  longitude   Float?
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([cityId])
+}
+
+enum VenueCategory {
+  SADE
+  ORTA
+  PREMIUM
+}
+
+enum VenueType {
+  ALCOHOLIC
+  NON_ALCOHOLIC
+}
+
+// ─────────────────────────────────────────────
+// KULLANICI ENGELLEMESİ
+// ─────────────────────────────────────────────
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("BlockerRelation", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("BlockedRelation", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+}
+
+// ─────────────────────────────────────────────
+// REHBER ENGELLEMESİ
+// ─────────────────────────────────────────────
+
+model ContactBlock {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hashedPhone String
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, hashedPhone])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────
+// ŞİKAYET / RAPOR
+// ─────────────────────────────────────────────
+
+model Report {
+  id         String       @id @default(cuid())
+  reporterId String
+  reporter   User         @relation("ReportsByUser", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedId String
+  reported   User         @relation("ReportsAgainstUser", fields: [reportedId], references: [id], onDelete: Cascade)
+  reason     String
+  detail     String?      @db.Text
+  status     ReportStatus @default(PENDING)
+  adminNote  String?      @db.Text
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([reportedId, status])
+  @@index([reporterId])
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}
+
+// ─────────────────────────────────────────────
+// MEKAN ORTAKLIK BAŞVURUSU
+// ─────────────────────────────────────────────
+
+model PartnershipApplication {
+  id              String            @id @default(cuid())
+  businessName    String
+  contactName     String
+  email           String
+  phone           String
+  city            String
+  venueType       String
+  capacity        Int
+  description     String?           @db.Text
+  websiteOrSocial String?
+  status          PartnershipStatus @default(PENDING)
+  adminNote       String?           @db.Text
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PartnershipStatus {
+  PENDING
+  REVIEWED
+  APPROVED
+  REJECTED
+}
+
+// ─────────────────────────────────────────────
+// KARİYER BAŞVURUSU
+// ─────────────────────────────────────────────
+
+model CareerApplication {
+  id           String       @id @default(cuid())
+  fullName     String
+  email        String
+  phone        String
+  city         String
+  linkedinOrCv String?
+  motivation   String       @db.Text
+  hearFrom     String?
+  status       CareerStatus @default(PENDING)
+  adminNote    String?      @db.Text
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum CareerStatus {
+  PENDING
+  REVIEWED
+  SHORTLISTED
+  REJECTED
+}
+
+// ─────────────────────────────────────────────
+// ADMİN UYARI SİSTEMİ
+// ─────────────────────────────────────────────
+
+model AdminAlert {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alertType AdminAlertType
+  isRead    Boolean        @default(false)
+  createdAt DateTime       @default(now())
+
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum AdminAlertType {
+  MISSED_GROUP_CYCLES
+  MISSED_ONEONE_CYCLES
+  MISSED_KANKA_CYCLES
+  SOS_ALERT
+  BOT_NOT_FOUND
+}
+
+// ─────────────────────────────────────────────
+// İADE TALEBİ
+// ─────────────────────────────────────────────
+
+model RefundRequest {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  refundType     RefundType
+  status         RefundStatus @default(PENDING)
+  adminNote      String?      @db.Text
+  refundedKurus  Int? // onayda iyzico'dan iade edilen tutar
+  iyzicoRefundId String? // iyzico iade yanıtındaki paymentId
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum RefundType {
+  GROUP
+  ONEONE
+  FULL
+  KANKA // Kankamla paketi
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ─────────────────────────────────────────────
+// SADAKAT PROGRAMI
+// ─────────────────────────────────────────────
+
+enum ReferralStatus {
+  PENDING
+  REGISTERED
+  KYC_APPROVED
+  DISCOUNT_USED
+}
+
+model Referral {
+  id             String         @id @default(cuid())
+  createdAt      DateTime       @default(now())
+  referrerId     String
+  referrer       User           @relation("ReferralsSent", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredId     String?
+  referred       User?          @relation("ReferralsReceived", fields: [referredId], references: [id])
+  inviteCode     String         @unique @default(cuid())
+  invitedPhone   String?
+  discountUsedAt DateTime?
+  status         ReferralStatus @default(PENDING)
+
+  @@index([referrerId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// SOHBET SİSTEMİ
+// ─────────────────────────────────────────────
+
+model ChatMessage {
+  id        String       @id @default(cuid())
+  meetingId String
+  meeting   Meeting      @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User         @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  content   String       @db.Text
+  deletedAt DateTime?
+  createdAt DateTime     @default(now())
+  reports   ChatReport[]
+
+  @@index([meetingId, createdAt])
+  @@index([senderId])
+}
+
+model ChatReport {
+  id         String      @id @default(cuid())
+  messageId  String
+  message    ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reporterId String
+  reporter   User        @relation("ChatReportSender", fields: [reporterId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+
+  @@unique([messageId, reporterId])
+  @@index([messageId])
+}
+
+// ─────────────────────────────────────────────
+// KULLANICI YAPTIRIM SİSTEMİ
+// ─────────────────────────────────────────────
+
+model UserSanction {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminId   String
+  admin     User         @relation("SanctionAdmin", fields: [adminId], references: [id])
+  type      SanctionType
+  reason    String       @db.Text
+  expiresAt DateTime?
+  liftedAt  DateTime?
+  createdAt DateTime     @default(now())
+  meetingId String? // gelmedi uyarısının ait olduğu masa (aynı masaya ikinci uyarı yok)
+  meeting   Meeting?     @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, meetingId])
+  @@index([userId, createdAt])
+}
+
+enum SanctionType {
+  WARNING
+  SUSPENSION
+  BAN
+}
+
+// ─────────────────────────────────────────────
+// ACİL YARDIM SİSTEMİ
+// ─────────────────────────────────────────────
+
+model SosReport {
+  id                  String              @id @default(cuid())
+  userId              String
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meetingId           String
+  meeting             Meeting             @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  threats             String[]
+  lat                 Float?
+  lng                 Float?
+  accuracy            Float?
+  participantSnapshot Json
+  resolvedAt          DateTime?
+  resolvedById        String?
+  resolvedBy          User?               @relation("SosResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+  claimedById         String?
+  claimedBy           User?               @relation("SosClaimedBy", fields: [claimedById], references: [id], onDelete: SetNull)
+  claimedAt           DateTime?
+  createdAt           DateTime            @default(now())
+  locationUpdates     SosLocationUpdate[]
+
+  @@index([meetingId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model SosLocationUpdate {
+  id        String    @id @default(cuid())
+  reportId  String
+  report    SosReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  lat       Float
+  lng       Float
+  accuracy  Float?
+  timestamp DateTime  @default(now())
+
+  @@index([reportId, timestamp])
+}
+
+// ─────────────────────────────────────────────
+// KATILIMCI KONUM TAKİBİ (Acil Yardım Dönemi)
+// ─────────────────────────────────────────────
+
+model ParticipantLocation {
+  id        String   @id @default(cuid())
+  meetingId String
+  userId    String
+  lat       Float
+  lng       Float
+  accuracy  Float?
+  timestamp DateTime @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, userId, timestamp])
+  @@index([timestamp])
+}
+
+// ─────────────────────────────────────────────
+// KANKAMLA — kanka daveti ve kankalık
+// ─────────────────────────────────────────────
+
+// Davet telefon numarasına bağlıdır: sadece o numarayı WhatsApp koduyla doğrulamış hesap görür / kabul eder.
+// Link (token) sadece yönlendirme içindir; numaranın kayıtlı olup olmadığını ele vermez. 48 saat geçerli.
+model KankaInvite {
+  id           String            @id @default(cuid())
+  inviterId    String
+  inviter      User              @relation("KankaInviteSender", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitedPhone String // +905XXXXXXXXX
+  token        String            @unique
+  status       KankaInviteStatus @default(PENDING)
+  acceptedById String?
+  expiresAt    DateTime
+  respondedAt  DateTime?
+  createdAt    DateTime          @default(now())
+
+  @@index([invitedPhone, status])
+  @@index([inviterId, status])
+}
+
+enum KankaInviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED // davet edilen vazgeçti
+  CANCELLED // davet eden geri çekti / yeni davet gönderdi
+  EXPIRED
+}
+
+// Kankalık: biri kaldırana kadar sürer (endedAt). Kişi başına tek aktif kankalık.
+model KankaLink {
+  id        String    @id @default(cuid())
+  userAId   String
+  userA     User      @relation("KankaLinkA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId   String
+  userB     User      @relation("KankaLinkB", fields: [userBId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  endedAt   DateTime?
+  endReason String? // "USER" | "BAN"
+
+  @@index([userAId, endedAt])
+  @@index([userBId, endedAt])
+}

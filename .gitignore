@@ -1,0 +1,33 @@
+node_modules/
+.pnpm-store/
+dist/
+.next/
+.turbo/
+*.env
+!.env.example
+*.env.local
+*.env.production
+*.env.development
+
+# PM2 logs
+*.pm2/
+
+# Build outputs
+out/
+build/
+
+# Test
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Kullanıcı yüklemeleri (KYC belgeleri, mekan fotoğrafları) — repoya girmez
+uploads/
