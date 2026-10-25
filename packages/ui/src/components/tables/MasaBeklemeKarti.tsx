@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 interface Props {
-  /** Cumartesi 10:00 UTC zamanı (ISO string veya Date) */
+  /** Buluşma günü 10:00 zamanı (ISO string veya Date) */
   sat10UTC: string | Date;
   maxParticipants?: number;
   participantCount?: number;
@@ -146,7 +146,7 @@ export function MasaBeklemeKarti({ sat10UTC, maxParticipants = 6, participantCou
           lineHeight: 1.55, letterSpacing: '0.01em',
         }}
       >
-        Mekan bilgileri Cumartesi sabah 10:00'da açıklanacak.
+        Mekan bilgileri buluşma günü sabah 10:00'da açıklanacak.
       </motion.p>
 
       {/* Divider */}

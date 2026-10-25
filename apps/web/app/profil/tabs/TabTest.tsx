@@ -25,7 +25,7 @@ function fmtDate(val?: string | null) {
   if (!val) return '—';
   const d = new Date(val);
   if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('tr-TR');
+  return d.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' });
 }
 
 function getLevel(v: number) { return v < 0.4 ? 0 : v < 0.7 ? 1 : 2; }

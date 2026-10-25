@@ -96,7 +96,7 @@ const tcknInputStyle: React.CSSProperties = {
 };
 
 function fmtDate(val: string) {
-  return new Date(val).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(val).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export default function AdminKyc() {

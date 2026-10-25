@@ -111,10 +111,10 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
 };
 
 const TYPE_LABEL: Record<string, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Başbaşa' };
-const PLAN_LABEL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde' };
+const PLAN_LABEL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' };
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function oceanAvg(o: OceanScore | null) {
@@ -750,7 +750,7 @@ export default function AdminMatches() {
                         {m.senderName ?? m.senderInitials}
                       </span>
                       <span style={{ fontSize: 9, color: MUTED, fontFamily: MONO }}>
-                        {new Date(m.createdAt).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(m.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
                     <p style={{ margin: 0, fontSize: 11, color: m.deletedAt ? MUTED : TEXT, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
@@ -761,7 +761,7 @@ export default function AdminMatches() {
                         {m.deletedAt ? 'Kullanıcı tarafında silindi' : ''}
                         {m.deletedAt && m.reportCount > 0 ? ' · ' : ''}
                         {m.reportCount > 0
-                          ? `${m.reportCount} şikayet: ${m.reports.map(r => `${r.reporterInitials} (${new Date(r.createdAt).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })})`).join(', ')}`
+                          ? `${m.reportCount} şikayet: ${m.reports.map(r => `${r.reporterInitials} (${new Date(r.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })})`).join(', ')}`
                           : ''}
                       </p>
                     )}
@@ -1008,7 +1008,7 @@ export default function AdminMatches() {
                   <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>KİŞİLİK TESTİ</span>
                     <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                      Son test: {new Date(userModal.oceanScore.completedAt).toLocaleDateString('tr-TR')}
+                      Son test: {new Date(userModal.oceanScore.completedAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}
                       {userModal.oceanScore.adminCanReset ? ' · Kilit açık, kullanıcı testi yeniden yapabilir' : ' · 180 gün kilitli'}
                     </p>
                     {!userModal.oceanScore.adminCanReset && (
@@ -1057,6 +1057,7 @@ export default function AdminMatches() {
                       <option value="MASADA">Masada</option>
                       <option value="KARSIMDA">Karşımda</option>
                       <option value="ICERDE">İçerde</option>
+                      <option value="KANKAMLA">Kankamla</option>
                     </select>
                     <button
                       onClick={userGrantSubscription}

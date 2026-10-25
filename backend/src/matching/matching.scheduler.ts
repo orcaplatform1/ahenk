@@ -6,7 +6,7 @@ import { AiReportService } from "../meetings/ai-report.service";
 import { NotificationService } from "../notification/notification.service";
 import { SubscriptionPlan, SubscriptionStatus, KycStatus } from "@prisma/client";
 import { cancellationNotice, initialsOf } from "../meetings/cancellation-notice";
-import { closeGroupCycle, closeOneOnOneCycle } from "../payment/package-rights";
+import { closeGroupCycle, closeKankaCycle, closeOneOnOneCycle, OPEN_KANKA_SUB } from "../payment/package-rights";
 
 @Injectable()
 export class MatchingScheduler {
@@ -108,8 +108,8 @@ export class MatchingScheduler {
     }
   }
 
-  // Perşembe ve Cuma 23:44 (TR): son tarama — havuzdakiler atanır, yarım grup masaları birleştirilir
-  @Cron("44 23 * * 4,5", { timeZone: "Europe/Istanbul" })
+  // Perşembe, Cuma ve Cumartesi 23:44 (TR): son tarama — havuzdakiler atanır, yarım grup masaları birleştirilir
+  @Cron("44 23 * * 4,5,6", { timeZone: "Europe/Istanbul" })
   async scheduleFinalScan(): Promise<void> {
     try {
       await this.matchingService.requestScan();
@@ -199,28 +199,28 @@ export class MatchingScheduler {
     this.logger.log(`Döngü takibi güncellendi (${meetingType})`);
   }
 
-  // Cumartesi 10:00 (TR): eşleşmiş kullanıcılara bildirim gönder + AI raporları oluştur
-  @Cron("0 10 * * 6", { timeZone: "Europe/Istanbul" })
-  async scheduleSaturdayNotifications(): Promise<void> {
-    this.logger.log("Cumartesi bildirimleri gönderiliyor...");
+  // Cuma 10:00 (TR, grup buluşma günü): grup masası katılımcılarına bildirim + AI raporları
+  @Cron("0 10 * * 5", { timeZone: "Europe/Istanbul" })
+  async scheduleGroupRevealNotifications(): Promise<void> {
+    this.logger.log("Cuma grup bildirimleri gönderiliyor...");
     try {
-      await this.matchingService.sendSaturdayNotifications();
-      this.logger.log("Cumartesi bildirimleri tamamlandı");
+      await this.matchingService.sendGroupRevealNotifications();
+      this.logger.log("Cuma grup bildirimleri tamamlandı");
     } catch (err) {
-      this.logger.error(`Cumartesi bildirim hatası: ${err}`);
+      this.logger.error(`Cuma grup bildirim hatası: ${err}`);
     }
 
-    this.logger.log("Cumartesi AI raporları oluşturuluyor...");
+    this.logger.log("Cuma grup AI raporları oluşturuluyor...");
     try {
       await this.generateAiReports("GROUP");
-      this.logger.log("Cumartesi AI raporları tamamlandı");
+      this.logger.log("Cuma grup AI raporları tamamlandı");
     } catch (err) {
-      this.logger.error(`Cumartesi AI raporu hatası: ${err}`);
+      this.logger.error(`Cuma grup AI raporu hatası: ${err}`);
     }
   }
 
   // Bugün (önümüzdeki 24 saat içinde) buluşacak onaylı masaların raporu
-  private async generateAiReports(meetingType: "GROUP" | "ONE_ON_ONE"): Promise<void> {
+  private async generateAiReports(meetingType: "GROUP" | "ONE_ON_ONE" | "KANKA"): Promise<void> {
     const now = new Date();
     const meetings = await this.prisma.meeting.findMany({
       where: {
@@ -298,23 +298,122 @@ export class MatchingScheduler {
     }
   }
 
-  // Pazar 10:00 (TR): ONE_ON_ONE mekanı atanmış masaların katılımcılarına bildirim gönder + AI raporları oluştur
+  // Cumartesi 11:59 (TR): Kankamla döngüsü kapanışına 12 saat kala hatırlatma
+  @Cron("59 11 * * 6", { timeZone: "Europe/Istanbul" })
+  async notifyKankaCycleClosingSoon(): Promise<void> {
+    try {
+      await this.sendCycleClosingSoonNotifications('KANKA');
+    } catch (err) {
+      this.logger.error(`KANKA kapanış hatırlatması hatası: ${err}`);
+    }
+  }
+
+  // Cumartesi 23:59 (TR): Kankamla kilidi — eşleşemeyen çiftler bekleme listesine + "masa kurulamadı";
+  // iade sayacı, hak düşümü (kurulan masalar) ve döngü sayımı
+  @Cron("59 23 * * 6", { timeZone: "Europe/Istanbul" })
+  async scheduleSaturdayKankaClosing(): Promise<void> {
+    this.logger.log("Cumartesi KANKA kapanışı başlıyor...");
+    try {
+      const now = new Date();
+      const { week: weekNumber, year } = this.getISOWeek(now);
+      const cycle = await this.prisma.matchingCycle.upsert({
+        where: { weekNumber_year: { weekNumber, year } },
+        update: {},
+        create: { weekNumber, year, status: "RUNNING" },
+      });
+      // Atama 23:44'te durdu: havuzda kalan çiftler bu hafta eşleşemedi
+      const unmatched = await this.matchingService.fetchKankaPairs(cycle.id);
+      const { week: nw, year: ny } = this.getISOWeek(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
+      const nextCycle = await this.prisma.matchingCycle.upsert({
+        where: { weekNumber_year: { weekNumber: nw, year: ny } },
+        update: {},
+        create: { weekNumber: nw, year: ny, status: "RUNNING" },
+      });
+      for (const pair of unmatched) {
+        for (const userId of [pair.buyer.id, pair.kanka.id]) {
+          await this.prisma.matchingWaitlist.upsert({
+            where: { userId_cycleId: { userId, cycleId: nextCycle.id } },
+            update: {},
+            create: { userId, cycleId: nextCycle.id, reason: "ODD_NUMBER" },
+          });
+          await this.notifications.notifyMeetingNotFormed(userId);
+        }
+      }
+      await this.updateMissedKankaCycles(cycle.id);
+      await closeKankaCycle(this.prisma, cycle.id);
+      this.logger.log(`Cumartesi KANKA kapanışı tamamlandı (${unmatched.length} çift eşleşemedi)`);
+    } catch (err) {
+      this.logger.error(`Cumartesi KANKA kapanışı hatası: ${err}`);
+    }
+  }
+
+  // Kankamla iade sayacı: çiftin bu döngüde masası kurulduysa sıfırlanır, kurulamadıysa 1 artar (alıcı paketinde)
+  private async updateMissedKankaCycles(cycleId: string): Promise<void> {
+    const subs = await this.prisma.subscription.findMany({
+      where: { ...OPEN_KANKA_SUB },
+      select: { id: true, userId: true, missedKankaCycles: true },
+    });
+    const formed = new Set(
+      (await this.prisma.meetingParticipant.findMany({
+        where: { meeting: { cycleId, type: "KANKA", status: { not: "CANCELLED" } } },
+        select: { userId: true, kankaPartnerId: true },
+      })).flatMap((p) => [p.userId, ...(p.kankaPartnerId ? [p.kankaPartnerId] : [])]),
+    );
+    for (const sub of subs) {
+      const next = formed.has(sub.userId) ? 0 : sub.missedKankaCycles + 1;
+      await this.prisma.subscription.update({ where: { id: sub.id }, data: { missedKankaCycles: next } });
+      if (next === 4) {
+        const existing = await this.prisma.adminAlert.findFirst({ where: { userId: sub.userId, alertType: "MISSED_KANKA_CYCLES", isRead: false } });
+        if (!existing) await this.prisma.adminAlert.create({ data: { userId: sub.userId, alertType: "MISSED_KANKA_CYCLES" } });
+      }
+    }
+  }
+
+  // Pazar 10:00 (TR, Kankamla buluşma günü): mekanı atanmış Kankamla masalarına bildirim + AI raporları
   @Cron("0 10 * * 0", { timeZone: "Europe/Istanbul" })
-  async scheduleSundayOneOnOneNotifications(): Promise<void> {
-    this.logger.log("Pazar ONE_ON_ONE bildirimleri gönderiliyor...");
+  async scheduleKankaRevealNotifications(): Promise<void> {
+    try {
+      const { week: weekNumber, year } = this.getISOWeek(new Date());
+      const cycle = await this.prisma.matchingCycle.findUnique({ where: { weekNumber_year: { weekNumber, year } } });
+      if (cycle) {
+        const meetings = await this.prisma.meeting.findMany({
+          where: { cycleId: cycle.id, type: "KANKA", status: { in: ["PENDING", "ACTIVE"] }, locationText: { not: null } },
+          include: { participants: { where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } }, select: { userId: true } } },
+        });
+        for (const meeting of meetings) {
+          for (const p of meeting.participants) {
+            await this.notifications.notifyMeetingConfirmed(p.userId, meeting.id, meeting.scheduledAt);
+          }
+        }
+        this.logger.log(`Pazar KANKA bildirimi: ${meetings.length} masa`);
+      }
+    } catch (err) {
+      this.logger.error(`Pazar KANKA bildirim hatası: ${err}`);
+    }
+    try {
+      await this.generateAiReports("KANKA");
+    } catch (err) {
+      this.logger.error(`Pazar KANKA AI raporu hatası: ${err}`);
+    }
+  }
+
+  // Cumartesi 10:00 (TR, başbaşa buluşma günü): mekanı atanmış ONE_ON_ONE masalarına bildirim + AI raporları
+  @Cron("0 10 * * 6", { timeZone: "Europe/Istanbul" })
+  async scheduleOneOnOneRevealNotifications(): Promise<void> {
+    this.logger.log("Cumartesi ONE_ON_ONE bildirimleri gönderiliyor...");
     try {
       await this.sendOneOnOneNotifications();
-      this.logger.log("Pazar ONE_ON_ONE bildirimleri tamamlandı");
+      this.logger.log("Cumartesi ONE_ON_ONE bildirimleri tamamlandı");
     } catch (err) {
-      this.logger.error(`Pazar ONE_ON_ONE bildirim hatası: ${err}`);
+      this.logger.error(`Cumartesi ONE_ON_ONE bildirim hatası: ${err}`);
     }
 
-    this.logger.log("Pazar ONE_ON_ONE AI raporları oluşturuluyor...");
+    this.logger.log("Cumartesi ONE_ON_ONE AI raporları oluşturuluyor...");
     try {
       await this.generateAiReports("ONE_ON_ONE");
-      this.logger.log("Pazar ONE_ON_ONE AI raporları tamamlandı");
+      this.logger.log("Cumartesi ONE_ON_ONE AI raporları tamamlandı");
     } catch (err) {
-      this.logger.error(`Pazar AI raporu hatası: ${err}`);
+      this.logger.error(`Cumartesi AI raporu hatası: ${err}`);
     }
   }
 
@@ -353,13 +452,24 @@ export class MatchingScheduler {
     this.logger.log(`GROUP iptal özeti: ${notified} masa`);
   }
 
-  private async sendCycleClosingSoonNotifications(meetingType: 'GROUP' | 'ONE_ON_ONE'): Promise<void> {
+  private async sendCycleClosingSoonNotifications(meetingType: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'): Promise<void> {
     const isGroup = meetingType === 'GROUP';
+    const now = new Date();
+    if (meetingType === 'KANKA') {
+      // Kankamla: havuzda kalan (masası kurulmamış) çiftin ikisine de
+      const { week, year } = this.getISOWeek(now);
+      const cycle = await this.prisma.matchingCycle.findUnique({ where: { weekNumber_year: { weekNumber: week, year } } });
+      const pairs = cycle ? await this.matchingService.fetchKankaPairs(cycle.id) : [];
+      for (const pair of pairs) {
+        for (const id of [pair.buyer.id, pair.kanka.id]) await this.notifications.notifyCycleClosingSoon(id, 'KANKA');
+      }
+      this.logger.log(`KANKA kapanış hatırlatması: ${pairs.length} çift`);
+      return;
+    }
     const plans = isGroup
       ? [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE]
       : [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE];
 
-    const now = new Date();
     const { week: weekNumber, year } = this.getISOWeek(now);
     const cycle = await this.prisma.matchingCycle.findUnique({
       where: { weekNumber_year: { weekNumber, year } },
@@ -496,7 +606,7 @@ export class MatchingScheduler {
         await this.notifications.notifyMeetingConfirmed(p.userId, meeting.id, meeting.scheduledAt);
       }
     }
-    this.logger.log(`Pazar ONE_ON_ONE bildirimi: ${meetings.length} masa`);
+    this.logger.log(`Cumartesi ONE_ON_ONE bildirimi: ${meetings.length} masa`);
   }
 
   private getISOWeek(date: Date): { week: number; year: number } {

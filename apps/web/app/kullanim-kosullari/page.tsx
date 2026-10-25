@@ -102,6 +102,7 @@ const sections = [
             { name: 'Masada', price: <PlanPriceText plan="MASADA" suffix="₺" />, desc: '2 grup masası hakkı, 4 döngü geçerli' },
             { name: 'Karşımda', price: <PlanPriceText plan="KARSIMDA" suffix="₺" />, desc: '1 başbaşa masası hakkı, 4 döngü geçerli' },
             { name: 'İçerde', price: <PlanPriceText plan="ICERDE" suffix="₺" />, desc: '2 grup + 1 başbaşa masası hakkı (her kısım 4 döngü geçerli), öncelikli eşleştirme' },
+            { name: 'Kankamla', price: <PlanPriceText plan="KANKAMLA" suffix="₺" />, desc: '2 Kankamla masası hakkı (4 döngü geçerli); alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır, 4 kişilik masa' },
           ].map((pkg) => (
             <div key={pkg.name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1.1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px' }}>
               <span style={{ fontWeight: 700, color: '#e8e8e8', minWidth: '90px', fontSize: '0.9rem' }}>{pkg.name}</span>
@@ -134,6 +135,8 @@ const sections = [
           'Paketler tek seferlik olduğundan iptal edilecek bir abonelik yoktur.',
           'Paketin bir kısmında 4 döngü boyunca hiç masa kurulamazsa o kısım için iade talep edilebilir (İçerde paketinde grup ve başbaşa kısımları ayrı değerlendirilir).',
           'Bir masa kurulduysa kalan hak bulunsa dahi hizmet alınmış sayılır ve iade yapılmaz; kullanılmayan haklar için kısmi iade yapılmaz.',
+          'Kankamla rezervasyonunu çiftten biri iptal ederse iki kişi birlikte masadan düşer ve paketten 1 masa hakkı düşer; pakette tek iptal hakkı vardır.',
+          'Kanka daveti telefon numarasıyla yapılır ve 48 saat geçerlidir; davet yalnızca o numarayı doğrulamış hesap tarafından kabul edilebilir. Kanka, seçildiği hafta değiştirilemez. Bir kullanıcının banlanması kankalığı sona erdirir.',
           'kimlik doğrulaması tamamlanmamış kullanıcılar eşleştirmeye dahil edilmez; bu nedenle iade talep edilemez.',
           'Hesabın Ahenk tarafından kural ihlali nedeniyle kapatılması durumunda kalan haklar için iade yapılmaz.',
           'Masa kurulduktan sonra bir veya birden fazla katılımcının buluşmaya katılmaması, hizmetin ifa edilmediği anlamına gelmez ve iade sebebi teşkil etmez.',

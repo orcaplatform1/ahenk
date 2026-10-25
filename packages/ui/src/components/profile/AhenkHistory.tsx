@@ -162,7 +162,7 @@ export function AhenkHistory({ entries, apiBase, token }: Props) {
                 {/* Orta — detay + radar */}
                 <div className="p-4 flex flex-col gap-2">
                   <p className="font-medium text-sm text-text">{entry.locationName}</p>
-                  <p className="text-xs text-muted">{new Date(entry.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                  <p className="text-xs text-muted">{new Date(entry.date).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' })}</p>
                   <div className="mt-1">
                     <OceanRadar scores={entry.oceanScore ?? FALLBACK} size={140} />
                   </div>

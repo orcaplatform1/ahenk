@@ -157,14 +157,12 @@ export class NotificationService {
 
   // ─── Döngü kapanış hatırlatması ──────────────────────────────────────────
 
-  async notifyCycleClosingSoon(userId: string, meetingType: 'GROUP' | 'ONE_ON_ONE'): Promise<void> {
-    const isGroup = meetingType === 'GROUP';
+  async notifyCycleClosingSoon(userId: string, meetingType: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'): Promise<void> {
+    const label = meetingType === 'GROUP' ? 'Grup masası' : meetingType === 'KANKA' ? 'Kankamla' : 'Başbaşa';
     await this.send({
       userId,
-      title: isGroup ? 'Grup döngüsü kapanıyor' : 'Başbaşa döngüsü kapanıyor',
-      body: isGroup
-        ? 'Grup masası döngüsü 12 saat içinde kapanıyor. Hâlâ eşleşme havuzundasın.'
-        : 'Başbaşa döngüsü 12 saat içinde kapanıyor. Hâlâ eşleşme havuzundasın.',
+      title: `${meetingType === 'GROUP' ? 'Grup' : label} döngüsü kapanıyor`,
+      body: `${label} döngüsü 12 saat içinde kapanıyor. Hâlâ eşleşme havuzundasın.`,
       data: { event: 'CYCLE_CLOSING_SOON', meetingType },
     });
   }

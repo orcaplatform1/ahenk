@@ -6,4 +6,5 @@ export const PLAN_CONFIG: Record<SubscriptionPlan, { nametr: string; label: stri
   [SubscriptionPlan.MASADA]: { nametr: "Masada", label: null },
   [SubscriptionPlan.KARSIMDA]: { nametr: "Karşımda", label: null },
   [SubscriptionPlan.ICERDE]: { nametr: "İçerde", label: "Tercih Edilen" },
+  [SubscriptionPlan.KANKAMLA]: { nametr: "Kankamla", label: null },
 };

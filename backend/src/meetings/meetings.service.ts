@@ -11,8 +11,10 @@ import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { cancellationNotice, initialsOf } from "./cancellation-notice";
 import { restoreOneOnOneRights } from "../matching/one-on-one-right";
-import { noShowCardWindow, sosWindowEnd } from "./meeting-windows";
+import { cancelDeadline, noShowCardWindow, sosWindowEnd } from "./meeting-windows";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
+import { chargeKankaRight, pairKankaSub } from "../payment/package-rights";
+import { activeKankaLink } from "../kanka/kanka-links";
 import { MeetingStatus, MeetingType, LeaveReason, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 
 
@@ -33,11 +35,6 @@ function reviewWindow(scheduledAt: Date): { opensAt: Date; closesAt: Date } {
   };
 }
 
-// Rezervasyon iptalinin son anı: masa gününden 2 gün önce 20:00 (TR, UTC+3)
-function cancelDeadline(scheduledAt: Date): Date {
-  const tr = new Date(scheduledAt.getTime() + 3 * 60 * 60 * 1000);
-  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() - 2, 20 - 3, 0, 0, 0));
-}
 
 @Injectable()
 export class MeetingsService {
@@ -58,6 +55,8 @@ export class MeetingsService {
       participants: {
         select: {
           status: true,
+          userId: true,
+          kankaPartnerId: true,
           user: {
             select: {
               isBot: true,
@@ -85,6 +84,9 @@ export class MeetingsService {
 
     if (parts.length === 0) return { items: [] };
     const cancelRightUsed = await this.groupCancelRightUsed(userId);
+    const kankaCancelUsed = parts.some(({ meeting }) => meeting.type === MeetingType.KANKA)
+      ? await this.kankaCancelRightUsed(userId)
+      : false;
 
     const items = await Promise.all(
       parts.map(async ({ meeting: m }) => {
@@ -93,6 +95,8 @@ export class MeetingsService {
 
         // İptal eden, bildirim gittiği anda ekrandan kalkar: başbaşada hemen, grupta iptal son anında (Perşembe 20:00)
         const hideCancelled = m.type !== MeetingType.GROUP || new Date() >= cancelDeadline(m.scheduledAt);
+        // Kankamla: kişinin kendi çifti (kendisi + kankası) "MINE", karşı çift "OTHER" — kartta kim kimin kankası
+        const myKankaId = m.participants.find((p) => p.userId === userId)?.kankaPartnerId ?? null;
         const participants = m.participants
           .filter((p) => !(p.status === ParticipantStatus.CANCELLED && hideCancelled))
           .map((p) => {
@@ -101,6 +105,9 @@ export class MeetingsService {
             return {
               initials: `${(f[0] ?? '?').toUpperCase()}.${(l[0] ?? '?').toUpperCase()}.`,
               gender: p.user.profile?.gender ?? null,
+              ...(m.type === MeetingType.KANKA && {
+                pair: p.userId === userId || p.userId === myKankaId ? ('MINE' as const) : ('OTHER' as const),
+              }),
             };
           });
 
@@ -128,8 +135,8 @@ export class MeetingsService {
             scheduledAt: m.scheduledAt,
             participants,
             sat10UTC,
-            // Grup masasında bu abonelik döneminde iptal hakkı kullanıldı mı (kart butonu)
-            cancelRightUsed: m.type === MeetingType.GROUP ? cancelRightUsed : false,
+            // Bu pakette iptal hakkı kullanıldı mı (bekleme ekranındaki iptal butonu): grup ve Kankamla
+            cancelRightUsed: m.type === MeetingType.GROUP ? cancelRightUsed : m.type === MeetingType.KANKA ? kankaCancelUsed : false,
             ...(isRevealed && {
               venueName: m.locationText,
               venueAddress: m.venueAddress,
@@ -575,6 +582,28 @@ export class MeetingsService {
     return cancelled > 0;
   }
 
+  // Kankamla: çiftin paketi başladıktan sonra çiftten biri bir Kankamla rezervasyonunu kendisi iptal ettiyse hak kullanılmıştır
+  private async kankaCancelRightUsed(userId: string): Promise<boolean> {
+    const link = await activeKankaLink(this.prisma, userId);
+    const pairIds = link ? [userId, link.kankaId] : [userId];
+    const sub = await this.prisma.subscription.findFirst({
+      where: { userId: { in: pairIds }, plan: SubscriptionPlan.KANKAMLA, status: SubscriptionStatus.ACTIVE },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true },
+    });
+    if (!sub) return false;
+    const cancelled = await this.prisma.meetingParticipant.count({
+      where: {
+        userId: { in: pairIds },
+        status: ParticipantStatus.CANCELLED,
+        leaveReason: { not: null }, // kendisi iptal etti (kankası yüzünden düşen değil)
+        cancelledAt: { gte: sub.createdAt },
+        meeting: { type: MeetingType.KANKA },
+      },
+    });
+    return cancelled > 0;
+  }
+
   async cancelRegistration(
     meetingId: string,
     userId: string,
@@ -608,9 +637,10 @@ export class MeetingsService {
     }
 
     const isGroup = meeting.type === MeetingType.GROUP;
+    const isKanka = meeting.type === MeetingType.KANKA;
 
-    // İptal süresi masa tarihinden hesaplanır: masa gününden 2 gün önce 20:00 (TR)
-    // Grup (Cumartesi) → Perşembe 20:00, Başbaşa (Pazar) → Cuma 20:00
+    // İptal süresi masa tarihinden hesaplanır: masa gününden 1 gün önce 20:00 (TR)
+    // Grup (Cuma) → Perşembe 20:00, Başbaşa (Cumartesi) → Cuma 20:00
     const now = new Date();
     const pastDeadline = now >= cancelDeadline(meeting.scheduledAt);
 
@@ -618,13 +648,19 @@ export class MeetingsService {
       throw new ForbiddenException(
         isGroup
           ? "Grup masası iptal süresi doldu (Perşembe 20:00)"
-          : "Baş başa masası iptal süresi doldu (Cuma 20:00)",
+          : isKanka
+            ? "Kankamla masası iptal süresi doldu (Cumartesi 20:00)"
+            : "Baş başa masası iptal süresi doldu (Cuma 20:00)",
       );
     }
 
-    // Grup: abonelik dönemi başına tek iptal hakkı
+    // Grup / Kankamla: paket başına tek iptal hakkı
     if (isGroup && await this.groupCancelRightUsed(userId)) {
       throw new ForbiddenException("Bu paket için iptal hakkınızı kullandınız");
+    }
+    if (isKanka) {
+      if (await this.kankaCancelRightUsed(userId)) throw new ForbiddenException("Bu paket için iptal hakkınızı kullandınız");
+      return this.cancelKankaRegistration(meetingId, userId, participant.id, participant.kankaPartnerId, reason, note, now);
     }
 
     await this.prisma.meetingParticipant.update({
@@ -660,6 +696,55 @@ export class MeetingsService {
       for (const uid of others) await enqueueAssign(this.assignQueue, uid);
     }
 
+    return { success: true };
+  }
+
+  // Kankamla iptali: iptal eden kankasıyla birlikte düşer, masa iptal olur, çiftin paketinden 1 hak düşer.
+  // Karşı çift yeniden taramaya girer (hakları korunur).
+  private async cancelKankaRegistration(
+    meetingId: string, userId: string, participantId: string, kankaId: string | null,
+    reason: LeaveReason, note: string | undefined, now: Date,
+  ) {
+    const pairIds = [userId, ...(kankaId ? [kankaId] : [])];
+    const all = await this.prisma.meetingParticipant.findMany({ where: { meetingId }, select: { id: true, userId: true } });
+    const otherIds = all.map((p) => p.userId).filter((id) => !pairIds.includes(id));
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.meetingParticipant.update({
+        where: { id: participantId },
+        data: { status: ParticipantStatus.CANCELLED, leaveReason: reason, leaveNote: note ?? null, cancelledAt: now },
+      });
+      if (kankaId) {
+        await tx.meetingParticipant.updateMany({
+          where: { meetingId, userId: kankaId },
+          data: { status: ParticipantStatus.CANCELLED, leaveNote: "Kankası rezervasyonu iptal etti", cancelledAt: now },
+        });
+      }
+      await tx.meeting.update({ where: { id: meetingId }, data: { status: MeetingStatus.CANCELLED } });
+      // Rezervasyonu iptal eden çiftin paketinden 1 hak düşer
+      const sub = await pairKankaSub(tx, pairIds);
+      if (sub) {
+        const buyer = all.find((p) => p.userId === sub.userId) ?? all.find((p) => p.id === participantId)!;
+        await chargeKankaRight(tx, buyer.id, sub.id);
+      }
+    });
+
+    const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { profile: { select: { firstName: true, lastName: true } } } });
+    if (kankaId) {
+      await this.notifications.sendToUser(kankaId, {
+        title: "Kankamla rezervasyonu iptal edildi",
+        body: `Kankan ${initialsOf(me?.profile)} bu haftaki Kankamla rezervasyonunuzu iptal etti.`,
+        data: { type: "KANKA_CANCELLED", meetingId },
+      }).catch(() => undefined);
+    }
+    for (const id of otherIds) {
+      await this.notifications.sendToUser(id, {
+        title: "Karşı çift masadan ayrıldı",
+        body: "Kankamla masanızdaki karşı çift ayrıldı. Sizin için yeniden eşleşme aranıyor.",
+        data: { type: "KANKA_PAIR_LEFT", meetingId },
+      }).catch(() => undefined);
+      await enqueueAssign(this.assignQueue, id);
+    }
     return { success: true };
   }
 }

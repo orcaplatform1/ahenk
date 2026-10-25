@@ -26,6 +26,7 @@ interface AlertItem {
 const ALERT_LABELS: Record<string, string> = {
   MISSED_GROUP_CYCLES: 'Grup masası üst üste kurulamadı',
   MISSED_ONEONE_CYCLES: 'Başbaşa masası üst üste kurulamadı',
+  MISSED_KANKA_CYCLES: 'Kankamla masası üst üste kurulamadı',
   SOS_ALERT: 'Acil yardım talebi',
   BOT_NOT_FOUND: 'Uygun bot bulunamadı',
 };
@@ -115,7 +116,7 @@ export default function AdminAlerts() {
                       {a.user?.profile && ` — ${a.user.profile.firstName ?? ''} ${a.user.profile.lastName ?? ''}`}
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
-                      {new Date(a.createdAt).toLocaleString('tr-TR')}
+                      {new Date(a.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}
                     </p>
                   </div>
                   {!a.isRead && (

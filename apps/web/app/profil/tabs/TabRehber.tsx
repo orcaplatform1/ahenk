@@ -100,7 +100,7 @@ export function TabRehber() {
               <div>
                 <span className="text-sm text-[#f5f5f5]">{resolveDisplay(b, i)}</span>
                 <span className="block text-xs text-[#555] mt-0.5">
-                  {new Date(b.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {new Date(b.createdAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' })}
                 </span>
               </div>
               <button

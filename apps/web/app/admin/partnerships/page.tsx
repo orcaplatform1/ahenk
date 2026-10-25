@@ -156,7 +156,7 @@ export default function AdminPartnerships() {
                       {p.contactName} · {p.email}
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
-                      {p.city}{p.venueType ? ` · ${p.venueType}` : ''} · {new Date(p.createdAt).toLocaleString('tr-TR')}
+                      {p.city}{p.venueType ? ` · ${p.venueType}` : ''} · {new Date(p.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}
                     </p>
                   </div>
                   <button

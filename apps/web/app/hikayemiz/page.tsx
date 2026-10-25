@@ -127,7 +127,7 @@ export default function HikayemizPage() {
       {/* Bölüm 6 */}
       <TwoCol
         title="Neredeyiz?"
-        body="Ahenk şu an İstanbul, Ankara, İzmir, Antalya, Muğla, Aydın ve Balıkesir (Ayvalık/Akçay)'da aktif. Her Cumartesi grup masaları, her Pazar başbaşa buluşmalar gerçekleşiyor. Topluluk büyüdükçe yeni şehirler ekleniyor."
+        body="Ahenk şu an İstanbul, Ankara, İzmir, Antalya, Muğla, Aydın ve Balıkesir (Ayvalık/Akçay)'da aktif. Her Cuma grup masaları, her Cumartesi başbaşa buluşmalar gerçekleşiyor. Topluluk büyüdükçe yeni şehirler ekleniyor."
       />
 
       {/* Kapanış */}

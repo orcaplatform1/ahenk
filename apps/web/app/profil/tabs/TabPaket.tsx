@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePlanPrices, type PlanKeyName } from '@/components/PlanPrice';
 import { api } from '@/lib/api';
-import { getPlanCardState, type OpenParts, type PlanKey } from '@/lib/planCards';
+import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
 
@@ -17,13 +17,16 @@ interface Subscription {
   oneOnOneCycles: number;
   groupTableFormed?: boolean;
   oneOnOneTableFormed?: boolean;
+  kankaRights?: number;
+  kankaCycles?: number;
 }
 
-type RefundOption = 'GROUP' | 'ONEONE' | 'FULL';
+type RefundOption = 'GROUP' | 'ONEONE' | 'FULL' | 'KANKA';
 const REFUND_LABEL: Record<RefundOption, string> = {
   FULL: 'İade Talep Et (tüm paket)',
   GROUP: 'Grup Masası İadesi Talep Et',
   ONEONE: 'Başbaşa Masası İadesi Talep Et',
+  KANKA: 'Kankamla İadesi Talep Et',
 };
 
 interface InitCheckoutResponse {
@@ -57,12 +60,22 @@ const PLANS = [
     bgImage: '/plan-icerde.webp',
     features: ['2 Grup Masası + 1 Baş Başa Masa', 'Tüm Özellikler Dahil'],
   },
+  {
+    key: 'KANKAMLA',
+    name: 'Kankamla',
+    desc: '2 Kankamla masası hakkı · kankan ücretsiz katılır',
+    featured: false,
+    // Kankamla için ayrı görsel eklenene kadar grup masası görseli
+    bgImage: '/plan-masada.webp',
+    features: ['2 Kankamla Masası Hakkı', 'Kankan Ücretsiz Katılır', '4 Kişilik Masa (2E + 2K)', 'Doğrulanmış Profiller', 'Masa Garantili (Ücret İade)'],
+  },
 ];
 
 const PLAN_LABEL: Record<string, string> = {
   MASADA: 'Masada',
   KARSIMDA: 'Karşımda',
   ICERDE: 'İçerde',
+  KANKAMLA: 'Kankamla',
 };
 
 const PLATFORM_LABEL: Record<string, string> = {
@@ -82,6 +95,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
   const [packageCycles, setPackageCycles] = useState(4);
   const [ownedPlans, setOwnedPlans] = useState<Set<PlanKey>>(new Set());
   const [openParts, setOpenParts] = useState<OpenParts>({ group: false, oneOnOne: false });
+  const [kankamla, setKankamla] = useState<KankamlaState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [buying, setBuying] = useState('');
@@ -107,6 +121,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
       .finally(() => setLoading(false));
 
     api.get<DiscountInfo>('/payment/discount-info').then(setDiscountInfo).catch(() => {});
+    api.get<{ kankamla?: KankamlaState }>('/auth/me').then((m) => setKankamla(m.kankamla ?? null)).catch(() => {});
     api.get<{ totalInvites: number; availableDiscounts: number }>('/referral/my-stats').then(setReferralStats).catch(() => {});
   }, []);
 
@@ -237,6 +252,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
           {subscriptions.map((sub) => {
             const hasGroup = sub.plan === 'MASADA' || sub.plan === 'ICERDE';
             const hasOneOnOne = sub.plan === 'KARSIMDA' || sub.plan === 'ICERDE';
+            const isKankamla = sub.plan === 'KANKAMLA';
             const totalGroup = 2;
             return (
               <div key={sub.id} className="flex flex-col gap-2">
@@ -249,6 +265,14 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
                     <span className="text-xs text-muted">Grup masası hakkı</span>
                     <span className="text-xs text-text">
                       {sub.groupCycles >= packageCycles ? 'Süresi doldu' : `${sub.groupRights}/${totalGroup} kaldı · ${sub.groupCycles}/${packageCycles} döngü`}
+                    </span>
+                  </div>
+                )}
+                {isKankamla && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted">Kankamla masası hakkı</span>
+                    <span className="text-xs text-text">
+                      {(sub.kankaCycles ?? 0) >= packageCycles ? 'Süresi doldu' : `${sub.kankaRights ?? 0}/2 kaldı · ${sub.kankaCycles ?? 0}/${packageCycles} döngü`}
                     </span>
                   </div>
                 )}
@@ -303,9 +327,12 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
         .p-feat-inner{position:relative;z-index:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:row;flex:1;}
       `}</style>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {PLANS.map((plan) => {
-          const cs = getPlanCardState(plan.key, ownedPlans, openParts);
+          const isKankamlaCard = plan.key === 'KANKAMLA';
+          const cs = isKankamlaCard
+            ? getKankamlaCardState(kankamla)
+            : { ...getPlanCardState(plan.key, ownedPlans, openParts), needsKanka: false };
           const cardBody = (
             <div
               className={plan.featured ? 'p-feat-inner' : 'relative rounded-2xl overflow-hidden flex-1'}
@@ -366,11 +393,12 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
 
               {cs.showButton && (
                 <button
-                  onClick={() => kycApproved ? handleBuy(plan.key) : onGoKyc()}
+                  // Kankamla: kanka seçmeden satın alınamaz → önce Profilim'de kanka daveti
+                  onClick={() => !kycApproved ? onGoKyc() : cs.needsKanka ? (window.location.href = '/profil?tab=profil') : handleBuy(plan.key)}
                   disabled={buying === plan.key || maintenanceMode}
                   className="btn-primary w-full justify-center disabled:opacity-50"
                 >
-                  {buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : 'Paketi Seç'}
+                  {buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : cs.needsKanka ? 'Önce Kanka Davet Et' : 'Paketi Seç'}
                 </button>
               )}
             </div>

@@ -151,7 +151,7 @@ export default function AdminCareers() {
                     </div>
                     <p style={{ margin: 0, fontSize: 11, color: MUTED }}>{c.email}</p>
                     <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
-                      {c.city ?? '—'} · {new Date(c.createdAt).toLocaleString('tr-TR')}
+                      {c.city ?? '—'} · {new Date(c.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}
                     </p>
                   </div>
                   <button

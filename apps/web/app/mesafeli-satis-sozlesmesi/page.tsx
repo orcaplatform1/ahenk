@@ -64,6 +64,15 @@ const sections = [
               items: [
                 '2 grup masası + 1 başbaşa masası buluşması hakkı, öncelikli eşleştirme',
                 'Grup ve başbaşa hakları ayrı ayrı 4\'er döngü (yaklaşık 1 ay) içinde kullanılır',
+              ],
+            },
+            {
+              name: 'Kankamla Paketi',
+              price: <PlanPriceText plan="KANKAMLA" suffix="₺" />,
+              items: [
+                '2 Kankamla masası hakkı: Alıcı ve aynı cinsiyetteki kankası, karşı cinsten bir kanka çiftiyle 4 kişilik masada buluşur',
+                'Paketi yalnızca alıcı satın alır; kankası ücretsiz katılır. Paket, kanka seçilmeden satın alınamaz',
+                'Haklar, satın alımdan sonraki 4 Kankamla döngüsü (yaklaşık 1 ay) içinde kullanılır',
                 'Mekan seçimi ve rezervasyonu Ahenk tarafından yapılır',
               ],
             },
@@ -164,6 +173,8 @@ const sections = [
               'Masada paketinde 4 grup döngüsü boyunca hiç grup masası kurulamazsa tam iade talep edilebilir.',
               'Karşımda paketinde 4 başbaşa döngüsü boyunca başbaşa masası kurulamazsa tam iade talep edilebilir.',
               'İçerde paketinde grup ve başbaşa kısımları ayrı değerlendirilir: bir kısımda 4 döngü boyunca hiç masa kurulamazsa o kısım için paket bedelinin yarısı, her iki kısımda da kurulamazsa tamamı iade edilebilir.',
+              'Kankamla paketinde 4 Kankamla döngüsü boyunca hiç masa kurulamazsa tam iade talep edilebilir. İade talebini yalnızca paketi satın alan kişi yapabilir; çiftin rezervasyonu kendisi iptal etmesi masanın kurulduğu anlamına gelir.',
+              'Kankanın buluşmaya katılmaması veya kankalığın sona ermesi iade sebebi değildir.',
               'Paketin bir kısmında bir masa kurulduysa, kalan hak bulunsa dahi o kısım için hizmet alınmış sayılır ve iade yapılmaz.',
               'Masa kurulduğu halde kullanıcının katılım sağlamaması durumunda iade yapılmaz.',
               'Masa kurulduktan sonra bir veya birden fazla katılımcının buluşmaya katılmaması, hizmetin ifa edilmediği anlamına gelmez ve iade sebebi teşkil etmez.',

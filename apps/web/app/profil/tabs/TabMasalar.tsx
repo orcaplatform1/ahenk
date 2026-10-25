@@ -1,16 +1,17 @@
 'use client';
 
+import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { api, API_PREFIX } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
-import { ConfirmedRadarView, MasaDetayKarti, type MasaDetayData } from '@ahenk/ui';
+import { ConfirmedRadarView, MasaDetayKarti, RezervasyonIptal, type MasaDetayData } from '@ahenk/ui';
 
 interface DashboardItem {
   phase: 'WAITING' | 'REVEALED';
   meeting: {
     id: string;
-    type?: 'GROUP' | 'ONE_ON_ONE';
+    type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
     maxParticipants?: number;
     scheduledAt: string;
     participants: Array<{ initials: string; gender: string | null }>;
@@ -40,7 +41,7 @@ interface UserInfo {
 }
 
 function fmtDate(val: string) {
-  return new Date(val).toLocaleDateString('tr-TR', {
+  return new Date(val).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul',
     day: 'numeric', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
@@ -162,7 +163,7 @@ function EmptyMasaCard({
   userInfo,
 }: {
   locked: boolean;
-  cardType: 'group' | 'basbasa';
+  cardType: 'group' | 'basbasa' | 'kanka';
   userInfo?: UserInfo;
 }) {
   const initials = userInfo
@@ -307,7 +308,7 @@ function EmptyMasaCard({
             <span style={{ fontSize: 13, color: '#888', fontFamily: 'Inter, sans-serif' }}>Buluşma</span>
           </div>
           <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>
-            Cumartesi · 20:00
+            {cardType === 'basbasa' ? 'Cumartesi · 20:00' : 'Cuma · 20:00'}
           </span>
         </motion.div>
 
@@ -401,27 +402,6 @@ function EmptyMasaCard({
           </button>
         </motion.div>
 
-        {/* Rezervasyon İptal */}
-        <motion.div
-          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.84, duration: 0.4 }}
-          style={{ marginBottom: 16 }}
-        >
-          <button
-            disabled
-            style={{
-              width: '100%', padding: '13px 0',
-              background: 'rgba(192,57,43,0.2)', border: '1px solid rgba(192,57,43,0.5)',
-              borderRadius: 9999, cursor: 'default',
-              color: '#ff6b6b', fontSize: 12, fontWeight: 700,
-              letterSpacing: '0.1em', textTransform: 'uppercase',
-              fontFamily: 'Inter, sans-serif', opacity: 0.5,
-            }}
-          >
-            Rezervasyon İptal
-          </button>
-        </motion.div>
-
         {/* Sohbet bölümü */}
         <div>
           <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', margin: '0 0 20px' }} />
@@ -466,13 +446,15 @@ function MasaBlock({
   infoText,
   cardType,
   userInfo,
+  onCancelled,
 }: {
   title: string;
   item?: DashboardItem;
   locked: boolean;
   infoText: string;
-  cardType: 'group' | 'basbasa';
+  cardType: 'group' | 'basbasa' | 'kanka';
   userInfo?: UserInfo;
+  onCancelled?: () => void;
 }) {
   const meeting = item?.meeting;
 
@@ -492,7 +474,6 @@ function MasaBlock({
       venuePhotos: meeting.venuePhotos,
       participants: meeting.participants,
       aiReport: meeting.aiReport,
-      cancelRightUsed: meeting.cancelRightUsed,
     };
     content = (
       <div style={CARD_STYLE}>
@@ -512,8 +493,20 @@ function MasaBlock({
           type={meeting.type}
           scheduledAt={meeting.scheduledAt}
           infoText={isOneOnOne
-            ? "Pazar saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."
-            : "Cumartesi saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."}
+            ? "Cumartesi saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."
+            : meeting.type === 'KANKA'
+              ? "Pazar saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."
+              : "Cuma saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."}
+        />
+        {/* Rezervasyon iptali: kilit günü 20:00'ye kadar (masa kartı açıldığında iptal yok) */}
+        <RezervasyonIptal
+          meetingId={meeting.id}
+          type={meeting.type ?? (cardType === 'basbasa' ? 'ONE_ON_ONE' : cardType === 'kanka' ? 'KANKA' : 'GROUP')}
+          scheduledAt={meeting.scheduledAt}
+          cancelRightUsed={meeting.cancelRightUsed}
+          apiBase={API_PREFIX}
+          onCancelled={onCancelled}
+          modalPortal={(node) => createPortal(node, document.body)}
         />
       </div>
     );
@@ -529,8 +522,9 @@ function MasaBlock({
   );
 }
 
-export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
+export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc, kankamlaActive = false }: {
   activePlan: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
+  kankamlaActive?: boolean;
   userInfo?: UserInfo;
   kycApproved?: boolean;
   onGoKyc?: () => void;
@@ -539,7 +533,8 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
   const [history,   setHistory]   = useState<HistoryMeeting[]>([]);
   const [loading,   setLoading]   = useState(true);
 
-  useEffect(() => {
+  // Bekleme ekranında iptal sonrası da çağrılır (iptal mesajı görünsün diye 2 sn sonra)
+  const loadMeetings = () => {
     Promise.all([
       api.get<{ items: DashboardItem[] }>('/meetings/dashboard').catch(() => ({ items: [] as DashboardItem[] })),
       api.get<HistoryMeeting[]>('/meetings/my-history').catch(() => [] as HistoryMeeting[]),
@@ -549,13 +544,16 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
         setHistory(Array.isArray(hist) ? hist : []);
       })
       .finally(() => setLoading(false));
-  }, []);
+  };
+  useEffect(() => { loadMeetings(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const afterCancel = () => { setTimeout(loadMeetings, 2000); };
 
   if (loading) return <SkeletonBlock lines={5} />;
 
   const groupItem    = dashItems.find(i => !i.meeting.type || i.meeting.type === 'GROUP');
   const oneOnOneItem = dashItems.find(i => i.meeting.type === 'ONE_ON_ONE');
-  const locked       = activePlan === null;
+  const kankaItem    = dashItems.find(i => i.meeting.type === 'KANKA');
+  const locked       = activePlan === null && !kankamlaActive && !kankaItem;
 
   const showGroup    = activePlan === 'MASADA' || activePlan === 'ICERDE' || locked;
   const showOneOnOne = activePlan === 'KARSIMDA' || activePlan === 'ICERDE' || locked;
@@ -600,9 +598,10 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
           title="Grup Masa Kartı"
           item={groupItem}
           locked={locked}
-          infoText="Masa detayları Cumartesi saat 10:00'da burada görünecek"
+          infoText="Masa detayları Cuma saat 10:00'da burada görünecek"
           cardType="group"
           userInfo={userInfo}
+          onCancelled={afterCancel}
         />
       )}
 
@@ -611,10 +610,34 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
           title="Baş Başa Masa Kartı"
           item={oneOnOneItem}
           locked={locked}
-          infoText="Masa detayları Pazar saat 10:00'da burada görünecek"
+          infoText="Masa detayları Cumartesi saat 10:00'da burada görünecek"
           cardType="basbasa"
           userInfo={userInfo}
+          onCancelled={afterCancel}
         />
+      )}
+
+      {/* Kankamla: masa varsa kart, yoksa tarama bilgisi (paket alıcıda ya da kankada) */}
+      {kankaItem ? (
+        <MasaBlock
+          title="Kankamla Masa Kartı"
+          item={kankaItem}
+          locked={false}
+          infoText="Masa detayları Pazar saat 10:00'da burada görünecek"
+          cardType="kanka"
+          userInfo={userInfo}
+          onCancelled={afterCancel}
+        />
+      ) : kankamlaActive && (
+        <div className="flex flex-col gap-3">
+          <p className="text-xs font-semibold tracking-[0.14em] text-[#444] uppercase">Kankamla Masa Kartı</p>
+          <div style={CARD_STYLE}>
+            <p className="text-sm text-[#ccc] leading-relaxed">
+              Kankanla birlikte eşleşme taraması devam ediyor. Karşı cinsten bir kanka çiftiyle eşleştiğinizde masanız burada görünecek;
+              detaylar Pazar 10:00&apos;da açıklanır. Tarama Cumartesi 23:59&apos;da kapanır.
+            </p>
+          </div>
+        </div>
       )}
 
       {history.length > 0 && (

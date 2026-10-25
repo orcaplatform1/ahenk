@@ -10,13 +10,14 @@ import {
   OCEAN_MAX_DISTANCE,
   TABLE_SIZE_LARGE,
   TABLE_SIZE_SMALL,
-  MEETING_HOUR_UTC,
 } from "./matching.constants";
+import { groupMeetingAt, kankaMeetingAt, oneOnOneMeetingAt } from "../meetings/meeting-windows";
 import { Gender, MeetingType, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "@prisma/client";
 import { pickBot, alertBotNotFound, availableBots } from "./bot-picker";
 import { consumeOneOnOneRights } from "./one-on-one-right";
-import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_ONE_ON_ONE_SUB } from "../payment/package-rights";
-import { ASSIGN_QUEUE, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT, randomBotDelayMs } from "./assign-queue";
+import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB } from "../payment/package-rights";
+import { activeKankaLink } from "../kanka/kanka-links";
+import { ASSIGN_QUEUE, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT, enqueueAssign, randomBotDelayMs } from "./assign-queue";
 
 type OceanScoreData = {
   openness: number;
@@ -56,7 +57,12 @@ type AssignContext = {
   groupOcean: boolean;   // Perşembe 12:00'ye kadar OCEAN uyumu
   groupVenue: boolean;   // Perşembe 18:00'e kadar mekan uyumu
   oneOnOneSoft: boolean; // Cuma 10:00'a kadar OCEAN + mekan uyumu
+  kankaOpen: boolean;    // Kankamla Pazartesi – Cumartesi 23:44
+  kankaSoft: boolean;    // Cumartesi 12:00'ye kadar OCEAN + mekan uyumu (iki alıcı arasında)
 };
+
+// Kankamla çifti: paketi olan alıcı + aynı cinsiyetteki kankası (ücretsiz)
+type KankaPair = { buyer: EligibleUser; kanka: EligibleUser; subId: string };
 
 // Atama son anı 23:44 (TR); 23:45'ten itibaren sadece kapanış botları
 const ASSIGN_CUTOFF_MIN = 23 * 60 + 45;
@@ -86,25 +92,6 @@ function getISOWeekNumber(date: Date): { week: number; year: number } {
   return { week, year: d.getUTCFullYear() };
 }
 
-function nextSaturdayAt(hourUTC: number): Date {
-  const now = new Date();
-  const day = now.getUTCDay(); // 0=Sun, 6=Sat
-  const daysUntilSat = (6 - day + 7) % 7 || 7;
-  const sat = new Date(now);
-  sat.setUTCDate(now.getUTCDate() + daysUntilSat);
-  sat.setUTCHours(hourUTC, 0, 0, 0);
-  return sat;
-}
-
-// Başbaşa buluşma: haftanın Pazar günü (Pazar günü çağrılırsa bir sonraki Pazar)
-function nextSundayAt(hourUTC: number): Date {
-  const now = new Date();
-  const daysUntilSun = (7 - now.getUTCDay()) % 7 || 7;
-  const sun = new Date(now);
-  sun.setUTCDate(now.getUTCDate() + daysUntilSun);
-  sun.setUTCHours(hourUTC, 0, 0, 0);
-  return sun;
-}
 
 // TR saatiyle gün (0=Pazar … 6=Cumartesi) ve gün içindeki dakika
 function trClock(date: Date): { day: number; minutes: number } {
@@ -133,7 +120,8 @@ async function tableTitle(
     db.city.findUnique({ where: { id: cityId }, select: { name: true } }),
     db.meeting.count({ where: { cityId, type } }),
   ]);
-  return `${city?.name ?? ""} ${type === MeetingType.GROUP ? "Grup" : "Başbaşa"} ${count + 1}`.trim();
+  const label = type === MeetingType.GROUP ? "Grup" : type === MeetingType.KANKA ? "Kankamla" : "Başbaşa";
+  return `${city?.name ?? ""} ${label} ${count + 1}`.trim();
 }
 
 // Grup kapanışında dengeyi tamamlayan bot sayısı: önce 2E+2K, sığmazsa 3E+3K hedeflenir
@@ -176,6 +164,10 @@ export class MatchingService {
       const [user] = await this.fetchEligible(ctx.cycleId, ONE_ON_ONE_PLANS, true, [userId]);
       if (user) await this.assignOneOnOne(ctx, user);
     }
+    if (ctx.kankaOpen) {
+      const [pair] = await this.fetchKankaPairs(ctx.cycleId, [userId]);
+      if (pair) await this.assignKanka(ctx, pair);
+    }
   }
 
   async scanPool(): Promise<void> {
@@ -195,6 +187,14 @@ export class MatchingService {
         if (partnerId) pool = pool.filter((u) => u.id !== user.id && u.id !== partnerId);
       }
     }
+    if (ctx.kankaOpen) {
+      let pairs = await this.fetchKankaPairs(ctx.cycleId);
+      for (const pair of [...pairs]) {
+        if (!pairs.some((p) => p.subId === pair.subId)) continue;
+        const otherSubId = await this.assignKanka(ctx, pair, pairs);
+        if (otherSubId) pairs = pairs.filter((p) => p.subId !== pair.subId && p.subId !== otherSubId);
+      }
+    }
   }
 
   // Atama açık mı + saate göre hangi filtreler geçerli (TR saati)
@@ -209,7 +209,8 @@ export class MatchingService {
     // Grup Pazartesi – Perşembe 23:44, Başbaşa Pazartesi – Cuma 23:44
     const groupOpen = (day >= 1 && day <= 3) || (day === 4 && minutes < ASSIGN_CUTOFF_MIN);
     const oneOnOneOpen = (day >= 1 && day <= 4) || (day === 5 && minutes < ASSIGN_CUTOFF_MIN);
-    if (!groupOpen && !oneOnOneOpen) return null;
+    const kankaOpen = (day >= 1 && day <= 5) || (day === 6 && minutes < ASSIGN_CUTOFF_MIN);
+    if (!groupOpen && !oneOnOneOpen && !kankaOpen) return null;
 
     const { week: weekNumber, year } = getISOWeekNumber(now);
     const cycle = await this.prisma.matchingCycle.upsert({
@@ -226,6 +227,8 @@ export class MatchingService {
       groupOcean: !(day === 4 && minutes >= 12 * 60),
       groupVenue: !(day === 4 && minutes >= 18 * 60),
       oneOnOneSoft: !(day === 5 && minutes >= 10 * 60),
+      kankaOpen,
+      kankaSoft: !(day === 6 && minutes >= 12 * 60),
     };
   }
 
@@ -277,7 +280,7 @@ export class MatchingService {
         cityId,
         type: MeetingType.GROUP,
         title: await tableTitle(this.prisma, cityId, MeetingType.GROUP),
-        scheduledAt: nextSaturdayAt(MEETING_HOUR_UTC),
+        scheduledAt: groupMeetingAt(),
         maxParticipants: TABLE_SIZE_LARGE,
         participants: { create: { userId: user.id, status: "INVITED" } },
       },
@@ -323,7 +326,7 @@ export class MatchingService {
           cityId,
           type: MeetingType.ONE_ON_ONE,
           title: await tableTitle(tx, cityId, MeetingType.ONE_ON_ONE),
-          scheduledAt: nextSundayAt(MEETING_HOUR_UTC),
+          scheduledAt: oneOnOneMeetingAt(),
           maxParticipants: 2,
           participants: {
             createMany: { data: [user, partner].map((u) => ({ userId: u.id, status: "INVITED" as const })) },
@@ -335,6 +338,160 @@ export class MatchingService {
     });
     this.logger.log(`Başbaşa masası: ${user.id} + ${partner.id}`);
     return partner.id;
+  }
+
+  // KANKAMLA: iki alıcı (1 erkek + 1 kadın) eşleşince kankaları da masaya oturur → 4 kişi (2E + 2K), bot yok.
+  // İki alıcı: şehir + en fazla 8 yaş farkı hiç kalkmaz; OCEAN ve mekan uyumu Cumartesi 12:00'ye kadar.
+  // Kankalara uyum filtresi yok; engel (engelleme + rehber) dört kişi arasında çapraz kontrol edilir.
+  // Kurulan masanın karşı çiftinin paket id'sini döner.
+  private async assignKanka(ctx: AssignContext, pair: KankaPair, pool?: KankaPair[]): Promise<string | null> {
+    const cityId = matchCity(pair.buyer);
+    const gender = pair.buyer.profile?.gender;
+    if (!cityId || !gender) return null;
+
+    const others = (pool ?? (await this.fetchKankaPairs(ctx.cycleId))).filter(
+      (o) =>
+        o.subId !== pair.subId &&
+        ![o.buyer.id, o.kanka.id].some((id) => id === pair.buyer.id || id === pair.kanka.id) &&
+        matchCity(o.buyer) === cityId &&
+        !!o.buyer.profile?.gender &&
+        o.buyer.profile.gender !== gender &&
+        !this.areAgeGapTooLarge(pair.buyer, o.buyer) &&
+        (!ctx.kankaSoft || !this.areVenueIncompatible(pair.buyer, o.buyer)),
+    );
+    const candidates: KankaPair[] = [];
+    for (const o of others) {
+      const theirs = [o.buyer, o.kanka];
+      const blockedA = await this.blockedIds(pair.buyer, theirs);
+      const blockedB = await this.blockedIds(pair.kanka, theirs);
+      if (blockedA.size === 0 && blockedB.size === 0) candidates.push(o);
+    }
+    if (candidates.length === 0) return null;
+
+    const myAge = ageYears(pair.buyer.profile?.birthDate);
+    const ageDiff = (o: KankaPair) => {
+      const age = ageYears(o.buyer.profile?.birthDate);
+      return myAge === null || age === null ? Number.MAX_SAFE_INTEGER : Math.abs(myAge - age);
+    };
+    candidates.sort((a, b) =>
+      ageDiff(a) - ageDiff(b) || (ctx.kankaSoft ? this.scoreTwo(pair.buyer, b.buyer) - this.scoreTwo(pair.buyer, a.buyer) : 0),
+    );
+    const other = candidates[0];
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.meeting.create({
+        data: {
+          cycleId: ctx.cycleId,
+          cityId,
+          type: MeetingType.KANKA,
+          title: await tableTitle(tx, cityId, MeetingType.KANKA),
+          scheduledAt: kankaMeetingAt(),
+          maxParticipants: 4,
+          participants: {
+            createMany: {
+              data: [
+                { userId: pair.buyer.id, kankaPartnerId: pair.kanka.id },
+                { userId: pair.kanka.id, kankaPartnerId: pair.buyer.id },
+                { userId: other.buyer.id, kankaPartnerId: other.kanka.id },
+                { userId: other.kanka.id, kankaPartnerId: other.buyer.id },
+              ].map((p) => ({ ...p, status: "INVITED" as const })),
+            },
+          },
+        },
+      });
+    });
+    this.logger.log(`Kankamla masası: ${pair.buyer.id}+${pair.kanka.id} & ${other.buyer.id}+${other.kanka.id}`);
+    return other.subId;
+  }
+
+  // Kankamla havuzu: açık Kankamla paketi olan alıcı + aktif kankası. İkisi de aktif, KYC onaylı, bot değil,
+  // aynı cinsiyet; bu hafta Kankamla masası olan / Kankamla rezervasyonunu iptal eden çift havuza girmez.
+  // Çiftte iki kişide de paket varsa en eski paket kullanılır. userIds verilirse sadece o kişilerin çifti.
+  async fetchKankaPairs(cycleId: string, userIds?: string[]): Promise<KankaPair[]> {
+    let ownerIds: string[] | undefined;
+    if (userIds) {
+      const links = await this.prisma.kankaLink.findMany({
+        where: { endedAt: null, OR: [{ userAId: { in: userIds } }, { userBId: { in: userIds } }] },
+        select: { userAId: true, userBId: true },
+      });
+      ownerIds = [...new Set([...userIds, ...links.flatMap((l) => [l.userAId, l.userBId])])];
+    }
+    const subs = await this.prisma.subscription.findMany({
+      where: { ...OPEN_KANKA_SUB, ...(ownerIds ? { userId: { in: ownerIds } } : {}) },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, userId: true },
+    });
+
+    const pairs: KankaPair[] = [];
+    const used = new Set<string>();
+    for (const sub of subs) {
+      if (used.has(sub.userId)) continue;
+      const link = await activeKankaLink(this.prisma, sub.userId);
+      if (!link || used.has(link.kankaId)) continue;
+      used.add(sub.userId);
+      used.add(link.kankaId);
+
+      const notThisWeek: Prisma.UserWhereInput = {
+        participations: {
+          none: {
+            OR: [
+              { meeting: { cycleId, type: MeetingType.KANKA, status: { in: ["PENDING", "ACTIVE"] } } },
+              { status: "CANCELLED", meeting: { cycleId, type: MeetingType.KANKA } },
+            ],
+          },
+        },
+      };
+      const [buyer, kanka] = await Promise.all([
+        this.prisma.user.findFirst({
+          where: { id: sub.userId, status: "ACTIVE", isBot: false, oceanScore: { isNot: null }, kyc: { status: KycStatus.APPROVED }, ...notThisWeek },
+          select: ELIGIBLE_SELECT,
+        }),
+        this.prisma.user.findFirst({
+          where: { id: link.kankaId, status: "ACTIVE", isBot: false, kyc: { status: KycStatus.APPROVED }, ...notThisWeek },
+          select: ELIGIBLE_SELECT,
+        }),
+      ]);
+      if (!buyer || !kanka) continue;
+      if (!buyer.profile?.gender || buyer.profile.gender !== kanka.profile?.gender) continue;
+      pairs.push({ buyer: buyer as unknown as EligibleUser, kanka: kanka as unknown as EligibleUser, subId: sub.id });
+    }
+    return pairs;
+  }
+
+  // Askı / ban: kişi bu haftaki (henüz yapılmamış) Kankamla masasından kankasıyla birlikte düşer; masa iptal olur,
+  // karşı çift yeniden taramaya girer (hakları korunur). Düşen çiftin hakkı düşülmez.
+  async dropKankaPair(userId: string, reason: string): Promise<void> {
+    const parts = await this.prisma.meetingParticipant.findMany({
+      where: {
+        userId,
+        status: { notIn: ["CANCELLED", "DECLINED"] },
+        meeting: { type: MeetingType.KANKA, status: { in: ["PENDING", "ACTIVE"] }, scheduledAt: { gt: new Date() } },
+      },
+      select: { meetingId: true, kankaPartnerId: true },
+    });
+    for (const part of parts) {
+      const pairIds = [userId, ...(part.kankaPartnerId ? [part.kankaPartnerId] : [])];
+      const meeting = await this.prisma.meeting.findUnique({
+        where: { id: part.meetingId },
+        select: { participants: { select: { userId: true } } },
+      });
+      const otherIds = (meeting?.participants ?? []).map((p) => p.userId).filter((id) => !pairIds.includes(id));
+      await this.prisma.$transaction([
+        this.prisma.meetingParticipant.updateMany({
+          where: { meetingId: part.meetingId, userId: { in: pairIds } },
+          data: { status: "CANCELLED", cancelledAt: new Date(), leaveNote: reason },
+        }),
+        this.prisma.meeting.update({ where: { id: part.meetingId }, data: { status: "CANCELLED" } }),
+      ]);
+      for (const id of otherIds) {
+        await this.notifications.sendToUser(id, {
+          title: "Karşı çift masadan ayrıldı",
+          body: "Kankamla masanızdaki karşı çift ayrıldı. Sizin için yeniden eşleşme aranıyor.",
+          data: { type: "KANKA_PAIR_LEFT", meetingId: part.meetingId },
+        }).catch(() => undefined);
+        await enqueueAssign(this.assignQueue, id);
+      }
+    }
   }
 
   // Yarım masaları birleştirme: bir masanın TÜM kişileri aynı şehirdeki diğer masalara (cinsiyet sınırı, engel,
@@ -553,7 +710,7 @@ export class MatchingService {
     const cityId = user ? matchCity(user) : null;
     if (!user || !gender || !cityId) return;
 
-    const scheduledAt = nextSundayAt(MEETING_HOUR_UTC);
+    const scheduledAt = oneOnOneMeetingAt();
     const bot = await pickBot(this.prisma, {
       gender: gender === Gender.MALE ? Gender.FEMALE : Gender.MALE,
       scheduledAt,
@@ -641,7 +798,7 @@ export class MatchingService {
     const { user, gender } = await this.waitingUser(userId);
     const bots = await availableBots(this.prisma, {
       gender: gender === Gender.MALE ? Gender.FEMALE : Gender.MALE,
-      scheduledAt: nextSundayAt(MEETING_HOUR_UTC),
+      scheduledAt: oneOnOneMeetingAt(),
     });
     const myAge = ageYears(user.profile?.birthDate);
     return bots
@@ -656,7 +813,7 @@ export class MatchingService {
     if (!allowed.some((b) => b.id === botId)) {
       throw new BadRequestException("Bu bot eklenemez (cinsiyet, yaş farkı ya da aynı saatte başka masada)");
     }
-    await this.createOneOnOneBotMeeting(cycle, userId, cityId, botId, nextSundayAt(MEETING_HOUR_UTC));
+    await this.createOneOnOneBotMeeting(cycle, userId, cityId, botId, oneOnOneMeetingAt());
     return { created: true };
   }
 
@@ -742,7 +899,7 @@ export class MatchingService {
 
   // ─── Cumartesi bildirimleri ───────────────────────────────────────────────
 
-  async sendSaturdayNotifications(): Promise<void> {
+  async sendGroupRevealNotifications(): Promise<void> {
     const now = new Date();
     const { week: weekNumber, year } = getISOWeekNumber(now);
     const cycle = await this.prisma.matchingCycle.findUnique({
@@ -753,7 +910,7 @@ export class MatchingService {
     const meetings = await this.prisma.meeting.findMany({
       where: {
         cycleId: cycle.id,
-        type: MeetingType.GROUP, // başbaşa masalar Pazar 10:00'da bildirilir
+        type: MeetingType.GROUP, // başbaşa masalar Cumartesi 10:00'da bildirilir
         status: { in: ["PENDING", "ACTIVE"] },
         locationText: { not: null },
       },
@@ -779,7 +936,7 @@ export class MatchingService {
       for (const p of meeting.participants) {
         await this.notifications.notifyMeetingConfirmed(p.userId, meeting.id, meeting.scheduledAt);
       }
-      this.logger.log(`Cumartesi bildirimi: meeting=${meeting.id} (${participantInitials.join(", ")})`);
+      this.logger.log(`Grup masası bildirimi: meeting=${meeting.id} (${participantInitials.join(", ")})`);
     }
   }
 

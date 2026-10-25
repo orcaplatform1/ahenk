@@ -20,7 +20,7 @@ function getNextTarget(targetDay: number): Date {
   targetTR.setUTCHours(23, 59, 0, 0);
   const targetUTC = new Date(targetTR.getTime() - trOffset);
   if (targetUTC.getTime() <= now.getTime()) {
-    targetUTC.setDate(targetUTC.getDate() + 7);
+    targetUTC.setUTCDate(targetUTC.getUTCDate() + 7);
   }
   return targetUTC;
 }
@@ -103,6 +103,11 @@ export function HeroCountdown() {
         Bazı akşamlar takvimde kalır, bazıları hafızanda.
       </p>
       <CountdownRow label="Baş Başa Masa" targetDay={5} />
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', margin: '0 16px' }} />
+      <p style={{ fontSize: 11, fontStyle: 'italic', color: 'rgba(255,255,255,0.62)', padding: '12px 16px 0', lineHeight: 1.4, margin: 0 }}>
+        Yanında yakın arkadaşın, karşında iki yakın arkadaş daha.
+      </p>
+      <CountdownRow label="Kankamla Masası" targetDay={6} />
     </div>
   );
 }

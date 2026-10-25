@@ -134,11 +134,11 @@ export default function DegerlendirmePage() {
     : now > new Date(meetingInfo.reviewClosesAt).getTime() ? 'closed'
     : 'open';
   const fmtDateTime = (d: string) =>
-    new Date(d).toLocaleString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long', hour: '2-digit', minute: '2-digit' });
+    new Date(d).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', weekday: 'long', hour: '2-digit', minute: '2-digit' });
   const initialsOf = (ids: string[]) => participants.filter((p) => ids.includes(p.userId)).map((p) => p.initials).join(', ');
 
   const fmtDate = (d: string) =>
-    new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+    new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', weekday: 'long' });
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#121212' }}>
@@ -190,7 +190,7 @@ export default function DegerlendirmePage() {
         {/* Başlık */}
         <motion.div {...fadeUp(0)} className="mb-8">
           <h1 className="font-serif text-3xl text-[#f5f5f5] mb-2">
-            {meetingInfo ? `${new Date(meetingInfo.scheduledAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} Tarihli Masada Ahenk Nasıldı?` : 'Masada Ahenk Nasıldı?'}
+            {meetingInfo ? `${new Date(meetingInfo.scheduledAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long' })} Tarihli Masada Ahenk Nasıldı?` : 'Masada Ahenk Nasıldı?'}
           </h1>
           {meetingInfo && (
             <p className="text-[#555] text-sm">

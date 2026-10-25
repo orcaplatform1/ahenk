@@ -14,7 +14,8 @@ import { IyzicoService } from "./iyzico/iyzico.service";
 import { PLAN_CONFIG } from "./payment.constants";
 import { PricingService } from "./pricing.service";
 import { isMaintenanceMode } from "../admin/app-settings";
-import { GROUP_RIGHTS, ONE_ON_ONE_PLANS, PACKAGE_CYCLES, groupPartOpen, oneOnOnePartOpen, syncPackageStatus } from "./package-rights";
+import { GROUP_RIGHTS, KANKA_RIGHTS, ONE_ON_ONE_PLANS, PACKAGE_CYCLES, groupPartOpen, oneOnOnePartOpen, syncPackageStatus } from "./package-rights";
+import { activeKankaLink } from "../kanka/kanka-links";
 import { decryptIdentityNumber } from "../kyc/identity-number";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { Prisma, SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType, ReferralStatus, PaymentDiscountType, UserStatus, MeetingType, MeetingStatus } from "@prisma/client";
@@ -26,11 +27,12 @@ const REFUND_PLANS: Record<RefundType, SubscriptionPlan[]> = {
   [RefundType.GROUP]: [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE],
   [RefundType.ONEONE]: [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE],
   [RefundType.FULL]: [SubscriptionPlan.ICERDE],
+  [RefundType.KANKA]: [SubscriptionPlan.KANKAMLA],
 };
 const REFUND_SUB_SELECT = {
-  id: true, plan: true, createdAt: true, usedAt: true, groupCycles: true, oneOnOneCycles: true,
+  id: true, plan: true, createdAt: true, usedAt: true, groupCycles: true, oneOnOneCycles: true, kankaCycles: true,
 } as const;
-type RefundSub = { id: string; plan: SubscriptionPlan; createdAt: Date; usedAt: Date | null; groupCycles: number; oneOnOneCycles: number };
+type RefundSub = { id: string; plan: SubscriptionPlan; createdAt: Date; usedAt: Date | null; groupCycles: number; oneOnOneCycles: number; kankaCycles: number };
 
 
 @Injectable()
@@ -61,6 +63,8 @@ export class PaymentService {
         groupRights: true,
         groupCycles: true,
         oneOnOneCycles: true,
+        kankaRights: true,
+        kankaCycles: true,
         payment: { select: { status: true } },
       },
     });
@@ -85,7 +89,7 @@ export class PaymentService {
 
   private async refundOptions(userId: string): Promise<RefundType[]> {
     const options: RefundType[] = [];
-    for (const type of [RefundType.GROUP, RefundType.ONEONE, RefundType.FULL]) {
+    for (const type of [RefundType.GROUP, RefundType.ONEONE, RefundType.FULL, RefundType.KANKA]) {
       const subs = await this.prisma.subscription.findMany({
         where: {
           userId,
@@ -120,6 +124,20 @@ export class PaymentService {
 
   // Aktif paket kuralı: Masada → Masada/İçerde alınamaz; Karşımda → Karşımda/İçerde; İçerde → hiçbiri
   private async assertCanBuy(userId: string, plan: SubscriptionPlan) {
+    // Kankamla: kanka seçmeden alınamaz; çiftte (iki kişiden birinde) aktif Kankamla paketi bitene kadar yenisi alınamaz
+    if (plan === SubscriptionPlan.KANKAMLA) {
+      const link = await activeKankaLink(this.prisma, userId);
+      if (!link) {
+        throw new BadRequestException("Kankamla paketini almak için önce Profilim'den bir kanka davet etmelisin.");
+      }
+      const pairActive = await this.prisma.subscription.count({
+        where: { userId: { in: [userId, link.kankaId] }, plan: SubscriptionPlan.KANKAMLA, status: SubscriptionStatus.ACTIVE },
+      });
+      if (pairActive > 0) {
+        throw new ConflictException("Sizin ya da kankanızın aktif Kankamla paketi var; paket bitene kadar yenisi alınamaz.");
+      }
+      return;
+    }
     const active = await this.prisma.subscription.findMany({
       where: { userId, status: SubscriptionStatus.ACTIVE },
       select: { plan: true, groupRights: true, groupCycles: true, usedAt: true, oneOnOneCycles: true },
@@ -334,7 +352,7 @@ export class PaymentService {
     paymentId: string,
   ) {
     const sub = await tx.subscription.create({
-      data: { userId, plan, groupRights: GROUP_RIGHTS[plan] },
+      data: { userId, plan, groupRights: GROUP_RIGHTS[plan], kankaRights: plan === SubscriptionPlan.KANKAMLA ? KANKA_RIGHTS : 0 },
     });
     await tx.payment.update({ where: { id: paymentId }, data: { subscriptionId: sub.id } });
   }
@@ -393,6 +411,12 @@ export class PaymentService {
     return count > 0;
   }
 
+  // Kişi + (varsa) aktif kankası
+  private async kankaPairIds(userId: string): Promise<string[]> {
+    const link = await activeKankaLink(this.prisma, userId);
+    return link ? [userId, link.kankaId] : [userId];
+  }
+
   // Paket + iade türü uyumu, 4 döngü dolmuş olması ve "masa kurulduysa hizmet alınmıştır" kuralı
   private async assertRefundAllowed(userId: string, sub: RefundSub, refundType: RefundType) {
     if (!REFUND_PLANS[refundType].includes(sub.plan)) {
@@ -401,6 +425,7 @@ export class PaymentService {
 
     const isGroup = refundType === RefundType.GROUP || refundType === RefundType.FULL;
     const isOneone = refundType === RefundType.ONEONE || refundType === RefundType.FULL;
+    const isKanka = refundType === RefundType.KANKA;
 
     // Aynı kısım daha önce iade edildiyse tekrar edilmez
     const refunded = await this.prisma.refundRequest.findMany({
@@ -409,7 +434,7 @@ export class PaymentService {
     });
     const groupRefunded = refunded.some((r) => r.refundType === RefundType.GROUP || r.refundType === RefundType.FULL);
     const oneoneRefunded = refunded.some((r) => r.refundType === RefundType.ONEONE || r.refundType === RefundType.FULL);
-    if ((isGroup && groupRefunded) || (isOneone && oneoneRefunded)) {
+    if ((isGroup && groupRefunded) || (isOneone && oneoneRefunded) || (isKanka && refunded.length > 0)) {
       throw new BadRequestException("Bu paket için iade zaten yapıldı.");
     }
 
@@ -418,6 +443,21 @@ export class PaymentService {
     }
     if (isOneone && sub.oneOnOneCycles < PACKAGE_CYCLES) {
       throw new BadRequestException(`Başbaşa masası iadesi için ${PACKAGE_CYCLES} döngünün dolması gerekir. Geçen: ${sub.oneOnOneCycles}/${PACKAGE_CYCLES}`);
+    }
+    if (isKanka && sub.kankaCycles < PACKAGE_CYCLES) {
+      throw new BadRequestException(`Kankamla iadesi için ${PACKAGE_CYCLES} döngünün dolması gerekir. Geçen: ${sub.kankaCycles}/${PACKAGE_CYCLES}`);
+    }
+    // Kankamla: masa kurulduysa ya da çift rezervasyonu kendisi iptal ettiyse (grupta olduğu gibi) hizmet alınmış sayılır
+    const kankaSelfCancelled = isKanka && (await this.prisma.meetingParticipant.count({
+      where: {
+        userId: { in: await this.kankaPairIds(userId) },
+        status: "CANCELLED",
+        leaveReason: { not: null },
+        meeting: { type: MeetingType.KANKA, createdAt: { gte: sub.createdAt } },
+      },
+    })) > 0;
+    if (isKanka && (kankaSelfCancelled || await this.tableFormedSince(userId, MeetingType.KANKA, sub.createdAt))) {
+      throw new BadRequestException("Kankamla masanız kurulduğu için bu hizmet alınmış sayılır; iade yapılamaz.");
     }
     if (isGroup && await this.tableFormedSince(userId, MeetingType.GROUP, sub.createdAt)) {
       throw new BadRequestException("Grup masanız kurulduğu için bu hizmet alınmış sayılır; iade yapılamaz.");
@@ -543,6 +583,7 @@ export class PaymentService {
         // Tek seferlik paket hakları: grup / başbaşa masası sayısı, her kısım PACKAGE_CYCLES döngü geçerli
         groupRights: GROUP_RIGHTS[plan as SubscriptionPlan],
         oneOnOneRights: ONE_ON_ONE_PLANS.includes(plan as SubscriptionPlan) ? 1 : 0,
+        kankaRights: plan === SubscriptionPlan.KANKAMLA ? KANKA_RIGHTS : 0,
         cycles: PACKAGE_CYCLES,
         webTL: p.webKurus / 100,
         mobileTL: p.mobileKurus / 100,
