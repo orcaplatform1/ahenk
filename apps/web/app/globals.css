@@ -1,0 +1,215 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #121212;
+  color: #f5f5f5;
+}
+
+.hero-bg {
+  background-image: url('/hero-bg-mobile.webp');
+  background-size: cover;
+  background-position: center top;
+}
+
+/* Hero section: görselin tam boyutunda, kırpmasız */
+.hero-section {
+  aspect-ratio: 850 / 1850;
+}
+
+@media (min-width: 768px) {
+  .hero-bg {
+    background-image: url('/hero-bg-desktop.webp');
+    background-position: right center;
+  }
+  .hero-section {
+    aspect-ratio: 1672 / 941;
+  }
+}
+
+/* ── Glassmorphism kart ─────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 4px 24px rgba(0, 0, 0, 0.4);
+  border-radius: 16px;
+}
+
+.glass-card-featured {
+  background: rgba(255, 60, 40, 0.06);
+  border: 1px solid rgba(192, 57, 43, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 32px rgba(192, 57, 43, 0.2);
+  border-radius: 16px;
+}
+
+/* ── Gradient birincil buton (eski) ─────────────────── */
+.btn-grad {
+  background: linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%);
+  box-shadow: 0 0 20px rgba(192, 57, 43, 0.35);
+  border-radius: 9999px;
+  color: #fff;
+  font-weight: 500;
+  transition: filter 0.2s, box-shadow 0.2s;
+  border: none;
+}
+.btn-grad:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 0 28px rgba(192, 57, 43, 0.5);
+}
+.btn-grad:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Ana Buton — Primary ─────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 999px;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 9px 24px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffffff;
+  cursor: pointer;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s, border-color 0.2s;
+}
+.btn-primary::before {
+  content: '';
+  flex-shrink: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #A21A26;
+}
+.btn-primary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.btn-primary:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+.btn-primary:disabled,
+.btn-primary.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Ghost Buton — Secondary ─────────────────────────── */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 9px 24px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.btn-ghost::before {
+  content: '';
+  flex-shrink: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(230, 225, 218, 0.5);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.btn-ghost:active:not(:disabled) {
+  color: rgba(255, 255, 255, 0.65);
+}
+.btn-ghost:disabled,
+.btn-ghost.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Glass input ────────────────────────────────────── */
+.input-glass {
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 12px;
+  color: #f5f5f5;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+.input-glass::placeholder {
+  color: #888;
+}
+.input-glass:focus {
+  border-color: rgba(192, 57, 43, 0.6);
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
+}
+
+/* ── Gradient progress bar ──────────────────────────── */
+.progress-grad {
+  background: linear-gradient(90deg, #c0392b 0%, #ff6b6b 100%);
+  box-shadow: 0 0 8px rgba(192, 57, 43, 0.4);
+}
+
+/* ── Kırmızı glow vurgusu ───────────────────────────── */
+.glow-red {
+  box-shadow: 0 0 24px rgba(192, 57, 43, 0.4);
+}
+
+/* ── Scrollbar gizle ────────────────────────────────── */
+.ahenk-chat-input::placeholder { color: rgba(255,255,255,0.45); }
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Takvim ikonu palet rengi ───────────────────────── */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(30%) sepia(80%) saturate(500%) hue-rotate(330deg) brightness(90%);
+  cursor: pointer;
+  opacity: 0.8;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.hero-countdown-box {
+  background: rgba(26,26,26,0.55);
+}
+@media (max-width: 768px) {
+  .hero-countdown-box {
+    background: #1a1a1a;
+    margin: 16px;
+  }
+}
