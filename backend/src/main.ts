@@ -1,5 +1,5 @@
 import { NestFactory } from "@nestjs/core";
-import { ValidationPipe } from "@nestjs/common";
+import { ForbiddenException, ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
@@ -30,15 +30,21 @@ async function bootstrap() {
     })
   );
 
-  app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS: ${origin} izin listesinde değil`));
-      }
-    },
-    credentials: true,
+  // iyzico ödeme dönüşü: tarayıcı iyzico sayfasından POST eder (Origin iyzico) — CORS kontrolüne girmez,
+  // token iyzico'dan doğrulanır. İzinsiz Origin 500 değil 403 alır.
+  const CORS_EXEMPT_PATHS = new Set(["/api/v1/payment/callback"]);
+  app.enableCors((req: { path: string }, callback) => {
+    if (CORS_EXEMPT_PATHS.has(req.path)) return callback(null, { origin: false });
+    callback(null, {
+      origin: (origin, cb) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          cb(null, true);
+        } else {
+          cb(new ForbiddenException(`CORS: ${origin} izin listesinde değil`));
+        }
+      },
+      credentials: true,
+    });
   });
 
   // Swagger sadece geliştirme ortamında açık; canlıda /api/docs yok

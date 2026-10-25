@@ -526,12 +526,12 @@ function StatCards() {
 
   return (
     <>
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes _statRedBorder{to{transform:rotate(360deg)}}
         .stat-wrap{position:relative;border-radius:16px;padding:1px;overflow:hidden;}
         .stat-wrap::before{content:'';position:absolute;inset:-80%;background:conic-gradient(from 0deg,transparent 62%,#c0392b 76%,#ff6b6b 83%,transparent 92%);animation:_statRedBorder 3s linear infinite;z-index:0;}
         .stat-inner{position:relative;z-index:1;border-radius:14px;background:rgba(12,8,8,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 12px;}
-      `}</style>
+      ` }} />
       <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="grid grid-cols-3 gap-4">
           {stats.map((stat) => (
@@ -817,12 +817,12 @@ export default function Home() {
               Paketler
             </h2>
           </div>
-          <style>{`
+          <style dangerouslySetInnerHTML={{ __html: `
             @keyframes _cardGoldBorder{to{transform:rotate(360deg)}}
             .lp-feat-wrap{position:relative;border-radius:18px;padding:2px;overflow:hidden;}
             .lp-feat-wrap::before{content:'';position:absolute;width:300%;height:300%;top:-100%;left:-100%;background:conic-gradient(from 0deg,transparent 68%,#c9a227 78%,#e8c84a 84%,transparent 93%);animation:_cardGoldBorder 3s linear infinite;z-index:0;}
             .lp-feat-inner{position:relative;z-index:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:row;flex:1;}
-          `}</style>
+          ` }} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {plans.map((plan) => {
               const cardKey = plan.planKey;
