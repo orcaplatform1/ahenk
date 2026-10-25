@@ -113,12 +113,15 @@ export class AdminService {
 
   // ─── Kullanıcı listesi ────────────────────────────────────────────────────
 
-  async listUsers(params: { search?: string; status?: string; city?: string; type?: string; page?: number; limit?: number }) {
+  async listUsers(params: { search?: string; status?: string; city?: string; type?: string; page?: number; limit?: number }, viewerRole: UserRole) {
+    const isSuper = viewerRole === UserRole.SUPERADMIN;
     const page = params.page ?? 1;
     const limit = Math.min(params.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = { isBot: false };
+    // SUPERADMIN hesapları yalnızca SUPERADMIN'e listelenir (getUser ile aynı kural)
+    if (!isSuper) where.role = { not: UserRole.SUPERADMIN };
     if (params.status) {
       if (!Object.values(UserStatus).includes(params.status as UserStatus)) {
         throw new BadRequestException("Geçersiz kullanıcı durumu");
@@ -144,15 +147,19 @@ export class AdminService {
 
     // Rol / paket tipi filtresi
     if (params.type === 'ADMIN')       where.role = 'ADMIN';
-    else if (params.type === 'SUPERADMIN') where.role = 'SUPERADMIN';
-    else if (params.type === 'MASADA')  where.subscriptions = { some: { plan: 'MASADA' } };
-    else if (params.type === 'KARSIMDA') where.subscriptions = { some: { plan: 'KARSIMDA' } };
-    else if (params.type === 'ICERDE')  where.subscriptions = { some: { plan: 'ICERDE' } };
-    else if (params.type === 'KANKAMLA') where.subscriptions = { some: { plan: 'KANKAMLA' } };
-    else if (params.type === 'NO_PLAN') where.subscriptions = { none: {} };
+    else if (params.type === 'SUPERADMIN') {
+      if (!isSuper) throw new ForbiddenException("Bu filtre için SUPERADMIN yetkisi gerekli");
+      where.role = 'SUPERADMIN';
+    }
+    else if (params.type === 'MASADA')  where.subscriptions = { some: { plan: 'MASADA', status: SubscriptionStatus.ACTIVE } };
+    else if (params.type === 'KARSIMDA') where.subscriptions = { some: { plan: 'KARSIMDA', status: SubscriptionStatus.ACTIVE } };
+    else if (params.type === 'ICERDE')  where.subscriptions = { some: { plan: 'ICERDE', status: SubscriptionStatus.ACTIVE } };
+    else if (params.type === 'KANKAMLA') where.subscriptions = { some: { plan: 'KANKAMLA', status: SubscriptionStatus.ACTIVE } };
+    else if (params.type === 'NO_PLAN') where.subscriptions = { none: { status: SubscriptionStatus.ACTIVE } };
     if (params.search) {
       where.OR = [
-        { email: { contains: params.search, mode: "insensitive" } },
+        // E-posta ile arama yalnızca SUPERADMIN'e açık (ADMIN e-postayı göremez)
+        ...(isSuper ? [{ email: { contains: params.search, mode: "insensitive" } }] : []),
         { profile: { firstName: { contains: params.search, mode: "insensitive" } } },
         { profile: { lastName: { contains: params.search, mode: "insensitive" } } },
         { phone: { contains: params.search } },
@@ -338,6 +345,10 @@ export class AdminService {
       const city = await this.prisma.city.findUnique({ where: { id: dto.cityId }, select: { isActive: true } });
       if (!city?.isActive) throw new BadRequestException("Seçilen şehir aktif değil");
     }
+    // Telefon giriş/şifre sıfırlama kimliğidir: gerçek kullanıcıda yalnızca SUPERADMIN değiştirebilir
+    if (dto.phone !== undefined && !target.isBot && role !== UserRole.SUPERADMIN) {
+      throw new ForbiddenException("Telefonu yalnızca süper admin değiştirebilir");
+    }
     // Bot numarası ayrı alanda tutulur (bildirim/kayıt sistemleri kullanmaz)
     if (dto.phone && !target.isBot) {
       const other = await this.prisma.user.findFirst({ where: { phone: dto.phone, id: { not: targetId } }, select: { id: true } });
@@ -519,17 +530,19 @@ export class AdminService {
     });
     if (!participant) throw new NotFoundException('Katılımcı bu masada yok');
     const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { type: true, createdAt: true } });
+    // Hak iadesi cancelMeeting ile aynı kural: iptal eden / reddeden / gelmeyen iade almaz
+    const restore = !["CANCELLED", "DECLINED", "NO_SHOW"].includes(participant.status);
     await this.prisma.$transaction(async (tx) => {
       // Admin çıkarırsa başbaşa hakkı yanmaz (kendi iptal etmediyse)
-      if (meeting?.type === MeetingType.ONE_ON_ONE && participant.status !== "CANCELLED") {
+      if (meeting?.type === MeetingType.ONE_ON_ONE && restore) {
         await restoreOneOnOneRights(tx, meeting.createdAt, [userId]);
       }
       // Grup: kilitte düşülen grup hakkı geri verilir (kendi iptal etmediyse)
-      if (meeting?.type === MeetingType.GROUP && participant.status !== "CANCELLED") {
+      if (meeting?.type === MeetingType.GROUP && restore) {
         await restoreGroupRights(tx, meetingId, [userId]);
       }
       // Kankamla: kilitte düşülen hak geri verilir (kendi iptal etmediyse)
-      if (meeting?.type === MeetingType.KANKA && participant.status !== "CANCELLED") {
+      if (meeting?.type === MeetingType.KANKA && restore) {
         await restoreKankaRights(tx, meetingId, [userId]);
       }
       await tx.meetingParticipant.delete({
@@ -930,7 +943,7 @@ export class AdminService {
     });
   }
 
-  async listSubscriptions(params: { status?: string; plan?: string; search?: string; page?: number; limit?: number }) {
+  async listSubscriptions(params: { status?: string; plan?: string; search?: string; page?: number; limit?: number }, viewerRole: UserRole) {
     const page = Math.max(1, params.page ?? 1);
     const limit = Math.min(Math.max(1, params.limit ?? 25), 100);
     const where: Prisma.SubscriptionWhereInput = {};
@@ -950,7 +963,7 @@ export class AdminService {
       const q = params.search.trim();
       where.user = {
         OR: [
-          { email: { contains: q, mode: "insensitive" } },
+          ...(viewerRole === UserRole.SUPERADMIN ? [{ email: { contains: q, mode: "insensitive" as const } }] : []),
           { phone: { contains: q } },
           { profile: { firstName: { contains: q, mode: "insensitive" } } },
           { profile: { lastName: { contains: q, mode: "insensitive" } } },
@@ -1034,6 +1047,7 @@ export class AdminService {
         locationText: true,
         venuePhotoUrl: true,
         participants: {
+          where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
           select: {
             matchScore: true,
             user: {
@@ -1559,10 +1573,16 @@ export class AdminService {
   ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, isBot: true },
     });
     if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
+    // Ban/karantina/yaptırım uçlarının hepsi buradan geçer: updateUserStatus'taki bot kuralı burada da geçerli
+    if (user.isBot) throw new BadRequestException("Bu hesabın durumu buradan değiştirilemez");
     await this.assertCanSanction(userId, adminId);
+    // Silinmiş hesaba askı/ban verilmez (askı bitince hesap yeniden aktifleşirdi)
+    if (user.status === UserStatus.DELETED && type !== SanctionType.WARNING) {
+      throw new BadRequestException("Silinmiş hesaba yaptırım uygulanamaz");
+    }
 
     const sanction = await this.prisma.userSanction.create({
       data: { userId, adminId, type, reason, expiresAt: expiresAt ?? null },
@@ -1570,10 +1590,13 @@ export class AdminService {
 
     if (type === SanctionType.BAN || type === SanctionType.SUSPENSION) {
       const isBan = type === SanctionType.BAN;
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { status: isBan ? UserStatus.BANNED : UserStatus.SUSPENDED },
-      });
+      // Banlı kullanıcı askıyla SUSPENDED'a düşürülmez
+      if (isBan || user.status !== UserStatus.BANNED) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { status: isBan ? UserStatus.BANNED : UserStatus.SUSPENDED },
+        });
+      }
       // Abonelik iptal edilir, iade yapılmaz; bekleyen iade talepleri reddedilir
       await this.prisma.subscription.updateMany({
         where: { userId, status: SubscriptionStatus.ACTIVE },
@@ -1628,7 +1651,11 @@ export class AdminService {
       },
     });
 
-    if (!remaining) {
+    // Yalnızca askı/ban kaldırıldıysa ve kullanıcı hâlâ askıda/banlıysa aktifleşir (DELETED vb. dokunulmaz)
+    const target = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } });
+    const wasHard = sanction.type === SanctionType.BAN || sanction.type === SanctionType.SUSPENSION;
+    const isHardStatus = target?.status === UserStatus.SUSPENDED || target?.status === UserStatus.BANNED;
+    if (!remaining && wasHard && isHardStatus) {
       await this.prisma.user.update({
         where: { id: userId },
         data: { status: UserStatus.ACTIVE },

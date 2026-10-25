@@ -1,5 +1,6 @@
 import { PrismaClient, OceanDimension, UserRole, Gender } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -192,22 +193,29 @@ const oceanQuestions = [
 async function main() {
   console.log("Seed başlıyor...");
 
-  // Mevcut soruları temizle, yenilerini ekle
-  await prisma.oceanQuestion.deleteMany({});
+  // Soruları orderNum ile güncelle/ekle (silme yok — mevcut cevaplar soruya bağlı)
   for (const q of oceanQuestions) {
-    await prisma.oceanQuestion.create({ data: q });
+    const existing = await prisma.oceanQuestion.findFirst({ where: { orderNum: q.orderNum } });
+    if (existing) {
+      await prisma.oceanQuestion.update({ where: { id: existing.id }, data: q });
+    } else {
+      await prisma.oceanQuestion.create({ data: q });
+    }
   }
-  console.log(`✓ ${oceanQuestions.length} OCEAN sorusu eklendi (5 bölüm, O:4 C:4 E:4 A:4 N:3)`);
+  console.log(`✓ ${oceanQuestions.length} OCEAN sorusu güncellendi (5 bölüm, O:4 C:4 E:4 A:4 N:3)`);
 
   // Superadmin hesabı
   const superadminEmail = process.env.SUPERADMIN_EMAIL ?? "admin@ahenk.tr";
-  const superadminPassword = process.env.SUPERADMIN_PASSWORD ?? "Ahenk2024!";
+  const superadminPassword = process.env.SUPERADMIN_PASSWORD;
 
   const existingSuperadmin = await prisma.user.findUnique({
     where: { email: superadminEmail },
   });
 
   if (!existingSuperadmin) {
+    if (!superadminPassword) {
+      throw new Error("SUPERADMIN_PASSWORD tanımlı değil — superadmin oluşturulamaz");
+    }
     const passwordHash = await bcrypt.hash(superadminPassword, 12);
     const superadmin = await prisma.user.create({
       data: {
@@ -233,7 +241,7 @@ async function main() {
   const botEmail = "denge1@ahenk.co";
   const existingBot = await prisma.user.findUnique({ where: { email: botEmail } });
   if (!existingBot) {
-    const botPasswordHash = await bcrypt.hash("BotAhenk2024!", 12);
+    const botPasswordHash = await bcrypt.hash(randomBytes(32).toString("hex"), 12);
     const bot = await prisma.user.create({
       data: {
         email: botEmail,

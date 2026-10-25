@@ -136,7 +136,7 @@ export class SosService {
       include: { meeting: { select: { scheduledAt: true } } },
     });
     if (!report || report.userId !== userId) throw new ForbiddenException();
-    if (report.resolvedAt || !this.inSosWindow(report.meeting.scheduledAt)) return { active: false };
+    if (report.resolvedAt || !report.meeting || !this.inSosWindow(report.meeting.scheduledAt)) return { active: false };
 
     await this.prisma.sosLocationUpdate.create({
       data: { reportId, lat, lng, accuracy: accuracy ?? null },
@@ -158,7 +158,7 @@ export class SosService {
       orderBy: { createdAt: "desc" },
       include: { meeting: { select: { scheduledAt: true } } },
     });
-    if (!report || !this.inSosWindow(report.meeting.scheduledAt)) return { reportId: null };
+    if (!report || !report.meeting || !this.inSosWindow(report.meeting.scheduledAt)) return { reportId: null };
     return { reportId: report.id };
   }
 
@@ -237,7 +237,8 @@ export class SosService {
     if (!this.canSee(report, viewer)) throw new ForbiddenException("Bu talep başka bir admin tarafından takip ediliyor");
 
     // Aynı masadaki tüm katılımcıların konumları (kayıtlar talep çözülse de durur)
-    const participantLocations = await this.prisma.participantLocation.findMany({
+    // Masa silindiyse (meetingId null) katılımcı konumu yoktur
+    const participantLocations = !report.meetingId ? [] : await this.prisma.participantLocation.findMany({
       where: { meetingId: report.meetingId },
       orderBy: { timestamp: "desc" },
       include: {

@@ -33,8 +33,9 @@ interface SosReport {
   claimedBy: AdminRef | null;
   resolvedBy?: AdminRef | null;
   participantSnapshot: Participant[];
-  user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null };
-  meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null };
+  // Kullanıcı / masa silinirse null (SOS kaydı korunur)
+  user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null;
+  meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null;
   locationUpdates: LocUpdate[];
   allParticipantLocations?: ParticipantLoc[];
   participantLocationHistory?: ParticipantLoc[];
@@ -310,7 +311,7 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
   }
 
   const requester     = report.participantSnapshot.find(p => p.isRequester);
-  const reqName       = requester?.firstName ? `${requester.firstName} ${requester.lastName}` : (report.user.phone ?? '—');
+  const reqName       = requester?.firstName ? `${requester.firstName} ${requester.lastName}` : (report.user?.phone ?? '—');
   const latest        = detail
     ? detail.locationUpdates[detail.locationUpdates.length - 1]
     : report.locationUpdates[report.locationUpdates.length - 1];
@@ -337,8 +338,8 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
   }
 
   const allLocs  = detail?.allParticipantLocations ?? [];
-  const reqLoc   = allLocs.find(l => l.userId === report.user.id) ?? null;
-  const otherLoc = allLocs.filter(l => l.userId !== report.user.id);
+  const reqLoc   = allLocs.find(l => l.userId === report.user?.id) ?? null;
+  const otherLoc = allLocs.filter(l => l.userId !== report.user?.id);
 
   return (
     <div style={{
@@ -384,7 +385,7 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: TEXT }}>
             {reqName}
             <span style={{ fontWeight: 400, color: MUTED, marginLeft: 8, fontSize: 11 }}>
-              {report.user.phone ?? report.user.email ?? ''}
+              {report.user?.phone ?? report.user?.email ?? ''}
             </span>
           </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginTop: 5 }}>
@@ -447,8 +448,8 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
               <Section title="ACİL YARDIM TALEP EDEN" accent={RED}>
                 <PersonRow
                   p={requester}
-                  email={report.user.email}
-                  phone={report.user.phone}
+                  email={report.user?.email}
+                  phone={report.user?.phone ?? null}
                   highlight
                 />
               </Section>
@@ -462,10 +463,12 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
 
               {/* Masa */}
               <Section title="MASA BİLGİSİ" accent={CYAN} mt>
+                {report.meeting ? (<>
                 <Row label="Tür" value={report.meeting.type === 'GROUP' ? 'Grup' : 'Baş Başa'} />
                 <Row label="Saat" value={fmtTR(report.meeting.scheduledAt)} />
                 <Row label="Mekan" value={[report.meeting.locationText, report.meeting.venueAddress].filter(Boolean).join(' — ') || '—'} />
                 <Row label="ID" value={<code style={{ fontSize: 9, color: MUTED }}>{report.meeting.id}</code>} />
+                </>) : <Row label="Masa" value="Silinmiş" />}
               </Section>
             </div>
 
