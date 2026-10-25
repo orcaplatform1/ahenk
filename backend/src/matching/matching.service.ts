@@ -15,6 +15,7 @@ import {
 import { Gender, MeetingType, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "@prisma/client";
 import { pickBot, alertBotNotFound, availableBots } from "./bot-picker";
 import { consumeOneOnOneRights } from "./one-on-one-right";
+import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_ONE_ON_ONE_SUB } from "../payment/package-rights";
 import { ASSIGN_QUEUE, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT, randomBotDelayMs } from "./assign-queue";
 
 type OceanScoreData = {
@@ -59,8 +60,6 @@ type AssignContext = {
 
 // Atama son anı 23:44 (TR); 23:45'ten itibaren sadece kapanış botları
 const ASSIGN_CUTOFF_MIN = 23 * 60 + 45;
-const GROUP_PLANS = [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE];
-const ONE_ON_ONE_PLANS = [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE];
 // Başbaşa yaş farkı sınırı — hiçbir saatte kalkmaz
 const MAX_AGE_GAP_YEARS = 8;
 
@@ -529,9 +528,7 @@ export class MatchingService {
     const subs = await this.prisma.subscription.findMany({
       where: {
         userId: { in: pool.map((u) => u.id) },
-        status: "ACTIVE",
-        usedAt: null,
-        plan: { in: ONE_ON_ONE_PLANS },
+        ...OPEN_ONE_ON_ONE_SUB,
         missedOneonOneCycles: { gte: 1 },
       },
       select: { userId: true },
@@ -611,7 +608,7 @@ export class MatchingService {
     const cityIds = [...new Set(pool.map(matchCity).filter((c): c is string => !!c))];
     const [subs, cities] = await Promise.all([
       this.prisma.subscription.findMany({
-        where: { userId: { in: ids }, status: "ACTIVE", usedAt: null, plan: { in: ONE_ON_ONE_PLANS } },
+        where: { userId: { in: ids }, ...OPEN_ONE_ON_ONE_SUB },
         select: { userId: true, missedOneonOneCycles: true },
       }),
       this.prisma.city.findMany({ where: { id: { in: cityIds } }, select: { id: true, name: true } }),
@@ -801,13 +798,8 @@ export class MatchingService {
         isBot: false,
         oceanScore: { isNot: null },
         kyc: { status: KycStatus.APPROVED },
-        subscriptions: {
-          some: {
-            plan: { in: plans },
-            status: "ACTIVE",
-            ...(oneOnOne ? { usedAt: null } : {}),
-          },
-        },
+        // Paketin o kısmı açık olmalı: hak kalmış ve 4 döngü dolmamış
+        subscriptions: { some: { ...(oneOnOne ? OPEN_ONE_ON_ONE_SUB : OPEN_GROUP_SUB), plan: { in: plans } } },
         // Bu hafta aynı türde aktif masası olan ya da rezervasyonunu iptal eden havuza girmez
         // (İçerde: grubu iptal eden yalnızca gruba, başbaşayı iptal eden yalnızca başbaşaya giremez)
         participations: {

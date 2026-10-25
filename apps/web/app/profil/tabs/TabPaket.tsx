@@ -3,22 +3,28 @@
 import { useEffect, useState } from 'react';
 import { usePlanPrices, type PlanKeyName } from '@/components/PlanPrice';
 import { api } from '@/lib/api';
-import { getPlanCardState, type PlanKey } from '@/lib/planCards';
+import { getPlanCardState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
 
+// Tek seferlik paket: kalan grup hakkı + döngüler (her kısım 4 döngü geçerli), başbaşa hakkı usedAt ile
 interface Subscription {
   id: string;
   plan: string;
-  platform: string;
-  startedAt: string;
-  expiresAt?: string;
-  missedGroupCycles: number;
-  missedOneonOneCycles: number;
+  usedAt?: string | null;
+  groupRights: number;
+  groupCycles: number;
+  oneOnOneCycles: number;
   groupTableFormed?: boolean;
   oneOnOneTableFormed?: boolean;
-  recurring?: { id: string; status: 'PENDING' | 'ACTIVE' | 'CANCELLED' | 'UNPAID' } | null;
 }
+
+type RefundOption = 'GROUP' | 'ONEONE' | 'FULL';
+const REFUND_LABEL: Record<RefundOption, string> = {
+  FULL: 'İade Talep Et (tüm paket)',
+  GROUP: 'Grup Masası İadesi Talep Et',
+  ONEONE: 'Başbaşa Masası İadesi Talep Et',
+};
 
 interface InitCheckoutResponse {
   checkoutFormContent: string;
@@ -30,15 +36,15 @@ const PLANS = [
   {
     key: 'MASADA',
     name: 'Masada',
-    desc: 'Aylık grup buluşma hakkı',
+    desc: '2 grup masası hakkı · 4 döngü geçerli',
     featured: false,
     bgImage: '/plan-masada.webp',
-    features: ['Her Hafta Grup Masası', 'Doğrulanmış Profiller', 'OCEAN Kişilik Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'],
+    features: ['2 Grup Masası Hakkı', 'Doğrulanmış Profiller', 'OCEAN Kişilik Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'],
   },
   {
     key: 'KARSIMDA',
     name: 'Karşımda',
-    desc: 'Tek kullanımlık başbaşa buluşma',
+    desc: '1 başbaşa masası hakkı · 4 döngü geçerli',
     featured: false,
     bgImage: '/plan-karsimda.webp',
     features: ['Tek Seferlik Baş Başa Masa', 'Doğrulanmış Profiller', 'OCEAN + Yaş Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'],
@@ -46,10 +52,10 @@ const PLANS = [
   {
     key: 'ICERDE',
     name: 'İçerde',
-    desc: '1 ay Masada + 1 Karşımda hakkı',
+    desc: '2 grup + 1 başbaşa masası hakkı · tek seferlik',
     featured: true,
     bgImage: '/plan-icerde.webp',
-    features: ['4 Grup Masası + 1 Baş Başa Masa', 'Tüm Özellikler Dahil'],
+    features: ['2 Grup Masası + 1 Baş Başa Masa', 'Tüm Özellikler Dahil'],
   },
 ];
 
@@ -71,8 +77,11 @@ interface Props { kycApproved: boolean; onGoKyc: () => void; maintenanceMode?: b
 
 export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Props) {
   const prices = usePlanPrices();
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [refundOptions, setRefundOptions] = useState<RefundOption[]>([]);
+  const [packageCycles, setPackageCycles] = useState(4);
   const [ownedPlans, setOwnedPlans] = useState<Set<PlanKey>>(new Set());
+  const [openParts, setOpenParts] = useState<OpenParts>({ group: false, oneOnOne: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [buying, setBuying] = useState('');
@@ -83,22 +92,16 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
   const [referralSending, setReferralSending] = useState(false);
   const [referralMsg, setReferralMsg] = useState('');
   const [referralStats, setReferralStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
-  // Otomatik yenilenen abonelik (Masada / İçerde): iptal edilene kadar her ay yenilenir
-  const [autoRenew, setAutoRenew] = useState<{ status: string; expiresAt?: string } | null>(null);
-  const [cancelAsk, setCancelAsk] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-  const [cancelMsg, setCancelMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
-    api.get<{ subscriptions: Subscription[]; hasMasada?: boolean; hasKarsimda?: boolean }>('/payment/subscriptions')
+    api.get<{ subscriptions: Subscription[]; hasMasada?: boolean; hasKarsimda?: boolean; refundOptions?: RefundOption[]; packageCycles?: number }>('/payment/subscriptions')
       .then((d) => {
-        const subs: Subscription[] = Array.isArray(d) ? d : (d.subscriptions ?? []);
-        if (subs.length > 0) {
-          setSubscription(subs[0]);
-          setOwnedPlans(new Set(subs.map(s => s.plan as PlanKey)));
-          const rec = subs.find(s => s.recurring && s.recurring.status !== 'PENDING');
-          if (rec?.recurring) setAutoRenew({ status: rec.recurring.status, expiresAt: rec.expiresAt });
-        }
+        const subs = d.subscriptions ?? [];
+        setSubscriptions(subs);
+        setOwnedPlans(new Set(subs.map(s => s.plan as PlanKey)));
+        setOpenParts({ group: !!d.hasMasada, oneOnOne: !!d.hasKarsimda });
+        setRefundOptions(d.refundOptions ?? []);
+        if (d.packageCycles) setPackageCycles(d.packageCycles);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -123,18 +126,6 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
     finally { setReferralSending(false); }
   }
 
-  async function cancelAutoRenew() {
-    setCancelling(true); setCancelMsg(null);
-    try {
-      const r = await api.post<{ activeUntil: string | null }>('/payment/subscription/cancel', {});
-      setAutoRenew(a => a ? { ...a, status: 'CANCELLED', expiresAt: r.activeUntil ?? a.expiresAt } : a);
-      setCancelMsg({ ok: true, text: 'Aboneliğin iptal edildi. Bir sonraki ay ücret alınmayacak.' });
-      setCancelAsk(false);
-    } catch (e) {
-      setCancelMsg({ ok: false, text: (e as Error).message });
-    } finally { setCancelling(false); }
-  }
-
   async function handleRefund(refundType: string) {
     setRefundLoading(true);
     setRefundMsg(null);
@@ -146,20 +137,6 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
     } finally {
       setRefundLoading(false);
     }
-  }
-
-  // Masa kurulduysa o tür için hizmet alınmış sayılır → iade yok
-  function getRefundType(sub: Subscription): string | null {
-    const g = sub.groupTableFormed ? 0 : (sub.missedGroupCycles ?? 0);
-    const o = sub.oneOnOneTableFormed ? 0 : (sub.missedOneonOneCycles ?? 0);
-    if (sub.plan === 'MASADA' && g >= 4) return 'GROUP';
-    if (sub.plan === 'KARSIMDA' && o >= 4) return 'ONEONE';
-    if (sub.plan === 'ICERDE') {
-      if (g >= 4 && o >= 4) return 'FULL';
-      if (g >= 4) return 'GROUP';
-      if (o >= 4) return 'ONEONE';
-    }
-    return null;
   }
 
   async function handleBuy(plan: string) {
@@ -198,13 +175,10 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
 
   if (loading) return <SkeletonBlock lines={4} />;
 
-  const refundType = subscription ? getRefundType(subscription) : null;
-  const canRefund = refundType !== null;
-  const refundBlockedByTable = !!subscription && (
-    (subscription.plan === 'MASADA' && !!subscription.groupTableFormed) ||
-    (subscription.plan === 'KARSIMDA' && !!subscription.oneOnOneTableFormed) ||
-    (subscription.plan === 'ICERDE' && !!subscription.groupTableFormed && !!subscription.oneOnOneTableFormed)
-  );
+  // İçerde'nin iki kısmı da iade edilebiliyorsa tek "tüm paket" butonu
+  const shownRefunds: RefundOption[] = refundOptions.includes('FULL')
+    ? ['FULL']
+    : refundOptions.filter((o) => o !== 'FULL');
 
   const hasReferralDiscount = !!(discountInfo?.referralDiscount);
 
@@ -257,84 +231,65 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
         </div>
       </div>
 
-      {/* Aktif abonelik varsa iade bölümü */}
-      {subscription && (
+      {/* Aktif paketler: kalan haklar ve döngüler; iade (süresi dolmuş paket için de) */}
+      {(subscriptions.length > 0 || shownRefunds.length > 0) && (
         <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted uppercase tracking-wide">Aktif Paket</span>
-            <span className="text-sm font-semibold text-text">{PLAN_LABEL[subscription.plan] ?? subscription.plan}</span>
-          </div>
-          {subscription.expiresAt && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted">Bitiş</span>
-              <span className="text-xs text-text">{new Date(subscription.expiresAt).toLocaleDateString('tr-TR')}</span>
-            </div>
-          )}
-          {autoRenew && (
-            <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted">Otomatik yenileme</span>
-                <span className={`text-xs ${autoRenew.status === 'ACTIVE' ? 'text-green-400' : 'text-[#888]'}`}>
-                  {autoRenew.status === 'ACTIVE' ? 'Açık — her ay yenilenir' : autoRenew.status === 'UNPAID' ? 'Ödeme alınamadı' : 'Kapalı'}
-                </span>
-              </div>
-              {autoRenew.status === 'CANCELLED' && autoRenew.expiresAt && (
-                <p className="text-xs text-[#666]">Paketin {new Date(autoRenew.expiresAt).toLocaleDateString('tr-TR')} tarihine kadar devam eder.</p>
-              )}
-              {cancelMsg && <p className={`text-xs ${cancelMsg.ok ? 'text-green-400' : 'text-accent'}`}>{cancelMsg.text}</p>}
-              {(autoRenew.status === 'ACTIVE' || autoRenew.status === 'UNPAID') && (cancelAsk ? (
-                <div className="flex flex-col gap-2">
-                  <p className="text-xs text-[#888]">Aboneliği iptal edersen bir sonraki ay ücret alınmaz; ödediğin dönem bitene kadar paketin devam eder. Ücret iadesi yapılmaz.</p>
-                  <div className="flex gap-2">
-                    <button onClick={cancelAutoRenew} disabled={cancelling}
-                      className="flex-1 py-2 rounded-xl text-sm font-medium"
-                      style={{ border: '1px solid rgba(192,57,43,0.6)', color: '#e74c3c', background: 'rgba(192,57,43,0.06)', opacity: cancelling ? 0.5 : 1 }}>
-                      {cancelling ? 'İptal ediliyor…' : 'Evet, iptal et'}
-                    </button>
-                    <button onClick={() => setCancelAsk(false)} disabled={cancelling}
-                      className="flex-1 py-2 rounded-xl text-sm font-medium"
-                      style={{ border: '1px solid rgba(255,255,255,0.12)', color: '#aaa' }}>
-                      Vazgeç
-                    </button>
-                  </div>
+          {subscriptions.map((sub) => {
+            const hasGroup = sub.plan === 'MASADA' || sub.plan === 'ICERDE';
+            const hasOneOnOne = sub.plan === 'KARSIMDA' || sub.plan === 'ICERDE';
+            const totalGroup = 2;
+            return (
+              <div key={sub.id} className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted uppercase tracking-wide">Aktif Paket</span>
+                  <span className="text-sm font-semibold text-text">{PLAN_LABEL[sub.plan] ?? sub.plan}</span>
                 </div>
-              ) : (
-                <button onClick={() => setCancelAsk(true)}
-                  className="w-full py-2 rounded-xl text-sm font-medium"
-                  style={{ border: '1px solid rgba(255,255,255,0.12)', color: '#aaa' }}>
-                  Aboneliği iptal et
-                </button>
-              ))}
-            </div>
-          )}
+                {hasGroup && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted">Grup masası hakkı</span>
+                    <span className="text-xs text-text">
+                      {sub.groupCycles >= packageCycles ? 'Süresi doldu' : `${sub.groupRights}/${totalGroup} kaldı · ${sub.groupCycles}/${packageCycles} döngü`}
+                    </span>
+                  </div>
+                )}
+                {hasOneOnOne && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted">Başbaşa masası hakkı</span>
+                    <span className="text-xs text-text">
+                      {sub.usedAt ? 'Kullanıldı' : sub.oneOnOneCycles >= packageCycles ? 'Süresi doldu' : `1/1 kaldı · ${sub.oneOnOneCycles}/${packageCycles} döngü`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
           <p className="text-xs text-[#555] leading-relaxed border-t border-white/5 pt-3 mt-1">
-            Eşleşme 4 döngü boyunca gerçekleşmezse iade talep edebilirsiniz. İade talepleri 5 iş günü içinde değerlendirilir.
+            Paketler tek seferliktir; her masa hakkı {packageCycles} döngü (yaklaşık 1 ay) geçerlidir. Bu süre içinde hiç masa kurulamazsa
+            tam iade talep edebilirsin. Bir masa kurulduysa kalan hakkın olsa da hizmet alınmış sayılır ve iade yapılmaz.
+            İade talepleri 5 iş günü içinde değerlendirilir.
           </p>
           {refundMsg ? (
             <p className={`text-sm ${refundMsg.ok ? 'text-green-400' : 'text-accent'}`}>{refundMsg.text}</p>
+          ) : shownRefunds.length > 0 ? (
+            shownRefunds.map((opt) => (
+              <button
+                key={opt}
+                disabled={refundLoading}
+                onClick={() => handleRefund(opt)}
+                className="w-full py-2 rounded-xl text-sm font-medium border transition-colors"
+                style={{ border: '1px solid rgba(192,57,43,0.6)', color: '#e74c3c', background: 'rgba(192,57,43,0.06)' }}
+              >
+                {refundLoading ? 'Gönderiliyor…' : REFUND_LABEL[opt]}
+              </button>
+            ))
           ) : (
             <button
-              disabled={!canRefund || refundLoading}
-              onClick={() => canRefund && handleRefund(refundType!)}
-              className="w-full py-2 rounded-xl text-sm font-medium border transition-colors"
-              style={canRefund ? {
-                border: '1px solid rgba(192,57,43,0.6)',
-                color: '#e74c3c',
-                background: 'rgba(192,57,43,0.06)',
-              } : {
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.25)',
-                cursor: 'not-allowed',
-              }}
+              disabled
+              className="w-full py-2 rounded-xl text-sm font-medium border"
+              style={{ border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.25)', cursor: 'not-allowed' }}
             >
-              {refundLoading ? 'Gönderiliyor…' : 'İade Talep Et'}
+              İade Talep Et
             </button>
-          )}
-          {!canRefund && !refundMsg && refundBlockedByTable && (
-            <p className="text-xs text-[#444]">Masanız kurulduğu için bu paket için iade yapılamaz.</p>
-          )}
-          {!canRefund && !refundMsg && !refundBlockedByTable && (
-            <p className="text-xs text-[#444]">4 kaçırılmış döngü gerekli (mevcut: grup {subscription.missedGroupCycles ?? 0}, başbaşa {subscription.missedOneonOneCycles ?? 0})</p>
           )}
         </div>
       )}
@@ -350,7 +305,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {PLANS.map((plan) => {
-          const cs = getPlanCardState(plan.key, ownedPlans);
+          const cs = getPlanCardState(plan.key, ownedPlans, openParts);
           const cardBody = (
             <div
               className={plan.featured ? 'p-feat-inner' : 'relative rounded-2xl overflow-hidden flex-1'}

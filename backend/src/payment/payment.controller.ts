@@ -17,7 +17,6 @@ import { Request, Response } from "express";
 import { ConfigService } from "@nestjs/config";
 import { IsEnum } from "class-validator";
 import { PaymentService } from "./payment.service";
-import type { IyzicoSubscriptionWebhook } from "./iyzico/iyzico.service";
 import { InitCheckoutDto } from "./dto/init-checkout.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { KycGuard } from "../kyc/kyc.guard";
@@ -96,47 +95,5 @@ export class PaymentController {
       }
     }
     return res.redirect(HttpStatus.SEE_OTHER, `${appUrl}/odeme/${success ? "basarili" : "basarisiz"}`);
-  }
-
-  // ─── Otomatik yenilenen abonelik ────────────────────────────────────────
-
-  // Abonelik formu dönüşü (auth yok): sonuç iyzico'dan sorgulanır, kullanıcı başarılı / başarısız sayfasına gider
-  @Post("subscription/callback")
-  async handleSubscriptionCallback(
-    @Query("token") token: string,
-    @Body() body: Record<string, string>,
-    @Res() res: Response,
-  ) {
-    const appUrl = this.config.get<string>("APP_URL") ?? "https://ahenk.co";
-    const t = token ?? body?.token;
-    let success = false;
-    if (t) {
-      try {
-        success = (await this.paymentService.handleSubscriptionCallback(t)).success;
-      } catch (err) {
-        this.logger.error(`iyzico abonelik callback hatası: ${err}`);
-      }
-    }
-    return res.redirect(HttpStatus.SEE_OTHER, `${appUrl}/odeme/${success ? "basarili" : "basarisiz"}`);
-  }
-
-  // iyzico abonelik webhook'u (auth yok, X-IYZ-SIGNATURE-V3 ile doğrulanır). 2xx dışı yanıtta iyzico tekrar dener.
-  @Post("subscription-webhook")
-  @HttpCode(HttpStatus.OK)
-  async subscriptionWebhook(
-    @Body() body: IyzicoSubscriptionWebhook,
-    @Headers("x-iyz-signature-v3") signature: string | undefined,
-  ) {
-    const result = await this.paymentService.handleSubscriptionWebhook(body, signature);
-    if (!result.ok) throw new BadRequestException("Bildirim işlenemedi");
-    return result;
-  }
-
-  // Otomatik yenilemeyi iptal: ödenmiş dönem sonuna kadar paket sürer, iade yok
-  @Post("subscription/cancel")
-  @UseGuards(JwtAuthGuard)
-  cancelRecurring(@Req() req: Request) {
-    const user = req.user as { id: string };
-    return this.paymentService.cancelRecurring(user.id);
   }
 }

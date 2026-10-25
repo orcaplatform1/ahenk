@@ -31,7 +31,7 @@ export interface MasaDetayData {
   venuePhotos?: VenuePhoto[];
   participants: DetayParticipant[];
   aiReport?: AiReport | null;
-  cancelRightUsed?: boolean; // grup: bu abonelik döneminde iptal hakkı kullanıldı
+  cancelRightUsed?: boolean; // grup: bu pakette iptal hakkı kullanıldı
 }
 
 interface ChatMsg {
@@ -1239,7 +1239,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
         {/* Rezervasyon iptal butonu */}
         {authHeaders && !cancelled && !cancelDeadlinePassed && masa.cancelRightUsed && (
           <p style={{ margin: '0 0 16px', fontSize: 12, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-            Bu abonelik döneminde iptal hakkınızı kullandınız.
+            Bu paket için iptal hakkınızı kullandınız.
           </p>
         )}
         {authHeaders && !cancelled && !cancelDeadlinePassed && !masa.cancelRightUsed && (

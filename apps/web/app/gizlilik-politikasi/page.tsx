@@ -85,7 +85,7 @@ const sections = [
           'Kimlik doğrulama sürecinin yürütülmesi ve güvenli platform ortamının sağlanması',
           'OCEAN kişilik modeline dayalı algoritmik eşleştirme ile uyumlu masa buluşmalarının organize edilmesi',
           'OCEAN skorlarının yapay zeka destekli analizi ile masa uyum raporu oluşturulması (yalnızca toplu skor verisi kullanılır; bireysel kimlik bilgisi yapay zeka sistemine aktarılmaz)',
-          'Abonelik ve ödeme işlemlerinin gerçekleştirilmesi',
+          'Paket satın alma ve ödeme işlemlerinin gerçekleştirilmesi',
           'Kullanıcıyla e-posta ve sistem bildirimleri aracılığıyla iletişim kurulması',
           'Yasal yükümlülüklerin yerine getirilmesi ve yetkili kurumlara bildirim yapılması',
           'Platform güvenliğinin sağlanması ve kötüye kullanımın önlenmesi',
@@ -170,7 +170,7 @@ const sections = [
         <SubTitle>Yurt İçi Aktarımlar</SubTitle>
         <p>
           <strong style={{ color: '#e8e8e8' }}>iyzico Ödeme Hizmetleri A.Ş.</strong>
-          {' '}— ödeme tahsilatı ve abonelik yönetimi amacıyla.
+          {' '}— ödeme tahsilatı ve paket yönetimi amacıyla.
         </p>
 
         <SubTitle style={{ marginTop: '1.25rem' }}>Yurt Dışı Aktarımlar</SubTitle>

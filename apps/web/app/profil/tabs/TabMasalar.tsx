@@ -590,7 +590,7 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc }: {
       {locked && (
         <div style={{ background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: 12, padding: '12px 14px' }}>
           <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5, margin: 0 }}>
-            Aşağıda bulunan Masa Detay bilgileri şuanda önizlemedir. Abonelik alarak eşleştiğinizde, gerçek zamanlı randevu bilgileri yer alacaktır.
+            Aşağıda bulunan Masa Detay bilgileri şuanda önizlemedir. Paket alarak eşleştiğinizde, gerçek zamanlı randevu bilgileri yer alacaktır.
           </p>
         </div>
       )}

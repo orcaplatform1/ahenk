@@ -96,7 +96,7 @@ export class NotificationService {
       await this.send({
         userId,
         title: "Kimlik doğrulamanız onaylandı ✓",
-        body: "Profilinizde 'Doğrulanmış' rozeti aktif. Artık abonelik satın alabilirsiniz.",
+        body: "Profilinizde 'Doğrulanmış' rozeti aktif. Artık paket satın alabilirsiniz.",
         data: { event: "KYC_APPROVED" },
         whatsappTemplate: "ahenk_kyc_approved",
         whatsappParams: [],
@@ -152,18 +152,6 @@ export class NotificationService {
       data: { event: "MEETING_NOT_FORMED" },
       whatsappTemplate: "ahenk_meeting_not_formed",
       whatsappParams: [],
-    });
-  }
-
-  // ─── Fiyat değişikliği (abonelere tek sefer, uygulama içi) ──────────────────
-
-  async notifyRenewalPrice(userId: string, renewsAt: Date, priceTL: number): Promise<void> {
-    const day = renewsAt.toLocaleDateString("tr-TR", { day: "numeric", month: "long", timeZone: "Europe/Istanbul" });
-    await this.send({
-      userId,
-      title: "Abonelik yenileme ücreti",
-      body: `Aboneliğiniz ${day} tarihinde yenilenecek ve yenileme ücreti sadece ${priceTL}₺`,
-      data: { event: "RENEWAL_PRICE" },
     });
   }
 

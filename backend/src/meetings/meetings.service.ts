@@ -624,7 +624,7 @@ export class MeetingsService {
 
     // Grup: abonelik dönemi başına tek iptal hakkı
     if (isGroup && await this.groupCancelRightUsed(userId)) {
-      throw new ForbiddenException("Bu abonelik döneminde iptal hakkınızı kullandınız");
+      throw new ForbiddenException("Bu paket için iptal hakkınızı kullandınız");
     }
 
     await this.prisma.meetingParticipant.update({

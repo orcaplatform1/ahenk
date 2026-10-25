@@ -6,6 +6,7 @@ import { AiReportService } from "../meetings/ai-report.service";
 import { NotificationService } from "../notification/notification.service";
 import { SubscriptionPlan, SubscriptionStatus, KycStatus } from "@prisma/client";
 import { cancellationNotice, initialsOf } from "../meetings/cancellation-notice";
+import { closeGroupCycle, closeOneOnOneCycle } from "../payment/package-rights";
 
 @Injectable()
 export class MatchingScheduler {
@@ -134,6 +135,10 @@ export class MatchingScheduler {
     try {
       await this.matchingService.runThursdayClosing();
       await this.updateMissedCycles("GROUP");
+      // Paket hakları: grup döngüsü sayılır, masası kurulanın 1 grup hakkı düşer
+      const { week: weekNumber, year } = this.getISOWeek(new Date());
+      const cycle = await this.prisma.matchingCycle.findUnique({ where: { weekNumber_year: { weekNumber, year } }, select: { id: true } });
+      await closeGroupCycle(this.prisma, cycle?.id ?? null);
       this.logger.log("Perşembe kapanışı tamamlandı");
     } catch (err) {
       this.logger.error(`Perşembe kapanışı hatası: ${err}`);
@@ -285,6 +290,8 @@ export class MatchingScheduler {
     try {
       await this.runOneOnOneClosing();
       await this.updateMissedCycles("ONE_ON_ONE");
+      // Paket hakları: başbaşa döngüsü sayılır (hak masa kurulunca zaten harcandı)
+      await closeOneOnOneCycle(this.prisma);
       this.logger.log("Cuma ONE_ON_ONE kapanışı tamamlandı");
     } catch (err) {
       this.logger.error(`Cuma ONE_ON_ONE kapanışı hatası: ${err}`);

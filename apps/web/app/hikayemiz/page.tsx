@@ -121,7 +121,7 @@ export default function HikayemizPage() {
       {/* Bölüm 5 */}
       <TwoCol
         title="Fiyat mı?"
-        body={`Türkiye'deki benzer platformlar çok daha yüksek ücret talep ediyor ve performans olarak bizden çok daha geride. Ahenk'te aylık grup buluşması ${tl(prices?.MASADA?.webTL)} TL, tek seferlik başbaşa buluşma ${tl(prices?.KARSIMDA?.webTL)} TL. İçerde paketinde her iki tercihte de kullanabiliyorsunuz, ${tl(prices?.ICERDE?.webTL)} TL. Bunların dışında gizli bir ücret yok. Mekan masrafı sana ait; biz sadece masayı kuruyoruz.`}
+        body={`Türkiye'deki benzer platformlar çok daha yüksek ücret talep ediyor ve performans olarak bizden çok daha geride. Ahenk'te 2 grup masası hakkı ${tl(prices?.MASADA?.webTL)} TL, başbaşa masası ${tl(prices?.KARSIMDA?.webTL)} TL. İçerde paketinde ikisini birden alıyorsun (2 grup + 1 başbaşa), ${tl(prices?.ICERDE?.webTL)} TL. Paketler tek seferlik; abonelik ve otomatik ödeme yok. Bunların dışında gizli bir ücret yok. Mekan masrafı sana ait; biz sadece masayı kuruyoruz.`}
       />
 
       {/* Bölüm 6 */}
