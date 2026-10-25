@@ -134,7 +134,7 @@ const sections = [
           },
           {
             basis: 'Sözleşmenin Kurulması veya İfası — Madde 5/2-c',
-            desc: 'Ad, soyad, e-posta, şehir, paket ve ödeme verileri.',
+            desc: 'Ad, soyad, e-posta, şehir, paket ve ödeme verileri. Kankamla için kanka davetinde girilen telefon numarası (davetin iletilmesi ve doğrulanmış hesapla eşleştirilmesi amacıyla) ve kanka bağlantısı.',
           },
           {
             basis: 'Veri Sorumlusunun Meşru Menfaati — Madde 5/2-f',

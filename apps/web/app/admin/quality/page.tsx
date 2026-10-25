@@ -129,7 +129,7 @@ export default function AdminQuality() {
                       </div>
                       <p style={{ margin: 0, fontSize: 11, color: MUTED }}>{r.reason}</p>
                       <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
-                        {new Date(r.createdAt).toLocaleString('tr-TR')}
+                        {new Date(r.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}
                       </p>
                     </div>
                     <button

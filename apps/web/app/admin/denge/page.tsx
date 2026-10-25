@@ -54,10 +54,11 @@ type BotForm = typeof EMPTY_FORM;
 
 function ageOf(birthDate?: string | null): number | null {
   if (!birthDate) return null;
+  // Doğum tarihi gün olarak saklanır (UTC 00:00); bugün TR saatine göre
   const b = new Date(birthDate);
-  const now = new Date();
-  let age = now.getFullYear() - b.getFullYear();
-  if (now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) age--;
+  const now = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  let age = now.getUTCFullYear() - b.getUTCFullYear();
+  if (now.getUTCMonth() < b.getUTCMonth() || (now.getUTCMonth() === b.getUTCMonth() && now.getUTCDate() < b.getUTCDate())) age--;
   return age;
 }
 

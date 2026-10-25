@@ -3,6 +3,7 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MasaDetayKarti, type MasaDetayData } from './MasaDetayKarti';
+import { RezervasyonIptal, type ModalPortal } from './RezervasyonIptal';
 
 // ── Sabitler ───────────────────────────────────────────────────────────────
 const RADAR_SZ   = 340;
@@ -58,8 +59,13 @@ export function buildInitials(firstName?: string | null, lastName?: string | nul
 }
 
 // ── Kapanış sayacı — GROUP=Perşembe, ONE_ON_ONE=Cuma ─────────────────────────
-function nextDeadline(type: 'GROUP' | 'ONE_ON_ONE'): Date {
-  const targetDay = type === 'GROUP' ? 4 : 5;
+// Masa türü başlığı
+function tableTitleOf(type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'): string {
+  return type === 'ONE_ON_ONE' ? 'BAŞ BAŞA MASA' : type === 'KANKA' ? 'KANKAMLA MASASI' : 'GRUP MASASI';
+}
+
+function nextDeadline(type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'): Date {
+  const targetDay = type === 'GROUP' ? 4 : type === 'KANKA' ? 6 : 5;
   const now = Date.now();
   const nowTRms = now + 3 * 60 * 60 * 1000;
   const nowTR   = new Date(nowTRms);
@@ -78,8 +84,9 @@ function nextDeadline(type: 'GROUP' | 'ONE_ON_ONE'): Date {
 
 
 // ── Eşleşme kapalı mı? (TR saati) — Grup: Perşembe 23:59 → Pazar 23:59, Başbaşa: Cuma 23:59 → Pazar 23:59 ──
-function isMatchingClosed(type: 'GROUP' | 'ONE_ON_ONE'): boolean {
+function isMatchingClosed(type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'): boolean {
   const dayTR = new Date(Date.now() + 3 * 60 * 60 * 1000).getUTCDay(); // 0=Pazar … 6=Cumartesi
+  if (type === 'KANKA') return dayTR === 0; // Kankamla: Cumartesi 23:59 → Pazar 23:59
   return type === 'GROUP' ? (dayTR === 5 || dayTR === 6 || dayTR === 0) : (dayTR === 6 || dayTR === 0);
 }
 
@@ -92,7 +99,7 @@ function nextScanStartLabel(): string {
   return `${date} 23:59`;
 }
 
-function CenterCountdown({ type }: { type: 'GROUP' | 'ONE_ON_ONE' }) {
+function CenterCountdown({ type }: { type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA' }) {
   const [msLeft, setMsLeft] = useState(() => Math.max(0, nextDeadline(type).getTime() - Date.now()));
 
   useEffect(() => {
@@ -228,11 +235,13 @@ export interface Participant {
   id?: string;
   initials: string;
   gender: 'MALE' | 'FEMALE' | string | null;
+  // Kankamla: kişinin kendi çifti (kendisi + kankası) MINE, karşı çift OTHER
+  pair?: 'MINE' | 'OTHER';
 }
 
 export interface MasaData {
   id: string;
-  type?: 'GROUP' | 'ONE_ON_ONE';
+  type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   scheduledAt: string;
   maxParticipants?: number;
   locationName?: string | null;
@@ -247,7 +256,7 @@ interface DashboardItem {
   phase: 'WAITING' | 'REVEALED';
   meeting: {
     id: string;
-    type?: 'GROUP' | 'ONE_ON_ONE';
+    type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
     maxParticipants?: number;
     scheduledAt: string;
     participants: Participant[];
@@ -272,6 +281,10 @@ interface Props {
   selfParticipant?: Participant;
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
   kycApproved?: boolean;
+  // Kankamla: çiftte açık paket (kendisi ya da kankası) — Kankamla sekmesinde tarama görünür
+  kankamlaActive?: boolean;
+  // Rezervasyon iptal penceresini sayfanın üst katmanında açmak için (kart bulanıklığı pencereyi kırpmasın)
+  modalPortal?: ModalPortal;
 }
 
 // ── Avatar bileşeni ────────────────────────────────────────────────────────
@@ -408,7 +421,7 @@ interface RadarCanvasHandle {
 }
 
 const RadarCanvas = forwardRef<RadarCanvasHandle, {
-  type: 'GROUP' | 'ONE_ON_ONE';
+  type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   children?: React.ReactNode;
 }>(function RadarCanvas({ type, children }, ref) {
   const canvasRef   = useRef<HTMLCanvasElement>(null);
@@ -604,7 +617,7 @@ function buildScanningSlots(allParts: Participant[], maxP: number): Array<Partic
 
 // ── SCANNING ekranı ──────────────────────────────────────────────────────────
 function ScanningView({ type = 'GROUP', participants, selfParticipant, isDesktop }: {
-  type?: 'GROUP' | 'ONE_ON_ONE';
+  type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   participants?: Participant[];
   selfParticipant?: Participant;
   isDesktop?: boolean;
@@ -614,7 +627,7 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant, isDesktop
   const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale(isDesktop ? 1.5 : 1);
 
   const maxP  = type === 'ONE_ON_ONE' ? 2 : 6;
-  const title = type === 'ONE_ON_ONE' ? 'BAŞ BAŞA MASA' : 'GRUP MASASI';
+  const title = tableTitleOf(type);
 
   const rawParts = participants ?? [];
   const allParts: Participant[] = (() => {
@@ -700,14 +713,14 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant, isDesktop
 interface ConfirmedRadarProps {
   participants: Participant[];
   maxParticipants?: number;
-  type?: 'GROUP' | 'ONE_ON_ONE';
+  type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   scheduledAt: string;
   infoText: string;
 }
 
 export function ConfirmedRadarView({ participants, maxParticipants, type, scheduledAt, infoText, isDesktop }: ConfirmedRadarProps & { isDesktop?: boolean }) {
   const isOneOnOne = type === 'ONE_ON_ONE';
-  const title      = isOneOnOne ? 'BAŞ BAŞA MASA' : 'GRUP MASASI';
+  const title      = tableTitleOf(type);
   const maxP       = maxParticipants ?? (isOneOnOne ? 2 : 6);
   const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale(isDesktop ? 1.5 : 1);
 
@@ -792,7 +805,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
 
 // ── Kapalı ekran (kapanıştan sonra, masası olmayan aboneler) ─────────────────
 function ClosedView({ type = 'GROUP', isDesktop, icon = '/clock-icon.png', message, action }: {
-  type?: 'GROUP' | 'ONE_ON_ONE';
+  type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   isDesktop?: boolean;
   icon?: string;
   message?: React.ReactNode;
@@ -809,7 +822,7 @@ function ClosedView({ type = 'GROUP', isDesktop, icon = '/clock-icon.png', messa
           fontSize: 22, fontWeight: 400, color: '#f5f5f5',
           letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0,
         }}>
-          {type === 'ONE_ON_ONE' ? 'BAŞ BAŞA MASA' : 'GRUP MASASI'}
+          {tableTitleOf(type)}
         </h2>
       </div>
 
@@ -850,16 +863,18 @@ function ClosedView({ type = 'GROUP', isDesktop, icon = '/clock-icon.png', messa
 const LOCK_CLR      = '#e8850c';
 const LOCK_ICON_CLR = '#7bc67e';
 
-function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ONE'; neededPlan?: 'MASADA' | 'KARSIMDA' | null; isDesktop?: boolean }) {
+function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'; neededPlan?: 'MASADA' | 'KARSIMDA' | 'KANKAMLA' | null; isDesktop?: boolean }) {
   const isGroup = type === 'GROUP';
   const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale(isDesktop ? 1.5 : 1);
 
   const line1 = isGroup
     ? 'Eşleşme taraması aktif.'
     : 'Eşleşme taraması daha derin ve hassas çalışıyor.';
-  const line2 = isGroup
-    ? 'Kişilik testiniz ile uyumlu insanlarla eşleşmenizi görmek için paket almalısınız.'
-    : 'Kişilik testi ve Yaşınızla uyumlu bir insanla eşleşmenizi görmek için paket almalısınız.';
+  const line2 = type === 'KANKA'
+    ? 'Kankanla birlikte karşı cinsten bir kanka çiftiyle eşleşmek için Kankamla paketi almalısınız. Paketi birinizin alması yeterli.'
+    : isGroup
+      ? 'Kişilik testiniz ile uyumlu insanlarla eşleşmenizi görmek için paket almalısınız.'
+      : 'Kişilik testi ve Yaşınızla uyumlu bir insanla eşleşmenizi görmek için paket almalısınız.';
 
   return (
     <div>
@@ -876,7 +891,7 @@ function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ON
           fontSize: 22, fontWeight: 400, color: '#f5f5f5',
           letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 12px',
         }}>
-          {isGroup ? 'GRUP MASASI' : 'BAŞ BAŞA MASA'}
+          {tableTitleOf(type)}
         </h2>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
           <CenterCountdown type={type} />
@@ -926,12 +941,16 @@ function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ON
 
 // ── Tek kart içeriği ──────────────────────────────────────────────────────────
 function MasaKarti({
-  type, item, selfParticipant, isDesktop,
+  type, item, selfParticipant, isDesktop, apiBase, token, onCancelled, modalPortal,
 }: {
-  type: 'GROUP' | 'ONE_ON_ONE';
+  type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   item?: DashboardItem;
   selfParticipant?: Participant;
   isDesktop?: boolean;
+  apiBase?: string;
+  token?: string;
+  onCancelled?: () => void;
+  modalPortal?: ModalPortal;
 }) {
   if (!item) {
     if (isMatchingClosed(type)) return <ClosedView type={type} isDesktop={isDesktop} />;
@@ -950,21 +969,35 @@ function MasaKarti({
       venuePhotos:    item.meeting.venuePhotos,
       participants:   item.meeting.participants,
       aiReport:       item.meeting.aiReport,
-      cancelRightUsed: item.meeting.cancelRightUsed,
     };
     return <MasaDetayKarti masa={detayData} />;
   }
 
   if (item.phase === 'WAITING') {
     return (
-      <ConfirmedRadarView
-        participants={item.meeting.participants}
-        maxParticipants={item.meeting.maxParticipants}
-        type={item.meeting.type}
-        scheduledAt={item.meeting.scheduledAt}
-        infoText="Masalar bölümünden detaylı bilgiye ulaşabilirsiniz."
-        isDesktop={isDesktop}
-      />
+      <>
+        <ConfirmedRadarView
+          participants={item.meeting.participants}
+          maxParticipants={item.meeting.maxParticipants}
+          type={item.meeting.type}
+          scheduledAt={item.meeting.scheduledAt}
+          infoText="Masalar bölümünden detaylı bilgiye ulaşabilirsiniz."
+          isDesktop={isDesktop}
+        />
+        {/* Rezervasyon iptali: kilit günü 20:00'ye kadar (masa kartı açıldığında iptal yok) */}
+        {apiBase && (
+          <RezervasyonIptal
+            meetingId={item.meeting.id}
+            type={item.meeting.type ?? type}
+            scheduledAt={item.meeting.scheduledAt}
+            cancelRightUsed={item.meeting.cancelRightUsed}
+            apiBase={apiBase}
+            token={token}
+            onCancelled={onCancelled}
+            modalPortal={modalPortal}
+          />
+        )}
+      </>
     );
   }
 
@@ -977,13 +1010,14 @@ function PremiumToggle({
   onSwitch,
   shineKey,
 }: {
-  activeTab: 'GROUP' | 'ONE_ON_ONE';
-  onSwitch: (tab: 'GROUP' | 'ONE_ON_ONE') => void;
+  activeTab: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
+  onSwitch: (tab: 'GROUP' | 'ONE_ON_ONE' | 'KANKA') => void;
   shineKey: number;
 }) {
   const tabs = [
     { key: 'GROUP' as const,      label: 'Grup Masası' },
     { key: 'ONE_ON_ONE' as const, label: 'Baş Başa Masa' },
+    { key: 'KANKA' as const,      label: 'Kankamla' },
   ];
 
   return (
@@ -1075,10 +1109,12 @@ export function MasalarDashboard({
   selfParticipant,
   activePlan,
   kycApproved = true,
+  modalPortal,
+  kankamlaActive = false,
 }: Props) {
   const [dashData, setDashData]   = useState<DashboardResponse | null>(null);
   const [loading, setLoading]     = useState(!!apiBase);
-  const [activeTab, setActiveTab] = useState<'GROUP' | 'ONE_ON_ONE'>('GROUP');
+  const [activeTab, setActiveTab] = useState<'GROUP' | 'ONE_ON_ONE' | 'KANKA'>('GROUP');
   const [tabDir, setTabDir]       = useState(1);
   const [shineKey, setShineKey]   = useState(0);
   const isDesktop = useIsDesktop();
@@ -1112,9 +1148,10 @@ export function MasalarDashboard({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiBase, token, pollIntervalMs]);
 
-  function handleTabSwitch(tab: 'GROUP' | 'ONE_ON_ONE') {
+  function handleTabSwitch(tab: 'GROUP' | 'ONE_ON_ONE' | 'KANKA') {
     if (tab === activeTab) return;
-    setTabDir(tab === 'ONE_ON_ONE' ? 1 : -1);
+    const order = { GROUP: 0, ONE_ON_ONE: 1, KANKA: 2 };
+    setTabDir(order[tab] > order[activeTab] ? 1 : -1);
     setShineKey(k => k + 1);
     setActiveTab(tab);
   }
@@ -1143,10 +1180,19 @@ export function MasalarDashboard({
   const items        = dashData?.items ?? [];
   const groupItem    = items.find(i => i.meeting.type === 'GROUP');
   const oneOnOneItem = items.find(i => i.meeting.type === 'ONE_ON_ONE');
+  const kankaItem    = items.find(i => i.meeting.type === 'KANKA');
+  // Bekleme ekranındaki rezervasyon iptali: iptal mesajı görünsün diye 2 sn sonra masalar yenilenir
+  const cancelProps = { apiBase, token, modalPortal, onCancelled: () => { setTimeout(() => { fetchDashboard(); }, 2000); } };
 
   // Aktif tab'ın içeriğini belirle
-  function getTabContent(tab: 'GROUP' | 'ONE_ON_ONE') {
+  function getTabContent(tab: 'GROUP' | 'ONE_ON_ONE' | 'KANKA') {
     // Abonelik yok → her iki tab da kilitli
+    // Kankamla ayrı paket: alıcı ya da kankası olarak açık paket varsa (veya masası varsa) tarama / masa
+    if (tab === 'KANKA') {
+      if (kankamlaActive || kankaItem) return <MasaKarti type="KANKA" item={kankaItem} selfParticipant={selfParticipant} isDesktop={isDesktop} {...cancelProps} />;
+      return <LockedView type="KANKA" neededPlan="KANKAMLA" isDesktop={isDesktop} />;
+    }
+
     if (!activePlan) return <LockedView type={tab} neededPlan={null} isDesktop={isDesktop} />;
 
     // Paket olsa bile (admin vermiş olsa dahi) KYC onaylı değilse eşleşme taraması yapılmaz
@@ -1165,16 +1211,16 @@ export function MasalarDashboard({
 
     if (activePlan === 'ICERDE') {
       const item = tab === 'GROUP' ? groupItem : oneOnOneItem;
-      return <MasaKarti type={tab} item={item} selfParticipant={selfParticipant} isDesktop={isDesktop} />;
+      return <MasaKarti type={tab} item={item} selfParticipant={selfParticipant} isDesktop={isDesktop} {...cancelProps} />;
     }
 
     if (activePlan === 'MASADA') {
-      if (tab === 'GROUP') return <MasaKarti type="GROUP" item={groupItem} selfParticipant={selfParticipant} isDesktop={isDesktop} />;
+      if (tab === 'GROUP') return <MasaKarti type="GROUP" item={groupItem} selfParticipant={selfParticipant} isDesktop={isDesktop} {...cancelProps} />;
       return <LockedView type="ONE_ON_ONE" neededPlan="KARSIMDA" isDesktop={isDesktop} />;
     }
 
     if (activePlan === 'KARSIMDA') {
-      if (tab === 'ONE_ON_ONE') return <MasaKarti type="ONE_ON_ONE" item={oneOnOneItem} selfParticipant={selfParticipant} isDesktop={isDesktop} />;
+      if (tab === 'ONE_ON_ONE') return <MasaKarti type="ONE_ON_ONE" item={oneOnOneItem} selfParticipant={selfParticipant} isDesktop={isDesktop} {...cancelProps} />;
       return <LockedView type="GROUP" neededPlan="MASADA" isDesktop={isDesktop} />;
     }
 

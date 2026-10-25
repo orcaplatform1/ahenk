@@ -6,4 +6,6 @@ export const OVERLAPPING_PLANS: Record<SubscriptionPlan, SubscriptionPlan[]> = {
   [SubscriptionPlan.MASADA]: [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE],
   [SubscriptionPlan.KARSIMDA]: [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE],
   [SubscriptionPlan.ICERDE]: [SubscriptionPlan.MASADA, SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE],
+  // Kankamla diğer paketlerle çakışmaz (çiftte tek aktif Kankamla kuralı satın almada / kanka tarafında)
+  [SubscriptionPlan.KANKAMLA]: [SubscriptionPlan.KANKAMLA],
 };

@@ -23,6 +23,7 @@ interface UserData {
   role?: string;
   activeCity?: string | null;
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
+  kankamla?: { open: boolean };
   maintenanceMode?: boolean;
   profile?: {
     gender?: string;
@@ -144,7 +145,7 @@ function ProfilPage() {
           >
             {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} activePlan={user.activePlan ?? null} />}
             {activeTab === 'test'    && <TabTest />}
-            {activeTab === 'masalar' && <TabMasalar activePlan={user.activePlan ?? null} userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender }} kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
+            {activeTab === 'masalar' && <TabMasalar activePlan={user.activePlan ?? null} kankamlaActive={!!user.kankamla?.open} userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender }} kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
             {activeTab === 'paket'   && <TabPaket kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} maintenanceMode={!!user.maintenanceMode} />}
             {activeTab === 'kyc'     && <TabKyc />}
             {activeTab === 'rehber'  && <TabRehber />}

@@ -55,6 +55,9 @@ model User {
   referralDiscountAvailable Boolean               @default(false)
   referralsSent             Referral[]            @relation("ReferralsSent")
   referralsReceived         Referral[]            @relation("ReferralsReceived")
+  kankaInvitesSent          KankaInvite[]         @relation("KankaInviteSender")
+  kankaLinksA               KankaLink[]           @relation("KankaLinkA")
+  kankaLinksB               KankaLink[]           @relation("KankaLinkB")
   chatMessages              ChatMessage[]         @relation("ChatMessageSender")
   chatReports               ChatReport[]          @relation("ChatReportSender")
   sanctions                 UserSanction[]
@@ -281,6 +284,7 @@ model MeetingReview {
 enum MeetingType {
   GROUP
   ONE_ON_ONE
+  KANKA // Kankamla: 4 kişi (2E + 2K) — iki alıcı + kankaları
 }
 
 enum MeetingStatus {
@@ -304,6 +308,9 @@ model MeetingParticipant {
   cancelledAt     DateTime?
   // Grup kilidinde hakkı düşülen paket (admin masayı iptal ederse / katılımcıyı çıkarırsa hak bu pakete iade edilir)
   groupRightSubId String?
+  // Kankamla masası: katılımcının masadaki kankası (kartta "kim kimin kankası") ve hakkı düşülen alıcı paketi
+  kankaPartnerId  String?
+  kankaRightSubId String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -511,6 +518,10 @@ model Subscription {
   groupRights          Int                @default(0)
   groupCycles          Int                @default(0)
   oneOnOneCycles       Int                @default(0)
+  // Kankamla: 2 masa hakkı, 4 döngü (Cumartesi kilidinde sayılır)
+  kankaRights          Int                @default(0)
+  kankaCycles          Int                @default(0)
+  missedKankaCycles    Int                @default(0)
   payment              Payment?
   refundRequests       RefundRequest[]
   createdAt            DateTime           @default(now())
@@ -547,6 +558,7 @@ enum SubscriptionPlan {
   MASADA // 349 TL/ay — grup buluşma
   KARSIMDA // 449 TL/tek kullanım — başbaşa buluşma
   ICERDE // 679 TL — MASADA (1 ay) + KARSIMDA (1 kullanım) "Tercih Edilen"
+  KANKAMLA // tek seferlik, 2 Kankamla masası hakkı; alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır
 }
 
 enum SubscriptionStatus {
@@ -763,6 +775,7 @@ model AdminAlert {
 enum AdminAlertType {
   MISSED_GROUP_CYCLES
   MISSED_ONEONE_CYCLES
+  MISSED_KANKA_CYCLES
   SOS_ALERT
   BOT_NOT_FOUND
 }
@@ -793,6 +806,7 @@ enum RefundType {
   GROUP
   ONEONE
   FULL
+  KANKA // Kankamla paketi
 }
 
 enum RefundStatus {
@@ -946,4 +960,49 @@ model ParticipantLocation {
 
   @@index([meetingId, userId, timestamp])
   @@index([timestamp])
+}
+
+// ─────────────────────────────────────────────
+// KANKAMLA — kanka daveti ve kankalık
+// ─────────────────────────────────────────────
+
+// Davet telefon numarasına bağlıdır: sadece o numarayı WhatsApp koduyla doğrulamış hesap görür / kabul eder.
+// Link (token) sadece yönlendirme içindir; numaranın kayıtlı olup olmadığını ele vermez. 48 saat geçerli.
+model KankaInvite {
+  id           String            @id @default(cuid())
+  inviterId    String
+  inviter      User              @relation("KankaInviteSender", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitedPhone String // +905XXXXXXXXX
+  token        String            @unique
+  status       KankaInviteStatus @default(PENDING)
+  acceptedById String?
+  expiresAt    DateTime
+  respondedAt  DateTime?
+  createdAt    DateTime          @default(now())
+
+  @@index([invitedPhone, status])
+  @@index([inviterId, status])
+}
+
+enum KankaInviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED // davet edilen vazgeçti
+  CANCELLED // davet eden geri çekti / yeni davet gönderdi
+  EXPIRED
+}
+
+// Kankalık: biri kaldırana kadar sürer (endedAt). Kişi başına tek aktif kankalık.
+model KankaLink {
+  id        String    @id @default(cuid())
+  userAId   String
+  userA     User      @relation("KankaLinkA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId   String
+  userB     User      @relation("KankaLinkB", fields: [userBId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  endedAt   DateTime?
+  endReason String? // "USER" | "BAN"
+
+  @@index([userAId, endedAt])
+  @@index([userBId, endedAt])
 }

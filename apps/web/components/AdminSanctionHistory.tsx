@@ -29,7 +29,7 @@ const TYPE_LABEL: Record<Sanction['type'], { label: string; color: string }> = {
 };
 
 function fmt(d: string) {
-  return new Date(d).toLocaleString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(d).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 // Askı/ban: kaldırılmamış ve süresi dolmamış; uyarı: kaldırılmamış

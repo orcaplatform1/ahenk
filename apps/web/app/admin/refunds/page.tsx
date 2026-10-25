@@ -60,7 +60,7 @@ function RefundRow({ refund, onUpdate }: { refund: RefundItem; onUpdate: () => v
             {refund.user?.profile?.firstName ?? ''} {refund.user?.profile?.lastName ?? ''}
           </p>
           <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
-            {refund.refundType}{refund.subscription?.plan ? ` · ${refund.subscription.plan}` : ''} · {new Date(refund.createdAt).toLocaleString('tr-TR')}
+            {refund.refundType}{refund.subscription?.plan ? ` · ${refund.subscription.plan}` : ''} · {new Date(refund.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}
           </p>
           {refund.refundAmountKurus != null && (
             <p style={{ margin: '4px 0 0', fontSize: 11, color: TEXT, fontFamily: MONO }}>

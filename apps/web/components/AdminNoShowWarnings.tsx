@@ -84,7 +84,7 @@ export function AdminNoShowWarnings({
         return (
           <div key={meeting.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-              {new Date(meeting.scheduledAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {new Date(meeting.scheduledAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' })}
               {' · '}{meeting.type === 'ONE_ON_ONE' ? 'Başbaşa' : 'Grup'}
               {meeting.locationText ? ` · ${meeting.locationText}` : ''}
               {' — bildiren: '}

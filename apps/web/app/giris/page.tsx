@@ -190,7 +190,7 @@ export default function GirisPage() {
                 </h2>
                 {sanction.expiresAt && (
                   <p className="text-xs text-[#888]">
-                    Bitiş: {new Date(sanction.expiresAt).toLocaleString('tr-TR')}
+                    Bitiş: {new Date(sanction.expiresAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}
                   </p>
                 )}
               </div>

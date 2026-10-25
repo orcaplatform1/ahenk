@@ -1,5 +1,6 @@
 'use client';
 
+import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
 import { MasalarDashboard, buildInitials } from '@ahenk/ui';
 import { api } from '@/lib/api';
@@ -12,6 +13,7 @@ interface MeData {
   firstName: string;
   lastName: string;
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
+  kankamla?: { open: boolean };
   profile?: { gender?: string | null };
   kyc?: { status: string; rejectReason?: string | null };
   maintenanceMode?: boolean;
@@ -67,6 +69,8 @@ export default function DashboardPage() {
           selfParticipant={selfParticipant}
           activePlan={me?.activePlan ?? null}
           kycApproved={me?.kyc?.status === 'APPROVED'}
+          kankamlaActive={!!me?.kankamla?.open}
+          modalPortal={(node) => createPortal(node, document.body)}
         />
       </main>
     </div>

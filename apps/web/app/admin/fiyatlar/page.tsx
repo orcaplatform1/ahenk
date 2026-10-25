@@ -15,7 +15,7 @@ const AMBER   = '#f59e0b';
 const SANS    = 'Inter, system-ui, sans-serif';
 const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
-type PlanKey = 'MASADA' | 'KARSIMDA' | 'ICERDE';
+type PlanKey = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA';
 interface CurrentPrice {
   plan: PlanKey; name: string;
   netKurus: number; webKurus: number; mobileKurus: number;
@@ -41,9 +41,9 @@ function parseNet(v: string): number | null {
   const n = Number(v.replace(/\./g, '').replace(',', '.'));
   return Number.isFinite(n) && n >= 1 ? Math.round(n * 100) : null;
 }
-const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde' };
+const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' };
 // Paket hakları (her kısım 4 döngü geçerli)
-const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '2 grup masası', KARSIMDA: '1 başbaşa masası', ICERDE: '2 grup + 1 başbaşa masası' };
+const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '2 grup masası', KARSIMDA: '1 başbaşa masası', ICERDE: '2 grup + 1 başbaşa masası', KANKAMLA: '2 Kankamla masası (kanka ücretsiz)' };
 
 export default function AdminFiyatlar() {
   const [data, setData] = useState<PricesResponse | null>(null);

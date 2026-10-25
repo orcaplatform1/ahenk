@@ -43,7 +43,9 @@ import { MatchingService } from "../matching/matching.service";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
 import { OVERLAPPING_PLANS } from "../payment/plan-overlap";
-import { GROUP_RIGHTS, restoreGroupRights } from "../payment/package-rights";
+import { trIsoWeekStart, trWeekStart, WEEK_MS } from "./tr-week";
+import { GROUP_RIGHTS, KANKA_RIGHTS, restoreGroupRights, restoreKankaRights } from "../payment/package-rights";
+import { activeKankaLink, endKankaLinks } from "../kanka/kanka-links";
 
 const PIONEER_MAX_QUOTA = 500;
 
@@ -67,12 +69,9 @@ export class AdminService {
   // ─── Dashboard ───────────────────────────────────────────────────────────
 
   async getDashboard() {
-    // Hafta Pazartesi 00:00'da başlar
-    const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    weekStart.setHours(0, 0, 0, 0);
-    const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // Hafta Pazartesi 00:00 (TR) başlar
+    const weekStart = trWeekStart();
+    const weekEnd = new Date(weekStart.getTime() + WEEK_MS);
 
     const [
       totalUsers,
@@ -149,6 +148,7 @@ export class AdminService {
     else if (params.type === 'MASADA')  where.subscriptions = { some: { plan: 'MASADA' } };
     else if (params.type === 'KARSIMDA') where.subscriptions = { some: { plan: 'KARSIMDA' } };
     else if (params.type === 'ICERDE')  where.subscriptions = { some: { plan: 'ICERDE' } };
+    else if (params.type === 'KANKAMLA') where.subscriptions = { some: { plan: 'KANKAMLA' } };
     else if (params.type === 'NO_PLAN') where.subscriptions = { none: {} };
     if (params.search) {
       where.OR = [
@@ -220,13 +220,22 @@ export class AdminService {
     const { passwordHash, fcmToken, phoneHash, isBot, botPhone, ...rest } = user;
     // Botun panel numarası telefon olarak gösterilir (gerçek telefon alanı boştur)
     const safeUser = { ...rest, phone: isBot ? botPhone : rest.phone };
-    const [groupCount, oneOnOneCount] = await Promise.all([
+    const [groupCount, oneOnOneCount, kankaCount] = await Promise.all([
       this.prisma.meetingParticipant.count({ where: { userId, meeting: { type: 'GROUP' } } }),
       this.prisma.meetingParticipant.count({ where: { userId, meeting: { type: 'ONE_ON_ONE' } } }),
+      this.prisma.meetingParticipant.count({ where: { userId, meeting: { type: 'KANKA' } } }),
     ]);
     const noShowWarnings = await this.noShowWarnings(userId);
+    // Aktif kankası (Kankamla)
+    const link = await activeKankaLink(this.prisma, userId);
+    const kankaUser = link
+      ? await this.prisma.user.findUnique({ where: { id: link.kankaId }, select: { id: true, profile: { select: { firstName: true, lastName: true } } } })
+      : null;
+    const kanka = kankaUser
+      ? { userId: kankaUser.id, name: `${kankaUser.profile?.firstName ?? ''} ${kankaUser.profile?.lastName ?? ''}`.trim(), since: link!.createdAt }
+      : null;
     // Bot bilgisi yalnızca SUPERADMIN'e
-    return { ...safeUser, ...(viewerRole === UserRole.SUPERADMIN ? { isBot } : {}), groupCount, oneOnOneCount, noShowWarnings };
+    return { ...safeUser, ...(viewerRole === UserRole.SUPERADMIN ? { isBot } : {}), groupCount, oneOnOneCount, kankaCount, kanka, noShowWarnings };
   }
 
   // ─── Gelmedi uyarısı ──────────────────────────────────────────────────────
@@ -491,7 +500,7 @@ export class AdminService {
         data: { status: RefundStatus.REJECTED, adminNote: "Paket admin tarafından değiştirildi" },
       }),
       this.prisma.subscription.create({
-        data: { userId: targetId, plan, status: "ACTIVE", expiresAt: expiry, groupRights: GROUP_RIGHTS[plan] },
+        data: { userId: targetId, plan, status: "ACTIVE", expiresAt: expiry, groupRights: GROUP_RIGHTS[plan], kankaRights: plan === SubscriptionPlan.KANKAMLA ? KANKA_RIGHTS : 0 },
         select: { id: true, plan: true, status: true, expiresAt: true },
       }),
     ]);
@@ -518,6 +527,10 @@ export class AdminService {
       // Grup: kilitte düşülen grup hakkı geri verilir (kendi iptal etmediyse)
       if (meeting?.type === MeetingType.GROUP && participant.status !== "CANCELLED") {
         await restoreGroupRights(tx, meetingId, [userId]);
+      }
+      // Kankamla: kilitte düşülen hak geri verilir (kendi iptal etmediyse)
+      if (meeting?.type === MeetingType.KANKA && participant.status !== "CANCELLED") {
+        await restoreKankaRights(tx, meetingId, [userId]);
       }
       await tx.meetingParticipant.delete({
         where: { meetingId_userId: { meetingId, userId } },
@@ -572,10 +585,9 @@ export class AdminService {
 
     // Hafta filtresi
     if (params.week) {
-      const year = new Date().getFullYear();
-      const jan4 = new Date(year, 0, 4);
-      const startOfWeek = new Date(jan4.getTime() + (params.week - 1) * 7 * 24 * 60 * 60 * 1000);
-      const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+      // ISO hafta: Pazartesi 00:00 (TR) – sonraki Pazartesi
+      const startOfWeek = trIsoWeekStart(params.week);
+      const endOfWeek = new Date(startOfWeek.getTime() + WEEK_MS);
       where.scheduledAt = { gte: startOfWeek, lt: endOfWeek };
     }
 
@@ -825,6 +837,10 @@ export class AdminService {
       if (meeting.type === MeetingType.GROUP) {
         await restoreGroupRights(tx, meetingId, stillIn);
       }
+      // Kankamla: kilitte düşülen hak geri verilir (rezervasyonunu iptal eden çiftin hakkı geri verilmez)
+      if (meeting.type === MeetingType.KANKA) {
+        await restoreKankaRights(tx, meetingId, stillIn);
+      }
       return tx.meeting.update({
         where: { id: meetingId },
         data: { status: MeetingStatus.CANCELLED },
@@ -951,7 +967,7 @@ export class AdminService {
         select: {
           id: true, plan: true, status: true, startsAt: true, expiresAt: true, usedAt: true,
           cancelNote: true, missedGroupCycles: true, missedOneonOneCycles: true, createdAt: true, updatedAt: true,
-          groupRights: true, groupCycles: true, oneOnOneCycles: true,
+          groupRights: true, groupCycles: true, oneOnOneCycles: true, kankaRights: true, kankaCycles: true,
           user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
           payment: { select: { platform: true, amountKurus: true, paidAt: true } },
         },
@@ -1112,7 +1128,7 @@ export class AdminService {
     const tables = meetings.map((m) => {
       const males = m.participants.filter((p) => p.user.profile?.gender === Gender.MALE).length;
       const females = m.participants.length - males;
-      const half = m.type === MeetingType.GROUP ? m.maxParticipants / 2 : 1;
+      const half = m.type === MeetingType.ONE_ON_ONE ? 1 : m.maxParticipants / 2;
       return {
         id: m.id,
         type: m.type,
@@ -1137,6 +1153,7 @@ export class AdminService {
     return {
       group: tables.filter((t) => t.type === MeetingType.GROUP),
       oneOnOne: tables.filter((t) => t.type === MeetingType.ONE_ON_ONE),
+      kanka: tables.filter((t) => t.type === MeetingType.KANKA),
       waiting: await this.matching.getOneOnOneWaiting(),
     };
   }
@@ -1154,11 +1171,13 @@ export class AdminService {
       },
     });
     if (!meeting) throw new NotFoundException('Masa bulunamadı');
+    // Kankamla masasına asla bot eklenmez
+    if (meeting.type === MeetingType.KANKA) return [];
     if (meeting.status !== MeetingStatus.PENDING && meeting.status !== MeetingStatus.ACTIVE) return [];
     if (meeting.participants.length >= meeting.maxParticipants) return [];
     const males = meeting.participants.filter((p) => p.user.profile?.gender === Gender.MALE).length;
     const females = meeting.participants.length - males;
-    const half = meeting.type === MeetingType.GROUP ? meeting.maxParticipants / 2 : 1;
+    const half = meeting.type === MeetingType.ONE_ON_ONE ? 1 : meeting.maxParticipants / 2;
     const genders = [
       ...(males < half ? [Gender.MALE] : []),
       ...(females < half ? [Gender.FEMALE] : []),
@@ -1197,13 +1216,10 @@ export class AdminService {
   // ─── Stats overview ───────────────────────────────────────────────────────
 
   async getStatsOverview() {
+    // Bu hafta / geçen hafta: Pazartesi 00:00 (TR)
     const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
-    weekStart.setHours(0, 0, 0, 0);
-
-    const prevWeekStart = new Date(weekStart);
-    prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+    const weekStart = trWeekStart(now);
+    const prevWeekStart = new Date(weekStart.getTime() - WEEK_MS);
 
     const [
       activeUsers,
@@ -1311,13 +1327,10 @@ export class AdminService {
   // ─── Stats cities ─────────────────────────────────────────────────────────
 
   async getStatsCities() {
+    // Bu hafta / geçen hafta: Pazartesi 00:00 (TR)
     const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
-    weekStart.setHours(0, 0, 0, 0);
-
-    const prevWeekStart = new Date(weekStart);
-    prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+    const weekStart = trWeekStart(now);
+    const prevWeekStart = new Date(weekStart.getTime() - WEEK_MS);
 
     const cities = await this.prisma.city.findMany({
       where: { isActive: true },
@@ -1428,7 +1441,7 @@ export class AdminService {
 
     if (user.phone) {
       await this.whatsapp.send(user.phone, "ahenk_quarantine_warning", [
-        quarantineUntil.toLocaleDateString("tr-TR"),
+        quarantineUntil.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" }),
       ]).catch(() => {});
     }
 
@@ -1570,6 +1583,18 @@ export class AdminService {
         where: { userId, status: RefundStatus.PENDING },
         data: { status: RefundStatus.REJECTED, adminNote: "Yaptırım nedeniyle iade yapılmaz" },
       });
+      // Kankamla: kişi bu haftaki masasından kankasıyla düşer (karşı çift yeniden taramaya girer); ban → kankalık biter
+      await this.matching.dropKankaPair(userId, isBan ? "Banlandı" : "Askıya alındı");
+      if (isBan) {
+        const exKankas = await endKankaLinks(this.prisma, userId, "BAN");
+        for (const id of exKankas) {
+          await this.notifications.sendToUser(id, {
+            title: "Kankalık sona erdi",
+            body: "Kankanın hesabı kapatıldığı için kankalığınız sona erdi. Profilim'den yeni bir kanka davet edebilirsin.",
+            data: { type: "KANKA_ENDED" },
+          }).catch(() => undefined);
+        }
+      }
     }
 
     return sanction;

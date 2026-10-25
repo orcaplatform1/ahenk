@@ -16,7 +16,8 @@ export const NO_SHOW_WARNING_LIMIT = 3;
 
 // Askı süresi: 1 ay
 export function suspensionEndDate(from = new Date()): Date {
+  // Türkiye saati (UTC+3, yaz saati yok) UTC ile aynı aralıkta kaydığı için UTC ay ekleme TR'de de aynı saati verir
   const d = new Date(from);
-  d.setMonth(d.getMonth() + 1);
+  d.setUTCMonth(d.getUTCMonth() + 1);
   return d;
 }

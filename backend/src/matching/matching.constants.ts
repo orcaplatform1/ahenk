@@ -17,7 +17,7 @@ export const GENDER_TARGET = {
   [TABLE_SIZE_SMALL]: { MALE: 2, FEMALE: 2 },
 } as const;
 
-// Buluşma saati: Cumartesi 20:00 TR (17:00 UTC)
+// Buluşma saati 20:00 TR (17:00 UTC): grup Cuma, başbaşa Cumartesi
 export const MEETING_HOUR_UTC = 17;
 
 // Cumartesi bildirim saati: 10:00 TR (07:00 UTC)

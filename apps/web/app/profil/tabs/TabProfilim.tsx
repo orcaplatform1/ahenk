@@ -1,5 +1,6 @@
 'use client';
 
+import { KankaSection } from '@/components/KankaSection';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
@@ -104,7 +105,7 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
 
   if (status.hasMeeting) {
     const date = status.meetingScheduledAt
-      ? new Date(status.meetingScheduledAt).toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })
+      ? new Date(status.meetingScheduledAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', weekday: 'long', day: 'numeric', month: 'long' })
       : null;
     return (
       <div className="glass-card p-5">
@@ -436,6 +437,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         {user.profile?.birthDate && (
           <Row label="Yaş" value={`${Math.floor((Date.now() - new Date(user.profile.birthDate).getTime()) / (365.25 * 24 * 3600 * 1000))}`} />
         )}
+        {/* Kankamla: Aktif Kankanız (davet et / davet var / kankan) + kısa açıklama */}
+        <KankaSection />
         {user.profile?.gender && (
           <Row label="Cinsiyet" value={user.profile.gender === 'MALE' ? 'Erkek' : 'Kadın'} />
         )}

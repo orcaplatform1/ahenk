@@ -25,7 +25,7 @@ interface OpenTable {
   participants: OpenParticipant[];
 }
 interface WaitingUser { userId: string; initials: string; gender: string | null; age: number | null; city: string | null; cycleNo: number; }
-interface OpenResponse { group: OpenTable[]; oneOnOne: OpenTable[]; waiting: WaitingUser[]; }
+interface OpenResponse { group: OpenTable[]; oneOnOne: OpenTable[]; kanka?: OpenTable[]; waiting: WaitingUser[]; }
 interface BotOption { id: string; name: string; gender: string | null; age: number | null; }
 
 const genderColor = (g: string | null) => (g === 'MALE' ? MALE_C : g === 'FEMALE' ? FEMALE_C : MUTED);
@@ -212,6 +212,13 @@ export function AdminOpenTables({ isSuperadmin, onUserClick }: { isSuperadmin: b
           <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
             {data.oneOnOne.length === 0 && <p style={{ margin: 0, fontSize: 12, color: MUTED }}>Kurulmuş başbaşa masası yok</p>}
             {data.oneOnOne.map(t => <TableCard key={t.id} t={t} {...common} />)}
+          </div>
+
+          {/* Kankamla: 4 kişi (2E + 2K) — bot eklenmez */}
+          <p style={sectionTitle}>KANKAMLA MASALARI ({data.kanka?.length ?? 0})</p>
+          <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
+            {(data.kanka?.length ?? 0) === 0 && <p style={{ margin: 0, fontSize: 12, color: MUTED }}>Kurulmuş Kankamla masası yok</p>}
+            {(data.kanka ?? []).map(t => <TableCard key={t.id} t={t} {...common} />)}
           </div>
 
           <p style={sectionTitle}>BAŞBAŞA — EŞİ BEKLEYENLER ({data.waiting.length})</p>

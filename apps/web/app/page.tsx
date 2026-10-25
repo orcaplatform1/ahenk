@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { getPlanCardState, type OpenParts, type PlanKey } from '@/lib/planCards';
+import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { HeroCountdown } from '@/components/HeroCountdown';
 import { PlanPriceText } from '@/components/PlanPrice';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
@@ -56,6 +56,20 @@ const plans = [
     featured: true,
     bgImage: '/plan-icerde.webp',
     features: ['2 Grup Masası + 1 Baş Başa Masa', 'Tüm Özellikler Dahil'],
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Kankamla',
+    planKey: 'KANKAMLA' as const,
+    desc: '2 Kankamla masası hakkı · kankan ücretsiz katılır',
+    featured: false,
+    // Kankamla için ayrı görsel eklenene kadar grup masası görseli
+    bgImage: '/plan-masada.webp',
+    features: ['2 Kankamla Masası Hakkı', 'Kankan Ücretsiz Katılır', '4 Kişilik Masa (2E + 2K)', 'Doğrulanmış Profiller', 'Masa Garantili (Ücret İade)'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
@@ -277,11 +291,13 @@ function seededRand(seed: number, min: number, max: number): number {
   return min + Math.floor((x - Math.floor(x)) * (max - min + 1));
 }
 
+// Bu haftanın (Pazartesi başlangıçlı) verilen gün/saati geçti mi (TR)
 function isTRDayPast(targetDay: number, targetHour: number, targetMin: number): boolean {
   const now = new Date();
   const trNow = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  const mondayIdx = (d: number) => (d + 6) % 7; // Pzt=0 … Paz=6
   const day = trNow.getUTCDay(); // 0=Paz,6=Cmt
-  if (day !== targetDay) return day > targetDay || (targetDay === 6 && day === 0);
+  if (day !== targetDay) return mondayIdx(day) > mondayIdx(targetDay);
   return trNow.getUTCHours() > targetHour || (trNow.getUTCHours() === targetHour && trNow.getUTCMinutes() >= targetMin);
 }
 
@@ -293,24 +309,28 @@ function WeeklyTables() {
   }, []);
 
   const week = getWeekNumber(new Date());
-  const grupDone = isTRDayPast(6, 23, 59);   // Cumartesi 23:59
-  const bbDone   = isTRDayPast(0, 23, 59);   // Pazar 23:59
+  const grupDone = isTRDayPast(5, 23, 59);   // Cuma 23:59 (grup buluşma günü)
+  const bbDone   = isTRDayPast(6, 23, 59);   // Cumartesi 23:59 (başbaşa buluşma günü)
+  const kankaDone = isTRDayPast(6, 23, 59);  // Cumartesi 23:59 (Kankamla kilidi; buluşma Pazar)
 
   const cities = [
     {
       name: 'İstanbul',
       grup:   { min: 5, max: 8,  seed: week * 31 + 1 },
       bb:     { min: 4, max: 8,  seed: week * 31 + 2 },
+      kanka:  { min: 2, max: 5,  seed: week * 31 + 7 },
     },
     {
       name: 'Ankara',
       grup:   { min: 4, max: 7,  seed: week * 31 + 3 },
       bb:     { min: 3, max: 6,  seed: week * 31 + 4 },
+      kanka:  { min: 1, max: 4,  seed: week * 31 + 8 },
     },
     {
       name: 'İzmir',
       grup:   { min: 3, max: 6,  seed: week * 31 + 5 },
       bb:     { min: 2, max: 5,  seed: week * 31 + 6 },
+      kanka:  { min: 1, max: 3,  seed: week * 31 + 9 },
     },
   ];
 
@@ -338,6 +358,7 @@ function WeeklyTables() {
         {cities.map((city) => {
           const grupCount = seededRand(city.grup.seed, city.grup.min, city.grup.max);
           const bbCount   = seededRand(city.bb.seed,   city.bb.min,   city.bb.max);
+          const kankaCount = seededRand(city.kanka.seed, city.kanka.min, city.kanka.max);
           return (
             <div
               key={city.name}
@@ -387,6 +408,20 @@ function WeeklyTables() {
                     <span style={{ fontSize: 12, color: 'rgba(245,245,245,0.5)' }}>
                       <span style={{ fontSize: 18, fontWeight: 700, color: '#c0392b', marginRight: 4 }}>{bbCount}</span>
                       eşleşme kaldı
+                    </span>
+                  )}
+                </div>
+                {/* Kankamla */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="pulse-dot" />
+                  {kankaDone ? (
+                    <span style={{ fontSize: 11, color: 'rgba(245,245,245,0.35)', fontStyle: 'italic' }}>
+                      Bu haftanın Kankamla masaları doldu.
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 12, color: 'rgba(245,245,245,0.5)' }}>
+                      <span style={{ fontSize: 18, fontWeight: 700, color: '#c0392b', marginRight: 4 }}>{kankaCount}</span>
+                      Kankamla masası
                     </span>
                   )}
                 </div>
@@ -526,12 +561,14 @@ export default function Home() {
   const [ownedPlans, setOwnedPlans] = useState<Set<PlanKey>>(new Set());
   const [openParts, setOpenParts] = useState<OpenParts>({ group: false, oneOnOne: false });
   const [authState, setAuthState] = useState<{ loggedIn: boolean; kycApproved: boolean } | null>(null);
+  const [kankamla, setKankamla] = useState<KankamlaState | null>(null);
 
   useEffect(() => {
-    api.silentGet<{ ownedPlans?: PlanKey[]; openParts?: OpenParts; isKycVerified?: boolean }>('/auth/me').then((d) => {
+    api.silentGet<{ ownedPlans?: PlanKey[]; openParts?: OpenParts; kankamla?: KankamlaState; isKycVerified?: boolean }>('/auth/me').then((d) => {
       if (d) {
         setOwnedPlans(new Set(d.ownedPlans ?? []));
         if (d.openParts) setOpenParts(d.openParts);
+        setKankamla(d.kankamla ?? null);
         setAuthState({ loggedIn: true, kycApproved: !!d.isKycVerified });
       } else {
         setAuthState({ loggedIn: false, kycApproved: false });
@@ -786,10 +823,10 @@ export default function Home() {
             .lp-feat-wrap::before{content:'';position:absolute;width:300%;height:300%;top:-100%;left:-100%;background:conic-gradient(from 0deg,transparent 68%,#c9a227 78%,#e8c84a 84%,transparent 93%);animation:_cardGoldBorder 3s linear infinite;z-index:0;}
             .lp-feat-inner{position:relative;z-index:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:row;flex:1;}
           `}</style>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {plans.map((plan) => {
-              const cardKey = plan.name === 'Masada' ? 'MASADA' : plan.name === 'Karşımda' ? 'KARSIMDA' : 'ICERDE';
-              const cs = getPlanCardState(cardKey, ownedPlans, openParts);
+              const cardKey = plan.planKey;
+              const cs = cardKey === 'KANKAMLA' ? getKankamlaCardState(kankamla) : getPlanCardState(cardKey, ownedPlans, openParts);
               const inner = (
                 <div
                   className={plan.featured ? 'lp-feat-inner' : 'relative rounded-2xl overflow-hidden flex-1'}

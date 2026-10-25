@@ -15,7 +15,8 @@ import * as bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { isMaintenanceMode } from "../admin/app-settings";
-import { groupPartOpen, oneOnOnePartOpen } from "../payment/package-rights";
+import { groupPartOpen, kankaPartOpen, oneOnOnePartOpen, RIGHTS_SELECT } from "../payment/package-rights";
+import { activeKankaLink } from "../kanka/kanka-links";
 import { UsersService } from "../users/users.service";
 import { OtpService, OTP_RESEND_SECONDS } from "./otp/otp.service";
 import { RedisService } from "../redis/redis.service";
@@ -52,6 +53,23 @@ export class AuthService {
   }
 
   // ─── Aktif yaptırım kontrolü ─────────────────────────────────────────────
+
+  private async kankamlaState(userId: string) {
+    const link = await activeKankaLink(this.prisma, userId);
+    const pairIds = link ? [userId, link.kankaId] : [userId];
+    const sub = await this.prisma.subscription.findFirst({
+      where: { userId: { in: pairIds }, plan: "KANKAMLA", status: SubscriptionStatus.ACTIVE },
+      orderBy: { createdAt: "asc" },
+      select: { userId: true, ...RIGHTS_SELECT },
+    });
+    return {
+      hasKanka: !!link,
+      // Paket bitene kadar çiftte yenisi alınamaz
+      pairPackageActive: !!sub,
+      open: !!sub && !!link && kankaPartOpen(sub),
+      role: sub ? (sub.userId === userId ? "BUYER" : "KANKA") : null,
+    };
+  }
 
   private async checkSanction(userId: string, status: string): Promise<void> {
     if (status === 'DELETED') throw new ForbiddenException("Bu hesap silinmiş");
@@ -452,6 +470,8 @@ export class AuthService {
       ownedPlans: [...new Set(activeSubs.map((s) => s.plan))],
       // Açık kısımlar (hak kalmış, 4 döngü dolmamış): satın alma kuralı bunlara göre
       openParts: { group: hasMasada, oneOnOne: hasKarsimda },
+      // Kankamla: çiftte (kendisi ya da kankası) aktif paket; "BUYER" parayı ödeyen, "KANKA" ücretsiz katılan
+      kankamla: await this.kankamlaState(user.id),
       activeSanction: activeSanction ?? null,
       noShowWarning: noShowCount > 0
         ? { count: noShowCount, remaining: Math.max(NO_SHOW_WARNING_LIMIT - noShowCount, 0) }

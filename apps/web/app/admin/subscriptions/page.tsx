@@ -25,7 +25,9 @@ const inputStyle: React.CSSProperties = {
 
 interface Subscription {
   id: string;
-  plan: 'MASADA' | 'KARSIMDA' | 'ICERDE';
+  plan: 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA';
+  kankaRights?: number;
+  kankaCycles?: number;
   status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
   startsAt: string;
   expiresAt: string | null;
@@ -49,11 +51,11 @@ const TABS = [
   { key: 'CANCELLED', label: 'İptal Edilen' },
 ] as const;
 
-const PLAN_LABEL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde' };
+const PLAN_LABEL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' };
 const PLATFORM_LABEL: Record<string, string> = { WEB: 'Web', ANDROID: 'Android', IOS: 'iOS' };
 
 function fmtDate(d: string | null) {
-  return d ? new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+  return d ? new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 }
 
 export default function AdminSubscriptions() {
@@ -133,6 +135,7 @@ export default function AdminSubscriptions() {
           <option value="MASADA">Masada</option>
           <option value="KARSIMDA">Karşımda</option>
           <option value="ICERDE">İçerde</option>
+          <option value="KANKAMLA">Kankamla</option>
         </select>
       </div>
 
@@ -183,7 +186,8 @@ export default function AdminSubscriptions() {
                     <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
                       Başlangıç {fmtDate(s.startsAt)}
                       {s.expiresAt ? ` · Bitiş ${fmtDate(s.expiresAt)}` : ''}
-                      {s.plan !== 'KARSIMDA' ? ` · Grup hakkı: ${s.groupRights}/2 kaldı, döngü ${s.groupCycles}/4` : ''}
+                      {s.plan === 'MASADA' || s.plan === 'ICERDE' ? ` · Grup hakkı: ${s.groupRights}/2 kaldı, döngü ${s.groupCycles}/4` : ''}
+                      {s.plan === 'KANKAMLA' ? ` · Kankamla hakkı: ${s.kankaRights ?? 0}/2 kaldı, döngü ${s.kankaCycles ?? 0}/4` : ''}
                       {oneOnOneRight ? ` · Başbaşa hakkı: ${s.usedAt ? `kullanıldı (${fmtDate(s.usedAt)})` : `kullanılmadı, döngü ${s.oneOnOneCycles}/4`}` : ''}
                     </p>
                     <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED }}>

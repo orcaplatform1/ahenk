@@ -54,7 +54,8 @@ interface AdminUserDetail {
   occupationSector?: string | null;
   kyc: { status: string } | null;
   subscriptions: { id: string; plan: string; status: string }[];
-  groupCount: number; oneOnOneCount: number;
+  groupCount: number; oneOnOneCount: number; kankaCount?: number;
+  kanka?: { userId: string; name: string; since: string } | null;
   oceanScore?: { completedAt: string; adminCanReset: boolean } | null;
   noShowReportsReceived?: NoShowReportItem[];
   noShowWarnings?: NoShowWarningInfo;
@@ -67,7 +68,7 @@ const STATUS_STYLE: Record<string, { label: string; color: string; bg: string; b
 };
 
 const PLAN_LABEL: Record<string, string> = {
-  MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde',
+  MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla',
 };
 
 function oceanAvg(o: AdminUser['oceanScore']): string {
@@ -216,6 +217,7 @@ export default function AdminUsers() {
           <option value="MASADA">Masada</option>
           <option value="KARSIMDA">Karşımda</option>
           <option value="ICERDE">İçerde</option>
+          <option value="KANKAMLA">Kankamla</option>
           <option value="ADMIN">Admin</option>
           <option value="SUPERADMIN">Superadmin</option>
         </select>
@@ -364,6 +366,8 @@ export default function AdminUsers() {
                   )}
                   <span style={{ fontSize: 11, color: MUTED }}>Grup: <span style={{ color: '#93c5fd' }}>{userModal.groupCount}</span></span>
                   <span style={{ fontSize: 11, color: MUTED }}>Başbaşa: <span style={{ color: '#93c5fd' }}>{userModal.oneOnOneCount}</span></span>
+                  <span style={{ fontSize: 11, color: MUTED }}>Kankamla: <span style={{ color: '#93c5fd' }}>{userModal.kankaCount ?? 0}</span></span>
+                  <span style={{ fontSize: 11, color: MUTED }}>Kanka: <span style={{ color: '#93c5fd' }}>{userModal.kanka ? userModal.kanka.name : 'yok'}</span></span>
                 </div>
 
                 {/* Durum badge'leri */}
@@ -390,7 +394,7 @@ export default function AdminUsers() {
                       fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99,
                       background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)',
                     }}>
-                      {{ MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde' }[s.plan] ?? s.plan}
+                      {{ MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' }[s.plan] ?? s.plan}
                     </span>
                   ))}
                 </div>
@@ -478,7 +482,7 @@ export default function AdminUsers() {
                   <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>KİŞİLİK TESTİ</span>
                     <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                      Son test: {new Date(userModal.oceanScore.completedAt).toLocaleDateString('tr-TR')}
+                      Son test: {new Date(userModal.oceanScore.completedAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}
                       {userModal.oceanScore.adminCanReset ? ' · Kilit açık, kullanıcı testi yeniden yapabilir' : ' · 180 gün kilitli'}
                     </p>
                     {!userModal.oceanScore.adminCanReset && (
@@ -531,6 +535,7 @@ export default function AdminUsers() {
                       <option value="MASADA">Masada</option>
                       <option value="KARSIMDA">Karşımda</option>
                       <option value="ICERDE">İçerde</option>
+                      <option value="KANKAMLA">Kankamla</option>
                     </select>
                     <button
                       onClick={modalGrantSubscription} disabled={!!userAction || !grantPlan}

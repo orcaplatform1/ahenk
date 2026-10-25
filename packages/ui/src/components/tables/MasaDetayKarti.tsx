@@ -22,7 +22,7 @@ export interface AiReport {
 
 export interface MasaDetayData {
   id: string;
-  type?: 'GROUP' | 'ONE_ON_ONE';
+  type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   maxParticipants?: number;
   scheduledAt: string;
   venueName: string;
@@ -31,7 +31,6 @@ export interface MasaDetayData {
   venuePhotos?: VenuePhoto[];
   participants: DetayParticipant[];
   aiReport?: AiReport | null;
-  cancelRightUsed?: boolean; // grup: bu pakette iptal hakkı kullanıldı
 }
 
 interface ChatMsg {
@@ -367,132 +366,6 @@ function SosModal({
   );
 }
 
-// ── İptal Modal ───────────────────────────────────────────────────────────
-const LEAVE_REASONS = [
-  { value: 'VENUE_NOT_SUITABLE', label: 'Mekan uygun değil' },
-  { value: 'TIME_CHANGED',       label: 'Zaman değişti' },
-  { value: 'PERSONAL',           label: 'Kişisel sebep' },
-  { value: 'OTHER',              label: 'Diğer' },
-] as const;
-
-function CancelModal({
-  onConfirm,
-  onClose,
-  loading,
-  isOneOnOne,
-  error,
-}: {
-  onConfirm: (reason: string, note: string) => void;
-  onClose: () => void;
-  loading: boolean;
-  isOneOnOne: boolean;
-  error: string;
-}) {
-  const [reason, setReason] = useState<string>('');
-  const [note,   setNote]   = useState('');
-  const canSubmit = reason !== '' && (reason !== 'OTHER' || note.trim().length > 0);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9998,
-        background: 'rgba(20,4,4,0.88)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
-      }}
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
-        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-        onClick={e => e.stopPropagation()}
-        style={{
-          width: '100%', maxWidth: 380,
-          background: 'rgba(30,8,8,0.97)',
-          border: '1px solid rgba(192,57,43,0.35)',
-          borderRadius: 16, padding: '28px 22px 22px',
-        }}
-      >
-        <p style={{
-          margin: '0 0 18px',
-          fontSize: 15, lineHeight: 1.6, fontWeight: 500,
-          color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center',
-        }}>
-          {isOneOnOne
-            ? 'Başbaşa masanız kurulduğu için paket hakkınız kullanılmış sayılır; iptal etmeniz durumunda hakkınız iade edilmez. Kurulan masaya katılmama durumunda ilk uyarıyı alırsınız, 3 uyarı tamamlandığında hesabınız 1 ay askıya alınacaktır.'
-            : 'Rezervasyon iptali diğer kullanıcıları da doğrudan etkilediğinden, kurulan bir masada tekrar iptal hakkınız bulunmayacaktır ve kurulan masaya katılmama durumunda ilk uyarıyı alırsınız, 3 uyarı tamamlandığında hesabınız 1 ay askıya alınacaktır.'}
-        </p>
-        <p style={{ margin: '0 0 10px', fontSize: 13, color: 'rgba(245,245,245,0.6)', fontFamily: 'Inter, sans-serif' }}>
-          Ayrılma sebebiniz:
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-          {LEAVE_REASONS.map(r => (
-            <button
-              key={r.value}
-              onClick={() => setReason(r.value)}
-              style={{
-                padding: '10px 14px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
-                background: reason === r.value ? 'rgba(192,57,43,0.25)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${reason === r.value ? 'rgba(192,57,43,0.6)' : 'rgba(255,255,255,0.1)'}`,
-                color: reason === r.value ? '#ff6b6b' : '#c0c0c0',
-                fontSize: 14, fontFamily: 'Inter, sans-serif', fontWeight: reason === r.value ? 600 : 400,
-              }}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-        {reason === 'OTHER' && (
-          <textarea
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            placeholder="Lütfen açıklayın…"
-            maxLength={300}
-            rows={3}
-            style={{
-              width: '100%', boxSizing: 'border-box',
-              padding: '10px 12px', borderRadius: 10, marginBottom: 16,
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)',
-              color: '#f5f5f5', fontSize: 13, fontFamily: 'Inter, sans-serif', resize: 'none',
-              outline: 'none',
-            }}
-          />
-        )}
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1, padding: '13px 0', borderRadius: 10, cursor: 'pointer',
-              background: 'rgba(39,174,96,0.18)', border: '1px solid rgba(39,174,96,0.45)',
-              color: '#27ae60', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif',
-            }}
-          >
-            Vazgeç
-          </button>
-          <button
-            onClick={() => canSubmit && onConfirm(reason, note)}
-            disabled={loading || !canSubmit}
-            style={{
-              flex: 1, padding: '13px 0', borderRadius: 10,
-              cursor: (loading || !canSubmit) ? 'not-allowed' : 'pointer',
-              background: 'rgba(192,57,43,0.25)', border: '1px solid rgba(192,57,43,0.55)',
-              color: '#ff6b6b', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif',
-              opacity: (loading || !canSubmit) ? 0.45 : 1,
-            }}
-          >
-            {loading ? '…' : 'İptal Et'}
-          </button>
-        </div>
-        {error && (
-          <p style={{ margin: '12px 0 0', fontSize: 13, color: '#ff6b6b', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-            {error}
-          </p>
-        )}
-      </motion.div>
-    </motion.div>
-  );
-}
-
 // ── Sohbet Bölümü ─────────────────────────────────────────────────────────
 function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase: string; token?: string }) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -756,10 +629,6 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
   const [lightboxIdx,   setLightboxIdx]   = useState<number | null>(null);
   const [onMyWayDone,   setOnMyWayDone]   = useState(false);
   const [onMyWayLoading,setOnMyWayLoading]= useState(false);
-  const [showCancel,    setShowCancel]    = useState(false);
-  const [cancelLoading, setCancelLoading] = useState(false);
-  const [cancelled,     setCancelled]     = useState(false);
-  const [cancelError,   setCancelError]   = useState('');
 
   const isOneOnOne = masa.type === 'ONE_ON_ONE';
   const photos     = masa.venuePhotos ?? [];
@@ -778,34 +647,10 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
     } finally { setOnMyWayLoading(false); }
   }
 
-  async function handleCancel(reason: string, note: string) {
-    if (!authHeaders) return;
-    setCancelLoading(true);
-    setCancelError('');
-    try {
-      const res = await fetch(`${apiBase}/meetings/${masa.id}/cancel-registration`, {
-        method: 'POST', headers: authHeaders, credentials: 'include',
-        body: JSON.stringify({ reason, note: note || undefined }),
-      });
-      if (res.ok) { setCancelled(true); setShowCancel(false); return; }
-      const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
-      const msg = Array.isArray(err?.message) ? err?.message[0] : err?.message;
-      setCancelError(msg ?? 'İptal edilemedi, lütfen tekrar deneyin.');
-    } catch {
-      setCancelError('İptal edilemedi, lütfen tekrar deneyin.');
-    } finally { setCancelLoading(false); }
-  }
-
   const hasChat = !!apiBase;
 
-  // İptal deadline kontrolü (tarayıcı tarafı - yalnızca buton görünümü için)
-  // Masa gününden 2 gün önce 20:00 (TR): Grup → Perşembe 20:00, Başbaşa → Cuma 20:00
-  const now = new Date();
-  const schedTR = new Date(new Date(masa.scheduledAt).getTime() + 3 * 60 * 60 * 1000);
-  const cancelDeadline = new Date(Date.UTC(schedTR.getUTCFullYear(), schedTR.getUTCMonth(), schedTR.getUTCDate() - 2, 20 - 3, 0, 0, 0));
-  const cancelDeadlinePassed = now >= cancelDeadline;
-
   // SOS görünürlük: masa saatinden (scheduledAt) sonraki gün 10:00 TR'ye kadar
+  const now = new Date();
   const scheduledTR = new Date(new Date(masa.scheduledAt).getTime() + 3 * 60 * 60 * 1000);
   const nextDay10 = new Date(scheduledTR);
   nextDay10.setUTCDate(nextDay10.getUTCDate() + 1);
@@ -969,15 +814,6 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
         {lightboxIdx !== null && (
           <Lightbox photos={photos} startIdx={lightboxIdx} onClose={() => setLightboxIdx(null)} />
         )}
-        {showCancel && (
-          <CancelModal
-            onConfirm={(reason, note) => handleCancel(reason, note)}
-            onClose={() => { setShowCancel(false); setCancelError(''); }}
-            loading={cancelLoading}
-            isOneOnOne={isOneOnOne}
-            error={cancelError}
-          />
-        )}
         {showSos && (
           <SosModal
             selectedThreats={selectedThreats}
@@ -1127,13 +963,29 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
           style={{ marginBottom: 20 }}
         >
           <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#f5f5f5', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-            {isOneOnOne ? 'BAŞ BAŞA' : 'KATILIMCILAR'}
+            {isOneOnOne ? 'BAŞ BAŞA' : masa.type === 'KANKA' ? 'KANKA ÇİFTLERİ' : 'KATILIMCILAR'}
           </p>
+          {masa.type === 'KANKA' ? (
+            // Kankamla: kim kimin kankası — iki çift ayrı satırda
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {(['MINE', 'OTHER'] as const).map((pair, gi) => (
+                <div key={pair} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {masa.participants.filter((p) => (p as { pair?: string }).pair === pair).map((p, i) => (
+                    <DetayAvatar key={`${pair}-${p.initials}-${i}`} participant={p} delay={0.52 + (gi * 2 + i) * 0.1} />
+                  ))}
+                  <span style={{ fontSize: 11, color: 'rgba(245,245,245,0.6)', fontFamily: 'Inter, sans-serif' }}>
+                    {pair === 'MINE' ? 'Sen ve kankan' : 'Karşı kanka çifti'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
           <div style={isOneOnOne ? { display: 'flex', gap: 10, flexWrap: 'wrap' } : { display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gap: 10 }}>
             {ordered.map((p, i) => (
               <DetayAvatar key={`${p.initials}-${i}`} participant={p} delay={0.52 + i * 0.1} />
             ))}
           </div>
+          )}
         </motion.div>
 
         {masa.aiReport && (
@@ -1210,7 +1062,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
         </motion.div>
 
         {/* Yola Çıktım butonu */}
-        {authHeaders && !cancelled && (
+        {authHeaders && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1236,59 +1088,13 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
           </motion.div>
         )}
 
-        {/* Rezervasyon iptal butonu */}
-        {authHeaders && !cancelled && !cancelDeadlinePassed && masa.cancelRightUsed && (
-          <p style={{ margin: '0 0 16px', fontSize: 12, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-            Bu paket için iptal hakkınızı kullandınız.
-          </p>
-        )}
-        {authHeaders && !cancelled && !cancelDeadlinePassed && !masa.cancelRightUsed && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: masa.aiReport ? 0.84 : 0.74, duration: 0.4 }}
-            style={{ marginBottom: mapLink ? 16 : 10 }}
-          >
-            <button
-              onClick={() => setShowCancel(true)}
-              style={{
-                width: '100%', padding: '13px 0',
-                background: 'rgba(192,57,43,0.2)', border: '1px solid rgba(192,57,43,0.5)',
-                borderRadius: 9999, cursor: 'pointer',
-                color: '#ff6b6b', fontSize: 12, fontWeight: 700,
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-                fontFamily: 'Inter, sans-serif', transition: 'background 0.2s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(192,57,43,0.3)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(192,57,43,0.2)')}
-            >
-              Rezervasyon İptal
-            </button>
-          </motion.div>
-        )}
-
-        {cancelled && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            style={{
-              padding: '12px 14px', borderRadius: 10,
-              background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.2)',
-              marginBottom: 16, textAlign: 'center',
-            }}
-          >
-            <p style={{ margin: 0, fontSize: 13, color: '#c0392b', fontFamily: 'Inter, sans-serif' }}>
-              Rezervasyonunuz iptal edildi.
-            </p>
-          </motion.div>
-        )}
-
         {/* Sohbet bölümü */}
-        {hasChat && !cancelled && (
+        {hasChat && (
           <ChatSection meetingId={masa.id} apiBase={apiBase!} token={token} />
         )}
 
         {/* Masaya gelmeyen işaretleme */}
-        {hasChat && !cancelled && (
+        {hasChat && (
           <NoShowSection meetingId={masa.id} apiBase={apiBase!} token={token} />
         )}
 
