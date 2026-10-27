@@ -71,7 +71,7 @@ export default function SiteFooter() {
           </p>
           <p style={{ color: '#f5f5f5', fontSize: '0.78rem', lineHeight: '1.5' }}>
             Ahenk bir{' '}
-            <a href="https://traders.tr" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            <a href="https://traders.tr" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', whiteSpace: 'nowrap', cursor: 'pointer', pointerEvents: 'auto' }}>
               <span style={{ color: '#e8e8e8', fontWeight: 700 }}>Traders</span>
               <span style={{ color: '#4a90d9', fontWeight: 800 }}>.TR</span>
               <span style={{ marginLeft: '3px' }}>🇹🇷</span>
