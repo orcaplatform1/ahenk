@@ -71,9 +71,11 @@ export default function SiteFooter() {
           </p>
           <p style={{ color: '#f5f5f5', fontSize: '0.78rem', lineHeight: '1.5' }}>
             Ahenk bir{' '}
-            <span style={{ color: '#e8e8e8', fontWeight: 700 }}>Traders</span>
-            <span style={{ color: '#4a90d9', fontWeight: 800 }}>.TR</span>
-            <span style={{ marginLeft: '3px' }}>🇹🇷</span>
+            <a href="https://traders.tr" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>
+              <span style={{ color: '#e8e8e8', fontWeight: 700 }}>Traders</span>
+              <span style={{ color: '#4a90d9', fontWeight: 800 }}>.TR</span>
+              <span style={{ marginLeft: '3px' }}>🇹🇷</span>
+            </a>
             {' '}ticari markasıdır.
           </p>
         </div>
@@ -87,8 +89,6 @@ export default function SiteFooter() {
               target={l.external ? '_blank' : undefined}
               rel={l.external ? 'noopener noreferrer' : undefined}
               style={{ color: '#333', fontSize: '0.7rem', textDecoration: 'none' }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#666'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#333'; }}
             >
               {l.label}
             </Link>
