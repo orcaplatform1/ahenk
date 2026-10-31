@@ -730,12 +730,15 @@ export class AdminService {
     meetingId: string,
     data: { locationText?: string; locationUrl?: string; scheduledAt?: string },
   ) {
-    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { id: true } });
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { id: true, locationText: true } });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
 
+    // Admin farklı mekân yazarsa otomatik atama bağı kalkar (mekânın masa listesinden ve kontenjanından düşer)
+    const manualVenue = data.locationText !== undefined && data.locationText !== meeting.locationText;
     const updated = await this.prisma.meeting.update({
       where: { id: meetingId },
       data: {
+        ...(manualVenue ? { venueId: null } : {}),
         locationText: data.locationText,
         locationUrl: data.locationUrl,
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
@@ -906,6 +909,8 @@ export class AdminService {
   async deleteVenue(venueId: string) {
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) throw new NotFoundException("Mekan bulunamadı");
+    const account = await this.prisma.venueAccount.findUnique({ where: { venueId }, select: { id: true } });
+    if (account) throw new BadRequestException("Panel hesabı olan mekan silinemez, pasife alın");
     await this.prisma.venue.delete({ where: { id: venueId } });
     return { deleted: true, id: venueId };
   }
@@ -1541,13 +1546,98 @@ export class AdminService {
   }
 
   async listPartnerships() {
-    return this.prisma.partnershipApplication.findMany({ orderBy: { createdAt: 'desc' } });
+    return this.prisma.partnershipApplication.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { account: { select: { status: true, registeredAt: true, approvedAt: true, deactivatedAt: true } } },
+    });
   }
 
-  async updatePartnership(id: string, data: { status?: PartnershipStatus; adminNote?: string }) {
+  async updatePartnership(id: string, data: { status?: PartnershipStatus; adminNote?: string; cityId?: string }) {
+    const application = await this.prisma.partnershipApplication.findUnique({
+      where: { id },
+      include: { account: { select: { id: true } } },
+    });
+    if (!application) throw new NotFoundException("Başvuru bulunamadı");
+
+    if (data.status === PartnershipStatus.APPROVED && !application.account) {
+      throw new BadRequestException("Bu başvurunun panel hesabı yok (eski form)");
+    }
+    if (application.account && data.status) {
+      if (data.status === PartnershipStatus.APPROVED) return this.approvePartnership(application, data);
+      if (data.status === PartnershipStatus.REJECTED) return this.rejectPartnership(application, data.adminNote);
+      throw new BadRequestException("Hesaplı başvuru sadece onaylanabilir veya reddedilebilir");
+    }
+
     return this.prisma.partnershipApplication.update({
       where: { id },
       data: { status: data.status, adminNote: data.adminNote },
+    });
+  }
+
+  // Başvurudaki şehir adı ("Balıkesir (Ayvalık-Akçay)" gibi) şehir kaydıyla eşleştirilir
+  private async partnershipCityId(cityName: string, cityId?: string) {
+    const city = await this.prisma.city.findFirst({
+      where: cityId ? { id: cityId } : { name: cityName.split(" (")[0].trim() },
+      select: { id: true },
+    });
+    if (!city) throw new BadRequestException("Şehir bulunamadı, onay için şehir seçin");
+    return city.id;
+  }
+
+  private async approvePartnership(
+    app: Prisma.PartnershipApplicationGetPayload<{ include: { account: { select: { id: true } } } }>,
+    data: { adminNote?: string; cityId?: string },
+  ) {
+    const cityId = await this.partnershipCityId(app.city, data.cityId);
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Çift tıklamada ikinci mekân oluşmasın
+      const claimed = await tx.partnershipApplication.updateMany({
+        where: { id: app.id, status: PartnershipStatus.PENDING },
+        data: { status: PartnershipStatus.APPROVED, adminNote: data.adminNote },
+      });
+      if (claimed.count === 0) throw new BadRequestException("Başvuru zaten sonuçlanmış");
+      const venue = await tx.venue.create({
+        data: {
+          name: app.businessName,
+          description: app.description,
+          category: VenueCategory.ORTA,
+          venueType: app.alcoholStatus ?? VenueType.NON_ALCOHOLIC,
+          cityId,
+          address: app.address,
+          locationUrl: app.locationUrl,
+          websiteOrSocial: app.websiteOrSocial,
+          photos: app.photos,
+          capacity: app.capacity,
+        },
+      });
+      await tx.venueAccount.update({
+        where: { id: app.account!.id },
+        data: { status: "ACTIVE", approvedAt: new Date(), venueId: venue.id },
+      });
+      return tx.partnershipApplication.findUniqueOrThrow({ where: { id: app.id } });
+    });
+
+    const loginUrl = `${process.env.APP_URL ?? "https://ahenk.co"}/mekan/giris`;
+    await this.whatsapp.send(app.phone, "ahenk_venue_approved", [app.businessName, loginUrl])
+      .catch((err: unknown) => console.error(`Mekân onay mesajı gönderilemedi: ${err}`));
+    return updated;
+  }
+
+  private async rejectPartnership(
+    app: Prisma.PartnershipApplicationGetPayload<{ include: { account: { select: { id: true } } } }>,
+    adminNote?: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.partnershipApplication.updateMany({
+        where: { id: app.id, status: PartnershipStatus.PENDING },
+        data: { status: PartnershipStatus.REJECTED, adminNote },
+      });
+      if (claimed.count === 0) throw new BadRequestException("Başvuru zaten sonuçlanmış");
+      await tx.venueAccount.update({
+        where: { id: app.account!.id },
+        data: { status: "REJECTED", tokenVersion: { increment: 1 } },
+      });
+      return tx.partnershipApplication.findUniqueOrThrow({ where: { id: app.id } });
     });
   }
 

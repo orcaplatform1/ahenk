@@ -228,6 +228,8 @@ model Meeting {
   venueAddress         String? // Mekan adresi (ayrı alan)
   locationUrl          String? // Google Maps URL
   locationText         String? // Fiziksel mekan adı
+  venueId              String? // Kilit sonrası otomatik atanan ortak mekân (elle yazılan mekânda boş)
+  venue                Venue?         @relation(fields: [venueId], references: [id], onDelete: SetNull)
   registrationDeadline DateTime? // Kayıt kapanış (Cumartesi 10:00, uzatılabilir)
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
@@ -242,6 +244,7 @@ model Meeting {
   participantLocations ParticipantLocation[]
 
   @@index([cityId])
+  @@index([venueId, scheduledAt])
 }
 
 model MeetingAiReport {
@@ -623,10 +626,60 @@ model Venue {
   latitude    Float?
   longitude   Float?
   isActive    Boolean       @default(true)
+  // Mekân panelinden yönetilen alanlar (admin'in elle eklediği mekânlarda boş kalabilir)
+  locationUrl     String?
+  websiteOrSocial String?
+  photos          String[]  @default([])
+  capacity        Int?      // Varsayılan haftalık kontenjan (kişi); o hafta için kayıt yoksa bu kullanılır
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
+  account         VenueAccount?
+  weeklyCapacities VenueWeeklyCapacity[]
+  meetings        Meeting[]
+
   @@index([cityId])
+}
+
+// Mekânın belirli bir hafta için ayırdığı kontenjan (weekStart: Pazartesi 00:00 TR)
+model VenueWeeklyCapacity {
+  id        String   @id @default(cuid())
+  venueId   String
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  weekStart DateTime
+  capacity  Int
+  updatedAt DateTime @updatedAt
+
+  @@unique([venueId, weekStart])
+}
+
+// Mekân paneli hesabı: kullanıcı ve admin hesaplarından tamamen ayrı
+model VenueAccount {
+  id            String             @id @default(cuid())
+  applicationId String             @unique
+  application   PartnershipApplication @relation(fields: [applicationId], references: [id])
+  venueId       String?            @unique // Onayda oluşur
+  venue         Venue?             @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  email         String             @unique
+  phone         String
+  passwordHash  String
+  status        VenueAccountStatus @default(PENDING)
+  tokenVersion  Int                @default(0) // Şifre değişince/hesap kapanınca eski oturumlar düşer
+  registeredAt  DateTime           @default(now()) // Mekânın kayıt tarihi (ücretli aboneliğe geçişte kullanılacak)
+  approvedAt    DateTime?
+  deactivatedAt DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([phone])
+  @@index([status])
+}
+
+enum VenueAccountStatus {
+  PENDING     // Onay bekliyor: giriş yok
+  ACTIVE
+  REJECTED    // Giriş yok
+  DEACTIVATED // Mekân hesabını kapattı: giriş yok, kayıt admin tarafında kalır
 }
 
 enum VenueCategory {
@@ -714,8 +767,14 @@ model PartnershipApplication {
   capacity        Int
   description     String?           @db.Text
   websiteOrSocial String?
+  address         String?
+  locationUrl     String?
+  alcoholStatus   VenueType?
+  referenceCode   String?           // Personel referans kodu (opsiyonel)
+  photos          String[]          @default([])
   status          PartnershipStatus @default(PENDING)
   adminNote       String?           @db.Text
+  account         VenueAccount?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 

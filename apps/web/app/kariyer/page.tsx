@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import Link from 'next/link';
+import SiteSelect from '@/components/SiteSelect';
 
 /* ── Count-up ─────────────────────────────────────────────────── */
 function useCountUp(target: number, duration = 1600, start = false) {
@@ -362,14 +363,10 @@ function SelectField({ label, value, options, onChange, required }: {
   label: string; value: string; options: string[]; onChange: (v: string) => void; required?: boolean;
 }) {
   return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
       <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} required={required}
-        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: value ? '#f5f5f5' : '#666', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box', appearance: 'none' }}>
-        <option value="" style={{ background: '#1a1a1a' }}>Seçin...</option>
-        {options.map((o) => <option key={o} value={o} style={{ background: '#1a1a1a' }}>{o}</option>)}
-      </select>
-    </label>
+      <SiteSelect value={value} onChange={onChange} options={options} required={required} ariaLabel={label} />
+    </div>
   );
 }
 

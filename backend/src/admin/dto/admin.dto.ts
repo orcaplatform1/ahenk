@@ -276,6 +276,11 @@ export class UpdatePartnershipDto {
   @IsString()
   @MaxLength(2000)
   adminNote?: string;
+
+  // Onayda şehir eşleşmezse (örn. "Diğer") admin seçer
+  @IsOptional()
+  @IsString()
+  cityId?: string;
 }
 
 export class UpdateCareerDto {

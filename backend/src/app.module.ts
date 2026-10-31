@@ -22,6 +22,7 @@ import { ReferralModule } from "./referral/referral.module";
 import { KankaModule } from "./kanka/kanka.module";
 import { ChatModule } from "./chat/chat.module";
 import { SosModule } from "./sos/sos.module";
+import { VenuePanelModule } from "./venue-panel/venue-panel.module";
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { SosModule } from "./sos/sos.module";
     MeetingsModule,
     ContactBlocksModule,
     PartnershipsModule,
+    VenuePanelModule,
     ReferralModule,
     KankaModule,
     CareersModule,
