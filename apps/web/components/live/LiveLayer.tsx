@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getNextTarget } from '@/components/HeroCountdown';
-import { PremiumToggle, type MasaTuru } from '@ahenk/ui';
+import type { MasaTuru } from '@ahenk/ui';
 import LiveSonar from './LiveSonar';
 import { LEVELS } from './levels';
 import LiveFeed from './LiveFeed';
+import LiveTabs, { type TabStatus } from './LiveTabs';
 import type { LiveFill, LiveOverview, LivePulse, OceanKey } from './types';
 
 const PULSE_MS = 15_000;
@@ -15,7 +16,7 @@ const OVERVIEW_MS = 60_000;
 // Masa türüne göre kapanış günü ve kart metinleri (0=Pazar … 6=Cumartesi, 23:59)
 const TABLE_TEXT: Record<MasaTuru, { day: number; title: string; note: string }> = {
   GROUP: { day: 4, title: 'Grup masası kurulmasına', note: "Perşembe 23:59'da masalar kapanır." },
-  ONE_ON_ONE: { day: 5, title: 'Baş başa masa kurulmasına', note: "Cuma 23:59'da masalar kapanır." },
+  ONE_ON_ONE: { day: 5, title: 'Baş Başa masası kurulmasına', note: "Cuma 23:59'da masalar kapanır." },
   KANKA: { day: 6, title: 'Kankamla masası kurulmasına', note: "Cumartesi 23:59'da masalar kapanır." },
 };
 
@@ -26,6 +27,8 @@ const SCAN_START_DAY = 0;
 export function isPastClosing(tab: MasaTuru) {
   return getNextTarget(SCAN_START_DAY).getTime() < getNextTarget(TABLE_TEXT[tab].day).getTime();
 }
+
+const MASA_TURLERI: MasaTuru[] = ['GROUP', 'ONE_ON_ONE', 'KANKA'];
 
 const OCEAN_LABEL: Record<OceanKey, string> = {
   openness: 'Açıklık',
@@ -123,30 +126,36 @@ function heatColor(index: number, count: number) {
   return `rgba(255,255,255,${mix(0.08, 0.045)})`;
 }
 
-export default function LiveLayer({ activePlan, hasTabTable, tab, tabs, onTab, participation }: {
+export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables, onTab, notice, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
   tab: MasaTuru;
-  tabs: MasaTuru[];
+  rights: Record<MasaTuru, boolean>; // Türde aktif paket hakkı
+  tables: Record<MasaTuru, boolean>; // Türde bu hafta masa
   onTab: (tab: MasaTuru) => void;
+  notice?: React.ReactNode; // Sekmelerin hemen üstü
   participation: React.ReactNode;
 }) {
   const router = useRouter();
   // Şehir backend'de activeCity → primaryCity sırasıyla çözülür
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
-  const [shineKey, setShineKey] = useState(0);
-  const [pastClosing, setPastClosing] = useState(() => isPastClosing(tab));
+  const pastList = () => MASA_TURLERI.filter(isPastClosing).join();
+  const [pastClosed, setPastClosed] = useState(pastList);
 
   // Tarama başlayınca/kapanınca kart sayfa yenilenmeden değişsin
   useEffect(() => {
-    const check = () => setPastClosing(isPastClosing(tab));
-    check();
-    const id = setInterval(check, 1000);
+    const id = setInterval(() => setPastClosed(pastList()), 1000);
     return () => clearInterval(id);
-  }, [tab]);
+  }, []);
 
-  const waitingScan = pastClosing && !hasTabTable;
+  const statusOf = (t: MasaTuru): TabStatus => {
+    if (tables[t]) return 'TABLE';
+    if (!rights[t]) return 'NONE';
+    return pastClosed.split(',').includes(t) ? 'FAILED' : 'SCANNING';
+  };
+  const statuses = { GROUP: statusOf('GROUP'), ONE_ON_ONE: statusOf('ONE_ON_ONE'), KANKA: statusOf('KANKA') };
+  const waitingScan = pastClosed.split(',').includes(tab) && !hasTabTable;
 
   const city = overview?.city;
   const seats = overview?.groupSeatsLeft ?? null;
@@ -161,11 +170,12 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, tabs, onTab, p
     <div className="live-layer">
       <div className="ll-glow" aria-hidden="true" />
       <div className="ll-column">
-        <PremiumToggle activeTab={tab} visible={tabs} shineKey={shineKey} onSwitch={(t) => { setShineKey((k) => k + 1); onTab(t); }} />
+        {notice}
+        <LiveTabs tab={tab} statuses={statuses} onTab={onTab} />
 
         {/* Geri sayım */}
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
-          <p className="ll-eyebrow">{waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</p>
+          <p key={tab} className="ll-eyebrow ll-fade">{waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</p>
           <Countdown day={waitingScan ? SCAN_START_DAY : TABLE_TEXT[tab].day} />
           <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>
             {waitingScan ? "Pazar 23:59'da yeni tarama başlar." : TABLE_TEXT[tab].note}
@@ -190,7 +200,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, tabs, onTab, p
         </section>
 
         <LiveSonar sonar={pulse?.sonar ?? null} />
-        {participation}
+        <div key={tab} className="ll-fade">{participation}</div>
         <LiveFeed feed={pulse?.feed ?? null} />
 
         {/* Isı haritası */}

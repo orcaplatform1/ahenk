@@ -12,6 +12,7 @@ import { NotificationService } from "../notification/notification.service";
 import { cancellationNotice, initialsOf } from "./cancellation-notice";
 import { restoreOneOnOneRights } from "../matching/one-on-one-right";
 import { cancelDeadline, noShowCardWindow, sosWindowEnd } from "./meeting-windows";
+import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { chargeKankaRight, pairKankaSub } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
@@ -83,7 +84,22 @@ export class MeetingsService {
       select: { meeting: { select: meetingSelect } },
     }).then((rows) => rows.filter(({ meeting }) => sosWindowEnd(meeting.scheduledAt) > new Date()));
 
-    if (parts.length === 0) return { items: [] };
+    // Bu hafta masası olan türler: buluşma bitip kart kalksa da /dashboard sekmesi "Masa Kuruldu" kalır
+    const weekStart = trWeekStart();
+    const weekRows = await this.prisma.meetingParticipant.findMany({
+      where: {
+        userId,
+        status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED] },
+        meeting: {
+          status: { not: MeetingStatus.CANCELLED },
+          scheduledAt: { gte: weekStart, lt: new Date(weekStart.getTime() + WEEK_MS) },
+        },
+      },
+      select: { meeting: { select: { type: true } } },
+    });
+    const weekTableTypes = [...new Set(weekRows.map((r) => r.meeting.type))];
+
+    if (parts.length === 0) return { items: [], weekTableTypes };
     const cancelRightUsed = await this.groupCancelRightUsed(userId);
     const kankaCancelUsed = parts.some(({ meeting }) => meeting.type === MeetingType.KANKA)
       ? await this.kankaCancelRightUsed(userId)
@@ -107,6 +123,7 @@ export class MeetingsService {
               initials: `${(f[0] ?? '?').toUpperCase()}.${(l[0] ?? '?').toUpperCase()}.`,
               gender: p.user.profile?.gender ?? null,
               joinedAt: p.createdAt, // Katılım listesi giriş sırası
+              ...(p.status === ParticipantStatus.CANCELLED && { cancelled: true }), // Katılım alanı ekranda eler
               ...(m.type === MeetingType.KANKA && {
                 pair: p.userId === userId || p.userId === myKankaId ? ('MINE' as const) : ('OTHER' as const),
               }),
@@ -151,7 +168,7 @@ export class MeetingsService {
       }),
     );
 
-    return { items };
+    return { items, weekTableTypes };
   }
 
   // ─── Geçmiş masalar ─────────────────────────────────────────────────────────
