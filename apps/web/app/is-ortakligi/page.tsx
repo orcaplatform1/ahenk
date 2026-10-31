@@ -5,7 +5,7 @@ import { motion, useInView } from 'framer-motion';
 import Link from 'next/link';
 import OtpInput from '@/components/ui/OtpInput';
 import SiteSelect from '@/components/SiteSelect';
-import { API_PREFIX } from '@/lib/api';
+import { API_PREFIX, api } from '@/lib/api';
 import { readError } from '@/lib/venueApi';
 
 /* ── Count-up hook ────────────────────────────────────────────── */
@@ -93,8 +93,10 @@ export default function IsOrtakligiPage() {
   const [form, setForm] = useState({
     businessName: '', contactName: '', email: '', phone: '',
     city: '', venueType: '', capacity: '', description: '', websiteOrSocial: '',
-    password: '', passwordConfirm: '', address: '', locationUrl: '', alcoholStatus: '', referenceCode: '',
+    password: '', passwordConfirm: '', district: '', address: '', locationUrl: '', alcoholStatus: '', referenceCode: '',
   });
+  const [districts, setDistricts] = useState<Record<string, string[]>>({});
+  const districtOptions = districts[form.city.split(' (')[0]] ?? [];
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
 
@@ -114,6 +116,10 @@ export default function IsOrtakligiPage() {
   function scrollToForm() {
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+
+  useEffect(() => {
+    api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -479,10 +485,18 @@ export default function IsOrtakligiPage() {
                     <Field label="Şifre Tekrar *" type="password" value={form.passwordConfirm} onChange={(v) => setForm(f => ({ ...f, passwordConfirm: v }))} required />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    <SelectField label="Şehir *" value={form.city} options={CITIES} onChange={(v) => setForm(f => ({ ...f, city: v }))} required />
+                    <SelectField label="Şehir *" value={form.city} options={CITIES} onChange={(v) => setForm(f => ({ ...f, city: v, district: '' }))} required />
                     <SelectField label="Mekân Türü *" value={form.venueType} options={VENUE_TYPES} onChange={(v) => setForm(f => ({ ...f, venueType: v }))} required />
                   </div>
                   <Field label="Tahsis Edilebilir Kapasite (kişi) *" type="number" value={form.capacity} onChange={(v) => setForm(f => ({ ...f, capacity: v }))} required placeholder="Örn: 20" />
+                  {districtOptions.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>İlçe *</span>
+                      <SiteSelect key={form.city} value={form.district} onChange={(v) => setForm(f => ({ ...f, district: v }))} options={districtOptions} placeholder="İlçe seçin" ariaLabel="İlçe" searchable searchPlaceholder="İlçe ara" required />
+                    </div>
+                  ) : (
+                    <Field label="İlçe *" value={form.district} onChange={(v) => setForm(f => ({ ...f, district: v }))} required />
+                  )}
                   <SelectField label="Alkol Durumu *" value={form.alcoholStatus} options={ALCOHOL_OPTIONS} onChange={(v) => setForm(f => ({ ...f, alcoholStatus: v }))} required />
                   <TextareaField label="Açık Adres *" value={form.address} onChange={(v) => setForm(f => ({ ...f, address: v }))} maxLength={300} required />
                   <Field label="Google Maps Konum Linki *" type="url" value={form.locationUrl} onChange={(v) => setForm(f => ({ ...f, locationUrl: v }))} required placeholder="https://maps.app.goo.gl/..." />

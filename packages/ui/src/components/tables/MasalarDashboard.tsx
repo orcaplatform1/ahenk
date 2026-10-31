@@ -4,6 +4,7 @@ import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } f
 import { motion, AnimatePresence } from 'framer-motion';
 import { MasaDetayKarti, type MasaDetayData } from './MasaDetayKarti';
 import { RezervasyonIptal, type ModalPortal } from './RezervasyonIptal';
+import { AhenkSonar } from '../sonar/AhenkSonar';
 
 // ── Sabitler ───────────────────────────────────────────────────────────────
 const RADAR_SZ   = 340;
@@ -380,6 +381,7 @@ function useRadarScale(maxScale = 1) {
 }
 
 // ── Radar sweep ──────────────────────────────────────────────────────────────
+// KULLANILMIYOR: radar ortak AhenkSonar'a geçti, temizlikte kaldırılabilir
 function RadarSweep({ running, cx, cy, sweepPath }: { running: boolean; cx: number; cy: number; sweepPath: string }) {
   const gRef = useRef<SVGGElement>(null);
   const angleRef = useRef(0);
@@ -409,9 +411,7 @@ function RadarSweep({ running, cx, cy, sweepPath }: { running: boolean; cx: numb
 }
 
 // ── Canvas Radar ─────────────────────────────────────────────────────────────
-const CANVAS_R   = 167;   // dış yarıçap (340px canvas)
 const AVATAR_RIM = 134;   // avatar orbit yarıçapı (340px canvas)
-const SWEEP_SPD  = 0.028; // radyan/kare
 
 const SLOT_ANGLES_6 = [270, 330, 30, 90, 150, 210];
 const SLOT_ANGLES_2 = [270, 90];
@@ -424,16 +424,8 @@ const RadarCanvas = forwardRef<RadarCanvasHandle, {
   type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   children?: React.ReactNode;
 }>(function RadarCanvas({ type, children }, ref) {
-  const canvasRef   = useRef<HTMLCanvasElement>(null);
   const profilesRef = useRef<HTMLDivElement>(null);
-  const rafRef      = useRef<number>(0);
-  const stateRef    = useRef({
-    sweepAngle: -Math.PI / 2,
-    connections: [] as Array<{ slotIdx: number; alpha: number }>,
-    avatarsData: [] as Array<{ gender: string } | undefined>,
-    nextSlot: 0,
-    particles: [] as Array<{ angle: number; r: number; speed: number; alpha: number; size: number; drift: number }>,
-  });
+  const stateRef    = useRef({ nextSlot: 0 });
 
   const slots = type === 'ONE_ON_ONE' ? SLOT_ANGLES_2 : SLOT_ANGLES_6;
   const slotsRef = useRef(slots);
@@ -443,93 +435,6 @@ const RadarCanvas = forwardRef<RadarCanvasHandle, {
     const a = (slotsRef.current[idx] * Math.PI) / 180;
     return { x: CX + AVATAR_RIM * Math.cos(a), y: CY + AVATAR_RIM * Math.sin(a) };
   }
-
-  useEffect(() => {
-    const s = stateRef.current;
-    s.particles = Array.from({ length: 38 }, () => ({
-      angle: Math.random() * Math.PI * 2,
-      r:     20 + Math.random() * 95,
-      speed: (0.002 + Math.random() * 0.005) * (Math.random() < 0.5 ? 1 : -1),
-      alpha: 0.15 + Math.random() * 0.6,
-      size:  0.8 + Math.random() * 1.4,
-      drift: (Math.random() - 0.5) * 0.003,
-    }));
-
-    const canvas = canvasRef.current!;
-    const ctx    = canvas.getContext('2d')!;
-
-    function draw() {
-      ctx.clearRect(0, 0, RADAR_SZ, RADAR_SZ);
-
-      const bg = ctx.createRadialGradient(CX, CY, 40, CX, CY, CANVAS_R);
-      bg.addColorStop(0,   'rgba(180,20,45,0.18)');
-      bg.addColorStop(0.7, 'rgba(180,20,45,0.09)');
-      bg.addColorStop(1,   'rgba(180,20,45,0.28)');
-      ctx.fillStyle = bg;
-      ctx.beginPath(); ctx.arc(CX, CY, CANVAS_R, 0, Math.PI * 2); ctx.fill();
-
-      [36, 75, 112, CANVAS_R - 2].forEach((r, i) => {
-        ctx.beginPath(); ctx.arc(CX, CY, r, 0, Math.PI * 2);
-        ctx.strokeStyle = i === 3 ? 'rgba(200,30,50,0.55)' : 'rgba(200,30,50,0.30)';
-        ctx.lineWidth = i === 3 ? 1.5 : 0.8; ctx.stroke();
-      });
-
-      ctx.strokeStyle = 'rgba(192,57,43,0.10)'; ctx.lineWidth = 0.7;
-      ([[CX, CY - CANVAS_R, CX, CY + CANVAS_R], [CX - CANVAS_R, CY, CX + CANVAS_R, CY]] as number[][]).forEach(([x1,y1,x2,y2]) => {
-        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-      });
-
-      ctx.save();
-      ctx.translate(CX, CY);
-      ctx.rotate(s.sweepAngle);
-      const SPREAD = Math.PI / 5;
-      const cg = ctx.createLinearGradient(0, 0, CANVAS_R, 0);
-      cg.addColorStop(0,   'rgba(180,20,45,0)');
-      cg.addColorStop(0.5, 'rgba(180,20,45,0.35)');
-      cg.addColorStop(1,   'rgba(180,20,45,0.65)');
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, CANVAS_R, 0, SPREAD); ctx.closePath();
-      ctx.fillStyle = cg; ctx.fill();
-      ctx.beginPath(); ctx.moveTo(0, 0);
-      ctx.lineTo(CANVAS_R * Math.cos(SPREAD), CANVAS_R * Math.sin(SPREAD));
-      ctx.strokeStyle = 'rgba(200,30,50,1.0)'; ctx.lineWidth = 1.2; ctx.stroke();
-      ctx.restore();
-
-      s.particles.forEach(p => {
-        p.angle += p.speed;
-        p.drift = p.drift * 0.99 + (Math.random() - 0.5) * 0.0004;
-        p.r = Math.max(12, Math.min(p.r + p.drift, CANVAS_R - 6));
-        const px = CX + p.r * Math.cos(p.angle);
-        const py = CY + p.r * Math.sin(p.angle);
-        ctx.beginPath(); ctx.arc(px, py, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(200,30,50,${p.alpha * 1.0})`; ctx.fill();
-      });
-
-      s.connections.forEach(({ slotIdx, alpha }) => {
-        const pos = slotPos(slotIdx);
-        const isMale = s.avatarsData[slotIdx]?.gender !== 'female';
-        const lc = isMale ? `rgba(74,158,255,${alpha * 0.45})` : `rgba(255,126,179,${alpha * 0.45})`;
-        ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(pos.x, pos.y);
-        ctx.strokeStyle = lc; ctx.lineWidth = 0.8; ctx.stroke();
-        ctx.beginPath(); ctx.arc(CX, CY, 3, 0, Math.PI * 2);
-        ctx.fillStyle = isMale ? `rgba(74,158,255,${alpha * 0.7})` : `rgba(255,126,179,${alpha * 0.7})`; ctx.fill();
-      });
-
-      ctx.save();
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.beginPath(); ctx.arc(CX, CY, CANVAS_R, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
-
-    function loop() {
-      s.sweepAngle = (s.sweepAngle + SWEEP_SPD) % (Math.PI * 2);
-      s.connections.forEach(c => { c.alpha = Math.min(c.alpha + 0.02, 1); });
-      draw();
-      rafRef.current = requestAnimationFrame(loop);
-    }
-    rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useImperativeHandle(ref, () => ({
     addAvatar(initials: string, gender: string) {
@@ -548,9 +453,6 @@ const RadarCanvas = forwardRef<RadarCanvasHandle, {
       el.style.left = pos.x + 'px';
       el.style.top  = pos.y + 'px';
       profiles.appendChild(el);
-
-      s.avatarsData[idx] = { gender: g };
-      s.connections.push({ slotIdx: idx, alpha: 0 });
 
       requestAnimationFrame(() => {
         el.classList.add('av-arriving');
@@ -585,11 +487,9 @@ const RadarCanvas = forwardRef<RadarCanvasHandle, {
         .av-rc.av-female::after { box-shadow: 0 0 16px 4px rgba(255,126,179,0.6); }
         .av-rc.av-glow::after   { opacity: 1; }
       `}</style>
-      <canvas
-        ref={canvasRef}
-        width={RADAR_SZ} height={RADAR_SZ}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-      />
+      <div style={{ position: 'absolute', inset: 0 }}>
+        <AhenkSonar width="100%" ariaLabel="Eşleşme taraması" />
+      </div>
       <div ref={profilesRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
       {children}
     </div>
@@ -761,15 +661,9 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
           transform: `scale(${radarScale})`, transformOrigin: 'top center',
           marginBottom: RADAR_SZ * (radarScale - 1),
         }}>
-          <svg width={RADAR_SZ} height={RADAR_SZ} viewBox={`0 0 ${RADAR_SZ} ${RADAR_SZ}`} style={{ position: 'absolute', inset: 0 }}>
-            {[36, 75, 112, ORBIT_R].map((r, i) => (
-              <circle key={r} cx={CX} cy={CY} r={r} fill="none" stroke="#27ae60"
-                strokeWidth={i === 3 ? 1 : 0.8} opacity={i === 3 ? 0.35 : 0.12} />
-            ))}
-            <line x1={CX} y1={CY - ORBIT_R - 8} x2={CX} y2={CY + ORBIT_R + 8} stroke="#27ae60" strokeWidth={0.6} opacity={0.1} />
-            <line x1={CX - ORBIT_R - 8} y1={CY} x2={CX + ORBIT_R + 8} y2={CY} stroke="#27ae60" strokeWidth={0.6} opacity={0.1} />
-            <circle cx={CX} cy={CY} r={5} fill="#27ae60" opacity={0.7} />
-          </svg>
+          <div style={{ position: 'absolute', inset: 0 }}>
+            <AhenkSonar width="100%" ariaLabel="Masa oluşturuldu" />
+          </div>
           <AnimatePresence>
             {ordered.map((p, i) => {
               const pos = positions[i];

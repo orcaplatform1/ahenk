@@ -80,6 +80,11 @@ export class ApplyPartnershipDto {
   address: string;
 
   @IsString()
+  @MinLength(2, { message: 'İlçe seçin' })
+  @MaxLength(60)
+  district: string;
+
+  @IsString()
   @MaxLength(500)
   @Matches(GOOGLE_MAPS_URL, { message: GOOGLE_MAPS_URL_MESSAGE })
   locationUrl: string;

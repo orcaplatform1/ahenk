@@ -1,3 +1,4 @@
+import { matchScore } from "./match-score";
 import { Injectable, Logger, NotFoundException, BadRequestException } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
@@ -997,28 +998,7 @@ export class MatchingService {
   }
 
   private scoreTwo(a: EligibleUser, b: EligibleUser): number {
-    return (
-      this.calcOcean(a.oceanScore, b.oceanScore) +
-      this.calcOccupation(a.occupationSector, b.occupationSector)
-    );
-  }
-
-  private calcOccupation(a: string | null, b: string | null): number {
-    if (!a || !b) return 0;
-    if (a === 'Öğrenci' || a === 'Diğer' || b === 'Öğrenci' || b === 'Diğer') return 0;
-    return a === b ? WEIGHTS.OCCUPATION : 0;
-  }
-
-  private calcOcean(a: OceanScoreData | null, b: OceanScoreData | null): number {
-    if (!a || !b) return WEIGHTS.OCEAN / 2;
-    const d = Math.sqrt(
-      (a.openness - b.openness) ** 2 +
-      (a.conscientiousness - b.conscientiousness) ** 2 +
-      (a.extraversion - b.extraversion) ** 2 +
-      (a.agreeableness - b.agreeableness) ** 2 +
-      (a.neuroticism - b.neuroticism) ** 2,
-    );
-    return (1 - d / OCEAN_MAX_DISTANCE) * WEIGHTS.OCEAN;
+    return matchScore(a, b);
   }
 
   // ─── Bot yönetimi ─────────────────────────────────────────────────────────

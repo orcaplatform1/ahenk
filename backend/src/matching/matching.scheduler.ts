@@ -42,6 +42,16 @@ export class MatchingScheduler {
     }
   }
 
+  // Kart açılışından 2 saat önce (Cuma/Cmt/Pazar 08:00): hâlâ mekânsız masalar için admin'e tekrar uyarı
+  @Cron("0 8 * * 5,6,0", { timeZone: "Europe/Istanbul" })
+  async remindMissingVenues(): Promise<void> {
+    try {
+      await this.venueAssignment.remindMissingVenues();
+    } catch (err) {
+      this.logger.error(`Mekânsız masa hatırlatma hatası: ${err}`);
+    }
+  }
+
   // Her saat başı: saati 6 saat geçmiş masaları kapat
   // ACTIVE → COMPLETED (iptal etmeyen katılımcılar ATTENDED), onaylanmamış PENDING → CANCELLED
   @Cron("0 * * * *", { timeZone: "Europe/Istanbul" })

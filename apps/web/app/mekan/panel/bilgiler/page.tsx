@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SiteSelect from '@/components/SiteSelect';
+import { api } from '@/lib/api';
 import { VenueAuthError, VenueMe, mediaUrl, venueApi } from '@/lib/venueApi';
 import { panelCard, useVenuePanel } from '../context';
 
@@ -23,10 +24,16 @@ export default function BilgilerPage() {
   const [form, setForm] = useState({
     description: me.venue.description ?? '',
     address: me.venue.address ?? '',
+    district: me.venue.district ?? '',
     locationUrl: me.venue.locationUrl ?? '',
     websiteOrSocial: me.venue.websiteOrSocial ?? '',
     venueType: me.venue.venueType as string,
   });
+  const [districts, setDistricts] = useState<Record<string, string[]>>({});
+  const districtOptions = districts[me.venue.city] ?? [];
+  useEffect(() => {
+    api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => undefined);
+  }, []);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
@@ -75,6 +82,13 @@ export default function BilgilerPage() {
         </Labeled>
         <Labeled label="Açık Adres">
           <textarea className="input-glass w-full px-4 py-3 text-sm" aria-label="Açık adres" rows={2} maxLength={300} required value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
+        </Labeled>
+        <Labeled label="İlçe">
+          {districtOptions.length > 0 ? (
+            <SiteSelect value={form.district} options={districtOptions} onChange={(v) => setForm((f) => ({ ...f, district: v }))} placeholder="İlçe seçin" required ariaLabel="İlçe" searchable searchPlaceholder="İlçe ara" />
+          ) : (
+            <input className="input-glass w-full px-4 py-3 text-sm" aria-label="İlçe" maxLength={60} required value={form.district} onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))} />
+          )}
         </Labeled>
         <Labeled label="Google Maps Konum Linki">
           <input className="input-glass w-full px-4 py-3 text-sm" aria-label="Konum linki" type="url" required value={form.locationUrl} onChange={(e) => setForm((f) => ({ ...f, locationUrl: e.target.value }))} />

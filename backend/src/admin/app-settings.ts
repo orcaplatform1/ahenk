@@ -8,6 +8,12 @@ export async function isBotSystemActive(prisma: PrismaService): Promise<boolean>
   return row?.value !== "false";
 }
 
+// "Canlı katman ilçe verisi": varsayılan statik
+export async function liveDistrictSource(prisma: PrismaService): Promise<"static" | "real"> {
+  const row = await prisma.appConfig.findUnique({ where: { key: "LIVE_DISTRICT_SOURCE" } });
+  return row?.value === "real" ? "real" : "static";
+}
+
 // "Bakım Modu": paket satın alma ve yeni eşleşmeler durur; kayıt, giriş ve diğer işlemler çalışır
 export async function isMaintenanceMode(prisma: PrismaService): Promise<boolean> {
   const row = await prisma.appConfig.findUnique({ where: { key: "MAINTENANCE_MODE" } });

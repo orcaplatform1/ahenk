@@ -51,6 +51,13 @@ export class RegisterDto {
   @IsString()
   primaryCityId?: string;
 
+  // Listesi olan şehirlerde zorunlu (auth.service doğrular)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  district?: string;
+
   @ApiProperty()
   @IsString()
   @MinLength(1, { message: "Meslek alanı seçin" })

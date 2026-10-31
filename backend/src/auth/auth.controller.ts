@@ -179,6 +179,12 @@ export class AuthController {
     return this.authService.getActiveCities();
   }
 
+  @Get("districts")
+  @ApiOperation({ summary: "Şehir bazında ilçe listesi (public)" })
+  getDistricts() {
+    return this.authService.getDistricts();
+  }
+
   // ─── Yardımcılar ─────────────────────────────────────────────────────────
 
   private isProduction() {

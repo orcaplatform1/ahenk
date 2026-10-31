@@ -14,37 +14,46 @@ interface Props {
   placeholder?: string;
   required?: boolean;
   ariaLabel?: string;
+  searchable?: boolean; // Uzun listelerde üstte arama kutusu
+  searchPlaceholder?: string;
 }
 
 const LIST_MAX_HEIGHT = 280;
 
-export default function SiteSelect({ value, onChange, options, placeholder = 'Seçin...', required, ariaLabel }: Props) {
-  const items: SiteSelectOption[] = options.map((o) => (typeof o === 'string' ? { value: o, label: o } : o));
+export default function SiteSelect({ value, onChange, options, placeholder = 'Seçin...', required, ariaLabel, searchable, searchPlaceholder = 'Ara...' }: Props) {
+  const allItems: SiteSelectOption[] = options.map((o) => (typeof o === 'string' ? { value: o, label: o } : o));
+  const [search, setSearch] = useState('');
+  const needle = search.trim().toLocaleLowerCase('tr-TR');
+  const items = needle ? allItems.filter((o) => o.label.toLocaleLowerCase('tr-TR').includes(needle)) : allItems;
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [pos, setPos] = useState<{ left: number; width: number; top?: number; bottom?: number }>({ left: 0, width: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const typed = useRef({ text: '', at: 0 });
   const id = useId();
-  const selected = items.find((o) => o.value === value);
+  const selected = allItems.find((o) => o.value === value);
 
   const place = useCallback(() => {
     const r = buttonRef.current?.getBoundingClientRect();
     if (!r) return;
     const below = window.innerHeight - r.bottom;
     // Altta yer yoksa ve üstte daha çok varsa yukarı açılır
-    if (below < Math.min(LIST_MAX_HEIGHT, items.length * 46) && r.top > below) {
+    if (below < Math.min(LIST_MAX_HEIGHT, allItems.length * 46) && r.top > below) {
       setPos({ left: r.left, width: r.width, bottom: window.innerHeight - r.top + 6 });
     } else {
       setPos({ left: r.left, width: r.width, top: r.bottom + 6 });
     }
-  }, [items.length]);
+  }, [allItems.length]);
 
   function show() {
     place();
-    setActive(Math.max(0, items.findIndex((o) => o.value === value)));
+    setSearch('');
+    setActive(Math.max(0, allItems.findIndex((o) => o.value === value)));
     setOpen(true);
+    if (searchable) requestAnimationFrame(() => searchRef.current?.focus());
   }
 
   function choose(i: number) {
@@ -57,7 +66,7 @@ export default function SiteSelect({ value, onChange, options, placeholder = 'Se
     if (!open) return;
     function outside(e: PointerEvent) {
       const t = e.target as Node;
-      if (!buttonRef.current?.contains(t) && !listRef.current?.contains(t)) setOpen(false);
+      if (!buttonRef.current?.contains(t) && !panelRef.current?.contains(t)) setOpen(false);
     }
     document.addEventListener('pointerdown', outside);
     window.addEventListener('resize', place);
@@ -82,10 +91,10 @@ export default function SiteSelect({ value, onChange, options, placeholder = 'Se
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
     else if (e.key === 'Home') { e.preventDefault(); setActive(0); }
     else if (e.key === 'End') { e.preventDefault(); setActive(items.length - 1); }
-    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (items[active]) choose(active); }
-    else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); }
+    else if (e.key === 'Enter' || (e.key === ' ' && !searchable)) { e.preventDefault(); if (items[active]) choose(active); }
+    else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); buttonRef.current?.focus(); }
     else if (e.key === 'Tab') setOpen(false);
-    else if (e.key.length === 1) {
+    else if (e.key.length === 1 && !searchable) {
       // Harfle arama
       const now = Date.now();
       const text = (now - typed.current.at > 700 ? '' : typed.current.text) + e.key.toLocaleLowerCase('tr-TR');
@@ -135,16 +144,33 @@ export default function SiteSelect({ value, onChange, options, placeholder = 'Se
       )}
 
       {open && createPortal(
+        <div
+          ref={panelRef}
+          style={{
+            position: 'fixed', zIndex: 200, left: pos.left, width: pos.width, top: pos.top, bottom: pos.bottom,
+            boxSizing: 'border-box', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10,
+            boxShadow: '0 12px 32px rgba(0,0,0,0.6)', fontFamily: 'var(--font-sans, system-ui)', overflow: 'hidden',
+          }}
+        >
+          {searchable && (
+            <div style={{ padding: 6, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setActive(0); }}
+                onKeyDown={onKeyDown}
+                placeholder={searchPlaceholder}
+                aria-label={searchPlaceholder}
+                style={{ width: '100%', minHeight: 40, boxSizing: 'border-box', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '0 0.75rem', color: '#f5f5f5', fontSize: 16, outline: 'none' }}
+              />
+            </div>
+          )}
         <ul
           ref={listRef}
           id={id}
           role="listbox"
-          style={{
-            position: 'fixed', zIndex: 200, left: pos.left, width: pos.width, top: pos.top, bottom: pos.bottom,
-            maxHeight: LIST_MAX_HEIGHT, overflowY: 'auto', margin: 0, padding: 6, listStyle: 'none', boxSizing: 'border-box',
-            background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10,
-            boxShadow: '0 12px 32px rgba(0,0,0,0.6)', fontFamily: 'var(--font-sans, system-ui)',
-          }}
+          style={{ maxHeight: searchable ? LIST_MAX_HEIGHT - 54 : LIST_MAX_HEIGHT, overflowY: 'auto', margin: 0, padding: 6, listStyle: 'none', boxSizing: 'border-box' }}
         >
           {items.map((o, i) => {
             const isSelected = o.value === value;
@@ -167,7 +193,9 @@ export default function SiteSelect({ value, onChange, options, placeholder = 'Se
               </li>
             );
           })}
-        </ul>,
+        </ul>
+          {items.length === 0 && <p style={{ margin: 0, padding: '0.75rem', fontSize: '0.85rem', color: '#888' }}>Sonuç yok</p>}
+        </div>,
         document.body,
       )}
     </div>

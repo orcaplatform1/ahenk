@@ -9,6 +9,7 @@ import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { venueJwtSecret } from "./venue-auth.guard";
 import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "./venue-media";
 import { CLEARED_MEETING_VENUE, meetingVenueFields, VenueAssignmentService } from "./venue-assignment.service";
+import { isValidDistrict } from "../common/districts";
 import { VenueCapacityDto, VenueInfoDto } from "./venue-panel.dto";
 
 export const VENUE_SESSION_DAYS = 7;
@@ -95,6 +96,7 @@ export class VenuePanelService {
         city: venue.city.name,
         description: venue.description,
         address: venue.address,
+        district: venue.district,
         locationUrl: venue.locationUrl,
         websiteOrSocial: venue.websiteOrSocial,
         venueType: venue.venueType,
@@ -143,11 +145,16 @@ export class VenuePanelService {
   }
 
   async updateInfo(account: VenueAccount, dto: VenueInfoDto) {
+    if (dto.district !== undefined) {
+      const { city } = await this.venueOf(account);
+      if (!isValidDistrict(city.name, dto.district)) throw new BadRequestException("Geçerli bir ilçe seçin");
+    }
     await this.prisma.venue.update({
       where: { id: account.venueId! },
       data: {
         description: dto.description,
         address: dto.address,
+        district: dto.district,
         locationUrl: dto.locationUrl,
         websiteOrSocial: dto.websiteOrSocial,
         venueType: dto.venueType,
