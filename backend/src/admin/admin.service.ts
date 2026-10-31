@@ -40,6 +40,7 @@ import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "../matching/one-on-one-right";
 import { availableBots } from "../matching/bot-picker";
 import { MatchingService } from "../matching/matching.service";
+import { VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
 import { OVERLAPPING_PLANS } from "../payment/plan-overlap";
@@ -64,6 +65,7 @@ export class AdminService {
     private kyc: KycService,
     @InjectQueue(ASSIGN_QUEUE) private assignQueue: Queue,
     private matching: MatchingService,
+    private venueAssignment: VenueAssignmentService,
   ) {}
 
   // ─── Dashboard ───────────────────────────────────────────────────────────
@@ -626,7 +628,21 @@ export class AdminService {
       this.prisma.meeting.count({ where }),
     ]);
 
-    return { items, total, page, totalPages: Math.ceil(total / limit) };
+    const now = Date.now();
+    const leadMs = VENUE_LOCK_LEAD_MS;
+    return {
+      items: items.map((m) => ({
+        ...m,
+        venueMissing: !m.locationText && (m.status === "PENDING" || m.status === "ACTIVE")
+          && m.scheduledAt.getTime() > now && m.scheduledAt.getTime() - now <= leadMs,
+      })),
+      total, page, totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  // Kilidi geçmiş ama mekânı boş masa sayısı (masalar sayfası sayacı)
+  async countMeetingsWithoutVenue() {
+    return { count: await this.venueAssignment.countMissing() };
   }
 
   // ─── Masa detay ──────────────────────────────────────────────────────────
@@ -730,22 +746,31 @@ export class AdminService {
     meetingId: string,
     data: { locationText?: string; locationUrl?: string; scheduledAt?: string },
   ) {
-    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { id: true, locationText: true } });
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { id: true, locationText: true, cityId: true } });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
 
     // Admin farklı mekân yazarsa otomatik atama bağı kalkar (mekânın masa listesinden ve kontenjanından düşer)
-    const manualVenue = data.locationText !== undefined && data.locationText !== meeting.locationText;
+    // Yazılan ad o şehirdeki panel hesaplı mekânla aynıysa masa o mekâna bağlanır (kontenjan + bildirim)
+    const locationText = data.locationText === undefined ? undefined : data.locationText.trim() || null;
+    const manualVenue = locationText !== undefined && locationText !== meeting.locationText;
+    const partner = manualVenue && locationText && meeting.cityId
+      ? await this.prisma.venue.findFirst({
+          where: { cityId: meeting.cityId, name: locationText, isActive: true, account: { status: "ACTIVE" } },
+          select: { id: true },
+        })
+      : null;
     const updated = await this.prisma.meeting.update({
       where: { id: meetingId },
       data: {
-        ...(manualVenue ? { venueId: null } : {}),
-        locationText: data.locationText,
+        ...(manualVenue ? { venueId: partner?.id ?? null } : {}),
+        locationText,
         locationUrl: data.locationUrl,
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
       },
       select: { id: true, locationText: true, locationUrl: true, scheduledAt: true, type: true },
     });
 
+    await this.venueAssignment.syncVenueNotice(meetingId);
     return updated;
   }
 
@@ -1018,10 +1043,11 @@ export class AdminService {
       // Bot ayarı yalnızca SUPERADMIN'e
       ...(viewerRole === UserRole.SUPERADMIN ? { botSystemActive: map['BOT_SYSTEM_ACTIVE'] !== 'false' } : {}),
       maintenanceMode: map['MAINTENANCE_MODE'] === 'true',
+      liveDistrictSource: map['LIVE_DISTRICT_SOURCE'] === 'real' ? 'real' : 'static',
     };
   }
 
-  async updateSettings(data: { matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean }, viewerRole: UserRole) {
+  async updateSettings(data: { matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean; liveDistrictSource?: "static" | "real" }, viewerRole: UserRole) {
     if (data.botSystemActive !== undefined && viewerRole !== UserRole.SUPERADMIN) {
       throw new ForbiddenException("Bu ayarı değiştirme yetkiniz yok");
     }
@@ -1029,6 +1055,7 @@ export class AdminService {
     if (data.matchingEnabled !== undefined) updates.push({ key: "MATCHING_ENABLED", value: String(data.matchingEnabled) });
     if (data.botSystemActive !== undefined) updates.push({ key: "BOT_SYSTEM_ACTIVE", value: String(data.botSystemActive) });
     if (data.maintenanceMode !== undefined) updates.push({ key: "MAINTENANCE_MODE", value: String(data.maintenanceMode) });
+    if (data.liveDistrictSource !== undefined) updates.push({ key: "LIVE_DISTRICT_SOURCE", value: data.liveDistrictSource });
     for (const u of updates) {
       await this.prisma.appConfig.upsert({
         where: { key: u.key },
@@ -1604,6 +1631,7 @@ export class AdminService {
           venueType: app.alcoholStatus ?? VenueType.NON_ALCOHOLIC,
           cityId,
           address: app.address,
+          district: app.district,
           locationUrl: app.locationUrl,
           websiteOrSocial: app.websiteOrSocial,
           photos: app.photos,

@@ -214,6 +214,10 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsBoolean()
   maintenanceMode?: boolean;
+
+  @IsOptional()
+  @IsIn(["static", "real"])
+  liveDistrictSource?: "static" | "real";
 }
 
 

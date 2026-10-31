@@ -67,6 +67,9 @@ export class VenueInfoDto {
   @IsOptional() @IsString() @MinLength(5, { message: "Açık adres girin" }) @MaxLength(300)
   address?: string;
 
+  @IsOptional() @IsString() @MinLength(2) @MaxLength(60)
+  district?: string;
+
   @IsOptional() @IsString() @MaxLength(500) @Matches(GOOGLE_MAPS_URL, { message: GOOGLE_MAPS_URL_MESSAGE })
   locationUrl?: string;
 

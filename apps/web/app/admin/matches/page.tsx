@@ -42,6 +42,7 @@ interface MeetingRow {
   status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
   scheduledAt: string;
   locationText: string | null;
+  venueMissing?: boolean;
   city?: { name: string } | null;
   _count: { participants: number };
 }
@@ -167,6 +168,8 @@ export default function AdminMatches() {
   }, [statusFilter, cityFilter, page]);
 
   useEffect(() => { load(); }, [load]);
+  const [withoutVenue, setWithoutVenue] = useState(0);
+  useEffect(() => { api.get<{ count: number }>('/admin/meetings/without-venue').then(r => setWithoutVenue(r.count)).catch(() => {}); }, [items]);
   useEffect(() => { api.get<string[]>('/admin/sanction-reasons').then(setSanctionReasons).catch(() => {}); }, []);
   // Bot listesi ve yerleştirme yalnızca SUPERADMIN
   const isSuperadmin = myRole() === 'SUPERADMIN';
@@ -353,6 +356,11 @@ export default function AdminMatches() {
 
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>Masalar</h1>
+        {withoutVenue > 0 && (
+          <p style={{ margin: '8px 0 0', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)' }}>
+            ⚠ Mekânsız masa: {withoutVenue}
+          </p>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -442,7 +450,7 @@ export default function AdminMatches() {
                         <td style={{ padding: '10px 14px', fontSize: 11, color: MUTED }}>{TYPE_LABEL[m.type] ?? m.type}</td>
                         <td style={{ padding: '10px 14px', fontSize: 11, color: MUTED, whiteSpace: 'nowrap' }}>{m.city?.name ?? '—'}</td>
                         <td style={{ padding: '10px 14px', fontSize: 11, color: MUTED, textAlign: 'center' }}>{m._count.participants}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 11, color: MUTED, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.locationText ?? '—'}</td>
+                        <td style={{ padding: '10px 14px', fontSize: 11, color: MUTED, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.venueMissing ? <span style={{ color: '#f59e0b', fontWeight: 700 }}>⚠ Mekânsız</span> : m.locationText ?? '—'}</td>
                         <td style={{ padding: '10px 14px' }}>
                           <span style={{
                             fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',

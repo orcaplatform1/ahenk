@@ -12,6 +12,7 @@ import { NO_SHOW_WARNING_LIMIT } from "../admin/sanction-reasons";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
+import { DISTRICTS, districtsOf, isValidDistrict } from "../common/districts";
 import { randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { isMaintenanceMode } from "../admin/app-settings";
@@ -126,8 +127,11 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
     if (dto.primaryCityId) {
-      const city = await this.prisma.city.findUnique({ where: { id: dto.primaryCityId }, select: { isActive: true } });
+      const city = await this.prisma.city.findUnique({ where: { id: dto.primaryCityId }, select: { isActive: true, name: true } });
       if (!city?.isActive) throw new BadRequestException("Seçilen şehir şu an aktif değil");
+      if (districtsOf(city.name) && !isValidDistrict(city.name, dto.district ?? "")) {
+        throw new BadRequestException("İlçe seçin");
+      }
     }
 
     const phoneExists = await this.prisma.user.findUnique({ where: { phone: dto.phoneNumber } });
@@ -152,6 +156,7 @@ export class AuthService {
               firstName: dto.firstName,
               lastName: dto.lastName,
               primaryCity: dto.primaryCityId ?? null,
+              district: dto.district ?? null,
               gender: (dto.gender as Gender) ?? null,
               birthDate: dto.birthDate ? new Date(dto.birthDate) : null,
             },
@@ -492,6 +497,10 @@ export class AuthService {
         venuePreference: profile.venuePreference,
       } : undefined,
     };
+  }
+
+  getDistricts() {
+    return DISTRICTS;
   }
 
   getActiveCities() {

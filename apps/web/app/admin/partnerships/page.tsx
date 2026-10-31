@@ -55,6 +55,7 @@ interface Partnership {
   description?: string;
   websiteOrSocial?: string;
   address?: string | null;
+  district?: string | null;
   locationUrl?: string | null;
   alcoholStatus?: 'ALCOHOLIC' | 'NON_ALCOHOLIC' | null;
   referenceCode?: string | null;
@@ -233,7 +234,7 @@ export default function AdminPartnerships() {
                     )}
                     {p.address && (
                       <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Adres:</span> {p.address}
+                        <span style={{ color: TEXT, fontWeight: 600 }}>Adres:</span> {p.address}{p.district ? ` (${p.district})` : ''}
                       </p>
                     )}
                     {p.locationUrl && (

@@ -251,10 +251,14 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .ll-bar { position: relative; overflow: hidden; }
 .ll-bar > span { position: absolute; inset: 0; transform-origin: left; }
 .ll-cta { width: 100%; min-height: 56px; border: none; border-radius: 16px; cursor: pointer; color: #fff; font: 700 16px var(--font-sans), system-ui, sans-serif; background: linear-gradient(90deg, #c7342a, #d9603f 55%, #e8a27a); box-shadow: 0 10px 30px rgba(214,69,58,0.35); }
+.ll-bubble-pulse { transform-box: fill-box; transform-origin: center; animation: ll-pulse 2.2s ease-out infinite; }
+.ll-flash { transform-box: fill-box; transform-origin: center; animation: ll-flash 1.4s ease-out forwards; }
+@keyframes ll-flash { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(3.2); opacity: 0; } }
 @keyframes ll-pulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.6); opacity: 0; } }
 @keyframes ll-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 @keyframes ll-spin { to { transform: rotate(360deg); } }
 @keyframes ll-scroll { to { transform: translateY(-50%); } }
 @media (prefers-reduced-motion: reduce) {
-  .ll-live-dot::after, .ll-blink, .ll-sweep, .ll-dot-new, .ll-feed-track { animation: none; }
+  .ll-live-dot::after, .ll-blink, .ll-sweep, .ll-dot-new, .ll-bubble-pulse, .ll-feed-track { animation: none; }
+  .ll-flash { animation: none; opacity: 0; }
 }

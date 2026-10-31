@@ -48,6 +48,7 @@ export interface VenueMe {
     city: string;
     description: string | null;
     address: string | null;
+    district: string | null;
     locationUrl: string | null;
     websiteOrSocial: string | null;
     venueType: 'ALCOHOLIC' | 'NON_ALCOHOLIC';

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import SiteSelect from '@/components/SiteSelect';
 import { getNextTarget } from '@/components/HeroCountdown';
-import LiveSonar from './LiveSonar';
+import LiveSonar, { LEVELS } from './LiveSonar';
 import LiveFeed from './LiveFeed';
 import type { LiveFill, LiveOverview, LivePulse, OceanKey } from './types';
 
@@ -94,6 +94,9 @@ function FillRow({ label, fill, gradient }: { label: string; fill: LiveFill; gra
     </div>
   );
 }
+
+// Seviye rengi: 1 en opak, 4 en soluk
+const LEVEL_ALPHA = { 1: 'd9', 2: 'a6', 3: '73', 4: '4d' } as const;
 
 // Yoğunluk sırasına göre üç bant; bant içinde sıra ilerledikçe renk solar
 function heatColor(index: number, count: number) {
@@ -191,7 +194,16 @@ export default function LiveLayer({ activePlan }: { activePlan: string | null })
             <h2 className="ll-title">Semt Isı Haritası</h2>
             <span className="ll-note">bu hafta talep</span>
           </div>
-          {overview?.heatmap.length ? (
+          {overview?.density ? (
+            <div className="ll-heat">
+              {overview.density.districts.map((d) => (
+                <div key={d.name} className="ll-heat-cell" style={{ background: `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+                  <span className="ll-mono" style={{ fontSize: d.percent === null ? 11 : 15 }}>{d.percent === null ? LEVELS[d.level].label : `%${d.percent}`}</span>
+                </div>
+              ))}
+            </div>
+          ) : overview?.heatmap.length ? (
             <div className="ll-heat">
               {overview.heatmap.map((d, i) => (
                 <div key={d.name} className="ll-heat-cell" style={{ background: heatColor(i, overview.heatmap.length) }}>

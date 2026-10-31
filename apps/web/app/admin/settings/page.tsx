@@ -16,6 +16,7 @@ interface Settings {
   matchingEnabled: boolean;
   botSystemActive?: boolean; // yalnızca SUPERADMIN'e gelir
   maintenanceMode: boolean;
+  liveDistrictSource?: 'static' | 'real';
 }
 
 function Toggle({ label, desc, value, onChange }: {
@@ -66,6 +67,7 @@ export default function AdminSettings() {
       matchingEnabled: settings.matchingEnabled,
       botSystemActive: settings.botSystemActive,
       maintenanceMode: settings.maintenanceMode,
+      liveDistrictSource: settings.liveDistrictSource,
     };
     setError('');
     try {
@@ -120,6 +122,26 @@ export default function AdminSettings() {
                 value={settings.maintenanceMode}
                 onChange={v => setSettings(s => s ? { ...s, maintenanceMode: v } : s)}
               />
+              <div>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>Canlı katman ilçe verisi</p>
+                <p style={{ margin: '2px 0 8px', fontSize: 11, color: MUTED }}>Statik: İstanbul yoğunluk tablosu. Gerçek: üyelerin ilçe verisinden hesaplanır.</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {([['static', 'Statik'], ['real', 'Gerçek']] as const).map(([value, label]) => {
+                    const on = (settings.liveDistrictSource ?? 'static') === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setSettings(s => s ? { ...s, liveDistrictSource: value } : s)}
+                        style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontFamily: SANS, fontSize: 12, fontWeight: 600, background: on ? 'rgba(34,211,238,0.1)' : 'transparent', border: `1px solid ${on ? 'rgba(34,211,238,0.3)' : BORDER}`, color: on ? '#22d3ee' : MUTED }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 

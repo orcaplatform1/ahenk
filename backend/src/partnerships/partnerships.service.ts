@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { OTP_RESEND_SECONDS, OtpService } from '../auth/otp/otp.service';
 import { ApplyPartnershipDto } from './partnerships.dto';
+import { isValidDistrict } from '../common/districts';
 import { assertVenuePhotos, removeVenuePhotoDir, saveVenuePhotos } from '../venue-panel/venue-media';
 
 const PHONE_TOKEN_TTL = 30 * 60; // Üye kaydıyla aynı: doğrulama 30 dk geçerli
@@ -43,6 +44,7 @@ export class PartnershipsService {
   async apply(dto: ApplyPartnershipDto, files: Express.Multer.File[]) {
     if (files.length === 0) throw new BadRequestException('En az 1 mekân fotoğrafı yükleyin');
     assertVenuePhotos(files);
+    if (!isValidDistrict(dto.city, dto.district)) throw new BadRequestException('Geçerli bir ilçe seçin');
 
     const stored = await this.redis.get(phoneKey(dto.phone));
     if (!stored || stored !== dto.phoneToken) {
@@ -75,6 +77,7 @@ export class PartnershipsService {
             description: dto.description,
             websiteOrSocial: dto.websiteOrSocial,
             address: dto.address,
+            district: dto.district,
             locationUrl: dto.locationUrl,
             alcoholStatus: dto.alcoholStatus,
             referenceCode: dto.referenceCode?.trim() || null,

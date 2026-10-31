@@ -230,6 +230,8 @@ model Meeting {
   locationText         String? // Fiziksel mekan adı
   venueId              String? // Kilit sonrası otomatik atanan ortak mekân (elle yazılan mekânda boş)
   venue                Venue?         @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  venueNotifiedId      String? // WhatsApp ile haber verilen mekân (aynı masa için ikinci bildirim gitmesin)
+  venueMissingAlertAt  DateTime? // Mekânsız masa uyarısının admin'e ilk gidiş zamanı
   registrationDeadline DateTime? // Kayıt kapanış (Cumartesi 10:00, uzatılabilir)
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
@@ -623,6 +625,7 @@ model Venue {
   cityId      String
   city        City          @relation(fields: [cityId], references: [id])
   address     String?
+  district    String? // İlçe (mekân atamasında yakınlık için)
   latitude    Float?
   longitude   Float?
   isActive    Boolean       @default(true)
@@ -768,6 +771,7 @@ model PartnershipApplication {
   description     String?           @db.Text
   websiteOrSocial String?
   address         String?
+  district        String?
   locationUrl     String?
   alcoholStatus   VenueType?
   referenceCode   String?           // Personel referans kodu (opsiyonel)

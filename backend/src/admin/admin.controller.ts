@@ -209,6 +209,11 @@ export class AdminController {
     return this.adminService.listMeetings({ status, city, week: week || undefined, page, limit });
   }
 
+  @Get("meetings/without-venue")
+  countMeetingsWithoutVenue() {
+    return this.adminService.countMeetingsWithoutVenue();
+  }
+
   @Get("meetings/:id")
   getMeeting(@Param("id") id: string, @Req() req: Request) {
     return this.adminService.getMeeting(id, (req.user as { role: UserRole }).role);
@@ -320,6 +325,7 @@ export class AdminController {
       matchingEnabled: dto.matchingEnabled,
       botSystemActive: dto.botSystemActive,
       maintenanceMode: dto.maintenanceMode,
+      liveDistrictSource: dto.liveDistrictSource,
     }, (req.user as { role: UserRole }).role);
   }
 

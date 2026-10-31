@@ -7,6 +7,7 @@ import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { OCCUPATION_SECTORS } from '@/lib/occupations';
 import { api } from '@/lib/api';
 import OtpInput from '@/components/ui/OtpInput';
+import SiteSelect from '@/components/SiteSelect';
 
 interface City { id: string; name: string; }
 
@@ -61,6 +62,7 @@ interface FormState {
   birthDate: string; gender: 'MALE' | 'FEMALE' | '';
   occupationSector: string;
   primaryCityId: string;
+  district: string;
   venuePreference: VenuePreference;
   contactNumbers: string[]; contactInput: string;
 }
@@ -80,6 +82,7 @@ function KayitPageInner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cities, setCities] = useState<City[]>([]);
+  const [districts, setDistricts] = useState<Record<string, string[]>>({});
   const [confirmShake, setConfirmShake] = useState(0);
 
   const [form, setForm] = useState<FormState>({
@@ -88,12 +91,15 @@ function KayitPageInner() {
     birthDate: '', gender: '',
     occupationSector: '',
     primaryCityId: '',
+    district: '',
     venuePreference: '',
     contactNumbers: [], contactInput: '',
   });
 
   const [pwError, setPwError] = useState('');
   const [pwConfirmError, setPwConfirmError] = useState('');
+
+  const districtOptions = districts[cities.find((c) => c.id === form.primaryCityId)?.name ?? ''] ?? [];
 
   // Telefon doğrulama (WhatsApp OTP) — hesap oluşmadan önce
   const [otpSent, setOtpSent] = useState(false);
@@ -157,6 +163,7 @@ function KayitPageInner() {
 
   useEffect(() => {
     api.get<City[]>('/auth/cities').then(setCities).catch(() => {});
+    api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -190,6 +197,7 @@ function KayitPageInner() {
 
   async function handleStep2() {
     if (!form.primaryCityId) { setError('Ana şehir seçin.'); return; }
+    if (districtOptions.length > 0 && !form.district) { setError('İlçe seçin.'); return; }
     setLoading(true); setError('');
     try {
       const phoneDigits = form.phoneNumber.replace(/\D/g, '');
@@ -205,6 +213,7 @@ function KayitPageInner() {
         birthDate: form.birthDate || undefined,
         occupationSector: form.occupationSector,
         primaryCityId: form.primaryCityId || undefined,
+        district: form.district || undefined,
         referralCode,
       });
       api.onLogin();
@@ -515,7 +524,13 @@ function KayitPageInner() {
               <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Şehir Seçimi</h1>
               <p className="text-[#555] text-sm">Hangi şehirde buluşmak istediğini seç. Yaşadığın şehir değil, katılmak istediğin şehir.</p>
             </div>
-            <CityPickerField label="Ana Şehir *" value={form.primaryCityId} onChange={(v) => set('primaryCityId', v)} cities={cities} title="Ana şehir seç" />
+            <CityPickerField label="Ana Şehir *" value={form.primaryCityId} onChange={(v) => { set('primaryCityId', v); set('district', ''); }} cities={cities} title="Ana şehir seç" />
+            {districtOptions.length > 0 && (
+              <div>
+                <label className="block text-sm text-[#555] mb-2">İlçe *</label>
+                <SiteSelect key={form.primaryCityId} value={form.district} onChange={(v) => set('district', v)} options={districtOptions} placeholder="İlçe seç" ariaLabel="İlçe" searchable searchPlaceholder="İlçe ara" required />
+              </div>
+            )}
             <div style={{ background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: 12, padding: '12px 14px' }}>
               <p style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 1.5, margin: 0 }}>
                 Farklı bir şehirde olduğun haftalarda profilindeki "Bu Hafta Hangi Şehirdesiniz?" kartından geçici şehir seçebilirsin.

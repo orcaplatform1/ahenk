@@ -1,5 +1,8 @@
 export * from './theme';
 
+// Sonar
+export * from './components/sonar/AhenkSonar';
+
 // Ocean
 export * from './components/ocean/OceanRadar';
 export * from './components/ocean/PersonalityResult';

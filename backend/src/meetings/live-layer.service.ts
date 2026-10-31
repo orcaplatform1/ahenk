@@ -3,7 +3,10 @@ import { MeetingType, ParticipantStatus, Prisma } from "@prisma/client";
 import { createHash } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
-import { OCEAN_MAX_DISTANCE, WEIGHTS } from "../matching/matching.constants";
+import { WEIGHTS } from "../matching/matching.constants";
+import { MatchPerson, matchScore } from "../matching/match-score";
+import { ISTANBUL_DENSITY } from "../common/districts";
+import { liveDistrictSource } from "../admin/app-settings";
 
 const LEFT_STATUSES: ParticipantStatus[] = ["DECLINED", "CANCELLED", "NO_SHOW"];
 const NEW_ENTRY_MS = 5 * 60 * 1000;
@@ -11,30 +14,17 @@ const ACTIVE_ENTRY_MS = 60 * 60 * 1000;
 const SONAR_MAX_DOTS = 60;
 const SONAR_MAX_LABELS = 8;
 const HEATMAP_MAX = 9;
+const DENSITY_MAX = 15;
 const FEED_MAX = 30;
 const FEED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const HIGH_MATCH_RATIO = 0.7; // Eşleşme puanının en az %70'i "yüksek uyum"
 
 const DIMENSIONS = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"] as const;
 type Dimension = (typeof DIMENSIONS)[number];
-type Ocean = Record<Dimension, number>;
-type Person = { oceanScore: Ocean | null; occupationSector: string | null };
 
 const OCEAN_SELECT = { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } as const;
 
-// Eşleşme algoritmasının puanı (matching.service scoreTwo ile aynı formül), 0-1 aralığında
-function matchRatio(a: Person, b: Person): number {
-  let ocean: number = WEIGHTS.OCEAN / 2;
-  if (a.oceanScore && b.oceanScore) {
-    const x = a.oceanScore, y = b.oceanScore;
-    const distance = Math.sqrt(DIMENSIONS.reduce((sum, d) => sum + (x[d] - y[d]) ** 2, 0));
-    ocean = (1 - distance / OCEAN_MAX_DISTANCE) * WEIGHTS.OCEAN;
-  }
-  const p = a.occupationSector, q = b.occupationSector;
-  const skip = !p || !q || [p, q].some((s) => s === "Öğrenci" || s === "Diğer");
-  const occupation = !skip && p === q ? WEIGHTS.OCCUPATION : 0;
-  return (ocean + occupation) / (WEIGHTS.OCEAN + WEIGHTS.OCCUPATION);
-}
+const matchRatio = (a: MatchPerson, b: MatchPerson) => matchScore(a, b) / (WEIGHTS.OCEAN + WEIGHTS.OCCUPATION);
 
 // Tarayıcıya kullanıcı/masa kimliği gitmez: haftalık tuzlu özet
 const opaque = (id: string, weekStart: Date) =>
@@ -44,6 +34,23 @@ function topDistrict(districts: (string | null | undefined)[]): string | null {
   const counts = new Map<string, number>();
   for (const d of districts) if (d) counts.set(d, (counts.get(d) ?? 0) + 1);
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+}
+
+type Density = { mode: "static" | "real"; districts: { name: string; level: 1 | 2 | 3 | 4; percent: number | null }[] } | null;
+
+// Gerçek veri: ilçeler yoğunluk sırasına göre dört eşit seviyeye bölünür
+function realDensity(demand: Map<string, number>): Density {
+  const sorted = [...demand.entries()].sort((a, b) => b[1] - a[1]).slice(0, DENSITY_MAX);
+  if (sorted.length === 0) return null;
+  const peak = sorted[0][1];
+  return {
+    mode: "real",
+    districts: sorted.map(([name, count], i) => ({
+      name,
+      level: (Math.floor((i * 4) / sorted.length) + 1) as 1 | 2 | 3 | 4,
+      percent: Math.round((count / peak) * 100),
+    })),
+  };
 }
 
 @Injectable()
@@ -83,10 +90,17 @@ export class LiveLayerService {
     };
   }
 
+  // Yoğunluk katmanı: statik yalnızca İstanbul'da; diğer durumda gerçek veri (yoksa null, eski görünüm sürer)
+  private async density(city: { name: string }, demand: Map<string, number>): Promise<Density> {
+    if ((await liveDistrictSource(this.prisma)) === "real") return realDensity(demand);
+    if (city.name !== "İstanbul") return null;
+    return { mode: "static", districts: ISTANBUL_DENSITY.map((d) => ({ ...d, percent: null })) };
+  }
+
   // 15 sn'de bir: sonar + canlı akış. İsim, baş harf, yaş, meslek, fotoğraf dönmez
   async pulse(userId: string, cityId?: string) {
     const city = await this.resolveCity(userId, cityId);
-    if (!city) return { sonar: { dots: [], labels: [] }, feed: { events: [], perMinute: 0 } };
+    if (!city) return { sonar: { dots: [], labels: [], density: null }, feed: { events: [], perMinute: 0 } };
     return { sonar: await this.sonar(city), feed: await this.feed(city) };
   }
 
@@ -111,6 +125,12 @@ export class LiveLayerService {
       .slice(0, SONAR_MAX_DOTS)
       .map(({ age: _age, ...dot }) => dot);
 
+    const demand = new Map<string, number>();
+    for (const u of users) {
+      const d = u.profile?.district;
+      if (d) demand.set(d, (demand.get(d) ?? 0) + 1);
+    }
+
     const labels = new Map<string, { count: number; active: boolean }>();
     for (const d of dots) {
       if (!d.district) continue;
@@ -123,6 +143,7 @@ export class LiveLayerService {
         .sort((a, b) => b[1].count - a[1].count)
         .slice(0, SONAR_MAX_LABELS)
         .map(([name, v]) => ({ name, active: v.active })),
+      density: await this.density(city, demand),
     };
   }
 
@@ -230,6 +251,7 @@ export class LiveLayerService {
       groupSeatsLeft: group.total ? Math.max(0, group.total - group.filled) : null,
       fill: { group, oneOnOne, kanka },
       heatmap: sorted.map(([name, count]) => ({ name, percent: Math.round((count / peak) * 100) })),
+      density: await this.density(city, demand),
       signal: {
         closeCount: me ? pool.filter((u) => u.id !== userId && matchRatio(me, u) >= HIGH_MATCH_RATIO).length : 0,
         top: ocean
