@@ -3,6 +3,7 @@ import { Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 import { VENUE_UPLOAD_DIR } from "./admin.service";
+import { VENUE_GALLERY_DIR } from "../venue-panel/venue-media";
 
 // Mekan fotoğrafları herkese açık sunulur (masa kartında gösterilir)
 @Controller("media")
@@ -14,6 +15,18 @@ export class MediaController {
       throw new NotFoundException();
     }
     const filePath = path.join(VENUE_UPLOAD_DIR, meetingId, file);
+    if (!fs.existsSync(filePath)) throw new NotFoundException();
+    res.set("Cache-Control", "public, max-age=86400");
+    return res.sendFile(filePath);
+  }
+
+  // Mekân başvuru/panel fotoğrafları
+  @Get("venue-gallery/:key/:file")
+  venueGallery(@Param("key") key: string, @Param("file") file: string, @Res() res: Response) {
+    if (!/^[a-z0-9]+$/i.test(key) || !/^g-\d+-[a-f0-9]{8}\.(jpg|png|webp)$/.test(file)) {
+      throw new NotFoundException();
+    }
+    const filePath = path.join(VENUE_GALLERY_DIR, key, file);
     if (!fs.existsSync(filePath)) throw new NotFoundException();
     res.set("Cache-Control", "public, max-age=86400");
     return res.sendFile(filePath);

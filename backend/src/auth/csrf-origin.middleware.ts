@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { ACCESS_COOKIE, REFRESH_COOKIE } from "./auth-cookies";
+import { ACCESS_COOKIE, REFRESH_COOKIE, VENUE_COOKIE } from "./auth-cookies";
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -15,7 +15,7 @@ export function csrfOriginCheck(allowedOrigins: string[]) {
     if (!UNSAFE_METHODS.has(req.method)) return next();
     if (EXEMPT_PATHS.has(req.path)) return next();
     if (req.headers.authorization?.startsWith("Bearer ")) return next();
-    const hasSessionCookie = !!(req.cookies?.[ACCESS_COOKIE] || req.cookies?.[REFRESH_COOKIE]);
+    const hasSessionCookie = !!(req.cookies?.[ACCESS_COOKIE] || req.cookies?.[REFRESH_COOKIE] || req.cookies?.[VENUE_COOKIE]);
     if (!hasSessionCookie) return next();
 
     let source = req.headers.origin;

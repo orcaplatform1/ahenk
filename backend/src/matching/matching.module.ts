@@ -10,6 +10,7 @@ import { PrismaModule } from "../prisma/prisma.module";
 import { NotificationModule } from "../notification/notification.module";
 import { MeetingsModule } from "../meetings/meetings.module";
 import { ConfigModule } from "@nestjs/config";
+import { VenuePanelModule } from "../venue-panel/venue-panel.module";
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ConfigModule } from "@nestjs/config";
     NotificationModule,
     MeetingsModule,
     ConfigModule,
+    VenuePanelModule,
     BullModule.registerQueue({ name: MATCHING_QUEUE }),
     BullModule.registerQueue({ name: ASSIGN_QUEUE }),
   ],

@@ -2,3 +2,5 @@
 export const REFRESH_COOKIE = "refresh_token";
 export const ACCESS_COOKIE = "access_token";
 export const SESSION_COOKIE = "ahenk_session";
+// Mekân paneli oturumu: üye oturumundan bağımsız
+export const VENUE_COOKIE = "venue_token";

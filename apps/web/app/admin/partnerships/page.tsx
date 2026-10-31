@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { mediaUrl } from '@/lib/venueApi';
+import { AdminSelect } from '@/components/AdminSelect';
 
 // ─── Renk sabitleri ───────────────────────────────────────────────────────────
 const SURFACE = '#0a1628';
@@ -19,16 +21,25 @@ const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 const STATUS_COLOR: Record<string, string> = {
   PENDING:  AMBER,
   REVIEWED: GREEN,
+  APPROVED: GREEN,
   REJECTED: RED,
+};
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: 'BEKLİYOR', REVIEWED: 'İNCELENDİ', APPROVED: 'ONAYLANDI', REJECTED: 'REDDEDİLDİ',
+};
+const ACCOUNT_LABEL: Record<string, string> = {
+  PENDING: 'Onay bekliyor', ACTIVE: 'Aktif', REJECTED: 'Reddedildi', DEACTIVATED: 'Pasif (mekân kapattı)',
 };
 const STATUS_BG: Record<string, string> = {
   PENDING:  'rgba(245,158,11,0.12)',
   REVIEWED: 'rgba(34,197,94,0.12)',
+  APPROVED: 'rgba(34,197,94,0.12)',
   REJECTED: 'rgba(239,68,68,0.12)',
 };
 const STATUS_BORDER: Record<string, string> = {
   PENDING:  'rgba(245,158,11,0.35)',
   REVIEWED: 'rgba(34,197,94,0.3)',
+  APPROVED: 'rgba(34,197,94,0.3)',
   REJECTED: 'rgba(239,68,68,0.3)',
 };
 
@@ -43,6 +54,12 @@ interface Partnership {
   capacity?: number;
   description?: string;
   websiteOrSocial?: string;
+  address?: string | null;
+  locationUrl?: string | null;
+  alcoholStatus?: 'ALCOHOLIC' | 'NON_ALCOHOLIC' | null;
+  referenceCode?: string | null;
+  photos?: string[];
+  account?: { status: string; registeredAt: string; approvedAt: string | null; deactivatedAt: string | null } | null;
   status: string;
   adminNote?: string;
   createdAt: string;
@@ -55,6 +72,8 @@ export default function AdminPartnerships() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
+  const [cityIds, setCityIds] = useState<Record<string, string>>({});
 
   function load() {
     api.get<Partnership[]>('/admin/partnerships').then(setItems)
@@ -62,13 +81,21 @@ export default function AdminPartnerships() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    api.get<{ id: string; name: string }[]>('/admin/cities').then(setCities).catch(() => undefined);
+  }, []);
+
+  // Başvurudaki şehir, şehir listesinde yoksa ("Diğer") onay için seçim istenir
+  function cityMatches(city: string) {
+    return cities.some(c => c.name === city.split(' (')[0].trim());
+  }
 
   async function update(id: string, status: string) {
     setSaving(id);
     setError('');
     try {
-      await api.patch(`/admin/partnerships/${id}`, { status, adminNote: notes[id] || undefined });
+      await api.patch(`/admin/partnerships/${id}`, { status, adminNote: notes[id] || undefined, cityId: cityIds[id] || undefined });
       setExpanded(null);
       load();
     } catch (e) {
@@ -149,7 +176,7 @@ export default function AdminPartnerships() {
                         border: `1px solid ${STATUS_BORDER[p.status] ?? BORDER}`,
                         color: STATUS_COLOR[p.status] ?? MUTED,
                       }}>
-                        {p.status}
+                        {STATUS_LABEL[p.status] ?? p.status}
                       </span>
                     </div>
                     <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
@@ -193,6 +220,43 @@ export default function AdminPartnerships() {
                         <span style={{ color: TEXT, fontWeight: 600 }}>Kapasite:</span> {p.capacity}
                       </p>
                     )}
+                    {p.account && (
+                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
+                        <span style={{ color: TEXT, fontWeight: 600 }}>Panel hesabı:</span> {ACCOUNT_LABEL[p.account.status] ?? p.account.status}
+                        {' · '}Kayıt: {new Date(p.account.registeredAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}
+                      </p>
+                    )}
+                    {p.alcoholStatus && (
+                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
+                        <span style={{ color: TEXT, fontWeight: 600 }}>Alkol durumu:</span> {p.alcoholStatus === 'ALCOHOLIC' ? 'Alkollü' : 'Alkolsüz'}
+                      </p>
+                    )}
+                    {p.address && (
+                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
+                        <span style={{ color: TEXT, fontWeight: 600 }}>Adres:</span> {p.address}
+                      </p>
+                    )}
+                    {p.locationUrl && (
+                      <p style={{ margin: 0, fontSize: 11, color: MUTED, wordBreak: 'break-all' }}>
+                        <span style={{ color: TEXT, fontWeight: 600 }}>Konum:</span>{' '}
+                        <a href={p.locationUrl} target="_blank" rel="noopener noreferrer" style={{ color: CYAN }}>{p.locationUrl}</a>
+                      </p>
+                    )}
+                    {p.referenceCode && (
+                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
+                        <span style={{ color: TEXT, fontWeight: 600 }}>Referans kodu:</span> {p.referenceCode}
+                      </p>
+                    )}
+                    {!!p.photos?.length && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 6 }}>
+                        {p.photos.map((src, k) => (
+                          <a key={src} href={mediaUrl(src)} target="_blank" rel="noopener noreferrer">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={mediaUrl(src)} alt={`Mekân fotoğrafı ${k + 1}`} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, display: 'block' }} />
+                          </a>
+                        ))}
+                      </div>
+                    )}
                     {p.websiteOrSocial && (
                       <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
                         <span style={{ color: TEXT, fontWeight: 600 }}>Web/Sosyal:</span> {p.websiteOrSocial}
@@ -224,9 +288,17 @@ export default function AdminPartnerships() {
                             boxSizing: 'border-box',
                           }}
                         />
+                        {p.account && !cityMatches(p.city) && (
+                          <AdminSelect
+                            value={cityIds[p.id] ?? ''}
+                            onChange={v => setCityIds(c => ({ ...c, [p.id]: v }))}
+                            options={cities.map(c => ({ value: c.id, label: c.name }))}
+                            placeholder="Onay için şehir seçin"
+                          />
+                        )}
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button
-                            onClick={() => update(p.id, 'REVIEWED')}
+                            onClick={() => update(p.id, p.account ? 'APPROVED' : 'REVIEWED')}
                             disabled={saving === p.id}
                             style={{
                               flex: 1, padding: '8px', borderRadius: 8, cursor: saving === p.id ? 'not-allowed' : 'pointer',
@@ -236,7 +308,7 @@ export default function AdminPartnerships() {
                               fontFamily: SANS, opacity: saving === p.id ? 0.4 : 1,
                             }}
                           >
-                            {saving === p.id ? '…' : 'İncelendi'}
+                            {saving === p.id ? '…' : p.account ? 'Onayla' : 'İncelendi'}
                           </button>
                           <button
                             onClick={() => update(p.id, 'REJECTED')}

@@ -6,6 +6,7 @@ import { AiReportService } from "../meetings/ai-report.service";
 import { NotificationService } from "../notification/notification.service";
 import { SubscriptionPlan, SubscriptionStatus, KycStatus } from "@prisma/client";
 import { cancellationNotice, initialsOf } from "../meetings/cancellation-notice";
+import { VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { closeGroupCycle, closeKankaCycle, closeOneOnOneCycle, OPEN_KANKA_SUB } from "../payment/package-rights";
 
 @Injectable()
@@ -17,6 +18,7 @@ export class MatchingScheduler {
     private prisma: PrismaService,
     private aiReportService: AiReportService,
     private notifications: NotificationService,
+    private venueAssignment: VenueAssignmentService,
   ) {}
 
   // Her saat başı güvenlik taraması: atama anında kaçan ve saatle gevşeyen filtrelere (Perşembe 12:00 / 18:00,
@@ -27,6 +29,16 @@ export class MatchingScheduler {
       await this.matchingService.requestScan();
     } catch (err) {
       this.logger.error(`Saatlik tarama hatası: ${err}`);
+    }
+  }
+
+  // Kilidi geçmiş, mekânı boş masalar güncel kontenjana göre ortak mekânlara atanır
+  @Cron("5 * * * *", { timeZone: "Europe/Istanbul" })
+  async assignVenues(): Promise<void> {
+    try {
+      await this.venueAssignment.assignLockedMeetings();
+    } catch (err) {
+      this.logger.error(`Mekân atama hatası: ${err}`);
     }
   }
 

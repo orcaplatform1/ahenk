@@ -17,6 +17,6 @@ import { UsersModule } from "../users/users.module";
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtRefreshStrategy, OtpService, WhatsappService],
-  exports: [AuthService, JwtStrategy],
+  exports: [AuthService, JwtStrategy, OtpService],
 })
 export class AuthModule {}
