@@ -9,7 +9,7 @@ interface TimeLeft {
   seconds: number;
 }
 
-function getNextTarget(targetDay: number): Date {
+export function getNextTarget(targetDay: number): Date {
   const trOffset = 3 * 60 * 60 * 1000;
   const now = new Date();
   const nowTR = new Date(now.getTime() + trOffset);

@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Param, Body, Req, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Param, Body, Query, Req, UseGuards } from "@nestjs/common";
 import { Request } from "express";
 import { MeetingsService } from "./meetings.service";
 import { AiReportService } from "./ai-report.service";
+import { LiveLayerService } from "./live-layer.service";
+import { LiveLayerQueryDto } from "./live-layer.dto";
 import { BlockUsersDto, ReviewMeetingDto, CancelRegistrationDto, MarkNoShowDto } from "./dto/meetings.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
@@ -11,7 +13,22 @@ export class MeetingsController {
   constructor(
     private meetingsService: MeetingsService,
     private aiReportService: AiReportService,
+    private liveLayer: LiveLayerService,
   ) {}
+
+  // Canlı Katman: sonar + canlı akış (15 sn)
+  @Get("live/pulse")
+  getLivePulse(@Req() req: Request, @Query() query: LiveLayerQueryDto) {
+    const user = req.user as { id: string };
+    return this.liveLayer.pulse(user.id, query.cityId);
+  }
+
+  // Canlı Katman: metrikler, ısı haritası, uyum sinyali, dolum (60 sn)
+  @Get("live/overview")
+  getLiveOverview(@Req() req: Request, @Query() query: LiveLayerQueryDto) {
+    const user = req.user as { id: string };
+    return this.liveLayer.overview(user.id, query.cityId);
+  }
 
   @Get("dashboard")
   getDashboard(@Req() req: Request) {
