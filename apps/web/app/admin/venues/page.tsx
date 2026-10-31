@@ -34,7 +34,7 @@ function sortCities(list: City[]): City[] {
 const labelStyle: React.CSSProperties = { fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED, margin: '0 0 4px' };
 interface Venue {
   id: string; name: string; category: string; venueType?: string;
-  address?: string; description?: string; isActive: boolean;
+  address?: string; district?: string | null; description?: string; isActive: boolean;
   city: City;
 }
 
@@ -47,7 +47,8 @@ export default function AdminVenues() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Venue | null>(null);
-  const [form, setForm] = useState({ name: '', category: 'SADE', cityId: '', address: '', description: '' });
+  const [form, setForm] = useState({ name: '', category: 'SADE', cityId: '', address: '', district: '', description: '' });
+  const [districts, setDistricts] = useState<Record<string, string[]>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [modalError, setModalError] = useState('');
@@ -61,25 +62,26 @@ export default function AdminVenues() {
 
   useEffect(() => {
     api.get<City[]>('/admin/cities').then(list => setCities(sortCities(list))).catch((e: Error) => setError(`Şehirler yüklenemedi: ${e.message}`));
+    api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => {});
     loadVenues();
   }, []);
 
   function openAdd() {
-    setForm({ name: '', category: 'SADE', cityId: cities[0]?.id ?? '', address: '', description: '' });
+    setForm({ name: '', category: 'SADE', cityId: cities[0]?.id ?? '', address: '', district: '', description: '' });
     setModalError('');
     setModal('add');
   }
 
   function openEdit(v: Venue) {
     setEditing(v);
-    setForm({ name: v.name, category: v.category, cityId: v.city.id, address: v.address ?? '', description: v.description ?? '' });
+    setForm({ name: v.name, category: v.category, cityId: v.city.id, address: v.address ?? '', district: v.district ?? '', description: v.description ?? '' });
     setModalError('');
     setModal('edit');
   }
 
   async function save() {
     setSaving(true);
-    const body = { name: form.name, category: form.category, cityId: form.cityId, address: form.address || undefined, description: form.description || undefined };
+    const body = { name: form.name, category: form.category, cityId: form.cityId, address: form.address || undefined, district: form.district || undefined, description: form.description || undefined };
     setModalError('');
     try {
       if (modal === 'add') await api.post('/admin/venues', body);
@@ -114,6 +116,7 @@ export default function AdminVenues() {
     loadVenues(selectedCity || undefined);
   }
 
+  const districtOptions = districts[cities.find(c => c.id === form.cityId)?.name ?? ''] ?? [];
   const filtered = selectedCity ? venues.filter(v => v.city.id === selectedCity) : venues;
 
   return (
@@ -253,7 +256,7 @@ export default function AdminVenues() {
               </div>
               <div>
                 <p style={labelStyle}>ŞEHİR</p>
-                <select value={form.cityId} onChange={e => setForm(f => ({ ...f, cityId: e.target.value }))} style={{ ...inputStyle, background: SURFACE }}>
+                <select value={form.cityId} onChange={e => setForm(f => ({ ...f, cityId: e.target.value, district: '' }))} style={{ ...inputStyle, background: SURFACE }}>
                   <optgroup label="Aktif şehirler">
                     {cities.filter(c => c.isActive).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </optgroup>
@@ -261,6 +264,19 @@ export default function AdminVenues() {
                     {cities.filter(c => !c.isActive).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </optgroup>
                 </select>
+              </div>
+              <div>
+                <p style={labelStyle}>İLÇE (OPSİYONEL)</p>
+                {districtOptions.length > 0 ? (
+                  <AdminSelect
+                    value={form.district}
+                    onChange={v => setForm(f => ({ ...f, district: v }))}
+                    options={districtOptions.map(d => ({ value: d, label: d }))}
+                    placeholder="İlçe seçin"
+                  />
+                ) : (
+                  <input value={form.district} onChange={e => setForm(f => ({ ...f, district: e.target.value }))} placeholder="İlçe" maxLength={60} style={inputStyle} />
+                )}
               </div>
               <div>
                 <p style={labelStyle}>KATEGORİ</p>

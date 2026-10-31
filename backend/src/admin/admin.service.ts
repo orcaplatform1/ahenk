@@ -40,6 +40,7 @@ import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "../matching/one-on-one-right";
 import { availableBots } from "../matching/bot-picker";
 import { MatchingService } from "../matching/matching.service";
+import { isValidDistrict } from "../common/districts";
 import { VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
@@ -867,7 +868,7 @@ export class AdminService {
     }
     // Admin iptalinde paket hakkı yanmaz: başbaşa hakkı ve (kilitte düşüldüyse) grup hakkı, kendi iptal etmemiş
     // olanlara geri verilir. Grup: katılımcı kaydı iptal sayılmadığı için o hafta tekrar eşleşebilir.
-    return this.prisma.$transaction(async (tx) => {
+    const cancelled = await this.prisma.$transaction(async (tx) => {
       const stillIn = meeting.participants
         .filter((p) => !["CANCELLED", "DECLINED", "NO_SHOW"].includes(p.status))
         .map((p) => p.userId);
@@ -888,6 +889,8 @@ export class AdminService {
         select: { id: true, status: true },
       });
     });
+    await this.venueAssignment.noticeMeetingCancelled(meetingId);
+    return cancelled;
   }
 
   // ─── Mekan CRUD ──────────────────────────────────────────────────────────
@@ -907,9 +910,11 @@ export class AdminService {
     venueType?: VenueType;
     cityId: string;
     address?: string;
+    district?: string;
   }) {
     const city = await this.prisma.city.findUnique({ where: { id: data.cityId } });
     if (!city) throw new NotFoundException("Şehir bulunamadı");
+    if (data.district && !isValidDistrict(city.name, data.district)) throw new BadRequestException("Geçerli bir ilçe seçin");
     return this.prisma.venue.create({ data, include: { city: { select: { name: true } } } });
   }
 
@@ -919,6 +924,7 @@ export class AdminService {
     category?: VenueCategory;
     venueType?: VenueType;
     address?: string;
+    district?: string;
     isActive?: boolean;
     cityId?: string;
   }) {
@@ -927,6 +933,10 @@ export class AdminService {
     if (data.cityId && data.cityId !== venue.cityId) {
       const city = await this.prisma.city.findUnique({ where: { id: data.cityId }, select: { id: true } });
       if (!city) throw new BadRequestException("Şehir bulunamadı");
+    }
+    if (data.district) {
+      const city = await this.prisma.city.findUniqueOrThrow({ where: { id: data.cityId ?? venue.cityId }, select: { name: true } });
+      if (!isValidDistrict(city.name, data.district)) throw new BadRequestException("Geçerli bir ilçe seçin");
     }
     return this.prisma.venue.update({ where: { id: venueId }, data });
   }

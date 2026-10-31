@@ -113,11 +113,14 @@ export class LiveLayerService {
         id: true,
         profile: { select: { district: true } },
         subscriptions: { where: { status: "ACTIVE" }, orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
+        kyc: { select: { reviewedAt: true } },
       },
     });
     const dots = users
       .map((u) => {
-        const age = now - (u.subscriptions[0]?.createdAt.getTime() ?? 0);
+        // Havuza giriş: paket alınması ya da KYC onayı, hangisi daha geç olduysa
+        const joinedAt = Math.max(u.subscriptions[0]?.createdAt.getTime() ?? 0, u.kyc?.reviewedAt?.getTime() ?? 0);
+        const age = now - joinedAt;
         const state = age <= NEW_ENTRY_MS ? "new" : age <= ACTIVE_ENTRY_MS ? "active" : "pool";
         return { key: opaque(u.id, start), district: u.profile?.district ?? null, state, age };
       })

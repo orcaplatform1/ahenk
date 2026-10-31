@@ -35,7 +35,7 @@ export function AccountTabBar({ activeKey, kycApproved, role }: { activeKey?: st
         position: 'sticky',
         top: 52,
         zIndex: 40,
-        background: 'rgba(10,10,10,0.95)',
+        background: '#0a0a0a',
         borderBottom: '1px solid rgba(255,255,255,0.12)',
         scrollbarWidth: 'none',
       }}
