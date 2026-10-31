@@ -553,10 +553,11 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc, kankaml
   const groupItem    = dashItems.find(i => !i.meeting.type || i.meeting.type === 'GROUP');
   const oneOnOneItem = dashItems.find(i => i.meeting.type === 'ONE_ON_ONE');
   const kankaItem    = dashItems.find(i => i.meeting.type === 'KANKA');
-  const locked       = activePlan === null && !kankamlaActive && !kankaItem;
+  // Masası olan kullanıcı paket hakkı bitse de masasını burada görür (detaylar yalnızca bu sekmede)
+  const locked       = activePlan === null && !kankamlaActive && !kankaItem && !groupItem && !oneOnOneItem;
 
-  const showGroup    = activePlan === 'MASADA' || activePlan === 'ICERDE' || locked;
-  const showOneOnOne = activePlan === 'KARSIMDA' || activePlan === 'ICERDE' || locked;
+  const showGroup    = activePlan === 'MASADA' || activePlan === 'ICERDE' || locked || !!groupItem;
+  const showOneOnOne = activePlan === 'KARSIMDA' || activePlan === 'ICERDE' || locked || !!oneOnOneItem;
 
   return (
     <div className="flex flex-col gap-6">

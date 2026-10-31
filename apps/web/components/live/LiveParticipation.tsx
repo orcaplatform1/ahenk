@@ -21,23 +21,18 @@ export default function LiveParticipation({ tab, item, self, kanka, scanning }: 
   scanning: boolean;
 }) {
   const seated = [...(item?.meeting.participants ?? [])].sort((a, b) => (a.joinedAt ?? '').localeCompare(b.joinedAt ?? ''));
-  const waiting = tab === 'KANKA' ? [self, kanka].filter((p): p is Person => !!p) : [];
+  const waiting = tab === 'KANKA' && scanning && self && kanka ? [self, kanka] : [];
   const people: Person[] = item ? seated : waiting;
-  if (!item && !scanning) return null;
+  const total = item?.meeting.maxParticipants ?? CAPACITY[tab];
 
   return (
-    <section className="ll-card" aria-live="polite">
-      <h2 className="ll-title">Katılım {people.length}/{CAPACITY[tab]}</h2>
-      {people.length > 0 && (
-        <ul style={{ listStyle: 'none', margin: '10px 0 0', padding: 0, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {people.map((p, i) => (
-            <li key={`${p.initials}-${i}`} className="ll-mono" style={{ fontSize: 13, fontWeight: 600, color: gColor(p.gender), padding: '4px 10px', borderRadius: 9999, border: '1px solid currentColor' }}>
-              {label(p.initials)}
-            </li>
-          ))}
-        </ul>
-      )}
-      {!item && <p style={{ margin: '10px 0 0', fontSize: 13, color: '#c9c2b8' }}>Tarama sürüyor, masana yerleşince burada görünecek.</p>}
+    <section className="ll-card" aria-live="polite" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 6 }}>
+      <h2 className="ll-title">{people.length > 0 ? `Katılım ${people.length}/${total}:` : 'Katılım:'}</h2>
+      {people.map((p, i) => (
+        <span key={`${p.initials}-${i}`} className="ll-mono" style={{ fontSize: 14, fontWeight: 600, color: gColor(p.gender) }}>
+          {label(p.initials)}
+        </span>
+      ))}
     </section>
   );
 }

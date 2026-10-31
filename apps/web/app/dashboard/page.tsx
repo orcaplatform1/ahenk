@@ -1,15 +1,14 @@
 'use client';
 
-import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
-import { MasalarDashboard, buildInitials, isMatchingClosed, type DashboardItem, type MasaTuru } from '@ahenk/ui';
+import { buildInitials, type DashboardItem, type MasaTuru } from '@ahenk/ui';
 import { api } from '@/lib/api';
 import { AccountTabBar } from '@/components/AccountTabBar';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
-import LiveLayer from '@/components/live/LiveLayer';
+import LiveLayer, { isPastClosing } from '@/components/live/LiveLayer';
 import LiveParticipation from '@/components/live/LiveParticipation';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
+const DASHBOARD_POLL_MS = 15_000;
 
 interface MeData {
   firstName: string;
@@ -38,6 +37,18 @@ export default function DashboardPage() {
     api.get<{ kanka: { initials: string; gender: string | null } | null }>('/kanka/me').then(r => setKanka(r.kanka)).catch(() => {});
   }, []);
 
+  // Katılım alanı için kullanıcının kendi masaları
+  useEffect(() => {
+    let alive = true;
+    const load = () => {
+      if (document.hidden) return;
+      api.get<{ items: DashboardItem[] }>('/meetings/dashboard').then(r => { if (alive) setItems(r.items); }).catch(() => {});
+    };
+    load();
+    const id = setInterval(load, DASHBOARD_POLL_MS);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-[#121212] flex items-center justify-center">
@@ -61,7 +72,7 @@ export default function DashboardPage() {
   const tab = chosenTab && tabs.includes(chosenTab) ? chosenTab : tabs[0];
   const tabItem = items.find(i => i.meeting.type === tab);
   const kycApproved = me?.kyc?.status === 'APPROVED';
-  const scanning = owned.includes(tab) && kycApproved && !isMatchingClosed(tab);
+  const scanning = owned.includes(tab) && kycApproved && !isPastClosing(tab);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] pt-[52px]">
@@ -84,27 +95,12 @@ export default function DashboardPage() {
       </div>
       <LiveLayer
         activePlan={me?.activePlan ?? null}
+        hasTabTable={!!tabItem}
         tab={tab}
         tabs={tabs}
         onTab={setChosenTab}
         participation={<LiveParticipation tab={tab} item={tabItem} self={selfParticipant} kanka={kanka} scanning={scanning} />}
-      >
-        {(tabItem || !scanning) && (
-          <div className="mb-3">
-            <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Bu Haftanın Masası</h1>
-          </div>
-        )}
-        <MasalarDashboard
-          apiBase={`${API_BASE}/api/v1`}
-          selfParticipant={selfParticipant}
-          activePlan={me?.activePlan ?? null}
-          kycApproved={me?.kyc?.status === 'APPROVED'}
-          kankamlaActive={!!me?.kankamla?.open}
-          modalPortal={(node) => createPortal(node, document.body)}
-          activeTabOverride={tab}
-          onItems={setItems}
-        />
-      </LiveLayer>
+      />
     </div>
   );
 }

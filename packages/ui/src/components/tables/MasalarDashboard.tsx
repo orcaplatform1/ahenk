@@ -991,6 +991,7 @@ export function PremiumToggle({
 }
 
 // ── Ana bileşen ──────────────────────────────────────────────────────────────
+// KULLANILMIYOR: /dashboard'dan kaldırıldı; ClosedView, LockedView ve MasaKarti yalnızca bu bileşenden çağrılıyor. Masa detayları Profil > Masalarım'da.
 export function MasalarDashboard({
   apiBase,
   token,

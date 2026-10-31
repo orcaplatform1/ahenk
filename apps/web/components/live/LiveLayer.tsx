@@ -19,6 +19,14 @@ const TABLE_TEXT: Record<MasaTuru, { day: number; title: string; note: string }>
   KANKA: { day: 6, title: 'Kankamla masası kurulmasına', note: "Cumartesi 23:59'da masalar kapanır." },
 };
 
+// Yeni tarama her Pazar 23:59'da başlar (getNextTarget ile aynı döngü)
+const SCAN_START_DAY = 0;
+
+// Türün bu haftaki kapanışı geçti mi: bir sonraki tarama başlangıcı bir sonraki kapanıştan önce geliyorsa
+export function isPastClosing(tab: MasaTuru) {
+  return getNextTarget(SCAN_START_DAY).getTime() < getNextTarget(TABLE_TEXT[tab].day).getTime();
+}
+
 const OCEAN_LABEL: Record<OceanKey, string> = {
   openness: 'Açıklık',
   conscientiousness: 'Sorumluluk',
@@ -115,19 +123,30 @@ function heatColor(index: number, count: number) {
   return `rgba(255,255,255,${mix(0.08, 0.045)})`;
 }
 
-export default function LiveLayer({ activePlan, tab, tabs, onTab, participation, children }: {
+export default function LiveLayer({ activePlan, hasTabTable, tab, tabs, onTab, participation }: {
   activePlan: string | null;
+  hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
   tab: MasaTuru;
   tabs: MasaTuru[];
   onTab: (tab: MasaTuru) => void;
   participation: React.ReactNode;
-  children: React.ReactNode; // Mevcut masa kartı bilgileri
 }) {
   const router = useRouter();
   // Şehir backend'de activeCity → primaryCity sırasıyla çözülür
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
   const [shineKey, setShineKey] = useState(0);
+  const [pastClosing, setPastClosing] = useState(() => isPastClosing(tab));
+
+  // Tarama başlayınca/kapanınca kart sayfa yenilenmeden değişsin
+  useEffect(() => {
+    const check = () => setPastClosing(isPastClosing(tab));
+    check();
+    const id = setInterval(check, 1000);
+    return () => clearInterval(id);
+  }, [tab]);
+
+  const waitingScan = pastClosing && !hasTabTable;
 
   const city = overview?.city;
   const seats = overview?.groupSeatsLeft ?? null;
@@ -135,11 +154,7 @@ export default function LiveLayer({ activePlan, tab, tabs, onTab, participation,
   const tabSeats = tabFill && tabFill.total ? Math.max(0, tabFill.total - tabFill.filled) : null;
 
   function primaryAction() {
-    if (overview?.hasTable || activePlan) {
-      document.getElementById('masam')?.scrollIntoView();
-      return;
-    }
-    router.push('/profil?tab=paket');
+    router.push(overview?.hasTable || activePlan ? '/profil?tab=masalar' : '/profil?tab=paket');
   }
 
   return (
@@ -150,11 +165,11 @@ export default function LiveLayer({ activePlan, tab, tabs, onTab, participation,
 
         {/* Geri sayım */}
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
-          <p className="ll-eyebrow">{TABLE_TEXT[tab].title}</p>
-          <Countdown day={TABLE_TEXT[tab].day} />
+          <p className="ll-eyebrow">{waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</p>
+          <Countdown day={waitingScan ? SCAN_START_DAY : TABLE_TEXT[tab].day} />
           <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>
-            {TABLE_TEXT[tab].note}
-            {city && tabSeats !== null && (
+            {waitingScan ? "Pazar 23:59'da yeni tarama başlar." : TABLE_TEXT[tab].note}
+            {!waitingScan && city && tabSeats !== null && (
               <> {locative(city.name)} <strong style={{ color: '#fff' }}>{num(tabSeats)} koltuk</strong> kaldı.</>
             )}
           </p>
@@ -177,11 +192,7 @@ export default function LiveLayer({ activePlan, tab, tabs, onTab, participation,
         <LiveSonar sonar={pulse?.sonar ?? null} />
         {participation}
         <LiveFeed feed={pulse?.feed ?? null} />
-      </div>
 
-      <div id="masam" className="relative z-10 max-w-5xl mx-auto px-4 pb-3 scroll-mt-28">{children}</div>
-
-      <div className="ll-column">
         {/* Isı haritası */}
         <section>
           <div className="ll-head">
