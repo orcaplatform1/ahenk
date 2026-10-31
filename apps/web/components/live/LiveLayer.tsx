@@ -1,18 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import SiteSelect from '@/components/SiteSelect';
 import { getNextTarget } from '@/components/HeroCountdown';
-import LiveSonar, { LEVELS } from './LiveSonar';
+import { PremiumToggle, type MasaTuru } from '@ahenk/ui';
+import LiveSonar from './LiveSonar';
+import { LEVELS } from './levels';
 import LiveFeed from './LiveFeed';
 import type { LiveFill, LiveOverview, LivePulse, OceanKey } from './types';
 
 const PULSE_MS = 15_000;
 const OVERVIEW_MS = 60_000;
-const GROUP_LOCK_DAY = 4; // Perşembe 23:59
+// Masa türüne göre kapanış günü ve kart metinleri (0=Pazar … 6=Cumartesi, 23:59)
+const TABLE_TEXT: Record<MasaTuru, { day: number; title: string; note: string }> = {
+  GROUP: { day: 4, title: 'Grup masası kurulmasına', note: "Perşembe 23:59'da masalar kapanır." },
+  ONE_ON_ONE: { day: 5, title: 'Baş başa masa kurulmasına', note: "Cuma 23:59'da masalar kapanır." },
+  KANKA: { day: 6, title: 'Kankamla masası kurulmasına', note: "Cumartesi 23:59'da masalar kapanır." },
+};
 
 const OCEAN_LABEL: Record<OceanKey, string> = {
   openness: 'Açıklık',
@@ -49,14 +54,14 @@ function useLivePoll<T>(path: string | null, intervalMs: number) {
   return data;
 }
 
-function Countdown() {
+function Countdown({ day }: { day: number }) {
   const [left, setLeft] = useState<number | null>(null);
   useEffect(() => {
-    const tick = () => setLeft(Math.max(0, getNextTarget(GROUP_LOCK_DAY).getTime() - Date.now()));
+    const tick = () => setLeft(Math.max(0, getNextTarget(day).getTime() - Date.now()));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [day]);
 
   const ms = left ?? 0;
   const units = [
@@ -110,22 +115,24 @@ function heatColor(index: number, count: number) {
   return `rgba(255,255,255,${mix(0.08, 0.045)})`;
 }
 
-export default function LiveLayer({ activePlan }: { activePlan: string | null }) {
+export default function LiveLayer({ activePlan, tab, tabs, onTab, participation, children }: {
+  activePlan: string | null;
+  tab: MasaTuru;
+  tabs: MasaTuru[];
+  onTab: (tab: MasaTuru) => void;
+  participation: React.ReactNode;
+  children: React.ReactNode; // Mevcut masa kartı bilgileri
+}) {
   const router = useRouter();
-  const [cityId, setCityId] = useState('');
-  const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
-  const query = cityId ? `?cityId=${encodeURIComponent(cityId)}` : '';
-  const overview = useLivePoll<LiveOverview>(`/meetings/live/overview${query}`, OVERVIEW_MS);
-  const pulse = useLivePoll<LivePulse>(`/meetings/live/pulse${query}`, PULSE_MS);
-
-  useEffect(() => {
-    api.get<{ id: string; name: string }[]>('/auth/cities').then(setCities).catch(() => undefined);
-  }, []);
+  // Şehir backend'de activeCity → primaryCity sırasıyla çözülür
+  const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
+  const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
+  const [shineKey, setShineKey] = useState(0);
 
   const city = overview?.city;
   const seats = overview?.groupSeatsLeft ?? null;
-  // Aktif şehir listede olmasa da (kapalı şehir) seçicide görünsün
-  const cityOptions = city && !cities.some((c) => c.id === city.id) ? [city, ...cities] : cities;
+  const tabFill = overview ? { GROUP: overview.fill.group, ONE_ON_ONE: overview.fill.oneOnOne, KANKA: overview.fill.kanka }[tab] : null;
+  const tabSeats = tabFill && tabFill.total ? Math.max(0, tabFill.total - tabFill.filled) : null;
 
   function primaryAction() {
     if (overview?.hasTable || activePlan) {
@@ -139,34 +146,16 @@ export default function LiveLayer({ activePlan }: { activePlan: string | null })
     <div className="live-layer">
       <div className="ll-glow" aria-hidden="true" />
       <div className="ll-column">
-        {/* Üst bar */}
-        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Image src="/logo.webp" alt="" width={32} height={32} className="rounded-full" />
-            <span className="ll-serif" style={{ fontSize: 24, letterSpacing: 3 }}>AHENK</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="ll-live"><span className="ll-live-dot" />CANLI</span>
-            <div style={{ width: 130 }}>
-              <SiteSelect
-                value={city?.id ?? ''}
-                onChange={setCityId}
-                options={cityOptions.map((c) => ({ value: c.id, label: c.name }))}
-                placeholder="Şehir"
-                ariaLabel="Şehir seçin"
-              />
-            </div>
-          </div>
-        </header>
+        <PremiumToggle activeTab={tab} visible={tabs} shineKey={shineKey} onSwitch={(t) => { setShineKey((k) => k + 1); onTab(t); }} />
 
         {/* Geri sayım */}
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
-          <p className="ll-eyebrow">GRUP MASASI KİLİTLENMESİNE</p>
-          <Countdown />
+          <p className="ll-eyebrow">{TABLE_TEXT[tab].title}</p>
+          <Countdown day={TABLE_TEXT[tab].day} />
           <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>
-            Perşembe 23:59&apos;da masalar kilitlenir.
-            {city && seats !== null && (
-              <> {locative(city.name)} <strong style={{ color: '#fff' }}>{num(seats)} koltuk</strong> kaldı.</>
+            {TABLE_TEXT[tab].note}
+            {city && tabSeats !== null && (
+              <> {locative(city.name)} <strong style={{ color: '#fff' }}>{num(tabSeats)} koltuk</strong> kaldı.</>
             )}
           </p>
         </section>
@@ -186,8 +175,13 @@ export default function LiveLayer({ activePlan }: { activePlan: string | null })
         </section>
 
         <LiveSonar sonar={pulse?.sonar ?? null} />
+        {participation}
         <LiveFeed feed={pulse?.feed ?? null} />
+      </div>
 
+      <div id="masam" className="relative z-10 max-w-5xl mx-auto px-4 pb-3 scroll-mt-28">{children}</div>
+
+      <div className="ll-column">
         {/* Isı haritası */}
         <section>
           <div className="ll-head">

@@ -237,6 +237,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .ll-live { display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px; border-radius: 9999px; border: 1px solid rgba(255,107,94,0.35); color: var(--ll-red-2); font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 600; }
 .ll-live-dot { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--ll-red-2); }
 .ll-live-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--ll-red-2); animation: ll-pulse 1.8s ease-out infinite; }
+.ll-live.is-green { color: #22c55e; }
+.ll-live.is-green .ll-live-dot, .ll-live.is-green .ll-live-dot::after { background: #22c55e; }
 .ll-blink { color: var(--ll-red-3); animation: ll-blink 1.4s ease-in-out infinite; }
 .ll-sweep { transform-box: view-box; transform-origin: 150px 150px; animation: ll-spin 6s linear infinite; }
 .ll-dot-new { transform-box: fill-box; transform-origin: center; animation: ll-pulse 1.8s ease-out infinite; }

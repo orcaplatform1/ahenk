@@ -131,6 +131,25 @@ export class VenueAssignmentService {
     }
   }
 
+  // Admin masayı iptal etti: haber verilmiş mekâna iptal mesajı (birleştirmede çağrılmaz)
+  async noticeMeetingCancelled(meetingId: string): Promise<void> {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      select: { venueNotifiedId: true, type: true, scheduledAt: true },
+    });
+    if (!meeting?.venueNotifiedId) return;
+    const claimed = await this.prisma.meeting.updateMany({
+      where: { id: meetingId, venueNotifiedId: meeting.venueNotifiedId },
+      data: { venueNotifiedId: null },
+    });
+    if (claimed.count === 0) return;
+    const account = await this.prisma.venueAccount.findUnique({ where: { venueId: meeting.venueNotifiedId }, select: { phone: true } });
+    if (!account) return;
+    const { day, time } = this.trParts(meeting.scheduledAt);
+    await this.whatsapp.send(account.phone, "ahenk_venue_table_cancelled", [day, time, TYPE_LABEL[meeting.type] ?? meeting.type])
+      .catch((err: unknown) => this.logger.error(`Mekân iptal bildirimi gönderilemedi: ${err}`));
+  }
+
   // Haftada mekâna atanmış masalardaki toplam kişi
   async usedSeats(venueId: string, weekStart: Date, tx: Prisma.TransactionClient = this.prisma): Promise<number> {
     const meetings = await tx.meeting.findMany({

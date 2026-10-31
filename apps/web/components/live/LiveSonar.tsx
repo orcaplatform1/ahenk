@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AhenkSonar, SONAR_CENTER as C } from '@ahenk/ui';
+import { LEVELS } from './levels';
 import type { LivePulse, SonarDensity, SonarState } from './types';
 
 const RING_RADIUS: Record<SonarState, number> = { new: 50, active: 86, pool: 122 };
@@ -12,12 +13,15 @@ const DOT: Record<SonarState, { color: string; r: number }> = {
 };
 const FLASH_MS = 1500;
 
-export const LEVELS = {
-  1: { label: 'Çok yoğun', color: '#ff4a3d', r: 9, band: 50, opacity: 1, start: 45 },
-  2: { label: 'Yoğun', color: '#d6453a', r: 7, band: 86, opacity: 0.92, start: 0 },
-  3: { label: 'Orta', color: '#e8823a', r: 5.5, band: 118, opacity: 0.8, start: 90 },
-  4: { label: 'Düşük', color: '#c9a227', r: 4, band: 136, opacity: 0.6, start: 25 },
-} as const;
+// Etiket kutusu tahmini (viewBox birimi) ve sonar sınırı
+const LABEL_H = 12;
+const LABEL_GAP = 3;
+const EDGE = 4;
+const SIZE = 300;
+
+type Box = { x0: number; x1: number; y0: number; y1: number };
+const hit = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+const inside = (b: Box) => b.x0 >= EDGE && b.x1 <= SIZE - EDGE && b.y0 >= EDGE && b.y1 <= SIZE - EDGE;
 
 function hashAngle(text: string): number {
   let h = 0;
@@ -47,33 +51,58 @@ function placeBubbles(density: SonarDensity) {
   });
 }
 
+// Etiketler seviyeler arasında da çakışmaz: her etiket için yandan, üstten ve alttan adaylar denenir;
+// sonar dışına taşan, başka etikete ya da baloncuğa değen aday elenir.
+function placeLabels(bubbles: ReturnType<typeof placeBubbles>) {
+  const circles: Box[] = bubbles.map((b) => ({ x0: b.x - b.r - 1, x1: b.x + b.r + 1, y0: b.y - b.r - 1, y1: b.y + b.r + 1 }));
+  const placed: Box[] = [];
+  return bubbles.map((b, index) => {
+    const width = b.name.length * (b.level <= 2 ? 6.4 : 5.9) + 2;
+    const left = b.x - b.r - LABEL_GAP - width;
+    const right = b.x + b.r + LABEL_GAP;
+    const center = b.x - width / 2;
+    const above = b.y - b.r - LABEL_GAP - LABEL_H;
+    const below = b.y + b.r + LABEL_GAP;
+    const beside = b.y - LABEL_H / 2;
+    const towardCenter = b.x >= C ? [left, right] : [right, left];
+    const candidates: { x: number; y: number }[] = [
+      ...towardCenter.map((x) => ({ x, y: beside })),
+      { x: center, y: b.y >= C ? above : below },
+      { x: center, y: b.y >= C ? below : above },
+    ];
+    for (const step of [13, 26, 39]) {
+      for (const x of [...towardCenter, center]) candidates.push({ x, y: beside - step }, { x, y: beside + step });
+    }
+    const toBox = (c: { x: number; y: number }): Box => ({ x0: c.x, x1: c.x + width, y0: c.y, y1: c.y + LABEL_H });
+    const others = circles.filter((_, i) => i !== index);
+    const free = (box: Box) => inside(box) && !placed.some((p) => hit(p, box)) && !others.some((p) => hit(p, box));
+    const pick = candidates.find((c) => free(toBox(c))) ?? candidates.find((c) => inside(toBox(c)) && !placed.some((p) => hit(p, toBox(c)))) ?? candidates[0];
+    const box = toBox(pick);
+    placed.push(box);
+    return { ...b, labelX: box.x0, labelY: box.y0 + LABEL_H - 2.5 };
+  });
+}
+
 function DensityLayer({ density, flashes }: { density: SonarDensity; flashes: Record<string, number> }) {
   return (
     <>
-      {placeBubbles(density).map((b) => {
-        const right = b.x >= C;
-        // Dış bantlarda yazı içeri, iç bantlarda dışarı bakar; sonarın dışına taşmaz
-        const inward = b.band >= 118;
-        const anchorEnd = inward ? right : !right;
-        return (
-          <g key={b.name}>
-            {b.level === 1 && <circle className="ll-bubble-pulse" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
-            {flashes[b.name] > 0 && <circle key={flashes[b.name]} className="ll-flash" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
-            <circle cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} />
-            <text
-              x={b.x + (anchorEnd ? -(b.r + 3) : b.r + 3)}
-              y={b.y + 3.5}
-              textAnchor={anchorEnd ? 'end' : 'start'}
-              fontSize="10.5"
-              fontWeight={b.level <= 2 ? 700 : 400}
-              fill={b.level <= 2 ? '#f4f1ec' : '#c9c2b8'}
-              style={{ fontFamily: 'var(--font-sans), system-ui, sans-serif' }}
-            >
-              {b.name}
-            </text>
-          </g>
-        );
-      })}
+      {placeLabels(placeBubbles(density)).map((b) => (
+        <g key={b.name}>
+          {b.level === 1 && <circle className="ll-bubble-pulse" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
+          {flashes[b.name] > 0 && <circle key={flashes[b.name]} className="ll-flash" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
+          <circle cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} />
+          <text
+            x={b.labelX}
+            y={b.labelY}
+            fontSize="10.5"
+            fontWeight={b.level <= 2 ? 700 : 400}
+            fill={b.level <= 2 ? '#f4f1ec' : '#c9c2b8'}
+            style={{ fontFamily: 'var(--font-sans), system-ui, sans-serif' }}
+          >
+            {b.name}
+          </text>
+        </g>
+      ))}
     </>
   );
 }
@@ -146,15 +175,15 @@ export default function LiveSonar({ sonar }: { sonar: LivePulse['sonar'] | null 
   return (
     <section>
       <div className="ll-head">
-        <h2 className="ll-title">Ahenk Sonarı</h2>
-        <span className="ll-note">tarama · canlı</span>
+        <h2 className="ll-title">Eşleşme Taraması</h2>
+        <span className="ll-live is-green"><span className="ll-live-dot" />CANLI</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <AhenkSonar
           centerPulse={centerPulse}
           ariaLabel={density
-            ? `Ahenk sonarı: ilçe yoğunluğu, ${density.districts.length} ilçe. Kişisel bilgi gösterilmez.`
-            : `Ahenk sonarı: bu hafta havuzda ${dots.length} kişi görünüyor, ${counts.new} yeni giriş, ${counts.active} aktif. Kişisel bilgi gösterilmez.`}
+            ? `Eşleşme taraması: ilçe yoğunluğu, ${density.districts.length} ilçe. Kişisel bilgi gösterilmez.`
+            : `Eşleşme taraması: bu hafta havuzda ${dots.length} kişi görünüyor, ${counts.new} yeni giriş, ${counts.active} aktif. Kişisel bilgi gösterilmez.`}
         >
           {density ? <DensityLayer density={density} flashes={flashes} /> : <DotLayer sonar={sonar} />}
         </AhenkSonar>

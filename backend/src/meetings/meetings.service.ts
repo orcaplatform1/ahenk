@@ -57,6 +57,7 @@ export class MeetingsService {
           status: true,
           userId: true,
           kankaPartnerId: true,
+          createdAt: true,
           user: {
             select: {
               isBot: true,
@@ -105,6 +106,7 @@ export class MeetingsService {
             return {
               initials: `${(f[0] ?? '?').toUpperCase()}.${(l[0] ?? '?').toUpperCase()}.`,
               gender: p.user.profile?.gender ?? null,
+              joinedAt: p.createdAt, // Katılım listesi giriş sırası
               ...(m.type === MeetingType.KANKA && {
                 pair: p.userId === userId || p.userId === myKankaId ? ('MINE' as const) : ('OTHER' as const),
               }),

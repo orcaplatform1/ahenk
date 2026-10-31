@@ -43,7 +43,7 @@ function buildSweepPath(): string {
 const SWEEP_PATH = buildSweepPath();
 
 // ── Cinsiyet yardımcıları ──────────────────────────────────────────────────
-function gColor(g?: string | null) {
+export function gColor(g?: string | null) {
   if (g === 'FEMALE') return FEMALE_CLR;
   return MALE_CLR;
 }
@@ -85,7 +85,7 @@ function nextDeadline(type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'): Date {
 
 
 // ── Eşleşme kapalı mı? (TR saati) — Grup: Perşembe 23:59 → Pazar 23:59, Başbaşa: Cuma 23:59 → Pazar 23:59 ──
-function isMatchingClosed(type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'): boolean {
+export function isMatchingClosed(type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'): boolean {
   const dayTR = new Date(Date.now() + 3 * 60 * 60 * 1000).getUTCDay(); // 0=Pazar … 6=Cumartesi
   if (type === 'KANKA') return dayTR === 0; // Kankamla: Cumartesi 23:59 → Pazar 23:59
   return type === 'GROUP' ? (dayTR === 5 || dayTR === 6 || dayTR === 0) : (dayTR === 6 || dayTR === 0);
@@ -238,6 +238,7 @@ export interface Participant {
   gender: 'MALE' | 'FEMALE' | string | null;
   // Kankamla: kişinin kendi çifti (kendisi + kankası) MINE, karşı çift OTHER
   pair?: 'MINE' | 'OTHER';
+  joinedAt?: string; // Masaya giriş zamanı (Katılım listesi sırası)
 }
 
 export interface MasaData {
@@ -253,7 +254,9 @@ export interface MasaData {
   participants: Participant[];
 }
 
-interface DashboardItem {
+export type MasaTuru = 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
+
+export interface DashboardItem {
   phase: 'WAITING' | 'REVEALED';
   meeting: {
     id: string;
@@ -286,6 +289,10 @@ interface Props {
   kankamlaActive?: boolean;
   // Rezervasyon iptal penceresini sayfanın üst katmanında açmak için (kart bulanıklığı pencereyi kırpmasın)
   modalPortal?: ModalPortal;
+  // Verilirse sekme sayfa tarafından yönetilir ve içeride sekme çubuğu gösterilmez
+  activeTabOverride?: MasaTuru;
+  // Her polling sonucu sayfaya da iletilir (ayrı istek açılmaz)
+  onItems?: (items: DashboardItem[]) => void;
 }
 
 // ── Avatar bileşeni ────────────────────────────────────────────────────────
@@ -410,6 +417,7 @@ function RadarSweep({ running, cx, cy, sweepPath }: { running: boolean; cx: numb
   );
 }
 
+// KULLANILMIYOR: tarama/kilitli radar /dashboard'dan kaldırıldı (RadarCanvas, buildScanningSlots, ScanningView)
 // ── Canvas Radar ─────────────────────────────────────────────────────────────
 const AVATAR_RIM = 134;   // avatar orbit yarıçapı (340px canvas)
 
@@ -516,6 +524,7 @@ function buildScanningSlots(allParts: Participant[], maxP: number): Array<Partic
 }
 
 // ── SCANNING ekranı ──────────────────────────────────────────────────────────
+// KULLANILMIYOR
 function ScanningView({ type = 'GROUP', participants, selfParticipant, isDesktop }: {
   type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   participants?: Participant[];
@@ -757,10 +766,8 @@ function ClosedView({ type = 'GROUP', isDesktop, icon = '/clock-icon.png', messa
 const LOCK_CLR      = '#e8850c';
 const LOCK_ICON_CLR = '#7bc67e';
 
-function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'; neededPlan?: 'MASADA' | 'KARSIMDA' | 'KANKAMLA' | null; isDesktop?: boolean }) {
+function LockedView({ type = 'GROUP' }: { type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'; neededPlan?: 'MASADA' | 'KARSIMDA' | 'KANKAMLA' | null; isDesktop?: boolean }) {
   const isGroup = type === 'GROUP';
-  const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale(isDesktop ? 1.5 : 1);
-
   const line1 = isGroup
     ? 'Eşleşme taraması aktif.'
     : 'Eşleşme taraması daha derin ve hassas çalışıyor.';
@@ -801,21 +808,6 @@ function LockedView({ type = 'GROUP', isDesktop }: { type?: 'GROUP' | 'ONE_ON_ON
         </div>
       </div>
 
-      {/* Canvas radar + kilit ikonu */}
-      <div ref={radarWrapRef} style={{ width: '100%', display: 'flex', justifyContent: 'center', overflow: 'visible' }}>
-        <div style={{
-          transform: `scale(${radarScale})`, transformOrigin: 'top center',
-          marginBottom: RADAR_SZ * (radarScale - 1), flexShrink: 0,
-        }}>
-          <RadarCanvas type={type}>
-            <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', zIndex: 5, pointerEvents: 'none' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/lock-icon.png" width={56} height={56} style={{ animation: 'lockShake 0.8s ease-in-out infinite', display: 'block' }} alt="" />
-            </div>
-          </RadarCanvas>
-        </div>
-      </div>
-
       {/* Alt yazı + buton */}
       <div style={{ textAlign: 'center', marginTop: 20, padding: '0 8px' }}>
         <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#f5f5f5', lineHeight: 1.65, margin: '0 0 4px' }}>
@@ -848,7 +840,7 @@ function MasaKarti({
 }) {
   if (!item) {
     if (isMatchingClosed(type)) return <ClosedView type={type} isDesktop={isDesktop} />;
-    return <ScanningView type={type} participants={[]} selfParticipant={selfParticipant} isDesktop={isDesktop} />;
+    return null; // Tarama durumu /dashboard'daki Katılım alanında
   }
 
   if (item.phase === 'REVEALED' && item.meeting.venueName) {
@@ -895,27 +887,29 @@ function MasaKarti({
     );
   }
 
-  return <ScanningView type={type} participants={item.meeting.participants} selfParticipant={selfParticipant} isDesktop={isDesktop} />;
+  return null;
 }
 
 // ── Premium Toggle ─────────────────────────────────────────────────────────────
-function PremiumToggle({
+export function PremiumToggle({
   activeTab,
   onSwitch,
   shineKey,
+  visible,
 }: {
   activeTab: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   onSwitch: (tab: 'GROUP' | 'ONE_ON_ONE' | 'KANKA') => void;
   shineKey: number;
+  visible?: MasaTuru[]; // Boşsa üç sekme de görünür
 }) {
   const tabs = [
     { key: 'GROUP' as const,      label: 'Grup Masası' },
     { key: 'ONE_ON_ONE' as const, label: 'Baş Başa Masa' },
     { key: 'KANKA' as const,      label: 'Kankamla' },
-  ];
+  ].filter((t) => !visible?.length || visible.includes(t.key));
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+    <div style={{ display: 'flex', justifyContent: 'center' }}>
       <style>{`
         @keyframes toggleShine {
           0%   { left: -60%; }
@@ -940,7 +934,8 @@ function PremiumToggle({
               onClick={() => onSwitch(key)}
               style={{
                 position: 'relative',
-                padding: '11px 26px',
+                padding: '11px clamp(12px, 4vw, 26px)',
+                whiteSpace: 'nowrap',
                 borderRadius: 100,
                 border: 'none',
                 background: 'transparent',
@@ -1005,10 +1000,13 @@ export function MasalarDashboard({
   kycApproved = true,
   modalPortal,
   kankamlaActive = false,
+  activeTabOverride,
+  onItems,
 }: Props) {
   const [dashData, setDashData]   = useState<DashboardResponse | null>(null);
   const [loading, setLoading]     = useState(!!apiBase);
-  const [activeTab, setActiveTab] = useState<'GROUP' | 'ONE_ON_ONE' | 'KANKA'>('GROUP');
+  const [ownTab, setActiveTab]    = useState<'GROUP' | 'ONE_ON_ONE' | 'KANKA'>('GROUP');
+  const activeTab = activeTabOverride ?? ownTab;
   const [tabDir, setTabDir]       = useState(1);
   const [shineKey, setShineKey]   = useState(0);
   const isDesktop = useIsDesktop();
@@ -1027,6 +1025,11 @@ export function MasalarDashboard({
       setDashData({ items: [] });
     }
   };
+
+  useEffect(() => {
+    if (dashData) onItems?.(dashData.items);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashData]);
 
   useEffect(() => {
     if (!apiBase) return;
@@ -1121,10 +1124,16 @@ export function MasalarDashboard({
     return <LockedView type={tab} neededPlan={null} isDesktop={isDesktop} />;
   }
 
+  // Masası olmayan ve kapanmamış sekmede gösterilecek kart yok (tarama durumu Katılım alanında)
+  const activeItem = activeTab === 'GROUP' ? groupItem : activeTab === 'ONE_ON_ONE' ? oneOnOneItem : kankaItem;
+  const tabContent = getTabContent(activeTab);
+  const scanningOnly = !activeItem && !isMatchingClosed(activeTab) && (tabContent as React.ReactElement | null)?.type === MasaKarti;
+  if (tabContent === null || scanningOnly) return null;
+
   return (
     <div style={{ maxWidth: isDesktop ? undefined : 400, margin: '0 auto' }}>
       <div style={cardStyle}>
-        <PremiumToggle activeTab={activeTab} onSwitch={handleTabSwitch} shineKey={shineKey} />
+        {!activeTabOverride && <div style={{ marginBottom: 24 }}><PremiumToggle activeTab={activeTab} onSwitch={handleTabSwitch} shineKey={shineKey} /></div>}
         <AnimatePresence mode="wait" custom={tabDir}>
           <motion.div
             key={activeTab}
@@ -1139,7 +1148,7 @@ export function MasalarDashboard({
             exit="exit"
             transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
           >
-            {getTabContent(activeTab)}
+            {tabContent}
           </motion.div>
         </AnimatePresence>
       </div>

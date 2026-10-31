@@ -132,6 +132,11 @@ export class CreateVenueDto {
   address?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  district?: string;
+
+  @IsOptional()
   latitude?: number;
 
   @IsOptional()
@@ -164,6 +169,11 @@ export class UpdateVenueDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  district?: string;
 
   @IsOptional()
   @IsBoolean()
