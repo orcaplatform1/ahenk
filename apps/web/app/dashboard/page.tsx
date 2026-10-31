@@ -6,6 +6,7 @@ import { MasalarDashboard, buildInitials } from '@ahenk/ui';
 import { api } from '@/lib/api';
 import { AccountTabBar } from '@/components/AccountTabBar';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
+import LiveLayer from '@/components/live/LiveLayer';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
 
@@ -44,13 +45,14 @@ export default function DashboardPage() {
     : undefined;
 
   return (
-    <div className="min-h-screen bg-[#121212] text-[#f5f5f5] pt-[52px]">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] pt-[52px]">
       <AccountTabBar kycApproved={me?.kyc?.status === 'APPROVED'} />
       <div
         className="fixed inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,0.1) 0%, transparent 70%)' }}
       />
-      <main className="relative z-10 max-w-5xl mx-auto px-4 py-3">
+      <LiveLayer activePlan={me?.activePlan ?? null} />
+      <main id="masam" className="relative z-10 max-w-5xl mx-auto px-4 py-3 scroll-mt-28">
         {me?.kyc?.status === 'REJECTED' && (
           <div className="mb-4 rounded-2xl px-4 py-4" style={{ background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.35)' }}>
             <p className="text-sm font-semibold text-[#ff6b6b] mb-1">Kimlik doğrulamanız reddedildi</p>

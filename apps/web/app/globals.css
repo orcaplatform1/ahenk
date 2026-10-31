@@ -213,3 +213,48 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     margin: 16px;
   }
 }
+
+/* ── Canlı Katman (sadece /dashboard) ───────────────── */
+.live-layer {
+  --ll-bg: #0a0a0a; --ll-text: #f4f1ec; --ll-text-2: #c9c2b8; --ll-label: #a39c93; --ll-time: #8f887f;
+  --ll-red: #d6453a; --ll-red-2: #ff6b5e; --ll-red-3: #ff8a7e; --ll-copper: #e8a27a; --ll-copper-2: #c8743c;
+  position: relative; overflow: hidden; background: var(--ll-bg); color: var(--ll-text);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+.ll-glow {
+  position: absolute; top: -140px; right: -140px; width: 420px; height: 420px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(200,56,44,0.28) 0%, transparent 70%);
+}
+.ll-column { position: relative; max-width: 480px; margin: 0 auto; padding: 16px 20px 28px; display: flex; flex-direction: column; gap: 28px; }
+.ll-serif { font-family: var(--font-serif), Georgia, serif; font-weight: 400; }
+.ll-mono { font-family: var(--font-mono), monospace; }
+.ll-card { border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.025); padding: 18px; }
+.ll-metric { border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); padding: 12px 10px; min-width: 0; }
+.ll-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.ll-title { font-family: var(--font-serif), Georgia, serif; font-weight: 400; font-size: 23px; line-height: 1.2; margin: 0; }
+.ll-note { font-family: var(--font-mono), monospace; font-size: 11px; color: var(--ll-label); white-space: nowrap; }
+.ll-eyebrow { font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: 1.6px; color: var(--ll-copper); margin: 0; }
+.ll-live { display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px; border-radius: 9999px; border: 1px solid rgba(255,107,94,0.35); color: var(--ll-red-2); font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 600; }
+.ll-live-dot { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--ll-red-2); }
+.ll-live-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--ll-red-2); animation: ll-pulse 1.8s ease-out infinite; }
+.ll-blink { color: var(--ll-red-3); animation: ll-blink 1.4s ease-in-out infinite; }
+.ll-sweep { transform-box: view-box; transform-origin: 150px 150px; animation: ll-spin 6s linear infinite; }
+.ll-dot-new { transform-box: fill-box; transform-origin: center; animation: ll-pulse 1.8s ease-out infinite; }
+.ll-feed-window { position: relative; height: 372px; overflow: hidden; }
+.ll-feed-window::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 60px; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--ll-bg)); }
+.ll-feed-track { animation: ll-scroll var(--ll-scroll-time, 60s) linear infinite; will-change: transform; }
+.ll-feed-track.is-static { animation: none; }
+.ll-feed-row { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; min-height: 44px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.ll-badge { font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 600; padding: 3px 7px; border-radius: 6px; border: 1px solid currentColor; white-space: nowrap; }
+.ll-heat { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ll-heat-cell { height: 84px; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+.ll-bar { position: relative; overflow: hidden; }
+.ll-bar > span { position: absolute; inset: 0; transform-origin: left; }
+.ll-cta { width: 100%; min-height: 56px; border: none; border-radius: 16px; cursor: pointer; color: #fff; font: 700 16px var(--font-sans), system-ui, sans-serif; background: linear-gradient(90deg, #c7342a, #d9603f 55%, #e8a27a); box-shadow: 0 10px 30px rgba(214,69,58,0.35); }
+@keyframes ll-pulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes ll-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes ll-spin { to { transform: rotate(360deg); } }
+@keyframes ll-scroll { to { transform: translateY(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .ll-live-dot::after, .ll-blink, .ll-sweep, .ll-dot-new, .ll-feed-track { animation: none; }
+}

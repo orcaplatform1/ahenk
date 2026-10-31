@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { DM_Serif_Display, Inter } from 'next/font/google';
+import { DM_Serif_Display, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import CookieBanner from '@/components/CookieBanner';
 import SiteFooter from '@/components/SiteFooter';
@@ -15,6 +15,13 @@ const dmSerifDisplay = DM_Serif_Display({
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
+  display: 'swap',
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600'],
+  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -68,7 +75,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="tr" className={`${dmSerifDisplay.variable} ${inter.variable}`}>
+    <html lang="tr" className={`${dmSerifDisplay.variable} ${inter.variable} ${jetBrainsMono.variable}`}>
       <body className="font-sans antialiased" style={{}}>
         <NavbarWrapper />
         {children}

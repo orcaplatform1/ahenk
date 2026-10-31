@@ -1,3 +1,4 @@
+import { LiveLayerService } from "./live-layer.service";
 import { Module } from "@nestjs/common";
 import { BullModule } from "@nestjs/bull";
 import { MeetingsService } from "./meetings.service";
@@ -16,7 +17,7 @@ import { ASSIGN_QUEUE } from "../matching/assign-queue";
     BullModule.registerQueue({ name: ASSIGN_QUEUE }),
   ],
   controllers: [MeetingsController],
-  providers: [MeetingsService, AiReportService],
+  providers: [MeetingsService, AiReportService, LiveLayerService],
   exports: [AiReportService],
 })
 export class MeetingsModule {}
