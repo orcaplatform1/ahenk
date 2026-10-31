@@ -4,8 +4,7 @@ import type { LivePulse } from './types';
 
 type Event = LivePulse['feed']['events'][number];
 
-const SCROLL_MIN_ROWS = 7; // Daha az satır pencereye sığar, kaydırılmaz
-const SECONDS_PER_ROW = 4;
+const MAX_ROWS = 6;
 
 const KIND: Record<Event['kind'], { text: string; color: string }> = {
   FULL: { text: 'Masa doldu', color: '#ff8a7e' },
@@ -35,8 +34,7 @@ function Row({ event }: { event: Event }) {
 }
 
 export default function LiveFeed({ feed }: { feed: LivePulse['feed'] | null }) {
-  const events = feed?.events ?? [];
-  const scrolls = events.length >= SCROLL_MIN_ROWS;
+  const events = (feed?.events ?? []).slice(0, MAX_ROWS);
 
   return (
     <section className="ll-card">
@@ -45,17 +43,9 @@ export default function LiveFeed({ feed }: { feed: LivePulse['feed'] | null }) {
         <span className="ll-note">dk&apos;da {(feed?.perMinute ?? 0).toLocaleString('tr-TR')} olay</span>
       </div>
       {events.length === 0 ? (
-        <p style={{ margin: 0, fontSize: 13, color: '#a39c93' }}>Bu hafta henüz masa hareketi yok.</p>
+        <p style={{ margin: 0, fontSize: 13, color: '#a39c93' }}>Henüz olay yok.</p>
       ) : (
-        <div className="ll-feed-window">
-          <div
-            className={`ll-feed-track${scrolls ? '' : ' is-static'}`}
-            style={{ '--ll-scroll-time': `${events.length * SECONDS_PER_ROW}s` } as React.CSSProperties}
-          >
-            <div>{events.map((e) => <Row key={e.key} event={e} />)}</div>
-            {scrolls && <div aria-hidden="true">{events.map((e) => <Row key={e.key} event={e} />)}</div>}
-          </div>
-        </div>
+        <div>{events.map((e) => <Row key={e.key} event={e} />)}</div>
       )}
     </section>
   );

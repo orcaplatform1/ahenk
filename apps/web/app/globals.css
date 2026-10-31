@@ -242,6 +242,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .ll-blink { color: var(--ll-red-3); animation: ll-blink 1.4s ease-in-out infinite; }
 .ll-sweep { transform-box: view-box; transform-origin: 150px 150px; animation: ll-spin 6s linear infinite; }
 .ll-dot-new { transform-box: fill-box; transform-origin: center; animation: ll-pulse 1.8s ease-out infinite; }
+/* KULLANILMIYOR: ll-feed-window, ll-feed-track (Canlı Akış artık kaydırmalı pencere kullanmıyor) */
 .ll-feed-window { position: relative; height: 372px; overflow: hidden; }
 .ll-feed-window::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 60px; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--ll-bg)); }
 .ll-feed-track { animation: ll-scroll var(--ll-scroll-time, 60s) linear infinite; will-change: transform; }
