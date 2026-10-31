@@ -20,7 +20,7 @@ export default function LiveParticipation({ tab, item, self, kanka, scanning }: 
   kanka?: Person | null;
   scanning: boolean;
 }) {
-  const seated = [...(item?.meeting.participants ?? [])].sort((a, b) => (a.joinedAt ?? '').localeCompare(b.joinedAt ?? ''));
+  const seated = (item?.meeting.participants ?? []).filter((p) => !p.cancelled).sort((a, b) => (a.joinedAt ?? '').localeCompare(b.joinedAt ?? ''));
   const waiting = tab === 'KANKA' && scanning && self && kanka ? [self, kanka] : [];
   const people: Person[] = item ? seated : waiting;
   const total = item?.meeting.maxParticipants ?? CAPACITY[tab];

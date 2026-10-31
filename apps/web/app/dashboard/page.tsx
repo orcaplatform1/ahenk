@@ -25,6 +25,8 @@ export default function DashboardPage() {
   const [me, setMe] = useState<MeData | null>(null);
   const [mounted, setMounted] = useState(false);
   const [items, setItems] = useState<DashboardItem[]>([]);
+  const [weekTypes, setWeekTypes] = useState<MasaTuru[]>([]);
+  const [dashLoaded, setDashLoaded] = useState(false);
   const [chosenTab, setChosenTab] = useState<MasaTuru | null>(null);
   const [kanka, setKanka] = useState<{ initials: string; gender: string | null } | null>(null);
 
@@ -42,14 +44,17 @@ export default function DashboardPage() {
     let alive = true;
     const load = () => {
       if (document.hidden) return;
-      api.get<{ items: DashboardItem[] }>('/meetings/dashboard').then(r => { if (alive) setItems(r.items); }).catch(() => {});
+      api.get<{ items: DashboardItem[]; weekTableTypes?: MasaTuru[] }>('/meetings/dashboard')
+        .then(r => { if (alive) { setItems(r.items); setWeekTypes(r.weekTableTypes ?? []); } })
+        .catch(() => {})
+        .finally(() => { if (alive) setDashLoaded(true); });
     };
     load();
     const id = setInterval(load, DASHBOARD_POLL_MS);
     return () => { alive = false; clearInterval(id); };
   }, []);
 
-  if (!mounted) {
+  if (!mounted || !dashLoaded) {
     return (
       <div className="min-h-screen bg-[#121212] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-[#c0392b] border-t-transparent animate-spin" />
@@ -61,15 +66,12 @@ export default function DashboardPage() {
     ? { initials: buildInitials(me.firstName, me.lastName), gender: me.profile?.gender ?? null }
     : undefined;
 
-  // Sekmeler: aktif paket hakkı ya da bu hafta masası olan türler; hiç yoksa üçü de (paket seçme ekranı için)
-  const hasItem = (t: MasaTuru) => items.some(i => i.meeting.type === t);
-  const owned: MasaTuru[] = [
-    ...(me?.openParts?.group || hasItem('GROUP') ? ['GROUP' as const] : []),
-    ...(me?.openParts?.oneOnOne || hasItem('ONE_ON_ONE') ? ['ONE_ON_ONE' as const] : []),
-    ...(me?.kankamla?.open || hasItem('KANKA') ? ['KANKA' as const] : []),
-  ];
-  const tabs: MasaTuru[] = owned.length ? owned : ['GROUP', 'ONE_ON_ONE', 'KANKA'];
-  const tab = chosenTab && tabs.includes(chosenTab) ? chosenTab : tabs[0];
+  // Sekmeler: aktif paket hakkı ya da bu hafta masası olan türler seçilebilir; hiç yoksa sayaç Grup'ta kalır
+  const hasTable = (t: MasaTuru) => weekTypes.includes(t) || items.some(i => i.meeting.type === t);
+  const rights = { GROUP: !!me?.openParts?.group, ONE_ON_ONE: !!me?.openParts?.oneOnOne, KANKA: !!me?.kankamla?.open };
+  const tables = { GROUP: hasTable('GROUP'), ONE_ON_ONE: hasTable('ONE_ON_ONE'), KANKA: hasTable('KANKA') };
+  const owned = (['GROUP', 'ONE_ON_ONE', 'KANKA'] as const).filter(t => rights[t] || tables[t]) as MasaTuru[];
+  const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : owned[0] ?? 'GROUP';
   const tabItem = items.find(i => i.meeting.type === tab);
   const kycApproved = me?.kyc?.status === 'APPROVED';
   const scanning = owned.includes(tab) && kycApproved && !isPastClosing(tab);
@@ -97,8 +99,19 @@ export default function DashboardPage() {
         activePlan={me?.activePlan ?? null}
         hasTabTable={!!tabItem}
         tab={tab}
-        tabs={tabs}
+        rights={rights}
+        tables={tables}
         onTab={setChosenTab}
+        notice={me && !kycApproved ? (
+          <section className="ll-card" style={{ textAlign: 'center' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/lock-icon.png" width={64} height={64} alt="" style={{ display: 'block', margin: '0 auto 14px' }} />
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.65, margin: '0 0 22px' }}>
+              Eşleşme taramasına katılabilmek için kimlik doğrulamanızı (KYC) tamamlamalısınız.
+            </p>
+            <a href="/profil?tab=kyc" className="btn-primary">Kimliğimi Doğrula</a>
+          </section>
+        ) : undefined}
         participation={<LiveParticipation tab={tab} item={tabItem} self={selfParticipant} kanka={kanka} scanning={scanning} />}
       />
     </div>
