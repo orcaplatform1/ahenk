@@ -21,15 +21,13 @@ const STATUS_TEXT: Record<TabStatus, string> = {
   NONE: 'Abonelik Yok',
 };
 
-// İç içe geçmiş iki halka; son yay kesişimde bakır halkayı kırmızının üstüne alır
-// Küçük halkalar merkeze göre konumlanır: durağan alan Baş Başa ile aynı (x 4.5–53.5, y 10.5–47.5), kalınlık/çap oranı aynı.
-// Her halka Baş Başa ile aynı dönüşte kendi evresiyle merkeze girip çıkar; hareket bu alanın içinde kalır.
-const SMALL_R = 11.4865;
-const SMALL_STROKE = 2.027;
+// Olimpiyat düzeni: alt sıra yarım halka kaydırılmış, halkalar yalnızca komşusuyla kesişir. Durağan alan Baş Başa ile aynı
+// (x 4.5–53.5, y 10.5–47.5), kalınlık/çap oranı aynı. Sıra çevresinde verilir, renk ve evre komşudan komşuya değişir.
 const SPIN_S = 3.2;
-const SMALL_RINGS: Partial<Record<MasaTuru, [number, number][]>> = {
-  GROUP: [[-12, 0], [-6, -6], [6, -6], [12, 0], [6, 6], [-6, 6]],
-  KANKA: [[-12, 0], [0, -6], [12, 0], [0, 6]],
+const DRIFT = 1.5; // Dönerken her halka kendi evresiyle merkeze bu kadar yaklaşır; kesişme payını aşmaz
+const SMALL_RINGS: Partial<Record<MasaTuru, { r: number; stroke: number; rings: [number, number][] }>> = {
+  GROUP: { r: 9.189, stroke: 1.622, rings: [[-14.5, -8.5], [-2.9, -8.5], [8.7, -8.5], [14.5, 8.5], [2.9, 8.5], [-8.7, 8.5]] },
+  KANKA: { r: 9.557, stroke: 1.686, rings: [[-14.1, -8.1], [4.7, -8.1], [14.1, 8.1], [-4.7, 8.1]] },
 };
 
 function Rings({ type }: { type: MasaTuru }) {
@@ -37,21 +35,25 @@ function Rings({ type }: { type: MasaTuru }) {
   if (small) {
     return (
       <svg className="ll-tab-rings" width="58" height="58" viewBox="0 0 58 58" fill="none" aria-hidden="true">
-        <g className="ll-tab-spin" strokeWidth={SMALL_STROKE}>
-          {small.map(([x, y], i) => (
-            <circle
-              key={`${x}-${y}`}
-              className={`ll-ring-drift ${i % 2 === 0 ? 'll-ring-copper' : 'll-ring-red'}`}
-              cx={29 + x}
-              cy={29 + y}
-              r={SMALL_R}
-              style={{ '--ring-x': `${-x}px`, '--ring-y': `${-y}px`, animationDelay: `${(-SPIN_S * i) / small.length}s` } as CSSProperties}
-            />
-          ))}
+        <g className="ll-tab-spin" strokeWidth={small.stroke}>
+          {small.rings.map(([x, y], i) => {
+            const pull = DRIFT / Math.hypot(x, y);
+            return (
+              <circle
+                key={`${x}-${y}`}
+                className={`ll-ring-drift ${i % 2 === 0 ? 'll-ring-copper' : 'll-ring-red'}`}
+                cx={29 + x}
+                cy={29 + y}
+                r={small.r}
+                style={{ '--ring-x': `${-x * pull}px`, '--ring-y': `${-y * pull}px`, animationDelay: `${(-SPIN_S * i) / small.rings.length}s` } as CSSProperties}
+              />
+            );
+          })}
         </g>
       </svg>
     );
   }
+  // İç içe geçmiş iki halka; son yay kesişimde bakır halkayı kırmızının üstüne alır
   return (
     <svg className="ll-tab-rings" width="58" height="58" viewBox="0 0 58 58" fill="none" aria-hidden="true">
       <g className="ll-tab-spin" strokeWidth="3" strokeLinecap="round">

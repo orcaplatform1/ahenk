@@ -34,12 +34,14 @@ export default function KankaDavetPage({ params }: { params: { token: string } }
             </span>
             <h1 className="font-serif text-3xl text-[#f5f5f5]">Kanka davetin var</h1>
             <p className="text-sm text-[#aaa] leading-relaxed">
-              <strong className="text-[#f5f5f5]">{info.inviterInitials}</strong> seni Ahenk&apos;te Kankamla için kanka olmaya davet etti.
-              Kankamla paketini birinizin alması yeterli; diğeri ücretsiz katılır.
+              <strong className="text-[#f5f5f5]">{info.inviterInitials}</strong> seni Ahenk&apos;te Kankamla masasında kankan olman için davet etti.
+              Kankamla paketini birinizin alması yeterli; diğeri ücret ödemez.
             </p>
             <p className="text-xs text-[#666] leading-relaxed">
-              Daveti, davet edilen telefon numarasıyla giriş yapıp Profilim → Aktif Kankanız bölümünden kabul edebilirsin.
-              Kanka olmak için kimlik doğrulaman (KYC) tamamlanmış olmalı. Davet 48 saat geçerlidir.
+              Bu daveti, davet edildiğin telefon numarasıyla kayıt olup veya giriş yapıp Profilim → Aktif Kankanız bölümünden kabul edebilirsin.
+              Kanka masasına dahil olmak için kimlik doğrulamanı tamamlanmış olmalısın.
+              <br />
+              Davet 48 saat geçerlidir.
             </p>
             {loggedIn ? (
               <Link href="/profil?tab=profil" className="btn-primary justify-center w-full">Profilim&apos;e Git</Link>
