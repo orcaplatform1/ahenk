@@ -66,19 +66,19 @@ export const metadata: Metadata = {
   },
 };
 
-// CSP nonce'u her istekte middleware'de üretilir; Next.js scriptlere nonce'u sadece dinamik
+// CSP nonce'u her istekte proxy'de üretilir; Next.js scriptlere nonce'u sadece dinamik
 // render'da ekleyebildiği için tüm sayfalar istek anında render edilir
 export const dynamic = 'force-dynamic';
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const nonce = headers().get('x-nonce') ?? undefined;
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
 
   return (
-    <html lang="tr" className={`${dmSerifDisplay.variable} ${inter.variable} ${jetBrainsMono.variable}`}>
+    <html lang="tr" data-scroll-behavior="smooth" className={`${dmSerifDisplay.variable} ${inter.variable} ${jetBrainsMono.variable}`}>
       <body className="font-sans antialiased" style={{}}>
         <Analytics nonce={nonce} />
         <NavbarWrapper />

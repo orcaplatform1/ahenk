@@ -5,6 +5,7 @@ import { KankaSection } from '@/components/KankaSection';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { Modal } from '@/components/ui/Modal';
 
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
 
@@ -235,6 +236,36 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [currentEmail, setCurrentEmail] = useState(user.email);
+
+  /* Oturum ve hesap */
+  const [logoutAllBusy, setLogoutAllBusy] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [deletePending, setDeletePending] = useState(false);
+
+  useEffect(() => {
+    api.silentGet<{ id: string } | null>('/users/me/deletion-request').then((r) => setDeletePending(!!r?.id));
+  }, []);
+
+  async function logoutAll() {
+    setLogoutAllBusy(true);
+    try {
+      await api.post('/auth/logout-all', {});
+      api.clearSession();
+      window.location.href = '/giris';
+    } catch (e) { setSaveError((e as Error).message); setLogoutAllBusy(false); }
+  }
+
+  async function confirmDelete() {
+    setDeleteBusy(true); setDeleteError('');
+    try {
+      await api.post('/users/me/deletion-request', {});
+      setDeletePending(true);
+      setDeleteOpen(false);
+    } catch (e) { setDeleteError((e as Error).message); }
+    finally { setDeleteBusy(false); }
+  }
 
   useEffect(() => {
     if (referralStatsLoaded) return;
@@ -615,6 +646,35 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
           </div>
         </div>
       </Card>
+
+      {/* Oturum ve hesap */}
+      <div className="flex flex-col items-center gap-3 pb-2">
+        <button onClick={logoutAll} disabled={logoutAllBusy} className="mx-auto block btn-ghost disabled:opacity-40" style={{ width: '72%' }}>
+          {logoutAllBusy ? 'Çıkış yapılıyor…' : 'Tüm cihazlardan çıkış yap'}
+        </button>
+        {deletePending ? (
+          <p className="text-xs text-[#a39c93] text-center">Hesap silme talebin alındı, en geç 48 saat içinde sonuçlanır.</p>
+        ) : (
+          <button onClick={() => { setDeleteError(''); setDeleteOpen(true); }} className="text-xs text-[#ff6b6b] hover:underline">
+            Hesabımı Sil
+          </button>
+        )}
+      </div>
+
+      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Hesabımı Sil">
+        <p className="text-sm text-[#c9c2b8] leading-relaxed">
+          Hesabını silmek üzeresin. Bu işlem geri alınamaz. Talebin onaylandıktan sonra hesabın en geç 48 saat içinde kalıcı olarak silinir. Profilin, kişilik testi sonuçların, kimlik doğrulama bilgilerin ve masa geçmişin sistemden kaldırılır. Kullanılmamış paket hakların iade edilmez ve kullanılamaz hâle gelir. Yasal zorunluluk gereği ödeme ve fatura kayıtların mevzuatta belirtilen süre boyunca saklanır.
+        </p>
+        {deleteError && <p className="text-[#ff6b6b] text-sm mt-3">{deleteError}</p>}
+        <div className="mt-5 flex flex-col gap-3">
+          <button type="button" onClick={confirmDelete} disabled={deleteBusy} className="mx-auto block btn-primary disabled:opacity-40" style={{ width: '72%' }}>
+            {deleteBusy ? 'Gönderiliyor…' : 'Onaylıyorum'}
+          </button>
+          <button type="button" onClick={() => setDeleteOpen(false)} className="mx-auto block btn-ghost" style={{ width: '72%' }}>
+            Vazgeç
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

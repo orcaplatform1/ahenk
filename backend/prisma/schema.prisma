@@ -70,8 +70,31 @@ model User {
   planPriceChanges          PlanPrice[]
   adminActionLogs           AdminActionLog[]
   participantLocations      ParticipantLocation[]
+  winbackOffer              WinbackOffer?
+  deletionRequests          AccountDeletionRequest[]
 
   @@index([phoneHash])
+}
+
+// Hesap silme talebi. retainedIdentity: kişi SOS, şikâyet ya da yaptırım kaydına karışmışsa silinmeyen kimlik bilgisi (sadece SUPERADMIN görür)
+model AccountDeletionRequest {
+  id               String                @id @default(cuid())
+  userId           String
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status           DeletionRequestStatus @default(PENDING)
+  createdAt        DateTime              @default(now())
+  decidedAt        DateTime?
+  decidedBy        String?
+  retainedIdentity Json?
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+enum DeletionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum UserRole {
@@ -592,6 +615,25 @@ enum PaymentPlatform {
 enum PaymentDiscountType {
   REFERRER
   INVITEE
+  WINBACK // geri kazanım indirimi (sabit TL, referans indirimiyle birleşmez)
+}
+
+// Geri kazanım indirimi: kişi başına tek satır, Pazartesi push'unda hak verilir ya da süresi dolmuşsa sıfırlanır.
+// Sayaç sunucuda: shownAt ekranın ilk açıldığı (KYC onaysızda onaydan sonraki ilk açılış) an, expiresAt bitiş.
+model WinbackOffer {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grantedAt      DateTime  @default(now())
+  heldSeenAt     DateTime? // KYC onaysız kullanıcı ekranı ilk gördüğü an (sayaç başlamaz)
+  shownAt        DateTime?
+  expiresAt      DateTime?
+  reminderSentAt DateTime?
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([expiresAt])
 }
 
 // ─────────────────────────────────────────────

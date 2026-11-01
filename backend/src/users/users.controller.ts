@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { IsString, IsOptional, IsEnum, Matches, IsEmail } from "class-validator";
 import { VenuePreference } from "@prisma/client";
 import { UsersService } from "./users.service";
+import { AccountDeletionService } from "./account-deletion.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 
@@ -44,7 +45,27 @@ class ChangeEmailDto {
 @ApiTags("Users")
 @Controller("users")
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private accountDeletion: AccountDeletionService,
+  ) {}
+
+  @Get("me/deletion-request")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Bekleyen hesap silme talebi" })
+  getDeletionRequest(@CurrentUser() user: any) {
+    return this.accountDeletion.pendingOf(user.id);
+  }
+
+  @Post("me/deletion-request")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Hesap silme talebi oluştur" })
+  requestDeletion(@CurrentUser() user: any) {
+    return this.accountDeletion.request(user.id);
+  }
 
   @Post("cities")
   @HttpCode(HttpStatus.OK)

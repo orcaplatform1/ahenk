@@ -7,11 +7,12 @@ import { BullModule } from "@nestjs/bull";
 import { ASSIGN_QUEUE } from "../matching/assign-queue";
 import { NotificationModule } from "../notification/notification.module";
 import { PricingService } from "./pricing.service";
+import { WinbackService } from "./winback.service";
 
 @Module({
   imports: [PrismaModule, NotificationModule, BullModule.registerQueue({ name: ASSIGN_QUEUE })],
   controllers: [PaymentController],
-  providers: [PaymentService, IyzicoService, PricingService],
-  exports: [PaymentService, PricingService],
+  providers: [PaymentService, IyzicoService, PricingService, WinbackService],
+  exports: [PaymentService, PricingService, WinbackService],
 })
 export class PaymentModule {}

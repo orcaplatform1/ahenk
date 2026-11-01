@@ -15,6 +15,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { IyzicoCallbackResult, IyzicoService } from "./iyzico/iyzico.service";
 import { PLAN_CONFIG } from "./payment.constants";
 import { PricingService } from "./pricing.service";
+import { WinbackService } from "./winback.service";
 import { isMaintenanceMode } from "../admin/app-settings";
 import { GROUP_RIGHTS, KANKA_RIGHTS, ONE_ON_ONE_PLANS, PACKAGE_CYCLES, groupPartOpen, oneOnOnePartOpen, syncPackageStatus } from "./package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
@@ -53,6 +54,7 @@ export class PaymentService {
     private config: ConfigService,
     @InjectQueue(ASSIGN_QUEUE) private assignQueue: Queue,
     private pricing: PricingService,
+    private winback: WinbackService,
   ) {}
 
   // ─── Mevcut abonelik durumu ───────────────────────────────────────────────
@@ -200,8 +202,13 @@ export class PaymentService {
     let amountKurus = listKurus;
     let discountType: PaymentDiscountType | null = null;
 
-    // İndirim burada sadece kontrol edilir; hak ödeme başarılı olunca harcanır
-    if (useDiscount === 'REFERRER') {
+    // İndirim burada sadece kontrol edilir; hak ödeme başarılı olunca harcanır.
+    // Geri kazanım indirimi süresi içindeyse otomatik uygulanır, referans indirimiyle birleşmez.
+    const winbackKurus = await this.winback.discountedKurus(userId, plan, listKurus);
+    if (winbackKurus !== null) {
+      amountKurus = winbackKurus;
+      discountType = PaymentDiscountType.WINBACK;
+    } else if (useDiscount === 'REFERRER') {
       const referral = await this.prisma.referral.findFirst({
         where: { referrerId: userId, status: ReferralStatus.KYC_APPROVED },
       });
@@ -693,6 +700,89 @@ export class PaymentService {
     });
   }
 
+  // ─── İade ve ödeme sonuçlandırma (SUPERADMIN, iyzico panelinden kontrol sonrası) ─────────────
+
+  // İyzico'ya istek gitmez, sadece kayıt sonuçlanır. PROCESSING iade: APPROVED ise para çıkmıştır, paket iade kuralıyla
+  // kapanır; REJECTED ise para çıkmamıştır, talep kapanır. Her işlem işlem kaydına yazılır.
+  async listSettlements() {
+    const [refunds, payments] = await Promise.all([
+      this.prisma.refundRequest.findMany({
+        where: { status: "PROCESSING" },
+        orderBy: { updatedAt: "asc" },
+        include: {
+          user: { select: { phone: true, profile: { select: { firstName: true, lastName: true } } } },
+          subscription: { select: { plan: true, payment: { select: { amountKurus: true, iyzicoPaymentId: true } } } },
+        },
+      }),
+      this.prisma.payment.findMany({
+        where: { status: PaymentStatus.DUPLICATE },
+        orderBy: { updatedAt: "asc" },
+        include: { user: { select: { phone: true, profile: { select: { firstName: true, lastName: true } } } } },
+      }),
+    ]);
+    const name = (u: { profile: { firstName: string; lastName: string } | null }) =>
+      u.profile ? `${u.profile.firstName} ${u.profile.lastName}`.trim() : "Silinmiş kullanıcı";
+    return {
+      refunds: refunds.map((r) => ({
+        id: r.id, userId: r.userId, userName: name(r.user), phone: r.user.phone, refundType: r.refundType,
+        plan: r.subscription.plan, status: r.status, createdAt: r.createdAt, updatedAt: r.updatedAt,
+        iyzicoPaymentId: r.subscription.payment?.iyzicoPaymentId ?? null,
+        amountKurus: PaymentService.refundAmountKurus(r.subscription.plan, r.refundType, r.subscription.payment?.amountKurus ?? 0),
+      })),
+      payments: payments.map((p) => ({
+        id: p.id, userId: p.userId, userName: name(p.user), phone: p.user.phone, plan: p.plan, status: p.status,
+        amountKurus: p.amountKurus, iyzicoPaymentId: p.iyzicoPaymentId, failureReason: p.failureReason,
+        createdAt: p.createdAt, updatedAt: p.updatedAt,
+      })),
+    };
+  }
+
+  async settleRefund(id: string, status: "APPROVED" | "REJECTED", adminId: string, adminNote?: string) {
+    const refund = await this.prisma.refundRequest.findUnique({
+      where: { id },
+      include: { subscription: { select: { id: true, plan: true, payment: { select: { amountKurus: true, iyzicoPaymentId: true } } } } },
+    });
+    if (!refund) throw new NotFoundException("İade talebi bulunamadı.");
+    if (refund.status !== "PROCESSING") throw new BadRequestException("Bu iade talebi işleniyor durumunda değil.");
+
+    if (status === "APPROVED") {
+      const sub = refund.subscription;
+      const amountKurus = PaymentService.refundAmountKurus(sub.plan, refund.refundType, sub.payment?.amountKurus ?? 0);
+      const partial = sub.plan === SubscriptionPlan.ICERDE && refund.refundType !== RefundType.FULL;
+      await this.finishRefund(refund, sub.id, partial, amountKurus, sub.payment?.iyzicoPaymentId ?? null, adminNote);
+    } else {
+      const { count } = await this.prisma.refundRequest.updateMany({
+        where: { id, status: "PROCESSING" },
+        data: { status: "REJECTED", idempotencyKey: null, adminNote: adminNote ?? refund.adminNote },
+      });
+      if (count === 0) throw new BadRequestException("Bu iade talebi zaten sonuçlandırılmış.");
+    }
+    await this.prisma.adminActionLog.create({
+      data: {
+        adminId, action: "REFUND_SETTLE", targetUserId: refund.userId,
+        description: `İşleniyor durumundaki iade ${status === "APPROVED" ? "onaylandı (para çıktı)" : "reddedildi (para çıkmadı)"}: ${id}${adminNote ? ` (Not: ${adminNote})` : ""}`,
+      },
+    });
+    return { ok: true, status };
+  }
+
+  async settlePayment(id: string, status: "REFUNDED" | "FAILED", adminId: string, note?: string) {
+    const payment = await this.prisma.payment.findUnique({ where: { id }, select: { userId: true, failureReason: true } });
+    if (!payment) throw new NotFoundException("Ödeme bulunamadı.");
+    const { count } = await this.prisma.payment.updateMany({
+      where: { id, status: PaymentStatus.DUPLICATE },
+      data: { status: status === "REFUNDED" ? PaymentStatus.REFUNDED : PaymentStatus.FAILED, ...(note ? { failureReason: `${payment.failureReason ?? ""} | ${note}` } : {}) },
+    });
+    if (count === 0) throw new BadRequestException("Bu ödeme iade bekliyor durumunda değil.");
+    await this.prisma.adminActionLog.create({
+      data: {
+        adminId, action: "PAYMENT_SETTLE", targetUserId: payment.userId,
+        description: `Fazla ödeme ${status === "REFUNDED" ? "iade edildi olarak" : "başarısız olarak"} sonuçlandırıldı: ${id}${note ? ` (Not: ${note})` : ""}`,
+      },
+    });
+    return { ok: true, status };
+  }
+
   // Elle kontrol gerektiren ödeme / iade durumu: okunmamış uyarı varsa yenisi açılmaz
   private async paymentAlert(userId: string) {
     try {
@@ -717,6 +807,7 @@ export class PaymentService {
   }
 
   private async consumeDiscount(tx: Prisma.TransactionClient, userId: string, type: PaymentDiscountType): Promise<boolean> {
+    if (type === PaymentDiscountType.WINBACK) return this.winback.consume(tx, userId);
     if (type === PaymentDiscountType.REFERRER) {
       const referral = await tx.referral.findFirst({ where: { referrerId: userId, status: ReferralStatus.KYC_APPROVED } });
       if (!referral) return false;

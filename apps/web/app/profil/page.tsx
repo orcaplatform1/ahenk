@@ -11,6 +11,7 @@ import { TabPaket } from './tabs/TabPaket';
 import { TabKyc } from './tabs/TabKyc';
 import { TabRehber } from './tabs/TabRehber';
 import { AccountTabBar } from '@/components/AccountTabBar';
+import { WinbackHost } from '@/components/winback/WinbackHost';
 
 interface City { id: string; name: string; }
 
@@ -132,6 +133,7 @@ function ProfilPage() {
   return (
     <main className="min-h-screen bg-bg text-text pt-[52px]">
       <AccountTabBar activeKey={activeTab} kycApproved={kycApproved} />
+      <WinbackHost />
       {/* Eşleşme Paneli görünümü: ışıma ve Canlı Katman stilleri */}
       <div className="live-layer" style={{ minHeight: 'calc(100vh - 100px)' }}>
       <div className="ll-glow" aria-hidden="true" />

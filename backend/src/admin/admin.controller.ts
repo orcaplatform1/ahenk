@@ -38,6 +38,10 @@ import {
   UpdateCityDto,
   CancelSubscriptionDto,
   UpdateSettingsDto,
+  UpdateWinbackDto,
+  SettleRefundDto,
+  SettlePaymentDto,
+  DecideDeletionDto,
   CreateSanctionDto,
   SanctionReasonDto,
   NoShowWarningDto,
@@ -53,6 +57,9 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { UserRole, RefundStatus } from "@prisma/client";
+import { WinbackService } from "../payment/winback.service";
+import { PaymentService } from "../payment/payment.service";
+import { AccountDeletionService } from "../users/account-deletion.service";
 import { SkipThrottle } from "@nestjs/throttler";
 import { SANCTION_REASONS } from "./sanction-reasons";
 
@@ -74,6 +81,9 @@ export class AdminController {
   constructor(
     private adminService: AdminService,
     private pricing: PricingService,
+    private winback: WinbackService,
+    private paymentService: PaymentService,
+    private accountDeletion: AccountDeletionService,
   ) {}
 
   // ─── Dashboard ───────────────────────────────────────────────────────────
@@ -370,6 +380,52 @@ export class AdminController {
   updatePrices(@Body() dto: UpdatePricesDto, @Req() req: Request) {
     const actor = req.user as { id: string };
     return this.pricing.updatePrices(dto.prices, actor.id);
+  }
+
+  // Geri kazanım indirimi ayarları (paket fiyatları sayfası)
+  @Get("winback")
+  @Roles(UserRole.SUPERADMIN)
+  getWinbackSettings() {
+    return this.winback.settings();
+  }
+
+  @Patch("winback")
+  @Roles(UserRole.SUPERADMIN)
+  updateWinbackSettings(@Body() dto: UpdateWinbackDto) {
+    return this.winback.updateSettings(dto.amountTL, dto.plans);
+  }
+
+  // ─── İade ve ödeme sonuçlandırma (sadece SUPERADMIN) ─────────────────────
+
+  @Get("settlements")
+  @Roles(UserRole.SUPERADMIN)
+  listSettlements() {
+    return this.paymentService.listSettlements();
+  }
+
+  @Patch("settlements/refunds/:id")
+  @Roles(UserRole.SUPERADMIN)
+  settleRefund(@Param("id") id: string, @Body() dto: SettleRefundDto, @Req() req: Request) {
+    return this.paymentService.settleRefund(id, dto.status, (req.user as { id: string }).id, dto.note);
+  }
+
+  @Patch("settlements/payments/:id")
+  @Roles(UserRole.SUPERADMIN)
+  settlePayment(@Param("id") id: string, @Body() dto: SettlePaymentDto, @Req() req: Request) {
+    return this.paymentService.settlePayment(id, dto.status, (req.user as { id: string }).id, dto.note);
+  }
+
+  // ─── Hesap silme talepleri ───────────────────────────────────────────────
+
+  @Get("deletion-requests")
+  listDeletionRequests(@Req() req: Request) {
+    return this.accountDeletion.list((req.user as { role: UserRole }).role);
+  }
+
+  @Patch("deletion-requests/:id")
+  @Roles(UserRole.SUPERADMIN)
+  decideDeletionRequest(@Param("id") id: string, @Body() dto: DecideDeletionDto, @Req() req: Request) {
+    return this.accountDeletion.decide(id, dto.status, (req.user as { id: string }).id);
   }
 
   // ─── Matches ─────────────────────────────────────────────────────────────

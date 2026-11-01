@@ -370,3 +370,37 @@ export class UpdatePricesDto {
   @Type(() => PlanNetPriceDto)
   prices: PlanNetPriceDto[];
 }
+
+// Geri kazanım indirimi ayarları
+export class UpdateWinbackDto {
+  @IsInt()
+  @Min(1, { message: "İndirim tutarı en az 1 ₺ olmalı" })
+  @Max(100000)
+  amountTL: number;
+
+  @IsArray()
+  @IsEnum(SubscriptionPlan, { each: true })
+  plans: SubscriptionPlan[];
+}
+
+// İade ve ödeme sonuçlandırma
+export class SettleRefundDto {
+  @IsIn(["APPROVED", "REJECTED"])
+  status: "APPROVED" | "REJECTED";
+
+  @IsOptional() @IsString() @MaxLength(500)
+  note?: string;
+}
+
+export class SettlePaymentDto {
+  @IsIn(["REFUNDED", "FAILED"])
+  status: "REFUNDED" | "FAILED";
+
+  @IsOptional() @IsString() @MaxLength(500)
+  note?: string;
+}
+
+export class DecideDeletionDto {
+  @IsIn(["APPROVED", "REJECTED"])
+  status: "APPROVED" | "REJECTED";
+}

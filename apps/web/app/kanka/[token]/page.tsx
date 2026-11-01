@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { API_PREFIX, api } from '@/lib/api';
 
@@ -9,16 +9,17 @@ import { API_PREFIX, api } from '@/lib/api';
 const MALE_CLR = '#4fc3f7';
 const FEMALE_CLR = '#f48fb1';
 
-export default function KankaDavetPage({ params }: { params: { token: string } }) {
+export default function KankaDavetPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = use(params);
   const [info, setInfo] = useState<{ valid: boolean; inviterInitials: string | null; inviterGender: string | null } | null>(null);
   const loggedIn = typeof window !== 'undefined' && api.hasSession();
 
   useEffect(() => {
-    fetch(`${API_PREFIX}/kanka/link/${encodeURIComponent(params.token)}`)
+    fetch(`${API_PREFIX}/kanka/link/${encodeURIComponent(token)}`)
       .then((r) => r.json())
       .then(setInfo)
       .catch(() => setInfo({ valid: false, inviterInitials: null, inviterGender: null }));
-  }, [params.token]);
+  }, [token]);
 
   const clr = info?.inviterGender === 'FEMALE' ? FEMALE_CLR : MALE_CLR;
 

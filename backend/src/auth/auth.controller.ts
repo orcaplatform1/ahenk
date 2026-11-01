@@ -93,6 +93,17 @@ export class AuthController {
     return { message: "Çıkış yapıldı" };
   }
 
+  @Post("logout-all")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Tüm cihazlardan çıkış" })
+  async logoutAll(@CurrentUser() user: { id: string }, @Res({ passthrough: true }) res: Response) {
+    await this.authService.logoutAll(user.id);
+    this.clearSession(res);
+    return { message: "Tüm cihazlardan çıkış yapıldı" };
+  }
+
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtRefreshGuard)
@@ -195,7 +206,7 @@ export class AuthController {
   }
 
   private refreshMaxAge() {
-    return durationMs(this.config.get("JWT_REFRESH_EXPIRES") ?? "7d");
+    return durationMs(this.config.get("JWT_REFRESH_EXPIRES") ?? "365d");
   }
 
   private cookieOptions() {

@@ -8,7 +8,7 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(self), microphone=(self), geolocation=(self), interest-cohort=()',
   },
-  // Content-Security-Policy middleware.ts'de (her istekte yeni nonce ile) verilir
+  // Content-Security-Policy proxy.ts'de (her istekte yeni nonce ile) verilir
 ];
 
 const nextConfig = {

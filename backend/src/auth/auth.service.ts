@@ -19,6 +19,7 @@ import { isMaintenanceMode } from "../admin/app-settings";
 import { groupPartOpen, kankaPartOpen, oneOnOnePartOpen, RIGHTS_SELECT } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { UsersService } from "../users/users.service";
+import { hashPhone } from "../users/account-deletion.service";
 import { OtpService, OTP_RESEND_SECONDS } from "./otp/otp.service";
 import { RedisService } from "../redis/redis.service";
 import { RegisterDto } from "./dto/register.dto";
@@ -44,8 +45,15 @@ export class AuthService {
   async registerSendOtp(phone: string) {
     const used = await this.prisma.user.findUnique({ where: { phone }, select: { id: true } });
     if (used) throw new ConflictException("Bu telefon numarası zaten kullanılıyor");
+    await this.assertPhoneNotBanned(phone);
     await this.otpService.send(phone);
     return { message: "Doğrulama kodu gönderildi", resendSeconds: OTP_RESEND_SECONDS };
+  }
+
+  // Banlıyken silinen hesabın numarası sadece phoneHash olarak kalır: bu numarayla yeniden kayıt olunamaz
+  private async assertPhoneNotBanned(phone: string) {
+    const banned = await this.prisma.user.findFirst({ where: { phoneHash: hashPhone(phone) }, select: { id: true } });
+    if (banned) throw new ForbiddenException("Bu telefon numarasıyla kayıt yapılamaz");
   }
 
   // Doğru kod → 30 dk geçerli telefon anahtarı; kayıt bu anahtar olmadan yapılamaz
@@ -149,6 +157,7 @@ export class AuthService {
 
     const phoneExists = await this.prisma.user.findUnique({ where: { phone: dto.phoneNumber } });
     if (phoneExists) throw new ConflictException("Bu telefon numarası zaten kullanılıyor");
+    await this.assertPhoneNotBanned(dto.phoneNumber);
     // Telefon WhatsApp OTP ile doğrulanmış olmalı
     const phoneToken = await this.redis.get(`regphone:${dto.phoneNumber}`);
     if (!phoneToken || phoneToken !== dto.phoneToken) {
@@ -311,6 +320,12 @@ export class AuthService {
     return { user: this.sanitizeUser(user), ...tokens };
   }
 
+  // Profilim → Tüm cihazlardan çıkış: bütün refresh token'lar iptal, eldeki erişim token'ları hemen düşer
+  async logoutAll(userId: string) {
+    await this.revokeAllSessions(userId);
+    await this.prisma.user.update({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } });
+  }
+
   private revokeAllSessions(userId: string) {
     return this.prisma.refreshToken.updateMany({
       where: { userId, revoked: false },
@@ -420,13 +435,13 @@ export class AuthService {
         { sub: userId, email, jti },
         {
           secret: this.config.getOrThrow("JWT_REFRESH_SECRET"),
-          expiresIn: this.config.get("JWT_REFRESH_EXPIRES") ?? "7d",
+          expiresIn: this.config.get("JWT_REFRESH_EXPIRES") ?? "365d",
         },
       ),
     ]);
 
     const refreshExpiryDays = parseInt(
-      (this.config.get("JWT_REFRESH_EXPIRES") ?? "7d").replace("d", ""),
+      (this.config.get("JWT_REFRESH_EXPIRES") ?? "365d").replace("d", ""),
       10,
     );
     // Sunucu saat diliminden bağımsız: gün sayısı milisaniye olarak eklenir

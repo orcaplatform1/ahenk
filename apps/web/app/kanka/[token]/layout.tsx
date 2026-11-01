@@ -1,8 +1,9 @@
 import { pageMetadata } from '@/lib/seo';
 
-export function generateMetadata({ params }: { params: { token: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
   return pageMetadata({
-    path: `/kanka/${params.token}`,
+    path: `/kanka/${token}`,
     title: 'Kanka Daveti',
     description: 'Ahenk Kankamla masasına davet edildiniz. Davet edildiğiniz telefon numarasıyla kayıt olun veya giriş yapın, daveti 48 saat içinde profilinizden kabul edin.',
   });

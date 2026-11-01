@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { usePlanPrices, type PlanKeyName } from '@/components/PlanPrice';
 import { api } from '@/lib/api';
-import { rememberPendingPurchase } from '@/lib/analytics';
+import { startCheckout } from '@/lib/checkout';
+import { clockMS, useWinback } from '@/components/winback/useWinback';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
@@ -29,13 +30,6 @@ const REFUND_LABEL: Record<RefundOption, string> = {
   ONEONE: 'Başbaşa Masası İadesi Talep Et',
   KANKA: 'Kankamla İadesi Talep Et',
 };
-
-interface InitCheckoutResponse {
-  checkoutFormContent: string;
-  tokenExpireTime: number;
-  token: string;
-  plan: { amountKurus: number };
-}
 
 const PLANS = [
   {
@@ -92,6 +86,7 @@ interface Props { kycApproved: boolean; onGoKyc: () => void; maintenanceMode?: b
 
 export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Props) {
   const prices = usePlanPrices();
+  const winback = useWinback();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [refundOptions, setRefundOptions] = useState<RefundOption[]>([]);
   const [packageCycles, setPackageCycles] = useState(4);
@@ -161,29 +156,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
     setError('');
     try {
       const useDiscount = discountInfo?.referralDiscount ? 'REFERRER' : discountInfo?.inviteeDiscount ? 'INVITEE' : undefined;
-      const data = await api.post<InitCheckoutResponse>('/payment/init', {
-        plan,
-        platform: 'WEB',
-        ...(useDiscount ? { useDiscount } : {}),
-      });
-      rememberPendingPurchase(plan, PLANS.find((p) => p.key === plan)?.name ?? plan, data.plan.amountKurus);
-      // iyzico formu bu div'e yerleşir
-      let container = document.getElementById('iyzipay-checkout-form');
-      if (!container) {
-        container = document.createElement('div');
-        container.id = 'iyzipay-checkout-form';
-        container.className = 'popup';
-        document.body.appendChild(container);
-      }
-      // innerHTML ile eklenen script çalışmaz; her script yeniden oluşturulup eklenir
-      const tmp = document.createElement('div');
-      tmp.innerHTML = data.checkoutFormContent;
-      tmp.querySelectorAll('script').forEach((old) => {
-        const s = document.createElement('script');
-        if (old.src) s.src = old.src;
-        else s.text = old.textContent ?? '';
-        document.body.appendChild(s);
-      });
+      await startCheckout(plan, PLANS.find((p) => p.key === plan)?.name ?? plan, useDiscount);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -202,6 +175,8 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
 
   // Fiyatlar backend'den (SUPERADMIN fiyat sayfası); indirimli fiyat da backend'de hesaplanır
   const priceOf = (key: string) => prices?.[key as PlanKeyName];
+  // Geri kazanım indirimi: süre boyunca seçili paketlerde indirimli fiyat + sayaç (ödemede otomatik uygulanır)
+  const winbackOf = (key: string) => (winback.live && winback.running ? winback.state?.plans?.find((p) => p.plan === key) : undefined);
 
   return (
     <div className="flex flex-col gap-5">
@@ -365,7 +340,16 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
               )}
               <div style={{ marginTop: cs.badge ? 20 : 0 }}>
                 <h4 className="font-serif text-[#f5f5f5]" style={{ fontSize: '1rem', marginBottom: 3 }}>{plan.name}</h4>
-                {hasReferralDiscount ? (
+                {winbackOf(plan.key) ? (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
+                      <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.5rem' }}>{winbackOf(plan.key)!.discountedTL}</span>
+                      <span style={{ color: '#888', fontSize: '0.85rem', marginBottom: 1 }}>₺</span>
+                      <span style={{ color: '#555', fontSize: '0.75rem', textDecoration: 'line-through', marginBottom: 1 }}>{winbackOf(plan.key)!.listTL}₺</span>
+                    </div>
+                    <p style={{ color: '#e8a27a', fontSize: '0.68rem', marginBottom: 2, fontVariantNumeric: 'tabular-nums' }}>İndirim bitimine {clockMS(winback.remaining)}</p>
+                  </>
+                ) : hasReferralDiscount ? (
                   <>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
                       <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.5rem' }}>{priceOf(plan.key)?.webDiscountTL ?? '—'}</span>

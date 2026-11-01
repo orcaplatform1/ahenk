@@ -21,7 +21,7 @@ function buildCsp(nonce: string): string {
   ].join('; ');
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Uygulamada Server Action ve POST alan sayfa yok (API ayrı sunucuda). Sayfalara gelen diğer yöntemler Next'in

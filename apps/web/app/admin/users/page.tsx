@@ -8,6 +8,7 @@ import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
 import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } from '@/components/AdminNoShowWarnings';
 import { SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 import { AdminSelect } from '@/components/AdminSelect';
+import { AdminDeletionRequests } from '@/components/AdminDeletionRequests';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
 function canSanction(target: { id: string; role: string }): boolean {
@@ -73,6 +74,7 @@ function activePlan(u: AdminUser): string {
 }
 
 export default function AdminUsers() {
+  const [tab, setTab] = useState<'users' | 'deletions'>('users');
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -197,8 +199,15 @@ export default function AdminUsers() {
 
       <div style={{ marginBottom: 24 }}>
         <h1 className="ll-title">Kullanıcılar</h1>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          {([['users', 'Kullanıcılar'], ['deletions', 'Silme Talepleri']] as const).map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)} style={{ padding: '6px 14px', borderRadius: 8, fontSize: 13, fontFamily: SANS, cursor: 'pointer', background: tab === key ? 'rgba(34,211,238,0.08)' : 'transparent', border: `1px solid ${tab === key ? 'rgba(34,211,238,0.3)' : BORDER}`, color: tab === key ? TEXT : MUTED }}>{label}</button>
+          ))}
+        </div>
       </div>
 
+      {tab === 'deletions' && <AdminDeletionRequests />}
+      {tab === 'users' && <>
       {/* Filtreler */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
         <input
@@ -330,6 +339,8 @@ export default function AdminUsers() {
           </button>
         </div>
       )}
+
+      </>}
 
       {/* Kullanıcı detay modalı */}
       {(userModalLoading || userModal) && (

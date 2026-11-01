@@ -10,4 +10,4 @@ allowBuilds:
   prisma: set this to true or false
   protobufjs: set this to true or false
 overrides:
-  '@types/react': ^18.3.3
+  '@types/react': ^19.3.0

@@ -5,6 +5,7 @@ import MaintenanceNotice from '@/components/MaintenanceNotice';
 import LiveLayer from '@/components/live/LiveLayer';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import LiveParticipation from '@/components/live/LiveParticipation';
+import { WinbackHost } from '@/components/winback/WinbackHost';
 
 export default function DashboardPage() {
   const { ready, me, kanka, tab, tabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant } = useMasaTabs();
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] pt-[52px]">
       <AccountTabBar kycApproved={kycApproved} />
+      <WinbackHost badge />
       <div
         className="fixed inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,0.1) 0%, transparent 70%)' }}

@@ -22,6 +22,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { KycGuard } from "../kyc/kyc.guard";
 import { TestCompletedGuard } from "../test/test.guard";
 import { RefundType } from "@prisma/client";
+import { WinbackService } from "./winback.service";
 
 class RequestRefundDto {
   @IsEnum(RefundType)
@@ -35,6 +36,7 @@ export class PaymentController {
   constructor(
     private paymentService: PaymentService,
     private config: ConfigService,
+    private winback: WinbackService,
   ) {}
 
   // Herkese açık — paket listesi
@@ -57,6 +59,21 @@ export class PaymentController {
   getDiscountInfo(@Req() req: Request) {
     const user = req.user as { id: string };
     return this.paymentService.getDiscountInfo(user.id);
+  }
+
+  // Geri kazanım indirimi durumu
+  @Get("winback")
+  @UseGuards(JwtAuthGuard)
+  getWinback(@Req() req: Request) {
+    return this.winback.state((req.user as { id: string }).id);
+  }
+
+  // İndirim ekranı gösterildi: sayaç sunucuda başlar, tekrar çağrı sıfırlamaz
+  @Post("winback/open")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  openWinback(@Req() req: Request) {
+    return this.winback.markShown((req.user as { id: string }).id);
   }
 
   // iyzico checkout form başlat (web/android)

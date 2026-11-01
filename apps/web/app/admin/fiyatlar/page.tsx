@@ -35,6 +35,58 @@ const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Masada', KARSIMDA: 'Karş�
 // Paket hakları (her kısım 4 döngü geçerli)
 const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '2 grup masası', KARSIMDA: '1 başbaşa masası', ICERDE: '2 grup + 1 başbaşa masası', KANKAMLA: '2 Kankamla masası (kanka ücretsiz)' };
 
+// Geri kazanım indirimi: sabit TL + indirimin uygulanacağı paketler (AppConfig)
+function WinbackSettings() {
+  const [amount, setAmount] = useState('');
+  const [plans, setPlans] = useState<PlanKey[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    api.get<{ amountTL: number; plans: PlanKey[] }>('/admin/winback')
+      .then((d) => { setAmount(String(d.amountTL)); setPlans(d.plans); })
+      .catch((e: Error) => setMsg({ ok: false, text: e.message }));
+  }, []);
+
+  const toggle = (p: PlanKey) => setPlans((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
+
+  async function save() {
+    setBusy(true); setMsg(null);
+    try {
+      await api.patch('/admin/winback', { amountTL: Number(amount), plans });
+      setMsg({ ok: true, text: 'İndirim ayarları güncellendi' });
+    } catch (e) { setMsg({ ok: false, text: (e as Error).message }); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <div className="ll-card" style={{ marginTop: 20 }}>
+      <h2 className="ll-title" style={{ marginBottom: 10 }}>Geri Kazanım İndirimi</h2>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: MUTED, marginBottom: 12 }}>
+        İndirim tutarı
+        <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} inputMode="numeric"
+          style={{ width: 90, background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 10px', fontSize: 13, color: TEXT, fontFamily: MONO, outline: 'none' }} />
+        ₺
+      </label>
+      <p style={{ margin: '0 0 6px', fontSize: 12, color: MUTED }}>Uygulanacak paketler</p>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
+        {(Object.keys(PLAN_NAME) as PlanKey[]).map((p) => (
+          <label key={p} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: TEXT, cursor: 'pointer' }}>
+            <input type="checkbox" checked={plans.includes(p)} onChange={() => toggle(p)} />
+            {PLAN_NAME[p]}
+          </label>
+        ))}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={save} disabled={busy || !amount} style={{ padding: '9px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: SANS, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: GREEN, cursor: 'pointer', opacity: busy || !amount ? 0.5 : 1 }}>
+          Kaydet
+        </button>
+        {msg && <span style={{ fontSize: 13, color: msg.ok ? GREEN : RED }}>{msg.text}</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminFiyatlar() {
   const [data, setData] = useState<PricesResponse | null>(null);
   const [inputs, setInputs] = useState<Record<string, string>>({});
@@ -143,6 +195,8 @@ export default function AdminFiyatlar() {
         </button>
         {saved && <span style={{ fontSize: 13, color: GREEN }}>Fiyatlar güncellendi</span>}
       </div>
+
+      <WinbackSettings />
 
       {/* Onay */}
       {confirmOpen && (

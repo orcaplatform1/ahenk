@@ -23,6 +23,7 @@ const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; sup
   { href: '/admin/subscriptions', label: 'Abonelikler' },
   { href: '/admin/alerts',       label: 'Uyarılar', alertKey: true },
   { href: '/admin/refunds',      label: 'İade Talepleri', superadminOnly: true },
+  { href: '/admin/sonuclandirma', label: 'İade ve Ödeme Sonuçlandırma', superadminOnly: true },
   { href: '/admin/venues',       label: 'Mekanlar', superadminOnly: true },
   { href: '/admin/cities',       label: 'Şehirler', superadminOnly: true },
   { href: '/admin/denge',        label: 'Bot Yönetimi', superadminOnly: true },

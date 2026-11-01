@@ -34,6 +34,7 @@ import { vatOfGrossKurus } from "../payment/pricing";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { NotificationService } from "../notification/notification.service";
 import { PaymentService } from "../payment/payment.service";
+import { DELETED_PLACEHOLDER_PREFIX } from "../users/account-deletion.service";
 import type { AdminUpdateUserDto } from "./dto/admin.dto";
 import { KycService } from "../kyc/kyc.service";
 import { InjectQueue } from "@nestjs/bull";
@@ -134,7 +135,8 @@ export class AdminService {
     const limit = Math.min(params.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = { isBot: false };
+    // Silinen hesapların masa geçmişini tutan yer tutucu satırlar listelenmez
+    const where: Record<string, unknown> = { isBot: false, NOT: { email: { startsWith: DELETED_PLACEHOLDER_PREFIX } } };
     // SUPERADMIN hesapları yalnızca SUPERADMIN'e listelenir (getUser ile aynı kural)
     if (!isSuper) where.role = { not: UserRole.SUPERADMIN };
     if (params.status) {
@@ -1848,6 +1850,8 @@ export class AdminService {
 
     if (type === SanctionType.BAN || type === SanctionType.SUSPENSION) {
       const isBan = type === SanctionType.BAN;
+      // Ban / karantina: kişinin bütün oturumları kapanır
+      await this.prisma.refreshToken.updateMany({ where: { userId, revoked: false }, data: { revoked: true } });
       // Banlı kullanıcı askıyla SUSPENDED'a düşürülmez
       if (isBan || user.status !== UserStatus.BANNED) {
         await this.prisma.user.update({

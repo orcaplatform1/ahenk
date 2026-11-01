@@ -195,10 +195,17 @@ export class SosService {
     return new Set(bots.map((b) => b.id));
   }
 
-  private shapeSnapshot(snapshot: unknown, bots: Set<string>, viewer: Viewer) {
+  // Hesabı silinmiş kişiler: kimlik bilgisi kayıtta kalır, sadece SUPERADMIN görür
+  private async deletedIds(userIds: string[]): Promise<Set<string>> {
+    if (userIds.length === 0) return new Set();
+    const rows = await this.prisma.user.findMany({ where: { id: { in: userIds }, status: "DELETED" }, select: { id: true } });
+    return new Set(rows.map((r) => r.id));
+  }
+
+  private shapeSnapshot(snapshot: unknown, bots: Set<string>, viewer: Viewer, deleted: Set<string>) {
     const people = (Array.isArray(snapshot) ? snapshot : []) as SnapshotPerson[];
     if (viewer.role === UserRole.SUPERADMIN) return people.map((p) => ({ ...p, isBot: bots.has(p.userId) }));
-    return people.filter((p) => !bots.has(p.userId)).map(({ isBot: _isBot, ...p }) => p);
+    return people.filter((p) => !bots.has(p.userId) && !deleted.has(p.userId)).map(({ isBot: _isBot, ...p }) => p);
   }
 
   private adminName = { select: { id: true, profile: { select: { firstName: true, lastName: true } } } } as const;
@@ -227,9 +234,12 @@ export class SosService {
     const bots = await this.botIds(
       reports.flatMap((r) => ((Array.isArray(r.participantSnapshot) ? r.participantSnapshot : []) as SnapshotPerson[]).map((p) => p.userId)),
     );
+    const deleted = await this.deletedIds(
+      reports.flatMap((r) => ((Array.isArray(r.participantSnapshot) ? r.participantSnapshot : []) as SnapshotPerson[]).map((p) => p.userId)),
+    );
     return reports.map((r) =>
       this.canSee(r, viewer)
-        ? { ...r, restricted: false, participantSnapshot: this.shapeSnapshot(r.participantSnapshot, bots, viewer) }
+        ? { ...r, restricted: false, participantSnapshot: this.shapeSnapshot(r.participantSnapshot, bots, viewer, deleted) }
         : { id: r.id, createdAt: r.createdAt, resolvedAt: r.resolvedAt, claimedAt: r.claimedAt, claimedBy: r.claimedBy, restricted: true },
     );
   }
@@ -278,10 +288,11 @@ export class SosService {
 
     const snapshot = (Array.isArray(report.participantSnapshot) ? report.participantSnapshot : []) as SnapshotPerson[];
     const bots = await this.botIds(snapshot.map((p) => p.userId));
+    const deleted = await this.deletedIds(snapshot.map((p) => p.userId));
     return {
       ...report,
       restricted: false,
-      participantSnapshot: this.shapeSnapshot(report.participantSnapshot, bots, viewer),
+      participantSnapshot: this.shapeSnapshot(report.participantSnapshot, bots, viewer, deleted),
       allParticipantLocations: Array.from(latestByUser.values()),
       participantLocationHistory: participantLocations,
     };

@@ -18,4 +18,12 @@ export function trIsoWeekStart(week: number, now = new Date()): Date {
   return new Date(trWeekStart(jan4).getTime() + (week - 1) * 7 * DAY_MS);
 }
 
+// Verilen anın ISO hafta numarası (TR saatine göre)
+export function trIsoWeek(now = new Date()): number {
+  const tr = new Date(now.getTime() + TR_OFFSET_MS);
+  const thursday = new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() - ((tr.getUTCDay() + 6) % 7) + 3));
+  const jan1 = Date.UTC(thursday.getUTCFullYear(), 0, 1);
+  return Math.floor((thursday.getTime() - jan1) / WEEK_MS) + 1;
+}
+
 export const WEEK_MS = 7 * DAY_MS;
