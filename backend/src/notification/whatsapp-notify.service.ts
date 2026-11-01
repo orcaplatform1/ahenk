@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { isE2eFakeMode, last4, readFakeControl, recordFake } from "../common/e2e/fake-layer";
 
 const SEND_TIMEOUT_MS = 10_000;
 
@@ -11,6 +12,15 @@ export class WhatsappNotifyService {
   constructor(private config: ConfigService) {}
 
   async send(phone: string, templateName: string, bodyParams: string[]): Promise<void> {
+    if (isE2eFakeMode()) {
+      if (readFakeControl().whatsappFailPhones?.includes(phone)) {
+        const err = new Error("The operation was aborted due to timeout");
+        err.name = "TimeoutError";
+        throw err;
+      }
+      recordFake({ channel: "whatsapp", template: templateName, to: last4(phone), params: bodyParams });
+      return;
+    }
     if (this.config.get("NODE_ENV") !== "production") {
       this.logger.log(`[WhatsApp bildirim stub] şablon: ${templateName}`);
       return;

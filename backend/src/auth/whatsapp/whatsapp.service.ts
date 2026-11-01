@@ -1,5 +1,6 @@
 import { Injectable, Logger, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { isE2eFakeMode, last4, readFakeControl, recordFake } from "../../common/e2e/fake-layer";
 
 interface MetaApiError {
   error?: { message: string; code: number };
@@ -13,6 +14,11 @@ export class WhatsappService {
   constructor(private config: ConfigService) {}
 
   async sendOtp(phone: string, code: string): Promise<void> {
+    if (isE2eFakeMode()) {
+      if (readFakeControl().whatsappOtpFail) throw new InternalServerErrorException("OTP gönderilemedi, lütfen tekrar deneyin");
+      recordFake({ channel: "whatsapp-otp", template: "otp", to: last4(phone), params: { phone, code } });
+      return;
+    }
     if (this.config.get("NODE_ENV") !== "production") {
       this.logger.log(`[WhatsApp OTP] ${phone} → ${code}`);
       return;

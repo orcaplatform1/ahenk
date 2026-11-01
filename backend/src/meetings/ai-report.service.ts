@@ -2,6 +2,7 @@ import { Injectable, Logger, ForbiddenException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import Anthropic from "@anthropic-ai/sdk";
+import { isE2eFakeMode, recordFake } from "../common/e2e/fake-layer";
 
 @Injectable()
 export class AiReportService {
@@ -113,12 +114,15 @@ Katılımcıların güçlü ortak yönlerini ve farklılıklarından doğabilece
 Gereksiz kalıpları kullanma, özgün ol.`;
 
     try {
-      const client = new Anthropic({ apiKey });
-      const message = await client.messages.create({
-        model: "claude-haiku-5-5",
-        max_tokens: 300,
-        messages: [{ role: "user", content: prompt }],
-      });
+      if (isE2eFakeMode()) recordFake({ channel: "anthropic", template: "masa-raporu", params: { meetingId } });
+      const client = isE2eFakeMode() ? null : new Anthropic({ apiKey });
+      const message = client
+        ? await client.messages.create({
+            model: "claude-haiku-5-5",
+            max_tokens: 300,
+            messages: [{ role: "user", content: prompt }],
+          })
+        : { content: [{ type: "text", text: "Sahte masa raporu" }] };
 
       const content = (message.content[0] as { type: string; text: string }).text ?? "";
 

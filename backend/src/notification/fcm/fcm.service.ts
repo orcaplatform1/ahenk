@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as admin from "firebase-admin";
+import { isE2eFakeMode, readFakeControl, recordFake } from "../../common/e2e/fake-layer";
 
 @Injectable()
 export class FcmService implements OnModuleInit {
@@ -39,6 +40,11 @@ export class FcmService implements OnModuleInit {
     body: string;
     data?: Record<string, string>;
   }): Promise<boolean> {
+    if (isE2eFakeMode()) {
+      const ok = !readFakeControl().fcmFail;
+      recordFake({ channel: "fcm", template: params.title, to: params.token.slice(-4), params: { body: params.body, data: params.data, ok } });
+      return ok;
+    }
     if (!this.initialized) {
       this.logger.log(`[FCM stub] ${params.title}`);
       return true;

@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 // @ts-ignore — iyzipay does not have official TS types
 import * as Iyzipay from "iyzipay";
+import { decodeFakeIyzicoToken, encodeFakeIyzicoToken, isE2eFakeMode, readFakeControl, recordFake } from "../../common/e2e/fake-layer";
 
 export type IyzicoCheckoutResult = {
   status: string;
@@ -37,9 +38,9 @@ export class IyzicoService {
 
   constructor(private config: ConfigService) {
     this.client = new Iyzipay({
-      apiKey: this.config.get("IYZICO_API_KEY") ?? "sandbox_placeholder",
-      secretKey: this.config.get("IYZICO_SECRET_KEY") ?? "sandbox_placeholder",
-      uri: this.config.get("IYZICO_BASE_URL") ?? "https://sandbox-api.iyzipay.com",
+      apiKey: (isE2eFakeMode() ? "e2e_fake" : this.config.get("IYZICO_API_KEY")) ?? "sandbox_placeholder",
+      secretKey: (isE2eFakeMode() ? "e2e_fake" : this.config.get("IYZICO_SECRET_KEY")) ?? "sandbox_placeholder",
+      uri: (isE2eFakeMode() ? "http://127.0.0.1:9" : this.config.get("IYZICO_BASE_URL")) ?? "https://sandbox-api.iyzipay.com",
     });
   }
 
@@ -58,6 +59,13 @@ export class IyzicoService {
     callbackUrl: string;
   }): Promise<IyzicoCheckoutResult> {
     const price = (params.amountKurus / 100).toFixed(2);
+
+    if (isE2eFakeMode()) {
+      recordFake({ channel: "iyzico", template: "init", params: { conversationId: params.conversationId, basketId: params.basketId, price } });
+      if (readFakeControl().iyzicoInit === "failure") return { status: "failure", errorMessage: "Sahte iyzico init hatası", errorCode: "E2E" };
+      const token = encodeFakeIyzicoToken({ conversationId: params.conversationId, basketId: params.basketId, price });
+      return { status: "success", token, checkoutFormContent: `<div id="e2e-fake-iyzico" data-token="${token}"></div>` };
+    }
 
     const request = {
       locale: "tr",
@@ -118,6 +126,12 @@ export class IyzicoService {
 
   // Callback token'ını doğrular
   async retrieveCheckoutForm(token: string): Promise<IyzicoCallbackResult> {
+    if (isE2eFakeMode()) {
+      const data = decodeFakeIyzicoToken(token);
+      recordFake({ channel: "iyzico", template: "retrieve", params: { outcome: readFakeControl().iyzicoRetrieve ?? "success" } });
+      if (!data || readFakeControl().iyzicoRetrieve === "failure") return { status: "failure", paymentStatus: "FAILURE", errorMessage: "Sahte iyzico ödeme hatası" };
+      return { status: "success", paymentStatus: "SUCCESS", basketId: data.basketId, conversationId: data.conversationId, paymentId: `fake-pay-${data.conversationId}`, price: data.price, paidPrice: data.price };
+    }
     return new Promise((resolve) => {
       this.client.checkoutForm.retrieve(
         { locale: "tr", token },
@@ -135,6 +149,11 @@ export class IyzicoService {
 
   // Ödeme ID'si üzerinden (kısmi) iade yapar
   async refundPayment(params: { paymentId: string; amountKurus: number; conversationId: string; ip: string }): Promise<IyzicoRefundResult> {
+    if (isE2eFakeMode()) {
+      recordFake({ channel: "iyzico", template: "refund", params: { paymentId: params.paymentId, amountKurus: params.amountKurus } });
+      if (readFakeControl().iyzicoRefund === "failure") return { status: "failure", errorMessage: "Sahte iyzico iade hatası", errorCode: "E2E" };
+      return { status: "success", paymentId: params.paymentId, price: params.amountKurus / 100 };
+    }
     return new Promise((resolve) => {
       this.client.refundV2.create(
         {

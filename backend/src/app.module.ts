@@ -23,6 +23,7 @@ import { KankaModule } from "./kanka/kanka.module";
 import { ChatModule } from "./chat/chat.module";
 import { SosModule } from "./sos/sos.module";
 import { VenuePanelModule } from "./venue-panel/venue-panel.module";
+import { isE2eFakeMode } from "./common/e2e/fake-layer";
 
 @Module({
   imports: [
@@ -30,7 +31,8 @@ import { VenuePanelModule } from "./venue-panel/venue-panel.module";
       isGlobal: true,
       envFilePath: "../.env",
     }),
-    ScheduleModule.forRoot(),
+    // E2E test modunda cron'lar otomatik çalışmaz; testten doğrudan çağrılır
+    ...(isE2eFakeMode() ? [] : [ScheduleModule.forRoot()]),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
@@ -38,7 +40,10 @@ import { VenuePanelModule } from "./venue-panel/venue-panel.module";
           host: config.get("REDIS_HOST", "localhost"),
           port: config.get<number>("REDIS_PORT", 6379),
           password: config.get("REDIS_PASSWORD"),
+          // E2E test modunda canlı kuyruklardan ayrı Redis DB ve prefix
+          ...(isE2eFakeMode() ? { db: 5 } : {}),
         },
+        ...(isE2eFakeMode() ? { prefix: process.env.BULL_PREFIX ?? "ahenk-test" } : {}),
       }),
       inject: [ConfigService],
     }),
