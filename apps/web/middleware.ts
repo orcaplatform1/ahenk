@@ -23,6 +23,13 @@ function buildCsp(nonce: string): string {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Uygulamada Server Action ve POST alan sayfa yok (API ayrı sunucuda). Sayfalara gelen diğer yöntemler Next'in
+  // action işleyicisine girmeden kesilir: bu istekler loglarda "reading 'digest'" hatası üretiyordu.
+  if (request.method !== 'GET' && request.method !== 'HEAD' && !pathname.startsWith('/api/')) {
+    return new NextResponse(null, { status: 405, headers: { Allow: 'GET, HEAD' } });
+  }
+
   // Oturum işareti (gizli değer taşımaz); token'lar HttpOnly çerezde. ahenk_token: eski sürümden kalan oturum
   const hasSession = !!(request.cookies.get('ahenk_session')?.value || request.cookies.get('ahenk_token')?.value);
 
