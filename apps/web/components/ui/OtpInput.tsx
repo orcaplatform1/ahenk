@@ -94,7 +94,7 @@ export default function OtpInput({ value, onChange, onComplete, error = false, a
             className="text-center text-[#f5f5f5] text-2xl font-semibold outline-none caret-[#ff6b6b]"
             style={{
               width: 48, height: 60, borderRadius: 14,
-              background: digit ? 'rgba(192,57,43,0.08)' : 'rgba(255,255,255,0.06)',
+              background: digit ? 'rgba(192,57,43,0.08)' : 'rgba(255,255,255,0.025)',
               border,
               boxShadow: isFocused && !error ? '0 0 0 3px rgba(192,57,43,0.22)' : 'none',
               transition: 'border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease',

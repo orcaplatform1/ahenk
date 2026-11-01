@@ -324,15 +324,6 @@ export default function GirisPage() {
                   />
                 </div>
                 {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={loading || !phoneValid}
-                  className="mx-auto block btn-primary mt-1 disabled:opacity-40"
-                  style={{ width: '72%' }}
-                >
-                  {loading ? 'Gönderiliyor…' : 'Kod Gönder'}
-                </button>
               </div>
             )}
 
@@ -348,29 +339,6 @@ export default function GirisPage() {
                   error={otpShake}
                 />
                 {error && <p className="text-[#ff6b6b] text-sm text-center">{error}</p>}
-                <button
-                  type="button"
-                  onClick={handleVerifyOtp}
-                  disabled={loading || !canSubmit}
-                  className="w-full btn-primary disabled:opacity-40"
-                >
-                  {loading ? 'Doğrulanıyor…' : 'Giriş Yap'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={resendIn > 0 || loading}
-                  className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed"
-                >
-                  {resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setOtpStep(false); setOtp(['', '', '', '', '', '']); setError(''); }}
-                  className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center"
-                >
-                  ← Numarayı değiştir
-                </button>
               </div>
             )}
 
@@ -412,6 +380,53 @@ export default function GirisPage() {
                   </button>
                 </div>
                 {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        </section>
+
+        <div className="mt-4 flex flex-col gap-3">
+            {method === 'whatsapp' && !otpStep && (
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={loading || !phoneValid}
+                  className="mx-auto block btn-primary mt-1 disabled:opacity-40"
+                  style={{ width: '72%' }}
+                >
+                  {loading ? 'Gönderiliyor…' : 'Kod Gönder'}
+                </button>
+            )}
+            {method === 'whatsapp' && otpStep && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleVerifyOtp}
+                  disabled={loading || !canSubmit}
+                  className="w-full btn-primary disabled:opacity-40"
+                >
+                  {loading ? 'Doğrulanıyor…' : 'Giriş Yap'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={resendIn > 0 || loading}
+                  className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed"
+                >
+                  {resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setOtpStep(false); setOtp(['', '', '', '', '', '']); setError(''); }}
+                  className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center"
+                >
+                  ← Numarayı değiştir
+                </button>
+              </>
+            )}
+            {method === 'email' && (
                 <button
                   type="button"
                   onClick={handleEmailLogin}
@@ -421,14 +436,10 @@ export default function GirisPage() {
                 >
                   {loading ? 'Giriş yapılıyor…' : 'Giriş Yap'}
                 </button>
-              </div>
             )}
-          </motion.div>
-        </AnimatePresence>
+        </div>
 
         {/* Alt linkler */}
-        </section>
-
         <div className="mt-4 flex justify-center">
           <Link href="/sifremi-unuttum" className="mx-auto block btn-ghost" style={{ width: '72%' }}>
             Şifremi Unuttum

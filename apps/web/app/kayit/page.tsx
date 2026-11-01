@@ -8,6 +8,7 @@ import { OCCUPATION_SECTORS } from '@/lib/occupations';
 import { api } from '@/lib/api';
 import OtpInput from '@/components/ui/OtpInput';
 import SiteSelect from '@/components/SiteSelect';
+import { gColor } from '@ahenk/ui';
 
 interface City { id: string; name: string; }
 
@@ -295,7 +296,7 @@ function KayitPageInner() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="fixed inset-0 flex flex-col items-center justify-start pt-[18%]"
-            style={{ background: '#121212', zIndex: 100 }}
+            style={{ background: '#0a0a0a', zIndex: 100 }}
           >
             <div className="fixed inset-0 pointer-events-none">
               <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: '60vw', height: '60vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.12) 0%, transparent 60%)', filter: 'blur(60px)' }} />
@@ -347,13 +348,13 @@ function KayitPageInner() {
           {STEPS.map((_, i) => (
             <div key={i} className="flex items-center">
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold flex-shrink-0"
                 style={
                   i < step
                     ? { background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff' }
                     : i === step
                     ? { border: '2px solid #c0392b', color: '#c0392b', background: 'transparent' }
-                    : { border: '1px solid rgba(255,255,255,0.1)', color: '#444', background: 'transparent' }
+                    : { border: '1px solid rgba(255,255,255,0.1)', color: '#8f887f', background: 'transparent' }
                 }
               >
                 {i < step ? '✓' : i + 1}
@@ -413,7 +414,7 @@ function KayitPageInner() {
                   onChange={(e) => changePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   placeholder="5XX XXX XX XX"
                   disabled={!!phoneToken}
-                  className="input-glass flex-1 min-w-0 px-4 py-3 text-sm disabled:opacity-60"
+                  className="input-glass flex-1 min-w-0 px-4 py-3 text-[13px] disabled:opacity-60"
                 />
                 {!phoneToken && (
                   <button
@@ -452,13 +453,25 @@ function KayitPageInner() {
             <OccupationField label="Meslek Alanı" value={form.occupationSector} onChange={(v) => set('occupationSector', v)} />
             <div>
               <label className="block ll-mono text-[11px] text-[#a39c93] mb-2">Cinsiyet</label>
-              <div className="flex gap-4">
-                {(['MALE', 'FEMALE'] as const).map((g) => (
-                  <label key={g} className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="gender" value={g} checked={form.gender === g} onChange={() => set('gender', g)} className="accent-[#c0392b]" />
-                    <span className="text-[13px] text-[#c9c2b8]">{g === 'MALE' ? 'Erkek' : 'Kadın'}</span>
-                  </label>
-                ))}
+              <div className="flex gap-2">
+                {(['MALE', 'FEMALE'] as const).map((g) => {
+                  const on = form.gender === g;
+                  const color = gColor(g);
+                  return (
+                    <label
+                      key={g}
+                      className="flex items-center cursor-pointer"
+                      style={{
+                        padding: '6px 16px', borderRadius: 9999, transition: 'border-color 0.2s, box-shadow 0.2s',
+                        border: `1.5px solid ${on ? color : 'transparent'}`,
+                        boxShadow: on ? `0 0 12px ${color}55` : 'none',
+                      }}
+                    >
+                      <input type="radio" name="gender" value={g} checked={on} onChange={() => set('gender', g)} className="sr-only" />
+                      <span className="text-[13px]" style={{ color: on ? color : '#8f887f' }}>{g === 'MALE' ? 'Erkek' : 'Kadın'}</span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
             <AnimatePresence mode="wait">
@@ -469,7 +482,7 @@ function KayitPageInner() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="text-[#ff6b6b] text-sm"
+                  className="text-[#ff6b6b] text-[13px]"
                 >
                   {error}
                 </motion.p>
@@ -493,7 +506,7 @@ function KayitPageInner() {
             {districtOptions.length > 0 && (
               <div>
                 <label className="block ll-mono text-[11px] text-[#a39c93] mb-2">İlçe *</label>
-                <SiteSelect key={form.primaryCityId} value={form.district} onChange={(v) => set('district', v)} options={districtOptions} placeholder="İlçe seç" ariaLabel="İlçe" searchable searchPlaceholder="İlçe ara" required />
+                <SiteSelect live key={form.primaryCityId} value={form.district} onChange={(v) => set('district', v)} options={districtOptions} placeholder="İlçe seç" ariaLabel="İlçe" searchable searchPlaceholder="İlçe ara" required />
               </div>
             )}
             <div style={{ background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: 12, padding: '12px 14px' }}>
@@ -501,7 +514,7 @@ function KayitPageInner() {
                 Farklı bir şehirde olduğun haftalarda profilindeki "Bu Hafta Hangi Şehirdesiniz?" kartından geçici şehir seçebilirsin.
               </p>
             </div>
-            {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+            {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
             <div className="flex gap-3 mt-1">
               <button type="button" onClick={() => { setStepDir(-1); setStep(0); setError(''); }} className="btn-ghost">
                 Geri
@@ -585,16 +598,16 @@ function KayitPageInner() {
                             type="button"
                             onClick={() => pickAnswer(v)}
                             whileTap={{ scale: 0.99 }}
-                            className="w-full px-5 py-3.5 rounded-xl text-left text-sm transition-all duration-200"
+                            className="w-full px-5 py-3.5 rounded-xl text-left text-[13px] transition-all duration-200"
                             style={selected ? {
                               background: 'rgba(192,57,43,0.12)',
                               border: '1px solid rgba(192,57,43,0.55)',
                               color: '#ff6b6b',
                               boxShadow: '0 0 14px rgba(192,57,43,0.18)',
                             } : {
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.12)',
-                              color: '#888',
+                              background: 'rgba(255,255,255,0.025)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              color: '#a39c93',
                             }}
                           >
                             {label}
@@ -605,7 +618,7 @@ function KayitPageInner() {
                   </motion.div>
                 </AnimatePresence>
 
-                {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+                {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
 
                 <div className="flex items-center gap-3 mt-1">
                   <button
@@ -661,7 +674,7 @@ function KayitPageInner() {
                       border: '1.5px solid rgba(192,57,43,0.6)',
                       boxShadow: '0 0 18px rgba(192,57,43,0.14)',
                     } : {
-                      background: 'rgba(255,255,255,0.07)',
+                      background: 'rgba(255,255,255,0.025)',
                       border: '1px solid rgba(255,255,255,0.08)',
                     }}
                   >
@@ -692,7 +705,7 @@ function KayitPageInner() {
               })}
             </div>
 
-            {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+            {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
 
             <button
               type="button"
@@ -725,7 +738,7 @@ function KayitPageInner() {
                 value={form.contactInput}
                 onChange={(e) => set('contactInput', e.target.value.replace(/\D/g, '').slice(0, 10))}
                 placeholder="5XX XXX XX XX"
-                className="input-glass flex-1 px-4 py-3 text-sm"
+                className="input-glass flex-1 px-4 py-3 text-[13px]"
                 onKeyDown={(e) => e.key === 'Enter' && addContact()}
               />
               <button type="button" onClick={addContact} className="px-4 py-3 text-[13px] text-[#c9c2b8] hover:text-[#f5f5f5] transition-colors" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}>
@@ -735,7 +748,7 @@ function KayitPageInner() {
             {form.contactNumbers.length > 0 && (
               <div className="flex flex-col gap-2">
                 {form.contactNumbers.map((n) => (
-                  <div key={n} className="flex items-center justify-between px-4 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  <div key={n} className="flex items-center justify-between px-4 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)' }}>
                     <span className="text-[13px] text-[#a39c93]">{n}</span>
                     <button type="button" onClick={() => set('contactNumbers', form.contactNumbers.filter((x) => x !== n))} className="text-[#a39c93] hover:text-[#ff6b6b] text-lg leading-none transition-colors">×</button>
                   </div>
@@ -743,7 +756,7 @@ function KayitPageInner() {
                 <p className="text-xs text-[#a39c93]">{form.contactNumbers.length}/50 numara eklendi</p>
               </div>
             )}
-            {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+            {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
             <button type="button" onClick={() => handleFinish(false)} disabled={loading} className="w-full btn-primary mt-1">
               {loading ? 'Kaydediliyor…' : 'Tamamla →'}
             </button>
@@ -768,7 +781,7 @@ function Field({ label, value, onChange, type = 'text', placeholder, maxLength }
       <input
         type={type} value={value} onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder} maxLength={maxLength}
-        className="input-glass px-4 py-3 text-sm"
+        className="input-glass px-4 py-3 text-[13px]"
       />
     </div>
   );
@@ -801,7 +814,7 @@ function PasswordField({ label, value, onChange, shakeKey, error }: {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           maxLength={20}
-          className="input-glass px-4 py-3 text-sm pr-12"
+          className="input-glass px-4 py-3 text-[13px] pr-12"
           style={shaking || error ? { borderColor: 'rgba(192,57,43,0.7)', transition: 'border-color 0.3s' } : { transition: 'border-color 0.3s' }}
         />
         <button
@@ -848,7 +861,7 @@ function PickerColumn({ title, options, selected, onSelect }: {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-      <p style={{ textAlign: 'center', fontSize: 11, color: '#555', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</p>
+      <p className="ll-mono" style={{ textAlign: 'center', fontSize: 11, color: '#a39c93', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</p>
       <div
         ref={listRef}
         style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'] }}
@@ -864,7 +877,7 @@ function PickerColumn({ title, options, selected, onSelect }: {
                 padding: '11px 6px',
                 textAlign: 'center',
                 fontSize: 15,
-                color: isSel ? '#ff6b6b' : '#777',
+                color: isSel ? '#ff6b6b' : '#a39c93',
                 fontWeight: isSel ? 600 : 400,
                 background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent',
                 borderRadius: 8,
@@ -927,7 +940,7 @@ function DatePickerModal({ value, onChange, onClose }: {
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%',
-          background: '#1a1a1a',
+          background: '#0a0a0a',
           border: '1px solid rgba(255,255,255,0.08)',
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
@@ -936,10 +949,10 @@ function DatePickerModal({ value, onChange, onClose }: {
       >
         {/* Başlık */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <p style={{ fontSize: 13, color: '#888' }}>Doğum tarihi seç</p>
+          <p style={{ fontSize: 13, color: '#a39c93' }}>Doğum tarihi seç</p>
           <button
             onClick={onClose}
-            style={{ color: '#555', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
+            style={{ color: '#a39c93', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
           >×</button>
         </div>
 
@@ -984,7 +997,7 @@ function OccupationPickerModal({ value, onChange, onClose }: {
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%',
-          background: '#1a1a1a',
+          background: '#0a0a0a',
           border: '1px solid rgba(255,255,255,0.08)',
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
@@ -992,8 +1005,8 @@ function OccupationPickerModal({ value, onChange, onClose }: {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <p style={{ fontSize: 13, color: '#888' }}>Meslek alanı seç</p>
-          <button onClick={onClose} style={{ color: '#555', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>×</button>
+          <p style={{ fontSize: 13, color: '#a39c93' }}>Meslek alanı seç</p>
+          <button onClick={onClose} style={{ color: '#a39c93', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>×</button>
         </div>
         <div style={{ overflowY: 'auto', maxHeight: 300, scrollbarWidth: 'none' }}>
           {OCCUPATION_SECTORS.map(s => {
@@ -1005,7 +1018,7 @@ function OccupationPickerModal({ value, onChange, onClose }: {
                 style={{
                   padding: '13px 14px',
                   fontSize: 15,
-                  color: isSel ? '#ff6b6b' : '#ccc',
+                  color: isSel ? '#ff6b6b' : '#c9c2b8',
                   fontWeight: isSel ? 600 : 400,
                   background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent',
                   borderRadius: 8,
@@ -1044,12 +1057,12 @@ function OccupationField({ label, value, onChange }: {
         onClick={() => setOpen(true)}
         style={{
           width: '100%',
-          background: 'rgba(255,255,255,0.10)',
-          border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.12)'}`,
+          background: 'rgba(255,255,255,0.025)',
+          border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 12,
           padding: '14px 16px',
-          fontSize: 14,
-          color: value ? '#f5f5f5' : '#555',
+          fontSize: 13,
+          color: value ? '#f5f5f5' : '#a39c93',
           textAlign: 'left',
           cursor: 'pointer',
           outline: 'none',
@@ -1082,12 +1095,12 @@ function DateField({ label, value, onChange }: {
         onClick={() => setOpen(true)}
         style={{
           width: '100%',
-          background: 'rgba(255,255,255,0.10)',
-          border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.12)'}`,
+          background: 'rgba(255,255,255,0.025)',
+          border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 12,
           padding: '14px 16px',
-          fontSize: 14,
-          color: value ? '#f5f5f5' : '#555',
+          fontSize: 13,
+          color: value ? '#f5f5f5' : '#a39c93',
           textAlign: 'left',
           cursor: 'pointer',
           outline: 'none',
@@ -1132,17 +1145,17 @@ function CityPickerModal({ cities, value, onChange, onClose, optional, title }: 
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ width: '100%', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '20px 16px 36px' }}
+        style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '20px 16px 36px' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <p style={{ fontSize: 13, color: '#888' }}>{title}</p>
-          <button onClick={onClose} style={{ color: '#555', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>×</button>
+          <p style={{ fontSize: 13, color: '#a39c93' }}>{title}</p>
+          <button onClick={onClose} style={{ color: '#a39c93', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>×</button>
         </div>
         <div style={{ overflowY: 'auto', maxHeight: 300, scrollbarWidth: 'none' }}>
           {optional && (
             <div
               onClick={() => setTmp('')}
-              style={{ padding: '13px 14px', fontSize: 15, color: tmp === '' ? '#ff6b6b' : '#888', fontWeight: tmp === '' ? 600 : 400, background: tmp === '' ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}
+              style={{ padding: '13px 14px', fontSize: 15, color: tmp === '' ? '#ff6b6b' : '#a39c93', fontWeight: tmp === '' ? 600 : 400, background: tmp === '' ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}
             >
               Seçmek istemiyorum
             </div>
@@ -1153,7 +1166,7 @@ function CityPickerModal({ cities, value, onChange, onClose, optional, title }: 
               <div
                 key={c.id}
                 onClick={() => setTmp(c.id)}
-                style={{ padding: '13px 14px', fontSize: 15, color: isSel ? '#ff6b6b' : '#ccc', fontWeight: isSel ? 600 : 400, background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}
+                style={{ padding: '13px 14px', fontSize: 15, color: isSel ? '#ff6b6b' : '#c9c2b8', fontWeight: isSel ? 600 : 400, background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}
               >
                 {cityLabel(c.name)}
               </div>
@@ -1184,7 +1197,7 @@ function CityPickerField({ label, value, onChange, cities, optional, title }: {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        style={{ width: '100%', background: 'rgba(255,255,255,0.10)', border: `1px solid ${value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 12, padding: '14px 16px', fontSize: 14, color: value ? '#f5f5f5' : '#555', textAlign: 'left', cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent' }}
+        style={{ width: '100%', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '14px 16px', fontSize: 14, color: value ? '#f5f5f5' : '#a39c93', textAlign: 'left', cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent' }}
       >
         {display}
       </button>

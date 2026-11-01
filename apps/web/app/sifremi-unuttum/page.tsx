@@ -75,6 +75,9 @@ export default function SifremiUnuttumPage() {
             />
           </div>
           {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+        </motion.div>
+
+        <div className="mt-4">
           <button
             type="button"
             onClick={handleSubmit}
@@ -84,7 +87,7 @@ export default function SifremiUnuttumPage() {
           >
             {loading ? 'Gönderiliyor…' : 'Kod Gönder'}
           </button>
-        </motion.div>
+        </div>
 
         <div className="mt-4 flex justify-center">
           <Link href="/giris" className="mx-auto block btn-ghost" style={{ width: '72%' }}>

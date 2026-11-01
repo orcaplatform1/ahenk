@@ -84,20 +84,13 @@ function SifremiSifirlaForm() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="ll-card flex flex-col gap-3"
+            className="flex flex-col gap-4"
           >
+            <div className="ll-card flex flex-col gap-3">
             <p className="text-[#a39c93] text-[13px] text-center">
               {phone} numarasına WhatsApp ile gönderilen 6 haneli kodu gir.
             </p>
             <OtpInput value={code} onChange={(c) => { setCode(c); setError(''); }} error={codeError} />
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={resendIn > 0 || resending}
-              className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed mb-2"
-            >
-              {resending ? 'Gönderiliyor…' : resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}
-            </button>
             <div className="relative">
               <input
                 type={showPass ? 'text' : 'password'}
@@ -156,6 +149,8 @@ function SifremiSifirlaForm() {
               </button>
             </div>
             {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+            </div>
+            <div className="flex flex-col gap-3">
             <button
               type="button"
               onClick={handleSubmit}
@@ -164,6 +159,15 @@ function SifremiSifirlaForm() {
             >
               {loading ? 'Kaydediliyor…' : 'Şifremi Sıfırla'}
             </button>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resendIn > 0 || resending}
+              className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed mb-2"
+            >
+              {resending ? 'Gönderiliyor…' : resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}
+            </button>
+            </div>
           </motion.div>
         ) : (
           <motion.div

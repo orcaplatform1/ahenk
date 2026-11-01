@@ -16,11 +16,12 @@ interface Props {
   ariaLabel?: string;
   searchable?: boolean; // Uzun listelerde üstte arama kutusu
   searchPlaceholder?: string;
+  live?: boolean; // Canlı Katman kart zemini (ll-form sayfaları)
 }
 
 const LIST_MAX_HEIGHT = 280;
 
-export default function SiteSelect({ value, onChange, options, placeholder = 'Seçin...', required, ariaLabel, searchable, searchPlaceholder = 'Ara...' }: Props) {
+export default function SiteSelect({ value, onChange, options, placeholder = 'Seçin...', required, ariaLabel, live, searchable, searchPlaceholder = 'Ara...' }: Props) {
   const allItems: SiteSelectOption[] = options.map((o) => (typeof o === 'string' ? { value: o, label: o } : o));
   const [search, setSearch] = useState('');
   const needle = search.trim().toLocaleLowerCase('tr-TR');
@@ -119,9 +120,9 @@ export default function SiteSelect({ value, onChange, options, placeholder = 'Se
         onKeyDown={onKeyDown}
         style={{
           width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 8, boxSizing: 'border-box',
-          background: 'rgba(255,255,255,0.08)', border: `1px solid ${open ? '#c0392b' : 'rgba(255,255,255,0.1)'}`,
-          borderRadius: 10, padding: '0.7rem 1rem', color: selected ? '#f5f5f5' : '#666',
-          fontSize: '0.9rem', fontFamily: 'inherit', textAlign: 'left', cursor: 'pointer', outline: 'none',
+          background: live ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.08)', border: `1px solid ${open ? '#c0392b' : live ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.1)'}`,
+          borderRadius: 10, padding: '0.7rem 1rem', color: selected ? '#f5f5f5' : live ? '#a39c93' : '#666',
+          fontSize: live ? 13 : '0.9rem', fontFamily: 'inherit', textAlign: 'left', cursor: 'pointer', outline: 'none',
         }}
       >
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -148,7 +149,7 @@ export default function SiteSelect({ value, onChange, options, placeholder = 'Se
           ref={panelRef}
           style={{
             position: 'fixed', zIndex: 200, left: pos.left, width: pos.width, top: pos.top, bottom: pos.bottom,
-            boxSizing: 'border-box', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10,
+            boxSizing: 'border-box', background: live ? '#0a0a0a' : '#1a1a1a', border: `1px solid ${live ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 10,
             boxShadow: '0 12px 32px rgba(0,0,0,0.6)', fontFamily: 'var(--font-sans, system-ui)', overflow: 'hidden',
           }}
         >
@@ -162,7 +163,7 @@ export default function SiteSelect({ value, onChange, options, placeholder = 'Se
                 onKeyDown={onKeyDown}
                 placeholder={searchPlaceholder}
                 aria-label={searchPlaceholder}
-                style={{ width: '100%', minHeight: 40, boxSizing: 'border-box', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '0 0.75rem', color: '#f5f5f5', fontSize: 16, outline: 'none' }}
+                style={{ width: '100%', minHeight: 40, boxSizing: 'border-box', background: live ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.08)', border: `1px solid ${live ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 8, padding: '0 0.75rem', color: '#f5f5f5', fontSize: 16, outline: 'none' }}
               />
             </div>
           )}
