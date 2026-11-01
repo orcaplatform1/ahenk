@@ -8,6 +8,7 @@ import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
 import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } from '@/components/AdminNoShowWarnings';
 import { AdminOpenTables } from '@/components/AdminOpenTables';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
+import { AdminSelect } from '@/components/AdminSelect';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
 function canSanction(target: { id: string; role: string }): boolean {
@@ -371,17 +372,17 @@ export default function AdminMatches() {
       {tab === 'all' && (<>
       {/* Filtreler */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-        <select
-          value={statusFilter}
-          onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-          style={{ ...inputStyle, width: 160 }}
-        >
-          <option value="">Tüm durumlar</option>
-          <option value="PENDING">Bekliyor</option>
-          <option value="ACTIVE">Aktif</option>
-          <option value="COMPLETED">Tamamlandı</option>
-          <option value="CANCELLED">İptal</option>
-        </select>
+        <div style={{ width: 160 }}>
+          <AdminSelect
+            value={statusFilter}
+            onChange={v => { setStatusFilter(v); setPage(1); }}
+            placeholder="Tüm durumlar"
+            options={[
+              { value: '', label: 'Tüm durumlar' }, { value: 'PENDING', label: 'Bekliyor' }, { value: 'ACTIVE', label: 'Aktif' },
+              { value: 'COMPLETED', label: 'Tamamlandı' }, { value: 'CANCELLED', label: 'İptal' },
+            ]}
+          />
+        </div>
         <input
           type="text"
           value={cityFilter}
@@ -692,18 +693,14 @@ export default function AdminMatches() {
                 </p>
                 {emptySeats > 0 && (
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <select
+                    <AdminSelect
                       value={botToPlace}
-                      onChange={e => setBotToPlace(e.target.value)}
-                      style={{ ...inputStyle, flex: 1, background: SURFACE }}
-                    >
-                      <option value="">{available.length ? 'Bot seçin (eksik cinsiyet)' : 'Uygun bot yok'}</option>
-                      {available.map(b => (
-                        <option key={b.id} value={b.id}>
-                          {b.name || b.id} ({b.gender === 'MALE' ? 'E' : 'K'}{b.age !== null ? `, ${b.age}` : ''})
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setBotToPlace}
+                      placeholder={available.length ? 'Bot seçin (eksik cinsiyet)' : 'Uygun bot yok'}
+                      title="Bot seç"
+                      style={{ flex: 1, width: 'auto', minWidth: 0 }}
+                      options={available.map(b => ({ value: b.id, label: `${b.name || b.id} (${b.gender === 'MALE' ? 'E' : 'K'}${b.age !== null ? `, ${b.age}` : ''})` }))}
+                    />
                     <button
                       onClick={placeBot}
                       disabled={placingBot || !botToPlace}
@@ -952,17 +949,13 @@ export default function AdminMatches() {
                   <p style={{ margin: 0, ...LABEL, color: MUTED }}>HESAP İŞLEMLERİ</p>
                   {canSanction(userModal) ? (<>
                   {userModal.status !== 'SUSPENDED' && (
-                    <select
+                    <AdminSelect
                       value={sanctionReason}
-                      onChange={e => setSanctionReason(e.target.value)}
-                      style={{
-                        padding: '6px 10px', borderRadius: 8, background: SURFACE, border: `1px solid ${BORDER}`,
-                        fontSize: 11, color: TEXT, fontFamily: SANS, outline: 'none',
-                      }}
-                    >
-                      <option value="">Askı sebebi (boşsa: Yönetici kararı)</option>
-                      {sanctionReasons.map(x => <option key={x} value={x}>{x}</option>)}
-                    </select>
+                      onChange={setSanctionReason}
+                      placeholder="Askı sebebi (boşsa: Yönetici kararı)"
+                      title="Askı sebebi"
+                      options={[{ value: '', label: 'Yönetici kararı' }, ...sanctionReasons.map(x => ({ value: x, label: x }))]}
+                    />
                   )}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {userModal.status !== 'SUSPENDED' && (
@@ -1043,17 +1036,17 @@ export default function AdminMatches() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
                   <p style={{ margin: 0, ...LABEL, color: MUTED }}>ÜCRETSİZ ABONELİK VER</p>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <select
+                    <AdminSelect
                       value={grantPlan}
-                      onChange={e => setGrantPlan(e.target.value)}
-                      style={{ ...inputStyle, flex: 1 }}
-                    >
-                      <option value="">Paket seç…</option>
-                      <option value="MASADA">Masada</option>
-                      <option value="KARSIMDA">Karşımda</option>
-                      <option value="ICERDE">İçerde</option>
-                      <option value="KANKAMLA">Kankamla</option>
-                    </select>
+                      onChange={setGrantPlan}
+                      placeholder="Paket seç…"
+                      title="Paket seç"
+                      style={{ flex: 1, width: 'auto', minWidth: 0 }}
+                      options={[
+              { value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' },
+              { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
+            ]}
+                    />
                     <button
                       onClick={userGrantSubscription}
                       disabled={!!userAction || !grantPlan}

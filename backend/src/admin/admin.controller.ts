@@ -15,9 +15,11 @@ import {
   HttpStatus,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
 } from "@nestjs/common";
 import { HideEmailForAdminInterceptor, KeepEmails } from "./hide-email.interceptor";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
+import { VENUE_PHOTO_MAX_BYTES, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
 import { IsEnum, IsOptional, IsString } from "class-validator";
 import { Request } from "express";
 import { AdminService } from "./admin.service";
@@ -41,6 +43,7 @@ import {
   AdminUpdateUserDto,
   PlaceBotDto,
   UpdateVenuePhotosDto,
+  AdminVenuePhotoDeleteDto,
   UpdatePartnershipDto,
   UpdateCareerDto,
   UpdatePricesDto,
@@ -178,9 +181,13 @@ export class AdminController {
     @Query("search") search?: string,
     @Query("page", new DefaultValuePipe(1), ParseIntPipe) page?: number,
     @Query("limit", new DefaultValuePipe(25), ParseIntPipe) limit?: number,
+    @Query("group") group?: string,
     @Req() req?: Request,
   ) {
-    return this.adminService.listSubscriptions({ status, plan, search, page, limit }, (req!.user as { role: UserRole }).role);
+    const role = (req!.user as { role: UserRole }).role;
+    // group=user: kişi başına tek kart
+    if (group === "user") return this.adminService.listSubscriptionsByUser({ status, plan, search, page, limit }, role);
+    return this.adminService.listSubscriptions({ status, plan, search, page, limit }, role);
   }
 
   @AdminAction("SUBSCRIPTION_CANCEL", async (c) => {
@@ -263,8 +270,8 @@ export class AdminController {
   // ─── Mekan yönetimi ───────────────────────────────────────────────────────
 
   @Get("venues")
-  listVenues(@Query("cityId") cityId?: string) {
-    return this.adminService.listVenues(cityId);
+  listVenues(@Query("cityId") cityId?: string, @Req() req?: Request) {
+    return this.adminService.listVenues(cityId, (req!.user as { role: UserRole }).role);
   }
 
   @Post("venues")
@@ -277,6 +284,19 @@ export class AdminController {
   @Roles(UserRole.SUPERADMIN)
   updateVenue(@Param("id") id: string, @Body() dto: UpdateVenueDto) {
     return this.adminService.updateVenue(id, dto);
+  }
+
+  @Post("venues/:id/photos")
+  @Roles(UserRole.SUPERADMIN)
+  @UseInterceptors(FilesInterceptor("photos", VENUE_PHOTO_MAX_COUNT, { limits: { fileSize: VENUE_PHOTO_MAX_BYTES } }))
+  addVenuePhotos(@Param("id") id: string, @UploadedFiles() files: Express.Multer.File[]) {
+    return this.adminService.addVenuePhotos(id, files);
+  }
+
+  @Delete("venues/:id/photos")
+  @Roles(UserRole.SUPERADMIN)
+  removeVenuePhoto(@Param("id") id: string, @Body() dto: AdminVenuePhotoDeleteDto) {
+    return this.adminService.removeVenuePhoto(id, dto.url);
   }
 
   @Delete("venues/:id")

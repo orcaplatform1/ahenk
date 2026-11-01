@@ -16,9 +16,11 @@ import {
   IsEmail,
   Matches,
   ValidateNested,
+  ValidateIf,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { SANCTION_REASONS } from "../sanction-reasons";
+import { GOOGLE_MAPS_URL, GOOGLE_MAPS_URL_MESSAGE } from "../../venue-panel/venue-url";
 import { UserStatus, UserRole, SubscriptionPlan, VenueCategory, VenueType, SanctionType, PartnershipStatus, CareerStatus } from "@prisma/client";
 
 // ─── Kullanıcı ────────────────────────────────────────────────────────────────
@@ -134,6 +136,29 @@ export class CreateVenueDto {
 
   @IsOptional()
   longitude?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  @ValidateIf((_o, v) => !!v)
+  @Matches(GOOGLE_MAPS_URL, { message: GOOGLE_MAPS_URL_MESSAGE })
+  locationUrl?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  websiteOrSocial?: string | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  capacity?: number | null;
+}
+
+export class AdminVenuePhotoDeleteDto {
+  @IsString()
+  @MaxLength(300)
+  url: string;
 }
 
 export class UpdateVenueDto {
@@ -177,6 +202,23 @@ export class UpdateVenueDto {
 
   @IsOptional()
   longitude?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  @ValidateIf((_o, v) => !!v)
+  @Matches(GOOGLE_MAPS_URL, { message: GOOGLE_MAPS_URL_MESSAGE })
+  locationUrl?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  websiteOrSocial?: string | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  capacity?: number | null;
 }
 
 // ─── Şehir ─────────────────────────────────────────────────────────────────────

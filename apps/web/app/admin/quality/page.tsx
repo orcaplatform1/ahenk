@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { SURFACE, CARD, BORDER, TEXT, MUTED, RED, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
+import { AdminSelect } from '@/components/AdminSelect';
 
 
 interface Report {
@@ -140,17 +141,13 @@ export default function AdminQuality() {
                       {r.detail && (
                         <p style={{ margin: 0, fontSize: 11, color: MUTED, fontStyle: 'italic' }}>"{r.detail}"</p>
                       )}
-                      <select
+                      <AdminSelect
                         value={reason}
-                        onChange={e => setReason(e.target.value)}
-                        style={{
-                          padding: '7px 10px', borderRadius: 8, background: CARD, border: `1px solid ${BORDER}`,
-                          fontSize: 11, color: TEXT, fontFamily: SANS, outline: 'none',
-                        }}
-                      >
-                        <option value="">Sebep seçin (boşsa: Yönetici kararı)</option>
-                        {reasons.map(x => <option key={x} value={x}>{x}</option>)}
-                      </select>
+                        onChange={setReason}
+                        placeholder="Sebep seçin (boşsa: Yönetici kararı)"
+                        title="Sebep seç"
+                        options={[{ value: '', label: 'Yönetici kararı' }, ...reasons.map(x => ({ value: x, label: x }))]}
+                      />
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button
                           onClick={() => quarantine(r.userId)}

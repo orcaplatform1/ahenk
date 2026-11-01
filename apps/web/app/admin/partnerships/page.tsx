@@ -54,12 +54,18 @@ interface Partnership {
   status: string;
   adminNote?: string;
   createdAt: string;
+  updatedAt: string;
+}
+
+function fmtDateTime(d?: string | null) {
+  return d ? new Date(d).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' }) : null;
 }
 
 export default function AdminPartnerships() {
   const [items, setItems] = useState<Partnership[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -98,6 +104,15 @@ export default function AdminPartnerships() {
 
   return (
     <div className="adm-page" style={{ maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
+      {lightbox && (
+        <div
+          onClick={() => setLightbox(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.85)', cursor: 'zoom-out' }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightbox} alt="Mekân fotoğrafı" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+        </div>
+      )}
 
       {/* Başlık */}
       <div style={{ marginBottom: 24 }}>
@@ -198,67 +213,56 @@ export default function AdminPartnerships() {
                     border: `1px solid ${BORDER}`,
                     display: 'flex', flexDirection: 'column', gap: 8,
                   }}>
-                    {p.phone && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Tel:</span> {p.phone}
+                    {([
+                      ['Başvuru durumu', STATUS_LABEL[p.status] ?? p.status],
+                      ['İşletme adı', p.businessName],
+                      ['Yetkili', p.contactName],
+                      ['E-posta', p.email],
+                      ['Telefon', p.phone],
+                      ['Şehir', p.city],
+                      ['İlçe', p.district],
+                      ['Adres', p.address],
+                      ['Mekân türü', p.venueType],
+                      ['Kapasite', p.capacity],
+                      ['Alkol durumu', p.alcoholStatus ? (p.alcoholStatus === 'ALCOHOLIC' ? 'Alkollü' : 'Alkolsüz') : null],
+                      ['Web / Sosyal', p.websiteOrSocial],
+                      ['Referans kodu', p.referenceCode],
+                      ['Başvuru tarihi', fmtDateTime(p.createdAt)],
+                      ['Son güncelleme', fmtDateTime(p.updatedAt)],
+                      ['Panel hesabı', p.account ? ACCOUNT_LABEL[p.account.status] ?? p.account.status : null],
+                      ['Panel kayıt tarihi', fmtDateTime(p.account?.registeredAt)],
+                      ['Onay tarihi', fmtDateTime(p.account?.approvedAt)],
+                      ['Kapatılma tarihi', fmtDateTime(p.account?.deactivatedAt)],
+                    ] as [string, string | number | null | undefined][]).map(([label, value]) => (
+                      <p key={label} style={{ margin: 0, fontSize: 13, color: MUTED }}>
+                        <span style={{ color: TEXT, fontWeight: 600 }}>{label}:</span> {value || '—'}
                       </p>
-                    )}
-                    {p.capacity && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Kapasite:</span> {p.capacity}
-                      </p>
-                    )}
-                    {p.account && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Panel hesabı:</span> {ACCOUNT_LABEL[p.account.status] ?? p.account.status}
-                        {' · '}Kayıt: {new Date(p.account.registeredAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}
-                      </p>
-                    )}
-                    {p.alcoholStatus && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Alkol durumu:</span> {p.alcoholStatus === 'ALCOHOLIC' ? 'Alkollü' : 'Alkolsüz'}
-                      </p>
-                    )}
-                    {p.address && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Adres:</span> {p.address}{p.district ? ` (${p.district})` : ''}
-                      </p>
-                    )}
-                    {p.locationUrl && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED, wordBreak: 'break-all' }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Konum:</span>{' '}
-                        <a href={p.locationUrl} target="_blank" rel="noopener noreferrer" style={{ color: CYAN }}>{p.locationUrl}</a>
-                      </p>
-                    )}
-                    {p.referenceCode && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Referans kodu:</span> {p.referenceCode}
-                      </p>
-                    )}
+                    ))}
+                    <p style={{ margin: 0, fontSize: 13, color: MUTED, wordBreak: 'break-all' }}>
+                      <span style={{ color: TEXT, fontWeight: 600 }}>Maps linki:</span>{' '}
+                      {p.locationUrl ? <a href={p.locationUrl} target="_blank" rel="noopener noreferrer" style={{ color: CYAN }}>{p.locationUrl}</a> : '—'}
+                    </p>
+                    <p style={{ margin: 0, fontSize: 13, color: MUTED }}>
+                      <span style={{ color: TEXT, fontWeight: 600 }}>Açıklama:</span> {p.description || '—'}
+                    </p>
+                    <p style={{ margin: 0, fontSize: 13, color: MUTED }}>
+                      <span style={{ color: TEXT, fontWeight: 600 }}>Admin notu:</span> {p.adminNote || '—'}
+                    </p>
                     {!!p.photos?.length && (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 6 }}>
                         {p.photos.map((src, k) => (
-                          <a key={src} href={mediaUrl(src)} target="_blank" rel="noopener noreferrer">
+                          <button
+                            key={src}
+                            type="button"
+                            onClick={() => setLightbox(mediaUrl(src))}
+                            aria-label={`Mekân fotoğrafı ${k + 1} büyüt`}
+                            style={{ padding: 0, background: 'none', border: 'none', cursor: 'zoom-in' }}
+                          >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={mediaUrl(src)} alt={`Mekân fotoğrafı ${k + 1}`} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, display: 'block' }} />
-                          </a>
+                          </button>
                         ))}
                       </div>
-                    )}
-                    {p.websiteOrSocial && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Web/Sosyal:</span> {p.websiteOrSocial}
-                      </p>
-                    )}
-                    {p.description && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED, fontStyle: 'italic' }}>
-                        "{p.description}"
-                      </p>
-                    )}
-                    {p.adminNote && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Not:</span> {p.adminNote}
-                      </p>
                     )}
 
                     {p.status === 'PENDING' && (

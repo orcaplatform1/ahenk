@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, API_PREFIX } from '@/lib/api';
+import { mediaUrl } from '@/lib/venueApi';
 import { AdminSelect } from '@/components/AdminSelect';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
@@ -21,11 +22,27 @@ function sortCities(list: City[]): City[] {
 }
 
 const labelStyle: React.CSSProperties = { ...LABEL, color: MUTED, margin: '0 0 4px' };
+const photoRemove: React.CSSProperties = {
+  position: 'absolute', top: 3, right: 3, width: 20, height: 20, padding: 0, borderRadius: '50%', cursor: 'pointer',
+  background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', fontSize: 11, lineHeight: 1,
+};
 interface Venue {
   id: string; name: string; category: string; venueType?: string;
-  address?: string; district?: string | null; description?: string; isActive: boolean;
+  address?: string | null; district?: string | null; description?: string | null; isActive: boolean;
+  locationUrl?: string | null; websiteOrSocial?: string | null; capacity?: number | null;
+  latitude?: number | null; longitude?: number | null; photos: string[];
   city: City;
+  account?: { email: string; phone: string; status: string; application?: { contactName: string } | null } | null;
 }
+
+const EMPTY_FORM = {
+  name: '', category: 'SADE', venueType: 'NON_ALCOHOLIC', cityId: '', address: '', district: '', description: '',
+  locationUrl: '', websiteOrSocial: '', capacity: '', latitude: '', longitude: '',
+};
+const MAX_PHOTOS = 10;
+
+const orNull = (v: string) => v.trim() || null;
+const numOrNull = (v: string) => (v.trim() ? Number(v.replace(',', '.')) : null);
 
 const CATS = ['SADE', 'ORTA', 'PREMIUM'];
 
@@ -36,7 +53,10 @@ export default function AdminVenues() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Venue | null>(null);
-  const [form, setForm] = useState({ name: '', category: 'SADE', cityId: '', address: '', district: '', description: '' });
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [districts, setDistricts] = useState<Record<string, string[]>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -56,25 +76,43 @@ export default function AdminVenues() {
   }, []);
 
   function openAdd() {
-    setForm({ name: '', category: 'SADE', cityId: cities[0]?.id ?? '', address: '', district: '', description: '' });
+    setEditing(null);
+    setForm({ ...EMPTY_FORM, cityId: cities[0]?.id ?? '' });
+    setPhotos([]);
+    setPendingFiles([]);
     setModalError('');
     setModal('add');
   }
 
   function openEdit(v: Venue) {
     setEditing(v);
-    setForm({ name: v.name, category: v.category, cityId: v.city.id, address: v.address ?? '', district: v.district ?? '', description: v.description ?? '' });
+    setForm({
+      name: v.name, category: v.category, venueType: v.venueType ?? 'NON_ALCOHOLIC', cityId: v.city.id,
+      address: v.address ?? '', district: v.district ?? '', description: v.description ?? '',
+      locationUrl: v.locationUrl ?? '', websiteOrSocial: v.websiteOrSocial ?? '', capacity: v.capacity != null ? String(v.capacity) : '',
+      latitude: v.latitude != null ? String(v.latitude) : '', longitude: v.longitude != null ? String(v.longitude) : '',
+    });
+    setPhotos(v.photos ?? []);
+    setPendingFiles([]);
     setModalError('');
     setModal('edit');
   }
 
   async function save() {
     setSaving(true);
-    const body = { name: form.name, category: form.category, cityId: form.cityId, address: form.address || undefined, district: form.district || undefined, description: form.description || undefined };
+    const body = {
+      name: form.name, category: form.category, venueType: form.venueType, cityId: form.cityId,
+      address: orNull(form.address), district: orNull(form.district), description: orNull(form.description),
+      locationUrl: orNull(form.locationUrl), websiteOrSocial: orNull(form.websiteOrSocial),
+      capacity: numOrNull(form.capacity), latitude: numOrNull(form.latitude), longitude: numOrNull(form.longitude),
+    };
     setModalError('');
     try {
-      if (modal === 'add') await api.post('/admin/venues', body);
-      else if (editing) await api.patch(`/admin/venues/${editing.id}`, body);
+      if (modal === 'add') {
+        const created = await api.post<{ id: string }>('/admin/venues', body);
+        // Mekân kaydı oluştu: fotoğraf yüklenemezse hata gösterilir, düzenle ekranından yeniden eklenebilir
+        if (pendingFiles.length) await uploadPhotos(created.id, pendingFiles);
+      } else if (editing) await api.patch(`/admin/venues/${editing.id}`, body);
       setModal(null);
       loadVenues(selectedCity || undefined);
     } catch (e) {
@@ -84,11 +122,51 @@ export default function AdminVenues() {
     }
   }
 
-  async function deleteVenue(id: string) {
-    if (!confirm('Mekanı sil?')) return;
+  async function uploadPhotos(venueId: string, files: File[]) {
+    const data = new FormData();
+    files.forEach(f => data.append('photos', f));
+    const res = await fetch(`${API_PREFIX}/admin/venues/${venueId}/photos`, { method: 'POST', credentials: 'include', body: data });
+    const json = await res.json().catch(() => ({})) as { photos?: string[]; message?: string | string[] };
+    if (!res.ok) throw new Error([json.message].flat()[0] ?? 'Fotoğraf yüklenemedi');
+    return json.photos ?? [];
+  }
+
+  // Düzenlemede fotoğraf anında kaydedilir; yeni mekânda kayıtla birlikte yüklenir
+  async function addPhotos(list: FileList | null) {
+    const files = Array.from(list ?? []);
+    if (!files.length) return;
+    setModalError('');
+    if (photos.length + pendingFiles.length + files.length > MAX_PHOTOS) { setModalError(`En fazla ${MAX_PHOTOS} fotoğraf eklenebilir`); return; }
+    if (!editing) { setPendingFiles(p => [...p, ...files]); return; }
+    setPhotoBusy(true);
+    try {
+      setPhotos(await uploadPhotos(editing.id, files));
+      loadVenues(selectedCity || undefined);
+    } catch (e) { setModalError((e as Error).message); }
+    finally { setPhotoBusy(false); }
+  }
+
+  async function removePhoto(url: string) {
+    if (!editing || !confirm('Fotoğraf silinsin mi?')) return;
+    setPhotoBusy(true); setModalError('');
+    try {
+      const res = await fetch(`${API_PREFIX}/admin/venues/${editing.id}/photos`, {
+        method: 'DELETE', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }),
+      });
+      const json = await res.json().catch(() => ({})) as { photos?: string[]; message?: string };
+      if (!res.ok) throw new Error(json.message ?? 'Fotoğraf silinemedi');
+      setPhotos(json.photos ?? []);
+      loadVenues(selectedCity || undefined);
+    } catch (e) { setModalError((e as Error).message); }
+    finally { setPhotoBusy(false); }
+  }
+
+  async function deleteVenue(v: Venue) {
+    const note = v.account ? ' Panel hesabı kapatılır.' : '';
+    if (!confirm(`${v.name} silinsin mi? Bu işlem geri alınamaz. Masaların mekân adı ve adresi korunur.${note}`)) return;
     setError('');
     try {
-      await api.delete(`/admin/venues/${id}`);
+      await api.delete(`/admin/venues/${v.id}`);
     } catch (e) {
       setError(`Silinemedi: ${(e as Error).message}`);
     }
@@ -210,7 +288,7 @@ export default function AdminVenues() {
                       Düzenle
                     </button>
                     <button
-                      onClick={() => deleteVenue(v.id)}
+                      onClick={() => deleteVenue(v)}
                       style={{
                         padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
                         background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
@@ -229,7 +307,7 @@ export default function AdminVenues() {
 
       {modal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-          <div className="ll-card" style={{ width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
+          <div className="ll-card" style={{ width: '100%', maxWidth: 460, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 className="ll-title">
                 {modal === 'add' ? 'Yeni Mekan' : 'Mekanı Düzenle'}
@@ -243,14 +321,13 @@ export default function AdminVenues() {
               </div>
               <div>
                 <p style={labelStyle}>ŞEHİR</p>
-                <select value={form.cityId} onChange={e => setForm(f => ({ ...f, cityId: e.target.value, district: '' }))} style={{ ...inputStyle, background: SURFACE }}>
-                  <optgroup label="Aktif şehirler">
-                    {cities.filter(c => c.isActive).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </optgroup>
-                  <optgroup label="Diğer şehirler">
-                    {cities.filter(c => !c.isActive).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </optgroup>
-                </select>
+                <AdminSelect
+                  value={form.cityId}
+                  onChange={v => setForm(f => ({ ...f, cityId: v, district: '' }))}
+                  placeholder="Şehir seçin"
+                  title="Şehir seç"
+                  options={cities.map(c => ({ value: c.id, label: c.name, group: c.isActive ? 'Aktif şehirler' : 'Diğer şehirler' }))}
+                />
               </div>
               <div>
                 <p style={labelStyle}>İLÇE (OPSİYONEL)</p>
@@ -267,9 +344,12 @@ export default function AdminVenues() {
               </div>
               <div>
                 <p style={labelStyle}>KATEGORİ</p>
-                <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} style={{ ...inputStyle, background: SURFACE }}>
-                  {CATS.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <AdminSelect
+                  value={form.category}
+                  onChange={v => setForm(f => ({ ...f, category: v }))}
+                  placeholder="Kategori"
+                  options={CATS.map(c => ({ value: c, label: c }))}
+                />
               </div>
               <div>
                 <p style={labelStyle}>ADRES (OPSİYONEL)</p>
@@ -291,6 +371,72 @@ export default function AdminVenues() {
                     Haritada gör
                   </a>
                 </div>
+              </div>
+              <div>
+                <p style={labelStyle}>MAPS LİNKİ (OPSİYONEL)</p>
+                <input value={form.locationUrl} onChange={e => setForm(f => ({ ...f, locationUrl: e.target.value }))} placeholder="https://maps.app.goo.gl/…" maxLength={500} style={inputStyle} />
+              </div>
+              <div>
+                <p style={labelStyle}>ALKOL DURUMU</p>
+                <AdminSelect
+                  value={form.venueType}
+                  onChange={v => setForm(f => ({ ...f, venueType: v }))}
+                  placeholder="Alkol durumu"
+                  options={[{ value: 'NON_ALCOHOLIC', label: 'Alkolsüz' }, { value: 'ALCOHOLIC', label: 'Alkollü' }]}
+                />
+              </div>
+              <div>
+                <p style={labelStyle}>KONTENJAN (KİŞİ, OPSİYONEL)</p>
+                <input type="number" min={1} value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} placeholder="Haftalık varsayılan kontenjan" style={inputStyle} />
+              </div>
+              <div>
+                <p style={labelStyle}>WEB / SOSYAL (OPSİYONEL)</p>
+                <input value={form.websiteOrSocial} onChange={e => setForm(f => ({ ...f, websiteOrSocial: e.target.value }))} placeholder="Web sitesi veya sosyal medya" maxLength={300} style={inputStyle} />
+              </div>
+              <div>
+                <p style={labelStyle}>AÇIKLAMA (OPSİYONEL)</p>
+                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={labelStyle}>ENLEM (OPSİYONEL)</p>
+                  <input inputMode="decimal" value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} style={inputStyle} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={labelStyle}>BOYLAM (OPSİYONEL)</p>
+                  <input inputMode="decimal" value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} style={inputStyle} />
+                </div>
+              </div>
+              {editing?.account && (
+                <div>
+                  <p style={labelStyle}>PANEL HESABI İLETİŞİM</p>
+                  <p style={{ margin: 0, fontSize: 13, color: MUTED }}>
+                    {[editing.account.application?.contactName, editing.account.email, editing.account.phone].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+              )}
+              <div>
+                <p style={labelStyle}>FOTOĞRAFLAR ({photos.length + pendingFiles.length}/{MAX_PHOTOS})</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 6, marginBottom: 8 }}>
+                  {photos.map(url => (
+                    <div key={url} style={{ position: 'relative' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={mediaUrl(url)} alt="Mekân fotoğrafı" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, display: 'block' }} />
+                      <button type="button" onClick={() => removePhoto(url)} disabled={photoBusy} aria-label="Fotoğrafı sil" style={photoRemove}>✕</button>
+                    </div>
+                  ))}
+                  {pendingFiles.map((f, i) => (
+                    <div key={`${f.name}-${i}`} style={{ position: 'relative', aspectRatio: '1', borderRadius: 6, background: SURFACE, padding: 6, fontSize: 11, color: MUTED, overflow: 'hidden' }}>
+                      {f.name}
+                      <button type="button" onClick={() => setPendingFiles(p => p.filter((_, k) => k !== i))} aria-label="Fotoğrafı çıkar" style={photoRemove}>✕</button>
+                    </div>
+                  ))}
+                </div>
+                <input
+                  type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={photoBusy}
+                  onChange={e => { addPhotos(e.target.files); e.target.value = ''; }}
+                  style={{ fontSize: 13, color: MUTED, fontFamily: SANS, maxWidth: '100%' }}
+                />
               </div>
               <button
                 onClick={save}

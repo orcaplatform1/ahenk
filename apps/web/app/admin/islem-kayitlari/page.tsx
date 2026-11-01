@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { BG, BORDER, TEXT, MUTED, RED, SANS, MONO } from '@/lib/adminTheme';
+import { AdminSelect } from '@/components/AdminSelect';
+import { AdminDatePicker } from '@/components/AdminDatePicker';
 
 
 interface AdminRef { id: string; profile: { firstName: string; lastName: string } | null }
@@ -18,6 +20,8 @@ const input: React.CSSProperties = {
 };
 
 // ADMIN rolündekilerin veri değiştiren işlemleri (SUPERADMIN işlemleri kaydedilmez) — sadece SUPERADMIN görür
+const LOG_MIN_YEAR = 2026;
+
 export default function IslemKayitlari() {
   const [data, setData] = useState<LogResponse | null>(null);
   const [error, setError] = useState('');
@@ -46,12 +50,17 @@ export default function IslemKayitlari() {
       <p style={{ margin: '0 0 20px', fontSize: 13, color: MUTED }}>Adminlerin yaptığı veri değiştiren işlemler. Kayıtlar silinemez ve değiştirilemez.</p>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
-        <select value={adminId} onChange={(e) => { setAdminId(e.target.value); setPage(1); }} style={{ ...input, minWidth: 160 }}>
-          <option value="">Tüm adminler</option>
-          {data?.admins.map((a) => <option key={a.id} value={a.id}>{nameOf(a)}</option>)}
-        </select>
-        <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} style={input} aria-label="Başlangıç tarihi" />
-        <input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} style={input} aria-label="Bitiş tarihi" />
+        <div style={{ minWidth: 160 }}>
+          <AdminSelect
+            value={adminId}
+            onChange={v => { setAdminId(v); setPage(1); }}
+            placeholder="Tüm adminler"
+            title="Admin seç"
+            options={[{ value: '', label: 'Tüm adminler' }, ...(data?.admins ?? []).map(a => ({ value: a.id, label: nameOf(a) }))]}
+          />
+        </div>
+        <div style={{ width: 150 }}><AdminDatePicker value={from} onChange={v => { setFrom(v); setPage(1); }} placeholder="Başlangıç tarihi" title="Başlangıç tarihi" minYear={LOG_MIN_YEAR} maxYear={new Date().getFullYear()} clearable /></div>
+        <div style={{ width: 150 }}><AdminDatePicker value={to} onChange={v => { setTo(v); setPage(1); }} placeholder="Bitiş tarihi" title="Bitiş tarihi" minYear={LOG_MIN_YEAR} maxYear={new Date().getFullYear()} clearable /></div>
         <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Açıklamada ara…" style={{ ...input, flex: 1, minWidth: 160 }} />
       </div>
 

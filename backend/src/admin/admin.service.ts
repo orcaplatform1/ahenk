@@ -27,6 +27,7 @@ import {
   KycStatus,
   Prisma,
   AdminAlertType,
+  Venue,
 } from "@prisma/client";
 import { PLAN_CONFIG } from "../payment/payment.constants";
 import { vatOfGrossKurus } from "../payment/pricing";
@@ -42,7 +43,8 @@ import { consumeOneOnOneRights, restoreOneOnOneRights } from "../matching/one-on
 import { availableBots } from "../matching/bot-picker";
 import { MatchingService } from "../matching/matching.service";
 import { isValidDistrict } from "../common/districts";
-import { VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
+import { meetingVenueFields, VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
+import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
 import { OVERLAPPING_PLANS } from "../payment/plan-overlap";
@@ -56,6 +58,14 @@ const PIONEER_MAX_QUOTA = 500;
 export const VENUE_UPLOAD_DIR = path.join(process.cwd(), "..", "uploads", "venues");
 export const VENUE_PUBLIC_PREFIX = "/api/v1/media/venues";
 const VENUE_PHOTO_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
+const SUBSCRIPTION_ROW = {
+  id: true, plan: true, status: true, startsAt: true, expiresAt: true, usedAt: true,
+  cancelNote: true, missedGroupCycles: true, missedOneonOneCycles: true, createdAt: true, updatedAt: true,
+  groupRights: true, groupCycles: true, oneOnOneCycles: true, kankaRights: true, kankaCycles: true,
+  user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
+  payment: { select: { platform: true, amountKurus: true, paidAt: true } },
+} as const;
 
 @Injectable()
 export class AdminService {
@@ -183,7 +193,8 @@ export class AdminService {
           role: true,
           status: true,
           createdAt: true,
-          profile: { select: { firstName: true, lastName: true, city: true, isPioneer: true } },
+          activeCity: true,
+          profile: { select: { firstName: true, lastName: true, city: true, primaryCity: true, isPioneer: true } },
           kyc: { select: { status: true } },
           oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
           // Sadece aktif paketler (Abonelikler sayfasındaki "Aktif" ile aynı kural)
@@ -193,7 +204,15 @@ export class AdminService {
       this.prisma.user.count({ where }),
     ]);
 
-    return { data: items, total, page, totalPages: Math.ceil(total / limit) };
+    // primaryCity ve activeCity şehir id'si tutar (eski kayıtta ad olabilir): listede ad gösterilir
+    const cityKeys = [...new Set(items.flatMap((u) => [u.profile?.primaryCity, u.activeCity]).filter((c): c is string => !!c))];
+    const cityRows = cityKeys.length
+      ? await this.prisma.city.findMany({ where: { OR: [{ id: { in: cityKeys } }, { name: { in: cityKeys } }] }, select: { id: true, name: true } })
+      : [];
+    const cityName = (key?: string | null) => (key ? cityRows.find((c) => c.id === key || c.name === key)?.name ?? key : null);
+    const data = items.map((u) => ({ ...u, primaryCityName: cityName(u.profile?.primaryCity), activeCityName: cityName(u.activeCity) }));
+
+    return { data, total, page, totalPages: Math.ceil(total / limit) };
   }
 
   // ─── Kullanıcı detay ──────────────────────────────────────────────────────
@@ -236,6 +255,12 @@ export class AdminService {
       this.prisma.meetingParticipant.count({ where: { userId, meeting: { type: 'ONE_ON_ONE' } } }),
       this.prisma.meetingParticipant.count({ where: { userId, meeting: { type: 'KANKA' } } }),
     ]);
+    // Kalan haklar: aktif aboneliklerden, Abonelikler sayfasındaki değerlerle aynı
+    const rights = {
+      group: user.subscriptions.filter((s) => s.plan === "MASADA" || s.plan === "ICERDE").reduce((sum, s) => sum + s.groupRights, 0),
+      oneOnOne: user.subscriptions.filter((s) => (s.plan === "KARSIMDA" || s.plan === "ICERDE") && !s.usedAt).length,
+      kanka: user.subscriptions.filter((s) => s.plan === "KANKAMLA").reduce((sum, s) => sum + s.kankaRights, 0),
+    };
     const noShowWarnings = await this.noShowWarnings(userId);
     // Aktif kankası (Kankamla)
     const link = await activeKankaLink(this.prisma, userId);
@@ -246,7 +271,7 @@ export class AdminService {
       ? { userId: kankaUser.id, name: `${kankaUser.profile?.firstName ?? ''} ${kankaUser.profile?.lastName ?? ''}`.trim(), since: link!.createdAt }
       : null;
     // Bot bilgisi yalnızca SUPERADMIN'e
-    return { ...safeUser, ...(viewerRole === UserRole.SUPERADMIN ? { isBot } : {}), groupCount, oneOnOneCount, kankaCount, kanka, noShowWarnings };
+    return { ...safeUser, ...(viewerRole === UserRole.SUPERADMIN ? { isBot } : {}), groupCount, oneOnOneCount, kankaCount, rights, kanka, noShowWarnings };
   }
 
   // ─── Gelmedi uyarısı ──────────────────────────────────────────────────────
@@ -881,12 +906,17 @@ export class AdminService {
 
   // ─── Mekan CRUD ──────────────────────────────────────────────────────────
 
-  async listVenues(cityId?: string) {
-    return this.prisma.venue.findMany({
+  async listVenues(cityId?: string, viewerRole?: UserRole) {
+    const venues = await this.prisma.venue.findMany({
       where: cityId ? { cityId } : undefined,
-      include: { city: { select: { id: true, name: true } } },
+      include: {
+        city: { select: { id: true, name: true } },
+        account: { select: { email: true, phone: true, status: true, application: { select: { contactName: true } } } },
+      },
       orderBy: { name: "asc" },
     });
+    // Panel hesabının iletişim bilgileri yalnızca SUPERADMIN'e
+    return viewerRole === UserRole.SUPERADMIN ? venues : venues.map(({ account: _account, ...v }) => v);
   }
 
   async createVenue(data: {
@@ -897,6 +927,9 @@ export class AdminService {
     cityId: string;
     address?: string;
     district?: string;
+    locationUrl?: string | null;
+    websiteOrSocial?: string | null;
+    capacity?: number | null;
   }) {
     const city = await this.prisma.city.findUnique({ where: { id: data.cityId } });
     if (!city) throw new NotFoundException("Şehir bulunamadı");
@@ -909,10 +942,13 @@ export class AdminService {
     description?: string;
     category?: VenueCategory;
     venueType?: VenueType;
-    address?: string;
-    district?: string;
+    address?: string | null;
+    district?: string | null;
     isActive?: boolean;
     cityId?: string;
+    locationUrl?: string | null;
+    websiteOrSocial?: string | null;
+    capacity?: number | null;
   }) {
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) throw new NotFoundException("Mekan bulunamadı");
@@ -924,15 +960,54 @@ export class AdminService {
       const city = await this.prisma.city.findUniqueOrThrow({ where: { id: data.cityId ?? venue.cityId }, select: { name: true } });
       if (!isValidDistrict(city.name, data.district)) throw new BadRequestException("Geçerli bir ilçe seçin");
     }
-    return this.prisma.venue.update({ where: { id: venueId }, data });
+    const updated = await this.prisma.venue.update({ where: { id: venueId }, data });
+    await this.syncVenueMeetings(updated);
+    return updated;
+  }
+
+  // Yaklaşan masalar mekânın güncel bilgisini gösterir (mekân panelindeki kuralla aynı)
+  private async syncVenueMeetings(venue: Venue) {
+    await this.prisma.meeting.updateMany({
+      where: { venueId: venue.id, scheduledAt: { gt: new Date() }, status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] } },
+      data: meetingVenueFields(venue),
+    });
+  }
+
+  async addVenuePhotos(venueId: string, files: Express.Multer.File[]) {
+    if (!files?.length) throw new BadRequestException("Fotoğraf seçin");
+    assertVenuePhotos(files);
+    const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
+    if (!venue) throw new NotFoundException("Mekan bulunamadı");
+    if (venue.photos.length + files.length > VENUE_PHOTO_MAX_COUNT) {
+      throw new BadRequestException(`En fazla ${VENUE_PHOTO_MAX_COUNT} fotoğraf eklenebilir`);
+    }
+    const urls = saveVenuePhotos(venue.id, files);
+    const updated = await this.prisma.venue.update({ where: { id: venueId }, data: { photos: [...venue.photos, ...urls] } });
+    await this.syncVenueMeetings(updated);
+    return { photos: updated.photos };
+  }
+
+  // Dosya diskte kalır: başvuru kaydı ve geçmiş masalar aynı adresi kullanır
+  async removeVenuePhoto(venueId: string, url: string) {
+    const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
+    if (!venue) throw new NotFoundException("Mekan bulunamadı");
+    if (!venue.photos.includes(url)) throw new NotFoundException("Fotoğraf bulunamadı");
+    const updated = await this.prisma.venue.update({ where: { id: venueId }, data: { photos: venue.photos.filter((p) => p !== url) } });
+    await this.syncVenueMeetings(updated);
+    return { photos: updated.photos };
   }
 
   async deleteVenue(venueId: string) {
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) throw new NotFoundException("Mekan bulunamadı");
-    const account = await this.prisma.venueAccount.findUnique({ where: { venueId }, select: { id: true } });
-    if (account) throw new BadRequestException("Panel hesabı olan mekan silinemez, pasife alın");
-    await this.prisma.venue.delete({ where: { id: venueId } });
+    // Masalar mekân adını/adresini kendi kaydında tutar, bağ boşa düşer (venueId SetNull). Panel hesabı kapanır, oturumu düşer.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.venueAccount.updateMany({
+        where: { venueId },
+        data: { status: "DEACTIVATED", deactivatedAt: new Date(), tokenVersion: { increment: 1 } },
+      });
+      await tx.venue.delete({ where: { id: venueId } });
+    });
     return { deleted: true, id: venueId };
   }
 
@@ -969,9 +1044,7 @@ export class AdminService {
     });
   }
 
-  async listSubscriptions(params: { status?: string; plan?: string; search?: string; page?: number; limit?: number }, viewerRole: UserRole) {
-    const page = Math.max(1, params.page ?? 1);
-    const limit = Math.min(Math.max(1, params.limit ?? 25), 100);
+  private subscriptionWhere(params: { status?: string; plan?: string; search?: string }, viewerRole: UserRole) {
     const where: Prisma.SubscriptionWhereInput = {};
     if (params.status) {
       if (!Object.values(SubscriptionStatus).includes(params.status as SubscriptionStatus)) {
@@ -996,6 +1069,13 @@ export class AdminService {
         ],
       };
     }
+    return where;
+  }
+
+  async listSubscriptions(params: { status?: string; plan?: string; search?: string; page?: number; limit?: number }, viewerRole: UserRole) {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(Math.max(1, params.limit ?? 25), 100);
+    const where = this.subscriptionWhere(params, viewerRole);
 
     const [items, total] = await Promise.all([
       this.prisma.subscription.findMany({
@@ -1003,17 +1083,35 @@ export class AdminService {
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
-        select: {
-          id: true, plan: true, status: true, startsAt: true, expiresAt: true, usedAt: true,
-          cancelNote: true, missedGroupCycles: true, missedOneonOneCycles: true, createdAt: true, updatedAt: true,
-          groupRights: true, groupCycles: true, oneOnOneCycles: true, kankaRights: true, kankaCycles: true,
-          user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
-          payment: { select: { platform: true, amountKurus: true, paidAt: true } },
-        },
+        select: SUBSCRIPTION_ROW,
       }),
       this.prisma.subscription.count({ where }),
     ]);
     return { items, total, page, totalPages: Math.ceil(total / limit) };
+  }
+
+  // Kişi başına tek kart: filtreye uyan aboneliği olan kişiler sayfalanır, kartta o sekmedeki tüm abonelikleri gelir
+  async listSubscriptionsByUser(params: { status?: string; plan?: string; search?: string; page?: number; limit?: number }, viewerRole: UserRole) {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(Math.max(1, params.limit ?? 25), 100);
+    const where = this.subscriptionWhere(params, viewerRole);
+    const people = await this.prisma.subscription.groupBy({
+      by: ["userId"],
+      where,
+      _max: { createdAt: true },
+      orderBy: { _max: { createdAt: "desc" } },
+    });
+    const userIds = people.slice((page - 1) * limit, page * limit).map((p) => p.userId);
+    const subs = await this.prisma.subscription.findMany({
+      where: { userId: { in: userIds }, ...(where.status ? { status: where.status } : {}) },
+      orderBy: { createdAt: "desc" },
+      select: SUBSCRIPTION_ROW,
+    });
+    const items = userIds.map((id) => {
+      const subscriptions = subs.filter((s) => s.user.id === id);
+      return { user: subscriptions[0].user, subscriptions };
+    });
+    return { items, total: people.length, page, totalPages: Math.ceil(people.length / limit) };
   }
 
   async cancelSubscription(subscriptionId: string, cancelNote?: string) {

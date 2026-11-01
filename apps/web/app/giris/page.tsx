@@ -162,8 +162,7 @@ export default function GirisPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center md:justify-start px-6 pt-[52px] md:pt-[80px]"
-      style={{ background: '#121212' }}
+      className="live-layer ll-form min-h-screen flex flex-col items-center justify-center md:justify-start px-6 pt-[52px] md:pt-[80px]"
     >
       {/* Yaptırım modalı */}
       <AnimatePresence>
@@ -189,13 +188,13 @@ export default function GirisPage() {
                   {sanction.type === 'BAN'        && 'Hesap Engellendi'}
                 </h2>
                 {sanction.expiresAt && (
-                  <p className="text-xs text-[#888]">
+                  <p className="text-xs text-[#c9c2b8]">
                     Bitiş: {new Date(sanction.expiresAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}
                   </p>
                 )}
               </div>
               <p className="text-sm text-[#ccc] leading-relaxed">{sanction.reason}</p>
-              <p className="text-xs text-[#666]">
+              <p className="text-xs text-[#a39c93]">
                 Hatalı olduğunu düşünüyorsan{' '}
                 <a href="mailto:bilgi@ahenk.co" className="text-[#c0392b] underline">bilgi@ahenk.co</a>{' '}
                 adresiyle iletişime geç.
@@ -269,19 +268,20 @@ export default function GirisPage() {
             <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
             <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
           </div>
-          <h1 className="font-serif text-4xl text-[#f5f5f5]">Giriş Yap</h1>
+          <h1 className="ll-title">Giriş Yap</h1>
         </div>
 
+        <section className="ll-card">
         {/* Toggle */}
         <div
-          className="flex mb-8 p-1 rounded-2xl"
-          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+          className="flex mb-6 p-1 rounded-2xl"
+          style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           {(['whatsapp', 'email'] as Method[]).map((m) => (
             <button
               key={m}
               onClick={() => switchMethod(m)}
-              className="flex-1 py-2 text-sm font-medium rounded-xl transition-all"
+              className="flex-1 py-2 text-[13px] font-medium rounded-xl transition-all"
               style={
                 method === m
                   ? { background: 'rgba(192,57,43,0.18)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.35)' }
@@ -309,8 +309,8 @@ export default function GirisPage() {
               <div className="flex flex-col gap-3">
                 <div className="flex gap-2">
                   <div
-                    className="flex items-center px-4 text-[#555] text-sm select-none flex-shrink-0"
-                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}
+                    className="flex items-center px-4 text-[#a39c93] text-[13px] select-none flex-shrink-0"
+                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}
                   >
                     +90
                   </div>
@@ -339,7 +339,7 @@ export default function GirisPage() {
             {/* ── WhatsApp OTP ── */}
             {method === 'whatsapp' && otpStep && (
               <div className="flex flex-col gap-4">
-                <p className="text-[#666] text-sm text-center">
+                <p className="text-[#a39c93] text-[13px] text-center">
                   +90{phoneDigits} numarasına gönderilen 6 haneli kodu gir.
                 </p>
                 <OtpInput
@@ -360,14 +360,14 @@ export default function GirisPage() {
                   type="button"
                   onClick={handleSendOtp}
                   disabled={resendIn > 0 || loading}
-                  className="text-sm text-[#555] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed"
+                  className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed"
                 >
                   {resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setOtpStep(false); setOtp(['', '', '', '', '', '']); setError(''); }}
-                  className="text-sm text-[#555] hover:text-[#888] transition-colors text-center"
+                  className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center"
                 >
                   ← Numarayı değiştir
                 </button>
@@ -397,7 +397,7 @@ export default function GirisPage() {
                     type="button"
                     onClick={() => setShowPass(s => !s)}
                     tabIndex={-1}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444] hover:text-[#c0392b] transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a39c93] hover:text-[#c0392b] transition-colors"
                   >
                     {showPass ? (
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -427,6 +427,8 @@ export default function GirisPage() {
         </AnimatePresence>
 
         {/* Alt linkler */}
+        </section>
+
         <div className="mt-4 flex justify-center">
           <Link href="/sifremi-unuttum" className="mx-auto block btn-ghost" style={{ width: '72%' }}>
             Şifremi Unuttum

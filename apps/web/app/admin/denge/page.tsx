@@ -314,11 +314,12 @@ export default function AdminBots() {
                 <input value={form.lastName} onChange={e => set('lastName', e.target.value)} placeholder="Soyad" style={inputStyle} />
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <select value={form.gender} onChange={e => set('gender', e.target.value)} style={inputStyle}>
-                  <option value="">Cinsiyet</option>
-                  <option value="MALE">Erkek</option>
-                  <option value="FEMALE">Kadın</option>
-                </select>
+                <AdminSelect
+                  value={form.gender}
+                  onChange={v => set('gender', v)}
+                  placeholder="Cinsiyet"
+                  options={[{ value: 'MALE', label: 'Erkek' }, { value: 'FEMALE', label: 'Kadın' }]}
+                />
                 <AdminDatePicker value={form.birthDate} onChange={v => set('birthDate', v)} />
               </div>
               <AdminSelect
@@ -335,10 +336,12 @@ export default function AdminBots() {
                   placeholder="5XX XXX XX XX" style={inputStyle}
                 />
               </div>
-              <select value={form.cityId} onChange={e => set('cityId', e.target.value)} style={inputStyle}>
-                <option value="">Şehir</option>
-                {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <AdminSelect
+                value={form.cityId}
+                onChange={v => set('cityId', v)}
+                placeholder="Şehir"
+                options={cities.map(c => ({ value: c.id, label: c.name }))}
+              />
               <p style={{ margin: '4px 0 0', ...LABEL, color: MUTED }}>KİŞİLİK TESTİ SKORLARI (0-100)</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
                 {OCEAN_FIELDS.map(({ key, label }) => (

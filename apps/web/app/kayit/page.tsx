@@ -287,7 +287,7 @@ function KayitPageInner() {
   const tIsLast = testCurrent === tTotal - 1;
 
   return (
-    <div className="min-h-screen flex flex-col pt-[52px]" style={{ background: '#121212' }}>
+    <div className="live-layer ll-form min-h-screen flex flex-col pt-[52px]">
       {/* Başarı overlay */}
       <AnimatePresence>
         {showSuccess && (
@@ -385,11 +385,11 @@ function KayitPageInner() {
 
         {/* ── Adım 1: Temel Bilgiler ── */}
         {step === 0 && (
-          <div className="flex flex-col gap-5">
+          <div className="ll-card flex flex-col gap-5">
             <div>
-              <p className="text-xs font-semibold tracking-[0.18em] text-[#555] uppercase mb-1">ADIM 1</p>
-              <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Temel Bilgiler</h1>
-              <p className="text-[#555] text-sm">Hesabını oluştur.</p>
+              <p className="ll-eyebrow" style={{ marginBottom: 4 }}>ADIM 1</p>
+              <h1 className="ll-title" style={{ marginBottom: 4 }}>Temel Bilgiler</h1>
+              <p className="text-[#a39c93] text-[13px]">Hesabını oluştur.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Ad" value={form.firstName} onChange={(v) => set('firstName', v)} />
@@ -398,12 +398,12 @@ function KayitPageInner() {
             <Field label="E-posta" type="email" value={form.email} onChange={(v) => set('email', v)} />
             {/* Telefon */}
             <div>
-              <label className="block text-xs text-[#555] mb-1.5">Telefon Numarası</label>
-              <p className="text-xs text-[#444] mb-2">WhatsApp'a kayıtlı numaranızı yazın</p>
+              <label className="block ll-mono text-[11px] text-[#a39c93] mb-1.5">Telefon Numarası</label>
+              <p className="text-xs text-[#a39c93] mb-2">WhatsApp'a kayıtlı numaranızı yazın</p>
               <div className="flex gap-2">
                 <div
-                  className="flex items-center px-4 text-[#555] text-sm select-none flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}
+                  className="flex items-center px-4 text-[#a39c93] text-[13px] select-none flex-shrink-0"
+                  style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}
                 >
                   +90
                 </div>
@@ -430,18 +430,18 @@ function KayitPageInner() {
               {phoneToken ? (
                 <div className="flex items-center justify-between mt-2">
                   <p className="text-xs text-green-400">✓ Telefon numaran doğrulandı</p>
-                  <button type="button" onClick={() => changePhone(form.phoneNumber)} className="text-xs text-[#555] hover:text-[#888]">Numarayı değiştir</button>
+                  <button type="button" onClick={() => changePhone(form.phoneNumber)} className="text-xs text-[#a39c93] hover:text-[#888]">Numarayı değiştir</button>
                 </div>
               ) : otpSent && (
                 <div className="mt-3 flex flex-col gap-2">
-                  <p className="text-xs text-[#666] text-center">+90{form.phoneNumber} numarasına WhatsApp ile gönderilen 6 haneli kodu gir.</p>
+                  <p className="text-xs text-[#a39c93] text-center">+90{form.phoneNumber} numarasına WhatsApp ile gönderilen 6 haneli kodu gir.</p>
                   <OtpInput
                     value={otpCode}
                     onChange={(c) => { setOtpCode(c); setOtpError(''); }}
                     onComplete={verifyPhoneOtp}
                     error={otpShake}
                   />
-                  {otpVerifying && <p className="text-xs text-[#666] text-center">Doğrulanıyor…</p>}
+                  {otpVerifying && <p className="text-xs text-[#a39c93] text-center">Doğrulanıyor…</p>}
                 </div>
               )}
               {otpError && <p className="text-xs text-[#ff6b6b] mt-2">{otpError}</p>}
@@ -451,12 +451,12 @@ function KayitPageInner() {
             <DateField label="Doğum tarihi" value={form.birthDate} onChange={(v) => set('birthDate', v)} />
             <OccupationField label="Meslek Alanı" value={form.occupationSector} onChange={(v) => set('occupationSector', v)} />
             <div>
-              <label className="block text-sm text-[#555] mb-2">Cinsiyet</label>
+              <label className="block ll-mono text-[11px] text-[#a39c93] mb-2">Cinsiyet</label>
               <div className="flex gap-4">
                 {(['MALE', 'FEMALE'] as const).map((g) => (
                   <label key={g} className="flex items-center gap-2 cursor-pointer">
                     <input type="radio" name="gender" value={g} checked={form.gender === g} onChange={() => set('gender', g)} className="accent-[#c0392b]" />
-                    <span className="text-sm text-[#888]">{g === 'MALE' ? 'Erkek' : 'Kadın'}</span>
+                    <span className="text-[13px] text-[#c9c2b8]">{g === 'MALE' ? 'Erkek' : 'Kadın'}</span>
                   </label>
                 ))}
               </div>
@@ -483,16 +483,16 @@ function KayitPageInner() {
 
         {/* ── Adım 2: Şehir Seçimi ── */}
         {step === 1 && (
-          <div className="flex flex-col gap-5">
+          <div className="ll-card flex flex-col gap-5">
             <div>
-              <p className="text-xs font-semibold tracking-[0.18em] text-[#555] uppercase mb-1">ADIM 2</p>
-              <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Şehir Seçimi</h1>
-              <p className="text-[#555] text-sm">Hangi şehirde buluşmak istediğini seç. Yaşadığın şehir değil, katılmak istediğin şehir.</p>
+              <p className="ll-eyebrow" style={{ marginBottom: 4 }}>ADIM 2</p>
+              <h1 className="ll-title" style={{ marginBottom: 4 }}>Şehir Seçimi</h1>
+              <p className="text-[#a39c93] text-[13px]">Hangi şehirde buluşmak istediğini seç. Yaşadığın şehir değil, katılmak istediğin şehir.</p>
             </div>
             <CityPickerField label="Ana Şehir *" value={form.primaryCityId} onChange={(v) => { set('primaryCityId', v); set('district', ''); }} cities={cities} title="Ana şehir seç" />
             {districtOptions.length > 0 && (
               <div>
-                <label className="block text-sm text-[#555] mb-2">İlçe *</label>
+                <label className="block ll-mono text-[11px] text-[#a39c93] mb-2">İlçe *</label>
                 <SiteSelect key={form.primaryCityId} value={form.district} onChange={(v) => set('district', v)} options={districtOptions} placeholder="İlçe seç" ariaLabel="İlçe" searchable searchPlaceholder="İlçe ara" required />
               </div>
             )}
@@ -515,7 +515,7 @@ function KayitPageInner() {
 
         {/* ── Adım 3: OCEAN Testi ── */}
         {step === 2 && (
-          <div className="flex flex-col gap-4">
+          <div className="ll-card flex flex-col gap-4">
             {testQuestions.length === 0 ? (
               <div className="flex items-center justify-center py-16">
                 <div className="w-8 h-8 rounded-full border-2 border-[#c0392b] border-t-transparent animate-spin" />
@@ -524,10 +524,10 @@ function KayitPageInner() {
               <>
                 {/* Header */}
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold tracking-[0.15em] text-[#555] uppercase">
+                  <span className="ll-eyebrow">
                     BÖLÜM {String(tq?.section ?? 1).padStart(2, '0')} — {tq?.sectionTitle ?? ''}
                   </span>
-                  <span className="text-xs font-mono text-[#555]">{testCurrent + 1} / {tTotal}</span>
+                  <span className="ll-mono text-[11px] text-[#a39c93]">{testCurrent + 1} / {tTotal}</span>
                 </div>
 
                 {/* Progress bar */}
@@ -567,13 +567,11 @@ function KayitPageInner() {
                     <div
                       className="rounded-2xl p-5"
                       style={{
-                        background: 'rgba(255,50,30,0.07)',
-                        border: '1px solid rgba(255,255,255,0.09)',
-                        backdropFilter: 'blur(20px)',
-                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 32px rgba(0,0,0,0.5)',
+                        background: 'rgba(255,255,255,0.025)',
+                        border: '1px solid rgba(255,255,255,0.08)',
                       }}
                     >
-                      <p className="text-xs text-[#444] mb-2 font-mono tracking-widest">SORU {testCurrent + 1}</p>
+                      <p className="ll-mono text-[11px] text-[#a39c93] mb-2">SORU {testCurrent + 1}</p>
                       <p className="font-serif text-xl text-[#f5f5f5] leading-snug">{tq?.text}</p>
                     </div>
 
@@ -634,10 +632,10 @@ function KayitPageInner() {
 
         {/* ── Adım 4: Mekan Tercihi ── */}
         {step === 3 && (
-          <div className="flex flex-col gap-5">
+          <div className="ll-card flex flex-col gap-5">
             <div>
-              <p className="text-xs font-semibold tracking-[0.18em] text-[#555] uppercase mb-1">ADIM 4</p>
-              <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1 leading-tight">
+              <p className="ll-eyebrow" style={{ marginBottom: 4 }}>ADIM 4</p>
+              <h1 className="ll-title" style={{ marginBottom: 4 }}>
                 Eşleşmenizin yapılacağı mekan ortamı nasıl olsun istersiniz?
               </h1>
             </div>
@@ -673,7 +671,7 @@ function KayitPageInner() {
                           style={{ color: selected ? '#ff6b6b' : '#f5f5f5' }}>
                           {opt.label}
                         </p>
-                        <p className="text-sm text-[#666]">{opt.description}</p>
+                        <p className="text-[13px] text-[#a39c93]">{opt.description}</p>
                       </div>
                       {selected && (
                         <motion.div
@@ -709,16 +707,16 @@ function KayitPageInner() {
 
         {/* ── Adım 5: Numara Engelleme ── */}
         {step === 4 && (
-          <div className="flex flex-col gap-5">
+          <div className="ll-card flex flex-col gap-5">
             <div>
-              <p className="text-xs font-semibold tracking-[0.18em] text-[#555] uppercase mb-1">ADIM 5</p>
-              <h1 className="font-serif text-3xl text-[#f5f5f5] mb-1">Numara Engelleme</h1>
-              <p className="text-[#555] text-sm">Tanıdıklarınla karşılaşmak istemiyorsan numara ekleyebilirsin.</p>
+              <p className="ll-eyebrow" style={{ marginBottom: 4 }}>ADIM 5</p>
+              <h1 className="ll-title" style={{ marginBottom: 4 }}>Numara Engelleme</h1>
+              <p className="text-[#a39c93] text-[13px]">Tanıdıklarınla karşılaşmak istemiyorsan numara ekleyebilirsin.</p>
             </div>
             <div className="flex gap-2">
               <div
-                className="flex items-center px-4 text-[#555] text-sm select-none flex-shrink-0"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}
+                className="flex items-center px-4 text-[#a39c93] text-[13px] select-none flex-shrink-0"
+                style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}
               >
                 +90
               </div>
@@ -730,7 +728,7 @@ function KayitPageInner() {
                 className="input-glass flex-1 px-4 py-3 text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && addContact()}
               />
-              <button type="button" onClick={addContact} className="px-4 py-3 text-sm text-[#888] hover:text-[#f5f5f5] transition-colors" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}>
+              <button type="button" onClick={addContact} className="px-4 py-3 text-[13px] text-[#c9c2b8] hover:text-[#f5f5f5] transition-colors" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}>
                 Ekle
               </button>
             </div>
@@ -738,11 +736,11 @@ function KayitPageInner() {
               <div className="flex flex-col gap-2">
                 {form.contactNumbers.map((n) => (
                   <div key={n} className="flex items-center justify-between px-4 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                    <span className="text-sm text-[#555]">{n}</span>
-                    <button type="button" onClick={() => set('contactNumbers', form.contactNumbers.filter((x) => x !== n))} className="text-[#555] hover:text-[#ff6b6b] text-lg leading-none transition-colors">×</button>
+                    <span className="text-[13px] text-[#a39c93]">{n}</span>
+                    <button type="button" onClick={() => set('contactNumbers', form.contactNumbers.filter((x) => x !== n))} className="text-[#a39c93] hover:text-[#ff6b6b] text-lg leading-none transition-colors">×</button>
                   </div>
                 ))}
-                <p className="text-xs text-[#444]">{form.contactNumbers.length}/50 numara eklendi</p>
+                <p className="text-xs text-[#a39c93]">{form.contactNumbers.length}/50 numara eklendi</p>
               </div>
             )}
             {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
@@ -766,7 +764,7 @@ function Field({ label, value, onChange, type = 'text', placeholder, maxLength }
 }) {
   return (
     <div>
-      <label className="block text-xs text-[#555] mb-1.5">{label}</label>
+      <label className="block ll-mono text-[11px] text-[#a39c93] mb-1.5">{label}</label>
       <input
         type={type} value={value} onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder} maxLength={maxLength}
@@ -796,7 +794,7 @@ function PasswordField({ label, value, onChange, shakeKey, error }: {
 
   return (
     <div>
-      <label className="block text-xs text-[#555] mb-1.5">{label}</label>
+      <label className="block ll-mono text-[11px] text-[#a39c93] mb-1.5">{label}</label>
       <motion.div className="relative" animate={controls}>
         <input
           type={show ? 'text' : 'password'}
@@ -809,7 +807,7 @@ function PasswordField({ label, value, onChange, shakeKey, error }: {
         <button
           type="button"
           onClick={() => setShow((s) => !s)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444] hover:text-[#c0392b] transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a39c93] hover:text-[#c0392b] transition-colors"
           tabIndex={-1}
         >
           {show ? (
@@ -1040,7 +1038,7 @@ function OccupationField({ label, value, onChange }: {
   const [open, setOpen] = useState(false);
   return (
     <div>
-      <label className="block text-xs text-[#555] mb-1.5">{label}</label>
+      <label className="block ll-mono text-[11px] text-[#a39c93] mb-1.5">{label}</label>
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -1078,7 +1076,7 @@ function DateField({ label, value, onChange }: {
 
   return (
     <div>
-      <label className="block text-xs text-[#555] mb-1.5">{label}</label>
+      <label className="block ll-mono text-[11px] text-[#a39c93] mb-1.5">{label}</label>
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -1182,7 +1180,7 @@ function CityPickerField({ label, value, onChange, cities, optional, title }: {
   const display = found ? cityLabel(found.name) : (optional ? 'Seçmek istemiyorum' : 'Şehir seç');
   return (
     <div>
-      <label className="block text-xs text-[#555] mb-1.5">{label}</label>
+      <label className="block ll-mono text-[11px] text-[#a39c93] mb-1.5">{label}</label>
       <button
         type="button"
         onClick={() => setOpen(true)}

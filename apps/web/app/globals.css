@@ -214,6 +214,18 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   }
 }
 
+/* Tarayıcı otomatik doldurma: alan kendi rengini korur (arka plan değişimi ertelenir) */
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active {
+  -webkit-text-fill-color: #f5f5f5;
+  caret-color: #f5f5f5;
+  transition: background-color 99999s ease-out 0s;
+}
+.admin-shell input:-webkit-autofill, .admin-shell input:-webkit-autofill:hover,
+.admin-shell input:-webkit-autofill:focus, .admin-shell input:-webkit-autofill:active {
+  -webkit-text-fill-color: #e2e8f0;
+  caret-color: #e2e8f0;
+}
+
 /* ── Canlı Katman (sadece /dashboard) ───────────────── */
 .live-layer {
   --ll-bg: #0a0a0a; --ll-text: #f4f1ec; --ll-text-2: #c9c2b8; --ll-label: #a39c93; --ll-time: #8f887f;
@@ -228,6 +240,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .ll-column { position: relative; max-width: 480px; margin: 0 auto; padding: 16px 20px 28px; display: flex; flex-direction: column; gap: 28px; }
 .ll-serif { font-family: var(--font-serif), Georgia, serif; font-weight: 400; }
 .ll-mono { font-family: var(--font-mono), monospace; }
+.ll-form .input-glass { background: rgba(255,255,255,0.025); border-color: rgba(255,255,255,0.08); }
 .ll-card { border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.025); padding: 18px; }
 .ll-metric { border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); padding: 12px 10px; min-width: 0; }
 .ll-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }

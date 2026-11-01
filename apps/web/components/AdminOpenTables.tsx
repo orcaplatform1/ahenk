@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { SURFACE, BORDER, TEXT, MUTED, RED, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
+import { AdminSelect } from '@/components/AdminSelect';
 
 const MALE_C   = '#4fc3f7';
 const FEMALE_C = '#f48fb1';
@@ -57,12 +58,14 @@ function BotPicker({ listUrl, placeUrl, onPlaced, onError }: { listUrl: string; 
   if (bots === null) return <p style={{ margin: 0, fontSize: 11, color: MUTED }}>Botlar yükleniyor…</p>;
   return (
     <div style={{ display: 'flex', gap: 8 }}>
-      <select value={botId} onChange={e => setBotId(e.target.value)} style={selectStyle}>
-        <option value="">{bots.length ? 'Bot seçin' : 'Uygun bot yok'}</option>
-        {bots.map(b => (
-          <option key={b.id} value={b.id}>{b.name || b.id} ({genderShort(b.gender)}{b.age !== null ? `, ${b.age}` : ''})</option>
-        ))}
-      </select>
+      <AdminSelect
+        value={botId}
+        onChange={setBotId}
+        placeholder={bots.length ? 'Bot seçin' : 'Uygun bot yok'}
+        title="Bot seç"
+        style={{ flex: 1, width: 'auto', minWidth: 0 }}
+        options={bots.map(b => ({ value: b.id, label: `${b.name || b.id} (${genderShort(b.gender)}${b.age !== null ? `, ${b.age}` : ''})` }))}
+      />
       <button onClick={place} disabled={saving || !botId} style={btnStyle(saving || !botId)}>{saving ? '…' : 'Ekle'}</button>
     </div>
   );

@@ -7,6 +7,7 @@ import { AdminUserEdit } from '@/components/AdminUserEdit';
 import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
 import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } from '@/components/AdminNoShowWarnings';
 import { SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
+import { AdminSelect } from '@/components/AdminSelect';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
 function canSanction(target: { id: string; role: string }): boolean {
@@ -30,6 +31,8 @@ interface AdminUser {
   kyc?: { status: string } | null;
   oceanScore?: { openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number } | null;
   subscriptions?: { plan: string }[];
+  primaryCityName?: string | null;
+  activeCityName?: string | null;
 }
 
 interface UsersResponse {
@@ -42,7 +45,7 @@ interface AdminUserDetail {
   occupationSector?: string | null;
   kyc: { status: string } | null;
   subscriptions: { id: string; plan: string; status: string }[];
-  groupCount: number; oneOnOneCount: number; kankaCount?: number;
+  rights?: { group: number; oneOnOne: number; kanka: number };
   kanka?: { userId: string; name: string; since: string } | null;
   oceanScore?: { completedAt: string; adminCanReset: boolean } | null;
   noShowReportsReceived?: NoShowReportItem[];
@@ -86,6 +89,7 @@ export default function AdminUsers() {
   const [sanctionReasons, setSanctionReasons] = useState<string[]>([]);
   const [sanctionReason, setSanctionReason] = useState('');
   const [grantPlan, setGrantPlan] = useState('');
+  const [subToCancel, setSubToCancel] = useState<AdminUserDetail['subscriptions'][number] | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -120,6 +124,7 @@ export default function AdminUsers() {
   async function openUserModal(userId: string) {
     setUserModalLoading(true);
     setUserModal(null);
+    setSubToCancel(null);
     try {
       const u = await api.get<AdminUserDetail>(`/admin/users/${userId}`);
       setUserModal(u); setGrantPlan('');
@@ -172,6 +177,19 @@ export default function AdminUsers() {
     finally { setUserAction(null); }
   }
 
+  // Abonelikler sayfasındaki İptal Et ile aynı uç (İşlem Kayıtları'na yazılır)
+  async function modalCancelSubscription() {
+    if (!userModal || !subToCancel) return;
+    setUserAction('cancelSub');
+    try {
+      await api.patch(`/admin/subscriptions/${subToCancel.id}/cancel`, {});
+      setSubToCancel(null);
+      refreshUserModal(userModal.id);
+      load();
+    } catch (e) { setError(`Abonelik iptal edilemedi: ${(e as Error).message}`); }
+    finally { setUserAction(null); }
+  }
+
   const totalPages = Math.ceil(total / 20);
 
   return (
@@ -195,20 +213,20 @@ export default function AdminUsers() {
           placeholder="Şehir..."
           style={{ ...inputStyle, width: 120 }}
         />
-        <select
-          value={typeFilter}
-          onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
-          style={{ ...inputStyle, width: 160 }}
-        >
-          <option value="">Tüm üyeler</option>
-          <option value="NO_PLAN">Aboneliksiz</option>
-          <option value="MASADA">Masada</option>
-          <option value="KARSIMDA">Karşımda</option>
-          <option value="ICERDE">İçerde</option>
-          <option value="KANKAMLA">Kankamla</option>
-          <option value="ADMIN">Admin</option>
-          <option value="SUPERADMIN">Superadmin</option>
-        </select>
+        <div style={{ width: 160 }}>
+          <AdminSelect
+            value={typeFilter}
+            onChange={v => { setTypeFilter(v); setPage(1); }}
+            placeholder="Tüm üyeler"
+            title="Üye filtresi"
+            options={[
+              { value: '', label: 'Tüm üyeler' }, { value: 'NO_PLAN', label: 'Aboneliksiz' },
+              { value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' },
+              { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
+              { value: 'ADMIN', label: 'Admin' }, { value: 'SUPERADMIN', label: 'Superadmin' },
+            ]}
+          />
+        </div>
       </div>
 
       {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
@@ -239,16 +257,19 @@ export default function AdminUsers() {
                     const s = STATUS_STYLE[u.status] ?? STATUS_STYLE.ACTIVE;
                     return (
                       <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none' }}>
-                        <td data-label="Kullanıcı" style={{ padding: '10px 14px' }}>
+                        <td data-label="Kullanıcı" style={{ padding: '6px 10px' }}>
                           <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}
                           </p>
                           <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email ?? u.phone ?? ''}</p>
                         </td>
-                        <td data-label="Şehir" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>{u.profile?.city ?? '—'}</td>
-                        <td data-label="Paket" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>{activePlan(u)}</td>
-                        <td data-label="OCEAN Ort." style={{ padding: '10px 14px', fontSize: 13, color: MUTED, fontFamily: MONO }}>{oceanAvg(u.oceanScore)}</td>
-                        <td data-label="Durum" style={{ padding: '10px 14px' }}>
+                        <td data-label="Şehir" style={{ padding: '6px 10px', fontSize: 13, color: MUTED }}>
+                          <div>{u.primaryCityName ?? '—'}</div>
+                          <div style={{ fontSize: 11 }}>Bu hafta: {u.activeCityName ?? '—'}</div>
+                        </td>
+                        <td data-label="Paket" style={{ padding: '6px 10px', fontSize: 13, color: MUTED }}>{activePlan(u)}</td>
+                        <td data-label="OCEAN Ort." style={{ padding: '6px 10px', fontSize: 13, color: MUTED, fontFamily: MONO }}>{oceanAvg(u.oceanScore)}</td>
+                        <td data-label="Durum" style={{ padding: '6px 10px' }}>
                           <span style={{
                             ...LABEL,
                             padding: '2px 8px', borderRadius: 99,
@@ -257,7 +278,7 @@ export default function AdminUsers() {
                             {s.label}
                           </span>
                         </td>
-                        <td data-label="" style={{ padding: '10px 14px' }}>
+                        <td data-label="" style={{ padding: '6px 10px' }}>
                           <button
                             onClick={() => openUserModal(u.id)}
                             style={{
@@ -351,9 +372,9 @@ export default function AdminUsers() {
                   {userModal.profile?.occupation && (
                     <span style={{ fontSize: 11, color: MUTED }}>{userModal.profile.occupation}</span>
                   )}
-                  <span style={{ fontSize: 11, color: MUTED }}>Grup: <span style={{ color: '#93c5fd' }}>{userModal.groupCount}</span></span>
-                  <span style={{ fontSize: 11, color: MUTED }}>Başbaşa: <span style={{ color: '#93c5fd' }}>{userModal.oneOnOneCount}</span></span>
-                  <span style={{ fontSize: 11, color: MUTED }}>Kankamla: <span style={{ color: '#93c5fd' }}>{userModal.kankaCount ?? 0}</span></span>
+                  <span style={{ fontSize: 11, color: MUTED }}>Grup hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.group ?? 0}</span></span>
+                  <span style={{ fontSize: 11, color: MUTED }}>Başbaşa hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.oneOnOne ?? 0}</span></span>
+                  <span style={{ fontSize: 11, color: MUTED }}>Kankamla hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.kanka ?? 0}</span></span>
                   <span style={{ fontSize: 11, color: MUTED }}>Kanka: <span style={{ color: '#93c5fd' }}>{userModal.kanka ? userModal.kanka.name : 'yok'}</span></span>
                 </div>
 
@@ -381,10 +402,36 @@ export default function AdminUsers() {
                       ...LABEL, padding: '2px 8px', borderRadius: 99,
                       background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)',
                     }}>
-                      {{ MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' }[s.plan] ?? s.plan}
+                      {PLAN_LABEL[s.plan] ?? s.plan}
+                      <button
+                        type="button"
+                        onClick={() => setSubToCancel(s)}
+                        aria-label={`${PLAN_LABEL[s.plan] ?? s.plan} aboneliğini iptal et`}
+                        style={{ marginLeft: 6, padding: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#93c5fd', fontSize: 11, lineHeight: 1 }}
+                      >✕</button>
                     </span>
                   ))}
                 </div>
+                {subToCancel && (
+                  <div style={{ padding: 10, borderRadius: 8, background: SURFACE, border: '1px solid rgba(239,68,68,0.3)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <p style={{ margin: 0, fontSize: 13, color: TEXT }}>{PLAN_LABEL[subToCancel.plan] ?? subToCancel.plan} aboneliği iptal edilsin mi? Bu işlem geri alınamaz.</p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={modalCancelSubscription}
+                        disabled={userAction === 'cancelSub'}
+                        style={{ flex: 1, padding: '6px', borderRadius: 6, cursor: 'pointer', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', fontSize: 13, color: RED, fontFamily: SANS }}
+                      >
+                        {userAction === 'cancelSub' ? 'İptal ediliyor…' : 'İptal Et'}
+                      </button>
+                      <button
+                        onClick={() => setSubToCancel(null)}
+                        style={{ flex: 1, padding: '6px', borderRadius: 6, cursor: 'pointer', background: 'transparent', border: `1px solid ${BORDER}`, fontSize: 13, color: MUTED, fontFamily: SANS }}
+                      >
+                        Vazgeç
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Kişisel bilgi düzenleme */}
                 <AdminUserEdit user={userModal} canEdit={canSanction(userModal)} onSaved={() => refreshUserModal(userModal.id)} />
@@ -409,17 +456,13 @@ export default function AdminUsers() {
                   <span style={{ ...LABEL, color: MUTED }}>HESAP İŞLEMLERİ</span>
                   {canSanction(userModal) ? (<>
                   {userModal.status !== 'SUSPENDED' && (
-                    <select
+                    <AdminSelect
                       value={sanctionReason}
-                      onChange={e => setSanctionReason(e.target.value)}
-                      style={{
-                        padding: '6px 10px', borderRadius: 8, background: SURFACE, border: `1px solid ${BORDER}`,
-                        fontSize: 11, color: TEXT, fontFamily: SANS, outline: 'none',
-                      }}
-                    >
-                      <option value="">Askı sebebi (boşsa: Yönetici kararı)</option>
-                      {sanctionReasons.map(x => <option key={x} value={x}>{x}</option>)}
-                    </select>
+                      onChange={setSanctionReason}
+                      placeholder="Askı sebebi (boşsa: Yönetici kararı)"
+                      title="Askı sebebi"
+                      options={[{ value: '', label: 'Yönetici kararı' }, ...sanctionReasons.map(x => ({ value: x, label: x }))]}
+                    />
                   )}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {userModal.status !== 'SUSPENDED' && (
@@ -514,16 +557,17 @@ export default function AdminUsers() {
                     </p>
                   )}
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <select
-                      value={grantPlan} onChange={e => setGrantPlan(e.target.value)}
-                      style={{ flex: 1, background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 10px', fontSize: 13, color: TEXT, outline: 'none', fontFamily: SANS }}
-                    >
-                      <option value="">Paket seç…</option>
-                      <option value="MASADA">Masada</option>
-                      <option value="KARSIMDA">Karşımda</option>
-                      <option value="ICERDE">İçerde</option>
-                      <option value="KANKAMLA">Kankamla</option>
-                    </select>
+                    <AdminSelect
+                      value={grantPlan}
+                      onChange={setGrantPlan}
+                      placeholder="Paket seç…"
+                      title="Paket seç"
+                      style={{ flex: 1, width: 'auto', minWidth: 0 }}
+                      options={[
+              { value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' },
+              { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
+            ]}
+                    />
                     <button
                       onClick={modalGrantSubscription} disabled={!!userAction || !grantPlan}
                       style={{

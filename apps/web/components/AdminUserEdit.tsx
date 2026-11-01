@@ -5,6 +5,8 @@ import { api } from '@/lib/api';
 import { myRole } from '@/lib/adminRole';
 import { OCCUPATION_SECTORS } from '@/lib/occupations';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, CYAN, SANS, LABEL } from '@/lib/adminTheme';
+import { AdminSelect } from '@/components/AdminSelect';
+import { AdminDatePicker } from '@/components/AdminDatePicker';
 
 
 const inputStyle: React.CSSProperties = {
@@ -110,12 +112,13 @@ export function AdminUserEdit({ user, canEdit, onSaved }: {
         <input value={form.lastName} onChange={e => set('lastName', e.target.value)} placeholder="Soyad" style={inputStyle} />
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <select value={form.gender} onChange={e => set('gender', e.target.value)} style={inputStyle}>
-          <option value="">Cinsiyet</option>
-          <option value="MALE">Erkek</option>
-          <option value="FEMALE">Kadın</option>
-        </select>
-        <input type="date" value={form.birthDate} onChange={e => set('birthDate', e.target.value)} style={inputStyle} title="Doğum tarihi" />
+        <AdminSelect
+          value={form.gender}
+          onChange={v => set('gender', v)}
+          placeholder="Cinsiyet"
+          options={[{ value: 'MALE', label: 'Erkek' }, { value: 'FEMALE', label: 'Kadın' }]}
+        />
+        <AdminDatePicker value={form.birthDate} onChange={v => set('birthDate', v)} />
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <div style={{ ...inputStyle, width: 'auto', color: MUTED, flexShrink: 0 }}>+90</div>
@@ -125,14 +128,18 @@ export function AdminUserEdit({ user, canEdit, onSaved }: {
           placeholder="5XX XXX XX XX" style={inputStyle}
         />
       </div>
-      <select value={form.cityId} onChange={e => set('cityId', e.target.value)} style={inputStyle}>
-        <option value="">Katılım şehri</option>
-        {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-      </select>
-      <select value={form.occupationSector} onChange={e => set('occupationSector', e.target.value)} style={inputStyle}>
-        <option value="">Meslek alanı</option>
-        {OCCUPATION_SECTORS.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
+      <AdminSelect
+        value={form.cityId}
+        onChange={v => set('cityId', v)}
+        placeholder="Katılım şehri"
+        options={cities.map(c => ({ value: c.id, label: c.name }))}
+      />
+      <AdminSelect
+        value={form.occupationSector}
+        onChange={v => set('occupationSector', v)}
+        placeholder="Meslek alanı"
+        options={OCCUPATION_SECTORS.map(o => ({ value: o, label: o }))}
+      />
       {isSuperadmin && (
         <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="E-posta" style={inputStyle} />
       )}

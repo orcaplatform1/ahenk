@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, SANS, MONO, LABEL } from '@/lib/adminTheme';
+import { AdminSelect } from '@/components/AdminSelect';
 
 
 const inputStyle: React.CSSProperties = {
@@ -31,7 +32,7 @@ interface Subscription {
   payment: { platform: string; amountKurus: number; paidAt: string | null } | null;
 }
 
-interface ListResponse { items: Subscription[]; total: number; page: number; totalPages: number; }
+interface ListResponse { items: { user: Subscription['user']; subscriptions: Subscription[] }[]; total: number; page: number; totalPages: number; }
 
 const TABS = [
   { key: 'ACTIVE',    label: 'Aktif' },
@@ -44,6 +45,55 @@ const PLATFORM_LABEL: Record<string, string> = { WEB: 'Web', ANDROID: 'Android',
 
 function fmtDate(d: string | null) {
   return d ? new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+}
+
+// Kişi kartındaki tek abonelik: hak/döngü bilgisi ve kendi iptal butonu
+function SubscriptionRow({ s, onCancel }: { s: Subscription; onCancel: () => void }) {
+  const oneOnOneRight = s.plan === 'KARSIMDA' || s.plan === 'ICERDE';
+  return (
+    <div style={{ padding: '8px 10px', borderRadius: 8, background: SURFACE, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>{PLAN_LABEL[s.plan] ?? s.plan}</p>
+        <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED, fontFamily: MONO }}>
+          Başlangıç {fmtDate(s.startsAt)}
+          {s.expiresAt ? ` · Bitiş ${fmtDate(s.expiresAt)}` : ''}
+          {s.plan === 'MASADA' || s.plan === 'ICERDE' ? ` · Grup hakkı: ${s.groupRights}/2 kaldı, döngü ${s.groupCycles}/4` : ''}
+          {s.plan === 'KANKAMLA' ? ` · Kankamla hakkı: ${s.kankaRights ?? 0}/2 kaldı, döngü ${s.kankaCycles ?? 0}/4` : ''}
+          {oneOnOneRight ? ` · Başbaşa hakkı: ${s.usedAt ? `kullanıldı (${fmtDate(s.usedAt)})` : `kullanılmadı, döngü ${s.oneOnOneCycles}/4`}` : ''}
+        </p>
+        <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED }}>
+          {s.payment
+            ? `${PLATFORM_LABEL[s.payment.platform] ?? s.payment.platform} · ₺${(s.payment.amountKurus / 100).toFixed(2)}`
+            : 'Ücretsiz (admin)'}
+          {s.status === 'ACTIVE' && (s.missedGroupCycles > 0 || s.missedOneonOneCycles > 0)
+            ? ` · Masa kurulamayan döngü: grup ${s.missedGroupCycles}, başbaşa ${s.missedOneonOneCycles}`
+            : ''}
+        </p>
+        {s.status === 'CANCELLED' && (
+          <p style={{ margin: '3px 0 0', fontSize: 11, color: AMBER }}>
+            İptal: {fmtDate(s.updatedAt)}{s.cancelNote ? ` · ${s.cancelNote}` : ''}
+          </p>
+        )}
+      </div>
+      {s.status === 'ACTIVE' && (
+        <button
+          onClick={onCancel}
+          style={{
+            padding: '4px 10px', borderRadius: 6, cursor: 'pointer', flexShrink: 0,
+            background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+            fontSize: 11, color: RED, fontFamily: SANS,
+          }}
+        >
+          İptal Et
+        </button>
+      )}
+      {s.status === 'EXPIRED' && <span style={{ ...LABEL, color: MUTED, flexShrink: 0 }}>SONA ERDİ</span>}
+      {/* 4 döngü dolmuş ve masa kurulamamış ücretli paket: kullanıcı iade talep edebilir (kesin kontrol talep anında) */}
+      {s.status !== 'CANCELLED' && !!s.payment && (s.missedGroupCycles >= 4 || s.missedOneonOneCycles >= 4) && (
+        <span style={{ ...LABEL, color: GREEN, flexShrink: 0 }}>İADE HAKKI</span>
+      )}
+    </div>
+  );
 }
 
 export default function AdminSubscriptions() {
@@ -61,7 +111,7 @@ export default function AdminSubscriptions() {
 
   const load = useCallback(() => {
     setLoading(true); setError('');
-    const params = new URLSearchParams({ status: tab, page: String(page), limit: '25' });
+    const params = new URLSearchParams({ status: tab, page: String(page), limit: '25', group: 'user' });
     if (plan) params.set('plan', plan);
     if (query) params.set('search', query);
     api.get<ListResponse>(`/admin/subscriptions?${params}`)
@@ -118,13 +168,18 @@ export default function AdminSubscriptions() {
           placeholder="Ad, e-posta veya telefon… (Enter)"
           style={{ ...inputStyle, flex: 1, minWidth: 180 }}
         />
-        <select value={plan} onChange={e => { setPlan(e.target.value); setPage(1); }} style={{ ...inputStyle, background: SURFACE }}>
-          <option value="">Tüm paketler</option>
-          <option value="MASADA">Masada</option>
-          <option value="KARSIMDA">Karşımda</option>
-          <option value="ICERDE">İçerde</option>
-          <option value="KANKAMLA">Kankamla</option>
-        </select>
+        <div style={{ width: 160 }}>
+          <AdminSelect
+            value={plan}
+            onChange={v => { setPlan(v); setPage(1); }}
+            placeholder="Tüm paketler"
+            title="Paket filtresi"
+            options={[
+              { value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' },
+              { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
+            ]}
+          />
+        </div>
       </div>
 
       {error && <p style={{ margin: '0 0 12px', fontSize: 13, color: RED }}>{error}</p>}
@@ -132,7 +187,7 @@ export default function AdminSubscriptions() {
       <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
           <h2 className="ll-title">Abonelikler</h2>
-          {data && <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{data.total} kayıt</span>}
+          {data && <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{data.total} kişi</span>}
         </div>
 
         {loading ? (
@@ -145,74 +200,31 @@ export default function AdminSubscriptions() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {items.map((s, i) => {
-              const name = s.user.profile ? `${s.user.profile.firstName} ${s.user.profile.lastName}` : s.user.email;
-              const oneOnOneRight = s.plan === 'KARSIMDA' || s.plan === 'ICERDE';
-              return (
-                <div
-                  key={s.id}
-                  style={{
-                    padding: '12px 18px',
-                    borderBottom: i < items.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none',
-                    display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 200 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{name}</span>
-                      <span style={{
-                        ...LABEL, padding: '1px 7px', borderRadius: 99,
-                        background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)',
-                      }}>
-                        {PLAN_LABEL[s.plan] ?? s.plan}
-                      </span>
-                    </div>
-                    <p style={{ margin: 0, fontSize: 10, color: MUTED }}>
-                      {[s.user.email, s.user.phone].filter(Boolean).join(' · ')}
-                    </p>
-                    <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
-                      Başlangıç {fmtDate(s.startsAt)}
-                      {s.expiresAt ? ` · Bitiş ${fmtDate(s.expiresAt)}` : ''}
-                      {s.plan === 'MASADA' || s.plan === 'ICERDE' ? ` · Grup hakkı: ${s.groupRights}/2 kaldı, döngü ${s.groupCycles}/4` : ''}
-                      {s.plan === 'KANKAMLA' ? ` · Kankamla hakkı: ${s.kankaRights ?? 0}/2 kaldı, döngü ${s.kankaCycles ?? 0}/4` : ''}
-                      {oneOnOneRight ? ` · Başbaşa hakkı: ${s.usedAt ? `kullanıldı (${fmtDate(s.usedAt)})` : `kullanılmadı, döngü ${s.oneOnOneCycles}/4`}` : ''}
-                    </p>
-                    <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED }}>
-                      {s.payment
-                        ? `${PLATFORM_LABEL[s.payment.platform] ?? s.payment.platform} · ₺${(s.payment.amountKurus / 100).toFixed(2)}`
-                        : 'Ücretsiz (admin)'}
-                      {s.status === 'ACTIVE' && (s.missedGroupCycles > 0 || s.missedOneonOneCycles > 0)
-                        ? ` · Masa kurulamayan döngü: grup ${s.missedGroupCycles}, başbaşa ${s.missedOneonOneCycles}`
-                        : ''}
-                    </p>
-                    {s.status === 'CANCELLED' && (
-                      <p style={{ margin: '3px 0 0', fontSize: 10, color: AMBER }}>
-                        İptal: {fmtDate(s.updatedAt)}{s.cancelNote ? ` · ${s.cancelNote}` : ''}
-                      </p>
-                    )}
-                  </div>
-                  {s.status === 'ACTIVE' && (
-                    <button
-                      onClick={() => { setCancelling(s); setCancelNote(''); }}
-                      style={{
-                        padding: '4px 10px', borderRadius: 6, cursor: 'pointer', flexShrink: 0,
-                        background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-                        fontSize: 10, color: RED, fontFamily: SANS,
-                      }}
-                    >
-                      İptal Et
-                    </button>
-                  )}
-                  {s.status === 'EXPIRED' && (
-                    <span style={{ fontSize: 9, fontWeight: 800, color: MUTED, flexShrink: 0 }}>SONA ERDİ</span>
-                  )}
-                  {/* 4 döngü dolmuş ve masa kurulamamış ücretli paket: kullanıcı iade talep edebilir (kesin kontrol talep anında) */}
-                  {s.status !== 'CANCELLED' && !!s.payment && (s.missedGroupCycles >= 4 || s.missedOneonOneCycles >= 4) && (
-                    <span style={{ fontSize: 9, fontWeight: 800, color: GREEN, flexShrink: 0 }}>İADE HAKKI</span>
-                  )}
+            {items.map(({ user, subscriptions }, i) => (
+              <div
+                key={user.id}
+                style={{ padding: '12px 18px', borderBottom: i < items.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none' }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>
+                  {user.profile ? `${user.profile.firstName} ${user.profile.lastName}` : user.email}
+                </span>
+                <p style={{ margin: '2px 0 8px', fontSize: 11, color: MUTED }}>
+                  {[user.email, user.phone].filter(Boolean).join(' · ')}
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  {subscriptions.map(s => (
+                    <span key={s.id} style={{ ...LABEL, padding: '1px 7px', borderRadius: 99, background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)' }}>
+                      {PLAN_LABEL[s.plan] ?? s.plan}
+                    </span>
+                  ))}
                 </div>
-              );
-            })}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {subscriptions.map(s => (
+                    <SubscriptionRow key={s.id} s={s} onCancel={() => { setCancelling(s); setCancelNote(''); }} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

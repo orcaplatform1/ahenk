@@ -49,13 +49,17 @@ function Column({ title, options, selected, onSelect }: {
   );
 }
 
-export function AdminDatePicker({ value, onChange, placeholder = 'Doğum tarihi' }: {
+export function AdminDatePicker({ value, onChange, placeholder = 'Doğum tarihi', title = 'Doğum tarihi seç', minYear = MIN_YEAR, maxYear: maxYearProp, clearable = false }: {
   value: string; // YYYY-MM-DD
   onChange: (v: string) => void;
   placeholder?: string;
+  title?: string;
+  minYear?: number;
+  maxYear?: number; // Verilmezse 18 yaş sınırı
+  clearable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const maxYear = new Date().getFullYear() - 18;
+  const maxYear = maxYearProp ?? new Date().getFullYear() - 18;
 
   const parts = value ? value.split('-').map(Number) : [0, 0, 0];
   const [year, setYear]   = useState(parts[0] || maxYear);
@@ -77,7 +81,7 @@ export function AdminDatePicker({ value, onChange, placeholder = 'Doğum tarihi'
 
   const dayOpts   = Array.from({ length: new Date(year, month, 0).getDate() }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
   const monthOpts = MONTHS_TR.map((m, i) => ({ value: i + 1, label: m }));
-  const yearOpts  = Array.from({ length: maxYear - MIN_YEAR + 1 }, (_, i) => ({ value: maxYear - i, label: String(maxYear - i) }));
+  const yearOpts  = Array.from({ length: maxYear - minYear + 1 }, (_, i) => ({ value: maxYear - i, label: String(maxYear - i) }));
 
   function confirm() {
     const safeDay = Math.min(day, new Date(year, month, 0).getDate());
@@ -111,7 +115,7 @@ export function AdminDatePicker({ value, onChange, placeholder = 'Doğum tarihi'
             className="ll-card" style={{ width: '100%', maxWidth: 360, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: SANS }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>Doğum tarihi seç</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{title}</span>
               <button type="button" onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: MUTED, padding: 2 }}>✕</button>
             </div>
             <div style={{ display: 'flex', gap: 6, height: 220 }}>
@@ -130,6 +134,15 @@ export function AdminDatePicker({ value, onChange, placeholder = 'Doğum tarihi'
             >
               Seç
             </button>
+            {clearable && value && (
+              <button
+                type="button"
+                onClick={() => { onChange(''); setOpen(false); }}
+                style={{ width: '100%', marginTop: 8, padding: '7px', borderRadius: 8, cursor: 'pointer', background: 'none', border: `1px solid ${BORDER}`, fontSize: 13, color: MUTED, fontFamily: SANS }}
+              >
+                Temizle
+              </button>
+            )}
           </div>
         </div>
       )}

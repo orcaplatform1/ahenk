@@ -67,8 +67,8 @@ function SifremiSifirlaForm() {
 
   if (!phoneValid) {
     return (
-      <div className="glass-card p-6 text-center flex flex-col items-center gap-4">
-        <p className="text-[#888] text-sm">Bağlantı geçersiz. Lütfen kodu yeniden iste.</p>
+      <div className="ll-card text-center flex flex-col items-center gap-4">
+        <p className="text-[#c9c2b8] text-sm">Bağlantı geçersiz. Lütfen kodu yeniden iste.</p>
         <Link href="/sifremi-unuttum" className="btn-primary">Kod İste</Link>
       </div>
     );
@@ -84,9 +84,9 @@ function SifremiSifirlaForm() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="flex flex-col gap-3"
+            className="ll-card flex flex-col gap-3"
           >
-            <p className="text-[#666] text-sm text-center">
+            <p className="text-[#a39c93] text-[13px] text-center">
               {phone} numarasına WhatsApp ile gönderilen 6 haneli kodu gir.
             </p>
             <OtpInput value={code} onChange={(c) => { setCode(c); setError(''); }} error={codeError} />
@@ -94,7 +94,7 @@ function SifremiSifirlaForm() {
               type="button"
               onClick={handleResend}
               disabled={resendIn > 0 || resending}
-              className="text-sm text-[#555] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed mb-2"
+              className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed mb-2"
             >
               {resending ? 'Gönderiliyor…' : resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}
             </button>
@@ -112,7 +112,7 @@ function SifremiSifirlaForm() {
                 onClick={() => setShowPass(v => !v)}
                 tabIndex={-1}
                 aria-label={showPass ? 'Şifreyi gizle' : 'Şifreyi göster'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444] hover:text-[#c0392b] transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a39c93] hover:text-[#c0392b] transition-colors"
               >
                 {showPass ? (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -141,7 +141,7 @@ function SifremiSifirlaForm() {
                 onClick={() => setShowPass(v => !v)}
                 tabIndex={-1}
                 aria-label={showPass ? 'Şifreyi gizle' : 'Şifreyi göster'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444] hover:text-[#c0392b] transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a39c93] hover:text-[#c0392b] transition-colors"
               >
                 {showPass ? (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -197,7 +197,7 @@ function SifremiSifirlaForm() {
               className="text-center"
             >
               <p className="text-[#f5f5f5] font-semibold mb-1">Şifren güncellendi</p>
-              <p className="text-[#666] text-sm">Giriş sayfasına yönlendiriliyorsun…</p>
+              <p className="text-[#a39c93] text-[13px]">Giriş sayfasına yönlendiriliyorsun…</p>
             </motion.div>
           </motion.div>
         )}
@@ -209,8 +209,7 @@ function SifremiSifirlaForm() {
 export default function SifremiSifirlaPage() {
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center md:justify-start px-6 md:pt-[80px]"
-      style={{ background: '#121212' }}
+      className="live-layer ll-form min-h-screen flex flex-col items-center justify-center md:justify-start px-6 md:pt-[80px]"
     >
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)', width: '70vw', height: '70vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.09) 0%, transparent 60%)', filter: 'blur(60px)' }} />
@@ -222,8 +221,8 @@ export default function SifremiSifirlaPage() {
             <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
             <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
           </div>
-          <h1 className="font-serif text-4xl text-[#f5f5f5] mb-2">Yeni Şifre</h1>
-          <p className="text-[#555] text-sm">Kodu gir ve hesabın için yeni bir şifre belirle.</p>
+          <h1 className="ll-title" style={{ marginBottom: 8 }}>Yeni Şifre</h1>
+          <p className="text-[#a39c93] text-[13px]">Kodu gir ve hesabın için yeni bir şifre belirle.</p>
         </div>
 
         <Suspense fallback={null}>
