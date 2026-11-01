@@ -25,6 +25,9 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus, SanctionType, Gender } from "@prisma/client";
 
+// Tüketilmiş refresh token bu süre içinde gelirse eşzamanlı yenileme sayılır (çok sekme)
+const REFRESH_REUSE_GRACE_MS = 30_000;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -273,10 +276,17 @@ export class AuthService {
 
   async refreshTokens(userId: string, refreshTokenJti: string) {
     const storedToken = await this.prisma.refreshToken.findFirst({
-      where: { userId, token: refreshTokenJti, revoked: false },
+      where: { userId, token: refreshTokenJti },
     });
 
-    if (!storedToken) throw new UnauthorizedException("Refresh token geçersiz");
+    // Geçerli imzalı ama tüketilmiş token: çalınmış olabilir, kişinin tüm oturumları kapanır.
+    // İstisna: birkaç saniye önce tüketilmişse iki sekmenin aynı anda yenilemesidir, oturum kapanmaz.
+    if (!storedToken || storedToken.revoked) {
+      const rotatedAt = storedToken?.rotatedAt?.getTime();
+      const sameMoment = rotatedAt !== undefined && Date.now() - rotatedAt < REFRESH_REUSE_GRACE_MS;
+      if (!sameMoment) await this.revokeAllSessions(userId);
+      throw new UnauthorizedException("Refresh token geçersiz");
+    }
     if (storedToken.expiresAt < new Date()) {
       await this.prisma.refreshToken.update({
         where: { id: storedToken.id },
@@ -291,18 +301,19 @@ export class AuthService {
     // Eski token'ı koşullu iptal et, yeni üret (rotation) — eşzamanlı ikinci kullanım reddedilir
     const { count } = await this.prisma.refreshToken.updateMany({
       where: { id: storedToken.id, revoked: false },
-      data: { revoked: true },
+      data: { revoked: true, rotatedAt: new Date() },
     });
-    if (count === 0) {
-      await this.prisma.refreshToken.updateMany({
-        where: { userId, revoked: false },
-        data: { revoked: true },
-      });
-      throw new UnauthorizedException("Refresh token geçersiz");
-    }
+    if (count === 0) throw new UnauthorizedException("Refresh token geçersiz");
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
     return { user: this.sanitizeUser(user), ...tokens };
+  }
+
+  private revokeAllSessions(userId: string) {
+    return this.prisma.refreshToken.updateMany({
+      where: { userId, revoked: false },
+      data: { revoked: true },
+    });
   }
 
   // ─── WhatsApp OTP ile Giriş (public) ────────────────────────────────────

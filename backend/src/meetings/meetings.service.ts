@@ -11,7 +11,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { cancellationNotice, initialsOf } from "./cancellation-notice";
 import { restoreOneOnOneRights } from "../matching/one-on-one-right";
-import { cancelDeadline, meetingCardEnd, noShowCardWindow, sosWindowEnd } from "./meeting-windows";
+import { cancelDeadline, meetingCardEnd, noShowCardWindow, sosWindowEnd, reviewWindow } from "./meeting-windows";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { chargeKankaRight, pairKankaSub } from "../payment/package-rights";
@@ -24,18 +24,6 @@ function googleMapsUrl(name?: string | null, address?: string | null): string | 
   const q = [name, address].filter(Boolean).join(", ");
   return q ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` : null;
 }
-
-// Değerlendirme penceresi (TR saati, UTC+3): buluşmanın ertesi günü 10:00 → buluşmadan 4 gün sonra 23:59
-// Grup (Cumartesi) → Pazar 10:00 – Çarşamba 23:59; Başbaşa (Pazar) → Pazartesi 10:00 – Perşembe 23:59
-function reviewWindow(scheduledAt: Date): { opensAt: Date; closesAt: Date } {
-  const tr = new Date(scheduledAt.getTime() + 3 * 60 * 60 * 1000);
-  const y = tr.getUTCFullYear(), m = tr.getUTCMonth(), d = tr.getUTCDate();
-  return {
-    opensAt: new Date(Date.UTC(y, m, d + 1, 10 - 3, 0, 0, 0)),
-    closesAt: new Date(Date.UTC(y, m, d + 4, 23 - 3, 59, 59, 999)),
-  };
-}
-
 
 @Injectable()
 export class MeetingsService {
@@ -294,6 +282,12 @@ export class MeetingsService {
     });
   }
 
+  // İptal eden, reddeden ve gelmeyen kişi masayı değerlendiremez, masadan kimseyi engelleyemez
+  private assertTookPart(status: ParticipantStatus) {
+    const out: ParticipantStatus[] = [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED, ParticipantStatus.NO_SHOW];
+    if (out.includes(status)) throw new ForbiddenException("Bu masanın aktif katılımcısı değilsiniz");
+  }
+
   // ─── Buluşma değerlendirmesi ──────────────────────────────────────────────
 
   async submitReview(
@@ -307,9 +301,10 @@ export class MeetingsService {
     // Katılımcı kontrolü
     const participation = await this.prisma.meetingParticipant.findUnique({
       where: { meetingId_userId: { meetingId, userId: reviewerId } },
-      select: { meeting: { select: { scheduledAt: true } } },
+      select: { status: true, meeting: { select: { scheduledAt: true } } },
     });
     if (!participation) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    this.assertTookPart(participation.status);
 
     // Değerlendirme penceresi
     const { opensAt, closesAt } = reviewWindow(participation.meeting.scheduledAt);
@@ -508,6 +503,7 @@ export class MeetingsService {
     if (!blockerParticipation) {
       throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
     }
+    this.assertTookPart(blockerParticipation.status);
 
     // Engellenenler de bu masanın katılımcısı olmalı
     const meetingParticipants = await this.prisma.meetingParticipant.findMany({
@@ -539,15 +535,16 @@ export class MeetingsService {
   async rematchBlock(meetingId: string, blockerId: string) {
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },
-      include: { participants: { select: { userId: true } } },
+      include: { participants: { select: { userId: true, status: true } } },
     });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
     if (meeting.type !== MeetingType.ONE_ON_ONE) {
       throw new BadRequestException("Bu endpoint sadece başbaşa buluşmalar için geçerlidir");
     }
 
-    const isParticipant = meeting.participants.some((p) => p.userId === blockerId);
-    if (!isParticipant) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    const blocker = meeting.participants.find((p) => p.userId === blockerId);
+    if (!blocker) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    this.assertTookPart(blocker.status);
 
     const otherId = meeting.participants.find((p) => p.userId !== blockerId)?.userId;
     if (!otherId) throw new BadRequestException("Karşı katılımcı bulunamadı");

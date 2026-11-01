@@ -27,6 +27,16 @@ function nextDayAt(scheduledAt: Date, hourTR: number): Date {
   return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 1, hourTR - 3, 0, 0, 0));
 }
 
+// Değerlendirme penceresi (TR saati, UTC+3): buluşmanın ertesi günü 10:00 → buluşmadan 4 gün sonra 23:59
+export function reviewWindow(scheduledAt: Date): { opensAt: Date; closesAt: Date } {
+  const tr = new Date(scheduledAt.getTime() + 3 * 60 * 60 * 1000);
+  const y = tr.getUTCFullYear(), m = tr.getUTCMonth(), d = tr.getUTCDate();
+  return {
+    opensAt: new Date(Date.UTC(y, m, d + 1, 10 - 3, 0, 0, 0)),
+    closesAt: new Date(Date.UTC(y, m, d + 4, 23 - 3, 59, 59, 999)),
+  };
+}
+
 // Acil yardım süresi (tek kaynak; web süreyi dashboard yanıtındaki sosEndsAt'ten alır): masa saatinden ertesi gün 08:00'e kadar
 export const sosWindowEnd = (scheduledAt: Date): Date => nextDayAt(scheduledAt, 8);
 

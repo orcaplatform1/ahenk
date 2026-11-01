@@ -173,13 +173,16 @@ export class AuthController {
     return this.authService.verifyOtp(user.id, dto.phone, dto.code);
   }
 
+  // Herkese açık liste: sayfa yüklemelerinde sık çağrılır, kimlik uçlarının dar sınırı uygulanmaz
   @Get("cities")
+  @Throttle({ default: { ttl: 60000, limit: 300 } })
   @ApiOperation({ summary: "Aktif şehirleri listele (public)" })
   getCities() {
     return this.authService.getActiveCities();
   }
 
   @Get("districts")
+  @Throttle({ default: { ttl: 60000, limit: 300 } })
   @ApiOperation({ summary: "Şehir bazında ilçe listesi (public)" })
   getDistricts() {
     return this.authService.getDistricts();

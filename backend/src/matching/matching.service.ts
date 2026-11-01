@@ -718,6 +718,7 @@ export class MatchingService {
         id: true,
         status: true,
         scheduledAt: true,
+        cityId: true,
         participants: {
           where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
           select: { userId: true, user: { select: { profile: { select: { gender: true } } } } },
@@ -736,7 +737,7 @@ export class MatchingService {
     const wanted: [Gender, number][] = [[Gender.MALE, need.male], [Gender.FEMALE, need.female]];
     for (const [gender, n] of wanted) {
       for (let i = 0; i < n; i++) {
-        const bot = await pickBot(this.prisma, { gender, scheduledAt: meeting.scheduledAt, excludeIds: botIds });
+        const bot = await pickBot(this.prisma, { gender, scheduledAt: meeting.scheduledAt, cityId: meeting.cityId, excludeIds: botIds });
         if (!bot) {
           await alertBotNotFound(this.prisma, meeting.participants[0].userId);
           this.logger.warn(`Uygun bot bulunamadı: meeting=${meeting.id} (${males}E+${females}K)`);
@@ -796,6 +797,7 @@ export class MatchingService {
     const bot = await pickBot(this.prisma, {
       gender: gender === Gender.MALE ? Gender.FEMALE : Gender.MALE,
       scheduledAt,
+      cityId,
       targetBirthDate: user.profile?.birthDate ? new Date(user.profile.birthDate) : null,
     });
     const myAge = ageYears(user.profile?.birthDate);
@@ -883,6 +885,7 @@ export class MatchingService {
     const bots = await availableBots(this.prisma, {
       gender: gender === Gender.MALE ? Gender.FEMALE : Gender.MALE,
       scheduledAt: oneOnOneMeetingAt(),
+      cityId: matchCity(user),
     });
     const myAge = ageYears(user.profile?.birthDate);
     return bots

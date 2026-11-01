@@ -21,7 +21,9 @@ export class ContactBlocksService {
     const existing = await this.prisma.contactBlock.count({ where: { userId } });
 
     const unique = [...new Set(hashedPhones.map(normalizePhone))];
-    const newCount = unique.length;
+    // Sınıra yalnız listede olmayan numaralar sayılır
+    const already = await this.prisma.contactBlock.count({ where: { userId, hashedPhone: { in: unique } } });
+    const newCount = unique.length - already;
 
     if (existing + newCount > MAX_BLOCKS) {
       throw new BadRequestException(

@@ -378,6 +378,7 @@ model RefreshToken {
   token     String   @unique
   expiresAt DateTime
   revoked   Boolean  @default(false)
+  rotatedAt DateTime? // yenilemede tüketildiği an: tekrar kullanım ile eşzamanlı sekme ayrımı için
   createdAt DateTime @default(now())
 
   @@index([userId])

@@ -1309,7 +1309,7 @@ export class AdminService {
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },
       select: {
-        status: true, type: true, scheduledAt: true, maxParticipants: true,
+        status: true, type: true, scheduledAt: true, maxParticipants: true, cityId: true,
         participants: {
           where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
           select: { user: { select: { profile: { select: { gender: true } } } } },
@@ -1328,7 +1328,7 @@ export class AdminService {
       ...(males < half ? [Gender.MALE] : []),
       ...(females < half ? [Gender.FEMALE] : []),
     ];
-    const lists = await Promise.all(genders.map((gender) => availableBots(this.prisma, { gender, scheduledAt: meeting.scheduledAt })));
+    const lists = await Promise.all(genders.map((gender) => availableBots(this.prisma, { gender, scheduledAt: meeting.scheduledAt, cityId: meeting.cityId })));
     return lists.flat().map((b) => ({
       id: b.id,
       name: `${b.profile?.firstName ?? ''} ${b.profile?.lastName ?? ''}`.trim(),
@@ -1780,7 +1780,7 @@ export class AdminService {
     adminNote: string | undefined,
     edited: Prisma.PartnershipApplicationUpdateManyMutationInput,
   ) {
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       const claimed = await tx.partnershipApplication.updateMany({
         where: { id: app.id, status: PartnershipStatus.PENDING },
         data: { status: PartnershipStatus.REJECTED, adminNote, ...edited },
@@ -1792,6 +1792,10 @@ export class AdminService {
       });
       return tx.partnershipApplication.findUniqueOrThrow({ where: { id: app.id } });
     });
+
+    await this.whatsapp.send(app.phone, "ahenk_venue_rejected", [app.businessName])
+      .catch((err: unknown) => console.error(`Mekân red mesajı gönderilemedi: ${err}`));
+    return updated;
   }
 
   async listCareers() {

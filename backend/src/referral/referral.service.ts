@@ -38,23 +38,26 @@ export class ReferralService {
     if (!user) throw new BadRequestException("Kullanıcı bulunamadı");
 
     if (user.phone === phoneNumber) throw new BadRequestException("Kendi numaranızı davet edemezsiniz.");
-    const [registered, invited, todayCount, totalCount] = await Promise.all([
-      this.prisma.user.findUnique({ where: { phone: phoneNumber }, select: { id: true } }),
-      this.prisma.referral.findFirst({ where: { invitedPhone: phoneNumber }, select: { id: true } }),
-      this.prisma.referral.count({ where: { referrerId: userId, createdAt: { gte: trDayStart() } } }),
-      this.prisma.referral.count({ where: { referrerId: userId } }),
-    ]);
-    if (registered) throw new ConflictException("Bu numara zaten Ahenk'e kayıtlı.");
-    if (invited) throw new ConflictException("Bu numara daha önce davet edildi.");
-    if (totalCount >= TOTAL_INVITE_LIMIT) {
-      throw new BadRequestException(`Toplam davet hakkınız doldu (${TOTAL_INVITE_LIMIT}).`);
-    }
-    if (todayCount >= DAILY_INVITE_LIMIT) {
-      throw new BadRequestException(`Günlük davet hakkınız doldu (${DAILY_INVITE_LIMIT}). Yarın tekrar deneyebilirsiniz.`);
-    }
-
-    const referral = await this.prisma.referral.create({
-      data: { referrerId: userId, invitedPhone: phoneNumber, status: ReferralStatus.PENDING },
+    // Sınır kontrolü ve kayıt kişi satırı kilitliyken yapılır: eşzamanlı davetler sırayla işlenir
+    const referral = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+      const [registered, invited, todayCount, totalCount] = await Promise.all([
+        tx.user.findUnique({ where: { phone: phoneNumber }, select: { id: true } }),
+        tx.referral.findFirst({ where: { invitedPhone: phoneNumber }, select: { id: true } }),
+        tx.referral.count({ where: { referrerId: userId, createdAt: { gte: trDayStart() } } }),
+        tx.referral.count({ where: { referrerId: userId } }),
+      ]);
+      if (registered) throw new ConflictException("Bu numara zaten Ahenk'e kayıtlı.");
+      if (invited) throw new ConflictException("Bu numara daha önce davet edildi.");
+      if (totalCount >= TOTAL_INVITE_LIMIT) {
+        throw new BadRequestException(`Toplam davet hakkınız doldu (${TOTAL_INVITE_LIMIT}).`);
+      }
+      if (todayCount >= DAILY_INVITE_LIMIT) {
+        throw new BadRequestException(`Günlük davet hakkınız doldu (${DAILY_INVITE_LIMIT}). Yarın tekrar deneyebilirsiniz.`);
+      }
+      return tx.referral.create({
+        data: { referrerId: userId, invitedPhone: phoneNumber, status: ReferralStatus.PENDING },
+      });
     });
 
     const appUrl = this.config.get<string>("APP_URL") ?? "https://ahenk.co";

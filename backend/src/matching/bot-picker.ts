@@ -3,19 +3,20 @@ import { AdminAlertType, Gender, Prisma, PrismaClient } from "@prisma/client";
 type Db = PrismaClient | Prisma.TransactionClient;
 
 /**
- * Belirtilen cinsiyette, o buluşma saatinde başka aktif masada olmayan aktif botlar
+ * Belirtilen cinsiyette, masanın şehrinde (bot şehri: profil primaryCity) ve o buluşma saatinde
+ * başka aktif masada olmayan aktif botlar
  * (admin elle bot ekleme listesi + otomatik seçim aynı kuralı kullanır).
  */
 export async function availableBots(
   db: Db,
-  opts: { gender: Gender; scheduledAt: Date; excludeIds?: string[] },
+  opts: { gender: Gender; scheduledAt: Date; cityId?: string | null; excludeIds?: string[] },
 ) {
   return db.user.findMany({
     where: {
       isBot: true,
       status: "ACTIVE",
       ...(opts.excludeIds?.length ? { id: { notIn: opts.excludeIds } } : {}),
-      profile: { is: { gender: opts.gender } },
+      profile: { is: { gender: opts.gender, ...(opts.cityId ? { primaryCity: opts.cityId } : {}) } },
       participations: {
         none: {
           status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] },
@@ -30,7 +31,7 @@ export async function availableBots(
 
 /**
  * Masaya eklenecek botu seçer.
- * - Sadece istenen cinsiyetteki aktif botlar (yanlış cinsiyet ASLA eklenmez)
+ * - Sadece istenen cinsiyetteki ve masanın şehrindeki aktif botlar (yanlış cinsiyet ASLA eklenmez)
  * - Aynı buluşma saatinde başka bir aktif masada aktif katılımcı olan bot seçilmez
  * - excludeIds: aynı masaya bu işlemde zaten seçilmiş botlar
  * - targetBirthDate verilirse yaşı en yakın bot; verilmezse rastgele
@@ -38,7 +39,7 @@ export async function availableBots(
  */
 export async function pickBot(
   db: Db,
-  opts: { gender: Gender; scheduledAt: Date; targetBirthDate?: Date | null; excludeIds?: string[] },
+  opts: { gender: Gender; scheduledAt: Date; cityId?: string | null; targetBirthDate?: Date | null; excludeIds?: string[] },
 ): Promise<{ id: string; birthDate: Date | null } | null> {
   const bots = await availableBots(db, opts);
   if (bots.length === 0) return null;

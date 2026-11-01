@@ -96,11 +96,15 @@ export class KycService {
       liveness?: Express.Multer.File[];
     },
   ) {
-    const front = files.idFront?.[0];
-    const back = files.idBack?.[0];
-    const video = files.liveness?.[0];
+    const front = files?.idFront?.[0];
+    const back = files?.idBack?.[0];
+    const video = files?.liveness?.[0];
 
     if (!front || !back || !video) {
+      // Eksik yüklemede gelen kimlik görselleri geçici klasörde kalmaz
+      for (const f of [front, back, video]) {
+        if (f?.path) { try { fs.unlinkSync(f.path); } catch {} }
+      }
       throw new BadRequestException("idFront, idBack ve liveness dosyaları zorunlu");
     }
 

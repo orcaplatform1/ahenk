@@ -7,6 +7,7 @@ import { NotificationService } from "../notification/notification.service";
 import { SubscriptionPlan, SubscriptionStatus, KycStatus } from "@prisma/client";
 import { cancellationNotice, initialsOf } from "../meetings/cancellation-notice";
 import { VenueAssignmentService } from "../venue-panel/venue-assignment.service";
+import { reviewWindow } from "../meetings/meeting-windows";
 import { closeGroupCycle, closeKankaCycle, closeOneOnOneCycle, OPEN_KANKA_SUB } from "../payment/package-rights";
 
 @Injectable()
@@ -149,6 +150,44 @@ export class MatchingScheduler {
       if (meetings.length > 0) this.logger.log(`Gelmeyen işaretleme bildirimi: ${meetings.length} masa`);
     } catch (err) {
       this.logger.error(`Gelmeyen işaretleme bildirimi hatası: ${err}`);
+    }
+  }
+
+  // Her gün 10:00 (TR): değerlendirmesi bu sabah açılan masalarda (dün buluşanlar) henüz değerlendirmeyen katılımcılara bildirim
+  @Cron("0 10 * * *", { timeZone: "Europe/Istanbul" })
+  async notifyReviewOpen(): Promise<void> {
+    try {
+      const now = new Date();
+      const candidates = await this.prisma.meeting.findMany({
+        where: {
+          status: { in: ["ACTIVE", "COMPLETED"] },
+          scheduledAt: { gte: new Date(now.getTime() - 36 * 60 * 60 * 1000), lte: now },
+        },
+        select: {
+          id: true,
+          scheduledAt: true,
+          participants: { where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } }, select: { userId: true } },
+          reviews: { select: { reviewerId: true } },
+        },
+      });
+      const opened = candidates.filter((m) => {
+        const { opensAt } = reviewWindow(m.scheduledAt);
+        return opensAt <= now && now.getTime() - opensAt.getTime() < 60 * 60 * 1000;
+      });
+      for (const m of opened) {
+        const reviewed = new Set(m.reviews.map((r) => r.reviewerId));
+        for (const p of m.participants) {
+          if (reviewed.has(p.userId)) continue;
+          await this.notifications.sendToUser(p.userId, {
+            title: "Masanı değerlendir",
+            body: "Dünkü buluşman nasıl geçti? Değerlendirmeni masa kartından yapabilirsin.",
+            data: { type: "REVIEW_OPEN", meetingId: m.id },
+          });
+        }
+      }
+      if (opened.length > 0) this.logger.log(`Değerlendirme bildirimi: ${opened.length} masa`);
+    } catch (err) {
+      this.logger.error(`Değerlendirme bildirimi hatası: ${err}`);
     }
   }
 

@@ -9,3 +9,5 @@ allowBuilds:
   msgpackr-extract: set this to true or false
   prisma: set this to true or false
   protobufjs: set this to true or false
+overrides:
+  '@types/react': ^18.3.3

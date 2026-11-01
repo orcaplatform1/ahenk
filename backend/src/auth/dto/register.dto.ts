@@ -5,6 +5,8 @@ import {
   MaxLength,
   IsOptional,
   IsBoolean,
+  IsDateString,
+  IsIn,
   Matches,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -64,13 +66,11 @@ export class RegisterDto {
   occupationSector: string;
 
   @ApiProperty()
-  @IsString({ message: "Cinsiyet seçin" })
-  @MinLength(1, { message: "Cinsiyet seçin" })
+  @IsIn(["MALE", "FEMALE"], { message: "Cinsiyet seçin" })
   gender: string;
 
   @ApiProperty({ example: "1995-06-15" })
-  @IsString({ message: "Doğum tarihinizi seçin" })
-  @MinLength(1, { message: "Doğum tarihinizi seçin" })
+  @IsDateString({ strict: true }, { message: "Geçerli bir doğum tarihi girin" })
   birthDate: string;
 
   @ApiPropertyOptional()
