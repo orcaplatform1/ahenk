@@ -128,14 +128,13 @@ function ProfilPage() {
   if (!user) return null;
 
   const kycApproved = user.kyc?.status === 'APPROVED';
-  // Eşleşme Paneli görünümü: ışıma ve Canlı Katman stilleri
-  const liveStyled = activeTab === 'profil' || activeTab === 'test' || activeTab === 'masalar';
 
   return (
     <main className="min-h-screen bg-bg text-text pt-[52px]">
       <AccountTabBar activeKey={activeTab} kycApproved={kycApproved} />
-      <div className={liveStyled ? 'live-layer' : undefined} style={liveStyled ? { minHeight: 'calc(100vh - 100px)' } : undefined}>
-      {liveStyled && <div className="ll-glow" aria-hidden="true" />}
+      {/* Eşleşme Paneli görünümü: ışıma ve Canlı Katman stilleri */}
+      <div className="live-layer" style={{ minHeight: 'calc(100vh - 100px)' }}>
+      <div className="ll-glow" aria-hidden="true" />
       <div className="relative max-w-4xl mx-auto px-4 py-8">
 
         {/* Sekme içeriği */}

@@ -371,8 +371,8 @@ function EmptyMasaCard({
           initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.72, duration: 0.4 }}
           style={{
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)',
+            background: 'rgba(255,255,255,0.025)',
+            border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 10, padding: '12px 14px', marginBottom: 16,
           }}
         >
@@ -402,7 +402,7 @@ function EmptyMasaCard({
             </span>
           </div>
           <div style={{
-            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+            background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 10, overflow: 'hidden',
           }}>
             <div style={{ padding: '16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

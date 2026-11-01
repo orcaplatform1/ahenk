@@ -5,7 +5,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { WEIGHTS } from "../matching/matching.constants";
 import { MatchPerson, matchScore } from "../matching/match-score";
-import { ISTANBUL_DENSITY } from "../common/districts";
+import { densityListOf, type DensityRow } from "../common/districts";
 import { liveDistrictSource } from "../admin/app-settings";
 
 const LEFT_STATUSES: ParticipantStatus[] = ["DECLINED", "CANCELLED", "NO_SHOW"];
@@ -53,6 +53,27 @@ function realDensity(demand: Map<string, number>): Density {
   };
 }
 
+// Sabit listeli şehirde gerçek veri: liste korunur, seviye talebe göre belirlenir; talebi olmayan ilçe 4. seviyededir
+function fixedRealDensity(list: DensityRow[], demand: Map<string, number>): Density {
+  const rows = list.map(({ name }) => ({ name, count: demand.get(name) ?? 0 })).sort((a, b) => b.count - a.count);
+  const peak = rows[0]?.count ?? 0;
+  return {
+    mode: "real",
+    districts: rows.map(({ name, count }, i) => ({
+      name,
+      level: count ? ((Math.floor((i * 4) / rows.length) + 1) as 1 | 2 | 3 | 4) : 4,
+      percent: peak ? Math.round((count / peak) * 100) : 0,
+    })),
+  };
+}
+
+// Sabit listeli şehirde listede olmayan kayıt ilçesi sonarda ve ısı haritasında yok sayılır
+function shownDistrict(cityName: string, district: string | null | undefined): string | null {
+  const list = densityListOf(cityName);
+  if (!district || (list && !list.some((d) => d.name === district))) return null;
+  return district;
+}
+
 @Injectable()
 export class LiveLayerService {
   constructor(private prisma: PrismaService) {}
@@ -90,11 +111,11 @@ export class LiveLayerService {
     };
   }
 
-  // Yoğunluk katmanı: statik yalnızca İstanbul'da; diğer durumda gerçek veri (yoksa null, eski görünüm sürer)
+  // Yoğunluk katmanı: sabit listeli şehirlerde liste hep görünür; diğer şehirlerde gerçek veri (yoksa null, eski görünüm sürer)
   private async density(city: { name: string }, demand: Map<string, number>): Promise<Density> {
-    if ((await liveDistrictSource(this.prisma)) === "real") return realDensity(demand);
-    if (city.name !== "İstanbul") return null;
-    return { mode: "static", districts: ISTANBUL_DENSITY.map((d) => ({ ...d, percent: null })) };
+    const list = densityListOf(city.name);
+    if ((await liveDistrictSource(this.prisma)) === "real") return list ? fixedRealDensity(list, demand) : realDensity(demand);
+    return list ? { mode: "static", districts: list.map((d) => ({ ...d, percent: null })) } : null;
   }
 
   // 15 sn'de bir: sonar + canlı akış. İsim, baş harf, yaş, meslek, fotoğraf dönmez
@@ -122,7 +143,7 @@ export class LiveLayerService {
         const joinedAt = Math.max(u.subscriptions[0]?.createdAt.getTime() ?? 0, u.kyc?.reviewedAt?.getTime() ?? 0);
         const age = now - joinedAt;
         const state = age <= NEW_ENTRY_MS ? "new" : age <= ACTIVE_ENTRY_MS ? "active" : "pool";
-        return { key: opaque(u.id, start), district: u.profile?.district ?? null, state, age };
+        return { key: opaque(u.id, start), district: shownDistrict(city.name, u.profile?.district), state, age };
       })
       .sort((a, b) => a.age - b.age)
       .slice(0, SONAR_MAX_DOTS)
@@ -130,7 +151,7 @@ export class LiveLayerService {
 
     const demand = new Map<string, number>();
     for (const u of users) {
-      const d = u.profile?.district;
+      const d = shownDistrict(city.name, u.profile?.district);
       if (d) demand.set(d, (demand.get(d) ?? 0) + 1);
     }
 
@@ -238,7 +259,7 @@ export class LiveLayerService {
 
     const demand = new Map<string, number>();
     for (const u of pool) {
-      const d = u.profile?.district;
+      const d = shownDistrict(city.name, u.profile?.district);
       if (d) demand.set(d, (demand.get(d) ?? 0) + 1);
     }
     const sorted = [...demand.entries()].sort((a, b) => b[1] - a[1]).slice(0, HEATMAP_MAX);

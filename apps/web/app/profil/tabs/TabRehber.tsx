@@ -54,12 +54,12 @@ export function TabRehber() {
   return (
     <div className="flex flex-col gap-5">
       {/* Sayaç */}
-      <div className="glass-card p-5">
-        <p className="text-sm text-[#888] mb-1">Engellenen numaralar</p>
+      <div className="ll-card">
+        <div className="ll-head"><h3 className="ll-title">Engellenen numaralar</h3></div>
         <p className="text-2xl font-semibold text-[#f5f5f5]">
-          {serverBlocks.length}<span className="text-sm font-normal text-[#888]">/50</span>
+          {serverBlocks.length}<span className="text-sm font-normal text-[#a39c93]">/50</span>
         </p>
-        <p className="text-xs text-[#888] mt-1">
+        <p className="text-xs text-[#a39c93] mt-1">
           Bu numaralarla eşleştirilmezsiniz.
         </p>
       </div>
@@ -67,7 +67,7 @@ export function TabRehber() {
       {/* Yeni numara girişi */}
       <div className="flex gap-2">
         <div
-          className="flex items-center px-3 text-[#888] text-sm select-none flex-shrink-0"
+          className="flex items-center px-3 text-[#a39c93] text-sm select-none flex-shrink-0"
           style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}
         >
           +90
@@ -96,17 +96,17 @@ export function TabRehber() {
       {serverBlocks.length > 0 && (
         <div className="flex flex-col gap-2">
           {serverBlocks.map((b, i) => (
-            <div key={b.id} className="flex items-center justify-between glass-card px-4 py-3">
+            <div key={b.id} className="ll-card flex items-center justify-between" style={{ padding: '12px 16px' }}>
               <div>
-                <span className="text-sm text-[#f5f5f5]">{resolveDisplay(b, i)}</span>
-                <span className="block text-xs text-[#555] mt-0.5">
+                <span className="text-[13px] text-[#c9c2b8]">{resolveDisplay(b, i)}</span>
+                <span className="block text-xs text-[#8f887f] mt-0.5">
                   {new Date(b.createdAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' })}
                 </span>
               </div>
               <button
                 onClick={() => handleServerDelete(b)}
                 disabled={deleting === b.id}
-                className="text-xs text-[#888] hover:text-[#ff6b6b] transition-colors disabled:opacity-40"
+                className="text-xs text-[#a39c93] hover:text-[#ff6b6b] transition-colors disabled:opacity-40"
               >
                 {deleting === b.id ? '…' : 'Sil'}
               </button>
@@ -116,7 +116,7 @@ export function TabRehber() {
       )}
 
       {serverBlocks.length === 0 && (
-        <p className="text-sm text-[#555] text-center py-4">Henüz engellenen numara yok.</p>
+        <p className="text-sm text-[#8f887f] text-center py-4">Henüz engellenen numara yok.</p>
       )}
     </div>
   );

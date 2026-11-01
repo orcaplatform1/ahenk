@@ -222,7 +222,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
               onClick={() => handleSelect(i)}
               onMouseEnter={() => handleSelect(i)}
               style={{
-                background: 'rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.025)',
                 border: 'none',
                 borderLeft: `3px solid ${activeId === i ? '#e05c4c' : 'transparent'}`,
                 borderRadius: 7, padding: '5px 7px',
@@ -254,7 +254,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
 
       {/* Açıklama kartı */}
       <div style={{
-        background: 'rgba(255,255,255,0.08)', borderTop: '1px solid rgba(255,255,255,0.12)',
+        background: 'rgba(255,255,255,0.025)', borderTop: '1px solid rgba(255,255,255,0.08)',
         borderRadius: '10px 10px 0 0', padding: '9px 12px 13px',
         opacity: cardShow ? 1 : 0, transform: cardShow ? 'translateY(0)' : 'translateY(5px)',
         transition: 'opacity .3s, transform .3s',

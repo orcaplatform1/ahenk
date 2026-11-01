@@ -27,10 +27,30 @@ export function isValidDistrict(cityName: string, district: string): boolean {
   return list ? list.includes(district) : district.trim().length > 0;
 }
 
-// Gerçek veriye geçene kadar İstanbul sonarı/ısı haritası (1: en yoğun)
-export const ISTANBUL_DENSITY: { name: string; level: 1 | 2 | 3 | 4 }[] = [
-  ...["Beşiktaş", "Şişli", "Kadıköy", "Üsküdar"].map((name) => ({ name, level: 1 as const })),
-  ...["Bakırköy", "Sarıyer", "Ataşehir", "Maltepe", "Ümraniye"].map((name) => ({ name, level: 2 as const })),
-  ...["Başakşehir", "Kartal"].map((name) => ({ name, level: 3 as const })),
-  ...["Beylikdüzü", "Avcılar", "Pendik", "Beykoz"].map((name) => ({ name, level: 4 as const })),
-];
+export type DensityRow = { name: string; level: 1 | 2 | 3 | 4 };
+
+// Seviye sırasıyla ilçeler (1: en yoğun, 4: en düşük)
+const densityList = (...levels: [string[], string[], string[], string[]]): DensityRow[] =>
+  levels.flatMap((names, i) => names.map((name) => ({ name, level: (i + 1) as DensityRow["level"] })));
+
+// Sonar ve ısı haritasının sabit ilçe listeleri. Listede olmayan kayıt ilçeleri eşleşmeye girer, burada gösterilmez/sayılmaz.
+export const CITY_DENSITY: Record<string, DensityRow[]> = {
+  "İstanbul": densityList(
+    ["Beşiktaş", "Şişli", "Kadıköy", "Üsküdar"],
+    ["Bakırköy", "Sarıyer", "Ataşehir", "Maltepe", "Ümraniye"],
+    ["Başakşehir", "Kartal"],
+    ["Beylikdüzü", "Avcılar", "Pendik", "Beykoz"],
+  ),
+  "Ankara": densityList(["Çankaya", "Yenimahalle"], ["Etimesgut", "Gölbaşı"], ["Altındağ", "Keçiören"], ["Mamak", "Polatlı"]),
+  "İzmir": densityList(
+    ["Karşıyaka", "Buca", "Bornova"],
+    ["Konak", "Gaziemir"],
+    ["Bayraklı", "Karabağlar", "Çiğli"],
+    ["Güzelbahçe", "Urla", "Çeşme"],
+  ),
+  "Antalya": densityList(["Muratpaşa", "Konyaaltı", "Kepez"], ["Döşemealtı", "Aksu"], ["Serik", "Kemer"], ["Manavgat", "Alanya"]),
+};
+
+export function densityListOf(cityName: string): DensityRow[] | null {
+  return CITY_DENSITY[cityName.split(" (")[0].trim()] ?? null;
+}

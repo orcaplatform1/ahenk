@@ -623,9 +623,9 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
 export function TabProfilimSkeleton() {
   return (
     <div className="flex flex-col gap-6">
-      <div className="h-16 bg-surface rounded-2xl animate-pulse" />
-      <div className="bg-surface border border-border rounded-2xl p-6"><SkeletonBlock lines={4} /></div>
-      <div className="bg-surface border border-border rounded-2xl p-6"><SkeletonBlock lines={2} /></div>
+      <div className="ll-card h-16 animate-pulse" />
+      <div className="ll-card"><SkeletonBlock lines={4} /></div>
+      <div className="ll-card"><SkeletonBlock lines={2} /></div>
     </div>
   );
 }

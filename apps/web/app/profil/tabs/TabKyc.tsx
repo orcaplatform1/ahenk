@@ -525,17 +525,17 @@ export function TabKyc() {
 
   if (kycStatus?.status === 'APPROVED') {
     return (
-      <div className="glass-card p-8 flex flex-col items-center gap-3 text-center" style={{ border: '1px solid rgba(74,222,128,0.25)' }}>
+      <div className="ll-card flex flex-col items-center gap-3 text-center">
         <span className="text-3xl">✓</span>
         <p className="font-medium text-green-400">Kimliğiniz doğrulandı</p>
-        <p className="text-sm text-[#888]">Artık masalara katılabilir ve paket satın alabilirsiniz.</p>
+        <p className="text-[13px] text-[#a39c93]">Artık masalara katılabilir ve paket satın alabilirsiniz.</p>
       </div>
     );
   }
 
   if (kycStatus?.status === 'PENDING') {
     return (
-      <div className="glass-card flex flex-col items-center gap-4 text-center overflow-hidden" style={{ paddingBottom: '2rem' }}>
+      <div className="ll-card flex flex-col items-center gap-4 text-center overflow-hidden" style={{ padding: '0 0 2rem' }}>
         {/* Şarap kırmızısı top animasyonu */}
         <div className="w-full relative overflow-hidden" style={{ height: '36px' }}>
           <style>{`
@@ -553,7 +553,7 @@ export function TabKyc() {
           <div className="kyc-ball" />
         </div>
         <p className="font-semibold text-[#f5f5f5] text-base px-6">Doğrulama incelemeye alındı</p>
-        <p className="text-sm text-[#888] px-6">
+        <p className="text-[13px] text-[#a39c93] px-6">
           Başvurunuz değerlendiriliyor.<br />
           Bu süreç genellikle 1 saat içinde tamamlanır.
         </p>
@@ -568,13 +568,13 @@ export function TabKyc() {
       {kycStatus?.status === 'REJECTED' && (
         <div className="bg-red-900/20 border border-red-800 rounded-2xl p-4">
           <p className="text-sm text-accent font-medium mb-1">Başvurunuz reddedildi</p>
-          <p className="text-sm text-muted">{kycStatus.rejectReason ?? 'Lütfen belgelerinizi yeniden yükleyin.'}</p>
+          <p className="text-[13px] text-[#a39c93]">{kycStatus.rejectReason ?? 'Lütfen belgelerinizi yeniden yükleyin.'}</p>
         </div>
       )}
 
       {showForm && (
         <>
-          <h3 className="font-medium text-sm text-muted uppercase tracking-wide">KİMLİK DOĞRULAMA</h3>
+          <h3 className="ll-title">Kimlik Doğrulama</h3>
 
           <ImageUploader
             svgSrc="/kyc_demo_identity_card.svg"

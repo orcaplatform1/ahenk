@@ -204,8 +204,8 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
     <div className="flex flex-col gap-5">
       {maintenanceMode && <MaintenanceNotice />}
       {/* Sadakat Programı kartı */}
-      <div className="rounded-2xl border border-white/10 p-4 flex flex-col gap-3" style={{ background: '#1a1a1a' }}>
-        <p className="text-xs font-medium text-muted uppercase tracking-wide">Sadakat Programı</p>
+      <div className="ll-card flex flex-col gap-3">
+        <div className="ll-head"><h3 className="ll-title">Sadakat Programı</h3></div>
         <div className="flex flex-col gap-2">
           <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
             <span style={{ color: '#555', fontSize: 14, marginRight: 4 }}>+90</span>
@@ -236,19 +236,19 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
         )}
         <div className="flex gap-6 pt-1 border-t border-white/5">
           <div>
-            <p className="text-xs text-[#f5f5f5]">Davetli Arkadaş</p>
-            <p className="text-base font-semibold text-text">{referralStats?.totalInvites ?? '—'} kişi</p>
+            <p className="text-xs text-[#c9c2b8]">Davetli Arkadaş</p>
+            <p className="text-base font-semibold text-[#f4f1ec]">{referralStats?.totalInvites ?? '—'} kişi</p>
           </div>
           <div>
-            <p className="text-xs text-[#f5f5f5]">Toplam %10 İndirim Hakkı</p>
-            <p className="text-base font-semibold text-text">{referralStats?.availableDiscounts ?? '—'} Adet</p>
+            <p className="text-xs text-[#c9c2b8]">Toplam %10 İndirim Hakkı</p>
+            <p className="text-base font-semibold text-[#f4f1ec]">{referralStats?.availableDiscounts ?? '—'} Adet</p>
           </div>
         </div>
       </div>
 
       {/* Aktif paketler: kalan haklar ve döngüler; iade (süresi dolmuş paket için de) */}
       {(subscriptions.length > 0 || shownRefunds.length > 0) && (
-        <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 flex flex-col gap-3">
+        <div className="ll-card flex flex-col gap-3">
           {subscriptions.map((sub) => {
             const hasGroup = sub.plan === 'MASADA' || sub.plan === 'ICERDE';
             const hasOneOnOne = sub.plan === 'KARSIMDA' || sub.plan === 'ICERDE';
@@ -257,29 +257,29 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
             return (
               <div key={sub.id} className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted uppercase tracking-wide">Aktif Paket</span>
-                  <span className="text-sm font-semibold text-text">{PLAN_LABEL[sub.plan] ?? sub.plan}</span>
+                  <span className="text-xs font-medium text-[#a39c93] uppercase tracking-wide">Aktif Paket</span>
+                  <span className="text-sm font-semibold text-[#f4f1ec]">{PLAN_LABEL[sub.plan] ?? sub.plan}</span>
                 </div>
                 {hasGroup && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted">Grup masası hakkı</span>
-                    <span className="text-xs text-text">
+                    <span className="text-xs text-[#a39c93]">Grup masası hakkı</span>
+                    <span className="text-xs text-[#f4f1ec]">
                       {sub.groupCycles >= packageCycles ? 'Süresi doldu' : `${sub.groupRights}/${totalGroup} kaldı · ${sub.groupCycles}/${packageCycles} döngü`}
                     </span>
                   </div>
                 )}
                 {isKankamla && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted">Kankamla masası hakkı</span>
-                    <span className="text-xs text-text">
+                    <span className="text-xs text-[#a39c93]">Kankamla masası hakkı</span>
+                    <span className="text-xs text-[#f4f1ec]">
                       {(sub.kankaCycles ?? 0) >= packageCycles ? 'Süresi doldu' : `${sub.kankaRights ?? 0}/2 kaldı · ${sub.kankaCycles ?? 0}/${packageCycles} döngü`}
                     </span>
                   </div>
                 )}
                 {hasOneOnOne && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted">Başbaşa masası hakkı</span>
-                    <span className="text-xs text-text">
+                    <span className="text-xs text-[#a39c93]">Başbaşa masası hakkı</span>
+                    <span className="text-xs text-[#f4f1ec]">
                       {sub.usedAt ? 'Kullanıldı' : sub.oneOnOneCycles >= packageCycles ? 'Süresi doldu' : `1/1 kaldı · ${sub.oneOnOneCycles}/${packageCycles} döngü`}
                     </span>
                   </div>
@@ -287,7 +287,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
               </div>
             );
           })}
-          <p className="text-xs text-[#555] leading-relaxed border-t border-white/5 pt-3 mt-1">
+          <p className="text-xs text-[#8f887f] leading-relaxed border-t border-white/5 pt-3 mt-1">
             Paketler tek seferliktir; her masa hakkı {packageCycles} döngü (yaklaşık 1 ay) geçerlidir. Bu süre içinde hiç masa kurulamazsa
             tam iade talep edebilirsin. Bir masa kurulduysa kalan hakkın olsa da hizmet alınmış sayılır ve iade yapılmaz.
             İade talepleri 5 iş günü içinde değerlendirilir.
