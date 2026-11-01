@@ -22,6 +22,7 @@ const TABLE_TEXT: Record<MasaTuru, { day: number; title: string; note: string }>
 
 // Yeni tarama her Pazar 23:59'da başlar (getNextTarget ile aynı döngü)
 const SCAN_START_DAY = 0;
+const WEEK_MS = 7 * 86_400_000;
 
 // Türün bu haftaki kapanışı geçti mi: bir sonraki tarama başlangıcı bir sonraki kapanıştan önce geliyorsa
 export function isPastClosing(tab: MasaTuru) {
@@ -126,12 +127,19 @@ function heatColor(index: number, count: number) {
   return `rgba(255,255,255,${mix(0.08, 0.045)})`;
 }
 
-export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables, onTab, notice, participation }: {
+// Türün bu haftaki kapanış anı; isPastClosing true iken bir sonraki kapanış gelecek haftadadır
+function lastClosing(tab: MasaTuru) {
+  return getNextTarget(TABLE_TEXT[tab].day).getTime() - WEEK_MS;
+}
+
+export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables, kycApproved, poolSince, onTab, notice, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
   tab: MasaTuru;
   rights: Record<MasaTuru, boolean>; // Türde aktif paket hakkı
   tables: Record<MasaTuru, boolean>; // Türde bu hafta masa
+  kycApproved: boolean;
+  poolSince: Record<MasaTuru, number | null>; // Türde havuza giriş anı (bilinmiyorsa null)
   onTab: (tab: MasaTuru) => void;
   notice?: React.ReactNode; // Sekmelerin hemen üstü
   participation: React.ReactNode;
@@ -152,7 +160,11 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables
   const statusOf = (t: MasaTuru): TabStatus => {
     if (tables[t]) return 'TABLE';
     if (!rights[t]) return 'NONE';
-    return pastClosed.split(',').includes(t) ? 'FAILED' : 'SCANNING';
+    if (!kycApproved) return 'KYC';
+    if (!pastClosed.split(',').includes(t)) return 'SCANNING';
+    // Başarısız yalnızca kapanıştan önce havuzda olana; kapanıştan sonra gelen yeni taramayı bekler
+    const since = poolSince[t];
+    return since !== null && since < lastClosing(t) ? 'FAILED' : 'PENDING';
   };
   const statuses = { GROUP: statusOf('GROUP'), ONE_ON_ONE: statusOf('ONE_ON_ONE'), KANKA: statusOf('KANKA') };
   const waitingScan = pastClosed.split(',').includes(tab) && !hasTabTable;
@@ -199,7 +211,9 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables
           ))}
         </section>
 
-        <LiveSonar sonar={pulse?.sonar ?? null} />
+        <div className={statuses[tab] === 'KYC' ? 'll-scan-off' : undefined}>
+          <LiveSonar sonar={pulse?.sonar ?? null} />
+        </div>
         <div key={tab} className="ll-fade">{participation}</div>
         <LiveFeed feed={pulse?.feed ?? null} />
 

@@ -239,7 +239,7 @@ export interface Participant {
   // Kankamla: kişinin kendi çifti (kendisi + kankası) MINE, karşı çift OTHER
   pair?: 'MINE' | 'OTHER';
   joinedAt?: string; // Masaya giriş zamanı (Katılım listesi sırası)
-  cancelled?: boolean; // İptal etti ama iptal son anına kadar listede dönüyor (Katılım alanında sayılmaz)
+  cancelled?: boolean; // İptal etti ama iptal son anına kadar listede dönüyor (Katılım alanında görünür)
 }
 
 export interface MasaData {

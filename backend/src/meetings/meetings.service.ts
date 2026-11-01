@@ -123,7 +123,7 @@ export class MeetingsService {
               initials: `${(f[0] ?? '?').toUpperCase()}.${(l[0] ?? '?').toUpperCase()}.`,
               gender: p.user.profile?.gender ?? null,
               joinedAt: p.createdAt, // Katılım listesi giriş sırası
-              ...(p.status === ParticipantStatus.CANCELLED && { cancelled: true }), // Katılım alanı ekranda eler
+              ...(p.status === ParticipantStatus.CANCELLED && { cancelled: true }), // Grupta iptal son anına kadar listede kalır
               ...(m.type === MeetingType.KANKA && {
                 pair: p.userId === userId || p.userId === myKankaId ? ('MINE' as const) : ('OTHER' as const),
               }),

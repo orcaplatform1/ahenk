@@ -10,6 +10,21 @@ import LiveParticipation from '@/components/live/LiveParticipation';
 
 const DASHBOARD_POLL_MS = 15_000;
 
+// Havuza giriş zamanı için paketin türdeki açık kısmı (mevcut /payment/subscriptions yanıtı)
+interface OwnSub {
+  plan: string;
+  createdAt: string;
+  usedAt: string | null;
+  groupRights: number;
+  kankaRights: number;
+}
+
+const SUB_OPEN: Record<MasaTuru, (s: OwnSub) => boolean> = {
+  GROUP: s => (s.plan === 'MASADA' || s.plan === 'ICERDE') && s.groupRights > 0,
+  ONE_ON_ONE: s => (s.plan === 'KARSIMDA' || s.plan === 'ICERDE') && !s.usedAt,
+  KANKA: s => s.plan === 'KANKAMLA' && s.kankaRights > 0,
+};
+
 interface MeData {
   firstName: string;
   lastName: string;
@@ -29,13 +44,16 @@ export default function DashboardPage() {
   const [dashLoaded, setDashLoaded] = useState(false);
   const [chosenTab, setChosenTab] = useState<MasaTuru | null>(null);
   const [kanka, setKanka] = useState<{ initials: string; gender: string | null } | null>(null);
+  const [subs, setSubs] = useState<OwnSub[]>([]);
+  const [kycAt, setKycAt] = useState<string | null>(null);
 
   useEffect(() => {
     // apiFetch 401 alınca refresh token deniyor (oturum HttpOnly çerezde)
-    api.get<MeData>('/auth/me')
-      .then(u => { setMe(u); })
-      .catch(() => {})
-      .finally(() => setMounted(true));
+    Promise.all([
+      api.get<MeData>('/auth/me').then(u => { setMe(u); }).catch(() => {}),
+      api.get<{ subscriptions: OwnSub[] }>('/payment/subscriptions').then(r => setSubs(r.subscriptions)).catch(() => {}),
+      api.get<{ reviewedAt?: string | null }>('/kyc/status').then(r => setKycAt(r.reviewedAt ?? null)).catch(() => {}),
+    ]).finally(() => setMounted(true));
     api.get<{ kanka: { initials: string; gender: string | null } | null }>('/kanka/me').then(r => setKanka(r.kanka)).catch(() => {});
   }, []);
 
@@ -75,6 +93,12 @@ export default function DashboardPage() {
   const tabItem = items.find(i => i.meeting.type === tab);
   const kycApproved = me?.kyc?.status === 'APPROVED';
   const scanning = owned.includes(tab) && kycApproved && !isPastClosing(tab);
+  // Havuza giriş: paket ve KYC onayının ikisi de tamamlandığı an; biri bilinmiyorsa null
+  const poolEntry = (t: MasaTuru) => {
+    const bought = subs.filter(SUB_OPEN[t]).map(s => Date.parse(s.createdAt));
+    return bought.length && kycAt ? Math.max(Math.min(...bought), Date.parse(kycAt)) : null;
+  };
+  const poolSince = { GROUP: poolEntry('GROUP'), ONE_ON_ONE: poolEntry('ONE_ON_ONE'), KANKA: poolEntry('KANKA') };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] pt-[52px]">
@@ -101,6 +125,8 @@ export default function DashboardPage() {
         tab={tab}
         rights={rights}
         tables={tables}
+        kycApproved={kycApproved}
+        poolSince={poolSince}
         onTab={setChosenTab}
         notice={me && !kycApproved ? (
           <section className="ll-card" style={{ textAlign: 'center' }}>
