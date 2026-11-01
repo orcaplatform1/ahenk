@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { setAdminIdentity } from '@/lib/adminRole';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, LABEL, SANS } from '@/lib/adminTheme';
 
 const NAV_TOP = [
   { href: '/',       label: 'Anasayfa' },
@@ -33,12 +34,6 @@ const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; sup
   { href: '/admin/settings',     label: 'Ayarlar', superadminOnly: true },
 ];
 
-const BG      = '#020c1b';
-const SURFACE = '#0a1628';
-const BORDER  = '#1a3a5c';
-const RED     = '#ef4444';
-const TEXT    = '#e2e8f0';
-const MUTED   = '#64748b';
 
 function NavLinks({ pathname, onClose, onLogout, unread, role }: {
   pathname: string; onClose?: () => void; onLogout: () => void; unread: number; role: string | null;
@@ -78,7 +73,7 @@ function NavLinks({ pathname, onClose, onLogout, unread, role }: {
       </div>
       <div style={{ paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
         <button onClick={onLogout}
-          style={{ width: '100%', padding: '8px 12px', fontSize: 12, color: MUTED, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderRadius: 10 }}>
+          style={{ width: '100%', padding: '8px 12px', fontSize: 13, color: MUTED, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderRadius: 10 }}>
           Çıkış
         </button>
       </div>
@@ -128,7 +123,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: BG, color: TEXT, display: 'flex', flexDirection: 'column' }}>
+    <div className="admin-shell" style={{ minHeight: '100vh', background: BG, color: TEXT, fontFamily: SANS, display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <header style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', height: 52, flexShrink: 0, position: 'sticky', top: 0, zIndex: 30, background: SURFACE, borderBottom: `1px solid ${BORDER}`, boxShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>
         <button className="md:hidden" onClick={() => setDrawerOpen(v => !v)}
@@ -137,9 +132,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span style={{ display: 'block', width: 18, height: 1.5, background: MUTED, borderRadius: 2 }} />
           <span style={{ display: 'block', width: 18, height: 1.5, background: MUTED, borderRadius: 2 }} />
         </button>
-        <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, textDecoration: 'none' }}>
+        <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, textDecoration: 'none' }}>
           <Image src="/logo.webp" alt="Ahenk" width={22} height={22} style={{ borderRadius: '50%' }} />
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', color: MUTED }}>AHENK YÖNETİM PANELİ</span>
+          <span style={{ ...LABEL, color: MUTED, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>AHENK YÖNETİM PANELİ</span>
         </Link>
         {unread > 0 && (
           <Link href="/admin/alerts" className="md:hidden" style={{ marginLeft: 'auto', textDecoration: 'none' }}>
@@ -161,10 +156,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <AnimatePresence>
         {drawerOpen && (
           <>
-            <motion.div className="md:hidden" style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(2px)' }}
+            <motion.div className="md:hidden" style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(2px)' }}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }} onClick={() => setDrawerOpen(false)} />
-            <motion.div className="md:hidden" style={{ position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50, width: 208, background: SURFACE, borderRight: `1px solid ${BORDER}`, boxShadow: '8px 0 32px rgba(0,0,0,0.7)', paddingTop: 52, display: 'flex', flexDirection: 'column' }}
+            <motion.div className="md:hidden" style={{ position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 210, width: 208, background: SURFACE, borderRight: `1px solid ${BORDER}`, boxShadow: '8px 0 32px rgba(0,0,0,0.7)', paddingTop: 52, display: 'flex', flexDirection: 'column' }}
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}>
               <NavLinks pathname={pathname} onClose={() => setDrawerOpen(false)} onLogout={handleLogout} unread={unread} role={role} />

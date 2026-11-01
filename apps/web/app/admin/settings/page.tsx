@@ -2,15 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { SURFACE, BORDER, TEXT, MUTED, RED, GREEN, SANS } from '@/lib/adminTheme';
 
-const SURFACE = '#0a1628';
-const CARD   = '#0d1f3c';
-const BORDER = '#1a3a5c';
-const TEXT   = '#e2e8f0';
-const MUTED  = '#64748b';
-const GREEN  = '#22c55e';
-const RED    = '#ef4444';
-const SANS   = 'Inter, system-ui, sans-serif';
 
 interface Settings {
   matchingEnabled: boolean;
@@ -82,23 +75,23 @@ export default function AdminSettings() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 520, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 520, margin: '0 auto', fontFamily: SANS }}>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>Sistem Ayarları</h1>
+        <h1 className="ll-title">Sistem Ayarları</h1>
       </div>
 
       {loading ? (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[0,1,2,3].map(i => <div key={i} style={{ height: 48, background: SURFACE, borderRadius: 8, opacity: 0.5 }} />)}
         </div>
       ) : !settings ? (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 40, textAlign: 'center' }}>
+        <div className="ll-card" style={{ textAlign: 'center' }}>
           <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Ayarlar yüklenemedi.{error ? ` ${error}` : ''}</p>
         </div>
       ) : (
         <>
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Toggle'lar */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -134,7 +127,7 @@ export default function AdminSettings() {
                         type="button"
                         aria-pressed={on}
                         onClick={() => setSettings(s => s ? { ...s, liveDistrictSource: value } : s)}
-                        style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontFamily: SANS, fontSize: 12, fontWeight: 600, background: on ? 'rgba(34,211,238,0.1)' : 'transparent', border: `1px solid ${on ? 'rgba(34,211,238,0.3)' : BORDER}`, color: on ? '#22d3ee' : MUTED }}
+                        style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontFamily: SANS, fontSize: 13, fontWeight: 600, background: on ? 'rgba(34,211,238,0.1)' : 'transparent', border: `1px solid ${on ? 'rgba(34,211,238,0.3)' : BORDER}`, color: on ? '#22d3ee' : MUTED }}
                       >
                         {label}
                       </button>
@@ -159,7 +152,7 @@ export default function AdminSettings() {
           >
             {saving ? 'Kaydediliyor…' : saved ? 'Kaydedildi ✓' : 'Kaydet'}
           </button>
-          {error && <p style={{ margin: '8px 0 0', fontSize: 12, color: RED }}>{error}</p>}
+          {error && <p style={{ margin: '8px 0 0', fontSize: 13, color: RED }}>{error}</p>}
         </>
       )}
     </div>

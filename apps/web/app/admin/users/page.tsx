@@ -6,6 +6,7 @@ import { myRole, myId } from '@/lib/adminRole';
 import { AdminUserEdit } from '@/components/AdminUserEdit';
 import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
 import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } from '@/components/AdminNoShowWarnings';
+import { SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
 function canSanction(target: { id: string; role: string }): boolean {
@@ -15,23 +16,10 @@ function canSanction(target: { id: string; role: string }): boolean {
   return target.role !== 'ADMIN' || myRole() === 'SUPERADMIN';
 }
 
-const BG     = '#020c1b';
-const SURFACE = '#0a1628';
-const CARD   = '#0d1f3c';
-const BORDER = '#1a3a5c';
-const TEXT   = '#e2e8f0';
-const MUTED  = '#64748b';
-const GREEN  = '#22c55e';
-const RED    = '#ef4444';
-const BLUE   = '#3b82f6';
-const AMBER  = '#f59e0b';
-const CYAN   = '#22d3ee';
-const SANS   = 'Inter, system-ui, sans-serif';
-const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 const inputStyle: React.CSSProperties = {
   background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8,
-  padding: '7px 12px', fontSize: 12, color: TEXT,
+  padding: '7px 12px', fontSize: 13, color: TEXT,
   outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
 };
 
@@ -187,10 +175,10 @@ export default function AdminUsers() {
   const totalPages = Math.ceil(total / 20);
 
   return (
-    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>Kullanıcılar</h1>
+        <h1 className="ll-title">Kullanıcılar</h1>
       </div>
 
       {/* Filtreler */}
@@ -223,21 +211,20 @@ export default function AdminUsers() {
         </select>
       </div>
 
-      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 
       {/* Tablo */}
-      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+      <div className="ll-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
         <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 2, height: 12, borderRadius: 1, background: BLUE }} />
-          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: BLUE }}>KULLANICILAR</span>
+          <h2 className="ll-title">Kullanıcılar</h2>
           <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{total} kayıt</span>
         </div>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', minWidth: 520, borderCollapse: 'collapse' }}>
+          <table className="adm-table" style={{ width: '100%', minWidth: 520, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
                 {['Kullanıcı', 'Şehir', 'Paket', 'OCEAN Ort.', 'Durum', ''].map(h => (
-                  <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: MUTED }}>{h}</th>
+                  <th key={h} style={{ padding: '8px 14px', textAlign: 'left', ...LABEL, color: MUTED }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -252,25 +239,25 @@ export default function AdminUsers() {
                     const s = STATUS_STYLE[u.status] ?? STATUS_STYLE.ACTIVE;
                     return (
                       <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none' }}>
-                        <td style={{ padding: '10px 14px' }}>
-                          <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: TEXT, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <td data-label="Kullanıcı" style={{ padding: '10px 14px' }}>
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}
                           </p>
                           <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email ?? u.phone ?? ''}</p>
                         </td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{u.profile?.city ?? '—'}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{activePlan(u)}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED, fontFamily: MONO }}>{oceanAvg(u.oceanScore)}</td>
-                        <td style={{ padding: '10px 14px' }}>
+                        <td data-label="Şehir" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>{u.profile?.city ?? '—'}</td>
+                        <td data-label="Paket" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>{activePlan(u)}</td>
+                        <td data-label="OCEAN Ort." style={{ padding: '10px 14px', fontSize: 13, color: MUTED, fontFamily: MONO }}>{oceanAvg(u.oceanScore)}</td>
+                        <td data-label="Durum" style={{ padding: '10px 14px' }}>
                           <span style={{
-                            fontSize: 9, fontWeight: 800, letterSpacing: '0.08em',
+                            ...LABEL,
                             padding: '2px 8px', borderRadius: 99,
                             background: s.bg, border: `1px solid ${s.border}`, color: s.color,
                           }}>
                             {s.label}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 14px' }}>
+                        <td data-label="" style={{ padding: '10px 14px' }}>
                           <button
                             onClick={() => openUserModal(u.id)}
                             style={{
@@ -331,7 +318,7 @@ export default function AdminUsers() {
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, width: '100%', maxWidth: 360, maxHeight: '85vh', overflowY: 'auto', padding: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 16 }}
+            className="ll-card" style={{ width: '100%', maxWidth: 360, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 16 }}
           >
             {userModalLoading && [0,1,2,3].map(i => (
               <div key={i} style={{ height: 40, background: SURFACE, borderRadius: 8, opacity: 0.5 }} />
@@ -375,13 +362,13 @@ export default function AdminUsers() {
                   {(() => {
                     const s = STATUS_STYLE[userModal.status] ?? STATUS_STYLE.ACTIVE;
                     return (
-                      <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99, background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>
+                      <span style={{ ...LABEL, padding: '2px 8px', borderRadius: 99, background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>
                         {s.label}
                       </span>
                     );
                   })()}
                   <span style={{
-                    fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99,
+                    ...LABEL, padding: '2px 8px', borderRadius: 99,
                     background: userModal.kyc?.status === 'APPROVED' ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)',
                     color: userModal.kyc?.status === 'APPROVED' ? GREEN : MUTED,
                     border: `1px solid ${userModal.kyc?.status === 'APPROVED' ? 'rgba(34,197,94,0.3)' : BORDER}`,
@@ -391,7 +378,7 @@ export default function AdminUsers() {
                   {/* Tüm aktif paketler (backend sadece ACTIVE gönderir) */}
                   {userModal.subscriptions.map(s => (
                     <span key={s.id} style={{
-                      fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99,
+                      ...LABEL, padding: '2px 8px', borderRadius: 99,
                       background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)',
                     }}>
                       {{ MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' }[s.plan] ?? s.plan}
@@ -419,7 +406,7 @@ export default function AdminUsers() {
 
                 {/* Hesap işlemleri */}
                 <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>HESAP İŞLEMLERİ</span>
+                  <span style={{ ...LABEL, color: MUTED }}>HESAP İŞLEMLERİ</span>
                   {canSanction(userModal) ? (<>
                   {userModal.status !== 'SUSPENDED' && (
                     <select
@@ -480,7 +467,7 @@ export default function AdminUsers() {
                 {/* Kişilik testi kilidi */}
                 {userModal.oceanScore && (
                   <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>KİŞİLİK TESTİ</span>
+                    <span style={{ ...LABEL, color: MUTED }}>KİŞİLİK TESTİ</span>
                     <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
                       Son test: {new Date(userModal.oceanScore.completedAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}
                       {userModal.oceanScore.adminCanReset ? ' · Kilit açık, kullanıcı testi yeniden yapabilir' : ' · 180 gün kilitli'}
@@ -503,13 +490,13 @@ export default function AdminUsers() {
                 {/* KYC onayla */}
                 {userModal.kyc && userModal.kyc.status !== 'APPROVED' && (
                   <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>KYC</span>
+                    <span style={{ ...LABEL, color: MUTED }}>KYC</span>
                     <button
                       onClick={modalApproveKyc} disabled={!!userAction}
                       style={{
                         padding: '8px', borderRadius: 8, cursor: userAction ? 'not-allowed' : 'pointer',
                         background: 'rgba(34,197,94,0.1)', color: GREEN, border: '1px solid rgba(34,197,94,0.3)',
-                        fontSize: 12, fontWeight: 600, fontFamily: SANS, opacity: userAction ? 0.5 : 1,
+                        fontSize: 13, fontWeight: 600, fontFamily: SANS, opacity: userAction ? 0.5 : 1,
                       }}
                     >
                       {userAction === 'kyc' ? 'Onaylanıyor…' : "KYC'yi Onayla"}
@@ -520,7 +507,7 @@ export default function AdminUsers() {
                 {/* Abonelik ver — ücretsiz paket sadece SUPERADMIN */}
                 {myRole() === 'SUPERADMIN' && (
                 <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>ÜCRETSİZ ABONELİK VER</span>
+                  <span style={{ ...LABEL, color: MUTED }}>ÜCRETSİZ ABONELİK VER</span>
                   {userModal.kyc?.status !== 'APPROVED' && (
                     <p style={{ margin: 0, fontSize: 10, color: RED }}>
                       KYC onaylı değil: paket verilse bile kullanıcı KYC tamamlanana kadar eşleşmeye katılamaz.
@@ -529,7 +516,7 @@ export default function AdminUsers() {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <select
                       value={grantPlan} onChange={e => setGrantPlan(e.target.value)}
-                      style={{ flex: 1, background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 10px', fontSize: 12, color: TEXT, outline: 'none', fontFamily: SANS }}
+                      style={{ flex: 1, background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 10px', fontSize: 13, color: TEXT, outline: 'none', fontFamily: SANS }}
                     >
                       <option value="">Paket seç…</option>
                       <option value="MASADA">Masada</option>
@@ -542,7 +529,7 @@ export default function AdminUsers() {
                       style={{
                         padding: '7px 16px', borderRadius: 8, cursor: (userAction || !grantPlan) ? 'not-allowed' : 'pointer',
                         background: 'rgba(34,211,238,0.1)', color: CYAN, border: '1px solid rgba(34,211,238,0.3)',
-                        fontSize: 12, fontWeight: 600, fontFamily: SANS,
+                        fontSize: 13, fontWeight: 600, fontFamily: SANS,
                         opacity: (userAction || !grantPlan) ? 0.5 : 1,
                       }}
                     >

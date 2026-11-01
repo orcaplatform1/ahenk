@@ -3,23 +3,12 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { AdminSelect } from '@/components/AdminSelect';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
-const BG     = '#020c1b';
-const SURFACE = '#0a1628';
-const CARD   = '#0d1f3c';
-const BORDER = '#1a3a5c';
-const TEXT   = '#e2e8f0';
-const MUTED  = '#64748b';
-const GREEN  = '#22c55e';
-const RED    = '#ef4444';
-const CYAN   = '#22d3ee';
-const BLUE   = '#3b82f6';
-const SANS   = 'Inter, system-ui, sans-serif';
-const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-  padding: '7px 12px', fontSize: 12, color: TEXT,
+  padding: '7px 12px', fontSize: 13, color: TEXT,
   outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
 };
 
@@ -31,7 +20,7 @@ function sortCities(list: City[]): City[] {
     Number(!!b.isActive) - Number(!!a.isActive) || a.name.localeCompare(b.name, 'tr'));
 }
 
-const labelStyle: React.CSSProperties = { fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED, margin: '0 0 4px' };
+const labelStyle: React.CSSProperties = { ...LABEL, color: MUTED, margin: '0 0 4px' };
 interface Venue {
   id: string; name: string; category: string; venueType?: string;
   address?: string; district?: string | null; description?: string; isActive: boolean;
@@ -120,23 +109,23 @@ export default function AdminVenues() {
   const filtered = selectedCity ? venues.filter(v => v.city.id === selectedCity) : venues;
 
   return (
-    <div style={{ padding: 24, maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
 
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>Mekanlar</h1>
+        <h1 className="ll-title">Mekanlar</h1>
         <button
           onClick={openAdd}
           style={{
             padding: '6px 16px', borderRadius: 8, cursor: 'pointer',
             background: 'rgba(34,211,238,0.1)', border: `1px solid rgba(34,211,238,0.3)`,
-            fontSize: 12, fontWeight: 600, color: CYAN, fontFamily: SANS,
+            fontSize: 13, fontWeight: 600, color: CYAN, fontFamily: SANS,
           }}
         >
           + Mekan Ekle
         </button>
       </div>
 
-      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 
       {/* Şehir filtresi */}
       <div style={{ marginBottom: 20, maxWidth: 280 }}>
@@ -153,20 +142,18 @@ export default function AdminVenues() {
       </div>
 
       {loading ? (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>MEKANLAR</span>
+            <h2 className="ll-title">Mekanlar</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 16 }}>
             {[0, 1, 2].map(i => <div key={i} style={{ height: 48, background: SURFACE, borderRadius: 8, opacity: 0.5 }} />)}
           </div>
         </div>
       ) : (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>MEKANLAR</span>
+            <h2 className="ll-title">Mekanlar</h2>
             <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{filtered.length} kayıt</span>
           </div>
 
@@ -190,7 +177,7 @@ export default function AdminVenues() {
                       <span style={{ fontSize: 13, fontWeight: 600, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
                       {!v.isActive && (
                         <span style={{
-                          fontSize: 8, fontWeight: 800, letterSpacing: '0.1em',
+                          ...LABEL,
                           padding: '1px 6px', borderRadius: 99,
                           background: 'rgba(100,116,139,0.12)', border: '1px solid rgba(100,116,139,0.25)', color: MUTED,
                         }}>PASİF</span>
@@ -242,9 +229,9 @@ export default function AdminVenues() {
 
       {modal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, width: '100%', maxWidth: 400, padding: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
+          <div className="ll-card" style={{ width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: TEXT }}>
+              <h2 className="ll-title">
                 {modal === 'add' ? 'Yeni Mekan' : 'Mekanı Düzenle'}
               </h2>
               <button onClick={() => setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: MUTED, padding: 4 }}>✕</button>
@@ -311,13 +298,13 @@ export default function AdminVenues() {
                 style={{
                   width: '100%', padding: '9px', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer',
                   background: 'rgba(34,211,238,0.1)', border: `1px solid rgba(34,211,238,0.3)`,
-                  fontSize: 12, fontWeight: 700, color: CYAN, fontFamily: SANS,
+                  fontSize: 13, fontWeight: 700, color: CYAN, fontFamily: SANS,
                   opacity: saving || !form.name || !form.cityId ? 0.5 : 1,
                 }}
               >
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
-              {modalError && <p style={{ margin: '8px 0 0', fontSize: 12, color: RED }}>{modalError}</p>}
+              {modalError && <p style={{ margin: '8px 0 0', fontSize: 13, color: RED }}>{modalError}</p>}
             </div>
           </div>
         </div>

@@ -2,18 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
-const BG     = '#020c1b';
-const SURFACE = '#0a1628';
-const CARD   = '#0d1f3c';
-const BORDER = '#1a3a5c';
-const TEXT   = '#e2e8f0';
-const MUTED  = '#64748b';
-const GREEN  = '#22c55e';
-const RED    = '#ef4444';
-const AMBER  = '#f59e0b';
-const SANS   = 'Inter, system-ui, sans-serif';
-const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 interface RefundItem {
   id: string; userId: string; refundType: string; status: string;
@@ -73,7 +63,7 @@ function RefundRow({ refund, onUpdate }: { refund: RefundItem; onUpdate: () => v
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <span style={{
-            fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99,
+            ...LABEL, padding: '2px 8px', borderRadius: 99,
             background: STATUS_BG[refund.status] ?? 'transparent',
             border: `1px solid ${STATUS_BORDER[refund.status] ?? BORDER}`,
             color: STATUS_COLOR[refund.status] ?? MUTED,
@@ -147,18 +137,17 @@ export default function AdminRefunds() {
   useEffect(() => { load(); }, []);
 
   return (
-    <div style={{ padding: 24, maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>İade Talepleri</h1>
+        <h1 className="ll-title">İade Talepleri</h1>
       </div>
 
-      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 
-      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+      <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 2, height: 12, borderRadius: 1, background: AMBER }} />
-          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: AMBER }}>İADE TALEPLERİ</span>
+          <h2 className="ll-title">İade Talepleri</h2>
           {!loading && <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{refunds.length} kayıt</span>}
         </div>
 

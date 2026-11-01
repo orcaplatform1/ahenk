@@ -4,19 +4,12 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { myRole } from '@/lib/adminRole';
 import { OCCUPATION_SECTORS } from '@/lib/occupations';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, CYAN, SANS, LABEL } from '@/lib/adminTheme';
 
-const BG      = '#020c1b';
-const SURFACE = '#0a1628';
-const BORDER  = '#1a3a5c';
-const TEXT    = '#e2e8f0';
-const MUTED   = '#64748b';
-const RED     = '#ef4444';
-const CYAN    = '#22d3ee';
-const SANS    = 'Inter, system-ui, sans-serif';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-  padding: '7px 10px', fontSize: 12, color: TEXT, outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
+  padding: '7px 10px', fontSize: 13, color: TEXT, outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
 };
 
 export interface EditableUser {
@@ -111,7 +104,7 @@ export function AdminUserEdit({ user, canEdit, onSaved }: {
 
   return (
     <div style={{ padding: 12, borderRadius: 8, background: SURFACE, border: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>BİLGİLERİ DÜZENLE</span>
+      <span style={{ ...LABEL, color: CYAN }}>BİLGİLERİ DÜZENLE</span>
       <div style={{ display: 'flex', gap: 8 }}>
         <input value={form.firstName} onChange={e => set('firstName', e.target.value)} placeholder="Ad" style={inputStyle} />
         <input value={form.lastName} onChange={e => set('lastName', e.target.value)} placeholder="Soyad" style={inputStyle} />

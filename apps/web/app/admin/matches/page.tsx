@@ -7,6 +7,7 @@ import { AdminUserEdit } from '@/components/AdminUserEdit';
 import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
 import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } from '@/components/AdminNoShowWarnings';
 import { AdminOpenTables } from '@/components/AdminOpenTables';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
 function canSanction(target: { id: string; role: string }): boolean {
@@ -16,23 +17,10 @@ function canSanction(target: { id: string; role: string }): boolean {
   return target.role !== 'ADMIN' || myRole() === 'SUPERADMIN';
 }
 
-const BG     = '#020c1b';
-const SURFACE = '#0a1628';
-const CARD   = '#0d1f3c';
-const BORDER = '#1a3a5c';
-const TEXT   = '#e2e8f0';
-const MUTED  = '#64748b';
-const GREEN  = '#22c55e';
-const RED    = '#ef4444';
-const BLUE   = '#3b82f6';
-const AMBER  = '#f59e0b';
-const CYAN   = '#22d3ee';
-const SANS   = 'Inter, system-ui, sans-serif';
-const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 const inputStyle: React.CSSProperties = {
   background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-  padding: '7px 12px', fontSize: 12, color: TEXT,
+  padding: '7px 12px', fontSize: 13, color: TEXT,
   outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
 };
 
@@ -352,12 +340,12 @@ export default function AdminMatches() {
   const totalPages = Math.ceil(total / 25);
 
   return (
-    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>Masalar</h1>
+        <h1 className="ll-title">Masalar</h1>
         {withoutVenue > 0 && (
-          <p style={{ margin: '8px 0 0', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)' }}>
+          <p style={{ margin: '8px 0 0', padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)' }}>
             ⚠ Mekânsız masa: {withoutVenue}
           </p>
         )}
@@ -369,7 +357,7 @@ export default function AdminMatches() {
             key={key}
             onClick={() => setTab(key)}
             style={{
-              padding: '7px 16px', borderRadius: 99, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: SANS,
+              padding: '7px 16px', borderRadius: 99, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: SANS,
               background: tab === key ? 'rgba(59,130,246,0.15)' : 'transparent',
               border: `1px solid ${tab === key ? 'rgba(59,130,246,0.45)' : BORDER}`,
               color: tab === key ? '#93c5fd' : MUTED,
@@ -403,22 +391,21 @@ export default function AdminMatches() {
         />
       </div>
 
-      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 
       {/* Tablo */}
-      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+      <div className="ll-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
         <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 2, height: 12, borderRadius: 1, background: BLUE }} />
-          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: BLUE }}>MASALAR</span>
+          <h2 className="ll-title">Masalar</h2>
           <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{total} kayıt</span>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', minWidth: 420, borderCollapse: 'collapse' }}>
+          <table className="adm-table" style={{ width: '100%', minWidth: 420, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
                 {['Tarih', 'Tip', 'Şehir', 'Kişi', 'Mekan', 'Durum', ''].map(h => (
-                  <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: MUTED }}>
+                  <th key={h} style={{ padding: '8px 14px', textAlign: 'left', ...LABEL, color: MUTED }}>
                     {h}
                   </th>
                 ))}
@@ -446,19 +433,19 @@ export default function AdminMatches() {
                           cursor: 'pointer',
                         }}
                       >
-                        <td style={{ padding: '10px 14px', fontSize: 11, color: TEXT, whiteSpace: 'nowrap' }}>{fmtDate(m.scheduledAt)}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 11, color: MUTED }}>{TYPE_LABEL[m.type] ?? m.type}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 11, color: MUTED, whiteSpace: 'nowrap' }}>{m.city?.name ?? '—'}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 11, color: MUTED, textAlign: 'center' }}>{m._count.participants}</td>
-                        <td style={{ padding: '10px 14px', fontSize: 11, color: MUTED, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.venueMissing ? <span style={{ color: '#f59e0b', fontWeight: 700 }}>⚠ Mekânsız</span> : m.locationText ?? '—'}</td>
-                        <td style={{ padding: '10px 14px' }}>
+                        <td data-label="Tarih" style={{ padding: '10px 14px', fontSize: 11, color: TEXT, whiteSpace: 'nowrap' }}>{fmtDate(m.scheduledAt)}</td>
+                        <td data-label="Tip" style={{ padding: '10px 14px', fontSize: 11, color: MUTED }}>{TYPE_LABEL[m.type] ?? m.type}</td>
+                        <td data-label="Şehir" style={{ padding: '10px 14px', fontSize: 11, color: MUTED, whiteSpace: 'nowrap' }}>{m.city?.name ?? '—'}</td>
+                        <td data-label="Kişi" style={{ padding: '10px 14px', fontSize: 11, color: MUTED, textAlign: 'center' }}>{m._count.participants}</td>
+                        <td data-label="Mekan" style={{ padding: '10px 14px', fontSize: 11, color: MUTED, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.venueMissing ? <span style={{ color: '#f59e0b', fontWeight: 700 }}>⚠ Mekânsız</span> : m.locationText ?? '—'}</td>
+                        <td data-label="Durum" style={{ padding: '10px 14px' }}>
                           <span style={{
-                            fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
+                            ...LABEL,
                             padding: '2px 7px', borderRadius: 99,
                             background: s.bg, border: `1px solid ${s.border}`, color: s.color,
                           }}>{s.label}</span>
                         </td>
-                        <td style={{ padding: '10px 14px', fontSize: 11, color: MUTED }}>{isActive ? '▲' : '▼'}</td>
+                        <td data-label="" style={{ padding: '10px 14px', fontSize: 11, color: MUTED }}>{isActive ? '▲' : '▼'}</td>
                       </tr>
                     );
                   })
@@ -493,13 +480,13 @@ export default function AdminMatches() {
 
       {/* Detay */}
       {detailLoading && (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div className="ll-card" style={{ marginBottom: 16 }}>
           {[0,1,2].map(i => <div key={i} style={{ height: 36, background: SURFACE, borderRadius: 6, opacity: 0.5, marginBottom: 10 }} />)}
         </div>
       )}
 
       {selected && !detailLoading && (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="ll-card" style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
@@ -511,7 +498,7 @@ export default function AdminMatches() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
               <span style={{
-                fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
+                ...LABEL,
                 padding: '2px 8px', borderRadius: 99,
                 background: STATUS_CFG[selected.status]?.bg,
                 border: `1px solid ${STATUS_CFG[selected.status]?.border}`,
@@ -531,7 +518,7 @@ export default function AdminMatches() {
               style={{
                 width: '100%', padding: '9px', borderRadius: 8, cursor: approving ? 'not-allowed' : 'pointer',
                 background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
-                fontSize: 12, fontWeight: 600, color: GREEN, fontFamily: SANS,
+                fontSize: 13, fontWeight: 600, color: GREEN, fontFamily: SANS,
                 opacity: approving ? 0.5 : 1,
               }}
             >
@@ -541,7 +528,7 @@ export default function AdminMatches() {
 
           {/* Mekan */}
           <div>
-            <p style={{ margin: '0 0 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>MEKAN</p>
+            <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>MEKAN</p>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
                 value={venueInput}
@@ -566,7 +553,7 @@ export default function AdminMatches() {
 
           {/* Mekan adresi + fotoğraflar (masa kartında katılımcılara gösterilir) */}
           <div>
-            <p style={{ margin: '0 0 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>MEKAN ADRESİ VE FOTOĞRAFLAR</p>
+            <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>MEKAN ADRESİ VE FOTOĞRAFLAR</p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <input
                 value={venueAddress}
@@ -647,7 +634,7 @@ export default function AdminMatches() {
 
           {/* Katılımcılar */}
           <div>
-            <p style={{ margin: '0 0 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>
+            <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>
               KATILIMCILAR ({selected.participants.length})
             </p>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -664,7 +651,7 @@ export default function AdminMatches() {
                     onClick={() => openUser(p.user.id)}
                     style={{ textAlign: 'left', flex: 1, minWidth: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                   >
-                    <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: TEXT }}>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>
                       {p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.user.email}
                       {p.user.isBot && <span style={{ marginLeft: 6, fontSize: 8, fontWeight: 800, color: CYAN }}>BOT</span>}
                       {['CANCELLED', 'DECLINED', 'NO_SHOW'].includes(p.status) && <span style={{ marginLeft: 6, fontSize: 8, fontWeight: 800, color: RED }}>İPTAL</span>}
@@ -700,7 +687,7 @@ export default function AdminMatches() {
             const available = bots;
             return (
               <div>
-                <p style={{ margin: '0 0 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>
+                <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>
                   BOT YERLEŞTİR ({emptySeats > 0 ? `${emptySeats} boş koltuk` : 'boş koltuk yok'})
                 </p>
                 {emptySeats > 0 && (
@@ -737,7 +724,7 @@ export default function AdminMatches() {
 
           {/* Sohbet geçmişi (salt okunur, silinenler dahil) */}
           <div>
-            <p style={{ margin: '0 0 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>
+            <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>
               SOHBET GEÇMİŞİ ({chat.length}{chat.some(m => m.reportCount > 0) ? ` · ${chat.filter(m => m.reportCount > 0).length} şikayetli` : ''})
             </p>
             {chat.length === 0 ? (
@@ -782,7 +769,7 @@ export default function AdminMatches() {
           {/* Değerlendirmeler */}
           {selected.reviews.length > 0 && (
             <div>
-              <p style={{ margin: '0 0 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>
+              <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>
                 DEĞERLENDİRMELER ({selected.reviews.length})
               </p>
               {selected.reviews.map((r, i) => (
@@ -834,7 +821,7 @@ export default function AdminMatches() {
               style={{
                 width: '100%', padding: '9px', borderRadius: 8, cursor: 'pointer',
                 background: 'rgba(239,68,68,0.08)', border: `1px solid rgba(239,68,68,0.3)`,
-                fontSize: 12, fontWeight: 600, color: RED, fontFamily: SANS,
+                fontSize: 13, fontWeight: 600, color: RED, fontFamily: SANS,
               }}
             >
               Masayı İptal Et
@@ -852,19 +839,19 @@ export default function AdminMatches() {
           onClick={() => setCancelConfirm(false)}
         >
           <div
-            style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, width: '100%', maxWidth: 320, padding: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 20 }}
+            className="ll-card" style={{ width: '100%', maxWidth: 320, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 20 }}
             onClick={e => e.stopPropagation()}
           >
             <div>
               <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: TEXT, marginBottom: 6 }}>Masayı iptal et</p>
-              <p style={{ margin: 0, fontSize: 12, color: MUTED }}>
+              <p style={{ margin: 0, fontSize: 13, color: MUTED }}>
                 {selected && fmtDate(selected.scheduledAt)} tarihli masa iptal edilecek. Bu işlem geri alınamaz.
               </p>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={() => setCancelConfirm(false)}
-                style={{ flex: 1, padding: '9px', borderRadius: 8, background: 'transparent', border: `1px solid ${BORDER}`, fontSize: 12, color: MUTED, cursor: 'pointer', fontFamily: SANS }}
+                style={{ flex: 1, padding: '9px', borderRadius: 8, background: 'transparent', border: `1px solid ${BORDER}`, fontSize: 13, color: MUTED, cursor: 'pointer', fontFamily: SANS }}
               >Vazgeç</button>
               <button
                 onClick={cancelMeeting}
@@ -872,7 +859,7 @@ export default function AdminMatches() {
                 style={{
                   flex: 1, padding: '9px', borderRadius: 8, cursor: cancelling ? 'not-allowed' : 'pointer',
                   background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
-                  fontSize: 12, fontWeight: 600, color: RED, fontFamily: SANS,
+                  fontSize: 13, fontWeight: 600, color: RED, fontFamily: SANS,
                   opacity: cancelling ? 0.5 : 1,
                 }}
               >
@@ -890,7 +877,7 @@ export default function AdminMatches() {
           onClick={() => setUserModal(null)}
         >
           <div
-            style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, width: '100%', maxWidth: 360, maxHeight: '85vh', overflowY: 'auto', padding: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 16 }}
+            className="ll-card" style={{ width: '100%', maxWidth: 360, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 16 }}
             onClick={e => e.stopPropagation()}
           >
             {userLoading && [0,1,2,3].map(i => (
@@ -913,7 +900,7 @@ export default function AdminMatches() {
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   <span style={{
-                    fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
+                    ...LABEL,
                     padding: '2px 8px', borderRadius: 99,
                     background: userModal.status === 'ACTIVE' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
                     color: userModal.status === 'ACTIVE' ? GREEN : RED,
@@ -922,7 +909,7 @@ export default function AdminMatches() {
                     {userModal.status === 'ACTIVE' ? 'Aktif' : userModal.status === 'SUSPENDED' ? 'Askıda' : 'Silinmiş'}
                   </span>
                   <span style={{
-                    fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
+                    ...LABEL,
                     padding: '2px 8px', borderRadius: 99,
                     background: userModal.kyc?.status === 'APPROVED' ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)',
                     color: userModal.kyc?.status === 'APPROVED' ? GREEN : MUTED,
@@ -933,7 +920,7 @@ export default function AdminMatches() {
                   {/* Tüm aktif paketler (backend sadece ACTIVE gönderir) */}
                   {userModal.subscriptions.map(s => (
                     <span key={s.id} style={{
-                      fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
+                      ...LABEL,
                       padding: '2px 8px', borderRadius: 99,
                       background: 'rgba(59,130,246,0.12)', color: BLUE,
                       border: '1px solid rgba(59,130,246,0.3)',
@@ -962,7 +949,7 @@ export default function AdminMatches() {
                 <AdminSanctionHistory userId={userModal.id} canAct={canSanction(userModal)} onChanged={() => refreshUser(userModal.id)} />
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
-                  <p style={{ margin: 0, fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>HESAP İŞLEMLERİ</p>
+                  <p style={{ margin: 0, ...LABEL, color: MUTED }}>HESAP İŞLEMLERİ</p>
                   {canSanction(userModal) ? (<>
                   {userModal.status !== 'SUSPENDED' && (
                     <select
@@ -1014,7 +1001,7 @@ export default function AdminMatches() {
                 {/* Kişilik testi kilidi */}
                 {userModal.oceanScore && (
                   <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>KİŞİLİK TESTİ</span>
+                    <span style={{ ...LABEL, color: MUTED }}>KİŞİLİK TESTİ</span>
                     <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
                       Son test: {new Date(userModal.oceanScore.completedAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}
                       {userModal.oceanScore.adminCanReset ? ' · Kilit açık, kullanıcı testi yeniden yapabilir' : ' · 180 gün kilitli'}
@@ -1036,13 +1023,13 @@ export default function AdminMatches() {
 
                 {userModal.kyc && userModal.kyc.status !== 'APPROVED' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
-                    <p style={{ margin: 0, fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>KYC</p>
+                    <p style={{ margin: 0, ...LABEL, color: MUTED }}>KYC</p>
                     <button
                       onClick={userApproveKyc}
                       disabled={!!userAction}
                       style={{
                         padding: '9px', borderRadius: 8, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
-                        fontSize: 12, fontWeight: 600, color: GREEN, cursor: 'pointer', fontFamily: SANS,
+                        fontSize: 13, fontWeight: 600, color: GREEN, cursor: 'pointer', fontFamily: SANS,
                         opacity: !!userAction ? 0.5 : 1,
                       }}
                     >
@@ -1054,7 +1041,7 @@ export default function AdminMatches() {
                 {/* Ücretsiz paket sadece SUPERADMIN */}
                 {myRole() === 'SUPERADMIN' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
-                  <p style={{ margin: 0, fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>ÜCRETSİZ ABONELİK VER</p>
+                  <p style={{ margin: 0, ...LABEL, color: MUTED }}>ÜCRETSİZ ABONELİK VER</p>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <select
                       value={grantPlan}
@@ -1073,7 +1060,7 @@ export default function AdminMatches() {
                       style={{
                         padding: '7px 16px', borderRadius: 8, cursor: (!!userAction || !grantPlan) ? 'not-allowed' : 'pointer',
                         background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)',
-                        fontSize: 12, fontWeight: 600, color: BLUE, fontFamily: SANS,
+                        fontSize: 13, fontWeight: 600, color: BLUE, fontFamily: SANS,
                         opacity: (!!userAction || !grantPlan) ? 0.5 : 1, flexShrink: 0,
                       }}
                     >

@@ -3,14 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { myRole } from '@/lib/adminRole';
+import { SURFACE, BORDER, TEXT, MUTED, RED, AMBER, SANS, LABEL } from '@/lib/adminTheme';
 
-const SURFACE = '#0a1628';
-const BORDER  = '#1a3a5c';
-const TEXT    = '#e2e8f0';
-const MUTED   = '#64748b';
-const RED     = '#ef4444';
-const AMBER   = '#f59e0b';
-const SANS    = 'Inter, system-ui, sans-serif';
 
 interface Sanction {
   id: string;
@@ -76,7 +70,7 @@ export function AdminSanctionHistory({ userId, canAct, onChanged }: {
 
   return (
     <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>
+      <span style={{ ...LABEL, color: MUTED }}>
         YAPTIRIM GEÇMİŞİ{!loading ? ` (${items.length})` : ''}
       </span>
       {error && <p style={{ margin: 0, fontSize: 11, color: RED }}>{error}</p>}

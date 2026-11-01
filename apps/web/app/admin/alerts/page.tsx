@@ -2,17 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, SANS, MONO } from '@/lib/adminTheme';
 
-const SURFACE = '#0a1628';
-const CARD    = '#0d1f3c';
-const BORDER  = '#1a3a5c';
-const TEXT    = '#e2e8f0';
-const MUTED   = '#64748b';
-const GREEN   = '#22c55e';
-const AMBER   = '#f59e0b';
-const RED     = '#ef4444';
-const SANS    = 'Inter, system-ui, sans-serif';
-const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 interface AlertItem {
   id: string;
@@ -56,31 +47,29 @@ export default function AdminAlerts() {
   const unread = alerts.filter(a => !a.isRead).length;
 
   return (
-    <div style={{ padding: 24, maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>
+        <h1 className="ll-title">
           Uyarılar
         </h1>
       </div>
 
-      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 
       {loading ? (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: AMBER }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: AMBER }}>UYARILAR</span>
+            <h2 className="ll-title">Uyarılar</h2>
           </div>
           <div style={{ padding: '24px 20px' }}>
-            <p style={{ margin: 0, fontSize: 12, color: MUTED, fontFamily: MONO }}>Yükleniyor…</p>
+            <p style={{ margin: 0, fontSize: 13, color: MUTED, fontFamily: MONO }}>Yükleniyor…</p>
           </div>
         </div>
       ) : (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: AMBER }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: AMBER }}>UYARILAR</span>
+            <h2 className="ll-title">Uyarılar</h2>
             {unread > 0 && (
               <span style={{ fontSize: 9, fontWeight: 900, background: AMBER, color: '#000', borderRadius: 99, padding: '1px 6px', fontFamily: MONO }}>
                 {unread}
@@ -111,7 +100,7 @@ export default function AdminAlerts() {
                   }}
                 >
                   <div>
-                    <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: TEXT }}>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>
                       {ALERT_LABELS[a.alertType] ?? a.alertType}
                       {a.user?.profile && ` — ${a.user.profile.firstName ?? ''} ${a.user.profile.lastName ?? ''}`}
                     </p>

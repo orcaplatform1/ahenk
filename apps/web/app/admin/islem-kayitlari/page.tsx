@@ -2,15 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { BG, BORDER, TEXT, MUTED, RED, SANS, MONO } from '@/lib/adminTheme';
 
-const BG      = '#020c1b';
-const CARD    = '#0d1f3c';
-const BORDER  = '#1a3a5c';
-const TEXT    = '#e2e8f0';
-const MUTED   = '#64748b';
-const RED     = '#ef4444';
-const SANS    = 'Inter, system-ui, sans-serif';
-const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 interface AdminRef { id: string; profile: { firstName: string; lastName: string } | null }
 interface LogItem { id: string; action: string; description: string; createdAt: string; admin: AdminRef }
@@ -21,7 +14,7 @@ const fmt = (d: string) => new Date(d).toLocaleString('tr-TR', { timeZone: 'Euro
 
 const input: React.CSSProperties = {
   background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 10px',
-  fontSize: 12, color: TEXT, outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
+  fontSize: 13, color: TEXT, outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
 };
 
 // ADMIN rolündekilerin veri değiştiren işlemleri (SUPERADMIN işlemleri kaydedilmez) — sadece SUPERADMIN görür
@@ -48,9 +41,9 @@ export default function IslemKayitlari() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div style={{ padding: 24, maxWidth: 960, margin: '0 auto', fontFamily: SANS }}>
-      <h1 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 700, color: TEXT }}>İşlem Kayıtları</h1>
-      <p style={{ margin: '0 0 20px', fontSize: 12, color: MUTED }}>Adminlerin yaptığı veri değiştiren işlemler. Kayıtlar silinemez ve değiştirilemez.</p>
+    <div className="adm-page" style={{ maxWidth: 960, margin: '0 auto', fontFamily: SANS }}>
+      <h1 className="ll-title" style={{ margin: '0 0 6px' }}>İşlem Kayıtları</h1>
+      <p style={{ margin: '0 0 20px', fontSize: 13, color: MUTED }}>Adminlerin yaptığı veri değiştiren işlemler. Kayıtlar silinemez ve değiştirilemez.</p>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
         <select value={adminId} onChange={(e) => { setAdminId(e.target.value); setPage(1); }} style={{ ...input, minWidth: 160 }}>
@@ -62,18 +55,18 @@ export default function IslemKayitlari() {
         <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Açıklamada ara…" style={{ ...input, flex: 1, minWidth: 160 }} />
       </div>
 
-      {error && <p style={{ margin: '0 0 12px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 12px', fontSize: 13, color: RED }}>{error}</p>}
 
-      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+      <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
         {!data ? (
-          <p style={{ margin: 0, padding: 16, fontSize: 12, color: MUTED }}>Yükleniyor…</p>
+          <p style={{ margin: 0, padding: 16, fontSize: 13, color: MUTED }}>Yükleniyor…</p>
         ) : data.items.length === 0 ? (
-          <p style={{ margin: 0, padding: 16, fontSize: 12, color: MUTED }}>Kayıt yok</p>
+          <p style={{ margin: 0, padding: 16, fontSize: 13, color: MUTED }}>Kayıt yok</p>
         ) : data.items.map((l, i) => (
           <div key={l.id} style={{ padding: '12px 16px', borderTop: i ? `1px solid ${BORDER}` : 'none', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'baseline' }}>
             <span style={{ fontSize: 11, color: MUTED, fontFamily: MONO, minWidth: 170 }}>{fmt(l.createdAt)}</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: TEXT, minWidth: 120 }}>{nameOf(l.admin)}</span>
-            <span style={{ fontSize: 12, color: TEXT, flex: 1, minWidth: 220 }}>{l.description}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: TEXT, minWidth: 120 }}>{nameOf(l.admin)}</span>
+            <span style={{ fontSize: 13, color: TEXT, flex: 1, minWidth: 220 }}>{l.description}</span>
           </div>
         ))}
       </div>

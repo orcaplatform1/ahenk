@@ -2,16 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { SURFACE, CARD, BORDER, TEXT, MUTED, RED, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
-const SURFACE = '#0a1628';
-const CARD   = '#0d1f3c';
-const BORDER = '#1a3a5c';
-const TEXT   = '#e2e8f0';
-const MUTED  = '#64748b';
-const RED    = '#ef4444';
-const AMBER  = '#f59e0b';
-const SANS   = 'Inter, system-ui, sans-serif';
-const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 interface Report {
   id: string;
@@ -75,29 +67,27 @@ export default function AdminQuality() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>Şikayetler</h1>
+        <h1 className="ll-title">Şikayetler</h1>
       </div>
 
-      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 
       {loading ? (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: RED }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: RED }}>ŞİKAYETLER</span>
+            <h2 className="ll-title">Şikayetler</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 16 }}>
             {[0, 1, 2].map(i => <div key={i} style={{ height: 48, background: SURFACE, borderRadius: 8, opacity: 0.5 }} />)}
           </div>
         </div>
       ) : (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: RED }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: RED }}>ŞİKAYETLER</span>
+            <h2 className="ll-title">Şikayetler</h2>
             <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{reports.length} kayıt</span>
           </div>
 
@@ -120,7 +110,7 @@ export default function AdminQuality() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{r.userName}</span>
                         <span style={{
-                          fontSize: 8, fontWeight: 800, letterSpacing: '0.1em',
+                          ...LABEL,
                           padding: '2px 7px', borderRadius: 99,
                           background: RISK_BG[r.riskLevel], border: `1px solid ${RISK_BORDER[r.riskLevel]}`, color: RISK_COLOR[r.riskLevel],
                         }}>

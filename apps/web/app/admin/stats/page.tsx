@@ -2,20 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import { SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
-const BG     = '#020c1b';
-const SURFACE = '#0a1628';
-const CARD   = '#0d1f3c';
-const BORDER = '#1a3a5c';
-const TEXT   = '#e2e8f0';
-const MUTED  = '#64748b';
-const GREEN  = '#22c55e';
-const RED    = '#ef4444';
-const BLUE   = '#3b82f6';
-const AMBER  = '#f59e0b';
-const CYAN   = '#22d3ee';
-const SANS   = 'Inter, system-ui, sans-serif';
-const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 interface PackageDist {
   masadaPct: number; karsimdaPct: number; icerdePct: number;
@@ -84,12 +72,12 @@ function StatCard({ label, value, sub, prefix = '', fmtFn, accent }: {
   const v = useCountUp(value);
   const color = accent ?? CYAN;
   return (
-    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
         <div style={{ width: 2, height: 12, borderRadius: 1, background: color }} />
-        <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color }}>{label.toUpperCase()}</span>
+        <span style={{ ...LABEL, color }}>{label.toUpperCase()}</span>
       </div>
-      <p style={{ margin: 0, fontSize: 32, fontWeight: 800, color: TEXT, fontFamily: MONO, letterSpacing: '-0.02em' }}>
+      <p style={{ margin: 0, fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>
         {prefix}{fmtFn ? fmtFn(v) : v.toLocaleString('tr-TR')}
       </p>
       {sub && <p style={{ margin: '4px 0 0', fontSize: 11, color: MUTED }}>{sub}</p>}
@@ -101,10 +89,10 @@ function PackageBar({ label, pct, count, color }: { label: string; pct: number; 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 12, color: TEXT }}>{label}</span>
+        <span style={{ fontSize: 13, color: TEXT }}>{label}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO }}>{count} abone</span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: TEXT, fontFamily: MONO }}>%{pct}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: TEXT, fontFamily: MONO }}>%{pct}</span>
         </div>
       </div>
       <div style={{ height: 6, borderRadius: 99, background: SURFACE, overflow: 'hidden' }}>
@@ -154,13 +142,13 @@ export default function AdminStats() {
   const algoSuccessAnim      = useCountUp(data?.algorithmSuccessRate ?? 0);
 
   return (
-    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>İstatistikler</h1>
+        <h1 className="ll-title">İstatistikler</h1>
       </div>
 
-      {error && <p style={{ margin: '0 0 20px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 20px', fontSize: 13, color: RED }}>{error}</p>}
 
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -218,33 +206,31 @@ export default function AdminStats() {
           </div>
 
           {/* Kurulan Masa */}
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, marginBottom: 12 }}>
+          <div className="ll-card" style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
-              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>KURULAN MASA</span>
+              <h2 className="ll-title">Kurulan Masa</h2>
             </div>
-            <p style={{ margin: '0 0 16px', fontSize: 36, fontWeight: 800, color: TEXT, fontFamily: MONO, letterSpacing: '-0.02em' }}>
+            <p style={{ margin: '0 0 16px', fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>
               {totalMeetingsAnim.toLocaleString('tr-TR')}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
               <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 16px' }}>
                 <p style={{ margin: '0 0 4px', fontSize: 10, color: MUTED }}>Grup</p>
-                <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: TEXT, fontFamily: MONO }}>{groupMeetingsAnim.toLocaleString('tr-TR')}</p>
+                <p style={{ margin: 0, fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>{groupMeetingsAnim.toLocaleString('tr-TR')}</p>
               </div>
               <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 16px' }}>
                 <p style={{ margin: '0 0 4px', fontSize: 10, color: MUTED }}>Başbaşa</p>
-                <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: TEXT, fontFamily: MONO }}>{oneOnOneAnim.toLocaleString('tr-TR')}</p>
+                <p style={{ margin: 0, fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>{oneOnOneAnim.toLocaleString('tr-TR')}</p>
               </div>
             </div>
           </div>
 
           {/* Algoritma */}
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20, marginBottom: 12 }}>
+          <div className="ll-card" style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <div style={{ width: 2, height: 12, borderRadius: 1, background: AMBER }} />
-              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: AMBER }}>ALGORİTMA BAŞARISI</span>
+              <h2 className="ll-title">Algoritma Başarısı</h2>
             </div>
-            <p style={{ margin: '0 0 4px', fontSize: 36, fontWeight: 800, color: TEXT, fontFamily: MONO }}>%{algoSuccessAnim}</p>
+            <p style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>%{algoSuccessAnim}</p>
             <p style={{ margin: 0, fontSize: 11, color: MUTED }}>Tamamlanan / toplam masa oranı</p>
           </div>
 
@@ -256,10 +242,9 @@ export default function AdminStats() {
       )}
 
       {/* Şehir tablosu */}
-      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', marginBottom: 12 }}>
+      <div className="ll-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 12 }}>
         <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 2, height: 12, borderRadius: 1, background: BLUE }} />
-          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: BLUE }}>ŞEHİR BAZLI PERFORMANS</span>
+          <h2 className="ll-title">Şehir Bazlı Performans</h2>
         </div>
         {loading ? (
           <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -267,26 +252,26 @@ export default function AdminStats() {
           </div>
         ) : cities.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse' }}>
+            <table className="adm-table" style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
                   {['Şehir', 'Masa', 'Üye', 'Ciro', 'İndirim', 'İade', 'Net', 'KDV', 'Trend'].map(h => (
-                    <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: MUTED }}>{h}</th>
+                    <th key={h} style={{ padding: '8px 14px', textAlign: 'left', ...LABEL, color: MUTED }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {cities.map((row, i) => (
                   <tr key={row.city} style={{ borderBottom: i < cities.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none' }}>
-                    <td style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: TEXT }}>{row.city}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{row.totalTables}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>{row.activeMembers}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>₺{fmtK(row.revenue)}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>₺{fmtK(row.discount)}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: row.refund > 0 ? RED : MUTED }}>₺{fmtK(row.refund)}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: TEXT }}>₺{fmtK(row.net)}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: MUTED }}>₺{fmtK(row.vat)}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: String(row.trend).startsWith('-') ? RED : GREEN }}>
+                    <td data-label="Şehir" style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: TEXT }}>{row.city}</td>
+                    <td data-label="Masa" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>{row.totalTables}</td>
+                    <td data-label="Üye" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>{row.activeMembers}</td>
+                    <td data-label="Ciro" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>₺{fmtK(row.revenue)}</td>
+                    <td data-label="İndirim" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>₺{fmtK(row.discount)}</td>
+                    <td data-label="İade" style={{ padding: '10px 14px', fontSize: 13, color: row.refund > 0 ? RED : MUTED }}>₺{fmtK(row.refund)}</td>
+                    <td data-label="Net" style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: TEXT }}>₺{fmtK(row.net)}</td>
+                    <td data-label="KDV" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>₺{fmtK(row.vat)}</td>
+                    <td data-label="Trend" style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: String(row.trend).startsWith('-') ? RED : GREEN }}>
                       {String(row.trend).startsWith('-') ? '↓ ' : '↑ '}{String(row.trend).replace('-', '')}
                     </td>
                   </tr>
@@ -296,16 +281,15 @@ export default function AdminStats() {
           </div>
         ) : (
           <div style={{ padding: '24px 20px', textAlign: 'center' }}>
-            <p style={{ margin: 0, fontSize: 12, color: MUTED }}>Veri yok</p>
+            <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Veri yok</p>
           </div>
         )}
       </div>
 
       {/* Paket dağılımı */}
-      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20 }}>
+      <div className="ll-card">
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>
-          <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
-          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>PAKET DAĞILIMI</span>
+          <h2 className="ll-title">Paket Dağılımı</h2>
         </div>
         {!loading && pkg ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

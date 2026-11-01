@@ -4,19 +4,9 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { mediaUrl } from '@/lib/venueApi';
 import { AdminSelect } from '@/components/AdminSelect';
+import { SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 // ─── Renk sabitleri ───────────────────────────────────────────────────────────
-const SURFACE = '#0a1628';
-const CARD    = '#0d1f3c';
-const BORDER  = '#1a3a5c';
-const TEXT    = '#e2e8f0';
-const MUTED   = '#64748b';
-const GREEN   = '#22c55e';
-const RED     = '#ef4444';
-const AMBER   = '#f59e0b';
-const CYAN    = '#22d3ee';
-const SANS    = 'Inter, system-ui, sans-serif';
-const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 const STATUS_COLOR: Record<string, string> = {
   PENDING:  AMBER,
@@ -107,23 +97,22 @@ export default function AdminPartnerships() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
 
       {/* Başlık */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>
+        <h1 className="ll-title">
           İş Ortaklığı Başvuruları
         </h1>
       </div>
 
-      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 
       {/* İçerik */}
       {loading ? (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>BAŞVURULAR</span>
+            <h2 className="ll-title">Başvurular</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 16 }}>
             {[0, 1, 2].map(i => (
@@ -132,10 +121,9 @@ export default function AdminPartnerships() {
           </div>
         </div>
       ) : items.length === 0 ? (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>BAŞVURULAR</span>
+            <h2 className="ll-title">Başvurular</h2>
           </div>
           <div style={{ padding: '48px 20px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: MUTED }}>Başvuru yok</p>
@@ -145,11 +133,10 @@ export default function AdminPartnerships() {
           </div>
         </div>
       ) : (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           {/* Kart başlığı */}
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>BAŞVURULAR</span>
+            <h2 className="ll-title">Başvurular</h2>
             <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>
               {items.length} kayıt
             </span>
@@ -171,7 +158,7 @@ export default function AdminPartnerships() {
                         {p.businessName}
                       </span>
                       <span style={{
-                        fontSize: 8, fontWeight: 800, letterSpacing: '0.1em', flexShrink: 0,
+                        ...LABEL, flexShrink: 0,
                         padding: '2px 7px', borderRadius: 99,
                         background: STATUS_BG[p.status] ?? 'transparent',
                         border: `1px solid ${STATUS_BORDER[p.status] ?? BORDER}`,

@@ -2,15 +2,8 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { SURFACE, BORDER, TEXT, MUTED, RED, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
-const SURFACE = '#0a1628';
-const BORDER  = '#1a3a5c';
-const TEXT    = '#e2e8f0';
-const MUTED   = '#64748b';
-const RED     = '#ef4444';
-const AMBER   = '#f59e0b';
-const SANS    = 'Inter, system-ui, sans-serif';
-const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 export interface NoShowReportItem {
   createdAt: string;
@@ -70,7 +63,7 @@ export function AdminNoShowWarnings({
   return (
     <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: RED }}>
+        <span style={{ ...LABEL, color: RED }}>
           GELMEDİ BİLDİRİMLERİ ({reports.length})
         </span>
         <span style={{ fontSize: 10, fontWeight: 700, color: reachedLimit ? RED : AMBER, fontFamily: MONO }}>

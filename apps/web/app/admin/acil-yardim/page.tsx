@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { myRole, myId } from '@/lib/adminRole';
+import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 // ─── Tipler ─────────────────────────────────────────────────────────────────
 
@@ -83,31 +84,12 @@ function haversineM(lat1: number, lng1: number, lat2: number, lng2: number) {
 
 // ─── CSS / stil sabitleri ───────────────────────────────────────────────────
 
-const BG      = '#020c1b';
-const SURFACE = '#0a1628';
-const CARD    = '#0d1f3c';
-const BORDER  = '#1a3a5c';
-const RED     = '#ef4444';
 const RED_DIM = 'rgba(239,68,68,0.15)';
-const BLUE    = '#3b82f6';
 const BLUE_DIM= 'rgba(59,130,246,0.12)';
-const CYAN    = '#22d3ee';
-const TEXT    = '#e2e8f0';
-const MUTED   = '#64748b';
-const GREEN   = '#22c55e';
-const AMBER   = '#f59e0b';
-const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
-const SANS    = 'Inter, system-ui, sans-serif';
 
 const s = {
   page: { minHeight: '100vh', background: BG, color: TEXT, fontFamily: SANS } as React.CSSProperties,
-  topbar: {
-    background: SURFACE, borderBottom: `1px solid ${BORDER}`,
-    padding: '0 24px', height: 56, display: 'flex', alignItems: 'center',
-    justifyContent: 'space-between', position: 'sticky' as const, top: 0, zIndex: 100,
-    boxShadow: '0 2px 20px rgba(0,0,0,0.5)',
-  },
-  main: { padding: '24px', maxWidth: 1400, margin: '0 auto' } as React.CSSProperties,
+  main: { maxWidth: 1400, margin: '0 auto' } as React.CSSProperties,
 };
 
 // ─── Bileşenler ──────────────────────────────────────────────────────────────
@@ -258,7 +240,7 @@ function ProximityAlert({ requester, others }: { requester: ParticipantLoc | nul
       padding: '10px 14px', borderRadius: 8, marginBottom: 12,
       background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.5)',
     }}>
-      <p style={{ margin: 0, fontSize: 12, color: RED, fontWeight: 700, fontFamily: SANS }}>
+      <p style={{ margin: 0, fontSize: 13, color: RED, fontWeight: 700, fontFamily: SANS }}>
         ⚠ YAKINDA KATILIMCI TESPİT EDİLDİ
       </p>
       {close.map(p => {
@@ -279,7 +261,7 @@ function ReportCard({ report, index, tick, onChanged }: { report: SosReport; ind
     return (
       <div style={{ borderRadius: 12, border: `1px solid ${BORDER}`, background: SURFACE, padding: '14px 18px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
         {!report.resolvedAt && <Pulse color={AMBER} />}
-        <span style={{ fontSize: 12, color: TEXT }}>
+        <span style={{ fontSize: 13, color: TEXT }}>
           {report.resolvedAt ? 'Çözülmüş talep' : 'Aktif talep'} — <strong>{adminName(report.claimedBy)}</strong> ilgileniyor
         </span>
         <span style={{ marginLeft: 'auto', fontSize: 9, fontFamily: MONO, color: MUTED }}>{fmtTR(report.createdAt)}</span>
@@ -364,7 +346,7 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const, marginBottom: 4 }}>
             {!report.resolvedAt && (
               <span style={{
-                fontSize: 9, fontWeight: 900, letterSpacing: '0.15em',
+                ...LABEL,
                 padding: '2px 8px', borderRadius: 99,
                 background: 'rgba(239,68,68,0.25)', color: RED,
                 border: '1px solid rgba(239,68,68,0.5)',
@@ -437,7 +419,7 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
           </div>
           {actionError && <p style={{ margin: '0 0 12px', fontSize: 11, color: RED }}>{actionError}</p>}
           {loading && !detail && (
-            <p style={{ color: MUTED, fontSize: 12, fontFamily: MONO }}>Veriler yükleniyor…</p>
+            <p style={{ color: MUTED, fontSize: 13, fontFamily: MONO }}>Veriler yükleniyor…</p>
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -520,7 +502,7 @@ function Section({ title, accent, children, mt }: { title: string; accent: strin
     <div style={{ marginTop: mt ? 16 : 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <div style={{ width: 2, height: 12, borderRadius: 1, background: accent }} />
-        <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: accent, fontFamily: SANS }}>
+        <span style={{ ...LABEL, color: accent }}>
           {title}
         </span>
       </div>
@@ -546,7 +528,7 @@ function PersonRow({ p, email, phone, highlight }: { p: Participant | undefined;
       background: highlight ? RED_DIM : BLUE_DIM,
       border: `1px solid ${highlight ? 'rgba(239,68,68,0.4)' : 'rgba(59,130,246,0.2)'}`,
     }}>
-      <p style={{ margin: '0 0 2px', fontSize: 12, fontWeight: 700, color: highlight ? RED : CYAN }}>
+      <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: highlight ? RED : CYAN }}>
         {p.firstName} {p.lastName}
         {p.age ? <span style={{ fontWeight: 400, color: MUTED, marginLeft: 6, fontSize: 10 }}>{p.age} yaş</span> : null}
         {p.gender ? <span style={{ fontWeight: 400, color: MUTED, marginLeft: 4, fontSize: 10 }}>{GENDER_TR[p.gender] ?? p.gender}</span> : null}
@@ -640,17 +622,15 @@ export default function AcilYardimPage() {
 
       <div style={s.page}>
         {/* Topbar */}
-        <header style={s.topbar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <header className="adm-topbar">
+          <div className="adm-topbar-title">
             <button onClick={() => router.push('/admin')}
               style={{ background: 'none', border: 'none', color: MUTED, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>
               ←
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <Pulse color={active.length > 0 ? RED : GREEN} />
-              <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.18em', color: active.length > 0 ? RED : TEXT }}>
-                ACİL YARDIM MERKEZİ
-              </span>
+              <h1 className="ll-title" style={{ color: active.length > 0 ? RED : TEXT }}>Acil Yardım Merkezi</h1>
             </div>
             {active.length > 0 && (
               <span style={{
@@ -663,8 +643,8 @@ export default function AcilYardimPage() {
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO }}>
+          <div className="adm-topbar-meta">
+            <span style={{ color: MUTED, fontFamily: MONO }}>
               Son: {lastFetch || '—'} · Yenileme: {Math.max(0, left)} sn
             </span>
             <Clock />
@@ -684,8 +664,8 @@ export default function AcilYardimPage() {
           </div>
         </header>
 
-        <main style={s.main}>
-          {fetchError && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{fetchError}</p>}
+        <main className="adm-page" style={s.main}>
+          {fetchError && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{fetchError}</p>}
           {/* İstatistik şeridi */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
             {[
@@ -694,13 +674,11 @@ export default function AcilYardimPage() {
               { label: 'ÇÖZÜMLENDI',    value: resolved.length, color: GREEN },
               { label: 'ÜYE TAKİBİ',   value: active.reduce((a, r) => a + (r.participantSnapshot?.length ?? 0), 0), color: CYAN },
             ].map(stat => (
-              <div key={stat.label} style={{
-                background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px',
-              }}>
-                <p style={{ margin: '0 0 4px', fontSize: 8, fontWeight: 800, letterSpacing: '0.18em', color: MUTED, fontFamily: SANS }}>
+              <div key={stat.label} className="ll-card">
+                <p style={{ margin: '0 0 4px', ...LABEL, color: MUTED }}>
                   {stat.label}
                 </p>
-                <p style={{ margin: 0, fontSize: 28, fontWeight: 900, color: stat.color, fontFamily: MONO }}>
+                <p style={{ margin: 0, fontSize: 20, fontWeight: 600, color: stat.color, fontFamily: MONO }}>
                   {stat.value}
                 </p>
               </div>
@@ -726,7 +704,7 @@ export default function AcilYardimPage() {
                 <div style={{ marginBottom: 32 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                     <Pulse color={RED} />
-                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.18em', color: RED }}>
+                    <span style={{ ...LABEL, color: RED }}>
                       AKTİF TALEPLER — {active.length}
                     </span>
                   </div>
@@ -737,7 +715,7 @@ export default function AcilYardimPage() {
               {resolved.length > 0 && (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.18em', color: MUTED }}>
+                    <span style={{ ...LABEL, color: MUTED }}>
                       ÇÖZÜMLENEN — {resolved.length}
                     </span>
                   </div>

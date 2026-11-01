@@ -2,19 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
-const BG     = '#020c1b';
-const SURFACE = '#0a1628';
-const CARD   = '#0d1f3c';
-const BORDER = '#1a3a5c';
-const TEXT   = '#e2e8f0';
-const MUTED  = '#64748b';
-const GREEN  = '#22c55e';
-const RED    = '#ef4444';
-const AMBER  = '#f59e0b';
 const ORANGE = '#fb923c';
-const SANS   = 'Inter, system-ui, sans-serif';
-const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 async function fetchBlob(path: string): Promise<string | null> {
   try {
@@ -91,7 +81,7 @@ function isValidTckn(v: string): boolean {
 const tcknInputStyle: React.CSSProperties = {
   display: 'block', width: '100%', marginBottom: 10,
   background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-  padding: '7px 12px', fontSize: 12, color: TEXT, letterSpacing: '0.08em',
+  padding: '7px 12px', fontSize: 13, color: TEXT, letterSpacing: '0.08em',
   outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
 };
 
@@ -163,10 +153,10 @@ export default function AdminKyc() {
   const st = STATUS_STYLE[activeTab];
 
   return (
-    <div style={{ padding: 24, maxWidth: 880, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 880, margin: '0 auto', fontFamily: SANS }}>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>
+        <h1 className="ll-title">
           KYC Başvuruları
         </h1>
       </div>
@@ -196,14 +186,13 @@ export default function AdminKyc() {
       </div>
 
       {error && (
-        <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>
+        <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>
       )}
 
       {loading ? (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: st.color }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: st.color }}>KYC BAŞVURULARI</span>
+            <h2 className="ll-title">KYC Başvuruları</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 16 }}>
             {[0, 1, 2].map(i => (
@@ -212,10 +201,9 @@ export default function AdminKyc() {
           </div>
         </div>
       ) : items.length === 0 ? (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: st.color }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: st.color }}>KYC BAŞVURULARI</span>
+            <h2 className="ll-title">KYC Başvuruları</h2>
           </div>
           <div style={{ padding: '40px 20px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: MUTED }}>Bu kategoride başvuru yok</p>
@@ -226,7 +214,7 @@ export default function AdminKyc() {
           {items.map((item) => (
             <div
               key={item.id}
-              style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20 }}
+              className="ll-card"
             >
               {/* Üst satır */}
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
@@ -239,7 +227,7 @@ export default function AdminKyc() {
                   </p>
                 </div>
                 <span style={{
-                  fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', flexShrink: 0,
+                  ...LABEL, flexShrink: 0,
                   padding: '2px 8px', borderRadius: 99,
                   background: st.bg, border: `1px solid ${st.border}`, color: st.color,
                 }}>

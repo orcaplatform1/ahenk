@@ -297,6 +297,45 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 @keyframes ll-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 @keyframes ll-spin { to { transform: rotate(360deg); } }
 @keyframes ll-scroll { to { transform: translateY(-50%); } }
+
+/* ── Yönetim Paneli: ll-card / ll-title yapısı, admin renkleri (lib/adminTheme) ───── */
+.admin-shell { --ll-label: #64748b; --ll-copper: #22d3ee; }
+.admin-shell .ll-card { background: #0d1f3c; border-color: #1a3a5c; }
+.adm-page { padding: 24px; }
+.adm-topbar {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 56px; padding: 8px 24px; background: #0a1628; border-bottom: 1px solid #1a3a5c; box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+}
+.adm-topbar-title, .adm-topbar-meta { display: flex; align-items: center; gap: 16px; font-size: 10px; }
+.adm-topbar-title { min-width: 0; }
+.adm-topbar-title .ll-title { white-space: nowrap; }
+@media (max-width: 640px) {
+  .adm-page { padding: 16px; }
+  .adm-topbar { flex-direction: column; align-items: stretch; gap: 6px; padding: 8px 16px; }
+  .adm-topbar-title { gap: 8px; }
+  .adm-topbar-title .ll-title { font-size: 18px; }
+  .adm-topbar-meta { justify-content: space-between; gap: 8px; white-space: nowrap; }
+  .adm-topbar-meta > * { font-size: 10px !important; }
+  /* Satırlar sığmazsa alta iner; dar sütun ve sabit genişlikler ekranı aşmaz */
+  .admin-shell main { overflow-wrap: anywhere; }
+  .admin-shell main .ll-card [style*="display: flex"], .admin-shell main .adm-page [style*="display: flex"] { flex-wrap: wrap; }
+  .admin-shell main [style*="grid-template-columns: repeat(3"],
+  .admin-shell main [style*="grid-template-columns: repeat(4"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .admin-shell main [style*="grid-template-columns: repeat(2"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .admin-shell main [style*="min-width: 1"], .admin-shell main [style*="min-width: 2"] { min-width: 0 !important; flex-basis: 100%; }
+  .admin-shell main input, .admin-shell main select { max-width: 100%; }
+  /* Tablolar kart satırına döner: başlık data-label'dan gelir */
+  .adm-table { min-width: 0 !important; }
+  .adm-table thead { display: none; }
+  .adm-table, .adm-table tbody, .adm-table tr { display: block; width: 100%; }
+  .adm-table tr { padding: 8px 0; }
+  .adm-table td { display: block; }
+  .adm-table td[data-label] {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 14px !important; max-width: none !important;
+    white-space: normal !important; text-align: right !important;
+  }
+  .adm-table td[data-label]::before { content: attr(data-label); font-family: var(--font-mono), monospace; font-size: 11px; color: #64748b; flex-shrink: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
   .ll-live-dot::after, .ll-blink, .ll-sweep, .ll-dot-new, .ll-bubble-pulse, .ll-feed-track, .ll-fade, .ll-tab-dot.is-scanning, .ll-tab.is-on .ll-tab-spin, .ll-tab.is-on .ll-ring-drift { animation: none; }
   .ll-flash { animation: none; opacity: 0; }

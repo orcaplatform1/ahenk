@@ -2,18 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
-const BG      = '#020c1b';
-const SURFACE = '#0a1628';
-const CARD    = '#0d1f3c';
-const BORDER  = '#1a3a5c';
-const TEXT    = '#e2e8f0';
-const MUTED   = '#64748b';
-const GREEN   = '#22c55e';
-const RED     = '#ef4444';
-const AMBER   = '#f59e0b';
-const SANS    = 'Inter, system-ui, sans-serif';
-const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 type PlanKey = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA';
 interface CurrentPrice {
@@ -76,23 +66,22 @@ export default function AdminFiyatlar() {
     finally { setSaving(false); }
   }
 
-  const cell: React.CSSProperties = { padding: '8px 10px', fontSize: 12, color: TEXT, fontFamily: MONO, whiteSpace: 'nowrap' };
+  const cell: React.CSSProperties = { padding: '8px 10px', fontSize: 13, color: TEXT, fontFamily: MONO, whiteSpace: 'nowrap' };
 
   return (
-    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
-      <h1 style={{ margin: '0 0 14px', fontSize: 20, fontWeight: 700, color: TEXT }}>Paket Fiyatları</h1>
+    <div className="adm-page" style={{ maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
+      <h1 className="ll-title" style={{ margin: '0 0 14px' }}>Paket Fiyatları</h1>
       {/* Hesaplama notu */}
-      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 16px', marginBottom: 20 }}>
+      <div className="ll-card" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <div style={{ width: 2, height: 12, borderRadius: 1, background: AMBER }} />
-          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: AMBER }}>NOT</span>
+          <h2 className="ll-title">Not</h2>
         </div>
-        <p style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.6 }}>
+        <p style={{ margin: 0, fontSize: 13, color: MUTED, lineHeight: 1.6 }}>
           Ham fiyat (KDV hariç) girin. Web fiyatı = ham + %20 KDV. Mobil fiyat = ham + %20 KDV, %15 mağaza komisyonu dahil (÷ 0,85).
           Davet indirimi %10. Tüm fiyatlar tam TL&apos;ye yuvarlanır. Paketler tek seferlik; yeni fiyat sadece bundan sonraki satın almalarda geçerli olur.
         </p>
       </div>
-      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 
       <div style={{ display: 'grid', gap: 12 }}>
         {(data?.current ?? []).map((c) => {
@@ -100,11 +89,11 @@ export default function AdminFiyatlar() {
           const p = net !== null ? compute(net) : null;
           const changed = net !== null && net !== c.netKurus;
           return (
-            <div key={c.plan} style={{ background: CARD, border: `1px solid ${changed ? 'rgba(245,158,11,0.5)' : BORDER}`, borderRadius: 10, padding: 16 }}>
+            <div key={c.plan} className="ll-card" style={{ borderColor: changed ? 'rgba(245,158,11,0.5)' : BORDER }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: TEXT, minWidth: 80 }}>{c.name}</span>
                 <span style={{
-                  fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '2px 8px', borderRadius: 99,
+                  ...LABEL, padding: '2px 8px', borderRadius: 99,
                   background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)',
                 }}>Tek Seferlik</span>
                 <span style={{ fontSize: 10, color: MUTED }}>{PLAN_RIGHTS[c.plan]}</span>
@@ -145,23 +134,23 @@ export default function AdminFiyatlar() {
           onClick={() => setConfirmOpen(true)}
           disabled={changes.length === 0 || invalid}
           style={{
-            padding: '9px 20px', borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: SANS,
+            padding: '9px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: SANS,
             background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: GREEN,
             cursor: changes.length === 0 || invalid ? 'not-allowed' : 'pointer', opacity: changes.length === 0 || invalid ? 0.5 : 1,
           }}
         >
           Kaydet
         </button>
-        {saved && <span style={{ fontSize: 12, color: GREEN }}>Fiyatlar güncellendi</span>}
+        {saved && <span style={{ fontSize: 13, color: GREEN }}>Fiyatlar güncellendi</span>}
       </div>
 
       {/* Onay */}
       {confirmOpen && (
         <div onClick={() => !saving && setConfirmOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 1000 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 20, width: '100%', maxWidth: 640 }}>
+          <div onClick={(e) => e.stopPropagation()} className="ll-card" style={{ width: '100%', maxWidth: 640 }}>
             <p style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: TEXT }}>Fiyat değişikliğini onayla</p>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="adm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>{['Paket', 'Ham', 'Web', 'Web indirimli', 'Mobil'].map((h) => (
                     <th key={h} style={{ ...cell, fontSize: 9, color: MUTED, textAlign: 'left', fontFamily: SANS }}>{h}</th>
@@ -172,11 +161,11 @@ export default function AdminFiyatlar() {
                     const p = compute(net);
                     return (
                       <tr key={c.plan} style={{ borderTop: `1px solid ${BORDER}` }}>
-                        <td style={{ ...cell, fontFamily: SANS }}>{c.name}</td>
-                        <td style={cell}>{tl(c.netKurus)} → {tl(net)}</td>
-                        <td style={cell}>{tl(c.webKurus)} → <strong style={{ color: AMBER }}>{tl(p.web)}</strong></td>
-                        <td style={cell}>{tl(c.webDiscountKurus)} → {tl(p.webDiscount)}</td>
-                        <td style={cell}>{tl(c.mobileKurus)} → {tl(p.mobile)}</td>
+                        <td data-label="Paket" style={{ ...cell, fontFamily: SANS }}>{c.name}</td>
+                        <td data-label="Ham" style={cell}>{tl(c.netKurus)} → {tl(net)}</td>
+                        <td data-label="Web" style={cell}>{tl(c.webKurus)} → <strong style={{ color: AMBER }}>{tl(p.web)}</strong></td>
+                        <td data-label="Web indirimli" style={cell}>{tl(c.webDiscountKurus)} → {tl(p.webDiscount)}</td>
+                        <td data-label="Mobil" style={cell}>{tl(c.mobileKurus)} → {tl(p.mobile)}</td>
                       </tr>
                     );
                   })}
@@ -188,11 +177,11 @@ export default function AdminFiyatlar() {
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button onClick={save} disabled={saving}
-                style={{ flex: 1, padding: '9px', borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: SANS, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: GREEN, cursor: 'pointer', opacity: saving ? 0.5 : 1 }}>
+                style={{ flex: 1, padding: '9px', borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: SANS, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: GREEN, cursor: 'pointer', opacity: saving ? 0.5 : 1 }}>
                 {saving ? 'Kaydediliyor…' : 'Onayla ve uygula'}
               </button>
               <button onClick={() => setConfirmOpen(false)} disabled={saving}
-                style={{ padding: '9px 16px', borderRadius: 8, fontSize: 12, fontFamily: SANS, background: 'transparent', border: `1px solid ${BORDER}`, color: MUTED, cursor: 'pointer' }}>
+                style={{ padding: '9px 16px', borderRadius: 8, fontSize: 13, fontFamily: SANS, background: 'transparent', border: `1px solid ${BORDER}`, color: MUTED, cursor: 'pointer' }}>
                 Vazgeç
               </button>
             </div>
@@ -203,18 +192,18 @@ export default function AdminFiyatlar() {
       {/* Geçmiş */}
       {(data?.history.length ?? 0) > 0 && (
         <div style={{ marginTop: 28 }}>
-          <p style={{ margin: '0 0 8px', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>FİYAT GEÇMİŞİ</p>
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>FİYAT GEÇMİŞİ</p>
+          <div className="ll-card" style={{ padding: 0, overflowX: 'auto' }}>
+            <table className="adm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
                 {data!.history.map((h, i) => (
                   <tr key={i} style={{ borderTop: i ? `1px solid ${BORDER}` : 'none' }}>
-                    <td style={{ ...cell, fontFamily: SANS, color: MUTED }}>{new Date(h.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' })}</td>
-                    <td style={{ ...cell, fontFamily: SANS }}>{PLAN_NAME[h.plan]}</td>
-                    <td style={cell}>ham {tl(h.netKurus)}</td>
-                    <td style={cell}>web {tl(h.webKurus)}</td>
-                    <td style={cell}>mobil {tl(h.mobileKurus)}</td>
-                    <td style={{ ...cell, fontFamily: SANS, color: MUTED }}>{h.createdBy?.profile ? `${h.createdBy.profile.firstName} ${h.createdBy.profile.lastName}` : 'Başlangıç'}</td>
+                    <td data-label="Tarih" style={{ ...cell, fontFamily: SANS, color: MUTED }}>{new Date(h.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' })}</td>
+                    <td data-label="Paket" style={{ ...cell, fontFamily: SANS }}>{PLAN_NAME[h.plan]}</td>
+                    <td data-label="Ham" style={cell}>ham {tl(h.netKurus)}</td>
+                    <td data-label="Web" style={cell}>web {tl(h.webKurus)}</td>
+                    <td data-label="Mobil" style={cell}>mobil {tl(h.mobileKurus)}</td>
+                    <td data-label="Yapan" style={{ ...cell, fontFamily: SANS, color: MUTED }}>{h.createdBy?.profile ? `${h.createdBy.profile.firstName} ${h.createdBy.profile.lastName}` : 'Başlangıç'}</td>
                   </tr>
                 ))}
               </tbody>

@@ -2,18 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { SURFACE, BORDER, TEXT, MUTED, RED, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
-const SURFACE = '#0a1628';
-const CARD    = '#0d1f3c';
-const BORDER  = '#1a3a5c';
-const TEXT    = '#e2e8f0';
-const MUTED   = '#64748b';
-const RED     = '#ef4444';
-const AMBER   = '#f59e0b';
 const MALE_C   = '#4fc3f7';
 const FEMALE_C = '#f48fb1';
-const SANS    = 'Inter, system-ui, sans-serif';
-const MONO    = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 const REFRESH_SEC = 30;
 
@@ -35,10 +27,10 @@ function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('tr-TR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
 }
 
-const sectionTitle: React.CSSProperties = { margin: '0 0 10px', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED };
+const sectionTitle: React.CSSProperties = { margin: '0 0 10px', ...LABEL, color: MUTED };
 const selectStyle: React.CSSProperties = {
   background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '6px 10px',
-  fontSize: 12, color: TEXT, outline: 'none', fontFamily: SANS, flex: 1, minWidth: 0,
+  fontSize: 13, color: TEXT, outline: 'none', fontFamily: SANS, flex: 1, minWidth: 0,
 };
 const btnStyle = (disabled: boolean): React.CSSProperties => ({
   padding: '6px 14px', borderRadius: 8, cursor: disabled ? 'not-allowed' : 'pointer',
@@ -82,9 +74,9 @@ function TableCard({ t, isSuperadmin, onUserClick, onChanged, onError }: {
   const [botOpen, setBotOpen] = useState(false);
   const missing = [t.missing.male ? `${t.missing.male} E` : '', t.missing.female ? `${t.missing.female} K` : ''].filter(Boolean).join(' + ');
   return (
-    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 14 }}>
+    <div className="ll-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: TEXT }}>{t.city ?? 'Şehir yok'} · {fmtDate(t.scheduledAt)}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{t.city ?? 'Şehir yok'} · {fmtDate(t.scheduledAt)}</span>
         <span style={{ fontSize: 11, fontFamily: MONO, color: MUTED }}>
           <span style={{ color: MALE_C }}>{t.males}E</span> · <span style={{ color: FEMALE_C }}>{t.females}K</span> · {t.participants.length}/{t.maxParticipants}
         </span>
@@ -134,7 +126,7 @@ function WaitingRow({ w, isSuperadmin, onUserClick, onChanged, onError }: {
   const [botOpen, setBotOpen] = useState(false);
   const first = w.cycleNo === 1;
   return (
-    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12 }}>
+    <div className="ll-card">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <button
           onClick={() => onUserClick(w.userId)}
@@ -197,33 +189,33 @@ export function AdminOpenTables({ isSuperadmin, onUserClick }: { isSuperadmin: b
         <button onClick={load} style={btnStyle(false)}>Şimdi yenile</button>
       </div>
 
-      {error && <p style={{ margin: '0 0 12px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 12px', fontSize: 13, color: RED }}>{error}</p>}
       {!data ? (
-        <p style={{ fontSize: 12, color: MUTED }}>Yükleniyor…</p>
+        <p style={{ fontSize: 13, color: MUTED }}>Yükleniyor…</p>
       ) : (
         <>
           <p style={sectionTitle}>GRUP MASALARI ({data.group.length})</p>
           <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
-            {data.group.length === 0 && <p style={{ margin: 0, fontSize: 12, color: MUTED }}>Açık grup masası yok</p>}
+            {data.group.length === 0 && <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Açık grup masası yok</p>}
             {data.group.map(t => <TableCard key={t.id} t={t} {...common} />)}
           </div>
 
           <p style={sectionTitle}>BAŞBAŞA MASALARI ({data.oneOnOne.length})</p>
           <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
-            {data.oneOnOne.length === 0 && <p style={{ margin: 0, fontSize: 12, color: MUTED }}>Kurulmuş başbaşa masası yok</p>}
+            {data.oneOnOne.length === 0 && <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Kurulmuş başbaşa masası yok</p>}
             {data.oneOnOne.map(t => <TableCard key={t.id} t={t} {...common} />)}
           </div>
 
           {/* Kankamla: 4 kişi (2E + 2K) — bot eklenmez */}
           <p style={sectionTitle}>KANKAMLA MASALARI ({data.kanka?.length ?? 0})</p>
           <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
-            {(data.kanka?.length ?? 0) === 0 && <p style={{ margin: 0, fontSize: 12, color: MUTED }}>Kurulmuş Kankamla masası yok</p>}
+            {(data.kanka?.length ?? 0) === 0 && <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Kurulmuş Kankamla masası yok</p>}
             {(data.kanka ?? []).map(t => <TableCard key={t.id} t={t} {...common} />)}
           </div>
 
           <p style={sectionTitle}>BAŞBAŞA — EŞİ BEKLEYENLER ({data.waiting.length})</p>
           <div style={{ display: 'grid', gap: 10 }}>
-            {data.waiting.length === 0 && <p style={{ margin: 0, fontSize: 12, color: MUTED }}>Eşi bekleyen yok</p>}
+            {data.waiting.length === 0 && <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Eşi bekleyen yok</p>}
             {data.waiting.map(w => <WaitingRow key={w.userId} w={w} {...common} />)}
           </div>
         </>

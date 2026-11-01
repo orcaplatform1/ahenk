@@ -5,23 +5,13 @@ import { api } from '@/lib/api';
 import { OCCUPATION_SECTORS } from '@/lib/occupations';
 import { AdminSelect } from '@/components/AdminSelect';
 import { AdminDatePicker } from '@/components/AdminDatePicker';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
-const BG     = '#020c1b';
-const SURFACE = '#0a1628';
-const CARD   = '#0d1f3c';
-const BORDER = '#1a3a5c';
-const TEXT   = '#e2e8f0';
-const MUTED  = '#64748b';
-const GREEN  = '#22c55e';
-const RED    = '#ef4444';
-const CYAN   = '#22d3ee';
-const SANS   = 'Inter, system-ui, sans-serif';
-const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', background: BG,
   border: `1px solid ${BORDER}`, borderRadius: 8,
-  padding: '7px 12px', fontSize: 12, color: TEXT,
+  padding: '7px 12px', fontSize: 13, color: TEXT,
   outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
 };
 
@@ -182,10 +172,10 @@ export default function AdminBots() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
 
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>
+        <h1 className="ll-title">
           Bot Yönetimi
         </h1>
         <button
@@ -193,20 +183,19 @@ export default function AdminBots() {
           style={{
             padding: '6px 16px', borderRadius: 8, cursor: 'pointer',
             background: 'rgba(34,211,238,0.1)', border: `1px solid rgba(34,211,238,0.3)`,
-            fontSize: 12, fontWeight: 600, color: CYAN, fontFamily: SANS,
+            fontSize: 13, fontWeight: 600, color: CYAN, fontFamily: SANS,
           }}
         >
           + Bot Ekle
         </button>
       </div>
 
-      {error && <p style={{ margin: '0 0 16px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 
       {loading ? (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>BOTLAR</span>
+            <h2 className="ll-title">Botlar</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 16 }}>
             {[0, 1, 2].map(i => (
@@ -215,10 +204,9 @@ export default function AdminBots() {
           </div>
         </div>
       ) : (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>BOTLAR</span>
+            <h2 className="ll-title">Botlar</h2>
             <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>
               {bots.length} kayıt
             </span>
@@ -248,7 +236,7 @@ export default function AdminBots() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{firstName} {lastName}</span>
                         <span style={{
-                          fontSize: 9, fontWeight: 800, letterSpacing: '0.1em',
+                          ...LABEL,
                           padding: '2px 7px', borderRadius: 99,
                           background: active ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)',
                           border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.25)'}`,
@@ -313,9 +301,9 @@ export default function AdminBots() {
 
       {modal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, width: '100%', maxWidth: 420, maxHeight: '90vh', overflowY: 'auto', padding: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
+          <div className="ll-card" style={{ width: '100%', maxWidth: 420, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: TEXT }}>
+              <h2 className="ll-title">
                 {modal === 'add' ? 'Yeni Bot' : 'Botu Düzenle'}
               </h2>
               <button onClick={() => setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: MUTED, padding: 4 }}>✕</button>
@@ -351,7 +339,7 @@ export default function AdminBots() {
                 <option value="">Şehir</option>
                 {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-              <p style={{ margin: '4px 0 0', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>KİŞİLİK TESTİ SKORLARI (0-100)</p>
+              <p style={{ margin: '4px 0 0', ...LABEL, color: MUTED }}>KİŞİLİK TESTİ SKORLARI (0-100)</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
                 {OCEAN_FIELDS.map(({ key, label }) => (
                   <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 9, color: MUTED }}>
@@ -370,13 +358,13 @@ export default function AdminBots() {
                 style={{
                   width: '100%', padding: '9px', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer',
                   background: 'rgba(34,211,238,0.1)', border: `1px solid rgba(34,211,238,0.3)`,
-                  fontSize: 12, fontWeight: 700, color: CYAN, fontFamily: SANS,
+                  fontSize: 13, fontWeight: 700, color: CYAN, fontFamily: SANS,
                   opacity: saving ? 0.5 : 1,
                 }}
               >
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
-              {modalError && <p style={{ margin: '8px 0 0', fontSize: 12, color: RED }}>{modalError}</p>}
+              {modalError && <p style={{ margin: '8px 0 0', fontSize: 13, color: RED }}>{modalError}</p>}
             </div>
           </div>
         </div>

@@ -1,15 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { BG, BORDER, TEXT, MUTED, BLUE, SANS, LABEL } from '@/lib/adminTheme';
 
 // Admin paneli renklerinde seçim kutusu: telefonun kendi seçim listesi yerine panel içinde açılan liste
-const BG      = '#020c1b';
-const CARD    = '#0d1f3c';
-const BORDER  = '#1a3a5c';
-const TEXT    = '#e2e8f0';
-const MUTED   = '#64748b';
-const BLUE    = '#3b82f6';
-const SANS    = 'Inter, system-ui, sans-serif';
 
 export interface AdminSelectOption { value: string; label: string; group?: string }
 
@@ -33,7 +27,7 @@ export function AdminSelect({ value, onChange, options, placeholder, title, styl
         onClick={() => setOpen(true)}
         style={{
           width: '100%', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-          padding: '7px 12px', fontSize: 12, color: selected ? TEXT : MUTED, textAlign: 'left',
+          padding: '7px 12px', fontSize: 13, color: selected ? TEXT : MUTED, textAlign: 'left',
           fontFamily: SANS, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
           boxSizing: 'border-box', ...style,
         }}
@@ -51,7 +45,7 @@ export function AdminSelect({ value, onChange, options, placeholder, title, styl
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, width: '100%', maxWidth: 360, maxHeight: '75vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: SANS }}
+            className="ll-card" style={{ padding: 0, width: '100%', maxWidth: 360, maxHeight: '75vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: SANS }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${BORDER}` }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{title ?? placeholder}</span>
@@ -64,7 +58,7 @@ export function AdminSelect({ value, onChange, options, placeholder, title, styl
                 return (
                   <div key={o.value || '__empty'}>
                     {showGroup && (
-                      <p style={{ margin: '10px 10px 4px', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED }}>
+                      <p style={{ margin: '10px 10px 4px', ...LABEL, color: MUTED }}>
                         {o.group!.toLocaleUpperCase('tr-TR')}
                       </p>
                     )}

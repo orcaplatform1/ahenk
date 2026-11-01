@@ -1,17 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { BG, BORDER, TEXT, MUTED, BLUE, CYAN, SANS, LABEL } from '@/lib/adminTheme';
 
 // Admin paneli renklerinde doğum tarihi seçici (kayıt sayfasındaki gün / ay / yıl seçimiyle aynı yapı).
 // Yıllar 1965'ten (en eski doğum tarihi 01.01.1965) 18 yaş sınırına kadar.
-const BG     = '#020c1b';
-const CARD   = '#0d1f3c';
-const BORDER = '#1a3a5c';
-const TEXT   = '#e2e8f0';
-const MUTED  = '#64748b';
-const BLUE   = '#3b82f6';
-const CYAN   = '#22d3ee';
-const SANS   = 'Inter, system-ui, sans-serif';
 
 const MIN_YEAR = 1965;
 const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -31,7 +24,7 @@ function Column({ title, options, selected, onSelect }: {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-      <p style={{ textAlign: 'center', fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: MUTED, margin: '0 0 8px' }}>{title}</p>
+      <p style={{ textAlign: 'center', ...LABEL, color: MUTED, margin: '0 0 8px' }}>{title}</p>
       <div ref={listRef} style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }}>
         {options.map(opt => {
           const isSel = opt.value === selected;
@@ -101,7 +94,7 @@ export function AdminDatePicker({ value, onChange, placeholder = 'Doğum tarihi'
         onClick={openPicker}
         style={{
           width: '100%', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-          padding: '7px 12px', fontSize: 12, color: display ? TEXT : MUTED, textAlign: 'left',
+          padding: '7px 12px', fontSize: 13, color: display ? TEXT : MUTED, textAlign: 'left',
           fontFamily: SANS, cursor: 'pointer', boxSizing: 'border-box',
         }}
       >
@@ -115,7 +108,7 @@ export function AdminDatePicker({ value, onChange, placeholder = 'Doğum tarihi'
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, width: '100%', maxWidth: 360, padding: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: SANS }}
+            className="ll-card" style={{ width: '100%', maxWidth: 360, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: SANS }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>Doğum tarihi seç</span>
@@ -132,7 +125,7 @@ export function AdminDatePicker({ value, onChange, placeholder = 'Doğum tarihi'
               style={{
                 width: '100%', marginTop: 14, padding: '9px', borderRadius: 8, cursor: 'pointer',
                 background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.3)',
-                fontSize: 12, fontWeight: 700, color: CYAN, fontFamily: SANS,
+                fontSize: 13, fontWeight: 700, color: CYAN, fontFamily: SANS,
               }}
             >
               Seç

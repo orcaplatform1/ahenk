@@ -2,24 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
-const BG     = '#020c1b';
-const SURFACE = '#0a1628';
-const CARD   = '#0d1f3c';
-const BORDER = '#1a3a5c';
-const TEXT   = '#e2e8f0';
-const MUTED  = '#64748b';
-const GREEN  = '#22c55e';
-const RED    = '#ef4444';
-const AMBER  = '#f59e0b';
-const CYAN   = '#22d3ee';
-const BLUE   = '#3b82f6';
-const SANS   = 'Inter, system-ui, sans-serif';
-const MONO   = '"JetBrains Mono", "Fira Code", "Courier New", monospace';
 
 const inputStyle: React.CSSProperties = {
   background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-  padding: '7px 12px', fontSize: 12, color: TEXT,
+  padding: '7px 12px', fontSize: 13, color: TEXT,
   outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
 };
 
@@ -98,9 +86,9 @@ export default function AdminSubscriptions() {
   const items = data?.items ?? [];
 
   return (
-    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
+    <div className="adm-page" style={{ maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.01em' }}>Abonelikler</h1>
+        <h1 className="ll-title">Abonelikler</h1>
       </div>
 
       {/* Sekmeler */}
@@ -139,12 +127,11 @@ export default function AdminSubscriptions() {
         </select>
       </div>
 
-      {error && <p style={{ margin: '0 0 12px', fontSize: 12, color: RED }}>{error}</p>}
+      {error && <p style={{ margin: '0 0 12px', fontSize: 13, color: RED }}>{error}</p>}
 
-      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+      <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 2, height: 12, borderRadius: 1, background: CYAN }} />
-          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.16em', color: CYAN }}>ABONELİKLER</span>
+          <h2 className="ll-title">Abonelikler</h2>
           {data && <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{data.total} kayıt</span>}
         </div>
 
@@ -174,7 +161,7 @@ export default function AdminSubscriptions() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{name}</span>
                       <span style={{
-                        fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', padding: '1px 7px', borderRadius: 99,
+                        ...LABEL, padding: '1px 7px', borderRadius: 99,
                         background: 'rgba(59,130,246,0.1)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.25)',
                       }}>
                         {PLAN_LABEL[s.plan] ?? s.plan}
@@ -254,12 +241,12 @@ export default function AdminSubscriptions() {
       {/* İptal onayı */}
       {cancelling && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, width: '100%', maxWidth: 400, padding: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
+          <div className="ll-card" style={{ width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: TEXT }}>Aboneliği İptal Et</h2>
+              <h2 className="ll-title">Aboneliği İptal Et</h2>
               <button onClick={() => setCancelling(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: MUTED, padding: 4 }}>✕</button>
             </div>
-            <p style={{ margin: '0 0 12px', fontSize: 12, color: MUTED }}>
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: MUTED }}>
               {cancelling.user.profile ? `${cancelling.user.profile.firstName} ${cancelling.user.profile.lastName}` : cancelling.user.email}
               {' — '}{PLAN_LABEL[cancelling.plan]}. Bu işlem geri alınamaz.
             </p>
@@ -276,7 +263,7 @@ export default function AdminSubscriptions() {
               style={{
                 width: '100%', padding: '9px', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer',
                 background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-                fontSize: 12, fontWeight: 700, color: RED, fontFamily: SANS, opacity: saving ? 0.5 : 1,
+                fontSize: 13, fontWeight: 700, color: RED, fontFamily: SANS, opacity: saving ? 0.5 : 1,
               }}
             >
               {saving ? 'İptal ediliyor…' : 'İptal Et'}
