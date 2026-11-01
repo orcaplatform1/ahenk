@@ -197,7 +197,7 @@ export class LiveLayerService {
 
     const events: { key: string; at: Date; place: string; kind: "FULL" | "MATCH" | "OPEN" | "VENUE"; value: number | null }[] = [];
     for (const m of meetings) {
-      const place = topDistrict(m.participants.map((p) => p.user.profile?.district)) ?? city.name;
+      const place = shownDistrict(city.name, topDistrict(m.participants.map((p) => p.user.profile?.district))) ?? city.name;
       const at = new Date(Math.max(m.createdAt.getTime(), ...m.participants.map((p) => p.createdAt.getTime())));
       const key = opaque(m.id, start);
       if (m.type === MeetingType.ONE_ON_ONE) {
