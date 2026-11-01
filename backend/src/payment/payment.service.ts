@@ -4,6 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  InternalServerErrorException,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -18,7 +19,7 @@ import { GROUP_RIGHTS, KANKA_RIGHTS, ONE_ON_ONE_PLANS, PACKAGE_CYCLES, groupPart
 import { activeKankaLink } from "../kanka/kanka-links";
 import { decryptIdentityNumber } from "../kyc/identity-number";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
-import { Prisma, SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType, ReferralStatus, PaymentDiscountType, UserStatus, MeetingType, MeetingStatus } from "@prisma/client";
+import { AdminAlertType, Prisma, SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType, ReferralStatus, PaymentDiscountType, UserStatus, MeetingType, MeetingStatus } from "@prisma/client";
 
 type Db = PrismaService | Prisma.TransactionClient;
 
@@ -32,6 +33,9 @@ const REFUND_PLANS: Record<RefundType, SubscriptionPlan[]> = {
 const REFUND_SUB_SELECT = {
   id: true, plan: true, createdAt: true, usedAt: true, groupCycles: true, oneOnOneCycles: true, kankaCycles: true,
 } as const;
+// Aynı kısmı kapsayan iade türleri birlikte işlenemez (İçerde'de FULL hem grup hem başbaşa kısmını kapsar)
+const refundsOverlap = (a: RefundType, b: RefundType): boolean =>
+  a === b || (a === RefundType.FULL && b !== RefundType.KANKA) || (b === RefundType.FULL && a !== RefundType.KANKA);
 type RefundSub = { id: string; plan: SubscriptionPlan; createdAt: Date; usedAt: Date | null; groupCycles: number; oneOnOneCycles: number; kankaCycles: number };
 
 
@@ -96,7 +100,7 @@ export class PaymentService {
           plan: { in: REFUND_PLANS[type] },
           status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.EXPIRED] },
           payment: { status: PaymentStatus.SUCCESS },
-          refundRequests: { none: { status: "PENDING" } },
+          refundRequests: { none: { status: { in: ["PENDING", "PROCESSING"] } } },
         },
         select: REFUND_SUB_SELECT,
       });
@@ -389,7 +393,7 @@ export class PaymentService {
     if (!sub) throw lastError;
 
     const existing = await this.prisma.refundRequest.findFirst({
-      where: { userId, subscriptionId: sub.id, status: "PENDING" },
+      where: { userId, subscriptionId: sub.id, status: { in: ["PENDING", "PROCESSING"] } },
     });
     if (existing) throw new ConflictException("Bu paket için bekleyen bir iade talebi zaten var.");
 
@@ -503,18 +507,79 @@ export class PaymentService {
     await this.assertRefundAllowed(refund.userId, sub, refund.refundType);
 
     const amountKurus = PaymentService.refundAmountKurus(sub.plan, refund.refundType, payment.amountKurus);
+
+    // iyzico'dan önce talep kilitlenir: paket satırı FOR UPDATE ile tutulur, durum koşullu geçer, benzersiz anahtar
+    // (paket + iade türü) veritabanında aynı iadenin ikinci kez işlenmesini engeller. Eşzamanlı onaylardan biri kazanır.
+    await this.claimRefund(refund.id, sub.id, refund.refundType);
+
     const result = await this.iyzico.refundPayment({
       paymentId: payment.iyzicoPaymentId,
       amountKurus,
       conversationId: `ahenk-refund-${refund.id}`,
       ip,
     });
+    if (result.outcomeUnknown) {
+      // Para iade edilmiş olabilir: talep PROCESSING kalır, tekrar gönderilmez, elle kontrol gerekir
+      this.logger.error(`iyzico iade sonucu bilinmiyor: refund=${refund.id}`);
+      await this.paymentAlert(refund.userId);
+      throw new ServiceUnavailableException("iyzico yanıt vermedi. İade işleniyor durumunda bırakıldı; iyzico panelinden kontrol edin.");
+    }
     if (result.status !== "success") {
+      // iyzico kesin olarak reddetti: para çıkmadı, talep yeniden denenebilir
+      await this.prisma.refundRequest.updateMany({
+        where: { id: refund.id, status: "PROCESSING" },
+        data: { status: "PENDING", idempotencyKey: null },
+      });
       throw new BadRequestException(`iyzico iadesi başarısız: ${result.errorMessage ?? "bilinmeyen hata"}`);
     }
 
     // Tek kısımlı paket ya da İçerde'nin tamamı → paket iptal; İçerde'nin tek kısmı → sadece o kısım kapanır
     const partial = sub.plan === SubscriptionPlan.ICERDE && refund.refundType !== RefundType.FULL;
+    try {
+      await this.finishRefund(refund, sub.id, partial, amountKurus, result.paymentId ?? null, adminNote);
+    } catch (err) {
+      // Para iade edildi, kayıt yazılamadı: talep PROCESSING kalır (yeniden gönderilmez)
+      this.logger.error(`iade yapıldı, kayıt yazılamadı: refund=${refund.id} ${err}`);
+      await this.paymentAlert(refund.userId);
+      throw new InternalServerErrorException("İade yapıldı ancak kayıt güncellenemedi. Talep işleniyor durumunda bırakıldı.");
+    }
+
+    return { ok: true, refundedKurus: amountKurus };
+  }
+
+  private async claimRefund(refundId: string, subscriptionId: string, refundType: RefundType) {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Subscription" WHERE id = ${subscriptionId} FOR UPDATE`;
+        const others = await tx.refundRequest.findMany({
+          where: { subscriptionId, id: { not: refundId }, status: { in: ["PROCESSING", "APPROVED"] } },
+          select: { refundType: true },
+        });
+        if (others.some((o) => refundsOverlap(o.refundType, refundType))) {
+          throw new ConflictException("Bu paket için iade zaten işleniyor ya da yapıldı.");
+        }
+        const { count } = await tx.refundRequest.updateMany({
+          where: { id: refundId, status: "PENDING" },
+          data: { status: "PROCESSING", idempotencyKey: `refund:${subscriptionId}:${refundType}` },
+        });
+        if (count === 0) throw new ConflictException("Bu iade talebi zaten işleniyor ya da sonuçlandırılmış.");
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        throw new ConflictException("Bu paket için iade zaten işleniyor ya da yapıldı.");
+      }
+      throw err;
+    }
+  }
+
+  private async finishRefund(
+    refund: { id: string; refundType: RefundType; adminNote: string | null },
+    subscriptionId: string,
+    partial: boolean,
+    amountKurus: number,
+    iyzicoRefundId: string | null,
+    adminNote?: string,
+  ) {
     await this.prisma.$transaction(async (tx) => {
       await tx.refundRequest.update({
         where: { id: refund.id },
@@ -522,24 +587,35 @@ export class PaymentService {
           status: "APPROVED",
           adminNote: adminNote ?? refund.adminNote,
           refundedKurus: amountKurus,
-          iyzicoRefundId: result.paymentId ?? null,
+          iyzicoRefundId,
         },
       });
       if (!partial) {
         await tx.subscription.update({
-          where: { id: sub.id },
+          where: { id: subscriptionId },
           data: { status: SubscriptionStatus.CANCELLED, cancelNote: "İade" },
         });
       } else {
         await tx.subscription.update({
-          where: { id: sub.id },
+          where: { id: subscriptionId },
           data: refund.refundType === RefundType.GROUP ? { groupRights: 0 } : { oneOnOneCycles: PACKAGE_CYCLES },
         });
-        await syncPackageStatus(tx, sub.id);
+        await syncPackageStatus(tx, subscriptionId);
       }
     });
+  }
 
-    return { ok: true, refundedKurus: amountKurus };
+  // Elle kontrol gerektiren ödeme / iade durumu: okunmamış uyarı varsa yenisi açılmaz
+  private async paymentAlert(userId: string) {
+    try {
+      const existing = await this.prisma.adminAlert.findFirst({
+        where: { userId, alertType: AdminAlertType.PAYMENT_ISSUE, isRead: false },
+        select: { id: true },
+      });
+      if (!existing) await this.prisma.adminAlert.create({ data: { userId, alertType: AdminAlertType.PAYMENT_ISSUE } });
+    } catch (err) {
+      this.logger.error(`Ödeme uyarısı oluşturulamadı: user=${userId} ${err}`);
+    }
   }
 
   // ─── İndirim hakları ──────────────────────────────────────────────────────

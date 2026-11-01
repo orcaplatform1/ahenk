@@ -18,6 +18,8 @@ export type IyzicoRefundResult = {
   price?: number;
   errorMessage?: string;
   errorCode?: string;
+  // Bağlantı hatası: iade iyzico'ya ulaşmış olabilir, sonuç bilinmiyor; yeniden gönderilmez
+  outcomeUnknown?: boolean;
 };
 
 export type IyzicoCallbackResult = {
@@ -167,7 +169,7 @@ export class IyzicoService {
         (err: Error | null, result: IyzicoRefundResult) => {
           if (err) {
             this.logger.error("iyzico iade hatası:", err);
-            resolve({ status: "failure", errorMessage: err.message });
+            resolve({ status: "failure", errorMessage: err.message, outcomeUnknown: true });
           } else {
             resolve(result);
           }

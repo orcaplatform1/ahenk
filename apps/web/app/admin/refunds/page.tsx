@@ -13,13 +13,13 @@ interface RefundItem {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  PENDING: AMBER, APPROVED: GREEN, REJECTED: RED,
+  PENDING: AMBER, PROCESSING: AMBER, APPROVED: GREEN, REJECTED: RED,
 };
 const STATUS_BG: Record<string, string> = {
-  PENDING: 'rgba(245,158,11,0.12)', APPROVED: 'rgba(34,197,94,0.12)', REJECTED: 'rgba(239,68,68,0.12)',
+  PENDING: 'rgba(245,158,11,0.12)', PROCESSING: 'rgba(245,158,11,0.12)', APPROVED: 'rgba(34,197,94,0.12)', REJECTED: 'rgba(239,68,68,0.12)',
 };
 const STATUS_BORDER: Record<string, string> = {
-  PENDING: 'rgba(245,158,11,0.35)', APPROVED: 'rgba(34,197,94,0.3)', REJECTED: 'rgba(239,68,68,0.3)',
+  PENDING: 'rgba(245,158,11,0.35)', PROCESSING: 'rgba(245,158,11,0.35)', APPROVED: 'rgba(34,197,94,0.3)', REJECTED: 'rgba(239,68,68,0.3)',
 };
 
 function RefundRow({ refund, onUpdate }: { refund: RefundItem; onUpdate: () => void }) {

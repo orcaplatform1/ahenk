@@ -858,6 +858,7 @@ enum AdminAlertType {
   MISSED_KANKA_CYCLES
   SOS_ALERT
   BOT_NOT_FOUND
+  PAYMENT_ISSUE
 }
 
 // ─────────────────────────────────────────────
@@ -875,6 +876,7 @@ model RefundRequest {
   adminNote      String?      @db.Text
   refundedKurus  Int? // onayda iyzico'dan iade edilen tutar
   iyzicoRefundId String? // iyzico iade yanıtındaki paymentId
+  idempotencyKey String?      @unique // paket + iade türü başına tek iyzico iadesi (onay anında yazılır)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -891,6 +893,7 @@ enum RefundType {
 
 enum RefundStatus {
   PENDING
+  PROCESSING // iyzico'ya gönderildi / sonuç bekleniyor; yeniden gönderilmez
   APPROVED
   REJECTED
 }

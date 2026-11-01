@@ -1663,13 +1663,15 @@ export class AdminService {
     if (status === RefundStatus.APPROVED) {
       return this.payment.approveRefund(id, ip, adminNote);
     }
+    // PROCESSING yalnızca iade akışının iç durumudur; dışarıdan atanamaz
+    if (status !== RefundStatus.REJECTED) throw new BadRequestException("Geçersiz iade durumu.");
     const refund = await this.prisma.refundRequest.findUnique({ where: { id } });
     if (!refund) throw new NotFoundException("İade talebi bulunamadı.");
-    if (refund.status !== RefundStatus.PENDING) throw new BadRequestException("Bu iade talebi zaten sonuçlandırılmış.");
-    await this.prisma.refundRequest.update({
-      where: { id },
+    const { count } = await this.prisma.refundRequest.updateMany({
+      where: { id, status: RefundStatus.PENDING },
       data: { status, adminNote: adminNote ?? refund.adminNote },
     });
+    if (count === 0) throw new BadRequestException("Bu iade talebi zaten sonuçlandırılmış.");
     return { ok: true };
   }
 
