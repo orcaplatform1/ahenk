@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { DM_Serif_Display, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import CookieBanner from '@/components/CookieBanner';
+import SosOpenReport from '@/components/SosOpenReport';
 import SiteFooter from '@/components/SiteFooter';
 import NavbarWrapper from '@/components/NavbarWrapper';
 
@@ -80,6 +81,7 @@ export default function RootLayout({
         <NavbarWrapper />
         {children}
         <SiteFooter />
+        <SosOpenReport />
         <CookieBanner />
       </body>
     </html>

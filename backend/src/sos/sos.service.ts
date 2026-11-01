@@ -129,14 +129,11 @@ export class SosService {
 
   // ─── Canlı konum güncelle ─────────────────────────────────────────────────
 
-  // Talep eden: talep çözülene ya da acil yardım süresi bitene kadar canlı konum; sonra { active: false } → takip durur
+  // Talep eden: talep sonuçlanana kadar saat sınırı olmadan canlı konum; sonra { active: false } → takip durur
   async updateLocation(reportId: string, userId: string, lat: number, lng: number, accuracy?: number) {
-    const report = await this.prisma.sosReport.findUnique({
-      where: { id: reportId },
-      include: { meeting: { select: { scheduledAt: true } } },
-    });
+    const report = await this.prisma.sosReport.findUnique({ where: { id: reportId } });
     if (!report || report.userId !== userId) throw new ForbiddenException();
-    if (report.resolvedAt || !report.meeting || !this.inSosWindow(report.meeting.scheduledAt)) return { active: false };
+    if (report.resolvedAt) return { active: false };
 
     await this.prisma.sosLocationUpdate.create({
       data: { reportId, lat, lng, accuracy: accuracy ?? null },
@@ -156,10 +153,19 @@ export class SosService {
     const report = await this.prisma.sosReport.findFirst({
       where: { userId, meetingId, resolvedAt: null },
       orderBy: { createdAt: "desc" },
-      include: { meeting: { select: { scheduledAt: true } } },
+      select: { id: true },
     });
-    if (!report || !report.meeting || !this.inSosWindow(report.meeting.scheduledAt)) return { reportId: null };
-    return { reportId: report.id };
+    return { reportId: report?.id ?? null };
+  }
+
+  // Kullanıcının açık talebi (masa kartı kalksa da): site genelindeki talep ekranı buradan beslenir
+  async myAnyOpenReport(userId: string) {
+    const report = await this.prisma.sosReport.findFirst({
+      where: { userId, resolvedAt: null },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+    return { reportId: report?.id ?? null };
   }
 
   // ─── Admin: görünürlük ────────────────────────────────────────────────────

@@ -60,6 +60,12 @@ export class SosController {
   }
 
   // Sayfa yenilenince açık talep geri yüklenir
+  @Get("my-open-report")
+  myAnyOpenReport(@Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.sos.myAnyOpenReport(user.id);
+  }
+
   @Get("meetings/:meetingId/my-report")
   myOpenReport(@Param("meetingId") meetingId: string, @Req() req: Request) {
     const user = req.user as { id: string };

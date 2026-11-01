@@ -662,7 +662,6 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
   const [selectedThreats, setSelectedThreats] = useState<string[]>([]);
   const [locError, setLocError] = useState<'off' | 'denied' | null>(null);
   const [sosError, setSosError] = useState('');
-  const liveWatchRef = useRef<number | null>(null);
 
   function toggleThreat(t: string) {
     setSelectedThreats(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
@@ -686,7 +685,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
           setSosReportId(data.reportId);
           setSosDone(true);
           setShowSos(false);
-          startLiveLocation(data.reportId);
+          window.dispatchEvent(new Event('ahenk-sos-opened'));
           return;
         }
         if (res.status === 429) { setSosError('Çok fazla deneme yapıldı. Lütfen birkaç dakika sonra tekrar dene.'); return; }
@@ -715,34 +714,14 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
     );
   }
 
-  // Talep eden: talep çözülene / acil yardım süresi bitene kadar canlı konum (backend active:false dönünce durur)
-  function startLiveLocation(reportId: string) {
-    if (!navigator.geolocation || !authHeaders || liveWatchRef.current !== null) return;
-    const headers = authHeaders;
-    liveWatchRef.current = navigator.geolocation.watchPosition(
-      async (pos) => {
-        try {
-          const res = await fetch(`${apiBase}/sos/reports/${reportId}/location`, {
-            method: 'POST', headers, credentials: 'include',
-            body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
-          });
-          const data = await res.json().catch(() => null) as { active?: boolean } | null;
-          if (data?.active === false && liveWatchRef.current !== null) {
-            navigator.geolocation.clearWatch(liveWatchRef.current);
-            liveWatchRef.current = null;
-          }
-        } catch { /* sessiz */ }
-      },
-      () => {},
-      { enableHighAccuracy: true, maximumAge: 10000 },
-    );
-  }
-
-  useEffect(() => () => {
-    if (liveWatchRef.current !== null) navigator.geolocation?.clearWatch(liveWatchRef.current);
+  // Canlı konum ve kart dışı talep ekranı site genelindeki SosOpenReport'ta; talep kapanınca kart da normale döner
+  useEffect(() => {
+    const onClosed = () => { setSosDone(false); setSosReportId(null); };
+    window.addEventListener('ahenk-sos-closed', onClosed);
+    return () => window.removeEventListener('ahenk-sos-closed', onClosed);
   }, []);
 
-  // Sayfa yenilenince açık talep geri yüklenir ve canlı konum devam eder
+  // Sayfa yenilenince açık talep kartta geri yüklenir
   useEffect(() => {
     if (!sosVisible || !authHeaders) return;
     fetch(`${apiBase}/sos/meetings/${masa.id}/my-report`, { headers: authHeaders, credentials: 'include' })
@@ -751,7 +730,6 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
         if (!d?.reportId) return;
         setSosReportId(d.reportId);
         setSosDone(true);
-        startLiveLocation(d.reportId);
       })
       .catch(() => {});
   }, [sosVisible, apiBase, masa.id]); // eslint-disable-line react-hooks/exhaustive-deps
