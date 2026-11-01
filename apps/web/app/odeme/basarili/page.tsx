@@ -3,9 +3,14 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { trackConfirmedPurchase } from '@/lib/analytics';
 
 export default function OdemeBasariliPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    void trackConfirmedPurchase();
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => router.push('/dashboard'), 3000);

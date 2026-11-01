@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
+import { applyConsent } from '@/lib/analytics';
 
 type Prefs = { analitik: boolean; pazarlama: boolean };
 
@@ -53,16 +54,19 @@ export default function CookieBanner() {
 
   function acceptAll() {
     try { localStorage.setItem('cookie-consent', 'all'); } catch { /* */ }
+    applyConsent();
     setVisible(false);
   }
 
   function reject() {
     try { localStorage.setItem('cookie-consent', 'essential'); } catch { /* */ }
+    applyConsent();
     setVisible(false);
   }
 
   function savePrefs() {
     try { localStorage.setItem('cookie-consent', JSON.stringify(prefs)); } catch { /* */ }
+    applyConsent();
     setVisible(false);
   }
 

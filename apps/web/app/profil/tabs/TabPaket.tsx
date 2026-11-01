@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePlanPrices, type PlanKeyName } from '@/components/PlanPrice';
 import { api } from '@/lib/api';
+import { rememberPendingPurchase } from '@/lib/analytics';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
@@ -33,6 +34,7 @@ interface InitCheckoutResponse {
   checkoutFormContent: string;
   tokenExpireTime: number;
   token: string;
+  plan: { amountKurus: number };
 }
 
 const PLANS = [
@@ -164,6 +166,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
         platform: 'WEB',
         ...(useDiscount ? { useDiscount } : {}),
       });
+      rememberPendingPurchase(plan, PLANS.find((p) => p.key === plan)?.name ?? plan, data.plan.amountKurus);
       // iyzico formu bu div'e yerleşir
       let container = document.getElementById('iyzipay-checkout-form');
       if (!container) {

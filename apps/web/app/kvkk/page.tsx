@@ -203,6 +203,10 @@ const sections = [
           <strong style={{ color: '#f4f1ec' }}>Cloudflare Inc. (ABD)</strong>
           : kimlik belgeleri ve liveness videosu R2 private bucket'ta saklanır. Bu aktarım AB Standart Sözleşme Maddeleri (SCCs) ve Cloudflare'in veri işleme sözleşmesi kapsamında gerçekleştirilir.
         </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Google Analytics ve Meta Pixel</strong>
+          : bu araçlar aracılığıyla çerez verisi işlenir. Bu veri yurt dışındaki sunuculara aktarılabilir. Aktarım açık rızanıza dayanır ve rızanızı çerez tercihlerinden her zaman geri alabilirsiniz.
+        </p>
         <div
           style={{
             padding: '1rem 1.25rem',

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
+import { trackOceanTestComplete } from '@/lib/analytics';
 
 interface Question {
   id: string;
@@ -80,6 +81,7 @@ export default function TestPage() {
       await api.post('/test/submit', {
         answers: questions.map(q => ({ questionId: q.id, score: answers[q.id] ?? 3 })),
       });
+      trackOceanTestComplete();
       setDone(true);
     } catch (e) {
       setError((e as Error).message);

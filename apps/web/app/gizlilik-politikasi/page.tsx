@@ -182,6 +182,10 @@ const sections = [
           <strong style={{ color: '#f4f1ec' }}>Cloudflare Inc. (ABD)</strong>
           : R2 private bucket'ta kimlik belgeleri ve liveness videosu şifrelenmiş olarak saklanır. Standart Sözleşme Maddeleri (SCCs) kapsamında aktarılır.
         </p>
+        <p>
+          <strong style={{ color: '#f4f1ec' }}>Google Analytics ve Meta Pixel</strong>
+          : bu araçlar aracılığıyla çerez verisi işlenir. Bu veri yurt dışındaki sunuculara aktarılabilir. Aktarım açık rızanıza dayanır ve rızanızı çerez tercihlerinden her zaman geri alabilirsiniz.
+        </p>
 
         <div
           style={{
@@ -233,7 +237,7 @@ const sections = [
     title: 'Çerezler',
     content: (
       <p>
-        Ahenk, platform işlevselliği için zorunlu çerezler kullanır. Bu çerezler oturum yönetimi ve güvenlik amacıyla kullanılır; üçüncü taraf izleme çerezleri kullanılmaz. Detaylı bilgi için{' '}
+        Ahenk, platform işlevselliği için zorunlu çerezler kullanır. Bu çerezler oturum yönetimi ve güvenlik amacıyla kullanılır. Onay vermeniz halinde Google Analytics ve Meta Pixel çerezleri de çalışır. Detaylı bilgi için{' '}
         <Link href="/cerez-politikasi" style={{ color: '#c0392b' }}>Çerez Politikamızı</Link>
         {' '}inceleyiniz.
       </p>

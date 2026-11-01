@@ -10,11 +10,11 @@ function buildCsp(nonce: string): string {
   const devEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : '';
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://*.iyzipay.com${devEval}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://*.iyzipay.com https://www.googletagmanager.com https://connect.facebook.net${devEval}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.iyzipay.com",
     "font-src 'self' https://fonts.gstatic.com https://*.iyzipay.com",
-    "img-src 'self' data: blob: https:",
-    `connect-src 'self' ${API_URL} https://ahenk.tr https://*.iyzipay.com`,
+    "img-src 'self' data: blob: https: https://www.google-analytics.com https://www.googletagmanager.com https://www.facebook.com",
+    `connect-src 'self' ${API_URL} https://ahenk.tr https://*.iyzipay.com https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://www.facebook.com`,
     "frame-src https://*.iyzipay.com",
     "media-src 'self' blob:",
     "frame-ancestors 'none'",

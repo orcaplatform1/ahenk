@@ -68,17 +68,44 @@ const sections = [
           </div>
         </div>
 
-        {/* Analitik ve pazarlama */}
+        {/* Analitik */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
             <span style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f' }}>
-              Analitik ve Pazarlama Çerezleri
+              Analitik Çerezler
+            </span>
+            <span style={{ fontSize: 11, padding: '0.15rem 0.6rem', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', color: '#a39c93', fontWeight: 600 }}>
+              Onaya Bağlı
             </span>
           </div>
-          <p style={{ color: '#8f887f', fontSize: 13 }}>
-            Ahenk şu anda analitik veya pazarlama çerezi kullanmaz.
+          <div style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
+            <span style={{ fontFamily: 'monospace', fontSize: 13, color: '#aaa', display: 'block', marginBottom: '0.2rem' }}>Google Analytics 4: _ga ve _ga_ ile başlayan çerezler</span>
+            <span style={{ color: '#a39c93', fontSize: 13 }}>Sağlayıcı: Google LLC. Amaç: ziyaret ve trafik kaynağı istatistiği. Süre: 2 yıl.</span>
+          </div>
+          <p style={{ marginTop: '0.6rem', color: '#8f887f', fontSize: 13 }}>
+            Onay verilmeden Google'a çerez içermeyen anonim sinyaller gönderilir; bu sinyallerle kimlik belirlenmez.
           </p>
         </div>
+
+        {/* Pazarlama */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f' }}>
+              Pazarlama Çerezleri
+            </span>
+            <span style={{ fontSize: 11, padding: '0.15rem 0.6rem', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', color: '#a39c93', fontWeight: 600 }}>
+              Onaya Bağlı
+            </span>
+          </div>
+          <div style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
+            <span style={{ fontFamily: 'monospace', fontSize: 13, color: '#aaa', display: 'block', marginBottom: '0.2rem' }}>Meta Pixel: _fbp</span>
+            <span style={{ color: '#a39c93', fontSize: 13 }}>Sağlayıcı: Meta Platforms. Amaç: reklam ölçümü ve yeniden hedefleme. Süre: 3 ay. Yalnızca onayla çalışır.</span>
+          </div>
+        </div>
+
+        <p style={{ color: '#8f887f', fontSize: 13 }}>
+          Onayınızı banner'daki Tercihler bölümünden her zaman değiştirebilirsiniz. Banner'ı yeniden açmak için bu sayfanın sonundaki Çerez Tercihlerimi Güncelle düğmesini kullanabilirsiniz.
+        </p>
       </div>
     ),
   },
@@ -119,6 +146,10 @@ const sections = [
             <span style={{ color: '#c0392b' }}>›</span>
             Zorunlu çerezler kapatıldığında platforma giriş yapılamaz ve hizmetlerden yararlanılamaz.
           </li>
+          <li style={{ display: 'flex', gap: '0.6rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b' }}>›</span>
+            Analitik ve pazarlama çerezleri kapatıldığında platform işlevselliği etkilenmez.
+          </li>
         </ul>
       </>
     ),
@@ -154,7 +185,7 @@ const sections = [
     title: 'KVKK Kapsamında Çerezler',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Zorunlu çerezler <strong style={{ color: '#f4f1ec' }}>meşru menfaat</strong> hukuki dayanağıyla işlenmektedir. Detaylı bilgi için{' '}
+        Zorunlu çerezler <strong style={{ color: '#f4f1ec' }}>meşru menfaat</strong> hukuki dayanağıyla, analitik ve pazarlama çerezleri ise <strong style={{ color: '#f4f1ec' }}>açık rıza</strong> hukuki dayanağıyla işlenmektedir. Detaylı bilgi için{' '}
         <Link href="/kvkk" style={{ color: '#c0392b' }}>KVKK Aydınlatma Metnimizi</Link>
         {' '}inceleyiniz.
       </p>

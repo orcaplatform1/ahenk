@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { OCCUPATION_SECTORS } from '@/lib/occupations';
 import { api } from '@/lib/api';
+import { trackOceanTestComplete, trackSignUp } from '@/lib/analytics';
 import OtpInput from '@/components/ui/OtpInput';
 import SiteSelect from '@/components/SiteSelect';
 import { gColor } from '@ahenk/ui';
@@ -245,6 +246,7 @@ function KayitPageInner() {
       await api.post('/test/submit', {
         answers: testQuestions.map(q => ({ questionId: q.id, score: testAnswers[q.id] ?? 3 })),
       });
+      trackOceanTestComplete();
       setStepDir(1); setStep(3);
     } catch (e) { setError((e as Error).message); }
     finally { setTestSubmitting(false); }
@@ -276,6 +278,7 @@ function KayitPageInner() {
       if (!skip && form.contactNumbers.length > 0) {
         await api.post('/contact-blocks/sync', { hashedPhones: form.contactNumbers });
       }
+      trackSignUp();
       setShowSuccess(true);
       setTimeout(() => router.push('/dashboard'), 2000);
     } catch (e) { setError((e as Error).message); }

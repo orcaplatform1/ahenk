@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { DM_Serif_Display, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+import Analytics from '@/components/Analytics';
 import CookieBanner from '@/components/CookieBanner';
 import SosOpenReport from '@/components/SosOpenReport';
 import SiteFooter from '@/components/SiteFooter';
@@ -73,9 +75,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const nonce = headers().get('x-nonce') ?? undefined;
+
   return (
     <html lang="tr" className={`${dmSerifDisplay.variable} ${inter.variable} ${jetBrainsMono.variable}`}>
       <body className="font-sans antialiased" style={{}}>
+        <Analytics nonce={nonce} />
         <NavbarWrapper />
         <PageOffset>{children}</PageOffset>
         <SiteFooter />
