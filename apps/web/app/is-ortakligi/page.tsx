@@ -5,6 +5,7 @@ import { motion, useInView } from 'framer-motion';
 import Link from 'next/link';
 import SiteSelect from '@/components/SiteSelect';
 import { FormLabel, PasswordInput, TextareaField, TextField, VerifiedPhoneField } from '@/components/PublicFormFields';
+import { LineIcon } from '@/components/LineIcon';
 import { API_PREFIX, api } from '@/lib/api';
 import { readError } from '@/lib/venueApi';
 
@@ -27,12 +28,6 @@ function useCountUp(target: number, duration = 1600, start = false) {
 }
 
 /* ── Styles helpers ───────────────────────────────────────────── */
-const glassCard: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.025)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: '20px',
-};
-
 const btnGrad: React.CSSProperties = {
   background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)',
   border: 'none',
@@ -61,6 +56,11 @@ const MAX_PHOTOS = 3;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const MAPS_URL = /^https:\/\/((www\.)?google\.(com|com\.tr)\/maps|maps\.google\.(com|com\.tr)|maps\.app\.goo\.gl|goo\.gl\/maps|share\.google)(\/|\?|$)/i;
 
+// "İstanbul, Ankara veya İzmir"
+function cityList(names: string[]) {
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} veya ${names[names.length - 1]}` : names[0] ?? 'Aktif';
+}
+
 /* ── InView wrapper ───────────────────────────────────────────── */
 function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef(null);
@@ -83,8 +83,6 @@ export default function IsOrtakligiPage() {
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { once: true });
 
-  const citiesCount = useCountUp(5, 1400, heroInView);
-  const meetingsCount = useCountUp(50, 1800, heroInView);
 
   const [form, setForm] = useState({
     businessName: '', contactName: '', email: '', phone: '',
@@ -93,6 +91,7 @@ export default function IsOrtakligiPage() {
   });
   const [districts, setDistricts] = useState<Record<string, string[]>>({});
   const [cities, setCities] = useState<string[]>([]);
+  const citiesCount = useCountUp(cities.length, 1400, heroInView);
   const districtOptions = districts[form.city] ?? [];
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -171,7 +170,7 @@ export default function IsOrtakligiPage() {
 
         <div ref={heroRef} style={{ position: 'relative', maxWidth: '720px', margin: '0 auto' }}>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-            <span style={{ display: 'inline-block', padding: '0.3rem 1rem', background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: '#ff6b6b', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
+            <span style={{ display: 'inline-block', padding: '0.3rem 1rem', background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: '9999px', fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.1em', color: '#ff6b6b', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
               Mekan Ortaklığı
             </span>
           </motion.div>
@@ -193,7 +192,7 @@ export default function IsOrtakligiPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.22 }}
-            style={{ color: '#888', fontSize: 'clamp(1rem, 2vw, 1.15rem)', lineHeight: 1.7, marginBottom: '2.5rem', maxWidth: '520px', margin: '0 auto 2.5rem' }}
+            style={{ color: '#a39c93', fontSize: 'clamp(1rem, 2vw, 1.15rem)', lineHeight: 1.7, marginBottom: '2.5rem', maxWidth: '520px', margin: '0 auto 2.5rem' }}
           >
             Ahenk kullanıcıları şehrin en seçkin mekânlarında buluşur. Sizin mekânınız bu deneyimin parçası olabilir.
           </motion.p>
@@ -203,19 +202,12 @@ export default function IsOrtakligiPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.34 }}
-            style={{ display: 'flex', justifyContent: 'center', gap: '1.25rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}
+            style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}
           >
-            {[
-              { value: citiesCount, suffix: '', label: 'Aktif Şehir' },
-              { value: meetingsCount, suffix: '+', label: 'Haftalık Buluşma' },
-            ].map((stat) => (
-              <div key={stat.label} style={{ ...glassCard, padding: '1.5rem 2.5rem', minWidth: '140px' }}>
-                <p style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(2.2rem, 5vw, 3rem)', fontWeight: 400, background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', lineHeight: 1, marginBottom: '0.4rem' }}>
-                  {stat.value}{stat.suffix}
-                </p>
-                <p style={{ color: '#666', fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{stat.label}</p>
-              </div>
-            ))}
+            <div className="ll-card" style={{ minWidth: '140px' }}>
+              <p className="ll-mono" style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#f4f1ec' }}>{citiesCount}</p>
+              <p style={{ margin: '4px 0 0', color: '#a39c93', fontSize: 11 }}>Aktif Şehir</p>
+            </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
@@ -228,24 +220,38 @@ export default function IsOrtakligiPage() {
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 1.5rem' }}>
 
+        {/* ── Öne çıkan alıntı ─────────────────────────────── */}
+        <FadeIn>
+          <section style={{ marginBottom: 'clamp(4rem,8vw,6rem)' }}>
+            <blockquote className="ll-card" style={{ margin: 0, borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
+              <p className="ll-serif" style={{ margin: '0 0 1rem', fontSize: 'clamp(1.1rem, 2.4vw, 1.35rem)', lineHeight: 1.5, color: '#f4f1ec' }}>
+                {`"Yemeksepeti'ni biliyorsunuz — başlangıçta tek tek lokanta lokanta gezip 'sizi internete taşıyalım' diyorlardı. Kimse ciddiye almadı, bazıları interneti buzdolabı gibi büyük bir şey sandı. Şimdi o platformda olmayan restoran müşteri kaybediyor diye panikliyor.`}
+              </p>
+              <p className="ll-serif" style={{ margin: 0, fontSize: 'clamp(1.1rem, 2.4vw, 1.35rem)', lineHeight: 1.5, color: '#f4f1ec' }}>
+                {`Ahenk de aynı yolun başında. Fark şu: biz sizi para almadan sisteme alıyoruz, masa doldurmaya başlıyoruz. İleride 'keşke ilk günden girseydik' diyenlerin arasında olmak istemezsiniz."`}
+              </p>
+            </blockquote>
+          </section>
+        </FadeIn>
+
         {/* ── Neden Ahenk Ortağı? ───────────────────────────── */}
         <FadeIn>
           <section style={{ marginBottom: 'clamp(4rem,8vw,6rem)' }}>
-            <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 400, textAlign: 'center', marginBottom: '2.5rem' }}>
+            <h2 className="ll-title" style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
               Neden Ahenk Ortağı?
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.25rem' }}>
               {[
-                { icon: '📅', title: 'Garantili Doluluk', desc: 'Her hafta önceden planlanmış, kesinleşmiş rezervasyonlar. Boş masa bırakmayın.' },
-                { icon: '🛡️', title: 'Seçkin Müşteri Kitlesi', desc: 'OCEAN kişilik testinden geçmiş, kimlik doğrulamalı, sosyal deneyime değer veren kullanıcılar. Kaliteli müşteri, kaliteli deneyim.' },
-                { icon: '⭐', title: 'Sıfır Pazarlama Maliyeti', desc: 'Reklam vermenize gerek yok. Ahenk kullanıcıları mekânınıza gelir, siz sadece en iyi deneyimi sunarsınız.' },
-                { icon: '🪑', title: 'Özel Masa Düzeni', desc: 'Grup masaları 4-8 kişi, başbaşa masalar 2 kişi. Önceden bilirsiniz, hazırlıklı olursunuz.' },
+                { icon: 'calendar' as const, title: 'Garantili Doluluk', desc: 'Her hafta önceden planlanmış, kesinleşmiş rezervasyonlar. Boş masa bırakmayın.' },
+                { icon: 'shield' as const, title: 'Seçkin Müşteri Kitlesi', desc: 'OCEAN kişilik testinden geçmiş, kimlik doğrulamalı, sosyal deneyime değer veren kullanıcılar. Kaliteli müşteri, kaliteli deneyim.' },
+                { icon: 'star' as const, title: 'Sıfır Pazarlama Maliyeti', desc: 'Reklam vermenize gerek yok. Ahenk kullanıcıları mekânınıza gelir, siz sadece en iyi deneyimi sunarsınız.' },
+                { icon: 'table' as const, title: 'Özel Masa Düzeni', desc: 'Grup masaları 4-8 kişi, başbaşa masalar 2 kişi. Önceden bilirsiniz, hazırlıklı olursunuz.' },
               ].map((card, i) => (
                 <FadeIn key={card.title} delay={i * 0.08}>
-                  <div style={{ ...glassCard, padding: '1.75rem', height: '100%' }}>
-                    <span style={{ fontSize: '1.6rem', display: 'block', marginBottom: '0.9rem' }}>{card.icon}</span>
-                    <h3 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: '1.05rem', fontWeight: 400, color: '#f5f5f5', marginBottom: '0.6rem' }}>{card.title}</h3>
-                    <p style={{ color: '#888', fontSize: '0.85rem', lineHeight: 1.65 }}>{card.desc}</p>
+                  <div className="ll-card" style={{ height: '100%' }}>
+                    <span style={{ display: 'block', marginBottom: '0.9rem' }}><LineIcon name={card.icon} /></span>
+                    <h3 className="ll-title" style={{ marginBottom: '0.6rem' }}>{card.title}</h3>
+                    <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.65 }}>{card.desc}</p>
                   </div>
                 </FadeIn>
               ))}
@@ -256,7 +262,7 @@ export default function IsOrtakligiPage() {
         {/* ── Nasıl Çalışır? ────────────────────────────────── */}
         <FadeIn>
           <section style={{ marginBottom: 'clamp(4rem,8vw,6rem)' }}>
-            <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 400, textAlign: 'center', marginBottom: '2.5rem' }}>
+            <h2 className="ll-title" style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
               Nasıl Çalışır?
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0', position: 'relative' }}>
@@ -272,8 +278,8 @@ export default function IsOrtakligiPage() {
                   <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: '1.3rem', color: '#fff', marginBottom: '1rem', flexShrink: 0, position: 'relative', zIndex: 1 }}>
                     {step.n}
                   </div>
-                  <h3 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: '1.1rem', fontWeight: 400, color: '#f5f5f5', marginBottom: '0.5rem' }}>{step.title}</h3>
-                  <p style={{ color: '#888', fontSize: '0.85rem', lineHeight: 1.6, maxWidth: '200px' }}>{step.desc}</p>
+                  <h3 className="ll-title" style={{ marginBottom: '0.5rem' }}>{step.title}</h3>
+                  <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.6, maxWidth: '200px' }}>{step.desc}</p>
                 </div>
               ))}
             </div>
@@ -284,19 +290,19 @@ export default function IsOrtakligiPage() {
         <FadeIn>
           <section style={{ marginBottom: 'clamp(4rem,8vw,6rem)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-              <div style={{ ...glassCard, padding: '2rem' }}>
-                <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.4rem, 3vw, 1.8rem)', fontWeight: 400, color: '#f5f5f5', marginBottom: '1.25rem' }}>
+              <div className="ll-card">
+                <h2 className="ll-title" style={{ marginBottom: '1.25rem' }}>
                   Kimler Ortak Olabilir?
                 </h2>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                   {[
                     'Restoranlar, kafeler ve bistro işletmeleri',
-                    'İstanbul, Ankara, İzmir, Antalya, Aydın, Muğla veya Balıkesir (Ayvalık/Akçay) illerinde faaliyet gösterenler',
+                    `${cityList(cities)} illerinde faaliyet gösterenler`,
                     'En az 2 ayrı masa veya özel alan tahsis edebilecek kapasitede olanlar',
                     'Müşteri deneyimine önem veren, kaliteli hizmet sunan işletmeler',
                     'Alkollü içecek servisi yapabilen veya yapmayan mekânlar başvurabilir — her ikisi de değerlendirmeye alınır',
                   ].map((item) => (
-                    <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+                    <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
                       <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
                     </li>
                   ))}
@@ -304,15 +310,15 @@ export default function IsOrtakligiPage() {
               </div>
 
               {/* Ortaklık Modeli */}
-              <div style={{ ...glassCard, padding: '2rem' }}>
-                <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.4rem, 3vw, 1.8rem)', fontWeight: 400, color: '#f5f5f5', marginBottom: '1.25rem' }}>
+              <div className="ll-card">
+                <h2 className="ll-title" style={{ marginBottom: '1.25rem' }}>
                   Ortaklık Modeli
                 </h2>
-                <p style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: 1.75, marginBottom: '1rem' }}>
-                  Ahenk, mekan ortaklarıyla <strong style={{ color: '#f5f5f5' }}>gelir paylaşımı</strong> veya <strong style={{ color: '#f5f5f5' }}>sabit rezervasyon ücreti</strong> modeliyle çalışır. Detaylar mekânın kapasitesine, şehrine ve haftalık rezervasyon yoğunluğuna göre belirlenir. Tüm koşullar ortaklık görüşmesinde şeffaf biçimde paylaşılır.
+                <p style={{ color: '#c9c2b8', fontSize: 13, lineHeight: 1.75, marginBottom: '1rem' }}>
+                  Ahenk&apos;e katılım şu an tamamen ücretsizdir. İlerleyen dönemde yalnızca aylık abonelik modeliyle çalışılacaktır; gelir paylaşımı veya rezervasyon başına ücret alınmaz.
                 </p>
-                <div style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '10px' }}>
-                  <p style={{ color: '#888', fontSize: '0.82rem', lineHeight: 1.6 }}>
+                <div style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
+                  <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.6 }}>
                     Ahenk kullanıcıları yemek ve içecek bedelini doğrudan mekâna öder — Ahenk sadece organizasyon ve eşleştirme hizmeti sunar.
                   </p>
                 </div>
@@ -324,21 +330,22 @@ export default function IsOrtakligiPage() {
         {/* ── Erken Ortaklık ────────────────────────────────── */}
         <FadeIn>
           <section style={{ marginBottom: 'clamp(4rem,8vw,6rem)' }}>
-            <div style={{ ...glassCard, padding: '2.5rem', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+            <div className="ll-card" style={{ textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)', width: 500, height: 300, background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
-              <span style={{ display: 'inline-block', padding: '0.3rem 0.9rem', background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: '9999px', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', color: '#ff6b6b', textTransform: 'uppercase' as const, marginBottom: '1rem' }}>
+              <span style={{ display: 'inline-block', padding: '0.3rem 0.9rem', background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: '9999px', fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.1em', color: '#ff6b6b', textTransform: 'uppercase' as const, marginBottom: '1rem' }}>
                 Erken Ortak Avantajları
               </span>
-              <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 400, marginBottom: '1.5rem' }}>
+              <h2 className="ll-title" style={{ marginBottom: '1.5rem' }}>
                 İlk ortaklarımızdan olmak ister misiniz?
               </h2>
               <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
-                {[
-                  '🗺️  Öncelikli bölge hakları',
-                  '📉  Düşük komisyon oranı',
-                  '🔥  Platform içi öne çıkarılma',
-                ].map((item) => (
-                  <div key={item} style={{ padding: '0.65rem 1.2rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '9999px', color: '#ccc', fontSize: '0.85rem' }}>
+                {([
+                  ['map', 'Öncelikli bölge hakları'],
+                  ['gift', 'Ücretsiz katılım'],
+                  ['spark', 'Platform içi öne çıkarılma'],
+                ] as const).map(([icon, item]) => (
+                  <div key={item} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0.65rem 1.2rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '9999px', color: '#c9c2b8', fontSize: 13 }}>
+                    <LineIcon name={icon} size={18} />
                     {item}
                   </div>
                 ))}
@@ -350,7 +357,7 @@ export default function IsOrtakligiPage() {
         {/* ── Başvuru Formu ─────────────────────────────────── */}
         <FadeIn>
           <section ref={formRef} style={{ marginBottom: 'clamp(4rem,8vw,6rem)' }}>
-            <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 400, textAlign: 'center', marginBottom: '0.5rem' }}>
+            <h2 className="ll-title" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
               Ortaklık Başvurusu
             </h2>
             <p style={{ textAlign: 'center', color: '#a39c93', fontSize: 13, marginBottom: '2.5rem' }}>
@@ -372,9 +379,9 @@ export default function IsOrtakligiPage() {
                   >
                     ✓
                   </motion.div>
-                  <h3 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: '1.4rem', fontWeight: 400, marginBottom: '0.75rem' }}>Başvurunuz alındı!</h3>
-                  <p style={{ color: '#888', fontSize: '0.9rem', lineHeight: 1.65 }}>
-                    Ekibimiz <strong style={{ color: '#f5f5f5' }}>3 iş günü</strong> içinde başvurunuzu inceleyecek. Onaylandığında WhatsApp ile bilgilendirileceksiniz; ardından mekân paneline giriş yapabilirsiniz.
+                  <h3 className="ll-title" style={{ marginBottom: '0.75rem' }}>Başvurunuz alındı!</h3>
+                  <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.65 }}>
+                    Ekibimiz <strong style={{ color: '#f4f1ec' }}>3 iş günü</strong> içinde başvurunuzu inceleyecek. Onaylandığında WhatsApp ile bilgilendirileceksiniz; ardından mekân paneline giriş yapabilirsiniz.
                   </p>
                 </motion.div>
               ) : (
@@ -452,7 +459,7 @@ export default function IsOrtakligiPage() {
                   <TextField label="Website veya Instagram linki (opsiyonel)" value={form.websiteOrSocial} onChange={(v) => setForm(f => ({ ...f, websiteOrSocial: v }))} placeholder="https://" />
                   <TextField label="Personel Referans Kodu (opsiyonel)" value={form.referenceCode} onChange={(v) => setForm(f => ({ ...f, referenceCode: v }))} />
 
-                  {error && <p style={{ color: '#ff6b6b', fontSize: '0.85rem', textAlign: 'center' }}>{error}</p>}
+                  {error && <p style={{ color: '#ff6b6b', fontSize: 13, textAlign: 'center' }}>{error}</p>}
 
                   <button
                     type="submit"
@@ -471,11 +478,11 @@ export default function IsOrtakligiPage() {
       {/* ── Footer ────────────────────────────────────────────── */}
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.10)', padding: '2.5rem 1.5rem' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-          <p style={{ color: '#e8e8e8', fontSize: '0.85rem', fontWeight: 500 }}>© 2026 Ahenk. Tüm hakları saklıdır.</p>
-          <p style={{ color: '#888', fontSize: '0.8rem' }}>
+          <p style={{ color: '#f4f1ec', fontSize: 13, fontWeight: 500 }}>© 2026 Ahenk. Tüm hakları saklıdır.</p>
+          <p style={{ color: '#a39c93', fontSize: 13 }}>
             Ahenk bir{' '}
             <a href="https://ahenk.co" style={{ textDecoration: 'none' }}>
-              <span style={{ color: '#f5f5f5', fontWeight: 600 }}>Traders</span>
+              <span style={{ color: '#f4f1ec', fontWeight: 600 }}>Traders</span>
               <span style={{ color: '#1e90ff', fontWeight: 700 }}>.TR</span>
             </a>
             <span style={{ marginLeft: '3px' }}>🇹🇷</span>{' '}ticari markasıdır.
@@ -488,7 +495,7 @@ export default function IsOrtakligiPage() {
               { label: 'KVKK', href: '/kvkk' },
               { label: 'Site Haritası', href: '/site-haritasi' },
             ].map((link) => (
-              <Link key={link.href} href={link.href} style={{ color: '#555', fontSize: '0.78rem', textDecoration: 'none' }}>{link.label}</Link>
+              <Link key={link.href} href={link.href} style={{ color: '#8f887f', fontSize: 11, textDecoration: 'none' }}>{link.label}</Link>
             ))}
           </div>
         </div>
@@ -498,7 +505,7 @@ export default function IsOrtakligiPage() {
 }
 
 /* ── Form field bileşenleri ───────────────────────────────────── */
-const fieldStyle: React.CSSProperties = { position: 'relative', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: 13, width: '100%', boxSizing: 'border-box' };
+const fieldStyle: React.CSSProperties = { position: 'relative', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '0.7rem 1rem', color: '#f4f1ec', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 
 function SelectField({ label, value, options, onChange, required }: {
   label: string; value: string; options: (string | { value: string; label: string })[]; onChange: (v: string) => void; required?: boolean;

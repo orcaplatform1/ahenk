@@ -6,6 +6,7 @@ import Link from 'next/link';
 import SiteSelect from '@/components/SiteSelect';
 import { DateField } from '@/components/BirthDateField';
 import { FormLabel, TextareaField, TextField, VerifiedPhoneField } from '@/components/PublicFormFields';
+import { LineIcon } from '@/components/LineIcon';
 import { API_PREFIX, api } from '@/lib/api';
 import { readError } from '@/lib/venueApi';
 
@@ -28,12 +29,6 @@ function useCountUp(target: number, duration = 1600, start = false) {
 }
 
 /* ── Shared styles ────────────────────────────────────────────── */
-const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.025)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: '20px',
-};
-
 const btnGrad: React.CSSProperties = {
   background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)',
   border: 'none',
@@ -69,9 +64,6 @@ export default function KariyerPage() {
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { once: true });
 
-  const cities = useCountUp(5, 1400, heroInView);
-  const meetings = useCountUp(50, 1800, heroInView);
-  const target = useCountUp(20, 2000, heroInView);
 
   const [form, setForm] = useState({
     fullName: '', email: '', phone: '', education: '', workType: '', salaryExpectation: '', birthDate: '',
@@ -82,6 +74,7 @@ export default function KariyerPage() {
   const [languages, setLanguages] = useState<Record<string, number>>({}); // Dil → seviye (0: seçilmedi)
   const [cv, setCv] = useState<File | null>(null);
   const [cityNames, setCityNames] = useState<string[]>([]);
+  const cities = useCountUp(cityNames.length, 1400, heroInView);
   const [districts, setDistricts] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
@@ -146,7 +139,7 @@ export default function KariyerPage() {
 
         <div ref={heroRef} style={{ position: 'relative', maxWidth: '780px', margin: '0 auto' }}>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-            <span style={{ display: 'inline-block', padding: '0.3rem 1rem', background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: '#ff6b6b', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
+            <span style={{ display: 'inline-block', padding: '0.3rem 1rem', background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: '9999px', fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.1em', color: '#ff6b6b', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
               Şimdi Başvur
             </span>
           </motion.div>
@@ -161,25 +154,17 @@ export default function KariyerPage() {
           </motion.h1>
 
           <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
-            style={{ color: '#888', fontSize: 'clamp(0.95rem, 2vw, 1.1rem)', lineHeight: 1.75, maxWidth: '540px', margin: '0 auto 2.5rem' }}>
+            style={{ color: '#a39c93', fontSize: 'clamp(0.95rem, 2vw, 1.1rem)', lineHeight: 1.75, maxWidth: '540px', margin: '0 auto 2.5rem' }}>
             Ahenk, insanları anlamlı buluşmalarla bir araya getiriyor. Bu deneyimi sahada yönetecek, şehrin nabzını tutacak birisini arıyoruz.
           </motion.p>
 
           {/* İstatistikler */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}
-            style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
-            {[
-              { value: cities, suffix: '', label: 'Aktif Şehir' },
-              { value: meetings, suffix: '+', label: 'Haftalık Buluşma' },
-              { value: target, suffix: '', label: 'Hedef 2025 Şehir' },
-            ].map((s) => (
-              <div key={s.label} style={{ ...glass, padding: '1.25rem 1.75rem', minWidth: '120px' }}>
-                <p style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', fontWeight: 400, background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', lineHeight: 1, marginBottom: '0.35rem' }}>
-                  {s.value}{s.suffix}
-                </p>
-                <p style={{ color: '#666', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{s.label}</p>
-              </div>
-            ))}
+            style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
+            <div className="ll-card" style={{ minWidth: '120px' }}>
+              <p className="ll-mono" style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#f4f1ec' }}>{cities}</p>
+              <p style={{ margin: '4px 0 0', color: '#a39c93', fontSize: 11 }}>Aktif Şehir</p>
+            </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42 }}>
@@ -195,17 +180,17 @@ export default function KariyerPage() {
         {/* ── Pozisyon ────────────────────────────────────────── */}
         <FadeIn>
           <section style={{ marginBottom: 'clamp(3.5rem,7vw,5.5rem)' }}>
-            <div style={{ ...glass, padding: 'clamp(1.75rem, 4vw, 2.5rem)' }}>
-              <span style={{ display: 'inline-block', padding: '0.25rem 0.85rem', background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: '9999px', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', color: '#ff6b6b', textTransform: 'uppercase' as const, marginBottom: '1rem' }}>
+            <div className="ll-card">
+              <span style={{ display: 'inline-block', padding: '0.25rem 0.85rem', background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: '9999px', fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', color: '#ff6b6b', textTransform: 'uppercase' as const, marginBottom: '1rem' }}>
                 Açık Pozisyon
               </span>
-              <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 400, background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', marginBottom: '0.6rem', lineHeight: 1.2 }}>
+              <h2 className="ll-title" style={{ marginBottom: '0.6rem' }}>
                 Şehir Operasyon Yetkilisi
               </h2>
-              <p style={{ color: '#666', fontSize: '0.85rem', marginBottom: '1.5rem', letterSpacing: '0.02em' }}>
-                Tam zamanlı · Uzaktan + Saha · İstanbul / Ankara / İzmir
+              <p style={{ color: '#8f887f', fontSize: 13, marginBottom: '1.5rem', letterSpacing: '0.02em' }}>
+                Tam zamanlı · Uzaktan + Saha · {cityNames.join(' / ')}
               </p>
-              <p style={{ color: '#ccc', fontSize: '0.92rem', lineHeight: 1.8, maxWidth: '660px' }}>
+              <p style={{ color: '#c9c2b8', fontSize: 13, lineHeight: 1.8, maxWidth: '660px' }}>
                 Ahenk'in şehirdeki yüzü sensin. Kullanıcı deneyiminin sahada kusursuz işlemesini sağlar, mekan ortaklarıyla ilişkileri yönetir ve platformun büyümesine doğrudan katkı sunarsın. Binlerce insanın sosyal hayatını şekillendiren bir yapının içinde, sahada gerçek bir etki yaratırsın.
               </p>
             </div>
@@ -215,10 +200,10 @@ export default function KariyerPage() {
         {/* ── Ne Yapacaksın ───────────────────────────────────── */}
         <FadeIn>
           <section style={{ marginBottom: 'clamp(3.5rem,7vw,5.5rem)' }}>
-            <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 400, marginBottom: '1.5rem' }}>
+            <h2 className="ll-title" style={{ marginBottom: '1.5rem' }}>
               Ne Yapacaksın?
             </h2>
-            <div style={{ ...glass, padding: '2rem' }}>
+            <div className="ll-card">
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.75rem' }}>
                 {[
                   'Şehrindeki mekan ortaklarıyla düzenli iletişim kurarak buluşma lokasyonlarını koordine etmek.',
@@ -229,7 +214,7 @@ export default function KariyerPage() {
                   'Şehir bazlı haftalık rapor hazırlamak ve merkeze iletmek.',
                   'Sosyal medya içerik fikirleri üretmek, lokal topluluk büyümesine katkı sunmak.',
                 ].map((item) => (
-                  <li key={item} style={{ display: 'flex', gap: '0.75rem', color: '#ccc', fontSize: '0.88rem', lineHeight: 1.65 }}>
+                  <li key={item} style={{ display: 'flex', gap: '0.75rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)', flexShrink: 0, marginTop: '0.45rem' }} />
                     {item}
                   </li>
@@ -242,21 +227,21 @@ export default function KariyerPage() {
         {/* ── Ahenk Sana Ne Katar? ────────────────────────────── */}
         <FadeIn>
           <section style={{ marginBottom: 'clamp(3.5rem,7vw,5.5rem)' }}>
-            <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 400, marginBottom: '1.5rem' }}>
+            <h2 className="ll-title" style={{ marginBottom: '1.5rem' }}>
               Ahenk Sana Ne Katar?
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
               {[
-                { icon: '⭐', title: 'Gerçek Sorumluluk', desc: 'İlk günden itibaren bir şehrin tüm operasyonunu yönetirsin. Staj değil, gerçek yetki.' },
-                { icon: '📈', title: 'Büyüyen Bir Yapının İçinde', desc: 'Ahenk büyüdükçe sen büyürsün. İlk ekip üyesi olmak, ilerleyen dönemde bölge yöneticiliği kapısını açar.' },
-                { icon: '📍', title: 'Esnek Çalışma', desc: 'Ofise bağlı değilsin. Şehrin her yerinden çalışabilir, kendi programını yönetebilirsin.' },
-                { icon: '❤️', title: 'Anlamlı İş', desc: 'Her hafta onlarca insanın hayatına değer katıyorsun. Rakamların arkasında gerçek hikayeler var.' },
+                { icon: 'star' as const, title: 'Gerçek Sorumluluk', desc: 'İlk günden itibaren bir şehrin tüm operasyonunu yönetirsin. Staj değil, gerçek yetki.' },
+                { icon: 'chart' as const, title: 'Büyüyen Bir Yapının İçinde', desc: 'Ahenk büyüdükçe sen büyürsün. İlk ekip üyesi olmak, ilerleyen dönemde bölge yöneticiliği kapısını açar.' },
+                { icon: 'pin' as const, title: 'Esnek Çalışma', desc: 'Ofise bağlı değilsin. Şehrin her yerinden çalışabilir, kendi programını yönetebilirsin.' },
+                { icon: 'heart' as const, title: 'Anlamlı İş', desc: 'Her hafta onlarca insanın hayatına değer katıyorsun. Rakamların arkasında gerçek hikayeler var.' },
               ].map((card, i) => (
                 <FadeIn key={card.title} delay={i * 0.07}>
-                  <div style={{ ...glass, padding: '1.6rem', height: '100%' }}>
-                    <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '0.85rem' }}>{card.icon}</span>
-                    <h3 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: '1rem', fontWeight: 400, color: '#f5f5f5', marginBottom: '0.5rem' }}>{card.title}</h3>
-                    <p style={{ color: '#888', fontSize: '0.83rem', lineHeight: 1.65 }}>{card.desc}</p>
+                  <div className="ll-card" style={{ height: '100%' }}>
+                    <span style={{ display: 'block', marginBottom: '0.85rem' }}><LineIcon name={card.icon} /></span>
+                    <h3 className="ll-title" style={{ marginBottom: '0.5rem' }}>{card.title}</h3>
+                    <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.65 }}>{card.desc}</p>
                   </div>
                 </FadeIn>
               ))}
@@ -267,10 +252,10 @@ export default function KariyerPage() {
         {/* ── Aradığımız Profil ───────────────────────────────── */}
         <FadeIn>
           <section style={{ marginBottom: 'clamp(3.5rem,7vw,5.5rem)' }}>
-            <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 400, marginBottom: '1.5rem' }}>
+            <h2 className="ll-title" style={{ marginBottom: '1.5rem' }}>
               Aradığımız Profil
             </h2>
-            <div style={{ ...glass, padding: '2rem' }}>
+            <div className="ll-card">
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.7rem' }}>
                 {[
                   'İnsanlarla iletişim kurmaktan keyif alan, sosyal zekâsı yüksek biri.',
@@ -280,14 +265,14 @@ export default function KariyerPage() {
                   'Ahenk\'in vizyonuna inanan, sosyal bağları güçlendirme misyonunu benimseyen biri.',
                   'Üniversite mezuniyeti veya aktif öğrencilik — ikisi de değerlendirmeye alınır.',
                 ].map((item) => (
-                  <li key={item} style={{ display: 'flex', gap: '0.75rem', color: '#ccc', fontSize: '0.88rem', lineHeight: 1.65 }}>
+                  <li key={item} style={{ display: 'flex', gap: '0.75rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)', flexShrink: 0, marginTop: '0.45rem' }} />
                     {item}
                   </li>
                 ))}
               </ul>
               <div style={{ marginTop: '1.25rem', padding: '0.85rem 1.1rem', background: 'rgba(192,57,43,0.07)', border: '1px solid rgba(192,57,43,0.2)', borderRadius: '10px' }}>
-                <p style={{ color: '#f5f5f5', fontSize: '0.87rem' }}>
+                <p style={{ color: '#f4f1ec', fontSize: 13 }}>
                   Deneyim zorunlu değil — <strong>doğru tutum her şeyin önünde.</strong>
                 </p>
               </div>
@@ -298,7 +283,7 @@ export default function KariyerPage() {
         {/* ── Başvuru Formu ───────────────────────────────────── */}
         <FadeIn>
           <section ref={formRef} style={{ marginBottom: 'clamp(3.5rem,7vw,5.5rem)' }}>
-            <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 400, textAlign: 'center', marginBottom: '0.5rem' }}>
+            <h2 className="ll-title" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
               Başvurunu Yap
             </h2>
             <p style={{ textAlign: 'center', color: '#a39c93', fontSize: 13, marginBottom: '2rem' }}>
@@ -312,9 +297,9 @@ export default function KariyerPage() {
                     style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontSize: '1.75rem', color: '#fff' }}>
                     ✓
                   </motion.div>
-                  <h3 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: '1.4rem', fontWeight: 400, marginBottom: '0.75rem' }}>Başvurun alındı!</h3>
-                  <p style={{ color: '#888', fontSize: '0.9rem', lineHeight: 1.7 }}>
-                    Seni inceliyoruz, en kısa sürede <strong style={{ color: '#f5f5f5' }}>geri döneceğiz.</strong>
+                  <h3 className="ll-title" style={{ marginBottom: '0.75rem' }}>Başvurun alındı!</h3>
+                  <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.7 }}>
+                    Seni inceliyoruz, en kısa sürede <strong style={{ color: '#f4f1ec' }}>geri döneceğiz.</strong>
                   </p>
                 </motion.div>
               ) : (
@@ -371,7 +356,7 @@ export default function KariyerPage() {
 
                   <div>
                     <FormLabel>Özgeçmiş (CV) * — PDF, DOC, DOCX, JPEG, PNG; en fazla 5 MB</FormLabel>
-                    <label className="input-glass px-4 py-3 text-[13px]" style={{ position: 'relative', display: 'block', cursor: 'pointer', color: cv ? '#f5f5f5' : '#ff6b6b', textAlign: 'center' }}>
+                    <label className="input-glass px-4 py-3 text-[13px]" style={{ position: 'relative', display: 'block', cursor: 'pointer', color: cv ? '#f4f1ec' : '#ff6b6b', textAlign: 'center' }}>
                       {cv ? cv.name : '+ Dosya seç'}
                       <input type="file" accept={CV_ACCEPT} onChange={(e) => { pickCv(e.target.files?.[0]); e.target.value = ''; }} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
                     </label>
@@ -384,7 +369,7 @@ export default function KariyerPage() {
                     <TextField label="Açıklama (opsiyonel)" value={form.hearFromOther} onChange={(v) => set('hearFromOther', v)} maxLength={200} />
                   )}
 
-                  {error && <p style={{ color: '#ff6b6b', fontSize: '0.85rem', textAlign: 'center' }}>{error}</p>}
+                  {error && <p style={{ color: '#ff6b6b', fontSize: 13, textAlign: 'center' }}>{error}</p>}
 
                   <button type="submit" disabled={submitting}
                     className="btn-primary w-full justify-center mt-2 disabled:opacity-70">
@@ -399,15 +384,15 @@ export default function KariyerPage() {
         {/* ── Sorular ─────────────────────────────────────────── */}
         <FadeIn>
           <section style={{ marginBottom: 'clamp(4rem,8vw,6rem)', textAlign: 'center' }}>
-            <div style={{ ...glass, padding: '2rem', maxWidth: '480px', margin: '0 auto' }}>
-              <h3 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: '1.3rem', fontWeight: 400, marginBottom: '1rem' }}>
+            <div className="ll-card" style={{ maxWidth: '480px', margin: '0 auto' }}>
+              <h3 className="ll-title" style={{ marginBottom: '1rem' }}>
                 Hâlâ aklında sorular mı var?
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.5rem' }}>
-                <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b', fontSize: '0.95rem', textDecoration: 'none', fontWeight: 500 }}>
+                <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b', fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
                   bilgi@ahenk.co
                 </a>
-                <a href="tel:+905403060080" style={{ color: '#888', fontSize: '0.9rem', textDecoration: 'none' }}>
+                <a href="tel:+905403060080" style={{ color: '#a39c93', fontSize: 13, textDecoration: 'none' }}>
                   0540 306 0080
                 </a>
               </div>
@@ -419,11 +404,11 @@ export default function KariyerPage() {
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.10)', padding: '2.5rem 1.5rem' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-          <p style={{ color: '#e8e8e8', fontSize: '0.85rem', fontWeight: 500 }}>© 2026 Ahenk. Tüm hakları saklıdır.</p>
-          <p style={{ color: '#888', fontSize: '0.8rem' }}>
+          <p style={{ color: '#f4f1ec', fontSize: 13, fontWeight: 500 }}>© 2026 Ahenk. Tüm hakları saklıdır.</p>
+          <p style={{ color: '#a39c93', fontSize: 13 }}>
             Ahenk bir{' '}
             <a href="https://ahenk.co" style={{ textDecoration: 'none' }}>
-              <span style={{ color: '#f5f5f5', fontWeight: 600 }}>Traders</span>
+              <span style={{ color: '#f4f1ec', fontWeight: 600 }}>Traders</span>
               <span style={{ color: '#1e90ff', fontWeight: 700 }}>.TR</span>
             </a>
             <span style={{ marginLeft: '3px' }}>🇹🇷</span>{' '}ticari markasıdır.
@@ -436,7 +421,7 @@ export default function KariyerPage() {
               { label: 'Gizlilik Politikası', href: '/gizlilik-politikasi' },
               { label: 'Site Haritası', href: '/site-haritasi' },
             ].map((link) => (
-              <Link key={link.href} href={link.href} style={{ color: '#555', fontSize: '0.78rem', textDecoration: 'none' }}>{link.label}</Link>
+              <Link key={link.href} href={link.href} style={{ color: '#8f887f', fontSize: 11, textDecoration: 'none' }}>{link.label}</Link>
             ))}
           </div>
         </div>

@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { PlanPriceText } from '@/components/PlanPrice';
+import { COMPANY_ADDRESS, JURISDICTION } from '@/lib/companyInfo';
+import { TaxInfo } from '@/components/TaxInfo';
 
 const sections = [
   {
@@ -10,18 +12,19 @@ const sections = [
     title: 'Taraflar',
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1rem' }}>
-        <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '12px' }}>
-          <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666', marginBottom: '0.6rem' }}>Satıcı</p>
+        <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
+          <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Satıcı</p>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.35rem' }}>
-            <p style={{ color: '#e8e8e8', fontWeight: 600 }}>Ahenk Platformu</p>
-            <p style={{ color: '#888', fontSize: '0.86rem' }}>Metropol İstanbul, Atatürk Mah. Ataşehir Bulvarı, Ertuğrul Gazi Sokak, Ataşehir / İstanbul</p>
-            <p style={{ fontSize: '0.86rem' }}><a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a></p>
-            <p style={{ fontSize: '0.86rem' }}><a href="tel:+905403060080" style={{ color: '#c0392b' }}>0540 306 0080</a></p>
+            <p style={{ color: '#f4f1ec', fontWeight: 600 }}>Ahenk Platformu</p>
+            <p style={{ color: '#a39c93', fontSize: 13 }}>{COMPANY_ADDRESS}</p>
+        <TaxInfo />
+            <p style={{ fontSize: 13 }}><a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a></p>
+            <p style={{ fontSize: 13 }}><a href="tel:+905403060080" style={{ color: '#c0392b' }}>0540 306 0080</a></p>
           </div>
         </div>
-        <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '12px' }}>
-          <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666', marginBottom: '0.6rem' }}>Alıcı</p>
-          <p style={{ color: '#ccc', fontSize: '0.87rem', lineHeight: 1.65 }}>
+        <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
+          <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Alıcı</p>
+          <p style={{ color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
             Platforma kayıtlı ve paket satın alma işlemi gerçekleştiren kullanıcı. Alıcının adı, soyadı, e-posta adresi ve adresi kayıt sırasında sisteme girilmiş bilgilerden alınır.
           </p>
         </div>
@@ -34,7 +37,7 @@ const sections = [
     content: (
       <>
         <p style={{ marginBottom: '1.25rem', lineHeight: 1.75 }}>
-          İşbu sözleşme, Alıcı'nın aşağıda belirtilen tek seferlik dijital hizmet paketlerinden birini satın alması ve Satıcı'nın bu hizmeti sunması karşılıklı yükümlülüklerini düzenler. Hizmetler <strong style={{ color: '#f5f5f5' }}>tamamen dijital niteliktedir</strong>; fiziksel teslimat söz konusu değildir.
+          İşbu sözleşme, Alıcı'nın aşağıda belirtilen tek seferlik dijital hizmet paketlerinden birini satın alması ve Satıcı'nın bu hizmeti sunması karşılıklı yükümlülüklerini düzenler. Hizmetler <strong style={{ color: '#f4f1ec' }}>tamamen dijital niteliktedir</strong>; fiziksel teslimat söz konusu değildir.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.85rem' }}>
           {[
@@ -77,14 +80,14 @@ const sections = [
               ],
             },
           ].map((pkg) => (
-            <div key={pkg.name} style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px' }}>
+            <div key={pkg.name} style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.7rem' }}>
-                <span style={{ fontWeight: 700, color: '#e8e8e8', fontSize: '0.92rem' }}>{pkg.name}</span>
-                <span style={{ color: '#ff6b6b', fontWeight: 700, fontSize: '0.9rem' }}>{pkg.price}</span>
+                <span style={{ fontWeight: 700, color: '#f4f1ec', fontSize: 13 }}>{pkg.name}</span>
+                <span style={{ color: '#ff6b6b', fontWeight: 700, fontSize: 13 }}>{pkg.price}</span>
               </div>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.35rem' }}>
                 {pkg.items.map((item) => (
-                  <li key={item} style={{ display: 'flex', gap: '0.6rem', color: '#888', fontSize: '0.84rem', lineHeight: 1.55 }}>
+                  <li key={item} style={{ display: 'flex', gap: '0.6rem', color: '#a39c93', fontSize: 13, lineHeight: 1.55 }}>
                     <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
                   </li>
                 ))}
@@ -92,7 +95,7 @@ const sections = [
             </div>
           ))}
         </div>
-        <p style={{ marginTop: '0.85rem', color: '#555', fontSize: '0.8rem' }}>Tüm fiyatlar KDV dahildir. Paketler tek seferliktir; abonelik ve otomatik yenileme yoktur.</p>
+        <p style={{ marginTop: '0.85rem', color: '#8f887f', fontSize: 13 }}>Tüm fiyatlar KDV dahildir. Paketler tek seferliktir; abonelik ve otomatik yenileme yoktur.</p>
       </>
     ),
   },
@@ -106,7 +109,7 @@ const sections = [
           'Kart bilgileri Ahenk tarafından saklanmaz — iyzico\'nun PCI-DSS uyumlu sisteminde işlenir.',
           'Paketler tek seferlik ödemeyle satın alınır; abonelik, otomatik yenileme veya kayıtlı karttan tekrar tahsilat yapılmaz.',
         ].map((item) => (
-          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
           </li>
         ))}
@@ -125,7 +128,7 @@ const sections = [
           'Bir döngü, ilgili masa türünün haftalık eşleştirme dönemidir; paket hakları kullanıldığında ya da 4 döngü dolduğunda sona erer.',
           'Kimlik doğrulaması tamamlanmadan eşleştirmeye dahil olunamaz.',
         ].map((item) => (
-          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
           </li>
         ))}
@@ -138,10 +141,10 @@ const sections = [
     content: (
       <>
         <p style={{ lineHeight: 1.75, marginBottom: '1rem' }}>
-          6502 sayılı Tüketicinin Korunması Hakkında Kanun'un 49. maddesi ve Mesafeli Sözleşmeler Yönetmeliği'nin 15. maddesi uyarınca, <strong style={{ color: '#f5f5f5' }}>dijital içerik ve hizmetlerde tüketicinin onayıyla hizmet ifasına başlanmış olması halinde cayma hakkı kullanılamaz.</strong>
+          6502 sayılı Tüketicinin Korunması Hakkında Kanun'un 49. maddesi ve Mesafeli Sözleşmeler Yönetmeliği'nin 15. maddesi uyarınca, <strong style={{ color: '#f4f1ec' }}>dijital içerik ve hizmetlerde tüketicinin onayıyla hizmet ifasına başlanmış olması halinde cayma hakkı kullanılamaz.</strong>
         </p>
         <div style={{ padding: '1rem 1.25rem', background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: '10px' }}>
-          <p style={{ color: '#f5f5f5', fontSize: '0.87rem', lineHeight: 1.65 }}>
+          <p style={{ color: '#f4f1ec', fontSize: 13, lineHeight: 1.65 }}>
             Kullanıcı, ödeme işlemini tamamlarken dijital hizmetin anında başlatılacağını ve bu nedenle cayma hakkından feragat ettiğini açıkça onaylar. Bu onay ödeme sayfasında açık ve anlaşılır biçimde alınır.
           </p>
         </div>
@@ -160,14 +163,14 @@ const sections = [
             'Teknik arıza veya Ahenk kaynaklı hizmet kesintisi durumunda iade değerlendirilebilir; talep için bilgi@ahenk.co adresine başvurulmalıdır.',
             'Hesabın kural ihlali nedeniyle Ahenk tarafından kapatılması durumunda kalan haklar için iade yapılmaz.',
           ].map((item) => (
-            <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+            <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
             </li>
           ))}
         </ul>
 
         <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(192,57,43,0.06)', border: '1px solid rgba(192,57,43,0.2)', borderRadius: '12px' }}>
-          <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#c0392b', marginBottom: '0.85rem' }}>Eşleşme Gerçekleşmemesi Durumunda İade</p>
+          <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#c0392b', marginBottom: '0.85rem' }}>Eşleşme Gerçekleşmemesi Durumunda İade</p>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
             {[
               'Masada paketinde 4 grup döngüsü boyunca hiç grup masası kurulamazsa tam iade talep edilebilir.',
@@ -180,7 +183,7 @@ const sections = [
               'Masa kurulduktan sonra bir veya birden fazla katılımcının buluşmaya katılmaması, hizmetin ifa edilmediği anlamına gelmez ve iade sebebi teşkil etmez.',
               'İade talepleri profil sayfasındaki İade Talep Et butonu üzerinden iletilir ve 5 iş günü içinde değerlendirilir.',
             ].map((item) => (
-              <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+              <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
                 <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
               </li>
             ))}
@@ -202,7 +205,7 @@ const sections = [
           "Ahenk, buluşmaların gerçekleştiği mekânın hizmet kalitesinden sorumlu tutulamaz.",
           'Buluşmalar sırasında kullanıcılar arasında yaşanan kişisel anlaşmazlık, maddi veya manevi zararlardan Ahenk sorumlu tutulamaz.',
         ].map((item) => (
-          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
           </li>
         ))}
@@ -234,11 +237,10 @@ const sections = [
         </p>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
           {[
-            '2024 yılı için belirlenen parasal sınırlar dahilinde İstanbul Tüketici Hakem Heyetleri\'ne başvurma hakkınız mevcuttur.',
-            'Bu sınırların üzerindeki uyuşmazlıklarda İstanbul Tüketici Mahkemeleri yetkilidir.',
-            'Ticari nitelikteki uyuşmazlıklarda ise İstanbul Mahkemeleri ve İcra Müdürlükleri münhasıran yetkilidir.',
+            '2024 yılı için belirlenen parasal sınırlar dahilinde Tüketici Hakem Heyetleri\'ne başvurma hakkınız mevcuttur.',
+            JURISDICTION,
           ].map((item) => (
-            <div key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+            <div key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
             </div>
           ))}
@@ -268,51 +270,18 @@ const fadeUp = {
 
 export default function MesafeliSatisSozlesmesiPage() {
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        background: '#121212',
-        color: '#f5f5f5',
-        fontFamily: 'var(--font-sans, system-ui)',
-        position: 'relative' as const,
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        style={{
-          position: 'fixed' as const,
-          top: -120,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 700,
-          height: 340,
-          background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.22) 0%, transparent 70%)',
-          pointerEvents: 'none' as const,
-          zIndex: 0,
-        }}
-      />
+    <main className="live-layer" style={{ minHeight: '100vh' }}>
+      <div className="ll-glow" aria-hidden="true" />
 
       <div style={{ position: 'relative' as const, zIndex: 1, maxWidth: '760px', margin: '0 auto', padding: '3rem 1.5rem 4rem' }}>
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
-          <h1
-            style={{
-              fontFamily: 'var(--font-serif, Georgia, serif)',
-              fontSize: 'clamp(1.8rem, 4.5vw, 2.8rem)',
-              fontWeight: 400,
-              letterSpacing: '-0.02em',
-              background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              lineHeight: 1.2,
-            }}
-          >
+          <h1 className="ll-title">
             Mesafeli Satış Sözleşmesi
           </h1>
-          <p style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.8rem', lineHeight: 1.5 }}>
+          <p style={{ marginTop: '0.5rem', color: '#8f887f', fontSize: 13, lineHeight: 1.5 }}>
             6502 Sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği Kapsamında
           </p>
-          <p style={{ marginTop: '0.25rem', color: '#555', fontSize: '0.78rem' }}>
+          <p style={{ marginTop: '0.25rem', color: '#8f887f', fontSize: 11 }}>
             Son güncelleme: Ekim 2026
           </p>
         </motion.div>
@@ -325,23 +294,15 @@ export default function MesafeliSatisSozlesmesiPage() {
               initial="hidden"
               animate="show"
               variants={fadeUp}
-              style={{
-                background: 'rgba(255,255,255,0.10)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
-                borderRadius: '16px',
-                padding: '1.75rem',
-              }}
+              className="ll-card"
             >
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', color: '#c0392b' }}>{sec.n}</span>
-                <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.1rem, 2.5vw, 1.35rem)', fontWeight: 400, color: '#f5f5f5', lineHeight: 1.2 }}>
+                <span className="ll-eyebrow">{sec.n}</span>
+                <h2 className="ll-title">
                   {sec.title}
                 </h2>
               </div>
-              <div style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: 1.75 }}>
+              <div style={{ color: '#c9c2b8', fontSize: 13, lineHeight: 1.75 }}>
                 {sec.content}
               </div>
             </motion.div>

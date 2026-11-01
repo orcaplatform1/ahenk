@@ -214,6 +214,9 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   }
 }
 
+/* Navbar altı ortak boşluk */
+.page-top-gap { padding-top: 24px; }
+
 /* Tarayıcı otomatik doldurma: alan kendi rengini korur (arka plan değişimi ertelenir) */
 input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active {
   -webkit-text-fill-color: #f5f5f5;

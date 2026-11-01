@@ -5,6 +5,7 @@ import CookieBanner from '@/components/CookieBanner';
 import SosOpenReport from '@/components/SosOpenReport';
 import SiteFooter from '@/components/SiteFooter';
 import NavbarWrapper from '@/components/NavbarWrapper';
+import PageOffset from '@/components/PageOffset';
 
 const dmSerifDisplay = DM_Serif_Display({
   subsets: ['latin'],
@@ -79,7 +80,7 @@ export default function RootLayout({
     <html lang="tr" className={`${dmSerifDisplay.variable} ${inter.variable} ${jetBrainsMono.variable}`}>
       <body className="font-sans antialiased" style={{}}>
         <NavbarWrapper />
-        {children}
+        <PageOffset>{children}</PageOffset>
         <SiteFooter />
         <SosOpenReport />
         <CookieBanner />

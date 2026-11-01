@@ -1,6 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { COMPANY_ADDRESS, JURISDICTION } from '@/lib/companyInfo';
+import { TaxInfo } from '@/components/TaxInfo';
 
 const sections = [
   {
@@ -9,22 +11,23 @@ const sections = [
     content: (
       <>
         <p style={{ marginBottom: '1rem' }}>
-          6698 sayılı Kişisel Verilerin Korunması Kanunu uyarınca <strong style={{ color: '#f5f5f5' }}>veri sorumlusu</strong> sıfatıyla Ahenk platformu bu aydınlatma metnini hazırlamıştır.
+          6698 sayılı Kişisel Verilerin Korunması Kanunu uyarınca <strong style={{ color: '#f4f1ec' }}>veri sorumlusu</strong> sıfatıyla Ahenk platformu bu aydınlatma metnini hazırlamıştır.
         </p>
         <div
           style={{
             padding: '1.25rem 1.5rem',
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            background: 'rgba(255,255,255,0.025)',
+            border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: '12px',
             display: 'flex',
             flexDirection: 'column' as const,
             gap: '0.5rem',
           }}
         >
-          <p><span style={{ color: '#888' }}>Adres:</span>{' '}Metropol İstanbul, Atatürk Mah. Ataşehir Bulvarı, Ertuğrul Gazi Sokak, Ataşehir / İstanbul</p>
-          <p><span style={{ color: '#888' }}>E-posta:</span>{' '}<a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a></p>
-          <p><span style={{ color: '#888' }}>Telefon:</span>{' '}<a href="tel:+905403060080" style={{ color: '#c0392b' }}>0540 306 0080</a></p>
+          <p><span style={{ color: '#a39c93' }}>Adres:</span>{' '}{COMPANY_ADDRESS}</p>
+        <TaxInfo />
+          <p><span style={{ color: '#a39c93' }}>E-posta:</span>{' '}<a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a></p>
+          <p><span style={{ color: '#a39c93' }}>Telefon:</span>{' '}<a href="tel:+905403060080" style={{ color: '#c0392b' }}>0540 306 0080</a></p>
         </div>
       </>
     ),
@@ -76,11 +79,9 @@ const sections = [
           <div key={row.cat}>
             <span
               style={{
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
+                fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em',
                 textTransform: 'uppercase' as const,
-                color: row.special ? '#c0392b' : '#666',
+                color: row.special ? '#c0392b' : '#8f887f',
                 display: 'block',
                 marginBottom: '0.4rem',
               }}
@@ -90,7 +91,7 @@ const sections = [
             </span>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.3rem' }}>
               {row.items.map((item) => (
-                <li key={item} style={{ display: 'flex', gap: '0.6rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+                <li key={item} style={{ display: 'flex', gap: '0.6rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
                   <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
                 </li>
               ))}
@@ -115,7 +116,7 @@ const sections = [
           'Şikâyet ve taleplerin yönetilmesi',
           'Hizmet kalitesinin iyileştirilmesi ve platform geliştirme faaliyetlerinin yürütülmesi',
         ].map((item) => (
-          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
           </li>
         ))}
@@ -149,13 +150,13 @@ const sections = [
             key={row.basis}
             style={{
               padding: '1rem 1.25rem',
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.10)',
+              background: 'rgba(255,255,255,0.025)',
+              border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: '10px',
             }}
           >
-            <p style={{ fontWeight: 600, color: '#e8e8e8', marginBottom: '0.25rem', fontSize: '0.9rem' }}>{row.basis}</p>
-            <p style={{ color: '#888', fontSize: '0.85rem' }}>{row.desc}</p>
+            <p style={{ fontWeight: 600, color: '#f4f1ec', marginBottom: '0.25rem', fontSize: 13 }}>{row.basis}</p>
+            <p style={{ color: '#a39c93', fontSize: 13 }}>{row.desc}</p>
           </div>
         ))}
       </div>
@@ -178,7 +179,7 @@ const sections = [
             'Üçüncü taraflarla paylaşılmaz',
             '10 yıl süreyle saklanır',
           ].map((item) => (
-            <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+            <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
             </li>
           ))}
@@ -191,14 +192,14 @@ const sections = [
     title: 'Kişisel Verilerin Aktarımı',
     content: (
       <>
-        <p style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666', marginBottom: '0.6rem' }}>Yurt İçi Aktarım</p>
+        <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Yurt İçi Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
-          <strong style={{ color: '#e8e8e8' }}>iyzico Ödeme Hizmetleri A.Ş.</strong>
+          <strong style={{ color: '#f4f1ec' }}>iyzico Ödeme Hizmetleri A.Ş.</strong>
           {' '}— ödeme ve paket işlemleri için zorunlu finansal veriler aktarılır; iyzico kendi KVKK yükümlülüklerini yerine getirmektedir.
         </p>
-        <p style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666', marginBottom: '0.6rem' }}>Yurt Dışı Aktarım</p>
+        <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Yurt Dışı Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
-          <strong style={{ color: '#e8e8e8' }}>Cloudflare Inc. (ABD)</strong>
+          <strong style={{ color: '#f4f1ec' }}>Cloudflare Inc. (ABD)</strong>
           {' '}— kimlik belgeleri ve liveness videosu R2 private bucket'ta saklanır. Bu aktarım AB Standart Sözleşme Maddeleri (SCCs) ve Cloudflare'in veri işleme sözleşmesi kapsamında gerçekleştirilir.
         </p>
         <div
@@ -209,7 +210,7 @@ const sections = [
             borderRadius: '10px',
           }}
         >
-          <p style={{ color: '#f5f5f5', fontSize: '0.87rem' }}>
+          <p style={{ color: '#f4f1ec', fontSize: 13 }}>
             Kişisel veriler hiçbir koşulda <strong>satılmaz</strong>, kiralanmaz veya ticari amaçla üçüncü taraflarla paylaşılmaz.
           </p>
         </div>
@@ -240,11 +241,11 @@ const sections = [
               borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.10)' : 'none',
             }}
           >
-            <span style={{ color: '#ccc', fontSize: '0.87rem', flex: 1 }}>{label}</span>
-            <span style={{ color: '#888', fontSize: '0.82rem', textAlign: 'right' as const, flexShrink: 0, maxWidth: '200px' }}>{value}</span>
+            <span style={{ color: '#c9c2b8', fontSize: 13, flex: 1 }}>{label}</span>
+            <span style={{ color: '#a39c93', fontSize: 13, textAlign: 'right' as const, flexShrink: 0, maxWidth: '200px' }}>{value}</span>
           </div>
         ))}
-        <p style={{ marginTop: '1rem', color: '#555', fontSize: '0.82rem' }}>
+        <p style={{ marginTop: '1rem', color: '#8f887f', fontSize: 13 }}>
           Saklama süreleri dolduğunda kişisel veriler silinir, yok edilir veya anonim hale getirilir.
         </p>
       </div>
@@ -265,7 +266,7 @@ const sections = [
           'İşlenen verilerin münhasıran otomatik sistemler aracılığıyla analiz edilmesi nedeniyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme',
           'Kişisel verilerin kanuna aykırı işlenmesi nedeniyle zarara uğramanız halinde zararın giderilmesini talep etme',
         ].map((item) => (
-          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#ccc', fontSize: '0.87rem', lineHeight: 1.6 }}>
+          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
           </li>
         ))}
@@ -282,18 +283,18 @@ const sections = [
           <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a>
           {' '}adresine e-posta gönderin.
         </p>
-        <p style={{ marginBottom: '0.6rem', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#666' }}>
+        <p style={{ marginBottom: '0.6rem', fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f' }}>
           Başvuruda yer alması gerekenler
         </p>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.4rem', marginBottom: '1rem' }}>
           {['Adınız ve soyadınız', 'TC kimlik numaranız (kimlik doğrulama için)', 'Talep konusu', 'İletişim bilgileriniz'].map((item) => (
-            <li key={item} style={{ display: 'flex', gap: '0.6rem', color: '#ccc', fontSize: '0.87rem' }}>
+            <li key={item} style={{ display: 'flex', gap: '0.6rem', color: '#c9c2b8', fontSize: 13 }}>
               <span style={{ color: '#c0392b' }}>›</span>{item}
             </li>
           ))}
         </ul>
-        <p style={{ color: '#888', fontSize: '0.85rem' }}>
-          Başvurular <strong style={{ color: '#f5f5f5' }}>30 gün</strong> içinde ücretsiz olarak yanıtlanır. Başvurunun ayrıca bir maliyet gerektirmesi halinde Kişisel Verileri Koruma Kurulu tarafından belirlenen tarifeye göre ücret alınabilir.
+        <p style={{ color: '#a39c93', fontSize: 13 }}>
+          Başvurular <strong style={{ color: '#f4f1ec' }}>30 gün</strong> içinde ücretsiz olarak yanıtlanır. Başvurunun ayrıca bir maliyet gerektirmesi halinde Kişisel Verileri Koruma Kurulu tarafından belirlenen tarifeye göre ücret alınabilir.
         </p>
       </>
     ),
@@ -304,7 +305,7 @@ const sections = [
     content: (
       <p>
         Başvurunuzun reddedilmesi, verilen cevabın yetersiz bulunması veya süresinde yanıt verilmemesi halinde{' '}
-        <strong style={{ color: '#f5f5f5' }}>Kişisel Verileri Koruma Kurulu</strong>'na şikâyette bulunabilirsiniz.
+        <strong style={{ color: '#f4f1ec' }}>Kişisel Verileri Koruma Kurulu</strong>'na şikâyette bulunabilirsiniz.
         {' '}Kurul web sitesi:{' '}
         <a href="https://www.kvkk.gov.tr" target="_blank" rel="noopener noreferrer" style={{ color: '#c0392b' }}>kvkk.gov.tr</a>
       </p>
@@ -315,8 +316,7 @@ const sections = [
     title: 'Uyuşmazlık',
     content: (
       <p>
-        Bu aydınlatma metninden doğan uyuşmazlıklarda{' '}
-        <strong style={{ color: '#f5f5f5' }}>İstanbul Mahkemeleri ve İcra Müdürlükleri</strong> yetkilidir.
+        {JURISDICTION}
       </p>
     ),
   },
@@ -333,53 +333,19 @@ const fadeUp = {
 
 export default function KvkkPage() {
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        background: '#121212',
-        color: '#f5f5f5',
-        fontFamily: 'var(--font-sans, system-ui)',
-        position: 'relative' as const,
-        overflow: 'hidden',
-      }}
-    >
-      {/* Kırmızı üst glow */}
-      <div
-        style={{
-          position: 'fixed' as const,
-          top: -120,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 700,
-          height: 340,
-          background: 'radial-gradient(ellipse at center, rgba(192,57,43,0.22) 0%, transparent 70%)',
-          pointerEvents: 'none' as const,
-          zIndex: 0,
-        }}
-      />
+    <main className="live-layer" style={{ minHeight: '100vh' }}>
+      <div className="ll-glow" aria-hidden="true" />
 
       <div style={{ position: 'relative' as const, zIndex: 1, maxWidth: '760px', margin: '0 auto', padding: '3rem 1.5rem 4rem' }}>
         {/* Başlık */}
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
-          <h1
-            style={{
-              fontFamily: 'var(--font-serif, Georgia, serif)',
-              fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
-              fontWeight: 400,
-              letterSpacing: '-0.02em',
-              background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              lineHeight: 1.15,
-            }}
-          >
+          <h1 className="ll-title">
             Kişisel Verilerin Korunması
           </h1>
-          <p style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.82rem', letterSpacing: '0.02em' }}>
+          <p style={{ marginTop: '0.5rem', color: '#8f887f', fontSize: 13, letterSpacing: '0.02em' }}>
             6698 Sayılı KVKK Kapsamında Aydınlatma Metni
           </p>
-          <p style={{ marginTop: '0.25rem', color: '#555', fontSize: '0.78rem' }}>
+          <p style={{ marginTop: '0.25rem', color: '#8f887f', fontSize: 11 }}>
             Son güncelleme: Ekim 2026
           </p>
         </motion.div>
@@ -393,41 +359,15 @@ export default function KvkkPage() {
               initial="hidden"
               animate="show"
               variants={fadeUp}
-              style={{
-                background: 'rgba(255,255,255,0.10)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
-                borderRadius: '16px',
-                padding: '1.75rem',
-              }}
+              className="ll-card"
             >
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                <span
-                  style={{
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    color: '#c0392b',
-                    fontFamily: 'var(--font-sans, system-ui)',
-                  }}
-                >
-                  {sec.n}
-                </span>
-                <h2
-                  style={{
-                    fontFamily: 'var(--font-serif, Georgia, serif)',
-                    fontSize: 'clamp(1.05rem, 2.5vw, 1.3rem)',
-                    fontWeight: 400,
-                    color: '#f5f5f5',
-                    lineHeight: 1.2,
-                  }}
-                >
+                <span className="ll-eyebrow">{sec.n}</span>
+                <h2 className="ll-title">
                   {sec.title}
                 </h2>
               </div>
-              <div style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: 1.75 }}>
+              <div style={{ color: '#c9c2b8', fontSize: 13, lineHeight: 1.75 }}>
                 {sec.content}
               </div>
             </motion.div>

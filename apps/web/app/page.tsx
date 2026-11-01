@@ -571,7 +571,11 @@ function StatCards() {
 
   const targetMembers = 100 + hoursElapsed * 2;
   const targetTables = 27 + weeksElapsed * 4;
-  const targetCities = 7;
+  // Aktif şehir sayısı sistemden gelir
+  const [targetCities, setTargetCities] = useState(0);
+  useEffect(() => {
+    api.get<unknown[]>('/auth/cities').then((c) => setTargetCities(c.length)).catch(() => undefined);
+  }, []);
 
   const members = useCountUp(targetMembers);
   const tables = useCountUp(targetTables);
