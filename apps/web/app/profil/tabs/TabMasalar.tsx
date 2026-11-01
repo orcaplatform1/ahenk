@@ -14,6 +14,7 @@ interface DashboardItem {
     type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
     maxParticipants?: number;
     scheduledAt: string;
+    sosEndsAt: string;
     participants: Array<{ initials: string; gender: string | null }>;
     venueName?: string;
     venueAddress?: string;
@@ -458,6 +459,7 @@ function MasaBlock({
       type: meeting.type,
       maxParticipants: meeting.maxParticipants,
       scheduledAt: meeting.scheduledAt,
+      sosEndsAt: meeting.sosEndsAt,
       venueName: meeting.venueName,
       venueAddress: meeting.venueAddress,
       venueMapsUrl: meeting.venueMapsUrl,

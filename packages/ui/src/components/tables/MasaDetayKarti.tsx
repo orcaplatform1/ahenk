@@ -25,6 +25,7 @@ export interface MasaDetayData {
   type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   maxParticipants?: number;
   scheduledAt: string;
+  sosEndsAt: string; // Acil yardımın bittiği an (backend tek kaynak)
   venueName: string;
   venueAddress?: string | null;
   venueMapsUrl?: string | null;
@@ -649,13 +650,9 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
 
   const hasChat = !!apiBase;
 
-  // SOS görünürlük: masa saatinden (scheduledAt) sonraki gün 10:00 TR'ye kadar
+  // SOS görünürlük: masa saatinden backend'in verdiği bitiş anına kadar
   const now = new Date();
-  const scheduledTR = new Date(new Date(masa.scheduledAt).getTime() + 3 * 60 * 60 * 1000);
-  const nextDay10 = new Date(scheduledTR);
-  nextDay10.setUTCDate(nextDay10.getUTCDate() + 1);
-  nextDay10.setUTCHours(7, 0, 0, 0); // 07:00 UTC = 10:00 TR
-  const sosVisible = authHeaders && now >= new Date(masa.scheduledAt) && now < nextDay10;
+  const sosVisible = authHeaders && now >= new Date(masa.scheduledAt) && now < new Date(masa.sosEndsAt);
 
   // SOS state
   const [showSos,    setShowSos]    = useState(false);

@@ -73,7 +73,7 @@ export class SosService {
       throw new ForbiddenException("İptal edilmiş masada acil yardım kullanılamaz");
     }
 
-    // SOS süresi: masa saatinden (scheduledAt) ertesi gün 10:00 TR'ye kadar (web ile aynı kural)
+    // SOS süresi: masa saatinden (scheduledAt) ertesi gün 08:00 TR'ye kadar (web aynı anı sosEndsAt ile alır)
     if (!this.inSosWindow(meeting.scheduledAt)) {
       throw new ForbiddenException("Acil yardım bu masa için şu an kullanılamaz");
     }

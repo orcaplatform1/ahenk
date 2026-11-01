@@ -11,7 +11,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { cancellationNotice, initialsOf } from "./cancellation-notice";
 import { restoreOneOnOneRights } from "../matching/one-on-one-right";
-import { cancelDeadline, noShowCardWindow, sosWindowEnd } from "./meeting-windows";
+import { cancelDeadline, meetingCardEnd, noShowCardWindow, sosWindowEnd } from "./meeting-windows";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { chargeKankaRight, pairKankaSub } from "../payment/package-rights";
@@ -76,13 +76,13 @@ export class MeetingsService {
         status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED] },
         meeting: {
           status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] },
-          // Kart masa saatinden sonra da acil yardım süresi bitene (ertesi gün 10:00) kadar kalır
+          // Kart masa saatinden sonra da ertesi gün 10:00'a kadar kalır
           scheduledAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
         },
       },
       orderBy: [{ meeting: { type: 'asc' } }, { meeting: { scheduledAt: 'asc' } }],
       select: { meeting: { select: meetingSelect } },
-    }).then((rows) => rows.filter(({ meeting }) => sosWindowEnd(meeting.scheduledAt) > new Date()));
+    }).then((rows) => rows.filter(({ meeting }) => meetingCardEnd(meeting.scheduledAt) > new Date()));
 
     // Bu hafta masası olan türler: buluşma bitip kart kalksa da /dashboard sekmesi "Masa Kuruldu" kalır
     const weekStart = trWeekStart();
@@ -154,6 +154,7 @@ export class MeetingsService {
             scheduledAt: m.scheduledAt,
             participants,
             sat10UTC,
+            sosEndsAt: sosWindowEnd(m.scheduledAt),
             // Bu pakette iptal hakkı kullanıldı mı (bekleme ekranındaki iptal butonu): grup ve Kankamla
             cancelRightUsed: m.type === MeetingType.GROUP ? cancelRightUsed : m.type === MeetingType.KANKA ? kankaCancelUsed : false,
             ...(isRevealed && {

@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient, MeetingType, MeetingStatus } from "@prisma/client";
 import { trWeekStart } from "../admin/tr-week";
-import { sosWindowEnd } from "../meetings/meeting-windows";
+import { meetingCardEnd } from "../meetings/meeting-windows";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -29,7 +29,7 @@ export async function kankaLockReason(db: Db, link: { createdAt: Date; userAId: 
     },
     select: { scheduledAt: true },
   });
-  if (meetings.some((m) => sosWindowEnd(m.scheduledAt) > now)) {
+  if (meetings.some((m) => meetingCardEnd(m.scheduledAt) > now)) {
     return "Kankamla masanız sürerken kankalıktan çıkamazsın.";
   }
   return null;

@@ -266,6 +266,7 @@ export interface DashboardItem {
     scheduledAt: string;
     participants: Participant[];
     sat10UTC?: string;
+    sosEndsAt: string; // Acil yardımın bittiği an (backend tek kaynak)
     venueName?: string;
     venueAddress?: string;
     venueMapsUrl?: string;
@@ -849,6 +850,7 @@ function MasaKarti({
       id:             item.meeting.id,
       type:           item.meeting.type,
       maxParticipants: item.meeting.maxParticipants,
+      sosEndsAt:      item.meeting.sosEndsAt,
       scheduledAt:    item.meeting.scheduledAt,
       venueName:      item.meeting.venueName,
       venueAddress:   item.meeting.venueAddress,
