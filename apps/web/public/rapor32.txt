@@ -1,0 +1,68 @@
+RAPOR 32 - Ahenk disindaki sitelerde adres ve yetki maddesi
+
+YENI METINLER
+Adres: Yildirim Kule, Cevizlidere Mahallesi Mevlana Bulvari No: 221/109-3 Balgat, Cankaya/ANKARA
+Yetki: Uyusmazliklarda Ankara Hukuk Mahkemeleri ve Ankara Icra Mudurlukleri yetkilidir.
+Tuketici cumlesi: mesafeli satis sozlesmelerinde yetki maddesinin hemen ardindan eklendi.
+
+OLAY: METTLO KISA KESINTI
+Mettlo build'i sirasinda mettlo.tr uye sitesi yaklasik 2 dakika 502 verdi (01.11, 13:55-13:57 civari). Sebep: .next klasorunde root'a ait dosyalar vardi, build yarida kalip eski build'i sildi ve o haliyle restart edildi. .next sahipligi mettlo yapildi, yeniden build alindi, site 200 donuyor.
+
+1. KRIPTOBEYAN (kriptobeyan.com)
+Dizin: /var/www/kriptobeyan/frontend
+Commit: 6b06d96 (kriptobeyan-frontend, main, push edildi)
+Degisen: lib/site-config.ts, app/mesafeli-satis-sozlesmesi/page.tsx
+Adres: "Barbaros Mahallesi, Begonya Sokak No:1, Atasehir/Istanbul" yeni adres oldu. KVKK ve Mesafeli Satis bu tek kaynaktan okur.
+Yetki: Mesafeli Satis'te "Tuketici Hakem Heyetleri ile Tuketici Mahkemeleri yetkilidir" maddesi Ankara cumlesi + tuketici cumlesi oldu.
+Sirket bilgisi: Unvan "KriptoBeyan Bilisim Teknolojileri Limited Sirketi", Vergi Dairesi "Atasehir Vergi Dairesi", Vergi No 1234567890, MERSIS 0123456789000015, Ticaret Sicil 123456.
+DIKKAT: Kodun yorumuna gore bu sirket bilgileri gercek degil, yer tutucu. Sayfalardaki "henuz gercek/dogrulanmis degildir" uyarilari duruyor. Ataşehir vergi dairesi yeni adresle uyumsuz kaldi.
+Backend repo'da degisiklik yok. DB'de eski metin yok.
+Dogrulama: tsc ve build basarili, kriptobeyan-frontend restart, online, yeni hata yok.
+
+2. ZESTA (zesta.tr)
+Dizin: /var/www/zesta.tr/frontend + zesta veritabani
+Commit: f5e5cb6 (zesta-frontend, main, push edildi)
+Degisen dosya: lib/site-pages-content.ts (footer/iletisim varsayilan adresi)
+Veritabani (pages tablosu): adres mesafeli-satis-sozlesmesi, kvkk, iletisim sayfalarinda degisti. Yetki: "Istanbul Hukuk Mahkemeleri yetkilidir" mesafeli-satis-sozlesmesi ve kullanim-kosullari'nda degisti; mesafeli satisa tuketici cumlesi eklendi.
+Yedek: /root/backups/zesta_pages_20261101_pre-adres.sql
+Sirket bilgisi: Unvan "Zesta Art&Design". Vergi dairesi/no yazili degil.
+Dogrulama: tsc ve build basarili, zesta-frontend restart, online, yeni hata yok.
+Not: Veritabani degisiklikleri git'te gorunmez. Onceki isten imza.jpg repoda commit edilmemis duruyor; bu talimat disi oldugu icin commit'e alinmadi.
+
+3. ORCA (orcalabs.tr)
+Dizin: /var/www/orcalabs.tr + orca veritabani
+Commit: 8146a36 (orcalabs.tr, main, push edildi)
+Degisen dosya: backend/scripts/seed-legal-pages.ts
+Veritabani (Page tablosu): terms-of-service'te "Istanbul (Merkez) Mahkemeleri ve Icra Daireleri" Ankara cumlesi oldu. distance-sales-agreement'ta sehir yazmiyordu; "Uyusmazliklarin Cozumu ve Yetki" maddesi oldugu icin mevcut metin korunup sonuna Ankara ve tuketici cumleleri eklendi.
+Adres: yok, eklenmedi. Mesafeli satista "acik adres faturada yer alir" cumlesi duruyor.
+Yedek: /root/backups/orca_page_20261101_pre-adres.sql
+Sirket bilgisi: "Unvan: ORCA". Vergi bilgisi yazili degil.
+Dogrulama: frontend degismedigi icin build alinmadi. Backend tsc, dokunulmayan scripts/patch-orcalabs-branding.ts ve scripts/run-day-trade-scan.ts dosyalarinda eski hata veriyor; degisen dosyada hata yok. orca-backend ve orca-frontend restart, online, yeni hata yok.
+Not: Seed dosyasi ile canli sayfalar birbirinden farkli metin; seed yeniden calistirilirse canli sayfalarin uzerine yazabilir.
+
+4. TRADERS (traders.tr, ORCA Traders)
+Dizin: /var/www/traders.tr
+Adres ve yetki maddesi: yok, eklenmedi. Commit yok, build ve restart yapilmadi.
+Sirket bilgisi: unvan/vergi bilgisi yazili degil.
+
+5. METTLO (mettlo.tr)
+Dizin: /var/www/mettlo.tr
+Commit: 6c72912 (mettlo, master, push edildi)
+Degisen: apps/member-web/app/lib/legal-content/terms.tsx, apps/member-web/app/(site)/checkout/[planId]/dsa-content.tsx, apps/member-web/app/(site)/distance-sales-agreement/page.tsx, apps/member-mobile-rn/constants/legalContent.ts
+Yetki: Kullanim kosullarinda "Mettlo'nun bulundugu yerdeki mahkemeler" Ankara cumlesi oldu, tuketici cumlesi yerinde. Mesafeli satis ve odeme ekranindaki sozlesmede Ankara + tuketici cumlesi yazildi.
+Adres: yok (COMPANY.address bos), eklenmedi.
+Sirket bilgisi: unvan, MERSIS, vergi dairesi/no, sicil, KEP bos.
+Dogrulama: member-web tsc ve build basarili, mettlo-member-web restart, online, mettlo.tr 200, canli sozlesmede yeni metin goruldu.
+Not: Mobil uygulamadaki metin yeni surum yayinlanana kadar kullanicilara gitmez.
+
+6. DIGER
+mail.zesta.tr (Roundcube) ve ahenk.tr: ayri icerik yok.
+Veritabani taramasi: kriptobeyan ve mettlo'da eski metin yok. orca'da bir haber ozetinde "mahkeme" geciyor, yasal metin degil.
+
+VERDIGIM KARARLAR
+- Tuketici Hakem Heyeti/Mahkemesi yazan mesafeli satis maddeleri de yetki maddesi sayildi ve degistirildi. Tuketici haklari 6502 cumlesiyle korunuyor. Parasal sinir ifadesi bu maddelerden cikti.
+- Veritabanindaki canli sayfalar da guncellendi; once yedek alindi.
+- Vergi dairesi ve diger sirket bilgilerine dokunulmadi.
+
+AHENK
+Yalnizca bu rapor dosyasi commit edildi, rapor31.txt silindi.
