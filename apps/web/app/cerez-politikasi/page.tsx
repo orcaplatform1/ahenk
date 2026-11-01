@@ -104,7 +104,7 @@ const sections = [
         </div>
 
         <p style={{ color: '#8f887f', fontSize: 13 }}>
-          Onayınızı banner'daki Tercihler bölümünden her zaman değiştirebilirsiniz. Banner'ı yeniden açmak için bu sayfanın sonundaki Çerez Tercihlerimi Güncelle düğmesini kullanabilirsiniz.
+          Onayınızı banner'daki Tercihler bölümünden her zaman değiştirebilirsiniz. Onayınızı geri çektiğinizde ilgili çerezler tarayıcınızdan silinir. Banner'ı yeniden açmak için bu sayfanın sonundaki Çerez Tercihlerimi Güncelle düğmesini kullanabilirsiniz.
         </p>
       </div>
     ),

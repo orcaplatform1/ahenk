@@ -43,7 +43,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
   const [managing, setManaging] = useState(false);
-  const [prefs, setPrefs] = useState<Prefs>({ analitik: true, pazarlama: false });
+  const [prefs, setPrefs] = useState<Prefs>({ analitik: false, pazarlama: false });
 
   useEffect(() => {
     try {

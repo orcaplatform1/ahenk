@@ -111,6 +111,23 @@ function loadPixel() {
   fbq('init', META_PIXEL_ID);
 }
 
+// Onayı olmayan araçların çerezlerini siler; alt alan adı seviyesinde yazıldıkları için her alan adı denenir
+export function clearRevokedCookies({ analitik, pazarlama }: { analitik: boolean; pazarlama: boolean }) {
+  const isRevoked = (name: string) =>
+    (!analitik && (name === '_ga' || name.startsWith('_ga_'))) ||
+    (!pazarlama && (name === '_fbp' || name === '_fbc'));
+
+  document.cookie
+    .split(';')
+    .map((cookie) => cookie.split('=')[0].trim())
+    .filter(isRevoked)
+    .forEach((name) => {
+      ['', '; domain=ahenk.co', '; domain=.ahenk.co'].forEach((domain) => {
+        document.cookie = `${name}=; path=/; max-age=0${domain}`;
+      });
+    });
+}
+
 // Onay değiştiğinde ve sayfa açıldığında çağrılır
 export function applyConsent() {
   if (typeof window === 'undefined') return;
@@ -131,6 +148,8 @@ export function applyConsent() {
   } else if (window.fbq) {
     window.fbq('consent', 'revoke');
   }
+
+  clearRevokedCookies({ analitik, pazarlama });
 }
 
 export function trackPageView(pathname: string) {

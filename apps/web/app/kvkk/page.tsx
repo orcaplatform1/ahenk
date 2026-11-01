@@ -216,7 +216,7 @@ const sections = [
           }}
         >
           <p style={{ color: '#f4f1ec', fontSize: 13 }}>
-            Kişisel veriler hiçbir koşulda <strong>satılmaz</strong>, kiralanmaz veya ticari amaçla üçüncü taraflarla paylaşılmaz.
+            Kişisel verileriniz satılmaz. Çerez verileri yalnızca açık rızanızla Google ve Meta ile reklam ve istatistik amacıyla paylaşılır.
           </p>
         </div>
       </>
