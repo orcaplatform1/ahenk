@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { COMPANY_ADDRESS, JURISDICTION } from '@/lib/companyInfo';
+import { COMPANY_ADDRESS, COMPANY_TITLE, JURISDICTION } from '@/lib/companyInfo';
+import { CareerDataNotice } from '@/components/CareerDataNotice';
 import { TaxInfo } from '@/components/TaxInfo';
 
 const sections = [
@@ -11,7 +12,7 @@ const sections = [
     content: (
       <>
         <p style={{ marginBottom: '1rem' }}>
-          6698 sayılı Kişisel Verilerin Korunması Kanunu uyarınca <strong style={{ color: '#f4f1ec' }}>veri sorumlusu</strong> sıfatıyla Ahenk platformu bu aydınlatma metnini hazırlamıştır.
+          6698 sayılı Kişisel Verilerin Korunması Kanunu uyarınca <strong style={{ color: '#f4f1ec' }}>veri sorumlusu</strong> sıfatıyla {COMPANY_TITLE} bu aydınlatma metnini hazırlamıştır.
         </p>
         <div
           style={{
@@ -319,6 +320,11 @@ const sections = [
         {JURISDICTION}
       </p>
     ),
+  },
+  {
+    n: '12',
+    title: 'Kariyer Başvuruları',
+    content: <CareerDataNotice transferRef="bu metnin 6. maddesi (Kişisel Verilerin Aktarımı)" rightsRef="8. maddesi (Veri Sahibinin KVKK Madde 11 Kapsamındaki Hakları)" />,
   },
 ];
 

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { PlanPriceText } from '@/components/PlanPrice';
-import { COMPANY_ADDRESS, JURISDICTION } from '@/lib/companyInfo';
+import { COMPANY_ADDRESS, COMPANY_TITLE, JURISDICTION } from '@/lib/companyInfo';
 import { TaxInfo } from '@/components/TaxInfo';
 
 const sections = [
@@ -15,9 +15,9 @@ const sections = [
         <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
           <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Satıcı</p>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.35rem' }}>
-            <p style={{ color: '#f4f1ec', fontWeight: 600 }}>Ahenk Platformu</p>
+            <p style={{ color: '#f4f1ec', fontWeight: 600 }}>{COMPANY_TITLE}</p>
             <p style={{ color: '#a39c93', fontSize: 13 }}>{COMPANY_ADDRESS}</p>
-        <TaxInfo />
+        <TaxInfo showTitle={false} />
             <p style={{ fontSize: 13 }}><a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a></p>
             <p style={{ fontSize: 13 }}><a href="tel:+905403060080" style={{ color: '#c0392b' }}>0540 306 0080</a></p>
           </div>
@@ -237,8 +237,9 @@ const sections = [
         </p>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
           {[
-            '2024 yılı için belirlenen parasal sınırlar dahilinde Tüketici Hakem Heyetleri\'ne başvurma hakkınız mevcuttur.',
+            'Her yıl Ticaret Bakanlığı\'nca belirlenen güncel parasal sınırlar dahilinde Tüketici Hakem Heyetleri\'ne başvurma hakkınız mevcuttur.',
             JURISDICTION,
+            'Tüketici, 6502 sayılı Kanun kapsamında kendi yerleşim yerindeki Tüketici Hakem Heyeti veya Tüketici Mahkemesi\'ne de başvurabilir.',
           ].map((item) => (
             <div key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}

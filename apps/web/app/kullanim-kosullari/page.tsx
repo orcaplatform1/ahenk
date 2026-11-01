@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { PlanPriceText } from '@/components/PlanPrice';
-import { COMPANY_ADDRESS, JURISDICTION } from '@/lib/companyInfo';
+import { COMPANY_ADDRESS, COMPANY_TITLE, JURISDICTION } from '@/lib/companyInfo';
 import { TaxInfo } from '@/components/TaxInfo';
 
 const sections = [
@@ -11,7 +11,7 @@ const sections = [
     title: 'Taraflar ve Kapsam',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Bu kullanım koşulları, {COMPANY_ADDRESS} adresinde faaliyet gösteren <strong style={{ color: '#f4f1ec' }}>Ahenk</strong> platformu ile platforma üye olan <strong style={{ color: '#f4f1ec' }}>Kullanıcı</strong> arasındaki hak ve yükümlülükleri düzenler. Platforma üye olarak veya platformu kullanarak bu koşulları kabul etmiş sayılırsınız.
+        Bu kullanım koşulları, {COMPANY_ADDRESS} adresinde faaliyet gösteren <strong style={{ color: '#f4f1ec' }}>{COMPANY_TITLE}</strong> ile platforma üye olan <strong style={{ color: '#f4f1ec' }}>Kullanıcı</strong> arasındaki hak ve yükümlülükleri düzenler. Platforma üye olarak veya platformu kullanarak bu koşulları kabul etmiş sayılırsınız.
       </p>
     ),
   },

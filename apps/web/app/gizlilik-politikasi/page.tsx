@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { COMPANY_ADDRESS, JURISDICTION } from '@/lib/companyInfo';
+import { COMPANY_ADDRESS, COMPANY_TITLE, JURISDICTION } from '@/lib/companyInfo';
+import { CareerDataNotice } from '@/components/CareerDataNotice';
 import { TaxInfo } from '@/components/TaxInfo';
 
 const sections = [
@@ -12,7 +13,7 @@ const sections = [
     content: (
       <>
         <p>
-          Ahenk platformunun veri sorumlusu olarak aşağıdaki iletişim bilgilerini kullanabilirsiniz:
+          Ahenk platformunun veri sorumlusu {COMPANY_TITLE}&apos;dır. Aşağıdaki iletişim bilgilerini kullanabilirsiniz:
         </p>
         <div
           style={{
@@ -277,6 +278,11 @@ const sections = [
         </p>
       </>
     ),
+  },
+  {
+    n: '12',
+    title: 'Kariyer Başvuruları',
+    content: <CareerDataNotice transferRef="bu politikanın 6. maddesi (Kişisel Verilerin Aktarıldığı Üçüncü Taraflar)" rightsRef="7. maddesi (Kişisel Veri Sahibinin Hakları)" />,
   },
 ];
 

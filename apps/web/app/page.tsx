@@ -12,16 +12,6 @@ import { PlanPriceText } from '@/components/PlanPrice';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
 
 
-const cities = [
-  { name: 'İstanbul' },
-  { name: 'Ankara' },
-  { name: 'İzmir' },
-  { name: 'Antalya' },
-  { name: 'Muğla' },
-  { name: 'Aydın' },
-  { name: 'Balıkesir', sub: 'Ayvalık / Akçay' },
-];
-
 const plans = [
   {
     name: 'Masada',
@@ -621,6 +611,12 @@ function StatCards() {
 export default function Home() {
   const router = useRouter();
   const [activeCity, setActiveCity] = useState('İstanbul');
+  const [cities, setCities] = useState<{ name: string }[]>([]);
+
+  useEffect(() => {
+    api.get<{ name: string }[]>('/auth/cities').then(setCities).catch(() => undefined);
+  }, []);
+
   const [ownedPlans, setOwnedPlans] = useState<Set<PlanKey>>(new Set());
   const [openParts, setOpenParts] = useState<OpenParts>({ group: false, oneOnOne: false });
   const [authState, setAuthState] = useState<{ loggedIn: boolean; kycApproved: boolean } | null>(null);

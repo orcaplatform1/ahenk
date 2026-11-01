@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useInView } from 'framer-motion';
 import { usePlanPrices } from '@/components/PlanPrice';
+import { api } from '@/lib/api';
 
 /* ─── Fade-in wrapper ────────────────────────────────────────────────────── */
 function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -63,6 +64,10 @@ function FullQuote({ text }: { text: string }) {
 export default function HikayemizPage() {
   const prices = usePlanPrices();
   const tl = (v?: number) => (v === undefined ? '—' : v);
+  const [activeCities, setActiveCities] = useState<string[]>([]);
+  useEffect(() => {
+    api.get<{ name: string }[]>('/auth/cities').then((c) => setActiveCities(c.map((x) => x.name))).catch(() => undefined);
+  }, []);
   return (
     <main className="min-h-screen bg-[#121212] text-[#f5f5f5] overflow-x-hidden pt-[52px]">
 
@@ -127,7 +132,7 @@ export default function HikayemizPage() {
       {/* Bölüm 6 */}
       <TwoCol
         title="Neredeyiz?"
-        body="Ahenk şu an İstanbul, Ankara, İzmir, Antalya, Muğla, Aydın ve Balıkesir (Ayvalık/Akçay)'da aktif. Her Cuma grup masaları, her Cumartesi başbaşa buluşmalar gerçekleşiyor. Topluluk büyüdükçe yeni şehirler ekleniyor."
+        body={`Ahenk şu an ${activeCities.join(', ')} şehirlerinde aktif. Her Cuma grup masaları, her Cumartesi başbaşa buluşmalar gerçekleşiyor. Topluluk büyüdükçe yeni şehirler ekleniyor.`}
       />
 
       {/* Kapanış */}
