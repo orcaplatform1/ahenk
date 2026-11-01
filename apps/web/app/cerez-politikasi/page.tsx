@@ -32,9 +32,9 @@ const sections = [
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
             {[
-              { name: 'auth-token', desc: 'JWT oturum tokeni — kullanıcının giriş durumunu korur, oturum süresince geçerlidir.' },
-              { name: 'session-id', desc: 'Oturum kimliği — güvenli bağlantı için gereklidir.' },
-              { name: 'csrf-token', desc: 'Siteler arası istek sahteciliğini önler — güvenlik için zorunludur.' },
+              { name: 'auth-token', desc: 'JWT oturum tokeni: kullanıcının giriş durumunu korur, oturum süresince geçerlidir.' },
+              { name: 'session-id', desc: 'Oturum kimliği: güvenli bağlantı için gereklidir.' },
+              { name: 'csrf-token', desc: 'Siteler arası istek sahteciliğini önler, güvenlik için zorunludur.' },
             ].map((c) => (
               <div key={c.name} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
                 <span style={{ fontFamily: 'monospace', fontSize: 13, color: '#ff6b6b', display: 'block', marginBottom: '0.2rem' }}>{c.name}</span>
@@ -59,7 +59,7 @@ const sections = [
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
             {[
-              { name: 'cookie-consent', desc: 'Çerez tercihlerinizi hatırlar — 1 yıl geçerlidir.' },
+              { name: 'cookie-consent', desc: 'Çerez tercihlerinizi hatırlar, 1 yıl geçerlidir.' },
               { name: 'theme-preference', desc: 'Tema tercihinizi hatırlar.' },
             ].map((c) => (
               <div key={c.name} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
@@ -161,7 +161,7 @@ const sections = [
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.55rem' }}>
         {[
           'Çerezler aracılığıyla işlenen veriler SSL/TLS şifrelemesiyle korunur.',
-          'Oturum çerezleri HttpOnly ve Secure flag\'leriyle işaretlenmiştir — JavaScript ile erişilemez.',
+          'Oturum çerezleri HttpOnly ve Secure flag\'leriyle işaretlenmiştir. JavaScript ile erişilemez.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}

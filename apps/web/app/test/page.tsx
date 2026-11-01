@@ -166,7 +166,7 @@ export default function TestPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-semibold tracking-[0.18em] text-[#888] uppercase">
-            BÖLÜM {String(q.section).padStart(2, '0')} — {q.sectionTitle}
+            BÖLÜM {String(q.section).padStart(2, '0')}: {q.sectionTitle}
           </span>
           <span className="text-xs font-mono text-[#888]">{current + 1} / {total}</span>
         </div>

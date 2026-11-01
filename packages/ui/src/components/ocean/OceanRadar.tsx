@@ -142,7 +142,7 @@ export function OceanRadar({ scores, size = 200 }: Props) {
             className="absolute left-1/2 -translate-x-1/2 bottom-0 w-full px-2"
           >
             <div className="bg-surface border border-border rounded-xl px-3 py-2 text-center">
-              <p className="text-sm font-medium text-text">{hovered.label} — <span className="text-primary">{Math.round(scores[hovered.key])}</span></p>
+              <p className="text-sm font-medium text-text">{hovered.label}: <span className="text-primary">{Math.round(scores[hovered.key])}</span></p>
               <p className="text-xs text-muted mt-0.5">{hovered.desc}</p>
             </div>
           </motion.div>

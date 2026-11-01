@@ -179,7 +179,7 @@ function RadarChart({ scores }: { scores: OceanScore }) {
             }}
           >
             <span className="text-xs font-semibold" style={{ color: '#ff6b6b' }}>
-              {hoveredTrait.label} — {hoveredScore}
+              {hoveredTrait.label}: {hoveredScore}
             </span>
             <span className="text-xs text-[#888]">{hoveredTrait.desc}</span>
           </div>

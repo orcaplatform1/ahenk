@@ -106,7 +106,7 @@ const sections = [
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
           'Ödemeler iyzico Ödeme Hizmetleri A.Ş. altyapısı üzerinden kredi kartı veya banka kartıyla güvenli şekilde tahsil edilir.',
-          'Kart bilgileri Ahenk tarafından saklanmaz — iyzico\'nun PCI-DSS uyumlu sisteminde işlenir.',
+          'Kart bilgileri Ahenk tarafından saklanmaz, iyzico\'nun PCI-DSS uyumlu sisteminde işlenir.',
           'Paketler tek seferlik ödemeyle satın alınır; abonelik, otomatik yenileme veya kayıtlı karttan tekrar tahsilat yapılmaz.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>

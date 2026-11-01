@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Mekân Paneli — Ahenk',
+  title: 'Mekân Paneli | Ahenk',
   robots: { index: false, follow: false },
 };
 

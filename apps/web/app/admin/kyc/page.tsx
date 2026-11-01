@@ -257,7 +257,7 @@ export default function AdminKyc() {
               {activeTab === 'APPROVED' && !item.hasIdentityNumber && (
                 <div>
                   <p style={{ margin: '0 0 8px', fontSize: 11, color: AMBER }}>
-                    TC kimlik numarası girilmemiş — bu kullanıcı ödeme yapamaz. Kimlik görselinden girin.
+                    TC kimlik numarası girilmemiş. Bu kullanıcı ödeme yapamaz. Kimlik görselinden girin.
                   </p>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input
@@ -290,7 +290,7 @@ export default function AdminKyc() {
                   <input
                     value={tckn[item.id] ?? ''}
                     onChange={e => setTckn(prev => ({ ...prev, [item.id]: e.target.value.replace(/\D/g, '').slice(0, 11) }))}
-                    placeholder="TC Kimlik No (onay için zorunlu — kimlik görselinden girin)"
+                    placeholder="TC Kimlik No (onay için zorunlu, kimlik görselinden girin)"
                     inputMode="numeric"
                     autoComplete="off"
                     style={tcknInputStyle}

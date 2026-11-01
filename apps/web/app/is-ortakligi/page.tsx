@@ -245,7 +245,7 @@ export default function IsOrtakligiPage() {
                 { icon: 'calendar' as const, title: 'Garantili Doluluk', desc: 'Her hafta önceden planlanmış, kesinleşmiş rezervasyonlar. Boş masa bırakmayın.' },
                 { icon: 'shield' as const, title: 'Seçkin Müşteri Kitlesi', desc: 'OCEAN kişilik testinden geçmiş, kimlik doğrulamalı, sosyal deneyime değer veren kullanıcılar. Kaliteli müşteri, kaliteli deneyim.' },
                 { icon: 'star' as const, title: 'Sıfır Pazarlama Maliyeti', desc: 'Reklam vermenize gerek yok. Ahenk kullanıcıları mekânınıza gelir, siz sadece en iyi deneyimi sunarsınız.' },
-                { icon: 'table' as const, title: 'Özel Masa Düzeni', desc: 'Grup masaları 4-8 kişi, başbaşa masalar 2 kişi. Önceden bilirsiniz, hazırlıklı olursunuz.' },
+                { icon: 'table' as const, title: 'Özel Masa Düzeni', desc: 'Grup masaları 4-6 kişi, başbaşa masalar 2 kişi, kankamla masaları 4 kişi. Önceden bilirsiniz, hazırlıklı olursunuz.' },
               ].map((card, i) => (
                 <FadeIn key={card.title} delay={i * 0.08}>
                   <div className="ll-card" style={{ height: '100%' }}>
@@ -268,7 +268,7 @@ export default function IsOrtakligiPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0', position: 'relative' }}>
               {[
                 { n: '1', title: 'Başvuru', desc: 'Formu doldurun, mekânınızı ve kapasitenizi bize bildirin.' },
-                { n: '2', title: 'Değerlendirme', desc: 'Ekibimiz mekânınızı inceler, 3 iş günü içinde geri dönüş yapar.' },
+                { n: '2', title: 'Değerlendirme', desc: 'Ekibimiz mekânınızı inceler, 24 saat içinde geri dönüş yapar.' },
                 { n: '3', title: 'Ortaklık', desc: 'Anlaşma imzalanır, ilk rezervasyonlar başlar.' },
               ].map((step, i) => (
                 <div key={step.n} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 1rem', position: 'relative' }}>
@@ -300,7 +300,7 @@ export default function IsOrtakligiPage() {
                     `${cityList(cities)} illerinde faaliyet gösterenler`,
                     'En az 2 ayrı masa veya özel alan tahsis edebilecek kapasitede olanlar',
                     'Müşteri deneyimine önem veren, kaliteli hizmet sunan işletmeler',
-                    'Alkollü içecek servisi yapabilen veya yapmayan mekânlar başvurabilir — her ikisi de değerlendirmeye alınır',
+                    'Alkollü içecek servisi yapabilen veya yapmayan mekânlar başvurabilir. Her ikisi de değerlendirmeye alınır',
                   ].map((item) => (
                     <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
                       <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -319,7 +319,7 @@ export default function IsOrtakligiPage() {
                 </p>
                 <div style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
                   <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.6 }}>
-                    Ahenk kullanıcıları yemek ve içecek bedelini doğrudan mekâna öder — Ahenk sadece organizasyon ve eşleştirme hizmeti sunar.
+                    Ahenk kullanıcıları yemek ve içecek bedelini doğrudan mekâna öder. Ahenk sadece organizasyon ve eşleştirme hizmeti sunar.
                   </p>
                 </div>
               </div>
@@ -381,7 +381,7 @@ export default function IsOrtakligiPage() {
                   </motion.div>
                   <h3 className="ll-title" style={{ marginBottom: '0.75rem' }}>Başvurunuz alındı!</h3>
                   <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.65 }}>
-                    Ekibimiz <strong style={{ color: '#f4f1ec' }}>3 iş günü</strong> içinde başvurunuzu inceleyecek. Onaylandığında WhatsApp ile bilgilendirileceksiniz; ardından mekân paneline giriş yapabilirsiniz.
+                    Ekibimiz <strong style={{ color: '#f4f1ec' }}>24 saat</strong> içinde başvurunuzu inceleyecek. Onaylandığında WhatsApp ile bilgilendirileceksiniz; ardından mekân paneline giriş yapabilirsiniz.
                   </p>
                 </motion.div>
               ) : (

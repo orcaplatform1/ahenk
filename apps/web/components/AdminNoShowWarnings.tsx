@@ -80,7 +80,7 @@ export function AdminNoShowWarnings({
               {new Date(meeting.scheduledAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' })}
               {' · '}{meeting.type === 'ONE_ON_ONE' ? 'Başbaşa' : 'Grup'}
               {meeting.locationText ? ` · ${meeting.locationText}` : ''}
-              {' — bildiren: '}
+              {', bildiren: '}
               <span style={{ color: TEXT }}>{reporters.join(', ')}</span>
             </p>
             {warned ? (

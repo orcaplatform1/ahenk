@@ -248,7 +248,7 @@ function ProximityAlert({ requester, others }: { requester: ParticipantLoc | nul
         const name = p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.userId.slice(0, 8);
         return (
           <p key={p.userId} style={{ margin: '4px 0 0', fontSize: 11, color: 'rgba(239,68,68,0.8)', fontFamily: MONO }}>
-            → {name} — {m}m mesafede
+            → {name}: {m}m mesafede
           </p>
         );
       })}
@@ -262,7 +262,7 @@ function ReportCard({ report, index, tick, onChanged }: { report: SosReport; ind
       <div style={{ borderRadius: 12, border: `1px solid ${BORDER}`, background: SURFACE, padding: '14px 18px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
         {!report.resolvedAt && <Pulse color={AMBER} />}
         <span style={{ fontSize: 13, color: TEXT }}>
-          {report.resolvedAt ? 'Çözülmüş talep' : 'Aktif talep'} — <strong>{adminName(report.claimedBy)}</strong> ilgileniyor
+          {report.resolvedAt ? 'Çözülmüş talep' : 'Aktif talep'}: <strong>{adminName(report.claimedBy)}</strong> ilgileniyor
         </span>
         <span style={{ marginLeft: 'auto', fontSize: 9, fontFamily: MONO, color: MUTED }}>{fmtTR(report.createdAt)}</span>
       </div>
@@ -448,7 +448,7 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
                 {report.meeting ? (<>
                 <Row label="Tür" value={report.meeting.type === 'GROUP' ? 'Grup' : 'Baş Başa'} />
                 <Row label="Saat" value={fmtTR(report.meeting.scheduledAt)} />
-                <Row label="Mekan" value={[report.meeting.locationText, report.meeting.venueAddress].filter(Boolean).join(' — ') || '—'} />
+                <Row label="Mekan" value={[report.meeting.locationText, report.meeting.venueAddress].filter(Boolean).join(', ') || '—'} />
                 <Row label="ID" value={<code style={{ fontSize: 9, color: MUTED }}>{report.meeting.id}</code>} />
                 </>) : <Row label="Masa" value="Silinmiş" />}
               </Section>
@@ -467,7 +467,7 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
                     {!reqLoc && displayLat && displayLng && (
                       <a href={mapsHref(displayLat, displayLng)} target="_blank" rel="noopener noreferrer"
                         style={{ fontSize: 11, color: CYAN, textDecoration: 'none' }}>
-                        📍 {displayLat.toFixed(5)}, {displayLng.toFixed(5)} — ilk konum
+                        📍 {displayLat.toFixed(5)}, {displayLng.toFixed(5)} (ilk konum)
                       </a>
                     )}
                   </>
@@ -695,7 +695,7 @@ export default function AcilYardimPage() {
           ) : reports.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-              <p style={{ fontSize: 14, color: GREEN, fontWeight: 600 }}>Sistem nominal — Aktif talep yok</p>
+              <p style={{ fontSize: 14, color: GREEN, fontWeight: 600 }}>Sistem nominal. Aktif talep yok</p>
               <p style={{ fontSize: 11, color: MUTED, marginTop: 6, fontFamily: MONO }}>Otomatik izleme aktif · 15s</p>
             </div>
           ) : (
@@ -705,7 +705,7 @@ export default function AcilYardimPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                     <Pulse color={RED} />
                     <span style={{ ...LABEL, color: RED }}>
-                      AKTİF TALEPLER — {active.length}
+                      AKTİF TALEPLER: {active.length}
                     </span>
                   </div>
                   {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} />)}
@@ -716,7 +716,7 @@ export default function AcilYardimPage() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                     <span style={{ ...LABEL, color: MUTED }}>
-                      ÇÖZÜMLENEN — {resolved.length}
+                      ÇÖZÜMLENEN: {resolved.length}
                     </span>
                   </div>
                   {resolved.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} />)}

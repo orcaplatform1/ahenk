@@ -28,7 +28,7 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Ahenk — Sana Uygun İnsanlarla Buluş',
+  title: 'Ahenk | Sana Uygun İnsanlarla Buluş',
   description:
     'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. İster Grup masasında, istersen başbaşa bir yemek veya kahve. Doğru insanlar, doğru zamanda.',
   icons: {
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   openGraph: {
-    title: 'Ahenk — Sana Uygun İnsanlarla Buluş',
+    title: 'Ahenk | Sana Uygun İnsanlarla Buluş',
     description:
       'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. İster Grup masasında, istersen başbaşa bir yemek veya kahve. Doğru insanlar, doğru zamanda.',
     type: 'website',
@@ -51,13 +51,13 @@ export const metadata: Metadata = {
         url: 'https://ahenk.co/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Ahenk — Sana Uygun İnsanlarla Buluş',
+        alt: 'Ahenk | Sana Uygun İnsanlarla Buluş',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ahenk — Sana Uygun İnsanlarla Buluş',
+    title: 'Ahenk | Sana Uygun İnsanlarla Buluş',
     description:
       'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. Doğru insanlar, doğru zamanda.',
     images: ['https://ahenk.co/og-image.jpg'],

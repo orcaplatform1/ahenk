@@ -421,7 +421,7 @@ export default function AdminVenues() {
                 </div>
               )}
               <div>
-                <p style={labelStyle}>FOTOĞRAFLAR ({photos.length + pendingFiles.length}/{MAX_PHOTOS}) — EN AZ 1, EN FAZLA 3; HER BİRİ EN FAZLA 5 MB</p>
+                <p style={labelStyle}>FOTOĞRAFLAR ({photos.length + pendingFiles.length}/{MAX_PHOTOS}): EN AZ 1, EN FAZLA 3; HER BİRİ EN FAZLA 5 MB</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 6, marginBottom: 8 }}>
                   {photos.map(url => (
                     <div key={url} style={{ position: 'relative' }}>

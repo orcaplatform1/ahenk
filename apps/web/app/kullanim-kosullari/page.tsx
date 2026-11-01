@@ -32,7 +32,7 @@ const sections = [
         {[
           'Platforma üye olmak için 18 yaşını doldurmuş olmak zorunludur.',
           'Gerçek kimlik bilgileriyle kayıt yapılması gerekir; sahte veya başkasına ait bilgilerle kayıt yasaktır.',
-          'Her kullanıcı yalnızca bir hesap açabilir — birden fazla hesap tespitinde tüm hesaplar kapatılır.',
+          'Her kullanıcı yalnızca bir hesap açabilir. Birden fazla hesap tespitinde tüm hesaplar kapatılır.',
           'kimlik doğrulama süreci zorunludur; doğrulama tamamlanmadan paket satın alınamaz ve masa eşleştirmesine dahil olunamaz.',
           'Üyelik sırasında verilen bilgilerin güncel ve doğru tutulması kullanıcının sorumluluğundadır.',
         ].map((item) => (

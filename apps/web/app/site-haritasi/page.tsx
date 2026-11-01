@@ -47,7 +47,7 @@ const SITE_MAP = [
     group: 'Yasal',
     icon: '📄',
     pages: [
-      { label: 'Site Haritası', href: '/site-haritasi', desc: 'Bu sayfa — tüm sayfalara bakış' },
+      { label: 'Site Haritası', href: '/site-haritasi', desc: 'Bu sayfa: tüm sayfalara bakış' },
       { label: 'XML Site Haritası', href: '/sitemap.xml', desc: 'Arama motoru XML site haritası', external: true },
     ],
   },

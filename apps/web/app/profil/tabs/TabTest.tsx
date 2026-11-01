@@ -43,7 +43,7 @@ const DIMENSIONS = [
   ]},
   { key: 'extraversion'      as keyof Scores, label: 'Dışadönüklük', sub: 'Sosyal Enerji',             levels: [
     'Sosyal ortamlar seni yoruyor, yalnız zaman enerji veriyor. Masalarda derin bire bir bağlantılarda parıldassan da kalabalık dinamikler zorlayabiliyor.',
-    'Ne tam içedönük ne tam dışadönüksün — ortam ve insanlara göre değişiyorsun. Masalarda seçici ama kaliteli bir enerji yayıyorsun.',
+    'Ne tam içedönük ne tam dışadönüksün, ortam ve insanlara göre değişiyorsun. Masalarda seçici ama kaliteli bir enerji yayıyorsun.',
     'Sosyal ortamlardan enerji alıyorsun. Masaya oturduğun andan itibaren buzları eriten, konuşmaları başlatan ve ortamı ısıtan birisin.',
   ]},
   { key: 'agreeableness'     as keyof Scores, label: 'Uyumluluk',    sub: 'Empati & İşbirliği',        levels: [

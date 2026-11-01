@@ -263,7 +263,7 @@ export default function KariyerPage() {
                   'Sorumluluk almaktan korkmayan, çözüm odaklı düşünen biri.',
                   'Dijital araçlara hâkim, raporlama yapabilen biri.',
                   'Ahenk\'in vizyonuna inanan, sosyal bağları güçlendirme misyonunu benimseyen biri.',
-                  'Üniversite mezuniyeti veya aktif öğrencilik — ikisi de değerlendirmeye alınır.',
+                  'Üniversite mezuniyeti veya aktif öğrencilik. İkisi de değerlendirmeye alınır.',
                 ].map((item) => (
                   <li key={item} style={{ display: 'flex', gap: '0.75rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)', flexShrink: 0, marginTop: '0.45rem' }} />
@@ -273,7 +273,7 @@ export default function KariyerPage() {
               </ul>
               <div style={{ marginTop: '1.25rem', padding: '0.85rem 1.1rem', background: 'rgba(192,57,43,0.07)', border: '1px solid rgba(192,57,43,0.2)', borderRadius: '10px' }}>
                 <p style={{ color: '#f4f1ec', fontSize: 13 }}>
-                  Deneyim zorunlu değil — <strong>doğru tutum her şeyin önünde.</strong>
+                  Deneyim zorunlu değil. <strong>Doğru tutum her şeyin önünde.</strong>
                 </p>
               </div>
             </div>
@@ -355,7 +355,7 @@ export default function KariyerPage() {
                   <TextField label="LinkedIn (opsiyonel)" type="url" value={form.linkedinOrCv} onChange={(v) => set('linkedinOrCv', v)} placeholder="https://www.linkedin.com/in/…" maxLength={300} />
 
                   <div>
-                    <FormLabel>Özgeçmiş (CV) * — PDF, DOC, DOCX, JPEG, PNG; en fazla 5 MB</FormLabel>
+                    <FormLabel>Özgeçmiş (CV) * (PDF, DOC, DOCX, JPEG, PNG; en fazla 5 MB)</FormLabel>
                     <label className="input-glass px-4 py-3 text-[13px]" style={{ position: 'relative', display: 'block', cursor: 'pointer', color: cv ? '#f4f1ec' : '#ff6b6b', textAlign: 'center' }}>
                       {cv ? cv.name : '+ Dosya seç'}
                       <input type="file" accept={CV_ACCEPT} onChange={(e) => { pickCv(e.target.files?.[0]); e.target.value = ''; }} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />

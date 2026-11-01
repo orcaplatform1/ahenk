@@ -102,7 +102,7 @@ export default function AdminAlerts() {
                   <div>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>
                       {ALERT_LABELS[a.alertType] ?? a.alertType}
-                      {a.user?.profile && ` — ${a.user.profile.firstName ?? ''} ${a.user.profile.lastName ?? ''}`}
+                      {a.user?.profile && `: ${a.user.profile.firstName ?? ''} ${a.user.profile.lastName ?? ''}`}
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
                       {new Date(a.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}

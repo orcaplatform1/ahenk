@@ -170,7 +170,7 @@ function Testimonials() {
             </div>
             <div style={{ borderTop: '1px solid rgba(192,57,43,0.2)', marginTop: 16, paddingTop: 12, textAlign: 'right' }}>
               <span style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.14em', color: '#c0392b', textTransform: 'uppercase' }}>
-                — {item.name}, {item.city}
+                {item.name}, {item.city}
               </span>
             </div>
           </div>
@@ -834,7 +834,7 @@ export default function Home() {
                       marginBottom: 8,
                     }}
                   >
-                    — {item.word}
+                    {item.word}
                   </div>
                   <p
                     style={{

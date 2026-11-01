@@ -139,7 +139,7 @@ function WaitingRow({ w, isSuperadmin, onUserClick, onChanged, onError }: {
         </button>
         <span style={{ fontSize: 11, color: MUTED }}>{w.city ?? 'Şehir yok'}</span>
         <span style={{ fontSize: 11, fontWeight: 600, color: first ? AMBER : TEXT }}>
-          {w.cycleNo}. döngü{first ? ' — ilk döngüde bot eklenmez' : ''}
+          {w.cycleNo}. döngü{first ? ', ilk döngüde bot eklenmez' : ''}
         </span>
         {isSuperadmin && (
           <button onClick={() => setBotOpen(o => !o)} style={{ ...btnStyle(false), marginLeft: 'auto' }}>{botOpen ? 'Kapat' : 'Bot ile masa kur'}</button>
@@ -216,7 +216,7 @@ export function AdminOpenTables({ isSuperadmin, onUserClick }: { isSuperadmin: b
             {(data.kanka ?? []).map(t => <TableCard key={t.id} t={t} {...common} />)}
           </div>
 
-          <p style={sectionTitle}>BAŞBAŞA — EŞİ BEKLEYENLER ({data.waiting.length})</p>
+          <p style={sectionTitle}>BAŞBAŞA: EŞİ BEKLEYENLER ({data.waiting.length})</p>
           <div style={{ display: 'grid', gap: 10 }}>
             {data.waiting.length === 0 && <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Eşi bekleyen yok</p>}
             {data.waiting.map(w => <WaitingRow key={w.userId} w={w} {...common} />)}

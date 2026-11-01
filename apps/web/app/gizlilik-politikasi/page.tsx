@@ -70,7 +70,7 @@ const sections = [
             'OCEAN kişilik testi sonuçları ve skorları',
             'Masa buluşma geçmişi',
             'Değerlendirme ve yorum verileri',
-            'Rehber engelleme listesi — eklenen telefon numaraları',
+            'Rehber engelleme listesi: eklenen telefon numaraları',
           ]}
         />
 
@@ -104,19 +104,19 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.85rem' }}>
         {[
           {
-            basis: 'Açık Rıza — KVKK Madde 5/1',
+            basis: 'Açık Rıza: KVKK Madde 5/1',
             desc: 'OCEAN testi sonuçları, kimlik belgeleri ve liveness videosu',
           },
           {
-            basis: 'Sözleşmenin İfası — KVKK Madde 5/2-c',
+            basis: 'Sözleşmenin İfası: KVKK Madde 5/2-c',
             desc: 'Kayıt, ödeme ve hizmet sunumu',
           },
           {
-            basis: 'Meşru Menfaat — KVKK Madde 5/2-f',
+            basis: 'Meşru Menfaat: KVKK Madde 5/2-f',
             desc: 'Platform güvenliği, teknik veriler',
           },
           {
-            basis: 'Yasal Yükümlülük — KVKK Madde 5/2-ç',
+            basis: 'Yasal Yükümlülük: KVKK Madde 5/2-ç',
             desc: 'Mali kayıtlar, yetkili kurum talepleri',
           },
         ].map((row) => (
@@ -143,9 +143,9 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
         {[
           ['Kullanıcı hesap verileri', 'Hesap silinene kadar + 2 yıl'],
-          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl — yasal yükümlülük'],
+          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl, yasal yükümlülük'],
           ['OCEAN testi sonuçları', 'Hesap aktif olduğu sürece'],
-          ['Ödeme kayıtları', '10 yıl — Vergi Usul Kanunu'],
+          ['Ödeme kayıtları', '10 yıl, Vergi Usul Kanunu'],
           ['Rehber engelleme için eklenen telefon numaraları', 'Kullanıcı silene kadar'],
         ].map(([label, value], i) => (
           <div
@@ -174,13 +174,13 @@ const sections = [
         <SubTitle>Yurt İçi Aktarımlar</SubTitle>
         <p>
           <strong style={{ color: '#f4f1ec' }}>iyzico Ödeme Hizmetleri A.Ş.</strong>
-          {' '}— ödeme tahsilatı ve paket yönetimi amacıyla.
+          : ödeme tahsilatı ve paket yönetimi amacıyla.
         </p>
 
         <SubTitle style={{ marginTop: '1.25rem' }}>Yurt Dışı Aktarımlar</SubTitle>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Cloudflare Inc. (ABD)</strong>
-          {' '}— R2 private bucket'ta kimlik belgeleri ve liveness videosu şifrelenmiş olarak saklanır. Standart Sözleşme Maddeleri (SCCs) kapsamında aktarılır.
+          : R2 private bucket'ta kimlik belgeleri ve liveness videosu şifrelenmiş olarak saklanır. Standart Sözleşme Maddeleri (SCCs) kapsamında aktarılır.
         </p>
 
         <div
@@ -245,8 +245,8 @@ const sections = [
     content: (
       <List
         items={[
-          'SSL/TLS şifrelemesi — tüm veri iletimlerinde',
-          'Cloudflare R2 private bucket — kimlik belgeleri ve liveness videosu yalnızca imzalı URL ile yetkili admin tarafından erişilebilir',
+          'SSL/TLS şifrelemesi: tüm veri iletimlerinde',
+          'Cloudflare R2 private bucket: kimlik belgeleri ve liveness videosu yalnızca imzalı URL ile yetkili admin tarafından erişilebilir',
           'Erişim kontrolleri ve rol tabanlı yetkilendirme',
           'Rate limiting ve DDoS koruması',
         ]}

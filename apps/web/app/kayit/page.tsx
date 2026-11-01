@@ -539,7 +539,7 @@ function KayitPageInner() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-1">
                   <span className="ll-eyebrow">
-                    BÖLÜM {String(tq?.section ?? 1).padStart(2, '0')} — {tq?.sectionTitle ?? ''}
+                    BÖLÜM {String(tq?.section ?? 1).padStart(2, '0')}: {tq?.sectionTitle ?? ''}
                   </span>
                   <span className="ll-mono text-[11px] text-[#a39c93]">{testCurrent + 1} / {tTotal}</span>
                 </div>

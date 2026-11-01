@@ -364,7 +364,7 @@ export class SosService {
     const name     = reporter?.profile ? `${reporter.profile.firstName} ${reporter.profile.lastName}` : reporter?.email ?? userId;
     const threatTx = threats.map((t) => THREAT_LABELS[t] ?? t).join(", ");
     const locTx    = lat && lng ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : "Konum alınamadı";
-    const logMsg   = `[ACİL YARDIM] ${name} (${reporter?.phone ?? reporter?.email}) — Tehdit: ${threatTx} — Konum: ${locTx} — Masa: ${meetingId} — Rapor: ${reportId}`;
+    const logMsg   = `[ACİL YARDIM] ${name} (${reporter?.phone ?? reporter?.email}). Tehdit: ${threatTx}. Konum: ${locTx}. Masa: ${meetingId}. Rapor: ${reportId}`;
 
     this.logger.error(logMsg);
 
@@ -384,7 +384,7 @@ export class SosService {
           await this.fcm.sendToToken({
             token: adm.fcmToken,
             title: "🚨 ACİL YARDIM TALEBİ",
-            body:  `${name} — ${threatTx}`,
+            body:  `${name}: ${threatTx}`,
             data:  { reportId, meetingId, type: "SOS_ALERT" },
           });
         } catch {

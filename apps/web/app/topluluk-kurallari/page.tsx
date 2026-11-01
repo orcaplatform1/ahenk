@@ -22,12 +22,12 @@ const sections = [
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.7rem' }}>
         {[
-          'Gerçek kimliğinizle kayıt olun — sahte isim, fotoğraf veya bilgi kullanmak yasaktır ve hesabınızın kalıcı olarak kapatılmasına neden olur.',
-          'OCEAN kişilik testini dürüstçe yanıtlayın — manipüle edilmiş sonuçlar eşleştirme kalitesini düşürür ve topluluğun tamamına zarar verir.',
-          'kimlik doğrulama sürecini eksiksiz tamamlayın — bu hem sizin hem de diğer kullanıcıların güvenliği içindir.',
-          'Buluşma daveti aldığınızda katılıp katılmayacağınıza zamanında karar verin — son dakika iptalleri diğer katılımcıları olumsuz etkiler. Katılamayacaksanız en az 24 saat öncesinden platform üzerinden bildirin.',
-          'Buluşma lokasyonunu ve saatini önceden not alın — Ahenk sistem bildirimleri gönderir ancak takip sorumluluğu size aittir.',
-          'Buluşmaya gitmeden önce kendinize ait herhangi bir beklenti veya ön yargıyı bir kenara bırakmaya çalışın — her insan sürpriz yapabilir.',
+          'Gerçek kimliğinizle kayıt olun. Sahte isim, fotoğraf veya bilgi kullanmak yasaktır ve hesabınızın kalıcı olarak kapatılmasına neden olur.',
+          'OCEAN kişilik testini dürüstçe yanıtlayın. Manipüle edilmiş sonuçlar eşleştirme kalitesini düşürür ve topluluğun tamamına zarar verir.',
+          'kimlik doğrulama sürecini eksiksiz tamamlayın. Bu hem sizin hem de diğer kullanıcıların güvenliği içindir.',
+          'Buluşma daveti aldığınızda katılıp katılmayacağınıza zamanında karar verin. Son dakika iptalleri diğer katılımcıları olumsuz etkiler. Katılamayacaksanız en az 24 saat öncesinden platform üzerinden bildirin.',
+          'Buluşma lokasyonunu ve saatini önceden not alın. Ahenk sistem bildirimleri gönderir ancak takip sorumluluğu size aittir.',
+          'Buluşmaya gitmeden önce kendinize ait herhangi bir beklenti veya ön yargıyı bir kenara bırakmaya çalışın. Her insan sürpriz yapabilir.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -43,14 +43,14 @@ const sections = [
       <>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.7rem', marginBottom: '1.25rem' }}>
           {[
-            'Zamanında gelin — 15 dakikadan fazla gecikeceğinizi anlarsanız platform üzerinden bildirim gönderin.',
-            'Masadaki herkese eşit ilgi ve saygı gösterin — birini ya da bir grubu dışlamak, görmezden gelmek veya yalnızlaştırmak kabul edilemez.',
-            'Kendinizi gerçek kimliğinizle tanıtın — masa arkadaşlarınızı yanıltacak bilgiler vermeyin.',
-            'Sohbeti tekelleştirmeyin — herkesin konuşma fırsatı bulduğundan emin olmaya gayret edin.',
-            'Alkol tüketimi konusunda diğer katılımcılara baskı uygulamayın — herkes kendi tercihini özgürce yapar.',
-            'Masada fotoğraf veya video çekmek için diğer katılımcıların açık onayını alın — sosyal medyada paylaşırken kimliği açığa çıkarmayın.',
-            'Ticari ürün, hizmet veya yatırım tekliflerini buluşma ortamına taşımayın — Ahenk masaları ticari faaliyet alanı değildir.',
-            'Masa arkadaşlarınızın kişisel bilgilerini (telefon, adres, iş yeri) açıkça talep etmeyin — iletişim kurmak istiyorsanız platform üzerinden yapın.',
+            'Zamanında gelin. 15 dakikadan fazla gecikeceğinizi anlarsanız platform üzerinden bildirim gönderin.',
+            'Masadaki herkese eşit ilgi ve saygı gösterin. Birini ya da bir grubu dışlamak, görmezden gelmek veya yalnızlaştırmak kabul edilemez.',
+            'Kendinizi gerçek kimliğinizle tanıtın. Masa arkadaşlarınızı yanıltacak bilgiler vermeyin.',
+            'Sohbeti tekelleştirmeyin. Herkesin konuşma fırsatı bulduğundan emin olmaya gayret edin.',
+            'Alkol tüketimi konusunda diğer katılımcılara baskı uygulamayın. Herkes kendi tercihini özgürce yapar.',
+            'Masada fotoğraf veya video çekmek için diğer katılımcıların açık onayını alın. Sosyal medyada paylaşırken kimliği açığa çıkarmayın.',
+            'Ticari ürün, hizmet veya yatırım tekliflerini buluşma ortamına taşımayın. Ahenk masaları ticari faaliyet alanı değildir.',
+            'Masa arkadaşlarınızın kişisel bilgilerini (telefon, adres, iş yeri) açıkça talep etmeyin. İletişim kurmak istiyorsanız platform üzerinden yapın.',
           ].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -82,11 +82,11 @@ const sections = [
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.7rem' }}>
         {[
-          'Değerlendirmenizi dürüstçe yapın — puanlarınız ve yorumlarınız algoritmanın gelişmesine ve topluluğun kalitesine doğrudan katkı sunar.',
-          'Bir katılımcının davranışı sizi rahatsız ettiyse değerlendirme ekranında bildirin veya bilgi@ahenk.co adresine yazın — her bildirim gizlilik içinde değerlendirilir.',
+          'Değerlendirmenizi dürüstçe yapın. Puanlarınız ve yorumlarınız algoritmanın gelişmesine ve topluluğun kalitesine doğrudan katkı sunar.',
+          'Bir katılımcının davranışı sizi rahatsız ettiyse değerlendirme ekranında bildirin veya bilgi@ahenk.co adresine yazın. Her bildirim gizlilik içinde değerlendirilir.',
           'Masa arkadaşlarınızın iletişim bilgilerini onların onayı olmadan üçüncü taraflarla paylaşmayın.',
-          'Buluşmada edindiğiniz kişisel bilgileri kötüye kullanmayın — bu bilgiler size güven ortamında paylaşılmıştır.',
-          'Bir katılımcıyla tekrar eşleşmek istemiyorsanız Rehber Engelleme veya değerlendirme ekranındaki bloklama özelliğini kullanın — taciz veya misilleme niteliğindeki davranışlar hesap kapatma sebebidir.',
+          'Buluşmada edindiğiniz kişisel bilgileri kötüye kullanmayın. Bu bilgiler size güven ortamında paylaşılmıştır.',
+          'Bir katılımcıyla tekrar eşleşmek istemiyorsanız Rehber Engelleme veya değerlendirme ekranındaki bloklama özelliğini kullanın. Taciz veya misilleme niteliğindeki davranışlar hesap kapatma sebebidir.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -103,7 +103,7 @@ const sections = [
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem', marginBottom: '1rem' }}>
           {[
             'Herhangi bir kullanıcıya yönelik taciz, tehdit, hakaret veya yıldırma girişimi.',
-            'Cinsel içerikli mesaj, teklif veya fiziksel yaklaşım — buluşmalar romantik değil sosyal amaçlıdır.',
+            'Cinsel içerikli mesaj, teklif veya fiziksel yaklaşım. Buluşmalar romantik değil sosyal amaçlıdır.',
             'Irk, etnisite, din, cinsiyet, cinsel yönelim, engellilik veya yaş temelinde ayrımcı tutum ve söylem.',
             'Siyasi parti propagandası, seçim kampanyası veya ideolojik baskı.',
             'Dini baskı, inanç dayatması veya dini ayin çağrısı.',
@@ -145,8 +145,8 @@ const sections = [
         </p>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.65rem', marginBottom: '1rem' }}>
           {[
-            { level: 'Uyarı', desc: 'Bildirim gönderme — hafif ihlaller için ilk adım.' },
-            { level: 'Askıya Alma', desc: 'Hesabı geçici olarak kapatma — 1-30 gün arası.' },
+            { level: 'Uyarı', desc: 'Bildirim gönderme: hafif ihlaller için ilk adım.' },
+            { level: 'Askıya Alma', desc: 'Hesabı geçici olarak kapatma: 1-30 gün arası.' },
             { level: 'Kalıcı Kapatma', desc: 'Hesabı kalıcı olarak kapatma ve platforma erişimi engelleme.' },
           ].map((row) => (
             <div key={row.level} style={{ display: 'flex', gap: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', alignItems: 'flex-start' }}>

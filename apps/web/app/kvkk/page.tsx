@@ -45,7 +45,7 @@ const sections = [
           },
           {
             cat: 'Biyometrik Veri',
-            items: ['Liveness (canlılık) videosu — yüz görüntüsü içerdiğinden özel nitelikli kişisel veri sayılır, açık rıza alınarak işlenir'],
+            items: ['Liveness (canlılık) videosu: yüz görüntüsü içerdiğinden özel nitelikli kişisel veri sayılır, açık rıza alınarak işlenir'],
             special: true,
           },
           {
@@ -58,7 +58,7 @@ const sections = [
           },
           {
             cat: 'Finansal Veriler',
-            items: ['Satın alınan paket, ödeme tarihleri — kart numarası Ahenk tarafından saklanmaz, iyzico tarafından işlenir'],
+            items: ['Satın alınan paket, ödeme tarihleri. Kart numarası Ahenk tarafından saklanmaz, iyzico tarafından işlenir'],
           },
           {
             cat: 'Psikolojik / Kişilik Verileri',
@@ -131,19 +131,19 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.85rem' }}>
         {[
           {
-            basis: 'Açık Rıza — Madde 5/1 ve 6/2',
-            desc: 'OCEAN kişilik testi sonuçları, kimlik belgesi görselleri ve liveness videosu — kullanıcı kayıt ve kimlik doğrulama sürecinde açık onay verir.',
+            basis: 'Açık Rıza: Madde 5/1 ve 6/2',
+            desc: 'OCEAN kişilik testi sonuçları, kimlik belgesi görselleri ve liveness videosu. Kullanıcı kayıt ve kimlik doğrulama sürecinde açık onay verir.',
           },
           {
-            basis: 'Sözleşmenin Kurulması veya İfası — Madde 5/2-c',
+            basis: 'Sözleşmenin Kurulması veya İfası: Madde 5/2-c',
             desc: 'Ad, soyad, e-posta, şehir, paket ve ödeme verileri. Kankamla için kanka davetinde girilen telefon numarası (davetin iletilmesi ve doğrulanmış hesapla eşleştirilmesi amacıyla) ve kanka bağlantısı.',
           },
           {
-            basis: 'Veri Sorumlusunun Meşru Menfaati — Madde 5/2-f',
+            basis: 'Veri Sorumlusunun Meşru Menfaati: Madde 5/2-f',
             desc: 'Teknik veriler, IP adresi, güvenlik logları, rehber engelleme için eklenen telefon numaraları.',
           },
           {
-            basis: 'Hukuki Yükümlülüğün Yerine Getirilmesi — Madde 5/2-ç',
+            basis: 'Hukuki Yükümlülüğün Yerine Getirilmesi: Madde 5/2-ç',
             desc: 'Ödeme kayıtları, fatura bilgileri, yetkili kurum talepleri.',
           },
         ].map((row) => (
@@ -196,12 +196,12 @@ const sections = [
         <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Yurt İçi Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>iyzico Ödeme Hizmetleri A.Ş.</strong>
-          {' '}— ödeme ve paket işlemleri için zorunlu finansal veriler aktarılır; iyzico kendi KVKK yükümlülüklerini yerine getirmektedir.
+          : ödeme ve paket işlemleri için zorunlu finansal veriler aktarılır; iyzico kendi KVKK yükümlülüklerini yerine getirmektedir.
         </p>
         <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Yurt Dışı Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Cloudflare Inc. (ABD)</strong>
-          {' '}— kimlik belgeleri ve liveness videosu R2 private bucket'ta saklanır. Bu aktarım AB Standart Sözleşme Maddeleri (SCCs) ve Cloudflare'in veri işleme sözleşmesi kapsamında gerçekleştirilir.
+          : kimlik belgeleri ve liveness videosu R2 private bucket'ta saklanır. Bu aktarım AB Standart Sözleşme Maddeleri (SCCs) ve Cloudflare'in veri işleme sözleşmesi kapsamında gerçekleştirilir.
         </p>
         <div
           style={{
@@ -225,9 +225,9 @@ const sections = [
       <div>
         {[
           ['Kullanıcı hesap ve profil verileri', 'Hesap silinene kadar + 2 yıl'],
-          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl — yasal yükümlülük'],
+          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl, yasal yükümlülük'],
           ['OCEAN test sonuçları', 'Hesap aktif olduğu sürece; hesap silindiğinde imha edilir'],
-          ['Ödeme ve fatura kayıtları', '10 yıl — Vergi Usul Kanunu'],
+          ['Ödeme ve fatura kayıtları', '10 yıl, Vergi Usul Kanunu'],
           ['Rehber engelleme için eklenen telefon numaraları', 'Kullanıcı tarafından silinene kadar'],
           ['IP adresi ve oturum logları', '2 yıl'],
         ].map(([label, value], i, arr) => (

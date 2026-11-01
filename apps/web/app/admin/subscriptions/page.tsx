@@ -260,7 +260,7 @@ export default function AdminSubscriptions() {
             </div>
             <p style={{ margin: '0 0 12px', fontSize: 13, color: MUTED }}>
               {cancelling.user.profile ? `${cancelling.user.profile.firstName} ${cancelling.user.profile.lastName}` : cancelling.user.email}
-              {' — '}{PLAN_LABEL[cancelling.plan]}. Bu işlem geri alınamaz.
+              {': '}{PLAN_LABEL[cancelling.plan]}. Bu işlem geri alınamaz.
             </p>
             <textarea
               value={cancelNote}
