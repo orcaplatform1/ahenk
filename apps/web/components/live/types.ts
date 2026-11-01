@@ -13,7 +13,7 @@ export interface LivePulse {
   };
   feed: {
     events: { key: string; at: string; place: string; kind: 'FULL' | 'MATCH' | 'OPEN' | 'VENUE'; value: number | null }[];
-    perMinute: number;
+    last24h: number; // Son 24 saatteki toplam olay
   };
 }
 

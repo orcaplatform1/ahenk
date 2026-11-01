@@ -16,7 +16,7 @@ const SONAR_MAX_LABELS = 8;
 const HEATMAP_MAX = 9;
 const DENSITY_MAX = 15;
 const FEED_MAX = 30;
-const FEED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const FEED_WINDOW_MS = 24 * 60 * 60 * 1000;
 const HIGH_MATCH_RATIO = 0.7; // Eşleşme puanının en az %70'i "yüksek uyum"
 
 const DIMENSIONS = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"] as const;
@@ -100,7 +100,7 @@ export class LiveLayerService {
   // 15 sn'de bir: sonar + canlı akış. İsim, baş harf, yaş, meslek, fotoğraf dönmez
   async pulse(userId: string, cityId?: string) {
     const city = await this.resolveCity(userId, cityId);
-    if (!city) return { sonar: { dots: [], labels: [], density: null }, feed: { events: [], perMinute: 0 } };
+    if (!city) return { sonar: { dots: [], labels: [], density: null }, feed: { events: [], last24h: 0 } };
     return { sonar: await this.sonar(city), feed: await this.feed(city) };
   }
 
@@ -192,9 +192,8 @@ export class LiveLayerService {
     for (const v of venues) events.push({ key: opaque(v.id, start), at: v.createdAt, place: city.name, kind: "VENUE", value: null });
 
     events.sort((a, b) => b.at.getTime() - a.at.getTime());
-    const hourAgo = Date.now() - 60 * 60 * 1000;
-    const lastHour = events.filter((e) => e.at.getTime() >= hourAgo).length;
-    return { events: events.slice(0, FEED_MAX), perMinute: Math.round((lastHour / 60) * 10) / 10 };
+    const recent = events.filter((e) => e.at >= since);
+    return { events: recent.slice(0, FEED_MAX), last24h: recent.length };
   }
 
   // 60 sn'de bir: metrikler, ısı haritası, uyum sinyali, dolum

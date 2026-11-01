@@ -4,7 +4,9 @@ import type { LivePulse } from './types';
 
 type Event = LivePulse['feed']['events'][number];
 
-const MAX_ROWS = 6;
+// Kart son 10 olayı gösterir; yükseklik satır sayısına göre sabit (10 × 44px)
+const MAX_ROWS = 10;
+const LIST_HEIGHT = 440;
 
 const KIND: Record<Event['kind'], { text: string; color: string }> = {
   FULL: { text: 'Masa doldu', color: '#ff8a7e' },
@@ -40,13 +42,15 @@ export default function LiveFeed({ feed }: { feed: LivePulse['feed'] | null }) {
     <section className="ll-card">
       <div className="ll-head">
         <h2 className="ll-title">Canlı Akış</h2>
-        <span className="ll-note">dk&apos;da {(feed?.perMinute ?? 0).toLocaleString('tr-TR')} olay</span>
+        <span className="ll-note">24 saatte {(feed?.last24h ?? 0).toLocaleString('tr-TR')} olay</span>
       </div>
-      {events.length === 0 ? (
-        <p style={{ margin: 0, fontSize: 13, color: '#a39c93' }}>Henüz olay yok.</p>
-      ) : (
-        <div>{events.map((e) => <Row key={e.key} event={e} />)}</div>
-      )}
+      <div style={{ height: LIST_HEIGHT, overflow: 'hidden' }}>
+        {events.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 13, color: '#a39c93' }}>Son 24 saatte olay yok.</p>
+        ) : (
+          events.map((e) => <Row key={e.key} event={e} />)
+        )}
+      </div>
     </section>
   );
 }
