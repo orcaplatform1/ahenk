@@ -6,7 +6,7 @@ import { api } from '@/lib/api';
 import { VenueAuthError, VenueMe, mediaUrl, venueApi } from '@/lib/venueApi';
 import { panelCard, useVenuePanel } from '../context';
 
-const MAX_PHOTOS = 10;
+const MAX_PHOTOS = 3;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALCOHOL_OPTIONS = [{ value: 'ALCOHOLIC', label: 'Alkollü' }, { value: 'NON_ALCOHOLIC', label: 'Alkolsüz' }];
 
@@ -77,6 +77,9 @@ export default function BilgilerPage() {
       <h1 className="font-serif" style={{ fontSize: '1.6rem', margin: 0 }}>Mekân Bilgileri</h1>
 
       <form onSubmit={save} style={{ ...panelCard, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <Labeled label="Mekân Türü">
+          <p style={{ margin: 0, fontSize: '0.9rem' }}>{me.venue.venueKind || '—'}</p>
+        </Labeled>
         <Labeled label="Tanıtım (en fazla 500 karakter)">
           <textarea className="input-glass w-full px-4 py-3 text-sm" aria-label="Tanıtım" rows={4} maxLength={500} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </Labeled>
@@ -103,7 +106,7 @@ export default function BilgilerPage() {
       </form>
 
       <section style={{ ...panelCard, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Fotoğraflar</h2>
+        <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Fotoğraflar (en az 1, en fazla {MAX_PHOTOS}; her biri en fazla 5 MB)</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 8 }}>
           {me.venue.photos.map((url, i) => (
             <div key={url} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden' }}>

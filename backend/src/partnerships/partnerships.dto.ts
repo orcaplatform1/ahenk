@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEmail, IsEnum, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
 import { VenueType } from '@prisma/client';
 import { GOOGLE_MAPS_URL, GOOGLE_MAPS_URL_MESSAGE } from '../venue-panel/venue-url';
 
@@ -57,6 +57,12 @@ export class ApplyPartnershipDto {
 
   @IsString()
   venueType: string;
+
+  @ValidateIf((o: ApplyPartnershipDto) => o.venueType === 'Diğer')
+  @IsString()
+  @MinLength(2, { message: 'Mekân türünüzü yazın' })
+  @MaxLength(60)
+  venueTypeOther?: string;
 
   @Type(() => Number)
   @IsInt()

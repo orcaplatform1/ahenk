@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { KankaPairs, type KankaPerson } from './KankaPairs';
+import { gColor } from './MasalarDashboard';
 
 type KankaParticipant = KankaPerson & { pair?: 'MINE' | 'OTHER' };
 
@@ -61,15 +62,9 @@ function jsonHeaders(token?: string): Record<string, string> {
 }
 
 // ── Renkler ─────────────────────────────────────────────────────────────────
-const MALE_CLR   = '#4fc3f7';
-const FEMALE_CLR = '#f48fb1';
 const GREEN      = '#27ae60';
 const RED        = '#c0392b';
 
-function gColor(g?: string | null) {
-  if (g === 'FEMALE') return FEMALE_CLR;
-  return MALE_CLR;
-}
 function gBg(g?: string | null) {
   if (g === 'FEMALE') return 'rgba(244,143,177,0.12)';
   return 'rgba(79,195,247,0.12)';

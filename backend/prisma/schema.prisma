@@ -621,6 +621,7 @@ model Venue {
   description String?       @db.Text
   category    VenueCategory
   venueType   VenueType     @default(NON_ALCOHOLIC)
+  venueKind   String? // Mekân türü (Restoran, Kafe … ya da başvurudaki tanım)
   cityId      String
   city        City          @relation(fields: [cityId], references: [id])
   address     String?
@@ -766,6 +767,7 @@ model PartnershipApplication {
   phone           String
   city            String
   venueType       String
+  venueTypeOther  String?           // Mekân türü "Diğer" ise tanım
   capacity        Int
   description     String?           @db.Text
   websiteOrSocial String?
@@ -777,6 +779,10 @@ model PartnershipApplication {
   photos          String[]          @default([])
   status          PartnershipStatus @default(PENDING)
   adminNote       String?           @db.Text
+  adminNoteById   String?
+  adminNoteByName String?
+  lastEditedAt    DateTime?         // Yalnızca admin ya da mekân değiştirince dolar
+  lastEditedByName String?
   account         VenueAccount?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
@@ -805,6 +811,15 @@ model CareerApplication {
   linkedinOrCv String?
   motivation   String       @db.Text
   hearFrom     String?
+  education    String?
+  languages    Json? // [{ name, level: 1-3 }]
+  workType     String?
+  salaryExpectation String?
+  birthDate    String? // YYYY-MM-DD
+  district     String?
+  hearFromOther String?
+  cvFile       String? // uploads/career-cv altındaki dosya adı (herkese açık sunulmaz)
+  cvOriginalName String?
   status       CareerStatus @default(PENDING)
   adminNote    String?      @db.Text
   createdAt    DateTime     @default(now())

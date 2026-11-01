@@ -153,6 +153,11 @@ export class CreateVenueDto {
   @IsInt()
   @Min(1)
   capacity?: number | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  venueKind?: string | null;
 }
 
 export class AdminVenuePhotoDeleteDto {
@@ -219,6 +224,11 @@ export class UpdateVenueDto {
   @IsInt()
   @Min(1)
   capacity?: number | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  venueKind?: string | null;
 }
 
 // ─── Şehir ─────────────────────────────────────────────────────────────────────

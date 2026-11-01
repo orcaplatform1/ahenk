@@ -1,5 +1,6 @@
 'use client';
 
+import { gColor } from '@ahenk/ui';
 import { KankaSection } from '@/components/KankaSection';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
@@ -440,7 +441,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         {/* Kankamla: Aktif Kankanız (davet et / davet var / kankan) + kısa açıklama */}
         <KankaSection />
         {user.profile?.gender && (
-          <Row label="Cinsiyet" value={user.profile.gender === 'MALE' ? 'Erkek' : 'Kadın'} />
+          <Row label="Cinsiyet" value={user.profile.gender === 'MALE' ? 'Erkek' : 'Kadın'} color={gColor(user.profile.gender)} />
         )}
       </Card>
 
@@ -650,11 +651,11 @@ function Card({ title, children, action }: { title: string; children: React.Reac
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-[13px] text-[#c9c2b8]">{label}</span>
-      <span className="text-[13px] text-[#f4f1ec]">{value}</span>
+      <span className="text-[13px] text-[#f4f1ec]" style={color ? { color } : undefined}>{value}</span>
     </div>
   );
 }

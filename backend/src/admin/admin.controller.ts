@@ -16,12 +16,13 @@ import {
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
+  Res,
 } from "@nestjs/common";
 import { HideEmailForAdminInterceptor, KeepEmails } from "./hide-email.interceptor";
 import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
 import { VENUE_PHOTO_MAX_BYTES, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
 import { IsEnum, IsOptional, IsString } from "class-validator";
-import { Request } from "express";
+import { Request, Response } from "express";
 import { AdminService } from "./admin.service";
 import { PricingService } from "../payment/pricing.service";
 import { AdminAction, planTr, reasonTr, statusTr } from "./admin-action-log";
@@ -282,21 +283,21 @@ export class AdminController {
 
   @Patch("venues/:id")
   @Roles(UserRole.SUPERADMIN)
-  updateVenue(@Param("id") id: string, @Body() dto: UpdateVenueDto) {
-    return this.adminService.updateVenue(id, dto);
+  updateVenue(@Param("id") id: string, @Body() dto: UpdateVenueDto, @Req() req: Request) {
+    return this.adminService.updateVenue(id, (req.user as { id: string }).id, dto);
   }
 
   @Post("venues/:id/photos")
   @Roles(UserRole.SUPERADMIN)
   @UseInterceptors(FilesInterceptor("photos", VENUE_PHOTO_MAX_COUNT, { limits: { fileSize: VENUE_PHOTO_MAX_BYTES } }))
-  addVenuePhotos(@Param("id") id: string, @UploadedFiles() files: Express.Multer.File[]) {
-    return this.adminService.addVenuePhotos(id, files);
+  addVenuePhotos(@Param("id") id: string, @UploadedFiles() files: Express.Multer.File[], @Req() req: Request) {
+    return this.adminService.addVenuePhotos(id, (req.user as { id: string }).id, files);
   }
 
   @Delete("venues/:id/photos")
   @Roles(UserRole.SUPERADMIN)
-  removeVenuePhoto(@Param("id") id: string, @Body() dto: AdminVenuePhotoDeleteDto) {
-    return this.adminService.removeVenuePhoto(id, dto.url);
+  removeVenuePhoto(@Param("id") id: string, @Body() dto: AdminVenuePhotoDeleteDto, @Req() req: Request) {
+    return this.adminService.removeVenuePhoto(id, (req.user as { id: string }).id, dto.url);
   }
 
   @Delete("venues/:id")
@@ -526,8 +527,8 @@ export class AdminController {
   @Patch("partnerships/:id")
   @Roles(UserRole.SUPERADMIN)
   @KeepEmails()
-  updatePartnership(@Param("id") id: string, @Body() body: UpdatePartnershipDto) {
-    return this.adminService.updatePartnership(id, body);
+  updatePartnership(@Param("id") id: string, @Body() body: UpdatePartnershipDto, @Req() req: Request) {
+    return this.adminService.updatePartnership(id, (req.user as { id: string }).id, body);
   }
 
   @Get("careers")
@@ -535,6 +536,14 @@ export class AdminController {
   @KeepEmails()
   listCareers() {
     return this.adminService.listCareers();
+  }
+
+  @Get("careers/:id/cv")
+  @Roles(UserRole.SUPERADMIN)
+  async careerCv(@Param("id") id: string, @Res() res: Response) {
+    const { filePath, name } = await this.adminService.careerCvPath(id);
+    res.set("Cache-Control", "private, no-store");
+    return res.download(filePath, name);
   }
 
   @Patch("careers/:id")

@@ -53,8 +53,11 @@ interface Partnership {
   account?: { status: string; registeredAt: string; approvedAt: string | null; deactivatedAt: string | null } | null;
   status: string;
   adminNote?: string;
+  adminNoteByName?: string | null;
+  venueTypeOther?: string | null;
+  lastEditedAt?: string | null;
+  lastEditedByName?: string | null;
   createdAt: string;
-  updatedAt: string;
 }
 
 function fmtDateTime(d?: string | null) {
@@ -222,13 +225,13 @@ export default function AdminPartnerships() {
                       ['Şehir', p.city],
                       ['İlçe', p.district],
                       ['Adres', p.address],
-                      ['Mekân türü', p.venueType],
+                      ['Mekân türü', p.venueType === 'Diğer' && p.venueTypeOther ? `Diğer: ${p.venueTypeOther}` : p.venueType],
                       ['Kapasite', p.capacity],
                       ['Alkol durumu', p.alcoholStatus ? (p.alcoholStatus === 'ALCOHOLIC' ? 'Alkollü' : 'Alkolsüz') : null],
                       ['Web / Sosyal', p.websiteOrSocial],
-                      ['Referans kodu', p.referenceCode],
+                      ['Personel Referans Kodu', p.referenceCode],
                       ['Başvuru tarihi', fmtDateTime(p.createdAt)],
-                      ['Son güncelleme', fmtDateTime(p.updatedAt)],
+                      ['Son güncelleme', p.lastEditedAt ? `${fmtDateTime(p.lastEditedAt)} · ${p.lastEditedByName ?? '—'}` : null],
                       ['Panel hesabı', p.account ? ACCOUNT_LABEL[p.account.status] ?? p.account.status : null],
                       ['Panel kayıt tarihi', fmtDateTime(p.account?.registeredAt)],
                       ['Onay tarihi', fmtDateTime(p.account?.approvedAt)],
@@ -246,7 +249,7 @@ export default function AdminPartnerships() {
                       <span style={{ color: TEXT, fontWeight: 600 }}>Açıklama:</span> {p.description || '—'}
                     </p>
                     <p style={{ margin: 0, fontSize: 13, color: MUTED }}>
-                      <span style={{ color: TEXT, fontWeight: 600 }}>Admin notu:</span> {p.adminNote || '—'}
+                      <span style={{ color: TEXT, fontWeight: 600 }}>Admin notu:</span> {p.adminNote ? `${p.adminNote}${p.adminNoteByName ? ` (${p.adminNoteByName})` : ''}` : '—'}
                     </p>
                     {!!p.photos?.length && (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 6 }}>

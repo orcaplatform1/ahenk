@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import Link from 'next/link';
-import OtpInput from '@/components/ui/OtpInput';
 import SiteSelect from '@/components/SiteSelect';
+import { FormLabel, PasswordInput, TextareaField, TextField, VerifiedPhoneField } from '@/components/PublicFormFields';
 import { API_PREFIX, api } from '@/lib/api';
 import { readError } from '@/lib/venueApi';
 
@@ -28,12 +28,9 @@ function useCountUp(target: number, duration = 1600, start = false) {
 
 /* ── Styles helpers ───────────────────────────────────────────── */
 const glassCard: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.10)',
+  background: 'rgba(255,255,255,0.025)',
   border: '1px solid rgba(255,255,255,0.08)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
-  borderRadius: '16px',
+  borderRadius: '20px',
 };
 
 const btnGrad: React.CSSProperties = {
@@ -55,13 +52,12 @@ const btnOutline: React.CSSProperties = {
   transition: 'border-color 0.2s',
 };
 
-const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Aydın', 'Muğla', 'Balıkesir (Ayvalık-Akçay)', 'Diğer'];
 const VENUE_TYPES = ['Restoran', 'Kafe', 'Bistro', 'Bar', 'Diğer'];
 const ALCOHOL_OPTIONS = [
   { value: 'ALCOHOLIC', label: 'Alkollü' },
   { value: 'NON_ALCOHOLIC', label: 'Alkolsüz' },
 ];
-const MAX_PHOTOS = 10;
+const MAX_PHOTOS = 3;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const MAPS_URL = /^https:\/\/((www\.)?google\.(com|com\.tr)\/maps|maps\.google\.(com|com\.tr)|maps\.app\.goo\.gl|goo\.gl\/maps|share\.google)(\/|\?|$)/i;
 
@@ -92,23 +88,17 @@ export default function IsOrtakligiPage() {
 
   const [form, setForm] = useState({
     businessName: '', contactName: '', email: '', phone: '',
-    city: '', venueType: '', capacity: '', description: '', websiteOrSocial: '',
+    city: '', venueType: '', venueTypeOther: '', capacity: '', description: '', websiteOrSocial: '',
     password: '', passwordConfirm: '', district: '', address: '', locationUrl: '', alcoholStatus: '', referenceCode: '',
   });
   const [districts, setDistricts] = useState<Record<string, string[]>>({});
-  const districtOptions = districts[form.city.split(' (')[0]] ?? [];
+  const [cities, setCities] = useState<string[]>([]);
+  const districtOptions = districts[form.city] ?? [];
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
 
   // Telefon doğrulama (WhatsApp OTP) — üye kaydıyla aynı akış
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpError, setOtpError] = useState('');
-  const [otpShake, setOtpShake] = useState(false);
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpVerifying, setOtpVerifying] = useState(false);
   const [phoneToken, setPhoneToken] = useState('');
-  const [resendIn, setResendIn] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -119,57 +109,14 @@ export default function IsOrtakligiPage() {
 
   useEffect(() => {
     api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => undefined);
+    api.get<{ name: string }[]>('/auth/cities').then((c) => setCities(c.map((x) => x.name))).catch(() => undefined);
   }, []);
-
-  useEffect(() => {
-    if (resendIn <= 0) return;
-    const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendIn]);
 
   useEffect(() => {
     const urls = photos.map((f) => URL.createObjectURL(f));
     setPreviews(urls);
     return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [photos]);
-
-  function changePhone(v: string) {
-    setForm((f) => ({ ...f, phone: v }));
-    setOtpSent(false); setOtpCode(''); setOtpError(''); setPhoneToken('');
-  }
-
-  async function postJson<T>(path: string, body: unknown): Promise<T> {
-    const res = await fetch(`${API_PREFIX}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(await readError(res));
-    return res.json() as Promise<T>;
-  }
-
-  async function sendPhoneOtp() {
-    if (form.phone.length !== 10 || !form.phone.startsWith('5')) { setOtpError('WhatsApp numaranızı girin (5 ile başlayan 10 hane).'); return; }
-    setOtpSending(true); setOtpError('');
-    try {
-      const r = await postJson<{ resendSeconds: number }>('/partnerships/send-otp', { phone: `+90${form.phone}` });
-      setOtpSent(true); setOtpCode(''); setResendIn(r.resendSeconds ?? 60);
-    } catch (e) {
-      setOtpError((e as Error).message);
-    } finally { setOtpSending(false); }
-  }
-
-  async function verifyPhoneOtp(code: string) {
-    setOtpVerifying(true); setOtpError('');
-    try {
-      const r = await postJson<{ phoneToken: string }>('/partnerships/verify-otp', { phone: `+90${form.phone}`, code });
-      setPhoneToken(r.phoneToken);
-    } catch (e) {
-      setOtpError((e as Error).message);
-      setOtpCode('');
-      setOtpShake(true); setTimeout(() => setOtpShake(false), 500);
-    } finally { setOtpVerifying(false); }
-  }
 
   function addPhotos(list: FileList | null) {
     if (!list) return;
@@ -186,17 +133,20 @@ export default function IsOrtakligiPage() {
     if (form.password.length < 6 || form.password.length > 20) { setError('Şifre 6-20 karakter arasında olmalı.'); return; }
     if (form.password !== form.passwordConfirm) { setError('Şifreler eşleşmiyor.'); return; }
     if (!phoneToken) { setError('Telefon numaranızı WhatsApp koduyla doğrulayın.'); return; }
+    if (form.venueType === 'Diğer' && !form.venueTypeOther.trim()) { setError('Mekân türünüzü yazın.'); return; }
+    if (!form.district) { setError('İlçe seçin.'); return; }
     if (!MAPS_URL.test(form.locationUrl.trim())) { setError('Geçerli bir Google Maps linki girin.'); return; }
     if (photos.length === 0) { setError('En az 1 mekân fotoğrafı yükleyin.'); return; }
     setSubmitting(true);
     setError('');
     try {
       const body = new FormData();
-      const { passwordConfirm: _confirm, phone, description, websiteOrSocial, referenceCode, locationUrl, ...rest } = form;
+      const { passwordConfirm: _confirm, phone, description, websiteOrSocial, referenceCode, locationUrl, venueTypeOther, ...rest } = form;
       Object.entries(rest).forEach(([k, v]) => body.append(k, v));
       body.append('phone', `+90${phone}`);
       body.append('phoneToken', phoneToken);
       body.append('locationUrl', locationUrl.trim());
+      if (rest.venueType === 'Diğer') body.append('venueTypeOther', venueTypeOther.trim());
       if (description) body.append('description', description);
       if (websiteOrSocial) body.append('websiteOrSocial', websiteOrSocial);
       if (referenceCode.trim()) body.append('referenceCode', referenceCode.trim());
@@ -212,7 +162,7 @@ export default function IsOrtakligiPage() {
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#121212', color: '#f5f5f5', fontFamily: 'var(--font-sans, system-ui)', overflowX: 'hidden' }}>
+    <main className="live-layer ll-form" style={{ minHeight: '100vh', overflowX: 'hidden' }}>
 
       {/* ── Hero ──────────────────────────────────────────────── */}
       <section style={{ position: 'relative', padding: 'clamp(5rem,12vw,9rem) 1.5rem clamp(4rem,8vw,7rem)', textAlign: 'center' }}>
@@ -403,11 +353,11 @@ export default function IsOrtakligiPage() {
             <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 400, textAlign: 'center', marginBottom: '0.5rem' }}>
               Ortaklık Başvurusu
             </h2>
-            <p style={{ textAlign: 'center', color: '#666', fontSize: '0.85rem', marginBottom: '2.5rem' }}>
-              Formu doldurun, 3 iş günü içinde ekibimiz sizi arasın.
+            <p style={{ textAlign: 'center', color: '#a39c93', fontSize: 13, marginBottom: '2.5rem' }}>
+              Formu doldurun, 24 saat içinde ekibimiz sizi arasın.
             </p>
 
-            <div style={{ ...glassCard, padding: 'clamp(1.5rem, 4vw, 2.5rem)', maxWidth: '680px', margin: '0 auto' }}>
+            <div className="ll-card" style={{ maxWidth: '680px', margin: '0 auto' }}>
               {success ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.92 }}
@@ -431,79 +381,54 @@ export default function IsOrtakligiPage() {
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {/* 2 col */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    <Field label="İşletme Adı *" value={form.businessName} onChange={(v) => setForm(f => ({ ...f, businessName: v }))} required />
-                    <Field label="Yetkili Ad Soyad *" value={form.contactName} onChange={(v) => setForm(f => ({ ...f, contactName: v }))} required />
+                    <TextField label="İşletme Adı *" value={form.businessName} onChange={(v) => setForm(f => ({ ...f, businessName: v }))} required />
+                    <TextField label="Yetkili Ad Soyad *" value={form.contactName} onChange={(v) => setForm(f => ({ ...f, contactName: v }))} required />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    <Field label="E-posta *" type="email" value={form.email} onChange={(v) => setForm(f => ({ ...f, email: v }))} required />
+                    <TextField label="E-posta *" type="email" value={form.email} onChange={(v) => setForm(f => ({ ...f, email: v }))} required />
                   </div>
 
-                  {/* Telefon + WhatsApp doğrulama */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>Telefon (WhatsApp) *</span>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <span style={{ ...fieldStyle, width: 'auto', flexShrink: 0, color: '#888' }}>+90</span>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        aria-label="Telefon"
-                        value={form.phone}
-                        onChange={(e) => changePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                        placeholder="5XX XXX XX XX"
-                        disabled={!!phoneToken}
-                        required
-                        style={{ ...fieldStyle, flex: 1, minWidth: 0, opacity: phoneToken ? 0.6 : 1 }}
-                      />
-                      {!phoneToken && (
-                        <button
-                          type="button"
-                          onClick={sendPhoneOtp}
-                          disabled={otpSending || resendIn > 0 || form.phone.length !== 10}
-                          style={{ flexShrink: 0, padding: '0 0.8rem', minHeight: 44, fontSize: '0.75rem', fontWeight: 500, borderRadius: '10px', border: '1px solid rgba(192,57,43,0.5)', color: '#e74c3c', background: 'rgba(192,57,43,0.06)', cursor: 'pointer', opacity: otpSending || resendIn > 0 || form.phone.length !== 10 ? 0.4 : 1 }}
-                        >
-                          {otpSending ? 'Gönderiliyor…' : resendIn > 0 ? `Tekrar (${resendIn} sn)` : otpSent ? 'Tekrar gönder' : 'Kod gönder'}
-                        </button>
-                      )}
-                    </div>
-                    {phoneToken ? (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.75rem', color: '#4ade80' }}>✓ Telefon numaranız doğrulandı</span>
-                        <button type="button" onClick={() => changePhone(form.phone)} style={{ background: 'none', border: 'none', color: '#666', fontSize: '0.75rem', cursor: 'pointer' }}>Numarayı değiştir</button>
-                      </div>
-                    ) : otpSent && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.4rem' }}>
-                        <span style={{ fontSize: '0.75rem', color: '#666', textAlign: 'center' }}>+90{form.phone} numarasına WhatsApp ile gönderilen 6 haneli kodu girin.</span>
-                        <OtpInput value={otpCode} onChange={(c) => { setOtpCode(c); setOtpError(''); }} onComplete={verifyPhoneOtp} error={otpShake} autoFocus={false} />
-                        {otpVerifying && <span style={{ fontSize: '0.75rem', color: '#666', textAlign: 'center' }}>Doğrulanıyor…</span>}
-                      </div>
-                    )}
-                    {otpError && <span style={{ fontSize: '0.75rem', color: '#ff6b6b' }}>{otpError}</span>}
-                  </div>
+                  <VerifiedPhoneField
+                    base="/partnerships"
+                    phone={form.phone}
+                    onPhone={(v) => setForm((f) => ({ ...f, phone: v }))}
+                    phoneToken={phoneToken}
+                    onToken={setPhoneToken}
+                  />
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    <Field label="Şifre * (6-20 karakter)" type="password" value={form.password} onChange={(v) => setForm(f => ({ ...f, password: v }))} required />
-                    <Field label="Şifre Tekrar *" type="password" value={form.passwordConfirm} onChange={(v) => setForm(f => ({ ...f, passwordConfirm: v }))} required />
+                    <PasswordInput label="Şifre * (6-20 karakter)" value={form.password} onChange={(v) => setForm(f => ({ ...f, password: v }))} required />
+                    <PasswordInput label="Şifre Tekrar *" value={form.passwordConfirm} onChange={(v) => setForm(f => ({ ...f, passwordConfirm: v }))} required />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    <SelectField label="Şehir *" value={form.city} options={CITIES} onChange={(v) => setForm(f => ({ ...f, city: v, district: '' }))} required />
-                    <SelectField label="Mekân Türü *" value={form.venueType} options={VENUE_TYPES} onChange={(v) => setForm(f => ({ ...f, venueType: v }))} required />
-                  </div>
-                  <Field label="Tahsis Edilebilir Kapasite (kişi) *" type="number" value={form.capacity} onChange={(v) => setForm(f => ({ ...f, capacity: v }))} required placeholder="Örn: 20" />
-                  {districtOptions.length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>İlçe *</span>
-                      <SiteSelect key={form.city} value={form.district} onChange={(v) => setForm(f => ({ ...f, district: v }))} options={districtOptions} placeholder="İlçe seçin" ariaLabel="İlçe" searchable searchPlaceholder="İlçe ara" required />
+                    <SelectField label="Şehir *" value={form.city} options={cities} onChange={(v) => setForm(f => ({ ...f, city: v, district: '' }))} required />
+                    <div>
+                      <FormLabel>İlçe *</FormLabel>
+                      <SiteSelect live key={form.city} value={form.district} onChange={(v) => setForm(f => ({ ...f, district: v }))} options={districtOptions} placeholder={form.city ? 'İlçe seçin' : 'Önce şehir seçin'} required ariaLabel="İlçe" searchable searchPlaceholder="İlçe ara" />
                     </div>
-                  ) : (
-                    <Field label="İlçe *" value={form.district} onChange={(v) => setForm(f => ({ ...f, district: v }))} required />
+                  </div>
+                  <SelectField label="Mekân Türü *" value={form.venueType} options={VENUE_TYPES} onChange={(v) => setForm(f => ({ ...f, venueType: v }))} required />
+                  {form.venueType === 'Diğer' && (
+                    <TextField label="Mekân türünüzü yazın *" value={form.venueTypeOther} onChange={(v) => setForm(f => ({ ...f, venueTypeOther: v }))} maxLength={60} required />
                   )}
+                  <TextField label="Tahsis Edilebilir Kapasite (kişi) *" type="number" value={form.capacity} onChange={(v) => setForm(f => ({ ...f, capacity: v }))} required />
                   <SelectField label="Alkol Durumu *" value={form.alcoholStatus} options={ALCOHOL_OPTIONS} onChange={(v) => setForm(f => ({ ...f, alcoholStatus: v }))} required />
                   <TextareaField label="Açık Adres *" value={form.address} onChange={(v) => setForm(f => ({ ...f, address: v }))} maxLength={300} required />
-                  <Field label="Google Maps Konum Linki *" type="url" value={form.locationUrl} onChange={(v) => setForm(f => ({ ...f, locationUrl: v }))} required placeholder="https://maps.app.goo.gl/..." />
+                  <TextField label="Google Maps Konum Linki *" type="url" value={form.locationUrl} onChange={(v) => setForm(f => ({ ...f, locationUrl: v }))} required placeholder="https://maps.app.goo.gl/..." />
+                  <a
+                    href={form.locationUrl.trim() || undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-disabled={!form.locationUrl.trim()}
+                    className="btn-ghost"
+                    style={{ alignSelf: 'flex-start', opacity: form.locationUrl.trim() ? 1 : 0.4, pointerEvents: form.locationUrl.trim() ? 'auto' : 'none' }}
+                  >
+                    Kontrol Et
+                  </a>
 
                   {/* Mekân fotoğrafları */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>Mekân Fotoğrafları * (en az 1, en fazla {MAX_PHOTOS}; her biri en fazla 5 MB)</span>
+                    <FormLabel>Mekân Fotoğrafları * (en az 1, en fazla {MAX_PHOTOS}; her biri en fazla 5 MB)</FormLabel>
                     {previews.length > 0 && (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: '0.5rem' }}>
                         {previews.map((src, i) => (
@@ -524,8 +449,8 @@ export default function IsOrtakligiPage() {
                   </div>
 
                   <TextareaField label="Mekânınızı Tanıtın (opsiyonel, maks. 500 karakter)" value={form.description} onChange={(v) => setForm(f => ({ ...f, description: v }))} maxLength={500} />
-                  <Field label="Website veya Instagram linki (opsiyonel)" value={form.websiteOrSocial} onChange={(v) => setForm(f => ({ ...f, websiteOrSocial: v }))} placeholder="https://" />
-                  <Field label="Personel Referans Kodu (opsiyonel)" value={form.referenceCode} onChange={(v) => setForm(f => ({ ...f, referenceCode: v }))} />
+                  <TextField label="Website veya Instagram linki (opsiyonel)" value={form.websiteOrSocial} onChange={(v) => setForm(f => ({ ...f, websiteOrSocial: v }))} placeholder="https://" />
+                  <TextField label="Personel Referans Kodu (opsiyonel)" value={form.referenceCode} onChange={(v) => setForm(f => ({ ...f, referenceCode: v }))} />
 
                   {error && <p style={{ color: '#ff6b6b', fontSize: '0.85rem', textAlign: 'center' }}>{error}</p>}
 
@@ -573,54 +498,15 @@ export default function IsOrtakligiPage() {
 }
 
 /* ── Form field bileşenleri ───────────────────────────────────── */
-const fieldStyle: React.CSSProperties = { position: 'relative', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' };
-
-function Field({ label, type = 'text', value, onChange, required, placeholder }: {
-  label: string; type?: string; value: string; onChange: (v: string) => void; required?: boolean; placeholder?: string;
-}) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-      <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        placeholder={placeholder}
-        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' }}
-      />
-    </label>
-  );
-}
+const fieldStyle: React.CSSProperties = { position: 'relative', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 
 function SelectField({ label, value, options, onChange, required }: {
   label: string; value: string; options: (string | { value: string; label: string })[]; onChange: (v: string) => void; required?: boolean;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-      <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>{label}</span>
-      <SiteSelect value={value} onChange={onChange} options={options} required={required} ariaLabel={label} />
+    <div>
+      <FormLabel>{label}</FormLabel>
+      <SiteSelect live value={value} onChange={onChange} options={options} required={required} ariaLabel={label} />
     </div>
-  );
-}
-
-function TextareaField({ label, value, onChange, maxLength, required }: {
-  label: string; value: string; onChange: (v: string) => void; maxLength?: number; required?: boolean;
-}) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-      <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>{label}</span>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        maxLength={maxLength}
-        required={required}
-        rows={3}
-        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', resize: 'vertical', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }}
-      />
-      {maxLength && (
-        <span style={{ fontSize: '0.72rem', color: '#555', alignSelf: 'flex-end' }}>{value.length}/{maxLength}</span>
-      )}
-    </label>
   );
 }

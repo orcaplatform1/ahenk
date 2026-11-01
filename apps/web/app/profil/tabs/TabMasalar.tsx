@@ -39,17 +39,12 @@ function fmtDate(val: string) {
 
 /* ── Mock kart renk sabitleri (MasaDetayKarti ile aynı) ── */
 const GREEN      = '#27ae60';
-const MALE_CLR   = '#4fc3f7';
-const FEMALE_CLR = '#f48fb1';
 
 const MAV_D    = 48;
 const MAV_R    = MAV_D / 2;
 const MAV_BR   = MAV_R - 2.5;
 const MAV_CIRC = 2 * Math.PI * MAV_BR;
 
-function mockGColor(g?: string | null) {
-  return g === 'FEMALE' ? FEMALE_CLR : MALE_CLR;
-}
 function mockGBg(g?: string | null) {
   return g === 'FEMALE' ? 'rgba(244,143,177,0.12)' : 'rgba(79,195,247,0.12)';
 }
@@ -66,7 +61,7 @@ function MockAvatar({
   delay?: number;
   showCheck?: boolean;
 }) {
-  const color = mockGColor(gender);
+  const color = gColor(gender);
   const bg    = mockGBg(gender);
   return (
     <motion.div

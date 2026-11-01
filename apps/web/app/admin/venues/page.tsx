@@ -30,16 +30,16 @@ interface Venue {
   id: string; name: string; category: string; venueType?: string;
   address?: string | null; district?: string | null; description?: string | null; isActive: boolean;
   locationUrl?: string | null; websiteOrSocial?: string | null; capacity?: number | null;
-  latitude?: number | null; longitude?: number | null; photos: string[];
+  latitude?: number | null; longitude?: number | null; photos: string[]; venueKind?: string | null;
   city: City;
   account?: { email: string; phone: string; status: string; application?: { contactName: string } | null } | null;
 }
 
 const EMPTY_FORM = {
   name: '', category: 'SADE', venueType: 'NON_ALCOHOLIC', cityId: '', address: '', district: '', description: '',
-  locationUrl: '', websiteOrSocial: '', capacity: '', latitude: '', longitude: '',
+  locationUrl: '', websiteOrSocial: '', capacity: '', latitude: '', longitude: '', venueKind: '',
 };
-const MAX_PHOTOS = 10;
+const MAX_PHOTOS = 3;
 
 const orNull = (v: string) => v.trim() || null;
 const numOrNull = (v: string) => (v.trim() ? Number(v.replace(',', '.')) : null);
@@ -91,6 +91,7 @@ export default function AdminVenues() {
       address: v.address ?? '', district: v.district ?? '', description: v.description ?? '',
       locationUrl: v.locationUrl ?? '', websiteOrSocial: v.websiteOrSocial ?? '', capacity: v.capacity != null ? String(v.capacity) : '',
       latitude: v.latitude != null ? String(v.latitude) : '', longitude: v.longitude != null ? String(v.longitude) : '',
+      venueKind: v.venueKind ?? '',
     });
     setPhotos(v.photos ?? []);
     setPendingFiles([]);
@@ -103,7 +104,7 @@ export default function AdminVenues() {
     const body = {
       name: form.name, category: form.category, venueType: form.venueType, cityId: form.cityId,
       address: orNull(form.address), district: orNull(form.district), description: orNull(form.description),
-      locationUrl: orNull(form.locationUrl), websiteOrSocial: orNull(form.websiteOrSocial),
+      locationUrl: orNull(form.locationUrl), websiteOrSocial: orNull(form.websiteOrSocial), venueKind: orNull(form.venueKind),
       capacity: numOrNull(form.capacity), latitude: numOrNull(form.latitude), longitude: numOrNull(form.longitude),
     };
     setModalError('');
@@ -377,6 +378,10 @@ export default function AdminVenues() {
                 <input value={form.locationUrl} onChange={e => setForm(f => ({ ...f, locationUrl: e.target.value }))} placeholder="https://maps.app.goo.gl/…" maxLength={500} style={inputStyle} />
               </div>
               <div>
+                <p style={labelStyle}>MEKÂN TÜRÜ (OPSİYONEL)</p>
+                <input value={form.venueKind} onChange={e => setForm(f => ({ ...f, venueKind: e.target.value }))} placeholder="Restoran, Kafe…" maxLength={60} style={inputStyle} />
+              </div>
+              <div>
                 <p style={labelStyle}>ALKOL DURUMU</p>
                 <AdminSelect
                   value={form.venueType}
@@ -416,7 +421,7 @@ export default function AdminVenues() {
                 </div>
               )}
               <div>
-                <p style={labelStyle}>FOTOĞRAFLAR ({photos.length + pendingFiles.length}/{MAX_PHOTOS})</p>
+                <p style={labelStyle}>FOTOĞRAFLAR ({photos.length + pendingFiles.length}/{MAX_PHOTOS}) — EN AZ 1, EN FAZLA 3; HER BİRİ EN FAZLA 5 MB</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 6, marginBottom: 8 }}>
                   {photos.map(url => (
                     <div key={url} style={{ position: 'relative' }}>

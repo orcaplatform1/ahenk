@@ -7,7 +7,7 @@ import * as path from "path";
 export const VENUE_GALLERY_DIR = path.join(process.cwd(), "..", "uploads", "venue-gallery");
 export const VENUE_GALLERY_PREFIX = "/api/v1/media/venue-gallery";
 export const VENUE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
-export const VENUE_PHOTO_MAX_COUNT = 10;
+export const VENUE_PHOTO_MAX_COUNT = 3;
 
 // Başvuru herkese açık olduğundan tür, dosyanın beyan edilen MIME'ına değil ilk baytlarına göre belirlenir
 function detectImage(buf: Buffer): "jpg" | "png" | "webp" | null {

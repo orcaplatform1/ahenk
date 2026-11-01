@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, API_PREFIX } from '@/lib/api';
 import { SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 // ─── Renk sabitleri ───────────────────────────────────────────────────────────
@@ -31,6 +31,15 @@ interface Career {
   linkedinOrCv?: string;
   motivation?: string;
   hearFrom?: string;
+  hearFromOther?: string | null;
+  education?: string | null;
+  languages?: { name: string; level: number }[] | null;
+  workType?: string | null;
+  salaryExpectation?: string | null;
+  birthDate?: string | null;
+  district?: string | null;
+  cvFile?: string | null;
+  cvOriginalName?: string | null;
   status: string;
   adminNote?: string;
   createdAt: string;
@@ -165,31 +174,32 @@ export default function AdminCareers() {
                     border: `1px solid ${BORDER}`,
                     display: 'flex', flexDirection: 'column', gap: 8,
                   }}>
-                    {c.phone && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Tel:</span> {c.phone}
+                    {([
+                      ['E-posta', c.email],
+                      ['Telefon', c.phone],
+                      ['Öğrenim durumu', c.education],
+                      ['Yabancı dil', c.languages?.length ? c.languages.map(l => `${l.name} ${'★'.repeat(l.level)}`).join(', ') : null],
+                      ['Çalışma türü', c.workType],
+                      ['Ücret beklentisi', c.salaryExpectation],
+                      ['Doğum tarihi', c.birthDate ? c.birthDate.split('-').reverse().join('.') : null],
+                      ['Şehir', c.city],
+                      ['İlçe', c.district],
+                      ['LinkedIn', c.linkedinOrCv],
+                      ['Ben Ahenk\'e şunları katabilirim', c.motivation],
+                      ['Bizi nereden duydu', [c.hearFrom, c.hearFromOther].filter(Boolean).join(': ')],
+                      ['Başvuru tarihi', new Date(c.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })],
+                      ['Admin notu', c.adminNote],
+                    ] as [string, string | null | undefined][]).map(([label, value]) => (
+                      <p key={label} style={{ margin: 0, fontSize: 13, color: MUTED, overflowWrap: 'anywhere' }}>
+                        <span style={{ color: TEXT, fontWeight: 600 }}>{label}:</span> {value || '—'}
                       </p>
-                    )}
-                    {c.linkedinOrCv && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>LinkedIn/CV:</span> {c.linkedinOrCv}
-                      </p>
-                    )}
-                    {c.hearFrom && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Nasıl duydunuz:</span> {c.hearFrom}
-                      </p>
-                    )}
-                    {c.motivation && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED, fontStyle: 'italic' }}>
-                        "{c.motivation}"
-                      </p>
-                    )}
-                    {c.adminNote && (
-                      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
-                        <span style={{ color: TEXT, fontWeight: 600 }}>Not:</span> {c.adminNote}
-                      </p>
-                    )}
+                    ))}
+                    <p style={{ margin: 0, fontSize: 13, color: MUTED }}>
+                      <span style={{ color: TEXT, fontWeight: 600 }}>Özgeçmiş (CV):</span>{' '}
+                      {c.cvFile
+                        ? <a href={`${API_PREFIX}/admin/careers/${c.id}/cv`} target="_blank" rel="noopener noreferrer" style={{ color: CYAN }}>{c.cvOriginalName ?? 'CV dosyasını aç'}</a>
+                        : '—'}
+                    </p>
 
                     {c.status === 'PENDING' && (
                       <>

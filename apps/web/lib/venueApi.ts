@@ -52,6 +52,7 @@ export interface VenueMe {
     locationUrl: string | null;
     websiteOrSocial: string | null;
     venueType: 'ALCOHOLIC' | 'NON_ALCOHOLIC';
+    venueKind: string | null;
     photos: string[];
   };
 }

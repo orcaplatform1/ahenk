@@ -100,6 +100,7 @@ export class VenuePanelService {
         locationUrl: venue.locationUrl,
         websiteOrSocial: venue.websiteOrSocial,
         venueType: venue.venueType,
+        venueKind: venue.venueKind,
         photos: venue.photos,
       },
     };
@@ -144,6 +145,14 @@ export class VenuePanelService {
     });
   }
 
+  // Başvuru detayındaki "Son güncelleme"
+  private async markEdited(account: VenueAccount) {
+    await this.prisma.partnershipApplication.update({
+      where: { id: account.applicationId },
+      data: { lastEditedAt: new Date(), lastEditedByName: "Mekân" },
+    });
+  }
+
   async updateInfo(account: VenueAccount, dto: VenueInfoDto) {
     if (dto.district !== undefined) {
       const { city } = await this.venueOf(account);
@@ -161,6 +170,7 @@ export class VenuePanelService {
       },
     });
     await this.syncUpcomingMeetings(account.venueId!);
+    await this.markEdited(account);
     return this.me(account);
   }
 
@@ -174,6 +184,7 @@ export class VenuePanelService {
     const urls = saveVenuePhotos(venue.id, files);
     await this.prisma.venue.update({ where: { id: venue.id }, data: { photos: [...venue.photos, ...urls] } });
     await this.syncUpcomingMeetings(venue.id);
+    await this.markEdited(account);
     return this.me(account);
   }
 
@@ -184,6 +195,7 @@ export class VenuePanelService {
     if (venue.photos.length === 1) throw new BadRequestException("En az 1 fotoğraf kalmalı");
     await this.prisma.venue.update({ where: { id: venue.id }, data: { photos: venue.photos.filter((p) => p !== url) } });
     await this.syncUpcomingMeetings(venue.id);
+    await this.markEdited(account);
     return this.me(account);
   }
 

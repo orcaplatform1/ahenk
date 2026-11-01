@@ -45,6 +45,7 @@ import { MatchingService } from "../matching/matching.service";
 import { isValidDistrict } from "../common/districts";
 import { meetingVenueFields, VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
+import { CAREER_CV_DIR } from "../careers/career-cv";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
 import { OVERLAPPING_PLANS } from "../payment/plan-overlap";
@@ -930,6 +931,7 @@ export class AdminService {
     locationUrl?: string | null;
     websiteOrSocial?: string | null;
     capacity?: number | null;
+    venueKind?: string | null;
   }) {
     const city = await this.prisma.city.findUnique({ where: { id: data.cityId } });
     if (!city) throw new NotFoundException("Şehir bulunamadı");
@@ -937,7 +939,7 @@ export class AdminService {
     return this.prisma.venue.create({ data, include: { city: { select: { name: true } } } });
   }
 
-  async updateVenue(venueId: string, data: {
+  async updateVenue(venueId: string, adminId: string, data: {
     name?: string;
     description?: string;
     category?: VenueCategory;
@@ -949,6 +951,7 @@ export class AdminService {
     locationUrl?: string | null;
     websiteOrSocial?: string | null;
     capacity?: number | null;
+    venueKind?: string | null;
   }) {
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) throw new NotFoundException("Mekan bulunamadı");
@@ -962,6 +965,7 @@ export class AdminService {
     }
     const updated = await this.prisma.venue.update({ where: { id: venueId }, data });
     await this.syncVenueMeetings(updated);
+    await this.markVenueEdited(venueId, adminId);
     return updated;
   }
 
@@ -973,7 +977,7 @@ export class AdminService {
     });
   }
 
-  async addVenuePhotos(venueId: string, files: Express.Multer.File[]) {
+  async addVenuePhotos(venueId: string, adminId: string, files: Express.Multer.File[]) {
     if (!files?.length) throw new BadRequestException("Fotoğraf seçin");
     assertVenuePhotos(files);
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
@@ -984,16 +988,18 @@ export class AdminService {
     const urls = saveVenuePhotos(venue.id, files);
     const updated = await this.prisma.venue.update({ where: { id: venueId }, data: { photos: [...venue.photos, ...urls] } });
     await this.syncVenueMeetings(updated);
+    await this.markVenueEdited(venueId, adminId);
     return { photos: updated.photos };
   }
 
   // Dosya diskte kalır: başvuru kaydı ve geçmiş masalar aynı adresi kullanır
-  async removeVenuePhoto(venueId: string, url: string) {
+  async removeVenuePhoto(venueId: string, adminId: string, url: string) {
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) throw new NotFoundException("Mekan bulunamadı");
     if (!venue.photos.includes(url)) throw new NotFoundException("Fotoğraf bulunamadı");
     const updated = await this.prisma.venue.update({ where: { id: venueId }, data: { photos: venue.photos.filter((p) => p !== url) } });
     await this.syncVenueMeetings(updated);
+    await this.markVenueEdited(venueId, adminId);
     return { photos: updated.photos };
   }
 
@@ -1674,7 +1680,20 @@ export class AdminService {
     });
   }
 
-  async updatePartnership(id: string, data: { status?: PartnershipStatus; adminNote?: string; cityId?: string }) {
+  private async adminName(adminId: string) {
+    const p = await this.prisma.profile.findUnique({ where: { userId: adminId }, select: { firstName: true, lastName: true } });
+    return `${p?.firstName ?? ""} ${p?.lastName ?? ""}`.trim() || "Admin";
+  }
+
+  // Mekân kaydı değişince başvuru detayındaki "Son güncelleme"
+  private async markVenueEdited(venueId: string, adminId: string) {
+    await this.prisma.partnershipApplication.updateMany({
+      where: { account: { venueId } },
+      data: { lastEditedAt: new Date(), lastEditedByName: await this.adminName(adminId) },
+    });
+  }
+
+  async updatePartnership(id: string, adminId: string, data: { status?: PartnershipStatus; adminNote?: string; cityId?: string }) {
     const application = await this.prisma.partnershipApplication.findUnique({
       where: { id },
       include: { account: { select: { id: true } } },
@@ -1684,15 +1703,21 @@ export class AdminService {
     if (data.status === PartnershipStatus.APPROVED && !application.account) {
       throw new BadRequestException("Bu başvurunun panel hesabı yok (eski form)");
     }
+    const name = await this.adminName(adminId);
+    const edited = {
+      lastEditedAt: new Date(),
+      lastEditedByName: name,
+      ...(data.adminNote ? { adminNoteById: adminId, adminNoteByName: name } : {}),
+    };
     if (application.account && data.status) {
-      if (data.status === PartnershipStatus.APPROVED) return this.approvePartnership(application, data);
-      if (data.status === PartnershipStatus.REJECTED) return this.rejectPartnership(application, data.adminNote);
+      if (data.status === PartnershipStatus.APPROVED) return this.approvePartnership(application, data, edited);
+      if (data.status === PartnershipStatus.REJECTED) return this.rejectPartnership(application, data.adminNote, edited);
       throw new BadRequestException("Hesaplı başvuru sadece onaylanabilir veya reddedilebilir");
     }
 
     return this.prisma.partnershipApplication.update({
       where: { id },
-      data: { status: data.status, adminNote: data.adminNote },
+      data: { status: data.status, adminNote: data.adminNote, ...edited },
     });
   }
 
@@ -1709,13 +1734,14 @@ export class AdminService {
   private async approvePartnership(
     app: Prisma.PartnershipApplicationGetPayload<{ include: { account: { select: { id: true } } } }>,
     data: { adminNote?: string; cityId?: string },
+    edited: Prisma.PartnershipApplicationUpdateManyMutationInput,
   ) {
     const cityId = await this.partnershipCityId(app.city, data.cityId);
     const updated = await this.prisma.$transaction(async (tx) => {
       // Çift tıklamada ikinci mekân oluşmasın
       const claimed = await tx.partnershipApplication.updateMany({
         where: { id: app.id, status: PartnershipStatus.PENDING },
-        data: { status: PartnershipStatus.APPROVED, adminNote: data.adminNote },
+        data: { status: PartnershipStatus.APPROVED, adminNote: data.adminNote, ...edited },
       });
       if (claimed.count === 0) throw new BadRequestException("Başvuru zaten sonuçlanmış");
       const venue = await tx.venue.create({
@@ -1724,6 +1750,7 @@ export class AdminService {
           description: app.description,
           category: VenueCategory.ORTA,
           venueType: app.alcoholStatus ?? VenueType.NON_ALCOHOLIC,
+          venueKind: app.venueTypeOther || app.venueType,
           cityId,
           address: app.address,
           district: app.district,
@@ -1748,12 +1775,13 @@ export class AdminService {
 
   private async rejectPartnership(
     app: Prisma.PartnershipApplicationGetPayload<{ include: { account: { select: { id: true } } } }>,
-    adminNote?: string,
+    adminNote: string | undefined,
+    edited: Prisma.PartnershipApplicationUpdateManyMutationInput,
   ) {
     return this.prisma.$transaction(async (tx) => {
       const claimed = await tx.partnershipApplication.updateMany({
         where: { id: app.id, status: PartnershipStatus.PENDING },
-        data: { status: PartnershipStatus.REJECTED, adminNote },
+        data: { status: PartnershipStatus.REJECTED, adminNote, ...edited },
       });
       if (claimed.count === 0) throw new BadRequestException("Başvuru zaten sonuçlanmış");
       await tx.venueAccount.update({
@@ -1773,6 +1801,15 @@ export class AdminService {
       where: { id },
       data: { status: data.status, adminNote: data.adminNote },
     });
+  }
+
+  // CV yalnızca bu uçtan, SUPERADMIN'e sunulur
+  async careerCvPath(id: string) {
+    const c = await this.prisma.careerApplication.findUnique({ where: { id }, select: { cvFile: true, cvOriginalName: true } });
+    if (!c?.cvFile) throw new NotFoundException("CV bulunamadı");
+    const filePath = path.join(CAREER_CV_DIR, path.basename(c.cvFile));
+    if (!fs.existsSync(filePath)) throw new NotFoundException("CV bulunamadı");
+    return { filePath, name: c.cvOriginalName ?? c.cvFile };
   }
 
   // ─── Kullanıcı Yaptırım Sistemi ───────────────────────────────────────────

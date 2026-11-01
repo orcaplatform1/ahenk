@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import Link from 'next/link';
 import SiteSelect from '@/components/SiteSelect';
+import { DateField } from '@/components/BirthDateField';
+import { FormLabel, TextareaField, TextField, VerifiedPhoneField } from '@/components/PublicFormFields';
+import { API_PREFIX, api } from '@/lib/api';
+import { readError } from '@/lib/venueApi';
 
 /* ── Count-up ─────────────────────────────────────────────────── */
 function useCountUp(target: number, duration = 1600, start = false) {
@@ -25,12 +29,9 @@ function useCountUp(target: number, duration = 1600, start = false) {
 
 /* ── Shared styles ────────────────────────────────────────────── */
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.10)',
+  background: 'rgba(255,255,255,0.025)',
   border: '1px solid rgba(255,255,255,0.08)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
-  borderRadius: '16px',
+  borderRadius: '20px',
 };
 
 const btnGrad: React.CSSProperties = {
@@ -53,8 +54,14 @@ function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
   );
 }
 
-const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Diğer'];
-const HEAR_FROM = ['Instagram', 'Arkadaş Tavsiyesi', 'Google', 'Diğer'];
+const EDUCATIONS = ['Lise', 'Önlisans', 'Lisans', 'Yüksek Lisans'];
+const LANGUAGES = ['İngilizce', 'Almanca', 'Arapça', 'Rusça', 'Fransızca', 'İspanyolca', 'İtalyanca'];
+const WORK_TYPES = ['Saha', 'Ofis', 'Uzaktan'];
+const SALARIES = ['Belirtmek istemiyorum', '35.000 - 45.000', '45.000 - 60.000', '60.000 - 80.000', '80.000 - 100.000'];
+const HEAR_FROM = ['Instagram', 'Google', 'Arkadaş tavsiyesi', 'Diğer'];
+const CV_ACCEPT = '.pdf,.doc,.docx,.jpg,.jpeg,.png';
+const CV_MAX_BYTES = 5 * 1024 * 1024;
+const LINKEDIN_URL = /^https:\/\/([a-z]{2,3}\.)?(www\.)?linkedin\.com\//i;
 
 /* ── Page ─────────────────────────────────────────────────────── */
 export default function KariyerPage() {
@@ -66,27 +73,72 @@ export default function KariyerPage() {
   const meetings = useCountUp(50, 1800, heroInView);
   const target = useCountUp(20, 2000, heroInView);
 
-  const [form, setForm] = useState({ fullName: '', email: '', phone: '', city: '', linkedinOrCv: '', motivation: '', hearFrom: '' });
+  const [form, setForm] = useState({
+    fullName: '', email: '', phone: '', education: '', workType: '', salaryExpectation: '', birthDate: '',
+    city: '', district: '', linkedinOrCv: '', motivation: '', hearFrom: '', hearFromOther: '',
+  });
+  const set = (key: keyof typeof form, value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const [phoneToken, setPhoneToken] = useState('');
+  const [languages, setLanguages] = useState<Record<string, number>>({}); // Dil → seviye (0: seçilmedi)
+  const [cv, setCv] = useState<File | null>(null);
+  const [cityNames, setCityNames] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => undefined);
+    api.get<{ name: string }[]>('/auth/cities').then((c) => setCityNames(c.map((x) => x.name))).catch(() => undefined);
+  }, []);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
   function scrollToForm() { formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 
+  function toggleLanguage(name: string) {
+    setLanguages((l) => {
+      const next = { ...l };
+      if (name in next) delete next[name]; else next[name] = 0;
+      return next;
+    });
+  }
+
+  function pickCv(file?: File) {
+    if (!file) return;
+    if (file.size > CV_MAX_BYTES) { setError('CV en fazla 5 MB olabilir.'); return; }
+    setError(''); setCv(file);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const picked = Object.entries(languages);
+    if (!phoneToken) { setError('Telefon numaranızı WhatsApp koduyla doğrulayın.'); return; }
+    if (picked.length === 0) { setError('En az bir yabancı dil seçin.'); return; }
+    if (picked.some(([, level]) => !level)) { setError('Seçtiğiniz her dil için seviye seçin.'); return; }
+    if (!form.birthDate) { setError('Doğum tarihinizi seçin.'); return; }
+    if (!form.district) { setError('İlçe seçin.'); return; }
+    if (form.linkedinOrCv.trim() && !LINKEDIN_URL.test(form.linkedinOrCv.trim())) { setError('Geçerli bir LinkedIn bağlantısı girin.'); return; }
+    if (!cv) { setError('Özgeçmiş (CV) yükleyin.'); return; }
     setSubmitting(true); setError('');
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
-      const res = await fetch(`${API}/careers/apply`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
-      if (!res.ok) throw new Error();
+      const body = new FormData();
+      const { phone, hearFromOther, linkedinOrCv, hearFrom, ...rest } = form;
+      Object.entries(rest).forEach(([k, v]) => body.append(k, v));
+      body.append('phone', `+90${phone}`);
+      body.append('phoneToken', phoneToken);
+      body.append('languages', JSON.stringify(picked.map(([name, level]) => ({ name, level }))));
+      if (linkedinOrCv.trim()) body.append('linkedinOrCv', linkedinOrCv.trim());
+      if (hearFrom) body.append('hearFrom', hearFrom);
+      if (hearFrom === 'Diğer' && hearFromOther.trim()) body.append('hearFromOther', hearFromOther.trim());
+      body.append('cv', cv);
+      const res = await fetch(`${API_PREFIX}/careers/apply`, { method: 'POST', body });
+      if (!res.ok) throw new Error(await readError(res));
       setSuccess(true);
-    } catch { setError('Bir hata oluştu. Lütfen tekrar deneyin.'); }
+    } catch (err) { setError((err as Error).message || 'Bir hata oluştu. Lütfen tekrar deneyin.'); }
     finally { setSubmitting(false); }
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#121212', color: '#f5f5f5', fontFamily: 'var(--font-sans, system-ui)', overflowX: 'hidden' }}>
+    <main className="live-layer ll-form" style={{ minHeight: '100vh', overflowX: 'hidden' }}>
 
       {/* ── Hero ──────────────────────────────────────────────── */}
       <section style={{ position: 'relative', padding: 'clamp(5rem,12vw,9rem) 1.5rem clamp(4rem,8vw,7rem)', textAlign: 'center' }}>
@@ -249,11 +301,11 @@ export default function KariyerPage() {
             <h2 style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 400, textAlign: 'center', marginBottom: '0.5rem' }}>
               Başvurunu Yap
             </h2>
-            <p style={{ textAlign: 'center', color: '#666', fontSize: '0.85rem', marginBottom: '2rem' }}>
-              En kısa sürede geri döneceğiz.
+            <p style={{ textAlign: 'center', color: '#a39c93', fontSize: 13, marginBottom: '2rem' }}>
+              Formu doldurun, 3 iş günü içinde ekibimiz sizi arasın.
             </p>
 
-            <div style={{ ...glass, padding: 'clamp(1.5rem, 4vw, 2.5rem)', maxWidth: '640px', margin: '0 auto' }}>
+            <div className="ll-card" style={{ maxWidth: '640px', margin: '0 auto' }}>
               {success ? (
                 <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: 'center', padding: '2rem 0' }}>
                   <motion.div initial={{ scale: 0 }} animate={{ scale: [0, 1.2, 1] }} transition={{ duration: 0.6, times: [0, 0.6, 1] }}
@@ -267,23 +319,70 @@ export default function KariyerPage() {
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <TextField label="Ad Soyad *" value={form.fullName} onChange={(v) => set('fullName', v)} maxLength={120} required />
+                  <TextField label="E-posta *" type="email" value={form.email} onChange={(v) => set('email', v)} required />
+                  <VerifiedPhoneField base="/careers" phone={form.phone} onPhone={(v) => set('phone', v)} phoneToken={phoneToken} onToken={setPhoneToken} />
+                  <SelectField label="Öğrenim Durumu *" value={form.education} options={EDUCATIONS} onChange={(v) => set('education', v)} required />
+
+                  <fieldset style={{ border: 'none', margin: 0, padding: 0 }}>
+                    <legend style={{ padding: 0 }}><FormLabel>Yabancı Dil *</FormLabel></legend>
+                    <p className="ll-mono text-[11px] text-[#8f887f]" style={{ margin: '0 0 8px' }}>★ A1–A2 · ★★ B1–B2 · ★★★ C1–C2</p>
+                    {LANGUAGES.map((name) => {
+                      const on = name in languages;
+                      return (
+                        <div key={name} style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <label className="flex items-center justify-between cursor-pointer">
+                            <span className="text-[13px] text-[#f4f1ec]">{name}</span>
+                            <input type="checkbox" checked={on} onChange={() => toggleLanguage(name)} style={{ width: 18, height: 18, accentColor: '#c0392b' }} />
+                          </label>
+                          {on && (
+                            <div className="flex gap-1" style={{ marginTop: 6 }} role="radiogroup" aria-label={`${name} seviyesi`}>
+                              {[1, 2, 3].map((n) => (
+                                <button
+                                  key={n}
+                                  type="button"
+                                  role="radio"
+                                  aria-checked={languages[name] === n}
+                                  aria-label={`${n} yıldız`}
+                                  onClick={() => setLanguages((l) => ({ ...l, [name]: n }))}
+                                  style={{ background: 'none', border: 'none', padding: '0 2px', cursor: 'pointer', fontSize: 22, lineHeight: 1, color: languages[name] >= n ? '#ff3b30' : 'rgba(255,255,255,0.2)' }}
+                                >
+                                  ★
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </fieldset>
+
+                  <SelectField label="Çalışma Türü *" value={form.workType} options={WORK_TYPES} onChange={(v) => set('workType', v)} required />
+                  <SelectField label="Ücret Beklentisi *" value={form.salaryExpectation} options={SALARIES} onChange={(v) => set('salaryExpectation', v)} required />
+                  <DateField label="Doğum tarihi *" value={form.birthDate} onChange={(v) => set('birthDate', v)} />
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    <Field label="Ad Soyad *" value={form.fullName} onChange={(v) => setForm(f => ({ ...f, fullName: v }))} required />
-                    <Field label="E-posta *" type="email" value={form.email} onChange={(v) => setForm(f => ({ ...f, email: v }))} required />
+                    <SelectField label="Şehir *" value={form.city} options={cityNames} onChange={(v) => setForm((f) => ({ ...f, city: v, district: '' }))} required />
+                    <div>
+                      <FormLabel>İlçe *</FormLabel>
+                      <SiteSelect live key={form.city} value={form.district} onChange={(v) => set('district', v)} options={districts[form.city] ?? []} placeholder={form.city ? 'İlçe seçin' : 'Önce şehir seçin'} required ariaLabel="İlçe" searchable searchPlaceholder="İlçe ara" />
+                    </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    <Field label="Telefon *" type="tel" value={form.phone} onChange={(v) => setForm(f => ({ ...f, phone: v }))} required />
-                    <SelectField label="Şehir *" value={form.city} options={CITIES} onChange={(v) => setForm(f => ({ ...f, city: v }))} required />
+                  <TextField label="LinkedIn (opsiyonel)" type="url" value={form.linkedinOrCv} onChange={(v) => set('linkedinOrCv', v)} placeholder="https://www.linkedin.com/in/…" maxLength={300} />
+
+                  <div>
+                    <FormLabel>Özgeçmiş (CV) * — PDF, DOC, DOCX, JPEG, PNG; en fazla 5 MB</FormLabel>
+                    <label className="input-glass px-4 py-3 text-[13px]" style={{ position: 'relative', display: 'block', cursor: 'pointer', color: cv ? '#f5f5f5' : '#ff6b6b', textAlign: 'center' }}>
+                      {cv ? cv.name : '+ Dosya seç'}
+                      <input type="file" accept={CV_ACCEPT} onChange={(e) => { pickCv(e.target.files?.[0]); e.target.value = ''; }} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
+                    </label>
+                    <p style={{ margin: '6px 0 0', fontSize: 11, color: '#ff6b6b' }}>Resimsiz CV&apos;ler dikkate alınmamaktadır.</p>
                   </div>
-                  <Field label="LinkedIn veya özgeçmiş linki (opsiyonel)" value={form.linkedinOrCv} onChange={(v) => setForm(f => ({ ...f, linkedinOrCv: v }))} placeholder="https://linkedin.com/in/..." />
-                  <TextareaField
-                    label="Kendini Tanıt — Neden sen? Ahenk'e ne katabilirsin? *"
-                    value={form.motivation}
-                    onChange={(v) => setForm(f => ({ ...f, motivation: v }))}
-                    maxLength={600}
-                    required
-                  />
-                  <SelectField label="Bizi Nereden Duydun? (opsiyonel)" value={form.hearFrom} options={HEAR_FROM} onChange={(v) => setForm(f => ({ ...f, hearFrom: v }))} />
+
+                  <TextareaField label="Ben Ahenk'e şunları katabilirim: *" value={form.motivation} onChange={(v) => set('motivation', v)} maxLength={600} required rows={4} />
+                  <SelectField label="Bizi nereden duydun (opsiyonel)" value={form.hearFrom} options={HEAR_FROM} onChange={(v) => set('hearFrom', v)} />
+                  {form.hearFrom === 'Diğer' && (
+                    <TextField label="Açıklama (opsiyonel)" value={form.hearFromOther} onChange={(v) => set('hearFromOther', v)} maxLength={200} />
+                  )}
 
                   {error && <p style={{ color: '#ff6b6b', fontSize: '0.85rem', textAlign: 'center' }}>{error}</p>}
 
@@ -347,38 +446,13 @@ export default function KariyerPage() {
 }
 
 /* ── Form bileşenleri ─────────────────────────────────────────── */
-function Field({ label, type = 'text', value, onChange, required, placeholder }: {
-  label: string; type?: string; value: string; onChange: (v: string) => void; required?: boolean; placeholder?: string;
-}) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-      <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>{label}</span>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} placeholder={placeholder}
-        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
-    </label>
-  );
-}
-
 function SelectField({ label, value, options, onChange, required }: {
   label: string; value: string; options: string[]; onChange: (v: string) => void; required?: boolean;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-      <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>{label}</span>
-      <SiteSelect value={value} onChange={onChange} options={options} required={required} ariaLabel={label} />
+    <div>
+      <FormLabel>{label}</FormLabel>
+      <SiteSelect live value={value} onChange={onChange} options={options} required={required} ariaLabel={label} />
     </div>
-  );
-}
-
-function TextareaField({ label, value, onChange, maxLength, required }: {
-  label: string; value: string; onChange: (v: string) => void; maxLength?: number; required?: boolean;
-}) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-      <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 500 }}>{label}</span>
-      <textarea value={value} onChange={(e) => onChange(e.target.value)} maxLength={maxLength} required={required} rows={4}
-        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.7rem 1rem', color: '#f5f5f5', fontSize: '0.9rem', outline: 'none', resize: 'vertical', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-      {maxLength && <span style={{ fontSize: '0.72rem', color: '#555', alignSelf: 'flex-end' }}>{value.length}/{maxLength}</span>}
-    </label>
   );
 }

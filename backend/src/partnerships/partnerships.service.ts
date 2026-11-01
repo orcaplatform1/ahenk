@@ -30,12 +30,12 @@ export class PartnershipsService {
 
   async sendOtp(phone: string) {
     await this.assertPhoneFree(phone);
-    await this.otp.send(phone);
+    await this.otp.send(phone, 'venue');
     return { message: 'Doğrulama kodu gönderildi', resendSeconds: OTP_RESEND_SECONDS };
   }
 
   async verifyOtp(phone: string, code: string) {
-    await this.otp.verify(phone, code);
+    await this.otp.verify(phone, code, 'venue');
     const phoneToken = randomUUID();
     await this.redis.set(phoneKey(phone), phoneToken, PHONE_TOKEN_TTL);
     return { phoneToken };
@@ -44,6 +44,8 @@ export class PartnershipsService {
   async apply(dto: ApplyPartnershipDto, files: Express.Multer.File[]) {
     if (files.length === 0) throw new BadRequestException('En az 1 mekân fotoğrafı yükleyin');
     assertVenuePhotos(files);
+    const city = await this.prisma.city.findFirst({ where: { name: dto.city, isActive: true }, select: { id: true } });
+    if (!city) throw new BadRequestException('Geçerli bir şehir seçin');
     if (!isValidDistrict(dto.city, dto.district)) throw new BadRequestException('Geçerli bir ilçe seçin');
 
     const stored = await this.redis.get(phoneKey(dto.phone));
@@ -73,6 +75,7 @@ export class PartnershipsService {
             phone: dto.phone,
             city: dto.city,
             venueType: dto.venueType,
+            venueTypeOther: dto.venueType === 'Diğer' ? dto.venueTypeOther?.trim() : null,
             capacity: dto.capacity,
             description: dto.description,
             websiteOrSocial: dto.websiteOrSocial,

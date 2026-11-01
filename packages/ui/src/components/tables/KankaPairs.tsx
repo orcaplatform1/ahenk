@@ -12,7 +12,7 @@ function Slot({ person, emptyGender }: { person?: KankaPerson; emptyGender?: str
     <span
       style={{
         width: 48, height: 48, borderRadius: '50%', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        border: `2px solid ${color}`, color, fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono), monospace',
+        border: `2px solid ${color}`, color: '#f0f0f0', fontSize: 11, fontWeight: 700, letterSpacing: '0.02em', fontFamily: 'Inter, sans-serif',
       }}
     >
       {person ? person.initials : '?'}
