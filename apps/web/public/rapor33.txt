@@ -1,0 +1,68 @@
+RAPOR 33 - Sitelerde sirket bilgileri
+
+YENI DEGERLER
+Ticari unvan: Ahenk Zesta Art Design
+Vergi Dairesi: Baskent Vergi Dairesi
+Vergi No, MERSIS No, Ticaret Sicil No: bos
+Adres ve Ankara yetki maddesine dokunulmadi. Kesinti olmadi: .next sahiplikleri kontrol edildi, tsc ve build gecmeden restart yapilmadi.
+
+1. KRIPTOBEYAN (kriptobeyan.com)
+Dizin: /var/www/kriptobeyan/frontend
+Commit: 663b257 (kriptobeyan-frontend, main, push edildi)
+Degisen dosyalar: lib/site-config.ts, app/kvkk-aydinlatma-metni/page.tsx, components/legal-content/kvkk-content.tsx, app/mesafeli-satis-sozlesmesi/page.tsx, app/panel/abonelik/page.tsx
+Eski > yeni:
+- Unvan: KriptoBeyan Bilisim Teknolojileri Limited Sirketi > Ahenk Zesta Art Design
+- Vergi Dairesi: Atasehir Vergi Dairesi > Baskent Vergi Dairesi
+- Vergi No: 1234567890 > bos
+- MERSIS: 0123456789000015 > bos
+- Ticaret Sicil: 123456 > bos
+- Havale hesap sahibi: KriptoBeyan Bilisim Teknolojileri Ltd. Sti. > Ahenk Zesta Art Design
+Yer tutucu uyarilari KVKK iki yerde tamamen, Mesafeli Satis'te sirket bilgisi cumlesi olarak kaldirildi. site-config.ts'deki uyari yorumu da silindi.
+Bos degerler " / " gorunmesin diye tek satirlar ayrildi: Vergi Dairesi, Vergi No, MERSIS No.
+Veritabani: sirket bilgisi yok, yedek gerekmedi.
+Dogrulama: tsc ve build basarili, kriptobeyan-frontend restart, yeni hata yok, site 200.
+
+2. ZESTA (zesta.tr)
+Dizin: /var/www/zesta.tr/frontend + zesta veritabani
+Commit: 8d81a78 (zesta-frontend, main, push edildi)
+Degisen dosyalar: app/page.tsx, app/ekitap/page.tsx
+Tablo: pages (kvkk, mesafeli-satis-sozlesmesi)
+Eski > yeni: Zesta Art&Design > Ahenk Zesta Art Design
+Yedek: /root/backups/zesta_pages_20261101_pre-unvan.sql
+Vergi bilgisi yazmiyordu, eklenmedi.
+Dogrulama: tsc ve build basarili, zesta-frontend restart, yeni hata yok, site 200.
+DIKKAT: Koddaki iki dosyada bu ifade yasal metin degil; ana sayfa ve e-kitap sayfasinin tarayici basligi ile aciklamasi. Talimatta "kod" yazdigi icin degisti, yani sekme basligi artik "Ahenk Zesta Art Design". Marka olarak kalmasi istenirse bu iki dosya geri alinmali.
+
+3. ORCA (orcalabs.tr)
+Dizin: /var/www/orcalabs.tr + orca veritabani
+Commit: c2754b0 (orcalabs.tr, main, push edildi)
+Degisen dosyalar: backend/scripts/seed-legal-pages.ts, frontend/app/(dashboard)/subscription/page.tsx
+Tablo: Page (distance-sales-agreement)
+Eski > yeni:
+- Unvan: ORCA > Unvan: Ahenk Zesta Art Design
+- Havale hesap sahibi: ORCA EGITIM A.S. > Ahenk Zesta Art Design
+Yedek: /root/backups/orca_page_20261101_pre-unvan.sql
+Seed: 5 yasal sayfa (kullanim, gizlilik, kvkk, mesafeli, cerez) canli metinle birebir esitlendi. Eski seed, tabloda olmayan "content" alanina yaziyordu; artik "blocks" kullaniyor. Seed yeniden calistirilmadi.
+Vergi bilgisi yazmiyordu, eklenmedi.
+Dokunulmayan: Mesafeli Satis'teki "tescilli ticaret unvani, acik adresi, MERSIS numarasi ... faturada yer alir" cumlesi deger icermedigi icin kaldi. Footer'daki "Orca Labs" ve "Orca Akademi" marka adi sayildi.
+Dogrulama: frontend tsc ve build basarili, orca-frontend restart, yeni hata yok, site 200. Backend tsc'de scripts altindaki baska dosyalarda eski hatalar var; seed dosyasinda hata yok.
+
+4. METTLO (mettlo.tr) - talimatta yoktu, "diger siteler" kurali geregi
+Dizin: /var/www/mettlo.tr
+Commit: e1a37a3 (mettlo, master, push edildi)
+Degisen dosya: apps/member-web/app/(site)/checkout/event-checkout/[slug]/event-checkout-client.tsx
+Eski > yeni: Mettlo Dijital Hizmetler A.S. > Ahenk Zesta Art Design (etkinlik bileti mesafeli satis metninde taraf adi)
+company.ts'deki bos alanlara dokunulmadi.
+Dogrulama: tsc ve build basarili, mettlo-member-web restart, yeni hata yok, site 200.
+
+5. TRADERS (traders.tr)
+Sirket bilgisi yok, dokunulmadi. Commit yok.
+
+DIKKAT - HAVALE EKRANLARI
+KriptoBeyan ve ORCA odeme ekranlarinda IBAN hala yer tutucu (TR00 0000...) ve banka adi bos. Hesap sahibi artik gercek unvan oldugu icin bu ekran gercek gibi gorunuyor. Kullanici buraya havale yapamaz; gercek IBAN girilene kadar havale secenegi kapatilmali ya da IBAN yazilmali. Talimat disi oldugu icin dokunulmadi.
+
+KRIPTOBEYAN MESAFELI SATIS NOTU
+Metnin taslak oldugu ve odeme akisinin gercek odeme kurulusuna bagli olmadigi yazan kisim sirket bilgisi uyarisi olmadigi icin kaldi.
+
+AHENK
+Yalnizca rapor dosyasi degisti: rapor32.txt silindi, rapor33.txt eklendi.
