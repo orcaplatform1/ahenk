@@ -21,7 +21,7 @@ import { GROUP_RIGHTS, KANKA_RIGHTS, ONE_ON_ONE_PLANS, PACKAGE_CYCLES, groupPart
 import { activeKankaLink } from "../kanka/kanka-links";
 import { decryptIdentityNumber } from "../kyc/identity-number";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
-import { AdminAlertType, Prisma, SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType, ReferralStatus, PaymentDiscountType, UserStatus, MeetingType, MeetingStatus } from "@prisma/client";
+import { AdminAlertType, Prisma, SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType, ReferralStatus, PaymentDiscountType, UserStatus, MeetingType, MeetingStatus } from "../generated/prisma/client";
 
 type Db = PrismaService | Prisma.TransactionClient;
 

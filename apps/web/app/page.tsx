@@ -256,7 +256,7 @@ function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:stri
                 style={isActive ? { border: '1px solid rgba(192,57,43,0.8)', background: 'rgba(192,57,43,0.12)', color: '#ff6b6b', boxShadow: '0 0 16px rgba(192,57,43,0.3)' } : { border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.07)', color: '#aaa' }}
               >
                 {isActive && (
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 flex-shrink-0">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 shrink-0">
                     <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clipRule="evenodd" />
                   </svg>
                 )}
@@ -506,7 +506,7 @@ function AccordionGroup({ items }: { items: { title: string; body: string }[] })
               backgroundClip: open === i ? 'text' : 'unset',
             }}>{item.title}</span>
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}
-              className="flex-shrink-0 w-4 h-4 transition-transform duration-200"
+              className="shrink-0 w-4 h-4 transition-transform duration-200"
               style={{ color: '#555', transform: open === i ? 'rotate(180deg)' : 'rotate(0deg)' }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>

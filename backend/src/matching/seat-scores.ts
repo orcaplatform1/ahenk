@@ -1,4 +1,4 @@
-import { ParticipantStatus, Prisma, PrismaClient } from "@prisma/client";
+import { ParticipantStatus, Prisma, PrismaClient } from "../generated/prisma/client";
 import { matchScore } from "./match-score";
 
 type Db = PrismaClient | Prisma.TransactionClient;

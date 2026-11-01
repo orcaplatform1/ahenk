@@ -19,13 +19,13 @@
   },
   "devDependencies": {
     "@ahenk/config": "workspace:*",
-    "@types/node": "^20.14.9",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.39",
-    "tailwindcss": "^3.4.6",
-    "typescript": "^5.4.5",
-    "eslint-config-next": "16.4.3"
+    "postcss": "^8.5.32",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "eslint-config-next": "16.4.3",
+    "@tailwindcss/postcss": "^4.3.3"
   }
 }

@@ -28,7 +28,7 @@ import {
   Prisma,
   AdminAlertType,
   Venue,
-} from "@prisma/client";
+} from "../generated/prisma/client";
 import { PLAN_CONFIG } from "../payment/payment.constants";
 import { vatOfGrossKurus } from "../payment/pricing";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";

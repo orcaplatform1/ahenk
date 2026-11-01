@@ -78,6 +78,7 @@ test('2.1 /auth/me Bearer ile, hassas alan yok', async () => {
 test('2.1 refresh: rotation, eski token ikinci kullanımda red ve tüm oturumlar iptal', async () => {
   const u = await h.user(); const l = await h.login(u); const rt = l.cookies.find((c) => c.startsWith('refresh_token=')).split(';')[0];
   const r1 = await api('POST', '/auth/refresh', { cookie: rt, headers: { origin: process.env.APP_URL } }); assert.equal(r1.status, 200); const rt2 = r1.cookies.find((c) => c.startsWith('refresh_token=')).split(';')[0]; assert.notEqual(rt, rt2);
+  await h.sleep(200); // REFRESH_REUSE_GRACE_MS test ortamında 100 ms
   assert.equal((await api('POST', '/auth/refresh', { cookie: rt, headers: { origin: process.env.APP_URL } })).status, 401);
   assert.equal((await api('POST', '/auth/refresh', { cookie: rt2, headers: { origin: process.env.APP_URL } })).status, 401, 'yeniden kullanım tespitinde zincir iptal edilmeli');
 });
@@ -102,7 +103,7 @@ test('2.1 forgot/reset password, eski oturumlar kapanır', async () => {
   assert.equal((await api('POST', '/auth/refresh', { cookie: rt, headers: { origin: process.env.APP_URL } })).status, 401);
 });
 test('2.1 OLUMSUZ forgot-password kayıtsız numarada varlığı sızdırmamalı', async () => { const r = await api('POST', '/auth/forgot-password', { body: { phone: h.uniquePhone() } }); assert.equal(r.status, 200, 'gelen ' + r.status + ': hesap varlığı anlaşılıyor'); });
-test('2.1 OLUMSUZ bot hesabı forgot-password alamaz', async () => { const b = await h.user({ bot: true, phone: h.uniquePhone() }); assert.equal((await api('POST', '/auth/forgot-password', { body: { phone: b.phone } })).status, 404); });
+test('2.1 OLUMSUZ bot hesabı forgot-password 200 döner, kod gitmez', async () => { const b = await h.user({ bot: true, phone: h.uniquePhone() }); const mk = h.outboxMark(); assert.equal((await api('POST', '/auth/forgot-password', { body: { phone: b.phone } })).status, 200); await h.sleep(200); assert.equal(h.outboxSince(mk).filter((e) => e.channel === 'whatsapp-otp' && e.params.phone === b.phone).length, 0); });
 test('2.1 OLUMSUZ JWT send-otp başkasının numarasına doğrulama kodu üretememeli', async () => { const a = await h.user(), b = await h.user(); await prisma.user.update({ where: { id: b.id }, data: { phoneVerified: false } }); const s = await api('POST', '/auth/send-otp', { token: a.token, body: { phone: b.phone } }); assert.notEqual(s.status, 200, 'A kullanıcısı B numarasına kod gönderebildi'); });
 test('2.1 OLUMSUZ verify-otp başkasının telefonunu doğrulanmış yapamaz', async () => {
   const a = await h.user(), b = await h.user(); await prisma.user.update({ where: { id: b.id }, data: { phoneVerified: false } });

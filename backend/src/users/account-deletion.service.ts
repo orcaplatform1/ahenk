@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import * as fs from "fs";
 import { createHash, randomUUID } from "crypto";
-import { Prisma, SanctionType, SubscriptionStatus, UserRole, UserStatus } from "@prisma/client";
+import { Prisma, SanctionType, SubscriptionStatus, UserRole, UserStatus } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { endKankaLinks } from "../kanka/kanka-links";

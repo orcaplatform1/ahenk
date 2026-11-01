@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import * as admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { getMessaging } from "firebase-admin/messaging";
 import { isE2eFakeMode, readFakeControl, recordFake } from "../../common/e2e/fake-layer";
 
 @Injectable()
@@ -20,9 +21,9 @@ export class FcmService implements OnModuleInit {
       return;
     }
 
-    if (admin.apps.length === 0) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
+    if (getApps().length === 0) {
+      initializeApp({
+        credential: cert({
           projectId,
           clientEmail,
           privateKey: privateKey.replace(/\\n/g, "\n"),
@@ -51,7 +52,7 @@ export class FcmService implements OnModuleInit {
     }
 
     try {
-      await admin.messaging().send({
+      await getMessaging().send({
         token: params.token,
         notification: { title: params.title, body: params.body },
         data: params.data ?? {},

@@ -21,7 +21,7 @@ import { InitCheckoutDto } from "./dto/init-checkout.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { KycGuard } from "../kyc/kyc.guard";
 import { TestCompletedGuard } from "../test/test.guard";
-import { RefundType } from "@prisma/client";
+import { RefundType } from "../generated/prisma/client";
 import { WinbackService } from "./winback.service";
 
 class RequestRefundDto {

@@ -11,7 +11,7 @@ import {
   IsEnum,
 } from "class-validator";
 import { Transform } from "class-transformer";
-import { LeaveReason } from "@prisma/client";
+import { LeaveReason } from "../../generated/prisma/client";
 
 export class BlockUsersDto {
   @IsArray()

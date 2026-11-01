@@ -1,4 +1,4 @@
-import { SubscriptionPlan } from "@prisma/client";
+import { SubscriptionPlan } from "../generated/prisma/client";
 
 // İçeriği çakışan paketler (Masada = grup, Karşımda = başbaşa, İçerde = ikisi).
 // Admin ücretsiz paket verirse bunlardan aktif olan iptal edilir. (Satın almada açık kısma bakılır: payment.service assertCanBuy)

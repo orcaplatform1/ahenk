@@ -58,7 +58,7 @@ export default function SifremiUnuttumPage() {
           </p>
           <div className="flex gap-2">
             <div
-              className="flex items-center px-4 text-[#a39c93] text-[13px] select-none flex-shrink-0"
+              className="flex items-center px-4 text-[#a39c93] text-[13px] select-none shrink-0"
               style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}
             >
               +90

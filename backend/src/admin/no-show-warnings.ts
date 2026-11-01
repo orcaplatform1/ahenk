@@ -1,4 +1,4 @@
-import { PrismaClient, SanctionType } from "@prisma/client";
+import { PrismaClient, SanctionType } from "../generated/prisma/client";
 
 type Db = Pick<PrismaClient, "userSanction">;
 

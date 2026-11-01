@@ -199,7 +199,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 h-[52px] flex items-center justify-between">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
             <style>{`@keyframes navbar-logo-spin{to{transform:rotate(360deg)}}`}</style>
             <Image src="/logo.webp" alt="Ahenk" width={28} height={28} className="rounded-full" style={{ animation: 'navbar-logo-spin 10s linear infinite' }} />
             <span className="font-sans font-semibold text-sm tracking-[0.12em] text-text">AHENK</span>
@@ -238,7 +238,7 @@ export default function Navbar() {
               </>
             )}
             {checked && navUser && (
-              <Link href="/profil" className="cursor-pointer flex-shrink-0">
+              <Link href="/profil" className="cursor-pointer shrink-0">
                 <NavAvatar user={navUser} />
               </Link>
             )}

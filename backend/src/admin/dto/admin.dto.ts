@@ -21,7 +21,7 @@ import {
 import { Type } from "class-transformer";
 import { SANCTION_REASONS } from "../sanction-reasons";
 import { GOOGLE_MAPS_URL, GOOGLE_MAPS_URL_MESSAGE } from "../../venue-panel/venue-url";
-import { UserStatus, UserRole, SubscriptionPlan, VenueCategory, VenueType, SanctionType, PartnershipStatus, CareerStatus } from "@prisma/client";
+import { UserStatus, UserRole, SubscriptionPlan, VenueCategory, VenueType, SanctionType, PartnershipStatus, CareerStatus } from "../../generated/prisma/client";
 
 // ─── Kullanıcı ────────────────────────────────────────────────────────────────
 

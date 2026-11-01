@@ -7,9 +7,10 @@ for (const l of fs.readFileSync(BACK + '/.env.test', 'utf8').split('\n')) {
 }
 if (!process.env.DATABASE_URL.includes('ahenk_test') || process.env.AHENK_TEST_MODE !== '1') throw new Error('Test ortamı değil, durduruldu');
 const bk = (m) => require(require.resolve(m, { paths: [BACK] }));
-const { PrismaClient } = bk('@prisma/client');
+const { PrismaClient } = require(BACK + '/dist/src/generated/prisma/client');
+const { PrismaPg } = bk('@prisma/adapter-pg');
 const bcrypt = bk('bcryptjs');
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 const PW = 'Test1234!';
 const PW_HASH = bcrypt.hashSync(PW, 4);
 const eps = JSON.parse(fs.readFileSync(ART + '/endpoints.json', 'utf8'));
@@ -52,7 +53,7 @@ let phoneSeq = 0;
 const runTag = (Date.now() % 100000).toString().padStart(5, '0') + (process.pid % 10);
 function uniquePhone() { phoneSeq++; return `+9059${runTag.slice(-5)}${phoneSeq.toString().padStart(3, '0')}`.slice(0, 13); }
 async function cities() { return Object.fromEntries((await prisma.city.findMany()).map((c) => [c.name, c.id])); }
-const signAccess = (u) => new (bk('@nestjs/jwt').JwtService)({}).sign({ sub: u.id, email: u.email, role: u.role }, { secret: process.env.JWT_SECRET, expiresIn: '6h' });
+const signAccess = (u) => new (bk('@nestjs/jwt').JwtService)({}).sign({ sub: u.id, email: u.email, role: u.role, tv: u.tokenVersion ?? 0 }, { secret: process.env.JWT_SECRET, expiresIn: '6h' });
 const OCEAN = { openness: 50, conscientiousness: 50, extraversion: 50, agreeableness: 50, neuroticism: 50 };
 // Kullanıcıyı doğrudan DB'de kurar. opts: gender,city(id),district,age,ocean(false=yok),kyc,plan,role,bot,status,sector,venuePreference,sub(ek alan)
 async function user(opts = {}) {

@@ -1,8 +1,8 @@
 import { Injectable, BadRequestException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { OtpService } from "../auth/otp/otp.service";
-import { VenuePreference, Prisma } from "@prisma/client";
-import * as bcrypt from "bcryptjs";
+import { VenuePreference, Prisma } from "../generated/prisma/client";
+import bcrypt from "bcryptjs";
 
 @Injectable()
 export class UsersService {

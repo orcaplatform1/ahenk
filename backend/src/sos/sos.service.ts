@@ -4,7 +4,7 @@ import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { FcmService } from "../notification/fcm/fcm.service";
 import { NotificationService } from "../notification/notification.service";
 import { Logger } from "@nestjs/common";
-import { AdminAlertType, MeetingStatus, Prisma, UserRole } from "@prisma/client";
+import { AdminAlertType, MeetingStatus, Prisma, UserRole } from "../generated/prisma/client";
 import { sosWindowEnd } from "../meetings/meeting-windows";
 
 type Viewer = { id: string; role: UserRole };

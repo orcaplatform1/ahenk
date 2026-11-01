@@ -1,7 +1,8 @@
+import "dotenv/config";
 import { NestFactory } from "@nestjs/core";
 import { ForbiddenException, ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import * as cookieParser from "cookie-parser";
+import cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
 import { csrfOriginCheck } from "./auth/csrf-origin.middleware";
 
@@ -34,10 +35,10 @@ async function bootstrap() {
   // iyzico ödeme dönüşü: tarayıcı iyzico sayfasından POST eder (Origin iyzico) — CORS kontrolüne girmez,
   // token iyzico'dan doğrulanır. İzinsiz Origin 500 değil 403 alır.
   const CORS_EXEMPT_PATHS = new Set(["/api/v1/payment/callback"]);
-  app.enableCors((req: { path: string }, callback) => {
+  app.enableCors((req: { path: string }, callback: (err: Error | null, options: object) => void) => {
     if (CORS_EXEMPT_PATHS.has(req.path)) return callback(null, { origin: false });
     callback(null, {
-      origin: (origin, cb) => {
+      origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
         if (!origin || allowedOrigins.includes(origin)) {
           cb(null, true);
         } else {

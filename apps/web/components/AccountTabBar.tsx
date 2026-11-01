@@ -42,7 +42,7 @@ export function AccountTabBar({ activeKey, kycApproved }: { activeKey?: string; 
             <Link
               key={t.key}
               href={t.href}
-              className="text-xs font-medium whitespace-nowrap px-3 py-1.5 rounded-lg flex-shrink-0 transition-all"
+              className="text-xs font-medium whitespace-nowrap px-3 py-1.5 rounded-lg shrink-0 transition-all"
               style={isActive(t.key)
                 ? { background: 'rgba(192,57,43,0.18)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.35)', textDecoration: 'none' }
                 : { background: 'transparent', color: '#666', border: '1px solid transparent', textDecoration: 'none' }

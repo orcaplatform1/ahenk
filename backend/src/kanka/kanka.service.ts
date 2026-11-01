@@ -3,7 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
-import { KycStatus, UserStatus } from "@prisma/client";
+import { KycStatus, UserStatus } from "../generated/prisma/client";
 import { randomBytes } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";

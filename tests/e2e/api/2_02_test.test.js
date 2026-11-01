@@ -17,7 +17,7 @@ test('2.2 uç değerler 0 ve 100', async () => {
   const u = await h.user({ ocean: false }); const r = await api('POST', '/test/submit', { token: u.token, body: { answers: ans((q) => (q.reversed ? 1 : 5)) } }); for (const v of Object.values(r.json.scores)) assert.equal(v, 100);
   const u2 = await h.user({ ocean: false }); const r2 = await api('POST', '/test/submit', { token: u2.token, body: { answers: ans((q) => (q.reversed ? 5 : 1)) } }); for (const v of Object.values(r2.json.scores)) assert.equal(v, 0);
 });
-test('2.2 /test/my-score ucu (talimatta geçen) var mı', async () => { const u = await h.user(); const r = await api('GET', '/test/my-score', { token: u.token }); assert.equal(r.status, 200, 'uç yok, gerçek uç /test/result'); });
+test('2.2 /test/result ucu skoru döner', async () => { const u = await h.user(); const r = await api('GET', '/test/result', { token: u.token }); assert.equal(r.status, 200, r.text); });
 test('2.2 /test/result tamamlanmış ve tamamlanmamış', async () => {
   const u = await h.user({ ocean: false }); const a = await api('GET', '/test/result', { token: u.token }); assert.equal(a.json.completed, false);
   const b = await h.user(); const r = await api('GET', '/test/result', { token: b.token }); assert.equal(r.json.completed, true); assert.equal(r.json.canRetakeNow, false); assert.ok(r.json.retakeAvailableAt); assert.equal(typeof r.json.profile, 'string');

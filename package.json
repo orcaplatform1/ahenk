@@ -2,7 +2,7 @@
   "name": "ahenk",
   "version": "0.0.1",
   "private": true,
-  "packageManager": "pnpm@12.6.0",
+  "packageManager": "pnpm@12.16.1",
   "scripts": {
     "dev:web": "pnpm --filter @ahenk/web dev",
     "dev:mobile": "pnpm --filter @ahenk/mobile start",
@@ -13,6 +13,6 @@
     "type-check": "pnpm -r type-check"
   },
   "devDependencies": {
-    "typescript": "^5.4.5"
+    "typescript": "^7.0.2"
   }
 }

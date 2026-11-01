@@ -245,7 +245,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
   const [deletePending, setDeletePending] = useState(false);
 
   useEffect(() => {
-    api.silentGet<{ id: string } | null>('/users/me/deletion-request').then((r) => setDeletePending(!!r?.id));
+    api.silentGet<{ request: { id: string } | null }>('/users/me/deletion-request').then((r) => setDeletePending(!!r?.request?.id)).catch(() => {});
   }, []);
 
   async function logoutAll() {

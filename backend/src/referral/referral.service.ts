@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, ConflictException, ServiceUnavailableException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
-import { ReferralStatus } from "@prisma/client";
+import { ReferralStatus } from "../generated/prisma/client";
 import { ConfigService } from "@nestjs/config";
 
 // Kullanıcı başına davet sınırları

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { MeetingType, ParticipantStatus, Prisma } from "@prisma/client";
+import { MeetingType, ParticipantStatus, Prisma } from "../generated/prisma/client";
 import { createHash } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";

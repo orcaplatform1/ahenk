@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { MeetingStatus, ParticipantStatus } from "@prisma/client";
+import { MeetingStatus, ParticipantStatus } from "../generated/prisma/client";
 
 // Sohbet penceresi: masanın kendi buluşma günü 10:00–20:00 TR (UTC+3 sabit offset)
 function chatWindow(scheduledAt: Date): { openAt: Date; closeAt: Date } {

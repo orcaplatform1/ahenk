@@ -67,7 +67,7 @@ export function TabRehber() {
       {/* Yeni numara girişi */}
       <div className="flex gap-2">
         <div
-          className="flex items-center px-3 text-[#a39c93] text-sm select-none flex-shrink-0"
+          className="flex items-center px-3 text-[#a39c93] text-sm select-none shrink-0"
           style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}
         >
           +90

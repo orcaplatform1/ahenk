@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
-import { KycStatus, Prisma, SubscriptionPlan, SubscriptionStatus, UserStatus } from "@prisma/client";
+import { KycStatus, Prisma, SubscriptionPlan, SubscriptionStatus, UserStatus } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { activeKankaLink } from "../kanka/kanka-links";

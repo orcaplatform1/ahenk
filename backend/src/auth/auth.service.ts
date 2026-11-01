@@ -11,7 +11,7 @@ import { activeNoShowWarningsWhere } from "../admin/no-show-warnings";
 import { NO_SHOW_WARNING_LIMIT } from "../admin/sanction-reasons";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
-import * as bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 import { DISTRICTS, districtsOf, isValidDistrict } from "../common/districts";
 import { randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
@@ -24,10 +24,10 @@ import { OtpService, OTP_RESEND_SECONDS } from "./otp/otp.service";
 import { RedisService } from "../redis/redis.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus, SanctionType, Gender } from "@prisma/client";
+import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus, SanctionType, Gender } from "../generated/prisma/client";
 
 // Tüketilmiş refresh token bu süre içinde gelirse eşzamanlı yenileme sayılır (çok sekme)
-const REFRESH_REUSE_GRACE_MS = 30_000;
+const DEFAULT_REFRESH_REUSE_GRACE_MS = 30_000;
 
 @Injectable()
 export class AuthService {
@@ -294,7 +294,7 @@ export class AuthService {
     // İstisna: birkaç saniye önce tüketilmişse iki sekmenin aynı anda yenilemesidir, oturum kapanmaz.
     if (!storedToken || storedToken.revoked) {
       const rotatedAt = storedToken?.rotatedAt?.getTime();
-      const sameMoment = rotatedAt !== undefined && Date.now() - rotatedAt < REFRESH_REUSE_GRACE_MS;
+      const sameMoment = rotatedAt !== undefined && Date.now() - rotatedAt < Number(this.config.get("REFRESH_REUSE_GRACE_MS") ?? DEFAULT_REFRESH_REUSE_GRACE_MS);
       if (!sameMoment) await this.revokeAllSessions(userId);
       throw new UnauthorizedException("Refresh token geçersiz");
     }

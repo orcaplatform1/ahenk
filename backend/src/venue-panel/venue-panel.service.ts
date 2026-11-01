@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, UnauthorizedException, ForbiddenException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import { MeetingStatus, ParticipantStatus, VenueAccount } from "@prisma/client";
-import * as bcrypt from "bcryptjs";
+import { MeetingStatus, ParticipantStatus, VenueAccount } from "../generated/prisma/client";
+import bcrypt from "bcryptjs";
 import { PrismaService } from "../prisma/prisma.service";
 import { OtpService } from "../auth/otp/otp.service";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";

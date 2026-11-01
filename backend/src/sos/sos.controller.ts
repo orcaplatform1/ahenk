@@ -7,7 +7,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { Throttle } from "@nestjs/throttler";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "../generated/prisma/client";
 import { IsArray, IsNumber, IsOptional, IsIn, ArrayMinSize, Max, Min } from "class-validator";
 import { Transform } from "class-transformer";
 

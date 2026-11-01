@@ -16,7 +16,7 @@ import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { chargeKankaRight, pairKankaSub } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
-import { MeetingStatus, MeetingType, LeaveReason, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
+import { MeetingStatus, MeetingType, LeaveReason, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
 
 
 // Admin ayrı harita linki girmediyse mekan adı + adresle Google Maps araması

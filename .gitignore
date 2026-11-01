@@ -35,3 +35,6 @@ uploads/
 # Veritabanı yedekleri ve TypeScript derleme önbelleği
 backups/
 *.tsbuildinfo
+
+# Prisma istemcisi (prisma generate)
+backend/src/generated/

@@ -56,7 +56,7 @@ import {
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
-import { UserRole, RefundStatus } from "@prisma/client";
+import { UserRole, RefundStatus } from "../generated/prisma/client";
 import { WinbackService } from "../payment/winback.service";
 import { PaymentService } from "../payment/payment.service";
 import { AccountDeletionService } from "../users/account-deletion.service";

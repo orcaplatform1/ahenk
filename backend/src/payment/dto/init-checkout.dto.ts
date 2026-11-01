@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional } from "class-validator";
-import { SubscriptionPlan, PaymentPlatform } from "@prisma/client";
+import { SubscriptionPlan, PaymentPlatform } from "../../generated/prisma/client";
 
 export class InitCheckoutDto {
   @IsEnum(SubscriptionPlan)

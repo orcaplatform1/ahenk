@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { PlanPrice, SubscriptionPlan } from "@prisma/client";
+import { PlanPrice, SubscriptionPlan } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { PLAN_CONFIG } from "./payment.constants";
 import { computePrices } from "./pricing";

@@ -1,4 +1,4 @@
-import { SubscriptionPlan } from "@prisma/client";
+import { SubscriptionPlan } from "../generated/prisma/client";
 
 // Paket tanımları (tek seferlik). Fiyatlar veritabanında (PlanPrice), SUPERADMIN yönetir — bkz. pricing.ts;
 // haklar ve döngü süresi package-rights.ts'de

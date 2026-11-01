@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsEmail, IsEnum, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
-import { VenueType } from '@prisma/client';
+import { VenueType } from '../generated/prisma/client';
 import { GOOGLE_MAPS_URL, GOOGLE_MAPS_URL_MESSAGE } from '../venue-panel/venue-url';
 
 const PHONE = /^\+90[5][0-9]{9}$/;

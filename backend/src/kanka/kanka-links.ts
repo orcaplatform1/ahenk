@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, MeetingType, MeetingStatus } from "@prisma/client";
+import { Prisma, PrismaClient, MeetingType, MeetingStatus } from "../generated/prisma/client";
 import { trWeekStart } from "../admin/tr-week";
 import { meetingCardEnd } from "../meetings/meeting-windows";
 

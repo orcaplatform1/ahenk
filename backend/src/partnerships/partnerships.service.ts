@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
+import { Prisma } from '../generated/prisma/client';
+import bcrypt from 'bcryptjs';
 import { randomBytes, randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';

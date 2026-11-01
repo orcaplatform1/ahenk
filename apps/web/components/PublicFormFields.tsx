@@ -133,7 +133,7 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
       <p className="text-xs text-[#a39c93] mb-2">WhatsApp&apos;a kayıtlı numaranızı yazın</p>
       <div className="flex gap-2">
         <div
-          className="flex items-center px-4 text-[#a39c93] text-[13px] select-none flex-shrink-0"
+          className="flex items-center px-4 text-[#a39c93] text-[13px] select-none shrink-0"
           style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}
         >
           +90
@@ -147,7 +147,7 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
         {!phoneToken && (
           <button
             type="button" onClick={send} disabled={sending || resendIn > 0 || phone.length !== 10}
-            className="flex-shrink-0 px-3 text-xs font-medium rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
+            className="shrink-0 px-3 text-xs font-medium rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ border: '1px solid rgba(192,57,43,0.5)', color: '#e74c3c', background: 'rgba(192,57,43,0.06)' }}
           >
             {sending ? 'Gönderiliyor…' : resendIn > 0 ? `Tekrar (${resendIn} sn)` : otpSent ? 'Tekrar gönder' : 'Kod gönder'}

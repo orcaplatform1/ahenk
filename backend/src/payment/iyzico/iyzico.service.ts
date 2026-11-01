@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 // @ts-ignore — iyzipay does not have official TS types
-import * as Iyzipay from "iyzipay";
+import Iyzipay from "iyzipay";
 import { decodeFakeIyzicoToken, encodeFakeIyzicoToken, isE2eFakeMode, readFakeControl, recordFake } from "../../common/e2e/fake-layer";
 
 export type IyzicoCheckoutResult = {

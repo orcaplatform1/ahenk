@@ -352,7 +352,7 @@ function KayitPageInner() {
           {STEPS.map((_, i) => (
             <div key={i} className="flex items-center">
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold flex-shrink-0"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold shrink-0"
                 style={
                   i < step
                     ? { background: 'linear-gradient(135deg,#c0392b,#ff6b6b)', color: '#fff' }
@@ -407,7 +407,7 @@ function KayitPageInner() {
               <p className="text-xs text-[#a39c93] mb-2">WhatsApp'a kayıtlı numaranızı yazın</p>
               <div className="flex gap-2">
                 <div
-                  className="flex items-center px-4 text-[#a39c93] text-[13px] select-none flex-shrink-0"
+                  className="flex items-center px-4 text-[#a39c93] text-[13px] select-none shrink-0"
                   style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}
                 >
                   +90
@@ -425,7 +425,7 @@ function KayitPageInner() {
                     type="button"
                     onClick={sendPhoneOtp}
                     disabled={otpSending || resendIn > 0 || form.phoneNumber.length !== 10}
-                    className="flex-shrink-0 px-3 text-xs font-medium rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="shrink-0 px-3 text-xs font-medium rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{ border: '1px solid rgba(192,57,43,0.5)', color: '#e74c3c', background: 'rgba(192,57,43,0.06)' }}
                   >
                     {otpSending ? 'Gönderiliyor…' : resendIn > 0 ? `Tekrar (${resendIn} sn)` : otpSent ? 'Tekrar gönder' : 'Kod gönder'}
@@ -695,7 +695,7 @@ function KayitPageInner() {
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                          className="ml-auto flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                          className="ml-auto shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
                           style={{ background: 'linear-gradient(135deg,#c0392b,#ff6b6b)' }}
                         >
                           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -732,7 +732,7 @@ function KayitPageInner() {
             </div>
             <div className="flex gap-2">
               <div
-                className="flex items-center px-4 text-[#a39c93] text-[13px] select-none flex-shrink-0"
+                className="flex items-center px-4 text-[#a39c93] text-[13px] select-none shrink-0"
                 style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}
               >
                 +90

@@ -1,6 +1,6 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor, SetMetadata } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "../generated/prisma/client";
 import { Observable, map } from "rxjs";
 
 // Düz nesne ve dizilerde "email" alanlarını derinlemesine siler (Date, dosya akışı vb. dokunulmaz)

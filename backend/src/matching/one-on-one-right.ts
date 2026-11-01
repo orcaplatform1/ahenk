@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
+import { Prisma, PrismaClient, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
 import { OPEN_ONE_ON_ONE_SUB, syncPackageStatus } from "../payment/package-rights";
 
 type Db = PrismaClient | Prisma.TransactionClient;

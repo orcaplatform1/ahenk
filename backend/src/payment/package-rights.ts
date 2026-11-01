@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, SubscriptionPlan, SubscriptionStatus, MeetingType } from "@prisma/client";
+import { Prisma, PrismaClient, SubscriptionPlan, SubscriptionStatus, MeetingType } from "../generated/prisma/client";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 

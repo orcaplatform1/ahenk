@@ -1,7 +1,7 @@
 import { Controller, Post, Patch, Get, Body, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { IsString, IsOptional, IsEnum, Matches, IsEmail } from "class-validator";
-import { VenuePreference } from "@prisma/client";
+import { VenuePreference } from "../generated/prisma/client";
 import { UsersService } from "./users.service";
 import { AccountDeletionService } from "./account-deletion.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -54,8 +54,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Bekleyen hesap silme talebi" })
-  getDeletionRequest(@CurrentUser() user: any) {
-    return this.accountDeletion.pendingOf(user.id);
+  async getDeletionRequest(@CurrentUser() user: any) {
+    return { request: await this.accountDeletion.pendingOf(user.id) };
   }
 
   @Post("me/deletion-request")

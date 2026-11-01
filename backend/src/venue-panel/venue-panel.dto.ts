@@ -1,5 +1,5 @@
 import { IsEmail, IsEnum, IsInt, IsISO8601, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from "class-validator";
-import { VenueType } from "@prisma/client";
+import { VenueType } from "../generated/prisma/client";
 import { GOOGLE_MAPS_URL, GOOGLE_MAPS_URL_MESSAGE } from "./venue-url";
 
 const PASSWORD_MIN = { message: "Şifre en az 6 karakter olmalı" };

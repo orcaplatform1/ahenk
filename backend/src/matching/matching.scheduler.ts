@@ -4,7 +4,7 @@ import { MatchingService } from "./matching.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AiReportService } from "../meetings/ai-report.service";
 import { NotificationService } from "../notification/notification.service";
-import { SubscriptionPlan, SubscriptionStatus, KycStatus } from "@prisma/client";
+import { SubscriptionPlan, SubscriptionStatus, KycStatus } from "../generated/prisma/client";
 import { cancellationNotice, initialsOf } from "../meetings/cancellation-notice";
 import { VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { reviewWindow } from "../meetings/meeting-windows";

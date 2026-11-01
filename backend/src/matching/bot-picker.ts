@@ -1,4 +1,4 @@
-import { AdminAlertType, Gender, Prisma, PrismaClient } from "@prisma/client";
+import { AdminAlertType, Gender, Prisma, PrismaClient } from "../generated/prisma/client";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 

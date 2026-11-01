@@ -171,7 +171,7 @@ export default function GirisPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center z-[200] px-6"
+            className="fixed inset-0 flex items-center justify-center z-200 px-6"
             style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)' }}
           >
             <motion.div
@@ -223,7 +223,7 @@ export default function GirisPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 flex flex-col items-center justify-start pt-[18%] z-[100]"
+            className="fixed inset-0 flex flex-col items-center justify-start pt-[18%] z-100"
             style={{ background: '#121212' }}
           >
             <div className="fixed inset-0 pointer-events-none">
@@ -309,7 +309,7 @@ export default function GirisPage() {
               <div className="flex flex-col gap-3">
                 <div className="flex gap-2">
                   <div
-                    className="flex items-center px-4 text-[#a39c93] text-[13px] select-none flex-shrink-0"
+                    className="flex items-center px-4 text-[#a39c93] text-[13px] select-none shrink-0"
                     style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}
                   >
                     +90

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { MeetingStatus, ParticipantStatus, Prisma, VenueType } from "@prisma/client";
+import { MeetingStatus, ParticipantStatus, Prisma, VenueType } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";

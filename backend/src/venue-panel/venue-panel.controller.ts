@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Patch, Post, Put, Req, Res, Up
 import { ConfigService } from "@nestjs/config";
 import { FilesInterceptor } from "@nestjs/platform-express";
 import { Throttle } from "@nestjs/throttler";
-import { VenueAccount } from "@prisma/client";
+import { VenueAccount } from "../generated/prisma/client";
 import { Request, Response } from "express";
 import { VENUE_COOKIE } from "../auth/auth-cookies";
 import { VenueAuthGuard } from "./venue-auth.guard";

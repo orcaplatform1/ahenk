@@ -1,6 +1,6 @@
 import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor, SetMetadata } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "../generated/prisma/client";
 import { Observable, tap } from "rxjs";
 import { PrismaService } from "../prisma/prisma.service";
 

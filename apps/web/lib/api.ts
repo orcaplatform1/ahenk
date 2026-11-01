@@ -149,7 +149,7 @@ async function silentFetch<T>(path: string): Promise<T | null> {
       credentials: 'include',
     });
     if (!res.ok) return null;
-    return res.json() as Promise<T>;
+    return (await res.json()) as T;
   } catch {
     return null;
   }

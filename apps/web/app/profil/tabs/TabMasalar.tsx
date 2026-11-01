@@ -529,7 +529,7 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
           </p>
           <button
             onClick={onGoKyc}
-            className="btn-primary whitespace-nowrap flex-shrink-0"
+            className="btn-primary whitespace-nowrap shrink-0"
           >
             Doğrula
           </button>

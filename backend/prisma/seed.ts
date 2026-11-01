@@ -1,8 +1,12 @@
-import { PrismaClient, OceanDimension, UserRole, Gender } from "@prisma/client";
+import "dotenv/config";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient, OceanDimension, UserRole, Gender } from "../src/generated/prisma/client";
 import * as bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+});
 
 // 19 soru — 5 bölüm (boyut başına gruplandırılmış)
 // Boyut dağılımı: O:4, C:4, E:4, A:4, N:3

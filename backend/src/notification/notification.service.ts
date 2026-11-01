@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { FcmService } from "./fcm/fcm.service";
 import { WhatsappNotifyService } from "./whatsapp-notify.service";
-import { NotificationType, KycStatus } from "@prisma/client";
+import { NotificationType, KycStatus } from "../generated/prisma/client";
 
 type SendPayload = {
   userId: string;

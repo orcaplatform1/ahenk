@@ -16,7 +16,7 @@ import {
 } from "./matching.constants";
 import { cancelDeadline, groupMeetingAt, kankaMeetingAt, oneOnOneMeetingAt } from "../meetings/meeting-windows";
 import { cancellationNotice, initialsOf } from "../meetings/cancellation-notice";
-import { Gender, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "@prisma/client";
+import { Gender, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "../generated/prisma/client";
 import { pickBot, alertBotNotFound, availableBots } from "./bot-picker";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right";
 import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB } from "../payment/package-rights";

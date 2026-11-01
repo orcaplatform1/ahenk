@@ -6,7 +6,7 @@ import {
 import { randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { SubmitTestDto } from "./dto/submit-test.dto";
-import { OceanDimension } from "@prisma/client";
+import { OceanDimension } from "../generated/prisma/client";
 
 const TOTAL_QUESTIONS = 19;
 const RETAKE_DAYS = 180;
