@@ -280,7 +280,7 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
   const isSuperadmin = myRole() === 'SUPERADMIN';
   const me = myId();
   const claimedByMe = !!report.claimedBy && report.claimedBy.id === me;
-  const canClaim = !report.resolvedAt && (!report.claimedBy || (isSuperadmin && !claimedByMe));
+  const canClaim = !report.resolvedAt && !report.claimedBy;
   const canResolve = !report.resolvedAt && (isSuperadmin || claimedByMe);
 
   async function act(path: 'claim' | 'resolve') {

@@ -26,7 +26,7 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 import { CurrentUser } from "./decorators/current-user.decorator";
 
-import { ACCESS_COOKIE, REFRESH_COOKIE, SESSION_COOKIE } from "./auth-cookies";
+import { ACCESS_COOKIE, REFRESH_COOKIE, SESSION_COOKIE, refreshTokenFromRequest } from "./auth-cookies";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -87,7 +87,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const raw = req.cookies?.[REFRESH_COOKIE];
+    const raw = refreshTokenFromRequest(req);
     if (raw) await this.authService.logoutByRefreshToken(raw);
     this.clearSession(res);
     return { message: "Çıkış yapıldı" };
@@ -96,7 +96,7 @@ export class AuthController {
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtRefreshGuard)
-  @ApiOperation({ summary: "Access token yenile (httpOnly cookie gerekli)" })
+  @ApiOperation({ summary: "Access token yenile (web: httpOnly cookie; Origin'siz istemci: gövdede refreshToken)" })
   @ApiCookieAuth()
   async refresh(
     @CurrentUser() user: any,
@@ -160,8 +160,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "WhatsApp OTP gönder (telefon doğrulama)" })
-  async sendOtp(@Body() dto: SendOtpDto) {
-    return this.authService.sendOtp(dto.phone);
+  async sendOtp(@CurrentUser() user: { id: string }, @Body() dto: SendOtpDto) {
+    return this.authService.sendOtp(user.id, dto.phone);
   }
 
   @Post("verify-otp")
@@ -169,8 +169,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "WhatsApp OTP doğrula" })
-  async verifyOtp(@Body() dto: VerifyOtpDto) {
-    return this.authService.verifyOtp(dto.phone, dto.code);
+  async verifyOtp(@CurrentUser() user: { id: string }, @Body() dto: VerifyOtpDto) {
+    return this.authService.verifyOtp(user.id, dto.phone, dto.code);
   }
 
   @Get("cities")
@@ -231,12 +231,12 @@ export class AuthController {
   }
 
   // Çerezleri yazar. Tarayıcı isteğinde (Origin başlığı var) token yanıt gövdesine konmaz;
-  // Origin'siz istemciler (Bearer kullanan uygulamalar) token'ı gövdeden alır.
+  // Origin'siz istemciler (Bearer kullanan uygulamalar) iki token'ı da gövdeden alır.
   private issueSession(req: Request, res: Response, user: unknown, accessToken: string, refreshToken: string) {
     res.cookie(REFRESH_COOKIE, refreshToken, this.cookieOptions());
     res.cookie(ACCESS_COOKIE, accessToken, this.accessCookieOptions());
     res.cookie(SESSION_COOKIE, "1", this.sessionCookieOptions());
-    return req.headers.origin ? { user } : { user, accessToken };
+    return req.headers.origin ? { user } : { user, accessToken, refreshToken };
   }
 
   private clearSession(res: Response) {

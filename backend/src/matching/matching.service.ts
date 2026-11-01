@@ -14,10 +14,11 @@ import {
   TABLE_SIZE_LARGE,
   TABLE_SIZE_SMALL,
 } from "./matching.constants";
-import { groupMeetingAt, kankaMeetingAt, oneOnOneMeetingAt } from "../meetings/meeting-windows";
-import { Gender, MeetingType, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "@prisma/client";
+import { cancelDeadline, groupMeetingAt, kankaMeetingAt, oneOnOneMeetingAt } from "../meetings/meeting-windows";
+import { cancellationNotice, initialsOf } from "../meetings/cancellation-notice";
+import { Gender, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "@prisma/client";
 import { pickBot, alertBotNotFound, availableBots } from "./bot-picker";
-import { consumeOneOnOneRights } from "./one-on-one-right";
+import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right";
 import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { ASSIGN_QUEUE, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT, enqueueAssign, randomBotDelayMs } from "./assign-queue";
@@ -502,6 +503,73 @@ export class MatchingService {
     }
   }
 
+  // Kart açılışı masayı onaylar: bildirimi giden masa admin onayı yok diye iptal olmaz, AI raporu da üretilir
+  async activateRevealed(meetingIds: string[]): Promise<void> {
+    if (meetingIds.length === 0) return;
+    await this.prisma.meeting.updateMany({
+      where: { id: { in: meetingIds }, status: "PENDING" },
+      data: { status: "ACTIVE" },
+    });
+  }
+
+  // Askı / ban: kişi yapılmamış grup ve başbaşa masalarından çıkar (kayıt iptal olarak kalır).
+  // Başbaşa tek kişiyle kalmaz: masa iptal, kalanın hakkı geri verilir, yeniden taramaya girer.
+  // Grup: koltuk boşalır, iptal son anına kadar bildirim Perşembe 20:00 özetiyle, sonrasında hemen gider.
+  // Dönen liste iptal olan masalardır (mekân bildirimi için).
+  async dropFromTables(userId: string, reason: string): Promise<string[]> {
+    const now = new Date();
+    const inactive: ParticipantStatus[] = ["CANCELLED", "DECLINED", "NO_SHOW"];
+    const parts = await this.prisma.meetingParticipant.findMany({
+      where: {
+        userId,
+        status: { notIn: inactive },
+        meeting: { type: { in: [MeetingType.GROUP, MeetingType.ONE_ON_ONE] }, status: { in: ["PENDING", "ACTIVE"] }, scheduledAt: { gt: now } },
+      },
+      select: {
+        meetingId: true,
+        meeting: {
+          select: {
+            type: true, createdAt: true, scheduledAt: true,
+            participants: { where: { status: { notIn: inactive } }, select: { userId: true } },
+          },
+        },
+      },
+    });
+    if (parts.length === 0) return [];
+
+    const me = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { profile: { select: { firstName: true, lastName: true } } },
+    });
+    const notice = cancellationNotice([initialsOf(me?.profile)]);
+    const cancelled: string[] = [];
+
+    for (const { meetingId, meeting } of parts) {
+      const others = meeting.participants.map((p) => p.userId).filter((id) => id !== userId);
+      const isOneOnOne = meeting.type === MeetingType.ONE_ON_ONE;
+      await this.prisma.$transaction(async (tx) => {
+        await tx.meetingParticipant.updateMany({
+          where: { meetingId, userId },
+          data: { status: "CANCELLED", cancelledAt: now, leaveNote: reason },
+        });
+        if (isOneOnOne) {
+          await tx.meeting.update({ where: { id: meetingId }, data: { status: "CANCELLED" } });
+          await restoreOneOnOneRights(tx, meeting.createdAt, others);
+        }
+      });
+      if (isOneOnOne || now >= cancelDeadline(meeting.scheduledAt)) {
+        for (const id of others) {
+          await this.notifications.sendToUser(id, { ...notice, data: { type: "PARTICIPANT_LEFT", meetingId } });
+        }
+      }
+      if (isOneOnOne) {
+        cancelled.push(meetingId);
+        for (const id of others) await enqueueAssign(this.assignQueue, id);
+      }
+    }
+    return cancelled;
+  }
+
   // Yarım masaları birleştirme: bir masanın TÜM kişileri aynı şehirdeki diğer masalara (cinsiyet sınırı, engel,
   // saate göre mekan uyumu) yerleşebiliyorsa taşınır ve boşalan masa iptal edilir. Kısmi taşıma yapılmaz.
   // En küçük masadan başlanır, kişiler en dolu uygun masaya gider; değişiklik kalmayana kadar tekrarlanır.
@@ -941,6 +1009,7 @@ export class MatchingService {
       },
     });
 
+    await this.activateRevealed(meetings.map((m) => m.id));
     for (const meeting of meetings) {
       const participantInitials = meeting.participants.map((p) => {
         const f = p.user.profile?.firstName?.[0] ?? "?";

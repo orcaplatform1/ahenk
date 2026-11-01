@@ -578,6 +578,7 @@ enum PaymentStatus {
   SUCCESS
   FAILED
   REFUNDED
+  DUPLICATE // para çekildi, paket verilmedi; iyzico iadesi bekliyor (yapılınca REFUNDED)
 }
 
 enum PaymentPlatform {
@@ -1000,6 +1001,7 @@ model SosReport {
   lng                 Float?
   accuracy            Float?
   participantSnapshot Json
+  openKey             String?             @unique // açıkken "userId:meetingId", çözülünce boş: kişi+masa başına tek açık talep
   resolvedAt          DateTime?
   resolvedById        String?
   resolvedBy          User?               @relation("SosResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)

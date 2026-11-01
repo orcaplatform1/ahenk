@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 import { ConfigService } from "@nestjs/config";
 import { Request } from "express";
 import { UsersService } from "../../users/users.service";
+import { refreshTokenFromRequest } from "../auth-cookies";
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(Strategy, "jwt-refresh") {
@@ -12,9 +13,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, "jwt-refresh"
     private usersService: UsersService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => req?.cookies?.["refresh_token"] ?? null,
-      ]),
+      jwtFromRequest: ExtractJwt.fromExtractors([refreshTokenFromRequest]),
       secretOrKey: config.getOrThrow<string>("JWT_REFRESH_SECRET"),
       passReqToCallback: true,
       ignoreExpiration: false,
@@ -22,7 +21,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, "jwt-refresh"
   }
 
   async validate(req: Request, payload: { sub: string; email: string; jti: string }) {
-    const rawToken = req.cookies?.["refresh_token"];
+    const rawToken = refreshTokenFromRequest(req);
     if (!rawToken) throw new UnauthorizedException("Refresh token bulunamadı");
 
     const user = await this.usersService.findById(payload.sub);

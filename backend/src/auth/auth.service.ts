@@ -114,12 +114,22 @@ export class AuthService {
     }
   }
 
+  // 18 yaş: doğum günü Türkiye takvimine göre bugün ya da daha önce geçmiş olmalı
+  private assertAdult(birthDate: string) {
+    const born = new Date(birthDate).getTime();
+    if (Number.isNaN(born)) throw new BadRequestException("Geçerli bir doğum tarihi girin");
+    const tr = new Date(Date.now() + 3 * 60 * 60 * 1000);
+    const limit = Date.UTC(tr.getUTCFullYear() - 18, tr.getUTCMonth(), tr.getUTCDate());
+    if (born > limit) throw new BadRequestException("Ahenk'e kayıt için 18 yaşını doldurmuş olmalısınız");
+  }
+
   // ─── Kayıt ───────────────────────────────────────────────────────────────
 
   async register(dto: RegisterDto, ip?: string, userAgent?: string) {
     if (!dto.acceptTerms) {
       throw new BadRequestException("Kullanım şartlarını kabul etmelisiniz");
     }
+    this.assertAdult(dto.birthDate);
 
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) throw new ConflictException("Bu e-posta zaten kullanılıyor");
@@ -352,17 +362,27 @@ export class AuthService {
 
   // ─── WhatsApp OTP ─────────────────────────────────────────────────────────
 
-  async sendOtp(phone: string) {
+  // Oturumdaki kişi yalnız kendi hesabındaki numarayı doğrulayabilir
+  private async assertOwnPhone(userId: string, phone: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { phone: true } });
+    if (!user?.phone || user.phone !== phone) {
+      throw new ForbiddenException("Yalnızca hesabınızdaki telefon numarasını doğrulayabilirsiniz");
+    }
+  }
+
+  async sendOtp(userId: string, phone: string) {
+    await this.assertOwnPhone(userId, phone);
     await this.otpService.send(phone);
     return { message: "OTP gönderildi" };
   }
 
-  async verifyOtp(phone: string, code: string) {
+  async verifyOtp(userId: string, phone: string, code: string) {
+    await this.assertOwnPhone(userId, phone);
     await this.otpService.verify(phone, code);
 
     // Telefonu doğrulanmış olarak işaretle
-    await this.prisma.user.updateMany({
-      where: { phone },
+    await this.prisma.user.update({
+      where: { id: userId },
       data: { phoneVerified: true },
     });
 

@@ -4,7 +4,7 @@ import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { FcmService } from "../notification/fcm/fcm.service";
 import { NotificationService } from "../notification/notification.service";
 import { Logger } from "@nestjs/common";
-import { AdminAlertType, MeetingStatus, UserRole } from "@prisma/client";
+import { AdminAlertType, MeetingStatus, Prisma, UserRole } from "@prisma/client";
 import { sosWindowEnd } from "../meetings/meeting-windows";
 
 type Viewer = { id: string; role: UserRole };
@@ -107,17 +107,30 @@ export class SosService {
       };
     });
 
-    const report = await this.prisma.sosReport.create({
-      data: {
-        userId,
-        meetingId,
-        threats,
-        lat: lat ?? null,
-        lng: lng ?? null,
-        accuracy: accuracy ?? null,
-        participantSnapshot,
-      },
-    });
+    // Benzersiz openKey: eşzamanlı isteklerden yalnız biri rapor açar (uyarı da tek olur), diğerleri aynı raporu alır
+    const openKey = `${userId}:${meetingId}`;
+    let report: { id: string };
+    try {
+      report = await this.prisma.sosReport.create({
+        data: {
+          userId,
+          meetingId,
+          threats,
+          lat: lat ?? null,
+          lng: lng ?? null,
+          accuracy: accuracy ?? null,
+          participantSnapshot,
+          openKey,
+        },
+        select: { id: true },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        const existing = await this.prisma.sosReport.findUnique({ where: { openKey }, select: { id: true } });
+        if (existing) return { reportId: existing.id };
+      }
+      throw err;
+    }
 
     // WhatsApp: tüm admin ve superadmin kullanıcılarına gönder
     this.notifyAdmins(report.id, userId, meetingId, threats, lat, lng).catch(() =>
@@ -280,8 +293,12 @@ export class SosService {
     const report = await this.prisma.sosReport.findUnique({ where: { id }, select: { claimedById: true, resolvedAt: true } });
     if (!report) throw new NotFoundException();
     if (report.resolvedAt) throw new BadRequestException("Talep zaten çözülmüş");
-    if (!this.canSee(report, viewer)) throw new ForbiddenException("Bu talep başka bir admin tarafından takip ediliyor");
-    await this.prisma.sosReport.update({ where: { id }, data: { claimedById: viewer.id, claimedAt: new Date() } });
+    // Atomik: boş talebi yalnız bir admin üstlenir; üstlenilmiş talep başkasına geçmez
+    const { count } = await this.prisma.sosReport.updateMany({
+      where: { id, resolvedAt: null, OR: [{ claimedById: null }, { claimedById: viewer.id }] },
+      data: { claimedById: viewer.id, claimedAt: new Date() },
+    });
+    if (count === 0) throw new ForbiddenException("Bu talep başka bir admin tarafından takip ediliyor");
     return { claimed: true };
   }
 
@@ -293,7 +310,7 @@ export class SosService {
     if (viewer.role !== UserRole.SUPERADMIN && report.claimedById !== viewer.id) {
       throw new ForbiddenException("Önce 'İlgileniyorum' ile talebi üstlenin");
     }
-    await this.prisma.sosReport.update({ where: { id }, data: { resolvedAt: new Date(), resolvedById: viewer.id } });
+    await this.prisma.sosReport.update({ where: { id }, data: { resolvedAt: new Date(), resolvedById: viewer.id, openKey: null } });
     return { resolved: true };
   }
 

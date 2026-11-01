@@ -1860,6 +1860,12 @@ export class AdminService {
       });
       // Kankamla: kişi bu haftaki masasından kankasıyla düşer (karşı çift yeniden taramaya girer); ban → kankalık biter
       await this.matching.dropKankaPair(userId, isBan ? "Banlandı" : "Askıya alındı");
+      // Grup ve başbaşa: kişi yapılmamış masalardan çıkar; iptal olan başbaşa masası mekâna bildirilir
+      const cancelledTables = await this.matching.dropFromTables(userId, isBan ? "Banlandı" : "Askıya alındı");
+      for (const meetingId of cancelledTables) {
+        await this.venueAssignment.noticeMeetingCancelled(meetingId)
+          .catch((err: unknown) => console.error(`Mekân iptal bildirimi gönderilemedi: ${err}`));
+      }
       if (isBan) {
         const exKankas = await endKankaLinks(this.prisma, userId, "BAN");
         for (const id of exKankas) {

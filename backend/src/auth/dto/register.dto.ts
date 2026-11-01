@@ -46,10 +46,10 @@ export class RegisterDto {
   @IsString({ message: "Telefon numaranızı doğrulayın" })
   phoneToken: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  primaryCityId?: string;
+  @ApiProperty()
+  @IsString({ message: "Ana şehir seçin" })
+  @MinLength(1, { message: "Ana şehir seçin" })
+  primaryCityId: string;
 
   // Listesi olan şehirlerde zorunlu (auth.service doğrular)
   @ApiPropertyOptional()
@@ -63,15 +63,15 @@ export class RegisterDto {
   @MinLength(1, { message: "Meslek alanı seçin" })
   occupationSector: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  gender?: string;
+  @ApiProperty()
+  @IsString({ message: "Cinsiyet seçin" })
+  @MinLength(1, { message: "Cinsiyet seçin" })
+  gender: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  birthDate?: string;
+  @ApiProperty({ example: "1995-06-15" })
+  @IsString({ message: "Doğum tarihinizi seçin" })
+  @MinLength(1, { message: "Doğum tarihinizi seçin" })
+  birthDate: string;
 
   @ApiPropertyOptional()
   @IsOptional()

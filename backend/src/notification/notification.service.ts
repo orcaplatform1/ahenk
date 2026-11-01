@@ -25,68 +25,60 @@ export class NotificationService {
 
   // ─── Genel gönderici ─────────────────────────────────────────────────────
 
+  // Bildirim hatası çağıranı asla kesmez: kapanış ve döngü işleri devam eder, hata loglanır.
+  // Kanallar birbirinden bağımsızdır.
   private async send(payload: SendPayload): Promise<void> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { fcmToken: true, phone: true, isBot: true },
-    });
-    // Botlara hiçbir kanaldan bildirim gönderilmez
-    if (!user || user.isBot) return;
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { fcmToken: true, phone: true, isBot: true },
+      });
+      // Botlara hiçbir kanaldan bildirim gönderilmez
+      if (!user || user.isBot) return;
 
-    // 1) IN_APP kaydı her zaman oluştur
-    await this.prisma.notification.create({
+      // 1) IN_APP kaydı her zaman oluştur
+      await this.saveRecord(payload, NotificationType.IN_APP);
+
+      // 2) FCM push (token varsa)
+      if (user.fcmToken) {
+        try {
+          const sent = await this.fcm.sendToToken({
+            token: user.fcmToken,
+            title: payload.title,
+            body: payload.body,
+            data: payload.data,
+          });
+          if (sent) await this.saveRecord(payload, NotificationType.PUSH);
+        } catch (err) {
+          this.logger.error(`FCM bildirimi gönderilemedi: user=${payload.userId} ${err}`);
+        }
+      }
+
+      // 3) WhatsApp (kritik bildirimler + telefon varsa)
+      if (payload.whatsappTemplate && user.phone) {
+        try {
+          await this.whatsappNotify.send(user.phone, payload.whatsappTemplate, payload.whatsappParams ?? []);
+          await this.saveRecord(payload, NotificationType.WHATSAPP);
+        } catch (err) {
+          this.logger.error(`WhatsApp bildirimi gönderilemedi: user=${payload.userId} şablon=${payload.whatsappTemplate} ${err}`);
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Bildirim kaydedilemedi: user=${payload.userId} ${err}`);
+    }
+  }
+
+  private saveRecord(payload: SendPayload, type: NotificationType) {
+    return this.prisma.notification.create({
       data: {
         userId: payload.userId,
-        type: NotificationType.IN_APP,
+        type,
         title: payload.title,
         body: payload.body,
         data: payload.data ?? {},
         sentAt: new Date(),
       },
     });
-
-    // 2) FCM push (token varsa)
-    if (user.fcmToken) {
-      const sent = await this.fcm.sendToToken({
-        token: user.fcmToken,
-        title: payload.title,
-        body: payload.body,
-        data: payload.data,
-      });
-
-      if (sent) {
-        await this.prisma.notification.create({
-          data: {
-            userId: payload.userId,
-            type: NotificationType.PUSH,
-            title: payload.title,
-            body: payload.body,
-            data: payload.data ?? {},
-            sentAt: new Date(),
-          },
-        });
-      }
-    }
-
-    // 3) WhatsApp (kritik bildirimler + telefon varsa)
-    if (payload.whatsappTemplate && user.phone) {
-      await this.whatsappNotify.send(
-        user.phone,
-        payload.whatsappTemplate,
-        payload.whatsappParams ?? [],
-      );
-
-      await this.prisma.notification.create({
-        data: {
-          userId: payload.userId,
-          type: NotificationType.WHATSAPP,
-          title: payload.title,
-          body: payload.body,
-          data: payload.data ?? {},
-          sentAt: new Date(),
-        },
-      });
-    }
   }
 
   // ─── KYC olayları ────────────────────────────────────────────────────────

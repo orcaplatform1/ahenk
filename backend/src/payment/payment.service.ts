@@ -10,8 +10,9 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
+import { Cron } from "@nestjs/schedule";
 import { PrismaService } from "../prisma/prisma.service";
-import { IyzicoService } from "./iyzico/iyzico.service";
+import { IyzicoCallbackResult, IyzicoService } from "./iyzico/iyzico.service";
 import { PLAN_CONFIG } from "./payment.constants";
 import { PricingService } from "./pricing.service";
 import { isMaintenanceMode } from "../admin/app-settings";
@@ -22,6 +23,9 @@ import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { AdminAlertType, Prisma, SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType, ReferralStatus, PaymentDiscountType, UserStatus, MeetingType, MeetingStatus } from "@prisma/client";
 
 type Db = PrismaService | Prisma.TransactionClient;
+
+const PENDING_MIN_AGE_MS = 45 * 60 * 1000;
+const PENDING_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 
 // İade türü → iade edilebilen paketler (İçerde'de grup / başbaşa kısmı ayrı ayrı ya da tamamı)
 const REFUND_PLANS: Record<RefundType, SubscriptionPlan[]> = {
@@ -134,26 +138,33 @@ export class PaymentService {
       if (!link) {
         throw new BadRequestException("Kankamla paketini almak için önce Profilim'den bir kanka davet etmelisin.");
       }
-      const pairActive = await this.prisma.subscription.count({
-        where: { userId: { in: [userId, link.kankaId] }, plan: SubscriptionPlan.KANKAMLA, status: SubscriptionStatus.ACTIVE },
-      });
-      if (pairActive > 0) {
+      if (await this.planConflict(this.prisma, userId, plan)) {
         throw new ConflictException("Sizin ya da kankanızın aktif Kankamla paketi var; paket bitene kadar yenisi alınamaz.");
       }
       return;
     }
-    const active = await this.prisma.subscription.findMany({
+    if (await this.planConflict(this.prisma, userId, plan)) {
+      throw new ConflictException("Aktif paketiniz bu paketi kapsıyor; bu paketi şu an satın alamazsınız.");
+    }
+  }
+
+  // Satın alma kuralı: init'te ve ödeme dönüşünde (kilit altında) aynı kontrol yapılır
+  private async planConflict(db: Db, userId: string, plan: SubscriptionPlan): Promise<boolean> {
+    if (plan === SubscriptionPlan.KANKAMLA) {
+      const link = await activeKankaLink(db, userId);
+      const pairActive = await db.subscription.count({
+        where: { userId: { in: link ? [userId, link.kankaId] : [userId] }, plan: SubscriptionPlan.KANKAMLA, status: SubscriptionStatus.ACTIVE },
+      });
+      return pairActive > 0;
+    }
+    const active = await db.subscription.findMany({
       where: { userId, status: SubscriptionStatus.ACTIVE },
       select: { plan: true, groupRights: true, groupCycles: true, usedAt: true, oneOnOneCycles: true },
     });
     // Aynı içeriğin açık kısmı varken alınamaz: grup kısmı açıksa Masada / İçerde, başbaşa kısmı açıksa Karşımda / İçerde
     const groupOpen = active.some(groupPartOpen);
     const oneOnOneOpen = active.some(oneOnOnePartOpen);
-    const blocked =
-      (GROUP_RIGHTS[plan] > 0 && groupOpen) || (ONE_ON_ONE_PLANS.includes(plan) && oneOnOneOpen);
-    if (blocked) {
-      throw new ConflictException("Aktif paketiniz bu paketi kapsıyor; bu paketi şu an satın alamazsınız.");
-    }
+    return (GROUP_RIGHTS[plan] > 0 && groupOpen) || (ONE_ON_ONE_PLANS.includes(plan) && oneOnOneOpen);
   }
 
   async initCheckout(
@@ -181,9 +192,12 @@ export class PaymentService {
     const identityNumber = decryptIdentityNumber(identity.identityNumberEnc, this.config.get("IDENTITY_ENC_KEY"));
 
     const planCfg = PLAN_CONFIG[plan];
-    // Web fiyatı (ham + %20 KDV, SUPERADMIN fiyat sayfasından); indirim her ödenen pakette %10
+    // Fiyat platforma göre (web: ham + %20 KDV; Android: + mağaza komisyonu); indirim her ödenen pakette %10
     const price = await this.pricing.current(plan);
-    let amountKurus = price.webKurus;
+    const isMobile = platform === PaymentPlatform.ANDROID;
+    const listKurus = isMobile ? price.mobileKurus : price.webKurus;
+    const discountedKurus = isMobile ? price.mobileDiscountKurus : price.webDiscountKurus;
+    let amountKurus = listKurus;
     let discountType: PaymentDiscountType | null = null;
 
     // İndirim burada sadece kontrol edilir; hak ödeme başarılı olunca harcanır
@@ -192,13 +206,13 @@ export class PaymentService {
         where: { referrerId: userId, status: ReferralStatus.KYC_APPROVED },
       });
       if (referral) {
-        amountKurus = price.webDiscountKurus;
+        amountKurus = discountedKurus;
         discountType = PaymentDiscountType.REFERRER;
       }
     } else if (useDiscount === 'INVITEE') {
       const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { referralDiscountAvailable: true } });
       if (user?.referralDiscountAvailable) {
-        amountKurus = price.webDiscountKurus;
+        amountKurus = discountedKurus;
         discountType = PaymentDiscountType.INVITEE;
       }
     }
@@ -206,11 +220,8 @@ export class PaymentService {
     const conversationId = `ahenk-${userId}-${Date.now()}`;
     const callbackUrl = this.config.getOrThrow<string>("IYZICO_CALLBACK_URL");
 
-    // Önceki PENDING payment varsa temizle
-    await this.prisma.payment.deleteMany({
-      where: { userId, status: PaymentStatus.PENDING },
-    });
-
+    // Önceki PENDING kayıtlar silinmez: açık kalan başka sekmedeki ödeme tamamlanabilir (kapanmayanları cron sonuçlandırır).
+    // İki ödeme de tamamlanırsa handleCallback tek paket verir, fazlasını iade eder.
     // Payment kaydı oluştur
     const payment = await this.prisma.payment.create({
       data: {
@@ -221,7 +232,7 @@ export class PaymentService {
         platform,
         iyzicoConversationId: conversationId,
         discountType,
-        listKurus: price.webKurus,
+        listKurus,
       },
     });
 
@@ -280,7 +291,7 @@ export class PaymentService {
     });
 
     if (!payment) {
-      this.logger.warn(`Bilinmeyen iyzico token: ${token}`);
+      await this.handleUnknownToken(token);
       return { success: false, message: "Ödeme kaydı bulunamadı" };
     }
 
@@ -295,21 +306,21 @@ export class PaymentService {
     const result = await this.iyzico.retrieveCheckoutForm(token);
 
     // API çağrısının başarılı olması yetmez: ödeme durumu, sepet ve tutar da tutmalı
+    const paid = result.status === "success" && result.paymentStatus === "SUCCESS";
     const expectedPrice = payment.amountKurus / 100;
-    const verified =
-      result.status === "success" &&
-      result.paymentStatus === "SUCCESS" &&
-      result.basketId === payment.id &&
-      Number(result.price) === expectedPrice;
+    const verified = paid && result.basketId === payment.id && Number(result.price) === expectedPrice;
 
     if (!verified) {
       const reason =
         result.errorMessage ??
-        (result.status === "success" && result.paymentStatus === "SUCCESS"
+        (paid
           ? `Doğrulama uyuşmazlığı (sepet: ${result.basketId}, tutar: ${result.price})`
           : `Ödeme durumu: ${result.paymentStatus ?? result.status}`);
-      if (result.status === "success" && result.paymentStatus === "SUCCESS") {
+      if (paid) {
+        // Para çekildi ama pakete bağlanamıyor: paket verilmez, para iade edilir
         this.logger.error(`iyzico doğrulama uyuşmazlığı: payment=${payment.id} ${reason}`);
+        await this.refundUnfulfilled(payment.id, payment.userId, result, reason);
+        return { success: false, message: "Ödeme doğrulanamadı, iade başlatıldı" };
       }
       await this.prisma.payment.updateMany({
         where: { id: payment.id, status: PaymentStatus.PENDING },
@@ -318,8 +329,17 @@ export class PaymentService {
       return { success: false, message: result.errorMessage ?? "Ödeme başarısız" };
     }
 
-    // Ödeme başarılı — abonelik oluştur, indirimi harca
-    const processed = await this.prisma.$transaction(async (tx) => {
+    // Ödeme başarılı — abonelik oluştur, indirimi harca. Kişi (Kankamla'da çift) satırı kilitlenir:
+    // iki sekmeden gelen ödemeler sırayla işlenir, ikincisi paketi görür ve iade yoluna gider.
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      const link = payment.plan === SubscriptionPlan.KANKAMLA ? await activeKankaLink(tx, payment.userId) : null;
+      const lockIds = link ? [payment.userId, link.kankaId] : [payment.userId];
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id IN (${Prisma.join(lockIds)}) ORDER BY id FOR UPDATE`;
+
+      const current = await tx.payment.findUnique({ where: { id: payment.id }, select: { status: true } });
+      if (current?.status !== PaymentStatus.PENDING) return current?.status === PaymentStatus.SUCCESS ? "ALREADY_DONE" : "NOT_PENDING";
+      if (await this.planConflict(tx, payment.userId, payment.plan)) return "CONFLICT";
+
       // Sadece PENDING ise işle: aynı token için ikinci callback abonelik oluşturmaz
       const { count } = await tx.payment.updateMany({
         where: { id: payment.id, status: PaymentStatus.PENDING },
@@ -329,20 +349,88 @@ export class PaymentService {
           paidAt: new Date(),
         },
       });
-      if (count === 0) return false;
+      if (count === 0) return "ALREADY_DONE";
 
       await this.createSubscriptions(tx, payment.userId, payment.plan, payment.id);
 
       if (payment.discountType) await this.consumeDiscount(tx, payment.userId, payment.discountType);
-      return true;
+      return "CREATED";
     });
 
-    // Kişi havuza girdi: anında masaya atanır
-    if (processed) await enqueueAssign(this.assignQueue, payment.userId);
+    if (outcome === "CONFLICT") {
+      await this.refundUnfulfilled(payment.id, payment.userId, result, "Aynı paket için ikinci ödeme");
+      return { success: false, message: "Bu paket zaten alınmış, ikinci ödeme iade ediliyor" };
+    }
+    if (outcome === "NOT_PENDING") return { success: false, message: "Ödeme başarısız" };
 
-    return processed
+    // Kişi havuza girdi: anında masaya atanır
+    if (outcome === "CREATED") await enqueueAssign(this.assignQueue, payment.userId);
+
+    return outcome === "CREATED"
       ? { success: true, message: "Ödeme başarıyla tamamlandı" }
       : { success: true, message: "Ödeme zaten tamamlandı" };
+  }
+
+  // Para çekilmiş, paket verilmemiş ödeme: PENDING → DUPLICATE geçişini kazanan tek istek iade gönderir.
+  // İade kesinleşince REFUNDED; olmazsa DUPLICATE kalır ve admine uyarı düşer (iade yeniden gönderilmez).
+  private async refundUnfulfilled(paymentId: string, userId: string, result: IyzicoCallbackResult, reason: string) {
+    const { count } = await this.prisma.payment.updateMany({
+      where: { id: paymentId, status: PaymentStatus.PENDING },
+      data: { status: PaymentStatus.DUPLICATE, iyzicoPaymentId: result.paymentId, failureReason: reason },
+    });
+    if (count === 0) return;
+
+    const amountKurus = Math.round(Number(result.paidPrice ?? result.price) * 100);
+    const refund = result.paymentId && amountKurus > 0
+      ? await this.iyzico.refundPayment({
+          paymentId: result.paymentId,
+          amountKurus,
+          conversationId: `ahenk-unfulfilled-${paymentId}`,
+          ip: "127.0.0.1",
+        })
+      : null;
+    if (refund?.status === "success") {
+      await this.prisma.payment.update({ where: { id: paymentId }, data: { status: PaymentStatus.REFUNDED } });
+      return;
+    }
+    this.logger.error(`Fazla ödeme iade edilemedi: payment=${paymentId} ${refund?.errorMessage ?? "iade gönderilemedi"}`);
+    await this.paymentAlert(userId);
+  }
+
+  // Kaydı olmayan token: iyzico'da başarılıysa admine uyarı (kayıt olmadığından otomatik iade yapılmaz)
+  private async handleUnknownToken(token: string) {
+    const result = await this.iyzico.retrieveCheckoutForm(token);
+    if (result.status !== "success" || result.paymentStatus !== "SUCCESS") {
+      this.logger.warn("Bilinmeyen iyzico token");
+      return;
+    }
+    this.logger.error(`Kaydı olmayan başarılı ödeme: paymentId=${result.paymentId} conversation=${result.conversationId}`);
+    const userId = /^ahenk-(.+)-\d+$/.exec(result.conversationId ?? "")?.[1];
+    if (userId) await this.paymentAlert(userId);
+  }
+
+  // Dönüşü gelmeyen ödemeler (kapanan sekme, bağlantı kopması): iyzico'dan sonucu okunur, ödenmişse paket verilir.
+  // 45 dakikadan yeni kayda dokunulmaz: iyzico formu kullanıcıda hâlâ açık olabilir.
+  @Cron("*/15 * * * *", { timeZone: "Europe/Istanbul" })
+  async reconcilePendingPayments(): Promise<void> {
+    const now = Date.now();
+    const pending = await this.prisma.payment.findMany({
+      where: {
+        status: PaymentStatus.PENDING,
+        iyzicoToken: { not: null },
+        createdAt: { lt: new Date(now - PENDING_MIN_AGE_MS), gt: new Date(now - PENDING_MAX_AGE_MS) },
+      },
+      orderBy: { createdAt: "asc" },
+      take: 50,
+      select: { id: true, iyzicoToken: true },
+    });
+    for (const p of pending) {
+      try {
+        await this.handleCallback(p.iyzicoToken!);
+      } catch (err) {
+        this.logger.error(`Bekleyen ödeme kontrolü hatası: payment=${p.id} ${err}`);
+      }
+    }
   }
 
   // ─── Paket oluşturma (transaction içinde) ─────────────────────────────────
