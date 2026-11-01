@@ -131,7 +131,7 @@ function ProfilPage() {
 
   return (
     <main className="min-h-screen bg-bg text-text pt-[52px]">
-      <AccountTabBar activeKey={activeTab} />
+      <AccountTabBar activeKey={activeTab} kycApproved={kycApproved} />
       {/* Eşleşme Paneli görünümü: ışıma ve Canlı Katman stilleri */}
       <div className="live-layer" style={{ minHeight: 'calc(100vh - 100px)' }}>
       <div className="ll-glow" aria-hidden="true" />
