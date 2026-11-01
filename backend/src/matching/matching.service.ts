@@ -1,4 +1,6 @@
 import { matchScore } from "./match-score";
+import { writeSeatScores } from "./seat-scores";
+import { normalizePhone } from "../common/phone";
 import { Injectable, Logger, NotFoundException, BadRequestException } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
@@ -271,6 +273,7 @@ export class MatchingService {
       await this.prisma.meetingParticipant.create({
         data: { meetingId: target.id, userId: user.id, status: "INVITED" },
       });
+      await this.saveScores(target.id);
       this.logger.log(`Grup ataması: user=${user.id} → meeting=${target.id} (${target.members.length + 1}/${TABLE_SIZE_LARGE})`);
       return;
     }
@@ -320,8 +323,8 @@ export class MatchingService {
     );
     const partner = candidates[0];
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.meeting.create({
+    const seatedId = await this.prisma.$transaction(async (tx) => {
+      const seated = await tx.meeting.create({
         data: {
           cycleId: ctx.cycleId,
           cityId,
@@ -336,7 +339,9 @@ export class MatchingService {
       });
       // Başbaşa hakkı masa kurulduğu anda harcanır
       await consumeOneOnOneRights(tx, [user.id, partner.id]);
+      return seated.id;
     });
+    await this.saveScores(seatedId);
     this.logger.log(`Başbaşa masası: ${user.id} + ${partner.id}`);
     return partner.id;
   }
@@ -379,8 +384,8 @@ export class MatchingService {
     );
     const other = candidates[0];
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.meeting.create({
+    const seatedId = await this.prisma.$transaction(async (tx) => {
+      const seated = await tx.meeting.create({
         data: {
           cycleId: ctx.cycleId,
           cityId,
@@ -400,7 +405,9 @@ export class MatchingService {
           },
         },
       });
+      return seated.id;
     });
+    await this.saveScores(seatedId);
     this.logger.log(`Kankamla masası: ${pair.buyer.id}+${pair.kanka.id} & ${other.buyer.id}+${other.kanka.id}`);
     return other.subId;
   }
@@ -548,6 +555,7 @@ export class MatchingService {
           ),
           this.prisma.meeting.update({ where: { id: source.id }, data: { status: "CANCELLED" } }),
         ]);
+        for (const id of new Set(moves.map((m) => m.meetingId))) await this.saveScores(id);
         this.logger.log(`Masa birleştirildi: meeting=${source.id} → ${[...new Set(moves.map((m) => m.meetingId))].join(", ")}`);
         changed = true;
         break;
@@ -572,10 +580,14 @@ export class MatchingService {
     });
     for (const p of pairs) result.add(p.blockerId === user.id ? p.blockedId : p.blockerId);
 
-    // Rehber engeli: ContactBlock.hashedPhone düz "+90XXXXXXXXXX" tutar, User.phone ile karşılaştırılır
+    // Rehber engeli: ContactBlock.hashedPhone (adı eski) açık "+90XXXXXXXXXX" tutar, User.phone ile aynı formatta karşılaştırılır
+    const myPhone = user.phone ? normalizePhone(user.phone) : null;
     for (const o of others) {
-      if (o.phone && user.contactBlocks.some((cb) => cb.hashedPhone === o.phone)) result.add(o.id);
-      if (user.phone && o.contactBlocks.some((cb) => cb.hashedPhone === user.phone)) result.add(o.id);
+      if (o.phone) {
+        const theirPhone = normalizePhone(o.phone);
+        if (user.contactBlocks.some((cb) => normalizePhone(cb.hashedPhone) === theirPhone)) result.add(o.id);
+      }
+      if (myPhone && o.contactBlocks.some((cb) => normalizePhone(cb.hashedPhone) === myPhone)) result.add(o.id);
     }
     return result;
   }
@@ -672,6 +684,7 @@ export class MatchingService {
       }),
       this.prisma.meeting.update({ where: { id: meetingId }, data: { maxParticipants: count + botIds.length } }),
     ]);
+    await this.saveScores(meetingId);
     this.logger.log(`Bot eklendi: meeting=${meetingId} (${count}→${count + botIds.length})`);
   }
 
@@ -735,8 +748,8 @@ export class MatchingService {
     botId: string,
     scheduledAt: Date,
   ): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.meeting.create({
+    const seatedId = await this.prisma.$transaction(async (tx) => {
+      const seated = await tx.meeting.create({
         data: {
           cycleId: cycle.id,
           cityId,
@@ -751,7 +764,9 @@ export class MatchingService {
       });
       // Başbaşa hakkı masa kurulduğu anda harcanır
       await consumeOneOnOneRights(tx, [userId]);
+      return seated.id;
     });
+    await this.saveScores(seatedId);
     this.logger.log(`ONE_ON_ONE bot eşleşmesi: user=${userId} bot=${botId}`);
   }
 
@@ -995,6 +1010,11 @@ export class MatchingService {
     const pb = b.profile?.venuePreference ?? 'NO_PREFERENCE';
     return (pa === 'ALCOHOLIC' && pb === 'NON_ALCOHOLIC') ||
            (pa === 'NON_ALCOHOLIC' && pb === 'ALCOHOLIC');
+  }
+
+  // Skor yazımı eşleşmeyi durdurmaz: hata olursa masa kurulu kalır
+  private async saveScores(meetingId: string): Promise<void> {
+    await writeSeatScores(this.prisma, meetingId).catch((e) => this.logger.warn(`matchScore yazılamadı: meeting=${meetingId} ${e}`));
   }
 
   private scoreTwo(a: EligibleUser, b: EligibleUser): number {

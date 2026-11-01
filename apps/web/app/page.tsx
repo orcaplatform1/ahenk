@@ -191,6 +191,63 @@ function Testimonials() {
 }
 
 /* ─── FAQ + Şehirler + CTA ───────────────────────────────────────────────── */
+// Acil Yardım anlatımı; rapordaki metinle birebir aynı tutulur
+const SAFETY_STEPS = [
+  { title: 'Olayı seç', body: 'Yaşadığın durumu birkaç dokunuşla seçersin. Uzun uzun anlatman gerekmez; o an tek işin kendine iyi bakmak.' },
+  { title: 'Konumun yanında', body: 'Konum iznin açıkken canlı konumun ekibimize ulaşır. Nerede olduğunu tarif etmezsin, sen ilerledikçe biz de seninle ilerleriz.' },
+  { title: 'Ekip devralır', body: 'Yalnızca bu işe bakan ekibimiz 7/24 ayakta. Talebin ulaştığı andan süreç sonuçlanana kadar seni takip eder, yarıda bırakmaz.' },
+  { title: 'Gerekirse bir adım öteye', body: 'Durum gerektirdiğinde, ekibimizin kararıyla bilgiler yetkili mercilere iletilir.' },
+];
+
+function SafetySection() {
+  return (
+    <section id="acil-yardim" className="max-w-3xl mx-auto px-6 py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
+      <div className="text-center mb-12">
+        <p style={{ fontSize: 12, fontWeight: 250, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#e05c4c', marginBottom: 14 }}>
+          Acil Yardım
+        </p>
+        <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5] mb-6"><RedLast text="Masadan kalksan da yanındayız." /></h2>
+        <p className="mx-auto" style={{ maxWidth: 560, fontSize: 15, fontWeight: 300, color: 'rgba(245,245,245,0.88)', lineHeight: 1.8 }}>
+          Bu, listedeki sıradan bir özellik değil; Ahenk&apos;in en güçlü güvenlik katmanı. Bu tür uygulamalarda pek rastlamayacağın bir sistem,
+          çünkü biz işimizi masayı kurmakla bitmiş saymıyoruz.
+        </p>
+      </div>
+      <div className="flex flex-col gap-5 mb-12" style={{ fontSize: 15, fontWeight: 300, color: 'rgba(245,245,245,0.75)', lineHeight: 1.8 }}>
+        <p>
+          Gece güzel geçer, masa dağılır, herkes kendi yoluna gider. Sen yola çıktığında biz gitmiyoruz. Eve dönüş yolunda, arabanın arka
+          koltuğunda, kapını kapatana kadar geçen o son dakikalarda Acil Yardım hâlâ cebinde. Buluşma saati olan 20:00&apos;de açılır,
+          ertesi sabah 08:00&apos;e kadar seninle kalır.
+        </p>
+        <p>
+          Bir kadının akşam dışarı çıkarken kafasından geçirdiği küçük hesapları biliyoruz: Nasıl dönerim, kime haber veririm, bir şey olursa
+          ne yaparım? Bu sistemi o soruları ciddiye alarak kurduk. Kadın üyelerimiz o masaya gönlü rahat otursun, gecenin tadını sonuna
+          kadar çıkarsın diye.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-12">
+        {SAFETY_STEPS.map((step) => (
+          <div
+            key={step.title}
+            style={{
+              borderLeft: '2px solid #c0392b',
+              paddingLeft: 20,
+              background: 'linear-gradient(90deg, rgba(192,57,43,0.04) 0%, transparent 80%)',
+            }}
+          >
+            <p style={{ fontSize: 14, fontWeight: 250, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#f5f5f5', marginBottom: 10 }}>
+              {step.title}
+            </p>
+            <p style={{ fontSize: 13, color: 'rgba(245,245,245,0.6)', lineHeight: 1.7 }}>{step.body}</p>
+          </div>
+        ))}
+      </div>
+      <p className="font-serif italic text-xl sm:text-2xl text-center text-[#f5f5f5]">
+        Umarız hiç ihtiyacın olmaz. Ama orada olduğunu bilmek, geceyi değiştirir.
+      </p>
+    </section>
+  );
+}
+
 function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:string;sub?:string}[]; activeCity: string; setActiveCity: (c:string)=>void }) {
   return (
     <>
@@ -248,6 +305,8 @@ function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:stri
       </section>
 
       {/* ── Neden Rahat Hissedersin? */}
+      <SafetySection />
+
       <section id="why-safe" className="max-w-3xl mx-auto px-6 py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
         <div className="text-center mb-12">
           <h2 className="font-serif text-3xl sm:text-4xl text-[#f5f5f5] mb-3"><RedLast text="Neden Rahat Hissedersin?" /></h2>

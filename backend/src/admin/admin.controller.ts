@@ -29,7 +29,6 @@ import {
   GrantFreeSubscriptionDto,
   UpdateMeetingVenueDto,
   CreateManualMeetingDto,
-  ExtendMeetingDeadlineDto,
   CreateVenueDto,
   UpdateVenueDto,
   CreateCityDto,
@@ -247,12 +246,6 @@ export class AdminController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.adminService.saveVenuePhoto(id, slot, file);
-  }
-
-  @AdminAction("MEETING_EXTEND", async (c) => `${await c.meetingName(c.params.id)} masasının kapanış süresini ${c.body.extraHours} saat uzattı`)
-  @Patch("meetings/:id/extend-deadline")
-  extendMeetingDeadline(@Param("id") id: string, @Body() dto: ExtendMeetingDeadlineDto) {
-    return this.adminService.extendMeetingDeadline(id, dto.extraHours);
   }
 
   @AdminAction("MEETING_CANCEL", async (c) => `${await c.meetingName(c.params.id)} masasını iptal etti`)

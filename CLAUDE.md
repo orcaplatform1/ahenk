@@ -164,7 +164,6 @@ Masa yönetimi:
   - GET /admin/meetings/:id — detay + katılımcılar
   - POST /admin/meetings — manuel masa kur {title, scheduledAt, participantIds[], locationText?}
   - PATCH /admin/meetings/:id/venue — mekan/saat güncelle
-  - PATCH /admin/meetings/:id/extend-deadline — kapanış süresini uzat {extraHours: 1-72}
   - DELETE /admin/meetings/:id — masayı iptal et (CANCELLED)
 
 Mekan yönetimi:
@@ -235,16 +234,13 @@ REHBER ENGELLEME (Contact Block):
 - Kullanıcı kayıt akışında opsiyonel adım olarak rehberinden numara yükleyebilir; sonradan profil ayarlarından da yapılabilir
 - Mobil (React Native): native Contacts API ile rehber senkronizasyonu
 - Web: manuel numara girişi (alan kodu + numara)
-- Numaralar SHA-256 ile hash'lenerek ContactBlock tablosunda saklanır — ham numara tutulmaz
+- Numaralar ContactBlock.hashedPhone alanında (adı eski) açık "+90XXXXXXXXXX" formatında saklanır; hash kullanılmaz
 - Maksimum 50 numara per kullanıcı
-- Eşleştirme algoritmasında: her iki kullanıcının hash listesi karşılaştırılır, eşleşme varsa ikisi de birbirinin havuzuna dahil edilmez (UserBlock ile aynı mantık)
-- Prisma modeli: ContactBlock { id, userId, phoneHash String, createdAt } — userId üzerinden User'a relation
-- User modeline phoneHash alanı eklenir: kayıt sırasında kullanıcının kendi numarası SHA-256 ile hash'lenerek buraya kaydedilir
-- Eşleştirmede karşı tarafın ContactBlock listesi kendi phoneHash'i ile karşılaştırılır
-- Auth akışı: kayıt sırasında telefon numarası hash'lenerek User.phoneHash'e yazılır
+- Eşleştirme algoritmasında: engel listesi User.phone ile aynı formatta karşılaştırılır, eşleşme varsa ikisi de birbirinin havuzuna dahil edilmez (UserBlock ile aynı mantık)
+- Prisma modeli: ContactBlock { id, userId, hashedPhone String, createdAt } — userId üzerinden User'a relation
 Endpoint'ler:
-  - POST /contact-blocks/sync — dizi hash alır, upsert (JWT zorunlu)
-  - GET /contact-blocks — kullanıcının hash listesi (JWT zorunlu)
+  - POST /contact-blocks/sync — numara dizisi alır, upsert (JWT zorunlu)
+  - GET /contact-blocks — kullanıcının numara listesi (JWT zorunlu)
   - DELETE /contact-blocks/:id — tekil silme (JWT zorunlu)
 
 SOHBET SİSTEMİ (Modül 11):

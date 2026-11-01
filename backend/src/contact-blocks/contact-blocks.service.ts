@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, ForbiddenException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { normalizePhone } from "../common/phone";
 
 const MAX_BLOCKS = 50;
 
@@ -19,7 +20,7 @@ export class ContactBlocksService {
   async sync(userId: string, hashedPhones: string[]) {
     const existing = await this.prisma.contactBlock.count({ where: { userId } });
 
-    const unique = [...new Set(hashedPhones)];
+    const unique = [...new Set(hashedPhones.map(normalizePhone))];
     const newCount = unique.length;
 
     if (existing + newCount > MAX_BLOCKS) {

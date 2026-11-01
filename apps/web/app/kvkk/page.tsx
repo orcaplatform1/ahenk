@@ -66,7 +66,7 @@ const sections = [
           },
           {
             cat: 'Güvenlik Verileri',
-            items: ['Hash\'lenmiş telefon numaraları — rehber engelleme, ham numara saklanmaz', 'IP adresi, oturum bilgileri'],
+            items: ['Rehber engelleme için eklenen telefon numaraları', 'IP adresi, oturum bilgileri'],
           },
           {
             cat: 'Teknik Veriler',
@@ -138,7 +138,7 @@ const sections = [
           },
           {
             basis: 'Veri Sorumlusunun Meşru Menfaati — Madde 5/2-f',
-            desc: 'Teknik veriler, IP adresi, güvenlik logları, hash\'lenmiş telefon numaraları.',
+            desc: 'Teknik veriler, IP adresi, güvenlik logları, rehber engelleme için eklenen telefon numaraları.',
           },
           {
             basis: 'Hukuki Yükümlülüğün Yerine Getirilmesi — Madde 5/2-ç',
@@ -226,7 +226,7 @@ const sections = [
           ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl — yasal yükümlülük'],
           ['OCEAN test sonuçları', 'Hesap aktif olduğu sürece; hesap silindiğinde imha edilir'],
           ['Ödeme ve fatura kayıtları', '10 yıl — Vergi Usul Kanunu'],
-          ['Hash\'lenmiş telefon numaraları', 'Kullanıcı tarafından silinene kadar'],
+          ['Rehber engelleme için eklenen telefon numaraları', 'Kullanıcı tarafından silinene kadar'],
           ['IP adresi ve oturum logları', '2 yıl'],
         ].map(([label, value], i, arr) => (
           <div

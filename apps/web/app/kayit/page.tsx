@@ -29,17 +29,6 @@ interface QuestionsResponse {
   sections: { section: number; title: string; questions: Question[] }[];
 }
 
-async function sha256(text: string): Promise<string | null> {
-  if (!text || typeof crypto === 'undefined' || !crypto.subtle) return null;
-  try {
-    const enc = new TextEncoder();
-    const buf = await crypto.subtle.digest('SHA-256', enc.encode(text));
-    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-  } catch {
-    return null;
-  }
-}
-
 function formatPhone(digits: string): string { return `+90${digits}`; }
 
 const STEPS = ['Temel Bilgiler', 'Şehir Seçimi', 'OCEAN (Big Five) Testi', 'Mekan Tercihi', 'Numara Engelleme'];
@@ -279,35 +268,11 @@ function KayitPageInner() {
     set('contactInput', '');
   }
 
-  async function hashPhones(phones: string[]): Promise<string[]> {
-    if (typeof crypto !== 'undefined' && crypto.subtle) {
-      const results = await Promise.all(phones.map(n => sha256(n)));
-      return results.filter((h): h is string => h !== null);
-    }
-    // HTTP bağlamında crypto.subtle yok — sunucu tarafında hash'le
-    const res = await fetch('/api/hash-phones', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phones }),
-    });
-    const data = await res.json() as { hashes: string[] };
-    return data.hashes ?? [];
-  }
-
   async function handleFinish(skip: boolean) {
     setLoading(true); setError('');
     try {
       if (!skip && form.contactNumbers.length > 0) {
-        const hashes = await hashPhones(form.contactNumbers);
-        if (hashes.length > 0) {
-          // hash→numara eşleştirmesini localStorage'a kaydet (TabRehber'de görüntülenmek için)
-          try {
-            const map: Record<string, string> = JSON.parse(localStorage.getItem('ahenk_contact_block_map') ?? '{}');
-            hashes.forEach((h, i) => { if (form.contactNumbers[i]) map[h] = form.contactNumbers[i]; });
-            localStorage.setItem('ahenk_contact_block_map', JSON.stringify(map));
-          } catch {}
-          await api.post('/contact-blocks/sync', { hashedPhones: hashes });
-        }
+        await api.post('/contact-blocks/sync', { hashedPhones: form.contactNumbers });
       }
       setShowSuccess(true);
       setTimeout(() => router.push('/dashboard'), 2000);

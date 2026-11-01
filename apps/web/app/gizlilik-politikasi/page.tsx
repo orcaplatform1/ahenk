@@ -66,7 +66,7 @@ const sections = [
             'OCEAN kişilik testi sonuçları ve skorları',
             'Masa buluşma geçmişi',
             'Değerlendirme ve yorum verileri',
-            'Rehber engelleme listesi — hash\'lenmiş telefon numaraları (ham numara saklanmaz)',
+            'Rehber engelleme listesi — eklenen telefon numaraları',
           ]}
         />
 
@@ -142,7 +142,7 @@ const sections = [
           ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl — yasal yükümlülük'],
           ['OCEAN testi sonuçları', 'Hesap aktif olduğu sürece'],
           ['Ödeme kayıtları', '10 yıl — Vergi Usul Kanunu'],
-          ['Hash\'lenmiş telefon numaraları', 'Kullanıcı silene kadar'],
+          ['Rehber engelleme için eklenen telefon numaraları', 'Kullanıcı silene kadar'],
         ].map(([label, value], i) => (
           <div
             key={label}
@@ -243,7 +243,6 @@ const sections = [
         items={[
           'SSL/TLS şifrelemesi — tüm veri iletimlerinde',
           'Cloudflare R2 private bucket — kimlik belgeleri ve liveness videosu yalnızca imzalı URL ile yetkili admin tarafından erişilebilir',
-          'Hash\'leme teknolojileri — telefon numaraları SHA-256 ile hash\'lenerek saklanır, ham numara tutulmaz',
           'Erişim kontrolleri ve rol tabanlı yetkilendirme',
           'Rate limiting ve DDoS koruması',
         ]}

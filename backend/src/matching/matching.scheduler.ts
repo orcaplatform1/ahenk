@@ -21,6 +21,15 @@ export class MatchingScheduler {
     private venueAssignment: VenueAssignmentService,
   ) {}
 
+  // Her gece 04:00: süresi dolmuş ve iptal edilmiş oturum kayıtları silinir; geçerli token'lara dokunulmaz
+  @Cron("0 4 * * *", { timeZone: "Europe/Istanbul" })
+  async cleanRefreshTokens() {
+    const { count } = await this.prisma.refreshToken.deleteMany({
+      where: { OR: [{ revoked: true }, { expiresAt: { lt: new Date() } }] },
+    });
+    this.logger.log(`RefreshToken temizliği: ${count} kayıt silindi`);
+  }
+
   // Her saat başı güvenlik taraması: atama anında kaçan ve saatle gevşeyen filtrelere (Perşembe 12:00 / 18:00,
   // Cuma 10:00) takılmış kişileri masaya atar. Asıl atama kişi havuza girdiği an yapılır.
   @Cron("0 * * * *", { timeZone: "Europe/Istanbul" })

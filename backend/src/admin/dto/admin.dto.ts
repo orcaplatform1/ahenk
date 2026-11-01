@@ -98,13 +98,6 @@ export class CreateManualMeetingDto {
   locationUrl?: string;
 }
 
-export class ExtendMeetingDeadlineDto {
-  @IsInt()
-  @Min(1)
-  @Max(72)
-  extraHours: number;
-}
-
 // ─── Mekan ─────────────────────────────────────────────────────────────────────
 
 export class CreateVenueDto {

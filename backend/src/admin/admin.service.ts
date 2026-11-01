@@ -1,3 +1,4 @@
+import { writeSeatScores } from "../matching/seat-scores";
 import {
   Injectable,
   NotFoundException,
@@ -621,7 +622,6 @@ export class AdminService {
           scheduledAt: true,
           maxParticipants: true,
           locationText: true,
-          registrationDeadline: true,
           city: { select: { name: true } },
           _count: { select: { participants: true } },
         },
@@ -717,7 +717,7 @@ export class AdminService {
     }
 
     const type = data.participantIds.length === 2 ? MeetingType.ONE_ON_ONE : MeetingType.GROUP;
-    return this.prisma.$transaction(async (tx) => {
+    const created = await this.prisma.$transaction(async (tx) => {
       const meeting = await tx.meeting.create({
         data: {
           type,
@@ -739,6 +739,8 @@ export class AdminService {
       if (type === MeetingType.ONE_ON_ONE) await consumeOneOnOneRights(tx, data.participantIds);
       return meeting;
     });
+    await writeSeatScores(this.prisma, created.id).catch(() => undefined);
+    return created;
   }
 
   // ─── Masa mekan/saat güncelle ─────────────────────────────────────────────
@@ -834,22 +836,6 @@ export class AdminService {
     const url = `${VENUE_PUBLIC_PREFIX}/${meetingId}/${fileName}`;
     await this.prisma.meeting.update({ where: { id: meetingId }, data: { [field]: url } });
     return { slot, url };
-  }
-
-  // ─── Kapanış süresini uzat ────────────────────────────────────────────────
-
-  async extendMeetingDeadline(meetingId: string, extraHours: number) {
-    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
-    if (!meeting) throw new NotFoundException("Masa bulunamadı");
-    if (!meeting.registrationDeadline) throw new BadRequestException("Bu masanın kapanış tarihi yok");
-    if (meeting.status !== "PENDING") throw new BadRequestException("Sadece PENDING masaların süresi uzatılabilir");
-
-    const newDeadline = new Date(meeting.registrationDeadline.getTime() + extraHours * 60 * 60 * 1000);
-    return this.prisma.meeting.update({
-      where: { id: meetingId },
-      data: { registrationDeadline: newDeadline },
-      select: { id: true, registrationDeadline: true },
-    });
   }
 
   // ─── Masa iptal ──────────────────────────────────────────────────────────
@@ -1258,6 +1244,7 @@ export class AdminService {
     await this.prisma.meetingParticipant.create({
       data: { meetingId, userId: botUserId, status: 'INVITED' },
     });
+    await writeSeatScores(this.prisma, meetingId).catch(() => undefined);
     return { placed: true, botUserId, meetingId };
   }
 

@@ -232,7 +232,6 @@ model Meeting {
   venue                Venue?         @relation(fields: [venueId], references: [id], onDelete: SetNull)
   venueNotifiedId      String? // WhatsApp ile haber verilen mekân (aynı masa için ikinci bildirim gitmesin)
   venueMissingAlertAt  DateTime? // Mekânsız masa uyarısının admin'e ilk gidiş zamanı
-  registrationDeadline DateTime? // Kayıt kapanış (Cumartesi 10:00, uzatılabilir)
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 
