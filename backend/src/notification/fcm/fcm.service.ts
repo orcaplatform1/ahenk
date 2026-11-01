@@ -40,7 +40,7 @@ export class FcmService implements OnModuleInit {
     data?: Record<string, string>;
   }): Promise<boolean> {
     if (!this.initialized) {
-      this.logger.log(`[FCM stub] ${params.title}: ${params.body}`);
+      this.logger.log(`[FCM stub] ${params.title}`);
       return true;
     }
 

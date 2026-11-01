@@ -1,6 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
+const SEND_TIMEOUT_MS = 10_000;
+
 @Injectable()
 export class WhatsappNotifyService {
   private readonly logger = new Logger(WhatsappNotifyService.name);
@@ -10,7 +12,7 @@ export class WhatsappNotifyService {
 
   async send(phone: string, templateName: string, bodyParams: string[]): Promise<void> {
     if (this.config.get("NODE_ENV") !== "production") {
-      this.logger.log(`[WhatsApp bildirim stub] ${phone} → şablon: ${templateName}, params: ${bodyParams.join(", ")}`);
+      this.logger.log(`[WhatsApp bildirim stub] şablon: ${templateName}`);
       return;
     }
 
@@ -30,6 +32,7 @@ export class WhatsappNotifyService {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
       body: JSON.stringify({
         messaging_product: "whatsapp",
         to: normalizedPhone,
@@ -48,7 +51,7 @@ export class WhatsappNotifyService {
     });
 
     if (!response.ok) {
-      this.logger.error(`WhatsApp bildirim hatası [${response.status}]: ${templateName} → ${phone}`);
+      this.logger.error(`WhatsApp bildirim hatası [${response.status}]: ${templateName}`);
     }
   }
 }

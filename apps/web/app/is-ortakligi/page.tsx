@@ -245,7 +245,7 @@ export default function IsOrtakligiPage() {
                 { icon: 'calendar' as const, title: 'Garantili Doluluk', desc: 'Her hafta önceden planlanmış, kesinleşmiş rezervasyonlar. Boş masa bırakmayın.' },
                 { icon: 'shield' as const, title: 'Seçkin Müşteri Kitlesi', desc: 'OCEAN kişilik testinden geçmiş, kimlik doğrulamalı, sosyal deneyime değer veren kullanıcılar. Kaliteli müşteri, kaliteli deneyim.' },
                 { icon: 'star' as const, title: 'Sıfır Pazarlama Maliyeti', desc: 'Reklam vermenize gerek yok. Ahenk kullanıcıları mekânınıza gelir, siz sadece en iyi deneyimi sunarsınız.' },
-                { icon: 'table' as const, title: 'Özel Masa Düzeni', desc: 'Grup masaları 4-6 kişi, başbaşa masalar 2 kişi, kankamla masaları 4 kişi. Önceden bilirsiniz, hazırlıklı olursunuz.' },
+                { icon: 'table' as const, title: 'Özel Masa Düzeni', desc: 'Grup masası 4-6 kişi, Baş Başa 2 kişi, Kankamla 4 kişi. Önceden bilirsiniz, hazırlıklı olursunuz.' },
               ].map((card, i) => (
                 <FadeIn key={card.title} delay={i * 0.08}>
                   <div className="ll-card" style={{ height: '100%' }}>

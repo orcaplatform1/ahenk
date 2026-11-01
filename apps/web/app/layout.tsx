@@ -6,6 +6,7 @@ import SosOpenReport from '@/components/SosOpenReport';
 import SiteFooter from '@/components/SiteFooter';
 import NavbarWrapper from '@/components/NavbarWrapper';
 import PageOffset from '@/components/PageOffset';
+import { OG_IMAGE, SITE_TITLE, SITE_URL, TWITTER_IMAGE } from '@/lib/seo';
 
 const dmSerifDisplay = DM_Serif_Display({
   subsets: ['latin'],
@@ -27,10 +28,14 @@ const jetBrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
+const SITE_DESCRIPTION =
+  'Ahenk, OCEAN kişilik testine dayalı eşleştirmeyle seni her hafta sana uygun insanlarla buluşturur. Grup masası, Baş Başa ve Kankamla seçeneklerini keşfet.';
+const TITLE_TEMPLATE = '%s | Ahenk';
+
 export const metadata: Metadata = {
-  title: 'Ahenk | Sana Uygun İnsanlarla Buluş',
-  description:
-    'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. İster Grup masasında, istersen başbaşa bir yemek veya kahve. Doğru insanlar, doğru zamanda.',
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_TITLE, template: TITLE_TEMPLATE },
+  description: SITE_DESCRIPTION,
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
@@ -40,30 +45,22 @@ export const metadata: Metadata = {
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   openGraph: {
-    title: 'Ahenk | Sana Uygun İnsanlarla Buluş',
-    description:
-      'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. İster Grup masasında, istersen başbaşa bir yemek veya kahve. Doğru insanlar, doğru zamanda.',
-    type: 'website',
-    url: 'https://ahenk.co',
+    title: { default: SITE_TITLE, template: TITLE_TEMPLATE },
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
     siteName: 'Ahenk',
-    images: [
-      {
-        url: 'https://ahenk.co/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Ahenk | Sana Uygun İnsanlarla Buluş',
-      },
-    ],
+    locale: 'tr_TR',
+    type: 'website',
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: SITE_TITLE }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ahenk | Sana Uygun İnsanlarla Buluş',
-    description:
-      'Ahenk seni tanıyan bir algoritmayla her hafta yeni insanlarla buluşturuyor. Doğru insanlar, doğru zamanda.',
-    images: ['https://ahenk.co/og-image.jpg'],
+    title: { default: SITE_TITLE, template: TITLE_TEMPLATE },
+    description: SITE_DESCRIPTION,
+    images: [TWITTER_IMAGE],
   },
   alternates: {
-    canonical: 'https://ahenk.co',
+    canonical: SITE_URL,
   },
 };
 

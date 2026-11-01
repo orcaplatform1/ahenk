@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { OCEAN_TRAITS } from '@ahenk/ui';
 import { api } from '@/lib/api';
 
 interface OceanScore {
@@ -22,38 +23,7 @@ interface TestResult {
   canRetakeNow?: boolean;
 }
 
-const TRAITS = [
-  {
-    key: 'openness' as keyof OceanScore,
-    label: 'Açıklık',
-    radarLabel: 'Açıklık',
-    desc: 'Yeni deneyimlere, fikirlere ve yaratıcılığa açıklık',
-  },
-  {
-    key: 'conscientiousness' as keyof OceanScore,
-    label: 'Özdisiplin',
-    radarLabel: 'Özdisiplin',
-    desc: 'Düzen, planlama ve hedef odaklılık',
-  },
-  {
-    key: 'extraversion' as keyof OceanScore,
-    label: 'Dışadönüklük',
-    radarLabel: 'Dışadönüklük',
-    desc: 'Sosyal enerji, girişkenlik ve sohbet isteği',
-  },
-  {
-    key: 'agreeableness' as keyof OceanScore,
-    label: 'Uyumluluk',
-    radarLabel: 'Uyumluluk',
-    desc: 'Empati, iş birliği ve güvenilirlik',
-  },
-  {
-    key: 'neuroticism' as keyof OceanScore,
-    label: 'Duygusal Denge',
-    radarLabel: 'Denge',
-    desc: 'Duygusal istikrar ve stres toleransı',
-  },
-] as const;
+const TRAITS = OCEAN_TRAITS;
 
 /* ── Radar Chart SVG ──────────────────────────────────────────────────── */
 function RadarChart({ scores }: { scores: OceanScore }) {

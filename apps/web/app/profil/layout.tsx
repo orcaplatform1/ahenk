@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Profilim | Ahenk',
+  title: 'Profilim',
   description: 'Profilini düzenle, kimlik doğrulamanı yap, paket al.',
   robots: { index: false, follow: false },
 };

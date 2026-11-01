@@ -311,11 +311,7 @@ Prisma modeli:
   - ParticipantLocation { id, meetingId, userId, lat, lng, accuracy?, timestamp }
   - AdminAlertType enum'a SOS_ALERT eklendi
 Tehdit tipleri: LIFE_DANGER, PHYSICAL_VIOLENCE, ABDUCTION, HARASSMENT
-Admin bildirim zinciri (per-admin, her biri ayrı try/catch):
-  1. WhatsApp (telefon varsa)
-  2. FCM push (fcmToken varsa)
-  3. AdminAlert DB kaydı (panel bildirim)
-  Bir admin'in başarısız kanalı diğer adminleri etkilemez.
+SOS raporu başına tek AdminAlert oluşur. Bildirim tüm ADMIN ve SUPERADMIN'lere gider. Raporu tek bir admin üstlenir, diğer adminler izleyemez. SUPERADMIN sınırsız izler ve müdahale eder.
 Kullanıcı konumu: masa katılımcıları SOS sırasında konum paylaşabilir (ParticipantLocation tablosu).
 Admin SOS sayfası: /acil-yardim — canlı rapor listesi, 15s otomatik yenileme.
   Nominatim (OpenStreetMap) reverse geocoding: TR dili, max 1 istek/saniye (seri kuyruk), adres cache max 200 kayıt.

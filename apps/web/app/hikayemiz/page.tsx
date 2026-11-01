@@ -105,7 +105,7 @@ export default function HikayemizPage() {
       {/* Bölüm 2 */}
       <TwoCol
         title="İki format, tek felsefe."
-        body="Ahenk'te iki farklı buluşma formatı sunuyoruz. Grup masalarında 4 veya 6 kişi, algoritmanın bir araya getirdiği insanlar olarak buluşuyor. Başbaşa buluşmalarda ise algoritma sizi ikili olarak eşleştiriyor; derinlemesine, bire bir, karşılıklı. Her iki formatta da buluşma bir restoran ya da kafede, kamuya açık bir ortamda, yüz yüze gerçekleşiyor. Kapalı kapılar yok, belirsizlik yok. Sadece gerçek insanlar, gerçek bir ortam."
+        body="Ahenk'te üç buluşma formatı sunuyoruz: Grup masası 4-6 kişi, Baş Başa 2 kişi, Kankamla 4 kişi. Grup masalarında algoritmanın bir araya getirdiği insanlar buluşuyor. Başbaşa buluşmalarda ise algoritma sizi ikili olarak eşleştiriyor; derinlemesine, bire bir, karşılıklı. Her formatta buluşma bir restoran ya da kafede, kamuya açık bir ortamda, yüz yüze gerçekleşiyor. Kapalı kapılar yok, belirsizlik yok. Sadece gerçek insanlar, gerçek bir ortam."
       />
 
       {/* Bölüm 3 */}

@@ -120,8 +120,8 @@ export class SosService {
     });
 
     // WhatsApp: tüm admin ve superadmin kullanıcılarına gönder
-    this.notifyAdmins(report.id, userId, meetingId, threats, lat, lng).catch((e) =>
-      this.logger.error("Admin WhatsApp bildirimi gönderilemedi", e),
+    this.notifyAdmins(report.id, userId, meetingId, threats, lat, lng).catch(() =>
+      this.logger.error(`Admin bildirimi gönderilemedi (rapor: ${report.id}, masa: ${meetingId}, tehdit: ${threats.join(",")})`),
     );
 
     return { reportId: report.id };
@@ -351,6 +351,18 @@ export class SosService {
     lat?: number,
     lng?: number,
   ) {
+    // Loglarda yalnızca rapor, masa ve tehdit kodu yer alır
+    const logCtx = `rapor: ${reportId}, masa: ${meetingId}, tehdit: ${threats.join(",")}`;
+
+    // AdminAlert: talep başına tek kayıt, bildirimlerden önce yazılır (uyarılar sayfası tüm adminlere ortak)
+    try {
+      await this.prisma.adminAlert.create({ data: { userId, alertType: AdminAlertType.SOS_ALERT } });
+    } catch {
+      this.logger.error(`AdminAlert oluşturulamadı (${logCtx})`);
+    }
+
+    this.logger.error(`[ACİL YARDIM] ${logCtx}`);
+
     const admins = await this.prisma.user.findMany({
       where: { role: { in: [UserRole.ADMIN, UserRole.SUPERADMIN] } },
       select: { id: true, phone: true, fcmToken: true, profile: { select: { firstName: true, lastName: true } } },
@@ -358,47 +370,38 @@ export class SosService {
 
     const reporter = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true, phone: true, profile: { select: { firstName: true, lastName: true } } },
+      select: { email: true, profile: { select: { firstName: true, lastName: true } } },
     });
 
     const name     = reporter?.profile ? `${reporter.profile.firstName} ${reporter.profile.lastName}` : reporter?.email ?? userId;
     const threatTx = threats.map((t) => THREAT_LABELS[t] ?? t).join(", ");
     const locTx    = lat && lng ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : "Konum alınamadı";
-    const logMsg   = `[ACİL YARDIM] ${name} (${reporter?.phone ?? reporter?.email}). Tehdit: ${threatTx}. Konum: ${locTx}. Masa: ${meetingId}. Rapor: ${reportId}`;
 
-    this.logger.error(logMsg);
-
-    for (const adm of admins) {
-      // 1. WhatsApp
+    // Her kanal ve admin bağımsız ilerler: biri hata verirse veya zaman aşımına uğrarsa diğerleri beklemez
+    const deliveries = admins.flatMap((adm) => {
+      const channels: { channel: string; send: Promise<unknown> }[] = [];
       if (adm.phone) {
-        try {
-          await this.whatsapp.send(adm.phone, "ahenk_sos_alert", [name, threatTx, locTx]);
-        } catch {
-          this.logger.warn(`Admin ${adm.phone} WhatsApp bildirimi başarısız`);
-        }
+        channels.push({ channel: "WhatsApp", send: this.whatsapp.send(adm.phone, "ahenk_sos_alert", [name, threatTx, locTx]) });
       }
-
-      // 2. FCM push (fallback)
       if (adm.fcmToken) {
-        try {
-          await this.fcm.sendToToken({
+        channels.push({
+          channel: "FCM",
+          send: this.fcm.sendToToken({
             token: adm.fcmToken,
             title: "🚨 ACİL YARDIM TALEBİ",
             body:  `${name}: ${threatTx}`,
             data:  { reportId, meetingId, type: "SOS_ALERT" },
-          });
-        } catch {
-          this.logger.warn(`Admin ${adm.id} FCM bildirimi başarısız`);
-        }
+          }),
+        });
       }
+      return channels;
+    });
 
-    }
-
-    // 3. AdminAlert: talep başına tek kayıt, talep eden kişiye bağlı (uyarılar sayfası tüm adminlere ortak)
-    try {
-      await this.prisma.adminAlert.create({ data: { userId, alertType: AdminAlertType.SOS_ALERT } });
-    } catch (e) {
-      this.logger.error(`AdminAlert oluşturulamadı (rapor: ${reportId}): ${e}`);
-    }
+    const results = await Promise.allSettled(deliveries.map((d) => d.send));
+    results.forEach((result, i) => {
+      if (result.status === "rejected") {
+        this.logger.warn(`${deliveries[i].channel} bildirimi başarısız (${logCtx})`);
+      }
+    });
   }
 }

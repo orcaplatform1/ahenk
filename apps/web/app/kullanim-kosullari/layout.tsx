@@ -1,10 +1,10 @@
-import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Kullanım Koşulları | Ahenk',
-  description: 'Ahenk platformunu kullanmadan önce lütfen kullanım koşullarını okuyunuz.',
-  alternates: { canonical: 'https://ahenk.co/kullanim-kosullari' },
-};
+export const metadata = pageMetadata({
+  path: '/kullanim-kosullari',
+  title: 'Kullanım Koşulları',
+  description: 'Ahenk platformunu kullanmadan önce okumanız gereken kullanım koşulları. Üyelik, paketler, rezervasyon ve iptal kurallarına ilişkin hükümleri inceleyin.',
+});
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { OCEAN_RADAR_AXES } from './oceanData';
 
 export interface OceanScores {
   openness: number;
@@ -11,13 +12,7 @@ export interface OceanScores {
   neuroticism: number;
 }
 
-const AXES = [
-  { key: 'openness'         as const, label: 'Açıklık',        desc: 'Yeni deneyimlere ve fikirlere açıklık' },
-  { key: 'conscientiousness'as const, label: 'Öz-Disiplin',    desc: 'Düzen, sorumluluk ve hedef odaklılık' },
-  { key: 'extraversion'     as const, label: 'Dışadönüklük',   desc: 'Sosyal enerji ve çevresiyle etkileşim' },
-  { key: 'agreeableness'    as const, label: 'Uyumluluk',      desc: 'Empati, işbirliği ve güven' },
-  { key: 'neuroticism'      as const, label: 'Nevrotiklik',    desc: 'Duygusal dalgalanma ve stres tepkisi' },
-];
+const AXES = OCEAN_RADAR_AXES;
 
 interface Props {
   scores: OceanScores;

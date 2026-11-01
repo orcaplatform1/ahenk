@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
+import { OCEAN_DIMENSIONS } from './oceanData';
 
 export interface PersonalityResultProps {
   aciklik: number;
@@ -12,34 +13,6 @@ export interface PersonalityResultProps {
 
 type RGB = { r: number; g: number; b: number };
 type Layer = { i: RGB; m: RGB; o: RGB; a: number };
-
-const OCEAN_DATA = [
-  { name: 'Açıklık', sub: 'Yaratıcılık & Deneyim', levels: [
-    'Yeni fikir ve deneyimlere karşı temkinlisin. Tanıdık ortamlar seni rahatlatıyor, belirsizlik ise zorlayabiliyor. Masalarda güvenli konularda güçlüsün.',
-    'Merakın var ama seçici davranıyorsun. Bazı konularda derinleşmeyi seviyorsun, ancak her fikre kapı aralamıyorsun. Masalarda dengeli bir katkı sunuyorsun.',
-    'Fikir ve deneyimlere tamamen açıksın. Masalarda entelektüel derinliği, sanatı ve sıra dışı bakış açılarını tetikleyen ana jeneratör sensin.',
-  ]},
-  { name: 'Özdisiplin', sub: 'Hedef & Düzen', levels: [
-    'Anlık kararlarla hareket etmeyi seviyorsun. Planlama yerine spontanlık seni tanımlıyor. Masalarda sürpriz enerji getiriyorsun ama tutarlılık zor olabiliyor.',
-    'Belirli alanlarda düzenlisin, ancak esnekliğini de koruyorsun. Masalarda gerektiğinde organize olabilen, gerektiğinde akışa bırakabilen birisin.',
-    'Hedef odaklı ve tutarlısın. Grup dinamiklerinde güven veren, masanın dengesini ve akışını koruyan sessiz organizatör sensin.',
-  ]},
-  { name: 'Dışadönüklük', sub: 'Sosyal Enerji', levels: [
-    'Sosyal ortamlar seni yoruyor, yalnız zaman enerji veriyor. Masalarda derin bire bir bağlantılarda parıldassan da kalabalık dinamikler zorlayabiliyor.',
-    'Ne tam içedönük ne tam dışadönüksün, ortam ve insanlara göre değişiyorsun. Masalarda seçici ama kaliteli bir enerji yayıyorsun.',
-    'Sosyal ortamlardan enerji alıyorsun. Masaya oturduğun andan itibaren buzları eriten, konuşmaları başlatan ve ortamı ısıtan birisin.',
-  ]},
-  { name: 'Uyumluluk', sub: 'Empati & İşbirliği', levels: [
-    'Kendi bakış açın güçlü ve bunu kolayca bırakmıyorsun. Masalarda tartışmayı canlandırıyorsun ancak ortak zemin bulmak zaman alıyor.',
-    'İşbirliğine açıksın ama sınırların da var. Masalarda hem kendi sesini duyurabiliyorsun hem de diğerlerini dinleyebiliyorsun.',
-    'Empatik frekansın çok yüksek. İnsanları dinleme ve ortak paydada buluşturma yeteneğinle dahil olduğun her masada derin bir konfor alanı yaratıyorsun.',
-  ]},
-  { name: 'Denge', sub: 'Duygusal Esneklik', levels: [
-    'Duygular seni güçlü etkiliyor ve bunu çevrene yansıtıyorsun. Masalarda yoğun anlarda dengeyi korumak zorlaşabiliyor, ama bu aynı zamanda özgünlüğünün bir parçası.',
-    'Duygusal esnekliğin gelişiyor. Çoğu durumda sakin kalabiliyorsun, ancak beklenmedik anlarda zaman zaman sendeleyebiliyorsun.',
-    'Duygusal zemin sağlam. Hararetli tartışmalarda bile sakin kalabiliyor, masadaki en dengeli ve rasyonel frekansı sen yayıyorsun.',
-  ]},
-];
 
 const PALETTES: Layer[][] = [
   [
@@ -108,7 +81,7 @@ export function PersonalityResult({ aciklik, ozdisiplin, disadonukluk, uyumluluk
   const [activeId, setActiveId] = useState(3);
   const [hintGone, setHintGone] = useState(false);
   const [cardHidden, setCardHidden] = useState(false);
-  const [cardText, setCardText] = useState(OCEAN_DATA[3].levels[getLevel(denge)]);
+  const [cardText, setCardText] = useState(OCEAN_DIMENSIONS[3].levels[getLevel(denge)]);
 
   const handleSetActive = (id: number) => {
     setHintGone(true);
@@ -117,7 +90,7 @@ export function PersonalityResult({ aciklik, ozdisiplin, disadonukluk, uyumluluk
     setActiveId(id);
     setCardHidden(true);
     setTimeout(() => {
-      setCardText(OCEAN_DATA[id].levels[getLevel(valuesRef.current[id])]);
+      setCardText(OCEAN_DIMENSIONS[id].levels[getLevel(valuesRef.current[id])]);
       setCardHidden(false);
     }, 200);
   };
@@ -234,7 +207,7 @@ export function PersonalityResult({ aciklik, ozdisiplin, disadonukluk, uyumluluk
           <div style={{ fontSize: 8, color: '#5a2030', letterSpacing: '.09em', textTransform: 'uppercase', marginBottom: 2, fontWeight: 600 }}>
             Kişilik Boyutları
           </div>
-          {OCEAN_DATA.map((item, i) => (
+          {OCEAN_DIMENSIONS.map((item, i) => (
             <div
               key={i}
               style={{
@@ -255,7 +228,7 @@ export function PersonalityResult({ aciklik, ozdisiplin, disadonukluk, uyumluluk
               onTouchStart={(e) => { e.preventDefault(); handleSetActive(i); }}
             >
               <div>
-                <div style={{ fontSize: 10, fontWeight: 600, color: '#d4a0aa', lineHeight: 1.2 }}>{item.name}</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: '#d4a0aa', lineHeight: 1.2 }}>{item.label}</div>
                 <div style={{ fontSize: 8, color: '#6b3040', marginTop: 1 }}>{item.sub}</div>
               </div>
               <span style={{ fontSize: 10, fontWeight: 700, color: activeId === i ? '#e05070' : '#9b1e3a', flexShrink: 0 }}>

@@ -4,6 +4,7 @@ export * from './theme';
 export * from './components/sonar/AhenkSonar';
 
 // Ocean
+export * from './components/ocean/oceanData';
 export * from './components/ocean/OceanRadar';
 export * from './components/ocean/PersonalityResult';
 

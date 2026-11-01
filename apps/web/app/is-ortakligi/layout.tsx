@@ -1,10 +1,10 @@
-import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Mekan Ortaklığı | Ahenk',
-  description: 'Restoranınız veya kafeniz her hafta garantili dolulukla buluşma noktası olsun. Ahenk mekan ortaklığı programına başvurun.',
-  alternates: { canonical: 'https://ahenk.co/is-ortakligi' },
-};
+export const metadata = pageMetadata({
+  path: '/is-ortakligi',
+  title: 'Mekan Ortaklığı',
+  description: 'Ahenk mekan ortaklığı ile kimliği doğrulanmış kullanıcıları mekânınızda ağırlayın. Önceden planlanmış rezervasyonlarla çalışmak için başvuru formunu doldurun.',
+});
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;

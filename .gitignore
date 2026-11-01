@@ -31,3 +31,7 @@ yarn-error.log*
 
 # Kullanıcı yüklemeleri (KYC belgeleri, mekan fotoğrafları) — repoya girmez
 uploads/
+
+# Veritabanı yedekleri ve TypeScript derleme önbelleği
+backups/
+*.tsbuildinfo

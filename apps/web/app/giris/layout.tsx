@@ -1,15 +1,11 @@
-import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Giriş Yap | Ahenk',
-  description: 'Ahenk hesabına giriş yap. WhatsApp numaranla tek seferlik kod ile güvenli giriş.',
-  openGraph: {
-    title: 'Giriş Yap | Ahenk',
-    description: 'Ahenk hesabına giriş yap.',
-    url: 'https://ahenk.co/giris',
-  },
-};
+export const metadata = pageMetadata({
+  path: '/giris',
+  title: 'Giriş Yap',
+  description: 'Ahenk hesabınıza WhatsApp kodu veya e-posta ile güvenli şekilde giriş yapın, masalarınızı görüntüleyin ve size uygun insanlarla buluşmaya devam edin.',
+});
 
-export default function GirisLayout({ children }: { children: React.ReactNode }) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

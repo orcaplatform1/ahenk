@@ -47,7 +47,7 @@ const sections = [
               items: [
                 'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle 2 grup masası buluşması hakkı',
                 'Haklar, satın alımdan sonraki 4 grup döngüsü (yaklaşık 1 ay) içinde kullanılır',
-                'Her buluşmada 4-8 kişilik grup masası',
+                'Grup masası 4-6 kişi',
                 'Mekan seçimi ve rezervasyonu Ahenk tarafından yapılır',
               ],
             },
@@ -57,7 +57,7 @@ const sections = [
               items: [
                 'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle 1 başbaşa masası buluşması hakkı',
                 'Hak, satın alımdan sonraki 4 başbaşa döngüsü (yaklaşık 1 ay) içinde kullanılır',
-                'Her buluşmada 2 kişilik masa',
+                'Baş Başa 2 kişi',
                 'Mekan seçimi ve rezervasyonu Ahenk tarafından yapılır',
               ],
             },

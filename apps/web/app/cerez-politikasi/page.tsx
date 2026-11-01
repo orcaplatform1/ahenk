@@ -32,9 +32,10 @@ const sections = [
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
             {[
-              { name: 'auth-token', desc: 'JWT oturum tokeni: kullanıcının giriş durumunu korur, oturum süresince geçerlidir.' },
-              { name: 'session-id', desc: 'Oturum kimliği: güvenli bağlantı için gereklidir.' },
-              { name: 'csrf-token', desc: 'Siteler arası istek sahteciliğini önler, güvenlik için zorunludur.' },
+              { name: 'access_token', desc: 'Giriş yapmış kullanıcının API isteklerini doğrular. Süre: 15 dakika. HttpOnly: Evet.' },
+              { name: 'refresh_token', desc: 'Erişim süresi dolduğunda oturumu yeniler. Süre: 7 gün. HttpOnly: Evet.' },
+              { name: 'ahenk_session', desc: 'Yalnızca oturumun açık olup olmadığını gösteren bir işarettir, içinde kişisel veri bulunmaz. Süre: 7 gün. HttpOnly: Hayır.' },
+              { name: 'venue_token', desc: 'Mekân paneli oturumunu doğrular, yalnızca mekân hesaplarında kullanılır. Süre: 7 gün. HttpOnly: Evet.' },
             ].map((c) => (
               <div key={c.name} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
                 <span style={{ fontFamily: 'monospace', fontSize: 13, color: '#ff6b6b', display: 'block', marginBottom: '0.2rem' }}>{c.name}</span>
@@ -43,24 +44,21 @@ const sections = [
             ))}
           </div>
           <p style={{ marginTop: '0.75rem', color: '#8f887f', fontSize: 13, lineHeight: 1.6 }}>
-            Bu çerezler platformun çalışması için teknik olarak zorunludur. Kapatılmaları halinde giriş yapma ve platform kullanımı mümkün olmaz.
+            Bu çerezler platformun çalışması için teknik olarak zorunludur. Kapatılmaları halinde giriş yapma ve platform kullanımı mümkün olmaz. Önceki sürümden kalan ahenk_token çerezi tarayıcınızda bulunuyorsa otomatik olarak silinir.
           </p>
         </div>
 
-        {/* Tercih */}
+        {/* Yerel depolama */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
             <span style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f' }}>
-              Tercih Çerezleri
-            </span>
-            <span style={{ fontSize: 11, padding: '0.15rem 0.6rem', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', color: '#a39c93', fontWeight: 600 }}>
-              Opsiyonel
+              Tarayıcı Yerel Depolaması (localStorage)
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
             {[
-              { name: 'cookie-consent', desc: 'Çerez tercihlerinizi hatırlar, 1 yıl geçerlidir.' },
-              { name: 'theme-preference', desc: 'Tema tercihinizi hatırlar.' },
+              { name: 'cookie-consent', desc: 'Çerez onayınızı tutar. Çerez değildir; tarayıcınızın yerel depolamasında, siz silene kadar saklanır.' },
+              { name: 'ahenk_masa_tab', desc: 'Masalar ekranında son seçtiğiniz sekmeyi hatırlar. Çerez değildir; tarayıcınızın yerel depolamasında saklanır.' },
             ].map((c) => (
               <div key={c.name} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
                 <span style={{ fontFamily: 'monospace', fontSize: 13, color: '#aaa', display: 'block', marginBottom: '0.2rem' }}>{c.name}</span>
@@ -70,25 +68,15 @@ const sections = [
           </div>
         </div>
 
-        {/* Analitik */}
+        {/* Analitik ve pazarlama */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
             <span style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f' }}>
-              Analitik Çerezler
-            </span>
-            <span style={{ fontSize: 11, padding: '0.15rem 0.6rem', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', color: '#a39c93', fontWeight: 600 }}>
-              Opsiyonel
+              Analitik ve Pazarlama Çerezleri
             </span>
           </div>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.4rem' }}>
-            {['Platform kullanım istatistikleri', 'Hangi sayfaların daha çok ziyaret edildiği', 'Hata takibi'].map((item) => (
-              <li key={item} style={{ display: 'flex', gap: '0.6rem', color: '#c9c2b8', fontSize: 13 }}>
-                <span style={{ color: '#c0392b' }}>›</span>{item}
-              </li>
-            ))}
-          </ul>
-          <p style={{ marginTop: '0.6rem', color: '#8f887f', fontSize: 13 }}>
-            Bu veriler anonim olarak işlenir ve platform iyileştirme amacıyla kullanılır.
+          <p style={{ color: '#8f887f', fontSize: 13 }}>
+            Ahenk şu anda analitik veya pazarlama çerezi kullanmaz.
           </p>
         </div>
       </div>
@@ -103,12 +91,6 @@ const sections = [
           <p style={{ fontWeight: 600, color: '#f4f1ec', marginBottom: '0.4rem', fontSize: 13 }}>iyzico Ödeme Sistemi</p>
           <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.6 }}>
             Paket satın alma sayfasında iyzico kendi güvenlik ve dolandırıcılık önleme çerezlerini kullanır. Bu çerezler iyzico'nun gizlilik politikası kapsamındadır ve Ahenk tarafından kontrol edilmez.
-          </p>
-        </div>
-        <div style={{ padding: '1rem 1.25rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
-          <p style={{ fontWeight: 600, color: '#f4f1ec', marginBottom: '0.4rem', fontSize: 13 }}>Cloudflare</p>
-          <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.6 }}>
-            DDoS koruması ve güvenlik için Cloudflare teknik çerezler kullanabilir.
           </p>
         </div>
       </div>
@@ -137,10 +119,6 @@ const sections = [
             <span style={{ color: '#c0392b' }}>›</span>
             Zorunlu çerezler kapatıldığında platforma giriş yapılamaz ve hizmetlerden yararlanılamaz.
           </li>
-          <li style={{ display: 'flex', gap: '0.6rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
-            <span style={{ color: '#c0392b' }}>›</span>
-            Analitik çerezler kapatıldığında platform işlevselliği etkilenmez.
-          </li>
         </ul>
       </>
     ),
@@ -150,7 +128,7 @@ const sections = [
     title: 'Çerez Onay Banneri',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Siteye ilk girişinizde çerez tercihlerinizi belirlemenizi isteyen bir bildirim gösterilir. <strong style={{ color: '#f4f1ec' }}>Kabul Et</strong> seçeneğiyle tüm çerezleri, <strong style={{ color: '#f4f1ec' }}>Reddet</strong> seçeneğiyle yalnızca zorunlu çerezleri etkinleştirebilirsiniz. Tercihleriniz localStorage'a kaydedilir ve bir daha gösterilmez. Tercihlerinizi istediğiniz zaman bu sayfadan güncelleyebilirsiniz.
+        Siteye ilk girişinizde çerez tercihlerinizi belirlemenizi isteyen bir bildirim gösterilir. Çerez onayınız çerez olarak değil, tarayıcınızın yerel depolamasında (localStorage) tutulur ve bildirim bir daha gösterilmez. Tercihlerinizi istediğiniz zaman bu sayfadan güncelleyebilirsiniz.
       </p>
     ),
   },
@@ -161,7 +139,8 @@ const sections = [
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.55rem' }}>
         {[
           'Çerezler aracılığıyla işlenen veriler SSL/TLS şifrelemesiyle korunur.',
-          'Oturum çerezleri HttpOnly ve Secure flag\'leriyle işaretlenmiştir. JavaScript ile erişilemez.',
+          'access_token, refresh_token ve venue_token çerezleri HttpOnly ve Secure olarak işaretlenmiştir, JavaScript ile erişilemez.',
+          'ahenk_session çerezi Secure olarak işaretlenmiştir ancak HttpOnly değildir. Yalnızca oturumun açık olup olmadığını gösterir, içinde kişisel veri bulunmaz.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -175,7 +154,7 @@ const sections = [
     title: 'KVKK Kapsamında Çerezler',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Zorunlu çerezler <strong style={{ color: '#f4f1ec' }}>meşru menfaat</strong> hukuki dayanağıyla, analitik çerezler ise <strong style={{ color: '#f4f1ec' }}>açık rıza</strong> hukuki dayanağıyla işlenmektedir. Detaylı bilgi için{' '}
+        Zorunlu çerezler <strong style={{ color: '#f4f1ec' }}>meşru menfaat</strong> hukuki dayanağıyla işlenmektedir. Detaylı bilgi için{' '}
         <Link href="/kvkk" style={{ color: '#c0392b' }}>KVKK Aydınlatma Metnimizi</Link>
         {' '}inceleyiniz.
       </p>
@@ -234,7 +213,7 @@ export default function CerezPolitikasiPage() {
             Çerez Politikası
           </h1>
           <p style={{ marginTop: '0.6rem', color: '#8f887f', fontSize: 13 }}>
-            Son güncelleme: Ekim 2026
+            Son güncelleme: Kasım 2026
           </p>
         </motion.div>
 
