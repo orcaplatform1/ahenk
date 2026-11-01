@@ -205,7 +205,7 @@ function PersonalityAura({ scores }: { scores: Scores }) {
   }, []);
 
   return (
-    <div style={{ background: '#1a1a1a', borderRadius: 12, overflow: 'hidden' }}>
+    <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
       {/* Canvas + sağ liste */}
       <div ref={topRef} style={{ position: 'relative', width: '100%', height: 290 }}>
         <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }} />
@@ -289,8 +289,8 @@ export function TabTest() {
 
   if (!result || !result.completed || !result.scores) {
     return (
-      <div className="glass-card p-8 flex flex-col items-center gap-4 text-center">
-        <p className="text-[#888] text-sm">Henüz kişilik testini yapmadın.</p>
+      <div className="ll-card flex flex-col items-center gap-4 text-center">
+        <p className="text-[#a39c93] text-sm">Henüz kişilik testini yapmadın.</p>
         <Link href="/test" className="btn-primary">
           Teste Başla →
         </Link>
@@ -304,14 +304,14 @@ export function TabTest() {
     <div className="flex flex-col gap-5">
       <PersonalityAura scores={scores} />
 
-      <div className="glass-card p-5 flex flex-col gap-2.5">
+      <div className="ll-card flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted">Test Tarihi</span>
-          <span className="text-sm text-[#ccc]">{fmtDate(completedAt)}</span>
+          <span className="text-sm text-[#a39c93]">Test Tarihi</span>
+          <span className="text-sm text-[#c9c2b8]">{fmtDate(completedAt)}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted">Sonraki Test</span>
-          <span className="text-sm text-[#ccc]">{retakeAvailableAt ? fmtDate(retakeAvailableAt) : 'Şimdi yapabilirsin'}</span>
+          <span className="text-sm text-[#a39c93]">Sonraki Test</span>
+          <span className="text-sm text-[#c9c2b8]">{retakeAvailableAt ? fmtDate(retakeAvailableAt) : 'Şimdi yapabilirsin'}</span>
         </div>
       </div>
 

@@ -1,8 +1,9 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import type { MasaTuru } from '@ahenk/ui';
 
-export type TabStatus = 'TABLE' | 'SCANNING' | 'KYC' | 'PENDING' | 'FAILED' | 'NONE';
+export type TabStatus = 'TABLE' | 'SCANNING' | 'KYC' | 'KANKA' | 'PENDING' | 'FAILED' | 'NONE';
 
 const TABS: { type: MasaTuru; label: string }[] = [
   { type: 'GROUP', label: 'GRUP' },
@@ -14,18 +15,21 @@ const STATUS_TEXT: Record<TabStatus, string> = {
   TABLE: 'Masa Kuruldu',
   SCANNING: 'Taramada',
   KYC: 'Kimlik Bekleniyor',
+  KANKA: 'Kanka Bekleniyor',
   PENDING: 'Beklemede',
   FAILED: 'Başarısız',
   NONE: 'Abonelik Yok',
 };
 
 // İç içe geçmiş iki halka; son yay kesişimde bakır halkayı kırmızının üstüne alır
-// Küçük halkalar: dış çap dahil kapladığı alan Baş Başa ikonuyla aynı (x 4.5–53.5, y 10.5–47.5); kalınlık/çap oranı korunur
+// Küçük halkalar merkeze göre konumlanır: durağan alan Baş Başa ile aynı (x 4.5–53.5, y 10.5–47.5), kalınlık/çap oranı aynı.
+// Her halka Baş Başa ile aynı dönüşte kendi evresiyle merkeze girip çıkar; hareket bu alanın içinde kalır.
 const SMALL_R = 11.4865;
 const SMALL_STROKE = 2.027;
+const SPIN_S = 3.2;
 const SMALL_RINGS: Partial<Record<MasaTuru, [number, number][]>> = {
-  GROUP: [[17, 23], [29, 35], [41, 23], [17, 35], [29, 23], [41, 35]],
-  KANKA: [[17, 23], [33, 23], [25, 35], [41, 35]],
+  GROUP: [[-12, 0], [-6, -6], [6, -6], [12, 0], [6, 6], [-6, 6]],
+  KANKA: [[-12, 0], [0, -6], [12, 0], [0, 6]],
 };
 
 function Rings({ type }: { type: MasaTuru }) {
@@ -34,8 +38,15 @@ function Rings({ type }: { type: MasaTuru }) {
     return (
       <svg className="ll-tab-rings" width="58" height="58" viewBox="0 0 58 58" fill="none" aria-hidden="true">
         <g className="ll-tab-spin" strokeWidth={SMALL_STROKE}>
-          {small.map(([cx, cy], i) => (
-            <circle key={`${cx}-${cy}`} className={i % 2 === 0 ? 'll-ring-copper' : 'll-ring-red'} cx={cx} cy={cy} r={SMALL_R} />
+          {small.map(([x, y], i) => (
+            <circle
+              key={`${x}-${y}`}
+              className={`ll-ring-drift ${i % 2 === 0 ? 'll-ring-copper' : 'll-ring-red'}`}
+              cx={29 + x}
+              cy={29 + y}
+              r={SMALL_R}
+              style={{ '--ring-x': `${-x}px`, '--ring-y': `${-y}px`, animationDelay: `${(-SPIN_S * i) / small.length}s` } as CSSProperties}
+            />
           ))}
         </g>
       </svg>

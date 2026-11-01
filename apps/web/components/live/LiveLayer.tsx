@@ -132,13 +132,14 @@ function lastClosing(tab: MasaTuru) {
   return getNextTarget(TABLE_TEXT[tab].day).getTime() - WEEK_MS;
 }
 
-export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables, kycApproved, poolSince, onTab, notice, participation }: {
+export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables, kycApproved, kankaWaiting, poolSince, onTab, notice, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
   tab: MasaTuru;
   rights: Record<MasaTuru, boolean>; // Türde aktif paket hakkı
   tables: Record<MasaTuru, boolean>; // Türde bu hafta masa
   kycApproved: boolean;
+  kankaWaiting: boolean; // Kankamla paketi var, aktif kanka yok
   poolSince: Record<MasaTuru, number | null>; // Türde havuza giriş anı (bilinmiyorsa null)
   onTab: (tab: MasaTuru) => void;
   notice?: React.ReactNode; // Sekmelerin hemen üstü
@@ -161,6 +162,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables
     if (tables[t]) return 'TABLE';
     if (!rights[t]) return 'NONE';
     if (!kycApproved) return 'KYC';
+    if (t === 'KANKA' && kankaWaiting) return 'KANKA';
     if (!pastClosed.split(',').includes(t)) return 'SCANNING';
     // Başarısız yalnızca kapanıştan önce havuzda olana; kapanıştan sonra gelen yeni taramayı bekler
     const since = poolSince[t];
@@ -211,7 +213,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables
           ))}
         </section>
 
-        <div className={statuses[tab] === 'KYC' ? 'll-scan-off' : undefined}>
+        <div className={statuses[tab] === 'KYC' || statuses[tab] === 'KANKA' ? 'll-scan-off' : undefined}>
           <LiveSonar sonar={pulse?.sonar ?? null} />
         </div>
         <div key={tab} className="ll-fade">{participation}</div>

@@ -30,7 +30,7 @@ interface MeData {
   lastName: string;
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
   openParts?: { group: boolean; oneOnOne: boolean };
-  kankamla?: { open: boolean };
+  kankamla?: { open: boolean; hasKanka?: boolean; pairPackageActive?: boolean };
   profile?: { gender?: string | null };
   kyc?: { status: string; rejectReason?: string | null };
   maintenanceMode?: boolean;
@@ -86,7 +86,9 @@ export default function DashboardPage() {
 
   // Sekmeler: aktif paket hakkı ya da bu hafta masası olan türler seçilebilir; hiç yoksa sayaç Grup'ta kalır
   const hasTable = (t: MasaTuru) => weekTypes.includes(t) || items.some(i => i.meeting.type === t);
-  const rights = { GROUP: !!me?.openParts?.group, ONE_ON_ONE: !!me?.openParts?.oneOnOne, KANKA: !!me?.kankamla?.open };
+  // kankamla.open aktif kanka da ister; paketi olup kankası olmayan da Kankamla hakkına sahiptir
+  const kankaWaiting = !!me?.kankamla?.pairPackageActive && !me?.kankamla?.hasKanka;
+  const rights = { GROUP: !!me?.openParts?.group, ONE_ON_ONE: !!me?.openParts?.oneOnOne, KANKA: !!me?.kankamla?.open || kankaWaiting };
   const tables = { GROUP: hasTable('GROUP'), ONE_ON_ONE: hasTable('ONE_ON_ONE'), KANKA: hasTable('KANKA') };
   const owned = (['GROUP', 'ONE_ON_ONE', 'KANKA'] as const).filter(t => rights[t] || tables[t]) as MasaTuru[];
   const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : owned[0] ?? 'GROUP';
@@ -126,6 +128,7 @@ export default function DashboardPage() {
         rights={rights}
         tables={tables}
         kycApproved={kycApproved}
+        kankaWaiting={kankaWaiting}
         poolSince={poolSince}
         onTab={setChosenTab}
         notice={me && !kycApproved ? (

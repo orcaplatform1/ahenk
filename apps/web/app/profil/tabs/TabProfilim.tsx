@@ -96,8 +96,8 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
 
   if (!status) {
     return (
-      <div className="glass-card p-5">
-        <h3 className="font-medium text-sm text-[#f5f5f5] uppercase tracking-wide mb-4">Eşleşme Havuzu</h3>
+      <div className="ll-card">
+        <div className="ll-head"><h3 className="ll-title">Eşleşme Havuzu</h3></div>
         <div className="h-32 animate-pulse rounded-xl" style={{ background: 'rgba(255,255,255,0.08)' }} />
       </div>
     );
@@ -108,8 +108,8 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
       ? new Date(status.meetingScheduledAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', weekday: 'long', day: 'numeric', month: 'long' })
       : null;
     return (
-      <div className="glass-card p-5">
-        <h3 className="font-medium text-sm text-[#f5f5f5] uppercase tracking-wide mb-4">Eşleşme Havuzu</h3>
+      <div className="ll-card">
+        <div className="ll-head"><h3 className="ll-title">Eşleşme Havuzu</h3></div>
         <div className="flex flex-col items-center gap-4 py-4">
           <div style={{ position: 'relative', width: 80, height: 80 }}>
             <div style={{
@@ -123,8 +123,8 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
           </div>
           <div className="text-center">
             <p className="text-sm font-semibold text-[#4ade80]">Masanız Kuruldu!</p>
-            {date && <p className="text-xs text-[rgba(255,255,255,0.62)] mt-1">{date}</p>}
-            <p className="text-xs text-[rgba(255,255,255,0.62)] mt-1">Masalar sekmesinden detayları görebilirsiniz.</p>
+            {date && <p className="text-xs text-[#a39c93] mt-1">{date}</p>}
+            <p className="text-xs text-[#a39c93] mt-1">Masalar sekmesinden detayları görebilirsiniz.</p>
           </div>
         </div>
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
@@ -135,9 +135,9 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
   const size = status.poolSize ?? 0;
 
   return (
-    <div className="glass-card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium text-sm text-[#f5f5f5] uppercase tracking-wide">Eşleşme Havuzu</h3>
+    <div className="ll-card">
+      <div className="ll-head">
+        <h3 className="ll-title">Eşleşme Havuzu</h3>
         <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.3)', color: '#ff6b6b' }}>
           {PLAN_LABEL[activePlan] ?? activePlan}
         </span>
@@ -166,12 +166,12 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
           {status.inPool ? (
             <>
               <p className="text-sm font-semibold text-[#f5f5f5]">Havuzdasın</p>
-              <p className="text-xs text-[rgba(255,255,255,0.62)] mt-1">Algoritma her saat eşleşme arıyor.</p>
+              <p className="text-xs text-[#a39c93] mt-1">Algoritma her saat eşleşme arıyor.</p>
             </>
           ) : (
             <>
               <p className="text-sm font-semibold text-[#f5f5f5]">Bekleme dışında</p>
-              <p className="text-xs text-[rgba(255,255,255,0.62)] mt-1">OCEAN testi veya KYC eksik olabilir.</p>
+              <p className="text-xs text-[#a39c93] mt-1">OCEAN testi veya KYC eksik olabilir.</p>
             </>
           )}
         </div>
@@ -347,7 +347,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
 
         {/* Kimlik Doğrulama durumu */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-[#f5f5f5]">Kimlik Doğrulama</span>
+          <span className="text-[13px] text-[#c9c2b8]">Kimlik Doğrulama</span>
           <span
             className="text-xs px-3 py-1 rounded-full"
             style={badge.approved
@@ -364,7 +364,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         {/* E-posta */}
         {emailMode ? (
           <div className="flex flex-col gap-2 pt-1">
-            <p className="text-xs text-[rgba(255,255,255,0.62)]">Yeni e-posta adresi</p>
+            <p className="text-xs text-[#a39c93]">Yeni e-posta adresi</p>
             <input type="email" value={newEmail} onChange={e => { setNewEmail(e.target.value); setEmailError(''); }} placeholder="yeni@eposta.com" className="input-glass px-4 py-3 text-sm w-full" />
             <input type="password" value={emailPassword} onChange={e => { setEmailPassword(e.target.value); setEmailError(''); }} placeholder="Mevcut şifreniz" className="input-glass px-4 py-3 text-sm w-full" />
             {emailError && <p className="text-[#ff6b6b] text-xs">{emailError}</p>}
@@ -375,10 +375,10 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-[#f5f5f5]">E-posta</span>
+            <span className="text-[13px] text-[#c9c2b8]">E-posta</span>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-text">{currentEmail}</span>
-              <button onClick={() => setEmailMode(true)} className="text-xs text-[#888] hover:text-[#f5f5f5] transition-colors px-2 py-0.5" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}>Değiştir</button>
+              <span className="text-[13px] text-[#f4f1ec]">{currentEmail}</span>
+              <button onClick={() => setEmailMode(true)} className="text-xs text-[#a39c93] hover:text-[#f5f5f5] transition-colors px-2 py-0.5" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}>Değiştir</button>
             </div>
           </div>
         )}
@@ -386,10 +386,10 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         {/* Telefon */}
         {phoneMode === 'idle' && (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-[#f5f5f5]">Telefon</span>
+            <span className="text-[13px] text-[#c9c2b8]">Telefon</span>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-text">{currentPhone || '—'}</span>
-              <button onClick={() => setPhoneMode('enter')} className="text-xs text-[#888] hover:text-[#f5f5f5] transition-colors px-2 py-0.5" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}>
+              <span className="text-[13px] text-[#f4f1ec]">{currentPhone || '—'}</span>
+              <button onClick={() => setPhoneMode('enter')} className="text-xs text-[#a39c93] hover:text-[#f5f5f5] transition-colors px-2 py-0.5" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}>
                 {currentPhone ? 'Değiştir' : 'Ekle'}
               </button>
             </div>
@@ -397,9 +397,9 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         )}
         {phoneMode === 'enter' && (
           <div className="flex flex-col gap-2 pt-1">
-            <p className="text-xs text-[rgba(255,255,255,0.62)]">{currentPhone ? 'Yeni telefon numarası' : 'Telefon numarası ekle'}</p>
+            <p className="text-xs text-[#a39c93]">{currentPhone ? 'Yeni telefon numarası' : 'Telefon numarası ekle'}</p>
             <div className="flex gap-2">
-              <div className="flex items-center px-3 text-[rgba(255,255,255,0.62)] text-sm select-none" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}>+90</div>
+              <div className="flex items-center px-3 text-[#a39c93] text-sm select-none" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12 }}>+90</div>
               <input type="tel" value={newPhone} onChange={e => { setNewPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setPhoneError(''); }} placeholder="5XX XXX XX XX" className="input-glass flex-1 px-4 py-3 text-sm" />
             </div>
             {phoneError && <p className="text-[#ff6b6b] text-xs">{phoneError}</p>}
@@ -411,7 +411,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         )}
         {phoneMode === 'otp' && (
           <div className="flex flex-col gap-2 pt-1">
-            <p className="text-xs text-[rgba(255,255,255,0.62)]">+90{newPhone} numarasına WhatsApp kodu gönderildi.</p>
+            <p className="text-xs text-[#a39c93]">+90{newPhone} numarasına WhatsApp kodu gönderildi.</p>
             <div className="flex gap-1.5 justify-center">
               {phoneOtp.map((d, i) => (
                 <input key={i} ref={el => { otpRefs.current[i] = el; }} type="tel" inputMode="numeric" maxLength={1} value={d}
@@ -470,7 +470,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         </div>
       )}
       <Card title="Hangi Şehirdeki Masalara Katılmak İstersiniz?">
-        <p className="text-xs text-[rgba(255,255,255,0.62)] mb-3">
+        <p className="text-xs text-[#a39c93] mb-3">
           Bu şehirlerden birinde tatilde veya seyahatteyseniz, oradaki grup masası veya baş başa masasına katılabilirsiniz.
         </p>
         <div className="flex gap-2">
@@ -493,20 +493,20 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         </div>
         {activeCity && (
           <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-[rgba(255,255,255,0.62)]">
+            <span className="text-xs text-[#a39c93]">
               Aktif: <span className="text-[#f5f5f5]">{cities.find(c => c.id === activeCity)?.name ?? '—'}</span>
             </span>
             <button
               onClick={() => saveActiveCity(null)}
               disabled={savingActiveCity}
-              className="text-xs text-[#888] hover:text-[#ff6b6b] transition-colors"
+              className="text-xs text-[#a39c93] hover:text-[#ff6b6b] transition-colors"
             >
               Temizle
             </button>
           </div>
         )}
         {activeCity && (
-          <p className="text-xs text-[#888] mt-1.5">
+          <p className="text-xs text-[#a39c93] mt-1.5">
             Siz iptal edene kadar bu şehirdeki masalarla eşleşirsiniz.
           </p>
         )}
@@ -556,7 +556,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
                   <div className="flex items-center gap-3">
                     <div>
                       <p className="text-sm font-medium" style={{ color: selected ? '#ff6b6b' : '#f5f5f5' }}>{opt.label}</p>
-                      <p className="text-xs text-[rgba(255,255,255,0.62)] mt-0.5">{opt.description}</p>
+                      <p className="text-xs text-[#a39c93] mt-0.5">{opt.description}</p>
                     </div>
                   </div>
                 </button>
@@ -605,11 +605,11 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         )}
         <div className="flex gap-6 pt-3 border-t border-white/5">
           <div>
-            <p className="text-xs text-[#f5f5f5]">Davetli Arkadaş</p>
+            <p className="text-xs text-[#c9c2b8]">Davetli Arkadaş</p>
             <p className="text-base font-semibold text-text">{referralStats?.totalInvites ?? '—'} kişi</p>
           </div>
           <div>
-            <p className="text-xs text-[#f5f5f5]">Toplam %10 İndirim Hakkı</p>
+            <p className="text-xs text-[#c9c2b8]">Toplam %10 İndirim Hakkı</p>
             <p className="text-base font-semibold text-text">{referralStats?.availableDiscounts ?? '—'} Adet</p>
           </div>
         </div>
@@ -632,13 +632,13 @@ export function TabProfilimSkeleton() {
 
 function Card({ title, children, action }: { title: string; children: React.ReactNode; action?: { label: string; onClick: () => void }; }) {
   return (
-    <div className="glass-card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium text-sm text-[#f5f5f5] uppercase tracking-wide">{title}</h3>
+    <div className="ll-card">
+      <div className="ll-head">
+        <h3 className="ll-title">{title}</h3>
         {action && (
           <button
             onClick={action.onClick}
-            className="text-xs text-[#888] hover:text-[#f5f5f5] transition-colors px-3 py-1"
+            className="text-xs text-[#a39c93] hover:text-[#f5f5f5] transition-colors px-3 py-1"
             style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}
           >
             {action.label}
@@ -653,8 +653,8 @@ function Card({ title, children, action }: { title: string; children: React.Reac
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-[#f5f5f5]">{label}</span>
-      <span className="text-sm text-text">{value}</span>
+      <span className="text-[13px] text-[#c9c2b8]">{label}</span>
+      <span className="text-[13px] text-[#f4f1ec]">{value}</span>
     </div>
   );
 }
@@ -720,7 +720,7 @@ function Select({ label, value, onChange, cities, optional, placeholder, title }
   const display = found ? cityLabelP(found.name) : (optional ? (placeholder ?? 'Seçmek istemiyorum') : 'Şehir seç');
   return (
     <div className="flex-1">
-      {label && <label className="block text-xs text-[#f5f5f5] mb-1">{label}</label>}
+      {label && <label className="block text-xs text-[#c9c2b8] mb-1">{label}</label>}
       <button
         type="button"
         onClick={() => setOpen(true)}

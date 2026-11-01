@@ -53,16 +53,6 @@ function getParticipantCount(m: HistoryMeeting): number | null {
   return null;
 }
 
-const CARD_STYLE: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.10)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.4)',
-  borderRadius: 16,
-  padding: '28px 20px 24px',
-};
-
 const SECTION_TITLE: React.CSSProperties = {
   fontFamily: 'var(--font-serif, "DM Serif Display", serif)',
   fontSize: 15,
@@ -188,7 +178,7 @@ function EmptyMasaCard({
       ];
 
   return (
-    <div style={{ ...CARD_STYLE, position: 'relative' }}>
+    <div className="ll-card" style={{ position: 'relative' }}>
       {locked && (
         <>
           <style>{`@keyframes lockShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}50%{transform:translateX(0)}75%{transform:translateX(3px)}}`}</style>
@@ -476,7 +466,7 @@ function MasaBlock({
       aiReport: meeting.aiReport,
     };
     content = (
-      <div style={CARD_STYLE}>
+      <div className="ll-card">
         <MasaDetayKarti
           masa={detayData}
           apiBase={API_PREFIX}
@@ -486,7 +476,7 @@ function MasaBlock({
   } else if (meeting.participants.length > 0) {
     const isOneOnOne = meeting.type === 'ONE_ON_ONE';
     content = (
-      <div style={CARD_STYLE}>
+      <div className="ll-card">
         <ConfirmedRadarView
           participants={meeting.participants}
           maxParticipants={meeting.maxParticipants}
@@ -632,8 +622,8 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc, kankaml
       ) : kankamlaActive && (
         <div className="flex flex-col gap-3">
           <p className="text-xs font-semibold tracking-[0.14em] text-[#444] uppercase">Kankamla Masa Kartı</p>
-          <div style={CARD_STYLE}>
-            <p className="text-sm text-[#ccc] leading-relaxed">
+          <div className="ll-card">
+            <p className="text-sm text-[#c9c2b8] leading-relaxed">
               Kankanla birlikte eşleşme taraması devam ediyor. Karşı cinsten bir kanka çiftiyle eşleştiğinizde masanız burada görünecek;
               detaylar Pazar 10:00&apos;da açıklanır. Tarama Cumartesi 23:59&apos;da kapanır.
             </p>
@@ -667,13 +657,13 @@ function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
   const pCount   = getParticipantCount(m);
 
   return (
-    <div className="glass-card p-5 flex flex-col gap-3">
+    <div className="ll-card flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1 min-w-0">
           <p className="text-sm font-medium text-[#f5f5f5]">{fmtDate(m.date)}</p>
-          <p className="text-xs text-[#888] truncate">{location ?? 'Mekan bilgisi yok'}</p>
+          <p className="text-xs text-[#a39c93] truncate">{location ?? 'Mekan bilgisi yok'}</p>
           {pCount !== null && (
-            <p className="text-xs text-[#555]">{pCount} kişi ile buluşma</p>
+            <p className="text-xs text-[#8f887f]">{pCount} kişi ile buluşma</p>
           )}
         </div>
         <span
@@ -698,7 +688,7 @@ function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
           </a>
         ) : (
           <span
-            className="text-xs px-3 py-1.5 text-[#555]"
+            className="text-xs px-3 py-1.5 text-[#8f887f]"
             style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 9999 }}
           >
             ✓ Değerlendirildi

@@ -272,6 +272,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .ll-tab.is-on .ll-tab-rings { filter: drop-shadow(0 0 6px rgba(255,59,48,0.55)); }
 .ll-tab-spin { transform-box: view-box; transform-origin: 50% 50%; }
 .ll-tab.is-on .ll-tab-spin { animation: ll-spin 3.2s linear infinite; }
+.ll-tab.is-on .ll-ring-drift { animation: ll-ring-drift 1.6s ease-in-out infinite alternate; }
 .ll-ring-red { stroke: #4a3a3a; transition: stroke 0.5s ease; }
 .ll-ring-copper { stroke: #3a2e2e; transition: stroke 0.5s ease; }
 .ll-tab.is-on .ll-ring-red { stroke: #ff3b30; }
@@ -284,18 +285,19 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .ll-tab-dot.is-failed, .ll-tab-dot.is-scanning { background: #ff3b30; }
 .ll-tab-dot.is-scanning { animation: ll-blink 1.4s ease-in-out infinite; }
 .ll-tab-dot.is-kyc { background: #f5a623; }
-.ll-tab-dot.is-pending { background: #ffd60a; }
+.ll-tab-dot.is-pending, .ll-tab-dot.is-kanka { background: #ffd60a; }
 .ll-scan-off .ll-sweep { animation: none; }
 .ll-cta { width: 100%; min-height: 56px; border: none; border-radius: 16px; cursor: pointer; color: #fff; font: 700 16px var(--font-sans), system-ui, sans-serif; background: linear-gradient(90deg, #c7342a, #d9603f 55%, #e8a27a); box-shadow: 0 10px 30px rgba(214,69,58,0.35); }
 .ll-bubble-pulse { transform-box: fill-box; transform-origin: center; animation: ll-pulse 2.2s ease-out infinite; }
 .ll-flash { transform-box: fill-box; transform-origin: center; animation: ll-flash 1.4s ease-out forwards; }
 @keyframes ll-flash { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(3.2); opacity: 0; } }
 @keyframes ll-pulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes ll-ring-drift { to { transform: translate(var(--ring-x), var(--ring-y)); } }
 @keyframes ll-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ll-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 @keyframes ll-spin { to { transform: rotate(360deg); } }
 @keyframes ll-scroll { to { transform: translateY(-50%); } }
 @media (prefers-reduced-motion: reduce) {
-  .ll-live-dot::after, .ll-blink, .ll-sweep, .ll-dot-new, .ll-bubble-pulse, .ll-feed-track, .ll-fade, .ll-tab-dot.is-scanning, .ll-tab.is-on .ll-tab-spin { animation: none; }
+  .ll-live-dot::after, .ll-blink, .ll-sweep, .ll-dot-new, .ll-bubble-pulse, .ll-feed-track, .ll-fade, .ll-tab-dot.is-scanning, .ll-tab.is-on .ll-tab-spin, .ll-tab.is-on .ll-ring-drift { animation: none; }
   .ll-flash { animation: none; opacity: 0; }
 }
