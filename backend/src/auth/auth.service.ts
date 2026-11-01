@@ -229,7 +229,7 @@ export class AuthService {
       }
     }
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.tokenVersion);
     return { user: this.sanitizeUser(user), ...tokens };
   }
 
@@ -248,7 +248,7 @@ export class AuthService {
     // Yaptırım bilgisi sadece şifre doğruysa gösterilir
     await this.checkSanction(user.id, user.status);
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.tokenVersion);
     return { user: this.sanitizeUser(user), ...tokens };
   }
 
@@ -259,6 +259,8 @@ export class AuthService {
       where: { userId, token: refreshTokenJti, revoked: false },
       data: { revoked: true },
     });
+    // Eldeki erişim token'ları hemen geçersiz olur (süresini beklemez)
+    await this.prisma.user.updateMany({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } });
   }
 
   // Çerezdeki refresh token'ı iptal eder; imza geçersizse sessizce geçer (çerezler yine silinir)
@@ -305,7 +307,7 @@ export class AuthService {
     });
     if (count === 0) throw new UnauthorizedException("Refresh token geçersiz");
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.tokenVersion);
     return { user: this.sanitizeUser(user), ...tokens };
   }
 
@@ -320,9 +322,9 @@ export class AuthService {
 
   async sendLoginOtp(phone: string) {
     const user = await this.prisma.user.findUnique({ where: { phone } });
-    if (!user) throw new UnauthorizedException("Bu telefon numarasıyla kayıtlı hesap bulunamadı");
+    // Yanıt tek tip: numaranın kayıtlı olup olmadığı anlaşılmaz (kayıtsız numaraya kod gitmez)
     // Yaptırım kontrolü kod doğrulandıktan sonra yapılır (verifyLoginOtp)
-    await this.otpService.send(phone);
+    if (user) await this.otpService.send(phone);
     return { message: "Doğrulama kodu gönderildi" };
   }
 
@@ -330,14 +332,15 @@ export class AuthService {
 
   async forgotPassword(phone: string) {
     const user = await this.prisma.user.findUnique({ where: { phone }, select: { id: true, isBot: true } });
-    if (!user || user.isBot) throw new NotFoundException("Bu telefon numarasıyla kayıtlı hesap bulunamadı");
-    await this.otpService.send(phone);
+    // Yanıt tek tip: numaranın kayıtlı olup olmadığı anlaşılmaz
+    if (user && !user.isBot) await this.otpService.send(phone);
     return { message: "Doğrulama kodu gönderildi" };
   }
 
   async resetPassword(phone: string, code: string, newPassword: string) {
     const user = await this.prisma.user.findUnique({ where: { phone }, select: { id: true, isBot: true } });
-    if (!user || user.isBot) throw new NotFoundException("Bu telefon numarasıyla kayıtlı hesap bulunamadı");
+    // Kayıtsız numarada süresi dolmuş kod yanıtıyla aynı (bu numara için kod hiç üretilmedi)
+    if (!user || user.isBot) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
 
     await this.otpService.verify(phone, code);
 
@@ -356,7 +359,7 @@ export class AuthService {
       where: { phone },
       include: { profile: true },
     });
-    if (!user) throw new UnauthorizedException("Hesap bulunamadı");
+    if (!user) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
 
     await this.otpService.verify(phone, code);
     // Yaptırım bilgisi sadece kod doğruysa gösterilir
@@ -367,7 +370,7 @@ export class AuthService {
       data: { phoneVerified: true },
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.tokenVersion);
     return { user: this.sanitizeUser(user), ...tokens };
   }
 
@@ -402,12 +405,12 @@ export class AuthService {
 
   // ─── Token üretimi ────────────────────────────────────────────────────────
 
-  private async generateTokens(userId: string, email: string, role: string) {
+  private async generateTokens(userId: string, email: string, role: string, tokenVersion: number) {
     const jti = randomUUID(); // refresh token'ın benzersiz ID'si
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
-        { sub: userId, email, role },
+        { sub: userId, email, role, tv: tokenVersion },
         {
           secret: this.config.getOrThrow("JWT_SECRET"),
           expiresIn: this.config.get("JWT_ACCESS_EXPIRES") ?? "15m",
@@ -439,7 +442,7 @@ export class AuthService {
 
   // passwordHash ve hassas alanları çıkar; KYC rozetini ekle
   sanitizeUser(user: any) {
-    const { passwordHash, kyc, profile, ...safe } = user;
+    const { passwordHash, tokenVersion, kyc, profile, ...safe } = user;
     return {
       ...safe,
       firstName: profile?.firstName ?? '',
@@ -501,7 +504,7 @@ export class AuthService {
     const hasIcerde = hasMasada && hasKarsimda && activeSubs.some((s) => s.plan === 'ICERDE');
     const activePlan = hasIcerde ? 'ICERDE' : hasMasada ? 'MASADA' : hasKarsimda ? 'KARSIMDA' : null;
 
-    const { passwordHash, kyc, profile, ...safe } = user;
+    const { passwordHash, tokenVersion, kyc, profile, ...safe } = user;
     return {
       ...safe,
       firstName: profile?.firstName ?? '',

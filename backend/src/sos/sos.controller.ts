@@ -8,7 +8,13 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { Throttle } from "@nestjs/throttler";
 import { UserRole } from "@prisma/client";
-import { IsArray, IsNumber, IsOptional, IsIn, ArrayMinSize } from "class-validator";
+import { IsArray, IsNumber, IsOptional, IsIn, ArrayMinSize, Max, Min } from "class-validator";
+import { Transform } from "class-transformer";
+
+// Acil durumda talep engellenmez: geçersiz konum atılır, talep konumsuz açılır
+const validLat = ({ value }: { value: unknown }) => (typeof value === "number" && Math.abs(value) <= 90 ? value : undefined);
+const validLng = ({ value }: { value: unknown }) => (typeof value === "number" && Math.abs(value) <= 180 ? value : undefined);
+const validAccuracy = ({ value }: { value: unknown }) => (typeof value === "number" && value >= 0 ? value : undefined);
 
 class CreateSosDto {
   @IsArray()
@@ -17,27 +23,35 @@ class CreateSosDto {
   threats: string[];
 
   @IsOptional()
+  @Transform(validLat)
   @IsNumber()
   lat?: number;
 
   @IsOptional()
+  @Transform(validLng)
   @IsNumber()
   lng?: number;
 
   @IsOptional()
+  @Transform(validAccuracy)
   @IsNumber()
   accuracy?: number;
 }
 
 class UpdateLocationDto {
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   lat: number;
 
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   lng: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   accuracy?: number;
 }
 

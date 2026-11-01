@@ -1803,6 +1803,8 @@ export class AdminService {
   }
 
   async updateCareer(id: string, data: { status?: CareerStatus; adminNote?: string }) {
+    const exists = await this.prisma.careerApplication.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) throw new NotFoundException("Başvuru bulunamadı");
     return this.prisma.careerApplication.update({
       where: { id },
       data: { status: data.status, adminNote: data.adminNote },

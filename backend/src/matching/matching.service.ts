@@ -1248,7 +1248,13 @@ export class MatchingService {
           subscriptions: { some: { status: "ACTIVE" } },
         },
       });
-      return { isSubscribed: true, activePlan, inPool: true, hasMeeting: false, poolSize, meetingScheduledAt: null };
+      // Döngü henüz yok: havuz şartları (aktif hesap, test, onaylı KYC) yine aranır
+      const me = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { status: true, isBot: true, oceanScore: { select: { userId: true } }, kyc: { select: { status: true } } },
+      });
+      const eligible = me?.status === "ACTIVE" && !me.isBot && !!me.oceanScore && me.kyc?.status === KycStatus.APPROVED;
+      return { isSubscribed: true, activePlan, inPool: eligible, hasMeeting: false, poolSize, meetingScheduledAt: null };
     }
 
     const existingMeeting = await this.prisma.meetingParticipant.findFirst({

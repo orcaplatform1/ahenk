@@ -363,10 +363,12 @@ export class MeetingsService {
       where: { meetingId, reporterId: requesterId },
       select: { reportedId: true },
     });
+    // Mekân adı kart açılmadan (masa günü 10:00 TR) dönmez
+    const cardOpen = new Date() >= new Date(participation.meeting.scheduledAt.getTime() - 10 * 60 * 60 * 1000);
     return {
       // Önceden bildirilen gelmeyenler formda dolu ve kilitli gelir (geri alınamaz)
       myNoShowIds: myNoShow.map((r) => r.reportedId),
-      locationName: participation.meeting.locationText,
+      locationName: cardOpen ? participation.meeting.locationText : null,
       scheduledAt: participation.meeting.scheduledAt,
       reviewOpensAt: opensAt,
       reviewClosesAt: closesAt,

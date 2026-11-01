@@ -37,7 +37,8 @@ export class ChatService {
     const p = await this.prisma.meetingParticipant.findUnique({
       where: { meetingId_userId: { meetingId, userId } },
     });
-    if (!p || p.status === ParticipantStatus.CANCELLED) {
+    const inactive: ParticipantStatus[] = [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED, ParticipantStatus.NO_SHOW];
+    if (!p || inactive.includes(p.status)) {
       throw new ForbiddenException("Bu masanın aktif katılımcısı değilsiniz");
     }
     return p;

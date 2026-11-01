@@ -11,6 +11,7 @@ async function bootstrap() {
   // Gerçek istemci IP'si nginx'in X-Forwarded-For başlığından alınır (rate limit için).
   // Sadece loopback'ten (nginx) gelen istekte güvenilir; dışarıdan sahte başlık dikkate alınmaz.
   app.getHttpAdapter().getInstance().set("trust proxy", "loopback");
+  app.getHttpAdapter().getInstance().disable("x-powered-by");
 
   const allowedOrigins = [
     process.env.APP_URL ?? "http://localhost:3000",

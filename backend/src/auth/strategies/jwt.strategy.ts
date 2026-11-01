@@ -10,6 +10,7 @@ export interface JwtPayload {
   sub: string;   // userId
   email: string;
   role: string;
+  tv?: number;   // tokenVersion; bu alan olmadan üretilmiş eski token'lar 0 sayılır
 }
 
 @Injectable()
@@ -31,7 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 
   async validate(payload: JwtPayload) {
     const user = await this.usersService.findById(payload.sub);
-    if (!user || user.status !== "ACTIVE") {
+    if (!user || user.status !== "ACTIVE" || (payload.tv ?? 0) !== user.tokenVersion) {
       throw new UnauthorizedException("Oturum geçersiz");
     }
     return user;

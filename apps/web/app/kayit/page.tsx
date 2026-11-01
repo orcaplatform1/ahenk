@@ -154,8 +154,8 @@ function KayitPageInner() {
   }, []);
 
   useEffect(() => {
-    api.get<City[]>('/auth/cities').then(setCities).catch(() => {});
-    api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => {});
+    api.get<City[]>('/auth/cities').then(setCities).catch(() => setError('Şehir listesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'));
+    api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => setError('İlçe listesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'));
   }, []);
 
   useEffect(() => {

@@ -207,7 +207,7 @@ export class KycService {
   async adminList(status?: KycStatus, page: number | string = 1, limit: number | string = 20) {
     const where = status ? { status } : {};
     const p = Math.max(1, parseInt(String(page), 10) || 1);
-    const l = Math.max(1, parseInt(String(limit), 10) || 20);
+    const l = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 20));
 
     const [items, total] = await Promise.all([
       this.prisma.kycSubmission.findMany({

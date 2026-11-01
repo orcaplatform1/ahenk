@@ -12,6 +12,7 @@ datasource db {
 // ─────────────────────────────────────────────
 
 model User {
+  tokenVersion              Int                   @default(0) // Çıkışta artar: eldeki erişim token'ları hemen düşer
   id            String     @id @default(cuid())
   email         String     @unique
   phone         String?    @unique
