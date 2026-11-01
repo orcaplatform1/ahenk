@@ -395,8 +395,8 @@ export class AuthService {
       (this.config.get("JWT_REFRESH_EXPIRES") ?? "7d").replace("d", ""),
       10,
     );
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + refreshExpiryDays);
+    // Sunucu saat diliminden bağımsız: gün sayısı milisaniye olarak eklenir
+    const expiresAt = new Date(Date.now() + refreshExpiryDays * 24 * 60 * 60 * 1000);
 
     // Refresh token'ı DB'ye kaydet (jti ile)
     await this.prisma.refreshToken.create({

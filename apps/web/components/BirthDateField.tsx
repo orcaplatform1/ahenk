@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { currentYearTR } from '@/lib/tr-date';
 
 // Kayıt formundaki doğum tarihi seçici (gün / ay / yıl); kariyer formu da bunu kullanır
 
@@ -61,8 +62,7 @@ function DatePickerModal({ value, onChange, onClose }: {
   onChange: (v: string) => void;
   onClose: () => void;
 }) {
-  const now = new Date();
-  const maxYear = now.getFullYear() - 18;
+  const maxYear = currentYearTR() - 18;
   const minYear = 1965; // en eski doğum tarihi 01.01.1965
 
   const parts = value ? value.split('-').map(Number) : [0, 0, 0];

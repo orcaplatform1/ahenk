@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { BG, BORDER, TEXT, MUTED, BLUE, CYAN, SANS, LABEL } from '@/lib/adminTheme';
+import { currentYearTR } from '@/lib/tr-date';
 
 // Admin paneli renklerinde doğum tarihi seçici (kayıt sayfasındaki gün / ay / yıl seçimiyle aynı yapı).
 // Yıllar 1965'ten (en eski doğum tarihi 01.01.1965) 18 yaş sınırına kadar.
@@ -59,7 +60,7 @@ export function AdminDatePicker({ value, onChange, placeholder = 'Doğum tarihi'
   clearable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const maxYear = maxYearProp ?? new Date().getFullYear() - 18;
+  const maxYear = maxYearProp ?? currentYearTR() - 18;
 
   const parts = value ? value.split('-').map(Number) : [0, 0, 0];
   const [year, setYear]   = useState(parts[0] || maxYear);
