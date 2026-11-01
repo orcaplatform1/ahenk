@@ -5,33 +5,25 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { api, API_PREFIX } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
-import { ConfirmedRadarView, MasaDetayKarti, RezervasyonIptal, type MasaDetayData } from '@ahenk/ui';
-
-interface DashboardItem {
-  phase: 'WAITING' | 'REVEALED';
-  meeting: {
-    id: string;
-    type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
-    maxParticipants?: number;
-    scheduledAt: string;
-    sosEndsAt: string;
-    participants: Array<{ initials: string; gender: string | null }>;
-    venueName?: string;
-    venueAddress?: string;
-    venueMapsUrl?: string;
-    venuePhotos?: Array<{ url: string; caption?: string }>;
-    aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
-    cancelRightUsed?: boolean;
-  };
-}
+import { ConfirmedRadarView, KankaPairs, MasaDetayKarti, RezervasyonIptal, gColor, type DashboardItem, type MasaDetayData, type MasaTuru, type VenuePhoto } from '@ahenk/ui';
+import LiveTabs from '@/components/live/LiveTabs';
+import { useMasaTabs } from '@/components/live/useMasaTabs';
 
 // GET /meetings/my-history yanıtı (sadece tamamlanmış masalar)
 interface HistoryMeeting {
   id: string;
   date: string;
+  type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   venueName: string | null;
-  _count?: { participants?: number };
-  participantCount?: number;
+  cityName?: string | null;
+  maxParticipants?: number;
+  venueAddress?: string | null;
+  venueMapsUrl?: string | null;
+  venuePhotos?: VenuePhoto[];
+  aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
+  participants?: { initials: string; gender: string | null; isSelf?: boolean; pair?: 'MINE' | 'OTHER' }[];
+  review?: { rating: number; comment: string | null } | null;
+  blocked?: { initials: string; gender: string | null }[];
   isReviewed?: boolean;
 }
 
@@ -42,27 +34,8 @@ interface UserInfo {
 }
 
 function fmtDate(val: string) {
-  return new Date(val).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul',
-    day: 'numeric', month: 'long', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
+  return new Date(val).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' });
 }
-
-function getParticipantCount(m: HistoryMeeting): number | null {
-  if (typeof m.participantCount === 'number') return m.participantCount;
-  if (typeof m._count?.participants === 'number') return m._count.participants;
-  return null;
-}
-
-const SECTION_TITLE: React.CSSProperties = {
-  fontFamily: 'var(--font-serif, "DM Serif Display", serif)',
-  fontSize: 15,
-  fontWeight: 400,
-  color: '#888',
-  letterSpacing: '0.14em',
-  textTransform: 'uppercase' as const,
-  marginBottom: 10,
-};
 
 /* ── Mock kart renk sabitleri (MasaDetayKarti ile aynı) ── */
 const GREEN      = '#27ae60';
@@ -152,10 +125,12 @@ function EmptyMasaCard({
   locked,
   cardType,
   userInfo,
+  kanka,
 }: {
   locked: boolean;
   cardType: 'group' | 'basbasa' | 'kanka';
   userInfo?: UserInfo;
+  kanka?: { initials: string; gender: string | null } | null;
 }) {
   const initials = userInfo
     ? `${(userInfo.firstName[0] ?? '?').toUpperCase()}.${(userInfo.lastName[0] ?? '?').toUpperCase()}.`
@@ -299,7 +274,7 @@ function EmptyMasaCard({
             <span style={{ fontSize: 13, color: '#888', fontFamily: 'Inter, sans-serif' }}>Buluşma</span>
           </div>
           <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>
-            {cardType === 'basbasa' ? 'Cumartesi · 20:00' : 'Cuma · 20:00'}
+            {cardType === 'basbasa' ? 'Cumartesi · 20:00' : cardType === 'kanka' ? 'Pazar · 20:00' : 'Cuma · 20:00'}
           </span>
         </motion.div>
 
@@ -310,8 +285,11 @@ function EmptyMasaCard({
           style={{ marginBottom: 20 }}
         >
           <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#555', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-            {cardType === 'basbasa' ? 'BAŞ BAŞA' : 'KATILIMCILAR'}
+            {cardType === 'basbasa' ? 'BAŞ BAŞA' : cardType === 'kanka' ? 'KANKA ÇİFTLERİ' : 'KATILIMCILAR'}
           </p>
+          {cardType === 'kanka' ? (
+            <KankaPairs mine={[{ initials, gender: uGender, isSelf: true }, ...(kanka ? [kanka] : [])]} other={[]} />
+          ) : (
           <div style={cardType === 'group' ? { display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gap: 10 } : { display: 'flex', gap: 10 }}>
             {participants.map((p, i) => (
               <MockAvatar
@@ -323,6 +301,7 @@ function EmptyMasaCard({
               />
             ))}
           </div>
+          )}
         </motion.div>
 
         {/* Yapay Zeka Masa Raporu */}
@@ -399,7 +378,7 @@ function EmptyMasaCard({
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#555' }} />
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', color: '#555' }}>
-              {cardType === 'basbasa' ? 'BAŞ BAŞA SOHBETİ' : 'GRUP SOHBETİ'}
+              {cardType === 'basbasa' ? 'BAŞ BAŞA SOHBETİ' : cardType === 'kanka' ? 'KANKAMLA SOHBETİ' : 'GRUP SOHBETİ'}
             </span>
           </div>
           <div style={{
@@ -431,20 +410,18 @@ function EmptyMasaCard({
 
 /* ── Tek masa bloğu ── */
 function MasaBlock({
-  title,
   item,
   locked,
-  infoText,
   cardType,
   userInfo,
+  kanka,
   onCancelled,
 }: {
-  title: string;
   item?: DashboardItem;
   locked: boolean;
-  infoText: string;
   cardType: 'group' | 'basbasa' | 'kanka';
   userInfo?: UserInfo;
+  kanka?: { initials: string; gender: string | null } | null;
   onCancelled?: () => void;
 }) {
   const meeting = item?.meeting;
@@ -452,7 +429,7 @@ function MasaBlock({
   let content: React.ReactNode;
 
   if (locked || !meeting) {
-    content = <EmptyMasaCard locked={locked} cardType={cardType} userInfo={userInfo} />;
+    content = <EmptyMasaCard locked={locked} cardType={cardType} userInfo={userInfo} kanka={kanka} />;
   } else if (item.phase === 'REVEALED' && meeting.venueName) {
     const detayData: MasaDetayData = {
       id: meeting.id,
@@ -490,6 +467,14 @@ function MasaBlock({
               ? "Pazar saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."
               : "Cuma saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."}
         />
+        {meeting.type === 'KANKA' && (
+          <div style={{ marginTop: 16 }}>
+            <KankaPairs
+              mine={meeting.participants.filter(p => p.pair === 'MINE' && !p.cancelled)}
+              other={meeting.participants.filter(p => p.pair === 'OTHER' && !p.cancelled)}
+            />
+          </div>
+        )}
         {/* Rezervasyon iptali: kilit günü 20:00'ye kadar (masa kartı açıldığında iptal yok) */}
         <RezervasyonIptal
           meetingId={meeting.id}
@@ -503,53 +488,36 @@ function MasaBlock({
       </div>
     );
   } else {
-    content = <EmptyMasaCard locked={false} cardType={cardType} userInfo={userInfo} />;
+    content = <EmptyMasaCard locked={false} cardType={cardType} userInfo={userInfo} kanka={kanka} />;
   }
 
-  return (
-    <div>
-      <p style={SECTION_TITLE}>{title}</p>
-      {content}
-    </div>
-  );
+  return <div key={meeting?.id ?? cardType}>{content}</div>;
 }
 
-export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc, kankamlaActive = false }: {
-  activePlan: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
-  kankamlaActive?: boolean;
+const CARD_TITLE: Record<MasaTuru, string> = { GROUP: 'Grup Masa Kartı', ONE_ON_ONE: 'Baş Başa Masa Kartı', KANKA: 'Kankamla Masa Kartı' };
+const CARD_TYPE: Record<MasaTuru, 'group' | 'basbasa' | 'kanka'> = { GROUP: 'group', ONE_ON_ONE: 'basbasa', KANKA: 'kanka' };
+const HISTORY_TYPE: Record<MasaTuru, string> = { GROUP: 'Grup Masası', ONE_ON_ONE: 'Baş Başa Masası', KANKA: 'Kankamla Masası' };
+
+export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
   userInfo?: UserInfo;
   kycApproved?: boolean;
   onGoKyc?: () => void;
 }) {
-  const [dashItems, setDashItems] = useState<DashboardItem[]>([]);
-  const [history,   setHistory]   = useState<HistoryMeeting[]>([]);
-  const [loading,   setLoading]   = useState(true);
+  const { ready, kanka, tab, tabItem, selectTab, statuses, reload } = useMasaTabs();
+  const [history, setHistory] = useState<HistoryMeeting[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
-  // Bekleme ekranında iptal sonrası da çağrılır (iptal mesajı görünsün diye 2 sn sonra)
-  const loadMeetings = () => {
-    Promise.all([
-      api.get<{ items: DashboardItem[] }>('/meetings/dashboard').catch(() => ({ items: [] as DashboardItem[] })),
-      api.get<HistoryMeeting[]>('/meetings/my-history').catch(() => [] as HistoryMeeting[]),
-    ])
-      .then(([dash, hist]) => {
-        setDashItems(dash.items ?? []);
-        setHistory(Array.isArray(hist) ? hist : []);
-      })
-      .finally(() => setLoading(false));
-  };
-  useEffect(() => { loadMeetings(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const afterCancel = () => { setTimeout(loadMeetings, 2000); };
+  useEffect(() => {
+    api.get<HistoryMeeting[]>('/meetings/my-history').then(h => setHistory(Array.isArray(h) ? h : [])).catch(() => {});
+  }, []);
 
-  if (loading) return <SkeletonBlock lines={5} />;
+  // Bekleme ekranında iptal sonrası (iptal mesajı görünsün diye 2 sn sonra)
+  const afterCancel = () => { setTimeout(reload, 2000); };
 
-  const groupItem    = dashItems.find(i => !i.meeting.type || i.meeting.type === 'GROUP');
-  const oneOnOneItem = dashItems.find(i => i.meeting.type === 'ONE_ON_ONE');
-  const kankaItem    = dashItems.find(i => i.meeting.type === 'KANKA');
-  // Masası olan kullanıcı paket hakkı bitse de masasını burada görür (detaylar yalnızca bu sekmede)
-  const locked       = activePlan === null && !kankamlaActive && !kankaItem && !groupItem && !oneOnOneItem;
+  if (!ready) return <SkeletonBlock lines={5} />;
 
-  const showGroup    = activePlan === 'MASADA' || activePlan === 'ICERDE' || locked || !!groupItem;
-  const showOneOnOne = activePlan === 'KARSIMDA' || activePlan === 'ICERDE' || locked || !!oneOnOneItem;
+  // Hiç hakkı ve masası yoksa kartlar önizlemedir
+  const locked = Object.values(statuses).every(s => s === 'NONE');
 
   return (
     <div className="flex flex-col gap-6">
@@ -586,117 +554,109 @@ export function TabMasalar({ activePlan, userInfo, kycApproved, onGoKyc, kankaml
         </div>
       )}
 
-      {showGroup && (
-        <MasaBlock
-          title="Grup Masa Kartı"
-          item={groupItem}
-          locked={locked}
-          infoText="Masa detayları Cuma saat 10:00'da burada görünecek"
-          cardType="group"
-          userInfo={userInfo}
-          onCancelled={afterCancel}
-        />
-      )}
+      <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
 
-      {showOneOnOne && (
-        <MasaBlock
-          title="Baş Başa Masa Kartı"
-          item={oneOnOneItem}
-          locked={locked}
-          infoText="Masa detayları Cumartesi saat 10:00'da burada görünecek"
-          cardType="basbasa"
-          userInfo={userInfo}
-          onCancelled={afterCancel}
-        />
-      )}
-
-      {/* Kankamla: masa varsa kart, yoksa tarama bilgisi (paket alıcıda ya da kankada) */}
-      {kankaItem ? (
-        <MasaBlock
-          title="Kankamla Masa Kartı"
-          item={kankaItem}
-          locked={false}
-          infoText="Masa detayları Pazar saat 10:00'da burada görünecek"
-          cardType="kanka"
-          userInfo={userInfo}
-          onCancelled={afterCancel}
-        />
-      ) : kankamlaActive && (
-        <div className="flex flex-col gap-3">
-          <p className="text-xs font-semibold tracking-[0.14em] text-[#444] uppercase">Kankamla Masa Kartı</p>
-          <div className="ll-card">
-            <p className="text-sm text-[#c9c2b8] leading-relaxed">
-              Kankanla birlikte eşleşme taraması devam ediyor. Karşı cinsten bir kanka çiftiyle eşleştiğinizde masanız burada görünecek;
-              detaylar Pazar 10:00&apos;da açıklanır. Tarama Cumartesi 23:59&apos;da kapanır.
-            </p>
-          </div>
+      <div>
+        <div className="ll-head">
+          <h2 className="ll-title">{CARD_TITLE[tab]}</h2>
+          <button type="button" onClick={() => setHistoryOpen(v => !v)} aria-expanded={historyOpen} className="btn-ghost" style={{ flexShrink: 0 }}>
+            Geçmiş Masaların
+          </button>
         </div>
-      )}
-
-      {history.length > 0 && (
-        <>
-          <p className="text-xs font-semibold tracking-[0.14em] text-[#444] uppercase">
-            Geçmiş Masalarım
+        {historyOpen && <HistoryList history={history} />}
+        {tab === 'KANKA' && !tabItem && statuses.KANKA === 'SCANNING' && (
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: '#c9c2b8', lineHeight: 1.6 }}>
+            Kankanla birlikte eşleşme taraması devam ediyor. Karşı cinsten bir kanka çiftiyle eşleştiğinizde masanız burada görünecek;
+            detaylar Pazar 10:00&apos;da açıklanır. Tarama Cumartesi 23:59&apos;da kapanır.
           </p>
-          {history.map((m, i) => (
-            <motion.div
-              key={m.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.06, duration: 0.3, ease: 'easeOut' }}
-            >
-              <HistoryCard meeting={m} />
-            </motion.div>
-          ))}
-        </>
-      )}
+        )}
+        <MasaBlock
+          key={tab}
+          item={tabItem}
+          locked={locked}
+          cardType={CARD_TYPE[tab]}
+          userInfo={userInfo}
+          kanka={kanka}
+          onCancelled={afterCancel}
+        />
+      </div>
     </div>
   );
 }
 
-function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
-  const location = m.venueName;
-  const pCount   = getParticipantCount(m);
+function HistoryList({ history }: { history: HistoryMeeting[] }) {
+  const [openId, setOpenId] = useState<string | null>(null);
 
+  if (history.length === 0) {
+    return <section className="ll-card" style={{ marginBottom: 16 }}><p style={{ margin: 0, fontSize: 13, color: '#a39c93' }}>Henüz geçmiş masan yok.</p></section>;
+  }
   return (
-    <div className="ll-card flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-1 min-w-0">
-          <p className="text-sm font-medium text-[#f5f5f5]">{fmtDate(m.date)}</p>
-          <p className="text-xs text-[#a39c93] truncate">{location ?? 'Mekan bilgisi yok'}</p>
-          {pCount !== null && (
-            <p className="text-xs text-[#8f887f]">{pCount} kişi ile buluşma</p>
-          )}
-        </div>
-        <span
-          className="text-xs px-2.5 py-1 rounded-full border flex-shrink-0 font-medium"
-          style={{ color: '#888', borderColor: 'rgba(255,255,255,0.1)' }}
-        >
-          Tamamlandı
-        </span>
-      </div>
+    <section className="ll-card" style={{ marginBottom: 16, padding: '6px 18px' }}>
+      {history.map((m, i) => {
+        const isOpen = openId === m.id;
+        return (
+          <div key={m.id} style={{ borderBottom: i < history.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+            <div className="flex items-center justify-between gap-3" style={{ minHeight: 44, padding: '6px 0' }}>
+              <span style={{ fontSize: 13, color: '#f4f1ec', minWidth: 0 }}>
+                {[fmtDate(m.date), HISTORY_TYPE[m.type ?? 'GROUP'], m.venueName, m.cityName].filter(Boolean).join(' - ')}
+              </span>
+              <button
+                type="button"
+                onClick={() => setOpenId(isOpen ? null : m.id)}
+                aria-expanded={isOpen}
+                aria-label={isOpen ? 'Masa kartını kapat' : 'Masa kartını aç'}
+                style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#a39c93', fontSize: 14, padding: 6, transform: isOpen ? 'rotate(180deg)' : undefined, transition: 'transform 0.2s' }}
+              >
+                ▾
+              </button>
+            </div>
+            {isOpen && <HistoryCard meeting={m} />}
+            {!m.isReviewed && (
+              <a href={`/degerlendirme/${m.id}`} className="ll-mono" style={{ display: 'inline-block', margin: '0 0 8px', fontSize: 11, color: '#e8a27a' }}>
+                Değerlendir
+              </a>
+            )}
+          </div>
+        );
+      })}
+    </section>
+  );
+}
 
-      <div className="flex gap-2 flex-wrap">
-        {!m.isReviewed ? (
-          <a
-            href={`/degerlendirme/${m.id}`}
-            className="text-xs px-3 py-1.5 font-medium"
-            style={{
-              background: 'linear-gradient(135deg,#c0392b,#ff6b6b)',
-              borderRadius: 9999, color: '#fff',
-            }}
-          >
-            Değerlendir
-          </a>
-        ) : (
-          <span
-            className="text-xs px-3 py-1.5 text-[#8f887f]"
-            style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 9999 }}
-          >
-            ✓ Değerlendirildi
-          </span>
-        )}
-      </div>
+// Salt görüntüleme: sohbet yok, yalnızca Haritada Gör çalışır
+function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
+  const masa: MasaDetayData = {
+    id: m.id,
+    type: m.type,
+    maxParticipants: m.maxParticipants,
+    scheduledAt: m.date,
+    sosEndsAt: m.date,
+    venueName: m.venueName ?? 'Mekân bilgisi yok',
+    venueAddress: m.venueAddress,
+    venueMapsUrl: m.venueMapsUrl,
+    venuePhotos: m.venuePhotos,
+    participants: m.participants ?? [],
+    aiReport: m.aiReport,
+  };
+  return (
+    <div style={{ paddingBottom: 12 }}>
+      <MasaDetayKarti masa={masa} archive />
+      {m.review && (
+        <div style={{ marginTop: 12 }}>
+          <p className="ll-mono" style={{ margin: '0 0 4px', fontSize: 11, color: '#a39c93' }}>DEĞERLENDİRMEN</p>
+          <p style={{ margin: 0, fontSize: 13, color: '#f4f1ec' }}>{m.review.rating}/5{m.review.comment ? ` · ${m.review.comment}` : ''}</p>
+        </div>
+      )}
+      {!!m.blocked?.length && (
+        <div style={{ marginTop: 12 }}>
+          <p className="ll-mono" style={{ margin: '0 0 4px', fontSize: 11, color: '#a39c93' }}>ENGELLEDİKLERİN</p>
+          <div className="flex flex-wrap gap-3">
+            {m.blocked.map((b, i) => (
+              <span key={`${b.initials}-${i}`} className="ll-mono" style={{ fontSize: 14, fontWeight: 600, color: gColor(b.gender) }}>{b.initials}</span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

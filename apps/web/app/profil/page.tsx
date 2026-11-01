@@ -131,7 +131,7 @@ function ProfilPage() {
 
   return (
     <main className="min-h-screen bg-bg text-text pt-[52px]">
-      <AccountTabBar activeKey={activeTab} kycApproved={kycApproved} />
+      <AccountTabBar activeKey={activeTab} />
       {/* Eşleşme Paneli görünümü: ışıma ve Canlı Katman stilleri */}
       <div className="live-layer" style={{ minHeight: 'calc(100vh - 100px)' }}>
       <div className="ll-glow" aria-hidden="true" />
@@ -148,7 +148,7 @@ function ProfilPage() {
           >
             {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} activePlan={user.activePlan ?? null} />}
             {activeTab === 'test'    && <TabTest />}
-            {activeTab === 'masalar' && <TabMasalar activePlan={user.activePlan ?? null} kankamlaActive={!!user.kankamla?.open} userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender }} kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
+            {activeTab === 'masalar' && <TabMasalar userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender }} kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
             {activeTab === 'paket'   && <TabPaket kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} maintenanceMode={!!user.maintenanceMode} />}
             {activeTab === 'kyc'     && <TabKyc />}
             {activeTab === 'rehber'  && <TabRehber />}

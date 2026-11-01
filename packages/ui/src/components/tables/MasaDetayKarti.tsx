@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { KankaPairs, type KankaPerson } from './KankaPairs';
+
+type KankaParticipant = KankaPerson & { pair?: 'MINE' | 'OTHER' };
 
 // ── Tipler ──────────────────────────────────────────────────────────────────
 export interface DetayParticipant {
@@ -48,6 +51,7 @@ interface Props {
   apiBase?: string;
   // Verilirse Bearer başlığı eklenir; web oturumu HttpOnly çerezle gider (credentials: 'include')
   token?: string;
+  archive?: boolean; // Geçmiş masa: yalnızca Haritada Gör çalışır, sohbet ve acil yardım yok (apiBase verilmez)
 }
 
 function jsonHeaders(token?: string): Record<string, string> {
@@ -626,7 +630,7 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
   );
 }
 
-export function MasaDetayKarti({ masa, apiBase, token }: Props) {
+export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props) {
   const [lightboxIdx,   setLightboxIdx]   = useState<number | null>(null);
   const [onMyWayDone,   setOnMyWayDone]   = useState(false);
   const [onMyWayLoading,setOnMyWayLoading]= useState(false);
@@ -941,19 +945,10 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
             {isOneOnOne ? 'BAŞ BAŞA' : masa.type === 'KANKA' ? 'KANKA ÇİFTLERİ' : 'KATILIMCILAR'}
           </p>
           {masa.type === 'KANKA' ? (
-            // Kankamla: kim kimin kankası — iki çift ayrı satırda
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {(['MINE', 'OTHER'] as const).map((pair, gi) => (
-                <div key={pair} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {masa.participants.filter((p) => (p as { pair?: string }).pair === pair).map((p, i) => (
-                    <DetayAvatar key={`${pair}-${p.initials}-${i}`} participant={p} delay={0.52 + (gi * 2 + i) * 0.1} />
-                  ))}
-                  <span style={{ fontSize: 11, color: 'rgba(245,245,245,0.6)', fontFamily: 'Inter, sans-serif' }}>
-                    {pair === 'MINE' ? 'Sen ve kankan' : 'Karşı kanka çifti'}
-                  </span>
-                </div>
-              ))}
-            </div>
+            <KankaPairs
+              mine={(masa.participants as KankaParticipant[]).filter(p => p.pair === 'MINE')}
+              other={(masa.participants as KankaParticipant[]).filter(p => p.pair === 'OTHER')}
+            />
           ) : (
           <div style={isOneOnOne ? { display: 'flex', gap: 10, flexWrap: 'wrap' } : { display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gap: 10 }}>
             {ordered.map((p, i) => (
@@ -1037,7 +1032,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
         </motion.div>
 
         {/* Yola Çıktım butonu */}
-        {authHeaders && (
+        {(authHeaders || archive) && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1046,7 +1041,7 @@ export function MasaDetayKarti({ masa, apiBase, token }: Props) {
           >
             <button
               onClick={handleOnMyWay}
-              disabled={onMyWayDone || onMyWayLoading}
+              disabled={archive || onMyWayDone || onMyWayLoading}
               className={onMyWayDone ? undefined : 'btn-primary'}
               style={onMyWayDone ? {
                 width: '100%', padding: '13px 0',

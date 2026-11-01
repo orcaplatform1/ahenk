@@ -123,6 +123,7 @@ export class MeetingsService {
               initials: `${(f[0] ?? '?').toUpperCase()}.${(l[0] ?? '?').toUpperCase()}.`,
               gender: p.user.profile?.gender ?? null,
               joinedAt: p.createdAt, // Katılım listesi giriş sırası
+              ...(p.userId === userId && { isSelf: true }),
               ...(p.status === ParticipantStatus.CANCELLED && { cancelled: true }), // Grupta iptal son anına kadar listede kalır
               ...(m.type === MeetingType.KANKA && {
                 pair: p.userId === userId || p.userId === myKankaId ? ('MINE' as const) : ('OTHER' as const),
@@ -175,9 +176,11 @@ export class MeetingsService {
   // ─── Geçmiş masalar ─────────────────────────────────────────────────────────
 
   async getMyHistory(userId: string) {
+    const LEFT = [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED];
     const participations = await this.prisma.meetingParticipant.findMany({
       where: {
         userId,
+        status: { notIn: LEFT },
         meeting: { status: MeetingStatus.COMPLETED },
       },
       orderBy: { meeting: { scheduledAt: "desc" } },
@@ -186,13 +189,26 @@ export class MeetingsService {
         meeting: {
           select: {
             id: true,
+            type: true,
             scheduledAt: true,
+            maxParticipants: true,
             locationText: true,
+            locationUrl: true,
+            venueAddress: true,
             venuePhotoUrl: true,
+            venuePhoto2Url: true,
+            venuePhoto3Url: true,
+            venuePhotoCaption1: true,
+            venuePhotoCaption2: true,
+            venuePhotoCaption3: true,
+            city: { select: { name: true } },
             cycle: { select: { weekNumber: true, year: true } },
+            aiReport: { select: { content: true, uyumSkoru: true, generatedAt: true } },
             participants: {
-              where: { userId },
+              where: { status: { notIn: LEFT } },
               select: {
+                userId: true,
+                kankaPartnerId: true,
                 user: {
                   select: {
                     oceanScore: {
@@ -204,7 +220,7 @@ export class MeetingsService {
                         neuroticism: true,
                       },
                     },
-                    profile: { select: { primaryCity: true } },
+                    profile: { select: { primaryCity: true, firstName: true, lastName: true, gender: true } },
                   },
                 },
               },
@@ -214,16 +230,18 @@ export class MeetingsService {
       },
     });
 
-    // Kullanıcının değerlendirdiği masa ID'lerini çek
-    const reviewedIds = new Set(
-      (await this.prisma.meetingReview.findMany({
-        where: { reviewerId: userId },
-        select: { meetingId: true },
-      })).map((r) => r.meetingId),
+    const reviews = await this.prisma.meetingReview.findMany({
+      where: { reviewerId: userId },
+      select: { meetingId: true, rating: true, comment: true },
+    });
+    const reviewOf = new Map(reviews.map((r) => [r.meetingId, r]));
+    const blockedIds = new Set(
+      (await this.prisma.userBlock.findMany({ where: { blockerId: userId }, select: { blockedId: true } })).map((b) => b.blockedId),
     );
 
     return participations.map((p) => {
-      const ocean = p.meeting.participants[0]?.user?.oceanScore;
+      const me = p.meeting.participants.find((x) => x.userId === userId);
+      const ocean = me?.user?.oceanScore;
       const overallCompatibility = ocean
         ? Math.round(
             (ocean.openness +
@@ -234,16 +252,44 @@ export class MeetingsService {
               5,
           )
         : null;
+      const m = p.meeting;
+      // Diğer katılımcılardan yalnızca baş harf + cinsiyet döner
+      const person = (x: (typeof m.participants)[number]) => ({
+        initials: `${(x.user.profile?.firstName?.[0] ?? '?').toUpperCase()}.${(x.user.profile?.lastName?.[0] ?? '?').toUpperCase()}.`,
+        gender: x.user.profile?.gender ?? null,
+      });
+      const review = reviewOf.get(m.id);
 
       return {
-        id: p.meeting.id,
-        weekNumber: p.meeting.cycle?.weekNumber ?? null,
-        date: p.meeting.scheduledAt,
-        venueName: p.meeting.locationText ?? null,
-        venuePhotoUrl: p.meeting.venuePhotoUrl ?? null,
-        city: p.meeting.participants[0]?.user?.profile?.primaryCity ?? null,
+        id: m.id,
+        weekNumber: m.cycle?.weekNumber ?? null,
+        date: m.scheduledAt,
+        venueName: m.locationText ?? null,
+        venuePhotoUrl: m.venuePhotoUrl ?? null,
+        city: me?.user?.profile?.primaryCity ?? null,
         overallCompatibility,
-        isReviewed: reviewedIds.has(p.meeting.id),
+        isReviewed: !!review,
+        // Masalarım > Geçmiş Masaların kartı
+        type: m.type,
+        cityName: m.city?.name ?? null,
+        maxParticipants: m.maxParticipants,
+        venueAddress: m.venueAddress ?? null,
+        venueMapsUrl: m.locationUrl ?? (m.locationText ? googleMapsUrl(m.locationText, m.venueAddress) : null),
+        venuePhotos: [
+          { url: m.venuePhotoUrl, caption: m.venuePhotoCaption1 ?? 'Alan 1' },
+          { url: m.venuePhoto2Url, caption: m.venuePhotoCaption2 ?? 'Alan 2' },
+          { url: m.venuePhoto3Url, caption: m.venuePhotoCaption3 ?? 'Alan 3' },
+        ].filter((x) => !!x.url),
+        aiReport: m.aiReport ?? null,
+        participants: m.participants.map((x) => ({
+          ...person(x),
+          ...(x.userId === userId && { isSelf: true }),
+          ...(m.type === MeetingType.KANKA && {
+            pair: x.userId === userId || x.userId === me?.kankaPartnerId ? ('MINE' as const) : ('OTHER' as const),
+          }),
+        })),
+        review: review ? { rating: review.rating, comment: review.comment } : null,
+        blocked: m.participants.filter((x) => blockedIds.has(x.userId)).map(person),
       };
     });
   }

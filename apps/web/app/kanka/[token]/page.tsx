@@ -39,7 +39,7 @@ export default function KankaDavetPage({ params }: { params: { token: string } }
             </p>
             <p className="text-xs text-[#666] leading-relaxed">
               Bu daveti, davet edildiğin telefon numarasıyla kayıt olup veya giriş yapıp Profilim → Aktif Kankanız bölümünden kabul edebilirsin.
-              Kanka masasına dahil olmak için kimlik doğrulamanı tamamlanmış olmalısın.
+              Kanka masasına dahil olmak için kimlik doğrulamanı tamamlamış olmalısın.
               <br />
               Davet 48 saat geçerlidir.
             </p>

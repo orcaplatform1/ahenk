@@ -5,17 +5,15 @@ import { usePathname } from 'next/navigation';
 
 const TABS = [
   { key: 'dashboard', label: 'Eşleşme Paneli', href: '/dashboard' },
+  { key: 'masalar',   label: 'Masalarım',        href: '/profil?tab=masalar' },
   { key: 'profil',    label: 'Profilim',        href: '/profil?tab=profil' },
   { key: 'test',      label: 'Kişilik Testim',  href: '/profil?tab=test' },
-  { key: 'masalar',   label: 'Masalarım',        href: '/profil?tab=masalar' },
   { key: 'paket',     label: 'Paketim',          href: '/profil?tab=paket' },
-  { key: 'kyc',       label: 'Kimlik Doğrulama', href: '/profil?tab=kyc' },
   { key: 'rehber',    label: 'Numara Engelleme', href: '/profil?tab=rehber' },
 ];
 
-export function AccountTabBar({ activeKey, kycApproved }: { activeKey?: string; kycApproved?: boolean }) {
+export function AccountTabBar({ activeKey }: { activeKey?: string }) {
   const pathname = usePathname();
-  const tabs = TABS.filter(t => !(t.key === 'kyc' && kycApproved));
 
   function isActive(key: string) {
     if (key === 'dashboard') return pathname === '/dashboard';
@@ -37,7 +35,7 @@ export function AccountTabBar({ activeKey, kycApproved }: { activeKey?: string; 
       }}
     >
       <div className="flex gap-1 px-3 py-2" style={{ minWidth: 'max-content' }}>
-        {tabs.map(t => {
+        {TABS.map(t => {
           return (
             <Link
               key={t.key}

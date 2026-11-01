@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getNextTarget } from '@/components/HeroCountdown';
+import { CLOSING_DAY, SCAN_START_DAY } from './useMasaTabs';
 import type { MasaTuru } from '@ahenk/ui';
 import LiveSonar from './LiveSonar';
 import { LEVELS } from './levels';
@@ -13,23 +14,12 @@ import type { LiveFill, LiveOverview, LivePulse, OceanKey } from './types';
 
 const PULSE_MS = 15_000;
 const OVERVIEW_MS = 60_000;
-// Masa türüne göre kapanış günü ve kart metinleri (0=Pazar … 6=Cumartesi, 23:59)
-const TABLE_TEXT: Record<MasaTuru, { day: number; title: string; note: string }> = {
-  GROUP: { day: 4, title: 'Grup masası kurulmasına', note: "Perşembe 23:59'da masalar kapanır." },
-  ONE_ON_ONE: { day: 5, title: 'Baş Başa masası kurulmasına', note: "Cuma 23:59'da masalar kapanır." },
-  KANKA: { day: 6, title: 'Kankamla masası kurulmasına', note: "Cumartesi 23:59'da masalar kapanır." },
+// Masa türüne göre kart metinleri
+const TABLE_TEXT: Record<MasaTuru, { title: string; note: string }> = {
+  GROUP: { title: 'Grup masası kurulmasına', note: "Perşembe 23:59'da masalar kapanır." },
+  ONE_ON_ONE: { title: 'Baş Başa masası kurulmasına', note: "Cuma 23:59'da masalar kapanır." },
+  KANKA: { title: 'Kankamla masası kurulmasına', note: "Cumartesi 23:59'da masalar kapanır." },
 };
-
-// Yeni tarama her Pazar 23:59'da başlar (getNextTarget ile aynı döngü)
-const SCAN_START_DAY = 0;
-const WEEK_MS = 7 * 86_400_000;
-
-// Türün bu haftaki kapanışı geçti mi: bir sonraki tarama başlangıcı bir sonraki kapanıştan önce geliyorsa
-export function isPastClosing(tab: MasaTuru) {
-  return getNextTarget(SCAN_START_DAY).getTime() < getNextTarget(TABLE_TEXT[tab].day).getTime();
-}
-
-const MASA_TURLERI: MasaTuru[] = ['GROUP', 'ONE_ON_ONE', 'KANKA'];
 
 const OCEAN_LABEL: Record<OceanKey, string> = {
   openness: 'Açıklık',
@@ -127,20 +117,12 @@ function heatColor(index: number, count: number) {
   return `rgba(255,255,255,${mix(0.08, 0.045)})`;
 }
 
-// Türün bu haftaki kapanış anı; isPastClosing true iken bir sonraki kapanış gelecek haftadadır
-function lastClosing(tab: MasaTuru) {
-  return getNextTarget(TABLE_TEXT[tab].day).getTime() - WEEK_MS;
-}
-
-export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables, kycApproved, kankaWaiting, poolSince, onTab, notice, participation }: {
+export default function LiveLayer({ activePlan, hasTabTable, tab, statuses, tabPastClosing, onTab, notice, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
   tab: MasaTuru;
-  rights: Record<MasaTuru, boolean>; // Türde aktif paket hakkı
-  tables: Record<MasaTuru, boolean>; // Türde bu hafta masa
-  kycApproved: boolean;
-  kankaWaiting: boolean; // Kankamla paketi var, aktif kanka yok
-  poolSince: Record<MasaTuru, number | null>; // Türde havuza giriş anı (bilinmiyorsa null)
+  statuses: Record<MasaTuru, TabStatus>;
+  tabPastClosing: boolean; // Seçili türün bu haftaki kapanışı geçti mi
   onTab: (tab: MasaTuru) => void;
   notice?: React.ReactNode; // Sekmelerin hemen üstü
   participation: React.ReactNode;
@@ -149,27 +131,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables
   // Şehir backend'de activeCity → primaryCity sırasıyla çözülür
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
-  const pastList = () => MASA_TURLERI.filter(isPastClosing).join();
-  const [pastClosed, setPastClosed] = useState(pastList);
-
-  // Tarama başlayınca/kapanınca kart sayfa yenilenmeden değişsin
-  useEffect(() => {
-    const id = setInterval(() => setPastClosed(pastList()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const statusOf = (t: MasaTuru): TabStatus => {
-    if (tables[t]) return 'TABLE';
-    if (!rights[t]) return 'NONE';
-    if (!kycApproved) return 'KYC';
-    if (t === 'KANKA' && kankaWaiting) return 'KANKA';
-    if (!pastClosed.split(',').includes(t)) return 'SCANNING';
-    // Başarısız yalnızca kapanıştan önce havuzda olana; kapanıştan sonra gelen yeni taramayı bekler
-    const since = poolSince[t];
-    return since !== null && since < lastClosing(t) ? 'FAILED' : 'PENDING';
-  };
-  const statuses = { GROUP: statusOf('GROUP'), ONE_ON_ONE: statusOf('ONE_ON_ONE'), KANKA: statusOf('KANKA') };
-  const waitingScan = pastClosed.split(',').includes(tab) && !hasTabTable;
+  const waitingScan = tabPastClosing && !hasTabTable;
 
   const city = overview?.city;
   const seats = overview?.groupSeatsLeft ?? null;
@@ -190,7 +152,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, rights, tables
         {/* Geri sayım */}
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
           <p key={tab} className="ll-eyebrow ll-fade">{waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</p>
-          <Countdown day={waitingScan ? SCAN_START_DAY : TABLE_TEXT[tab].day} />
+          <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} />
           <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>
             {waitingScan ? "Pazar 23:59'da yeni tarama başlar." : TABLE_TEXT[tab].note}
             {!waitingScan && city && tabSeats !== null && (

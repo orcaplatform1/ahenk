@@ -1,78 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { buildInitials, type DashboardItem, type MasaTuru } from '@ahenk/ui';
-import { api } from '@/lib/api';
 import { AccountTabBar } from '@/components/AccountTabBar';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
-import LiveLayer, { isPastClosing } from '@/components/live/LiveLayer';
+import LiveLayer from '@/components/live/LiveLayer';
+import { useMasaTabs } from '@/components/live/useMasaTabs';
 import LiveParticipation from '@/components/live/LiveParticipation';
 
-const DASHBOARD_POLL_MS = 15_000;
-
-// Havuza giriş zamanı için paketin türdeki açık kısmı (mevcut /payment/subscriptions yanıtı)
-interface OwnSub {
-  plan: string;
-  createdAt: string;
-  usedAt: string | null;
-  groupRights: number;
-  kankaRights: number;
-}
-
-const SUB_OPEN: Record<MasaTuru, (s: OwnSub) => boolean> = {
-  GROUP: s => (s.plan === 'MASADA' || s.plan === 'ICERDE') && s.groupRights > 0,
-  ONE_ON_ONE: s => (s.plan === 'KARSIMDA' || s.plan === 'ICERDE') && !s.usedAt,
-  KANKA: s => s.plan === 'KANKAMLA' && s.kankaRights > 0,
-};
-
-interface MeData {
-  firstName: string;
-  lastName: string;
-  activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
-  openParts?: { group: boolean; oneOnOne: boolean };
-  kankamla?: { open: boolean; hasKanka?: boolean; pairPackageActive?: boolean };
-  profile?: { gender?: string | null };
-  kyc?: { status: string; rejectReason?: string | null };
-  maintenanceMode?: boolean;
-}
-
 export default function DashboardPage() {
-  const [me, setMe] = useState<MeData | null>(null);
-  const [mounted, setMounted] = useState(false);
-  const [items, setItems] = useState<DashboardItem[]>([]);
-  const [weekTypes, setWeekTypes] = useState<MasaTuru[]>([]);
-  const [dashLoaded, setDashLoaded] = useState(false);
-  const [chosenTab, setChosenTab] = useState<MasaTuru | null>(null);
-  const [kanka, setKanka] = useState<{ initials: string; gender: string | null } | null>(null);
-  const [subs, setSubs] = useState<OwnSub[]>([]);
-  const [kycAt, setKycAt] = useState<string | null>(null);
+  const { ready, me, kanka, tab, tabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant } = useMasaTabs();
 
-  useEffect(() => {
-    // apiFetch 401 alınca refresh token deniyor (oturum HttpOnly çerezde)
-    Promise.all([
-      api.get<MeData>('/auth/me').then(u => { setMe(u); }).catch(() => {}),
-      api.get<{ subscriptions: OwnSub[] }>('/payment/subscriptions').then(r => setSubs(r.subscriptions)).catch(() => {}),
-      api.get<{ reviewedAt?: string | null }>('/kyc/status').then(r => setKycAt(r.reviewedAt ?? null)).catch(() => {}),
-    ]).finally(() => setMounted(true));
-    api.get<{ kanka: { initials: string; gender: string | null } | null }>('/kanka/me').then(r => setKanka(r.kanka)).catch(() => {});
-  }, []);
-
-  // Katılım alanı için kullanıcının kendi masaları
-  useEffect(() => {
-    let alive = true;
-    const load = () => {
-      if (document.hidden) return;
-      api.get<{ items: DashboardItem[]; weekTableTypes?: MasaTuru[] }>('/meetings/dashboard')
-        .then(r => { if (alive) { setItems(r.items); setWeekTypes(r.weekTableTypes ?? []); } })
-        .catch(() => {})
-        .finally(() => { if (alive) setDashLoaded(true); });
-    };
-    load();
-    const id = setInterval(load, DASHBOARD_POLL_MS);
-    return () => { alive = false; clearInterval(id); };
-  }, []);
-
-  if (!mounted || !dashLoaded) {
+  if (!ready) {
     return (
       <div className="min-h-screen bg-[#121212] flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-[#c0392b] border-t-transparent animate-spin" />
@@ -80,31 +17,9 @@ export default function DashboardPage() {
     );
   }
 
-  const selfParticipant = me
-    ? { initials: buildInitials(me.firstName, me.lastName), gender: me.profile?.gender ?? null }
-    : undefined;
-
-  // Sekmeler: aktif paket hakkı ya da bu hafta masası olan türler seçilebilir; hiç yoksa sayaç Grup'ta kalır
-  const hasTable = (t: MasaTuru) => weekTypes.includes(t) || items.some(i => i.meeting.type === t);
-  // kankamla.open aktif kanka da ister; paketi olup kankası olmayan da Kankamla hakkına sahiptir
-  const kankaWaiting = !!me?.kankamla?.pairPackageActive && !me?.kankamla?.hasKanka;
-  const rights = { GROUP: !!me?.openParts?.group, ONE_ON_ONE: !!me?.openParts?.oneOnOne, KANKA: !!me?.kankamla?.open || kankaWaiting };
-  const tables = { GROUP: hasTable('GROUP'), ONE_ON_ONE: hasTable('ONE_ON_ONE'), KANKA: hasTable('KANKA') };
-  const owned = (['GROUP', 'ONE_ON_ONE', 'KANKA'] as const).filter(t => rights[t] || tables[t]) as MasaTuru[];
-  const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : owned[0] ?? 'GROUP';
-  const tabItem = items.find(i => i.meeting.type === tab);
-  const kycApproved = me?.kyc?.status === 'APPROVED';
-  const scanning = owned.includes(tab) && kycApproved && !isPastClosing(tab);
-  // Havuza giriş: paket ve KYC onayının ikisi de tamamlandığı an; biri bilinmiyorsa null
-  const poolEntry = (t: MasaTuru) => {
-    const bought = subs.filter(SUB_OPEN[t]).map(s => Date.parse(s.createdAt));
-    return bought.length && kycAt ? Math.max(Math.min(...bought), Date.parse(kycAt)) : null;
-  };
-  const poolSince = { GROUP: poolEntry('GROUP'), ONE_ON_ONE: poolEntry('ONE_ON_ONE'), KANKA: poolEntry('KANKA') };
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] pt-[52px]">
-      <AccountTabBar kycApproved={me?.kyc?.status === 'APPROVED'} />
+      <AccountTabBar />
       <div
         className="fixed inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,0.1) 0%, transparent 70%)' }}
@@ -125,12 +40,9 @@ export default function DashboardPage() {
         activePlan={me?.activePlan ?? null}
         hasTabTable={!!tabItem}
         tab={tab}
-        rights={rights}
-        tables={tables}
-        kycApproved={kycApproved}
-        kankaWaiting={kankaWaiting}
-        poolSince={poolSince}
-        onTab={setChosenTab}
+        statuses={statuses}
+        tabPastClosing={tabPastClosing}
+        onTab={selectTab}
         notice={me && !kycApproved ? (
           <section className="ll-card" style={{ textAlign: 'center' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
