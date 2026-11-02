@@ -91,6 +91,11 @@ function ProfilPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Hesap sekmeleri arası geçişte paket durumu sunucudan güncellenir
+  useEffect(() => {
+    if (api.hasSession()) api.get<UserData>('/auth/me').then(u => setUser(u)).catch(() => {});
+  }, [activeTab]);
+
   useEffect(() => {
     if (!loading && !user) {
       // sadece oturum gerçekten yoksa yönlendir (sunucu hatalarında yanlış logout olmasın)

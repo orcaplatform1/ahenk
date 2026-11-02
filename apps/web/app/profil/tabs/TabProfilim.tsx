@@ -199,6 +199,9 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
   );
 }
 
+// Tüm Cihazlardan Çıkış Yap / Hesabımı Sil: yazı dar ekranda da tek satıra sığar
+const ACCOUNT_BTN: React.CSSProperties = { width: '72%', justifyContent: 'center', whiteSpace: 'nowrap', padding: '9px 10px', fontSize: 'clamp(8px, 2.5vw, 10px)', letterSpacing: '0.04em' };
+
 export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
   const [editingCities, setEditingCities] = useState(false);
   const [editingVenue, setEditingVenue] = useState(false);
@@ -469,11 +472,24 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         {user.profile?.birthDate && (
           <Row label="Yaş" value={`${Math.floor((Date.now() - new Date(user.profile.birthDate).getTime()) / (365.25 * 24 * 3600 * 1000))}`} />
         )}
+        {user.profile?.gender && (
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] text-[#c9c2b8]">Cinsiyet</span>
+            {/* Kayıt formundaki seçili cinsiyet etiketiyle aynı görünüm (app/kayit/page.tsx) */}
+            <span
+              className="flex items-center"
+              style={{
+                padding: '6px 16px', borderRadius: 9999,
+                border: `1.5px solid ${gColor(user.profile.gender)}`,
+                boxShadow: `0 0 12px ${gColor(user.profile.gender)}55`,
+              }}
+            >
+              <span className="text-[13px]" style={{ color: gColor(user.profile.gender) }}>{user.profile.gender === 'MALE' ? 'Erkek' : 'Kadın'}</span>
+            </span>
+          </div>
+        )}
         {/* Kankamla: Aktif Kankanız (davet et / davet var / kankan) + kısa açıklama */}
         <KankaSection />
-        {user.profile?.gender && (
-          <Row label="Cinsiyet" value={user.profile.gender === 'MALE' ? 'Erkek' : 'Kadın'} color={gColor(user.profile.gender)} />
-        )}
       </Card>
 
       {/* Aktif şehir */}
@@ -611,7 +627,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
       </Card>
 
       {/* Sadakat Programı */}
-      <Card title="SADAKAT PROGRAMI">
+      <Card title="Sadakat Programı">
         <div className="flex flex-col gap-2 mb-3">
           <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
             <span style={{ color: 'rgba(255,255,255,0.62)', fontSize: 14, marginRight: 4 }}>+90</span>
@@ -649,13 +665,13 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
 
       {/* Oturum ve hesap */}
       <div className="flex flex-col items-center gap-3 pb-2">
-        <button onClick={logoutAll} disabled={logoutAllBusy} className="mx-auto block btn-ghost disabled:opacity-40" style={{ width: '72%' }}>
+        <button onClick={logoutAll} disabled={logoutAllBusy} className="mx-auto block btn-ghost disabled:opacity-40" style={ACCOUNT_BTN}>
           {logoutAllBusy ? 'Çıkış yapılıyor…' : 'Tüm cihazlardan çıkış yap'}
         </button>
         {deletePending ? (
           <p className="text-xs text-[#a39c93] text-center">Hesap silme talebin alındı, en geç 48 saat içinde sonuçlanır.</p>
         ) : (
-          <button onClick={() => { setDeleteError(''); setDeleteOpen(true); }} className="text-xs text-[#ff6b6b] hover:underline">
+          <button onClick={() => { setDeleteError(''); setDeleteOpen(true); }} className="mx-auto block btn-ghost btn-ghost-red-dot" style={ACCOUNT_BTN}>
             Hesabımı Sil
           </button>
         )}

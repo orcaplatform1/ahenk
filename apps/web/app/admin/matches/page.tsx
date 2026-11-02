@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { api, API_PREFIX } from '@/lib/api';
+import { api } from '@/lib/api';
 import { myRole, myId } from '@/lib/adminRole';
 import { AdminUserEdit } from '@/components/AdminUserEdit';
 import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
@@ -54,10 +54,6 @@ interface Participant {
 
 interface MeetingDetail extends MeetingRow {
   maxParticipants: number;
-  venueAddress: string | null;
-  venuePhotoUrl: string | null;  venuePhotoCaption1: string | null;
-  venuePhoto2Url: string | null; venuePhotoCaption2: string | null;
-  venuePhoto3Url: string | null; venuePhotoCaption3: string | null;
   participants: Participant[];
   reviews: {
     id: string; rating: number; comment: string | null;
@@ -65,6 +61,11 @@ interface MeetingDetail extends MeetingRow {
   }[];
   blocks: { blockerId: string; blockedId: string }[];
   noShowReports: { reporterId: string; reportedId: string; createdAt: string }[];
+}
+
+interface VenueOption {
+  id: string; name: string; category: string;
+  weekCount: number; lastDaysAgo: number | null; capacityShort: boolean;
 }
 
 interface BotRow { id: string; name: string; gender: string | null; age: number | null; }
@@ -100,6 +101,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
   CANCELLED: { label: 'İptal',      color: RED,   bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.3)'   },
 };
 
+const VENUE_PACKAGES = ['SADE', 'ORTA', 'PREMIUM'];
 const TYPE_LABEL: Record<string, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Başbaşa' };
 const PLAN_LABEL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' };
 
@@ -124,7 +126,10 @@ export default function AdminMatches() {
 
   const [selected, setSelected] = useState<MeetingDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [venueInput, setVenueInput] = useState('');
+  const [venueOptions, setVenueOptions] = useState<VenueOption[]>([]);
+  const [venueChoice, setVenueChoice] = useState('');
+  const [venuePackage, setVenuePackage] = useState('');
+  const [venueError, setVenueError] = useState('');
   const [venueSaving, setVenueSaving] = useState(false);
   const [approving, setApproving] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -132,9 +137,6 @@ export default function AdminMatches() {
   const [cancelling, setCancelling] = useState(false);
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [bots, setBots] = useState<BotRow[]>([]);
-  const [venueAddress, setVenueAddress] = useState('');
-  const [captions, setCaptions] = useState(['', '', '']);
-  const [photoSaving, setPhotoSaving] = useState<number | 'info' | null>(null);
   const [botToPlace, setBotToPlace] = useState('');
   const [placingBot, setPlacingBot] = useState(false);
 
@@ -180,9 +182,11 @@ export default function AdminMatches() {
       setChat(messages);
       setBotToPlace('');
       loadBots(row.id);
-      setVenueInput(d.locationText ?? '');
-      setVenueAddress(d.venueAddress ?? '');
-      setCaptions([d.venuePhotoCaption1 ?? '', d.venuePhotoCaption2 ?? '', d.venuePhotoCaption3 ?? '']);
+      setVenuePackage('');
+      setVenueError('');
+      setVenueOptions([]);
+      setVenueChoice('');
+      loadVenueOptions(row.id);
     } catch (e) { setError(`Masa detayı yüklenemedi: ${(e as Error).message}`); }
     finally { setDetailLoading(false); }
   }
@@ -198,49 +202,22 @@ export default function AdminMatches() {
     finally { setApproving(false); }
   }
 
-  async function saveVenue() {
-    if (!selected) return;
-    setVenueSaving(true);
+  function loadVenueOptions(meetingId: string) {
+    api.get<{ venueId: string | null; options: VenueOption[] }>(`/admin/meetings/${meetingId}/venue-options`)
+      .then(r => { setVenueOptions(r.options); setVenueChoice(r.venueId ?? ''); })
+      .catch((e: Error) => setError(`Mekanlar yüklenemedi: ${e.message}`));
+  }
+
+  async function assignVenue() {
+    if (!selected || !venueChoice) return;
+    setVenueSaving(true); setVenueError('');
     try {
-      await api.patch(`/admin/meetings/${selected.id}/venue`, { locationText: venueInput });
-      setSelected(s => s ? { ...s, locationText: venueInput } : null);
-      setItems(prev => prev.map(m => m.id === selected.id ? { ...m, locationText: venueInput } : m));
-    } catch (e) { setError(`Mekan kaydedilemedi: ${(e as Error).message}`); }
+      const r = await api.patch<{ locationText: string }>(`/admin/meetings/${selected.id}/assign-venue`, { venueId: venueChoice });
+      setSelected(s => s ? { ...s, locationText: r.locationText } : null);
+      setItems(prev => prev.map(m => m.id === selected.id ? { ...m, locationText: r.locationText, venueMissing: false } : m));
+      loadVenueOptions(selected.id);
+    } catch (e) { setVenueError((e as Error).message); }
     finally { setVenueSaving(false); }
-  }
-
-  async function uploadVenuePhoto(slot: 1 | 2 | 3, file: File) {
-    if (!selected) return;
-    setPhotoSaving(slot); setError('');
-    try {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch(`${API_PREFIX}/admin/meetings/${selected.id}/venue-photo?slot=${slot}`, {
-        method: 'POST',
-        credentials: 'include',
-        body: form,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error((data as { message?: string }).message ?? 'Fotoğraf yüklenemedi');
-      const key = (['venuePhotoUrl', 'venuePhoto2Url', 'venuePhoto3Url'] as const)[slot - 1];
-      setSelected(s => s ? { ...s, [key]: (data as { url: string }).url } : null);
-    } catch (e) { setError((e as Error).message); }
-    finally { setPhotoSaving(null); }
-  }
-
-  async function saveVenueInfo(clearSlot?: 1 | 2 | 3) {
-    if (!selected) return;
-    setPhotoSaving(clearSlot ?? 'info'); setError('');
-    try {
-      const body: Record<string, string> = {
-        venueAddress,
-        venuePhotoCaption1: captions[0], venuePhotoCaption2: captions[1], venuePhotoCaption3: captions[2],
-      };
-      if (clearSlot) body[(['venuePhotoUrl', 'venuePhoto2Url', 'venuePhoto3Url'] as const)[clearSlot - 1]] = '';
-      const d = await api.patch<Partial<MeetingDetail>>(`/admin/meetings/${selected.id}/venue-photos`, body);
-      setSelected(s => s ? { ...s, ...d } : null);
-    } catch (e) { setError((e as Error).message); }
-    finally { setPhotoSaving(null); }
   }
 
   async function placeBot() {
@@ -527,110 +504,55 @@ export default function AdminMatches() {
             </button>
           )}
 
-          {/* Mekan */}
+          {/* Mekan: /admin/venues kayıtlarından seçilir; adres ve fotoğraflar mekân kaydından gelir */}
           <div>
-            <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>MEKAN</p>
+            <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>Mekan</p>
+            <div style={{ marginBottom: 8, maxWidth: 220 }}>
+              <AdminSelect
+                value={venuePackage}
+                onChange={setVenuePackage}
+                placeholder="Tüm paketler"
+                title="Paket seç"
+                options={[{ value: '', label: 'Tüm paketler' }, ...VENUE_PACKAGES.map(c => ({ value: c, label: c }))]}
+              />
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                value={venueInput}
-                onChange={e => setVenueInput(e.target.value)}
-                placeholder="Mekan adı / adresi…"
-                style={{ ...inputStyle, flex: 1 }}
+              <AdminSelect
+                value={venueChoice}
+                onChange={v => { setVenueChoice(v); setVenueError(''); }}
+                placeholder={venueOptions.length ? 'Mekan seçin' : 'Uygun mekan yok'}
+                title="Mekan seç"
+                style={{ flex: 1, width: 'auto', minWidth: 0 }}
+                options={venueOptions
+                  .filter(o => !venuePackage || o.category === venuePackage || o.id === venueChoice)
+                  .map(o => ({
+                    value: o.id,
+                    label: [
+                      o.name,
+                      o.category,
+                      `Bu hafta ${o.weekCount} masa`,
+                      o.lastDaysAgo === null ? 'Hiç atanmadı' : `Son atama: ${o.lastDaysAgo} gün önce`,
+                      ...(o.capacityShort ? ['Kapasite yetersiz'] : []),
+                    ].join(' · '),
+                  }))}
               />
               <button
-                onClick={saveVenue}
-                disabled={venueSaving}
+                onClick={assignVenue}
+                disabled={venueSaving || !venueChoice}
                 style={{
-                  padding: '7px 16px', borderRadius: 8, cursor: venueSaving ? 'not-allowed' : 'pointer',
+                  padding: '7px 16px', borderRadius: 8, cursor: venueSaving || !venueChoice ? 'not-allowed' : 'pointer',
                   background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)',
                   fontSize: 11, fontWeight: 600, color: '#93c5fd', fontFamily: SANS,
-                  opacity: venueSaving ? 0.5 : 1, flexShrink: 0,
+                  opacity: venueSaving || !venueChoice ? 0.5 : 1, flexShrink: 0,
                 }}
               >
-                {venueSaving ? '…' : 'Kaydet'}
+                {venueSaving ? '…' : 'Ata'}
               </button>
             </div>
-          </div>
-
-          {/* Mekan adresi + fotoğraflar (masa kartında katılımcılara gösterilir) */}
-          <div>
-            <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>MEKAN ADRESİ VE FOTOĞRAFLAR</p>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              <input
-                value={venueAddress}
-                onChange={e => setVenueAddress(e.target.value)}
-                placeholder="Açık adres…"
-                style={{ ...inputStyle, flex: 1 }}
-              />
-              {(venueAddress.trim() || venueInput.trim()) && (
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([venueInput.trim(), venueAddress.trim()].filter(Boolean).join(', '))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    padding: '7px 12px', borderRadius: 8, flexShrink: 0, textDecoration: 'none',
-                    background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.3)',
-                    fontSize: 11, fontWeight: 600, color: CYAN, fontFamily: SANS,
-                  }}
-                >
-                  Haritada gör
-                </a>
-              )}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-              {([1, 2, 3] as const).map(slot => {
-                const url = [selected.venuePhotoUrl, selected.venuePhoto2Url, selected.venuePhoto3Url][slot - 1];
-                return (
-                  <div key={slot} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <label
-                      style={{
-                        position: 'relative', aspectRatio: '4 / 3', borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
-                        background: SURFACE, border: `1px dashed ${BORDER}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >
-                      {url
-                        ? <img src={url} alt={`Fotoğraf ${slot}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ fontSize: 10, color: MUTED }}>{photoSaving === slot ? 'Yükleniyor…' : `+ Fotoğraf ${slot}`}</span>}
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        style={{ display: 'none' }}
-                        disabled={photoSaving !== null}
-                        onChange={e => { const f = e.target.files?.[0]; if (f) uploadVenuePhoto(slot, f); e.target.value = ''; }}
-                      />
-                    </label>
-                    <input
-                      value={captions[slot - 1]}
-                      onChange={e => setCaptions(c => c.map((x, i) => i === slot - 1 ? e.target.value : x))}
-                      placeholder={`Açıklama ${slot}`}
-                      style={{ ...inputStyle, width: '100%', padding: '5px 8px', fontSize: 10 }}
-                    />
-                    {url && (
-                      <button
-                        onClick={() => saveVenueInfo(slot)}
-                        disabled={photoSaving !== null}
-                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 9, color: RED, fontFamily: SANS, textAlign: 'left' }}
-                      >
-                        {photoSaving === slot ? '…' : 'Fotoğrafı kaldır'}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <button
-              onClick={() => saveVenueInfo()}
-              disabled={photoSaving !== null}
-              style={{
-                marginTop: 8, padding: '7px 16px', borderRadius: 8, cursor: photoSaving !== null ? 'not-allowed' : 'pointer',
-                background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)',
-                fontSize: 11, fontWeight: 600, color: '#93c5fd', fontFamily: SANS,
-                opacity: photoSaving !== null ? 0.5 : 1,
-              }}
-            >
-              {photoSaving === 'info' ? '…' : 'Adres ve Açıklamaları Kaydet'}
-            </button>
+            {selected.locationText && !venueOptions.some(o => o.id === venueChoice) && (
+              <p style={{ margin: '6px 0 0', fontSize: 11, color: MUTED }}>Mevcut mekan: {selected.locationText}</p>
+            )}
+            {venueError && <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 600, color: RED }}>{venueError}</p>}
           </div>
 
           {/* Katılımcılar */}

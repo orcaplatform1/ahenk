@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { buildInitials, type DashboardItem, type MasaTuru } from '@ahenk/ui';
+import { buildInitials, isTableLocked, type DashboardItem, type MasaTuru } from '@ahenk/ui';
 import { api } from '@/lib/api';
 import { getNextTarget } from '@/components/HeroCountdown';
 import type { TabStatus } from './LiveTabs';
@@ -64,6 +64,7 @@ export function useMasaTabs() {
   const [mounted, setMounted] = useState(false);
   const [items, setItems] = useState<DashboardItem[]>([]);
   const [weekTypes, setWeekTypes] = useState<MasaTuru[]>([]);
+  const [cancelledTypes, setCancelledTypes] = useState<MasaTuru[]>([]);
   const [dashLoaded, setDashLoaded] = useState(false);
   const [chosenTab, setChosenTab] = useState<MasaTuru | null>(null);
   const [kanka, setKanka] = useState<{ initials: string; gender: string | null } | null>(null);
@@ -73,21 +74,26 @@ export function useMasaTabs() {
   const pastList = () => MASA_TURLERI.filter(isPastClosing).join();
   const [pastClosed, setPastClosed] = useState(pastList);
 
+  // Paket durumu: panele her girişte ve sekme değişiminde sunucudan
+  const refreshPlan = useCallback(() => Promise.all([
+    api.get<MeData>('/auth/me').then(u => { setMe(u); }).catch(() => {}),
+    api.get<{ subscriptions: OwnSub[] }>('/payment/subscriptions').then(r => setSubs(r.subscriptions)).catch(() => {}),
+  ]), []);
+
   useEffect(() => {
     setChosenTab(readTab());
     // apiFetch 401 alınca refresh token deniyor (oturum HttpOnly çerezde)
     Promise.all([
-      api.get<MeData>('/auth/me').then(u => { setMe(u); }).catch(() => {}),
-      api.get<{ subscriptions: OwnSub[] }>('/payment/subscriptions').then(r => setSubs(r.subscriptions)).catch(() => {}),
+      refreshPlan(),
       api.get<{ reviewedAt?: string | null }>('/kyc/status').then(r => setKycAt(r.reviewedAt ?? null)).catch(() => {}),
     ]).finally(() => setMounted(true));
-  }, []);
+  }, [refreshPlan]);
 
   const reload = useCallback(() => {
     if (document.hidden) return Promise.resolve();
     api.get<{ kanka: { initials: string; gender: string | null } | null }>('/kanka/me').then(r => setKanka(r.kanka)).catch(() => {});
-    return api.get<{ items: DashboardItem[]; weekTableTypes?: MasaTuru[] }>('/meetings/dashboard')
-      .then(r => { setItems(r.items); setWeekTypes(r.weekTableTypes ?? []); })
+    return api.get<{ items: DashboardItem[]; weekTableTypes?: MasaTuru[]; weekCancelledTypes?: MasaTuru[] }>('/meetings/dashboard')
+      .then(r => { setItems(r.items); setWeekTypes(r.weekTableTypes ?? []); setCancelledTypes(r.weekCancelledTypes ?? []); })
       .catch(() => {})
       .finally(() => setDashLoaded(true));
   }, []);
@@ -107,7 +113,8 @@ export function useMasaTabs() {
   const selectTab = useCallback((t: MasaTuru) => {
     setChosenTab(t);
     try { localStorage.setItem(TAB_STORAGE_KEY, t); } catch { /* seçim yalnızca bu sayfada kalır */ }
-  }, []);
+    refreshPlan();
+  }, [refreshPlan]);
 
   // Sekmeler: aktif paket hakkı ya da bu hafta masası olan türler seçilebilir; hiç yoksa sayaç Grup'ta kalır
   const hasTable = (t: MasaTuru) => weekTypes.includes(t) || items.some(i => i.meeting.type === t);
@@ -119,12 +126,12 @@ export function useMasaTabs() {
     KANKA: !!me?.kankamla?.open || !!me?.kankamla?.pairPackageActive,
   };
   const tables: Record<MasaTuru, boolean> = { GROUP: hasTable('GROUP'), ONE_ON_ONE: hasTable('ONE_ON_ONE'), KANKA: hasTable('KANKA') };
-  const owned = MASA_TURLERI.filter(t => rights[t] || tables[t]);
+  const owned = MASA_TURLERI.filter(t => rights[t] || tables[t] || cancelledTypes.includes(t));
   const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : owned[0] ?? 'GROUP';
   const tabItem = items.find(i => i.meeting.type === tab);
   const kycApproved = me?.kyc?.status === 'APPROVED';
   const tabPastClosing = pastClosed.split(',').includes(tab);
-  const scanning = owned.includes(tab) && kycApproved && !tabPastClosing;
+  const scanning = owned.includes(tab) && kycApproved && !tabPastClosing && !cancelledTypes.includes(tab);
 
   // Havuza giriş: paket ve KYC onayının ikisi de tamamlandığı an; biri bilinmiyorsa null
   const poolEntry = (t: MasaTuru) => {
@@ -132,7 +139,11 @@ export function useMasaTabs() {
     return bought.length && kycAt ? Math.max(Math.min(...bought), Date.parse(kycAt)) : null;
   };
   const statusOf = (t: MasaTuru): TabStatus => {
-    if (tables[t]) return 'TABLE';
+    if (tables[t]) {
+      const table = items.find(i => i.meeting.type === t);
+      return table && !isTableLocked(table.meeting.scheduledAt) ? 'FORMING' : 'TABLE';
+    }
+    if (cancelledTypes.includes(t)) return 'CANCELLED';
     if (!rights[t]) return 'NONE';
     if (!kycApproved) return 'KYC';
     if (t === 'KANKA' && kankaWaiting) return 'KANKA';

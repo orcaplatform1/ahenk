@@ -361,7 +361,7 @@ function LivenessRecorder({ onCapture, initialDone }: { onCapture: (blob: Blob, 
                     <motion.div
                       animate={{ opacity: [1, 0.3, 1] }}
                       transition={{ duration: 0.6, repeat: Infinity }}
-                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
                       style={{ background: '#27ae60' }}
                     />
                     <span style={{ fontSize: '10px', fontWeight: 700, color: '#2ecc71', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>

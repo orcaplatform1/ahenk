@@ -764,7 +764,7 @@ export class AdminService {
         include: { participants: { select: { userId: true, status: true } } },
       });
       // Başbaşa hakkı masa kurulduğu anda harcanır
-      if (type === MeetingType.ONE_ON_ONE) await consumeOneOnOneRights(tx, data.participantIds);
+      if (type === MeetingType.ONE_ON_ONE) await consumeOneOnOneRights(tx, data.participantIds, meeting.createdAt);
       return meeting;
     });
     await writeSeatScores(this.prisma, created.id).catch(() => undefined);
@@ -777,7 +777,7 @@ export class AdminService {
     meetingId: string,
     data: { locationText?: string; locationUrl?: string; scheduledAt?: string },
   ) {
-    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { id: true, locationText: true, cityId: true } });
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { id: true, locationText: true, cityId: true, scheduledAt: true } });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
 
     // Admin farklı mekân yazarsa otomatik atama bağı kalkar (mekânın masa listesinden ve kontenjanından düşer)
@@ -787,9 +787,10 @@ export class AdminService {
     const partner = manualVenue && locationText && meeting.cityId
       ? await this.prisma.venue.findFirst({
           where: { cityId: meeting.cityId, name: locationText, isActive: true, account: { status: "ACTIVE" } },
-          select: { id: true },
+          select: { id: true, seatCapacity: true },
         })
       : null;
+    if (partner) await this.assertVenueFits(meetingId, partner.id, partner.seatCapacity, meeting.scheduledAt);
     const updated = await this.prisma.meeting.update({
       where: { id: meetingId },
       data: {
@@ -803,6 +804,89 @@ export class AdminService {
 
     await this.venueAssignment.syncVenueNotice(meetingId);
     return updated;
+  }
+
+  // Elle atama kuralı: aynı tarih ve saatte aynı mekânda başka masa olamaz; kapasite doluysa masaya yetmeli (boşsa kontrol yok)
+  private async assertVenueFits(meetingId: string, venueId: string, seatCapacity: number | null, scheduledAt: Date) {
+    const clash = await this.prisma.meeting.count({
+      where: { id: { not: meetingId }, venueId, scheduledAt, status: { not: MeetingStatus.CANCELLED } },
+    });
+    if (clash > 0) throw new BadRequestException("Bu mekanda aynı tarih ve saatte başka bir masa var.");
+    if (seatCapacity === null) return;
+    const seated = await this.prisma.meetingParticipant.count({
+      where: { meetingId, status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
+    });
+    if (seated > seatCapacity) throw new BadRequestException("Kapasite yetersiz");
+  }
+
+  // Masa detayındaki mekân listesi: masanın şehrindeki aktif mekânlar, az kullanılan önce
+  async getMeetingVenueOptions(meetingId: string) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      select: {
+        cityId: true,
+        scheduledAt: true,
+        venueId: true,
+        _count: { select: { participants: { where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } } } } },
+      },
+    });
+    if (!meeting) throw new NotFoundException("Masa bulunamadı");
+    if (!meeting.cityId) return { venueId: meeting.venueId, options: [] };
+
+    const venues = await this.prisma.venue.findMany({
+      where: { cityId: meeting.cityId, isActive: true },
+      select: { id: true, name: true, category: true, seatCapacity: true },
+    });
+    const assigned = await this.prisma.meeting.findMany({
+      where: { venueId: { in: venues.map((v) => v.id) }, status: { not: MeetingStatus.CANCELLED } },
+      select: { venueId: true, scheduledAt: true },
+    });
+    const weekStart = trWeekStart(meeting.scheduledAt).getTime();
+    const now = Date.now();
+    const options = venues.map((v) => {
+      const dates = assigned.filter((m) => m.venueId === v.id).map((m) => m.scheduledAt.getTime());
+      const lastAt = dates.length ? Math.max(...dates) : null;
+      return {
+        id: v.id,
+        name: v.name,
+        category: v.category,
+        weekCount: dates.filter((t) => t >= weekStart && t < weekStart + WEEK_MS).length,
+        lastAt,
+        // Masa tarihi ileride olabilir: gün sayısı 0'ın altına inmez
+        lastDaysAgo: lastAt === null ? null : Math.max(0, Math.floor((now - lastAt) / 86_400_000)),
+        capacityShort: v.seatCapacity !== null && meeting._count.participants > v.seatCapacity,
+      };
+    });
+    options.sort((a, b) => a.weekCount - b.weekCount || (a.lastAt ?? 0) - (b.lastAt ?? 0));
+    return { venueId: meeting.venueId, options: options.map(({ lastAt: _lastAt, ...o }) => o) };
+  }
+
+  // Seçilen mekân masaya atanır; adres, fotoğraf ve harita linki mekân kaydından gelir
+  async assignMeetingVenue(meetingId: string, venueId: string) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      select: { status: true, cityId: true, scheduledAt: true, venueId: true },
+    });
+    if (!meeting) throw new NotFoundException("Masa bulunamadı");
+    if (meeting.status === MeetingStatus.CANCELLED || meeting.status === MeetingStatus.COMPLETED) {
+      throw new BadRequestException("Bu masaya mekan atanamaz");
+    }
+    const venue = await this.prisma.venue.findFirst({ where: { id: venueId, cityId: meeting.cityId ?? undefined, isActive: true } });
+    if (!venue || !meeting.cityId) throw new BadRequestException("Mekan bu masanın şehrinde aktif değil");
+    if (meeting.venueId === venueId) return { id: meetingId, venueId, locationText: venue.name };
+
+    await this.assertVenueFits(meetingId, venueId, venue.seatCapacity, meeting.scheduledAt);
+    await this.prisma.meeting.update({
+      where: { id: meetingId },
+      data: {
+        venueId,
+        ...meetingVenueFields(venue),
+        // Önceki mekâna yazılmış fotoğraf başlıkları kalmaz
+        venuePhotoCaption1: null, venuePhotoCaption2: null, venuePhotoCaption3: null,
+      },
+    });
+    await this.venueAssignment.syncVenueNotice(meetingId);
+    return { id: meetingId, venueId, locationText: venue.name };
   }
 
   async updateMeetingVenuePhotos(
@@ -933,6 +1017,7 @@ export class AdminService {
     locationUrl?: string | null;
     websiteOrSocial?: string | null;
     capacity?: number | null;
+    seatCapacity?: number | null;
     venueKind?: string | null;
   }) {
     const city = await this.prisma.city.findUnique({ where: { id: data.cityId } });
@@ -953,6 +1038,7 @@ export class AdminService {
     locationUrl?: string | null;
     websiteOrSocial?: string | null;
     capacity?: number | null;
+    seatCapacity?: number | null;
     venueKind?: string | null;
   }) {
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
@@ -1347,8 +1433,18 @@ export class AdminService {
     if (!allowed.some((b) => b.id === botUserId)) {
       throw new BadRequestException('Bu bot eklenemez (eksik cinsiyet değil, masa dolu ya da aynı saatte başka masada)');
     }
-    await this.prisma.meetingParticipant.create({
-      data: { meetingId, userId: botUserId, status: 'INVITED' },
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      select: { type: true, createdAt: true, participants: { where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } }, select: { userId: true } } },
+    });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.meetingParticipant.create({
+        data: { meetingId, userId: botUserId, status: 'INVITED' },
+      });
+      // Başbaşa hakkı iki kişi oturduğu anda harcanır
+      if (meeting?.type === MeetingType.ONE_ON_ONE) {
+        await consumeOneOnOneRights(tx, meeting.participants.map((p) => p.userId), meeting.createdAt);
+      }
     });
     await writeSeatScores(this.prisma, meetingId).catch(() => undefined);
     return { placed: true, botUserId, meetingId };

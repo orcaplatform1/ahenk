@@ -16,7 +16,7 @@ import { encryptIdentityNumber, isValidTckn } from "./identity-number";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { NotificationService } from "../notification/notification.service";
 import { ReviewKycDto } from "./dto/review-kyc.dto";
-import { KycStatus, ReferralStatus } from "@prisma/client";
+import { KycStatus, ReferralStatus } from "../generated/prisma/client";
 import convertHeic = require("heic-convert");
 
 const UPLOAD_DIR = path.join(process.cwd(), "..", "uploads", "kyc");

@@ -18,7 +18,7 @@ import { AdminAction, reasonTr } from "../admin/admin-action-log";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from "@nestjs/swagger";
-import { KycStatus } from "@prisma/client";
+import { KycStatus } from "../generated/prisma/client";
 import { KycService } from "./kyc.service";
 import { ReviewKycDto, SetIdentityNumberDto } from "./dto/review-kyc.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";

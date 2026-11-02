@@ -79,8 +79,25 @@ export async function syncPackageStatus(db: Db, subscriptionId: string): Promise
   if (next !== s.status) await db.subscription.update({ where: { id: subscriptionId }, data: { status: next } });
 }
 
+// Rezervasyon iptali (grup): en eski açık paketten 1 hak + 1 döngü anında düşer; kilit bu paketi tekrar saymaz
+export async function chargeGroupCancel(db: Db, participantId: string, userId: string): Promise<void> {
+  const sub = await db.subscription.findFirst({
+    where: { userId, ...OPEN_GROUP_SUB },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (!sub) return;
+  await db.subscription.update({
+    where: { id: sub.id },
+    data: { groupRights: { decrement: 1 }, groupCycles: { increment: 1 } },
+  });
+  await db.meetingParticipant.update({ where: { id: participantId }, data: { groupRightSubId: sub.id } });
+  await syncPackageStatus(db, sub.id);
+}
+
 // Grup kilidi (Perşembe 23:59): grup kısmı açık paketlerin döngüsü 1 artar; bu döngüde kurulmuş (iptal edilmemiş)
 // grup masasında yeri olan kişinin 1 grup hakkı düşer. Kendisi iptal etmiş olsa da masa kurulmuş sayılır.
+// Rezervasyon iptalinde hak ve döngüsü düşülmüş paket bu kilitte sayılmaz.
 export async function closeGroupCycle(db: Db, cycleId: string | null, now = new Date()): Promise<void> {
   const subs = await db.subscription.findMany({
     where: { ...OPEN_GROUP_SUB, createdAt: { lte: new Date(now.getTime() - CYCLE_COUNT_CUTOFF_MS) } },
@@ -95,9 +112,18 @@ export async function closeGroupCycle(db: Db, cycleId: string | null, now = new 
       })
     : [];
   const participantByUser = new Map(participants.map((p) => [p.userId, p.id]));
+  const cancelCharged = new Set(
+    cycleId
+      ? (await db.meetingParticipant.findMany({
+          where: { status: "CANCELLED", groupRightSubId: { not: null }, meeting: { cycleId, type: MeetingType.GROUP } },
+          select: { groupRightSubId: true },
+        })).map((p) => p.groupRightSubId)
+      : [],
+  );
 
   const charged = new Set<string>();
   for (const sub of subs) {
+    if (cancelCharged.has(sub.id)) continue;
     const participantId = participantByUser.get(sub.userId);
     // Aynı kişinin birden fazla grup paketi varsa hak en eskiden düşer
     const charge = !!participantId && !charged.has(sub.userId);
@@ -157,8 +183,14 @@ export async function chargeKankaRight(db: Db, participantId: string, subscripti
   await syncPackageStatus(db, subscriptionId);
 }
 
+// Rezervasyon iptali (Kankamla): çiftin paketinden 1 hak + 1 döngü anında düşer; kilit bu paketi tekrar saymaz
+export async function chargeKankaCancel(db: Db, participantId: string, subscriptionId: string): Promise<void> {
+  await db.subscription.update({ where: { id: subscriptionId }, data: { kankaCycles: { increment: 1 } } });
+  await chargeKankaRight(db, participantId, subscriptionId);
+}
+
 // Kankamla kilidi (Cumartesi 23:59): bu döngüde kurulmuş (iptal edilmemiş) masadaki her çiftin paketinden 1 hak
-// düşer; sonra açık Kankamla paketlerinin döngüsü 1 artar. İptal eden çiftin hakkı iptal anında düşer.
+// düşer; sonra açık Kankamla paketlerinin döngüsü 1 artar. İptal eden çiftin hak ve döngüsü iptal anında düşer.
 export async function closeKankaCycle(db: Db, cycleId: string | null, now = new Date()): Promise<void> {
   if (cycleId) {
     const meetings = await db.meeting.findMany({
@@ -179,11 +211,20 @@ export async function closeKankaCycle(db: Db, cycleId: string | null, now = new 
       }
     }
   }
+  const cancelCharged = new Set(
+    cycleId
+      ? (await db.meetingParticipant.findMany({
+          where: { kankaRightSubId: { not: null }, meeting: { cycleId, type: MeetingType.KANKA, status: "CANCELLED" } },
+          select: { kankaRightSubId: true },
+        })).map((p) => p.kankaRightSubId)
+      : [],
+  );
   const subs = await db.subscription.findMany({
     where: { ...OPEN_KANKA_SUB, createdAt: { lte: new Date(now.getTime() - CYCLE_COUNT_CUTOFF_MS) } },
     select: { id: true },
   });
   for (const sub of subs) {
+    if (cancelCharged.has(sub.id)) continue;
     await db.subscription.update({ where: { id: sub.id }, data: { kankaCycles: { increment: 1 } } });
     await syncPackageStatus(db, sub.id);
   }

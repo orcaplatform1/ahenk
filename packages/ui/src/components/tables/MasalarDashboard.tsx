@@ -91,6 +91,12 @@ export function isMatchingClosed(type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'): boolea
   return type === 'GROUP' ? (dayTR === 5 || dayTR === 6 || dayTR === 0) : (dayTR === 6 || dayTR === 0);
 }
 
+// Masa kilidi: masa gününden 1 gün önce (kilit günü) 23:59 TR — Grup Perşembe, Başbaşa Cuma, Kankamla Cumartesi
+export function isTableLocked(scheduledAt: string): boolean {
+  const tr = new Date(new Date(scheduledAt).getTime() + 3 * 60 * 60 * 1000);
+  return Date.now() >= Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() - 1, 23 - 3, 59, 0, 0);
+}
+
 // Yeni taramanın başlayacağı Pazar 23:59 (TR) — örn. "1 Kasım Pazar 23:59"
 function nextScanStartLabel(): string {
   const nowTR = new Date(Date.now() + 3 * 60 * 60 * 1000);
@@ -582,7 +588,7 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant, isDesktop
             initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
             style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', color: isFull ? '#27ae60' : SCAN_CLR, fontFamily: 'Inter, sans-serif' }}
           >
-            {isFull ? 'MASA OLUŞTURULDU' : 'EŞLEŞME TARANIYOR'}
+            {isFull ? 'MASA KURULDU' : 'EŞLEŞME TARANIYOR'}
           </motion.span>
         </div>
       </div>
@@ -647,6 +653,8 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
   ordered.push(...others);
 
   const positions = orbitPts(maxP);
+  const locked = isTableLocked(scheduledAt);
+  const statusText = locked ? 'Masa Kuruldu' : 'Masa Oluşturuluyor';
 
   return (
     <div>
@@ -660,8 +668,8 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#27ae60' }} />
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', color: '#27ae60', fontFamily: 'Inter, sans-serif' }}>
-            MASA OLUŞTURULDU
+          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', color: '#27ae60', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>
+            {statusText}
           </span>
         </div>
       </div>
@@ -673,7 +681,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
           marginBottom: RADAR_SZ * (radarScale - 1),
         }}>
           <div style={{ position: 'absolute', inset: 0 }}>
-            <AhenkSonar width="100%" ariaLabel="Masa oluşturuldu" />
+            <AhenkSonar width="100%" ariaLabel={statusText} />
           </div>
           <AnimatePresence>
             {ordered.map((p, i) => {
@@ -695,7 +703,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
 
       <div style={{ textAlign: 'center', marginTop: 20, padding: '0 4px' }}>
         <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-serif, "DM Serif Display", serif)', fontSize: 18, fontWeight: 400, color: '#27ae60' }}>
-          Masanız Kuruldu!
+          {locked ? 'Masanız Kuruldu!' : 'Masanız Oluşturuluyor!'}
         </p>
         <p style={{ margin: '0 0 8px', fontSize: 12, color: '#888', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>
           Masa bulunma tarihi: {formatMasaDate(scheduledAt)}

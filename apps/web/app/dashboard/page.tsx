@@ -41,6 +41,7 @@ export default function DashboardPage() {
       <LiveLayer
         activePlan={me?.activePlan ?? null}
         hasTabTable={!!tabItem}
+        tabSeatsLeft={tabItem ? Math.max(0, (tabItem.meeting.maxParticipants ?? 0) - tabItem.meeting.participants.filter(p => !p.cancelled).length) : null}
         tab={tab}
         statuses={statuses}
         tabPastClosing={tabPastClosing}

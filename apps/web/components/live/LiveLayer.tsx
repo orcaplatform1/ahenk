@@ -16,9 +16,9 @@ const PULSE_MS = 15_000;
 const OVERVIEW_MS = 60_000;
 // Masa türüne göre kart metinleri
 const TABLE_TEXT: Record<MasaTuru, { title: string; note: string }> = {
-  GROUP: { title: 'Grup masası kurulmasına', note: "Perşembe 23:59'da masalar kapanır." },
-  ONE_ON_ONE: { title: 'Baş Başa masası kurulmasına', note: "Cuma 23:59'da masalar kapanır." },
-  KANKA: { title: 'Kankamla masası kurulmasına', note: "Cumartesi 23:59'da masalar kapanır." },
+  GROUP: { title: 'Grup masası kurulmasına', note: "Perşembe 23:59'da masa kapanır." },
+  ONE_ON_ONE: { title: 'Baş Başa masası kurulmasına', note: "Cuma 23:59'da masa kapanır." },
+  KANKA: { title: 'Kankamla masası kurulmasına', note: "Cumartesi 23:59'da masa kapanır." },
 };
 
 const OCEAN_LABEL: Record<OceanKey, string> = {
@@ -31,14 +31,6 @@ const OCEAN_LABEL: Record<OceanKey, string> = {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const num = (n: number) => n.toLocaleString('tr-TR');
-
-// Şehir adına bulunma eki: İstanbul'da, İzmir'de
-function locative(name: string) {
-  const vowels = name.toLocaleLowerCase('tr-TR').match(/[aıoueiöü]/g) ?? [];
-  const back = 'aıou'.includes(vowels[vowels.length - 1] ?? 'e');
-  const hard = /[fstkçşhp]$/i.test(name);
-  return `${name}'${hard ? 't' : 'd'}${back ? 'a' : 'e'}`;
-}
 
 function useLivePoll<T>(path: string | null, intervalMs: number) {
   const [data, setData] = useState<T | null>(null);
@@ -117,9 +109,10 @@ function heatColor(index: number, count: number) {
   return `rgba(255,255,255,${mix(0.08, 0.045)})`;
 }
 
-export default function LiveLayer({ activePlan, hasTabTable, tab, statuses, tabPastClosing, onTab, notice, participation }: {
+export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, tab, statuses, tabPastClosing, onTab, notice, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
+  tabSeatsLeft: number | null; // Kullanıcının masasındaki boş koltuk; masası yoksa null
   tab: MasaTuru;
   statuses: Record<MasaTuru, TabStatus>;
   tabPastClosing: boolean; // Seçili türün bu haftaki kapanışı geçti mi
@@ -133,10 +126,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, statuses, tabP
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
   const waitingScan = tabPastClosing && !hasTabTable;
 
-  const city = overview?.city;
   const seats = overview?.groupSeatsLeft ?? null;
-  const tabFill = overview ? { GROUP: overview.fill.group, ONE_ON_ONE: overview.fill.oneOnOne, KANKA: overview.fill.kanka }[tab] : null;
-  const tabSeats = tabFill && tabFill.total ? Math.max(0, tabFill.total - tabFill.filled) : null;
 
   function primaryAction() {
     router.push(overview?.hasTable || activePlan ? '/profil?tab=masalar' : '/profil?tab=paket');
@@ -155,8 +145,10 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, statuses, tabP
           <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} />
           <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>
             {waitingScan ? "Pazar 23:59'da yeni tarama başlar." : TABLE_TEXT[tab].note}
-            {!waitingScan && city && tabSeats !== null && (
-              <> {locative(city.name)} <strong style={{ color: '#fff' }}>{num(tabSeats)} koltuk</strong> kaldı.</>
+            {!waitingScan && tabSeatsLeft !== null && (
+              <span style={{ display: 'block' }}>
+                {tabSeatsLeft > 0 ? `Masanızda boş ${num(tabSeatsLeft)} koltuk kaldı.` : 'Masanızda kontenjan doldu.'}
+              </span>
             )}
           </p>
         </section>
@@ -184,8 +176,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, statuses, tabP
         {/* Isı haritası */}
         <section>
           <div className="ll-head">
-            <h2 className="ll-title">Semt Isı Haritası</h2>
-            <span className="ll-note">bu hafta talep</span>
+            <h2 className="ll-title">Semt Masa Yoğunluğu</h2>
           </div>
           {overview?.density ? (
             <div className="ll-heat">
@@ -242,8 +233,8 @@ export default function LiveLayer({ activePlan, hasTabTable, tab, statuses, tabP
             <div className="ll-head"><h2 className="ll-title">Bu Hafta Dolum</h2></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <FillRow label="Grup Masası · Cuma" fill={overview.fill.group} gradient="linear-gradient(90deg, #d6453a, #ff8a7e)" />
-              <FillRow label="Baş Başa · Cumartesi" fill={overview.fill.oneOnOne} gradient="linear-gradient(90deg, #c8743c, #e8a27a)" />
-              <FillRow label="Kankamla" fill={overview.fill.kanka} gradient="linear-gradient(90deg, #8f887f, #c9c2b8)" />
+              <FillRow label="Baş Başa Masası · Cumartesi" fill={overview.fill.oneOnOne} gradient="linear-gradient(90deg, #c8743c, #e8a27a)" />
+              <FillRow label="Kankamla Masası · Pazar" fill={overview.fill.kanka} gradient="linear-gradient(90deg, #8f887f, #c9c2b8)" />
             </div>
           </section>
         )}

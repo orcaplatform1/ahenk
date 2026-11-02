@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { KycStatus } from "@prisma/client";
+import { KycStatus } from "../generated/prisma/client";
 
 /**
  * Abonelik satın alımı gibi KYC gerektiren endpoint'lere eklenir.

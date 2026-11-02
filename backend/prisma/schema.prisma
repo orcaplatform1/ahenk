@@ -680,6 +680,7 @@ model Venue {
   websiteOrSocial String?
   photos          String[]  @default([])
   capacity        Int?      // Varsayılan haftalık kontenjan (kişi); o hafta için kayıt yoksa bu kullanılır
+  seatCapacity    Int?      // Kapasite (kişi): tek masanın en fazla kişi sayısı; boşsa elle atamada kontrol yapılmaz
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 

@@ -279,8 +279,8 @@ function EmptyMasaCard({
           transition={{ delay: 0.48, duration: 0.4 }}
           style={{ marginBottom: 20 }}
         >
-          <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#555', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-            {cardType === 'basbasa' ? 'BAŞ BAŞA' : cardType === 'kanka' ? 'KANKA ÇİFTLERİ' : 'KATILIMCILAR'}
+          <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#555', letterSpacing: '0.14em', textTransform: cardType === 'kanka' ? 'none' : 'uppercase', fontFamily: 'Inter, sans-serif' }}>
+            {cardType === 'basbasa' ? 'BAŞ BAŞA' : cardType === 'kanka' ? 'Kanka Çiftler' : 'KATILIMCILAR'}
           </p>
           {cardType === 'kanka' ? (
             <KankaPairs mine={[{ initials, gender: uGender, isSelf: true }, ...(kanka ? [kanka] : [])]} other={[]} />
@@ -553,9 +553,9 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
 
       <div>
         <div className="ll-head">
-          <h2 className="ll-title">{CARD_TITLE[tab]}</h2>
+          <h2 className="ll-title">{locked ? 'Masa Detay Kartı' : CARD_TITLE[tab]}</h2>
           <button type="button" onClick={() => setHistoryOpen(v => !v)} aria-expanded={historyOpen} className="btn-ghost" style={{ flexShrink: 0 }}>
-            Geçmiş Masaların
+            Geçmiş Masalarım
           </button>
         </div>
         {historyOpen && <HistoryList history={history} />}

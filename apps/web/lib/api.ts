@@ -41,22 +41,15 @@ async function logout(): Promise<void> {
 
 let _refreshPromise: Promise<boolean> | null = null;
 
-let _meCache: { data: unknown; ts: number } | null = null;
 let _meFlight: Promise<unknown> | null = null;
 let _meGen = 0;
 
-function getMeCached<T>(path: string): Promise<T> {
-  const now = Date.now();
-  if (_meCache && hasSession() && now - _meCache.ts < 30000) {
-    return Promise.resolve(_meCache.data as T);
-  }
+// /auth/me süreli önbelleğe alınmaz (paket durumu bayatlardı); yalnızca eşzamanlı istekler tek istekte birleşir
+function getMeShared<T>(path: string): Promise<T> {
   if (_meFlight) return _meFlight as Promise<T>;
   const capturedGen = _meGen;
   _meFlight = apiFetch<T>(path).then(data => {
-    if (_meGen === capturedGen) {
-      _meCache = { data, ts: Date.now() };
-      _meFlight = null;
-    }
+    if (_meGen === capturedGen) _meFlight = null;
     return data;
   }).catch(err => {
     if (_meGen === capturedGen) _meFlight = null;
@@ -66,7 +59,6 @@ function getMeCached<T>(path: string): Promise<T> {
 }
 
 function clearMeCache() {
-  _meCache = null;
   _meFlight = null;
   _meGen++;
 }
@@ -158,7 +150,7 @@ async function silentFetch<T>(path: string): Promise<T | null> {
 export const API_PREFIX = PREFIX;
 
 export const api = {
-  get: <T>(path: string) => path === '/auth/me' ? getMeCached<T>(path) : apiFetch<T>(path),
+  get: <T>(path: string) => path === '/auth/me' ? getMeShared<T>(path) : apiFetch<T>(path),
   post: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST', body }),
   put: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PUT', body }),
   patch: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PATCH', body }),

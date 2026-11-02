@@ -7,31 +7,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Son an: masa gününden 1 gün önce (kilit günü) 20:00 TR; masa kartı buluşma günü 10:00'da açıldığı için kartta iptal yoktur.
 
 // ── İptal Modal ───────────────────────────────────────────────────────────
-const LEAVE_REASONS = [
-  { value: 'VENUE_NOT_SUITABLE', label: 'Mekan uygun değil' },
-  { value: 'TIME_CHANGED',       label: 'Zaman değişti' },
-  { value: 'PERSONAL',           label: 'Kişisel sebep' },
-  { value: 'OTHER',              label: 'Diğer' },
-] as const;
-
 function CancelModal({
   onConfirm,
   onClose,
   loading,
-  isOneOnOne,
-  isKanka = false,
   error,
 }: {
-  onConfirm: (reason: string, note: string) => void;
+  onConfirm: (note: string) => void;
   onClose: () => void;
   loading: boolean;
-  isOneOnOne: boolean;
-  isKanka?: boolean;
   error: string;
 }) {
-  const [reason, setReason] = useState<string>('');
-  const [note,   setNote]   = useState('');
-  const canSubmit = reason !== '' && (reason !== 'OTHER' || note.trim().length > 0);
+  const [note, setNote] = useState('');
+  const canSubmit = note.trim().length > 0;
 
   return (
     <motion.div
@@ -59,61 +47,27 @@ function CancelModal({
           fontSize: 15, lineHeight: 1.6, fontWeight: 500,
           color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center',
         }}>
-          {isKanka
-            ? 'Rezervasyonu iptal ederseniz kankanızla birlikte masadan düşersiniz ve paketinizden 1 masa hakkı düşer. Pakette tek iptal hakkınız vardır. Kurulan masaya katılmama durumunda ilk uyarıyı alırsınız, 3 uyarı tamamlandığında hesabınız 1 ay askıya alınacaktır.'
-            : isOneOnOne
-            ? 'Başbaşa masanız kurulduğu için paket hakkınız kullanılmış sayılır; iptal etmeniz durumunda hakkınız iade edilmez. Kurulan masaya katılmama durumunda ilk uyarıyı alırsınız, 3 uyarı tamamlandığında hesabınız 1 ay askıya alınacaktır.'
-            : 'Rezervasyon iptali diğer kullanıcıları da doğrudan etkilediğinden, kurulan bir masada tekrar iptal hakkınız bulunmayacaktır ve kurulan masaya katılmama durumunda ilk uyarıyı alırsınız, 3 uyarı tamamlandığında hesabınız 1 ay askıya alınacaktır.'}
+          Rezervasyon iptali diğer kullanıcıları da doğrudan etkilediğinden, kurulan bir masada tekrar iptal hakkın bulunmayacaktır ve sonraki kurulan masaya da katılmama durumunda 1. uyarı verilir, toplamda 3 uyarı alırsan hesabın 30 gün askıya alınır.
         </p>
         <p style={{ margin: '0 0 10px', fontSize: 13, color: 'rgba(245,245,245,0.6)', fontFamily: 'Inter, sans-serif' }}>
-          Ayrılma sebebiniz:
+          İptal nedenini belirtin:
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-          {LEAVE_REASONS.map(r => (
-            <button
-              key={r.value}
-              onClick={() => setReason(r.value)}
-              style={{
-                padding: '10px 14px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
-                background: reason === r.value ? 'rgba(192,57,43,0.25)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${reason === r.value ? 'rgba(192,57,43,0.6)' : 'rgba(255,255,255,0.1)'}`,
-                color: reason === r.value ? '#ff6b6b' : '#c0c0c0',
-                fontSize: 14, fontFamily: 'Inter, sans-serif', fontWeight: reason === r.value ? 600 : 400,
-              }}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-        {reason === 'OTHER' && (
-          <textarea
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            placeholder="Lütfen açıklayın…"
-            maxLength={300}
-            rows={3}
-            style={{
-              width: '100%', boxSizing: 'border-box',
-              padding: '10px 12px', borderRadius: 10, marginBottom: 16,
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)',
-              color: '#f5f5f5', fontSize: 13, fontFamily: 'Inter, sans-serif', resize: 'none',
-              outline: 'none',
-            }}
-          />
-        )}
+        <textarea
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          maxLength={300}
+          rows={4}
+          style={{
+            width: '100%', boxSizing: 'border-box',
+            padding: '10px 12px', borderRadius: 10, marginBottom: 16,
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)',
+            color: '#f5f5f5', fontSize: 13, fontFamily: 'Inter, sans-serif', resize: 'none',
+            outline: 'none',
+          }}
+        />
         <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={onClose}
-            style={{
-              flex: 1, padding: '13px 0', borderRadius: 10, cursor: 'pointer',
-              background: 'rgba(39,174,96,0.18)', border: '1px solid rgba(39,174,96,0.45)',
-              color: '#27ae60', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif',
-            }}
-          >
-            Vazgeç
-          </button>
-          <button
-            onClick={() => canSubmit && onConfirm(reason, note)}
+            onClick={() => canSubmit && onConfirm(note.trim())}
             disabled={loading || !canSubmit}
             style={{
               flex: 1, padding: '13px 0', borderRadius: 10,
@@ -123,7 +77,17 @@ function CancelModal({
               opacity: (loading || !canSubmit) ? 0.45 : 1,
             }}
           >
-            {loading ? '…' : 'İptal Et'}
+            {loading ? '…' : 'İptali Onayla'}
+          </button>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: '13px 0', borderRadius: 10, cursor: 'pointer',
+              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)',
+              color: '#b0b0b0', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Vazgeç
           </button>
         </div>
         {error && (
@@ -147,7 +111,7 @@ function cancelDeadline(scheduledAt: string): Date {
 // pencereyi sayfanın üst katmanına taşımak için portal fonksiyonu verir (ör. node => createPortal(node, document.body))
 export type ModalPortal = (node: ReactNode) => ReactNode;
 
-export function RezervasyonIptal({ meetingId, type, scheduledAt, cancelRightUsed, apiBase, token, onCancelled, modalPortal }: {
+export function RezervasyonIptal({ meetingId, scheduledAt, cancelRightUsed, apiBase, token, onCancelled, modalPortal }: {
   meetingId: string;
   type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   scheduledAt: string;
@@ -162,11 +126,10 @@ export function RezervasyonIptal({ meetingId, type, scheduledAt, cancelRightUsed
   const [loading, setLoading] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const [error, setError] = useState('');
-  const isOneOnOne = type === 'ONE_ON_ONE';
 
   if (new Date() >= cancelDeadline(scheduledAt)) return null;
 
-  async function handleCancel(reason: string, note: string) {
+  async function handleCancel(note: string) {
     setLoading(true);
     setError('');
     try {
@@ -176,7 +139,7 @@ export function RezervasyonIptal({ meetingId, type, scheduledAt, cancelRightUsed
           ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
           : { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ reason, note: note || undefined }),
+        body: JSON.stringify({ note }),
       });
       if (res.ok) { setCancelled(true); setShowCancel(false); onCancelled?.(); return; }
       const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
@@ -214,11 +177,9 @@ export function RezervasyonIptal({ meetingId, type, scheduledAt, cancelRightUsed
         <AnimatePresence>
           {showCancel && (
             <CancelModal
-              onConfirm={(reason, note) => handleCancel(reason, note)}
+              onConfirm={handleCancel}
               onClose={() => { setShowCancel(false); setError(''); }}
               loading={loading}
-              isOneOnOne={isOneOnOne}
-              isKanka={type === 'KANKA'}
               error={error}
             />
           )}

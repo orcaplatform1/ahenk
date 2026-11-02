@@ -31,6 +31,7 @@ import {
   UpdateUserRoleDto,
   GrantFreeSubscriptionDto,
   UpdateMeetingVenueDto,
+  AssignMeetingVenueDto,
   CreateManualMeetingDto,
   CreateVenueDto,
   UpdateVenueDto,
@@ -246,6 +247,17 @@ export class AdminController {
   @Patch("meetings/:id/venue")
   updateMeetingVenue(@Param("id") id: string, @Body() dto: UpdateMeetingVenueDto) {
     return this.adminService.updateMeetingVenue(id, dto);
+  }
+
+  @Get("meetings/:id/venue-options")
+  getMeetingVenueOptions(@Param("id") id: string) {
+    return this.adminService.getMeetingVenueOptions(id);
+  }
+
+  @AdminAction("MEETING_VENUE", async (c) => `${await c.meetingName(c.params.id)} masasına mekan atadı`)
+  @Patch("meetings/:id/assign-venue")
+  assignMeetingVenue(@Param("id") id: string, @Body() dto: AssignMeetingVenueDto) {
+    return this.adminService.assignMeetingVenue(id, dto.venueId);
   }
 
   @AdminAction("MEETING_VENUE_INFO", async (c) => `${await c.meetingName(c.params.id)} masasının mekan adresini ve fotoğraf bilgilerini güncelledi`)

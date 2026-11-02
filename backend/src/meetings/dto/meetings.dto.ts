@@ -8,10 +8,8 @@ import {
   IsOptional,
   MaxLength,
   MinLength,
-  IsEnum,
 } from "class-validator";
 import { Transform } from "class-transformer";
-import { LeaveReason } from "../../generated/prisma/client";
 
 export class BlockUsersDto {
   @IsArray()
@@ -46,13 +44,12 @@ export class ReviewMeetingDto {
 }
 
 export class CancelRegistrationDto {
-  @IsEnum(LeaveReason)
-  reason: LeaveReason;
-
-  @IsOptional()
+  // "İptal nedenini belirtin" — zorunlu; yalnızca boşluk kabul edilmez
+  @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
   @IsString()
-  @MaxLength(500)
-  note?: string;
+  @MinLength(1, { message: "İptal nedenini belirtin" })
+  @MaxLength(300, { message: "İptal nedeni en fazla 300 karakter olabilir" })
+  note: string;
 }
 
 // Masa kartından gelmeyen işaretleme (geri alınamaz)

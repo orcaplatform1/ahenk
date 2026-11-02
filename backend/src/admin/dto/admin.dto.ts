@@ -77,6 +77,12 @@ export class UpdateMeetingVenueDto {
   scheduledAt?: string;
 }
 
+export class AssignMeetingVenueDto {
+  @IsString()
+  @MinLength(1)
+  venueId: string;
+}
+
 export class CreateManualMeetingDto {
   @IsString()
   @MinLength(2)
@@ -155,6 +161,11 @@ export class CreateVenueDto {
   capacity?: number | null;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  seatCapacity?: number | null;
+
+  @IsOptional()
   @IsString()
   @MaxLength(60)
   venueKind?: string | null;
@@ -224,6 +235,11 @@ export class UpdateVenueDto {
   @IsInt()
   @Min(1)
   capacity?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  seatCapacity?: number | null;
 
   @IsOptional()
   @IsString()

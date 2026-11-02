@@ -10,11 +10,11 @@ import { Queue } from "bull";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { cancellationNotice, initialsOf } from "./cancellation-notice";
-import { restoreOneOnOneRights } from "../matching/one-on-one-right";
+import { chargeOneOnOneCancel, restoreOneOnOneRights } from "../matching/one-on-one-right";
 import { cancelDeadline, meetingCardEnd, noShowCardWindow, sosWindowEnd, reviewWindow } from "./meeting-windows";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
-import { chargeKankaRight, pairKankaSub } from "../payment/package-rights";
+import { chargeGroupCancel, chargeKankaCancel, pairKankaSub } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { MeetingStatus, MeetingType, LeaveReason, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
 
@@ -87,7 +87,19 @@ export class MeetingsService {
     });
     const weekTableTypes = [...new Set(weekRows.map((r) => r.meeting.type))];
 
-    if (parts.length === 0) return { items: [], weekTableTypes };
+    // Bu hafta kendisi rezervasyonunu iptal ettiği türler (sekmede "Rez. İptal")
+    const cancelledRows = await this.prisma.meetingParticipant.findMany({
+      where: {
+        userId,
+        status: ParticipantStatus.CANCELLED,
+        leaveReason: { not: null },
+        meeting: { scheduledAt: { gte: weekStart, lt: new Date(weekStart.getTime() + WEEK_MS) } },
+      },
+      select: { meeting: { select: { type: true } } },
+    });
+    const weekCancelledTypes = [...new Set(cancelledRows.map((r) => r.meeting.type))];
+
+    if (parts.length === 0) return { items: [], weekTableTypes, weekCancelledTypes };
     const cancelRightUsed = await this.groupCancelRightUsed(userId);
     const kankaCancelUsed = parts.some(({ meeting }) => meeting.type === MeetingType.KANKA)
       ? await this.kankaCancelRightUsed(userId)
@@ -158,7 +170,7 @@ export class MeetingsService {
       }),
     );
 
-    return { items, weekTableTypes };
+    return { items, weekTableTypes, weekCancelledTypes };
   }
 
   // ─── Geçmiş masalar ─────────────────────────────────────────────────────────
@@ -672,8 +684,7 @@ export class MeetingsService {
   async cancelRegistration(
     meetingId: string,
     userId: string,
-    reason: LeaveReason,
-    note?: string,
+    note: string,
   ) {
     const participant = await this.prisma.meetingParticipant.findUnique({
       where: { meetingId_userId: { meetingId, userId } },
@@ -725,17 +736,22 @@ export class MeetingsService {
     }
     if (isKanka) {
       if (await this.kankaCancelRightUsed(userId)) throw new ForbiddenException("Bu paket için iptal hakkınızı kullandınız");
-      return this.cancelKankaRegistration(meetingId, userId, participant.id, participant.kankaPartnerId, reason, note, now);
+      return this.cancelKankaRegistration(meetingId, userId, participant.id, participant.kankaPartnerId, note, now);
     }
 
-    await this.prisma.meetingParticipant.update({
-      where: { meetingId_userId: { meetingId, userId } },
-      data: {
-        status: ParticipantStatus.CANCELLED,
-        leaveReason: reason,
-        leaveNote: note ?? null,
-        cancelledAt: now,
-      },
+    // İptal nedeni leaveNote'a yazılır; leaveReason "kendisi iptal etti" işaretidir
+    await this.prisma.$transaction(async (tx) => {
+      await tx.meetingParticipant.update({
+        where: { meetingId_userId: { meetingId, userId } },
+        data: {
+          status: ParticipantStatus.CANCELLED,
+          leaveReason: LeaveReason.OTHER,
+          leaveNote: note,
+          cancelledAt: now,
+        },
+      });
+      // Grup: iptal edenin paketinden 1 hak + 1 döngü düşer
+      if (isGroup) await chargeGroupCancel(tx, participant.id, userId);
     });
 
     // Grup: anında bildirim yok, Perşembe 20:00'de toplu gider (MatchingScheduler).
@@ -757,6 +773,8 @@ export class MeetingsService {
       await this.prisma.$transaction(async (tx) => {
         await tx.meeting.update({ where: { id: meetingId }, data: { status: MeetingStatus.CANCELLED } });
         await restoreOneOnOneRights(tx, meeting.createdAt, others);
+        // İptal edenin başbaşa hakkı yanar, 1 döngü düşer
+        await chargeOneOnOneCancel(tx, userId, meeting.createdAt);
       });
       for (const uid of others) await enqueueAssign(this.assignQueue, uid);
     }
@@ -764,11 +782,11 @@ export class MeetingsService {
     return { success: true };
   }
 
-  // Kankamla iptali: iptal eden kankasıyla birlikte düşer, masa iptal olur, çiftin paketinden 1 hak düşer.
+  // Kankamla iptali: iptal eden kankasıyla birlikte düşer, masa iptal olur, çiftin paketinden 1 hak + 1 döngü düşer.
   // Karşı çift yeniden taramaya girer (hakları korunur).
   private async cancelKankaRegistration(
     meetingId: string, userId: string, participantId: string, kankaId: string | null,
-    reason: LeaveReason, note: string | undefined, now: Date,
+    note: string, now: Date,
   ) {
     const pairIds = [userId, ...(kankaId ? [kankaId] : [])];
     const all = await this.prisma.meetingParticipant.findMany({ where: { meetingId }, select: { id: true, userId: true } });
@@ -777,7 +795,7 @@ export class MeetingsService {
     await this.prisma.$transaction(async (tx) => {
       await tx.meetingParticipant.update({
         where: { id: participantId },
-        data: { status: ParticipantStatus.CANCELLED, leaveReason: reason, leaveNote: note ?? null, cancelledAt: now },
+        data: { status: ParticipantStatus.CANCELLED, leaveReason: LeaveReason.OTHER, leaveNote: note, cancelledAt: now },
       });
       if (kankaId) {
         await tx.meetingParticipant.updateMany({
@@ -786,11 +804,11 @@ export class MeetingsService {
         });
       }
       await tx.meeting.update({ where: { id: meetingId }, data: { status: MeetingStatus.CANCELLED } });
-      // Rezervasyonu iptal eden çiftin paketinden 1 hak düşer
+      // Rezervasyonu iptal eden çiftin paketinden 1 hak + 1 döngü düşer
       const sub = await pairKankaSub(tx, pairIds);
       if (sub) {
         const buyer = all.find((p) => p.userId === sub.userId) ?? all.find((p) => p.id === participantId)!;
-        await chargeKankaRight(tx, buyer.id, sub.id);
+        await chargeKankaCancel(tx, buyer.id, sub.id);
       }
     });
 

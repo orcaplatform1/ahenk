@@ -3,7 +3,7 @@
 import type { CSSProperties } from 'react';
 import type { MasaTuru } from '@ahenk/ui';
 
-export type TabStatus = 'TABLE' | 'SCANNING' | 'KYC' | 'KANKA' | 'PENDING' | 'FAILED' | 'NONE';
+export type TabStatus = 'TABLE' | 'FORMING' | 'CANCELLED' | 'SCANNING' | 'KYC' | 'KANKA' | 'PENDING' | 'FAILED' | 'NONE';
 
 const TABS: { type: MasaTuru; label: string }[] = [
   { type: 'GROUP', label: 'GRUP' },
@@ -13,6 +13,8 @@ const TABS: { type: MasaTuru; label: string }[] = [
 
 const STATUS_TEXT: Record<TabStatus, string> = {
   TABLE: 'Masa Kuruldu',
+  FORMING: 'Masa Oluşturuluyor',
+  CANCELLED: 'Rez. İptal',
   SCANNING: 'Taramada',
   KYC: 'Kimlik Bekleniyor',
   KANKA: 'Kanka Bekleniyor',

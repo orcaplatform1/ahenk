@@ -65,6 +65,9 @@ type AssignContext = {
   kankaSoft: boolean;    // Cumartesi 12:00'ye kadar OCEAN + mekan uyumu (iki alıcı arasında)
 };
 
+// Tek kişilik başbaşa masası: oturan kişi eş bekliyor
+type LoneTable = { id: string; cityId: string | null; createdAt: Date; participantId: string; user: EligibleUser };
+
 // Kankamla çifti: paketi olan alıcı + aynı cinsiyetteki kankası (ücretsiz)
 type KankaPair = { buyer: EligibleUser; kanka: EligibleUser; subId: string };
 
@@ -184,11 +187,15 @@ export class MatchingService {
       await this.mergeGroupTables(ctx);
     }
     if (ctx.oneOnOneOpen) {
-      let pool = await this.fetchEligible(ctx.cycleId, ONE_ON_ONE_PLANS, true);
-      for (const user of [...pool]) {
-        if (!pool.some((u) => u.id === user.id)) continue;
-        const partnerId = await this.assignOneOnOne(ctx, user, pool);
-        if (partnerId) pool = pool.filter((u) => u.id !== user.id && u.id !== partnerId);
+      for (const user of await this.fetchEligible(ctx.cycleId, ONE_ON_ONE_PLANS, true)) {
+        await this.assignOneOnOne(ctx, user);
+      }
+      // Saatle gevşeyen filtreler: tek başına oturanlar birbirinin masasına geçebilir
+      const filled = new Set<string>();
+      for (const table of await this.loneOneOnOneTables(ctx.cycleId)) {
+        if (filled.has(table.id)) continue;
+        const target = await this.assignOneOnOne(ctx, table.user, table);
+        if (target) filled.add(target);
       }
     }
     if (ctx.kankaOpen) {
@@ -293,26 +300,45 @@ export class MatchingService {
     this.logger.log(`Yeni grup masası: meeting=${meeting.id} user=${user.id}`);
   }
 
-  // BAŞBAŞA: masa asla tek kişiyle kurulmaz; karşı cinsten uygun kişi bulununca kurulur ve iki tarafın hakkı harcanır.
-  // Karşı cins + şehir + en fazla 8 yaş farkı + engel hiç kalkmaz; OCEAN ve mekan uyumu Cuma 10:00'a kadar.
-  // Birden fazla aday → yaşı en yakın olan. Kurulan masanın karşı tarafının id'sini döner.
-  private async assignOneOnOne(ctx: AssignContext, user: EligibleUser, pool?: EligibleUser[]): Promise<string | null> {
+  // BAŞBAŞA: masa grup gibi ilk kişiyle açılır, hak ikinci kişi oturunca harcanır. Yeni gelen şehrindeki uygun tek kişilik
+  // masaya oturur; yoksa kendi masasını açar. Karşı cins + şehir + en fazla 8 yaş farkı + engel hiç kalkmaz;
+  // OCEAN ve mekan uyumu Cuma 10:00'a kadar. Birden fazla aday → yaşı en yakın olan.
+  // seat: kişi zaten tek başına oturuyor (saatlik tarama); eş bulunursa masası iptal edilip eşin masasına geçer.
+  // Dolan masanın id'sini döner.
+  private async assignOneOnOne(ctx: AssignContext, user: EligibleUser, seat?: LoneTable): Promise<string | null> {
     const cityId = matchCity(user);
     const gender = user.profile?.gender;
     if (!cityId || !gender) return null;
 
-    const others = (pool ?? (await this.fetchEligible(ctx.cycleId, ONE_ON_ONE_PLANS, true))).filter(
-      (u) =>
-        u.id !== user.id &&
-        matchCity(u) === cityId &&
-        !!u.profile?.gender &&
-        u.profile.gender !== gender &&
-        !this.areAgeGapTooLarge(user, u) &&
-        (!ctx.oneOnOneSoft || !this.areVenueIncompatible(user, u)),
+    const tables = (await this.loneOneOnOneTables(ctx.cycleId)).filter(
+      (t) =>
+        t.id !== seat?.id &&
+        t.user.id !== user.id &&
+        t.cityId === cityId &&
+        !!t.user.profile?.gender &&
+        t.user.profile.gender !== gender &&
+        !this.areAgeGapTooLarge(user, t.user) &&
+        (!ctx.oneOnOneSoft || !this.areVenueIncompatible(user, t.user)),
     );
-    const blocked = await this.blockedIds(user, others);
-    const candidates = others.filter((u) => !blocked.has(u.id));
-    if (candidates.length === 0) return null;
+    const blocked = await this.blockedIds(user, tables.map((t) => t.user));
+    const candidates = tables.filter((t) => !blocked.has(t.user.id));
+
+    if (candidates.length === 0) {
+      if (seat) return null;
+      const opened = await this.prisma.meeting.create({
+        data: {
+          cycleId: ctx.cycleId,
+          cityId,
+          type: MeetingType.ONE_ON_ONE,
+          title: await tableTitle(this.prisma, cityId, MeetingType.ONE_ON_ONE),
+          scheduledAt: oneOnOneMeetingAt(),
+          maxParticipants: 2,
+          participants: { create: { userId: user.id, status: "INVITED" } },
+        },
+      });
+      this.logger.log(`Yeni başbaşa masası: meeting=${opened.id} user=${user.id}`);
+      return null;
+    }
 
     const myAge = ageYears(user.profile?.birthDate);
     const ageDiff = (u: EligibleUser) => {
@@ -320,31 +346,70 @@ export class MatchingService {
       return myAge === null || age === null ? Number.MAX_SAFE_INTEGER : Math.abs(myAge - age);
     };
     candidates.sort((a, b) =>
-      ageDiff(a) - ageDiff(b) || (ctx.oneOnOneSoft ? this.scoreTwo(user, b) - this.scoreTwo(user, a) : 0),
+      ageDiff(a.user) - ageDiff(b.user) || (ctx.oneOnOneSoft ? this.scoreTwo(user, b.user) - this.scoreTwo(user, a.user) : 0),
     );
-    const partner = candidates[0];
+    const target = candidates[0];
 
-    const seatedId = await this.prisma.$transaction(async (tx) => {
-      const seated = await tx.meeting.create({
-        data: {
-          cycleId: ctx.cycleId,
-          cityId,
-          type: MeetingType.ONE_ON_ONE,
-          title: await tableTitle(tx, cityId, MeetingType.ONE_ON_ONE),
-          scheduledAt: oneOnOneMeetingAt(),
-          maxParticipants: 2,
-          participants: {
-            createMany: { data: [user, partner].map((u) => ({ userId: u.id, status: "INVITED" as const })) },
+    await this.prisma.$transaction(async (tx) => {
+      if (seat) {
+        await tx.meetingParticipant.update({ where: { id: seat.participantId }, data: { meetingId: target.id } });
+        await tx.meeting.update({ where: { id: seat.id }, data: { status: "CANCELLED" } });
+      } else {
+        await tx.meetingParticipant.create({ data: { meetingId: target.id, userId: user.id, status: "INVITED" } });
+      }
+      // Başbaşa hakkı iki kişi oturduğu anda harcanır
+      await consumeOneOnOneRights(tx, [user.id, target.user.id], target.createdAt);
+    });
+    await this.saveScores(target.id);
+    this.logger.log(`Başbaşa masası: ${user.id} + ${target.user.id}`);
+    return target.id;
+  }
+
+  // Bu döngüde eş bekleyen tek kişilik başbaşa masaları (kişinin başbaşa hakkı açık)
+  private async loneOneOnOneTables(cycleId: string): Promise<LoneTable[]> {
+    const meetings = await this.prisma.meeting.findMany({
+      where: { cycleId, type: MeetingType.ONE_ON_ONE, status: "PENDING", maxParticipants: 2 },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        cityId: true,
+        createdAt: true,
+        participants: {
+          where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
+          select: {
+            id: true,
+            user: { select: { ...ELIGIBLE_SELECT, subscriptions: { where: OPEN_ONE_ON_ONE_SUB, select: { id: true } } } },
           },
         },
-      });
-      // Başbaşa hakkı masa kurulduğu anda harcanır
-      await consumeOneOnOneRights(tx, [user.id, partner.id]);
-      return seated.id;
+      },
     });
-    await this.saveScores(seatedId);
-    this.logger.log(`Başbaşa masası: ${user.id} + ${partner.id}`);
-    return partner.id;
+    return meetings.flatMap((m) => {
+      const [only, ...rest] = m.participants;
+      if (!only || rest.length > 0 || only.user.subscriptions.length === 0) return [];
+      return [{ id: m.id, cityId: m.cityId, createdAt: m.createdAt, participantId: only.id, user: only.user as unknown as EligibleUser }];
+    });
+  }
+
+  async loneOneOnOneUserIds(cycleId: string): Promise<string[]> {
+    return (await this.loneOneOnOneTables(cycleId)).map((t) => t.user.id);
+  }
+
+  // Cuma kapanışı: eşi bulunamayan tek kişilik başbaşa masaları iptal olur (kişi bekleme listesine geçer)
+  async cancelLoneOneOnOneTables(cycleId: string): Promise<void> {
+    const meetings = await this.prisma.meeting.findMany({
+      where: { cycleId, type: MeetingType.ONE_ON_ONE, status: "PENDING" },
+      select: {
+        id: true,
+        createdAt: true,
+        participants: { where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } }, select: { userId: true } },
+      },
+    });
+    for (const m of meetings.filter((x) => x.participants.length < 2)) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.meeting.update({ where: { id: m.id }, data: { status: "CANCELLED" } });
+        await restoreOneOnOneRights(tx, m.createdAt, m.participants.map((p) => p.userId));
+      });
+    }
   }
 
   // KANKAMLA: iki alıcı (1 erkek + 1 kadın) eşleşince kankaları da masaya oturur → 4 kişi (2E + 2K), bot yok.
@@ -757,17 +822,17 @@ export class MatchingService {
     this.logger.log(`Bot eklendi: meeting=${meetingId} (${count}→${count + botIds.length})`);
   }
 
-  // Cuma 23:45: eşi bulunamayan ve 2. başbaşa haftasında olan (önceki başbaşa döngüsünde masası kurulamamış) kişiler
+  // Cuma 23:45: masasında eşi bulunamayan ve 2. başbaşa haftasında olan (önceki başbaşa döngüsünde masası kurulamamış) kişiler
   async scheduleOneOnOneBots(): Promise<void> {
     if (!(await isBotSystemActive(this.prisma))) return;
     const cycle = await this.currentCycle();
     if (!cycle) return;
-    const pool = await this.fetchEligible(cycle.id, ONE_ON_ONE_PLANS, true);
-    if (pool.length === 0) return;
+    const userIds = await this.loneOneOnOneUserIds(cycle.id);
+    if (userIds.length === 0) return;
 
     const subs = await this.prisma.subscription.findMany({
       where: {
-        userId: { in: pool.map((u) => u.id) },
+        userId: { in: userIds },
         ...OPEN_ONE_ON_ONE_SUB,
         missedOneonOneCycles: { gte: 1 },
       },
@@ -788,16 +853,16 @@ export class MatchingService {
     const cycle = await this.currentCycle();
     if (!cycle) return;
     // Bu arada eşleşmiş ya da hakkı kalmamışsa listede çıkmaz
-    const [user] = await this.fetchEligible(cycle.id, ONE_ON_ONE_PLANS, true, [userId]);
-    const gender = user?.profile?.gender;
-    const cityId = user ? matchCity(user) : null;
-    if (!user || !gender || !cityId) return;
+    const table = (await this.loneOneOnOneTables(cycle.id)).find((t) => t.user.id === userId);
+    if (!table) return;
+    const { user } = table;
+    const gender = user.profile?.gender;
+    if (!gender) return;
 
-    const scheduledAt = oneOnOneMeetingAt();
     const bot = await pickBot(this.prisma, {
       gender: gender === Gender.MALE ? Gender.FEMALE : Gender.MALE,
-      scheduledAt,
-      cityId,
+      scheduledAt: oneOnOneMeetingAt(),
+      cityId: table.cityId,
       targetBirthDate: user.profile?.birthDate ? new Date(user.profile.birthDate) : null,
     });
     const myAge = ageYears(user.profile?.birthDate);
@@ -808,36 +873,17 @@ export class MatchingService {
       return;
     }
 
-    await this.createOneOnOneBotMeeting(cycle, user.id, cityId, bot.id, scheduledAt);
+    await this.seatOneOnOneBot(table, bot.id);
   }
 
-  private async createOneOnOneBotMeeting(
-    cycle: { id: string; weekNumber: number },
-    userId: string,
-    cityId: string,
-    botId: string,
-    scheduledAt: Date,
-  ): Promise<void> {
-    const seatedId = await this.prisma.$transaction(async (tx) => {
-      const seated = await tx.meeting.create({
-        data: {
-          cycleId: cycle.id,
-          cityId,
-          type: MeetingType.ONE_ON_ONE,
-          title: await tableTitle(tx, cityId, MeetingType.ONE_ON_ONE),
-          scheduledAt,
-          maxParticipants: 2,
-          participants: {
-            createMany: { data: [{ userId, status: "INVITED" }, { userId: botId, status: "INVITED" }] },
-          },
-        },
-      });
-      // Başbaşa hakkı masa kurulduğu anda harcanır
-      await consumeOneOnOneRights(tx, [userId]);
-      return seated.id;
+  private async seatOneOnOneBot(table: LoneTable, botId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.meetingParticipant.create({ data: { meetingId: table.id, userId: botId, status: "INVITED" } });
+      // Başbaşa hakkı iki kişi oturduğu anda harcanır
+      await consumeOneOnOneRights(tx, [table.user.id], table.createdAt);
     });
-    await this.saveScores(seatedId);
-    this.logger.log(`ONE_ON_ONE bot eşleşmesi: user=${userId} bot=${botId}`);
+    await this.saveScores(table.id);
+    this.logger.log(`ONE_ON_ONE bot eşleşmesi: user=${table.user.id} bot=${botId}`);
   }
 
   // ─── Admin: başbaşada eşi bekleyenler (Açık masalar) ──────────────────────
@@ -845,7 +891,7 @@ export class MatchingService {
   // Kaçıncı başbaşa döngüsünde olduğu: önceki döngülerde masası kurulamadıysa artar (1. döngüde bot eklenmez)
   async getOneOnOneWaiting() {
     const cycle = await this.currentCycle();
-    const pool = await this.fetchEligible(cycle.id, ONE_ON_ONE_PLANS, true);
+    const pool = (await this.loneOneOnOneTables(cycle.id)).map((t) => t.user);
     if (pool.length === 0) return [];
     const ids = pool.map((u) => u.id);
     const cityIds = [...new Set(pool.map(matchCity).filter((c): c is string => !!c))];
@@ -872,20 +918,19 @@ export class MatchingService {
 
   private async waitingUser(userId: string) {
     const cycle = await this.currentCycle();
-    const [user] = await this.fetchEligible(cycle.id, ONE_ON_ONE_PLANS, true, [userId]);
-    const gender = user?.profile?.gender;
-    const cityId = user ? matchCity(user) : null;
-    if (!user || !gender || !cityId) throw new BadRequestException("Kişi eşi bekleyenler listesinde değil");
-    return { cycle, user, gender, cityId };
+    const table = (await this.loneOneOnOneTables(cycle.id)).find((t) => t.user.id === userId);
+    const gender = table?.user.profile?.gender;
+    if (!table || !gender) throw new BadRequestException("Kişi eşi bekleyenler listesinde değil");
+    return { table, user: table.user, gender };
   }
 
   // Elle bot listesi: karşı cins, en fazla 8 yaş fark, Pazar buluşma saatinde boşta
   async botsForWaiting(userId: string) {
-    const { user, gender } = await this.waitingUser(userId);
+    const { table, user, gender } = await this.waitingUser(userId);
     const bots = await availableBots(this.prisma, {
       gender: gender === Gender.MALE ? Gender.FEMALE : Gender.MALE,
       scheduledAt: oneOnOneMeetingAt(),
-      cityId: matchCity(user),
+      cityId: table.cityId,
     });
     const myAge = ageYears(user.profile?.birthDate);
     return bots
@@ -895,12 +940,12 @@ export class MatchingService {
   }
 
   async addOneOnOneBotManual(userId: string, botId: string) {
-    const { cycle, cityId } = await this.waitingUser(userId);
+    const { table } = await this.waitingUser(userId);
     const allowed = await this.botsForWaiting(userId);
     if (!allowed.some((b) => b.id === botId)) {
       throw new BadRequestException("Bu bot eklenemez (cinsiyet, yaş farkı ya da aynı saatte başka masada)");
     }
-    await this.createOneOnOneBotMeeting(cycle, userId, cityId, botId, oneOnOneMeetingAt());
+    await this.seatOneOnOneBot(table, botId);
     return { created: true };
   }
 

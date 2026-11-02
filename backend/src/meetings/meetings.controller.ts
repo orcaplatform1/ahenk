@@ -101,7 +101,7 @@ export class MeetingsController {
     @Req() req: Request,
   ) {
     const user = req.user as { id: string };
-    return this.meetingsService.cancelRegistration(id, user.id, dto.reason, dto.note);
+    return this.meetingsService.cancelRegistration(id, user.id, dto.note);
   }
 
   // AI masa raporu

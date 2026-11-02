@@ -576,6 +576,11 @@ export class MatchingScheduler {
         )
       : new Set<string>();
 
+    // Başbaşa: masada tek başına oturan henüz eşleşmemiştir
+    if (cycle && !isGroup) {
+      for (const id of await this.matchingService.loneOneOnOneUserIds(cycle.id)) matchedUserIds.delete(id);
+    }
+
     // Havuzda olan ama eşleşmemiş kullanıcılar
     const eligibleUsers = await this.prisma.user.findMany({
       where: {
@@ -611,6 +616,9 @@ export class MatchingScheduler {
       update: {},
       create: { weekNumber, year, status: 'RUNNING' },
     });
+
+    // Eşi bulunamayan tek kişilik masalar kapanır
+    await this.matchingService.cancelLoneOneOnOneTables(cycle.id);
 
     // Eşleşmemiş ONE_ON_ONE kullanıcıları bul
     const matchedIds = new Set(

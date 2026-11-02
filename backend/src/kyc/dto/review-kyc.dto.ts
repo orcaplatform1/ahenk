@@ -1,6 +1,6 @@
 import { IsEnum, IsOptional, IsString, Matches, MaxLength, ValidateIf } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { KycStatus } from "@prisma/client";
+import { KycStatus } from "../../generated/prisma/client";
 
 const REVIEWABLE_STATUSES = [
   KycStatus.APPROVED,

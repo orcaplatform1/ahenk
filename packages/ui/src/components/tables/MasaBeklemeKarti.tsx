@@ -106,7 +106,7 @@ export function MasaBeklemeKarti({ sat10UTC, maxParticipants = 6, participantCou
           fontWeight: 600,
         }}
       >
-        MASA OLUŞTURULDU
+        MASA KURULDU
       </motion.p>
 
       {/* Tik animasyonu */}
