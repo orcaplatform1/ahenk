@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import { getNextTarget } from '@/components/HeroCountdown';
 import { CLOSING_DAY, SCAN_START_DAY } from './useMasaTabs';
@@ -141,6 +142,9 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, tab, 
 
         {/* Geri sayım */}
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
+          {!hasTabTable && (
+            <Image src="/maskot/jantihaydar_stop.png" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[160px] md:w-[200px]" />
+          )}
           <p key={tab} className="ll-eyebrow ll-fade">{waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</p>
           <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} />
           <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>
