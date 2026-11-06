@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "commonjs",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "paths": {
+      "@ahenk/shared/*": ["./packages/shared/src/*"],
+      "@ahenk/ui/*": ["./packages/ui/src/*"],
+      "@ahenk/config/*": ["./packages/config/*"]
+    }
+  },
+  "exclude": ["node_modules", "**/node_modules", "**/dist", "**/build", "**/.next"]
+}
