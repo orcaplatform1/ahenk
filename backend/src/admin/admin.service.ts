@@ -41,10 +41,10 @@ import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "../matching/one-on-one-right";
-import { availableBots } from "../matching/bot-picker";
+import { availableBots, recentlyMetBotIds } from "../matching/bot-picker";
 import { MatchingService } from "../matching/matching.service";
 import { isValidDistrict } from "../common/districts";
-import { meetingVenueFields, VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
+import { meetingVenueFields, seatsBookedAt, VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
 import { CAREER_CV_DIR } from "../careers/career-cv";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
@@ -823,17 +823,15 @@ export class AdminService {
     return updated;
   }
 
-  // Elle atama kuralı: aynı tarih ve saatte aynı mekânda başka masa olamaz; kapasite doluysa masaya yetmeli (boşsa kontrol yok)
+  // Elle atama kuralı: aynı mekânda aynı tarih-saatteki masaların maxParticipants toplamı + bu masanın
+  // maxParticipants değeri mekân kapasitesini aşamaz (kapasite boşsa kontrol yok)
   private async assertVenueFits(meetingId: string, venueId: string, seatCapacity: number | null, scheduledAt: Date) {
-    const clash = await this.prisma.meeting.count({
-      where: { id: { not: meetingId }, venueId, scheduledAt, status: { not: MeetingStatus.CANCELLED } },
-    });
-    if (clash > 0) throw new BadRequestException("Bu mekanda aynı tarih ve saatte başka bir masa var.");
     if (seatCapacity === null) return;
-    const seated = await this.prisma.meetingParticipant.count({
-      where: { meetingId, status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
-    });
-    if (seated > seatCapacity) throw new BadRequestException("Kapasite yetersiz");
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { maxParticipants: true } });
+    const booked = await seatsBookedAt(this.prisma, venueId, scheduledAt, meetingId);
+    if (booked + (meeting?.maxParticipants ?? 0) > seatCapacity) {
+      throw new BadRequestException(`Mekan kapasitesi yetersiz: bu saatte ${booked}/${seatCapacity} kişilik masa atanmış.`);
+    }
   }
 
   // Masa detayındaki mekân listesi: masanın şehrindeki aktif mekânlar, az kullanılan önce
@@ -844,7 +842,7 @@ export class AdminService {
         cityId: true,
         scheduledAt: true,
         venueId: true,
-        _count: { select: { participants: { where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } } } } },
+        maxParticipants: true,
       },
     });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
@@ -860,6 +858,9 @@ export class AdminService {
     });
     const weekStart = trWeekStart(meeting.scheduledAt).getTime();
     const now = Date.now();
+    const booked = new Map(
+      await Promise.all(venues.map(async (v) => [v.id, await seatsBookedAt(this.prisma, v.id, meeting.scheduledAt, meetingId)] as const)),
+    );
     const options = venues.map((v) => {
       const dates = assigned.filter((m) => m.venueId === v.id).map((m) => m.scheduledAt.getTime());
       const lastAt = dates.length ? Math.max(...dates) : null;
@@ -871,7 +872,7 @@ export class AdminService {
         lastAt,
         // Masa tarihi ileride olabilir: gün sayısı 0'ın altına inmez
         lastDaysAgo: lastAt === null ? null : Math.max(0, Math.floor((now - lastAt) / 86_400_000)),
-        capacityShort: v.seatCapacity !== null && meeting._count.participants > v.seatCapacity,
+        capacityShort: v.seatCapacity !== null && (booked.get(v.id) ?? 0) + meeting.maxParticipants > v.seatCapacity,
       };
     });
     options.sort((a, b) => a.weekCount - b.weekCount || (a.lastAt ?? 0) - (b.lastAt ?? 0));
@@ -1036,7 +1037,6 @@ export class AdminService {
     district?: string;
     locationUrl?: string | null;
     websiteOrSocial?: string | null;
-    capacity?: number | null;
     seatCapacity?: number | null;
     venueKind?: string | null;
   }) {
@@ -1057,7 +1057,6 @@ export class AdminService {
     cityId?: string;
     locationUrl?: string | null;
     websiteOrSocial?: string | null;
-    capacity?: number | null;
     seatCapacity?: number | null;
     venueKind?: string | null;
   }) {
@@ -1420,7 +1419,7 @@ export class AdminService {
         status: true, type: true, scheduledAt: true, maxParticipants: true, cityId: true,
         participants: {
           where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
-          select: { user: { select: { profile: { select: { gender: true } } } } },
+          select: { userId: true, user: { select: { isBot: true, profile: { select: { gender: true } } } } },
         },
       },
     });
@@ -1436,7 +1435,9 @@ export class AdminService {
       ...(males < half ? [Gender.MALE] : []),
       ...(females < half ? [Gender.FEMALE] : []),
     ];
-    const lists = await Promise.all(genders.map((gender) => availableBots(this.prisma, { gender, scheduledAt: meeting.scheduledAt, cityId: meeting.cityId })));
+    // Masadaki gerçek kullanıcılardan biriyle son 28 günde aynı masada bulunmuş botlar listelenmez
+    const recentBots = await recentlyMetBotIds(this.prisma, meeting.participants.filter((p) => !p.user.isBot).map((p) => p.userId));
+    const lists = await Promise.all(genders.map((gender) => availableBots(this.prisma, { gender, scheduledAt: meeting.scheduledAt, cityId: meeting.cityId, excludeIds: recentBots })));
     return lists.flat().map((b) => ({
       id: b.id,
       name: `${b.profile?.firstName ?? ''} ${b.profile?.lastName ?? ''}`.trim(),
@@ -1448,6 +1449,13 @@ export class AdminService {
   }
 
   async placeBot(meetingId: string, botUserId: string) {
+    const realIds = (await this.prisma.meetingParticipant.findMany({
+      where: { meetingId, status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] }, user: { isBot: false } },
+      select: { userId: true },
+    })).map((p) => p.userId);
+    if ((await recentlyMetBotIds(this.prisma, realIds)).includes(botUserId)) {
+      throw new BadRequestException('Bu bot son 4 hafta içinde masadaki bir kullanıcıyla eşleşti.');
+    }
     const allowed = await this.getBotsForMeeting(meetingId);
     // Yanlış cinsiyet, dolu masa ya da aynı saatte başka masadaki bot ASLA eklenmez
     if (!allowed.some((b) => b.id === botUserId)) {
@@ -1907,7 +1915,7 @@ export class AdminService {
           locationUrl: app.locationUrl,
           websiteOrSocial: app.websiteOrSocial,
           photos: app.photos,
-          capacity: app.capacity,
+          seatCapacity: app.capacity,
         },
       });
       await tx.venueAccount.update({

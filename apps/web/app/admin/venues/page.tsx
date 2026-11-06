@@ -29,7 +29,7 @@ const photoRemove: React.CSSProperties = {
 interface Venue {
   id: string; name: string; category: string; venueType?: string;
   address?: string | null; district?: string | null; description?: string | null; isActive: boolean;
-  locationUrl?: string | null; websiteOrSocial?: string | null; capacity?: number | null; seatCapacity?: number | null;
+  locationUrl?: string | null; websiteOrSocial?: string | null; seatCapacity?: number | null;
   latitude?: number | null; longitude?: number | null; photos: string[]; venueKind?: string | null;
   city: City;
   account?: { email: string; phone: string; status: string; application?: { contactName: string } | null } | null;
@@ -37,7 +37,7 @@ interface Venue {
 
 const EMPTY_FORM = {
   name: '', category: 'SADE', venueType: 'NON_ALCOHOLIC', cityId: '', address: '', district: '', description: '',
-  locationUrl: '', websiteOrSocial: '', capacity: '', seatCapacity: '', latitude: '', longitude: '', venueKind: '',
+  locationUrl: '', websiteOrSocial: '', seatCapacity: '', latitude: '', longitude: '', venueKind: '',
 };
 const MAX_PHOTOS = 3;
 
@@ -89,7 +89,7 @@ export default function AdminVenues() {
     setForm({
       name: v.name, category: v.category, venueType: v.venueType ?? 'NON_ALCOHOLIC', cityId: v.city.id,
       address: v.address ?? '', district: v.district ?? '', description: v.description ?? '',
-      locationUrl: v.locationUrl ?? '', websiteOrSocial: v.websiteOrSocial ?? '', capacity: v.capacity != null ? String(v.capacity) : '',
+      locationUrl: v.locationUrl ?? '', websiteOrSocial: v.websiteOrSocial ?? '',
       seatCapacity: v.seatCapacity != null ? String(v.seatCapacity) : '',
       latitude: v.latitude != null ? String(v.latitude) : '', longitude: v.longitude != null ? String(v.longitude) : '',
       venueKind: v.venueKind ?? '',
@@ -106,7 +106,7 @@ export default function AdminVenues() {
       name: form.name, category: form.category, venueType: form.venueType, cityId: form.cityId,
       address: orNull(form.address), district: orNull(form.district), description: orNull(form.description),
       locationUrl: orNull(form.locationUrl), websiteOrSocial: orNull(form.websiteOrSocial), venueKind: orNull(form.venueKind),
-      capacity: numOrNull(form.capacity), seatCapacity: numOrNull(form.seatCapacity), latitude: numOrNull(form.latitude), longitude: numOrNull(form.longitude),
+      seatCapacity: numOrNull(form.seatCapacity), latitude: numOrNull(form.latitude), longitude: numOrNull(form.longitude),
     };
     setModalError('');
     try {
@@ -390,10 +390,6 @@ export default function AdminVenues() {
                   placeholder="Alkol durumu"
                   options={[{ value: 'NON_ALCOHOLIC', label: 'Alkolsüz' }, { value: 'ALCOHOLIC', label: 'Alkollü' }]}
                 />
-              </div>
-              <div>
-                <p style={labelStyle}>KONTENJAN (KİŞİ, OPSİYONEL)</p>
-                <input type="number" min={1} value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} placeholder="Haftalık varsayılan kontenjan" style={inputStyle} />
               </div>
               <div>
                 <p style={labelStyle}>Kapasite (kişi)</p>

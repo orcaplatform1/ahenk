@@ -169,6 +169,11 @@ Mekan yönetimi:
   - POST /admin/venues — mekan ekle {name, category(SADE/ORTA/PREMIUM), cityId, address?}
   - PATCH /admin/venues/:id — güncelle (name, description, category, address, isActive)
   - DELETE /admin/venues/:id — mekan sil
+  - Mekânda tek kapasite alanı kullanılır (Venue.seatCapacity, "Kapasite"); kontenjan alanı (Venue.capacity) kullanılmaz, DB kolonu duruyor
+  - Mekân kapasite kuralı: aynı mekânda aynı tarih ve saatteki masaların maxParticipants toplamı + atanacak masanın
+    maxParticipants değeri mekânın kapasitesini aşamaz (ör. kapasite 20 → 3 grup masası 18 kişi + 1 başbaşa 2 kişi).
+    Tüm atama yollarında geçerli: elle atama (assignMeetingVenue, updateMeetingVenue), mekân seçenek listesi ve saatlik otomatik atama.
+    Elle atamada kapasitesi boş mekânda kontrol yapılmaz; otomatik atama kapasitesi boş mekânı seçmez, uygun mekân yoksa masa mekânsız kalır.
 
 Şehir yönetimi:
   - GET /admin/cities — liste (mekan sayısıyla)
@@ -330,6 +335,7 @@ Bot doldurma kuyruğu: BOT_FILL_QUEUE ("bot-fill"), JOB_FILL_SPOT ("fill-spot")
   - Grup masası: mevcut MALE/FEMALE sayısına bakarak hedef cinsiyet belirlenir (iptal edenin cinsiyetine bakılmaz).
   - ONE_ON_ONE: iptal edenin cinsiyeti hedef (MALE/FEMALE).
   - Hedef cinsiyette profile'lı bot bulunamazsa herhangi aktif bot fallback olarak denenir.
+  - Aynı bot 4 hafta kuralı: masadaki gerçek katılımcılardan biriyle son 28 gün içinde aynı masada bulunmuş bot o masaya seçilmez (addGroupBots, admin bot listesi); placeBot'ta seçilirse 400 "Bu bot son 4 hafta içinde masadaki bir kullanıcıyla eşleşti."
 
 REZERVASYON İPTALİ EK KURALLAR:
   - cancelRegistration bildirim listesi: CANCELLED, DECLINED, NO_SHOW statüsündeki katılımcılar "1 kişi ayrıldı" bildiriminden çıkarılır.

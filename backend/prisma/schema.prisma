@@ -73,6 +73,7 @@ model User {
   participantLocations      ParticipantLocation[]
   winbackOffer              WinbackOffer?
   deletionRequests          AccountDeletionRequest[]
+  problemReports            ProblemReport[]
 
   @@index([phoneHash])
 }
@@ -1137,4 +1138,28 @@ model KankaLink {
 
   @@index([userAId, endedAt])
   @@index([userBId, endedAt])
+}
+
+// ─────────────────────────────────────────────
+// Sorun bildirimi (salla-bildir / Profilim "Sorun Bildir")
+// ─────────────────────────────────────────────
+
+enum ProblemReportPlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+model ProblemReport {
+  id          String                @id @default(cuid())
+  userId      String
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform    ProblemReportPlatform
+  screen      String // Bildirildiği ekran / sayfa adı
+  appVersion  String?
+  description String                @db.Text
+  images      String[]              @default([]) // Görsel dosya adları (uploads/problem-reports/<id>/)
+  createdAt   DateTime              @default(now())
+
+  @@index([createdAt])
 }

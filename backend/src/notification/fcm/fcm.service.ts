@@ -58,6 +58,8 @@ export class FcmService implements OnModuleInit {
         data: params.data ?? {},
         android: { priority: "high" },
         apns: { payload: { aps: { sound: "default" } } },
+        // Dokununca açılacak sayfa (ör. admin sorun bildirimi detayı)
+        ...(params.data?.link ? { webpush: { fcmOptions: { link: params.data.link } } } : {}),
       });
       return true;
     } catch (err) {

@@ -6,6 +6,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { Modal } from '@/components/ui/Modal';
+import { ProblemReportModal } from '@/components/ProblemReportModal';
 
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
 
@@ -243,6 +244,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
   /* Oturum ve hesap */
   const [logoutAllBusy, setLogoutAllBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [deletePending, setDeletePending] = useState(false);
@@ -665,6 +667,9 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
 
       {/* Oturum ve hesap */}
       <div className="flex flex-col items-center gap-3 pb-2">
+        <button onClick={() => setReportOpen(true)} className="mx-auto block btn-ghost" style={ACCOUNT_BTN}>
+          Sorun Bildir
+        </button>
         <button onClick={logoutAll} disabled={logoutAllBusy} className="mx-auto block btn-ghost disabled:opacity-40" style={ACCOUNT_BTN}>
           {logoutAllBusy ? 'Çıkış yapılıyor…' : 'Tüm cihazlardan çıkış yap'}
         </button>
@@ -676,6 +681,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
           </button>
         )}
       </div>
+
+      <ProblemReportModal open={reportOpen} onClose={() => setReportOpen(false)} screen="Profilim" />
 
       <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Hesabımı Sil">
         <p className="text-sm text-[#c9c2b8] leading-relaxed">

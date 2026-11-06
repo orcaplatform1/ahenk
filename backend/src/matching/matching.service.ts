@@ -17,7 +17,7 @@ import {
 import { cancelDeadline, groupMeetingAt, kankaMeetingAt, oneOnOneMeetingAt } from "../meetings/meeting-windows";
 import { cancellationNotice } from "../meetings/cancellation-notice";
 import { Gender, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "../generated/prisma/client";
-import { pickBot, alertBotNotFound, availableBots } from "./bot-picker";
+import { pickBot, alertBotNotFound, availableBots, recentlyMetBotIds } from "./bot-picker";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right";
 import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, restoreGroupRights } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
@@ -782,7 +782,7 @@ export class MatchingService {
         cityId: true,
         participants: {
           where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
-          select: { userId: true, user: { select: { profile: { select: { gender: true } } } } },
+          select: { userId: true, user: { select: { isBot: true, profile: { select: { gender: true } } } } },
         },
       },
     });
@@ -795,10 +795,12 @@ export class MatchingService {
     if (!need || need.male + need.female === 0) return;
 
     const botIds: string[] = [];
+    // Masadaki gerçek kullanıcılardan biriyle son 28 günde aynı masada bulunmuş bot seçilmez
+    const recentBots = await recentlyMetBotIds(this.prisma, meeting.participants.filter((p) => !p.user.isBot).map((p) => p.userId));
     const wanted: [Gender, number][] = [[Gender.MALE, need.male], [Gender.FEMALE, need.female]];
     for (const [gender, n] of wanted) {
       for (let i = 0; i < n; i++) {
-        const bot = await pickBot(this.prisma, { gender, scheduledAt: meeting.scheduledAt, cityId: meeting.cityId, excludeIds: botIds });
+        const bot = await pickBot(this.prisma, { gender, scheduledAt: meeting.scheduledAt, cityId: meeting.cityId, excludeIds: [...botIds, ...recentBots] });
         if (!bot) {
           await alertBotNotFound(this.prisma, meeting.participants[0].userId);
           this.logger.warn(`Uygun bot bulunamadı: meeting=${meeting.id} (${males}E+${females}K)`);

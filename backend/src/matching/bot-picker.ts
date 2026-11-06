@@ -60,3 +60,24 @@ export async function pickBot(
 export async function alertBotNotFound(db: Db, userId: string): Promise<void> {
   await db.adminAlert.create({ data: { userId, alertType: AdminAlertType.BOT_NOT_FOUND } });
 }
+
+/** Aynı bot 4 hafta kuralı: bu gerçek kullanıcılardan biriyle son 28 gün içinde aynı masada bulunmuş botlar */
+export const BOT_REPEAT_WINDOW_MS = 28 * 24 * 60 * 60 * 1000;
+export async function recentlyMetBotIds(db: Db, realUserIds: string[], now: Date = new Date()): Promise<string[]> {
+  if (realUserIds.length === 0) return [];
+  const left = ["CANCELLED", "DECLINED", "NO_SHOW"] as const;
+  const rows = await db.meetingParticipant.findMany({
+    where: {
+      user: { isBot: true },
+      status: { notIn: [...left] },
+      meeting: {
+        scheduledAt: { gte: new Date(now.getTime() - BOT_REPEAT_WINDOW_MS) },
+        status: { not: "CANCELLED" },
+        participants: { some: { userId: { in: realUserIds }, status: { notIn: [...left] } } },
+      },
+    },
+    select: { userId: true },
+    distinct: ["userId"],
+  });
+  return rows.map((r) => r.userId);
+}

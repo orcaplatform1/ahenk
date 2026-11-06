@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { MeetingStatus, ParticipantStatus, Prisma, VenueType } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
-import { trWeekStart, WEEK_MS } from "../admin/tr-week";
+import { WEEK_MS } from "../admin/tr-week";
 import { sideOf } from "../common/districts";
 
 // Masa kilitleri buluşmadan ~20 saat önce kapanır: Grup Perş, Baş başa Cuma, Kankamla Cmt 23:59 → ertesi gün 20:00.
@@ -33,6 +33,26 @@ export const CLEARED_MEETING_VENUE: Prisma.MeetingUncheckedUpdateManyInput = {
   venueId: null, venueNotifiedId: null, locationText: null, venueAddress: null, locationUrl: null,
   venuePhotoUrl: null, venuePhoto2Url: null, venuePhoto3Url: null,
 };
+
+// Mekân kapasite kuralı: aynı mekânda aynı tarih-saatteki masaların maxParticipants toplamı
+// + atanacak masanın maxParticipants değeri mekânın kapasitesini (seatCapacity) aşamaz.
+export async function seatsBookedAt(
+  db: Prisma.TransactionClient,
+  venueId: string,
+  scheduledAt: Date,
+  excludeMeetingId?: string,
+): Promise<number> {
+  const agg = await db.meeting.aggregate({
+    where: {
+      venueId,
+      scheduledAt,
+      status: { not: MeetingStatus.CANCELLED },
+      ...(excludeMeetingId ? { id: { not: excludeMeetingId } } : {}),
+    },
+    _sum: { maxParticipants: true },
+  });
+  return agg._sum.maxParticipants ?? 0;
+}
 
 @Injectable()
 export class VenueAssignmentService {
@@ -163,23 +183,23 @@ export class VenueAssignmentService {
     return meetings.reduce((sum, m) => sum + m._count.participants, 0);
   }
 
-  // Hafta için geçerli kontenjan: o haftanın kaydı, yoksa mekânın varsayılanı
-  async capacityFor(venue: { id: string; capacity: number | null }, weekStart: Date): Promise<number> {
+  // Mekân panelindeki haftalık kayıt (atamada kullanılmaz; atama yalnızca mekân kapasitesine bakar)
+  async capacityFor(venue: { id: string }, weekStart: Date): Promise<number> {
     const week = await this.prisma.venueWeeklyCapacity.findUnique({
       where: { venueId_weekStart: { venueId: venue.id, weekStart } },
       select: { capacity: true },
     });
-    return week?.capacity ?? venue.capacity ?? 0;
+    return week?.capacity ?? 0;
   }
 
-  // Kilidi geçmiş ve mekânı olmayan masaları, aktif ortak mekânlara güncel kontenjana göre dağıtır.
+  // Kilidi geçmiş ve mekânı olmayan masaları, aktif ortak mekânlara kapasite kuralına göre dağıtır.
   // Uygun mekân yoksa masa boş kalır, admin elle mekân yazabilir.
   async assignLockedMeetings(): Promise<void> {
     const meetings = await this.prisma.meeting.findMany({
       where: { ...this.missingWhere(), cityId: { not: null } },
       orderBy: { scheduledAt: "asc" },
       select: {
-        id: true, cityId: true, scheduledAt: true,
+        id: true, cityId: true, scheduledAt: true, maxParticipants: true,
         city: { select: { name: true } },
         participants: {
           where: { status: { notIn: LEFT_STATUSES } },
@@ -200,7 +220,7 @@ export class VenueAssignmentService {
           account: { status: "ACTIVE" },
           ...(venueType ? { venueType } : {}),
         },
-        select: { id: true, name: true, address: true, district: true, locationUrl: true, photos: true, capacity: true },
+        select: { id: true, name: true, address: true, district: true, locationUrl: true, photos: true, seatCapacity: true },
       });
 
       const cityName = meeting.city?.name ?? "";
@@ -213,16 +233,17 @@ export class VenueAssignmentService {
         return 2;
       };
 
-      const weekStart = trWeekStart(meeting.scheduledAt);
       let best: { venue: (typeof venues)[number]; free: number; rank: number } | null = null;
       for (const venue of venues) {
-        const free = (await this.capacityFor(venue, weekStart)) - (await this.usedSeats(venue.id, weekStart));
-        if (free < seats) continue;
+        // Kapasitesi girilmemiş mekân kurala uyduğu doğrulanamadığı için otomatik atamada seçilmez
+        if (venue.seatCapacity === null) continue;
+        const free = venue.seatCapacity - (await seatsBookedAt(this.prisma, venue.id, meeting.scheduledAt, meeting.id));
+        if (free < meeting.maxParticipants) continue;
         const rank = proximity(venue.district);
         if (!best || rank < best.rank || (rank === best.rank && free > best.free)) best = { venue, free, rank };
       }
       if (!best) {
-        this.logger.warn(`Masa ${meeting.id}: ${seats} kişilik kontenjanı olan uygun mekân yok`);
+        this.logger.warn(`Masa ${meeting.id}: ${meeting.maxParticipants} kişilik kapasitesi olan uygun mekân yok`);
         continue;
       }
 

@@ -162,11 +162,6 @@ export class CreateVenueDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  capacity?: number | null;
-
-  @IsOptional()
-  @IsInt()
-  @Min(1)
   seatCapacity?: number | null;
 
   @IsOptional()
@@ -234,11 +229,6 @@ export class UpdateVenueDto {
   @IsString()
   @MaxLength(300)
   websiteOrSocial?: string | null;
-
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  capacity?: number | null;
 
   @IsOptional()
   @IsInt()
