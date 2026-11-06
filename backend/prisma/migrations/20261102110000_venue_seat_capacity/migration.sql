@@ -1,1 +1,0 @@
-ALTER TABLE "Venue" ADD COLUMN "seatCapacity" INTEGER;
