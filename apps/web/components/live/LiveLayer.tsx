@@ -142,6 +142,9 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, tab, 
 
         {/* Geri sayım */}
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
+          {hasTabTable && statuses[tab] === 'FORMING' && (
+            <Image src="/maskot/jantihaydar_run.png" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[180px] md:w-[220px]" />
+          )}
           {!hasTabTable && (
             <Image src="/maskot/jantihaydar_stop.png" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[160px] md:w-[200px]" />
           )}
