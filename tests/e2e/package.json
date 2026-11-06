@@ -1,0 +1,14 @@
+{
+  "name": "ahenk-e2e",
+  "private": true,
+  "description": "Ahenk uçtan uca testleri. Ana workspace'in dışındadır, kendi bağımlılıkları vardır.",
+  "scripts": {
+    "test": "bash run.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@prisma/client": "^5.22.0",
+    "@sinonjs/fake-timers": "^13.0.5",
+    "ioredis": "^5.11.1"
+  }
+}
