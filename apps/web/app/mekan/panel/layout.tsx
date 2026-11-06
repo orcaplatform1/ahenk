@@ -7,7 +7,6 @@ import { VenueAuthError, VenueMe, venueApi } from '@/lib/venueApi';
 import { VenuePanelContext } from './context';
 
 const NAV = [
-  { href: '/mekan/panel/kontenjan', label: 'Kontenjan' },
   { href: '/mekan/panel/bilgiler', label: 'Mekân Bilgileri' },
   { href: '/mekan/panel/masalar', label: 'Masalar' },
   { href: '/mekan/panel/abonelik', label: 'Abonelik' },

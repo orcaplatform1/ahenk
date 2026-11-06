@@ -5,15 +5,13 @@ import { MeetingStatus, ParticipantStatus, VenueAccount } from "../generated/pri
 import bcrypt from "bcryptjs";
 import { PrismaService } from "../prisma/prisma.service";
 import { OtpService } from "../auth/otp/otp.service";
-import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { venueJwtSecret } from "./venue-auth.guard";
 import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "./venue-media";
 import { CLEARED_MEETING_VENUE, meetingVenueFields, VenueAssignmentService } from "./venue-assignment.service";
 import { isValidDistrict } from "../common/districts";
-import { VenueCapacityDto, VenueInfoDto } from "./venue-panel.dto";
+import { VenueInfoDto } from "./venue-panel.dto";
 
 export const VENUE_SESSION_DAYS = 7;
-const CAPACITY_WEEKS = 4; // Bu hafta + önümüzdeki 3 hafta
 const LEFT_STATUSES: ParticipantStatus[] = [ParticipantStatus.DECLINED, ParticipantStatus.CANCELLED];
 
 const LOGIN_BLOCKED: Record<string, string> = {
@@ -104,36 +102,6 @@ export class VenuePanelService {
         photos: venue.photos,
       },
     };
-  }
-
-  async getCapacity(account: VenueAccount) {
-    const venue = await this.venueOf(account);
-    const first = trWeekStart();
-    const weeks = await Promise.all(
-      Array.from({ length: CAPACITY_WEEKS }, async (_, i) => {
-        const weekStart = new Date(first.getTime() + i * WEEK_MS);
-        return {
-          weekStart,
-          capacity: await this.assignment.capacityFor(venue, weekStart),
-          assignedSeats: await this.assignment.usedSeats(venue.id, weekStart),
-        };
-      }),
-    );
-    return { weeks };
-  }
-
-  async setCapacity(account: VenueAccount, dto: VenueCapacityDto) {
-    const weekStart = new Date(dto.weekStart);
-    const offset = (weekStart.getTime() - trWeekStart().getTime()) / WEEK_MS;
-    if (!Number.isInteger(offset) || offset < 0 || offset >= CAPACITY_WEEKS) {
-      throw new BadRequestException("Bu hafta için kontenjan girilemez");
-    }
-    await this.prisma.venueWeeklyCapacity.upsert({
-      where: { venueId_weekStart: { venueId: account.venueId!, weekStart } },
-      create: { venueId: account.venueId!, weekStart, capacity: dto.capacity },
-      update: { capacity: dto.capacity },
-    });
-    return this.getCapacity(account);
   }
 
   // Yaklaşan masaların kartı da güncel mekân bilgisini gösterir

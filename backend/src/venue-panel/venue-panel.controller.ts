@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Patch, Post, Put, Req, Res, UploadedFiles, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Patch, Post, Req, Res, UploadedFiles, UseGuards, UseInterceptors } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { FilesInterceptor } from "@nestjs/platform-express";
 import { Throttle } from "@nestjs/throttler";
@@ -9,7 +9,7 @@ import { VenueAuthGuard } from "./venue-auth.guard";
 import { VENUE_SESSION_DAYS, VenuePanelService } from "./venue-panel.service";
 import { VENUE_PHOTO_MAX_BYTES, VENUE_PHOTO_MAX_COUNT } from "./venue-media";
 import {
-  VenueCapacityDto, VenueChangePasswordDto, VenueDeactivateDto, VenueForgotPasswordDto,
+  VenueChangePasswordDto, VenueDeactivateDto, VenueForgotPasswordDto,
   VenueInfoDto, VenueLoginDto, VenuePhotoDeleteDto, VenueResetPasswordDto,
 } from "./venue-panel.dto";
 
@@ -70,18 +70,6 @@ export class VenuePanelController {
   @UseGuards(VenueAuthGuard)
   me(@Req() req: VenueRequest) {
     return this.service.me(req.venueAccount);
-  }
-
-  @Get("capacity")
-  @UseGuards(VenueAuthGuard)
-  getCapacity(@Req() req: VenueRequest) {
-    return this.service.getCapacity(req.venueAccount);
-  }
-
-  @Put("capacity")
-  @UseGuards(VenueAuthGuard)
-  setCapacity(@Req() req: VenueRequest, @Body() dto: VenueCapacityDto) {
-    return this.service.setCapacity(req.venueAccount, dto);
   }
 
   @Patch("info")

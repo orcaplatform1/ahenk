@@ -2,7 +2,6 @@ import { Injectable, Logger } from "@nestjs/common";
 import { MeetingStatus, ParticipantStatus, Prisma, VenueType } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
-import { WEEK_MS } from "../admin/tr-week";
 import { sideOf } from "../common/districts";
 
 // Masa kilitleri buluşmadan ~20 saat önce kapanır: Grup Perş, Baş başa Cuma, Kankamla Cmt 23:59 → ertesi gün 20:00.
@@ -168,28 +167,6 @@ export class VenueAssignmentService {
     const { day, time } = this.trParts(meeting.scheduledAt);
     await this.whatsapp.send(account.phone, "ahenk_venue_table_cancelled", [day, time, TYPE_LABEL[meeting.type] ?? meeting.type])
       .catch((err: unknown) => this.logger.error(`Mekân iptal bildirimi gönderilemedi: ${err}`));
-  }
-
-  // Haftada mekâna atanmış masalardaki toplam kişi
-  async usedSeats(venueId: string, weekStart: Date, tx: Prisma.TransactionClient = this.prisma): Promise<number> {
-    const meetings = await tx.meeting.findMany({
-      where: {
-        venueId,
-        status: { not: MeetingStatus.CANCELLED },
-        scheduledAt: { gte: weekStart, lt: new Date(weekStart.getTime() + WEEK_MS) },
-      },
-      select: { _count: { select: { participants: { where: { status: { notIn: LEFT_STATUSES } } } } } },
-    });
-    return meetings.reduce((sum, m) => sum + m._count.participants, 0);
-  }
-
-  // Mekân panelindeki haftalık kayıt (atamada kullanılmaz; atama yalnızca mekân kapasitesine bakar)
-  async capacityFor(venue: { id: string }, weekStart: Date): Promise<number> {
-    const week = await this.prisma.venueWeeklyCapacity.findUnique({
-      where: { venueId_weekStart: { venueId: venue.id, weekStart } },
-      select: { capacity: true },
-    });
-    return week?.capacity ?? 0;
   }
 
   // Kilidi geçmiş ve mekânı olmayan masaları, aktif ortak mekânlara kapasite kuralına göre dağıtır.

@@ -17,7 +17,7 @@ export default function MekanGirisPage() {
     setLoading(true); setError('');
     try {
       await venueApi.post('/login', { email, password });
-      router.push('/mekan/panel/kontenjan');
+      router.push('/mekan/panel/bilgiler');
     } catch (err) {
       setError((err as Error).message);
       setLoading(false);

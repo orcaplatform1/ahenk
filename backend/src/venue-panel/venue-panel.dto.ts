@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsInt, IsISO8601, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from "class-validator";
+import { IsEmail, IsEnum, IsOptional, IsString, Matches, MaxLength, MinLength } from "class-validator";
 import { VenueType } from "../generated/prisma/client";
 import { GOOGLE_MAPS_URL, GOOGLE_MAPS_URL_MESSAGE } from "./venue-url";
 
@@ -48,16 +48,6 @@ export class VenueDeactivateDto {
   @IsString()
   @MaxLength(20)
   password: string;
-}
-
-export class VenueCapacityDto {
-  @IsISO8601()
-  weekStart: string;
-
-  @IsInt()
-  @Min(0)
-  @Max(500)
-  capacity: number;
 }
 
 export class VenueInfoDto {
