@@ -52,7 +52,7 @@ export class AiReportService {
           include: {
             user: {
               include: {
-                profile: { select: { firstName: true, gender: true } },
+                profile: { select: { gender: true } },
                 oceanScore: true,
               } as any,
             },
@@ -94,10 +94,10 @@ export class AiReportService {
     ];
 
     const scoreLines = reportParticipants
-      .map((p, i) => {
+      .map((_p, i) => {
         const s = scores[i];
-        const name = (p.user as any).profile?.firstName ?? "Anonim";
-        return `${name}: ${dimKeys.map((k) => `${k}=${s[k].toFixed(0)}`).join(", ")}`;
+        // İsim gönderilmez: katılımcılar P1, P2, P3... etiketiyle
+        return `P${i + 1}: ${dimKeys.map((k) => `${k}=${s[k].toFixed(0)}`).join(", ")}`;
       })
       .join("\n");
 
@@ -111,7 +111,8 @@ Toplam uyum skoru: ${uyumSkoru}/100
 
 Lütfen bu gruba özgü, samimi, motive edici, kısa bir masa raporu yaz (2-3 cümle). Türkçe yaz.
 Katılımcıların güçlü ortak yönlerini ve farklılıklarından doğabilecek zenginliği vurgula.
-Gereksiz kalıpları kullanma, özgün ol.`;
+Gereksiz kalıpları kullanma, özgün ol.
+Metinde isim veya etiket kullanma.`;
 
     try {
       if (isE2eFakeMode()) recordFake({ channel: "anthropic", template: "masa-raporu", params: { meetingId } });

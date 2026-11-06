@@ -55,13 +55,11 @@ TEST KURALLARI:
 
 EŞLEŞTİRME ALGORİTMASI (Modül 7):
 - Tetikleme: Her Perşembe 23:59, Bull queue ile
-- Ağırlıklar: OCEAN %50 / Mekan %25 / Şehir+İlçe %15 / Konu %10 (Rol faktörü yok)
-- OCEAN benzerliği: Öklid mesafesi, normalize 0-50
-- Mekan benzerliği: Jaccard (ortak/toplam) × 25
-- Şehir+İlçe: aynı şehir+ilçe→15, aynı şehir→10, farklı→0
-- Konu benzerliği: Jaccard × 10
+- Eşleştirme puanı: OCEAN 65 + aynı meslek sektörü 35, başka faktör yok
+- OCEAN benzerliği: Öklid mesafesi, normalize 0-65
+- Meslek: iki kişi aynı meslek sektöründeyse +35, değilse 0
 - Cinsiyet dengesi: 6 kişi → 3E+3K, 4 kişi → 2E+2K
-- PREFER_NOT_TO_SAY / OTHER → dengeden bağımsız, boş slotlara yerleştirilir
+- Cinsiyet değerleri: yalnızca MALE ve FEMALE
 - Masa 5 kişi kalırsa: bot ile 6'ya tamamla; bot yoksa 4'e düşür, 5. kişi sonraki haftaya
 - Bot sistemi: seed'de isBot:true olan User kayıtları, admin panelinden aktif/pasif ve isim düzenleme
 - Bot OceanScore: seed'de manuel atanır (50/50/50/50/50 varsayılan), test doldurmaları gerekmez
@@ -330,7 +328,7 @@ Bot doldurma kuyruğu: BOT_FILL_QUEUE ("bot-fill"), JOB_FILL_SPOT ("fill-spot")
   - Kapasite dolu ise (anlık sayım) işlem yapılmaz.
   - Kapasite kontrolü + bot ekleme Prisma $transaction içinde atomik yapılır (race condition önlemi).
   - Grup masası: mevcut MALE/FEMALE sayısına bakarak hedef cinsiyet belirlenir (iptal edenin cinsiyetine bakılmaz).
-  - ONE_ON_ONE: iptal edenin cinsiyeti hedef (MALE/FEMALE ise); OTHER/PREFER_NOT_TO_SAY ise herhangi bot.
+  - ONE_ON_ONE: iptal edenin cinsiyeti hedef (MALE/FEMALE).
   - Hedef cinsiyette profile'lı bot bulunamazsa herhangi aktif bot fallback olarak denenir.
 
 REZERVASYON İPTALİ EK KURALLAR:

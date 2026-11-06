@@ -500,18 +500,6 @@ export default function AdminUsers() {
                         {userAction === 'ACTIVE' ? '…' : 'Aktifleştir'}
                       </button>
                     )}
-                    {userModal.status !== 'DELETED' && (
-                      <button
-                        onClick={() => modalUpdateStatus('DELETED')} disabled={!!userAction}
-                        style={{
-                          padding: '5px 12px', borderRadius: 8, cursor: userAction ? 'not-allowed' : 'pointer',
-                          background: 'rgba(239,68,68,0.1)', color: RED, border: '1px solid rgba(239,68,68,0.3)',
-                          fontSize: 11, fontWeight: 600, fontFamily: SANS, opacity: userAction ? 0.5 : 1,
-                        }}
-                      >
-                        {userAction === 'DELETED' ? '…' : 'Hesabı Sil'}
-                      </button>
-                    )}
                   </div>
                   </>) : (
                     <p style={{ margin: 0, fontSize: 11, color: MUTED, fontFamily: SANS }}>Bu hesaba işlem yetkiniz yok</p>

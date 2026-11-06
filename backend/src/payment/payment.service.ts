@@ -329,6 +329,11 @@ export class PaymentService {
         await this.refundUnfulfilled(payment.id, payment.userId, result, reason);
         return { success: false, message: "Ödeme doğrulanamadı, iade başlatıldı" };
       }
+      // Kesin ödeme durumu yoksa (SDK / ağ / timeout hatası) satır PENDING kalır; reconcile cron'u sonra çözer
+      if (!result.paymentStatus) {
+        this.logger.error(`iyzico sorgu hatası, ödeme PENDING bırakıldı: payment=${payment.id} ${reason}`);
+        return { success: false, message: result.errorMessage ?? "Ödeme durumu doğrulanamadı" };
+      }
       await this.prisma.payment.updateMany({
         where: { id: payment.id, status: PaymentStatus.PENDING },
         data: { status: PaymentStatus.FAILED, failureReason: reason },
@@ -338,6 +343,7 @@ export class PaymentService {
 
     // Ödeme başarılı — abonelik oluştur, indirimi harca. Kişi (Kankamla'da çift) satırı kilitlenir:
     // iki sekmeden gelen ödemeler sırayla işlenir, ikincisi paketi görür ve iade yoluna gider.
+    const DISCOUNT_USED = "DISCOUNT_USED";
     const outcome = await this.prisma.$transaction(async (tx) => {
       const link = payment.plan === SubscriptionPlan.KANKAMLA ? await activeKankaLink(tx, payment.userId) : null;
       const lockIds = link ? [payment.userId, link.kankaId] : [payment.userId];
@@ -360,10 +366,20 @@ export class PaymentService {
 
       await this.createSubscriptions(tx, payment.userId, payment.plan, payment.id);
 
-      if (payment.discountType) await this.consumeDiscount(tx, payment.userId, payment.discountType);
+      // İndirim hakkı harcanamıyorsa (başka ödemede kullanıldı) her şey geri alınır: SUCCESS ve abonelik yazılmaz
+      if (payment.discountType && !(await this.consumeDiscount(tx, payment.userId, payment.discountType))) {
+        throw new Error(DISCOUNT_USED);
+      }
       return "CREATED";
+    }).catch((err: unknown) => {
+      if (err instanceof Error && err.message === DISCOUNT_USED) return DISCOUNT_USED;
+      throw err;
     });
 
+    if (outcome === DISCOUNT_USED) {
+      await this.refundUnfulfilled(payment.id, payment.userId, result, "İndirim hakkı başka ödemede kullanılmış");
+      return { success: false, message: "İndirim hakkı zaten kullanılmış, ödeme iade ediliyor" };
+    }
     if (outcome === "CONFLICT") {
       await this.refundUnfulfilled(payment.id, payment.userId, result, "Aynı paket için ikinci ödeme");
       return { success: false, message: "Bu paket zaten alınmış, ikinci ödeme iade ediliyor" };

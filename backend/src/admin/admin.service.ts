@@ -561,7 +561,10 @@ export class AdminService {
       where: { meetingId_userId: { meetingId, userId } },
     });
     if (!participant) throw new NotFoundException('Katılımcı bu masada yok');
-    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { type: true, createdAt: true } });
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { type: true, createdAt: true, status: true } });
+    if (meeting?.status === MeetingStatus.COMPLETED || meeting?.status === MeetingStatus.CANCELLED) {
+      throw new BadRequestException("Tamamlanmış veya iptal edilmiş masadan katılımcı çıkarılamaz.");
+    }
     // Hak iadesi cancelMeeting ile aynı kural: iptal eden / reddeden / gelmeyen iade almaz
     const restore = !["CANCELLED", "DECLINED", "NO_SHOW"].includes(participant.status);
     await this.prisma.$transaction(async (tx) => {
@@ -733,9 +736,12 @@ export class AdminService {
     title: string;
     scheduledAt: string;
     participantIds: string[];
+    cityId: string;
     locationText?: string;
     locationUrl?: string;
   }) {
+    const city = await this.prisma.city.findUnique({ where: { id: data.cityId }, select: { id: true } });
+    if (!city) throw new BadRequestException("Şehir bulunamadı");
     const users = await this.prisma.user.findMany({
       where: { id: { in: data.participantIds }, status: "ACTIVE" },
       select: { id: true },
@@ -752,6 +758,7 @@ export class AdminService {
           title: data.title,
           scheduledAt: new Date(data.scheduledAt),
           maxParticipants: data.participantIds.length,
+          cityId: data.cityId,
           locationText: data.locationText,
           locationUrl: data.locationUrl,
           status: MeetingStatus.ACTIVE,
@@ -777,7 +784,7 @@ export class AdminService {
     meetingId: string,
     data: { locationText?: string; locationUrl?: string; scheduledAt?: string },
   ) {
-    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { id: true, locationText: true, cityId: true, scheduledAt: true } });
+    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { id: true, locationText: true, cityId: true, scheduledAt: true, venueId: true } });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
 
     // Admin farklı mekân yazarsa otomatik atama bağı kalkar (mekânın masa listesinden ve kontenjanından düşer)
@@ -790,7 +797,17 @@ export class AdminService {
           select: { id: true, seatCapacity: true },
         })
       : null;
-    if (partner) await this.assertVenueFits(meetingId, partner.id, partner.seatCapacity, meeting.scheduledAt);
+    // Etkin saat (yeni, yoksa eski) ve etkin mekân (yeni bağ, yoksa mevcut); biri değişirse çakışma/kapasite kontrolü
+    const effectiveAt = data.scheduledAt ? new Date(data.scheduledAt) : meeting.scheduledAt;
+    const effectiveVenueId = manualVenue ? partner?.id ?? null : meeting.venueId;
+    const venueChanged = effectiveVenueId !== meeting.venueId;
+    const timeChanged = effectiveAt.getTime() !== meeting.scheduledAt.getTime();
+    if (effectiveVenueId && (venueChanged || timeChanged)) {
+      const seatCapacity = partner
+        ? partner.seatCapacity
+        : (await this.prisma.venue.findUnique({ where: { id: effectiveVenueId }, select: { seatCapacity: true } }))?.seatCapacity ?? null;
+      await this.assertVenueFits(meetingId, effectiveVenueId, seatCapacity, effectiveAt);
+    }
     const updated = await this.prisma.meeting.update({
       where: { id: meetingId },
       data: {
@@ -967,6 +984,12 @@ export class AdminService {
     // Admin iptalinde paket hakkı yanmaz: başbaşa hakkı ve (kilitte düşüldüyse) grup hakkı, kendi iptal etmemiş
     // olanlara geri verilir. Grup: katılımcı kaydı iptal sayılmadığı için o hafta tekrar eşleşebilir.
     const cancelled = await this.prisma.$transaction(async (tx) => {
+      // İptal atomik alınır: eşzamanlı ikinci iptal count=0 görür ve hak iadesi yapmaz
+      const claimed = await tx.meeting.updateMany({
+        where: { id: meetingId, status: { notIn: [MeetingStatus.CANCELLED, MeetingStatus.COMPLETED] } },
+        data: { status: MeetingStatus.CANCELLED },
+      });
+      if (claimed.count === 0) return null;
       const stillIn = meeting.participants
         .filter((p) => !["CANCELLED", "DECLINED", "NO_SHOW"].includes(p.status))
         .map((p) => p.userId);
@@ -981,12 +1004,9 @@ export class AdminService {
       if (meeting.type === MeetingType.KANKA) {
         await restoreKankaRights(tx, meetingId, stillIn);
       }
-      return tx.meeting.update({
-        where: { id: meetingId },
-        data: { status: MeetingStatus.CANCELLED },
-        select: { id: true, status: true },
-      });
+      return { id: meetingId, status: MeetingStatus.CANCELLED };
     });
+    if (!cancelled) return { id: meetingId, status: MeetingStatus.CANCELLED };
     await this.venueAssignment.noticeMeetingCancelled(meetingId);
     return cancelled;
   }
@@ -1433,16 +1453,34 @@ export class AdminService {
     if (!allowed.some((b) => b.id === botUserId)) {
       throw new BadRequestException('Bu bot eklenemez (eksik cinsiyet değil, masa dolu ya da aynı saatte başka masada)');
     }
-    const meeting = await this.prisma.meeting.findUnique({
-      where: { id: meetingId },
-      select: { type: true, createdAt: true, participants: { where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } }, select: { userId: true } } },
-    });
+    const botGender = allowed.find((b) => b.id === botUserId)?.gender ?? null;
     await this.prisma.$transaction(async (tx) => {
+      // Masa satırı kilitlenir; kapasite ve cinsiyet dengesi eklemeyle aynı transaction'da yeniden sayılır
+      await tx.$queryRaw`SELECT id FROM "Meeting" WHERE id = ${meetingId} FOR UPDATE`;
+      const meeting = await tx.meeting.findUnique({
+        where: { id: meetingId },
+        select: {
+          type: true, createdAt: true, maxParticipants: true,
+          participants: {
+            where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
+            select: { userId: true, user: { select: { profile: { select: { gender: true } } } } },
+          },
+        },
+      });
+      if (!meeting) throw new NotFoundException('Masa bulunamadı');
+      if (meeting.participants.length >= meeting.maxParticipants) {
+        throw new BadRequestException('Masa dolu, bot eklenemez');
+      }
+      const half = meeting.type === MeetingType.ONE_ON_ONE ? 1 : meeting.maxParticipants / 2;
+      const sameGender = meeting.participants.filter((p) => p.user.profile?.gender === botGender).length;
+      if (botGender && sameGender >= half) {
+        throw new BadRequestException('Cinsiyet dengesi bozulacağı için bot eklenemez');
+      }
       await tx.meetingParticipant.create({
         data: { meetingId, userId: botUserId, status: 'INVITED' },
       });
       // Başbaşa hakkı iki kişi oturduğu anda harcanır
-      if (meeting?.type === MeetingType.ONE_ON_ONE) {
+      if (meeting.type === MeetingType.ONE_ON_ONE) {
         await consumeOneOnOneRights(tx, meeting.participants.map((p) => p.userId), meeting.createdAt);
       }
     });
@@ -1498,7 +1536,7 @@ export class AdminService {
     // Ciro: gerçek başarılı ödemeler (ücretsiz paket ve bot hariç), indirim düşülmüş
     const finance = await this.financeTotals({ isBot: false });
     const totalRevenue = finance.grossTL;
-    const netCommission = Math.round(totalRevenue * 0.15 * 100) / 100;
+    const netCommission = finance.commissionTL;
 
     const matchRateThisWeek =
       prevWeekMeetings > 0
@@ -1548,17 +1586,29 @@ export class AdminService {
     const [payments, refunds] = await Promise.all([
       this.prisma.payment.findMany({
         where: { status: "SUCCESS", user: userWhere },
-        select: { plan: true, amountKurus: true, discountType: true, listKurus: true },
+        select: { plan: true, amountKurus: true, discountType: true, listKurus: true, platform: true },
       }),
       this.prisma.refundRequest.aggregate({
         where: { status: RefundStatus.APPROVED, user: userWhere },
         _sum: { refundedKurus: true },
       }),
     ]);
+    // Platform komisyonu (CLAUDE.md): PLATFORM_FEE_WEB / PLATFORM_FEE_GOOGLE / PLATFORM_FEE_APPLE
+    const feeOf = (name: string, fallback: number) => {
+      const v = Number(process.env[name]);
+      return Number.isFinite(v) ? v : fallback;
+    };
+    const fees: Record<string, number> = {
+      WEB: feeOf("PLATFORM_FEE_WEB", 0),
+      ANDROID: feeOf("PLATFORM_FEE_GOOGLE", 0.15),
+      IOS: feeOf("PLATFORM_FEE_APPLE", 0.3),
+    };
     let grossKurus = 0;
     let discountKurus = 0;
+    let commissionKurus = 0;
     for (const p of payments) {
       grossKurus += p.amountKurus;
+      commissionKurus += p.amountKurus * (fees[p.platform] ?? 0);
       // Liste fiyatı kaydı olmayan eski indirimli ödemelerde liste = tutar ÷ 0,90
       if (p.discountType) discountKurus += (p.listKurus ?? Math.round(p.amountKurus / 0.9)) - p.amountKurus;
     }
@@ -1566,7 +1616,7 @@ export class AdminService {
     const tl = (k: number) => Math.round(k) / 100;
     const netKurus = grossKurus - refundKurus;
     // Net ciro KDV dahil: içindeki %20 KDV payı ayrıca gösterilir
-    return { grossTL: tl(grossKurus), discountTL: tl(discountKurus), refundTL: tl(refundKurus), netTL: tl(netKurus), vatTL: tl(vatOfGrossKurus(netKurus)) };
+    return { commissionTL: tl(commissionKurus), grossTL: tl(grossKurus), discountTL: tl(discountKurus), refundTL: tl(refundKurus), netTL: tl(netKurus), vatTL: tl(vatOfGrossKurus(netKurus)) };
   }
 
   // ─── Stats cities ─────────────────────────────────────────────────────────

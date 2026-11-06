@@ -15,11 +15,11 @@ import {
   TABLE_SIZE_SMALL,
 } from "./matching.constants";
 import { cancelDeadline, groupMeetingAt, kankaMeetingAt, oneOnOneMeetingAt } from "../meetings/meeting-windows";
-import { cancellationNotice, initialsOf } from "../meetings/cancellation-notice";
+import { cancellationNotice } from "../meetings/cancellation-notice";
 import { Gender, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "../generated/prisma/client";
 import { pickBot, alertBotNotFound, availableBots } from "./bot-picker";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right";
-import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB } from "../payment/package-rights";
+import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, restoreGroupRights } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { ASSIGN_QUEUE, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT, enqueueAssign, randomBotDelayMs } from "./assign-queue";
 
@@ -602,11 +602,7 @@ export class MatchingService {
     });
     if (parts.length === 0) return [];
 
-    const me = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { profile: { select: { firstName: true, lastName: true } } },
-    });
-    const notice = cancellationNotice([initialsOf(me?.profile)]);
+    const notice = cancellationNotice();
     const cancelled: string[] = [];
 
     for (const { meetingId, meeting } of parts) {
@@ -965,7 +961,7 @@ export class MatchingService {
       include: {
         participants: {
           where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
-          select: { userId: true },
+          select: { userId: true, createdAt: true, user: { select: { profile: { select: { gender: true } } } } },
         },
       },
     });
@@ -990,6 +986,36 @@ export class MatchingService {
           });
         }
         this.logger.log(`Masa iptal (yetersiz katılım): meeting=${meeting.id}`);
+      } else if (count === TABLE_SIZE_SMALL + 1) {
+        // Bot eklenemedi, 5 kişi kaldı: çoğunluk cinsiyetten en son eklenen çıkarılır, masa dengeli 4 olur.
+        // Çıkarılana bildirim gitmez; grup hakkı iade edilir, sonraki döngünün bekleme listesine öncelikli girer.
+        const males = meeting.participants.filter((p) => p.user.profile?.gender === Gender.MALE);
+        const females = meeting.participants.filter((p) => p.user.profile?.gender === Gender.FEMALE);
+        const majority = males.length === 3 && females.length === 2 ? males
+          : females.length === 3 && males.length === 2 ? females
+          : null;
+        if (!majority) {
+          this.logger.warn(`5 kişilik masa 2E+2K'ya indirilemiyor (cinsiyet dağılımı uygun değil): meeting=${meeting.id}`);
+          continue;
+        }
+        const removed = [...majority].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+        const { week: nw, year: ny } = getISOWeekNumber(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
+        await this.prisma.$transaction(async (tx) => {
+          await restoreGroupRights(tx, meeting.id, [removed.userId]);
+          await tx.meetingParticipant.delete({ where: { meetingId_userId: { meetingId: meeting.id, userId: removed.userId } } });
+          await tx.meeting.update({ where: { id: meeting.id }, data: { maxParticipants: TABLE_SIZE_SMALL } });
+          const nextCycle = await tx.matchingCycle.upsert({
+            where: { weekNumber_year: { weekNumber: nw, year: ny } },
+            update: {},
+            create: { weekNumber: nw, year: ny, status: "RUNNING" },
+          });
+          await tx.matchingWaitlist.upsert({
+            where: { userId_cycleId: { userId: removed.userId, cycleId: nextCycle.id } },
+            update: {},
+            create: { userId: removed.userId, cycleId: nextCycle.id, reason: "GENDER_IMBALANCE" },
+          });
+        });
+        this.logger.log(`5 kişilik masa 4'e indirildi: meeting=${meeting.id}, çıkarılan=${removed.userId}`);
       }
     }
 
@@ -1020,10 +1046,7 @@ export class MatchingService {
       });
     }
 
-    // Grup masası kurulamayanlara (1-2 kişi kalıp iptal edilen masalar dahil) bildirim + WhatsApp
-    for (const u of groupEligible) {
-      await this.notifications.notifyMeetingNotFormed(u.id);
-    }
+    // Perşembe 23:59'da hiçbir kullanıcıya bildirim gitmez (CLAUDE.md MASA BİLDİRİM AKIŞI)
 
     await this.prisma.matchingCycle.update({ where: { id: cycle.id }, data: { status: "COMPLETED" } });
     this.logger.log(`Perşembe kapanışı: ${unmatched.length} kullanıcı bekliste`);
@@ -1247,6 +1270,17 @@ export class MatchingService {
   async deleteBot(botId: string) {
     const bot = await this.prisma.user.findFirst({ where: { id: botId, isBot: true } });
     if (!bot) throw new NotFoundException("Bot bulunamadı");
+    // Masa katılım satırları cascade ile silinmesin: aktif masası olan bot silinmez, geçmişi olan pasifleştirilir
+    const active = await this.prisma.meetingParticipant.count({
+      where: { userId: botId, meeting: { status: { in: ["PENDING", "ACTIVE"] } } },
+    });
+    if (active > 0) throw new BadRequestException("Aktif masası olan bot silinemez.");
+    const past = await this.prisma.meetingParticipant.count({ where: { userId: botId } });
+    if (past > 0) {
+      // Bot pasif alanı: User.status (setBotStatus ile aynı: SUSPENDED = pasif)
+      await this.prisma.user.update({ where: { id: botId }, data: { status: "SUSPENDED" } });
+      return { deleted: false, deactivated: true, id: botId };
+    }
     await this.prisma.user.delete({ where: { id: botId } });
     return { deleted: true, id: botId };
   }
@@ -1357,7 +1391,7 @@ export class MatchingService {
       activePlan,
       inPool,
       hasMeeting: !!existingMeeting,
-      poolSize: inPool ? poolSize + 1 : poolSize,
+      poolSize,
       meetingScheduledAt: existingMeeting?.meeting?.scheduledAt?.toISOString() ?? null,
     };
   }

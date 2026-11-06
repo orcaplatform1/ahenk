@@ -757,11 +757,7 @@ export class MeetingsService {
     // Grup: anında bildirim yok, Perşembe 20:00'de toplu gider (MatchingScheduler).
     // Başbaşa: karşı tarafa hemen gider.
     if (!isGroup) {
-      const me = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { profile: { select: { firstName: true, lastName: true } } },
-      });
-      const notice = cancellationNotice([initialsOf(me?.profile)]);
+      const notice = cancellationNotice();
       const others = meeting.participants.map((p) => p.userId).filter((id) => id !== userId);
       await Promise.all(
         others.map((uid) =>

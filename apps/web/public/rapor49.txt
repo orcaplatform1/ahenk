@@ -1,0 +1,153 @@
+RAPOR 49 — RAPOR48 BULGULARININ DÜZELTİLMESİ (PR #20–#21, bulgu 1–20)
+Tarih: 2026-11-06 · Commit/push yapılmadı · Migration/şema değişikliği yok · Canlı DB'ye bağlanılmadı
+
+======================================================================
+1) Askıya alma için bitiş tarihi zorunlu — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/admin/admin.controller.ts
+Not: Kontrol POST /admin/users/:id/sanction ucunda (controller). type=SUSPENSION ve expiresAt yok
+ya da gelecekte değilse 400: "Askıya alma için gelecekte bir bitiş tarihi zorunludur."
+
+======================================================================
+2) status=DELETED reddi + "Hesabı Sil" butonu — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/admin/admin.controller.ts
+                  apps/web/app/admin/users/page.tsx
+Not: PATCH /admin/users/:id/status DELETED gelirse 400: "Hesap silme bu uçtan yapılamaz; Silme
+Talepleri akışını kullanın." Admin kullanıcılar sayfasındaki "Hesabı Sil" butonu kaldırıldı.
+
+======================================================================
+3) removeParticipant: tamamlanmış/iptal masa reddi — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/admin/admin.service.ts
+
+======================================================================
+4) cancelMeeting: atomik iptal — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/admin/admin.service.ts
+Not: İptal transaction içinde updateMany (status CANCELLED/COMPLETED dışında) ile alınıyor.
+count=0 ise hak iadesi yapılmadan çıkılıyor (mekân iptal bildirimi de tekrar gönderilmiyor).
+Hak iadeleri yalnızca count=1 iken aynı transaction'da.
+
+======================================================================
+5) updateMeetingVenue: etkin saat + etkin mekân kontrolü — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/admin/admin.service.ts
+
+======================================================================
+6) Manuel masada zorunlu cityId — KISMEN YAPILDI (web formu ATLANDI)
+======================================================================
+Değişen dosyalar: backend/src/admin/dto/admin.dto.ts
+                  backend/src/admin/admin.service.ts
+Not: Backend: cityId zorunlu, şehir yoksa 400 "Şehir bulunamadı", masaya cityId yazılıyor.
+Atlanan kısım: Web admin'de manuel masa oluşturma formu yok (apps/web'de POST /admin/meetings
+çağıran sayfa bulunamadı); bu yüzden şehir seçimi eklenemedi.
+
+======================================================================
+7) placeBot: kilitli transaction içinde kontrol — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/admin/admin.service.ts
+Not: SELECT ... FOR UPDATE ile masa kilitleniyor, katılımcılar transaction içinde sayılıyor.
+Dolu masa → 400 "Masa dolu, bot eklenemez"; denge bozulacaksa → 400 "Cinsiyet dengesi
+bozulacağı için bot eklenemez".
+
+======================================================================
+8) Hesap silme talebi ön kontrolü — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/users/account-deletion.service.ts
+Not: Index'e dokunulmadı. Mevcut P2002 yakalaması da duruyor.
+
+======================================================================
+9) CLAUDE.md cinsiyet düzeltmesi — YAPILDI
+======================================================================
+Değişen dosyalar: CLAUDE.md
+Not: "PREFER_NOT_TO_SAY / OTHER" satırı yerine "Cinsiyet değerleri: yalnızca MALE ve FEMALE";
+BOT DOLDURMA bölümündeki OTHER/PREFER_NOT_TO_SAY ifadesi kaldırıldı. LeaveReason enum'undaki
+OTHER (cinsiyet değil) olduğu gibi kaldı. Migration dosyasına dokunulmadı.
+
+======================================================================
+10) Platforma göre komisyon — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/admin/admin.service.ts
+Not: PLATFORM_FEE_* değişkenleri backend .env'de tanımlı değil; tanımlı olmadığında CLAUDE.md
+değerleri (WEB 0, GOOGLE 0.15, APPLE 0.30) kullanılıyor. Sabit 0.15 kaldırıldı.
+
+======================================================================
+11) Anonim iptal bildirimi — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/meetings/cancellation-notice.ts
+                  backend/src/meetings/meetings.service.ts
+                  backend/src/matching/matching.service.ts
+                  backend/src/matching/matching.scheduler.ts
+Not: Yalnızca baş harf için yapılan kullanıcı sorguları ve kullanılmayan initialsOf importları
+da kaldırıldı (initialsOf fonksiyonu başka yerlerde kullanıldığı için duruyor).
+
+======================================================================
+12) AI raporunda isim yerine P1, P2... — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/meetings/ai-report.service.ts
+
+======================================================================
+13) 5 kişilik dengesiz masayı 4'e indirme — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/matching/matching.service.ts
+Not: Yalnızca 3+2 dağılımlı 5 kişilik masada uygulanıyor; çoğunluk cinsiyetten en son eklenen
+çıkarılıyor, grup hakkı restoreGroupRights ile iade, sonraki döngü MatchingWaitlist'e upsert
+(reason "GENDER_IMBALANCE"), bildirim yok. Masanın maxParticipants değeri 4 yapılıyor.
+3+2 olmayan 5 kişilik masa (ör. 4+1) dengeli 4'e inemeyeceği için dokunulmuyor, log yazılıyor.
+
+======================================================================
+14) Perşembe 23:59 bildirimi kaldırıldı — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/matching/matching.service.ts
+
+======================================================================
+15) Eşleştirme puanı CLAUDE.md'ye göre güncellendi — YAPILDI
+======================================================================
+Değişen dosyalar: CLAUDE.md
+Not: match-score.ts ve matching.constants.ts'e dokunulmadı. CLAUDE.md: "OCEAN 65 + aynı meslek
+sektörü 35, başka faktör yok".
+
+======================================================================
+16) iyzico kesin durum yoksa PENDING — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/payment/payment.service.ts
+
+======================================================================
+17) İndirim harcanamazsa iade — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/payment/payment.service.ts
+Not: consumeDiscount false dönerse transaction tamamen geri alınıyor (SUCCESS ve abonelik
+yazılmıyor), ardından CONFLICT yolundaki refundUnfulfilled (iade + admin uyarısı) çalışıyor.
+
+======================================================================
+18) Scheduler'da açık parça filtreleri — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/matching/matching.scheduler.ts
+
+======================================================================
+19) getPoolStatus çift sayım — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/matching/matching.service.ts
+
+======================================================================
+20) deleteBot korumaları — YAPILDI
+======================================================================
+Değişen dosyalar: backend/src/matching/matching.service.ts
+Not: Şemada bot için ayrı bir pasif alanı yok; mevcut bot pasifleştirme User.status üzerinden
+(setBotStatus: SUSPENDED = pasif). Geçmiş masası olan bot bu yolla pasifleştiriliyor.
+Aktif masası olan bot → 400 "Aktif masası olan bot silinemez.". Yalnızca hiç masası olmayan
+bot siliniyor.
+
+======================================================================
+DOĞRULAMA
+======================================================================
+tsc backend : BAŞARILI (hata yok)
+tsc web     : BAŞARILI (hata yok)
+build backend (npm run build) : BAŞARILI
+build web (next build)        : BAŞARILI
+pm2 restart ahenk-api ahenk-web : BAŞARILI, ikisi de online
+Log: API "Nest application successfully started"; web "Ready". Yeni hata yok
+     (hata logundaki pg_hba kaydı 2026-11-02 tarihli, eski).
+
+Kalan inceleme: PR #22, #23, #24, #25, #26.

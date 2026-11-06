@@ -1,14 +1,8 @@
-// İptal bildirimi: kişi sayısı yerine baş harfler; masayı dağıtmamak için taramanın sürdüğünü vurgular
-export function cancellationNotice(initials: string[]): { title: string; body: string } {
-  const names = initials.length > 1
-    ? `${initials.slice(0, -1).join(", ")} ve ${initials[initials.length - 1]}`
-    : initials[0];
-  const who = initials.length > 1
-    ? `${names} isimli kişiler rezervasyonlarını`
-    : `${names} isimli kişi rezervasyonunu`;
+// İptal bildirimi: ayrılanın kimliği verilmez (anonim); masayı dağıtmamak için taramanın sürdüğünü vurgular
+export function cancellationNotice(): { title: string; body: string } {
   return {
     title: "Masa Güncellendi",
-    body: `Masanızdan ${who} iptal etti, endişelenmeyin yapay zeka katmanı masanızı öncelikli eşleşme moduna yükseltti ve acele tarama modu devrede.`,
+    body: "Masanızdan bir katılımcı rezervasyonunu iptal etti, endişelenmeyin yapay zeka katmanı masanızı öncelikli eşleşme moduna yükseltti ve acele tarama modu devrede.",
   };
 }
 

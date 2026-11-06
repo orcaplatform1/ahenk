@@ -42,6 +42,7 @@ export class AccountDeletionService {
 
   async request(userId: string) {
     if (await this.activeTables(userId)) throw new BadRequestException(ACTIVE_TABLE_MESSAGE);
+    if (await this.pendingOf(userId)) throw new ConflictException("Bekleyen bir hesap silme talebin var.");
     try {
       return await this.prisma.accountDeletionRequest.create({
         data: { userId },

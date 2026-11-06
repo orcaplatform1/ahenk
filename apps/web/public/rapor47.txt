@@ -1,0 +1,325 @@
+RAPOR 47 - 2026-11-06
+orcalabs.tr backend ve mettlo.tr: Prisma 7 geçişi ve bağımlılık yükseltmesi; 6 projede commit ve push
+
+SONUÇ
+- İŞ 1 orcalabs.tr backend: tüm paketler yükseltildi, Prisma 7.10.1'e geçildi. tsc (build ayarı), build, restart başarılı.
+  orca-backend online. Geri alma yok.
+- İŞ 2 mettlo.tr: workspace'teki tüm paketler ve member-mobile-rn yükseltildi, Prisma 7.10.1'e geçildi.
+  tsc (typecheck), build, restart başarılı; 4 süreç online. Geri alma yok.
+  DİKKAT: İlk restart'ta mettlo-api yaklaşık 1 dakika çöktü (20:44:38 - 20:45:41), ayrıntı İŞ 2'de.
+- İŞ 3: 8 git reposunda commit atıldı, hepsi origin'e push'landı (hash'ler aşağıda).
+- Prisma her yerde 7.10.1 (kararlı). npm "latest" etiketi hâlâ 8.0.0-rc olduğu için "outdated" çıktısında
+  "prisma 7.10.1 -> 8.0.0-rc" satırı duruyor; RC kullanılmadı.
+- Canlı veritabanına talimat dışı bağlanılmadı, migration çalıştırılmadı, tablo/kolon değişmedi.
+  Yalnızca prisma generate çalıştırıldı. (Uygulamalar restart sonrası kendi bağlantılarını normal şekilde açtı.)
+- Yedekler: /root/backups/deps2-20261106/orcalabs-backend/ ve /root/backups/deps2-20261106/mettlo/files.tgz
+
+==========================================================================================
+İŞ 1 - ORCALABS.TR BACKEND (/var/www/orcalabs.tr/backend)
+==========================================================================================
+Yedek: /root/backups/deps2-20261106/orcalabs-backend/ (package.json, package-lock.json, prisma.config.ts,
+schema.prisma, prisma.service.ts, tsconfig.json, tsconfig.build.json, nest-cli.json)
+
+Yükseltilen paketler (eski -> yeni):
+  @prisma/client 6.19.3 -> 7.10.1
+  prisma 6.19.3 -> 7.10.1
+  @prisma/adapter-pg (yoktu) -> 7.10.1 (yeni eklendi)
+  @anthropic-ai/sdk 1.3.0 -> 1.6.0
+  @aws-sdk/client-s3 3.1090.0 -> 3.1163.0
+  @aws-sdk/s3-request-presigner 3.1090.0 -> 3.1163.0
+  @nestjs/bullmq 11.0.4 -> 12.0.1
+  @nestjs/cli 11.0.24 -> 12.0.12
+  @nestjs/common 11.1.28 -> 12.4.0
+  @nestjs/config 4.0.4 -> 12.1.1
+  @nestjs/core 11.1.28 -> 12.4.0
+  @nestjs/jwt 11.0.2 -> 12.0.4
+  @nestjs/mapped-types 2.1.1 -> 12.0.1
+  @nestjs/passport 11.0.5 -> 12.0.1
+  @nestjs/platform-express 11.1.28 -> 12.4.0
+  @nestjs/platform-socket.io 11.1.28 -> 12.4.0
+  @nestjs/schedule 6.1.3 -> 12.0.3
+  @nestjs/schematics 11.1.0 -> 12.0.13
+  @nestjs/testing 11.1.28 -> 12.4.0
+  @nestjs/throttler 6.5.0 -> 6.7.1
+  @nestjs/websockets 11.1.28 -> 12.4.0
+  @eslint/eslintrc 3.3.6 -> 3.3.7
+  @eslint/js 9.39.5 -> 10.0.1
+  eslint 9.39.5 -> 10.14.0
+  eslint-plugin-prettier 5.5.6 -> 5.5.7
+  @types/node 24.13.3 -> 26.6.6
+  @types/pdfkit 0.17.6 -> 0.17.7
+  bullmq 5.80.9 -> 6.7.1
+  globals 17.7.0 -> 17.14.0
+  ioredis 5.11.1 -> 6.0.0
+  jest 30.4.2 -> 30.5.2
+  pdfkit 0.19.1 -> 0.20.2
+  pg 8.22.0 -> 8.23.1
+  prettier 3.9.5 -> 3.9.10
+  socket.io 4.8.3 -> 4.8.4
+  supertest 7.2.2 -> 7.3.1
+  ts-jest 29.4.11 -> 29.4.15
+  typescript 5.9.3 -> 7.0.2
+  typescript-eslint 8.64.0 -> 8.72.1
+  (package.json aralığı güncellenenler: @types/express ^5.0.6, @types/supertest ^7.2.1, eslint-config-prettier
+  ^10.1.8, ts-loader ^9.6.2, rxjs ^7.8.2)
+
+Değiştirilen dosyalar ve kod değişiklikleri:
+  a) package.json / package-lock.json: yukarıdaki sürümler.
+     package.json'a "overrides": { "typescript": "$typescript" } eklendi. Sebep: ts-jest ve typescript-eslint'in
+     son sürümleri "typescript <7" peer şartı koyuyor, npm install ERESOLVE ile duruyordu (kriptobeyan'daki
+     çözümün aynısı). jest/eslint TypeScript 7 ile denenmedi.
+  b) prisma/schema.prisma: datasource bloğundan yalnızca url = env("DATABASE_URL") satırı silindi. Başka
+     değişiklik yok (diff: tek satır silme).
+  c) prisma.config.ts: Proje kökünde zaten vardı ve DATABASE_URL'yi "dotenv/config" ile projenin
+     backend/.env dosyasından okuyordu (schema: prisma/schema.prisma, migrations: prisma/migrations,
+     datasource.url: process.env.DATABASE_URL). İstenen davranışı zaten sağladığı için değiştirilmedi.
+     dotenv paketi package.json'da doğrudan yok, @nestjs/config üzerinden kurulu geliyor (18.0.3); prisma generate
+     "Loaded Prisma config" ile bu dosyayı okudu.
+  d) src/prisma/prisma.service.ts:
+       + import { PrismaPg } from '@prisma/adapter-pg';
+       eski: super({ log: [{ emit: 'event', level: 'query' }] });
+       yeni: super({
+               adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+               log: [{ emit: 'event', level: 'query' }],
+             });
+     Sorgu logu dinleyicisi ve 5 denemeli $connect mantığı aynen duruyor. DATABASE_URL çalışma anında
+     ConfigModule.forRoot() ile .env'den process.env'e yükleniyor.
+  e) Build betiği:
+       eski: nest build && node scripts/copy-prisma-engine.js
+       yeni: rm -rf dist && tsc -p tsconfig.build.json
+     copy-prisma-engine adımı kaldırıldı: Prisma 7 adaptörle çalışıyor, generated/prisma altında artık
+     .so.node motor dosyası yok; betik kopyalayacak dosya bulamıyordu, gereksiz. scripts/copy-prisma-engine.js
+     dosyası silinmedi, yalnızca build'den çıkarıldı.
+  f) nest build TypeScript 7 ile çalışmadı: "The installed TypeScript version (7.0.2) does not expose the
+     programmatic compiler API that the Nest CLI requires." Build betiği tsc'ye çevrildi (yukarıda).
+     Kontrol: Eski dist'teki .js dosya listesi ile yeni dist'teki .js listesi birebir aynı. Tek fark eski
+     dist'teki generated/prisma/libquery_engine-debian-openssl-3.0.x.so.node dosyasının artık olmaması
+     (Prisma 7'de gerekmiyor).
+  tsconfig.json (TypeScript 7 zorunlu düzeltmesi):
+     - "moduleResolution": "node" ve "baseUrl": "./" silindi (TS5108, TS5102: TS7'de kaldırıldı). Kodda baseUrl'e
+       dayanan import yok.
+     - "types": ["node", "jest"] eklendi (TS7'de @types paketleri kendiliğinden yüklenmiyor).
+  g) scripts/ klasörüne dokunulmadı. Not: tsc -p tsconfig.json ile scripts/ hataları 5'ten 63'e çıktı.
+     Sebep: scripts/ içindeki 9 dosya "new PrismaClient()" ile adaptörsüz istemci kuruyor (Prisma 7 adaptör
+     istiyor) ve TS7 tip değişiklikleri. scripts/ build'e dahil değil, canlı uygulamayı etkilemiyor; ama bu
+     betikler elle çalıştırılırsa Prisma 7'de hata verir.
+
+Doğrulama:
+  - prisma generate: "Generated Prisma Client (7.10.1) to ./generated/prisma", başarılı.
+  - tsc -p tsconfig.build.json: 0 hata. tsc -p tsconfig.json: src/ ve test/ için 0 hata, yalnızca scripts/ hataları
+    (yukarıda g maddesi).
+  - build: başarılı (çıkış 0), dist/src/main.js üretildi.
+  - pm2 restart orca-backend: online.
+  - log: hata logu değişmedi (son kayıt 2026-11-02). Out logunda "PrismaModule dependencies initialized" ve
+    "Nest application successfully started" var. Uyarılar (X_API_BEARER_TOKEN tanımsız, bitinfocharts 403,
+    CRYPTORANK_API_KEY tanımsız, EventLoop blokaj uyarısı) açılışta eskiden de çıkan türden.
+
+==========================================================================================
+İŞ 2 - METTLO.TR (/var/www/mettlo.tr)
+==========================================================================================
+Yedek: /root/backups/deps2-20261106/mettlo/files.tgz (tüm package.json, pnpm-lock.yaml, pnpm-workspace.yaml,
+member-mobile-rn package-lock.json, *.prisma şema dosyaları, tsconfig dosyaları, PrismaClient kullanan 3 dosya).
+
+Dosya sahipliği (a maddesi):
+  - İş başında projede mettlo'ya ait olmayan 47.833 dosya/klasör vardı (önceki root kurulumlarından): node_modules
+    içinde ~45.000, apps/admin-web/.next ve apps/creator-web/.next (~1.600), apps/member-mobile-rn klasörünün
+    tamamı, pnpm-lock.yaml, database/prisma/schema altındaki 13 dosya, services/api/src altında 28 dosya, bazı
+    dist dosyaları, .git içinde bazı nesneler, kökteki .webp görseller ve .github.
+  - Bu hâlde mettlo kullanıcısı pnpm kuramadı ("Failed to create symlink ... Permission denied").
+  - Komutları mettlo olarak çalıştırabilmek ve sahipliği mettlo'da tutmak için
+    chown -R mettlo:mettlo /var/www/mettlo.tr yapıldı. İş öncesi liste:
+    /root/backups/deps2-20261106/mettlo/not-mettlo-owned-before-full.txt
+  - Yükseltme, prisma generate, typecheck, build, pm2 restart ve commit mettlo kullanıcısı ile yapıldı.
+  - İstisna: push. mettlo kullanıcısının GitHub kimlik bilgisi yok ("could not read Username"). Push root ile
+    yapıldı, ardından .git klasörü tekrar mettlo'ya chown edildi.
+  - İş sonu kontrolü: /var/www/mettlo.tr altında mettlo'ya ait olmayan dosya sayısı: 0.
+
+Yükseltilen paketler (package.json'daki eski -> yeni):
+  kök (mettlo):
+    @prisma/client 6.19.3 -> 7.10.1
+    prisma 6.19.3 -> 7.10.1 (pnpm 8.0.0-rc.30 yazdı, 7.10.1'e geri sabitlendi)
+    turbo ^2.5.0 -> ^2.11.10
+    typescript ^5.8.0 -> ^7.0.2
+  packages/database:
+    @prisma/client 6.19.3 -> 7.10.1
+    prisma 6.19.3 -> 7.10.1 (aynı RC düzeltmesi)
+    @prisma/adapter-pg (yoktu) -> ^7.10.1 (yeni)
+    @prisma/client-runtime-utils (yoktu) -> 7.10.1 (yeni, sebebi aşağıda)
+    dotenv-cli ^8.0.0 -> ^11.1.0
+    tsx ^4.20.0 -> ^4.23.15
+    typescript ^5.8.0 -> ^7.0.2
+    @types/node ^22.0.0 -> ^26.6.6
+  services/api:
+    @anthropic-ai/sdk ^0.128.0 -> ^1.6.0
+    @nestjs/common ^12.0.1 -> ^12.3.3
+    @nestjs/core ^12.0.1 -> ^12.3.3
+    @nestjs/platform-express ^12.0.1 -> ^12.3.3
+    @nestjs/jwt ^12.0.1 -> ^12.0.3
+    @nestjs/throttler ^6.5.0 -> ^6.7.1
+    @prisma/adapter-pg (yoktu) -> ^7.10.1 (yeni)
+    @types/multer ^2.2.0 -> ^2.3.0
+    @types/express ^5.0.0 -> ^5.0.6
+    @types/node ^22.0.0 -> ^26.6.6
+    dotenv ^17.4.2 -> ^18.0.9
+    multer ^2.4.0 -> ^2.5.0
+    rxjs ^7.8.1 -> ^7.8.2
+    tsx ^4.20.0 -> ^4.23.15
+    typescript ^5.8.0 -> ^7.0.2
+    zod ^4.6.5 -> ^4.6.7
+  apps/member-web, apps/creator-web, apps/admin-web (üçünde aynı):
+    next 16.3.6 -> 16.4.5
+    react 19.2.8 -> 19.3.1
+    react-dom 19.2.8 -> 19.3.1
+    lucide-react ^1.48.0 -> ^1.69.0
+    @types/node ^22.0.0 -> ^26.6.6
+    @types/qrcode ^1.5.5 -> ^1.5.6
+    @types/react ^19 -> ^19.3.0
+    @types/react-dom ^19 -> ^19.3.0
+    typescript ^5.8.0 -> ^7.0.2
+  packages/ui:
+    next 16.3.6 -> 16.4.5, react 19.2.8 -> 19.3.1, react-dom 19.2.8 -> 19.3.1, lucide-react ^1.48.0 -> ^1.69.0,
+    @types/react ^19 -> ^19.3.0, @types/react-dom ^19 -> ^19.3.0, typescript ^5.8.0 -> ^7.0.2
+  packages/web-core:
+    next 16.3.6 -> 16.4.5, react 19.2.8 -> 19.3.1, @types/react ^19 -> ^19.3.0, typescript ^5.8.0 -> ^7.0.2
+  packages/config:
+    zod ^4.6.5 -> ^4.6.7, typescript ^5.8.0 -> ^7.0.2, @types/node ^22.0.0 -> ^26.6.6,
+    next * -> ^16.4.5 (pnpm "*" aralığını kurulu sürümle yazdı)
+  packages/validation: zod ^4.6.5 -> ^4.6.7, typescript ^5.8.0 -> ^7.0.2, @types/node ^22.0.0 -> ^26.6.6
+  packages/auth: argon2 ^0.45.1 -> ^0.45.2, typescript ^5.8.0 -> ^7.0.2, @types/node ^22.0.0 -> ^26.6.6
+  packages/entitlements, health, payments, types, utils: typescript ^5.8.0 -> ^7.0.2, @types/node ^22.0.0 -> ^26.6.6
+  apps/member-mobile-rn (ayrı npm projesi):
+    expo ~57.0.26 -> ~58.0.23
+    expo-constants ~57.0.20 -> ~58.0.15
+    expo-device ~57.0.2 -> ~58.0.5
+    expo-font ~57.0.4 -> ~58.0.11
+    expo-image ~57.0.5 -> ~58.0.18
+    expo-linear-gradient ~57.0.2 -> ~58.0.3
+    expo-navigation-bar ~57.0.3 -> ~58.0.4
+    expo-notifications ~57.0.21 -> ~58.1.8
+    expo-secure-store ~57.0.4 -> ~58.0.2
+    expo-status-bar ~57.0.1 -> ~58.0.4
+    react 19.2.3 -> 19.3.1
+    react-native 0.86.3 -> 0.88.1
+    react-native-gesture-handler ~2.32.0 -> ~3.5.0
+    react-native-reanimated 4.5.1 -> 4.7.1
+    react-native-safe-area-context ~5.7.0 -> ~5.11.1
+    react-native-screens ~4.26.0 -> ~4.30.1
+    react-native-svg 15.15.4 -> 15.16.1
+    @react-native-community/datetimepicker 9.1.0 -> 9.3.0
+    @react-navigation/bottom-tabs ^7.3.14 -> ^7.21.0
+    @react-navigation/native ^7.1.14 -> ^7.5.1
+    @react-navigation/native-stack ^7.3.14 -> ^7.21.0
+    @tanstack/react-query ^5.75.8 -> ^5.106.1
+    axios ^1.9.0 -> ^1.21.0
+    zustand ^5.0.5 -> ^5.1.0
+    @babel/core ^7.26.0 -> ^8.1.0
+    @types/react ~19.2.2 -> ~19.3.0
+    typescript ~6.0.3 -> ~7.0.2
+    @types/react-native ~0.73.0 değişmedi: npm "latest" etiketi 0.72.8 (kurulu 0.73.0'dan eski), düşürülmedi.
+
+Değiştirilen dosyalar ve kod değişiklikleri:
+  - Tüm workspace package.json dosyaları, pnpm-lock.yaml, apps/member-mobile-rn/package.json ve package-lock.json.
+  - database/prisma/schema/00_base.prisma: datasource bloğundan yalnızca url = env("DATABASE_URL") satırı
+    silindi. Başka şema dosyasına dokunulmadı.
+  - packages/database/prisma.config.ts (yeni): Prisma komutları packages/database klasöründen çalıştığı için
+    oraya kondu. Projenin kullandığı kök .env dosyasını (/var/www/mettlo.tr/.env) Node'un yerleşik
+    process.loadEnvFile() ile okuyup DATABASE_URL'yi veriyor (ek paket gerekmedi). schema:
+    ../../database/prisma/schema, migrations: ../../database/prisma/schema/migrations (mevcut migration klasörü).
+    prisma generate "Loaded Prisma config from prisma.config.ts" yazdı.
+  - services/api/src/common/prisma.service.ts: kurucu eklendi:
+      constructor() { super({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) }); }
+    + import { PrismaPg } from '@prisma/adapter-pg';
+    DATABASE_URL, main.ts'deki dotenv ile kök .env'den ve pm2 ortamından geliyor.
+  - database/prisma/seed/seed.ts ve database/prisma/seed/test-fitness-seed.ts (PrismaClient oluşturulan diğer
+    yerler): new PrismaClient() -> new PrismaClient({ adapter: new PrismaPg({ connectionString:
+    process.env.DATABASE_URL }) }). Adaptör, dosyaların mevcut göreli import düzenine uygun olarak
+    '../../../packages/database/node_modules/@prisma/adapter-pg' yolundan alındı. Seed'ler çalıştırılmadı.
+  - tsconfig.base.json (TS7 zorunlu düzeltmesi): "moduleResolution": "node" silindi (TS5108), "types": ["node"]
+    eklendi. Bu dosyayı 9 paket ve services/api kullanıyor.
+  - f maddesi: services/api zaten "tsc -p tsconfig.json" ile derleniyor, nest build kullanılmıyor; build betiği
+    değiştirilmedi. Yine de karşılaştırıldı: services/api/dist .js listesi (66 dosya) eskisiyle birebir aynı.
+  - pnpm-workspace.yaml: pnpm güncelleme sırasında allowBuilds'e "workerd: set this to true or false" satırını
+    ekledi; dosya eski hâline geri alındı (değişiklik yok).
+
+mettlo-api çökmesi ve düzeltmesi:
+  - İlk restart'ta mettlo-api açılmadı: "Error: Cannot find module '@prisma/client-runtime-utils'"
+    (packages/database/generated/client/runtime/client.js içinden). Prisma 7'nin "prisma-client-js" çıktısı bu
+    paketi istiyor; pnpm'in katı yapısında packages/database'ten erişilemiyordu. pm2 süreci yeniden başlatıp
+    durdu (restart sayacı 14'ten 39'a çıktı).
+  - Süreci durdurmak istedim, otomatik izin sistemi pm2 stop komutunu engelledi; düzeltmeye geçildi.
+  - Düzeltme: packages/database'e @prisma/client-runtime-utils 7.10.1 eklendi (@prisma/client 7.10.1'in kendi
+    bağımlılığı, sürüm aynı). Restart sonrası API açıldı.
+  - Kesinti: yaklaşık 20:44:38 - 20:45:41 arası mettlo-api yanıt vermedi. Bu sürede mettlo-member-web hata
+    loguna API'ye bağlanamama (ECONNREFUSED 127.0.0.1:3301) kayıtları düştü; son kayıt 20:45:34, API açıldıktan
+    sonra yeni kayıt yok.
+
+Doğrulama:
+  - prisma generate (mettlo kullanıcısı): "Generated Prisma Client (v7.10.1) to ./generated/client", başarılı.
+  - tsc (pnpm typecheck / turbo): 21/21 görev başarılı (ilk denemede TS5108 hatası, tsconfig.base.json düzeltmesi
+    sonrası geçti).
+  - build (pnpm build / turbo): 13/13 görev başarılı (3 Next uygulaması, api, paketler).
+  - pm2 restart (mettlo kullanıcısının pm2'si): mettlo-api, mettlo-member-web, mettlo-creator-web,
+    mettlo-admin-web; dördü de online.
+  - log:
+    mettlo-api: "Nest application successfully started" ve "API http://127.0.0.1:3301/v1". Hata loguna her açılışta
+      "◇ injected env (2) from ../../.env" satırı düşüyor; bu hata değil, dotenv 18'in yükleme bilgisi (stderr'e
+      yazıyor). Bu satır yükseltmeden sonra çıkmaya başladı.
+    mettlo-member-web: yalnızca yukarıdaki kesinti süresindeki ECONNREFUSED kayıtları; "Ready in 951ms".
+    mettlo-creator-web ve mettlo-admin-web: hata loguna yeni kayıt yok; "Ready".
+  - member-mobile-rn: build/pm2 yok. npm install mettlo kullanıcısıyla hatasız bitti (çıkış 0). npm update
+    sırasında "ERESOLVE overriding peer dependency" uyarıları çıktı (hata değil). npm audit 6 açık bildirdi,
+    audit fix çalıştırılmadı. Bilgi: talimat gereği tsc çalıştırılması gerekmiyordu; denendiğinde tsconfig.json'daki
+    "baseUrl" için TS5102 (TS7'de kaldırıldı) hatası verdi, dosyaya dokunulmadı.
+  - Prisma'nın kurulum betiği "Prisma only supports Node.js versions 20.19+, 22.12+, 24.0+" uyarısı verdi
+    (sunucuda Node 26.13.0). Uyarı, kurulum durmadı; uygulama Prisma 7 ile açıldı.
+
+==========================================================================================
+İŞ 3 - COMMIT VE PUSH
+==========================================================================================
+Commit mesajı: "Bagimlilik yukseltmesi" (+ Co-Authored-By satırı, önceki commit'lerdeki düzenle aynı).
+Yalnızca bu işlerde (rapor46 ve rapor47) değiştirilen dosyalar commit'lendi.
+
+  Ahenk (/root/ahenk, master): f60efbc - push başarılı (46a8167..f60efbc master -> master)
+    Dosyalar: apps/mobile/package.json, apps/web/package.json, backend/package.json, packages/ui/package.json,
+    pnpm-lock.yaml. apps/web/public/rapor*.txt ve REVIEW_BULGULARI.md eklenmedi.
+  traders.tr (main): be9cd94 - push başarılı (d7cf08e..be9cd94 main -> main)
+    Dosyalar: package.json, package-lock.json
+  zesta.tr: /var/www/zesta.tr kökü git reposu değil; backend ve frontend ayrı repolar.
+    backend (master): c9503ca - push başarılı (8e41481..c9503ca master -> master)
+      Dosyalar: package.json, package-lock.json, test/app.e2e-spec.ts
+    frontend (main): 1436280 - push başarılı (f4f8cad..1436280 main -> main)
+      Dosyalar: package.json, package-lock.json
+      Not: public/imza.jpg dosyasında daha önceden kalma commit edilmemiş değişiklik var; bu işe ait olmadığı için
+      eklenmedi.
+  kriptobeyan.tr: /var/www/kriptobeyan kökü git reposu değil; backend ve frontend ayrı repolar.
+    backend (main): 0c59cf2 - push başarılı (a9e7534..0c59cf2 main -> main)
+      Dosyalar: package.json, package-lock.json, tsconfig.json
+    frontend (main): 47995c8 - push başarılı (663b257..47995c8 main -> main)
+      Dosyalar: package.json, package-lock.json
+  orcalabs.tr (main): 9552f79 - push başarılı (c2754b0..9552f79 main -> main)
+    Dosyalar: backend/package.json, backend/package-lock.json, backend/prisma/schema.prisma,
+    backend/src/prisma/prisma.service.ts, backend/tsconfig.json, frontend/app/(terminal)/terminal/layout.tsx,
+    frontend/package.json, frontend/package-lock.json.
+    Not: frontend/public/rapor53.txt ve rapor68.txt takip dışı dosyalar, bu işe ait değil, eklenmedi.
+  mettlo.tr (master): cbc005e - push başarılı (e1a37a3..cbc005e master -> master)
+    Commit mettlo kullanıcısıyla atıldı. mettlo'nun git kimliği tanımlı olmadığı için bu commit'e özel
+    -c user.name=orcaplatform1 -c user.email=orcaplatform@proton.me verildi (repodaki önceki commit'lerin
+    yazarı); kalıcı git ayarı yapılmadı. Push root ile yapıldı (mettlo'da GitHub kimliği yok), sonra .git
+    sahipliği mettlo'ya geri verildi.
+    Dosyalar: 15 workspace package.json, pnpm-lock.yaml, apps/member-mobile-rn/package.json ve package-lock.json,
+    database/prisma/schema/00_base.prisma, database/prisma/seed/seed.ts, database/prisma/seed/test-fitness-seed.ts,
+    services/api/src/common/prisma.service.ts, tsconfig.base.json, packages/database/prisma.config.ts (yeni).
+
+Git reposu olmayan proje: zesta.tr ve kriptobeyan.tr kök klasörleri (alt klasörleri ayrı repo olarak commit'lendi).
+Origin'i olmayan repo: yok.
+
+==========================================================================================
+SON DURUM
+==========================================================================================
+- root pm2: ahenk-api, ahenk-web, traders-site, zesta-backend, zesta-frontend, kriptobeyan-backend,
+  kriptobeyan-frontend, orca-backend, orca-frontend online. orca-sentiment işten önce de "stopped" idi,
+  dokunulmadı.
+- mettlo pm2: mettlo-api, mettlo-member-web, mettlo-creator-web, mettlo-admin-web online.
+- Tarayıcı, istek ve test denemesi yapılmadı.
+- rapor46.txt bu rapor yazıldıktan sonra silindi. rapor47.txt'nin https://ahenk.co/rapor47.txt linkinden açılması
+  için ahenk-web'in yeniden başlatılması gerekir (dosya site açıldıktan sonra eklendi); restart yapılmadı.

@@ -5,10 +5,10 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AiReportService } from "../meetings/ai-report.service";
 import { NotificationService } from "../notification/notification.service";
 import { SubscriptionPlan, SubscriptionStatus, KycStatus } from "../generated/prisma/client";
-import { cancellationNotice, initialsOf } from "../meetings/cancellation-notice";
+import { cancellationNotice } from "../meetings/cancellation-notice";
 import { VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { reviewWindow } from "../meetings/meeting-windows";
-import { closeGroupCycle, closeKankaCycle, closeOneOnOneCycle, OPEN_KANKA_SUB } from "../payment/package-rights";
+import { closeGroupCycle, closeKankaCycle, closeOneOnOneCycle, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB } from "../payment/package-rights";
 
 @Injectable()
 export class MatchingScheduler {
@@ -237,13 +237,8 @@ export class MatchingScheduler {
     });
 
     const subs = await this.prisma.subscription.findMany({
-      where: {
-        status: SubscriptionStatus.ACTIVE,
-        // Başbaşa: sadece harcanmamış hak döngü kaçırabilir
-        ...(isGroup
-          ? { plan: { in: [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE] } }
-          : { plan: { in: [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE] }, usedAt: null }),
-      },
+      // Yalnızca ilgili parçası açık paketler döngü kaçırabilir
+      where: isGroup ? OPEN_GROUP_SUB : OPEN_ONE_ON_ONE_SUB,
       select: { id: true, userId: true, missedGroupCycles: true, missedOneonOneCycles: true },
     });
 
@@ -527,7 +522,7 @@ export class MatchingScheduler {
     for (const m of meetings) {
       const cancelled = m.participants.filter((p) => p.status === 'CANCELLED');
       if (cancelled.length === 0) continue;
-      const notice = cancellationNotice(cancelled.map((p) => initialsOf(p.user.profile)));
+      const notice = cancellationNotice();
       const remaining = m.participants.filter((p) => !['CANCELLED', 'DECLINED', 'NO_SHOW'].includes(p.status));
       for (const p of remaining) {
         await this.notifications.sendToUser(p.userId, { ...notice, data: { type: 'PARTICIPANT_LEFT', meetingId: m.id } });
@@ -551,9 +546,6 @@ export class MatchingScheduler {
       this.logger.log(`KANKA kapanış hatırlatması: ${pairs.length} çift`);
       return;
     }
-    const plans = isGroup
-      ? [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE]
-      : [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE];
 
     const { week: weekNumber, year } = this.getISOWeek(now);
     const cycle = await this.prisma.matchingCycle.findUnique({
@@ -589,13 +581,7 @@ export class MatchingScheduler {
         oceanScore: { isNot: null },
         // KYC onaylı olmayan (admin paket vermiş olsa bile) eşleşmeye giremez
         kyc: { status: KycStatus.APPROVED },
-        subscriptions: {
-          some: {
-            plan: { in: plans },
-            status: SubscriptionStatus.ACTIVE,
-            ...(isGroup ? {} : { usedAt: null }),
-          },
-        },
+        subscriptions: { some: isGroup ? OPEN_GROUP_SUB : OPEN_ONE_ON_ONE_SUB },
       },
       select: { id: true },
     });
@@ -641,13 +627,7 @@ export class MatchingScheduler {
         oceanScore: { isNot: null },
         // KYC onaylı olmayan (admin paket vermiş olsa bile) eşleşmeye giremez
         kyc: { status: KycStatus.APPROVED },
-        subscriptions: {
-          some: {
-            plan: { in: [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE] },
-            status: SubscriptionStatus.ACTIVE,
-            usedAt: null,
-          },
-        },
+        subscriptions: { some: OPEN_ONE_ON_ONE_SUB },
       },
       select: { id: true, profile: { select: { gender: true, birthDate: true } } },
     });

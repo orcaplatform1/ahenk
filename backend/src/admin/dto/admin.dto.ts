@@ -97,6 +97,10 @@ export class CreateManualMeetingDto {
   @IsString({ each: true })
   participantIds: string[];
 
+  @IsString()
+  @IsNotEmpty()
+  cityId: string;
+
   @IsOptional()
   @IsString()
   locationText?: string;

@@ -17,6 +17,7 @@ import {
   UploadedFile,
   UploadedFiles,
   Res,
+  BadRequestException,
 } from "@nestjs/common";
 import { HideEmailForAdminInterceptor, KeepEmails } from "./hide-email.interceptor";
 import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
@@ -57,7 +58,7 @@ import {
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
-import { UserRole, RefundStatus } from "../generated/prisma/client";
+import { UserRole, RefundStatus, UserStatus } from "../generated/prisma/client";
 import { WinbackService } from "../payment/winback.service";
 import { PaymentService } from "../payment/payment.service";
 import { AccountDeletionService } from "../users/account-deletion.service";
@@ -135,6 +136,10 @@ export class AdminController {
     @Body() dto: UpdateUserStatusDto,
     @Req() req: Request,
   ) {
+    // Hesap silme yalnızca Silme Talepleri (AccountDeletionService.approve) akışıyla yapılır
+    if (dto.status === UserStatus.DELETED) {
+      throw new BadRequestException("Hesap silme bu uçtan yapılamaz; Silme Talepleri akışını kullanın.");
+    }
     const actor = req.user as { id: string };
     return this.adminService.updateUserStatus(id, actor.id, dto.status, dto.reason);
   }
@@ -558,6 +563,9 @@ export class AdminController {
     @Body() dto: CreateSanctionDto,
     @Req() req: Request,
   ) {
+    if (dto.type === "SUSPENSION" && (!dto.expiresAt || new Date(dto.expiresAt).getTime() <= Date.now())) {
+      throw new BadRequestException("Askıya alma için gelecekte bir bitiş tarihi zorunludur.");
+    }
     const admin = req.user as { id: string };
     return this.adminService.createSanction(
       id,
