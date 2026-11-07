@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
 
 const POLL_MS = 30_000;
+const NOTICE_MS = 10_000; // Görsel uyarı 10 saniye görünür; konum gönderimi sürer
 // Masa kartı (MasaDetayKarti) talep açınca ve burada talep kapanınca haberleşme olayları
 const SOS_OPENED_EVENT = 'ahenk-sos-opened';
 const SOS_CLOSED_EVENT = 'ahenk-sos-closed';
@@ -14,6 +15,15 @@ const SOS_CLOSED_EVENT = 'ahenk-sos-closed';
 export default function SosOpenReport() {
   const pathname = usePathname();
   const [reportId, setReportId] = useState<string | null>(null);
+  const [noticeVisible, setNoticeVisible] = useState(false);
+
+  // Talep açıldığında uyarı 10 saniye gösterilir, sonra yalnızca görsel uyarı gizlenir
+  useEffect(() => {
+    if (!reportId) { setNoticeVisible(false); return; }
+    setNoticeVisible(true);
+    const t = setTimeout(() => setNoticeVisible(false), NOTICE_MS);
+    return () => clearTimeout(t);
+  }, [reportId]);
 
   useEffect(() => {
     const sync = () => {
@@ -48,7 +58,7 @@ export default function SosOpenReport() {
     };
   }, [reportId]);
 
-  if (!reportId) return null;
+  if (!reportId || !noticeVisible) return null;
   return (
     <div
       role="status"
@@ -58,9 +68,9 @@ export default function SosOpenReport() {
         background: '#2a0a0a', border: '1.5px solid rgba(192,57,43,0.5)',
       }}
     >
-      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#ff6b6b' }}>🚨 Acil yardım talebiniz açık.</p>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#ff6b6b' }}>ACİL YARDIM TALEBİ ETKİN</p>
       <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,107,107,0.7)' }}>
-        Ekibimiz sizi takip ediyor, konumunuz paylaşılıyor. Güvende kalın.
+        Ekibimiz sizi aralıksız takip ediyor, konumunuzu kapatmayın, lokasyonunuz canlı paylaşılıyor. Şuan ihbarınız, canlı konumunuz, sizin ve masanızdakilerin kimlik bilgileri emniyetle paylaşılıyor.
       </p>
     </div>
   );

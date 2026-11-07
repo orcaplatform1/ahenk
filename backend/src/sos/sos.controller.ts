@@ -109,6 +109,14 @@ export class SosController {
     return this.sos.adminGetReport(id, req.user as { id: string; role: UserRole });
   }
 
+  // Canlı harita: açık talebin yalnızca en yeni konumu (admin sayfası 1 sn'de bir çeker)
+  @Get("admin/reports/:id/latest-location")
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  adminLatestLocation(@Param("id") id: string, @Req() req: Request) {
+    return this.sos.adminLatestLocation(id, req.user as { id: string; role: UserRole });
+  }
+
   @AdminAction("SOS_CLAIM", async (c) => {
     const r = await c.db.sosReport.findUnique({ where: { id: c.params.id }, select: { userId: true } });
     return { text: `${await c.userName(r?.userId)} kullanıcısının acil yardım talebini üstlendi`, targetUserId: r?.userId };

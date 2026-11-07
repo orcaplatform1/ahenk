@@ -6,16 +6,23 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { MeetingStatus, ParticipantStatus } from "../generated/prisma/client";
+import { MeetingStatus, MeetingType, ParticipantStatus } from "../generated/prisma/client";
+import { trWeekStart } from "../admin/tr-week";
 
-// Sohbet penceresi: masanın kendi buluşma günü 10:00–20:00 TR (UTC+3 sabit offset)
-function chatWindow(scheduledAt: Date): { openAt: Date; closeAt: Date } {
+// Sohbet kapanış günü (masanın TR haftası içinde, Pzt=0): grup Cuma, baş başa Cumartesi, kankamla Pazar — saat 22:00 TR
+const CHAT_CLOSE_DAY: Record<MeetingType, number> = {
+  [MeetingType.GROUP]: 4,
+  [MeetingType.ONE_ON_ONE]: 5,
+  [MeetingType.KANKA]: 6,
+};
+
+// Sohbet penceresi: açılış masanın buluşma günü 10:00 TR; kapanış masa türüne göre 22:00 TR (UTC+3 sabit offset)
+function chatWindow(scheduledAt: Date, type: MeetingType): { openAt: Date; closeAt: Date } {
   const TR = 3 * 3600_000;
   const dayTR = new Date(scheduledAt.getTime() + TR);
   dayTR.setUTCHours(10, 0, 0, 0);
   const openAt = new Date(dayTR.getTime() - TR);
-  dayTR.setUTCHours(20, 0, 0, 0);
-  const closeAt = new Date(dayTR.getTime() - TR);
+  const closeAt = new Date(trWeekStart(scheduledAt).getTime() + CHAT_CLOSE_DAY[type] * 86_400_000 + 22 * 3600_000);
   return { openAt, closeAt };
 }
 
@@ -67,7 +74,7 @@ export class ChatService {
       throw new ForbiddenException("Sohbet sadece aktif masalarda açıktır");
     }
 
-    const { openAt, closeAt } = chatWindow(meeting.scheduledAt);
+    const { openAt, closeAt } = chatWindow(meeting.scheduledAt, meeting.type);
     const now = new Date();
     const isClosed = now >= closeAt;
     if (now < openAt) {
@@ -122,7 +129,7 @@ export class ChatService {
       throw new ForbiddenException("Sohbet sadece aktif masalarda açıktır");
     }
 
-    const { openAt, closeAt } = chatWindow(meeting.scheduledAt);
+    const { openAt, closeAt } = chatWindow(meeting.scheduledAt, meeting.type);
     const now = new Date();
     if (now < openAt) {
       throw new ForbiddenException("Sohbet henüz açılmadı");

@@ -133,7 +133,7 @@ export class MeetingsService {
         // Kankamla: kişinin kendi çifti (kendisi + kankası) "MINE", karşı çift "OTHER" — kartta kim kimin kankası
         const myKankaId = m.participants.find((p) => p.userId === userId)?.kankaPartnerId ?? null;
         // Masa içi rozet: aynı baş harfte katılım sırasına göre üst simge numara (tek kaynak)
-        const badges = tableInitials(m.participants);
+        const badges = tableInitials(m.participants.map((p) => ({ userId: p.userId, createdAt: p.createdAt, profile: p.user.profile })));
         const participants = m.participants
           .filter((p) => !(p.status === ParticipantStatus.CANCELLED && hideCancelled))
           .map((p) => {

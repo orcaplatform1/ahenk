@@ -298,6 +298,31 @@ export class SosService {
     };
   }
 
+  // Canlı harita: talep edenin en yeni konumu (talep konum güncellemesi ya da katılımcı konumu, hangisi yeniyse).
+  // Talep çözüldüyse konum dönmez; sayfa çekmeyi durdurur.
+  async adminLatestLocation(id: string, viewer: Viewer) {
+    const report = await this.prisma.sosReport.findUnique({
+      where: { id },
+      select: {
+        claimedById: true, resolvedAt: true, userId: true, meetingId: true,
+        locationUpdates: { orderBy: { timestamp: "desc" }, take: 1, select: { lat: true, lng: true, timestamp: true } },
+      },
+    });
+    if (!report) throw new NotFoundException();
+    if (!this.canSee(report, viewer)) throw new ForbiddenException("Bu talep başka bir admin tarafından takip ediliyor");
+    if (report.resolvedAt) return { resolved: true, location: null };
+    const update = report.locationUpdates[0] ?? null;
+    const part = report.meetingId && report.userId
+      ? await this.prisma.participantLocation.findFirst({
+          where: { meetingId: report.meetingId, userId: report.userId },
+          orderBy: { timestamp: "desc" },
+          select: { lat: true, lng: true, timestamp: true },
+        })
+      : null;
+    const location = part && (!update || part.timestamp >= update.timestamp) ? part : update;
+    return { resolved: false, location };
+  }
+
   // ─── Admin: üstlen / çöz ─────────────────────────────────────────────────
 
   async claimReport(id: string, viewer: Viewer) {

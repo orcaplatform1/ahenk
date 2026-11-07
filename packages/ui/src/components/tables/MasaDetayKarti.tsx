@@ -227,15 +227,14 @@ function SosModal({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <span style={{ fontSize: 22 }}>🚨</span>
           <span style={{ fontSize: 16, fontWeight: 800, color: '#ff6b6b', fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em' }}>
-            Acil Yardım
+            ACİL YARDIM TALEP FORMU
           </span>
         </div>
         <div style={{ height: 1, background: 'rgba(192,57,43,0.3)', margin: '10px 0 16px' }} />
 
         <p style={{ margin: '0 0 12px', fontSize: 12, color: 'rgba(255,107,107,0.7)', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
-          Yaşadığın durumu seç (birden fazla seçebilirsin):
+          Yaşadığın durumu seç:
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
@@ -334,6 +333,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
   const [isClosed, setIsClosed] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
   const [openAt, setOpenAt] = useState<string | null>(null);
+  const [closeAt, setCloseAt] = useState<string | null>(null); // Buluşma günü 22:00 TR (backend)
   const [sendError, setSendError] = useState('');
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -349,10 +349,11 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
       });
       // Başarısız yenilemede (arka plandan dönüş, bağlantı kopması) ekrandaki mesajlar ve bölüm olduğu gibi kalır
       if (!res.ok) return;
-      const data = await res.json() as { isOpen: boolean; isClosed: boolean; openAt: string; messages: ChatMsg[] };
+      const data = await res.json() as { isOpen: boolean; isClosed: boolean; openAt: string; closeAt?: string; messages: ChatMsg[] };
       setIsOpen(data.isOpen);
       setOpenAt(data.openAt);
-      setIsClosed(data.isClosed);
+      setCloseAt(data.closeAt ?? null);
+      setIsClosed(data.isClosed || (!!data.closeAt && Date.now() >= new Date(data.closeAt).getTime()));
       // Sunucudan gelenler mevcut listeyle birleştirilir; aynı mesaj iki kez gösterilmez
       setMessages(prev => {
         const byId = new Map(prev.map(m => [m.id, m]));
@@ -377,6 +378,15 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
       window.removeEventListener('online', fetchMessages);
     };
   }, [fetchMessages]);
+
+  // Kapanış saati (22:00 TR) geldiğinde sohbet sayfa yenilenmeden kapanır
+  useEffect(() => {
+    if (!closeAt || isClosed) return;
+    const ms = new Date(closeAt).getTime() - Date.now();
+    if (ms <= 0) { setIsClosed(true); return; }
+    const t = setTimeout(() => setIsClosed(true), Math.min(ms, 2_147_000_000));
+    return () => clearTimeout(t);
+  }, [closeAt, isClosed]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1146,10 +1156,10 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
                 textAlign: 'center',
               }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#ff6b6b', fontFamily: 'Inter, sans-serif' }}>
-                  🚨 Acil yardım talebiniz alındı.
+                  ACİL YARDIM TALEBİNİZ ALINDI
                 </p>
                 <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,107,107,0.7)', fontFamily: 'Inter, sans-serif' }}>
-                  Güvende kalın.
+                  Sakin olun ve güvende kalmaya çalışın.
                 </p>
               </div>
             ) : (

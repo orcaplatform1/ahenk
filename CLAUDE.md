@@ -249,8 +249,9 @@ Endpoint'ler:
 SOHBET SİSTEMİ (Modül 11):
 Kural: Masa onaylandığı an (REVEALED) masa kartı açılınca sohbet direkt açılır. Onay sorulmaz. Her iki masa türü için geçerli.
 Kapanış:
-  - Grup masası sohbeti: Cumartesi 23:59'da kapanır
-  - Baş başa sohbeti: Cuma 23:59'da kapanır (tarama bitişiyle aynı)
+  - Grup masası sohbeti: Cuma 22:00'de kapanır (TR)
+  - Baş başa sohbeti: Cumartesi 22:00'de kapanır (TR)
+  - Kankamla sohbeti: Pazar 22:00'de kapanır (TR)
 Kapanınca:
   - Kullanıcı tarafında mesajlar silinir (görünmez olur)
   - Admin panelinde mesajlar kalıcı olarak saklanır

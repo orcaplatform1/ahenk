@@ -2,9 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { api } from '@/lib/api';
 import { myRole, myId } from '@/lib/adminRole';
 import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
+
+// Leaflet yalnızca istemcide yüklenir (SSR yok)
+const SosLiveMap = dynamic(() => import('@/components/SosLiveMap'), { ssr: false });
 
 // ─── Tipler ─────────────────────────────────────────────────────────────────
 
@@ -277,6 +281,8 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [livePos, setLivePos] = useState<{ lat: number; lng: number; timestamp: string } | null>(null);
+  const [liveStopped, setLiveStopped] = useState(false);
   const isSuperadmin = myRole() === 'SUPERADMIN';
   const me = myId();
   const claimedByMe = !!report.claimedBy && report.claimedBy.id === me;
@@ -310,6 +316,25 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
     finally { setLoading(false); }
   }
 
+  // Canlı harita: açık (çözülmemiş) talepte kart açıkken yalnızca en yeni konum 1 sn'de bir çekilir.
+  // Talep çözülünce, kart kapanınca ya da sayfadan çıkılınca (unmount) durur; sayfanın geri kalanı 15 sn yenilemede kalır.
+  useEffect(() => {
+    if (!open || report.resolvedAt || liveStopped) return;
+    let busy = false;
+    const id = setInterval(() => {
+      if (busy) return;
+      busy = true;
+      api.get<{ resolved: boolean; location: { lat: number; lng: number; timestamp: string } | null }>(`/sos/admin/reports/${report.id}/latest-location`)
+        .then((r) => {
+          if (r.resolved) { setLiveStopped(true); return; }
+          if (r.location) setLivePos(r.location);
+        })
+        .catch(() => undefined)
+        .finally(() => { busy = false; });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [open, report.id, report.resolvedAt, liveStopped]);
+
   // Açık kart her yenilemede (sayaç / Yenile) canlı konumla birlikte güncellenir
   useEffect(() => { if (open) loadDetail(); }, [tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -322,6 +347,12 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
   const allLocs  = detail?.allParticipantLocations ?? [];
   const reqLoc   = allLocs.find(l => l.userId === report.user?.id) ?? null;
   const otherLoc = allLocs.filter(l => l.userId !== report.user?.id);
+  // Haritadaki işaret: talep edenin en yeni konumu (katılımcı konumu ya da talep konum güncellemesi)
+  const mapPos = reqLoc && (!latest || new Date(reqLoc.timestamp) >= new Date(latest.timestamp))
+    ? { lat: reqLoc.lat, lng: reqLoc.lng }
+    : (displayLat != null && displayLng != null ? { lat: displayLat, lng: displayLng } : null);
+  // 1 sn'lik canlı konum varsa işaret onu izler
+  const markerPos = livePos ?? mapPos;
 
   return (
     <div style={{
@@ -457,6 +488,7 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
             {/* Sağ: Konum takibi */}
             <div>
               <Section title="CANLI KONUM TAKİBİ" accent={CYAN}>
+                {markerPos && <SosLiveMap lat={markerPos.lat} lng={markerPos.lng} />}
                 {allLocs.length === 0 && !displayLat ? (
                   <p style={{ fontSize: 11, color: MUTED, margin: '8px 0' }}>Konum verisi yok</p>
                 ) : (
