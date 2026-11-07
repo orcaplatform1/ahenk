@@ -757,7 +757,7 @@ export class AdminService {
         data: {
           type,
           // Elle kurulan masa da otomatik masalarla aynı sayaçtan sıradaki numarayı ve aynı başlık biçimini alır
-          title: await tableTitle(tx, data.cityId, type),
+          title: await tableTitle(tx, data.cityId, type, new Date(data.scheduledAt)),
           scheduledAt: new Date(data.scheduledAt),
           maxParticipants: data.participantIds.length,
           cityId: data.cityId,

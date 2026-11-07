@@ -8,6 +8,7 @@ import { MatchPerson, matchScore } from "../matching/match-score";
 import { densityListOf, type DensityRow } from "../common/districts";
 import { liveDistrictSource } from "../admin/app-settings";
 import { meetingLockAt } from "./meeting-windows";
+import { superscript, tableInitials } from "./table-initials";
 
 const LEFT_STATUSES: ParticipantStatus[] = ["DECLINED", "CANCELLED", "NO_SHOW"];
 const NEW_ENTRY_MS = 5 * 60 * 1000;
@@ -243,7 +244,7 @@ export class LiveLayerService {
           id: true, type: true, title: true, maxParticipants: true, scheduledAt: true,
           participants: {
             select: {
-              status: true, createdAt: true, cancelledAt: true,
+              userId: true, status: true, createdAt: true, cancelledAt: true,
               user: { select: { profile: { select: { firstName: true, lastName: true, gender: true } } } },
             },
           },
@@ -261,11 +262,16 @@ export class LiveLayerService {
     for (const m of meetings) {
       const label = tableLabel(m.type, m.title);
       const no = tableNo(m.title);
-      const person = (p: (typeof m.participants)[number]): FeedSegment => ({
-        t: "person",
-        v: `${(p.user.profile?.firstName ?? "").trim()[0]?.toLocaleUpperCase("tr-TR") ?? "?"}.${(p.user.profile?.lastName ?? "").trim()[0]?.toLocaleUpperCase("tr-TR") ?? "?"}`,
-        g: p.user.profile?.gender ?? null,
-      });
+      // Masa kartı ve sohbetle aynı rozet (tek kaynak); akışta sondaki nokta yazılmaz: "A.C", "A.C²"
+      const badges = tableInitials(m.participants.map((p) => ({ userId: p.userId, createdAt: p.createdAt, profile: p.user.profile })));
+      const person = (p: (typeof m.participants)[number]): FeedSegment => {
+        const b = badges.get(p.userId);
+        return {
+          t: "person",
+          v: b ? `${b.base.replace(/\.$/, "")}${b.no ? superscript(b.no) : ""}` : "?.?",
+          g: p.user.profile?.gender ?? null,
+        };
+      };
       // Katılım ve iptaller zaman sırasıyla yeniden oynatılır (o andaki doluluk için)
       const steps: { at: number; join: boolean; p: (typeof m.participants)[number] }[] = [];
       for (const p of m.participants) {

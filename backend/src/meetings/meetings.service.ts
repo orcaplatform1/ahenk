@@ -10,6 +10,7 @@ import { Queue } from "bull";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { cancellationNotice, initialsOf } from "./cancellation-notice";
+import { tableInitials } from "./table-initials";
 import { chargeOneOnOneCancel, restoreOneOnOneRights } from "../matching/one-on-one-right";
 import { cancelDeadline, meetingLockAt, meetingCardEnd, noShowCardWindow, sosWindowEnd, reviewWindow } from "./meeting-windows";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
@@ -131,13 +132,13 @@ export class MeetingsService {
         const hideCancelled = m.type !== MeetingType.GROUP || new Date() >= cancelDeadline(m.scheduledAt);
         // Kankamla: kişinin kendi çifti (kendisi + kankası) "MINE", karşı çift "OTHER" — kartta kim kimin kankası
         const myKankaId = m.participants.find((p) => p.userId === userId)?.kankaPartnerId ?? null;
+        // Masa içi rozet: aynı baş harfte katılım sırasına göre üst simge numara (tek kaynak)
+        const badges = tableInitials(m.participants);
         const participants = m.participants
           .filter((p) => !(p.status === ParticipantStatus.CANCELLED && hideCancelled))
           .map((p) => {
-            const f = p.user.profile?.firstName ?? '';
-            const l = p.user.profile?.lastName ?? '';
             return {
-              initials: `${(f[0] ?? '?').toUpperCase()}.${(l[0] ?? '?').toUpperCase()}.`,
+              initials: badges.get(p.userId)?.label ?? '?.?.',
               gender: p.user.profile?.gender ?? null,
               joinedAt: p.createdAt, // Katılım listesi giriş sırası
               ...(p.userId === userId && { isSelf: true }),
@@ -256,6 +257,14 @@ export class MeetingsService {
       (await this.prisma.userBlock.findMany({ where: { blockerId: userId }, select: { blockedId: true } })).map((b) => b.blockedId),
     );
 
+    // Rozet numarası iptal edenler dahil masanın tüm katılımcılarına göre hesaplanır
+    const allParts = await this.prisma.meetingParticipant.findMany({
+      where: { meetingId: { in: participations.map((p) => p.meeting.id) } },
+      select: { meetingId: true, userId: true, createdAt: true, user: { select: { profile: { select: { firstName: true, lastName: true } } } } },
+    });
+    const badgesOf = (meetingId: string) =>
+      tableInitials(allParts.filter((a) => a.meetingId === meetingId).map((a) => ({ userId: a.userId, createdAt: a.createdAt, profile: a.user.profile })));
+
     return participations.map((p) => {
       const me = p.meeting.participants.find((x) => x.userId === userId);
       const ocean = me?.user?.oceanScore;
@@ -271,8 +280,9 @@ export class MeetingsService {
         : null;
       const m = p.meeting;
       // Diğer katılımcılardan yalnızca baş harf + cinsiyet döner
+      const badges = badgesOf(m.id);
       const person = (x: (typeof m.participants)[number]) => ({
-        initials: `${(x.user.profile?.firstName?.[0] ?? '?').toUpperCase()}.${(x.user.profile?.lastName?.[0] ?? '?').toUpperCase()}.`,
+        initials: badges.get(x.userId)?.label ?? '?.?.',
         gender: x.user.profile?.gender ?? null,
       });
       const review = reviewOf.get(m.id);
@@ -426,13 +436,17 @@ export class MeetingsService {
       }),
       this.prisma.noShowReport.findMany({ where: { meetingId, reporterId: userId }, select: { reportedId: true } }),
     ]);
+    const badges = tableInitials(await this.prisma.meetingParticipant.findMany({
+      where: { meetingId },
+      select: { userId: true, createdAt: true, user: { select: { profile: { select: { firstName: true, lastName: true } } } } },
+    }).then((rows) => rows.map((r) => ({ userId: r.userId, createdAt: r.createdAt, profile: r.user.profile }))));
     return {
       open: me.meeting.status === MeetingStatus.ACTIVE && now >= opensAt && now < closesAt,
       opensAt,
       closesAt,
       participants: others.map((p) => ({
         userId: p.userId,
-        initials: initialsOf(p.user.profile),
+        initials: badges.get(p.userId)?.label ?? initialsOf(p.user.profile),
         gender: p.user.profile?.gender ?? null,
       })),
       markedIds: mine.map((r) => r.reportedId),

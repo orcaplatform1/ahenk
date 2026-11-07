@@ -16,6 +16,7 @@ import {
 } from "./matching.constants";
 import { cancelDeadline, groupMeetingAt, kankaMeetingAt, oneOnOneMeetingAt } from "../meetings/meeting-windows";
 import { cancellationNotice } from "../meetings/cancellation-notice";
+import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { Gender, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "../generated/prisma/client";
 import { pickBot, alertBotNotFound, availableBots, recentlyMetBotIds } from "./bot-picker";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right";
@@ -118,17 +119,28 @@ function ageYears(birthDate: string | Date | null | undefined): number | null {
 
 // Masa adı: "İstanbul Grup 44" = o şehirdeki 44. grup masası (haftalık değil, şehir + türe göre sıra).
 // Atamalar kuyrukta tek tek çalıştığı için sıra numarası çakışmaz.
+// Masa numarası şehir + tür + hafta bazındadır. Hafta: buluşma tarihinin ait olduğu Pazartesi 00:00 – Pazar 23:59 (TR).
+// Yeni numara = o şehir, tür ve haftadaki masaların (iptal edilenler dahil) en büyük numarası + 1; iptal edilen numara tekrar kullanılmaz.
 export async function tableTitle(
   db: Pick<PrismaService, "city" | "meeting"> | Prisma.TransactionClient,
   cityId: string,
   type: MeetingType,
+  scheduledAt: Date,
 ): Promise<string> {
-  const [city, count] = await Promise.all([
+  const weekStart = trWeekStart(scheduledAt);
+  const [city, weekTitles] = await Promise.all([
     db.city.findUnique({ where: { id: cityId }, select: { name: true } }),
-    db.meeting.count({ where: { cityId, type } }),
+    db.meeting.findMany({
+      where: { cityId, type, scheduledAt: { gte: weekStart, lt: new Date(weekStart.getTime() + WEEK_MS) } },
+      select: { title: true },
+    }),
   ]);
+  const maxNo = weekTitles.reduce((max, m) => {
+    const hit = /(\d+)\s*$/.exec(m.title);
+    return hit ? Math.max(max, Number(hit[1])) : max;
+  }, 0);
   const label = type === MeetingType.GROUP ? "Grup" : type === MeetingType.KANKA ? "Kankamla" : "Başbaşa";
-  return `${city?.name ?? ""} ${label} ${count + 1}`.trim();
+  return `${city?.name ?? ""} ${label} ${maxNo + 1}`.trim();
 }
 
 // Grup kapanışında dengeyi tamamlayan bot sayısı: önce 2E+2K, sığmazsa 3E+3K hedeflenir
@@ -291,8 +303,10 @@ export class MatchingService {
         cycleId: ctx.cycleId,
         cityId,
         type: MeetingType.GROUP,
-        title: await tableTitle(this.prisma, cityId, MeetingType.GROUP),
-        scheduledAt: groupMeetingAt(),
+        ...(await (async () => {
+          const scheduledAt = groupMeetingAt();
+          return { scheduledAt, title: await tableTitle(this.prisma, cityId, MeetingType.GROUP, scheduledAt) };
+        })()),
         maxParticipants: TABLE_SIZE_LARGE,
         participants: { create: { userId: user.id, status: "INVITED" } },
       },
@@ -330,8 +344,10 @@ export class MatchingService {
           cycleId: ctx.cycleId,
           cityId,
           type: MeetingType.ONE_ON_ONE,
-          title: await tableTitle(this.prisma, cityId, MeetingType.ONE_ON_ONE),
-          scheduledAt: oneOnOneMeetingAt(),
+          ...(await (async () => {
+            const scheduledAt = oneOnOneMeetingAt();
+            return { scheduledAt, title: await tableTitle(this.prisma, cityId, MeetingType.ONE_ON_ONE, scheduledAt) };
+          })()),
           maxParticipants: 2,
           participants: { create: { userId: user.id, status: "INVITED" } },
         },
@@ -456,8 +472,10 @@ export class MatchingService {
           cycleId: ctx.cycleId,
           cityId,
           type: MeetingType.KANKA,
-          title: await tableTitle(tx, cityId, MeetingType.KANKA),
-          scheduledAt: kankaMeetingAt(),
+          ...(await (async () => {
+            const scheduledAt = kankaMeetingAt();
+            return { scheduledAt, title: await tableTitle(tx, cityId, MeetingType.KANKA, scheduledAt) };
+          })()),
           maxParticipants: 4,
           participants: {
             createMany: {

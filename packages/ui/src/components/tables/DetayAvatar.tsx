@@ -56,8 +56,8 @@ export function DetayAvatar({ participant, delay }: { participant: { initials?: 
       <div style={{
         position: 'absolute', inset: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, fontWeight: 700, color: '#f0f0f0',
-        letterSpacing: '0.02em', fontFamily: 'Inter, sans-serif',
+        fontSize: label.length > 4 ? 10 : 11, fontWeight: 700, color: '#f0f0f0',
+        letterSpacing: '0.02em', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden',
         userSelect: 'none', pointerEvents: 'none',
       }}>
         {label}

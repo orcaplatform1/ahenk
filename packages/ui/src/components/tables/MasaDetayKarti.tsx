@@ -46,6 +46,7 @@ interface ChatMsg {
   isOwn: boolean;
   senderInitials: string;
   senderGender?: string | null;
+  seatNo?: number | null; // Masaya özel anonim sandalye no (art arda mesaj serisi)
   reportedByMe: boolean;
 }
 
@@ -62,7 +63,9 @@ function ChatBadge({ initials, gender }: { initials: string; gender?: string | n
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       background: gender === 'FEMALE' ? 'rgba(244,143,177,0.12)' : 'rgba(79,195,247,0.12)',
       border: `1.5px solid ${gColor(gender)}`,
-      fontSize: 8.5, fontWeight: 700, color: '#f0f0f0', fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em',
+      // Rozet boyutu sabit; üst simge numaralı (uzun) metinde yazı küçülür, rozet dışına taşmaz
+      fontSize: initials.length > 4 ? 7.5 : 8.5, fontWeight: 700, color: '#f0f0f0', fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em',
+      overflow: 'hidden', whiteSpace: 'nowrap',
     }}>
       {initials.toUpperCase()}
     </span>
@@ -436,7 +439,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
           {messages.map((msg, i) => {
             const prev = messages[i - 1];
             // Aynı kişinin art arda mesajlarında rozet yalnızca serinin ilk mesajında
-            const firstOfSeries = !prev || prev.isOwn !== msg.isOwn || prev.senderInitials !== msg.senderInitials || prev.senderGender !== msg.senderGender;
+            const firstOfSeries = !prev || prev.isOwn !== msg.isOwn || prev.seatNo !== msg.seatNo;
             return (
             <div key={msg.id} style={{ display: 'flex', flexDirection: 'row', justifyContent: msg.isOwn ? 'flex-end' : 'flex-start', gap: 6, alignItems: 'flex-start' }}>
               {!msg.isOwn && (

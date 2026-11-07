@@ -27,6 +27,7 @@ const inputStyle: React.CSSProperties = {
 
 interface MeetingRow {
   id: string;
+  title: string;
   type: 'GROUP' | 'ONE_ON_ONE';
   status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
   scheduledAt: string;
@@ -34,6 +35,12 @@ interface MeetingRow {
   venueMissing?: boolean;
   city?: { name: string } | null;
   _count: { participants: number };
+}
+
+// Masa adı tarihle: "7 Kas · İstanbul Grup 16"
+function masaName(m: { scheduledAt: string; title: string }) {
+  const day = new Date(m.scheduledAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', timeZone: 'Europe/Istanbul' });
+  return `${day} · ${m.title}`;
 }
 
 interface OceanScore {
@@ -389,7 +396,7 @@ export default function AdminMatches() {
           <table className="adm-table" style={{ width: '100%', minWidth: 420, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                {['Tarih', 'Tip', 'Şehir', 'Kişi', 'Mekan', 'Durum', ''].map(h => (
+                {['Masa', 'Tarih', 'Tip', 'Şehir', 'Kişi', 'Mekan', 'Durum', ''].map(h => (
                   <th key={h} style={{ padding: '8px 14px', textAlign: 'left', ...LABEL, color: MUTED }}>
                     {h}
                   </th>
@@ -400,7 +407,7 @@ export default function AdminMatches() {
               {loading
                 ? [0,1,2,3,4].map(i => (
                     <tr key={i}>
-                      <td colSpan={7} style={{ padding: '8px 14px' }}>
+                      <td colSpan={8} style={{ padding: '8px 14px' }}>
                         <div style={{ height: 36, background: SURFACE, borderRadius: 6, opacity: 0.5 }} />
                       </td>
                     </tr>
@@ -418,6 +425,7 @@ export default function AdminMatches() {
                           cursor: 'pointer',
                         }}
                       >
+                        <td data-label="Masa" style={{ padding: '10px 14px', fontSize: 11, color: TEXT, fontWeight: 600 }}>{masaName(m)}</td>
                         <td data-label="Tarih" style={{ padding: '10px 14px', fontSize: 11, color: TEXT, whiteSpace: 'nowrap' }}>{fmtDate(m.scheduledAt)}</td>
                         <td data-label="Tip" style={{ padding: '10px 14px', fontSize: 11, color: MUTED }}>{TYPE_LABEL[m.type] ?? m.type}</td>
                         <td data-label="Şehir" style={{ padding: '10px 14px', fontSize: 11, color: MUTED, whiteSpace: 'nowrap' }}>{m.city?.name ?? '—'}</td>
@@ -476,9 +484,9 @@ export default function AdminMatches() {
           {/* Header */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, minWidth: 0 }}>
             <div style={{ minWidth: 0, flex: '1 1 160px' }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>{fmtDate(selected.scheduledAt)}</p>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>{masaName(selected)}</p>
               <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED }}>
-                {TYPE_LABEL[selected.type]} · {selected.participants.length} katılımcı
+                {fmtDate(selected.scheduledAt)} · {TYPE_LABEL[selected.type]} · {selected.participants.length} katılımcı
               </p>
             </div>
             <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 8, marginLeft: 'auto', maxWidth: '100%' }}>

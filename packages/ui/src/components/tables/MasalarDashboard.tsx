@@ -365,8 +365,8 @@ function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
       </svg>
       <div style={{
         position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, fontWeight: 700, color: '#f0f0f0', letterSpacing: '0.03em',
-        fontFamily: 'Inter, sans-serif', userSelect: 'none', pointerEvents: 'none',
+        fontSize: label.length > 4 ? 10 : 11, fontWeight: 700, color: '#f0f0f0', letterSpacing: '0.03em',
+        fontFamily: 'Inter, sans-serif', userSelect: 'none', pointerEvents: 'none', whiteSpace: 'nowrap', overflow: 'hidden',
       }}>
         {label}
       </div>
