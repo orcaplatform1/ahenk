@@ -19,9 +19,35 @@ export const THREAT_LABELS: Record<string, string> = {
   HARASSMENT:       "Taciz veya istismara uğradım",
 };
 
+// ─── Açık adres (Nominatim ters adres çözümleme) ───────────────────────────
+// Yalnızca backend sorgular; sunucu genelinde Nominatim'e saniyede en fazla 1 istek (global sıra).
+// Her açık talep için adres en fazla 15 sn'de bir yenilenir; koordinat değişmediyse tekrar sorulmaz.
+const NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse";
+const NOMINATIM_UA = "Ahenk/1.0 (https://ahenk.co)";
+const NOMINATIM_GAP_MS = 1000;
+const NOMINATIM_TIMEOUT_MS = 5000;
+const ADDRESS_REFRESH_MS = 15_000;
+const HISTORY_CACHE_MAX = 1000; // konum geçmişi adresleri: koordinat bazlı önbellek üst sınırı
+
+export interface SosAddress {
+  il: string | null; ilce: string | null; mahalle: string | null; caddeSokak: string | null;
+  binaNo: string | null; postaKodu: string | null; tamAdres: string | null; guncelleme: Date;
+  kisaAdres: string; // katılımcı koordinat satırındaki tek satırlık adres (cadde, mahalle, ilçe, şehir)
+}
+interface AddressCacheEntry { lat: number; lng: number; checkedAt: number; inFlight: boolean; address: SosAddress | null }
+
 @Injectable()
 export class SosService {
   private readonly logger = new Logger(SosService.name);
+  // Talep bazında bellek içi adres önbelleği (talep çözülünce silinir)
+  private readonly addressCache = new Map<string, AddressCacheEntry>();
+  // Global Nominatim sırası: tek işçi, iki istek arası en az 1 sn. Güncel adres (öncelikli) konum geçmişinden önce işlenir.
+  private readonly nominatimQueue: { priority: boolean; run: () => Promise<void> }[] = [];
+  private nominatimBusy = false;
+  private lastNominatimAt = 0;
+  // Konum geçmişi adresleri: koordinat (5 hane) bazlı önbellek + sırada bekleyenler
+  private readonly historyAddressCache = new Map<string, SosAddress>();
+  private readonly historyPending = new Set<string>();
 
   constructor(
     private prisma: PrismaService,
@@ -291,9 +317,12 @@ export class SosService {
     const deleted = await this.deletedIds(snapshot.map((p) => p.userId));
     return {
       ...report,
+      // Konum geçmişi: her satıra açık adres (backend önbelleği; yoksa sıraya eklenir, null döner)
+      locationUpdates: report.locationUpdates.map((lu) => ({ ...lu, address: this.historyAddress(lu.lat, lu.lng) })),
       restricted: false,
       participantSnapshot: this.shapeSnapshot(report.participantSnapshot, bots, viewer, deleted),
-      allParticipantLocations: Array.from(latestByUser.values()),
+      // Katılımcı koordinat satırları: açık adres aynı koordinat önbelleği + global kuyruktan (düşük öncelik)
+      allParticipantLocations: Array.from(latestByUser.values()).map((l) => ({ ...l, address: this.historyAddress(l.lat, l.lng) })),
       participantLocationHistory: participantLocations,
     };
   }
@@ -324,12 +353,125 @@ export class SosService {
       select: { meetingId: true, userId: true, lat: true, lng: true, timestamp: true },
     });
     const partBy = new Map(partRows.map((p) => [`${p.meetingId}:${p.userId}`, p]));
+    // SUPERADMIN listesi tüm açık talepleri içerir: listede olmayan (çözülmüş/silinmiş) taleplerin adresi önbellekten silinir
+    if (viewer.role === UserRole.SUPERADMIN) {
+      const openIds = new Set(reports.map((r) => r.id));
+      for (const id of this.addressCache.keys()) if (!openIds.has(id)) this.addressCache.delete(id);
+    }
     return reports.map((r) => {
       const update = r.locationUpdates[0] ?? null;
       const p = r.meetingId && r.userId ? partBy.get(`${r.meetingId}:${r.userId}`) : undefined;
       const part = p ? { lat: p.lat, lng: p.lng, timestamp: p.timestamp } : null;
-      return { reportId: r.id, location: part && (!update || part.timestamp >= update.timestamp) ? part : update };
+      const location = part && (!update || part.timestamp >= update.timestamp) ? part : update;
+      // Uç her saniye çağrılır ama Nominatim'e gitmez: yenileme gerekiyorsa arka planda sıraya eklenir, önbellek döner
+      if (location) this.refreshAddress(r.id, location.lat, location.lng);
+      return { reportId: r.id, location, address: this.addressCache.get(r.id)?.address ?? null };
     });
+  }
+
+  // 15 sn kuralı: son kontrolden 15 sn geçmediyse ya da istek sürüyorsa hiçbir şey yapılmaz.
+  // Koordinat bir önceki sorgudakiyle aynıysa ve adres varsa Nominatim'e tekrar sorulmaz.
+  private refreshAddress(reportId: string, lat: number, lng: number) {
+    const now = Date.now();
+    const entry = this.addressCache.get(reportId);
+    if (entry && (entry.inFlight || now - entry.checkedAt < ADDRESS_REFRESH_MS)) return;
+    if (entry && entry.address && entry.lat === lat && entry.lng === lng) { entry.checkedAt = now; return; }
+    const e: AddressCacheEntry = entry ?? { lat, lng, checkedAt: now, inFlight: false, address: null };
+    e.lat = lat; e.lng = lng; e.checkedAt = now; e.inFlight = true;
+    this.addressCache.set(reportId, e);
+    this.enqueueNominatim(true, async () => {
+      try {
+        if (!this.addressCache.has(reportId)) return; // sırada beklerken talep çözüldü
+        const address = await this.reverseGeocode(lat, lng);
+        const cur = this.addressCache.get(reportId);
+        if (cur && address) cur.address = address; // hata/zaman aşımında son bilinen adres korunur
+      } finally {
+        const cur = this.addressCache.get(reportId);
+        if (cur) cur.inFlight = false;
+      }
+    });
+  }
+
+  // Konum geçmişi ve katılımcı koordinat satırlarının adresi: önbellekte varsa döner; yoksa (sırada değilse) sıraya eklenir ve null döner.
+  // Aynı koordinat bir kez çözülür; sonraki 15 sn detay yenilemelerinde önbellekten gelir.
+  private historyAddress(lat: number, lng: number): SosAddress | null {
+    const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+    const hit = this.historyAddressCache.get(key);
+    if (hit) return hit;
+    if (!this.historyPending.has(key)) {
+      this.historyPending.add(key);
+      this.enqueueNominatim(false, async () => {
+        try {
+          const address = await this.reverseGeocode(lat, lng);
+          if (address) {
+            if (this.historyAddressCache.size >= HISTORY_CACHE_MAX) {
+              const oldest = this.historyAddressCache.keys().next().value;
+              if (oldest !== undefined) this.historyAddressCache.delete(oldest);
+            }
+            this.historyAddressCache.set(key, address);
+          }
+        } finally {
+          this.historyPending.delete(key);
+        }
+      });
+    }
+    return null;
+  }
+
+  // Global sıra: öncelikli iş sıranın önüne girer; işçi her istekten önce son istekten bu yana 1 sn geçmesini bekler
+  private enqueueNominatim(priority: boolean, run: () => Promise<void>) {
+    const job = { priority, run };
+    if (priority) {
+      const i = this.nominatimQueue.findIndex((j) => !j.priority);
+      if (i === -1) this.nominatimQueue.push(job); else this.nominatimQueue.splice(i, 0, job);
+    } else {
+      this.nominatimQueue.push(job);
+    }
+    void this.drainNominatim();
+  }
+
+  private async drainNominatim() {
+    if (this.nominatimBusy) return;
+    this.nominatimBusy = true;
+    try {
+      for (let job = this.nominatimQueue.shift(); job; job = this.nominatimQueue.shift()) {
+        const wait = this.lastNominatimAt + NOMINATIM_GAP_MS - Date.now();
+        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+        this.lastNominatimAt = Date.now();
+        await job.run().catch(() => undefined);
+      }
+    } finally {
+      this.nominatimBusy = false;
+    }
+  }
+
+  private async reverseGeocode(lat: number, lng: number): Promise<SosAddress | null> {
+    const url = `${NOMINATIM_URL}?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=tr`;
+    try {
+      const res = await fetch(url, { headers: { "User-Agent": NOMINATIM_UA }, signal: AbortSignal.timeout(NOMINATIM_TIMEOUT_MS) });
+      if (!res.ok) { this.logger.warn(`Nominatim adres çözümleme hatası: HTTP ${res.status}`); return null; }
+      const d = (await res.json()) as { display_name?: string; address?: Record<string, string> };
+      const a = d.address ?? {};
+      return {
+        il: a.province ?? a.state ?? null,
+        ilce: a.town ?? a.county ?? a.district ?? null,
+        mahalle: a.suburb ?? a.neighbourhood ?? a.quarter ?? null,
+        caddeSokak: a.road ?? null,
+        binaNo: a.house_number ?? null,
+        postaKodu: a.postcode ?? null,
+        tamAdres: d.display_name ?? null,
+        guncelleme: new Date(),
+        kisaAdres: [
+          a.road ?? a.pedestrian ?? a.path,
+          a.neighbourhood ?? a.suburb ?? a.quarter,
+          a.district ?? a.county,
+          a.city ?? a.town ?? a.village ?? a.state,
+        ].filter(Boolean).join(", ") || d.display_name?.split(",").slice(0, 3).join(",").trim() || "",
+      };
+    } catch (err) {
+      this.logger.warn(`Nominatim adres çözümleme yanıt vermedi: ${(err as Error).message}`);
+      return null;
+    }
   }
 
   // ─── Admin: üstlen / çöz ─────────────────────────────────────────────────
@@ -356,6 +498,7 @@ export class SosService {
       throw new ForbiddenException("Önce 'İlgileniyorum' ile talebi üstlenin");
     }
     await this.prisma.sosReport.update({ where: { id }, data: { resolvedAt: new Date(), resolvedById: viewer.id, openKey: null } });
+    this.addressCache.delete(id); // açık adres önbelleği talep çözülünce silinir
     return { resolved: true };
   }
 

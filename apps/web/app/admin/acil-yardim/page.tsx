@@ -12,13 +12,20 @@ const SosLiveMap = dynamic(() => import('@/components/SosLiveMap'), { ssr: false
 
 // Canlı harita: sayfa düzeyindeki 1 sn'lik tek istekten gelen, talep edenin en yeni konumu
 type LivePos = { lat: number; lng: number; timestamp: string };
+// Açık adres: backend Nominatim'den 15 sn'de bir çözer, open-locations ucuyla birlikte gelir
+type LiveAddress = {
+  il: string | null; ilce: string | null; mahalle: string | null; caddeSokak: string | null;
+  binaNo: string | null; postaKodu: string | null; tamAdres: string | null; guncelleme: string;
+  kisaAdres?: string;
+};
 
 // ─── Tipler ─────────────────────────────────────────────────────────────────
 
-interface LocUpdate { lat: number; lng: number; accuracy: number | null; timestamp: string; }
+interface LocUpdate { lat: number; lng: number; accuracy: number | null; timestamp: string; address?: LiveAddress | null; }
 
 interface ParticipantLoc {
   id: string; userId: string; lat: number; lng: number; accuracy: number | null; timestamp: string;
+  address?: LiveAddress | null; // backend Nominatim önbelleğinden (detayla 15 sn'de bir)
   user: { id: string; profile: { firstName: string; lastName: string } | null };
 }
 
@@ -134,53 +141,10 @@ function LiveBadge({ ts }: { ts: string }) {
   );
 }
 
-const addrCache = new Map<string, string>();
-const addrPending = new Map<string, Promise<string>>();
-const ADDR_CACHE_MAX = 200;
-// Nominatim ToS: max 1 istek/saniye — seri kuyruk; aynı key için tek istek (dedup)
-let _geoQueue = Promise.resolve();
-async function reverseGeocode(lat: number, lng: number): Promise<string> {
-  const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
-  if (addrCache.has(key)) return addrCache.get(key)!;
-  if (addrPending.has(key)) return addrPending.get(key)!;
-  const p = new Promise<string>((resolve) => {
-    _geoQueue = _geoQueue.then(async () => {
-      try {
-        if (addrCache.has(key)) { resolve(addrCache.get(key)!); return; }
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`,
-          { headers: { 'User-Agent': 'Ahenk-Admin/1.0' } },
-        );
-        const data = await res.json();
-        const a = data.address ?? {};
-        const parts = [
-          a.road ?? a.pedestrian ?? a.path,
-          a.neighbourhood ?? a.suburb ?? a.quarter,
-          a.district ?? a.county,
-          a.city ?? a.town ?? a.village ?? a.state,
-        ].filter(Boolean);
-        const addr = parts.join(', ') || data.display_name?.split(',').slice(0, 3).join(',').trim() || '';
-        if (addrCache.size >= ADDR_CACHE_MAX) addrCache.clear();
-        addrCache.set(key, addr);
-        addrPending.delete(key);
-        resolve(addr);
-      } catch { addrPending.delete(key); resolve(''); }
-      await new Promise(r => setTimeout(r, 1100));
-    });
-  });
-  addrPending.set(key, p);
-  return p;
-}
-
 function CoordRow({ loc, isRequester }: { loc: ParticipantLoc; isRequester: boolean }) {
   const name = loc.user.profile ? `${loc.user.profile.firstName} ${loc.user.profile.lastName}` : loc.userId.slice(0, 8);
-  const [addr, setAddr] = useState('');
-
-  useEffect(() => {
-    let alive = true;
-    reverseGeocode(loc.lat, loc.lng).then(a => { if (alive) setAddr(a); });
-    return () => { alive = false; };
-  }, [loc.lat, loc.lng]);
+  // Adres backend'den gelir (tarayıcı Nominatim'e istek atmaz)
+  const addr = loc.address ? (loc.address.kisaAdres ?? '') : null;
 
   return (
     <div style={{
@@ -203,7 +167,11 @@ function CoordRow({ loc, isRequester }: { loc: ParticipantLoc; isRequester: bool
         )}
         <LiveBadge ts={loc.timestamp} />
       </div>
-      {addr && (
+      {addr === null ? (
+        <p style={{ margin: '4px 0 0 24px', fontSize: 10.5, color: MUTED, fontFamily: SANS, lineHeight: 1.4 }}>
+          Adres alınıyor…
+        </p>
+      ) : addr && (
         <p style={{ margin: '4px 0 0 24px', fontSize: 10.5, color: isRequester ? 'rgba(239,100,100,0.8)' : CYAN, fontFamily: SANS, lineHeight: 1.4 }}>
           📍 {addr}
         </p>
@@ -212,27 +180,64 @@ function CoordRow({ loc, isRequester }: { loc: ParticipantLoc; isRequester: bool
   );
 }
 
-function HistoryRow({ lu }: { lu: LocUpdate }) {
-  const [addr, setAddr] = useState('');
-  useEffect(() => {
-    let alive = true;
-    reverseGeocode(lu.lat, lu.lng).then(a => { if (alive) setAddr(a); });
-    return () => { alive = false; };
-  }, [lu.lat, lu.lng]);
+// Talep edenin güncel konumunun açık adresi (emniyete iletmek için); veri 1 sn'lik open-locations çekmesinden gelir
+function OpenAddress({ address }: { address: LiveAddress | null }) {
+  const rows: [string, string | null][] = address ? [
+    ['İl', address.il],
+    ['İlçe', address.ilce],
+    ['Mahalle', address.mahalle],
+    ['Cadde/Sokak', address.caddeSokak],
+    ['Bina No', address.binaNo],
+    ['Posta Kodu', address.postaKodu],
+    ['Tam Adres', address.tamAdres],
+    ['Son güncelleme', fmtTime(address.guncelleme)],
+  ] : [];
   return (
-    <div style={{ marginBottom: 6 }}>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-        <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, minWidth: 56 }}>{fmtTime(lu.timestamp)}</span>
-        <a href={mapsHref(lu.lat, lu.lng)} target="_blank" rel="noopener noreferrer"
-          style={{ fontSize: 10, color: CYAN, fontFamily: MONO, textDecoration: 'none' }}>
-          {lu.lat.toFixed(5)}, {lu.lng.toFixed(5)}
-        </a>
-        {lu.accuracy && <span style={{ fontSize: 9, color: MUTED }}>±{Math.round(lu.accuracy)}m</span>}
-      </div>
-      {addr && (
-        <p style={{ margin: '2px 0 0 56px', fontSize: 10, color: 'rgba(34,211,238,0.65)', fontFamily: SANS }}>
-          {addr}
-        </p>
+    <div style={{ marginBottom: 10 }}>
+      <Section title="AÇIK ADRES" accent={CYAN}>
+        {!address ? (
+          <p style={{ fontSize: 11, color: MUTED, margin: '4px 0', fontFamily: SANS }}>Adres alınıyor…</p>
+        ) : (
+          <div style={{ padding: '8px 10px', borderRadius: 6, background: RED_DIM, border: '1px solid rgba(239,68,68,0.3)' }}>
+            {rows.map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', gap: 10, fontSize: 11, lineHeight: 1.6, fontFamily: SANS }}>
+                <span style={{ color: MUTED, minWidth: 96, flexShrink: 0 }}>{k}</span>
+                <span style={{ color: TEXT, wordBreak: 'break-word' }}>{v || '—'}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+    </div>
+  );
+}
+
+// Konum geçmişi satırı: koordinat yerine açık adres bilgileri (backend Nominatim önbelleğinden, detayla birlikte gelir)
+function HistoryRow({ lu }: { lu: LocUpdate }) {
+  const a = lu.address ?? null;
+  const rows: [string, string | null][] = a ? [
+    ['İl', a.il],
+    ['İlçe', a.ilce],
+    ['Mahalle', a.mahalle],
+    ['Cadde/Sokak', a.caddeSokak],
+    ['Bina No', a.binaNo],
+    ['Posta Kodu', a.postaKodu],
+    ['Tam Adres', a.tamAdres],
+  ] : [];
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO }}>{fmtTime(lu.timestamp)}</span>
+      {!a ? (
+        <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: SANS }}>Adres alınıyor…</p>
+      ) : (
+        <div style={{ marginTop: 2 }}>
+          {rows.map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', gap: 10, fontSize: 10, lineHeight: 1.5, fontFamily: SANS }}>
+              <span style={{ color: MUTED, minWidth: 80, flexShrink: 0 }}>{k}</span>
+              <span style={{ color: 'rgba(34,211,238,0.85)', wordBreak: 'break-word' }}>{v || '—'}</span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -263,7 +268,7 @@ function ProximityAlert({ requester, others }: { requester: ParticipantLoc | nul
   );
 }
 
-function ReportCard({ report, index, tick, onChanged, livePos }: { report: SosReport; index: number; tick: number; onChanged: () => void; livePos?: LivePos | null }) {
+function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { report: SosReport; index: number; tick: number; onChanged: () => void; livePos?: LivePos | null; liveAddress?: LiveAddress | null }) {
   if (report.restricted) {
     return (
       <div style={{ borderRadius: 12, border: `1px solid ${BORDER}`, background: SURFACE, padding: '14px 18px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -275,10 +280,10 @@ function ReportCard({ report, index, tick, onChanged, livePos }: { report: SosRe
       </div>
     );
   }
-  return <ReportCardFull report={report} index={index} tick={tick} onChanged={onChanged} livePos={livePos ?? null} />;
+  return <ReportCardFull report={report} index={index} tick={tick} onChanged={onChanged} livePos={livePos ?? null} liveAddress={liveAddress ?? null} />;
 }
 
-function ReportCardFull({ report, index, tick, onChanged, livePos }: { report: SosReport; index: number; tick: number; onChanged: () => void; livePos: LivePos | null }) {
+function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress }: { report: SosReport; index: number; tick: number; onChanged: () => void; livePos: LivePos | null; liveAddress: LiveAddress | null }) {
   const [open, setOpen]   = useState(index === 0 && !report.resolvedAt);
   const [detail, setDetail] = useState<SosReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -471,6 +476,7 @@ function ReportCardFull({ report, index, tick, onChanged, livePos }: { report: S
             <div>
               <Section title="CANLI KONUM TAKİBİ" accent={CYAN}>
                 {markerPos && <SosLiveMap lat={markerPos.lat} lng={markerPos.lng} />}
+                {markerPos && !report.resolvedAt && <OpenAddress address={liveAddress} />}
                 {allLocs.length === 0 && !displayLat ? (
                   <p style={{ fontSize: 11, color: MUTED, margin: '8px 0' }}>Konum verisi yok</p>
                 ) : (
@@ -621,6 +627,7 @@ export default function AcilYardimPage() {
   // Yalnızca bu sayfa açıkken ve en az bir açık talep varken çalışır; önceki istek bitmeden yenisi gitmez.
   // Açık talep kalmayınca (liste ya da uç boş dönünce) veya sayfadan çıkılınca durur. 15 sn yenileme ayrı çalışır.
   const [liveLocs, setLiveLocs] = useState<Record<string, LivePos>>({});
+  const [liveAddrs, setLiveAddrs] = useState<Record<string, LiveAddress>>({});
   const openKey = active.filter(r => !r.restricted).map(r => r.id).join(',');
   useEffect(() => {
     if (!openKey) return;
@@ -628,12 +635,17 @@ export default function AcilYardimPage() {
     const id = setInterval(() => {
       if (busy) return;
       busy = true;
-      api.get<{ reportId: string; location: LivePos | null }[]>('/sos/admin/reports/open-locations')
+      api.get<{ reportId: string; location: LivePos | null; address: LiveAddress | null }[]>('/sos/admin/reports/open-locations')
         .then((rows) => {
           if (rows.length === 0) { clearInterval(id); return; }
           setLiveLocs((prev) => {
             const next = { ...prev };
             for (const r of rows) if (r.location) next[r.reportId] = r.location;
+            return next;
+          });
+          setLiveAddrs((prev) => {
+            const next = { ...prev };
+            for (const r of rows) if (r.address) next[r.reportId] = r.address;
             return next;
           });
         })
@@ -748,7 +760,7 @@ export default function AcilYardimPage() {
                       AKTİF TALEPLER: {active.length}
                     </span>
                   </div>
-                  {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} livePos={liveLocs[r.id] ?? null} />)}
+                  {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} livePos={liveLocs[r.id] ?? null} liveAddress={liveAddrs[r.id] ?? null} />)}
                 </div>
               )}
 
