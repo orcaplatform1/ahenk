@@ -13,6 +13,7 @@ const YASAL = [
 const SIRKET = [
   { label: 'İş Ortaklığı', href: '/is-ortakligi' },
   { label: 'Kariyer',       href: '/kariyer' },
+  { label: 'Janti Haydar Tanıtım', href: '/jantihaydar' },
 ];
 
 const HARITA = [
