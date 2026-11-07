@@ -426,7 +426,11 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
-## Apple HIG Kuralı (iOS / React Native mobil)
-- Ahenk mobil uygulamasında yazılan her ekran ve bileşen .claude/skills içindeki hig-* skill'lerine uyacak.
-- Ekran yazmadan önce ilgili hig-* skill dosyasını ve gerekli referans dosyasını oku.
-- Skill'lerde karşılığı olmayan ekran, bileşen veya düzen uydurma; kullanıcıya sor.
+## Mobil Uygulama Kuralı (iOS / React Native)
+- Ahenk mobil uygulaması, ahenk.co web sitesinin mobil görünümüyle birebir aynı görünecek.
+- 1. öncelik: web ile birebir görünüm. Renkler, yazı tipleri, yazı boyları, boşluklar, köşe yuvarlaklıkları, gölgeler, ikonlar ve düzen web kaynak kodundan birebir alınacak.
+- Web tasarım değerleri tek bir tema dosyasında toplanacak; mobil ekranlar yalnızca bu tema dosyasını kullanacak. Tema dosyasında olmayan renk veya boyut değeri uydurulmayacak.
+- Her mobil ekran, webdeki karşılık gelen ekranla tek tek karşılaştırılarak yazılacak. Webde karşılığı olmayan ekran, bileşen veya düzen uydurulmayacak; kullanıcıya sorulacak.
+- Apple HIG (.claude/skills içindeki hig-* skill'leri) yalnızca webde karşılığı olmayan iPhone'a özgü konularda uygulanacak: güvenli alan (çentik, alt çubuk), en az 44×44 pt dokunma alanı, klavye davranışı, geri kaydırma hareketi, durum çubuğu. HIG, webdeki görünümü değiştirmek için kullanılmayacak.
+- Web'den mobile dönüşüm işlerinde WebToMobile skill'leri kullanılacak.
+- Talimatta "hig skill'lerini kullan" yazdığında bu öncelik sırası geçerlidir.
