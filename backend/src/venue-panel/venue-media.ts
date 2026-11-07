@@ -2,6 +2,7 @@ import { BadRequestException } from "@nestjs/common";
 import { randomBytes } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
+import { detectImageKind, ImageKind, toWebp } from "../common/image-webp";
 
 // Mekân tanıtım fotoğrafları: /root/ahenk/uploads/venue-gallery/<anahtar>/ — MediaController herkese açık sunar
 export const VENUE_GALLERY_DIR = path.join(process.cwd(), "..", "uploads", "venue-gallery");
@@ -17,19 +18,28 @@ export function detectImage(buf: Buffer): "jpg" | "png" | "webp" | null {
   return null;
 }
 
+// Mekân fotoğrafı olarak kabul edilen türler (içerikten): JPEG, PNG, WebP ve iPhone HEIC/HEIF
+const VENUE_PHOTO_KINDS: ImageKind[] = ["jpg", "png", "webp", "heic", "heif"];
+
+export function venuePhotoKind(buf: Buffer): ImageKind | null {
+  const kind = detectImageKind(buf);
+  return kind && VENUE_PHOTO_KINDS.includes(kind) ? kind : null;
+}
+
 export function assertVenuePhotos(files: Express.Multer.File[]): void {
   for (const file of files) {
-    if (!detectImage(file.buffer)) throw new BadRequestException("Fotoğraflar JPEG, PNG veya WebP olmalı");
+    if (!venuePhotoKind(file.buffer)) throw new BadRequestException("Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı");
   }
 }
 
-// Doğrulanmış dosyaları diske yazar, herkese açık adreslerini döner
-export function saveVenuePhotos(key: string, files: Express.Multer.File[]): string[] {
+// Doğrulanmış dosyaları WebP'ye çevirip (kalite 82, boyut değişmez) diske yazar, herkese açık adreslerini döner
+export async function saveVenuePhotos(key: string, files: Express.Multer.File[]): Promise<string[]> {
   const dir = path.join(VENUE_GALLERY_DIR, key);
+  const webps = await Promise.all(files.map((file) => toWebp(file.buffer, venuePhotoKind(file.buffer) as ImageKind)));
   fs.mkdirSync(dir, { recursive: true });
-  return files.map((file) => {
-    const name = `g-${Date.now()}-${randomBytes(4).toString("hex")}.${detectImage(file.buffer)}`;
-    fs.writeFileSync(path.join(dir, name), file.buffer);
+  return webps.map((buf) => {
+    const name = `g-${Date.now()}-${randomBytes(4).toString("hex")}.webp`;
+    fs.writeFileSync(path.join(dir, name), buf);
     return `${VENUE_GALLERY_PREFIX}/${key}/${name}`;
   });
 }

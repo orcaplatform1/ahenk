@@ -8,6 +8,7 @@ import { FormLabel, PasswordInput, TextareaField, TextField, VerifiedPhoneField 
 import { LineIcon } from '@/components/LineIcon';
 import { API_PREFIX, api } from '@/lib/api';
 import { readError } from '@/lib/venueApi';
+import { canPreview, isVenuePhoto, VENUE_PHOTO_ACCEPT } from '@/lib/imageType';
 
 /* ── Count-up hook ────────────────────────────────────────────── */
 function useCountUp(target: number, duration = 1600, start = false) {
@@ -111,17 +112,25 @@ export default function IsOrtakligiPage() {
     api.get<{ name: string }[]>('/auth/cities').then((c) => setCities(c.map((x) => x.name))).catch(() => undefined);
   }, []);
 
+  // HEIC/HEIF çoğu tarayıcıda önizlenemez: önizleme yerine dosya adı gösterilir (boş dize)
   useEffect(() => {
-    const urls = photos.map((f) => URL.createObjectURL(f));
-    setPreviews(urls);
-    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+    let alive = true;
+    const urls: string[] = [];
+    Promise.all(photos.map(async (f) => {
+      if (!(await canPreview(f))) return '';
+      const u = URL.createObjectURL(f); urls.push(u); return u;
+    })).then((list) => { if (alive) setPreviews(list); });
+    return () => { alive = false; urls.forEach((u) => URL.revokeObjectURL(u)); };
   }, [photos]);
 
-  function addPhotos(list: FileList | null) {
+  async function addPhotos(list: FileList | null) {
     if (!list) return;
     const picked = Array.from(list);
     if (picked.some((f) => f.size > MAX_PHOTO_BYTES)) { setError('Her fotoğraf en fazla 5 MB olabilir.'); return; }
-    if (picked.some((f) => !['image/jpeg', 'image/png', 'image/webp'].includes(f.type))) { setError('Fotoğraflar JPEG, PNG veya WebP olmalı.'); return; }
+    // Tür içerikten kontrol edilir (uzantı değil); HEIC/HEIF kabul edilir, sunucuda WebP'ye çevrilir
+    for (const f of picked) {
+      if (!(await isVenuePhoto(f))) { setError('Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı.'); return; }
+    }
     if (photos.length + picked.length > MAX_PHOTOS) { setError(`En fazla ${MAX_PHOTOS} fotoğraf yükleyebilirsiniz.`); return; }
     setError('');
     setPhotos((p) => [...p, ...picked]);
@@ -439,9 +448,13 @@ export default function IsOrtakligiPage() {
                     {previews.length > 0 && (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: '0.5rem' }}>
                         {previews.map((src, i) => (
-                          <div key={src} style={{ position: 'relative', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden' }}>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={src} alt={`Fotoğraf ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <div key={src || `${photos[i]?.name}-${i}`} style={{ position: 'relative', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden' }}>
+                            {src ? (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img src={src} alt={`Fotoğraf ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: 6, boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', color: '#a39c93', fontSize: 11, textAlign: 'center', overflowWrap: 'anywhere' }}>{photos[i]?.name}</span>
+                            )}
                             <button type="button" aria-label={`Fotoğraf ${i + 1} kaldır`} onClick={() => setPhotos((p) => p.filter((_, k) => k !== i))} style={{ position: 'absolute', top: 4, right: 4, width: 28, height: 28, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#fff', cursor: 'pointer' }}>✕</button>
                           </div>
                         ))}
@@ -450,7 +463,7 @@ export default function IsOrtakligiPage() {
                     {photos.length < MAX_PHOTOS && (
                       <label style={{ ...fieldStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, cursor: 'pointer', color: '#ff6b6b', borderStyle: 'dashed' }}>
                         + Fotoğraf ekle
-                        <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(e) => { addPhotos(e.target.files); e.target.value = ''; }} style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+                        <input type="file" accept={VENUE_PHOTO_ACCEPT} multiple onChange={(e) => { void addPhotos(e.target.files); e.target.value = ''; }} style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
                       </label>
                     )}
                   </div>

@@ -149,7 +149,7 @@ export class VenuePanelService {
     if (venue.photos.length + files.length > VENUE_PHOTO_MAX_COUNT) {
       throw new BadRequestException(`En fazla ${VENUE_PHOTO_MAX_COUNT} fotoğraf eklenebilir`);
     }
-    const urls = saveVenuePhotos(venue.id, files);
+    const urls = await saveVenuePhotos(venue.id, files);
     await this.prisma.venue.update({ where: { id: venue.id }, data: { photos: [...venue.photos, ...urls] } });
     await this.syncUpcomingMeetings(venue.id);
     await this.markEdited(account);

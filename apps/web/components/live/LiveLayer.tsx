@@ -158,10 +158,10 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
         {/* Geri sayım */}
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
           {hasTabTable && statuses[tab] === 'FORMING' && (
-            <Image src="/maskot/jantihaydar_run.png" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[80px] md:w-[100px]" />
+            <Image src="/maskot/jantihaydar_run.webp" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[80px] md:w-[100px]" />
           )}
           {!hasTabTable && (
-            <Image src="/maskot/jantihaydar_stop.png" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[80px] md:w-[100px]" />
+            <Image src="/maskot/jantihaydar_stop.webp" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[80px] md:w-[100px]" />
           )}
           <p key={tab} className="ll-eyebrow ll-fade">{meetingTarget !== null ? 'Buluşmanıza kalan süre' : waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</p>
           <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} targetAt={meetingTarget} />

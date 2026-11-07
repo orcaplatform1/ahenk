@@ -2,6 +2,7 @@ import { BadRequestException } from "@nestjs/common";
 import { randomBytes } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
+import { detectImageKind, toWebp } from "../common/image-webp";
 
 // Janti Haydar teklif formu dosyaları kişisel/ticari veridir: MediaController'dan sunulmaz, yalnızca admin ucundan
 export const JANTI_FILES_DIR = path.join(process.cwd(), "..", "uploads", "janti-haydar");
@@ -32,23 +33,8 @@ export interface JantiStoredFile {
 
 // Form herkese açık olduğundan tür, beyan edilen MIME'a ya da uzantıya değil dosyanın ilk baytlarına göre belirlenir
 export function detectJantiFile(buf: Buffer): JantiFileType | null {
-  if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "jpg";
-  if (buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "png";
-  if (buf.length > 12 && buf.toString("latin1", 0, 4) === "RIFF" && buf.toString("latin1", 8, 12) === "WEBP") return "webp";
-  if (buf.length > 6 && (buf.toString("latin1", 0, 6) === "GIF87a" || buf.toString("latin1", 0, 6) === "GIF89a")) return "gif";
   if (buf.length > 5 && buf.toString("latin1", 0, 5) === "%PDF-") return "pdf";
-  if (buf.length > 4 && (buf.subarray(0, 4).equals(Buffer.from([0x49, 0x49, 0x2a, 0x00])) || buf.subarray(0, 4).equals(Buffer.from([0x4d, 0x4d, 0x00, 0x2a])))) return "tiff";
-  if (buf.length > 14 && buf[0] === 0x42 && buf[1] === 0x4d) return "bmp";
-  // HEIC / HEIF / AVIF: ISO-BMFF "ftyp" kutusu; ana marka ve uyumlu markalara bakılır
-  if (buf.length > 16 && buf.toString("latin1", 4, 8) === "ftyp") {
-    const boxSize = Math.min(buf.readUInt32BE(0), buf.length, 256);
-    const brands = [buf.toString("latin1", 8, 12)];
-    for (let i = 16; i + 4 <= boxSize; i += 4) brands.push(buf.toString("latin1", i, i + 4));
-    if (brands.some((b) => b === "avif" || b === "avis")) return "avif";
-    if (brands.some((b) => ["heic", "heix", "hevc", "hevx", "heim", "heis"].includes(b))) return "heic";
-    if (brands.some((b) => b === "mif1" || b === "msf1")) return "heif";
-  }
-  return null;
+  return detectImageKind(buf);
 }
 
 export function assertJantiFiles(files: Express.Multer.File[]): void {
@@ -62,14 +48,22 @@ export function assertJantiFiles(files: Express.Multer.File[]): void {
   }
 }
 
-export function saveJantiFiles(files: Express.Multer.File[]): JantiStoredFile[] {
+// Görseller WebP'ye çevrilip yalnızca WebP olarak saklanır (kalite 82, boyut değişmez); PDF olduğu gibi saklanır
+export async function saveJantiFiles(files: Express.Multer.File[]): Promise<JantiStoredFile[]> {
   if (files.length === 0) return [];
+  const prepared = await Promise.all(files.map(async (f) => {
+    const kind = detectJantiFile(f.buffer) as JantiFileType;
+    if (kind === "pdf") return { f, type: "pdf" as const, buf: f.buffer };
+    return { f, type: "webp" as const, buf: await toWebp(f.buffer, kind) };
+  }));
   fs.mkdirSync(JANTI_FILES_DIR, { recursive: true });
-  return files.map((f) => {
-    const type = detectJantiFile(f.buffer) as JantiFileType;
+  return prepared.map(({ f, type, buf }) => {
     const name = `jh-${Date.now()}-${randomBytes(6).toString("hex")}.${type}`;
-    fs.writeFileSync(path.join(JANTI_FILES_DIR, name), f.buffer);
-    return { file: name, originalName: f.originalname.slice(0, 200), type, size: f.size };
+    fs.writeFileSync(path.join(JANTI_FILES_DIR, name), buf);
+    // Çevrilen görselin indirme adı .webp uzantısıyla (ör. IMG_0001.HEIC → IMG_0001.webp)
+    const base = f.originalname.slice(0, 190);
+    const originalName = type === "webp" ? `${base.replace(/\.[^./\\]+$/, "") || "gorsel"}.webp` : base;
+    return { file: name, originalName, type, size: buf.length };
   });
 }
 

@@ -773,7 +773,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
 }
 
 // ── Kapalı ekran (kapanıştan sonra, masası olmayan aboneler) ─────────────────
-function ClosedView({ type = 'GROUP', isDesktop, icon = '/clock-icon.png', message, action }: {
+function ClosedView({ type = 'GROUP', isDesktop, icon = '/clock-icon.webp', message, action }: {
   type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   isDesktop?: boolean;
   icon?: string;
@@ -1168,7 +1168,7 @@ export function MasalarDashboard({
         <ClosedView
           type={tab}
           isDesktop={isDesktop}
-          icon="/lock-icon.png"
+          icon="/lock-icon.webp"
           message="Eşleşme taramasına katılabilmek için kimlik doğrulamanızı (KYC) tamamlamalısınız."
           action={{ label: 'Kimliğimi Doğrula', href: '/profil?tab=kyc' }}
         />

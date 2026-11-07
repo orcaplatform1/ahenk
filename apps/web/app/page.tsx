@@ -313,7 +313,7 @@ function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:stri
 
       {/* ── CTA */}
       <section className="relative overflow-hidden py-28 px-6">
-        <div className="absolute inset-0" style={{ backgroundImage: 'url(/cta-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        <div className="absolute inset-0" style={{ backgroundImage: 'url(/cta-bg.webp)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
         <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.62)' }} />
         <div className="relative z-10 flex flex-col items-start gap-5 max-w-5xl mx-auto">
           <h2 className="font-serif text-white font-light" style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)', lineHeight: 1.15 }}>

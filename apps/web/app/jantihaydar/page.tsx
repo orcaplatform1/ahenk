@@ -7,6 +7,7 @@ import SiteSelect from '@/components/SiteSelect';
 import { FormLabel, VerifiedPhoneField } from '@/components/PublicFormFields';
 import { API_PREFIX } from '@/lib/api';
 import { readError } from '@/lib/venueApi';
+import { detectFileKind } from '@/lib/imageType';
 
 // Renkler sitenin Canlı Katman paletinden (globals.css --ll-*)
 const C = {
@@ -40,36 +41,11 @@ const STEPS = ['Teklif formunu doldur', "Ekibimiz WhatsApp'tan sana ulaşsın", 
 const AD_TYPES = FORMATS.map(([t]) => t);
 const STORY_OWNERS = STORY.map(([t]) => t);
 
-// Dosya kuralları (sunucuyla aynı): en fazla 3 dosya, toplam en fazla 10 MB; tür dosyanın ilk baytlarına göre
+// Dosya kuralları (sunucuyla aynı): en fazla 3 dosya, toplam en fazla 10 MB; tür dosyanın ilk baytlarına göre (lib/imageType).
+// capture özniteliği yok: iPhone'da galeri, kamera ve dosyalar birlikte sunulur. Görseller sunucuda WebP'ye çevrilir.
 const MAX_FILES = 3;
 const MAX_TOTAL_BYTES = 10 * 1024 * 1024;
 const ACCEPT = '.jpg,.jpeg,.png,.webp,.heic,.heif,.gif,.avif,.bmp,.tif,.tiff,.pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,image/gif,image/avif,image/bmp,image/tiff,application/pdf';
-
-function startsWith(b: Uint8Array, sig: number[], at = 0) {
-  return sig.every((v, i) => b[at + i] === v);
-}
-function ascii(b: Uint8Array, from: number, to: number) {
-  return String.fromCharCode(...Array.from(b.slice(from, to)));
-}
-async function detectType(file: File): Promise<string | null> {
-  const b = new Uint8Array(await file.slice(0, 256).arrayBuffer());
-  if (startsWith(b, [0xff, 0xd8, 0xff])) return 'jpg';
-  if (startsWith(b, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return 'png';
-  if (ascii(b, 0, 4) === 'RIFF' && ascii(b, 8, 12) === 'WEBP') return 'webp';
-  if (ascii(b, 0, 6) === 'GIF87a' || ascii(b, 0, 6) === 'GIF89a') return 'gif';
-  if (ascii(b, 0, 5) === '%PDF-') return 'pdf';
-  if (startsWith(b, [0x49, 0x49, 0x2a, 0x00]) || startsWith(b, [0x4d, 0x4d, 0x00, 0x2a])) return 'tiff';
-  if (b.length > 14 && b[0] === 0x42 && b[1] === 0x4d) return 'bmp';
-  if (b.length > 16 && ascii(b, 4, 8) === 'ftyp') {
-    const size = Math.min(((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]) >>> 0, b.length);
-    const brands = [ascii(b, 8, 12)];
-    for (let i = 16; i + 4 <= size; i += 4) brands.push(ascii(b, i, i + 4));
-    if (brands.some((x) => x === 'avif' || x === 'avis')) return 'avif';
-    if (brands.some((x) => ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis'].includes(x))) return 'heic';
-    if (brands.some((x) => x === 'mif1' || x === 'msf1')) return 'heif';
-  }
-  return null;
-}
 
 function fmtSize(n: number) {
   return n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1).replace('.', ',')} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
@@ -147,7 +123,7 @@ export default function JantiHaydarPage() {
     const total = [...files, ...picked].reduce((s, f) => s + f.size, 0);
     if (total > MAX_TOTAL_BYTES) { setError('Dosyaların toplam boyutu en fazla 10 MB olabilir.'); return; }
     for (const f of picked) {
-      if (!(await detectType(f))) { setError('Dosyalar JPG, JPEG, PNG, WEBP, HEIC, HEIF, GIF, AVIF, BMP, TIFF veya PDF olmalı.'); return; }
+      if (!(await detectFileKind(f))) { setError('Dosyalar JPG, JPEG, PNG, WEBP, HEIC, HEIF, GIF, AVIF, BMP, TIFF veya PDF olmalı.'); return; }
     }
     setError('');
     setFiles((p) => [...p, ...picked]);
@@ -252,7 +228,7 @@ export default function JantiHaydarPage() {
             </motion.p>
           </div>
           <motion.div className="jh-hero-img" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.1 }}>
-            <Image src="/maskot/jantihaydar_ads.png" alt="Janti Haydar" width={960} height={1639} priority className="block h-auto w-full" style={{ borderRadius: 20 }} />
+            <Image src="/maskot/jantihaydar_ads.webp" alt="Janti Haydar" width={960} height={1639} priority className="block h-auto w-full" style={{ borderRadius: 20 }} />
           </motion.div>
         </section>
 

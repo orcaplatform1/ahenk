@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, API_PREFIX } from '@/lib/api';
+import { isVenuePhoto, VENUE_PHOTO_ACCEPT } from '@/lib/imageType';
 import { mediaUrl } from '@/lib/venueApi';
 import { AdminSelect } from '@/components/AdminSelect';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
@@ -139,6 +140,10 @@ export default function AdminVenues() {
     if (!files.length) return;
     setModalError('');
     if (photos.length + pendingFiles.length + files.length > MAX_PHOTOS) { setModalError(`En fazla ${MAX_PHOTOS} fotoğraf eklenebilir`); return; }
+    // Tür içerikten kontrol edilir (uzantı değil); HEIC/HEIF kabul edilir, sunucuda WebP'ye çevrilir
+    for (const f of files) {
+      if (!(await isVenuePhoto(f))) { setModalError('Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı'); return; }
+    }
     if (!editing) { setPendingFiles(p => [...p, ...files]); return; }
     setPhotoBusy(true);
     try {
@@ -439,7 +444,7 @@ export default function AdminVenues() {
                   ))}
                 </div>
                 <input
-                  type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={photoBusy}
+                  type="file" accept={VENUE_PHOTO_ACCEPT} multiple disabled={photoBusy}
                   onChange={e => { addPhotos(e.target.files); e.target.value = ''; }}
                   style={{ fontSize: 13, color: MUTED, fontFamily: SANS, maxWidth: '100%' }}
                 />

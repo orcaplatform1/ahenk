@@ -46,7 +46,8 @@ import { availableBots, recentlyMetBotIds } from "../matching/bot-picker";
 import { MatchingService, tableTitle } from "../matching/matching.service";
 import { isValidDistrict } from "../common/districts";
 import { meetingVenueFields, seatsBookedAt, VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
-import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
+import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT, venuePhotoKind } from "../venue-panel/venue-media";
+import { toWebp } from "../common/image-webp";
 import { CAREER_CV_DIR } from "../careers/career-cv";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
@@ -60,7 +61,6 @@ const PIONEER_MAX_QUOTA = 500;
 // Mekan fotoğrafları: /root/ahenk/uploads/venues/<meetingId>/ — MediaController ile herkese açık sunulur
 export const VENUE_UPLOAD_DIR = path.join(process.cwd(), "..", "uploads", "venues");
 export const VENUE_PUBLIC_PREFIX = "/api/v1/media/venues";
-const VENUE_PHOTO_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
 const SUBSCRIPTION_ROW = {
   id: true, plan: true, status: true, startsAt: true, expiresAt: true, usedAt: true,
@@ -957,8 +957,10 @@ export class AdminService {
   async saveVenuePhoto(meetingId: string, slot: number, file?: Express.Multer.File) {
     if (![1, 2, 3].includes(slot)) throw new BadRequestException("Geçersiz fotoğraf alanı (1, 2 veya 3)");
     if (!file) throw new BadRequestException("Fotoğraf dosyası gerekli");
-    const ext = VENUE_PHOTO_TYPES[file.mimetype];
-    if (!ext) throw new BadRequestException("JPEG, PNG veya WebP yükleyin");
+    // Tür içerikten belirlenir; JPEG/PNG/WebP/HEIC/HEIF kabul edilir ve WebP olarak saklanır (kalite 82, boyut değişmez)
+    const kind = venuePhotoKind(file.buffer);
+    if (!kind) throw new BadRequestException("JPEG, PNG, WebP, HEIC veya HEIF yükleyin");
+    const webp = await toWebp(file.buffer, kind);
 
     const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
@@ -966,8 +968,8 @@ export class AdminService {
     const field = (["venuePhotoUrl", "venuePhoto2Url", "venuePhoto3Url"] as const)[slot - 1];
     const dir = path.join(VENUE_UPLOAD_DIR, meetingId);
     fs.mkdirSync(dir, { recursive: true });
-    const fileName = `photo${slot}-${Date.now()}.${ext}`;
-    fs.writeFileSync(path.join(dir, fileName), file.buffer);
+    const fileName = `photo${slot}-${Date.now()}.webp`;
+    fs.writeFileSync(path.join(dir, fileName), webp);
 
     // Aynı alandaki eski yerel dosyayı sil
     const old = meeting[field];
@@ -1117,7 +1119,7 @@ export class AdminService {
     if (venue.photos.length + files.length > VENUE_PHOTO_MAX_COUNT) {
       throw new BadRequestException(`En fazla ${VENUE_PHOTO_MAX_COUNT} fotoğraf eklenebilir`);
     }
-    const urls = saveVenuePhotos(venue.id, files);
+    const urls = await saveVenuePhotos(venue.id, files);
     const updated = await this.prisma.venue.update({ where: { id: venueId }, data: { photos: [...venue.photos, ...urls] } });
     await this.syncVenueMeetings(updated);
     await this.markVenueEdited(venueId, adminId);

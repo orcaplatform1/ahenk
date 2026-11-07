@@ -56,7 +56,7 @@ export class JantiHaydarService {
     }
     await this.assertPhoneQuota(dto.phone);
 
-    const saved = saveJantiFiles(files);
+    const saved = await saveJantiFiles(files);
     try {
       const created = await this.prisma.jantiHaydarRequest.create({
         data: {

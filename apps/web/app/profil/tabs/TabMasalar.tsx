@@ -154,7 +154,7 @@ function EmptyMasaCard({
         <>
           <style>{`@keyframes lockShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}50%{transform:translateX(0)}75%{transform:translateX(3px)}}`}</style>
           <img
-            src="/lock-icon.png"
+            src="/lock-icon.webp"
             alt="Kilitli"
             width={56}
             height={56}

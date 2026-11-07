@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import SiteSelect from '@/components/SiteSelect';
 import { api } from '@/lib/api';
 import { VenueAuthError, VenueMe, mediaUrl, venueApi } from '@/lib/venueApi';
+import { isVenuePhoto, VENUE_PHOTO_ACCEPT } from '@/lib/imageType';
 import { panelCard, useVenuePanel } from '../context';
 
 const MAX_PHOTOS = 3;
@@ -59,6 +60,10 @@ export default function BilgilerPage() {
     setError(''); setMessage('');
     if (picked.some((f) => f.size > MAX_PHOTO_BYTES)) { setError('Her fotoğraf en fazla 5 MB olabilir.'); return; }
     if (me.venue.photos.length + picked.length > MAX_PHOTOS) { setError(`En fazla ${MAX_PHOTOS} fotoğraf eklenebilir.`); return; }
+    // Tür içerikten kontrol edilir (uzantı değil); HEIC/HEIF kabul edilir, sunucuda WebP'ye çevrilir
+    for (const f of picked) {
+      if (!(await isVenuePhoto(f))) { setError('Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı.'); return; }
+    }
     const body = new FormData();
     picked.forEach((f) => body.append('photos', f));
     setUploading(true);
@@ -121,7 +126,7 @@ export default function BilgilerPage() {
         {me.venue.photos.length < MAX_PHOTOS && (
           <label style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, border: '1px dashed rgba(255,255,255,0.2)', borderRadius: 10, color: '#ff6b6b', fontSize: '0.9rem', cursor: 'pointer' }}>
             {uploading ? 'Yükleniyor…' : '+ Fotoğraf ekle'}
-            <input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={uploading} onChange={(e) => { addPhotos(e.target.files); e.target.value = ''; }} style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+            <input type="file" accept={VENUE_PHOTO_ACCEPT} multiple disabled={uploading} onChange={(e) => { addPhotos(e.target.files); e.target.value = ''; }} style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
           </label>
         )}
       </section>

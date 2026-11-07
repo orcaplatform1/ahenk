@@ -63,7 +63,7 @@ export class PartnershipsService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const photoKey = randomBytes(12).toString('hex');
-    const photos = saveVenuePhotos(photoKey, files);
+    const photos = await saveVenuePhotos(photoKey, files);
 
     try {
       const application = await this.prisma.$transaction(async (tx) => {
