@@ -45,7 +45,7 @@ export function AdminSelect({ value, onChange, options, placeholder, title, styl
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="ll-card" style={{ padding: 0, width: '100%', maxWidth: 360, maxHeight: '75vh', display: 'flex', flexDirection: 'column', flexWrap: 'nowrap', boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: SANS }}
+            className="ll-card" style={{ padding: 0, width: '100%', maxWidth: 360, boxSizing: 'border-box', minWidth: 0, maxHeight: '75vh', display: 'flex', flexDirection: 'column', flexWrap: 'nowrap', boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: SANS }}
           >
             <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '14px 16px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{title ?? placeholder}</span>
@@ -70,6 +70,7 @@ export function AdminSelect({ value, onChange, options, placeholder, title, styl
                         background: active ? 'rgba(59,130,246,0.15)' : 'transparent',
                         border: `1px solid ${active ? 'rgba(59,130,246,0.35)' : 'transparent'}`,
                         fontSize: 13, color: active ? BLUE : TEXT, fontFamily: SANS,
+                        whiteSpace: 'normal', overflowWrap: 'anywhere', boxSizing: 'border-box', maxWidth: '100%',
                       }}
                     >
                       {o.label}

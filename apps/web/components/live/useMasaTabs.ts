@@ -77,8 +77,8 @@ export function useMasaTabs() {
 
   // Paket durumu: panele her girişte ve sekme değişiminde sunucudan
   const refreshPlan = useCallback(() => Promise.all([
-    api.get<MeData>('/auth/me').then(u => { setMe(u); }).catch(() => {}),
-    api.get<{ subscriptions: OwnSub[] }>('/payment/subscriptions').then(r => setSubs(r.subscriptions)).catch(() => {}),
+    api.get<MeData>('/auth/me').then(u => { if (u) setMe(u); }).catch(() => {}),
+    api.get<{ subscriptions: OwnSub[] }>('/payment/subscriptions').then(r => { if (Array.isArray(r?.subscriptions)) setSubs(r.subscriptions); }).catch(() => {}),
   ]), []);
 
   useEffect(() => {
@@ -92,9 +92,13 @@ export function useMasaTabs() {
 
   const reload = useCallback(() => {
     if (document.hidden) return Promise.resolve();
-    api.get<{ kanka: { initials: string; gender: string | null } | null }>('/kanka/me').then(r => setKanka(r.kanka)).catch(() => {});
+    api.get<{ kanka: { initials: string; gender: string | null } | null }>('/kanka/me').then(r => { if (r && 'kanka' in r) setKanka(r.kanka); }).catch(() => {});
     return api.get<{ items: DashboardItem[]; weekTableTypes?: MasaTuru[]; weekCancelledTypes?: MasaTuru[]; weekAdminCancelledTypes?: MasaTuru[] }>('/meetings/dashboard')
-      .then(r => { setItems(r.items); setWeekTypes(r.weekTableTypes ?? []); setCancelledTypes(r.weekCancelledTypes ?? []); setAdminCancelledTypes(r.weekAdminCancelledTypes ?? []); })
+      .then(r => {
+        // Geçersiz yanıt ekrandaki masa verisini silmez
+        if (!r || !Array.isArray(r.items)) return;
+        setItems(r.items); setWeekTypes(r.weekTableTypes ?? []); setCancelledTypes(r.weekCancelledTypes ?? []); setAdminCancelledTypes(r.weekAdminCancelledTypes ?? []);
+      })
       .catch(() => {})
       .finally(() => setDashLoaded(true));
   }, []);
@@ -102,8 +106,18 @@ export function useMasaTabs() {
   useEffect(() => {
     reload();
     const id = setInterval(reload, DASHBOARD_POLL_MS);
-    return () => clearInterval(id);
-  }, [reload]);
+    // Arka plandan dönüş, odak ve internetin geri gelmesinde masa verisi ve paket durumu yeniden çekilir
+    const refresh = () => { if (!document.hidden) { reload(); refreshPlan(); } };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    window.addEventListener('online', refresh);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('online', refresh);
+    };
+  }, [reload, refreshPlan]);
 
   // Tarama başlayınca/kapanınca sekme ve kart sayfa yenilenmeden değişsin
   useEffect(() => {

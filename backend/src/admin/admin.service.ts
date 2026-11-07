@@ -43,7 +43,7 @@ import { Queue } from "bull";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "../matching/one-on-one-right";
 import { availableBots, recentlyMetBotIds } from "../matching/bot-picker";
-import { MatchingService } from "../matching/matching.service";
+import { MatchingService, tableTitle } from "../matching/matching.service";
 import { isValidDistrict } from "../common/districts";
 import { meetingVenueFields, seatsBookedAt, VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
@@ -756,7 +756,8 @@ export class AdminService {
       const meeting = await tx.meeting.create({
         data: {
           type,
-          title: data.title,
+          // Elle kurulan masa da otomatik masalarla aynı sayaçtan sıradaki numarayı ve aynı başlık biçimini alır
+          title: await tableTitle(tx, data.cityId, type),
           scheduledAt: new Date(data.scheduledAt),
           maxParticipants: data.participantIds.length,
           cityId: data.cityId,
@@ -989,7 +990,7 @@ export class AdminService {
       // İptal atomik alınır: eşzamanlı ikinci iptal count=0 görür ve hak iadesi yapmaz
       const claimed = await tx.meeting.updateMany({
         where: { id: meetingId, status: { notIn: [MeetingStatus.CANCELLED, MeetingStatus.COMPLETED] } },
-        data: { status: MeetingStatus.CANCELLED },
+        data: { status: MeetingStatus.CANCELLED, cancelledAt: new Date() },
       });
       if (claimed.count === 0) return null;
       const stillIn = meeting.participants

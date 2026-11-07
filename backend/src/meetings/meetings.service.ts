@@ -109,10 +109,11 @@ export class MeetingsService {
         status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED, ParticipantStatus.NO_SHOW] },
         meeting: { status: MeetingStatus.CANCELLED, scheduledAt: { gte: weekStart, lt: new Date(weekStart.getTime() + WEEK_MS) } },
       },
-      select: { meeting: { select: { type: true, scheduledAt: true, updatedAt: true } } },
+      select: { meeting: { select: { type: true, scheduledAt: true, updatedAt: true, cancelledAt: true } } },
     });
     const weekAdminCancelledTypes = [...new Set(adminCancelledRows
-      .filter((r) => r.meeting.updatedAt.getTime() >= meetingLockAt(r.meeting.scheduledAt))
+      // İptal anı (cancelledAt); alan boş olan eski kayıtlarda son güncellenme zamanı
+      .filter((r) => (r.meeting.cancelledAt ?? r.meeting.updatedAt).getTime() >= meetingLockAt(r.meeting.scheduledAt))
       .map((r) => r.meeting.type))];
 
     if (parts.length === 0) return { items: [], weekTableTypes, weekCancelledTypes, weekAdminCancelledTypes };
@@ -787,7 +788,7 @@ export class MeetingsService {
 
       // Başbaşa masa tek kişiyle kalmaz: masa iptal, kalanın hakkı geri verilir ve tekrar taramaya girer
       await this.prisma.$transaction(async (tx) => {
-        await tx.meeting.update({ where: { id: meetingId }, data: { status: MeetingStatus.CANCELLED } });
+        await tx.meeting.update({ where: { id: meetingId }, data: { status: MeetingStatus.CANCELLED, cancelledAt: new Date() } });
         await restoreOneOnOneRights(tx, meeting.createdAt, others);
         // İptal edenin başbaşa hakkı yanar, 1 döngü düşer
         await chargeOneOnOneCancel(tx, userId, meeting.createdAt);
@@ -819,7 +820,7 @@ export class MeetingsService {
           data: { status: ParticipantStatus.CANCELLED, leaveNote: "Kankası rezervasyonu iptal etti", cancelledAt: now },
         });
       }
-      await tx.meeting.update({ where: { id: meetingId }, data: { status: MeetingStatus.CANCELLED } });
+      await tx.meeting.update({ where: { id: meetingId }, data: { status: MeetingStatus.CANCELLED, cancelledAt: new Date() } });
       // Rezervasyonu iptal eden çiftin paketinden 1 hak + 1 döngü düşer
       const sub = await pairKankaSub(tx, pairIds);
       if (sub) {

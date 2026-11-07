@@ -244,6 +244,7 @@ model Meeting {
   scheduledAt          DateTime
   endsAt               DateTime?
   status               MeetingStatus  @default(PENDING)
+  cancelledAt          DateTime? // Masanın iptal edildiği an (eski iptal kayıtlarında boş)
   maxParticipants      Int            @default(6)
   venuePhotoUrl        String? // Mekan fotoğrafı 1 URL
   venuePhoto2Url       String? // Mekan fotoğrafı 2 URL

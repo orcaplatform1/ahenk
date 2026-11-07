@@ -118,7 +118,7 @@ function ageYears(birthDate: string | Date | null | undefined): number | null {
 
 // Masa adı: "İstanbul Grup 44" = o şehirdeki 44. grup masası (haftalık değil, şehir + türe göre sıra).
 // Atamalar kuyrukta tek tek çalıştığı için sıra numarası çakışmaz.
-async function tableTitle(
+export async function tableTitle(
   db: Pick<PrismaService, "city" | "meeting"> | Prisma.TransactionClient,
   cityId: string,
   type: MeetingType,
@@ -353,7 +353,7 @@ export class MatchingService {
     await this.prisma.$transaction(async (tx) => {
       if (seat) {
         await tx.meetingParticipant.update({ where: { id: seat.participantId }, data: { meetingId: target.id } });
-        await tx.meeting.update({ where: { id: seat.id }, data: { status: "CANCELLED" } });
+        await tx.meeting.update({ where: { id: seat.id }, data: { status: "CANCELLED", cancelledAt: new Date() } });
       } else {
         await tx.meetingParticipant.create({ data: { meetingId: target.id, userId: user.id, status: "INVITED" } });
       }
@@ -406,7 +406,7 @@ export class MatchingService {
     });
     for (const m of meetings.filter((x) => x.participants.length < 2)) {
       await this.prisma.$transaction(async (tx) => {
-        await tx.meeting.update({ where: { id: m.id }, data: { status: "CANCELLED" } });
+        await tx.meeting.update({ where: { id: m.id }, data: { status: "CANCELLED", cancelledAt: new Date() } });
         await restoreOneOnOneRights(tx, m.createdAt, m.participants.map((p) => p.userId));
       });
     }
@@ -555,7 +555,7 @@ export class MatchingService {
           where: { meetingId: part.meetingId, userId: { in: pairIds } },
           data: { status: "CANCELLED", cancelledAt: new Date(), leaveNote: reason },
         }),
-        this.prisma.meeting.update({ where: { id: part.meetingId }, data: { status: "CANCELLED" } }),
+        this.prisma.meeting.update({ where: { id: part.meetingId }, data: { status: "CANCELLED", cancelledAt: new Date() } }),
       ]);
       for (const id of otherIds) {
         await this.notifications.sendToUser(id, {
@@ -614,7 +614,7 @@ export class MatchingService {
           data: { status: "CANCELLED", cancelledAt: now, leaveNote: reason },
         });
         if (isOneOnOne) {
-          await tx.meeting.update({ where: { id: meetingId }, data: { status: "CANCELLED" } });
+          await tx.meeting.update({ where: { id: meetingId }, data: { status: "CANCELLED", cancelledAt: new Date() } });
           await restoreOneOnOneRights(tx, meeting.createdAt, others);
         }
       });
@@ -682,7 +682,7 @@ export class MatchingService {
           ...moves.map((m) =>
             this.prisma.meetingParticipant.update({ where: { id: m.participantId }, data: { meetingId: m.meetingId } }),
           ),
-          this.prisma.meeting.update({ where: { id: source.id }, data: { status: "CANCELLED" } }),
+          this.prisma.meeting.update({ where: { id: source.id }, data: { status: "CANCELLED", cancelledAt: new Date() } }),
         ]);
         for (const id of new Set(moves.map((m) => m.meetingId))) await this.saveScores(id);
         this.logger.log(`Masa birleştirildi: meeting=${source.id} → ${[...new Set(moves.map((m) => m.meetingId))].join(", ")}`);
@@ -973,7 +973,7 @@ export class MatchingService {
       const count = meeting.participants.length;
       if (count < TABLE_SIZE_SMALL - 1) {
         // 1-2 kişi → iptal et, bir sonraki haftaya taşı
-        await this.prisma.meeting.update({ where: { id: meeting.id }, data: { status: "CANCELLED" } });
+        await this.prisma.meeting.update({ where: { id: meeting.id }, data: { status: "CANCELLED", cancelledAt: new Date() } });
         for (const p of meeting.participants) {
           const { week: nw, year: ny } = getISOWeekNumber(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
           const nextCycle = await this.prisma.matchingCycle.upsert({

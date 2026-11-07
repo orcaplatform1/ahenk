@@ -349,7 +349,9 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   .adm-topbar-meta > * { font-size: 10px !important; }
   /* Satırlar sığmazsa alta iner; dar sütun ve sabit genişlikler ekranı aşmaz */
   .admin-shell main { overflow-wrap: anywhere; }
-  .admin-shell main .ll-card [style*="display: flex"], .admin-shell main .adm-page [style*="display: flex"] { flex-wrap: wrap; }
+  /* Dikey (column) flex kutular satır kırmaz: column + wrap, satır genişliğini en geniş içeriğin min-content'ine göre büyütüp kartı taşırıyordu */
+  .admin-shell main .ll-card [style*="display: flex"]:not([style*="flex-direction: column"]),
+  .admin-shell main .adm-page [style*="display: flex"]:not([style*="flex-direction: column"]) { flex-wrap: wrap; }
   .admin-shell main [style*="grid-template-columns: repeat(3"],
   .admin-shell main [style*="grid-template-columns: repeat(4"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   .admin-shell main [style*="grid-template-columns: repeat(2"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }

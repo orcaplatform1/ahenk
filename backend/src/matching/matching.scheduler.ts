@@ -97,7 +97,7 @@ export class MatchingScheduler {
 
       const { count: cancelled } = await this.prisma.meeting.updateMany({
         where: { status: "PENDING", locationText: null, scheduledAt: { lte: threshold } },
-        data: { status: "CANCELLED" },
+        data: { status: "CANCELLED", cancelledAt: new Date() },
       });
 
       if (finished.length > 0 || cancelled > 0) {

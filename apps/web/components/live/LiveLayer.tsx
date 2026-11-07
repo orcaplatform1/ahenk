@@ -40,11 +40,21 @@ function useLivePoll<T>(path: string | null, intervalMs: number) {
     let alive = true;
     const load = () => {
       if (document.hidden) return;
-      api.get<T>(path).then((d) => { if (alive) setData(d); }).catch(() => undefined);
+      // Başarısız ya da boş yanıt ekrandaki veriyi silmez
+      api.get<T>(path).then((d) => { if (alive && d) setData(d); }).catch(() => undefined);
     };
     load();
     const id = setInterval(load, intervalMs);
-    return () => { alive = false; clearInterval(id); };
+    // Arka plandan dönüş, odak ve internetin geri gelmesinde yeniden çekilir
+    document.addEventListener('visibilitychange', load);
+    window.addEventListener('focus', load);
+    window.addEventListener('online', load);
+    return () => {
+      alive = false; clearInterval(id);
+      document.removeEventListener('visibilitychange', load);
+      window.removeEventListener('focus', load);
+      window.removeEventListener('online', load);
+    };
   }, [path, intervalMs]);
   return data;
 }
@@ -148,10 +158,10 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
         {/* Geri sayım */}
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
           {hasTabTable && statuses[tab] === 'FORMING' && (
-            <Image src="/maskot/jantihaydar_run.png" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[180px] md:w-[220px]" />
+            <Image src="/maskot/jantihaydar_run.png" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[80px] md:w-[100px]" />
           )}
           {!hasTabTable && (
-            <Image src="/maskot/jantihaydar_stop.png" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[160px] md:w-[200px]" />
+            <Image src="/maskot/jantihaydar_stop.png" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[80px] md:w-[100px]" />
           )}
           <p key={tab} className="ll-eyebrow ll-fade">{meetingTarget !== null ? 'Buluşmanıza kalan süre' : waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</p>
           <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} targetAt={meetingTarget} />

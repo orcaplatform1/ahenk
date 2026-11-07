@@ -73,7 +73,7 @@ export class ChatService {
         senderId: true,
         sender: {
           select: {
-            profile: { select: { firstName: true, lastName: true } },
+            profile: { select: { firstName: true, lastName: true, gender: true } },
           },
         },
         reports: { select: { reporterId: true } },
@@ -91,6 +91,7 @@ export class ChatService {
         createdAt: m.createdAt,
         isOwn: m.senderId === userId,
         senderInitials: `${m.sender.profile?.firstName?.[0] ?? '?'}.${m.sender.profile?.lastName?.[0] ?? '?'}.`,
+        senderGender: m.sender.profile?.gender ?? null,
         reportedByMe: m.reports.some((r) => r.reporterId === userId),
       })),
     };
@@ -129,7 +130,7 @@ export class ChatService {
         createdAt: true,
         sender: {
           select: {
-            profile: { select: { firstName: true, lastName: true } },
+            profile: { select: { firstName: true, lastName: true, gender: true } },
           },
         },
       },
@@ -141,6 +142,7 @@ export class ChatService {
       createdAt: message.createdAt,
       isOwn: true,
       senderInitials: `${message.sender.profile?.firstName?.[0] ?? '?'}.${message.sender.profile?.lastName?.[0] ?? '?'}.`,
+      senderGender: message.sender.profile?.gender ?? null,
       reportedByMe: false,
     };
   }
@@ -180,7 +182,7 @@ export class ChatService {
         sender: {
           select: {
             isBot: true,
-            profile: { select: { firstName: true, lastName: true } },
+            profile: { select: { firstName: true, lastName: true, gender: true } },
           },
         },
         reports: {

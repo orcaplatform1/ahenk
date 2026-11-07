@@ -499,7 +499,7 @@ export default function AdminMatches() {
           {/* Mekan: /admin/venues kayıtlarından seçilir; adres ve fotoğraflar mekân kaydından gelir */}
           <div>
             <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>Mekan</p>
-            <div style={{ marginBottom: 8, maxWidth: 220, width: '100%' }}>
+            <div style={{ marginBottom: 8, maxWidth: 220, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
               <AdminSelect
                 value={venuePackage}
                 onChange={setVenuePackage}
@@ -514,7 +514,7 @@ export default function AdminMatches() {
                 onChange={v => { setVenueChoice(v); setVenueError(''); }}
                 placeholder={venueOptions.length ? 'Mekan seçin' : 'Uygun mekan yok'}
                 title="Mekan seç"
-                style={{ flex: 1, width: 'auto', minWidth: 0 }}
+                style={{ flex: 1, width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}
                 options={venueOptions
                   .filter(o => !venuePackage || o.category === venuePackage || o.id === venueChoice)
                   .map(o => ({
@@ -661,7 +661,7 @@ export default function AdminMatches() {
                 ref={chatBoxRef}
                 style={{
                   display: 'flex', flexDirection: 'column', flexWrap: 'nowrap', gap: 6,
-                  height: 'min(60vh, 500px)', overflowY: 'auto', overflowX: 'hidden',
+                  height: 'min(60vh, 500px)', overflowY: 'auto', overflowX: 'hidden', minWidth: 0,
                   width: '100%', maxWidth: '100%', boxSizing: 'border-box',
                   padding: 8, borderRadius: 10, background: BG, border: `1px solid ${BORDER}`,
                 }}
@@ -670,7 +670,7 @@ export default function AdminMatches() {
                   <div
                     key={m.id}
                     style={{
-                      padding: '8px 10px', borderRadius: 8, flexShrink: 0, width: '100%', boxSizing: 'border-box', minWidth: 0,
+                      padding: '8px 10px', borderRadius: 8, flexShrink: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box', minWidth: 0, overflowWrap: 'anywhere',
                       background: m.reportCount > 0 ? 'rgba(239,68,68,0.08)' : SURFACE,
                       border: `1px solid ${m.reportCount > 0 ? 'rgba(239,68,68,0.3)' : BORDER}`,
                     }}

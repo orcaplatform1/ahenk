@@ -45,7 +45,28 @@ interface ChatMsg {
   createdAt: string;
   isOwn: boolean;
   senderInitials: string;
+  senderGender?: string | null;
   reportedByMe: boolean;
+}
+
+// Mesaj saati: SS:DD (Europe/Istanbul)
+function msgTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
+}
+
+// Masa kartındaki baş harf rozetinin küçük hali
+function ChatBadge({ initials, gender }: { initials: string; gender?: string | null }) {
+  return (
+    <span style={{
+      width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      background: gender === 'FEMALE' ? 'rgba(244,143,177,0.12)' : 'rgba(79,195,247,0.12)',
+      border: `1.5px solid ${gColor(gender)}`,
+      fontSize: 8.5, fontWeight: 700, color: '#f0f0f0', fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em',
+    }}>
+      {initials.toUpperCase()}
+    </span>
+  );
 }
 
 interface Props {
@@ -313,7 +334,6 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
   const [sendError, setSendError] = useState('');
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [loadError, setLoadError] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const headers = jsonHeaders(token);
@@ -324,19 +344,35 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: 'include',
       });
-      if (!res.ok) { setLoadError(true); return; }
+      // Başarısız yenilemede (arka plandan dönüş, bağlantı kopması) ekrandaki mesajlar ve bölüm olduğu gibi kalır
+      if (!res.ok) return;
       const data = await res.json() as { isOpen: boolean; isClosed: boolean; openAt: string; messages: ChatMsg[] };
       setIsOpen(data.isOpen);
       setOpenAt(data.openAt);
       setIsClosed(data.isClosed);
-      setMessages(data.messages);
-    } catch { setLoadError(true); }
+      // Sunucudan gelenler mevcut listeyle birleştirilir; aynı mesaj iki kez gösterilmez
+      setMessages(prev => {
+        const byId = new Map(prev.map(m => [m.id, m]));
+        for (const m of data.messages ?? []) byId.set(m.id, m);
+        return [...byId.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      });
+    } catch { /* ekrandaki veri korunur */ }
   }, [meetingId, apiBase, token]);
 
   useEffect(() => {
     fetchMessages();
     const id = setInterval(fetchMessages, 8000);
-    return () => clearInterval(id);
+    // Sayfa tekrar görünür olduğunda, pencere odaklandığında ve internet geri geldiğinde yeniden çekilir
+    const onVisible = () => { if (!document.hidden) fetchMessages(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', fetchMessages);
+    window.addEventListener('online', fetchMessages);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', fetchMessages);
+      window.removeEventListener('online', fetchMessages);
+    };
   }, [fetchMessages]);
 
   useEffect(() => {
@@ -375,8 +411,6 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
     height: 1, background: 'rgba(255,255,255,0.07)', margin: '20px 0',
   };
 
-  if (loadError) return null;
-
   return (
     <div>
       <div style={dividerStyle} />
@@ -399,23 +433,30 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
                 : isClosed ? 'Sohbet sona erdi.' : 'Henüz mesaj yok. İlk mesajı sen gönder.'}
             </p>
           )}
-          {messages.map(msg => (
-            <div key={msg.id} style={{ display: 'flex', flexDirection: msg.isOwn ? 'row-reverse' : 'row', gap: 6, alignItems: 'flex-end' }}>
+          {messages.map((msg, i) => {
+            const prev = messages[i - 1];
+            // Aynı kişinin art arda mesajlarında rozet yalnızca serinin ilk mesajında
+            const firstOfSeries = !prev || prev.isOwn !== msg.isOwn || prev.senderInitials !== msg.senderInitials || prev.senderGender !== msg.senderGender;
+            return (
+            <div key={msg.id} style={{ display: 'flex', flexDirection: 'row', justifyContent: msg.isOwn ? 'flex-end' : 'flex-start', gap: 6, alignItems: 'flex-start' }}>
               {!msg.isOwn && (
-                <span style={{ fontSize: 9, color: '#555', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap', marginBottom: 2 }}>
-                  {msg.senderInitials}
-                </span>
+                firstOfSeries
+                  ? <ChatBadge initials={msg.senderInitials} gender={msg.senderGender} />
+                  : <span style={{ width: 28, flexShrink: 0 }} aria-hidden />
               )}
-              <div style={{ maxWidth: '72%' }}>
+              <div style={{ maxWidth: '72%', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: msg.isOwn ? 'flex-end' : 'flex-start' }}>
                 <div style={{
                   padding: '8px 11px', borderRadius: msg.isOwn ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                  background: msg.isOwn ? 'rgba(192,57,43,0.2)' : 'rgba(255,255,255,0.06)',
-                  border: msg.isOwn ? '1px solid rgba(192,57,43,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${gColor(msg.senderGender)}`,
                   fontSize: 13, color: '#f0f0f0', fontFamily: 'Inter, sans-serif', lineHeight: 1.45,
-                  wordBreak: 'break-word',
+                  wordBreak: 'break-word', overflowWrap: 'anywhere',
                 }}>
                   {msg.content}
                 </div>
+                <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>
+                  {msgTime(msg.createdAt)}
+                </span>
                 {!msg.isOwn && !isClosed && (
                   <button
                     onClick={() => !msg.reportedByMe && reportMessage(msg.id)}
@@ -430,12 +471,13 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
           <div ref={bottomRef} />
         </div>
 
         {isOpen && !isClosed && (
-          <div style={{ display: 'flex', gap: 8, padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', gap: 6, padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.06)', boxSizing: 'border-box', width: '100%' }}>
             <input
               value={input}
               onChange={e => setInput(e.target.value.slice(0, 1000))}
@@ -443,7 +485,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
               placeholder=""
               className="ahenk-chat-input"
               style={{
-                flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 8, padding: '8px 10px', fontSize: 13, color: '#f5f5f5',
                 fontFamily: 'Inter, sans-serif', outline: 'none',
               }}
@@ -452,6 +494,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
               onClick={sendMessage}
               disabled={!input.trim() || sending}
               className="btn-primary"
+              style={{ fontSize: 10, paddingLeft: 10, paddingRight: 10, gap: 5, flexShrink: 0, minWidth: 0 }}
             >
               Gönder
             </button>
@@ -489,7 +532,18 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
     } catch { /* sessiz */ }
   }, [apiBase, meetingId, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const onVisible = () => { if (!document.hidden) load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', load);
+    window.addEventListener('online', load);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', load);
+      window.removeEventListener('online', load);
+    };
+  }, [load]);
 
   if (!data?.open || data.participants.length === 0) return null;
   const marked = new Set(data.markedIds);
@@ -948,9 +1002,6 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
               </div>
               <div style={{ height: 5, borderRadius: 99, background: 'rgba(255,255,255,0.12)' }} />
             </div>
-            <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', lineHeight: 1.65 }}>
-              Masa kurulduktan sonra yapay zeka uyum raporu burada görünecek.
-            </p>
           </motion.div>
         )}
 
@@ -1048,19 +1099,21 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
                 color: '#27ae60', fontSize: 12, fontWeight: 700,
                 letterSpacing: '0.1em', textTransform: 'uppercase',
                 fontFamily: 'Inter, sans-serif', cursor: 'default',
-              } : { width: '100%', justifyContent: 'center', ...(!archive && !onMyWayOpen ? { opacity: 0.45, cursor: 'not-allowed' } : {}) }}
+              } : { width: '100%', justifyContent: 'center' }}
             >
               {onMyWayDone ? '✓ Yola çıktığını bildirdin' : onMyWayLoading ? 'Bildiriliyor…' : 'Yola Çıktım'}
             </button>
-            {!archive && !onMyWayOpen && !onMyWayDone && (
-              <p style={{ margin: '6px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-                Buluşmadan 1 saat önce aktif olur
-              </p>
-            )}
             {onMyWayWarn && (
-              <p role="alert" style={{ margin: '6px 0 0', fontSize: 12, color: '#ffb347', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-                {onMyWayWarn}
-              </p>
+              <div role="alert" style={{
+                marginTop: 8,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 10, padding: '12px 14px',
+              }}>
+                <p style={{ margin: 0, fontSize: 12, color: '#ffb347', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
+                  {onMyWayWarn}
+                </p>
+              </div>
             )}
           </motion.div>
         )}
