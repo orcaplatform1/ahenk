@@ -15,6 +15,12 @@ export const oneOnOneMeetingAt = (now = new Date()) => nextWeekdayAt(6, now);
 // Kankamla buluşma: Pazar 20:00 (kilit Cumartesi 23:59)
 export const kankaMeetingAt = (now = new Date()) => nextWeekdayAt(0, now);
 
+// Masa kilidi: masa gününden 1 gün önce (kilit günü) 23:59 TR
+export function meetingLockAt(scheduledAt: Date): number {
+  const tr = new Date(scheduledAt.getTime() + 3 * 60 * 60 * 1000);
+  return Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() - 1, 23 - 3, 59, 0, 0);
+}
+
 // Rezervasyon iptalinin son anı: masa gününden 1 gün önce (kilit günü) 20:00 TR
 export function cancelDeadline(scheduledAt: Date): Date {
   const tr = new Date(scheduledAt.getTime() + 3 * 60 * 60 * 1000);

@@ -49,14 +49,15 @@ function useLivePoll<T>(path: string | null, intervalMs: number) {
   return data;
 }
 
-function Countdown({ day }: { day: number }) {
+// targetAt verilirse o ana (buluşma), verilmezse günün bir sonraki 23:59'una sayar
+function Countdown({ day, targetAt }: { day: number; targetAt?: number | null }) {
   const [left, setLeft] = useState<number | null>(null);
   useEffect(() => {
-    const tick = () => setLeft(Math.max(0, getNextTarget(day).getTime() - Date.now()));
+    const tick = () => setLeft(Math.max(0, (targetAt ?? getNextTarget(day).getTime()) - Date.now()));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [day]);
+  }, [day, targetAt]);
 
   const ms = left ?? 0;
   const units = [
@@ -110,10 +111,12 @@ function heatColor(index: number, count: number) {
   return `rgba(255,255,255,${mix(0.08, 0.045)})`;
 }
 
-export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, tab, statuses, tabPastClosing, onTab, notice, participation }: {
+export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, scanOff, tab, statuses, tabPastClosing, onTab, notice, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
-  tabSeatsLeft: number | null; // Kullanıcının masasındaki boş koltuk; masası yoksa null
+  tabSeatsLeft: number | null; // Kullanıcının masasındaki boş sandalye; masası yoksa null
+  scanOff?: boolean; // Kurulmuş masası admin tarafından iptal edildi: tarama animasyonu başlamaz
+  meetingAt: string | null; // Kurulmuş aktif masanın buluşma anı (buluşmadan 3 saat sonrasına kadar); yoksa null
   tab: MasaTuru;
   statuses: Record<MasaTuru, TabStatus>;
   tabPastClosing: boolean; // Seçili türün bu haftaki kapanışı geçti mi
@@ -126,6 +129,8 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, tab, 
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
   const waitingScan = tabPastClosing && !hasTabTable;
+  // Kurulmuş aktif masa: sayaç buluşmaya sayar, yeni haftaya geçmez
+  const meetingTarget = hasTabTable && meetingAt ? Date.parse(meetingAt) : null;
 
   const seats = overview?.groupSeatsLeft ?? null;
 
@@ -148,13 +153,13 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, tab, 
           {!hasTabTable && (
             <Image src="/maskot/jantihaydar_stop.png" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[160px] md:w-[200px]" />
           )}
-          <p key={tab} className="ll-eyebrow ll-fade">{waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</p>
-          <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} />
+          <p key={tab} className="ll-eyebrow ll-fade">{meetingTarget !== null ? 'Buluşmanıza kalan süre' : waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</p>
+          <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} targetAt={meetingTarget} />
           <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>
             {waitingScan ? "Pazar 23:59'da yeni tarama başlar." : TABLE_TEXT[tab].note}
-            {!waitingScan && tabSeatsLeft !== null && (
+            {!waitingScan && tabSeatsLeft !== null && !(meetingTarget !== null && tabSeatsLeft === 0) && (
               <span style={{ display: 'block' }}>
-                {tabSeatsLeft > 0 ? `Masanızda boş ${num(tabSeatsLeft)} koltuk kaldı.` : 'Masanızda kontenjan doldu.'}
+                {tabSeatsLeft > 0 ? `Masanızda boş ${num(tabSeatsLeft)} sandalye kaldı.` : 'Masanızda kontenjan doldu.'}
               </span>
             )}
           </p>
@@ -174,7 +179,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, tab, 
           ))}
         </section>
 
-        <div className={statuses[tab] === 'KYC' || statuses[tab] === 'KANKA' ? 'll-scan-off' : undefined}>
+        <div className={scanOff || statuses[tab] === 'KYC' || statuses[tab] === 'KANKA' ? 'll-scan-off' : undefined}>
           <LiveSonar sonar={pulse?.sonar ?? null} />
         </div>
         <div key={tab} className="ll-fade">{participation}</div>
@@ -247,7 +252,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, tab, 
         )}
 
         <button type="button" className="ll-cta" onClick={primaryAction}>
-          {overview?.hasTable ? 'Masanı Gör' : seats !== null ? `Masanı Ayır · ${num(seats)} koltuk kaldı` : 'Masanı Ayır'}
+          {overview?.hasTable ? 'Masanı Gör' : seats !== null ? `Masanı Ayır · ${num(seats)} sandalye kaldı` : 'Masanı Ayır'}
         </button>
       </div>
     </div>

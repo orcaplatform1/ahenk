@@ -25,11 +25,11 @@ const FIRST_DELAY = 1800;
 const STAGGER     = 1100;
 
 // ── Orbit konumları ─────────────────────────────────────────────────────────
-function orbitPts(n: number): Array<{ x: number; y: number }> {
+function orbitPts(n: number, r = ORBIT_R): Array<{ x: number; y: number }> {
   const step = (2 * Math.PI) / n;
   return Array.from({ length: n }, (_, i) => {
     const a = -Math.PI / 2 + i * step;
-    return { x: CX + ORBIT_R * Math.cos(a), y: CY + ORBIT_R * Math.sin(a) };
+    return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) };
   });
 }
 
@@ -312,6 +312,7 @@ interface BubbleProps {
 }
 
 function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
+  // Konum değişince (masa tamamlanınca merkeze yaklaşma) yumuşak geçiş
   const color = gColor(participant.gender);
   const bg    = gBg(participant.gender);
   const ds    = delayMs / 1000;
@@ -336,10 +337,15 @@ function AvatarBubble({ participant, cx, cy, delayMs }: BubbleProps) {
 
   return (
     <motion.div
-      style={{ position: 'absolute', left: cx - AV_R, top: cy - AV_R, width: AV_D, height: AV_D }}
-      initial={{ scale: 0.4, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ delay: ds, duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
+      style={{ position: 'absolute', width: AV_D, height: AV_D }}
+      initial={{ scale: 0.4, opacity: 0, left: cx - AV_R, top: cy - AV_R }}
+      animate={{ scale: 1, opacity: 1, left: cx - AV_R, top: cy - AV_R }}
+      transition={{
+        scale: { delay: ds, duration: 0.7, ease: [0.34, 1.56, 0.64, 1] },
+        opacity: { delay: ds, duration: 0.7 },
+        left: { duration: 1.6, ease: 'easeInOut' },
+        top: { duration: 1.6, ease: 'easeInOut' },
+      }}
     >
       <svg width={AV_D} height={AV_D} viewBox={`0 0 ${AV_D} ${AV_D}`} style={{ position: 'absolute', inset: 0 }}>
         <circle cx={AV_R} cy={AV_R} r={AV_R - 1} fill={bg} />
@@ -626,6 +632,39 @@ function ScanningView({ type = 'GROUP', participants, selfParticipant, isDesktop
   );
 }
 
+// ── Masa detaylarının açılacağı an: buluşma günü 10:00 (TR) ──
+function revealAt(scheduledAt: string): number {
+  const tr = new Date(new Date(scheduledAt).getTime() + 3 * 60 * 60 * 1000);
+  return Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate(), 10 - 3, 0, 0, 0);
+}
+
+function RevealCountdown({ scheduledAt }: { scheduledAt: string }) {
+  const target = revealAt(scheduledAt);
+  const [msLeft, setMsLeft] = useState(() => Math.max(0, target - Date.now()));
+  useEffect(() => {
+    const id = setInterval(() => setMsLeft(Math.max(0, target - Date.now())), 1000);
+    return () => clearInterval(id);
+  }, [target]);
+  const total = Math.floor(msLeft / 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const units = [
+    { val: pad(Math.floor(total / 86400)), lbl: 'GÜN' },
+    { val: pad(Math.floor((total % 86400) / 3600)), lbl: 'SA' },
+    { val: pad(Math.floor((total % 3600) / 60)), lbl: 'DK' },
+    { val: pad(total % 60), lbl: 'SN' },
+  ];
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: 10, margin: '6px 0 10px' }}>
+      {units.map(u => (
+        <div key={u.lbl} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 30 }}>
+          <span style={{ fontFamily: '"SF Mono","Fira Code",monospace', fontSize: 18, fontWeight: 700, color: '#f5f5f5', lineHeight: 1 }}>{u.val}</span>
+          <span style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter, sans-serif', marginTop: 3 }}>{u.lbl}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Onaylı Radar Görünümü ─────────────────────────────────────────────────────
 interface ConfirmedRadarProps {
   participants: Participant[];
@@ -641,9 +680,11 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
   const maxP       = maxParticipants ?? (isOneOnOne ? 2 : 6);
   const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale(isDesktop ? 1.5 : 1);
 
-  const males   = participants.filter(p => p.gender === 'MALE');
-  const females = participants.filter(p => p.gender === 'FEMALE');
-  const others  = participants.filter(p => p.gender !== 'MALE' && p.gender !== 'FEMALE');
+  // İptal eden sandalye tutmaz: boş sandalye geri gelir
+  const seated  = participants.filter(p => !p.cancelled);
+  const males   = seated.filter(p => p.gender === 'MALE');
+  const females = seated.filter(p => p.gender === 'FEMALE');
+  const others  = seated.filter(p => p.gender !== 'MALE' && p.gender !== 'FEMALE');
   const ordered: Participant[] = [];
   const mfLen = Math.max(males.length, females.length);
   for (let i = 0; i < mfLen; i++) {
@@ -652,8 +693,12 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
   }
   ordered.push(...others);
 
-  const positions = orbitPts(maxP);
   const locked = isTableLocked(scheduledAt);
+  const full   = ordered.length >= maxP;
+  // Dolu ya da kilitli masada tarama durur: profiller merkeze yaklaşıp sabitlenir, halkalar yavaş nabız atar
+  const settled = full || locked;
+  const positions = orbitPts(maxP, settled ? ORBIT_R * 0.62 : ORBIT_R);
+  const emptySeats = settled ? [] : orbitPts(maxP).slice(ordered.length);
   const statusText = locked ? 'Masa Kuruldu' : 'Masa Oluşturuluyor';
 
   return (
@@ -681,8 +726,18 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
           marginBottom: RADAR_SZ * (radarScale - 1),
         }}>
           <div style={{ position: 'absolute', inset: 0 }}>
-            <AhenkSonar width="100%" ariaLabel={statusText} />
+            <AhenkSonar width="100%" ariaLabel={statusText} sweep={!settled} ringPulse={settled} />
           </div>
+          {emptySeats.map((pos, i) => (
+            <div
+              key={`empty-${ordered.length + i}`}
+              aria-hidden
+              style={{
+                position: 'absolute', left: pos.x - AV_R, top: pos.y - AV_R, width: AV_D, height: AV_D,
+                borderRadius: '50%', border: '1.5px dashed rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.03)',
+              }}
+            />
+          ))}
           <AnimatePresence>
             {ordered.map((p, i) => {
               const pos = positions[i];
@@ -703,10 +758,11 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
 
       <div style={{ textAlign: 'center', marginTop: 20, padding: '0 4px' }}>
         <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-serif, "DM Serif Display", serif)', fontSize: 18, fontWeight: 400, color: '#27ae60' }}>
-          {locked ? 'Masanız Kuruldu!' : 'Masanız Oluşturuluyor!'}
+          {locked ? 'Masanız kuruldu. Mekan bilgileri masa detayında gözükecektir.' : full ? 'Masanız tamamlandı.' : 'Masanız Oluşturuluyor!'}
         </p>
+        {locked && <RevealCountdown scheduledAt={scheduledAt} />}
         <p style={{ margin: '0 0 8px', fontSize: 12, color: '#888', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>
-          Masa bulunma tarihi: {formatMasaDate(scheduledAt)}
+          Masa buluşma tarihi: {formatMasaDate(scheduledAt)}
         </p>
         <p style={{ margin: 0, fontSize: 12, color: '#555', fontFamily: 'Inter, sans-serif', lineHeight: 1.55 }}>
           {infoText}

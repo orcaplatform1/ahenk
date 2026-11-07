@@ -1,7 +1,7 @@
 import { Queue } from "bull";
 
 // Gerçek zamanlı masa ataması: tüm atama ve kapanış botu işleri bu kuyrukta TEK TEK çalışır
-// (aynı koltuğa / aynı kişiye iki kez atama olmaz). Diğer modüller kuyruğu kaydedip sadece iş ekler.
+// (aynı sandalyeye / aynı kişiye iki kez atama olmaz). Diğer modüller kuyruğu kaydedip sadece iş ekler.
 export const ASSIGN_QUEUE = "matching-assign";
 export const JOB_ASSIGN_USER = "assign-user";
 export const JOB_SCAN_POOL = "scan-pool";

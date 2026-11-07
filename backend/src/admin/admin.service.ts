@@ -33,6 +33,7 @@ import { PLAN_CONFIG } from "../payment/payment.constants";
 import { vatOfGrossKurus } from "../payment/pricing";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { NotificationService } from "../notification/notification.service";
+import { meetingLockAt } from "../meetings/meeting-windows";
 import { PaymentService } from "../payment/payment.service";
 import { DELETED_PLACEHOLDER_PREFIX } from "../users/account-deletion.service";
 import type { AdminUpdateUserDto } from "./dto/admin.dto";
@@ -973,7 +974,7 @@ export class AdminService {
   async cancelMeeting(meetingId: string) {
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },
-      include: { participants: { select: { userId: true, status: true } } },
+      include: { participants: { select: { userId: true, status: true, user: { select: { isBot: true } } } } },
     });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
     if (meeting.status === MeetingStatus.COMPLETED) {
@@ -1009,6 +1010,19 @@ export class AdminService {
     });
     if (!cancelled) return { id: meetingId, status: MeetingStatus.CANCELLED };
     await this.venueAssignment.noticeMeetingCancelled(meetingId);
+    // Kurulmuş (kilitli) masa iptal edildiyse masadaki gerçek kullanıcılara bildirim
+    if (Date.now() >= meetingLockAt(meeting.scheduledAt)) {
+      const realUsers = meeting.participants
+        .filter((p) => !p.user.isBot && !["CANCELLED", "DECLINED", "NO_SHOW"].includes(p.status))
+        .map((p) => p.userId);
+      for (const uid of realUsers) {
+        await this.notifications.sendToUser(uid, {
+          title: "Masanız iptal edildi",
+          body: "Masanız iptal edildi. Masa hakkınız hesabınıza iade edildi.",
+          data: { type: "MEETING_CANCELLED_BY_ADMIN", meetingId },
+        }).catch(() => undefined);
+      }
+    }
     return cancelled;
   }
 

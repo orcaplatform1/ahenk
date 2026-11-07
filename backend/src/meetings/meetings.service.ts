@@ -11,12 +11,15 @@ import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { cancellationNotice, initialsOf } from "./cancellation-notice";
 import { chargeOneOnOneCancel, restoreOneOnOneRights } from "../matching/one-on-one-right";
-import { cancelDeadline, meetingCardEnd, noShowCardWindow, sosWindowEnd, reviewWindow } from "./meeting-windows";
+import { cancelDeadline, meetingLockAt, meetingCardEnd, noShowCardWindow, sosWindowEnd, reviewWindow } from "./meeting-windows";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { chargeGroupCancel, chargeKankaCancel, pairKankaSub } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { MeetingStatus, MeetingType, LeaveReason, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
+
+// Yola Çıktım: buluşmadan 1 saat önce açılır
+export const ON_MY_WAY_OPEN_MS = 60 * 60 * 1000;
 
 
 // Admin ayrı harita linki girmediyse mekan adı + adresle Google Maps araması
@@ -99,7 +102,20 @@ export class MeetingsService {
     });
     const weekCancelledTypes = [...new Set(cancelledRows.map((r) => r.meeting.type))];
 
-    if (parts.length === 0) return { items: [], weekTableTypes, weekCancelledTypes };
+    // Bu hafta kurulmuş (kilitli) iken admin tarafından iptal edilen masaların türleri
+    const adminCancelledRows = await this.prisma.meetingParticipant.findMany({
+      where: {
+        userId,
+        status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED, ParticipantStatus.NO_SHOW] },
+        meeting: { status: MeetingStatus.CANCELLED, scheduledAt: { gte: weekStart, lt: new Date(weekStart.getTime() + WEEK_MS) } },
+      },
+      select: { meeting: { select: { type: true, scheduledAt: true, updatedAt: true } } },
+    });
+    const weekAdminCancelledTypes = [...new Set(adminCancelledRows
+      .filter((r) => r.meeting.updatedAt.getTime() >= meetingLockAt(r.meeting.scheduledAt))
+      .map((r) => r.meeting.type))];
+
+    if (parts.length === 0) return { items: [], weekTableTypes, weekCancelledTypes, weekAdminCancelledTypes };
     const cancelRightUsed = await this.groupCancelRightUsed(userId);
     const kankaCancelUsed = parts.some(({ meeting }) => meeting.type === MeetingType.KANKA)
       ? await this.kankaCancelRightUsed(userId)
@@ -170,7 +186,7 @@ export class MeetingsService {
       }),
     );
 
-    return { items, weekTableTypes, weekCancelledTypes };
+    return { items, weekTableTypes, weekCancelledTypes, weekAdminCancelledTypes };
   }
 
   // ─── Geçmiş masalar ─────────────────────────────────────────────────────────
@@ -605,6 +621,10 @@ export class MeetingsService {
     if (!participant) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
     if (participant.status === ParticipantStatus.CANCELLED) {
       throw new ForbiddenException("İptal edilmiş rezervasyon");
+    }
+    // Buluşmaya 1 saatten fazla varken yola çıkış bildirimi kabul edilmez
+    if (Date.now() < participant.meeting.scheduledAt.getTime() - ON_MY_WAY_OPEN_MS) {
+      throw new BadRequestException("Yola çıkış bildirimi, buluşma saatinden 1 saat önce kullanıma açılır.");
     }
 
     await this.prisma.meetingParticipant.update({

@@ -47,7 +47,7 @@ function CancelModal({
           fontSize: 15, lineHeight: 1.6, fontWeight: 500,
           color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center',
         }}>
-          Rezervasyon iptali diğer kullanıcıları da doğrudan etkilediğinden, kurulan bir masada tekrar iptal hakkın bulunmayacaktır ve sonraki kurulan masaya da katılmama durumunda 1. uyarı verilir, toplamda 3 uyarı alırsan hesabın 30 gün askıya alınır.
+          Rezervasyon iptali diğer kullanıcıları da doğrudan etkilediğinden, kurulma aşamasındaki bir masada tekrar iptal hakkın bulunmayacaktır ve sonraki kurulan masaya da katılmama durumunda 1. uyarı verilir, toplamda 3 uyarı alırsan hesabın 30 gün askıya alınır.
         </p>
         <p style={{ margin: '0 0 10px', fontSize: 13, color: 'rgba(245,245,245,0.6)', fontFamily: 'Inter, sans-serif' }}>
           İptal nedenini belirtin:

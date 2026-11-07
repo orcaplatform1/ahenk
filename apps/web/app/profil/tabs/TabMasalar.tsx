@@ -279,8 +279,8 @@ function EmptyMasaCard({
           transition={{ delay: 0.48, duration: 0.4 }}
           style={{ marginBottom: 20 }}
         >
-          <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#555', letterSpacing: '0.14em', textTransform: cardType === 'kanka' ? 'none' : 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-            {cardType === 'basbasa' ? 'BAŞ BAŞA' : cardType === 'kanka' ? 'Kanka Çiftler' : 'KATILIMCILAR'}
+          <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#555', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
+            {cardType === 'basbasa' ? 'BAŞ BAŞA' : 'KATILIMCILAR'}
           </p>
           {cardType === 'kanka' ? (
             <KankaPairs mine={[{ initials, gender: uGender, isSelf: true }, ...(kanka ? [kanka] : [])]} other={[]} />
@@ -456,11 +456,7 @@ function MasaBlock({
           maxParticipants={meeting.maxParticipants}
           type={meeting.type}
           scheduledAt={meeting.scheduledAt}
-          infoText={isOneOnOne
-            ? "Cumartesi saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."
-            : meeting.type === 'KANKA'
-              ? "Pazar saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."
-              : "Cuma saat 10:00'da masa detayı burada görünecek, bildirim göndereceğiz."}
+          infoText="Buluşma günü saat 10:00'da masa detayları burada görünecektir. Ayrıca size bildirim göndereceğiz."
         />
         {meeting.type === 'KANKA' && (
           <div style={{ marginTop: 16 }}>
@@ -498,7 +494,7 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
   kycApproved?: boolean;
   onGoKyc?: () => void;
 }) {
-  const { ready, kanka, tab, tabItem, selectTab, statuses, reload } = useMasaTabs();
+  const { ready, kanka, tab, tabItem, selectTab, statuses, reload, tabAdminCancelled } = useMasaTabs();
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -565,6 +561,13 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
             detaylar Pazar 10:00&apos;da açıklanır. Tarama Cumartesi 23:59&apos;da kapanır.
           </p>
         )}
+        {tabAdminCancelled ? (
+          <div className="ll-card">
+            <p style={{ margin: 0, fontSize: 14, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', lineHeight: 1.6, textAlign: 'center' }}>
+              Masanız iptal edildi. Masa hakkınız hesabınıza iade edildi.
+            </p>
+          </div>
+        ) : (
         <MasaBlock
           key={tab}
           item={tabItem}
@@ -574,6 +577,7 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
           kanka={kanka}
           onCancelled={afterCancel}
         />
+        )}
       </div>
     </div>
   );

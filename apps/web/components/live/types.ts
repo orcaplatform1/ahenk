@@ -12,8 +12,8 @@ export interface LivePulse {
     density?: SonarDensity | null;
   };
   feed: {
-    events: { key: string; at: string; place: string; kind: 'FULL' | 'MATCH' | 'OPEN' | 'VENUE'; value: number | null }[];
-    last24h: number; // Son 24 saatteki toplam olay
+    // Olay satırı: metin parçaları ve baş harf rozetleri (cinsiyet rengiyle)
+    events: { key: string; at: string; segments: ({ t: 'text'; v: string } | { t: 'person'; v: string; g: string | null })[] }[];
   };
 }
 

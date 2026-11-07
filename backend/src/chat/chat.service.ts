@@ -179,6 +179,7 @@ export class ChatService {
         senderId: true,
         sender: {
           select: {
+            isBot: true,
             profile: { select: { firstName: true, lastName: true } },
           },
         },
@@ -202,6 +203,7 @@ export class ChatService {
       senderInitials: `${m.sender.profile?.firstName?.[0] ?? '?'}.${m.sender.profile?.lastName?.[0] ?? '?'}.`,
       senderName: `${m.sender.profile?.firstName ?? ''} ${m.sender.profile?.lastName ?? ''}`.trim() || null,
       senderId: m.senderId,
+      senderIsBot: m.sender.isBot,
       reportCount: m.reports.length,
       reports: m.reports.map((r) => ({
         reporterId: r.reporterId,

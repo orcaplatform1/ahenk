@@ -65,6 +65,7 @@ export function useMasaTabs() {
   const [items, setItems] = useState<DashboardItem[]>([]);
   const [weekTypes, setWeekTypes] = useState<MasaTuru[]>([]);
   const [cancelledTypes, setCancelledTypes] = useState<MasaTuru[]>([]);
+  const [adminCancelledTypes, setAdminCancelledTypes] = useState<MasaTuru[]>([]);
   const [dashLoaded, setDashLoaded] = useState(false);
   const [chosenTab, setChosenTab] = useState<MasaTuru | null>(null);
   const [kanka, setKanka] = useState<{ initials: string; gender: string | null } | null>(null);
@@ -92,8 +93,8 @@ export function useMasaTabs() {
   const reload = useCallback(() => {
     if (document.hidden) return Promise.resolve();
     api.get<{ kanka: { initials: string; gender: string | null } | null }>('/kanka/me').then(r => setKanka(r.kanka)).catch(() => {});
-    return api.get<{ items: DashboardItem[]; weekTableTypes?: MasaTuru[]; weekCancelledTypes?: MasaTuru[] }>('/meetings/dashboard')
-      .then(r => { setItems(r.items); setWeekTypes(r.weekTableTypes ?? []); setCancelledTypes(r.weekCancelledTypes ?? []); })
+    return api.get<{ items: DashboardItem[]; weekTableTypes?: MasaTuru[]; weekCancelledTypes?: MasaTuru[]; weekAdminCancelledTypes?: MasaTuru[] }>('/meetings/dashboard')
+      .then(r => { setItems(r.items); setWeekTypes(r.weekTableTypes ?? []); setCancelledTypes(r.weekCancelledTypes ?? []); setAdminCancelledTypes(r.weekAdminCancelledTypes ?? []); })
       .catch(() => {})
       .finally(() => setDashLoaded(true));
   }, []);
@@ -129,6 +130,8 @@ export function useMasaTabs() {
   const owned = MASA_TURLERI.filter(t => rights[t] || tables[t] || cancelledTypes.includes(t));
   const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : owned[0] ?? 'GROUP';
   const tabItem = items.find(i => i.meeting.type === tab);
+  // Kurulmuş masası admin tarafından iptal edilen tür (bu hafta)
+  const tabAdminCancelled = !tabItem && adminCancelledTypes.includes(tab);
   const kycApproved = me?.kyc?.status === 'APPROVED';
   const tabPastClosing = pastClosed.split(',').includes(tab);
   const scanning = owned.includes(tab) && kycApproved && !tabPastClosing && !cancelledTypes.includes(tab);
@@ -160,6 +163,6 @@ export function useMasaTabs() {
 
   return {
     ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved,
-    tabPastClosing, scanning, selfParticipant, reload,
+    tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled,
   };
 }

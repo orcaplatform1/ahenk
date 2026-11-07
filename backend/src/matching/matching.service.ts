@@ -579,7 +579,7 @@ export class MatchingService {
 
   // Askı / ban: kişi yapılmamış grup ve başbaşa masalarından çıkar (kayıt iptal olarak kalır).
   // Başbaşa tek kişiyle kalmaz: masa iptal, kalanın hakkı geri verilir, yeniden taramaya girer.
-  // Grup: koltuk boşalır, iptal son anına kadar bildirim Perşembe 20:00 özetiyle, sonrasında hemen gider.
+  // Grup: sandalye boşalır, iptal son anına kadar bildirim Perşembe 20:00 özetiyle, sonrasında hemen gider.
   // Dönen liste iptal olan masalardır (mekân bildirimi için).
   async dropFromTables(userId: string, reason: string): Promise<string[]> {
     const now = new Date();
@@ -969,7 +969,7 @@ export class MatchingService {
     });
 
     for (const meeting of pendingGroupMeetings) {
-      // Sadece aktif katılımcılar sayılır (iptal eden / gelmeyen koltuk tutmaz)
+      // Sadece aktif katılımcılar sayılır (iptal eden / gelmeyen sandalye tutmaz)
       const count = meeting.participants.length;
       if (count < TABLE_SIZE_SMALL - 1) {
         // 1-2 kişi → iptal et, bir sonraki haftaya taşı

@@ -24,9 +24,9 @@ function Column({ title, options, selected, onSelect }: {
   }, [selected]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flexWrap: 'nowrap', flex: 1, minWidth: 0, minHeight: 0 }}>
       <p style={{ textAlign: 'center', ...LABEL, color: MUTED, margin: '0 0 8px' }}>{title}</p>
-      <div ref={listRef} style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }}>
+      <div ref={listRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', scrollbarWidth: 'none' }}>
         {options.map(opt => {
           const isSel = opt.value === selected;
           return (
@@ -113,13 +113,13 @@ export function AdminDatePicker({ value, onChange, placeholder = 'Doğum tarihi'
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="ll-card" style={{ width: '100%', maxWidth: 360, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: SANS }}
+            className="ll-card" style={{ width: '100%', maxWidth: 360, maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box', boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: SANS }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{title}</span>
               <button type="button" onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: MUTED, padding: 2 }}>✕</button>
             </div>
-            <div style={{ display: 'flex', gap: 6, height: 220 }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, height: 220, overflow: 'hidden' }}>
               <Column title="GÜN" options={dayOpts}   selected={day}   onSelect={setDay} />
               <Column title="AY"  options={monthOpts} selected={month} onSelect={setMonth} />
               <Column title="YIL" options={yearOpts}  selected={year}  onSelect={setYear} />
@@ -128,7 +128,7 @@ export function AdminDatePicker({ value, onChange, placeholder = 'Doğum tarihi'
               type="button"
               onClick={confirm}
               style={{
-                width: '100%', marginTop: 14, padding: '9px', borderRadius: 8, cursor: 'pointer',
+                display: 'block', width: '100%', marginTop: 14, padding: '9px', borderRadius: 8, cursor: 'pointer',
                 background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.3)',
                 fontSize: 13, fontWeight: 700, color: CYAN, fontFamily: SANS,
               }}

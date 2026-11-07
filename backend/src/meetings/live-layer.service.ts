@@ -7,6 +7,7 @@ import { WEIGHTS } from "../matching/matching.constants";
 import { MatchPerson, matchScore } from "../matching/match-score";
 import { densityListOf, type DensityRow } from "../common/districts";
 import { liveDistrictSource } from "../admin/app-settings";
+import { meetingLockAt } from "./meeting-windows";
 
 const LEFT_STATUSES: ParticipantStatus[] = ["DECLINED", "CANCELLED", "NO_SHOW"];
 const NEW_ENTRY_MS = 5 * 60 * 1000;
@@ -15,9 +16,67 @@ const SONAR_MAX_DOTS = 60;
 const SONAR_MAX_LABELS = 8;
 const HEATMAP_MAX = 9;
 const DENSITY_MAX = 15;
-const FEED_MAX = 30;
-const FEED_WINDOW_MS = 24 * 60 * 60 * 1000;
+const FEED_MAX = 20;
 const HIGH_MATCH_RATIO = 0.7; // Eşleşme puanının en az %70'i "yüksek uyum"
+
+type FeedSegment = { t: "text"; v: string } | { t: "person"; v: string; g: string | null };
+type FeedEvent = { key: string; at: Date; segments: FeedSegment[] };
+
+// Masa adı: admin paneldeki sıralı masa numarası (Meeting.title sonundaki sayı) → "Grup Masa 16"
+const TYPE_NAME: Record<MeetingType, string> = { GROUP: "Grup", ONE_ON_ONE: "Baş Başa", KANKA: "Kankamla" };
+function tableNo(title: string): number | null {
+  const m = /(\d+)\s*$/.exec(title);
+  return m ? Number(m[1]) : null;
+}
+function tableLabel(type: MeetingType, title: string): string {
+  const no = tableNo(title);
+  return `${TYPE_NAME[type]} Masa${no !== null ? ` ${no}` : ""}`;
+}
+
+// Sayının okunuşundaki son kelimeye göre Türkçe ek: 16'ya / 16'da, 5'e / 5'te
+const NUM_WORD_END: Record<number, { front: boolean; vowel: boolean; hard: boolean }> = {
+  0: { front: false, vowel: false, hard: false }, // sıfır
+  1: { front: true, vowel: false, hard: false }, // bir
+  2: { front: true, vowel: true, hard: false }, // iki
+  3: { front: true, vowel: false, hard: true }, // üç
+  4: { front: true, vowel: false, hard: true }, // dört
+  5: { front: true, vowel: false, hard: true }, // beş
+  6: { front: false, vowel: true, hard: false }, // altı
+  7: { front: true, vowel: true, hard: false }, // yedi
+  8: { front: true, vowel: false, hard: false }, // sekiz
+  9: { front: false, vowel: false, hard: false }, // dokuz
+  10: { front: false, vowel: false, hard: false }, // on
+  20: { front: true, vowel: true, hard: false }, // yirmi
+  30: { front: false, vowel: false, hard: false }, // otuz
+  40: { front: false, vowel: false, hard: true }, // kırk
+  50: { front: true, vowel: true, hard: false }, // elli
+  60: { front: false, vowel: false, hard: true }, // altmış
+  70: { front: true, vowel: false, hard: true }, // yetmiş
+  80: { front: true, vowel: false, hard: false }, // seksen
+  90: { front: false, vowel: false, hard: false }, // doksan
+  100: { front: true, vowel: false, hard: false }, // yüz
+  1000: { front: true, vowel: false, hard: false }, // bin
+};
+function numEnd(n: number) {
+  if (n % 10 !== 0 || n === 0) return NUM_WORD_END[n % 10];
+  if (n % 100 !== 0) return NUM_WORD_END[n % 100];
+  if (n % 1000 !== 0) return NUM_WORD_END[100];
+  return NUM_WORD_END[1000];
+}
+function dativeSuffix(n: number): string {
+  const e = numEnd(n);
+  return `${e.vowel ? "y" : ""}${e.front ? "e" : "a"}`;
+}
+function locativeSuffix(n: number): string {
+  const e = numEnd(n);
+  return `${e.hard ? "t" : "d"}${e.front ? "e" : "a"}`;
+}
+
+// Detaylar: masa günü 10:00 (TR)
+function revealAt(scheduledAt: Date): number {
+  const tr = new Date(scheduledAt.getTime() + 3 * 60 * 60 * 1000);
+  return Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate(), 10 - 3, 0, 0, 0);
+}
 
 const DIMENSIONS = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"] as const;
 type Dimension = (typeof DIMENSIONS)[number];
@@ -121,7 +180,7 @@ export class LiveLayerService {
   // 15 sn'de bir: sonar + canlı akış. İsim, baş harf, yaş, meslek, fotoğraf dönmez
   async pulse(userId: string, cityId?: string) {
     const city = await this.resolveCity(userId, cityId);
-    if (!city) return { sonar: { dots: [], labels: [], density: null }, feed: { events: [], last24h: 0 } };
+    if (!city) return { sonar: { dots: [], labels: [], density: null }, feed: { events: [] } };
     return { sonar: await this.sonar(city), feed: await this.feed(city) };
   }
 
@@ -171,50 +230,80 @@ export class LiveLayerService {
     };
   }
 
-  // Olay tablosu yok: masa ve mekân kayıtlarından türetilir, "yeni katılım" olayı üretilmez
+  // Olay tablosu yok: masa ve katılımcı kayıtlarından türetilir; en son FEED_MAX olay döner.
+  // Mekân adı, semt ve buluşma günü/saati akışa yazılmaz; kişiler yalnızca baş harfle görünür.
   private async feed(city: { id: string; name: string }) {
     const { start, end } = this.week();
-    const since = new Date(Date.now() - FEED_WINDOW_MS);
-    const [meetings, venues] = await Promise.all([
+    const prevStart = new Date(start.getTime() - WEEK_MS);
+    const now = Date.now();
+    const [meetings, lastWeekCount] = await Promise.all([
       this.prisma.meeting.findMany({
-        where: { cityId: city.id, status: { in: ["PENDING", "ACTIVE"] }, scheduledAt: { gte: start, lt: end }, type: { in: [MeetingType.GROUP, MeetingType.ONE_ON_ONE] } },
+        where: { cityId: city.id, status: { not: "CANCELLED" }, scheduledAt: { gte: prevStart, lt: end } },
         select: {
-          id: true, type: true, maxParticipants: true, createdAt: true,
+          id: true, type: true, title: true, maxParticipants: true, scheduledAt: true,
           participants: {
-            where: { status: { notIn: LEFT_STATUSES } },
             select: {
-              createdAt: true,
-              user: { select: { occupationSector: true, oceanScore: { select: OCEAN_SELECT }, profile: { select: { district: true } } } },
+              status: true, createdAt: true, cancelledAt: true,
+              user: { select: { profile: { select: { firstName: true, lastName: true, gender: true } } } },
             },
           },
         },
       }),
-      this.prisma.venue.findMany({
-        where: { cityId: city.id, isActive: true, createdAt: { gte: since } },
-        select: { id: true, createdAt: true },
-      }),
+      this.prisma.meeting.count({ where: { cityId: city.id, status: { not: "CANCELLED" }, scheduledAt: { gte: prevStart, lt: start } } }),
     ]);
 
-    const events: { key: string; at: Date; place: string; kind: "FULL" | "MATCH" | "OPEN" | "VENUE"; value: number | null }[] = [];
+    const events: FeedEvent[] = [];
+    const push = (key: string, at: number, segments: FeedSegment[]) => {
+      if (at <= now) events.push({ key: opaque(key, start), at: new Date(at), segments });
+    };
+    const head = `${city.name} · `;
+
     for (const m of meetings) {
-      const place = shownDistrict(city.name, topDistrict(m.participants.map((p) => p.user.profile?.district))) ?? city.name;
-      const at = new Date(Math.max(m.createdAt.getTime(), ...m.participants.map((p) => p.createdAt.getTime())));
-      const key = opaque(m.id, start);
-      if (m.type === MeetingType.ONE_ON_ONE) {
-        if (m.participants.length === 2) {
-          const value = Math.round(matchRatio(m.participants[0].user, m.participants[1].user) * 100);
-          events.push({ key, at, place, kind: "MATCH", value });
+      const label = tableLabel(m.type, m.title);
+      const no = tableNo(m.title);
+      const person = (p: (typeof m.participants)[number]): FeedSegment => ({
+        t: "person",
+        v: `${(p.user.profile?.firstName ?? "").trim()[0]?.toLocaleUpperCase("tr-TR") ?? "?"}.${(p.user.profile?.lastName ?? "").trim()[0]?.toLocaleUpperCase("tr-TR") ?? "?"}`,
+        g: p.user.profile?.gender ?? null,
+      });
+      // Katılım ve iptaller zaman sırasıyla yeniden oynatılır (o andaki doluluk için)
+      const steps: { at: number; join: boolean; p: (typeof m.participants)[number] }[] = [];
+      for (const p of m.participants) {
+        steps.push({ at: p.createdAt.getTime(), join: true, p });
+        if (p.cancelledAt && LEFT_STATUSES.includes(p.status)) steps.push({ at: p.cancelledAt.getTime(), join: false, p });
+      }
+      steps.sort((a, b) => a.at - b.at);
+      const seated: (typeof m.participants)[number][] = [];
+      steps.forEach((st, i) => {
+        const k = `${m.id}:${i}`;
+        if (!st.join) {
+          const idx = seated.indexOf(st.p);
+          if (idx >= 0) seated.splice(idx, 1);
+          push(`${k}:cancel`, st.at, [{ t: "text", v: `${head}${label}${no !== null ? `'${locativeSuffix(no)}` : ""} 1 sandalye açıldı` }]);
+          return;
         }
-      } else {
-        const left = m.maxParticipants - m.participants.length;
-        events.push(left > 0 ? { key, at, place, kind: "OPEN", value: left } : { key, at, place, kind: "FULL", value: null });
+        seated.push(st.p);
+        if (m.type === MeetingType.ONE_ON_ONE && seated.length === 2) {
+          push(`${k}:match`, st.at, [{ t: "text", v: `${head}${label} · ` }, person(seated[0]), { t: "text", v: " " }, person(seated[1]), { t: "text", v: " eşleşti" }]);
+          return;
+        }
+        push(`${k}:join`, st.at, [{ t: "text", v: `${head}${label}${no !== null ? `'${dativeSuffix(no)}` : ""} ` }, person(st.p), { t: "text", v: " katıldı" }]);
+        if (m.type === MeetingType.ONE_ON_ONE) return;
+        const left = m.maxParticipants - seated.length;
+        if (left > 0) push(`${k}:left`, st.at + 1, [{ t: "text", v: `${head}${label}${no !== null ? `'${locativeSuffix(no)}` : ""} ${left} sandalye kaldı` }]);
+        else push(`${k}:full`, st.at + 1, [{ t: "text", v: `${head}${label} tamamlandı (${seated.length}/${m.maxParticipants})` }]);
+      });
+
+      if (m.participants.some((p) => !LEFT_STATUSES.includes(p.status))) {
+        push(`${m.id}:locked`, meetingLockAt(m.scheduledAt), [{ t: "text", v: `${head}${label} kuruldu` }]);
+        push(`${m.id}:reveal`, revealAt(m.scheduledAt), [{ t: "text", v: `${head}${label} masa detayları açıldı` }]);
+        push(`${m.id}:met`, m.scheduledAt.getTime(), [{ t: "text", v: `${head}${label} buluştu` }]);
       }
     }
-    for (const v of venues) events.push({ key: opaque(v.id, start), at: v.createdAt, place: city.name, kind: "VENUE", value: null });
+    push(`${city.id}:weekly`, start.getTime(), [{ t: "text", v: `${head}Geçen hafta ${lastWeekCount} masa kuruldu` }]);
 
     events.sort((a, b) => b.at.getTime() - a.at.getTime());
-    const recent = events.filter((e) => e.at >= since);
-    return { events: recent.slice(0, FEED_MAX), last24h: recent.length };
+    return { events: events.slice(0, FEED_MAX) };
   }
 
   // 60 sn'de bir: metrikler, ısı haritası, uyum sinyali, dolum

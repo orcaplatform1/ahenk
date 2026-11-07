@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { myRole, myId } from '@/lib/adminRole';
 import { AdminUserEdit } from '@/components/AdminUserEdit';
@@ -77,6 +77,7 @@ interface ChatMessage {
   deletedAt: string | null;
   senderInitials: string;
   senderName: string | null;
+  senderIsBot?: boolean;
   reportCount: number;
   reports: { reporterId: string; reporterInitials: string; createdAt: string }[];
 }
@@ -136,6 +137,12 @@ export default function AdminMatches() {
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [chat, setChat] = useState<ChatMessage[]>([]);
+  // Sohbet kutusu açıldığında en yeni mesaj (en alt) görünür
+  const chatBoxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = chatBoxRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [chat]);
   const [bots, setBots] = useState<BotRow[]>([]);
   const [botToPlace, setBotToPlace] = useState('');
   const [placingBot, setPlacingBot] = useState(false);
@@ -467,16 +474,17 @@ export default function AdminMatches() {
         <div className="ll-card" style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-            <div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, minWidth: 0 }}>
+            <div style={{ minWidth: 0, flex: '1 1 160px' }}>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>{fmtDate(selected.scheduledAt)}</p>
               <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED }}>
                 {TYPE_LABEL[selected.type]} · {selected.participants.length} katılımcı
               </p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 8, marginLeft: 'auto', maxWidth: '100%' }}>
               <span style={{
                 ...LABEL,
+                whiteSpace: 'nowrap',
                 padding: '2px 8px', borderRadius: 99,
                 background: STATUS_CFG[selected.status]?.bg,
                 border: `1px solid ${STATUS_CFG[selected.status]?.border}`,
@@ -488,26 +496,10 @@ export default function AdminMatches() {
             </div>
           </div>
 
-          {/* Onayla */}
-          {selected.status === 'PENDING' && (
-            <button
-              onClick={approve}
-              disabled={approving}
-              style={{
-                width: '100%', padding: '9px', borderRadius: 8, cursor: approving ? 'not-allowed' : 'pointer',
-                background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
-                fontSize: 13, fontWeight: 600, color: GREEN, fontFamily: SANS,
-                opacity: approving ? 0.5 : 1,
-              }}
-            >
-              {approving ? 'Onaylanıyor…' : '✓ Masayı Onayla'}
-            </button>
-          )}
-
           {/* Mekan: /admin/venues kayıtlarından seçilir; adres ve fotoğraflar mekân kaydından gelir */}
           <div>
             <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>Mekan</p>
-            <div style={{ marginBottom: 8, maxWidth: 220 }}>
+            <div style={{ marginBottom: 8, maxWidth: 220, width: '100%' }}>
               <AdminSelect
                 value={venuePackage}
                 onChange={setVenuePackage}
@@ -516,7 +508,7 @@ export default function AdminMatches() {
                 options={[{ value: '', label: 'Tüm paketler' }, ...VENUE_PACKAGES.map(c => ({ value: c, label: c }))]}
               />
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, minWidth: 0, maxWidth: '100%' }}>
               <AdminSelect
                 value={venueChoice}
                 onChange={v => { setVenueChoice(v); setVenueError(''); }}
@@ -565,14 +557,14 @@ export default function AdminMatches() {
                 <div
                   key={p.userId}
                   style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                    padding: '10px 0',
+                    display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                    padding: '10px 0', minWidth: 0,
                     borderBottom: i < selected.participants.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none',
                   }}
                 >
                   <button
                     onClick={() => openUser(p.user.id)}
-                    style={{ textAlign: 'left', flex: 1, minWidth: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    style={{ textAlign: 'left', flex: '1 1 160px', minWidth: 0, maxWidth: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, overflowWrap: 'anywhere' }}
                   >
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>
                       {p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.user.email}
@@ -581,8 +573,8 @@ export default function AdminMatches() {
                     </p>
                     {p.user.email && <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED }}>{p.user.email}</p>}
                   </button>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                    <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO }}>OCEAN {oceanAvg(p.user.oceanScore)}</span>
+                  <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+                    <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, whiteSpace: 'nowrap' }}>OCEAN {oceanAvg(p.user.oceanScore)}</span>
                     {selected.status !== 'CANCELLED' && selected.status !== 'COMPLETED' && (
                       <button
                         onClick={() => removeParticipant(p.userId)}
@@ -603,6 +595,22 @@ export default function AdminMatches() {
             </div>
           </div>
 
+          {/* Onayla */}
+          {selected.status === 'PENDING' && (
+            <button
+              onClick={approve}
+              disabled={approving}
+              style={{
+                display: 'block', width: '100%', boxSizing: 'border-box', padding: '9px', borderRadius: 8, cursor: approving ? 'not-allowed' : 'pointer',
+                background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
+                fontSize: 13, fontWeight: 600, color: GREEN, fontFamily: SANS,
+                opacity: approving ? 0.5 : 1,
+              }}
+            >
+              {approving ? 'Onaylanıyor…' : '✓ Masayı Onayla'}
+            </button>
+          )}
+
           {/* Bot yerleştir */}
           {isSuperadmin && selected.status !== 'CANCELLED' && selected.status !== 'COMPLETED' && (() => {
             const active = selected.participants.filter(p => !['CANCELLED', 'DECLINED', 'NO_SHOW'].includes(p.status));
@@ -611,10 +619,10 @@ export default function AdminMatches() {
             return (
               <div>
                 <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>
-                  BOT YERLEŞTİR ({emptySeats > 0 ? `${emptySeats} boş koltuk` : 'boş koltuk yok'})
+                  BOT YERLEŞTİR ({emptySeats > 0 ? `${emptySeats} boş sandalye` : 'boş sandalye yok'})
                 </p>
                 {emptySeats > 0 && (
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, minWidth: 0, maxWidth: '100%' }}>
                     <AdminSelect
                       value={botToPlace}
                       onChange={setBotToPlace}
@@ -649,25 +657,34 @@ export default function AdminMatches() {
             {chat.length === 0 ? (
               <p style={{ margin: 0, fontSize: 11, color: MUTED }}>Mesaj yok</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
-                {chat.map(m => (
+              <div
+                ref={chatBoxRef}
+                style={{
+                  display: 'flex', flexDirection: 'column', flexWrap: 'nowrap', gap: 6,
+                  height: 'min(60vh, 500px)', overflowY: 'auto', overflowX: 'hidden',
+                  width: '100%', maxWidth: '100%', boxSizing: 'border-box',
+                  padding: 8, borderRadius: 10, background: BG, border: `1px solid ${BORDER}`,
+                }}
+              >
+                {[...chat].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(m => (
                   <div
                     key={m.id}
                     style={{
-                      padding: '8px 10px', borderRadius: 8,
+                      padding: '8px 10px', borderRadius: 8, flexShrink: 0, width: '100%', boxSizing: 'border-box', minWidth: 0,
                       background: m.reportCount > 0 ? 'rgba(239,68,68,0.08)' : SURFACE,
                       border: `1px solid ${m.reportCount > 0 ? 'rgba(239,68,68,0.3)' : BORDER}`,
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 3 }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: TEXT }}>
+                    <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 3, minWidth: 0 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: TEXT, minWidth: 0, overflowWrap: 'anywhere' }}>
                         {m.senderName ?? m.senderInitials}
+                        {m.senderIsBot && <span style={{ marginLeft: 6, fontSize: 8, fontWeight: 800, color: CYAN }}>BOT</span>}
                       </span>
-                      <span style={{ fontSize: 9, color: MUTED, fontFamily: MONO }}>
+                      <span style={{ fontSize: 9, color: MUTED, fontFamily: MONO, whiteSpace: 'nowrap', flexShrink: 0 }}>
                         {new Date(m.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    <p style={{ margin: 0, fontSize: 11, color: m.deletedAt ? MUTED : TEXT, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    <p style={{ margin: 0, fontSize: 11, color: m.deletedAt ? MUTED : TEXT, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                       {m.content}
                     </p>
                     {(m.deletedAt || m.reportCount > 0) && (

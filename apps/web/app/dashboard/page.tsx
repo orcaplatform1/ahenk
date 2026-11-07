@@ -7,8 +7,13 @@ import { useMasaTabs } from '@/components/live/useMasaTabs';
 import LiveParticipation from '@/components/live/LiveParticipation';
 import { WinbackHost } from '@/components/winback/WinbackHost';
 
+const MEETING_GRACE_MS = 3 * 60 * 60 * 1000;
+
 export default function DashboardPage() {
-  const { ready, me, kanka, tab, tabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant } = useMasaTabs();
+  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, tabAdminCancelled } = useMasaTabs();
+  // Buluşma saatinden 3 saat sonra masa panelden düşer: sayaç yeni haftaya geçer, Katılım ve kontenjan sıfırlanır
+  // (dashboard 15 sn'de bir yenilendiği için sayfa yenilenmeden geçer)
+  const tabItem = rawTabItem && Date.now() < Date.parse(rawTabItem.meeting.scheduledAt) + MEETING_GRACE_MS ? rawTabItem : undefined;
 
   if (!ready) {
     return (
@@ -42,6 +47,8 @@ export default function DashboardPage() {
         activePlan={me?.activePlan ?? null}
         hasTabTable={!!tabItem}
         tabSeatsLeft={tabItem ? Math.max(0, (tabItem.meeting.maxParticipants ?? 0) - tabItem.meeting.participants.filter(p => !p.cancelled).length) : null}
+        meetingAt={tabItem && statuses[tab] === 'TABLE' ? tabItem.meeting.scheduledAt : null}
+        scanOff={tabAdminCancelled}
         tab={tab}
         statuses={statuses}
         tabPastClosing={tabPastClosing}

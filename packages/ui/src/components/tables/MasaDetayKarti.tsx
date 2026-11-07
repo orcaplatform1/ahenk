@@ -567,6 +567,15 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
   const [lightboxIdx,   setLightboxIdx]   = useState<number | null>(null);
   const [onMyWayDone,   setOnMyWayDone]   = useState(false);
   const [onMyWayLoading,setOnMyWayLoading]= useState(false);
+  const [onMyWayWarn,   setOnMyWayWarn]   = useState('');
+  // Yola Çıktım: buluşmadan 1 saat önce aktif olur; o ana gelince sayfa yenilenmeden açılsın
+  const onMyWayOpensAt = new Date(masa.scheduledAt).getTime() - 60 * 60 * 1000;
+  const [onMyWayOpen, setOnMyWayOpen] = useState(() => Date.now() >= onMyWayOpensAt);
+  useEffect(() => {
+    if (onMyWayOpen) return;
+    const id = setInterval(() => { if (Date.now() >= onMyWayOpensAt) setOnMyWayOpen(true); }, 15000);
+    return () => clearInterval(id);
+  }, [onMyWayOpen, onMyWayOpensAt]);
 
   const isOneOnOne = masa.type === 'ONE_ON_ONE';
   const photos     = masa.venuePhotos ?? [];
@@ -578,10 +587,20 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
 
   async function handleOnMyWay() {
     if (!authHeaders || onMyWayDone || onMyWayLoading) return;
+    if (!onMyWayOpen) {
+      setOnMyWayWarn('Yola çıkış bildirimi, buluşma saatinden 1 saat önce kullanıma açılır.');
+      setTimeout(() => setOnMyWayWarn(''), 4000);
+      return;
+    }
     setOnMyWayLoading(true);
     try {
-      await fetch(`${apiBase}/meetings/${masa.id}/on-my-way`, { method: 'POST', headers: authHeaders, credentials: 'include' });
-      setOnMyWayDone(true);
+      const res = await fetch(`${apiBase}/meetings/${masa.id}/on-my-way`, { method: 'POST', headers: authHeaders, credentials: 'include' });
+      if (res.ok) setOnMyWayDone(true);
+      else {
+        const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
+        const msg = Array.isArray(err?.message) ? err?.message[0] : err?.message;
+        if (msg) { setOnMyWayWarn(msg); setTimeout(() => setOnMyWayWarn(''), 4000); }
+      }
     } finally { setOnMyWayLoading(false); }
   }
 
@@ -874,8 +893,8 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
           transition={{ delay: 0.48, duration: 0.4 }}
           style={{ marginBottom: 20 }}
         >
-          <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#f5f5f5', letterSpacing: '0.14em', textTransform: masa.type === 'KANKA' ? 'none' : 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-            {isOneOnOne ? 'BAŞ BAŞA' : masa.type === 'KANKA' ? 'Kanka Çiftler' : 'KATILIMCILAR'}
+          <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#f5f5f5', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
+            {isOneOnOne ? 'BAŞ BAŞA' : 'KATILIMCILAR'}
           </p>
           {masa.type === 'KANKA' ? (
             <KankaPairs
@@ -890,6 +909,50 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
           </div>
           )}
         </motion.div>
+
+        {!masa.aiReport && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.4 }}
+            style={{
+              background: 'rgba(8,18,44,0.75)',
+              border: '1px solid rgba(100,130,200,0.18)',
+              borderRadius: 12, padding: '14px 16px', marginBottom: 14,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 8,
+                background: 'rgba(100,130,200,0.14)', border: '1px solid rgba(100,130,200,0.22)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <span style={{ fontSize: 16, lineHeight: 1 }}>✦</span>
+              </div>
+              <span style={{
+                fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase',
+                fontFamily: 'Inter, sans-serif', color: 'rgba(180,200,255,0.75)',
+              }}>
+                YAPAY ZEKA MASA RAPORU
+              </span>
+            </div>
+            <div style={{ height: 1, background: 'rgba(100,130,200,0.12)', marginBottom: 12 }} />
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.88)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>
+                  UYUM SKORU
+                </span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0', fontFamily: 'Inter, sans-serif' }}>
+                  %—
+                </span>
+              </div>
+              <div style={{ height: 5, borderRadius: 99, background: 'rgba(255,255,255,0.12)' }} />
+            </div>
+            <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', lineHeight: 1.65 }}>
+              Masa kurulduktan sonra yapay zeka uyum raporu burada görünecek.
+            </p>
+          </motion.div>
+        )}
 
         {masa.aiReport && (
           <motion.div
@@ -975,6 +1038,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
             <button
               onClick={handleOnMyWay}
               disabled={archive || onMyWayDone || onMyWayLoading}
+              aria-disabled={!onMyWayOpen || undefined}
               className={onMyWayDone ? undefined : 'btn-primary'}
               style={onMyWayDone ? {
                 width: '100%', padding: '13px 0',
@@ -984,10 +1048,20 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
                 color: '#27ae60', fontSize: 12, fontWeight: 700,
                 letterSpacing: '0.1em', textTransform: 'uppercase',
                 fontFamily: 'Inter, sans-serif', cursor: 'default',
-              } : { width: '100%', justifyContent: 'center' }}
+              } : { width: '100%', justifyContent: 'center', ...(!archive && !onMyWayOpen ? { opacity: 0.45, cursor: 'not-allowed' } : {}) }}
             >
               {onMyWayDone ? '✓ Yola çıktığını bildirdin' : onMyWayLoading ? 'Bildiriliyor…' : 'Yola Çıktım'}
             </button>
+            {!archive && !onMyWayOpen && !onMyWayDone && (
+              <p style={{ margin: '6px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+                Buluşmadan 1 saat önce aktif olur
+              </p>
+            )}
+            {onMyWayWarn && (
+              <p role="alert" style={{ margin: '6px 0 0', fontSize: 12, color: '#ffb347', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+                {onMyWayWarn}
+              </p>
+            )}
           </motion.div>
         )}
 

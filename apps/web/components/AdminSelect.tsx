@@ -28,11 +28,11 @@ export function AdminSelect({ value, onChange, options, placeholder, title, styl
         style={{
           width: '100%', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
           padding: '7px 12px', fontSize: 13, color: selected ? TEXT : MUTED, textAlign: 'left',
-          fontFamily: SANS, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-          boxSizing: 'border-box', ...style,
+          fontFamily: SANS, cursor: 'pointer', display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 8,
+          boxSizing: 'border-box', maxWidth: '100%', minWidth: 0, ...style,
         }}
       >
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {selected ? selected.label : placeholder}
         </span>
         <span style={{ color: MUTED, fontSize: 10 }}>▾</span>
@@ -45,13 +45,13 @@ export function AdminSelect({ value, onChange, options, placeholder, title, styl
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="ll-card" style={{ padding: 0, width: '100%', maxWidth: 360, maxHeight: '75vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: SANS }}
+            className="ll-card" style={{ padding: 0, width: '100%', maxWidth: 360, maxHeight: '75vh', display: 'flex', flexDirection: 'column', flexWrap: 'nowrap', boxShadow: '0 24px 64px rgba(0,0,0,0.6)', fontFamily: SANS }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${BORDER}` }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '14px 16px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{title ?? placeholder}</span>
               <button type="button" onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: MUTED, padding: 2 }}>✕</button>
             </div>
-            <div style={{ overflowY: 'auto', padding: 6 }}>
+            <div style={{ overflowY: 'auto', padding: 6, width: '100%', boxSizing: 'border-box', minHeight: 0 }}>
               {options.map((o, i) => {
                 const active = o.value === value;
                 const showGroup = o.group && o.group !== options[i - 1]?.group;

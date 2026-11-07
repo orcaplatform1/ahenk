@@ -14,13 +14,15 @@ function sweepEnd() {
 // Tek sonar görünümü: halkalar, eksenler, dönen kırmızı dilim, merkez noktası.
 // Veriyi çağıran bileşen verir (children: SVG katmanı, overlay: üstteki HTML katmanı).
 // Animasyonlar globals.css'teki .ll-sweep sınıfındadır (hareketi azalt açıkken durur).
-export function AhenkSonar({ width = SONAR_SIZE, ariaLabel, children, overlay, center = true, centerPulse = 0 }: {
+export function AhenkSonar({ width = SONAR_SIZE, ariaLabel, children, overlay, center = true, centerPulse = 0, sweep = true, ringPulse = false }: {
   width?: number | string;
   ariaLabel: string;
   children?: React.ReactNode;
   overlay?: React.ReactNode;
   center?: boolean;
   centerPulse?: number; // Değişince merkezde kısa nabız oynar
+  sweep?: boolean; // false: dönen tarama dilimi gösterilmez
+  ringPulse?: boolean; // true: halkalar yavaş nabız atar
 }) {
   const gradientId = useId();
   const c = SONAR_CENTER;
@@ -34,11 +36,11 @@ export function AhenkSonar({ width = SONAR_SIZE, ariaLabel, children, overlay, c
           </linearGradient>
         </defs>
         {RINGS.map((r, i) => (
-          <circle key={r} cx={c} cy={c} r={r} fill="none" stroke="#e8a27a" strokeOpacity={0.18 - (i * 0.04) / 3} />
+          <circle key={r} className={ringPulse ? 'll-ring-pulse' : undefined} style={ringPulse ? { animationDelay: `${i * 0.35}s` } : undefined} cx={c} cy={c} r={r} fill="none" stroke="#e8a27a" strokeOpacity={0.18 - (i * 0.04) / 3} />
         ))}
         <line x1={c - 140} y1={c} x2={c + 140} y2={c} stroke="rgba(255,255,255,0.05)" />
         <line x1={c} y1={c - 140} x2={c} y2={c + 140} stroke="rgba(255,255,255,0.05)" />
-        <path className="ll-sweep" d={`M ${c} ${c} L ${c + 140} ${c} A 140 140 0 0 0 ${sweepEnd()} Z`} fill={`url(#${gradientId})`} />
+        {sweep && <path className="ll-sweep" d={`M ${c} ${c} L ${c + 140} ${c} A 140 140 0 0 0 ${sweepEnd()} Z`} fill={`url(#${gradientId})`} />}
         {children}
         {centerPulse > 0 && <circle key={centerPulse} className="ll-flash" cx={c} cy={c} r={7} fill="#ff6b5e" />}
         {center && <circle cx={c} cy={c} r={5} fill="#e8a27a" />}
