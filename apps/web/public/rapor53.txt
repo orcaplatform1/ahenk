@@ -1,0 +1,41 @@
+RAPOR 53 — KOŞAN JANTI HAYDAR
+Tarih: 2026-11-07
+
+======================================================================
+1) KOŞAN GARSON — YAPILDI
+======================================================================
+Değişen dosyalar:
+  apps/web/components/live/LiveLayer.tsx
+LiveTabs.tsx'te değişiklik gerekmedi.
+
+Görselin yeri: geri sayım kartının en üstü. Bu, kullanıcının masası varken ve durum
+"Masa Oluşturuluyor" iken gösterilen kart; "Masanızda boş N koltuk kaldı" satırı da bu kartta.
+Ne zaman görünür: hasTabTable && statuses[tab] === 'FORMING'.
+
+Görselin özellikleri:
+  - next/image, alt "Janti Haydar"
+  - ortalı
+  - w-[180px] mobil, md:w-[220px] masaüstü
+  - h-auto; width 960, height 1639 (gerçek boyut)
+
+jantihaydar_stop.png'nin yerine ve koşuluna (!hasTabTable) dokunulmadı; iki görsel aynı anda
+görünmez. Mevcut metin, etiket ve butonlar değişmedi.
+
+======================================================================
+2) SON ADIM — YAPILDI
+======================================================================
+Değişen dosyalar: commit'te yalnızca apps/web/components/live/LiveLayer.tsx var.
+rapor52.txt apps/web/public ve /var/www/ahenk-rapor konumlarından silindi. Dosya hiç commit
+edilmediği için commit'te silme yer almıyor.
+
+tsc web       : BAŞARILI (hata yok)
+build web     : BAŞARILI
+pm2 restart ahenk-web : BAŞARILI, online
+Log           : out logu "Ready".
+                Hata logu 00:09'da bir kayıt almış: "Server Reference ID did not match the expected
+                format. Received 'x'". Bu Next.js server action uyumsuzluğu bu işten önce de vardı;
+                eski koddan dışarıdan gelen geçersiz bir istekten kaynaklanıyor. Bu değişiklikle
+                ilgili değil. Restart (00:13) sonrası yeni hata yok.
+Commit'ler    : c18b5d5 "koşan Janti Haydar masa oluşturuluyor kartına eklendi"
+                397848f "maskot Janti Haydar görselleri eklendi" (önceden yerelde bekliyordu)
+Push          : BAŞARILI — 284c30d..c18b5d5 master -> master. İki commit de origin'de.
