@@ -10,6 +10,9 @@ import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, CYAN, 
 // Leaflet yalnızca istemcide yüklenir (SSR yok)
 const SosLiveMap = dynamic(() => import('@/components/SosLiveMap'), { ssr: false });
 
+// Canlı harita: sayfa düzeyindeki 1 sn'lik tek istekten gelen, talep edenin en yeni konumu
+type LivePos = { lat: number; lng: number; timestamp: string };
+
 // ─── Tipler ─────────────────────────────────────────────────────────────────
 
 interface LocUpdate { lat: number; lng: number; accuracy: number | null; timestamp: string; }
@@ -260,7 +263,7 @@ function ProximityAlert({ requester, others }: { requester: ParticipantLoc | nul
   );
 }
 
-function ReportCard({ report, index, tick, onChanged }: { report: SosReport; index: number; tick: number; onChanged: () => void }) {
+function ReportCard({ report, index, tick, onChanged, livePos }: { report: SosReport; index: number; tick: number; onChanged: () => void; livePos?: LivePos | null }) {
   if (report.restricted) {
     return (
       <div style={{ borderRadius: 12, border: `1px solid ${BORDER}`, background: SURFACE, padding: '14px 18px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -272,17 +275,15 @@ function ReportCard({ report, index, tick, onChanged }: { report: SosReport; ind
       </div>
     );
   }
-  return <ReportCardFull report={report} index={index} tick={tick} onChanged={onChanged} />;
+  return <ReportCardFull report={report} index={index} tick={tick} onChanged={onChanged} livePos={livePos ?? null} />;
 }
 
-function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport; index: number; tick: number; onChanged: () => void }) {
+function ReportCardFull({ report, index, tick, onChanged, livePos }: { report: SosReport; index: number; tick: number; onChanged: () => void; livePos: LivePos | null }) {
   const [open, setOpen]   = useState(index === 0 && !report.resolvedAt);
   const [detail, setDetail] = useState<SosReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState('');
-  const [livePos, setLivePos] = useState<{ lat: number; lng: number; timestamp: string } | null>(null);
-  const [liveStopped, setLiveStopped] = useState(false);
   const isSuperadmin = myRole() === 'SUPERADMIN';
   const me = myId();
   const claimedByMe = !!report.claimedBy && report.claimedBy.id === me;
@@ -315,25 +316,6 @@ function ReportCardFull({ report, index, tick, onChanged }: { report: SosReport;
     } catch { /* yetki değiştiyse liste yenilemesi kartı kısıtlı gösterir */ }
     finally { setLoading(false); }
   }
-
-  // Canlı harita: açık (çözülmemiş) talepte kart açıkken yalnızca en yeni konum 1 sn'de bir çekilir.
-  // Talep çözülünce, kart kapanınca ya da sayfadan çıkılınca (unmount) durur; sayfanın geri kalanı 15 sn yenilemede kalır.
-  useEffect(() => {
-    if (!open || report.resolvedAt || liveStopped) return;
-    let busy = false;
-    const id = setInterval(() => {
-      if (busy) return;
-      busy = true;
-      api.get<{ resolved: boolean; location: { lat: number; lng: number; timestamp: string } | null }>(`/sos/admin/reports/${report.id}/latest-location`)
-        .then((r) => {
-          if (r.resolved) { setLiveStopped(true); return; }
-          if (r.location) setLivePos(r.location);
-        })
-        .catch(() => undefined)
-        .finally(() => { busy = false; });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [open, report.id, report.resolvedAt, liveStopped]);
 
   // Açık kart her yenilemede (sayaç / Yenile) canlı konumla birlikte güncellenir
   useEffect(() => { if (open) loadDetail(); }, [tick]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -635,6 +617,32 @@ export default function AcilYardimPage() {
   const active   = reports.filter(r => !r.resolvedAt);
   const resolved = reports.filter(r => !!r.resolvedAt);
 
+  // Canlı harita: kaç açık talep olursa olsun saniyede tek istek; konumlar reportId ile kartlara dağıtılır.
+  // Yalnızca bu sayfa açıkken ve en az bir açık talep varken çalışır; önceki istek bitmeden yenisi gitmez.
+  // Açık talep kalmayınca (liste ya da uç boş dönünce) veya sayfadan çıkılınca durur. 15 sn yenileme ayrı çalışır.
+  const [liveLocs, setLiveLocs] = useState<Record<string, LivePos>>({});
+  const openKey = active.filter(r => !r.restricted).map(r => r.id).join(',');
+  useEffect(() => {
+    if (!openKey) return;
+    let busy = false;
+    const id = setInterval(() => {
+      if (busy) return;
+      busy = true;
+      api.get<{ reportId: string; location: LivePos | null }[]>('/sos/admin/reports/open-locations')
+        .then((rows) => {
+          if (rows.length === 0) { clearInterval(id); return; }
+          setLiveLocs((prev) => {
+            const next = { ...prev };
+            for (const r of rows) if (r.location) next[r.reportId] = r.location;
+            return next;
+          });
+        })
+        .catch(() => undefined)
+        .finally(() => { busy = false; });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [openKey]);
+
   return (
     <>
       <style>{`
@@ -740,7 +748,7 @@ export default function AcilYardimPage() {
                       AKTİF TALEPLER: {active.length}
                     </span>
                   </div>
-                  {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} />)}
+                  {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} livePos={liveLocs[r.id] ?? null} />)}
                 </div>
               )}
 

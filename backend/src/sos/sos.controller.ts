@@ -101,20 +101,21 @@ export class SosController {
     return this.sos.adminListReports(req.user as { id: string; role: UserRole });
   }
 
+  // Canlı harita: tüm açık taleplerin en yeni konumu tek istekte (admin sayfası 1 sn'de bir çeker).
+  // Literal route, parametrik admin/reports/:id'den önce tanımlı olmalı (route shadow).
+  @Get("admin/reports/open-locations")
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  adminOpenLocations(@Req() req: Request) {
+    return this.sos.adminOpenLocations(req.user as { id: string; role: UserRole });
+  }
+
   @Get("admin/reports/:id")
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @UseInterceptors(HideEmailForAdminInterceptor)
   adminDetail(@Param("id") id: string, @Req() req: Request) {
     return this.sos.adminGetReport(id, req.user as { id: string; role: UserRole });
-  }
-
-  // Canlı harita: açık talebin yalnızca en yeni konumu (admin sayfası 1 sn'de bir çeker)
-  @Get("admin/reports/:id/latest-location")
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
-  adminLatestLocation(@Param("id") id: string, @Req() req: Request) {
-    return this.sos.adminLatestLocation(id, req.user as { id: string; role: UserRole });
   }
 
   @AdminAction("SOS_CLAIM", async (c) => {

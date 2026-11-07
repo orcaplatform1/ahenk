@@ -298,29 +298,38 @@ export class SosService {
     };
   }
 
-  // Canlı harita: talep edenin en yeni konumu (talep konum güncellemesi ya da katılımcı konumu, hangisi yeniyse).
-  // Talep çözüldüyse konum dönmez; sayfa çekmeyi durdurur.
-  async adminLatestLocation(id: string, viewer: Viewer) {
-    const report = await this.prisma.sosReport.findUnique({
-      where: { id },
+  // Canlı harita: çözülmemiş tüm açık taleplerin talep eden konumu, sabit 2 sorguda.
+  // Konum: talep konum güncellemesi ile katılımcı konumundan zamanı yeni olanı. Yetki canSee ile aynı:
+  // başka adminin üstlendiği talep dönmez, SUPERADMIN hepsini görür.
+  async adminOpenLocations(viewer: Viewer) {
+    // 1) Açık talepler + her birinin son konum güncellemesi (Prisma ilişki take:1)
+    const reports = await this.prisma.sosReport.findMany({
+      where: {
+        resolvedAt: null,
+        ...(viewer.role === UserRole.SUPERADMIN ? {} : { OR: [{ claimedById: null }, { claimedById: viewer.id }] }),
+      },
       select: {
-        claimedById: true, resolvedAt: true, userId: true, meetingId: true,
+        id: true, userId: true, meetingId: true,
         locationUpdates: { orderBy: { timestamp: "desc" }, take: 1, select: { lat: true, lng: true, timestamp: true } },
       },
     });
-    if (!report) throw new NotFoundException();
-    if (!this.canSee(report, viewer)) throw new ForbiddenException("Bu talep başka bir admin tarafından takip ediliyor");
-    if (report.resolvedAt) return { resolved: true, location: null };
-    const update = report.locationUpdates[0] ?? null;
-    const part = report.meetingId && report.userId
-      ? await this.prisma.participantLocation.findFirst({
-          where: { meetingId: report.meetingId, userId: report.userId },
-          orderBy: { timestamp: "desc" },
-          select: { lat: true, lng: true, timestamp: true },
-        })
-      : null;
-    const location = part && (!update || part.timestamp >= update.timestamp) ? part : update;
-    return { resolved: false, location };
+    // 2) Talep edenlerin masadaki son katılımcı konumu: tüm (masa, kişi) çiftleri tek sorguda
+    const pairs = reports
+      .filter((r) => r.meetingId && r.userId)
+      .map((r) => ({ meetingId: r.meetingId as string, userId: r.userId as string }));
+    const partRows = pairs.length === 0 ? [] : await this.prisma.participantLocation.findMany({
+      where: { OR: pairs },
+      orderBy: { timestamp: "desc" },
+      distinct: ["meetingId", "userId"],
+      select: { meetingId: true, userId: true, lat: true, lng: true, timestamp: true },
+    });
+    const partBy = new Map(partRows.map((p) => [`${p.meetingId}:${p.userId}`, p]));
+    return reports.map((r) => {
+      const update = r.locationUpdates[0] ?? null;
+      const p = r.meetingId && r.userId ? partBy.get(`${r.meetingId}:${r.userId}`) : undefined;
+      const part = p ? { lat: p.lat, lng: p.lng, timestamp: p.timestamp } : null;
+      return { reportId: r.id, location: part && (!update || part.timestamp >= update.timestamp) ? part : update };
+    });
   }
 
   // ─── Admin: üstlen / çöz ─────────────────────────────────────────────────
