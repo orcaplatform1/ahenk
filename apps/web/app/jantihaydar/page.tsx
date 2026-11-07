@@ -218,7 +218,9 @@ export default function JantiHaydarPage() {
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
               style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 'clamp(2.1rem, 5.5vw, 3.4rem)', fontWeight: 400, letterSpacing: '-0.025em', lineHeight: 1.1, margin: '0 0 1rem' }}
             >
-              Markanı Janti Haydar Sunsun
+              Markanı Janti Haydar
+              <br />
+              Öne Çıkarsın
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.12 }}
@@ -228,7 +230,7 @@ export default function JantiHaydarPage() {
             </motion.p>
           </div>
           <motion.div className="jh-hero-img" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.1 }}>
-            <Image src="/maskot/jantihaydar_ads.webp" alt="Janti Haydar" width={960} height={1639} priority className="block h-auto w-full" style={{ borderRadius: 20 }} />
+            <Image src="/maskot/jantihaydar_ads.webp" alt="Janti Haydar" width={960} height={1639} priority className="block h-auto w-full" />
           </motion.div>
         </section>
 
