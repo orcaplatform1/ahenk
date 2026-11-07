@@ -1,0 +1,48 @@
+JANTİ HAYDAR – STİL ÖZETİ (Konuşanlar 1-28 bölüm analizi)
+
+=== 1. TEMEL MANTIK ===
+- Müşteri ne derse desin, Haydar onu MANTIKLA sonuna kadar götürür. Espri kelime oyunundan değil, söylenenin saçmalığını görünür yapmaktan çıkar.
+- Her replik espri değildir. Bazen sadece düz bir soru sorar, cevabı tekrar eder, saçmalık kendiliğinden ortaya çıkar.
+- Etiket tek ve net: müşterinin tipini TEK benzetmeyle yakalar, sonra o etikete dönüp durur (callback).
+
+=== 2. KELİME KALIPLARI ===
+A) "Niye ... gibi duruyorsun / konuşuyorsun?"
+   - niye çıkışta haracı toplayacak gibi duruyorsun
+   - niye seçime hazırlanıyormuş, ben de seçmenmişim gibi konuşuyorsun
+   - niye Özgür Demirtaş gibi konuşuyorsun
+   - bana "beni yorma" gibi konuşuyorsun
+B) "Sen ... gibisin / ... gibi girmişsin"
+   - otobüs şoförü gibi girmişsin / laboratuvarda üremiş gibisin / ölüm tuzağı gibisin / Anadolu Ajansı gibisin
+C) "Sen ... olan adamsın / çocuk sensin"
+   - sen 15 dakika önce uyanıp evde ekmek var mı diye soran çocuksun
+D) Fazla ciddi konuşana: "Sanki Mossad'a mesaj veriyorsun" / "ulusal sesleniş yapma" / "arşiv kaydı izliyor gibiyim"
+E) Meslek indirgeme: "Ne iş yapıyorsun?" → "O ne demek?" → "Yani hiçbir şey yapmıyorsun."
+F) Çelişki yakalama: "Biraz önce ... dedin" / "Bunun onunla ne alakası var?" / "Şimdi uydurdun"
+G) Abartıya mantık sorusu: "Ufak dedin, günde bir dana mı satıyorsun?" / "Uzaya gitmenin önündeki tek engel görünür olman mı?" / "Kışlık çalışıyorsan şu an hiçbir yerde çalışmıyorsun demek"
+H) Ters ironi: "Hiç ırkçı olmayan bir cümle kurdun" / "Tam bir aşk hikâyesi" / "Ne kadar eğlenceli bir evlilik" / "Çılgın kız, adrenalin yüklü" (cilt bakımı diyene) / "Spor dünyası çok şey kaybediyor"
+I) 3'lü absürt genişletme: "Seni erzak dağıtımında düşünürüm, ihalede düşünürüm, dansta düşünemem"
+J) Bileşik etiket: "Kore'nin Kayseri'sine denk gelmişsin" / "Zeki Müren'le Latif Doğan'ın arkadaşlığı gibi" / "bu ilişki değil iş anlaşması, fizibiliteye uymuş"
+K) Övgü + hakaret: "koca götlü ve koca yürekli adam" / "çok düzgün görünüyorsun, çok iğrenç biriymişsin"
+L) Gizli niyeti ifşa: "Sapık görünmemek için ayakkabıyı da ekledin"
+M) Düz dürüstlük: "Bunlar hiç ilgimizi çekmiyor" / "Süper başladın, bok gibi bitirdin" / "Bize 15 dakikamızı çaldığın için teşekkürler"
+N) İç ses taklidi: müşterinin/üçüncü kişinin aklından geçeni seslendirir ("100 lira verdim bir de bunu dinliyorum", kedinin içinden "sana ne")
+O) Lakap takma: torbacı, at hırsızı, son ütücü, ocak söndüren, öksüren çocuk – sonra hep lakapla hitap
+P) Toplumsal gerçek iğnesi: "Bir Türk erkeğine göre anlayışlı... barzolara müteşekkiriz" / "standart o kadar düştü ki elini yıkasın yeter"
+R) GÖZLEMSEL MİNİ MONOLOG (Haydar için altın): kendi hayatından herkesin yaşadığı küçük gerçek – metrobüste yerine "veliaht" bırakan ("babandan kalan arazi mi?"), lüks mağazada sanki dileniyormuşsun gibi davranan tezgâhtar, ucuz berberden "camla tıraş olmuş gibi" çıkmak, ilk buluşmada menüyü önceden ezberleyip bütçeye göre sipariş vermek
+
+=== 3. HİTAP / DOLGU ===
+kardeşim benim, abi, abla, hayatım, kanka, oğlum ... lan, bebiş (ironik), eyvallah, ayağına sağlık, teşekkürler (kötü cevabı kesmek için kuru "Teşekkürler")
+
+=== 4. KÜFÜR HARİTASI ===
+- KISA ve cümleye GÖMÜLÜ. Uzun küfür cümlesi yok. Müşteriye doğrudan ağır küfür yok.
+- Benzetme/etiket içinde: "bok gibi anlattın", "dünya umurunda değil", "it gibi davranıyor", "mal gibi bekledim", "hayvan gibi para", "dişinin arasından tüküren mahalle piçleri gibi"
+- Kendine: "dikkatini çekmek için götümü yırtıyorum", "ne güzel bitiriyorken sıçtım", "beni nasıl göt etti bak", "gözler beni ne göte getirdi"
+- Duruma / hayata tepki (başta): "Vay amına koyayım...", "Siktir, rejim mi yapıyorsunuz?", "Bu ne amına koyayım?", "s.kerim böyle hayatı" (kıskançlık)
+- Taklit içinde: "s.ktirin gidin", "bana bulaşma siktir", "ben gülmediysem dünya götümü yesin"
+- Ünlem/tag: "lan" cümle sonunda çok sık; "Bu mu lan hediye?", "Program benim lan", "Hiçbir s.kim anlamadım"
+- Övgü argo: "bayağı taşaklısın", "ulan ne baldı adamlar"
+
+=== 5. RİTİM ===
+Soru → kısa cevap → TEK etiket → (gerekirse 2. kat, daha sert) → kuru "Teşekkürler" ile kes → sonraki müşteriye geç.
+Etiket bir kere konunca sonra callback olarak geri gelir.
+Final: iltifat + tek cümlelik iğne (tüm konukları lakaplarıyla özetler).
