@@ -6,8 +6,8 @@ import { SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, CYAN, SANS
 
 
 interface PackageDist {
-  masadaPct: number; karsimdaPct: number; icerdePct: number;
-  masadaCount: number; karsimdaCount: number; icerdeCount: number;
+  masadaPct: number; karsimdaPct: number; icerdePct: number; kankamlaPct: number;
+  masadaCount: number; karsimdaCount: number; icerdeCount: number; kankamlaCount: number;
 }
 
 interface StatsOverview {
@@ -24,6 +24,7 @@ interface StatsOverview {
   totalMeetings: number;
   groupMeetings: number;
   oneOnOneMeetings: number;
+  kankaMeetings: number;
   algorithmSuccessRate: number;
   packageDistribution: PackageDist;
 }
@@ -31,6 +32,7 @@ interface StatsOverview {
 interface CityRow {
   city: string;
   totalTables: number;
+  kankaTables: number;
   activeMembers: number;
   revenue: number;
   discount: number;
@@ -108,6 +110,7 @@ interface DashboardSummary {
   activeMeetingsThisWeek: number;
   groupMeetingsThisWeek: number;
   oneOnOneMeetingsThisWeek: number;
+  kankaMeetingsThisWeek: number;
   pioneer: { count: number; remaining: number };
 }
 
@@ -139,6 +142,7 @@ export default function AdminStats() {
   const totalMeetingsAnim    = useCountUp(data?.totalMeetings ?? 0);
   const groupMeetingsAnim    = useCountUp(data?.groupMeetings ?? 0);
   const oneOnOneAnim         = useCountUp(data?.oneOnOneMeetings ?? 0);
+  const kankaAnim            = useCountUp(data?.kankaMeetings ?? 0);
   const algoSuccessAnim      = useCountUp(data?.algorithmSuccessRate ?? 0);
 
   return (
@@ -169,7 +173,7 @@ export default function AdminStats() {
                 label="Bu Hafta Masa"
                 value={summary.activeMeetingsThisWeek}
                 accent={CYAN}
-                sub={`Grup ${summary.groupMeetingsThisWeek} · Başbaşa ${summary.oneOnOneMeetingsThisWeek}`}
+                sub={`Grup ${summary.groupMeetingsThisWeek} · Başbaşa ${summary.oneOnOneMeetingsThisWeek} · Kankamla ${summary.kankaMeetingsThisWeek}`}
               />
               <StatCard
                 label="Öncü Rozeti"
@@ -213,7 +217,7 @@ export default function AdminStats() {
             <p style={{ margin: '0 0 16px', fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>
               {totalMeetingsAnim.toLocaleString('tr-TR')}
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
               <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 16px' }}>
                 <p style={{ margin: '0 0 4px', fontSize: 10, color: MUTED }}>Grup</p>
                 <p style={{ margin: 0, fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>{groupMeetingsAnim.toLocaleString('tr-TR')}</p>
@@ -221,6 +225,10 @@ export default function AdminStats() {
               <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 16px' }}>
                 <p style={{ margin: '0 0 4px', fontSize: 10, color: MUTED }}>Başbaşa</p>
                 <p style={{ margin: 0, fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>{oneOnOneAnim.toLocaleString('tr-TR')}</p>
+              </div>
+              <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 16px' }}>
+                <p style={{ margin: '0 0 4px', fontSize: 10, color: MUTED }}>Kankamla</p>
+                <p style={{ margin: 0, fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>{kankaAnim.toLocaleString('tr-TR')}</p>
               </div>
             </div>
           </div>
@@ -231,7 +239,7 @@ export default function AdminStats() {
               <h2 className="ll-title">Algoritma Başarısı</h2>
             </div>
             <p style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>%{algoSuccessAnim}</p>
-            <p style={{ margin: 0, fontSize: 11, color: MUTED }}>Tamamlanan / toplam masa oranı</p>
+            <p style={{ margin: 0, fontSize: 11, color: MUTED }}>Tamamlanan / toplam masa oranı (Grup, Başbaşa ve Kankamla)</p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 12 }}>
@@ -255,7 +263,7 @@ export default function AdminStats() {
             <table className="adm-table" style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  {['Şehir', 'Masa', 'Üye', 'Ciro', 'İndirim', 'İade', 'Net', 'KDV', 'Trend'].map(h => (
+                  {['Şehir', 'Masa', 'Kankamla', 'Üye', 'Ciro', 'İndirim', 'İade', 'Net', 'KDV', 'Trend'].map(h => (
                     <th key={h} style={{ padding: '8px 14px', textAlign: 'left', ...LABEL, color: MUTED }}>{h}</th>
                   ))}
                 </tr>
@@ -265,6 +273,7 @@ export default function AdminStats() {
                   <tr key={row.city} style={{ borderBottom: i < cities.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none' }}>
                     <td data-label="Şehir" style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: TEXT }}>{row.city}</td>
                     <td data-label="Masa" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>{row.totalTables}</td>
+                    <td data-label="Kankamla" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>{row.kankaTables ?? 0}</td>
                     <td data-label="Üye" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>{row.activeMembers}</td>
                     <td data-label="Ciro" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>₺{fmtK(row.revenue)}</td>
                     <td data-label="İndirim" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>₺{fmtK(row.discount)}</td>
@@ -296,16 +305,18 @@ export default function AdminStats() {
             <PackageBar label="Masada"   pct={pkg.masadaPct}   count={pkg.masadaCount}   color={BLUE}  />
             <PackageBar label="Karşımda" pct={pkg.karsimdaPct} count={pkg.karsimdaCount} color={CYAN}  />
             <PackageBar label="İçerde"   pct={pkg.icerdePct}   count={pkg.icerdeCount}   color={GREEN} />
+            <PackageBar label="Kankamla" pct={pkg.kankamlaPct ?? 0} count={pkg.kankamlaCount ?? 0} color={AMBER} />
           </div>
         ) : loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {[0,1,2].map(i => <div key={i} style={{ height: 32, background: SURFACE, borderRadius: 6, opacity: 0.5 }} />)}
+            {[0,1,2,3].map(i => <div key={i} style={{ height: 32, background: SURFACE, borderRadius: 6, opacity: 0.5 }} />)}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <PackageBar label="Masada"   pct={0} count={0} color={BLUE}  />
             <PackageBar label="Karşımda" pct={0} count={0} color={CYAN}  />
             <PackageBar label="İçerde"   pct={0} count={0} color={GREEN} />
+            <PackageBar label="Kankamla" pct={0} count={0} color={AMBER} />
           </div>
         )}
       </div>

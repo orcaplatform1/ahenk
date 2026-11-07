@@ -18,6 +18,7 @@ import { MeetingsModule } from "./meetings/meetings.module";
 import { ContactBlocksModule } from "./contact-blocks/contact-blocks.module";
 import { PartnershipsModule } from "./partnerships/partnerships.module";
 import { CareersModule } from "./careers/careers.module";
+import { JantiHaydarModule } from "./janti-haydar/janti-haydar.module";
 import { ProblemReportsModule } from "./problem-reports/problem-reports.module";
 import { ReferralModule } from "./referral/referral.module";
 import { KankaModule } from "./kanka/kanka.module";
@@ -67,6 +68,7 @@ import { isE2eFakeMode } from "./common/e2e/fake-layer";
     ReferralModule,
     KankaModule,
     CareersModule,
+    JantiHaydarModule,
     ProblemReportsModule,
     ChatModule,
     SosModule,

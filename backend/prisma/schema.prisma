@@ -1164,3 +1164,22 @@ model ProblemReport {
 
   @@index([createdAt])
 }
+
+// ─────────────────────────────────────────────
+// JANTİ HAYDAR REKLAM TEKLİF TALEPLERİ
+// ─────────────────────────────────────────────
+
+model JantiHaydarRequest {
+  id              String   @id @default(cuid())
+  fullName        String
+  phone           String // +905XXXXXXXXX, WhatsApp OTP ile doğrulanmış
+  adTypes         String[] // "Post Animasyonu" | "Story Animasyonu" | "Reels Animasyonu"
+  storyOwner      String // Kurgu: "Ekibe ait" | "Bana ait" | "Ortak çalışma"
+  websiteOrSocial String?
+  message         String   @db.Text
+  files           Json // [{ file, originalName, type, size }] — uploads/janti-haydar, yalnızca admin ucundan sunulur
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([phone])
+}

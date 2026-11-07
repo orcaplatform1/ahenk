@@ -33,6 +33,7 @@ const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; sup
   { href: '/admin/sorun-bildirimleri', label: 'Sorun Bildirimleri' },
   { href: '/admin/partnerships', label: 'İş Ortaklığı', superadminOnly: true },
   { href: '/admin/careers',      label: 'Kariyer', superadminOnly: true },
+  { href: '/admin/janti-haydar', label: 'Janti Haydar' },
   { href: '/admin/settings',     label: 'Ayarlar', superadminOnly: true },
 ];
 

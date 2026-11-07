@@ -609,8 +609,10 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
                 })}
                 style={{ accentColor: '#c0392b' }}
               />
-              <span style={{ fontSize: 13, color: '#ccc', fontWeight: 500 }}>{p.initials}</span>
-              {p.gender && <span style={{ fontSize: 11, color: '#666' }}>{p.gender === 'MALE' ? 'E' : 'K'}</span>}
+              {/* Canlı Akış ile birebir aynı rozet: cinsiyet renkli border, sondaki nokta yazılmaz ("N.Y", "N.Y²") */}
+              <span style={{ display: 'inline-block', padding: '0 5px', borderRadius: 99, border: `1px solid ${gColor(p.gender)}`, fontSize: 10.5, fontWeight: 600, lineHeight: 1.45, color: '#f4f1ec' }}>
+                {p.initials.replace(/\.(?=[⁰¹²³⁴⁵⁶⁷⁸⁹]*$)/, '')}
+              </span>
               {locked && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#c0392b' }}>Bildirildi</span>}
             </label>
           );

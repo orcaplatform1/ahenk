@@ -95,6 +95,8 @@ export class AdminService {
       kycPending,
       activeMeetingsThisWeek,
       groupThisWeek,
+      oneOnOneThisWeek,
+      kankaThisWeek,
       pioneerCount,
       cityDistribution,
     ] = await Promise.all([
@@ -106,6 +108,13 @@ export class AdminService {
       }),
       this.prisma.meeting.count({
         where: { type: "GROUP", status: { in: ["PENDING", "ACTIVE"] }, scheduledAt: { gte: weekStart, lt: weekEnd } },
+      }),
+      this.prisma.meeting.count({
+        where: { type: "ONE_ON_ONE", status: { in: ["PENDING", "ACTIVE"] }, scheduledAt: { gte: weekStart, lt: weekEnd } },
+      }),
+      // Kankamla masaları ayrı sayılır (önceden "toplam − grup" ile başbaşaya karışıyordu)
+      this.prisma.meeting.count({
+        where: { type: "KANKA", status: { in: ["PENDING", "ACTIVE"] }, scheduledAt: { gte: weekStart, lt: weekEnd } },
       }),
       this.prisma.profile.count({ where: { isPioneer: true } }),
       this.prisma.profile.groupBy({
@@ -122,7 +131,8 @@ export class AdminService {
       kycPending,
       activeMeetingsThisWeek,
       groupMeetingsThisWeek: groupThisWeek,
-      oneOnOneMeetingsThisWeek: activeMeetingsThisWeek - groupThisWeek,
+      oneOnOneMeetingsThisWeek: oneOnOneThisWeek,
+      kankaMeetingsThisWeek: kankaThisWeek,
       pioneer: { count: pioneerCount, remaining: Math.max(0, PIONEER_MAX_QUOTA - pioneerCount) },
       cityDistribution: cityDistribution.map((c) => ({ city: c.city, count: c._count.city })),
     };
@@ -1535,11 +1545,13 @@ export class AdminService {
       referralRegisteredCount,
       groupMeetings,
       oneOnOneMeetings,
+      kankaMeetings,
       completedMeetings,
       cancelledMeetings,
       subMasada,
       subKarsimda,
       subIcerde,
+      subKankamla,
     ] = await Promise.all([
       // Bot dahil tüm aktif kullanıcılar
       this.prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
@@ -1549,11 +1561,13 @@ export class AdminService {
       this.prisma.referral.count({ where: { status: { in: [ReferralStatus.KYC_APPROVED, ReferralStatus.DISCOUNT_USED] } } }),
       this.prisma.meeting.count({ where: { type: MeetingType.GROUP } }),
       this.prisma.meeting.count({ where: { type: MeetingType.ONE_ON_ONE } }),
+      this.prisma.meeting.count({ where: { type: MeetingType.KANKA } }),
       this.prisma.meeting.count({ where: { status: MeetingStatus.COMPLETED } }),
       this.prisma.meeting.count({ where: { status: MeetingStatus.CANCELLED } }),
       this.prisma.subscription.count({ where: { plan: SubscriptionPlan.MASADA, status: SubscriptionStatus.ACTIVE } }),
       this.prisma.subscription.count({ where: { plan: SubscriptionPlan.KARSIMDA, status: SubscriptionStatus.ACTIVE } }),
       this.prisma.subscription.count({ where: { plan: SubscriptionPlan.ICERDE, status: SubscriptionStatus.ACTIVE } }),
+      this.prisma.subscription.count({ where: { plan: SubscriptionPlan.KANKAMLA, status: SubscriptionStatus.ACTIVE } }),
     ]);
 
     // Ciro: gerçek başarılı ödemeler (ücretsiz paket ve bot hariç), indirim düşülmüş
@@ -1566,23 +1580,25 @@ export class AdminService {
         ? Math.round(((thisWeekMeetings - prevWeekMeetings) / prevWeekMeetings) * 100)
         : thisWeekMeetings > 0 ? 100 : 0;
 
-    const totalMeetings = groupMeetings + oneOnOneMeetings;
+    const totalMeetings = groupMeetings + oneOnOneMeetings + kankaMeetings;
     const algorithmSuccessRate =
       (completedMeetings + cancelledMeetings) > 0
         ? Math.round((completedMeetings / (completedMeetings + cancelledMeetings)) * 100)
         : 0;
 
-    const totalSubs = subMasada + subKarsimda + subIcerde;
+    const totalSubs = subMasada + subKarsimda + subIcerde + subKankamla;
     const packageDistribution = totalSubs > 0 ? {
       masadaPct: Math.round((subMasada / totalSubs) * 100),
       karsimdaPct: Math.round((subKarsimda / totalSubs) * 100),
       icerdePct: Math.round((subIcerde / totalSubs) * 100),
+      kankamlaPct: Math.round((subKankamla / totalSubs) * 100),
       masadaCount: subMasada,
       karsimdaCount: subKarsimda,
       icerdeCount: subIcerde,
+      kankamlaCount: subKankamla,
     } : {
-      masadaPct: 0, karsimdaPct: 0, icerdePct: 0,
-      masadaCount: 0, karsimdaCount: 0, icerdeCount: 0,
+      masadaPct: 0, karsimdaPct: 0, icerdePct: 0, kankamlaPct: 0,
+      masadaCount: 0, karsimdaCount: 0, icerdeCount: 0, kankamlaCount: 0,
     };
 
     return {
@@ -1599,6 +1615,7 @@ export class AdminService {
       totalMeetings,
       groupMeetings,
       oneOnOneMeetings,
+      kankaMeetings,
       algorithmSuccessRate,
       packageDistribution,
     };
@@ -1660,9 +1677,13 @@ export class AdminService {
 
     const results = await Promise.all(
       cities.map(async (city) => {
-        const [totalTables, activeMembers, finance, thisWeekSubs, prevWeekSubs] = await Promise.all([
+        const [totalTables, kankaTables, activeMembers, finance, thisWeekSubs, prevWeekSubs] = await Promise.all([
           this.prisma.meeting.count({
             where: { status: MeetingStatus.COMPLETED, cityId: city.id },
+          }),
+          // Toplam masa sayısının içindeki Kankamla masaları
+          this.prisma.meeting.count({
+            where: { status: MeetingStatus.COMPLETED, cityId: city.id, type: MeetingType.KANKA },
           }),
           this.prisma.profile.count({
             // primaryCity şehir ID'si tutar
@@ -1691,6 +1712,7 @@ export class AdminService {
         return {
           city: city.name,
           totalTables,
+          kankaTables,
           activeMembers,
           revenue: finance.grossTL,
           discount: finance.discountTL,
