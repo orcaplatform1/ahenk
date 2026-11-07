@@ -203,7 +203,7 @@ export default function JantiHaydarPage() {
         .jh-honey { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
         @media (max-width: 760px) {
           .jh-hero { grid-template-columns: 1fr; gap: 20px; text-align: center; }
-          .jh-hero-img { max-width: 260px; margin: 0 auto; }
+          .jh-hero-img { width: 100%; max-width: min(260px, 100%); margin: 0 auto; }
           .jh-grid-3 { grid-template-columns: 1fr; }
           .jh-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
@@ -230,7 +230,9 @@ export default function JantiHaydarPage() {
             </motion.p>
           </div>
           <motion.div className="jh-hero-img" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.1 }}>
-            <Image src="/maskot/jantihaydar_ads.webp" alt="Janti Haydar" width={960} height={1639} priority className="block h-auto w-full" />
+            {/* Transparan görsel: optimizasyon kapalı (dosya olduğu gibi sunulur, görsel önbelleğine girmez); kırpma yok, oran korunur */}
+            <Image src="/maskot/jantihaydar_ads_v2.webp" alt="Janti Haydar" width={960} height={1639} priority unoptimized
+              style={{ display: 'block', width: '100%', height: 'auto', maxWidth: '100%', objectFit: 'contain', background: 'transparent', border: 'none', boxShadow: 'none', borderRadius: 0 }} />
           </motion.div>
         </section>
 
