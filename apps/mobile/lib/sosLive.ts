@@ -3,7 +3,10 @@
 // açık talep 30 sn'de bir /sos/my-open-report ile denetlenir; backend { active: false } dönünce veya talep kapanınca gönderim durur.
 // Mobil: konum güncellemesi Kullanırken izniyle ön planda başlatılır (expo-location startLocationUpdatesAsync). Uygulama arka plana
 // alınınca iOS'ta mavi konum göstergesiyle (showsBackgroundLocationIndicator, UIBackgroundModes location), Android'de ön plan hizmetiyle sürer.
-// "Her zaman" / arka plan izni istenmez (expo-location iOS'ta yalnız ön plan iznini, Android'de ön plan hizmetiyle yalnız ön plan iznini denetler).
+// SOS talebi gönderildikten sonra "Her zaman" izni istenir (yalnız SOS formunda); reddedilirse gönderim Kullanırken yöntemiyle sürer.
+// Android: killServiceOnDestroy false — uygulama kaydırılarak kapatılınca ön plan hizmeti ve gönderim durmaz.
+// iOS: expo-location görevi önemli konum değişikliği izlemesini (startMonitoringSignificantLocationChanges) her zaman başlatır;
+// "Her zaman" izni varsa iOS zorla kapatılan uygulamayı konum değişince yeniden başlatır, görev (app/_layout.tsx kaydı) gönderime devam eder.
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -39,8 +42,15 @@ export async function startSosLive(reportId: string) {
     distanceInterval: 0,
     showsBackgroundLocationIndicator: true,
     pausesUpdatesAutomatically: false,
-    foregroundService: { notificationTitle: 'Ahenk', notificationBody: 'Acil yardım: konumun emniyet birimleriyle paylaşılıyor, ekibimiz takip ediyor.' },
+    foregroundService: { notificationTitle: 'Ahenk', notificationBody: 'Acil yardım: konumun emniyet birimleriyle paylaşılıyor, ekibimiz takip ediyor.', killServiceOnDestroy: false },
   }).catch(() => {});
+}
+
+// Talep backend'e gönderildikten sonra çağrılır: "Her zaman" izni (yalnız Kullanırken izni verilmişse). Red talebi etkilemez.
+export async function requestSosAlwaysPermission() {
+  const fg = await Location.getForegroundPermissionsAsync();
+  if (fg.status !== 'granted') return;
+  await Location.requestBackgroundPermissionsAsync().catch(() => undefined);
 }
 
 export async function stopSosLive() {

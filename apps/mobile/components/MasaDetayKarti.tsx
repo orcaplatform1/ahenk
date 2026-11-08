@@ -5,7 +5,7 @@ import { Image, Modal, Pressable, ScrollView, TextInput, View, type ScrollViewIn
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { api } from '@/lib/api';
-import { startSosLive } from '@/lib/sosLive';
+import { requestSosAlwaysPermission, startSosLive } from '@/lib/sosLive';
 import { formatMeetingTime, gColor, type MasaTuru } from '@/lib/masa';
 import { openMaps } from '@/lib/links';
 import { useAppRefresh } from '@/lib/useAppRefresh';
@@ -338,7 +338,8 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
       try {
         const r = await api.post<{ reportId: string }>(`/sos/${masa.id}/report`, { threats, lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
         setSosDone(true); setShowSos(false);
-        if (r?.reportId) startSosLive(r.reportId).catch(() => {});
+        // Talep gönderildi: gönderim Kullanırken yöntemiyle başlar, ardından "Her zaman" izni istenir (red talebi engellemez)
+        if (r?.reportId) startSosLive(r.reportId).catch(() => {}).finally(() => { requestSosAlwaysPermission().catch(() => {}); });
       } catch (e) {
         const m = (e as Error).message;
         setSosError(m === '__rate_limit__' ? 'Çok fazla deneme yapıldı. Lütfen birkaç dakika sonra tekrar dene.' : m || 'Sunucu hatası. Lütfen tekrar dene.');

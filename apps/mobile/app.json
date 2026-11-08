@@ -16,12 +16,13 @@
         "NSMicrophoneUsageDescription": "Kimlik doğrulama canlılık videosu kaydı için gereklidir.",
         "NSContactsUsageDescription": "Rehberindeki numaraları engelleme listesine eklemek için kullanılır.",
         "NSLocationWhenInUseUsageDescription": "Acil yardım talebinde bulunduğunda konumun emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Acil yardım talebinde bulunduğunda, uygulama kapansa bile konumun talep çözülene kadar emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir.",
         "UIBackgroundModes": ["location"]
       }
     },
     "android": {
       "adaptiveIcon": { "foregroundImage": "./assets/icon.png", "backgroundColor": "#000000" },
-      "permissions": ["CAMERA", "RECORD_AUDIO", "READ_CONTACTS", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "FOREGROUND_SERVICE", "FOREGROUND_SERVICE_LOCATION"],
+      "permissions": ["CAMERA", "RECORD_AUDIO", "READ_CONTACTS", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "ACCESS_BACKGROUND_LOCATION", "FOREGROUND_SERVICE", "FOREGROUND_SERVICE_LOCATION"],
       "intentFilters": [
         { "action": "VIEW", "autoVerify": true, "data": [{ "scheme": "https", "host": "ahenk.co" }], "category": ["BROWSABLE", "DEFAULT"] }
       ]
@@ -34,7 +35,7 @@
       ["expo-splash-screen", { "backgroundColor": "#000000", "image": "./assets/start_logo.jpg", "imageWidth": 160 }],
       ["expo-camera", { "cameraPermission": "Kimlik doğrulama için kamera gereklidir.", "microphonePermission": "Canlılık videosu kaydı için mikrofon gereklidir.", "recordAudioAndroid": true }],
       ["expo-contacts", { "contactsPermission": "Rehberindeki numaraları engelleme listesine eklemek için kullanılır." }],
-      ["expo-location", { "locationWhenInUsePermission": "Acil yardım talebinde bulunduğunda konumun emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir.", "locationAlwaysAndWhenInUsePermission": false, "locationAlwaysPermission": false, "isIosBackgroundLocationEnabled": true, "isAndroidForegroundServiceEnabled": true }],
+      ["expo-location", { "locationWhenInUsePermission": "Acil yardım talebinde bulunduğunda konumun emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir.", "locationAlwaysAndWhenInUsePermission": "Acil yardım talebinde bulunduğunda, uygulama kapansa bile konumun talep çözülene kadar emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir.", "locationAlwaysPermission": "Acil yardım talebinde bulunduğunda, uygulama kapansa bile konumun talep çözülene kadar emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir.", "isIosBackgroundLocationEnabled": true, "isAndroidBackgroundLocationEnabled": true, "isAndroidForegroundServiceEnabled": true }],
       "expo-notifications",
       "expo-iap"
     ],
