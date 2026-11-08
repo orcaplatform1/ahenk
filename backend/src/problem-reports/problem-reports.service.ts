@@ -12,9 +12,9 @@ import { CreateProblemReportDto } from "./problem-reports.dto";
 export const PROBLEM_REPORT_DIR = path.join(process.cwd(), "..", "uploads", "problem-reports");
 // Mevcut görsel yükleme altyapısının boyut limiti
 export const PROBLEM_REPORT_IMAGE_MAX_BYTES = VENUE_PHOTO_MAX_BYTES;
-// Web: en fazla 3 görsel; mobil: otomatik ekran görüntüsü + galeriden en fazla 3
+// Web ve mobil: galeriden en fazla 3 görsel
 export const PROBLEM_REPORT_MAX_IMAGES_WEB = 3;
-export const PROBLEM_REPORT_MAX_IMAGES_MOBILE = 4;
+export const PROBLEM_REPORT_MAX_IMAGES_MOBILE = 3;
 
 const PLATFORM_LABEL: Record<ProblemReportPlatform, string> = { IOS: "iOS", ANDROID: "Android", WEB: "Web" };
 

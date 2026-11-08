@@ -339,7 +339,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
 
       <CardP title="Salla-Bildir">
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <T style={{ flex: 1, fontSize: 13, color: ll.text2 }}>Telefonu salladığında Sorun Bildir penceresi açılır, ekran görüntüsü otomatik eklenir.</T>
+          <T style={{ flex: 1, fontSize: 13, color: ll.text2 }}>Telefonu salladığında Sorun Bildir penceresi açılır.</T>
           <Switch value={shake} onChange={(v) => { setShake(v); setShakeEnabled(v); }} accessibilityLabel="Salla-Bildir" />
         </View>
       </CardP>

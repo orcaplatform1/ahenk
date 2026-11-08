@@ -1,5 +1,5 @@
-// apps/web/components/ProblemReportModal.tsx karşılığı: açıklama + galeriden görsel (JPG/PNG/WebP, 5 MB).
-// Salla-Bildir: açılışta ekran görüntüsü (initialImage) otomatik eklenir. Gönderim: POST /problem-reports (platform IOS/ANDROID).
+// apps/web/components/ProblemReportModal.tsx karşılığı: açıklama + yalnız galeriden en fazla 3 görsel (JPG/PNG/WebP, her biri 5 MB).
+// Butonla ve sallayarak açılışta aynı; ekran görüntüsü eklenmez. Gönderim: POST /problem-reports (platform IOS/ANDROID).
 import React, { useEffect, useState } from 'react';
 import { Image, Platform, TextInput, View } from 'react-native';
 import { api } from '@/lib/api';
@@ -7,12 +7,12 @@ import { pickFromLibrary, type PickedImage } from '@/lib/imagePick';
 import { Btn, BtnGhost, BtnPrimary, ModalBox, T } from '../ui';
 import { ll, sans, tw } from '@/theme/theme';
 
-// Backend mobil sınırı (PROBLEM_REPORT_MAX_IMAGES_MOBILE = 4): ekran görüntüsü + galeriden görseller
-const MAX_IMAGES = 4;
+// Web ile aynı: en fazla 3 görsel (backend PROBLEM_REPORT_MAX_IMAGES_MOBILE = 3)
+const MAX_IMAGES = 3;
 const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPT = ['image/jpeg', 'image/png', 'image/webp'];
 
-export function ProblemReport({ open, onClose, screen, initialImage }: { open: boolean; onClose: () => void; screen: string; initialImage?: PickedImage | null }) {
+export function ProblemReport({ open, onClose, screen }: { open: boolean; onClose: () => void; screen: string }) {
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<PickedImage[]>([]);
   const [busy, setBusy] = useState(false);
@@ -20,9 +20,9 @@ export function ProblemReport({ open, onClose, screen, initialImage }: { open: b
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    if (open) { setFiles(initialImage ? [initialImage] : []); return; }
+    if (open) return;
     setDescription(''); setFiles([]); setError(''); setDone(false);
-  }, [open, initialImage]);
+  }, [open]);
 
   async function addFiles() {
     setError('');
