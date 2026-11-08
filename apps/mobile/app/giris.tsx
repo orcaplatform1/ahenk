@@ -140,7 +140,7 @@ function MemberLogin() {
         {method === 'email' && <BtnPrimary label={loading ? 'Giriş yapılıyor…' : 'Giriş Yap'} disabled={loading || !canSubmit} style={{ width: '72%', alignSelf: 'center', marginTop: 4 }} onPress={emailLogin} />}
       </View>
       <View style={{ marginTop: 16, gap: 12 }}>
-        <BtnGhost label="Şifremi Unuttum" style={{ width: '72%', alignSelf: 'center' }} onPress={() => router.push('/sifremi-unuttum')} />
+        {method === 'email' && <BtnGhost label="Şifremi Unuttum" style={{ width: '72%', alignSelf: 'center' }} onPress={() => router.push('/sifremi-unuttum')} />}
         <BtnPrimary label="Kayıt Ol" full onPress={() => router.push('/kayit')} />
       </View>
     </>
@@ -221,7 +221,7 @@ export default function Giris() {
   return (
     <AuthShell title="Giriş Yap">
       <View style={{ marginBottom: 16 }}>
-        <Toggle items={[{ key: 'uye', label: 'Üye Girişi' }, { key: 'isletme', label: 'İşletme Girişi' }]} value={kind} onChange={setKind} />
+        <Toggle items={[{ key: 'uye', label: 'Üye Girişi' }, { key: 'isletme', label: 'M.Girişi' }]} value={kind} onChange={setKind} />
       </View>
       {kind === 'uye' ? <MemberLogin /> : <VenueLogin />}
     </AuthShell>
