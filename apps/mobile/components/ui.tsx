@@ -9,20 +9,38 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   btn, toggleSwitch, type BtnVariant,
-  btnGhost, btnPrimary, c, fonts, glassCard, inputGlass, ll, llCard, llCta, llEyebrow, llHead, llNote, llTitle, mono, sans, sheet, tw,
+  btnGhost, btnPrimary, c, fonts, glassCard, inputGlass, ll, llCard, llCta, llEyebrow, llHead, llNote, llTitle, mono, sans, sheet, tw, webLineHeight,
 } from '@/theme/theme';
+
+// Web satır yüksekliği: stilde lineHeight yoksa üye tarafında Tailwind boyutları için sınıf değeri, diğer boyutlarda 1.5×;
+// admin tarafında (yalnız satır içi stil) her boyutta 1.5×. Açıkça verilmiş lineHeight korunur.
+// Web karşılığı yalnız satır içi stil kullanan bileşenler (Tailwind yazı sınıfı yok) InlineLH ile sarılır: orada her boyut 1.5×
+const InlineLHContext = React.createContext(false);
+export function InlineLH({ children }: { children: React.ReactNode }) { return <InlineLHContext.Provider value>{children}</InlineLHContext.Provider>; }
+function useInlineLH() { return React.useContext(InlineLHContext); }
+
+export function withWebLH(style: StyleProp<TextStyle>, admin = false): StyleProp<TextStyle> {
+  const f = StyleSheet.flatten(style) as TextStyle | undefined;
+  if (!f || f.lineHeight != null) return style;
+  const size = f.fontSize ?? 14;
+  const lh = (!admin && webLineHeight.tailwind[size]) || size * webLineHeight.base;
+  return [style, { lineHeight: lh }];
+}
 
 // S-24: görünür boyut aynı, dokunma alanı 44×44 pt'ye tamamlanır
 export const HIT = { top: 10, bottom: 10, left: 10, right: 10 };
 
 export function T({ style, w = 400, children, ...rest }: TextProps & { w?: 400 | 500 | 600 | 700 | 800 }) {
-  return <Text {...rest} style={[{ fontFamily: sans(w), color: tw.text }, style]}>{children}</Text>;
+  const inline = useInlineLH();
+  return <Text {...rest} style={withWebLH([{ fontFamily: sans(w), color: tw.text }, style], inline)}>{children}</Text>;
 }
 export function Serif({ style, children, ...rest }: TextProps) {
-  return <Text {...rest} style={[{ fontFamily: fonts.serif, color: tw.text }, style]}>{children}</Text>;
+  const inline = useInlineLH();
+  return <Text {...rest} style={withWebLH([{ fontFamily: fonts.serif, color: tw.text }, style], inline)}>{children}</Text>;
 }
 export function Mono({ style, w = 400, children, ...rest }: TextProps & { w?: 400 | 500 | 600 }) {
-  return <Text {...rest} style={[{ fontFamily: mono(w), color: ll.text }, style]}>{children}</Text>;
+  const inline = useInlineLH();
+  return <Text {...rest} style={withWebLH([{ fontFamily: mono(w), color: ll.text }, style], inline)}>{children}</Text>;
 }
 
 export function Card({ style, children }: { style?: StyleProp<ViewStyle>; children: React.ReactNode }) {
@@ -56,7 +74,7 @@ export function BtnPrimary({ label, style, full, disabled, textStyle, noUpper, .
     <Pressable hitSlop={HIT} disabled={disabled} accessibilityRole="button" {...rest}
       style={({ pressed }) => [s.btn, s.btnPrimary, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: btnPrimary.disabledOpacity }, style]}>
       <View style={[s.dot, { backgroundColor: btnPrimary.dotColor }]} />
-      <Text style={[s.btnText, { fontFamily: sans(600), color: c.white }, textStyle]}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
+      <Text style={withWebLH([s.btnText, { fontFamily: sans(600), color: c.white }, textStyle])}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
     </Pressable>
   );
 }
@@ -67,7 +85,7 @@ export function BtnGhost({ label, style, full, disabled, redDot, textStyle, noUp
     <Pressable hitSlop={HIT} disabled={disabled} accessibilityRole="button" {...rest}
       style={({ pressed }) => [s.btn, s.btnGhost, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: btnGhost.disabledOpacity }, style]}>
       <View style={[s.dot, { backgroundColor: redDot ? c.ghostRedDot : btnGhost.dotColor }]} />
-      <Text style={[s.btnText, { fontFamily: sans(500), color: btnGhost.color }, textStyle]}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
+      <Text style={withWebLH([s.btnText, { fontFamily: sans(500), color: btnGhost.color }, textStyle])}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
     </Pressable>
   );
 }
@@ -77,12 +95,13 @@ export function Btn({ variant, label, children, selected, disabled, onPress, sty
   variant: BtnVariant; label?: string; children?: React.ReactNode; selected?: boolean; disabled?: boolean; onPress?: () => void;
   style?: StyleProp<ViewStyle>; textStyle?: StyleProp<TextStyle>; accessibilityLabel?: string; hitSlop?: PressableProps['hitSlop'];
 }) {
+  const inline = useInlineLH();
   const spec = btn[variant] as import('@/theme/theme').BtnSpec;
   const { weight = 400, ...textBase } = spec.text;
   const onText = selected && spec.on ? spec.on.text as { weight?: 400 | 500 | 600 | 700 | 800 } : undefined;
   const w = onText?.weight ?? weight;
   const content = children ?? (
-    <Text style={[{ fontFamily: sans(w) }, textBase as TextStyle, selected && spec.on ? spec.on.text as TextStyle : null, textStyle]}>
+    <Text style={withWebLH([{ fontFamily: sans(w) }, textBase as TextStyle, selected && spec.on ? spec.on.text as TextStyle : null, textStyle], inline || String(variant).startsWith('adm'))}>
       {label !== undefined && spec.upper ? label.toLocaleUpperCase('tr-TR') : label}
     </Text>
   );
@@ -161,12 +180,13 @@ export function Row({ label, value, color }: { label: string; value: string; col
 }
 
 // Alttan açılan pencere (KankaSection Sheet)
-export function Sheet({ visible, onClose, children }: { visible: boolean; onClose: () => void; children: React.ReactNode }) {
+// pad: web'de bazı alt pencereler 20px 16px dolgu kullanır (CityPickerModalP, BirthDateField); varsayılan 24px 20px (KankaSection, TabProfilim)
+export function Sheet({ visible, onClose, children, pad }: { visible: boolean; onClose: () => void; children: React.ReactNode; pad?: { top: number; h: number } }) {
   const insets = useSafeAreaInsets();
   return (
     <RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={s.sheetOverlay} onPress={onClose}>
-        <Pressable style={[s.sheet, { paddingBottom: sheet.padBottom + insets.bottom }]} onPress={() => undefined}>
+        <Pressable style={[s.sheet, pad && { paddingTop: pad.top, paddingHorizontal: pad.h }, { paddingBottom: sheet.padBottom + insets.bottom }]} onPress={() => undefined}>
           {children}
         </Pressable>
       </Pressable>

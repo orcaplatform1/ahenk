@@ -1,7 +1,7 @@
 // apps/web/app/profil/tabs/TabKyc.tsx karşılığı. Kimlik fotoğrafı yalnız kamerayla (S-12), canlılık videosu ön kamera
 // (3 sn geri sayım + 5 sn kayıt). Kayıt sırasında pencere kapatılamaz (S-25). Yükleme: POST /kyc/upload (multipart).
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, Modal, Pressable, View } from 'react-native';
+import { Animated, Easing, Image, Modal, Pressable, View } from 'react-native';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { SvgUri } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +10,7 @@ import { api } from '@/lib/api';
 import { API_PREFIX, SITE } from '@/lib/config';
 import { getAccess } from '@/lib/session';
 import { BtnGhost, BtnPrimary, Card, SkeletonBlock, T, Title } from '../ui';
-import { c, ll, tw } from '@/theme/theme';
+import { c, ll, tw, tw4 } from '@/theme/theme';
 
 interface KycStatus { status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPICIOUS' | null; rejectReason?: string | null }
 interface Shot { uri: string }
@@ -18,8 +18,8 @@ interface Shot { uri: string }
 function Done({ label, onRetake }: { label: string; onRetake: () => void }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: 'rgba(74,222,128,0.08)', borderWidth: 1, borderColor: 'rgba(74,222,128,0.2)' }}>
-      <T style={{ color: c.ok }}>✓</T>
-      <T style={{ fontSize: 12, color: c.ok }}>{label}</T>
+      <T style={{ fontSize: 16, color: tw4.green400 }}>✓</T>
+      <T style={{ fontSize: 12, color: tw4.green400 }}>{label}</T>
       <BtnGhost label="Tekrar Çek" style={{ marginLeft: 'auto' }} onPress={onRetake} />
     </View>
   );
@@ -139,7 +139,7 @@ function LivenessRecorder({ video, onCapture }: { video: Shot | null; onCapture:
           <Image source={require('@/assets/kyc-liveness-demo.png')} style={{ width: '100%', height: 180, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' }} resizeMode="cover" accessibilityLabel="Canlı video örneği" />
           <BtnGhost label="Canlı Video Yükle" full onPress={openCamera} />
           <View style={{ borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.3)' }}>
-            <T style={{ fontSize: 12, color: 'rgba(192,57,43,0.85)', lineHeight: 19 }}>
+            <T style={{ fontSize: 12, color: 'rgba(192,57,43,0.85)', lineHeight: 19.2 }}>
               Ekibimiz hesap doğrulama talebinizi inceleyene kadar bilgiler saklanır. Doğrulama onaylanır veya reddedilir ise, tüm bilgiler veritabanından silinir ve depolanmaz. Doğrulama, sahte profillerin platformu kullanmasını engellemek için bir filtredir.
             </T>
           </View>
@@ -168,6 +168,28 @@ async function uploadKyc(front: Shot, back: Shot, video: Shot, onProgress: (p: n
     xhr.onerror = () => reject(new Error('Ağ hatası'));
     xhr.send(form);
   });
+}
+
+// Web .kyc-ball / @keyframes ballRoll: 12 px top, translateX(-120px) → (genişlik + 40px), 3 sn doğrusal, 0/1/2 sn gecikmeli üç top
+function KycBalls() {
+  const [w, setW] = useState(0);
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!w) return;
+    const loop = Animated.loop(Animated.timing(v, { toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [w, v]);
+  return (
+    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: 36, width: '100%', overflow: 'hidden' }}>
+      {w > 0 && [0, 1, 2].map(i => {
+        const shift = i / 3; // gecikme 0/1/2 sn = döngünün 0, 1/3, 2/3'ü
+        const p = v.interpolate({ inputRange: [0, 1], outputRange: [1 - shift, 2 - shift] });
+        const x = Animated.modulo(p, 1).interpolate({ inputRange: [0, 1], outputRange: [-120, w + 40] });
+        return <Animated.View key={i} style={{ position: 'absolute', top: 12, left: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: c.kycBall, transform: [{ translateX: x }] }} />;
+      })}
+    </View>
+  );
 }
 
 export function KycTab({ onApproved }: { onApproved?: () => void }) {
@@ -202,7 +224,7 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
     return (
       <Card style={{ alignItems: 'center', gap: 12 }}>
         <T style={{ fontSize: 30 }}>✓</T>
-        <T w={500} style={{ color: c.ok }}>Kimliğiniz doğrulandı</T>
+        <T w={500} style={{ fontSize: 16, color: tw4.green400 }}>Kimliğiniz doğrulandı</T>
         <T style={{ fontSize: 13, color: ll.label, textAlign: 'center' }}>Artık masalara katılabilir ve paket satın alabilirsiniz.</T>
       </Card>
     );
@@ -210,9 +232,7 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
   if (status?.status === 'PENDING') {
     return (
       <Card style={{ alignItems: 'center', gap: 16, paddingTop: 0, paddingBottom: 32, paddingHorizontal: 0, overflow: 'hidden' }}>
-        <View style={{ height: 36, width: '100%', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 24 }}>
-          {[0, 1, 2].map(i => <View key={i} style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: c.kycBall }} />)}
-        </View>
+        <KycBalls />
         <T w={600} style={{ fontSize: 16, paddingHorizontal: 24, textAlign: 'center' }}>Doğrulama incelemeye alındı</T>
         <T style={{ fontSize: 13, color: ll.label, paddingHorizontal: 24, textAlign: 'center' }}>Başvurunuz değerlendiriliyor.{'\n'}Bu süreç genellikle 1 saat içinde tamamlanır.</T>
       </Card>
@@ -221,7 +241,7 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
   return (
     <View style={{ gap: 20 }}>
       {status?.status === 'REJECTED' && (
-        <View style={{ backgroundColor: 'rgba(127,29,29,0.2)', borderWidth: 1, borderColor: '#991b1b', borderRadius: 16, padding: 16 }}>
+        <View style={{ backgroundColor: tw4.red900a20, borderWidth: 1, borderColor: tw4.red800, borderRadius: 16, padding: 16 }}>
           <T w={500} style={{ fontSize: 14, color: tw.accent, marginBottom: 4 }}>Başvurunuz reddedildi</T>
           <T style={{ fontSize: 13, color: ll.label }}>{status.rejectReason ?? 'Lütfen belgelerinizi yeniden yükleyin.'}</T>
         </View>
@@ -231,7 +251,7 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
       <ImageUploader svg="/kyc_demo_identity_card_back.svg" alt="Kimlik arka yüz örneği" label="Arka Yüzü Yükle" shot={back} onChange={setBack} />
       <LivenessRecorder video={video} onCapture={setVideo} />
       {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}
-      <BtnPrimary label={submitting ? 'Yükleniyor…' : 'Kimliğimi Doğrula'} full disabled={submitting || !front || !back || !video} onPress={submit} />
+      <BtnPrimary label={submitting ? 'Yükleniyor…' : 'Kimliğimi Doğrula'} full disabled={submitting || !front || !back || !video} style={(submitting || !front || !back || !video) ? { opacity: 0.5 } : undefined} onPress={submit} />
       {submitting && progress > 0 && (
         <View style={{ height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.10)' }}>
           <LinearGradient colors={['#1a5c2a', '#27ae60']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: '100%', width: `${progress}%` }} />

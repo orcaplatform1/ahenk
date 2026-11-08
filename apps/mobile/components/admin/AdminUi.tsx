@@ -2,15 +2,16 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { adm, fonts, llCard, llTitle, mono, sans } from '@/theme/theme';
+import { withWebLH } from '../ui';
 
 export function AT({ style, w = 400, children, numberOfLines, onPress }: { style?: StyleProp<TextStyle>; w?: 400 | 500 | 600 | 700 | 800; children: React.ReactNode; numberOfLines?: number; onPress?: () => void }) {
-  return <Text onPress={onPress} numberOfLines={numberOfLines} style={[{ fontFamily: sans(w), color: adm.text }, style]}>{children}</Text>;
+  return <Text onPress={onPress} numberOfLines={numberOfLines} style={withWebLH([{ fontFamily: sans(w), color: adm.text }, style], true)}>{children}</Text>;
 }
 export function AMono({ style, w = 400, children }: { style?: StyleProp<TextStyle>; w?: 400 | 500 | 600; children: React.ReactNode }) {
-  return <Text style={[{ fontFamily: mono(w), color: adm.muted }, style]}>{children}</Text>;
+  return <Text style={withWebLH([{ fontFamily: mono(w), color: adm.muted }, style], true)}>{children}</Text>;
 }
 export function ALabel({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
-  return <Text style={[adm.label, { color: adm.muted }, style]}>{children}</Text>;
+  return <Text style={withWebLH([adm.label, { color: adm.muted }, style], true)}>{children}</Text>;
 }
 export function ATitle({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
   // Mobil: .adm-topbar-title .ll-title 18px; sayfa başlığı .ll-title 23px
@@ -37,7 +38,7 @@ export function ATableRow({ cells, onPress, last }: { cells: [string, React.Reac
     <View style={{ paddingVertical: 8, borderBottomWidth: last ? 0 : 1, borderBottomColor: adm.border }}>
       {cells.map(([k, v]) => (
         <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 4, paddingHorizontal: 14 }}>
-          <Text style={adm.tableLabel}>{k}</Text>
+          <Text style={withWebLH(adm.tableLabel, true)}>{k}</Text>
           <View style={{ flexShrink: 1, alignItems: 'flex-end' }}>{typeof v === 'string' || typeof v === 'number' ? <AT style={{ fontSize: 12, textAlign: 'right' }}>{v}</AT> : v}</View>
         </View>
       ))}

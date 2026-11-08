@@ -58,7 +58,7 @@ function CitySelect({ label, value, onChange, cities, optional, placeholder, tit
     <View style={{ flex: 1 }}>
       {!!label && <T style={{ fontSize: 12, color: ll.text2, marginBottom: 4 }}>{label}</T>}
       <Btn variant="citySelectProfile" selected={!!value} label={display} onPress={() => { setTmp(value); setOpen(true); }} />
-      <Sheet visible={open} onClose={() => setOpen(false)}>
+      <Sheet visible={open} onClose={() => setOpen(false)} pad={{ top: 20, h: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <T style={{ fontSize: 13, color: c.t888 }}>{title}</T>
           <Btn variant="closeX" label="×" accessibilityLabel="Kapat" onPress={() => setOpen(false)} />
@@ -208,7 +208,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
       )}
       <CardP title="Hesap Bilgileri">
         {user.noShowWarning && (
-          <T w={500} style={{ fontSize: 14, lineHeight: 22, color: c.warnYellow }}>
+          <T w={500} style={{ fontSize: 14, lineHeight: 22.75, color: c.warnYellow }}>
             Uyarı: {ORDINAL[user.noShowWarning.count - 1] ?? `${user.noShowWarning.count}.`} ihlal, masaya katılım sağlamadınız. Kalan uyarı hakkı {user.noShowWarning.remaining}
           </T>
         )}
@@ -288,7 +288,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
 
       <Sheet visible={activeConfirm} onClose={() => setActiveConfirm(false)}>
         <T w={700} style={{ fontSize: 16, marginBottom: 10 }}>Dikkat</T>
-        <T style={{ fontSize: 13, color: c.t888, lineHeight: 21, marginBottom: 20 }}>
+        <T style={{ fontSize: 13, color: c.t888, lineHeight: 20.8, marginBottom: 20 }}>
           Eşleşme süreciniz <T style={{ fontSize: 13, color: tw.text }}>{displayPrimary?.name ?? 'ana şehriniz'}</T> üzerinden devam etmektedir. Şehri değiştirirseniz eşleşme sıranıza yeniden gireceksiniz.
         </T>
         <View style={{ gap: 8 }}>
@@ -298,19 +298,19 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
       </Sheet>
 
       <CardP title="Hangi Şehirdeki Masalara Katılmak İstersiniz?">
-        <T style={{ fontSize: 12, color: ll.label }}>Bu şehirlerden birinde tatilde veya seyahatteyseniz, oradaki grup masası veya baş başa masasına katılabilirsiniz.</T>
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+        <T style={{ fontSize: 12, color: ll.label, marginBottom: 12 }}>Bu şehirlerden birinde tatilde veya seyahatteyseniz, oradaki grup masası veya baş başa masasına katılabilirsiniz.</T>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
           <CitySelect label="" value={activeCity} onChange={setActiveCity} cities={cities} optional placeholder="Şehir seç" title="Hangi şehirdeki masalara katılmak istersiniz?" />
-          <BtnPrimary label={savingActive ? '…' : 'Kaydet'} disabled={savingActive} onPress={() => { setPendingActive(activeCity || null); setActiveConfirm(true); }} />
+          <BtnPrimary label={savingActive ? '…' : 'Kaydet'} disabled={savingActive} style={[{ alignSelf: 'stretch' }, savingActive && { opacity: 0.5 }]} onPress={() => { setPendingActive(activeCity || null); setActiveConfirm(true); }} />
         </View>
         {!!activeCity && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
             <T style={{ fontSize: 12, color: ll.label }}>Aktif: <T style={{ fontSize: 12, color: tw.text }}>{cities.find(x => x.id === activeCity)?.name ?? '—'}</T></T>
             <Btn variant="textSmall" disabled={savingActive} label="Temizle" onPress={() => saveActiveCity(null)} />
           </View>
         )}
-        {!!activeCity && <T style={{ fontSize: 12, color: ll.label }}>Siz iptal edene kadar bu şehirdeki masalarla eşleşirsiniz.</T>}
-        {!!saveError && <T style={{ fontSize: 14, color: tw.accent }}>{saveError}</T>}
+        {!!activeCity && <T style={{ fontSize: 12, color: ll.label, marginTop: 6 }}>Siz iptal edene kadar bu şehirdeki masalarla eşleşirsiniz.</T>}
+        {!!saveError && <T style={{ fontSize: 14, color: tw.accent, marginTop: 4 }}>{saveError}</T>}
       </CardP>
 
       <CardP title="Şehir Tercihleri" action={!editingCities ? { label: 'Düzenle', onPress: () => setEditingCities(true) } : undefined}>
@@ -348,15 +348,15 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
       </CardP>
 
       <CardP title="Sadakat Programı">
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: 8, marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingHorizontal: 14 }}>
             <T style={{ color: 'rgba(255,255,255,0.62)', fontSize: 14, marginRight: 4 }}>+90</T>
             <TextInput keyboardType="number-pad" keyboardAppearance="dark" placeholder="5XX XXX XX XX" placeholderTextColor={tw.muted} value={refPhone} onChangeText={t => setRefPhone(t.replace(/\D/g, '').slice(0, 10))}
               style={{ flex: 1, fontSize: 14, color: tw.text, paddingVertical: 12, fontFamily: sans(400) }} />
           </View>
-          <BtnPrimary label={refSending ? '…' : 'Davet Gönder'} full disabled={refSending} onPress={sendReferral} />
+          <BtnPrimary label={refSending ? '…' : 'Davet Gönder'} full disabled={refSending} style={refSending ? { opacity: 0.5 } : undefined} onPress={sendReferral} />
         </View>
-        {!!refMsg && <T style={{ fontSize: 12, color: refMsg.includes('başarı') ? c.ok : tw.accent }}>{refMsg}</T>}
+        {!!refMsg && <T style={{ fontSize: 12, marginBottom: 12, color: refMsg.includes('başarı') ? c.ok : tw.accent }}>{refMsg}</T>}
         <View style={{ flexDirection: 'row', gap: 24, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
           <View><T style={{ fontSize: 12, color: ll.text2 }}>Davetli Arkadaş</T><T w={600} style={{ fontSize: 16 }}>{stats?.totalInvites ?? '—'} kişi</T></View>
           <View><T style={{ fontSize: 12, color: ll.text2 }}>Toplam %10 İndirim Hakkı</T><T w={600} style={{ fontSize: 16 }}>{stats?.availableDiscounts ?? '—'} Adet</T></View>
@@ -382,7 +382,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
       <ProblemReport open={reportOpen} onClose={() => setReportOpen(false)} screen="Profilim" />
 
       <ModalBox visible={deleteOpen} onClose={() => setDeleteOpen(false)} title="Hesabımı Sil">
-        <T style={{ fontSize: 14, color: ll.text2, lineHeight: 22 }}>
+        <T style={{ fontSize: 14, color: ll.text2, lineHeight: 22.75 }}>
           Hesabını silmek üzeresin. Bu işlem geri alınamaz. Talebin onaylandıktan sonra hesabın en geç 48 saat içinde kalıcı olarak silinir. Profilin, kişilik testi sonuçların, kimlik doğrulama bilgilerin ve masa geçmişin sistemden kaldırılır. Kullanılmamış paket hakların iade edilmez ve kullanılamaz hâle gelir. Yasal zorunluluk gereği ödeme ve fatura kayıtların mevzuatta belirtilen süre boyunca saklanır.
         </T>
         {!!deleteError && <T style={{ color: tw.accent, fontSize: 14, marginTop: 12 }}>{deleteError}</T>}

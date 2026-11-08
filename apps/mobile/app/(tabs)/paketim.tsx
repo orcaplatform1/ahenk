@@ -12,7 +12,7 @@ import { useReduceMotion } from '@/lib/motion';
 import { Btn, BtnPrimary, Card, Head, MaintenanceNotice, Serif, SkeletonBlock, T } from '@/components/ui';
 import { clockMS, useWinback } from '@/components/Winback';
 import { Glow } from './index';
-import { c, ll, sans, tw } from '@/theme/theme';
+import { c, ll, sans, tw, tw4 } from '@/theme/theme';
 
 interface Subscription { id: string; plan: string; usedAt?: string | null; groupRights: number; groupCycles: number; oneOnOneCycles: number; kankaRights?: number; kankaCycles?: number }
 type RefundOption = 'GROUP' | 'ONEONE' | 'FULL' | 'KANKA';
@@ -132,7 +132,7 @@ export default function Paketim() {
                   <TextInput keyboardType="number-pad" textContentType="telephoneNumber" keyboardAppearance="dark" placeholder="5XX XXX XX XX" placeholderTextColor={tw.muted} value={refPhone}
                     onChangeText={(t) => setRefPhone(t.replace(/\D/g, '').slice(0, 10))} style={{ flex: 1, fontSize: 14, color: tw.text, paddingVertical: 11, fontFamily: sans(400) }} />
                 </View>
-                <BtnPrimary label={refSending ? '…' : 'Davet Gönder'} full disabled={refSending} onPress={sendReferral} />
+                <BtnPrimary label={refSending ? '…' : 'Davet Gönder'} full disabled={refSending} style={refSending ? { opacity: 0.5 } : undefined} onPress={sendReferral} />
                 <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
                   <T style={{ color: c.tAaa, fontSize: 11, lineHeight: 16.5 }}>
                     Davet ettiğiniz arkadaşınız, telefon numarasını ve kimlik doğrulamasını yaptıktan sonra sistem size otomatik indirim hakkı tanımlar. Arkadaşınız da başka arkadaşlarını davet edip bu şartlar yerine geldiğinde o da indirim hakkı kazanır. İndirim hakları toplu olarak kullanılamaz ve devredilemez. <T w={700} style={{ fontSize: 11, color: '#fff' }}>Her bir indirim hakkı, yalnızca bir paket satın alımında geçerlidir.</T>
@@ -162,10 +162,10 @@ export default function Paketim() {
                     </View>
                   );
                 })}
-                <T style={{ fontSize: 12, color: ll.time, lineHeight: 19, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12, marginTop: 4 }}>
+                <T style={{ fontSize: 12, color: ll.time, lineHeight: 19.5, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12, marginTop: 4 }}>
                   Paketler tek seferliktir; her masa hakkı {packageCycles} döngü (yaklaşık 1 ay) geçerlidir. Bu süre içinde hiç masa kurulamazsa tam iade talep edebilirsin. Bir masa kurulduysa kalan hakkın olsa da hizmet alınmış sayılır ve iade yapılmaz. İade talepleri 5 iş günü içinde değerlendirilir.
                 </T>
-                {refundMsg ? <T style={{ fontSize: 14, color: refundMsg.ok ? c.ok : tw.accent }}>{refundMsg.text}</T>
+                {refundMsg ? <T style={{ fontSize: 14, color: refundMsg.ok ? tw4.green400 : tw.accent }}>{refundMsg.text}</T>
                   : shownRefunds.length > 0 ? shownRefunds.map((o) => (
                     <Btn key={o} variant="refund" disabled={refundLoading} onPress={() => refund(o)} label={refundLoading ? 'Gönderiliyor…' : REFUND_LABEL[o]} />
                   )) : (
@@ -187,7 +187,7 @@ export default function Paketim() {
                       {!!cs.badge && (
                         <View style={{ position: 'absolute', top: 8, left: 8, right: 8, zIndex: 10, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, borderWidth: 1,
                           backgroundColor: cs.badgeRed ? 'rgba(192,57,43,0.85)' : 'rgba(40,40,40,0.85)', borderColor: cs.badgeRed ? 'rgba(192,57,43,0.6)' : 'rgba(255,255,255,0.12)' }}>
-                          <T w={600} style={{ fontSize: 10.4, textAlign: 'center', color: cs.badgeRed ? '#fff' : c.tAaa }}>{cs.badge}</T>
+                          <T w={600} style={{ fontSize: 10.4, lineHeight: 13, textAlign: 'center', color: cs.badgeRed ? '#fff' : c.tAaa }}>{cs.badge}</T>
                         </View>
                       )}
                       <View style={{ marginTop: cs.badge ? 20 : 0 }}>
@@ -195,33 +195,33 @@ export default function Paketim() {
                         {w ? (
                           <>
                             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
-                              <T w={700} style={{ fontSize: 24 }}>{w.discountedTL}</T><T style={{ color: c.t888, fontSize: 13.6, marginBottom: 1 }}>₺</T>
-                              <T style={{ color: c.t555, fontSize: 12, textDecorationLine: 'line-through', marginBottom: 1 }}>{w.listTL}₺</T>
+                              <T w={700} style={{ fontSize: 24, lineHeight: 36 }}>{w.discountedTL}</T><T style={{ color: c.t888, fontSize: 13.6, marginBottom: 1 }}>₺</T>
+                              <T style={{ color: c.t555, fontSize: 12, lineHeight: 18, textDecorationLine: 'line-through', marginBottom: 1 }}>{w.listTL}₺</T>
                             </View>
                             <T style={{ color: ll.copper, fontSize: 10.9, marginBottom: 2, fontVariant: ['tabular-nums'] }}>İndirim bitimine {clockMS(winback.remaining)}</T>
                           </>
                         ) : discount?.referralDiscount ? (
                           <>
                             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
-                              <T w={700} style={{ fontSize: 24 }}>{p?.mobileDiscountTL ?? '—'}</T><T style={{ color: c.t888, fontSize: 13.6, marginBottom: 1 }}>₺</T>
-                              <T style={{ color: c.t555, fontSize: 12, textDecorationLine: 'line-through', marginBottom: 1 }}>{p?.mobileTL ?? '—'}₺</T>
+                              <T w={700} style={{ fontSize: 24, lineHeight: 36 }}>{p?.mobileDiscountTL ?? '—'}</T><T style={{ color: c.t888, fontSize: 13.6, marginBottom: 1 }}>₺</T>
+                              <T style={{ color: c.t555, fontSize: 12, lineHeight: 18, textDecorationLine: 'line-through', marginBottom: 1 }}>{p?.mobileTL ?? '—'}₺</T>
                             </View>
                             <T style={{ color: c.ok, fontSize: 10.9, marginBottom: 2 }}>Kalan İndirim Hakkı: {discount.referralCount}</T>
                           </>
                         ) : (
                           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
-                            <T w={700} style={{ fontSize: 24 }}>{p?.mobileTL ?? '—'}</T><T style={{ color: c.t888, fontSize: 13.6, marginBottom: 1 }}>₺</T>
+                            <T w={700} style={{ fontSize: 24, lineHeight: 36 }}>{p?.mobileTL ?? '—'}</T><T style={{ color: c.t888, fontSize: 13.6, marginBottom: 1 }}>₺</T>
                           </View>
                         )}
                         <T style={{ fontSize: 10.9 }}>{plan.desc}</T>
                       </View>
                       <View style={{ gap: 4, flex: 1 }}>
                         {plan.features.map((f) => (
-                          <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><Check /><T style={{ fontSize: 11.2, color: c.tCcc, lineHeight: 14.5, flexShrink: 1 }}>{f}</T></View>
+                          <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><Check /><T style={{ fontSize: 11.2, color: c.tCcc, lineHeight: 14.56, flexShrink: 1 }}>{f}</T></View>
                         ))}
                       </View>
                       {cs.showButton && (
-                        <BtnPrimary full disabled={buying === plan.key || maintenance}
+                        <BtnPrimary full disabled={buying === plan.key || maintenance} style={(buying === plan.key || maintenance) ? { opacity: 0.5 } : undefined}
                           label={buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : cs.needsKanka ? 'Önce Kanka Davet Et' : 'Paketi Seç'}
                           onPress={() => !kycApproved ? router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } }) : cs.needsKanka ? router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'profil' } }) : buy(plan.key)} />
                       )}
@@ -236,7 +236,7 @@ export default function Paketim() {
                     </View>
                   </View>
                 );
-                return plan.featured ? <GoldBorder key={plan.key}>{body}</GoldBorder> : <View key={plan.key}>{body}</View>;
+                return plan.featured ? <GoldBorder key={plan.key}>{body}</GoldBorder> : <View key={plan.key} style={{ borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } }}>{body}</View>;
               })}
             </View>
           </>

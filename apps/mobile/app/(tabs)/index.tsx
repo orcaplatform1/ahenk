@@ -1,6 +1,7 @@
 // Sekme 1 — Eşleşme Paneli: apps/web/app/dashboard/page.tsx + components/live/LiveLayer.tsx
-import React, { useCallback, useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Image, ScrollView, StyleSheet, View } from 'react-native';
+import { useReduceMotion } from '@/lib/motion';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,6 +48,20 @@ function useLivePoll<T>(path: string, intervalMs: number) {
   return data;
 }
 
+// .ll-blink: opaklık 1 → 0,45 → 1, 1,4 sn ease-in-out; Hareketi Azalt açıkken durağan (web prefers-reduced-motion)
+function Blink({ children }: { children: React.ReactNode }) {
+  const reduce = useReduceMotion();
+  const v = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (reduce) { v.setValue(1); return; }
+    const e = Easing.bezier(0.42, 0, 0.58, 1);
+    const loop = Animated.loop(Animated.sequence([Animated.timing(v, { toValue: 0.45, duration: 700, easing: e, useNativeDriver: true }), Animated.timing(v, { toValue: 1, duration: 700, easing: e, useNativeDriver: true })]));
+    loop.start();
+    return () => loop.stop();
+  }, [reduce, v]);
+  return <Animated.View style={{ opacity: v }}>{children}</Animated.View>;
+}
+
 function Countdown({ day, targetAt }: { day: number; targetAt?: number | null }) {
   const [left, setLeft] = useState(0);
   useEffect(() => {
@@ -65,7 +80,7 @@ function Countdown({ day, targetAt }: { day: number; targetAt?: number | null })
         <View key={u.label} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
           {i > 0 && <Serif style={{ fontSize: 40, lineHeight: 40, color: '#6e6860' }}>:</Serif>}
           <View style={{ alignItems: 'center', minWidth: 52 }}>
-            <Serif style={{ fontSize: 40, lineHeight: 40, color: u.label === 'SANİYE' ? ll.red3 : ll.text }}>{pad(u.value)}</Serif>
+            {u.label === 'SANİYE' ? <Blink><Serif style={{ fontSize: 40, lineHeight: 40, color: ll.red3 }}>{pad(u.value)}</Serif></Blink> : <Serif style={{ fontSize: 40, lineHeight: 40, color: ll.text }}>{pad(u.value)}</Serif>}
             <T style={{ fontSize: 10, color: ll.label, marginTop: 6 }}>{u.label}</T>
           </View>
         </View>
@@ -88,7 +103,7 @@ function FillRow({ label, fill, colors }: { label: string; fill: LiveFill; color
     <View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
         <T style={{ fontSize: 13, color: ll.text }}>{label}</T>
-        <Mono style={{ fontSize: 12, color: ll.text2 }}>{num(fill.filled)} / {num(fill.total)}</Mono>
+        <Mono style={{ fontSize: 12, lineHeight: 18, color: ll.text2 }}>{num(fill.filled)} / {num(fill.total)}</Mono>
       </View>
       <Bar ratio={ratio} colors={colors} height={8} />
     </View>
@@ -155,7 +170,7 @@ export default function EslesmePaneli() {
             {me && !kycApproved && (
               <Card style={{ alignItems: 'center' }}>
                 <Image source={require('@/assets/lock-icon.webp')} style={{ width: 64, height: 64, marginBottom: 14 }} />
-                <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 21, textAlign: 'center', marginBottom: 22 }}>
+                <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 21.45, textAlign: 'center', marginBottom: 22 }}>
                   Eşleşme taramasına katılabilmek için kimlik doğrulamanızı (KYC) tamamlamalısınız.
                 </T>
                 <BtnPrimary label="Kimliğimi Doğrula" style={{ alignSelf: 'center' }} onPress={() => router.push({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } })} />
@@ -165,7 +180,7 @@ export default function EslesmePaneli() {
 
             {/* Geri sayım */}
             <View style={[st.card, { borderColor: 'rgba(232,162,122,0.22)', overflow: 'hidden' }]}>
-              <LinearGradient colors={['rgba(214,69,58,0.14)', 'rgba(255,255,255,0.02)']} locations={[0, 0.6]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={StyleSheet.absoluteFill} />
+              <LinearGradient colors={['rgba(214,69,58,0.14)', 'rgba(255,255,255,0.02)']} locations={[0, 0.6]} start={{ x: 0.33, y: 0.03 }} end={{ x: 0.67, y: 0.97 }} style={StyleSheet.absoluteFill} />
               {hasTabTable && statuses[tab] === 'FORMING' && <Image source={require('@/assets/maskot/jantihaydar_run.webp')} style={st.maskot} resizeMode="contain" />}
               {!hasTabTable && <Image source={require('@/assets/maskot/jantihaydar_stop.webp')} style={st.maskot} resizeMode="contain" />}
               <Eyebrow>{meetingTarget !== null ? 'Buluşmanıza kalan süre' : waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</Eyebrow>
@@ -185,7 +200,7 @@ export default function EslesmePaneli() {
                 { label: 'doluluk', value: overview ? `%${overview.metrics.fillPercent}` : '–', color: ll.red3 },
               ].map((m) => (
                 <View key={m.label} style={st.metric}>
-                  <Mono w={600} style={{ fontSize: 20, color: m.color }}>{m.value}</Mono>
+                  <Mono w={600} style={{ fontSize: 20, lineHeight: 30, color: m.color }}>{m.value}</Mono>
                   <T style={{ fontSize: 11, color: ll.label, marginTop: 4 }}>{m.label}</T>
                 </View>
               ))}
@@ -197,7 +212,7 @@ export default function EslesmePaneli() {
             <Card style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 6 }}>
               <Title>{people.length > 0 ? `Katılım ${people.length}/${total}:` : 'Katılım:'}</Title>
               {people.map((p, i) => (
-                <T key={`${p.initials}-${i}`} w={700} style={{ fontSize: 14, letterSpacing: 0.28, color: gColor(p.gender) }}>{label(p.initials)}</T>
+                <T key={`${p.initials}-${i}`} w={700} style={{ fontSize: 14, lineHeight: 21, letterSpacing: 0.28, color: gColor(p.gender) }}>{label(p.initials)}</T>
               ))}
             </Card>
 
@@ -212,9 +227,9 @@ export default function EslesmePaneli() {
                   <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
                     {e.segments.map((sg, i) => sg.t === 'person' ? (
                       <View key={i} style={{ paddingHorizontal: 5, borderRadius: 99, borderWidth: 1, borderColor: gColor(sg.g) }}>
-                        <T w={600} style={{ fontSize: 10.5, lineHeight: 15, color: ll.text }}>{sg.v}</T>
+                        <T w={600} style={{ fontSize: 10.5, lineHeight: 15.225, color: ll.text }}>{sg.v}</T>
                       </View>
-                    ) : <T key={i} style={{ fontSize: 11.5, lineHeight: 17, color: ll.text }}>{sg.v}</T>)}
+                    ) : <T key={i} style={{ fontSize: 11.5, lineHeight: 17.25, color: ll.text }}>{sg.v}</T>)}
                   </View>
                 </View>
               ))}
@@ -227,7 +242,7 @@ export default function EslesmePaneli() {
                 <View style={st.heat}>
                   {overview.density.districts.map((d) => (
                     <View key={d.name} style={[st.heatCell, { backgroundColor: `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }]}>
-                      <T w={700} numberOfLines={1} style={{ fontSize: 12 }}>{d.name}</T>
+                      <T w={700} numberOfLines={1} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
                       <Mono style={{ fontSize: d.percent === null ? 11 : 15, color: tw.text }}>{d.percent === null ? LEVELS[d.level].label : `%${d.percent}`}</Mono>
                     </View>
                   ))}
@@ -236,7 +251,7 @@ export default function EslesmePaneli() {
                 <View style={st.heat}>
                   {overview.heatmap.map((d, i) => (
                     <View key={d.name} style={[st.heatCell, { backgroundColor: heatColor(i, overview.heatmap.length) }]}>
-                      <T w={700} numberOfLines={1} style={{ fontSize: 12 }}>{d.name}</T>
+                      <T w={700} numberOfLines={1} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
                       <Mono style={{ fontSize: 15, color: tw.text }}>%{d.percent}</Mono>
                     </View>
                   ))}
@@ -254,7 +269,7 @@ export default function EslesmePaneli() {
                 <View style={{ gap: 10 }}>
                   {overview.signal.top.map((d) => (
                     <View key={d.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                      <T style={{ width: 104, fontSize: 12, color: ll.text2 }}>{OCEAN_LABEL[d.key]}</T>
+                      <T style={{ width: 104, fontSize: 12, lineHeight: 18, color: ll.text2 }}>{OCEAN_LABEL[d.key]}</T>
                       <View style={{ flex: 1 }}><Bar ratio={d.score / 100} colors={['#d6453a', '#e8a27a']} height={6} /></View>
                       <Mono style={{ width: 28, fontSize: 11, textAlign: 'right' }}>{d.score}</Mono>
                     </View>

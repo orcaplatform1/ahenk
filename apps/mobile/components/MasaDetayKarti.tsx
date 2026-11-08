@@ -11,7 +11,7 @@ import { useAppRefresh } from '@/lib/useAppRefresh';
 import { startSosTracking, stopSosTracking } from '@/lib/sosTask';
 import { DetayAvatar } from './DetayAvatar';
 import { KankaPairs, type KankaPerson } from './KankaPairs';
-import { Btn, BtnPrimary, Serif, T } from './ui';
+import { InlineLH, Btn, BtnPrimary, Serif, T } from './ui';
 import { c, sans, tw } from '@/theme/theme';
 
 export interface DetayParticipant { initials: string; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean }
@@ -114,7 +114,7 @@ function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }
                 <View style={{ maxWidth: '72%', alignItems: m.isOwn ? 'flex-end' : 'flex-start' }}>
                   <View style={{ paddingVertical: 8, paddingHorizontal: 11, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: gColor(m.senderGender),
                     borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomLeftRadius: m.isOwn ? 12 : 2, borderBottomRightRadius: m.isOwn ? 2 : 12 }}>
-                    <T style={{ fontSize: 13, color: c.tF0, lineHeight: 18.9 }}>{m.content}</T>
+                    <T style={{ fontSize: 13, color: c.tF0, lineHeight: 18.2.85 }}>{m.content}</T>
                   </View>
                   <T style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{msgTime(m.createdAt)}</T>
                   {!m.isOwn && !isClosed && (
@@ -160,7 +160,7 @@ function NoShowSection({ meetingId }: { meetingId: string }) {
   return (
     <View style={{ marginTop: 24, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
       <T w={600} style={{ fontSize: 13, marginBottom: 4 }}>Masana gelmeyen oldu mu?</T>
-      <T style={{ fontSize: 11.5, color: c.t888, lineHeight: 17, marginBottom: 12 }}>Gelmeyen kişileri işaretleyip gönder. Gönderilen bildirim geri alınamaz.</T>
+      <T style={{ fontSize: 11.5, color: c.t888, lineHeight: 17.25, marginBottom: 12 }}>Gelmeyen kişileri işaretleyip gönder. Gönderilen bildirim geri alınamaz.</T>
       <View style={{ gap: 8 }}>
         {data.participants.map(p => {
           const locked = marked.has(p.userId);
@@ -173,7 +173,7 @@ function NoShowSection({ meetingId }: { meetingId: string }) {
                 {checked && <T w={700} style={{ fontSize: 10, color: '#fff' }}>✓</T>}
               </View>
               <View style={{ paddingHorizontal: 5, borderRadius: 99, borderWidth: 1, borderColor: gColor(p.gender) }}>
-                <T w={600} style={{ fontSize: 10.5, lineHeight: 15, color: '#f4f1ec' }}>{p.initials.replace(/\.(?=[⁰¹²³⁴⁵⁶⁷⁸⁹]*$)/, '')}</T>
+                <T w={600} style={{ fontSize: 10.5, lineHeight: 15.225, color: '#f4f1ec' }}>{p.initials.replace(/\.(?=[⁰¹²³⁴⁵⁶⁷⁸⁹]*$)/, '')}</T>
               </View>
               {locked && <T style={{ marginLeft: 'auto', fontSize: 11, color: c.red }}>Bildirildi</T>}
             </Pressable>
@@ -202,7 +202,7 @@ function SosModal({ selected, onToggle, onConfirm, onClose, loading, locError, e
   const can = selected.length > 0 && accepted && !loading;
   const warn = (text: string) => (
     <View style={{ padding: 10, paddingHorizontal: 12, backgroundColor: 'rgba(255,165,0,0.08)', borderWidth: 1, borderColor: 'rgba(255,165,0,0.3)', borderRadius: 8, marginBottom: 12 }}>
-      <T style={{ fontSize: 11.5, color: c.warnOrange, lineHeight: 17 }}>{text}</T>
+      <T style={{ fontSize: 11.5, color: c.warnOrange, lineHeight: 17.25 }}>{text}</T>
     </View>
   );
   return (
@@ -230,14 +230,14 @@ function SosModal({ selected, onToggle, onConfirm, onClose, loading, locError, e
           {locError === 'off' && warn('⚠ Cihaz konumu kapalı. Konum servisini açtıktan sonra tekrar dene.')}
           {!!error && (
             <View style={{ padding: 10, paddingHorizontal: 12, backgroundColor: 'rgba(192,57,43,0.12)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', borderRadius: 8, marginBottom: 12 }}>
-              <T style={{ fontSize: 11.5, color: tw.accent, lineHeight: 17 }}>⚠ Talep gönderilemedi: {error}</T>
+              <T style={{ fontSize: 11.5, color: tw.accent, lineHeight: 17.25 }}>⚠ Talep gönderilemedi: {error}</T>
             </View>
           )}
           <Pressable onPress={() => setAccepted(a => !a)} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 14 }}>
             <View style={{ marginTop: 2, width: 16, height: 16, borderRadius: 3, borderWidth: 1.5, borderColor: accepted ? c.red : 'rgba(255,255,255,0.4)', backgroundColor: accepted ? c.red : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
               {accepted && <T w={700} style={{ fontSize: 10, color: '#fff' }}>✓</T>}
             </View>
-            <T style={{ flex: 1, fontSize: 11.5, color: 'rgba(255,255,255,0.75)', lineHeight: 17 }}>Acil yardım talebimin sahte olmadığını ve ihbardan kaynaklı doğacak tüm yasal sorumluluğu kabul ediyorum.</T>
+            <T style={{ flex: 1, fontSize: 11.5, color: 'rgba(255,255,255,0.75)', lineHeight: 17.25 }}>Acil yardım talebimin sahte olmadığını ve ihbardan kaynaklı doğacak tüm yasal sorumluluğu kabul ediyorum.</T>
           </Pressable>
           <Btn variant="sosSubmit" onPress={onConfirm} disabled={!can} label={loading ? 'Konum alınıyor…' : error ? 'Tekrar dene' : 'İhbarda Bulun'} />
         </Pressable>
@@ -268,7 +268,7 @@ function AiReport({ report }: { report?: MasaDetayData['aiReport'] }) {
   return (
     <View style={{ backgroundColor: c.aiBg, borderWidth: 1, borderColor: c.aiBorder, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: c.aiIconBg, borderWidth: 1, borderColor: c.aiIconBorder, alignItems: 'center', justifyContent: 'center' }}><T style={{ fontSize: 16 }}>✦</T></View>
+        <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: c.aiIconBg, borderWidth: 1, borderColor: c.aiIconBorder, alignItems: 'center', justifyContent: 'center' }}><T style={{ fontSize: 16, lineHeight: 16 }}>✦</T></View>
         <T w={700} style={{ fontSize: 10, letterSpacing: 1.6, color: c.aiTitle }}>YAPAY ZEKA MASA RAPORU</T>
       </View>
       <View style={{ height: 1, backgroundColor: c.aiDivider, marginBottom: 12 }} />
@@ -281,12 +281,12 @@ function AiReport({ report }: { report?: MasaDetayData['aiReport'] }) {
           {report && <LinearGradient colors={['#4fc3f7', '#f48fb1']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: '100%', width: `${report.uyumSkoru}%`, borderRadius: 99 }} />}
         </View>
       </View>
-      {report && <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 21.5 }}>{report.content}</T>}
+      {report && <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 21.45 }}>{report.content}</T>}
     </View>
   );
 }
 
-export function MasaDetayKarti({ masa, archive = false }: { masa: MasaDetayData; archive?: boolean }) {
+function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; archive?: boolean }) {
   const live = !archive;
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [onMyWayDone, setOnMyWayDone] = useState(false);
@@ -358,8 +358,8 @@ export function MasaDetayKarti({ masa, archive = false }: { masa: MasaDetayData;
         <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: GREEN }} />
         <T w={700} style={{ fontSize: 10, color: GREEN, letterSpacing: 1.8 }}>MASA DETAYI</T>
       </View>
-      <Serif style={{ fontSize: 26, lineHeight: 31, color: tw.text, letterSpacing: 0.26, marginBottom: masa.venueAddress ? 4 : 16 }}>{masa.venueName}</Serif>
-      {!!masa.venueAddress && <T style={{ marginBottom: 16, fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 18 }}>{masa.venueAddress}</T>}
+      <Serif style={{ fontSize: 26, lineHeight: 31.2, color: tw.text, letterSpacing: 0.26, marginBottom: masa.venueAddress ? 4 : 16 }}>{masa.venueName}</Serif>
+      {!!masa.venueAddress && <T style={{ marginBottom: 16, fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 18.2 }}>{masa.venueAddress}</T>}
 
       {photos.length > 0 && (
         <View style={{ flexDirection: 'row', gap: 6, marginBottom: 18 }}>
@@ -400,7 +400,7 @@ export function MasaDetayKarti({ masa, archive = false }: { masa: MasaDetayData;
       <AiReport report={masa.aiReport} />
 
       <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 16 }}>
-        <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 19 }}>Rezervasyonunuz tamamlandı. Girişte görevliye isminizi söylediğinizde masanıza yönlendirileceksiniz. İyi eğlenceler.</T>
+        <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 19.2 }}>Rezervasyonunuz tamamlandı. Girişte görevliye isminizi söylediğinizde masanıza yönlendirileceksiniz. İyi eğlenceler.</T>
       </View>
 
       <View style={{ marginBottom: 10 }}>
@@ -411,7 +411,7 @@ export function MasaDetayKarti({ masa, archive = false }: { masa: MasaDetayData;
         )}
         {!!onMyWayWarn && (
           <View accessibilityRole="alert" style={{ marginTop: 8, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14 }}>
-            <T style={{ fontSize: 12, color: c.warnOrange, lineHeight: 19 }}>{onMyWayWarn}</T>
+            <T style={{ fontSize: 12, color: c.warnOrange, lineHeight: 19.2 }}>{onMyWayWarn}</T>
           </View>
         )}
       </View>
@@ -430,7 +430,7 @@ export function MasaDetayKarti({ masa, archive = false }: { masa: MasaDetayData;
             <>
               <Btn variant="sos" onPress={() => setShowSos(true)} label="Acil Yardım" />
               <View style={{ marginTop: 10, padding: 10, paddingHorizontal: 12, backgroundColor: 'rgba(192,57,43,0.07)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.22)', borderRadius: 8 }}>
-                <T style={{ fontSize: 10.5, lineHeight: 16, color: 'rgba(255,107,107,0.65)' }}>
+                <T style={{ fontSize: 10.5, lineHeight: 16.275, color: 'rgba(255,107,107,0.65)' }}>
                   Masada veya masadan sonrasında, masadaki birisi tarafından fiziksel şiddet, alıkoyulma, taciz veya istismar eylemiyle karşı karşıya kalırsan ya da kalma ihtimali yaşarsan hemen butona bas ve eylemin türünü seçerek onayla. Konum bilgisi ve masadaki kişilerin kimlik bilgileri emniyet birimleriyle anında paylaşılır. <T w={700} style={{ fontSize: 10.5, color: 'rgba(255,107,107,0.85)' }}>Güvenliğin bizim için çok önemli.</T>
                 </T>
               </View>
@@ -442,3 +442,6 @@ export function MasaDetayKarti({ masa, archive = false }: { masa: MasaDetayData;
   );
 }
 
+
+// Web karşılığı yalnız satır içi stil: satır yüksekliği her boyutta 1.5×
+export function MasaDetayKarti(props: React.ComponentProps<typeof MasaDetayKartiInner>) { return <InlineLH><MasaDetayKartiInner {...props} /></InlineLH>; }

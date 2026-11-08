@@ -86,5 +86,5 @@ const s = StyleSheet.create({
   label: { fontSize: llTab.labelSize, letterSpacing: llTab.labelSize * llTab.labelLetter },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '100%' },
   dot: { width: 7, height: 7, borderRadius: 3.5 },
-  status: { fontSize: llTab.statusSize, color: '#a39c93', flexShrink: 1 },
+  status: { fontSize: llTab.statusSize, lineHeight: llTab.statusSize * 1.2, color: '#a39c93', flexShrink: 1 },
 });

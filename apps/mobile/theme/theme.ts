@@ -347,11 +347,11 @@ export const btn = {
   listOption: { box: { paddingVertical: 13, paddingHorizontal: 14, borderRadius: 8 }, text: { fontSize: 15, color: '#cccccc' }, on: { box: { backgroundColor: 'rgba(192,57,43,0.12)' }, text: { color: '#ff6b6b', weight: 600 } } },
   // Form alanı açan buton (tarih / şehir / meslek seçimi)
   fieldSelect: { box: { backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, minHeight: 44 }, text: { fontSize: 13, color: '#a39c93' }, on: { box: {}, text: { color: '#f5f5f5' } } },
-  citySelectProfile: { box: { backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 12, paddingVertical: 11, paddingHorizontal: 14, minHeight: 44, justifyContent: 'center' }, text: { fontSize: 14, color: 'rgba(255,255,255,0.55)' }, on: { box: { borderColor: 'rgba(255,255,255,0.1)' }, text: { color: '#f5f5f5' } } },
+  citySelectProfile: { box: { backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 12, paddingVertical: 11, paddingHorizontal: 14, minHeight: 44, justifyContent: 'center' }, text: { fontSize: 14, lineHeight: 21, color: 'rgba(255,255,255,0.55)' }, on: { box: { borderColor: 'rgba(255,255,255,0.1)' }, text: { color: '#f5f5f5' } } },
   // Cinsiyet seçimi (kayıt)
   genderChip: { box: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 9999, borderWidth: 1.5, borderColor: 'transparent' }, text: { fontSize: 13, color: '#8f887f' } },
   // Kapat (×) ikon butonları
-  closeX: { box: { minWidth: 24, alignItems: 'center' }, text: { fontSize: 20, color: '#555555' } },
+  closeX: { box: { minWidth: 24, alignItems: 'center' }, text: { fontSize: 20, lineHeight: 20, color: '#555555' } },
   lightboxClose: { box: { position: 'absolute', top: 56, right: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 18, color: '#f5f5f5' } },
   photoRemove: { box: { position: 'absolute', top: 4, right: 4, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' }, text: { color: '#fff' } },
   thumbRemove: { box: { position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 10, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 12, lineHeight: 14, color: '#f5f5f5' } },
@@ -370,6 +370,13 @@ export const winbackShine = { colors: ['rgba(255,255,255,0)', 'rgba(255,255,255,
 
 // Navbar "Yönetim Paneli" rozeti nabzı (navAdminPulse / navAdminDot, 2,5 sn ease-in-out): gölge 10→18 px, rgba(59,130,246) 0,2→0,4; kenar #1a3a5c→#3b82f6; nokta opaklığı 1→0,35
 export const adminChipPulse = { periodMs: 2500, shadowColor: '#3b82f6', shadowOpacity: [0.2, 0.4], shadowRadius: [5, 9], borderOn: '#3b82f6', dotOpacity: [1, 0.35] } as const;
+
+// Satır yüksekliği (web): Tailwind v4 preflight html line-height 1.5 (tüm metin, buton ve kutular miras alır);
+// Tailwind yazı boyu sınıfları kendi satır yüksekliğini verir (text-xs 12/16, text-sm 14/20, text-base 16/24, text-lg 18/28, text-xl 20/28, text-2xl 24/32, text-3xl 30/36, text-4xl 36/40).
+// Tailwind v4.3 hazır renkleri (oklch → sRGB): text-green-400, border-red-800, bg-red-900/20
+export const tw4 = { green400: '#05df72', red800: '#9f0712', red900a20: 'rgba(130,24,26,0.2)' } as const;
+
+export const webLineHeight = { base: 1.5, tailwind: { 12: 16, 14: 20, 16: 24, 18: 28, 20: 28, 24: 32, 30: 36, 36: 40 } as Record<number, number> } as const;
 
 export const adm = {
   bg: '#020c1b', surface: '#0a1628', card: '#0d1f3c', border: '#1a3a5c', text: '#e2e8f0', muted: '#64748b',

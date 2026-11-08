@@ -8,7 +8,7 @@ import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { startPurchase } from '@/lib/purchase';
 import { useReduceMotion } from '@/lib/motion';
-import { Btn, Serif, T } from './ui';
+import { InlineLH, Btn, Serif, T } from './ui';
 import { btn, ll, tw, winbackShine } from '@/theme/theme';
 
 export interface WinbackPlan { plan: string; name: string; listTL: number; discountedTL: number; needsKanka: boolean }
@@ -58,7 +58,7 @@ export function WinbackHost({ badge = false, auto = true }: { badge?: boolean; a
   );
 }
 
-function WinbackScreen({ state, remaining, merged, onMerge, onClose }: { state: WinbackState; remaining: number; merged: boolean; onMerge: () => void; onClose: () => void }) {
+function WinbackScreenInner({ state, remaining, merged, onMerge, onClose }: { state: WinbackState; remaining: number; merged: boolean; onMerge: () => void; onClose: () => void }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduce = useReduceMotion();
@@ -177,3 +177,6 @@ const st = StyleSheet.create({
   ringMerged: { shadowColor: 'rgba(200,116,60,0.5)', shadowRadius: 17 },
   hint: { fontSize: 12, color: ll.label, textAlign: 'center', marginTop: 10 },
 });
+
+// Web karşılığı yalnız satır içi stil: satır yüksekliği her boyutta 1.5×
+function WinbackScreen(props: React.ComponentProps<typeof WinbackScreenInner>) { return <InlineLH><WinbackScreenInner {...props} /></InlineLH>; }

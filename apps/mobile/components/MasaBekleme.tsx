@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { cancelDeadline, formatMasaDate, isTableLocked, pad, tableTitleOf, type MasaTuru, type Participant } from '@/lib/masa';
 import { AhenkSonar } from './Sonar';
 import { DetayAvatar } from './DetayAvatar';
-import { Btn, Serif, T } from './ui';
+import { InlineLH, Btn, Serif, T } from './ui';
 import { c, sans, tw } from '@/theme/theme';
 
 const RADAR = 340; const C = RADAR / 2; const ORBIT_R = 142; const AV_D = 52;
@@ -33,7 +33,7 @@ function RevealCountdown({ scheduledAt }: { scheduledAt: string }) {
   );
 }
 
-export function ConfirmedRadarView({ participants, maxParticipants, type, scheduledAt, infoText, width }: {
+function ConfirmedRadarViewInner({ participants, maxParticipants, type, scheduledAt, infoText, width }: {
   participants: Participant[]; maxParticipants?: number; type?: MasaTuru; scheduledAt: string; infoText: string; width: number;
 }) {
   const isOneOnOne = type === 'ONE_ON_ONE';
@@ -87,7 +87,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
   );
 }
 
-export function RezervasyonIptal({ meetingId, scheduledAt, cancelRightUsed, onCancelled }: { meetingId: string; scheduledAt: string; cancelRightUsed?: boolean; onCancelled?: () => void }) {
+function RezervasyonIptalInner({ meetingId, scheduledAt, cancelRightUsed, onCancelled }: { meetingId: string; scheduledAt: string; cancelRightUsed?: boolean; onCancelled?: () => void }) {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cancelled, setCancelled] = useState(false);
@@ -131,3 +131,9 @@ export function RezervasyonIptal({ meetingId, scheduledAt, cancelRightUsed, onCa
     </>
   );
 }
+
+// Web karşılığı yalnız satır içi stil: satır yüksekliği her boyutta 1.5×
+export function ConfirmedRadarView(props: React.ComponentProps<typeof ConfirmedRadarViewInner>) { return <InlineLH><ConfirmedRadarViewInner {...props} /></InlineLH>; }
+
+// Web karşılığı yalnız satır içi stil: satır yüksekliği her boyutta 1.5×
+export function RezervasyonIptal(props: React.ComponentProps<typeof RezervasyonIptalInner>) { return <InlineLH><RezervasyonIptalInner {...props} /></InlineLH>; }

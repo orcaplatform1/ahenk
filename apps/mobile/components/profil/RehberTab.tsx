@@ -107,7 +107,7 @@ export function RehberTab() {
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <View style={{ justifyContent: 'center', paddingHorizontal: 12, backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12 }}><T style={{ color: ll.label, fontSize: 14 }}>+90</T></View>
         <Input style={{ flex: 1 }} keyboardType="number-pad" value={input} onChangeText={t => { setInput(t.replace(/\D/g, '').slice(0, 10)); setError(''); }} placeholder="5XX XXX XX XX" onSubmitEditing={add} />
-        <BtnPrimary label={adding ? '…' : 'Ekle'} disabled={adding || blocks.length >= MAX} onPress={add} style={{ alignSelf: 'stretch' }} />
+        <BtnPrimary label={adding ? '…' : 'Ekle'} disabled={adding || blocks.length >= MAX} onPress={add} style={[{ alignSelf: 'stretch' }, (adding || blocks.length >= MAX) && { opacity: 0.5 }]} />
       </View>
       <BtnGhost label="Rehberden Seç" full disabled={blocks.length >= MAX} onPress={() => setPicker(true)} />
       {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}

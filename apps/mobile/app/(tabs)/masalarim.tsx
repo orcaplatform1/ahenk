@@ -1,6 +1,7 @@
 // Sekme 2 — Masalarım: apps/web/app/profil/tabs/TabMasalar.tsx (webdeki içerikle aynı; S-06)
-import React, { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
@@ -13,7 +14,7 @@ import { KankaPairs } from '@/components/KankaPairs';
 import { DetayAvatar } from '@/components/DetayAvatar';
 import { MasaDetayKarti, type MasaDetayData, type VenuePhoto } from '@/components/MasaDetayKarti';
 import { ConfirmedRadarView, RezervasyonIptal } from '@/components/MasaBekleme';
-import { Btn, BtnGhost, BtnPrimary, Card, Head, Mono, Serif, SkeletonBlock, T } from '@/components/ui';
+import { InlineLH, Btn, BtnGhost, BtnPrimary, Card, Head, Mono, Serif, SkeletonBlock, T } from '@/components/ui';
 import { Glow } from './index';
 import { c, ll, llColumn, tw } from '@/theme/theme';
 
@@ -30,7 +31,51 @@ const CARD_TITLE: Record<MasaTuru, string> = { GROUP: 'Grup Masa Kartı', ONE_ON
 const CARD_TYPE: Record<MasaTuru, 'group' | 'basbasa' | 'kanka'> = { GROUP: 'group', ONE_ON_ONE: 'basbasa', KANKA: 'kanka' };
 const HISTORY_TYPE: Record<MasaTuru, string> = { GROUP: 'Grup Masası', ONE_ON_ONE: 'Baş Başa Masası', KANKA: 'Kankamla Masası' };
 
-function EmptyMasaCard({ locked, cardType, userInfo, kanka }: { locked: boolean; cardType: 'group' | 'basbasa' | 'kanka'; userInfo?: UserInfo; kanka?: { initials: string; gender: string | null } | null }) {
+// framer-motion giriş animasyonları (web EmptyMasaCard): opaklık 0 → 1, y → 0; varsayılan eğri "ease"
+const EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
+function FadeUp({ delay = 0, dy = 6, duration = 400, fromOpacity = 0, style, children }: { delay?: number; dy?: number; duration?: number; fromOpacity?: number; style?: ViewStyle; children: React.ReactNode }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => { Animated.timing(v, { toValue: 1, delay, duration, easing: EASE, useNativeDriver: true }).start(); }, [v, delay, duration]);
+  return <Animated.View style={[style, { opacity: v.interpolate({ inputRange: [0, 1], outputRange: [fromOpacity, 1] }), transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [dy, 0] }) }] }]}>{children}</Animated.View>;
+}
+// Çizgi: scaleX 0 → 1 soldan, 0,35 sn gecikme, 0,45 sn easeOut
+function GrowLine() {
+  const v = useRef(new Animated.Value(0)).current;
+  const [w, setW] = useState(0);
+  useEffect(() => { if (w) Animated.timing(v, { toValue: 1, delay: 350, duration: 450, easing: Easing.out(Easing.ease), useNativeDriver: true }).start(); }, [v, w]);
+  return (
+    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: 1, marginBottom: 16 }}>
+      <Animated.View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.12)', transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [-w / 2, 0] }) }, { scaleX: v }] }} />
+    </View>
+  );
+}
+// Parlama: linear-gradient(105deg, şeffaf %30, rgba(39,174,96,.15) %50, şeffaf %70); x -100% → 200%, opaklık 0,6 → 0, 1 sn easeOut, 0,1 sn gecikme
+function Shimmer() {
+  const v = useRef(new Animated.Value(0)).current;
+  const [w, setW] = useState(0);
+  useEffect(() => { if (w) Animated.timing(v, { toValue: 1, delay: 100, duration: 1000, easing: Easing.out(Easing.ease), useNativeDriver: true }).start(); }, [v, w]);
+  return (
+    <View pointerEvents="none" onLayout={(e) => setW(e.nativeEvent.layout.width)} style={[StyleSheet.absoluteFill, { zIndex: 10 }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }), transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [-w, 2 * w] }) }] }]}>
+        <LinearGradient colors={['rgba(39,174,96,0)', 'rgba(39,174,96,0.15)', 'rgba(39,174,96,0)']} locations={[0.3, 0.5, 0.7]} start={{ x: 0, y: 0.37 }} end={{ x: 1, y: 0.63 }} style={{ flex: 1 }} />
+      </Animated.View>
+    </View>
+  );
+}
+// Kilit simgesi: lockShake 0,8 sn ease-in-out sonsuz (0 → -3 → 0 → 3 → 0 px)
+function LockShake() {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const e = Easing.bezier(0.42, 0, 0.58, 1);
+    const step = (to: number) => Animated.timing(v, { toValue: to, duration: 200, easing: e, useNativeDriver: true });
+    const loop = Animated.loop(Animated.sequence([step(-3), step(0), step(3), step(0)]));
+    loop.start();
+    return () => loop.stop();
+  }, [v]);
+  return <Animated.Image source={require('@/assets/lock-icon.webp')} style={{ position: 'absolute', top: 16, right: 16, zIndex: 2, width: 56, height: 56, opacity: 0.85, transform: [{ translateX: v }] }} />;
+}
+
+function EmptyMasaCardInner({ locked, cardType, userInfo, kanka }: { locked: boolean; cardType: 'group' | 'basbasa' | 'kanka'; userInfo?: UserInfo; kanka?: { initials: string; gender: string | null } | null }) {
   const initials = userInfo ? buildInitials(userInfo.firstName, userInfo.lastName) : '?';
   const ug = userInfo?.gender ?? null;
   const og = ug === 'FEMALE' ? 'MALE' : 'FEMALE';
@@ -39,14 +84,16 @@ function EmptyMasaCard({ locked, cardType, userInfo, kanka }: { locked: boolean;
     : [{ initials, gender: ug ?? 'MALE' }, { initials: '?', gender: og }, { initials: '?', gender: ug ?? 'MALE' }, { initials: '?', gender: og }, { initials: '?', gender: ug ?? 'MALE' }, { initials: '?', gender: og }];
   return (
     <Card>
-      {locked && <Image source={require('@/assets/lock-icon.webp')} style={{ position: 'absolute', top: 16, right: 16, zIndex: 2, width: 56, height: 56, opacity: 0.85 }} />}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+      {locked && <LockShake />}
+      <FadeUp dy={10} duration={500} style={{ overflow: 'hidden' }}>
+      <Shimmer />
+      <FadeUp delay={100} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
         <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: c.green }} />
         <T w={700} style={{ fontSize: 10, color: c.green, letterSpacing: 1.8 }}>MASA DETAYI</T>
-      </View>
-      <Serif style={{ fontSize: 26, lineHeight: 31, letterSpacing: 0.26, marginBottom: 4 }}>Mekan Adı</Serif>
-      <T style={{ marginBottom: 16, fontSize: 13, color: c.t666, lineHeight: 18 }}>İstanbul</T>
-      <View style={{ flexDirection: 'row', gap: 6, marginBottom: 18 }}>
+      </FadeUp>
+      <FadeUp delay={150} style={{ marginBottom: 4 }}><Serif style={{ fontSize: 26, lineHeight: 31.2, letterSpacing: 0.26 }}>Mekan Adı</Serif></FadeUp>
+      <FadeUp delay={200} dy={0}><T style={{ marginBottom: 16, fontSize: 13, color: c.t666, lineHeight: 18.2 }}>İstanbul</T></FadeUp>
+      <FadeUp delay={250} dy={8} duration={450} style={{ flexDirection: 'row', gap: 6, marginBottom: 18 }}>
         {[0, 1, 2].map(i => (
           <View key={i} style={{ flex: 1, aspectRatio: 4 / 3, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
             <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={1.5}>
@@ -54,17 +101,17 @@ function EmptyMasaCard({ locked, cardType, userInfo, kanka }: { locked: boolean;
             </Svg>
           </View>
         ))}
-      </View>
-      <View style={{ marginBottom: 18 }}><BtnPrimary label="HARİTADA GÖR" full disabled /></View>
-      <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.12)', marginBottom: 16 }} />
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      </FadeUp>
+      <FadeUp delay={300} style={{ marginBottom: 18 }}><BtnPrimary label="HARİTADA GÖR" full disabled /></FadeUp>
+      <GrowLine />
+      <FadeUp delay={400} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
           <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: c.green }} />
           <T style={{ fontSize: 13, color: c.t888 }}>Buluşma</T>
         </View>
         <T w={700} style={{ fontSize: 15, letterSpacing: 0.15 }}>{cardType === 'basbasa' ? 'Cumartesi · 20:00' : cardType === 'kanka' ? 'Pazar · 20:00' : 'Cuma · 20:00'}</T>
-      </View>
-      <View style={{ marginBottom: 20 }}>
+      </FadeUp>
+      <FadeUp delay={480} style={{ marginBottom: 20 }}>
         <T w={700} style={{ marginBottom: 12, fontSize: 9, color: c.t555, letterSpacing: 1.26 }}>{cardType === 'basbasa' ? 'BAŞ BAŞA' : 'KATILIMCILAR'}</T>
         {cardType === 'kanka' ? (
           <KankaPairs mine={[{ initials, gender: ug, isSelf: true }, ...(kanka ? [kanka] : [])]} other={[]} />
@@ -73,10 +120,10 @@ function EmptyMasaCard({ locked, cardType, userInfo, kanka }: { locked: boolean;
             {ps.map((p, i) => <DetayAvatar key={i} participant={p} delay={0.52 + i * 0.1} />)}
           </View>
         )}
-      </View>
-      <View style={{ backgroundColor: c.aiBg, borderWidth: 1, borderColor: c.aiBorder, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 14 }}>
+      </FadeUp>
+      <FadeUp delay={600} style={{ backgroundColor: c.aiBg, borderWidth: 1, borderColor: c.aiBorder, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: c.aiIconBg, borderWidth: 1, borderColor: c.aiIconBorder, alignItems: 'center', justifyContent: 'center' }}><T style={{ fontSize: 16 }}>✦</T></View>
+          <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: c.aiIconBg, borderWidth: 1, borderColor: c.aiIconBorder, alignItems: 'center', justifyContent: 'center' }}><T style={{ fontSize: 16, lineHeight: 16 }}>✦</T></View>
           <T w={700} style={{ fontSize: 10, letterSpacing: 1.6, color: c.aiTitle }}>YAPAY ZEKA MASA RAPORU</T>
         </View>
         <View style={{ height: 1, backgroundColor: c.aiDivider, marginBottom: 12 }} />
@@ -85,24 +132,25 @@ function EmptyMasaCard({ locked, cardType, userInfo, kanka }: { locked: boolean;
           <T w={700} style={{ fontSize: 14, color: c.tF0 }}>%—</T>
         </View>
         <View style={{ height: 5, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.12)', marginBottom: 12 }} />
-        <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', lineHeight: 21.5 }}>Masa kurulduktan sonra yapay zeka uyum raporu burada görünecek.</T>
-      </View>
-      <View style={{ backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 16 }}>
-        <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.62)', lineHeight: 19 }}>Rezervasyonunuz tamamlandı. Girişte görevliye isminizi söylediğinizde masanıza yönlendirileceksiniz. İyi eğlenceler.</T>
-      </View>
-      <View style={{ marginBottom: 10 }}><BtnPrimary label="Yola Çıktım" full disabled /></View>
+        <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', lineHeight: 21.45 }}>Masa kurulduktan sonra yapay zeka uyum raporu burada görünecek.</T>
+      </FadeUp>
+      <FadeUp delay={720} style={{ backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 16 }}>
+        <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.62)', lineHeight: 19.2 }}>Rezervasyonunuz tamamlandı. Girişte görevliye isminizi söylediğinizde masanıza yönlendirileceksiniz. İyi eğlenceler.</T>
+      </FadeUp>
+      <FadeUp delay={780} style={{ marginBottom: 10 }}><BtnPrimary label="Yola Çıktım" full disabled /></FadeUp>
       <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.12)', marginBottom: 20 }} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
         <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: c.t555 }} />
         <T w={700} style={{ fontSize: 10, letterSpacing: 1.4, color: c.t555 }}>{cardType === 'basbasa' ? 'BAŞ BAŞA SOHBETİ' : cardType === 'kanka' ? 'KANKAMLA SOHBETİ' : 'GRUP SOHBETİ'}</T>
       </View>
       <View style={{ backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden' }}>
-        <View style={{ paddingVertical: 16, paddingHorizontal: 12, alignItems: 'center' }}><T style={{ fontSize: 12, textAlign: 'center' }}>Henüz mesaj yok. İlk mesajı sen gönder.</T></View>
+        <View style={{ paddingVertical: 16, paddingHorizontal: 12, alignItems: 'center' }}><T style={{ fontSize: 12, lineHeight: 18, textAlign: 'center' }}>Henüz mesaj yok. İlk mesajı sen gönder.</T></View>
         <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 8, paddingHorizontal: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.10)' }}>
           <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8 }} />
           <BtnPrimary label="Gönder" disabled />
         </View>
       </View>
+      </FadeUp>
     </Card>
   );
 }
@@ -134,7 +182,7 @@ function MasaBlock({ item, locked, cardType, userInfo, kanka, onCancelled, width
   return <EmptyMasaCard locked={false} cardType={cardType} userInfo={userInfo} kanka={kanka} />;
 }
 
-function HistoryList({ history }: { history: HistoryMeeting[] }) {
+function HistoryListInner({ history }: { history: HistoryMeeting[] }) {
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
   if (history.length === 0) return <Card style={{ marginBottom: 16 }}><T style={{ fontSize: 13, color: ll.label }}>Henüz geçmiş masan yok.</T></Card>;
@@ -203,7 +251,7 @@ export default function Masalarim() {
           <>
             {!kycApproved && (
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingHorizontal: 20, paddingVertical: 16, borderRadius: 16, backgroundColor: '#000', borderWidth: 1, borderColor: c.wineBorder }}>
-                <T style={{ flex: 1, fontSize: 14, lineHeight: 19, color: 'rgba(192,57,43,0.85)' }}>Masaya katılmak için kimlik doğrulaması gereklidir.</T>
+                <T style={{ flex: 1, fontSize: 14, lineHeight: 19.25, color: 'rgba(192,57,43,0.85)' }}>Masaya katılmak için kimlik doğrulaması gereklidir.</T>
                 <BtnPrimary label="Doğrula" onPress={() => router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } })} />
               </View>
             )}
@@ -218,7 +266,7 @@ export default function Masalarim() {
               <Head title={locked ? 'Masa Detay Kartı' : CARD_TITLE[tab]} right={<BtnGhost label="Geçmiş Masalarım" onPress={() => setHistoryOpen(v => !v)} accessibilityState={{ expanded: historyOpen }} />} />
               {historyOpen && <HistoryList history={history} />}
               {tab === 'KANKA' && !tabItem && statuses.KANKA === 'SCANNING' && (
-                <T style={{ marginBottom: 12, fontSize: 13, color: ll.text2, lineHeight: 21 }}>
+                <T style={{ marginBottom: 12, fontSize: 13, color: ll.text2, lineHeight: 20.8 }}>
                   Kankanla birlikte eşleşme taraması devam ediyor. Karşı cinsten bir kanka çiftiyle eşleştiğinizde masanız burada görünecek; detaylar Pazar 10:00&apos;da açıklanır. Tarama Cumartesi 23:59&apos;da kapanır.
                 </T>
               )}
@@ -234,3 +282,9 @@ export default function Masalarim() {
     </View>
   );
 }
+
+// Web karşılığı yalnız satır içi stil: satır yüksekliği her boyutta 1.5×
+function EmptyMasaCard(props: React.ComponentProps<typeof EmptyMasaCardInner>) { return <InlineLH><EmptyMasaCardInner {...props} /></InlineLH>; }
+
+// Web karşılığı yalnız satır içi stil: satır yüksekliği her boyutta 1.5×
+function HistoryList(props: React.ComponentProps<typeof HistoryListInner>) { return <InlineLH><HistoryListInner {...props} /></InlineLH>; }
