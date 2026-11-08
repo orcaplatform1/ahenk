@@ -86,8 +86,24 @@ export async function storeLogin(data: { accessToken?: string; refreshToken?: st
   if (data.accessToken && data.refreshToken) await setTokens(data.accessToken, data.refreshToken);
 }
 
+// Açılış ön yüklemesi: açılış ekranı hedef ekranın GET isteklerini önceden başlatır; 15 sn içinde aynı yola gelen
+// get() çağrıları aynı isteği/yanıtı kullanır (ekran açıldığında veri hazırdır, istek tekrarlanmaz)
+const PREFETCH_TTL_MS = 15_000;
+const prefetched = new Map<string, { p: Promise<unknown>; at: number }>();
+export function prefetch(paths: string[]) {
+  return Promise.allSettled(paths.map((path) => {
+    const p = apiFetch<unknown>(path).catch((e) => { prefetched.delete(path); throw e; });
+    prefetched.set(path, { p, at: Date.now() });
+    return p;
+  }));
+}
+
 export const api = {
-  get: <T>(path: string) => apiFetch<T>(path),
+  get: <T>(path: string) => {
+    const hit = prefetched.get(path);
+    if (hit && Date.now() - hit.at < PREFETCH_TTL_MS) return hit.p as Promise<T>;
+    return apiFetch<T>(path);
+  },
   post: <T>(path: string, body: unknown = {}) => apiFetch<T>(path, { method: 'POST', body }),
   patch: <T>(path: string, body: unknown = {}) => apiFetch<T>(path, { method: 'PATCH', body }),
   put: <T>(path: string, body: unknown = {}) => apiFetch<T>(path, { method: 'PUT', body }),

@@ -69,8 +69,22 @@ async function request<T>(path: string, init: { method?: string; body?: unknown 
   return data;
 }
 
+// Açılış ön yüklemesi (lib/api.ts prefetch ile aynı kural, 15 sn)
+const prefetchedVenue = new Map<string, { p: Promise<unknown>; at: number }>();
+export function prefetchVenue(paths: string[]) {
+  return Promise.allSettled(paths.map((path) => {
+    const p = request<unknown>(path).catch((e) => { prefetchedVenue.delete(path); throw e; });
+    prefetchedVenue.set(path, { p, at: Date.now() });
+    return p;
+  }));
+}
+
 export const venueApi = {
-  get: <T>(path: string) => request<T>(path),
+  get: <T>(path: string) => {
+    const hit = prefetchedVenue.get(path);
+    if (hit && Date.now() - hit.at < 15_000) return hit.p as Promise<T>;
+    return request<T>(path);
+  },
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body: body ?? {} }),
   put: <T>(path: string, body: unknown) => request<T>(path, { method: 'PUT', body }),
   patch: <T>(path: string, body: unknown) => request<T>(path, { method: 'PATCH', body }),
