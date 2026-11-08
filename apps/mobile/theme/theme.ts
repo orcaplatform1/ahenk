@@ -289,6 +289,10 @@ export const btn = {
   admTabSm: { box: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 13, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(34,211,238,0.08)', borderColor: 'rgba(34,211,238,0.3)' }, text: { color: '#e2e8f0' } } },
   admDetailBtn: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 10, color: '#64748b' } },
   admChipX: { box: { marginLeft: 6 }, text: { fontSize: 11, color: '#93c5fd' } },
+  admBlueAct: { box: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 6, backgroundColor: 'rgba(59,130,246,0.12)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.4)' }, text: { fontSize: 11, color: '#3b82f6' }, disabledOpacity: 0.5 },
+  admGreenAct: { box: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 6, backgroundColor: 'rgba(34,197,94,0.12)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.4)' }, text: { fontSize: 11, color: '#22c55e' }, disabledOpacity: 0.5 },
+  admRefresh: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, backgroundColor: 'rgba(59,130,246,0.12)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)' }, text: { fontSize: 11, color: '#3b82f6' }, on: { box: { backgroundColor: 'rgba(34,197,94,0.12)', borderColor: 'rgba(34,197,94,0.35)' }, text: { color: '#22c55e' } }, disabledOpacity: 0.7 },
+  admBack: { box: { paddingHorizontal: 4 }, text: { fontSize: 18, color: '#64748b' } },
   // Kayıt "Kod gönder" (telefon satırı) ve numara "Ekle"
   otpSend: { box: { justifyContent: 'center', paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', backgroundColor: 'rgba(192,57,43,0.06)' }, text: { weight: 500, fontSize: 12, color: '#e74c3c' }, disabledOpacity: 0.4 },
   addSquare: { box: { justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }, text: { fontSize: 13, color: '#c9c2b8' } },
