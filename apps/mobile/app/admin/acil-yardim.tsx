@@ -16,7 +16,7 @@ type LiveAddress = { il: string | null; ilce: string | null; mahalle: string | n
 interface LocUpdate { lat: number; lng: number; accuracy: number | null; timestamp: string; address?: LiveAddress | null }
 interface Participant { userId: string; firstName: string | null; lastName: string | null; email?: string; phone: string | null; age: number | null; gender: string | null; occupation: string | null; city: string | null; isRequester: boolean; isBot?: boolean }
 interface AdminRef { id: string; profile: { firstName: string; lastName: string } | null }
-interface SosReport { id: string; createdAt: string; threats: string[]; lat: number | null; lng: number | null; accuracy: number | null; resolvedAt: string | null; restricted: boolean; claimedAt: string | null; claimedBy: AdminRef | null; resolvedBy?: AdminRef | null; lastAddress?: string | null; lastLocationAt?: string | null; participantSnapshot: Participant[]; user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null; meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null; locationUpdates: LocUpdate[] }
+interface SosReport { id: string; createdAt: string; threats: string[]; lat: number | null; lng: number | null; accuracy: number | null; resolvedAt: string | null; restricted: boolean; claimedAt: string | null; claimedBy: AdminRef | null; resolvedBy?: AdminRef | null; lastAddress?: string | null; lastLocationAt?: string | null; locationStale?: boolean; liveLocationAt?: string | null; participantSnapshot: Participant[]; user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null; meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null; locationUpdates: LocUpdate[] }
 const THREAT: Record<string, string> = { LIFE_DANGER: 'Hayatım tehlikede', PHYSICAL_VIOLENCE: 'Fiziksel şiddet gördüm', ABDUCTION: 'Zorla alıkoyuluyorum', HARASSMENT: 'Taciz veya istismara uğradım' };
 const GENDER_TR: Record<string, string> = { MALE: 'E', FEMALE: 'K' };
 const REFRESH_SEC = 15;
@@ -68,7 +68,7 @@ function PersonRow({ p, email, phone, highlight }: { p?: Participant; email?: st
   );
 }
 
-function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { report: SosReport; index: number; tick: number; onChanged: () => void; livePos?: LivePos | null; liveAddress?: LiveAddress | null }) {
+function ReportCard({ report, index, tick, onChanged, livePos, liveAddress, liveStale }: { report: SosReport; index: number; tick: number; onChanged: () => void; liveStale?: boolean; livePos?: LivePos | null; liveAddress?: LiveAddress | null }) {
   const [open, setOpen] = useState(index === 0 && !report.resolvedAt);
   const [detail, setDetail] = useState<SosReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -109,6 +109,14 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { 
             <AMono style={{ fontSize: 9 }}>{fmtTR(report.createdAt)}</AMono>
             {!report.resolvedAt && <AMono style={{ fontSize: 9, color: adm.amber }}>+{elapsed} dk</AMono>}
           </View>
+          {/* Konum kesildi: açık talepte son konum 2 dk'dan eski (1 sn'lik open-locations ya da detay); yeni konum gelince kalkar */}
+          {!report.resolvedAt && (liveStale ?? detail?.locationStale) && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+              <StatusPill text="KONUM KESİLDİ" color="#fff" bg={adm.red} border={adm.red} pad={[2, 8]} />
+              {!!(livePos?.timestamp ?? detail?.liveLocationAt) && <AMono style={{ fontSize: 9 }}>Son konum: {fmtTR((livePos?.timestamp ?? detail?.liveLocationAt) as string)}</AMono>}
+              {!!(liveAddress?.tamAdres ?? liveAddress?.kisaAdres) && <AT style={{ fontSize: 10 }}>{liveAddress?.tamAdres ?? liveAddress?.kisaAdres}</AT>}
+            </View>
+          )}
           <AT w={700} style={{ fontSize: 13 }}>{reqName}<AT style={{ fontSize: 11, color: adm.muted }}>  {report.user?.phone ?? report.user?.email ?? ''}</AT></AT>
           <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 5 }}>
             {report.threats.map(t => <AT key={t} style={{ fontSize: 10, paddingVertical: 2, paddingHorizontal: 7, borderRadius: 99, overflow: 'hidden', backgroundColor: 'rgba(239,68,68,0.18)', color: 'rgba(239,100,100,0.9)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)' }}>{THREAT[t] ?? t}</AT>)}
@@ -222,16 +230,18 @@ export default function AcilYardim() {
   const active = reports.filter(r => !r.resolvedAt); const resolved = reports.filter(r => !!r.resolvedAt);
   const [liveLocs, setLiveLocs] = useState<Record<string, LivePos>>({});
   const [liveAddrs, setLiveAddrs] = useState<Record<string, LiveAddress>>({});
+  const [liveStale, setLiveStale] = useState<Record<string, boolean>>({});
   const openKey = active.filter(r => !r.restricted).map(r => r.id).join(',');
   useEffect(() => {
     if (!openKey) return;
     let busy = false;
     const id = setInterval(() => {
       if (busy) return; busy = true;
-      api.get<{ reportId: string; location: LivePos | null; address: LiveAddress | null }[]>('/sos/admin/reports/open-locations').then(rows => {
+      api.get<{ reportId: string; location: LivePos | null; address: LiveAddress | null; stale?: boolean }[]>('/sos/admin/reports/open-locations').then(rows => {
         if (rows.length === 0) { clearInterval(id); return; }
         setLiveLocs(p => { const n = { ...p }; for (const r of rows) if (r.location) n[r.reportId] = r.location; return n; });
         setLiveAddrs(p => { const n = { ...p }; for (const r of rows) if (r.address) n[r.reportId] = r.address; return n; });
+        setLiveStale(Object.fromEntries(rows.map(r => [r.reportId, !!r.stale])));
       }).catch(() => undefined).finally(() => { busy = false; });
     }, 1000);
     return () => clearInterval(id);
@@ -279,7 +289,7 @@ export default function AcilYardim() {
               {active.length > 0 && (
                 <View style={{ marginBottom: 32 }}>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 12 }}><Pulse /><ALabel style={{ color: adm.red }}>AKTİF TALEPLER: {active.length}</ALabel></View>
-                  {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} livePos={liveLocs[r.id] ?? null} liveAddress={liveAddrs[r.id] ?? null} />)}
+                  {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} livePos={liveLocs[r.id] ?? null} liveAddress={liveAddrs[r.id] ?? null} liveStale={liveStale[r.id]} />)}
                 </View>
               )}
               {resolved.length > 0 && (

@@ -10,6 +10,8 @@ type Viewer = { id: string; role: UserRole };
 type SnapshotPerson = { userId: string; [key: string]: unknown };
 
 const INACTIVE = ["CANCELLED", "DECLINED", "NO_SHOW"];
+// Açık talepte son konum bu süreden eskiyse admin'e "KONUM KESİLDİ" gösterilir
+const LOCATION_STALE_MS = 2 * 60 * 1000;
 
 export const THREAT_LABELS: Record<string, string> = {
   LIFE_DANGER:      "Hayatım tehlikede",
@@ -305,7 +307,16 @@ export class SosService {
       locationUpdates: report.locationUpdates.map((lu) => ({ ...lu, address: this.historyAddress(lu.lat, lu.lng) })),
       restricted: false,
       participantSnapshot: this.shapeSnapshot(report.participantSnapshot, bots, viewer, deleted),
+      // Açık talep: son konum zamanı ve 2 dk'dan eskiyse "konum kesildi" (çözülmüş talepte yok)
+      ...this.staleInfo(report),
     };
+  }
+
+  private staleInfo(report: { resolvedAt: Date | null; lat: number | null; lng: number | null; createdAt: Date; locationUpdates: { timestamp: Date }[] }) {
+    if (report.resolvedAt) return { locationStale: false, liveLocationAt: null };
+    const last = report.locationUpdates.reduce<Date | null>((m, u) => (!m || u.timestamp > m ? u.timestamp : m), null)
+      ?? (report.lat != null && report.lng != null ? report.createdAt : null);
+    return { locationStale: !!last && Date.now() - last.getTime() > LOCATION_STALE_MS, liveLocationAt: last };
   }
 
   // Canlı harita: çözülmemiş tüm açık taleplerin talep eden konumu, sabit 2 sorguda.
@@ -334,7 +345,9 @@ export class SosService {
       const location = update ?? (r.lat != null && r.lng != null ? { lat: r.lat, lng: r.lng, timestamp: r.createdAt } : null);
       // Uç her saniye çağrılır ama Nominatim'e gitmez: yenileme gerekiyorsa arka planda sıraya eklenir, önbellek döner
       if (location) this.refreshAddress(r.id, location.lat, location.lng);
-      return { reportId: r.id, location, address: this.addressCache.get(r.id)?.address ?? null };
+      // Konum kesildi: son konum 2 dk'dan eski (yeni güncelleme gelince kendiliğinden false olur)
+      const stale = !!location && Date.now() - new Date(location.timestamp).getTime() > LOCATION_STALE_MS;
+      return { reportId: r.id, location, address: this.addressCache.get(r.id)?.address ?? null, stale };
     });
   }
 

@@ -43,6 +43,8 @@ interface SosReport {
   resolvedBy?: AdminRef | null;
   lastAddress?: string | null;   // çözülünce: son konumun açık adresi (koordinat ve konum geçmişi silinir)
   lastLocationAt?: string | null;
+  locationStale?: boolean;          // açık talep: son konum 2 dk'dan eski (admin detay)
+  liveLocationAt?: string | null;
   participantSnapshot: Participant[];
   // Kullanıcı / masa silinirse null (SOS kaydı korunur)
   user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null;
@@ -167,7 +169,7 @@ function HistoryRow({ lu }: { lu: LocUpdate }) {
   );
 }
 
-function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { report: SosReport; index: number; tick: number; onChanged: () => void; livePos?: LivePos | null; liveAddress?: LiveAddress | null }) {
+function ReportCard({ report, index, tick, onChanged, livePos, liveAddress, liveStale }: { report: SosReport; index: number; tick: number; onChanged: () => void; livePos?: LivePos | null; liveAddress?: LiveAddress | null; liveStale?: boolean }) {
   if (report.restricted) {
     return (
       <div style={{ borderRadius: 12, border: `1px solid ${BORDER}`, background: SURFACE, padding: '14px 18px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -179,10 +181,10 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { 
       </div>
     );
   }
-  return <ReportCardFull report={report} index={index} tick={tick} onChanged={onChanged} livePos={livePos ?? null} liveAddress={liveAddress ?? null} />;
+  return <ReportCardFull report={report} index={index} tick={tick} onChanged={onChanged} livePos={livePos ?? null} liveAddress={liveAddress ?? null} liveStale={liveStale} />;
 }
 
-function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress }: { report: SosReport; index: number; tick: number; onChanged: () => void; livePos: LivePos | null; liveAddress: LiveAddress | null }) {
+function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress, liveStale }: { report: SosReport; index: number; tick: number; onChanged: () => void; livePos: LivePos | null; liveAddress: LiveAddress | null; liveStale?: boolean }) {
   const [open, setOpen]   = useState(index === 0 && !report.resolvedAt);
   const [detail, setDetail] = useState<SosReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -276,6 +278,18 @@ function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress }
               <span style={{ fontSize: 9, fontFamily: MONO, color: AMBER }}>+{elapsedMin} dk</span>
             )}
           </div>
+          {/* Konum kesildi: açık talepte son konum 2 dk'dan eski (1 sn'lik open-locations ya da detay); yeni konum gelince kalkar */}
+          {!report.resolvedAt && (liveStale ?? detail?.locationStale) && (() => {
+            const at = livePos?.timestamp ?? detail?.liveLocationAt ?? null;
+            const addr = liveAddress?.tamAdres ?? liveAddress?.kisaAdres ?? null;
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const, marginBottom: 4 }}>
+                <span style={{ ...LABEL, padding: '2px 8px', borderRadius: 99, background: RED, color: '#fff', border: `1px solid ${RED}` }}>KONUM KESİLDİ</span>
+                {at && <span style={{ fontSize: 9, fontFamily: MONO, color: MUTED }}>Son konum: {fmtTR(at)}</span>}
+                {addr && <span style={{ fontSize: 10, color: TEXT, fontFamily: SANS }}>{addr}</span>}
+              </div>
+            );
+          })()}
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: TEXT }}>
             {reqName}
             <span style={{ fontWeight: 400, color: MUTED, marginLeft: 8, fontSize: 11 }}>
@@ -524,6 +538,7 @@ export default function AcilYardimPage() {
   // Açık talep kalmayınca (liste ya da uç boş dönünce) veya sayfadan çıkılınca durur. 15 sn yenileme ayrı çalışır.
   const [liveLocs, setLiveLocs] = useState<Record<string, LivePos>>({});
   const [liveAddrs, setLiveAddrs] = useState<Record<string, LiveAddress>>({});
+  const [liveStale, setLiveStale] = useState<Record<string, boolean>>({});
   const openKey = active.filter(r => !r.restricted).map(r => r.id).join(',');
   useEffect(() => {
     if (!openKey) return;
@@ -531,7 +546,7 @@ export default function AcilYardimPage() {
     const id = setInterval(() => {
       if (busy) return;
       busy = true;
-      api.get<{ reportId: string; location: LivePos | null; address: LiveAddress | null }[]>('/sos/admin/reports/open-locations')
+      api.get<{ reportId: string; location: LivePos | null; address: LiveAddress | null; stale?: boolean }[]>('/sos/admin/reports/open-locations')
         .then((rows) => {
           if (rows.length === 0) { clearInterval(id); return; }
           setLiveLocs((prev) => {
@@ -544,6 +559,7 @@ export default function AcilYardimPage() {
             for (const r of rows) if (r.address) next[r.reportId] = r.address;
             return next;
           });
+          setLiveStale(Object.fromEntries(rows.map((r) => [r.reportId, !!r.stale])));
         })
         .catch(() => undefined)
         .finally(() => { busy = false; });
@@ -656,7 +672,7 @@ export default function AcilYardimPage() {
                       AKTİF TALEPLER: {active.length}
                     </span>
                   </div>
-                  {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} livePos={liveLocs[r.id] ?? null} liveAddress={liveAddrs[r.id] ?? null} />)}
+                  {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} livePos={liveLocs[r.id] ?? null} liveAddress={liveAddrs[r.id] ?? null} liveStale={liveStale[r.id]} />)}
                 </div>
               )}
 
