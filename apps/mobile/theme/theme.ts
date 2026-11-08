@@ -328,8 +328,8 @@ export const btn = {
   venueLogout: { box: { minHeight: 44, paddingHorizontal: 8, justifyContent: 'center' }, text: { fontSize: 12.8, color: '#888' } },
   // Mekân Hesap: "Hesabı Sil", "Vazgeç", "Hesabı Kapat"
   venueDelete: { box: { minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 14.4, color: '#ff6b6b' } },
-  venueCancel: { box: { flex: 1, minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }, text: { color: '#aaaaaa' } },
-  venueConfirm: { box: { flex: 1, minHeight: 44, borderRadius: 10, backgroundColor: '#c0392b', alignItems: 'center', justifyContent: 'center' }, text: { color: '#fff' }, disabledOpacity: 0.6 },
+  venueCancel: { box: { flex: 1, minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 16, color: '#aaaaaa' } },
+  venueConfirm: { box: { flex: 1, minHeight: 44, borderRadius: 10, backgroundColor: '#c0392b', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 16, color: '#fff' }, disabledOpacity: 0.6 },
   // Mekân fotoğraf ekleme (kesik çizgili)
   venueAddPhoto: { box: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.2)', borderRadius: 10 }, text: { color: '#ff6b6b', fontSize: 14.4 } },
   // Winback "İndirimi Uygula"
@@ -353,7 +353,7 @@ export const btn = {
   // Kapat (×) ikon butonları
   closeX: { box: { minWidth: 24, alignItems: 'center' }, text: { fontSize: 20, lineHeight: 20, color: '#555555' } },
   lightboxClose: { box: { position: 'absolute', top: 56, right: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 18, color: '#f5f5f5' } },
-  photoRemove: { box: { position: 'absolute', top: 4, right: 4, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' }, text: { color: '#fff' } },
+  photoRemove: { box: { position: 'absolute', top: 4, right: 4, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 16, color: '#fff' } },
   thumbRemove: { box: { position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 10, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 12, lineHeight: 14, color: '#f5f5f5' } },
 } satisfies Record<string, BtnSpec>;
 export type BtnVariant = keyof typeof btn;

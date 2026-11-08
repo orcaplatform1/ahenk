@@ -42,7 +42,7 @@ export default function Hesap() {
         <Input {...pass} textContentType="newPassword" accessibilityLabel="Yeni şifre tekrar" placeholder="Yeni şifre tekrar" value={pw.confirm} onChangeText={v => setPw(p => ({ ...p, confirm: v }))} />
         {!!pwError && <T style={{ color: tw.accent, fontSize: 12.8 }}>{pwError}</T>}
         {!!pwMessage && <T style={{ color: c.ok, fontSize: 12.8 }}>{pwMessage}</T>}
-        <BtnPrimary label={pwSaving ? 'Kaydediliyor…' : 'Şifreyi Güncelle'} full disabled={pwSaving} onPress={changePassword} />
+        <BtnPrimary label={pwSaving ? 'Kaydediliyor…' : 'Şifreyi Güncelle'} full disabled={pwSaving} style={pwSaving ? { opacity: 0.7 } : undefined} onPress={changePassword} />
       </View>
       <View style={[panelCard, { gap: 10 }]}>
         <T w={600} style={{ fontSize: 16 }}>Hesabı Sil</T>

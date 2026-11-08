@@ -14,7 +14,7 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALCOHOL = [{ value: 'ALCOHOLIC', label: 'Alkollü' }, { value: 'NON_ALCOHOLIC', label: 'Alkolsüz' }];
 
 function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
-  return <View style={{ gap: 6 }}><T w={500} style={{ fontSize: 12.5, color: c.t888 }}>{label}</T>{children}</View>;
+  return <View style={{ gap: 6 }}><T w={500} style={{ fontSize: 12.48, color: c.t888 }}>{label}</T>{children}</View>;
 }
 const area = { backgroundColor: inputGlass.bg, borderWidth: 1, borderColor: inputGlass.border, borderRadius: inputGlass.radius, color: tw.text, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, fontFamily: sans(400), textAlignVertical: 'top' as const };
 
@@ -22,6 +22,7 @@ export default function Bilgiler() {
   const { me, setMe, onAuthLost } = useVenuePanel();
   const [form, setForm] = useState({ description: me.venue.description ?? '', address: me.venue.address ?? '', district: me.venue.district ?? '', locationUrl: me.venue.locationUrl ?? '', websiteOrSocial: me.venue.websiteOrSocial ?? '', venueType: me.venue.venueType as string });
   const [districts, setDistricts] = useState<Record<string, string[]>>({});
+  const [gridW, setGridW] = useState(0);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
@@ -54,6 +55,8 @@ export default function Bilgiler() {
   }
   const setF = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: v }));
 
+  const cols = gridW ? Math.max(1, Math.floor((gridW + 8) / 108)) : 0;
+  const cellW = cols ? (gridW - 8 * (cols - 1)) / cols : 100;
   return (
     <View style={{ gap: 12 }}>
       <Serif style={{ fontSize: 25.6 }}>Mekân Bilgileri</Serif>
@@ -69,13 +72,14 @@ export default function Bilgiler() {
         <Labeled label="Google Maps Konum Linki"><Input accessibilityLabel="Konum linki" keyboardType="url" autoCapitalize="none" value={form.locationUrl} onChangeText={setF('locationUrl')} /></Labeled>
         <Labeled label="Website veya Instagram"><Input accessibilityLabel="Website veya Instagram" autoCapitalize="none" maxLength={300} value={form.websiteOrSocial} onChangeText={setF('websiteOrSocial')} /></Labeled>
         <Labeled label="Alkol Durumu"><ListPicker label="" value={form.venueType} onChange={setF('venueType')} options={ALCOHOL} placeholder="Seçin" title="Alkol durumu" /></Labeled>
-        <BtnPrimary label={saving ? 'Kaydediliyor…' : 'Kaydet'} full disabled={saving} onPress={save} />
+        <BtnPrimary label={saving ? 'Kaydediliyor…' : 'Kaydet'} full disabled={saving} style={saving ? { opacity: 0.7 } : undefined} onPress={save} />
       </View>
       <View style={[panelCard, { gap: 12 }]}>
         <T w={600} style={{ fontSize: 16 }}>Fotoğraflar (en az 1, en fazla {MAX_PHOTOS}; her biri en fazla 5 MB)</T>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {/* web: grid repeat(auto-fill, minmax(100px, 1fr)), gap 8 → sütun sayısı genişliğe göre, kare hücreler eşit genişlikte */}
+        <View onLayout={(e) => setGridW(e.nativeEvent.layout.width)} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {me.venue.photos.map((url, i) => (
-            <View key={url} style={{ width: 100, aspectRatio: 1, borderRadius: 10, overflow: 'hidden' }}>
+            <View key={url} style={{ width: cellW, aspectRatio: 1, borderRadius: 10, overflow: 'hidden' }}>
               <Image source={{ uri: mediaUrl(url) }} style={{ width: '100%', height: '100%' }} accessibilityLabel={`Mekân fotoğrafı ${i + 1}`} />
               {me.venue.photos.length > 1 && (
                 <Btn variant="photoRemove" hitSlop={6} accessibilityLabel={`Fotoğraf ${i + 1} sil`} label="✕" onPress={() => removePhoto(url)} />

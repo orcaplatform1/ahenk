@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clearVenueTokens } from '@/lib/session';
 import { logoutVenueDevice, VenueAuthError, venueApi, type VenueMe } from '@/lib/venueApi';
 import { VenuePanelContext } from '@/lib/venueContext';
-import { Btn, Serif, T } from '@/components/ui';
+import { Btn, Serif, T, InlineLH } from '@/components/ui';
 import { c, tw } from '@/theme/theme';
 
 const NAV = [
@@ -35,7 +35,7 @@ export default function MekanLayout() {
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <View style={{ flex: 1 }}>
               <Serif numberOfLines={1} style={{ fontSize: 20 }}>{me?.venue.name ?? 'Mekân Paneli'}</Serif>
-              {me && <T style={{ fontSize: 12, color: c.t666 }}>{me.venue.city}</T>}
+              {me && <T style={{ fontSize: 12, lineHeight: 18, color: c.t666 }}>{me.venue.city}</T>}
             </View>
             <Btn variant="venueLogout" label="Çıkış" onPress={logout} />
           </View>
@@ -51,7 +51,7 @@ export default function MekanLayout() {
       </View>
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ maxWidth: 820, width: '100%', alignSelf: 'center', paddingTop: 20, paddingHorizontal: 16, paddingBottom: 48 + insets.bottom }}>
         {!!error && <T style={{ color: tw.accent, fontSize: 13.6 }}>{error}</T>}
-        {me ? <VenuePanelContext.Provider value={{ me, setMe, onAuthLost }}><Slot /></VenuePanelContext.Provider> : !error && <T style={{ color: c.t666, fontSize: 13.6 }}>Yükleniyor…</T>}
+        {me ? <VenuePanelContext.Provider value={{ me, setMe, onAuthLost }}><InlineLH><Slot /></InlineLH></VenuePanelContext.Provider> : !error && <T style={{ color: c.t666, fontSize: 13.6 }}>Yükleniyor…</T>}
       </ScrollView>
     </View>
   );
