@@ -28,6 +28,13 @@ const NOMINATIM_TIMEOUT_MS = 5000;
 const ADDRESS_REFRESH_MS = 15_000;
 const HISTORY_CACHE_MAX = 1000; // konum geçmişi adresleri: koordinat bazlı önbellek üst sınırı
 
+// Saklanan açık adres: mahalle, cadde/sokak + bina no, ilçe, il, posta kodu
+export function formatSosAddress(a: Pick<SosAddress, "mahalle" | "caddeSokak" | "binaNo" | "ilce" | "il" | "postaKodu">): string | null {
+  const street = [a.caddeSokak, a.binaNo ? `No: ${a.binaNo}` : null].filter(Boolean).join(" ");
+  const text = [a.mahalle, street || null, a.ilce, a.il, a.postaKodu].filter(Boolean).join(", ");
+  return text || null;
+}
+
 export interface SosAddress {
   il: string | null; ilce: string | null; mahalle: string | null; caddeSokak: string | null;
   binaNo: string | null; postaKodu: string | null; tamAdres: string | null; guncelleme: Date;
@@ -459,9 +466,68 @@ export class SosService {
     if (viewer.role !== UserRole.SUPERADMIN && report.claimedById !== viewer.id) {
       throw new ForbiddenException("Önce 'İlgileniyorum' ile talebi üstlenin");
     }
-    await this.prisma.sosReport.update({ where: { id }, data: { resolvedAt: new Date(), resolvedById: viewer.id, openKey: null } });
+    // Son konum açık adrese çevrilir; adres alınamazsa çözme yapılmaz, hiçbir veri silinmez
+    const last = await this.lastLocation(id);
+    if (last.ok === false) throw new BadRequestException("Adres alınamadı, tekrar deneyin.");
+    await this.prisma.$transaction([
+      this.prisma.sosReport.update({
+        where: { id },
+        data: {
+          resolvedAt: new Date(), resolvedById: viewer.id, openKey: null,
+          lastAddress: last.address, lastLocationAt: last.at, lat: null, lng: null, accuracy: null,
+        },
+      }),
+      this.prisma.sosLocationUpdate.deleteMany({ where: { reportId: id } }),
+    ]);
     this.addressCache.delete(id); // açık adres önbelleği talep çözülünce silinir
     return { resolved: true };
+  }
+
+  // Daha önce çözülmüş talepler (bir kez): koordinat/konum geçmişi olanlarda adres → lastAddress, konum kayıtları silinir.
+  // Adresi alınamayan talebe dokunulmaz; kimlikleri döner.
+  async backfillResolvedLocations(): Promise<{ processed: string[]; failed: string[] }> {
+    const rows = await this.prisma.sosReport.findMany({
+      where: { resolvedAt: { not: null }, OR: [{ lat: { not: null } }, { locationUpdates: { some: {} } }] },
+      select: { id: true },
+    });
+    const processed: string[] = []; const failed: string[] = [];
+    for (const r of rows) {
+      const last = await this.lastLocation(r.id);
+      if (last.ok === false) { failed.push(r.id); continue; }
+      await this.prisma.$transaction([
+        this.prisma.sosReport.update({ where: { id: r.id }, data: { lastAddress: last.address, lastLocationAt: last.at, lat: null, lng: null, accuracy: null } }),
+        this.prisma.sosLocationUpdate.deleteMany({ where: { reportId: r.id } }),
+      ]);
+      processed.push(r.id);
+    }
+    return { processed, failed };
+  }
+
+  // Talebin son konumu (en yeni konum güncellemesi, yoksa talep anındaki konum) ve açık adresi.
+  // Konum hiç yoksa adres de yoktur (ok: true, address null). Konum var ama adres alınamadıysa ok: false.
+  private async lastLocation(reportId: string): Promise<{ ok: true; address: string | null; at: Date | null } | { ok: false }> {
+    const report = await this.prisma.sosReport.findUnique({
+      where: { id: reportId },
+      select: { lat: true, lng: true, createdAt: true, locationUpdates: { orderBy: { timestamp: "desc" }, take: 1, select: { lat: true, lng: true, timestamp: true } } },
+    });
+    if (!report) return { ok: false };
+    const u = report.locationUpdates[0];
+    const loc = u ? { lat: u.lat, lng: u.lng, at: u.timestamp } : report.lat != null && report.lng != null ? { lat: report.lat, lng: report.lng, at: report.createdAt } : null;
+    if (!loc) return { ok: true, address: null, at: null };
+    const a = await this.geocodeQueued(reportId, loc.lat, loc.lng);
+    const text = a ? formatSosAddress(a) : null;
+    return text ? { ok: true, address: text, at: loc.at } : { ok: false };
+  }
+
+  // Mevcut önbellek (talep / koordinat) varsa onu kullanır; yoksa global Nominatim kuyruğunda öncelikli sorgular
+  private geocodeQueued(reportId: string, lat: number, lng: number): Promise<SosAddress | null> {
+    const cached = this.addressCache.get(reportId);
+    if (cached?.address && cached.lat === lat && cached.lng === lng) return Promise.resolve(cached.address);
+    const hit = this.historyAddressCache.get(`${lat.toFixed(5)},${lng.toFixed(5)}`);
+    if (hit) return Promise.resolve(hit);
+    return new Promise((resolve) => {
+      this.enqueueNominatim(true, async () => { resolve(await this.reverseGeocode(lat, lng)); });
+    });
   }
 
   // ─── İç: admin bildirim ───────────────────────────────────────────────────

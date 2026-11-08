@@ -41,6 +41,8 @@ interface SosReport {
   claimedAt: string | null;
   claimedBy: AdminRef | null;
   resolvedBy?: AdminRef | null;
+  lastAddress?: string | null;   // çözülünce: son konumun açık adresi (koordinat ve konum geçmişi silinir)
+  lastLocationAt?: string | null;
   participantSnapshot: Participant[];
   // Kullanıcı / masa silinirse null (SOS kaydı korunur)
   user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null;
@@ -294,7 +296,7 @@ function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress }
         </div>
 
         <div style={{ textAlign: 'right' as const, flexShrink: 0 }}>
-          {displayLat && displayLng && (
+          {!report.resolvedAt && displayLat && displayLng && (
             <a href={mapsHref(displayLat, displayLng)} target="_blank" rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
               style={{ fontSize: 10, color: CYAN, display: 'block', marginBottom: 4, textDecoration: 'none' }}>
@@ -366,13 +368,27 @@ function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress }
 
             {/* Sağ: Konum takibi */}
             <div>
+              {report.resolvedAt ? (
+                // Çözülmüş talep: harita ve koordinat yok; yalnız son konumun açık adresi ve zamanı
+                <Section title="SON KONUM" accent={CYAN}>
+                  {report.lastAddress ? (
+                    <div style={{ padding: '8px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+                      <p style={{ margin: 0, fontSize: 11, color: TEXT, lineHeight: 1.6, fontFamily: SANS }}>{report.lastAddress}</p>
+                      {report.lastLocationAt && <p style={{ margin: '4px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>{fmtTR(report.lastLocationAt)}</p>}
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 11, color: MUTED, margin: '8px 0' }}>Konum verisi yok</p>
+                  )}
+                </Section>
+              ) : (
               <Section title="CANLI KONUM TAKİBİ" accent={CYAN}>
                 {markerPos && <SosLiveMap lat={markerPos.lat} lng={markerPos.lng} />}
-                {markerPos && !report.resolvedAt && <OpenAddress address={liveAddress} />}
+                {markerPos && <OpenAddress address={liveAddress} />}
                 {!markerPos && (
                   <p style={{ fontSize: 11, color: MUTED, margin: '8px 0' }}>Konum verisi yok</p>
                 )}
               </Section>
+              )}
 
               {/* Konum geçmişi (talep eden) */}
               {(detail?.locationUpdates?.length ?? 0) > 0 && (

@@ -1067,6 +1067,8 @@ model SosReport {
   claimedBy           User?               @relation("SosClaimedBy", fields: [claimedById], references: [id], onDelete: SetNull)
   claimedAt           DateTime?
   createdAt           DateTime            @default(now())
+  lastAddress         String?             // Çözülünce: son konumun açık adresi (koordinat ve konum geçmişi silinir)
+  lastLocationAt      DateTime?           // Çözülünce: son konumun zamanı
   locationUpdates     SosLocationUpdate[]
 
   @@index([meetingId])

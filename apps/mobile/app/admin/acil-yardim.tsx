@@ -16,7 +16,7 @@ type LiveAddress = { il: string | null; ilce: string | null; mahalle: string | n
 interface LocUpdate { lat: number; lng: number; accuracy: number | null; timestamp: string; address?: LiveAddress | null }
 interface Participant { userId: string; firstName: string | null; lastName: string | null; email?: string; phone: string | null; age: number | null; gender: string | null; occupation: string | null; city: string | null; isRequester: boolean; isBot?: boolean }
 interface AdminRef { id: string; profile: { firstName: string; lastName: string } | null }
-interface SosReport { id: string; createdAt: string; threats: string[]; lat: number | null; lng: number | null; accuracy: number | null; resolvedAt: string | null; restricted: boolean; claimedAt: string | null; claimedBy: AdminRef | null; resolvedBy?: AdminRef | null; participantSnapshot: Participant[]; user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null; meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null; locationUpdates: LocUpdate[] }
+interface SosReport { id: string; createdAt: string; threats: string[]; lat: number | null; lng: number | null; accuracy: number | null; resolvedAt: string | null; restricted: boolean; claimedAt: string | null; claimedBy: AdminRef | null; resolvedBy?: AdminRef | null; lastAddress?: string | null; lastLocationAt?: string | null; participantSnapshot: Participant[]; user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null; meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null; locationUpdates: LocUpdate[] }
 const THREAT: Record<string, string> = { LIFE_DANGER: 'Hayatım tehlikede', PHYSICAL_VIOLENCE: 'Fiziksel şiddet gördüm', ABDUCTION: 'Zorla alıkoyuluyorum', HARASSMENT: 'Taciz veya istismara uğradım' };
 const GENDER_TR: Record<string, string> = { MALE: 'E', FEMALE: 'K' };
 const REFRESH_SEC = 15;
@@ -115,7 +115,7 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { 
           </View>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
-          {!!dLat && !!dLng && <AT style={{ fontSize: 10, color: adm.cyan, marginBottom: 4 }} onPress={() => Linking.openURL(mapsHref(dLat, dLng))}>📍 Haritada Gör</AT>}
+          {!report.resolvedAt && !!dLat && !!dLng && <AT style={{ fontSize: 10, color: adm.cyan, marginBottom: 4 }} onPress={() => Linking.openURL(mapsHref(dLat, dLng))}>📍 Haritada Gör</AT>}
           <AT style={{ fontSize: 11, color: open ? adm.blue : adm.muted }}>{open ? '▲ Kapat' : '▼ Detay'}</AT>
         </View>
       </Pressable>
@@ -145,9 +145,20 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { 
               </Section>
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
+              {report.resolvedAt ? (
+                // Çözülmüş talep: harita ve koordinat yok; yalnız son konumun açık adresi ve zamanı
+                <Section title="SON KONUM" accent={adm.cyan}>
+                  {report.lastAddress ? (
+                    <View style={{ paddingVertical: 8, paddingHorizontal: 10, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: adm.border }}>
+                      <AT style={{ fontSize: 11 }}>{report.lastAddress}</AT>
+                      {!!report.lastLocationAt && <AMono style={{ marginTop: 4, fontSize: 10 }}>{fmtTR(report.lastLocationAt)}</AMono>}
+                    </View>
+                  ) : <AT style={{ fontSize: 11, color: adm.muted, marginVertical: 8 }}>Konum verisi yok</AT>}
+                </Section>
+              ) : (
               <Section title="CANLI KONUM TAKİBİ" accent={adm.cyan}>
                 {marker && <SosLiveMap lat={marker.lat} lng={marker.lng} />}
-                {marker && !report.resolvedAt && (
+                {marker && (
                   <View style={{ marginBottom: 10 }}>
                     <Section title="AÇIK ADRES" accent={adm.cyan}>
                       {!liveAddress ? <AT style={{ fontSize: 11, color: adm.muted, marginVertical: 4 }}>Adres alınıyor…</AT> : (
@@ -161,6 +172,7 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { 
                 )}
                 {!marker && <AT style={{ fontSize: 11, color: adm.muted, marginVertical: 8 }}>Konum verisi yok</AT>}
               </Section>
+              )}
               {(detail?.locationUpdates?.length ?? 0) > 0 && (
                 <Section title="KONUM GEÇMİŞİ (TALEP EDEN)" accent={adm.muted} mt>
                   <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
