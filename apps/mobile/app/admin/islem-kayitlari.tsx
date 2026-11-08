@@ -32,12 +32,12 @@ export default function IslemKayitlari() {
       <ATitle style={{ marginBottom: 6 }}>İşlem Kayıtları</ATitle>
       <AT style={{ marginBottom: 20, fontSize: 13, color: adm.muted }}>Adminlerin yaptığı veri değiştiren işlemler. Kayıtlar silinemez ve değiştirilemez.</AT>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
-        <View style={{ minWidth: 160, flexGrow: 1 }}>
+        <View style={{ minWidth: 0, flexBasis: '100%', flexGrow: 1 }}>
           <AdminSelect value={adminId} onChange={v => { setAdminId(v); setPage(1); }} placeholder="Tüm adminler" title="Admin seç" options={[{ value: '', label: 'Tüm adminler' }, ...(data?.admins ?? []).map(a => ({ value: a.id, label: nameOf(a) }))]} />
         </View>
         <View style={{ width: 150 }}><AdminDatePicker value={from} onChange={v => { setFrom(v); setPage(1); }} placeholder="Başlangıç tarihi" title="Başlangıç tarihi" minYear={2026} maxYear={year} clearable /></View>
         <View style={{ width: 150 }}><AdminDatePicker value={to} onChange={v => { setTo(v); setPage(1); }} placeholder="Bitiş tarihi" title="Bitiş tarihi" minYear={2026} maxYear={year} clearable /></View>
-        <AInput value={q} onChangeText={t => { setQ(t); setPage(1); }} placeholder="Açıklamada ara…" style={{ flexGrow: 1, minWidth: 160 }} />
+        <AInput value={q} onChangeText={t => { setQ(t); setPage(1); }} placeholder="Açıklamada ara…" style={{ flexGrow: 1, minWidth: 0, flexBasis: '100%' }} />
       </View>
       <AError>{error}</AError>
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
@@ -45,8 +45,8 @@ export default function IslemKayitlari() {
           : data.items.length === 0 ? <AT style={{ padding: 16, fontSize: 13, color: adm.muted }}>Kayıt yok</AT>
           : data.items.map((l, i) => (
             <View key={l.id} style={{ paddingVertical: 12, paddingHorizontal: 16, borderTopWidth: i ? 1 : 0, borderTopColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', columnGap: 14, rowGap: 4, alignItems: 'baseline' }}>
-              <AMono style={{ fontSize: 11, minWidth: 170 }}>{fmt(l.createdAt)}</AMono>
-              <AT w={700} style={{ fontSize: 13, minWidth: 120 }}>{nameOf(l.admin)}</AT>
+              <AMono style={{ fontSize: 11, minWidth: 0, flexBasis: '100%' }}>{fmt(l.createdAt)}</AMono>
+              <AT w={700} style={{ fontSize: 13, minWidth: 0, flexBasis: '100%' }}>{nameOf(l.admin)}</AT>
               <AT style={{ fontSize: 13, flexBasis: '100%' }}>{l.description}</AT>
             </View>
           ))}

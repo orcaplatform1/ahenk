@@ -76,7 +76,7 @@ export default function AdminUsers() {
     <APage maxWidth={900}>
       <View style={{ marginBottom: 24 }}>
         <ATitle>Kullanıcılar</ATitle>
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
           {([['users', 'Kullanıcılar'], ['deletions', 'Silme Talepleri']] as const).map(([k, l]) => <Btn key={k} variant="admTabSm" selected={tab === k} label={l} onPress={() => setTab(k)} />)}
         </View>
       </View>
@@ -84,7 +84,7 @@ export default function AdminUsers() {
       {tab === 'users' && (
         <>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-            <AInput value={search} onChangeText={t => { setSearch(t); setPage(1); }} placeholder="Ad, soyad veya e-posta..." style={{ flexGrow: 1, minWidth: 160, backgroundColor: adm.surface, paddingHorizontal: 12 }} />
+            <AInput value={search} onChangeText={t => { setSearch(t); setPage(1); }} placeholder="Ad, soyad veya e-posta..." style={{ flexGrow: 1, minWidth: 0, flexBasis: '100%', backgroundColor: adm.surface, paddingHorizontal: 12 }} />
             <AInput value={city} onChangeText={t => { setCity(t); setPage(1); }} placeholder="Şehir..." style={{ width: 120, backgroundColor: adm.surface, paddingHorizontal: 12 }} />
             <View style={{ width: 160 }}>
               <AdminSelect value={type} onChange={v => { setType(v); setPage(1); }} placeholder="Tüm üyeler" title="Üye filtresi" options={[{ value: '', label: 'Tüm üyeler' }, { value: 'NO_PLAN', label: 'Aboneliksiz' }, ...PLANS, { value: 'ADMIN', label: 'Admin' }, { value: 'SUPERADMIN', label: 'Superadmin' }]} />
@@ -92,7 +92,7 @@ export default function AdminUsers() {
           </View>
           <AError>{error}</AError>
           <ACard style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
-            <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
               <ATitle>Kullanıcılar</ATitle>
               <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{total} kayıt</AMono>
             </View>
@@ -119,7 +119,7 @@ export default function AdminUsers() {
               {modalLoading && [0, 1, 2, 3].map(i => <View key={i} style={{ height: 40, backgroundColor: adm.surface, borderRadius: 8, opacity: 0.5 }} />)}
               {m && st && !modalLoading && (
                 <>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                     <View style={{ flexShrink: 1 }}>
                       <AT w={600} style={{ fontSize: 14 }}>{m.profile ? `${m.profile.firstName} ${m.profile.lastName}` : m.email}</AT>
                       {!!m.email && <AMono style={{ marginTop: 3, fontSize: 10 }}>{m.email}</AMono>}
@@ -139,7 +139,7 @@ export default function AdminUsers() {
                     <StatusPill text={st.label} color={st.color} bg={st.bg} border={st.border} pad={[2, 8]} />
                     <StatusPill text={`KYC: ${kycOk ? 'Onaylı ✓' : m.kyc?.status ?? 'Yok'}`} color={kycOk ? adm.green : adm.muted} bg={kycOk ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)'} border={kycOk ? 'rgba(34,197,94,0.3)' : adm.border} pad={[2, 8]} />
                     {m.subscriptions.map(s => (
-                      <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 99, backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.25)' }}>
+                      <View key={s.id} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 99, backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.25)' }}>
                         <ALabel style={{ color: '#93c5fd' }}>{PL[s.plan] ?? s.plan}</ALabel>
                         <Btn variant="admChipX" label="✕" accessibilityLabel={`${PL[s.plan] ?? s.plan} aboneliğini iptal et`} onPress={() => setSubToCancel(s)} />
                       </View>
@@ -148,7 +148,7 @@ export default function AdminUsers() {
                   {subToCancel && (
                     <View style={{ padding: 10, borderRadius: 8, backgroundColor: adm.surface, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', gap: 8 }}>
                       <AT style={{ fontSize: 13 }}>{PL[subToCancel.plan] ?? subToCancel.plan} aboneliği iptal edilsin mi? Bu işlem geri alınamaz.</AT>
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         <Btn variant="admRed6" disabled={action === 'cancelSub'} label={action === 'cancelSub' ? 'İptal ediliyor…' : 'İptal Et'} onPress={cancelSub} />
                         <Btn variant="admMuted6" label="Vazgeç" onPress={() => setSubToCancel(null)} />
                       </View>
@@ -187,7 +187,7 @@ export default function AdminUsers() {
                     <Sect>
                       <ALabel>ÜCRETSİZ ABONELİK VER</ALabel>
                       {!kycOk && <AT style={{ fontSize: 10, color: adm.red }}>KYC onaylı değil: paket verilse bile kullanıcı KYC tamamlanana kadar eşleşmeye katılamaz.</AT>}
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         <View style={{ flex: 1 }}><AdminSelect value={grant} onChange={setGrant} placeholder="Paket seç…" title="Paket seç" options={PLANS} /></View>
                         <Btn variant="admCyanVer" disabled={!!action || !grant} label={action === 'sub' ? '…' : 'Ver'} onPress={grantSub} />
                       </View>

@@ -36,7 +36,7 @@ export function AdminDeletionRequests() {
               <AMono style={{ marginTop: 3, fontSize: 11 }}>{when(r.createdAt)}{r.decidedAt ? ` → ${when(r.decidedAt)}` : ''}</AMono>
               {r.retainedIdentity && <AT style={{ marginTop: 4, fontSize: 11, color: adm.amber }}>Saklanan kimlik: {r.retainedIdentity.firstName} {r.retainedIdentity.lastName} · {r.retainedIdentity.email} · {r.retainedIdentity.phone ?? '—'}</AT>}
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
               <AT w={600} style={{ fontSize: 11, color: DSTATUS[r.status].color }}>{DSTATUS[r.status].label}</AT>
               {r.status === 'PENDING' && isSuper && (
                 <>
@@ -77,7 +77,7 @@ export function AdminSanctionHistory({ userId, canAct, onChanged }: { userId: st
         const by = s.admin?.profile ? `${s.admin.profile.firstName ?? ''} ${s.admin.profile.lastName ?? ''}`.trim() : '—';
         return (
           <View key={s.id} style={{ paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: adm.surface, borderWidth: 1, borderColor: a ? 'rgba(239,68,68,0.3)' : adm.border, gap: 3 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <AT w={800} style={{ fontSize: 10, color: t.color }}>{t.label}{a ? ' · AKTİF' : s.liftedAt ? ' · KALDIRILDI' : ' · SÜRESİ DOLDU'}</AT>
               {a && isSuper && canAct && <Btn variant="admGreenXs" disabled={!!lifting} label={lifting === s.id ? '…' : 'Kaldır'} onPress={() => lift(s.id)} />}
             </View>
@@ -107,7 +107,7 @@ export function AdminNoShowWarnings({ userId, reports, warnings, canSanction, us
   const reached = warnings.count >= warnings.limit;
   return (
     <View style={{ borderTopWidth: 1, borderTopColor: adm.border, paddingTop: 14, gap: 6 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <ALabel style={{ color: adm.red }}>GELMEDİ BİLDİRİMLERİ ({reports.length})</ALabel>
         <AMono w={600} style={{ fontSize: 10, color: reached ? adm.red : adm.amber }}>UYARI: {warnings.count}/{warnings.limit}</AMono>
       </View>
@@ -115,7 +115,7 @@ export function AdminNoShowWarnings({ userId, reports, warnings, canSanction, us
         const warned = warnings.warnedMeetingIds.includes(meeting.id);
         const weekWarned = !warned && !!meeting.cycleId && (warnings.warnedCycleIds ?? []).includes(meeting.cycleId);
         return (
-          <View key={meeting.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <View key={meeting.id} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <AT style={{ flex: 1, fontSize: 11, color: adm.muted }}>
               {new Date(meeting.scheduledAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' })} · {meeting.type === 'ONE_ON_ONE' ? 'Başbaşa' : 'Grup'}{meeting.locationText ? ` · ${meeting.locationText}` : ''}, bildiren: <AT style={{ fontSize: 11 }}>{reporters.join(', ')}</AT>
             </AT>
@@ -126,7 +126,7 @@ export function AdminNoShowWarnings({ userId, reports, warnings, canSanction, us
       })}
       {!!error && <AT style={{ fontSize: 11, color: adm.red }}>{error}</AT>}
       {reached && canSanction && userStatus !== 'SUSPENDED' && (
-        <View style={{ marginTop: 4, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, backgroundColor: adm.surface, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <View style={{ marginTop: 4, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, backgroundColor: adm.surface, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <AT style={{ fontSize: 11, color: adm.red }}>{warnings.limit} uyarıya ulaştı.</AT>
           <Btn variant="admActRed" disabled={suspending} label={suspending ? '…' : 'Askıya Al (1 ay)'} onPress={onSuspend} />
         </View>
@@ -167,22 +167,22 @@ export function AdminUserEdit({ user, canEdit, onSaved }: { user: EditableUser; 
   return (
     <View style={{ padding: 12, borderRadius: 8, backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border, gap: 8 }}>
       <ALabel style={{ color: adm.cyan }}>BİLGİLERİ DÜZENLE</ALabel>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <AInput value={form.firstName} onChangeText={v => set('firstName', v)} placeholder="Ad" style={{ flex: 1 }} />
         <AInput value={form.lastName} onChangeText={v => set('lastName', v)} placeholder="Soyad" style={{ flex: 1 }} />
       </View>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <View style={{ flex: 1 }}><AdminSelect value={form.gender} onChange={v => set('gender', v)} placeholder="Cinsiyet" options={[{ value: 'MALE', label: 'Erkek' }, { value: 'FEMALE', label: 'Kadın' }]} /></View>
         <View style={{ flex: 1 }}><AdminDatePicker value={form.birthDate} onChange={v => set('birthDate', v)} /></View>
       </View>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <View style={{ justifyContent: 'center', backgroundColor: adm.bg, borderWidth: 1, borderColor: adm.border, borderRadius: 8, paddingHorizontal: 10 }}><AT style={{ fontSize: 13, color: adm.muted }}>+90</AT></View>
         <AInput keyboardType="number-pad" value={form.phone} onChangeText={v => set('phone', v.replace(/\D/g, '').slice(0, 10))} placeholder="5XX XXX XX XX" style={{ flex: 1 }} />
       </View>
       <AdminSelect value={form.cityId} onChange={v => set('cityId', v)} placeholder="Katılım şehri" options={cities.map(c => ({ value: c.id, label: c.name }))} />
       <AdminSelect value={form.occupationSector} onChange={v => set('occupationSector', v)} placeholder="Meslek alanı" options={OCCUPATION_SECTORS.map(o => ({ value: o, label: o }))} />
       {isSuper && <AInput keyboardType="email-address" autoCapitalize="none" value={form.email} onChangeText={v => set('email', v)} placeholder="E-posta" />}
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <Btn variant="admCyanSave" disabled={saving || !phoneValid} label={saving ? 'Kaydediliyor…' : 'Kaydet'} onPress={save} />
         <Btn variant="admOutlineFlex" disabled={saving} label="Vazgeç" onPress={() => setOpen(false)} />
       </View>

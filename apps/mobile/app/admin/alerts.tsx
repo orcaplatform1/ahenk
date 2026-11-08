@@ -25,7 +25,7 @@ export default function AdminAlerts() {
   }
   const unread = alerts.filter(a => !a.isRead).length;
   const head = (
-    <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+    <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
       <ATitle>Uyarılar</ATitle>
       {!loading && unread > 0 && <AMono w={600} style={{ fontSize: 9, backgroundColor: adm.amber, color: '#000', borderRadius: 99, paddingVertical: 1, paddingHorizontal: 6, overflow: 'hidden' }}>{unread}</AMono>}
       {!loading && <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{alerts.length} kayıt</AMono>}
@@ -45,7 +45,7 @@ export default function AdminAlerts() {
               <AMono style={{ marginTop: 4, fontSize: 11 }}>Tüm eşleşmeler nominal</AMono>
             </View>
           ) : alerts.map((a, i) => (
-            <View key={a.id} style={{ paddingVertical: 14, paddingHorizontal: 18, borderBottomWidth: i < alerts.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, backgroundColor: a.isRead ? 'transparent' : 'rgba(245,158,11,0.05)', opacity: a.isRead ? 0.55 : 1 }}>
+            <View key={a.id} style={{ paddingVertical: 14, paddingHorizontal: 18, borderBottomWidth: i < alerts.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, backgroundColor: a.isRead ? 'transparent' : 'rgba(245,158,11,0.05)', opacity: a.isRead ? 0.55 : 1 }}>
               <View style={{ flex: 1 }}>
                 <AT w={600} style={{ fontSize: 13 }}>{ALERT_LABELS[a.alertType] ?? a.alertType}{a.user?.profile ? `: ${a.user.profile.firstName ?? ''} ${a.user.profile.lastName ?? ''}` : ''}</AT>
                 <AMono style={{ marginTop: 2, fontSize: 10 }}>{new Date(a.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}</AMono>

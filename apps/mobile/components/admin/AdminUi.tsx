@@ -49,3 +49,14 @@ export function ATableRow({ cells, onPress, last }: { cells: [string, React.Reac
 export function ATable({ children }: { children: React.ReactNode }) {
   return <View style={{ backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border, borderRadius: 12, overflow: 'hidden' }}>{children}</View>;
 }
+
+// Web grid (≤640 px kuralı: repeat(2|3|4, …) → repeat(2, minmax(0, 1fr))): eşit genişlikte sütunlar, satır arası ve sütun arası gap
+export function AGrid({ columns = 2, gap, children, style }: { columns?: number; gap: number; children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+  const [w, setW] = React.useState(0);
+  const colW = w ? (w - gap * (columns - 1)) / columns : 0;
+  return (
+    <View onLayout={e => setW(e.nativeEvent.layout.width)} style={[{ flexDirection: 'row', flexWrap: 'wrap', gap }, style]}>
+      {React.Children.map(children, c => (c == null || c === false ? null : <View style={{ width: colW || `${100 / columns - 2}%` }}>{c}</View>))}
+    </View>
+  );
+}

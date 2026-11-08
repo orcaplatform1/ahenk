@@ -102,7 +102,7 @@ export default function AdminVenues() {
   const mapUrl = form.address.trim() ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${form.address.trim()}, ${cities.find(c => c.id === form.cityId)?.name ?? ''}`)}` : null;
   return (
     <APage maxWidth={760}>
-      <View style={{ marginBottom: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ marginBottom: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <ATitle>Mekanlar</ATitle>
         <Btn variant="admAdd" label="+ Mekan Ekle" onPress={openAdd} />
       </View>
@@ -111,7 +111,7 @@ export default function AdminVenues() {
         <AdminSelect value={selectedCity} onChange={id => { setSelectedCity(id); loadVenues(id || undefined); }} placeholder="Tüm şehirler" title="Şehir seç" options={[{ value: '', label: 'Tüm şehirler' }, ...cityOpts]} />
       </View>
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
-        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
           <ATitle>Mekanlar</ATitle>
           {!loading && <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{filtered.length} kayıt</AMono>}
         </View>
@@ -119,14 +119,14 @@ export default function AdminVenues() {
           : filtered.length === 0 ? <View style={{ paddingVertical: 40, alignItems: 'center' }}><AT w={600} style={{ fontSize: 13, color: adm.muted }}>Mekan yok</AT></View>
           : filtered.map((v, i) => (
             <View key={v.id} style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: i < filtered.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)', flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <View style={{ flex: 1, minWidth: 160 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                   <AT w={600} numberOfLines={1} style={{ fontSize: 13, flexShrink: 1 }}>{v.name}</AT>
                   {!v.isActive && <StatusPill text="PASİF" bg="rgba(100,116,139,0.12)" border="rgba(100,116,139,0.25)" pad={[1, 6]} />}
                 </View>
                 <AT style={{ fontSize: 10, color: adm.muted }}>{v.city.name} · {v.category}{v.address ? ` · ${v.address}` : ''}</AT>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
                 <Btn variant="admActivate" selected={v.isActive} label={v.isActive ? 'Pasifleştir' : 'Aktifleştir'} onPress={() => toggleActive(v)} />
                 <Btn variant="admEditSm" label="Düzenle" onPress={() => openEdit(v)} />
                 <Btn variant="admDelSm" label="Sil" onPress={() => deleteVenue(v)} />
@@ -141,7 +141,7 @@ export default function AdminVenues() {
           <Field label="İLÇE (OPSİYONEL)">{districtOptions.length > 0 ? <AdminSelect value={form.district} onChange={set('district')} options={districtOptions.map(d => ({ value: d, label: d }))} placeholder="İlçe seçin" /> : <AInput value={form.district} onChangeText={set('district')} placeholder="İlçe" maxLength={60} style={{ paddingHorizontal: 12 }} />}</Field>
           <Field label="KATEGORİ"><AdminSelect value={form.category} onChange={set('category')} placeholder="Kategori" options={['SADE', 'ORTA', 'PREMIUM'].map(c => ({ value: c, label: c }))} /></Field>
           <Field label="ADRES (OPSİYONEL)">
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <AInput value={form.address} onChangeText={set('address')} placeholder="Adres" style={{ flex: 1, paddingHorizontal: 12 }} />
               <Btn variant="admMapSm" disabled={!mapUrl} label="Haritada gör" onPress={() => mapUrl && Linking.openURL(mapUrl)} />
             </View>
@@ -152,7 +152,7 @@ export default function AdminVenues() {
           <Field label="Kapasite (kişi)"><AInput keyboardType="number-pad" value={form.seatCapacity} onChangeText={set('seatCapacity')} style={{ paddingHorizontal: 12 }} /></Field>
           <Field label="WEB / SOSYAL (OPSİYONEL)"><AInput value={form.websiteOrSocial} onChangeText={set('websiteOrSocial')} placeholder="Web sitesi veya sosyal medya" maxLength={300} autoCapitalize="none" style={{ paddingHorizontal: 12 }} /></Field>
           <Field label="AÇIKLAMA (OPSİYONEL)"><TextInput value={form.description} onChangeText={set('description')} multiline numberOfLines={3} keyboardAppearance="dark" style={{ backgroundColor: adm.bg, borderWidth: 1, borderColor: adm.border, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12, fontSize: 13, color: adm.text, fontFamily: sans(400), minHeight: 72, textAlignVertical: 'top' }} /></Field>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <View style={{ flex: 1 }}><Field label="ENLEM (OPSİYONEL)"><AInput keyboardType="decimal-pad" value={form.latitude} onChangeText={set('latitude')} style={{ paddingHorizontal: 12 }} /></Field></View>
             <View style={{ flex: 1 }}><Field label="BOYLAM (OPSİYONEL)"><AInput keyboardType="decimal-pad" value={form.longitude} onChangeText={set('longitude')} style={{ paddingHorizontal: 12 }} /></Field></View>
           </View>

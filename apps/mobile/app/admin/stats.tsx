@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '@/lib/api';
-import { ACard, AError, ALabel, AMono, APage, AT, ATableRow, ATitle } from '@/components/admin/AdminUi';
+import { ACard, AError, AGrid, ALabel, AMono, APage, AT, ATableRow, ATitle } from '@/components/admin/AdminUi';
 import { adm } from '@/theme/theme';
 
 interface PackageDist { masadaPct: number; karsimdaPct: number; icerdePct: number; kankamlaPct: number; masadaCount: number; karsimdaCount: number; icerdeCount: number; kankamlaCount: number }
@@ -30,7 +30,7 @@ function StatCard({ label, value, sub, prefix = '', fmtFn, accent }: { label: st
   const color = accent ?? adm.cyan;
   return (
     <ACard style={{ flexBasis: '47%', flexGrow: 1, gap: 4 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginBottom: 4 }}>
         <View style={{ width: 2, height: 12, borderRadius: 1, backgroundColor: color }} />
         <ALabel style={{ color, flexShrink: 1 }}>{label.toLocaleUpperCase('tr-TR')}</ALabel>
       </View>
@@ -42,9 +42,9 @@ function StatCard({ label, value, sub, prefix = '', fmtFn, accent }: { label: st
 function PackageBar({ label, pct, count, color }: { label: string; pct: number; count: number; color: string }) {
   return (
     <View style={{ gap: 6 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <AT style={{ fontSize: 13 }}>{label}</AT>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
           <AMono style={{ fontSize: 10 }}>{count} abone</AMono>
           <AMono w={600} style={{ fontSize: 13, color: adm.text }}>%{pct}</AMono>
         </View>
@@ -97,14 +97,14 @@ export default function AdminStats() {
           <ACard style={{ marginBottom: 12 }}>
             <ATitle style={{ marginBottom: 12 }}>Kurulan Masa</ATitle>
             <AMono w={600} style={{ marginBottom: 16, fontSize: 20, color: adm.text }}>{tm.toLocaleString('tr-TR')}</AMono>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
+            <AGrid gap={10}>
               {([['Grup', gm], ['Başbaşa', om], ['Kankamla', km]] as const).map(([l, v]) => (
-                <View key={l} style={{ flex: 1, minWidth: 0, backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 16 }}>
+                <View key={l} style={{ backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 16 }}>
                   <AT style={{ marginBottom: 4, fontSize: 10, color: adm.muted }}>{l}</AT>
                   <AMono w={600} style={{ fontSize: 20, color: adm.text }}>{v.toLocaleString('tr-TR')}</AMono>
                 </View>
               ))}
-            </View>
+            </AGrid>
           </ACard>
           <ACard style={{ marginBottom: 12 }}>
             <ATitle style={{ marginBottom: 8 }}>Algoritma Başarısı</ATitle>

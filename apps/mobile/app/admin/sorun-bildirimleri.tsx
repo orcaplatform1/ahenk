@@ -54,13 +54,13 @@ export default function AdminProblemReports() {
           {detail && (
             <Pressable onPress={() => undefined} style={{ width: '100%', maxWidth: 640, maxHeight: '90%', backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border, borderRadius: 14, padding: 20 }}>
               <ScrollView>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <AT w={700} style={{ fontSize: 15 }}>Sorun Bildirimi</AT>
                   <Btn variant="admClose" label="×" accessibilityLabel="Kapat" onPress={() => setDetail(null)} />
                 </View>
                 {([['Kullanıcı', nameOf(detail.user)], ['Tarih-saat', fmt(detail.createdAt)], ['Platform', PLATFORM_LABEL[detail.platform]], ['Ekran / sayfa', detail.screen], ['Uygulama sürümü', detail.appVersion ?? '—']] as const).map(([k, v]) => (
-                  <View key={k} style={{ flexDirection: 'row', gap: 12, paddingVertical: 4 }}>
-                    <ALabel style={{ minWidth: 130 }}>{k.toLocaleUpperCase('tr-TR')}</ALabel>
+                  <View key={k} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingVertical: 4 }}>
+                    <ALabel style={{ minWidth: 0, flexBasis: '100%' }}>{k.toLocaleUpperCase('tr-TR')}</ALabel>
                     <AT style={{ fontSize: 13, flex: 1 }}>{v}</AT>
                   </View>
                 ))}

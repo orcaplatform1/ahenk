@@ -193,7 +193,7 @@ export default function AdminMatches() {
           <AT w={600} style={{ marginTop: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, fontSize: 13, color: adm.amber, backgroundColor: 'rgba(245,158,11,0.12)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.35)', overflow: 'hidden' }}>⚠ Mekânsız masa: {withoutVenue}</AT>
         )}
       </View>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
         {([['all', 'Tüm masalar'], ['open', 'Açık masalar']] as const).map(([key, label]) => <Btn key={key} variant="admMatchTab" selected={tab === key} label={label} onPress={() => setTab(key)} />)}
       </View>
 
@@ -211,7 +211,7 @@ export default function AdminMatches() {
           <AError>{error}</AError>
 
           <ACard style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
-            <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
               <ATitle>Masalar</ATitle>
               <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{total} kayıt</AMono>
             </View>
@@ -239,7 +239,7 @@ export default function AdminMatches() {
           </ACard>
 
           {totalPages > 1 && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 20 }}>
               <Btn variant="admPager" label="← Önceki" disabled={page === 1} onPress={() => setPage(p => Math.max(1, p - 1))} />
               <AMono style={{ fontSize: 11 }}>{page} / {totalPages}</AMono>
               <Btn variant="admPager" label="Sonraki →" disabled={page === totalPages} onPress={() => setPage(p => Math.min(totalPages, p + 1))} />
@@ -349,7 +349,7 @@ export default function AdminMatches() {
                     const noShow = (sel.noShowReports ?? []).filter(n => n.reporterId === r.reviewer.id).map(n => nameOf(n.reportedId));
                     return (
                       <View key={r.id} style={{ paddingVertical: 8, borderBottomWidth: i < sel.reviews.length - 1 ? 1 : 0, borderBottomColor: ROW_BORDER }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                           <AT style={{ fontSize: 11, color: adm.muted }}>{r.reviewer.profile ? `${r.reviewer.profile.firstName} ${r.reviewer.profile.lastName[0]}.` : '—'}</AT>
                           <AT style={{ fontSize: 13 }}>{[1, 2, 3, 4, 5].map(k => <AT key={k} style={{ fontSize: 13, color: k <= r.rating ? adm.amber : 'rgba(255,255,255,0.12)' }}>★</AT>)}</AT>
                         </View>
@@ -376,7 +376,7 @@ export default function AdminMatches() {
               <AT w={700} style={{ fontSize: 14, marginBottom: 6 }}>Masayı iptal et</AT>
               <AT style={{ fontSize: 13, color: adm.muted }}>{sel ? fmtDate(sel.scheduledAt) : ''} tarihli masa iptal edilecek. Bu işlem geri alınamaz.</AT>
             </View>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Btn variant="admCancelNo" label="Vazgeç" onPress={() => setCancelConfirm(false)} />
               <Btn variant="admCancelYes" disabled={cancelling} label={cancelling ? '…' : 'İptal Et'} onPress={cancelMeeting} />
             </View>
@@ -392,7 +392,7 @@ export default function AdminMatches() {
               {userLoading && [0, 1, 2, 3].map(i => <View key={i} style={{ height: 36, backgroundColor: adm.surface, borderRadius: 6, opacity: 0.5 }} />)}
               {u && !userLoading && (
                 <>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                     <View style={{ flexShrink: 1 }}>
                       <AT w={700} style={{ fontSize: 14 }}>{u.profile ? `${u.profile.firstName} ${u.profile.lastName}` : u.email}</AT>
                       {!!u.email && <AT style={{ marginTop: 3, fontSize: 11, color: adm.muted }}>{u.email}</AT>}
@@ -439,7 +439,7 @@ export default function AdminMatches() {
                   {myRole() === 'SUPERADMIN' && (
                     <Sect>
                       <ALabel>ÜCRETSİZ ABONELİK VER</ALabel>
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         <AdminSelect value={grantPlan} onChange={setGrantPlan} placeholder="Paket seç…" title="Paket seç" style={{ flex: 1, minWidth: 0 }}
                           options={[{ value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }]} />
                         <Btn variant="admBlueVer" disabled={!!userAction || !grantPlan} label={userAction === 'sub' ? '…' : 'Ver'} onPress={userGrantSubscription} />

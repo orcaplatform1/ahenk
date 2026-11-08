@@ -28,7 +28,7 @@ export default function AdminCareers() {
     try { await api.patch(`/admin/careers/${id}`, { status, adminNote: notes[id] || undefined }); setExpanded(null); load(); } catch (e) { setError(`Güncellenemedi: ${(e as Error).message}`); } finally { setSaving(null); }
   }
   const head = (
-    <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+    <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
       <ATitle>Başvurular</ATitle>
       {!loading && items.length > 0 && <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{items.length} kayıt</AMono>}
     </View>
@@ -44,9 +44,9 @@ export default function AdminCareers() {
             <View style={{ paddingVertical: 48, paddingHorizontal: 20, alignItems: 'center' }}><AT w={600} style={{ fontSize: 13, color: adm.muted }}>Başvuru yok</AT><AMono style={{ marginTop: 4, fontSize: 11 }}>Yeni başvurular burada görünür</AMono></View>
           ) : items.map((c, i) => (
             <View key={c.id} style={{ borderBottomWidth: i < items.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)' }}>
-              <View style={{ paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+              <View style={{ paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <AT w={600} numberOfLines={1} style={{ fontSize: 13, flexShrink: 1 }}>{c.fullName}</AT>
                     <StatusPill text={c.status} color={C[c.status]} bg={B[c.status]} border={Bo[c.status]} />
                   </View>
@@ -71,7 +71,7 @@ export default function AdminCareers() {
                     <>
                       <TextInput value={notes[c.id] ?? ''} onChangeText={t => setNotes(n => ({ ...n, [c.id]: t }))} placeholder="Admin notu (opsiyonel)" placeholderTextColor={adm.muted} multiline numberOfLines={2} keyboardAppearance="dark"
                         style={{ borderWidth: 1, borderColor: adm.border, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 10, fontSize: 11, color: adm.text, fontFamily: sans(400), minHeight: 48, textAlignVertical: 'top' }} />
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         <Btn variant="admOkSm" style={{ padding: 8 }} disabled={saving === c.id} label={saving === c.id ? '…' : 'İncelendi'} onPress={() => update(c.id, 'REVIEWED')} />
                         <Btn variant="admNoSm" style={{ padding: 8 }} disabled={saving === c.id} label={saving === c.id ? '…' : 'Reddet'} onPress={() => update(c.id, 'REJECTED')} />
                       </View>

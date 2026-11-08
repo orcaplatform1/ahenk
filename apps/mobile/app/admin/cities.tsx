@@ -31,22 +31,22 @@ export default function AdminCities() {
   const pill = (on: boolean) => ({ paddingVertical: 1, paddingHorizontal: 6, borderRadius: 99, overflow: 'hidden' as const, borderWidth: 1, backgroundColor: on ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)', borderColor: on ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.25)', color: on ? adm.green : adm.muted });
   return (
     <APage maxWidth={760}>
-      <View style={{ marginBottom: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ marginBottom: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <ATitle>Şehirler</ATitle>
         <Btn variant="admAdd" label="+ Şehir Ekle" onPress={() => { setName(''); setError(''); setModal(true); }} />
       </View>
       {!modal && <AError>{error}</AError>}
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
-        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
           <ATitle>Şehirler</ATitle>
           {!loading && <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{cities.length} kayıt</AMono>}
         </View>
         {loading ? <View style={{ gap: 6, padding: 16 }}>{[0, 1, 2].map(i => <View key={i} style={{ height: 48, backgroundColor: adm.surface, borderRadius: 8, opacity: 0.5 }} />)}</View>
           : cities.length === 0 ? <View style={{ paddingVertical: 40, alignItems: 'center' }}><AT w={600} style={{ fontSize: 13, color: adm.muted }}>Şehir yok</AT></View>
           : cities.map((c, i) => (
-            <View key={c.id} style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: i < cities.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View key={c.id} style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: i < cities.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                   <AT w={600} style={{ fontSize: 13 }}>{c.name}</AT>
                   <ALabel style={pill(c.isActive)}>{c.isActive ? 'AKTİF' : 'PASİF'}</ALabel>
                 </View>

@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 import { BASE } from '@/lib/config';
 import { getAccess } from '@/lib/session';
 import { Btn } from '@/components/ui';
-import { ACard, AError, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
+import { ACard, AError, AGrid, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
 import { AInput } from '@/components/admin/AdminControls';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { adm, sans } from '@/theme/theme';
@@ -41,7 +41,7 @@ function KycVideo({ uri, token }: { uri: string; token: string }) {
 
 function MediaPreview({ url, label, isVideo, token }: { url: string | null; label: string; isVideo?: boolean; token: string | null }) {
   return (
-    <View style={{ flex: 1, minWidth: 0, borderRadius: 8, overflow: 'hidden', backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border }}>
+    <View style={{ minWidth: 0, borderRadius: 8, overflow: 'hidden', backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border }}>
       <View style={{ aspectRatio: 16 / 9 }}>
         {url && token ? (
           isVideo ? <KycVideo uri={abs(url)} token={token} />
@@ -113,7 +113,7 @@ export default function AdminKyc() {
             const valid = isValidTckn(tckn[item.id] ?? '');
             return (
               <ACard key={item.id}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
                   <View>
                     <AT w={600} style={{ fontSize: 13 }}>{item.user?.profile?.firstName} {item.user?.profile?.lastName}</AT>
                     <AMono style={{ marginTop: 3, fontSize: 10 }}>{fmtDate(item.submittedAt)}</AMono>
@@ -125,15 +125,15 @@ export default function AdminKyc() {
                     <AT style={{ fontSize: 11, color: adm.red }}><AT style={{ fontSize: 11, color: adm.muted }}>Red sebebi: </AT>{item.rejectReason}</AT>
                   </View>
                 )}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                <AGrid gap={10} style={{ marginBottom: 16 }}>
                   <MediaPreview url={item.idFrontUrl} label="Ön Yüz" token={token} />
                   <MediaPreview url={item.idBackUrl} label="Arka Yüz" token={token} />
                   <MediaPreview url={item.livenessUrl} label="Video" isVideo token={token} />
-                </View>
+                </AGrid>
                 {tab === 'APPROVED' && !item.hasIdentityNumber && (
                   <View>
                     <AT style={{ marginBottom: 8, fontSize: 11, color: adm.amber }}>TC kimlik numarası girilmemiş. Bu kullanıcı ödeme yapamaz. Kimlik görselinden girin.</AT>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                       <AInput value={tckn[item.id] ?? ''} onChangeText={t => setTckn(p => ({ ...p, [item.id]: t.replace(/\D/g, '').slice(0, 11) }))} placeholder="TC Kimlik No" keyboardType="number-pad" autoComplete="off" style={{ flex: 1, letterSpacing: 1.04, paddingHorizontal: 12 }} />
                       <Btn variant="admSaveSm" disabled={savingTckn === item.id || !valid} label={savingTckn === item.id ? '…' : 'Kaydet'} onPress={() => saveTckn(item.id)} />
                     </View>
@@ -147,7 +147,7 @@ export default function AdminKyc() {
                       <TextInput value={rejectNote[item.id] ?? ''} onChangeText={t => setRejectNote(p => ({ ...p, [item.id]: t }))} placeholder="Red sebebi (opsiyonel)..." placeholderTextColor={adm.muted} multiline numberOfLines={2} keyboardAppearance="dark"
                         style={{ marginBottom: 10, backgroundColor: adm.bg, borderWidth: 1, borderColor: adm.border, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12, fontSize: 11, color: adm.text, fontFamily: sans(400), minHeight: 48, textAlignVertical: 'top' }} />
                     )}
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                       <Btn variant="admOkMd" disabled={!!processing[item.id] || !valid} label={processing[item.id] === 'approve' ? '…' : 'Onayla'} onPress={() => approve(item.id)} />
                       {rejectOpen !== item.id
                         ? <Btn variant="admRejectMd" label="Reddet" onPress={() => setRejectOpen(item.id)} />

@@ -23,14 +23,14 @@ function RefundRow({ r, onUpdate, last }: { r: RefundItem; onUpdate: () => void;
   }
   return (
     <View style={{ borderBottomWidth: last ? 0 : 1, borderBottomColor: 'rgba(26,58,92,0.5)' }}>
-      <View style={{ paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+      <View style={{ paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
         <View style={{ flex: 1 }}>
           <AT w={600} style={{ fontSize: 13 }}>{r.user?.profile?.firstName ?? ''} {r.user?.profile?.lastName ?? ''}</AT>
           <AMono style={{ marginTop: 3, fontSize: 10 }}>{r.refundType}{r.subscription?.plan ? ` · ${r.subscription.plan}` : ''} · {new Date(r.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}</AMono>
           {r.refundAmountKurus != null && <AMono style={{ marginTop: 4, fontSize: 11, color: adm.text }}>{r.status === 'APPROVED' ? 'İade edildi' : 'İade tutarı'}: ₺{(r.refundAmountKurus / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</AMono>}
           {!!r.adminNote && <AT style={{ marginTop: 4, fontSize: 10, color: adm.muted, fontStyle: 'italic' }}>{r.adminNote}</AT>}
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
           <ALabel style={{ paddingVertical: 2, paddingHorizontal: 8, borderRadius: 99, overflow: 'hidden', backgroundColor: BG[r.status] ?? 'transparent', borderWidth: 1, borderColor: BORDER[r.status] ?? adm.border, color: COLOR[r.status] ?? adm.muted }}>{r.status}</ALabel>
           {r.status === 'PENDING' && <Btn variant="admReview" selected={open} label={open ? '▲' : 'İncele'} onPress={() => setOpen(o => !o)} />}
         </View>
@@ -38,7 +38,7 @@ function RefundRow({ r, onUpdate, last }: { r: RefundItem; onUpdate: () => void;
       {open && (
         <View style={{ marginHorizontal: 18, marginBottom: 14, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border, gap: 10 }}>
           <AInput value={note} onChangeText={setNote} placeholder="Admin notu (opsiyonel)" style={{ fontSize: 11, paddingHorizontal: 12 }} />
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <Btn variant="admOkSm" label="Onayla" disabled={loading} onPress={() => update('APPROVED')} />
             <Btn variant="admNoSm" label="Reddet" disabled={loading} onPress={() => update('REJECTED')} />
           </View>
@@ -60,7 +60,7 @@ export default function AdminRefunds() {
       <View style={{ marginBottom: 24 }}><ATitle>İade Talepleri</ATitle></View>
       <AError>{error}</AError>
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
-        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
           <ATitle>İade Talepleri</ATitle>
           {!loading && <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{refunds.length} kayıt</AMono>}
         </View>

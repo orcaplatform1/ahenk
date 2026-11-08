@@ -45,7 +45,7 @@ function BotPicker({ listUrl, placeUrl, onPlaced, onError }: { listUrl: string; 
   }
   if (bots === null) return <AT style={{ fontSize: 11, color: adm.muted }}>Botlar yükleniyor…</AT>;
   return (
-    <View style={{ flexDirection: 'row', gap: 8 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
       <AdminSelect value={botId} onChange={setBotId} placeholder={bots.length ? 'Bot seçin' : 'Uygun bot yok'} title="Bot seç" style={{ flex: 1, minWidth: 0 }}
         options={bots.map(b => ({ value: b.id, label: `${b.name || b.id} (${genderShort(b.gender)}${b.age !== null ? `, ${b.age}` : ''})` }))} />
       <Btn variant="admOpenBtn" disabled={saving || !botId} label={saving ? '…' : 'Ekle'} onPress={place} />
@@ -131,7 +131,7 @@ export function AdminOpenTables({ isSuperadmin, onUserClick }: { isSuperadmin: b
 
   return (
     <View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <AMono style={{ fontSize: 11 }}>Yenileme: {Math.max(0, left)} sn</AMono>
         <View style={{ flex: 1, height: 3, backgroundColor: adm.surface, borderRadius: 99, overflow: 'hidden', maxWidth: 160 }}>
           <Animated.View style={{ width: bar.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }), height: '100%', backgroundColor: adm.blue }} />

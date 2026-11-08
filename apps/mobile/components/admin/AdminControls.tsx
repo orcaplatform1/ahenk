@@ -93,7 +93,7 @@ export function AInput({ style, ...rest }: TextInputProps) {
 export function APager({ page, totalPages, total, onPage }: { page: number; totalPages: number; total: number; onPage: (p: number) => void }) {
   if (totalPages <= 1) return null;
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 16 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 16 }}>
       <Btn variant="admPager" label="← Önceki" disabled={page === 1} onPress={() => onPage(Math.max(1, page - 1))} />
       <ALabel style={{ fontFamily: 'JetBrainsMono_400Regular', letterSpacing: 0 }}>{page} / {totalPages} · {total} kayıt</ALabel>
       <Btn variant="admPager" label="Sonraki →" disabled={page === totalPages} onPress={() => onPage(Math.min(totalPages, page + 1))} />
@@ -105,7 +105,7 @@ export function APager({ page, totalPages, total, onPage }: { page: number; tota
 export function AdminToggle({ label, desc, value, onChange }: { label: string; desc?: string; value: boolean; onChange: (v: boolean) => void }) {
   const t = admToggle;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
       <View style={{ flex: 1 }}>
         <AT w={600} style={{ fontSize: 13 }}>{label}</AT>
         {!!desc && <AT style={{ marginTop: 3, fontSize: 10, color: adm.muted }}>{desc}</AT>}

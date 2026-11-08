@@ -26,7 +26,7 @@ function SubRow({ s, onCancel }: { s: Sub; onCancel: () => void }) {
   const one = s.plan === 'KARSIMDA' || s.plan === 'ICERDE';
   return (
     <View style={{ paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: adm.surface, flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-      <View style={{ flex: 1, minWidth: 200 }}>
+      <View style={{ flex: 1, minWidth: 0, flexBasis: '100%' }}>
         <AT w={600} style={{ fontSize: 13 }}>{PLAN_LABEL[s.plan] ?? s.plan}</AT>
         <AMono style={{ marginTop: 3, fontSize: 11 }}>
           Başlangıç {fmtDate(s.startsAt)}{s.expiresAt ? ` · Bitiş ${fmtDate(s.expiresAt)}` : ''}
@@ -79,14 +79,14 @@ export default function AdminSubscriptions() {
         {TABS.map(t => <Btn key={t.key} variant="admChipTab" selected={tab === t.key} label={t.label} onPress={() => { setTab(t.key); setPage(1); }} />)}
       </View>
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <AInput value={search} onChangeText={setSearch} onSubmitEditing={() => { setQuery(search.trim()); setPage(1); }} returnKeyType="search" placeholder="Ad, e-posta veya telefon… (Enter)" style={{ flexGrow: 1, minWidth: 180, paddingHorizontal: 12 }} />
+        <AInput value={search} onChangeText={setSearch} onSubmitEditing={() => { setQuery(search.trim()); setPage(1); }} returnKeyType="search" placeholder="Ad, e-posta veya telefon… (Enter)" style={{ flexGrow: 1, minWidth: 0, flexBasis: '100%', paddingHorizontal: 12 }} />
         <View style={{ width: 160 }}>
           <AdminSelect value={plan} onChange={v => { setPlan(v); setPage(1); }} placeholder="Tüm paketler" title="Paket filtresi" options={[{ value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }]} />
         </View>
       </View>
       <AError>{error}</AError>
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
-        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
           <ATitle>Abonelikler</ATitle>
           {data && <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{data.total} kişi</AMono>}
         </View>
@@ -104,7 +104,7 @@ export default function AdminSubscriptions() {
           ))}
       </ACard>
       {data && data.totalPages > 1 && (
-        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 14 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 14 }}>
           <Btn variant="admPageBox" label="‹" disabled={page <= 1} onPress={() => setPage(p => Math.max(1, p - 1))} />
           <AMono style={{ fontSize: 11 }}>{page} / {data.totalPages}</AMono>
           <Btn variant="admPageBox" label="›" disabled={page >= data.totalPages} onPress={() => setPage(p => Math.min(data.totalPages, p + 1))} />

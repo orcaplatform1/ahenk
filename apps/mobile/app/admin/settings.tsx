@@ -39,7 +39,7 @@ export default function AdminSettings() {
             <View>
               <AT w={600} style={{ fontSize: 13 }}>Canlı katman ilçe verisi</AT>
               <AT style={{ marginTop: 2, marginBottom: 8, fontSize: 11, color: adm.muted }}>Statik: İstanbul yoğunluk tablosu. Gerçek: üyelerin ilçe verisinden hesaplanır.</AT>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {([['static', 'Statik'], ['real', 'Gerçek']] as const).map(([v, l]) => <Btn key={v} variant="admSegment" selected={(s.liveDistrictSource ?? 'static') === v} label={l} onPress={() => upd({ liveDistrictSource: v })} />)}
               </View>
             </View>

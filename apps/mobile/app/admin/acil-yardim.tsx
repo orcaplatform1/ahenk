@@ -53,7 +53,7 @@ function LiveBadge({ ts }: { ts: string }) {
 function Section({ title, accent, children, mt }: { title: string; accent: string; children: React.ReactNode; mt?: boolean }) {
   return (
     <View style={{ marginTop: mt ? 16 : 0 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <View style={{ width: 2, height: 12, borderRadius: 1, backgroundColor: accent }} />
         <ALabel style={{ color: accent, flexShrink: 1 }}>{title}</ALabel>
       </View>
@@ -61,7 +61,7 @@ function Section({ title, accent, children, mt }: { title: string; accent: strin
     </View>
   );
 }
-const KV = ({ label, value }: { label: string; value: React.ReactNode }) => <View style={{ flexDirection: 'row', gap: 8, marginBottom: 4 }}><AT style={{ fontSize: 11, color: adm.muted, minWidth: 56 }}>{label}</AT><AT style={{ fontSize: 11, flexShrink: 1 }}>{value}</AT></View>;
+const KV = ({ label, value }: { label: string; value: React.ReactNode }) => <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}><AT style={{ fontSize: 11, color: adm.muted, minWidth: 56 }}>{label}</AT><AT style={{ fontSize: 11, flexShrink: 1 }}>{value}</AT></View>;
 function CoordRow({ loc, isRequester }: { loc: ParticipantLoc; isRequester: boolean }) {
   const name = loc.user.profile ? `${loc.user.profile.firstName} ${loc.user.profile.lastName}` : loc.userId.slice(0, 8);
   const addr = loc.address ? loc.address.kisaAdres ?? '' : null;
@@ -69,7 +69,7 @@ function CoordRow({ loc, isRequester }: { loc: ParticipantLoc; isRequester: bool
     <View style={{ paddingVertical: 8, paddingHorizontal: 10, borderRadius: 6, backgroundColor: isRequester ? RED_DIM : BLUE_DIM, borderWidth: 1, borderColor: isRequester ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.2)', marginBottom: 4 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <Pulse color={isRequester ? adm.red : adm.blue} />
-        <AT w={600} style={{ fontSize: 11, color: isRequester ? adm.red : adm.cyan }}>{name}{isRequester ? ' ★' : ''}</AT>
+        <AT w={600} style={{ fontSize: 11, color: isRequester ? adm.red : adm.cyan, flexBasis: '100%' }}>{name}{isRequester ? ' ★' : ''}</AT>
         <AT style={{ fontSize: 11, fontFamily: mono(400) }} onPress={() => Linking.openURL(mapsHref(loc.lat, loc.lng))}>{loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}</AT>
         {!!loc.accuracy && <AMono style={{ fontSize: 10 }}>±{Math.round(loc.accuracy)}m</AMono>}
         <LiveBadge ts={loc.timestamp} />
@@ -80,7 +80,7 @@ function CoordRow({ loc, isRequester }: { loc: ParticipantLoc; isRequester: bool
 }
 function AddrRows({ a, color, keyW, fs }: { a: LiveAddress; color: string; keyW: number; fs: number }) {
   const rows: [string, string | null][] = [['İl', a.il], ['İlçe', a.ilce], ['Mahalle', a.mahalle], ['Cadde/Sokak', a.caddeSokak], ['Bina No', a.binaNo], ['Posta Kodu', a.postaKodu], ['Tam Adres', a.tamAdres]];
-  return <>{rows.map(([k, v]) => <View key={k} style={{ flexDirection: 'row', gap: 10 }}><AT style={{ fontSize: fs, color: adm.muted, minWidth: keyW, lineHeight: fs * 1.6 }}>{k}</AT><AT style={{ fontSize: fs, color, flexShrink: 1, lineHeight: fs * 1.6 }}>{v || '—'}</AT></View>)}</>;
+  return <>{rows.map(([k, v]) => <View key={k} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}><AT style={{ fontSize: fs, color: adm.muted, minWidth: keyW, lineHeight: fs * 1.6 }}>{k}</AT><AT style={{ fontSize: fs, color, flexShrink: 1, lineHeight: fs * 1.6 }}>{v || '—'}</AT></View>)}</>;
 }
 function PersonRow({ p, email, phone, highlight }: { p?: Participant; email?: string; phone: string | null; highlight?: boolean }) {
   if (!p) return <AT style={{ fontSize: 11, color: adm.muted }}>—</AT>;
@@ -134,7 +134,7 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { 
   const marker = livePos ?? mapPos;
   return (
     <View style={{ borderRadius: 12, overflow: 'hidden', borderWidth: 1.5, borderColor: report.resolvedAt ? adm.border : 'rgba(239,68,68,0.6)', backgroundColor: adm.card, marginBottom: 12, shadowColor: 'rgba(239,68,68,0.12)', shadowOpacity: report.resolvedAt ? 0 : 1, shadowRadius: 12 }}>
-      <Pressable onPress={() => { const n = !open; setOpen(n); if (n) loadDetail(); }} style={{ paddingVertical: 14, paddingHorizontal: 18, backgroundColor: report.resolvedAt ? adm.surface : 'rgba(239,68,68,0.08)', flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+      <Pressable onPress={() => { const n = !open; setOpen(n); if (n) loadDetail(); }} style={{ paddingVertical: 14, paddingHorizontal: 18, backgroundColor: report.resolvedAt ? adm.surface : 'rgba(239,68,68,0.08)', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14 }}>
         {!report.resolvedAt && <Pulse />}
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -187,7 +187,7 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { 
                       {!liveAddress ? <AT style={{ fontSize: 11, color: adm.muted, marginVertical: 4 }}>Adres alınıyor…</AT> : (
                         <View style={{ paddingVertical: 8, paddingHorizontal: 10, borderRadius: 6, backgroundColor: RED_DIM, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }}>
                           <AddrRows a={liveAddress} color={adm.text} keyW={96} fs={11} />
-                          <View style={{ flexDirection: 'row', gap: 10 }}><AT style={{ fontSize: 11, color: adm.muted, minWidth: 96 }}>Son güncelleme</AT><AT style={{ fontSize: 11 }}>{fmtTime(liveAddress.guncelleme)}</AT></View>
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}><AT style={{ fontSize: 11, color: adm.muted, minWidth: 96 }}>Son güncelleme</AT><AT style={{ fontSize: 11 }}>{fmtTime(liveAddress.guncelleme)}</AT></View>
                         </View>
                       )}
                     </Section>
@@ -274,7 +274,7 @@ export default function AcilYardim() {
     <View style={{ flex: 1, backgroundColor: adm.bg }}>
       {/* .adm-topbar (mobil: dikey) */}
       <View style={{ minHeight: 56, paddingVertical: 8, paddingHorizontal: 16, gap: 6, backgroundColor: adm.surface, borderBottomWidth: 1, borderBottomColor: adm.border }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Btn variant="admBack" label="←" accessibilityLabel="Geri" onPress={() => router.navigate('/admin/stats')} />
           <Pulse color={active.length > 0 ? adm.red : adm.green} />
           <ATitle style={{ fontSize: 18, color: active.length > 0 ? adm.red : adm.text }}>Acil Yardım Merkezi</ATitle>
@@ -312,13 +312,13 @@ export default function AcilYardim() {
             <View>
               {active.length > 0 && (
                 <View style={{ marginBottom: 32 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}><Pulse /><ALabel style={{ color: adm.red }}>AKTİF TALEPLER: {active.length}</ALabel></View>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 12 }}><Pulse /><ALabel style={{ color: adm.red }}>AKTİF TALEPLER: {active.length}</ALabel></View>
                   {active.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} livePos={liveLocs[r.id] ?? null} liveAddress={liveAddrs[r.id] ?? null} />)}
                 </View>
               )}
               {resolved.length > 0 && (
                 <View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}><ALabel>ÇÖZÜMLENEN: {resolved.length}</ALabel></View>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 12 }}><ALabel>ÇÖZÜMLENEN: {resolved.length}</ALabel></View>
                   {resolved.map((r, i) => <ReportCard key={r.id} report={r} index={i} tick={tick} onChanged={fetchReports} />)}
                 </View>
               )}

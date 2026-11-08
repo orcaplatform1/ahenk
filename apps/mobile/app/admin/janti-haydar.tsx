@@ -30,7 +30,7 @@ export default function AdminJantiHaydar() {
       <View style={{ marginBottom: 24 }}><ATitle>Janti Haydar</ATitle></View>
       <AError>{error}</AError>
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
-        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
           <ATitle>Teklif Talepleri</ATitle>
           {!loading && items.length > 0 && <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{items.length} kayıt</AMono>}
         </View>
@@ -46,7 +46,7 @@ export default function AdminJantiHaydar() {
             const files = Array.isArray(r.files) ? r.files : [];
             return (
               <View key={r.id} style={{ borderBottomWidth: i < items.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)' }}>
-                <View style={{ paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                <View style={{ paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                   <View style={{ flex: 1 }}>
                     <AT w={600} numberOfLines={1} style={{ marginBottom: 4, fontSize: 13 }}>{r.fullName}</AT>
                     <AT style={{ fontSize: 11, color: adm.muted }}>{r.adTypes.join(', ')}</AT>

@@ -46,7 +46,7 @@ export default function AdminPartnerships() {
       <View style={{ marginBottom: 24 }}><ATitle>İş Ortaklığı Başvuruları</ATitle></View>
       <AError>{error}</AError>
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
-        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
           <ATitle>Başvurular</ATitle>
           {!loading && items.length > 0 && <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{items.length} kayıt</AMono>}
         </View>
@@ -54,9 +54,9 @@ export default function AdminPartnerships() {
           : items.length === 0 ? <View style={{ paddingVertical: 48, paddingHorizontal: 20, alignItems: 'center' }}><AT w={600} style={{ fontSize: 13, color: adm.muted }}>Başvuru yok</AT><AMono style={{ marginTop: 4, fontSize: 11 }}>Yeni başvurular burada görünür</AMono></View>
           : items.map((p, i) => (
             <View key={p.id} style={{ borderBottomWidth: i < items.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)' }}>
-              <View style={{ paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+              <View style={{ paddingVertical: 14, paddingHorizontal: 18, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <AT w={600} numberOfLines={1} style={{ fontSize: 13, flexShrink: 1 }}>{p.businessName}</AT>
                     <StatusPill text={L[p.status] ?? p.status} color={C[p.status]} bg={B[p.status]} border={Bo[p.status]} />
                   </View>
@@ -90,7 +90,7 @@ export default function AdminPartnerships() {
                       <TextInput value={notes[p.id] ?? ''} onChangeText={t => setNotes(n => ({ ...n, [p.id]: t }))} placeholder="Admin notu (opsiyonel)" placeholderTextColor={adm.muted} multiline numberOfLines={2} keyboardAppearance="dark"
                         style={{ borderWidth: 1, borderColor: adm.border, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 10, fontSize: 11, color: adm.text, fontFamily: sans(400), minHeight: 48, textAlignVertical: 'top' }} />
                       {p.account && !cityMatches(p.city) && <AdminSelect value={cityIds[p.id] ?? ''} onChange={v => setCityIds(c => ({ ...c, [p.id]: v }))} options={cities.map(c => ({ value: c.id, label: c.name }))} placeholder="Onay için şehir seçin" />}
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         <Btn variant="admOkSm" style={{ padding: 8 }} disabled={saving === p.id} label={saving === p.id ? '…' : p.account ? 'Onayla' : 'İncelendi'} onPress={() => update(p.id, p.account ? 'APPROVED' : 'REVIEWED')} />
                         <Btn variant="admNoSm" style={{ padding: 8 }} disabled={saving === p.id} label={saving === p.id ? '…' : 'Reddet'} onPress={() => update(p.id, 'REJECTED')} />
                       </View>

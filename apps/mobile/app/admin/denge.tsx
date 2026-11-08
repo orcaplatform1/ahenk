@@ -61,13 +61,13 @@ export default function AdminBots() {
   }
   return (
     <APage maxWidth={760}>
-      <View style={{ marginBottom: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ marginBottom: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <ATitle>Bot Yönetimi</ATitle>
         <Btn variant="admAdd" label="+ Bot Ekle" onPress={() => { setForm(EMPTY); setModalError(''); setModal('add'); }} />
       </View>
       <AError>{error}</AError>
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
-        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
           <ATitle>Botlar</ATitle>
           {!loading && <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{bots.length} kayıt</AMono>}
         </View>
@@ -77,8 +77,8 @@ export default function AdminBots() {
             const active = b.status === 'ACTIVE';
             return (
               <View key={b.id} style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: i < bots.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)', flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <View style={{ flex: 1, minWidth: 180 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                     <AT w={600} style={{ fontSize: 13 }}>{b.profile?.firstName ?? ''} {b.profile?.lastName ?? ''}</AT>
                     <StatusPill text={active ? 'AKTİF' : 'PASİF'} color={active ? adm.green : adm.muted} bg={active ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)'} border={active ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.25)'} />
                   </View>
@@ -87,7 +87,7 @@ export default function AdminBots() {
                   </AT>
                   {b.oceanScore && <AMono style={{ marginTop: 2, fontSize: 10 }}>{OCEAN_FIELDS.map(({ key, label }) => `${label[0]}${Math.round(b.oceanScore![key])}`).join(' · ')}</AMono>}
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
                   <Btn variant="admActivate" selected={active} label={active ? 'Pasifleştir' : 'Aktifleştir'} onPress={() => toggleStatus(b)} />
                   <Btn variant="admEditSm" label="Düzenle" onPress={() => openEdit(b)} />
                   <Btn variant="admDelSm" label="Sil" onPress={() => deleteBot(b.id)} />
@@ -98,22 +98,22 @@ export default function AdminBots() {
       </ACard>
       <ADialog visible={!!modal} onClose={() => setModal(null)} title={modal === 'add' ? 'Yeni Bot' : 'Botu Düzenle'} maxWidth={420}>
         <View style={{ gap: 10 }}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <AInput value={form.firstName} onChangeText={v => set('firstName', v)} placeholder="Ad" style={{ flex: 1, paddingHorizontal: 12 }} />
             <AInput value={form.lastName} onChangeText={v => set('lastName', v)} placeholder="Soyad" style={{ flex: 1, paddingHorizontal: 12 }} />
           </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <View style={{ flex: 1 }}><AdminSelect value={form.gender} onChange={v => set('gender', v)} placeholder="Cinsiyet" options={[{ value: 'MALE', label: 'Erkek' }, { value: 'FEMALE', label: 'Kadın' }]} /></View>
             <View style={{ flex: 1 }}><AdminDatePicker value={form.birthDate} onChange={v => set('birthDate', v)} /></View>
           </View>
           <AdminSelect value={form.occupationSector} onChange={v => set('occupationSector', v)} placeholder="Meslek alanı" options={OCCUPATION_SECTORS.map(o => ({ value: o, label: o }))} />
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <View style={{ justifyContent: 'center', backgroundColor: adm.bg, borderWidth: 1, borderColor: adm.border, borderRadius: 8, paddingHorizontal: 12 }}><AT style={{ fontSize: 13, color: adm.muted }}>+90</AT></View>
             <AInput keyboardType="number-pad" value={form.phone} onChangeText={v => set('phone', v.replace(/\D/g, '').slice(0, 10))} placeholder="5XX XXX XX XX" style={{ flex: 1, paddingHorizontal: 12 }} />
           </View>
           <AdminSelect value={form.cityId} onChange={v => set('cityId', v)} placeholder="Şehir" options={cities.map(c => ({ value: c.id, label: c.name }))} />
           <ALabel style={{ marginTop: 4 }}>KİŞİLİK TESTİ SKORLARI (0-100)</ALabel>
-          <View style={{ flexDirection: 'row', gap: 6 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
             {OCEAN_FIELDS.map(({ key, label }) => (
               <View key={key} style={{ flex: 1, gap: 3 }}>
                 <AT numberOfLines={1} style={{ fontSize: 9, color: adm.muted }}>{label}</AT>

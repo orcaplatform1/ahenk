@@ -31,7 +31,7 @@ function WinbackSettings() {
   return (
     <ACard style={{ marginTop: 20 }}>
       <ATitle style={{ marginBottom: 10 }}>Geri Kazanım İndirimi</ATitle>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <AT style={{ fontSize: 12, color: adm.muted }}>İndirim tutarı</AT>
         <AInput value={amount} onChangeText={t => setAmount(t.replace(/\D/g, ''))} keyboardType="number-pad" style={{ width: 90, fontFamily: mono(400) }} />
         <AT style={{ fontSize: 12, color: adm.muted }}>₺</AT>
@@ -40,7 +40,7 @@ function WinbackSettings() {
       <View style={{ flexDirection: 'row', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
         {(Object.keys(PLAN_NAME) as PlanKey[]).map(p => <ACheck key={p} label={PLAN_NAME[p]} checked={plans.includes(p)} onChange={() => toggle(p)} />)}
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
         <Btn variant="admGreen" label="Kaydet" disabled={busy || !amount} onPress={save} />
         {msg && <AT style={{ fontSize: 13, color: msg.ok ? adm.green : adm.red, flexShrink: 1 }}>{msg.text}</AT>}
       </View>
@@ -83,7 +83,7 @@ export default function AdminFiyatlar() {
                 <AT w={700} style={{ fontSize: 14, minWidth: 80 }}>{c.name}</AT>
                 <StatusPill text="Tek Seferlik" color="#93c5fd" bg="rgba(59,130,246,0.1)" border="rgba(59,130,246,0.25)" pad={[2, 8]} />
                 <AT style={{ fontSize: 10, color: adm.muted }}>{PLAN_RIGHTS[c.plan]}</AT>
-                <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ marginLeft: 'auto', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                   <AT style={{ fontSize: 11, color: adm.muted }}>Ham fiyat</AT>
                   <AInput value={inputs[c.plan] ?? ''} onChangeText={t => setInputs(prev => ({ ...prev, [c.plan]: t.replace(/[^\d.,]/g, '') }))} keyboardType="decimal-pad" style={{ width: 110, fontFamily: mono(400), borderColor: net === null ? adm.red : adm.border }} />
                   <AT style={{ fontSize: 11, color: adm.muted }}>₺</AT>
@@ -104,7 +104,7 @@ export default function AdminFiyatlar() {
           );
         })}
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 16 }}>
         <Btn variant="admGreen" label="Kaydet" disabled={changes.length === 0 || invalid} onPress={() => setConfirm(true)} />
         {saved && <AT style={{ fontSize: 13, color: adm.green }}>Fiyatlar güncellendi</AT>}
       </View>
@@ -116,7 +116,7 @@ export default function AdminFiyatlar() {
           ); })}
         </View>
         <AT style={{ marginTop: 12, fontSize: 11, color: adm.muted, lineHeight: 16.5 }}>Yeni fiyat sadece bundan sonraki satın almalarda geçerli olur; satın alınmış paketler etkilenmez.</AT>
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
           <Btn variant="admGreen" style={{ flex: 1, padding: 9 }} disabled={saving} label={saving ? 'Kaydediliyor…' : 'Onayla ve uygula'} onPress={save} />
           <Btn variant="admGhost" disabled={saving} label="Vazgeç" onPress={() => setConfirm(false)} />
         </View>
