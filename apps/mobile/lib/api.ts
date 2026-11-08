@@ -92,6 +92,7 @@ export const api = {
   patch: <T>(path: string, body: unknown = {}) => apiFetch<T>(path, { method: 'PATCH', body }),
   put: <T>(path: string, body: unknown = {}) => apiFetch<T>(path, { method: 'PUT', body }),
   delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
+  deleteBody: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'DELETE', body }),
   form: <T>(path: string, form: FormData) => apiFetch<T>(path, { method: 'POST', form }),
   hasSession: async () => !!(await getAccess()),
   async logout() {
