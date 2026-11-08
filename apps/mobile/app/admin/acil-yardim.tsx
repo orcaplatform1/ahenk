@@ -14,10 +14,9 @@ import { adm, mono } from '@/theme/theme';
 type LivePos = { lat: number; lng: number; timestamp: string };
 type LiveAddress = { il: string | null; ilce: string | null; mahalle: string | null; caddeSokak: string | null; binaNo: string | null; postaKodu: string | null; tamAdres: string | null; guncelleme: string; kisaAdres?: string };
 interface LocUpdate { lat: number; lng: number; accuracy: number | null; timestamp: string; address?: LiveAddress | null }
-interface ParticipantLoc { id: string; userId: string; lat: number; lng: number; accuracy: number | null; timestamp: string; address?: LiveAddress | null; user: { id: string; profile: { firstName: string; lastName: string } | null } }
 interface Participant { userId: string; firstName: string | null; lastName: string | null; email?: string; phone: string | null; age: number | null; gender: string | null; occupation: string | null; city: string | null; isRequester: boolean; isBot?: boolean }
 interface AdminRef { id: string; profile: { firstName: string; lastName: string } | null }
-interface SosReport { id: string; createdAt: string; threats: string[]; lat: number | null; lng: number | null; accuracy: number | null; resolvedAt: string | null; restricted: boolean; claimedAt: string | null; claimedBy: AdminRef | null; resolvedBy?: AdminRef | null; participantSnapshot: Participant[]; user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null; meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null; locationUpdates: LocUpdate[]; allParticipantLocations?: ParticipantLoc[] }
+interface SosReport { id: string; createdAt: string; threats: string[]; lat: number | null; lng: number | null; accuracy: number | null; resolvedAt: string | null; restricted: boolean; claimedAt: string | null; claimedBy: AdminRef | null; resolvedBy?: AdminRef | null; participantSnapshot: Participant[]; user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null; meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null; locationUpdates: LocUpdate[] }
 const THREAT: Record<string, string> = { LIFE_DANGER: 'Hayatım tehlikede', PHYSICAL_VIOLENCE: 'Fiziksel şiddet gördüm', ABDUCTION: 'Zorla alıkoyuluyorum', HARASSMENT: 'Taciz veya istismara uğradım' };
 const GENDER_TR: Record<string, string> = { MALE: 'E', FEMALE: 'K' };
 const REFRESH_SEC = 15;
@@ -25,9 +24,7 @@ const RED_DIM = 'rgba(239,68,68,0.15)'; const BLUE_DIM = 'rgba(59,130,246,0.12)'
 const adminName = (a: AdminRef | null | undefined) => (a?.profile ? `${a.profile.firstName} ${a.profile.lastName}` : 'Bir admin');
 const fmtTR = (iso: string) => new Date(iso).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'medium' });
 const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-const secondsAgo = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
 const mapsHref = (lat: number, lng: number) => `https://www.google.com/maps?q=${lat},${lng}`;
-function haversineM(a1: number, o1: number, a2: number, o2: number) { const R = 6371000; const dA = (a2 - a1) * Math.PI / 180; const dO = (o2 - o1) * Math.PI / 180; const a = Math.sin(dA / 2) ** 2 + Math.cos(a1 * Math.PI / 180) * Math.cos(a2 * Math.PI / 180) * Math.sin(dO / 2) ** 2; return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); }
 
 function Pulse({ color = adm.red }: { color?: string }) {
   const v = useRef(new Animated.Value(0)).current;
@@ -36,17 +33,6 @@ function Pulse({ color = adm.red }: { color?: string }) {
     <View style={{ width: 10, height: 10 }}>
       <Animated.View style={{ position: 'absolute', width: 10, height: 10, borderRadius: 5, backgroundColor: color, opacity: v.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.9, 0, 0] }), transform: [{ scale: v.interpolate({ inputRange: [0, 0.7, 1], outputRange: [1, 2.4, 2.4] }) }] }} />
       <View style={{ position: 'absolute', top: 2, left: 2, width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />
-    </View>
-  );
-}
-function LiveBadge({ ts }: { ts: string }) {
-  const [ago, setAgo] = useState(secondsAgo(ts));
-  useEffect(() => { const id = setInterval(() => setAgo(secondsAgo(ts)), 1000); return () => clearInterval(id); }, [ts]);
-  const fresh = ago < 60;
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 2, paddingHorizontal: 8, borderRadius: 99, backgroundColor: fresh ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.12)', borderWidth: 1, borderColor: fresh ? 'rgba(34,197,94,0.4)' : 'rgba(245,158,11,0.35)' }}>
-      <Pulse color={fresh ? adm.green : adm.amber} />
-      <AMono w={600} style={{ fontSize: 10, color: fresh ? adm.green : adm.amber }}>{ago < 60 ? `${ago}s önce` : `${Math.floor(ago / 60)}d ${ago % 60}s önce`}</AMono>
     </View>
   );
 }
@@ -62,22 +48,6 @@ function Section({ title, accent, children, mt }: { title: string; accent: strin
   );
 }
 const KV = ({ label, value }: { label: string; value: React.ReactNode }) => <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}><AT style={{ fontSize: 11, color: adm.muted, minWidth: 56 }}>{label}</AT><AT style={{ fontSize: 11, flexShrink: 1 }}>{value}</AT></View>;
-function CoordRow({ loc, isRequester }: { loc: ParticipantLoc; isRequester: boolean }) {
-  const name = loc.user.profile ? `${loc.user.profile.firstName} ${loc.user.profile.lastName}` : loc.userId.slice(0, 8);
-  const addr = loc.address ? loc.address.kisaAdres ?? '' : null;
-  return (
-    <View style={{ paddingVertical: 8, paddingHorizontal: 10, borderRadius: 6, backgroundColor: isRequester ? RED_DIM : BLUE_DIM, borderWidth: 1, borderColor: isRequester ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.2)', marginBottom: 4 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <Pulse color={isRequester ? adm.red : adm.blue} />
-        <AT w={600} style={{ fontSize: 11, color: isRequester ? adm.red : adm.cyan, flexBasis: '100%' }}>{name}{isRequester ? ' ★' : ''}</AT>
-        <AT style={{ fontSize: 11, fontFamily: mono(400) }} onPress={() => Linking.openURL(mapsHref(loc.lat, loc.lng))}>{loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}</AT>
-        {!!loc.accuracy && <AMono style={{ fontSize: 10 }}>±{Math.round(loc.accuracy)}m</AMono>}
-        <LiveBadge ts={loc.timestamp} />
-      </View>
-      {addr === null ? <AT style={{ marginTop: 4, marginLeft: 24, fontSize: 10.5, color: adm.muted }}>Adres alınıyor…</AT> : !!addr && <AT style={{ marginTop: 4, marginLeft: 24, fontSize: 10.5, color: isRequester ? 'rgba(239,100,100,0.8)' : adm.cyan }}>📍 {addr}</AT>}
-    </View>
-  );
-}
 function AddrRows({ a, color, keyW, fs }: { a: LiveAddress; color: string; keyW: number; fs: number }) {
   const rows: [string, string | null][] = [['İl', a.il], ['İlçe', a.ilce], ['Mahalle', a.mahalle], ['Cadde/Sokak', a.caddeSokak], ['Bina No', a.binaNo], ['Posta Kodu', a.postaKodu], ['Tam Adres', a.tamAdres]];
   return <>{rows.map(([k, v]) => <View key={k} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}><AT style={{ fontSize: fs, color: adm.muted, minWidth: keyW, lineHeight: fs * 1.6 }}>{k}</AT><AT style={{ fontSize: fs, color, flexShrink: 1, lineHeight: fs * 1.6 }}>{v || '—'}</AT></View>)}</>;
@@ -125,12 +95,8 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { 
   const latest = detail ? detail.locationUpdates[detail.locationUpdates.length - 1] : report.locationUpdates[report.locationUpdates.length - 1];
   const dLat = latest?.lat ?? report.lat; const dLng = latest?.lng ?? report.lng;
   const elapsed = Math.floor((Date.now() - new Date(report.createdAt).getTime()) / 60000);
-  const allLocs = detail?.allParticipantLocations ?? [];
-  const reqLoc = allLocs.find(l => l.userId === report.user?.id) ?? null;
-  const others = allLocs.filter(l => l.userId !== report.user?.id);
-  const close = reqLoc ? others.filter(o => haversineM(reqLoc.lat, reqLoc.lng, o.lat, o.lng) < 100) : [];
-  // Haritadaki işaret: talep edenin en yeni konumu (katılımcı konumu ya da talep konum güncellemesi); 1 sn'lik canlı konum varsa onu izler
-  const mapPos = reqLoc && (!latest || new Date(reqLoc.timestamp) >= new Date(latest.timestamp)) ? { lat: reqLoc.lat, lng: reqLoc.lng } : dLat != null && dLng != null ? { lat: dLat, lng: dLng } : null;
+  // Haritadaki işaret: talep edenin en yeni konumu (talep konum güncellemesi, yoksa talep anındaki konum); 1 sn'lik canlı konum varsa onu izler
+  const mapPos = dLat != null && dLng != null ? { lat: dLat, lng: dLng } : null;
   const marker = livePos ?? mapPos;
   return (
     <View style={{ borderRadius: 12, overflow: 'hidden', borderWidth: 1.5, borderColor: report.resolvedAt ? adm.border : 'rgba(239,68,68,0.6)', backgroundColor: adm.card, marginBottom: 12, shadowColor: 'rgba(239,68,68,0.12)', shadowOpacity: report.resolvedAt ? 0 : 1, shadowRadius: 12 }}>
@@ -193,19 +159,7 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { 
                     </Section>
                   </View>
                 )}
-                {allLocs.length === 0 && !dLat ? <AT style={{ fontSize: 11, color: adm.muted, marginVertical: 8 }}>Konum verisi yok</AT> : (
-                  <>
-                    {close.length > 0 && reqLoc && (
-                      <View style={{ paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8, marginBottom: 12, backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.5)' }}>
-                        <AT w={700} style={{ fontSize: 13, color: adm.red }}>⚠ YAKINDA KATILIMCI TESPİT EDİLDİ</AT>
-                        {close.map(p => <AMono key={p.userId} style={{ marginTop: 4, fontSize: 11, color: 'rgba(239,68,68,0.8)' }}>→ {p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.userId.slice(0, 8)}: {Math.round(haversineM(reqLoc.lat, reqLoc.lng, p.lat, p.lng))}m mesafede</AMono>)}
-                      </View>
-                    )}
-                    {reqLoc && <CoordRow loc={reqLoc} isRequester />}
-                    {others.map(l => <CoordRow key={l.userId} loc={l} isRequester={false} />)}
-                    {!reqLoc && !!dLat && !!dLng && <AT style={{ fontSize: 11, color: adm.cyan }} onPress={() => Linking.openURL(mapsHref(dLat, dLng))}>📍 {dLat.toFixed(5)}, {dLng.toFixed(5)} (ilk konum)</AT>}
-                  </>
-                )}
+                {!marker && <AT style={{ fontSize: 11, color: adm.muted, marginVertical: 8 }}>Konum verisi yok</AT>}
               </Section>
               {(detail?.locationUpdates?.length ?? 0) > 0 && (
                 <Section title="KONUM GEÇMİŞİ (TALEP EDEN)" accent={adm.muted} mt>

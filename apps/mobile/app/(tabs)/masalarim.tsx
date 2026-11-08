@@ -8,7 +8,6 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { buildInitials, fmtDate, gColor, type DashboardItem, type MasaTuru } from '@/lib/masa';
 import { useMasaTabs } from '@/lib/useMasaTabs';
-import { requestLocationOnFirstTable } from '@/lib/sosTask';
 import { LiveTabs } from '@/components/LiveTabs';
 import { KankaPairs } from '@/components/KankaPairs';
 import { DetayAvatar } from '@/components/DetayAvatar';
@@ -235,8 +234,6 @@ export default function Masalarim() {
   const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => { api.get<HistoryMeeting[]>('/meetings/my-history').then(h => setHistory(Array.isArray(h) ? h : [])).catch(() => {}); }, []);
-  // S-27: konum izni ilk masa onaylandığında istenir
-  useEffect(() => { if (items.some(i => i.phase === 'REVEALED')) requestLocationOnFirstTable().catch(() => {}); }, [items]);
 
   const colW = Math.min(width, llColumn.maxWidth) - 32;
   const userInfo = me ? { firstName: me.firstName, lastName: me.lastName, gender: me.profile?.gender } : undefined;

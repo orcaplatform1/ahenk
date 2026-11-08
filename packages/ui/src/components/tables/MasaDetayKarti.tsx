@@ -759,54 +759,6 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
       .catch(() => {});
   }, [sosVisible, apiBase, masa.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Acil yardım süresinde masa üyelerinin konumu 30 sn'de bir alınır. İzin İSTENMEZ: sadece daha önce
-  // konum izni vermiş kullanıcılarda çalışır. Backend kabul etmezse (iptal, gelmedi, talep çözüldü) durur.
-  useEffect(() => {
-    if (!sosVisible || !authHeaders || !navigator.geolocation) return;
-    const headers = authHeaders;
-    let watchId: number | null = null;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-    let lastPos: GeolocationPosition | null = null;
-    let stopped = false;
-
-    const stop = () => {
-      stopped = true;
-      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-      if (intervalId !== null) clearInterval(intervalId);
-    };
-
-    const start = () => {
-      if (stopped) return;
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => { lastPos = pos; },
-        () => {},
-        { enableHighAccuracy: true, maximumAge: 15000 },
-      );
-      intervalId = setInterval(async () => {
-        if (!lastPos) return;
-        try {
-          const res = await fetch(`${apiBase}/sos/${masa.id}/participant-location`, {
-            method: 'POST', headers, credentials: 'include',
-            body: JSON.stringify({
-              lat: lastPos.coords.latitude,
-              lng: lastPos.coords.longitude,
-              accuracy: lastPos.coords.accuracy,
-            }),
-          });
-          const data = await res.json().catch(() => null) as { active?: boolean } | null;
-          if (!res.ok || data?.active === false) stop();
-        } catch { /* sessiz */ }
-      }, 30000);
-    };
-
-    if (navigator.permissions?.query) {
-      navigator.permissions.query({ name: 'geolocation' as PermissionName })
-        .then(p => { if (p.state === 'granted') start(); })
-        .catch(() => {});
-    }
-
-    return stop;
-  }, [sosVisible, apiBase, masa.id]); // authHeaders dependency'den çıkarıldı — string ref stabil değil
 
   return (
     <>

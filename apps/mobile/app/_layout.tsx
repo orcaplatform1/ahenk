@@ -8,7 +8,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { loadFonts } from '@/lib/boot';
 import { onAuthLost } from '@/lib/api';
-import '@/lib/sosTask';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 

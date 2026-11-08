@@ -86,13 +86,6 @@ export class SosController {
     return this.sos.myOpenReport(user.id, meetingId);
   }
 
-  // Tüm masa katılımcıları 30s'de bir çağırır (acil yardım süresinde)
-  @Post(":meetingId/participant-location")
-  updateParticipantLocation(@Param("meetingId") meetingId: string, @Body() dto: UpdateLocationDto, @Req() req: Request) {
-    const user = req.user as { id: string };
-    return this.sos.updateParticipantLocation(meetingId, user.id, dto.lat, dto.lng, dto.accuracy);
-  }
-
   @Get("admin/reports")
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)

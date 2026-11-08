@@ -8,7 +8,6 @@ import { api } from '@/lib/api';
 import { formatMeetingTime, gColor, type MasaTuru } from '@/lib/masa';
 import { openMaps } from '@/lib/links';
 import { useAppRefresh } from '@/lib/useAppRefresh';
-import { startSosTracking, stopSosTracking } from '@/lib/sosTask';
 import { DetayAvatar } from './DetayAvatar';
 import { KankaPairs, type KankaPerson } from './KankaPairs';
 import { InlineLH, Btn, BtnPrimary, Serif, T } from './ui';
@@ -322,9 +321,6 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
   useEffect(() => {
     if (!sosVisible) return;
     api.get<{ reportId: string | null }>(`/sos/meetings/${masa.id}/my-report`).then(d => { if (d?.reportId) setSosDone(true); }).catch(() => {});
-    // Acil yardım süresinde masa üyelerinin konumu 30 sn'de bir; izin daha önce verilmişse (arka planda da, S-27)
-    startSosTracking(masa.id).catch(() => {});
-    return () => { stopSosTracking().catch(() => {}); };
   }, [sosVisible, masa.id]);
 
   async function handleSos() {
@@ -339,7 +335,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       try {
         await api.post<{ reportId: string }>(`/sos/${masa.id}/report`, { threats, lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
-        setSosDone(true); setShowSos(false); startSosTracking(masa.id).catch(() => {});
+        setSosDone(true); setShowSos(false);
       } catch (e) {
         const m = (e as Error).message;
         setSosError(m === '__rate_limit__' ? 'Çok fazla deneme yapıldı. Lütfen birkaç dakika sonra tekrar dene.' : m || 'Sunucu hatası. Lütfen tekrar dene.');

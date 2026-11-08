@@ -70,7 +70,6 @@ model User {
   identity                  UserIdentity?
   planPriceChanges          PlanPrice[]
   adminActionLogs           AdminActionLog[]
-  participantLocations      ParticipantLocation[]
   winbackOffer              WinbackOffer?
   deletionRequests          AccountDeletionRequest[]
   problemReports            ProblemReport[]
@@ -269,7 +268,6 @@ model Meeting {
   aiReport             MeetingAiReport?
   chatMessages         ChatMessage[]
   sosReports           SosReport[]
-  participantLocations ParticipantLocation[]
 
   @@index([cityId])
   @@index([venueId, scheduledAt])
@@ -1086,26 +1084,6 @@ model SosLocationUpdate {
   timestamp DateTime  @default(now())
 
   @@index([reportId, timestamp])
-}
-
-// ─────────────────────────────────────────────
-// KATILIMCI KONUM TAKİBİ (Acil Yardım Dönemi)
-// ─────────────────────────────────────────────
-
-model ParticipantLocation {
-  id        String   @id @default(cuid())
-  meetingId String
-  userId    String
-  lat       Float
-  lng       Float
-  accuracy  Float?
-  timestamp DateTime @default(now())
-
-  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([meetingId, userId, timestamp])
-  @@index([timestamp])
 }
 
 // ─────────────────────────────────────────────

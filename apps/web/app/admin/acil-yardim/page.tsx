@@ -23,12 +23,6 @@ type LiveAddress = {
 
 interface LocUpdate { lat: number; lng: number; accuracy: number | null; timestamp: string; address?: LiveAddress | null; }
 
-interface ParticipantLoc {
-  id: string; userId: string; lat: number; lng: number; accuracy: number | null; timestamp: string;
-  address?: LiveAddress | null; // backend Nominatim önbelleğinden (detayla 15 sn'de bir)
-  user: { id: string; profile: { firstName: string; lastName: string } | null };
-}
-
 interface Participant {
   userId: string; firstName: string | null; lastName: string | null;
   email?: string; phone: string | null; age: number | null;
@@ -52,8 +46,6 @@ interface SosReport {
   user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null;
   meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null;
   locationUpdates: LocUpdate[];
-  allParticipantLocations?: ParticipantLoc[];
-  participantLocationHistory?: ParticipantLoc[];
 }
 
 // ─── Sabitler ────────────────────────────────────────────────────────────────
@@ -82,20 +74,9 @@ function fmtTR(iso: string) {
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
-function secondsAgo(iso: string) {
-  return Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-}
 function mapsHref(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
-function haversineM(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
 // ─── CSS / stil sabitleri ───────────────────────────────────────────────────
 
 const RED_DIM = 'rgba(239,68,68,0.15)';
@@ -120,65 +101,6 @@ function Pulse({ color = RED }: { color?: string }) {
   );
 }
 
-function LiveBadge({ ts }: { ts: string }) {
-  const [ago, setAgo] = useState(secondsAgo(ts));
-  useEffect(() => {
-    const id = setInterval(() => setAgo(secondsAgo(ts)), 1000);
-    return () => clearInterval(id);
-  }, [ts]);
-  const fresh = ago < 60;
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      padding: '2px 8px', borderRadius: 99, fontSize: 10, fontFamily: MONO, fontWeight: 700,
-      background: fresh ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.12)',
-      border: `1px solid ${fresh ? 'rgba(34,197,94,0.4)' : 'rgba(245,158,11,0.35)'}`,
-      color: fresh ? GREEN : AMBER,
-    }}>
-      <Pulse color={fresh ? GREEN : AMBER} />
-      {ago < 60 ? `${ago}s önce` : `${Math.floor(ago / 60)}d ${ago % 60}s önce`}
-    </span>
-  );
-}
-
-function CoordRow({ loc, isRequester }: { loc: ParticipantLoc; isRequester: boolean }) {
-  const name = loc.user.profile ? `${loc.user.profile.firstName} ${loc.user.profile.lastName}` : loc.userId.slice(0, 8);
-  // Adres backend'den gelir (tarayıcı Nominatim'e istek atmaz)
-  const addr = loc.address ? (loc.address.kisaAdres ?? '') : null;
-
-  return (
-    <div style={{
-      padding: '8px 10px', borderRadius: 6,
-      background: isRequester ? RED_DIM : BLUE_DIM,
-      border: `1px solid ${isRequester ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.2)'}`,
-      marginBottom: 4,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Pulse color={isRequester ? RED : BLUE} />
-        <span style={{ fontSize: 11, fontWeight: 600, color: isRequester ? RED : CYAN, minWidth: 110, fontFamily: SANS, flexShrink: 0 }}>
-          {name}{isRequester ? ' ★' : ''}
-        </span>
-        <a href={mapsHref(loc.lat, loc.lng)} target="_blank" rel="noopener noreferrer"
-          style={{ fontSize: 11, fontFamily: MONO, color: TEXT, flex: 1, textDecoration: 'none' }}>
-          {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
-        </a>
-        {loc.accuracy && (
-          <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, flexShrink: 0 }}>±{Math.round(loc.accuracy)}m</span>
-        )}
-        <LiveBadge ts={loc.timestamp} />
-      </div>
-      {addr === null ? (
-        <p style={{ margin: '4px 0 0 24px', fontSize: 10.5, color: MUTED, fontFamily: SANS, lineHeight: 1.4 }}>
-          Adres alınıyor…
-        </p>
-      ) : addr && (
-        <p style={{ margin: '4px 0 0 24px', fontSize: 10.5, color: isRequester ? 'rgba(239,100,100,0.8)' : CYAN, fontFamily: SANS, lineHeight: 1.4 }}>
-          📍 {addr}
-        </p>
-      )}
-    </div>
-  );
-}
 
 // Talep edenin güncel konumunun açık adresi (emniyete iletmek için); veri 1 sn'lik open-locations çekmesinden gelir
 function OpenAddress({ address }: { address: LiveAddress | null }) {
@@ -239,31 +161,6 @@ function HistoryRow({ lu }: { lu: LocUpdate }) {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function ProximityAlert({ requester, others }: { requester: ParticipantLoc | null; others: ParticipantLoc[] }) {
-  if (!requester) return null;
-  const close = others.filter(o => haversineM(requester.lat, requester.lng, o.lat, o.lng) < 100);
-  if (close.length === 0) return null;
-  return (
-    <div style={{
-      padding: '10px 14px', borderRadius: 8, marginBottom: 12,
-      background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.5)',
-    }}>
-      <p style={{ margin: 0, fontSize: 13, color: RED, fontWeight: 700, fontFamily: SANS }}>
-        ⚠ YAKINDA KATILIMCI TESPİT EDİLDİ
-      </p>
-      {close.map(p => {
-        const m = Math.round(haversineM(requester.lat, requester.lng, p.lat, p.lng));
-        const name = p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.userId.slice(0, 8);
-        return (
-          <p key={p.userId} style={{ margin: '4px 0 0', fontSize: 11, color: 'rgba(239,68,68,0.8)', fontFamily: MONO }}>
-            → {name}: {m}m mesafede
-          </p>
-        );
-      })}
     </div>
   );
 }
@@ -331,13 +228,8 @@ function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress }
     if (next) loadDetail();
   }
 
-  const allLocs  = detail?.allParticipantLocations ?? [];
-  const reqLoc   = allLocs.find(l => l.userId === report.user?.id) ?? null;
-  const otherLoc = allLocs.filter(l => l.userId !== report.user?.id);
-  // Haritadaki işaret: talep edenin en yeni konumu (katılımcı konumu ya da talep konum güncellemesi)
-  const mapPos = reqLoc && (!latest || new Date(reqLoc.timestamp) >= new Date(latest.timestamp))
-    ? { lat: reqLoc.lat, lng: reqLoc.lng }
-    : (displayLat != null && displayLng != null ? { lat: displayLat, lng: displayLng } : null);
+  // Haritadaki işaret: talep edenin en yeni konumu (talep konum güncellemesi, yoksa talep anındaki konum)
+  const mapPos = displayLat != null && displayLng != null ? { lat: displayLat, lng: displayLng } : null;
   // 1 sn'lik canlı konum varsa işaret onu izler
   const markerPos = livePos ?? mapPos;
 
@@ -477,20 +369,8 @@ function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress }
               <Section title="CANLI KONUM TAKİBİ" accent={CYAN}>
                 {markerPos && <SosLiveMap lat={markerPos.lat} lng={markerPos.lng} />}
                 {markerPos && !report.resolvedAt && <OpenAddress address={liveAddress} />}
-                {allLocs.length === 0 && !displayLat ? (
+                {!markerPos && (
                   <p style={{ fontSize: 11, color: MUTED, margin: '8px 0' }}>Konum verisi yok</p>
-                ) : (
-                  <>
-                    <ProximityAlert requester={reqLoc} others={otherLoc} />
-                    {reqLoc && <CoordRow loc={reqLoc} isRequester />}
-                    {otherLoc.map(l => <CoordRow key={l.userId} loc={l} isRequester={false} />)}
-                    {!reqLoc && displayLat && displayLng && (
-                      <a href={mapsHref(displayLat, displayLng)} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: 11, color: CYAN, textDecoration: 'none' }}>
-                        📍 {displayLat.toFixed(5)}, {displayLng.toFixed(5)} (ilk konum)
-                      </a>
-                    )}
-                  </>
                 )}
               </Section>
 

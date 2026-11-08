@@ -2,7 +2,6 @@ import { Injectable, ForbiddenException, NotFoundException, BadRequestException 
 import { PrismaService } from "../prisma/prisma.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { FcmService } from "../notification/fcm/fcm.service";
-import { NotificationService } from "../notification/notification.service";
 import { Logger } from "@nestjs/common";
 import { AdminAlertType, MeetingStatus, Prisma, UserRole } from "../generated/prisma/client";
 import { sosWindowEnd } from "../meetings/meeting-windows";
@@ -53,7 +52,6 @@ export class SosService {
     private prisma: PrismaService,
     private whatsapp: WhatsappNotifyService,
     private fcm: FcmService,
-    private notifications: NotificationService,
   ) {}
 
   private inSosWindow(scheduledAt: Date): boolean {
@@ -291,27 +289,6 @@ export class SosService {
     if (!report) throw new NotFoundException();
     if (!this.canSee(report, viewer)) throw new ForbiddenException("Bu talep başka bir admin tarafından takip ediliyor");
 
-    // Aynı masadaki tüm katılımcıların konumları (kayıtlar talep çözülse de durur)
-    // Masa silindiyse (meetingId null) katılımcı konumu yoktur
-    const participantLocations = !report.meetingId ? [] : await this.prisma.participantLocation.findMany({
-      where: { meetingId: report.meetingId },
-      orderBy: { timestamp: "desc" },
-      include: {
-        user: {
-          select: {
-            id: true,
-            profile: { select: { firstName: true, lastName: true } },
-          },
-        },
-      },
-    });
-
-    // Her kullanıcı için en son konum
-    const latestByUser = new Map<string, typeof participantLocations[0]>();
-    for (const loc of participantLocations) {
-      if (!latestByUser.has(loc.userId)) latestByUser.set(loc.userId, loc);
-    }
-
     const snapshot = (Array.isArray(report.participantSnapshot) ? report.participantSnapshot : []) as SnapshotPerson[];
     const bots = await this.botIds(snapshot.map((p) => p.userId));
     const deleted = await this.deletedIds(snapshot.map((p) => p.userId));
@@ -321,14 +298,11 @@ export class SosService {
       locationUpdates: report.locationUpdates.map((lu) => ({ ...lu, address: this.historyAddress(lu.lat, lu.lng) })),
       restricted: false,
       participantSnapshot: this.shapeSnapshot(report.participantSnapshot, bots, viewer, deleted),
-      // Katılımcı koordinat satırları: açık adres aynı koordinat önbelleği + global kuyruktan (düşük öncelik)
-      allParticipantLocations: Array.from(latestByUser.values()).map((l) => ({ ...l, address: this.historyAddress(l.lat, l.lng) })),
-      participantLocationHistory: participantLocations,
     };
   }
 
   // Canlı harita: çözülmemiş tüm açık taleplerin talep eden konumu, sabit 2 sorguda.
-  // Konum: talep konum güncellemesi ile katılımcı konumundan zamanı yeni olanı. Yetki canSee ile aynı:
+  // Konum: talep edenin son konum güncellemesi (yoksa talep anındaki konum). Yetki canSee ile aynı:
   // başka adminin üstlendiği talep dönmez, SUPERADMIN hepsini görür.
   async adminOpenLocations(viewer: Viewer) {
     // 1) Açık talepler + her birinin son konum güncellemesi (Prisma ilişki take:1)
@@ -338,31 +312,19 @@ export class SosService {
         ...(viewer.role === UserRole.SUPERADMIN ? {} : { OR: [{ claimedById: null }, { claimedById: viewer.id }] }),
       },
       select: {
-        id: true, userId: true, meetingId: true,
+        id: true, userId: true, meetingId: true, lat: true, lng: true, createdAt: true,
         locationUpdates: { orderBy: { timestamp: "desc" }, take: 1, select: { lat: true, lng: true, timestamp: true } },
       },
     });
-    // 2) Talep edenlerin masadaki son katılımcı konumu: tüm (masa, kişi) çiftleri tek sorguda
-    const pairs = reports
-      .filter((r) => r.meetingId && r.userId)
-      .map((r) => ({ meetingId: r.meetingId as string, userId: r.userId as string }));
-    const partRows = pairs.length === 0 ? [] : await this.prisma.participantLocation.findMany({
-      where: { OR: pairs },
-      orderBy: { timestamp: "desc" },
-      distinct: ["meetingId", "userId"],
-      select: { meetingId: true, userId: true, lat: true, lng: true, timestamp: true },
-    });
-    const partBy = new Map(partRows.map((p) => [`${p.meetingId}:${p.userId}`, p]));
     // SUPERADMIN listesi tüm açık talepleri içerir: listede olmayan (çözülmüş/silinmiş) taleplerin adresi önbellekten silinir
     if (viewer.role === UserRole.SUPERADMIN) {
       const openIds = new Set(reports.map((r) => r.id));
       for (const id of this.addressCache.keys()) if (!openIds.has(id)) this.addressCache.delete(id);
     }
     return reports.map((r) => {
+      // Yalnız talep edenin konumu: son canlı konum güncellemesi, yoksa talep anındaki konum
       const update = r.locationUpdates[0] ?? null;
-      const p = r.meetingId && r.userId ? partBy.get(`${r.meetingId}:${r.userId}`) : undefined;
-      const part = p ? { lat: p.lat, lng: p.lng, timestamp: p.timestamp } : null;
-      const location = part && (!update || part.timestamp >= update.timestamp) ? part : update;
+      const location = update ?? (r.lat != null && r.lng != null ? { lat: r.lat, lng: r.lng, timestamp: r.createdAt } : null);
       // Uç her saniye çağrılır ama Nominatim'e gitmez: yenileme gerekiyorsa arka planda sıraya eklenir, önbellek döner
       if (location) this.refreshAddress(r.id, location.lat, location.lng);
       return { reportId: r.id, location, address: this.addressCache.get(r.id)?.address ?? null };
@@ -500,50 +462,6 @@ export class SosService {
     await this.prisma.sosReport.update({ where: { id }, data: { resolvedAt: new Date(), resolvedById: viewer.id, openKey: null } });
     this.addressCache.delete(id); // açık adres önbelleği talep çözülünce silinir
     return { resolved: true };
-  }
-
-  // ─── Tüm masa üyeleri konum güncelle ────────────────────────────────────
-  // Sadece acil yardım süresinde ve aktif katılımcıdan (iptal eden / gelmedi sayılan alınmaz).
-  // Masadaki talep çözüldüyse (açık talep kalmadıysa) konum alınmaz. Kabul edilmezse { active: false } → takip durur.
-  // Katılımcıya masa başına bir kez bilgilendirme gider.
-
-  async updateParticipantLocation(
-    meetingId: string,
-    userId: string,
-    lat: number,
-    lng: number,
-    accuracy?: number,
-  ) {
-    const participation = await this.prisma.meetingParticipant.findUnique({
-      where: { meetingId_userId: { meetingId, userId } },
-      select: { status: true, meeting: { select: { status: true, scheduledAt: true } } },
-    });
-    if (!participation) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
-    if (
-      INACTIVE.includes(participation.status) ||
-      participation.meeting.status === MeetingStatus.CANCELLED ||
-      !this.inSosWindow(participation.meeting.scheduledAt)
-    ) {
-      return { active: false };
-    }
-    const [resolved, open] = await Promise.all([
-      this.prisma.sosReport.count({ where: { meetingId, resolvedAt: { not: null } } }),
-      this.prisma.sosReport.count({ where: { meetingId, resolvedAt: null } }),
-    ]);
-    if (resolved > 0 && open === 0) return { active: false };
-
-    const first = (await this.prisma.participantLocation.count({ where: { meetingId, userId } })) === 0;
-    await this.prisma.participantLocation.create({
-      data: { meetingId, userId, lat, lng, accuracy: accuracy ?? null },
-    });
-    if (first) {
-      await this.notifications.sendToUser(userId, {
-        title: "Güvenliğin için",
-        body: "Masa süresince konumun, acil bir durumda kullanılmak üzere güvenlik ekibimizle paylaşılır.",
-        data: { type: "LOCATION_NOTICE", meetingId },
-      }).catch(() => undefined);
-    }
-    return { active: true };
   }
 
   // ─── İç: admin bildirim ───────────────────────────────────────────────────
