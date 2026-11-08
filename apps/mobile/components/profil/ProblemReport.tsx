@@ -1,5 +1,5 @@
-// apps/web/components/ProblemReportModal.tsx karşılığı: açıklama + yalnız galeriden en fazla 3 görsel (JPG/PNG/WebP, her biri 5 MB).
-// Butonla ve sallayarak açılışta aynı; ekran görüntüsü eklenmez. Gönderim: POST /problem-reports (platform IOS/ANDROID).
+// apps/web/components/ProblemReportModal.tsx karşılığı: açıklama + galeriden ek görsel, toplam en fazla 3 görsel (JPG/PNG/WebP, her biri 5 MB).
+// Sallayarak açılışta sallandığı anki ekran görüntüsü otomatik eklenir (3 görsel sınırına dahil). Gönderim: POST /problem-reports (platform IOS/ANDROID).
 import React, { useEffect, useState } from 'react';
 import { Image, Platform, TextInput, View } from 'react-native';
 import { api } from '@/lib/api';
@@ -12,17 +12,18 @@ const MAX_IMAGES = 3;
 const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPT = ['image/jpeg', 'image/png', 'image/webp'];
 
-export function ProblemReport({ open, onClose, screen }: { open: boolean; onClose: () => void; screen: string }) {
+export function ProblemReport({ open, onClose, screen, initialImage }: { open: boolean; onClose: () => void; screen: string; initialImage?: PickedImage | null }) {
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<PickedImage[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
 
+  // Salla-Bildir: açılışta sallandığı anki ekran görüntüsü eklenir (3 görsel sınırına dahil)
   useEffect(() => {
-    if (open) return;
+    if (open) { setFiles(initialImage ? [initialImage] : []); return; }
     setDescription(''); setFiles([]); setError(''); setDone(false);
-  }, [open]);
+  }, [open, initialImage]);
 
   async function addFiles() {
     setError('');
