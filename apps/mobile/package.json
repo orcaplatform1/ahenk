@@ -49,6 +49,7 @@
   "devDependencies": {
     "@ahenk/config": "workspace:*",
     "@babel/core": "^8.1.0",
+    "@expo/ngrok": "^4.1.3",
     "@types/react": "~19.3.0",
     "typescript": "^7.0.2"
   }
