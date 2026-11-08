@@ -98,7 +98,7 @@ export default function AdminFiyatlar() {
                   {([['Web (KDV dahil)', p.web, c.webKurus], ['Web indirimli', p.webDiscount, c.webDiscountKurus], ['Mobil (KDV + %15)', p.mobile, c.mobileKurus], ['Mobil indirimli', p.mobileDiscount, c.mobileDiscountKurus]] as const).map(([label, now, old]) => (
                     <View key={label} style={{ width: fitCell, backgroundColor: adm.surface, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10 }}>
                       <AT style={{ fontSize: 9, color: adm.muted, letterSpacing: 0.72 }}>{label}</AT>
-                      <AMono w={600} style={{ marginTop: 2, fontSize: 15, color: now !== old ? adm.amber : adm.text }}>{tl(now)}</AMono>
+                      <AMono w={700} style={{ marginTop: 2, fontSize: 15, color: now !== old ? adm.amber : adm.text }}>{tl(now)}</AMono>
                       {now !== old && <AMono style={{ fontSize: 10, textDecorationLine: 'line-through' }}>{tl(old)}</AMono>}
                     </View>
                   ))}

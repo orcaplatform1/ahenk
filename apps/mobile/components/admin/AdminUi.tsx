@@ -7,7 +7,7 @@ import { withWebLH } from '../ui';
 export function AT({ style, w = 400, children, numberOfLines, onPress }: { style?: StyleProp<TextStyle>; w?: 400 | 500 | 600 | 700 | 800; children: React.ReactNode; numberOfLines?: number; onPress?: () => void }) {
   return <Text onPress={onPress} numberOfLines={numberOfLines} style={withWebLH([{ fontFamily: sans(w), color: adm.text }, style], true)}>{children}</Text>;
 }
-export function AMono({ style, w = 400, children }: { style?: StyleProp<TextStyle>; w?: 400 | 500 | 600; children: React.ReactNode }) {
+export function AMono({ style, w = 400, children }: { style?: StyleProp<TextStyle>; w?: 400 | 500 | 600 | 700; children: React.ReactNode }) {
   return <Text style={withWebLH([{ fontFamily: mono(w), color: adm.muted }, style], true)}>{children}</Text>;
 }
 export function ALabel({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {

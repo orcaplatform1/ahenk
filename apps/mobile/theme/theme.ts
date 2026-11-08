@@ -135,13 +135,14 @@ export const fonts = {
   mono400: 'JetBrainsMono_400Regular',
   mono500: 'JetBrainsMono_500Medium',
   mono600: 'JetBrainsMono_600SemiBold',
+  mono700: 'JetBrainsMono_700Bold',
 } as const;
 
 export function sans(weight: 400 | 500 | 600 | 700 | 800 = 400): string {
   return ({ 400: fonts.sans400, 500: fonts.sans500, 600: fonts.sans600, 700: fonts.sans700, 800: fonts.sans800 } as const)[weight];
 }
-export function mono(weight: 400 | 500 | 600 = 400): string {
-  return ({ 400: fonts.mono400, 500: fonts.mono500, 600: fonts.mono600 } as const)[weight];
+export function mono(weight: 400 | 500 | 600 | 700 = 400): string {
+  return ({ 400: fonts.mono400, 500: fonts.mono500, 600: fonts.mono600, 700: fonts.mono700 } as const)[weight];
 }
 
 // ── Bileşen ölçüleri (globals.css) ────────────────────────────────────────
