@@ -1,7 +1,7 @@
 // apps/web/app/admin/careers/page.tsx karşılığı (yalnız SUPERADMIN)
 import React, { useEffect, useState } from 'react';
 import { TextInput, View } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import { openAuthedFile } from '@/lib/authFile';
 import { api } from '@/lib/api';
 import { API_PREFIX } from '@/lib/config';
 import { Btn } from '@/components/ui';
@@ -66,7 +66,7 @@ export default function AdminCareers() {
                   ] as [string, string | null | undefined][]).map(([k, v]) => (
                     <AT key={k} style={{ fontSize: 13, color: adm.muted }}><AT w={600} style={{ fontSize: 13 }}>{k}:</AT> {v || '—'}</AT>
                   ))}
-                  <AT style={{ fontSize: 13, color: adm.muted }}><AT w={600} style={{ fontSize: 13 }}>Özgeçmiş (CV):</AT> {c.cvFile ? <AT style={{ fontSize: 13, color: adm.cyan }} onPress={() => WebBrowser.openBrowserAsync(`${API_PREFIX}/admin/careers/${c.id}/cv`)}>{c.cvOriginalName ?? 'CV dosyasını aç'}</AT> : '—'}</AT>
+                  <AT style={{ fontSize: 13, color: adm.muted }}><AT w={600} style={{ fontSize: 13 }}>Özgeçmiş (CV):</AT> {c.cvFile ? <AT style={{ fontSize: 13, color: adm.cyan }} onPress={() => { openAuthedFile(`${API_PREFIX}/admin/careers/${c.id}/cv`).catch((e: Error) => setError(e.message)); }}>{c.cvOriginalName ?? 'CV dosyasını aç'}</AT> : '—'}</AT>
                   {c.status === 'PENDING' && (
                     <>
                       <TextInput value={notes[c.id] ?? ''} onChangeText={t => setNotes(n => ({ ...n, [c.id]: t }))} placeholder="Admin notu (opsiyonel)" placeholderTextColor={adm.muted} multiline numberOfLines={2} keyboardAppearance="dark"

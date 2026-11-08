@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Linking, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { api } from '@/lib/api';
+import { openAuthedFile } from '@/lib/authFile';
 import { API_PREFIX } from '@/lib/config';
 import { Btn } from '@/components/ui';
 import { ACard, AError, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
@@ -67,8 +68,8 @@ export default function AdminJantiHaydar() {
                         <View key={f.file} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                           <AT style={{ fontSize: 13 }}>{f.originalName}</AT>
                           <AMono style={{ fontSize: 10 }}>{f.type.toUpperCase()} · {fmtSize(f.size)}</AMono>
-                          <Btn variant="admLink" label="Görüntüle" onPress={() => WebBrowser.openBrowserAsync(`${API_PREFIX}/admin/janti-haydar/${r.id}/files/${k}`)} />
-                          <Btn variant="admLink" label="İndir" onPress={() => Linking.openURL(`${API_PREFIX}/admin/janti-haydar/${r.id}/files/${k}?download=1`)} />
+                          <Btn variant="admLink" label="Görüntüle" onPress={() => { openAuthedFile(`${API_PREFIX}/admin/janti-haydar/${r.id}/files/${k}`).catch((e: Error) => setError(e.message)); }} />
+                          <Btn variant="admLink" label="İndir" onPress={() => { openAuthedFile(`${API_PREFIX}/admin/janti-haydar/${r.id}/files/${k}?download=1`).catch((e: Error) => setError(e.message)); }} />
                         </View>
                       ))}
                     </View>
