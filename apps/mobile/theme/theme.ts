@@ -258,6 +258,10 @@ export const btn = {
   admGreen: { box: { paddingVertical: 9, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.12)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.4)' }, text: { weight: 600, fontSize: 13, color: '#22c55e' }, disabledOpacity: 0.5 },
   admGhost: { box: { paddingVertical: 9, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 13, color: '#64748b' } },
   admCheck: { box: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32 }, text: { fontSize: 13, color: '#e2e8f0' } },
+  admChipTab: { box: { paddingVertical: 5, paddingHorizontal: 14, borderRadius: 99, borderWidth: 1, borderColor: '#1a3a5c' }, text: { weight: 700, fontSize: 11, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.35)' }, text: { color: '#3b82f6' } } },
+  admCancelSm: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)' }, text: { fontSize: 11, color: '#ef4444' } },
+  admRedFull: { box: { padding: 9, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }, text: { weight: 700, fontSize: 13, color: '#ef4444' }, disabledOpacity: 0.5 },
+  admPageBox: { box: { backgroundColor: '#020c1b', borderWidth: 1, borderColor: '#1a3a5c', borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12 }, text: { fontSize: 13, color: '#e2e8f0' } },
   // Kayıt "Kod gönder" (telefon satırı) ve numara "Ekle"
   otpSend: { box: { justifyContent: 'center', paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', backgroundColor: 'rgba(192,57,43,0.06)' }, text: { weight: 500, fontSize: 12, color: '#e74c3c' }, disabledOpacity: 0.4 },
   addSquare: { box: { justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }, text: { fontSize: 13, color: '#c9c2b8' } },
