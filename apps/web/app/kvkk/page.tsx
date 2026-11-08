@@ -54,7 +54,10 @@ const sections = [
           },
           {
             cat: 'Konum Verisi',
-            items: ['Şehir tercihi'],
+            items: [
+              'Şehir tercihi',
+              'Acil yardım konumu: yalnız acil yardım talebinde bulunan kişiden, talep anında ve talep çözülene kadar alınır; diğer katılımcıların konumu alınmaz. Konum emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir. Talep çözülünce koordinatlar ve konum geçmişi silinir; son konumun açık adresi ve talep kaydı yasal yükümlülükler, olası hukuki uyuşmazlıklar ve resmi makam talepleri için saklanır.',
+            ],
           },
           {
             cat: 'Finansal Veriler',
