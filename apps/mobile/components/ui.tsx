@@ -1,0 +1,197 @@
+// Web globals.css sınıflarının RN karşılıkları: .ll-card, .ll-title, .ll-eyebrow, .btn-primary, .btn-ghost,
+// .input-glass, .ll-cta, Sheet (KankaSection/TabProfilim), Modal (components/ui/Modal.tsx), Skeleton, MaintenanceNotice.
+import React, { forwardRef, useState } from 'react';
+import {
+  ActivityIndicator, Modal as RNModal, Pressable, StyleSheet, Text, TextInput, View,
+  type PressableProps, type TextInputInstance, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  btnGhost, btnPrimary, c, fonts, glassCard, inputGlass, ll, llCard, llCta, llEyebrow, llHead, llNote, llTitle, mono, sans, sheet, tw,
+} from '@/theme/theme';
+
+// S-24: görünür boyut aynı, dokunma alanı 44×44 pt'ye tamamlanır
+export const HIT = { top: 10, bottom: 10, left: 10, right: 10 };
+
+export function T({ style, w = 400, children, ...rest }: TextProps & { w?: 400 | 500 | 600 | 700 | 800 }) {
+  return <Text {...rest} style={[{ fontFamily: sans(w), color: tw.text }, style]}>{children}</Text>;
+}
+export function Serif({ style, children, ...rest }: TextProps) {
+  return <Text {...rest} style={[{ fontFamily: fonts.serif, color: tw.text }, style]}>{children}</Text>;
+}
+export function Mono({ style, w = 400, children, ...rest }: TextProps & { w?: 400 | 500 | 600 }) {
+  return <Text {...rest} style={[{ fontFamily: mono(w), color: ll.text }, style]}>{children}</Text>;
+}
+
+export function Card({ style, children }: { style?: StyleProp<ViewStyle>; children: React.ReactNode }) {
+  return <View style={[s.card, style]}>{children}</View>;
+}
+export function Head({ title, right, style }: { title: string; right?: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[s.head, style]}>
+      <Serif style={s.title}>{title}</Serif>
+      {right}
+    </View>
+  );
+}
+export function Title({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  return <Serif style={[s.title, style]}>{children}</Serif>;
+}
+export function Eyebrow({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  return <Mono style={[s.eyebrow, style]}>{children}</Mono>;
+}
+export function Note({ children }: { children: React.ReactNode }) {
+  return <Mono style={s.note}>{children}</Mono>;
+}
+
+type BtnProps = Omit<PressableProps, 'children' | 'style'> & {
+  label: string; style?: StyleProp<ViewStyle>; full?: boolean; redDot?: boolean; textStyle?: StyleProp<TextStyle>; noUpper?: boolean;
+};
+
+// .btn-primary
+export function BtnPrimary({ label, style, full, disabled, textStyle, noUpper, ...rest }: BtnProps) {
+  return (
+    <Pressable hitSlop={HIT} disabled={disabled} accessibilityRole="button" {...rest}
+      style={({ pressed }) => [s.btn, s.btnPrimary, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: btnPrimary.disabledOpacity }, style]}>
+      <View style={[s.dot, { backgroundColor: btnPrimary.dotColor }]} />
+      <Text style={[s.btnText, { fontFamily: sans(600), color: c.white }, textStyle]}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
+    </Pressable>
+  );
+}
+
+// .btn-ghost (+ .btn-ghost-red-dot)
+export function BtnGhost({ label, style, full, disabled, redDot, textStyle, noUpper, ...rest }: BtnProps) {
+  return (
+    <Pressable hitSlop={HIT} disabled={disabled} accessibilityRole="button" {...rest}
+      style={({ pressed }) => [s.btn, s.btnGhost, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: btnGhost.disabledOpacity }, style]}>
+      <View style={[s.dot, { backgroundColor: redDot ? c.ghostRedDot : btnGhost.dotColor }]} />
+      <Text style={[s.btnText, { fontFamily: sans(500), color: btnGhost.color }, textStyle]}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
+    </Pressable>
+  );
+}
+
+// .ll-cta
+export function Cta({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" style={s.ctaWrap}>
+      <LinearGradient colors={[...llCta.gradient]} locations={[...llCta.locations]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.cta}>
+        <T w={700} style={{ fontSize: llCta.size, color: c.white }}>{label}</T>
+      </LinearGradient>
+    </Pressable>
+  );
+}
+
+// .input-glass
+export const Input = forwardRef<TextInputInstance, TextInputProps & { form?: boolean }>(function Input({ style, form, onFocus, onBlur, ...rest }, ref) {
+  const [focus, setFocus] = useState(false);
+  return (
+    <TextInput
+      ref={ref}
+      placeholderTextColor={inputGlass.placeholder}
+      keyboardAppearance="dark"
+      onFocus={(e) => { setFocus(true); onFocus?.(e); }}
+      onBlur={(e) => { setFocus(false); onBlur?.(e); }}
+      {...rest}
+      style={[
+        s.input,
+        form && { backgroundColor: inputGlass.formBg, borderColor: inputGlass.formBorder },
+        focus && { borderColor: inputGlass.focusBorder },
+        style,
+      ]}
+    />
+  );
+});
+
+// Profilim Card/Row
+export function Row({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <View style={s.row}>
+      <T style={{ fontSize: 13, color: ll.text2 }}>{label}</T>
+      <T style={{ fontSize: 13, color: color ?? ll.text }}>{value}</T>
+    </View>
+  );
+}
+
+// Alttan açılan pencere (KankaSection Sheet)
+export function Sheet({ visible, onClose, children }: { visible: boolean; onClose: () => void; children: React.ReactNode }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={s.sheetOverlay} onPress={onClose}>
+        <Pressable style={[s.sheet, { paddingBottom: sheet.padBottom + insets.bottom }]} onPress={() => undefined}>
+          {children}
+        </Pressable>
+      </Pressable>
+    </RNModal>
+  );
+}
+
+// components/ui/Modal.tsx (glass-card, ortada)
+export function ModalBox({ visible, onClose, title, children }: { visible: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+  return (
+    <RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={s.modalOverlay} onPress={onClose}>
+        <Pressable style={s.modal} onPress={() => undefined}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <T w={500} style={{ fontSize: 16 }}>{title}</T>
+            <Pressable onPress={onClose} hitSlop={HIT} accessibilityLabel="Kapat"><T style={{ fontSize: 24, color: tw.muted, lineHeight: 26 }}>×</T></Pressable>
+          </View>
+          {children}
+        </Pressable>
+      </Pressable>
+    </RNModal>
+  );
+}
+
+export function SkeletonBlock({ lines = 3 }: { lines?: number }) {
+  return (
+    <View style={{ gap: 12 }}>
+      {Array.from({ length: lines }).map((_, i) => (
+        <View key={i} style={{ height: 20, borderRadius: 12, backgroundColor: tw.surface, width: i === lines - 1 ? '66%' : '100%' }} />
+      ))}
+    </View>
+  );
+}
+
+export function Spinner() {
+  return <ActivityIndicator color={tw.primary} />;
+}
+
+export function MaintenanceNotice() {
+  return (
+    <View style={{ marginBottom: 16, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: c.maintBg, borderWidth: 1, borderColor: c.maintBorder }}>
+      <T w={600} style={{ fontSize: 14, color: c.maintText, marginBottom: 2 }}>Bakım çalışması</T>
+      <T style={{ fontSize: 12, color: c.tCcc, lineHeight: 19 }}>
+        Kısa bir bakım çalışması yapıyoruz. Bu sürede paket satın alma ve yeni eşleşmeler geçici olarak durduruldu.
+      </T>
+    </View>
+  );
+}
+
+export function ErrorText({ children, center }: { children?: React.ReactNode; center?: boolean }) {
+  if (!children) return null;
+  return <T style={{ fontSize: 12, color: tw.accent, textAlign: center ? 'center' : 'left' }}>{children}</T>;
+}
+
+const s = StyleSheet.create({
+  card: { borderRadius: llCard.radius, borderWidth: llCard.borderWidth, borderColor: llCard.borderColor, backgroundColor: llCard.bg, padding: llCard.padding },
+  head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: llHead.gap, marginBottom: llHead.marginBottom },
+  title: { fontSize: llTitle.size, lineHeight: llTitle.size * llTitle.lineHeight, color: ll.text, flexShrink: 1 },
+  eyebrow: { fontSize: llEyebrow.size, letterSpacing: llEyebrow.letterSpacing, color: ll.copper },
+  note: { fontSize: llNote.size, color: ll.label },
+  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start', borderRadius: btnPrimary.radius, borderWidth: 1, paddingVertical: btnPrimary.padV, paddingHorizontal: btnPrimary.padH, gap: btnPrimary.gap },
+  btnPrimary: { backgroundColor: btnPrimary.bg, borderColor: btnPrimary.border },
+  btnGhost: { backgroundColor: 'transparent', borderColor: btnGhost.border },
+  full: { alignSelf: 'stretch' },
+  dot: { width: 4, height: 4, borderRadius: 2 },
+  btnText: { fontSize: btnPrimary.size, letterSpacing: btnPrimary.size * btnPrimary.letterSpacing },
+  ctaWrap: { borderRadius: llCta.radius, shadowColor: llCta.shadow, shadowOpacity: 1, shadowRadius: 15, shadowOffset: { width: 0, height: 10 } },
+  cta: { minHeight: llCta.minHeight, borderRadius: llCta.radius, alignItems: 'center', justifyContent: 'center' },
+  input: { backgroundColor: inputGlass.bg, borderWidth: 1, borderColor: inputGlass.border, borderRadius: inputGlass.radius, color: inputGlass.color, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, fontFamily: sans(400) },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sheetOverlay: { flex: 1, backgroundColor: sheet.overlay, justifyContent: 'flex-end' },
+  sheet: { width: '100%', maxWidth: sheet.maxWidth, alignSelf: 'center', backgroundColor: sheet.bg, borderWidth: 1, borderColor: sheet.border, borderTopLeftRadius: sheet.radius, borderTopRightRadius: sheet.radius, paddingTop: sheet.padTop, paddingHorizontal: sheet.padH },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 16 },
+  modal: { width: '100%', maxWidth: 448, backgroundColor: glassCard.bg, borderWidth: 1, borderColor: glassCard.border, borderRadius: glassCard.radius, padding: 24 },
+});

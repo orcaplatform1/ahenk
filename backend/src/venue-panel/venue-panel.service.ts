@@ -55,6 +55,29 @@ export class VenuePanelService {
   }
 
   // Kod kayıtlı telefona WhatsApp ile gider; hesabın varlığı yanıttan anlaşılmaz
+  // ─── WhatsApp kodu ile giriş (üye giriş akışıyla aynı yapı) ─────────────
+  // Telefon mekân hesaplarında benzersiz değil: kod yalnızca numara tek hesaba bağlıysa gönderilir
+  private async accountByPhone(phone: string) {
+    const accounts = await this.prisma.venueAccount.findMany({ where: { phone }, take: 2 });
+    return accounts.length === 1 ? accounts[0] : null;
+  }
+
+  async sendLoginOtp(phone: string) {
+    const account = await this.accountByPhone(phone);
+    // Yanıt tek tip: numaranın kayıtlı olup olmadığı anlaşılmaz (kayıtsız numaraya kod gitmez)
+    if (account?.status === "ACTIVE") await this.otp.send(phone);
+    return { message: "Doğrulama kodu gönderildi" };
+  }
+
+  async verifyLoginOtp(phone: string, code: string) {
+    const account = await this.accountByPhone(phone);
+    if (!account) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
+    await this.otp.verify(phone, code);
+    if (account.status !== "ACTIVE") throw new ForbiddenException(LOGIN_BLOCKED[account.status]);
+    if (!account.venueId) throw new ForbiddenException("Mekân kaydı bulunamadı, destek ile iletişime geçin.");
+    return this.sign(account);
+  }
+
   async forgotPassword(email: string) {
     const account = await this.prisma.venueAccount.findUnique({ where: { email: this.normalizeEmail(email) } });
     if (account?.status === "ACTIVE") {

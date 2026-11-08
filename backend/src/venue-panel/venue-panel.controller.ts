@@ -11,6 +11,7 @@ import { VENUE_PHOTO_MAX_BYTES, VENUE_PHOTO_MAX_COUNT } from "./venue-media";
 import {
   VenueChangePasswordDto, VenueDeactivateDto, VenueForgotPasswordDto,
   VenueInfoDto, VenueLoginDto, VenuePhotoDeleteDto, VenueResetPasswordDto,
+  VenueSendLoginOtpDto, VenueVerifyLoginOtpDto,
 } from "./venue-panel.dto";
 
 type VenueRequest = Request & { venueAccount: VenueAccount };
@@ -42,6 +43,21 @@ export class VenuePanelController {
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   async login(@Body() dto: VenueLoginDto, @Res({ passthrough: true }) res: Response) {
     this.setSession(res, await this.service.login(dto.email, dto.password));
+    return { success: true };
+  }
+
+  @Post("send-login-otp")
+  @HttpCode(200)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  sendLoginOtp(@Body() dto: VenueSendLoginOtpDto) {
+    return this.service.sendLoginOtp(dto.phone);
+  }
+
+  @Post("verify-login-otp")
+  @HttpCode(200)
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  async verifyLoginOtp(@Body() dto: VenueVerifyLoginOtpDto, @Res({ passthrough: true }) res: Response) {
+    this.setSession(res, await this.service.verifyLoginOtp(dto.phone, dto.code));
     return { success: true };
   }
 

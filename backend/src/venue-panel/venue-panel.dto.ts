@@ -14,6 +14,23 @@ export class VenueLoginDto {
   password: string;
 }
 
+// WhatsApp kodu ile giriş (üye send-login-otp / verify-login-otp ile aynı doğrulama)
+export class VenueSendLoginOtpDto {
+  @IsString()
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  phone: string;
+}
+
+export class VenueVerifyLoginOtpDto {
+  @IsString()
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  phone: string;
+
+  @IsString()
+  @Matches(/^[0-9]{6}$/, { message: "Kod 6 haneli olmalı" })
+  code: string;
+}
+
 export class VenueForgotPasswordDto {
   @IsEmail({}, { message: "Geçerli bir e-posta adresi girin" })
   email: string;

@@ -1,0 +1,49 @@
+// Alt menü (S-26): 5 sekme, AccountTabBar renkleri, ince çizgi ikonlar, Profilim'de baş harf rozeti, Bildirimler'de sayı rozeti
+import React, { useCallback, useEffect, useState } from 'react';
+import { Tabs } from 'expo-router';
+import { api } from '@/lib/api';
+import { buildInitials } from '@/lib/masa';
+import { useAppRefresh } from '@/lib/useAppRefresh';
+import { LineIcon, ProfileTabIcon } from '@/components/TabIcons';
+import { sans, tabBar, tw } from '@/theme/theme';
+
+interface Me { firstName: string; lastName: string; profile?: { gender?: string | null } }
+
+export const unreadBus = { listeners: new Set<() => void>(), emit() { this.listeners.forEach((l) => l()); } };
+
+export default function TabsLayout() {
+  const [me, setMe] = useState<Me | null>(null);
+  const [unread, setUnread] = useState(0);
+  const loadUnread = useCallback(() => {
+    // Backend okunmamış sayısı döndürmüyor: ilk 50 kayıttaki okunmamışlar sayılır (backend sınırı 50)
+    api.get<{ items: { read: boolean }[] }>('/notifications?page=1&limit=50').then((r) => setUnread((r?.items ?? []).filter((n) => !n.read).length)).catch(() => {});
+  }, []);
+  useEffect(() => {
+    api.get<Me>('/auth/me').then(setMe).catch(() => {});
+    loadUnread();
+    const id = setInterval(loadUnread, 60_000);
+    unreadBus.listeners.add(loadUnread);
+    return () => { clearInterval(id); unreadBus.listeners.delete(loadUnread); };
+  }, [loadUnread]);
+  useAppRefresh(loadUnread);
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: tabBar.active,
+        tabBarInactiveTintColor: tabBar.inactive,
+        tabBarStyle: { backgroundColor: tabBar.bg, borderTopColor: tabBar.border, borderTopWidth: 1 },
+        tabBarLabelStyle: { fontFamily: sans(500), fontSize: 10 },
+        tabBarBadgeStyle: { backgroundColor: tw.primary, color: '#fff', fontFamily: sans(600), fontSize: 10 },
+        sceneStyle: { backgroundColor: '#0a0a0a' },
+      }}
+    >
+      <Tabs.Screen name="index" options={{ title: 'Eşleşme Paneli', tabBarIcon: ({ color }) => <LineIcon name="radar" color={String(color)} /> }} />
+      <Tabs.Screen name="masalarim" options={{ title: 'Masalarım', tabBarIcon: ({ color }) => <LineIcon name="table" color={String(color)} /> }} />
+      <Tabs.Screen name="bildirimler" options={{ title: 'Bildirimler', tabBarBadge: unread > 0 ? unread : undefined, tabBarIcon: ({ color }) => <LineIcon name="bell" color={String(color)} /> }} />
+      <Tabs.Screen name="paketim" options={{ title: 'Paketim', tabBarIcon: ({ color }) => <LineIcon name="package" color={String(color)} /> }} />
+      <Tabs.Screen name="profilim" options={{ title: 'Profilim', tabBarIcon: ({ focused }) => <ProfileTabIcon initials={me ? buildInitials(me.firstName, me.lastName) : '?'} gender={me?.profile?.gender} focused={focused} /> }} />
+    </Tabs>
+  );
+}
