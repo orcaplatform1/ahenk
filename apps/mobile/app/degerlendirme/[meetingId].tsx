@@ -1,19 +1,20 @@
 // apps/web/app/degerlendirme/[meetingId]/page.tsx karşılığı
-import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Defs, LinearGradient as SG, Path, Stop } from 'react-native-svg';
 import { api } from '@/lib/api';
-import { BtnGhost, BtnPrimary, ModalBox, Serif, T, PageGlow, Glow } from '@/components/ui';
-import { c, glassCard, inputGlass, sans, tw, ll } from '@/theme/theme';
+import { BtnGhost, BtnPrimary, Card, ModalBox, Mono, Serif, T, Title, PageGlow, Glow } from '@/components/ui';
+import { c, inputGlass, sans, tw, ll } from '@/theme/theme';
 
 interface Participant { userId: string; initials: string; gender: string | null; isRequester: boolean }
 interface MeetingInfo { locationName: string | null; scheduledAt: string; reviewOpensAt: string; reviewClosesAt: string; reviewed: boolean; myNoShowIds?: string[] }
 const genderColor = (g: string | null) => (g === 'FEMALE' ? '#f48fb1' : g === 'MALE' ? '#4fc3f7' : '#888');
 const MIN = 20, MAX = 300;
-const glass = { backgroundColor: glassCard.bg, borderWidth: 1, borderColor: glassCard.border, borderRadius: glassCard.radius, padding: 20 } as const;
+// Kartlar Eşleşme Paneli Canlı Akış kartıyla aynı: Card (.ll-card), başlık Title (serif), açıklama Note (mono, label), metin ll.text
+const note = { fontSize: 11, color: ll.label } as const;
 
 function Star({ filled }: { filled: boolean }) {
   return (
@@ -40,6 +41,7 @@ export default function Degerlendirme() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const scrollRef = useRef<ScrollViewInstance>(null);
 
   useEffect(() => {
     Promise.all([api.get<Participant[]>(`/meetings/${meetingId}/participants-preview`), api.get<MeetingInfo>(`/meetings/${meetingId}/info`).catch(() => null)])
@@ -67,8 +69,9 @@ export default function Degerlendirme() {
   const fmtDT = (d: string) => new Date(d).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', weekday: 'long', hour: '2-digit', minute: '2-digit' });
   const fmtD = (d: string) => new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', weekday: 'long' });
 
+  // Klavye açılınca içerik yukarı kayar (Android kenardan kenara düzende pencere küçülmez, iki platformda padding)
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: tw.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: tw.bg }} behavior="padding">
       <Modal visible={success} animationType="fade">
         <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}><Glow />
           <LinearGradient colors={['#c0392b', '#ff6b6b']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
@@ -79,7 +82,7 @@ export default function Degerlendirme() {
       </Modal>
       {/* web: top -8%, ortada, 70vw, rgba(192,57,43,.09) → şeffaf %60 */}
       <PageGlow top={-0.08} left={0.5} w={0.7} h={0.7} color="rgb(192,57,43)" opacity={0.09} stop={0.6} />
-      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ maxWidth: 512, width: '100%', alignSelf: 'center', paddingHorizontal: 20, paddingTop: insets.top + 48, paddingBottom: insets.bottom + 48 }}>
+      <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ maxWidth: 512, width: '100%', alignSelf: 'center', paddingHorizontal: 20, paddingTop: insets.top + 48, paddingBottom: insets.bottom + 48 }}>
         <View style={{ marginBottom: 32 }}>
           <Serif style={{ fontSize: 30, lineHeight: 36, marginBottom: 8 }}>{info ? `${new Date(info.scheduledAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long' })} Tarihli Masada Ahenk Nasıldı?` : 'Masada Ahenk Nasıldı?'}</Serif>
           {info && <T style={{ color: c.t555, fontSize: 14 }}>{info.locationName ? `${info.locationName} · ` : ''}{fmtD(info.scheduledAt)}</T>}
@@ -87,65 +90,65 @@ export default function Degerlendirme() {
         {loading ? (
           <View style={{ gap: 16 }}>{[0, 1, 2].map(i => <View key={i} style={{ height: 80, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.08)' }} />)}</View>
         ) : state !== 'open' ? (
-          <View style={[glass, { padding: 24, alignItems: 'center', gap: 16 }]}>
-            <T style={{ color: c.tCcc, fontSize: 14, textAlign: 'center' }}>
+          <Card style={{ alignItems: 'center', gap: 16 }}>
+            <T style={{ color: ll.text, fontSize: 14, textAlign: 'center' }}>
               {state === 'reviewed' ? 'Bu masayı zaten değerlendirdin. Teşekkürler!' : state === 'notYet' && info ? `Değerlendirme ${fmtDT(info.reviewOpensAt)} itibarıyla açılacak.` : 'Bu masanın değerlendirme süresi doldu.'}
             </T>
             <BtnGhost label="Panele Dön" onPress={() => router.replace('/(tabs)')} />
-          </View>
+          </Card>
         ) : (
           <View style={{ gap: 24 }}>
-            <View style={glass}>
-              <T w={500} style={{ fontSize: 14, color: c.t888, marginBottom: 16 }}>Genel deneyim</T>
+            <Card>
+              <Title style={{ marginBottom: 16 }}>Genel deneyim</Title>
               <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
                 {[1, 2, 3, 4, 5].map(s => <Pressable key={s} accessibilityLabel={`${s} yıldız`} onPress={() => { setRating(s); setError(''); }} style={{ padding: 4 }}><Star filled={rating >= s} /></Pressable>)}
               </View>
-            </View>
+            </Card>
             {participants.length > 0 && (
-              <View style={glass}>
-                <T w={500} style={{ fontSize: 14, color: c.t888, marginBottom: 4 }}>Masada rahatsız olduğun birileri varsa engelleyebilirsin, bir daha asla karşılaşmazsın.</T>
-                <T style={{ fontSize: 12, color: tw.accent, marginBottom: 20 }}>Bu engelleme işlemi geri alınamaz.</T>
+              <Card>
+                <Title style={{ marginBottom: 8 }}>Masada rahatsız olduğun birileri varsa engelleyebilirsin, bir daha asla karşılaşmazsın.</Title>
+                <Mono style={[note, { color: tw.accent, marginBottom: 20 }]}>Bu engelleme işlemi geri alınamaz.</Mono>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
                   {participants.map(p => {
                     const b = blocked.has(p.userId), col = genderColor(p.gender);
                     return (
                       <Pressable key={p.userId} onPress={() => toggle(setBlocked, p.userId)} accessibilityState={{ selected: b }} accessibilityLabel={`${p.initials} ${b ? 'engellemeyi kaldır' : 'engelle'}`} style={{ alignItems: 'center', gap: 6 }}>
                         <View style={{ width: 58, height: 58, borderRadius: 29, borderWidth: 2.5, borderColor: b ? '#777' : col, backgroundColor: `${col}1f`, alignItems: 'center', justifyContent: 'center', opacity: b ? 0.28 : 1, shadowColor: col, shadowOpacity: b ? 0 : 0.33, shadowRadius: 5 }}>
-                          <T w={700} style={{ fontSize: 13, color: c.tF0, letterSpacing: 0.26 }}>{p.initials}</T>
+                          <T w={700} style={{ fontSize: 13, color: ll.text, letterSpacing: 0.26 }}>{p.initials}</T>
                         </View>
-                        <T style={{ fontSize: 10, height: 12, color: b ? tw.accent : 'transparent' }}>Engellendi</T>
+                        {b && <T style={{ fontSize: 10, color: tw.accent }}>Engellendi</T>}
                       </Pressable>
                     );
                   })}
                 </View>
-              </View>
+              </Card>
             )}
             {participants.length > 0 && (
-              <View style={glass}>
-                <T w={500} style={{ fontSize: 14, color: c.t888, marginBottom: 4 }}>Masaya katılmayan biri oldu mu?</T>
-                <T style={{ fontSize: 12, color: c.t555, marginBottom: 16 }}>Masaya gelmeyen kişileri işaretle. Bildirimin yönetim ekibine iletilir ve geri alınamaz.</T>
+              <Card>
+                <Title style={{ marginBottom: 8 }}>Masaya katılmayan biri oldu mu?</Title>
+                <Mono style={[note, { marginBottom: 16 }]}>Masaya gelmeyen kişileri işaretle. Bildirimin yönetim ekibine iletilir ve geri alınamaz.</Mono>
                 <View style={{ gap: 8 }}>
                   {participants.map(p => {
                     const on = noShow.has(p.userId), lk = locked.has(p.userId);
                     return (
                       <Pressable key={p.userId} disabled={lk} onPress={() => toggle(setNoShow, p.userId)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, backgroundColor: on ? 'rgba(192,57,43,0.08)' : 'rgba(255,255,255,0.07)', borderColor: on ? 'rgba(192,57,43,0.3)' : 'rgba(255,255,255,0.12)' }}>
                         <View style={{ width: 16, height: 16, borderRadius: 3, borderWidth: 1.5, borderColor: on ? c.red : 'rgba(255,255,255,0.4)', backgroundColor: on ? c.red : 'transparent', alignItems: 'center', justifyContent: 'center' }}>{on && <T w={700} style={{ fontSize: 10, color: '#fff' }}>✓</T>}</View>
-                        <T w={500} style={{ fontSize: 14, color: c.tCcc }}>{p.initials}</T>
-                        {!!p.gender && <T style={{ fontSize: 12, color: c.t555 }}>{p.gender === 'MALE' ? 'E' : p.gender === 'FEMALE' ? 'K' : ''}</T>}
+                        <T w={500} style={{ fontSize: 14, color: ll.text }}>{p.initials}</T>
                         {lk && <T style={{ marginLeft: 'auto', fontSize: 12, color: c.red }}>Bildirildi</T>}
                       </Pressable>
                     );
                   })}
                 </View>
-              </View>
+              </Card>
             )}
-            <View style={glass}>
-              <T w={500} style={{ fontSize: 14, color: c.t888, marginBottom: 12 }}>Masa beklentilerini karşıladı mı?</T>
+            <Card>
+              <Title style={{ marginBottom: 12 }}>Masa beklentilerini karşıladı mı?</Title>
               <TextInput value={comment} onChangeText={t => { setComment(t.slice(0, MAX)); setError(''); }} placeholder="Masa, mekan ve sohbet beklentilerini ne kadar karşıladı? Düşüncelerini yaz…" placeholderTextColor={inputGlass.placeholder}
                 multiline numberOfLines={4} maxLength={MAX} keyboardAppearance="dark"
+                onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300)}
                 style={{ minHeight: 100, backgroundColor: inputGlass.bg, borderWidth: 1, borderColor: inputGlass.border, borderRadius: inputGlass.radius, color: tw.text, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, fontFamily: sans(400), textAlignVertical: 'top' }} />
-              <T style={{ textAlign: 'right', fontSize: 12, marginTop: 4, color: len > 0 && len < MIN ? tw.accent : c.t444 }}>{len < MIN ? `En az ${MIN} karakter · ` : ''}{comment.length}/{MAX}</T>
-            </View>
+              <T style={{ textAlign: 'right', fontSize: 12, marginTop: 4, color: len > 0 && len < MIN ? tw.accent : ll.time }}>{len < MIN ? `En az ${MIN} karakter · ` : ''}{comment.length}/{MAX}</T>
+            </Card>
             {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}
             <View>
               <T style={{ fontSize: 12, color: c.t555, textAlign: 'center', marginBottom: 12 }}>Değerlendirme bir kez gönderilir, sonradan düzenlenemez.</T>

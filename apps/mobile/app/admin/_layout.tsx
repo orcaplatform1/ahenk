@@ -42,6 +42,7 @@ export default function AdminLayout() {
   const [unread, setUnread] = useState(0);
   const [drawer, setDrawer] = useState(false);
   const x = useRef(new Animated.Value(-adm.drawerW)).current;
+  const drawerOpen = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,10 +59,13 @@ export default function AdminLayout() {
   useEffect(() => { if (blocked) router.replace('/admin/stats'); }, [blocked, router]);
 
   const openDrawer = useCallback((v: boolean) => {
+    drawerOpen.current = v;
     setDrawer(true);
     Animated.timing(x, { toValue: v ? 0 : -adm.drawerW, duration: 250, useNativeDriver: true }).start(() => { if (!v) setDrawer(false); });
   }, [x]);
-  useEffect(() => { openDrawer(false); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Sayfa değişince yalnız açık çekmece kapatılır. Önceden açılışta da kapatma çağrılıyordu: çekmece Modal'ı (rgba(0,0,0,0.7) örtü)
+  // kapanma animasyonu bitene kadar görünür kalıyor, panel açılırken ekran karanlık/soluk görünüyordu.
+  useEffect(() => { if (drawerOpen.current) openDrawer(false); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function logout() { await api.logout(); setAdminIdentity(null); router.replace('/giris'); }
   const go = (href: string) => { openDrawer(false); router.navigate(href as never); };

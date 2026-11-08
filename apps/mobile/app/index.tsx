@@ -1,7 +1,8 @@
-// Açılış ekranı (S-22): 3 sn, uygulama genel arka planı (web .live-layer + .ll-glow), logo dikey ekseninde dönerek; altında Traders.TR markası.
+// Açılış ekranı (S-22): 3 sn, uygulama genel arka planı (web .live-layer + .ll-glow), logo kendi merkezi etrafında düz dönerek; ekranın en altında Traders.TR markası.
 // Bu 3 sn boyunca arka planda: yazı tipleri, görseller, oturum yenileme + /auth/me rol kontrolü ve gidilecek ekranın açılış verileri yüklenir.
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { getAccess, getKind } from '@/lib/session';
 import { api, prefetch, refreshAtLaunch } from '@/lib/api';
@@ -22,6 +23,7 @@ const MEMBER_DATA = ['/payment/subscriptions', '/kyc/status', '/kanka/me', '/mee
 export default function Acilis() {
   const router = useRouter();
   const reduce = useReduceMotion();
+  const insets = useSafeAreaInsets();
   const spin = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -62,15 +64,16 @@ export default function Acilis() {
     return () => { alive = false; };
   }, [router]);
 
-  const rotateY = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  // Web Navbar logosu gibi kendi merkezi etrafında saat yönünde düz dönüş (rotate 0→360deg)
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
       <Glow />
-      <Animated.View style={{ transform: [{ perspective: 800 }, { rotateY }] }}>
-        <Image source={require('@/assets/start_logo.jpg')} style={{ width: 160, height: 160, borderRadius: 80 }} />
+      <Animated.View style={{ marginBottom: 32, transform: [{ rotate }] }}>
+        <Image source={require('@/assets/start_logo.jpg')} style={{ width: 184, height: 184, borderRadius: 92 }} />
       </Animated.View>
       {/* Yazı tipleri yüklenene kadar (birkaç ms) yer tutulur, yazı görünmez; yüklenmemiş yazı tipi adı kullanılmaz */}
-      <Text style={{ marginTop: 28, color: tw.text, fontSize: 12.5, lineHeight: 19, textAlign: 'center', opacity: fontsReady ? 1 : 0, ...(fontsReady ? { fontFamily: sans(400) } : null) }}>
+      <Text style={{ position: 'absolute', left: 24, right: 24, bottom: insets.bottom + 16, color: tw.text, fontSize: 12, lineHeight: 18, textAlign: 'center', opacity: fontsReady ? 1 : 0, ...(fontsReady ? { fontFamily: sans(400) } : null) }}>
         Ahenk bir{' '}
         <Text style={{ color: c.tradersText, ...(fontsReady ? { fontFamily: sans(700) } : { fontWeight: '700' }) }}>Traders</Text>
         <Text style={{ color: c.tradersTR, ...(fontsReady ? { fontFamily: sans(800) } : { fontWeight: '800' }) }}>.TR</Text>

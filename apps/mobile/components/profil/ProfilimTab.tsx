@@ -8,7 +8,6 @@ import { Btn, BtnGhost, BtnPrimary, Card, Head, Input, ModalBox, Row, Sheet, Swi
 import { getShakeEnabled, setShakeEnabled } from '@/lib/shakePref';
 import { OtpInput } from '../OtpInput';
 import { KankaSection } from './KankaSection';
-import { ProblemReport } from './ProblemReport';
 import { accountBtn, adminChipPulse, c, ll, sans, tw } from '@/theme/theme';
 
 export interface City { id: string; name: string }
@@ -136,7 +135,6 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
   const [currentEmail, setCurrentEmail] = useState(user.email);
   const [logoutAllBusy, setLogoutAllBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [deletePending, setDeletePending] = useState(false);
@@ -371,16 +369,13 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
       </CardP>
 
       <View style={{ alignItems: 'center', gap: 12, paddingBottom: 8 }}>
-        <BtnGhost label="Sorun Bildir" style={accountBtn.box} textStyle={accountBtn.text} onPress={() => setReportOpen(true)} />
+        <BtnGhost label="Çıkış Yap" style={accountBtn.box} textStyle={accountBtn.text} onPress={logout} />
         <BtnGhost label={logoutAllBusy ? 'Çıkış yapılıyor…' : 'Tüm cihazlardan çıkış yap'} style={accountBtn.box} textStyle={accountBtn.text} disabled={logoutAllBusy} onPress={logoutAll} />
-        <BtnGhost label="Çıkış Yap" full onPress={logout} />
         {/* En alttaki öğe: Hesabımı Sil (ikonsuz, uygulamanın tehlike rengi #e74c3c — Kankalıktan Çıkar / iade butonlarıyla aynı) */}
         {deletePending
           ? <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>Hesap silme talebin alındı, en geç 48 saat içinde sonuçlanır.</T>
           : <BtnGhost label="Hesabımı Sil" redDot style={accountBtn.box} textStyle={[accountBtn.text, { color: tw.primaryHover }]} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
       </View>
-
-      <ProblemReport open={reportOpen} onClose={() => setReportOpen(false)} screen="Profilim" />
 
       <ModalBox visible={deleteOpen} onClose={() => setDeleteOpen(false)} title="Hesabımı Sil">
         <T style={{ fontSize: 14, color: ll.text2, lineHeight: 22.75 }}>

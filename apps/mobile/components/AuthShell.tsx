@@ -6,7 +6,8 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { Btn, Input, PageGlow, T, Title } from './ui';
 import { ll, sans } from '@/theme/theme';
 
-export function AuthShell({ title, subtitle, children }: { title?: string; subtitle?: string; children: React.ReactNode }) {
+// brandLogo: yalnız giriş ekranı — açılış ekranındaki AHENK yazılı logo (start_logo.jpg), büyük, altında AHENK yazısı yok
+export function AuthShell({ title, subtitle, brandLogo, children }: { title?: string; subtitle?: string; brandLogo?: boolean; children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -15,10 +16,16 @@ export function AuthShell({ title, subtitle, children }: { title?: string; subti
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }}>
         <View style={{ width: '100%', maxWidth: 384, alignSelf: 'center' }}>
           <View style={{ marginBottom: 32, alignItems: 'center' }}>
-            <View style={{ alignItems: 'center', gap: 8, marginBottom: 24 }}>
-              <Image source={require('@/assets/logo.png')} style={{ width: 48, height: 48, borderRadius: 24 }} accessibilityLabel="Ahenk" />
-              <T w={600} style={{ fontSize: 15, letterSpacing: 1.8, fontFamily: sans(600) }}>AHENK</T>
-            </View>
+            {brandLogo ? (
+              <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                <Image source={require('@/assets/start_logo.jpg')} style={{ width: 120, height: 120, borderRadius: 60 }} accessibilityLabel="Ahenk" />
+              </View>
+            ) : (
+              <View style={{ alignItems: 'center', gap: 8, marginBottom: 24 }}>
+                <Image source={require('@/assets/logo.png')} style={{ width: 48, height: 48, borderRadius: 24 }} accessibilityLabel="Ahenk" />
+                <T w={600} style={{ fontSize: 15, letterSpacing: 1.8, fontFamily: sans(600) }}>AHENK</T>
+              </View>
+            )}
             {!!title && <Title style={{ textAlign: 'center', marginBottom: subtitle ? 8 : 0 }}>{title}</Title>}
             {!!subtitle && <T style={{ color: ll.label, fontSize: 13, textAlign: 'center' }}>{subtitle}</T>}
           </View>

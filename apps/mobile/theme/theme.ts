@@ -228,6 +228,8 @@ export const btn = {
   reportLink: { box: { paddingVertical: 2, marginTop: 2 }, text: { fontSize: 10, color: '#444444' }, on: { box: {}, text: { color: '#333333' } } },
   // Geçmiş Masalarım "Değerlendir" (ll-mono bakır bağlantı) ve kart açma oku
   monoLink: { box: { alignSelf: 'flex-start', marginBottom: 8 }, text: { fontSize: 11, color: '#e8a27a', fontFamily: 'JetBrainsMono_400Regular' } },
+  // Geçmiş Masalarım "Değerlendir": monoLink yazı renginde çerçeveli etiket, yazı biraz büyük
+  monoTag: { box: { alignSelf: 'flex-start', marginBottom: 12, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#e8a27a', borderRadius: 8, minHeight: 32, justifyContent: 'center' }, text: { fontSize: 13, color: '#e8a27a', fontFamily: 'JetBrainsMono_400Regular' } },
   chevron: { box: { padding: 6 }, text: { color: '#a39c93', fontSize: 14 } },
   // Yönetim Paneli: menü bağlantısı (normal / aktif / Acil Yardım), Çıkış, "Okundu" gibi küçük butonlar, Navbar "Yönetim Paneli" rozeti
   admNav: { box: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, text: { fontSize: 13, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)' }, text: { color: '#93c5fd' } } },

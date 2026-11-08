@@ -6,18 +6,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
 import { BtnGhost, Card, ErrorText, Head, Mono, Spinner, T, Glow } from '@/components/ui';
 import { unreadBus } from './_layout';
-import { ll, llColumn, tw, liveGlow } from '@/theme/theme';
+import { c, ll, llColumn, tw, liveGlow } from '@/theme/theme';
 
-interface Notif { id: string; title: string; body: string; data?: { event?: string } | null; read: boolean; createdAt: string }
+interface Notif { id: string; title: string; body: string; data?: { event?: string; type?: string; meetingId?: string } | null; read: boolean; createdAt: string }
 interface Page { items: Notif[]; total: number; page: number; totalPages: number }
 const LIMIT = 20;
 
+// GG.AA.YYYY SS:DD (Türkiye saati, Europe/Istanbul)
 function timeOf(iso: string) {
-  const d = new Date(iso);
-  const today = new Date().toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' }) === d.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' });
-  return today
-    ? d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })
-    : d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Istanbul' });
+  const parts = new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date(iso));
+  const v = (t: Intl.DateTimeFormatPartTypes) => parts.find((x) => x.type === t)?.value ?? '';
+  return `${v('day')}.${v('month')}.${v('year')} ${v('hour')}:${v('minute')}`;
 }
 
 export default function Bildirimler() {
@@ -45,10 +44,23 @@ export default function Bildirimler() {
       setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
       unreadBus.emit();
     }
-    const ev = n.data?.event;
-    if (ev === 'KYC_APPROVED' || ev === 'KYC_REJECTED') router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } });
-    else if (ev === 'MEETING_CONFIRMED' || ev === 'MEETING_PARTICIPANT_LEFT') router.navigate('/(tabs)/masalarim');
-    else if (ev === 'SUBSCRIPTION_EXPIRING') router.navigate('/(tabs)/paketim');
+    // Backend bildirim türleri: data.event (notification.service, winback) veya data.type (sendToUser çağrıları)
+    const ev = n.data?.event ?? n.data?.type;
+    switch (ev) {
+      case 'KYC_APPROVED': case 'KYC_REJECTED': case 'KYC_SUSPICIOUS':
+        router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } }); break;
+      case 'MEETING_CONFIRMED': case 'MEETING_PARTICIPANT_LEFT': case 'PARTICIPANT_LEFT': case 'MEETING_NOT_FORMED': case 'MEETING_CANCELLED_BY_ADMIN':
+      case 'CYCLE_CLOSING_SOON': case 'ON_MY_WAY': case 'ON_MY_WAY_OPEN': case 'NO_SHOW_MARK': case 'KANKA_CANCELLED': case 'KANKA_PAIR_LEFT':
+        router.navigate('/(tabs)/masalarim'); break;
+      case 'REVIEW_OPEN':
+        if (n.data?.meetingId) router.push(`/degerlendirme/${n.data.meetingId}`); else router.navigate('/(tabs)/masalarim'); break;
+      case 'KANKA_INVITE': case 'KANKA_ACCEPTED': case 'KANKA_ENDED':
+        router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'profil' } }); break;
+      case 'SUBSCRIPTION_EXPIRING': case 'REFERRAL_REGISTERED': case 'WEEKLY_MASA': case 'WINBACK_REMINDER':
+        router.navigate('/(tabs)/paketim'); break;
+      case 'PROBLEM_REPORT':
+        router.push('/admin/sorun-bildirimleri'); break;
+    }
   }
 
   async function readAll() {
@@ -81,9 +93,9 @@ export default function Bildirimler() {
         ListEmptyComponent={<Card><T style={{ fontSize: 13, color: ll.label }}>Henüz bildirimin yok</T></Card>}
         renderItem={({ item: n, index }) => (
           <Pressable onPress={() => open(n)} style={[s.row, index === 0 && s.first, index === items.length - 1 && s.last]} accessibilityRole="button" accessibilityLabel={`${n.title}${n.read ? '' : ', okunmadı'}`}>
-            <Mono style={{ fontSize: 10, color: ll.time, width: 38 }}>{timeOf(n.createdAt)}</Mono>
+            <Mono style={{ fontSize: 10, color: ll.time }}>{timeOf(n.createdAt)}</Mono>
             <T style={{ flex: 1, fontSize: 11.5, lineHeight: 17, color: ll.text }}>{n.title}</T>
-            {!n.read && <View style={s.dot} />}
+            <View style={[s.dot, n.read && s.dotRead]} />
           </Pressable>
         )}
       />
@@ -95,5 +107,7 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', gap: 8, alignItems: 'center', minHeight: 44, paddingVertical: 6, paddingHorizontal: 18, borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.025)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
   first: { borderTopWidth: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 18 },
   last: { borderBottomColor: 'rgba(255,255,255,0.08)', borderBottomLeftRadius: 20, borderBottomRightRadius: 20, paddingBottom: 18 },
+  // Okunmamış: kırmızı, okunmuş: yeşil
   dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: ll.red2 },
+  dotRead: { backgroundColor: c.green },
 });

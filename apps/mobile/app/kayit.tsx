@@ -155,9 +155,8 @@ export default function Kayit() {
       {/* web: top -5%, ortada, 80vw × 60vw, rgba(192,57,43,.08) → şeffaf %60 */}
       <PageGlow top={-0.05} left={0.5} w={0.8} h={0.6} color="rgb(192,57,43)" opacity={0.08} stop={0.6} />
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40, paddingHorizontal: 20, maxWidth: 576, width: '100%', alignSelf: 'center' }}>
-        <View style={{ alignItems: 'center', gap: 8, marginBottom: 32 }}>
-          <Image source={require('@/assets/logo.png')} style={{ width: 48, height: 48, borderRadius: 24 }} />
-          <T w={600} style={{ fontSize: 15, letterSpacing: 1.8 }}>AHENK</T>
+        <View style={{ alignItems: 'center', marginBottom: 32 }}>
+          <Image source={require('@/assets/start_logo.jpg')} style={{ width: 120, height: 120, borderRadius: 60 }} />
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 40 }}>
           {STEPS.map((_, i) => (

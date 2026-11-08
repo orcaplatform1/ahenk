@@ -2,6 +2,7 @@
 // Butonla ve sallayarak açılışta aynı; ekran görüntüsü eklenmez. Gönderim: POST /problem-reports (platform IOS/ANDROID).
 import React, { useEffect, useState } from 'react';
 import { Image, Platform, TextInput, View } from 'react-native';
+import { File as FsFile } from 'expo-file-system';
 import { api } from '@/lib/api';
 import { pickFromLibrary, type PickedImage } from '@/lib/imagePick';
 import { Btn, BtnGhost, BtnPrimary, ModalBox, T } from '../ui';
@@ -12,12 +13,22 @@ const MAX_IMAGES = 3;
 const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPT = ['image/jpeg', 'image/png', 'image/webp'];
 
+// Aynı anda tek Sorun Bildir penceresi: Salla-Bildir açık pencere varken yenisini açmaz
+let openCount = 0;
+export const isProblemReportOpen = () => openCount > 0;
+
 export function ProblemReport({ open, onClose, screen }: { open: boolean; onClose: () => void; screen: string }) {
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<PickedImage[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    openCount += 1;
+    return () => { openCount -= 1; };
+  }, [open]);
 
   useEffect(() => {
     if (open) return;
@@ -42,14 +53,16 @@ export function ProblemReport({ open, onClose, screen }: { open: boolean; onClos
       fd.append('platform', Platform.OS === 'ios' ? 'IOS' : 'ANDROID');
       fd.append('screen', screen);
       fd.append('description', description.trim());
-      files.forEach((f) => fd.append('images', { uri: f.uri, name: f.name, type: f.type } as unknown as Blob));
+      // Global fetch (expo/fetch) RN'nin { uri, name, type } parçasını desteklemiyor ("Unsupported FormDataPart implementation");
+      // expo-file-system File nesnesi bytes() sağladığı için dosya içeriği gövdeye yazılır
+      files.forEach((f) => fd.append('images', new FsFile(f.uri) as unknown as Blob));
       await api.form('/problem-reports', fd);
       setDone(true);
     } catch (e) { setError((e as Error).message || 'Bildirim gönderilemedi.'); } finally { setBusy(false); }
   }
 
   return (
-    <ModalBox visible={open} onClose={onClose} title="Sorun Bildir">
+    <ModalBox visible={open} onClose={onClose} title="Sorun Bildir" opaque>
       {done ? (
         <View style={{ gap: 16 }}>
           <T style={{ fontSize: 14, color: ll.text2 }}>Bildirimin alındı, teşekkürler.</T>

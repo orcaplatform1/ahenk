@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app-icon.png",
     "backgroundColor": "#000000",
     "ios": {
       "supportsTablet": false,
@@ -27,7 +27,7 @@
     "android": {
       "package": "co.ahenk.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
       "permissions": [
@@ -107,7 +107,8 @@
         }
       ],
       "expo-notifications",
-      "expo-iap"
+      "expo-iap",
+      "./plugins/withAutofillHighlight"
     ],
     "experiments": {
       "typedRoutes": false

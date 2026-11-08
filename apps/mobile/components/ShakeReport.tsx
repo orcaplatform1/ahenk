@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'expo-router';
 import { Accelerometer } from 'expo-sensors';
 import { getShakeEnabled, onShakePref } from '@/lib/shakePref';
-import { ProblemReport } from './profil/ProblemReport';
+import { ProblemReport, isProblemReportOpen } from './profil/ProblemReport';
 
 const THRESHOLD = 2.2; // g
 const COOLDOWN_MS = 2000;
@@ -25,7 +25,7 @@ export function ShakeReport() {
     const sub = Accelerometer.addListener(({ x, y, z }) => {
       const g = Math.sqrt(x * x + y * y + z * z);
       const now = Date.now();
-      if (g < THRESHOLD || openRef.current || now - last.current < COOLDOWN_MS) return;
+      if (g < THRESHOLD || openRef.current || isProblemReportOpen() || now - last.current < COOLDOWN_MS) return;
       last.current = now;
       setOpen(true);
     });

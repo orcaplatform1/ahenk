@@ -198,6 +198,9 @@ function HistoryListInner({ history }: { history: HistoryMeeting[] }) {
             </View>
             {open && (
               <View style={{ paddingBottom: 12 }}>
+                {!m.isReviewed && (
+                  <Btn variant="monoTag" label="Değerlendir" onPress={() => router.push(`/degerlendirme/${m.id}`)} />
+                )}
                 <MasaDetayKarti masa={masa} archive />
                 {m.review && (
                   <View style={{ marginTop: 12 }}>
@@ -214,9 +217,6 @@ function HistoryListInner({ history }: { history: HistoryMeeting[] }) {
                   </View>
                 )}
               </View>
-            )}
-            {!m.isReviewed && (
-              <Btn variant="monoLink" label="Değerlendir" onPress={() => router.push(`/degerlendirme/${m.id}`)} />
             )}
           </View>
         );

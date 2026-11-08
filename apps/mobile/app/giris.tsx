@@ -141,7 +141,7 @@ function MemberLogin() {
       </View>
       <View style={{ marginTop: 16, gap: 12 }}>
         {method === 'email' && <BtnGhost label="Şifremi Unuttum" style={{ width: '72%', alignSelf: 'center' }} onPress={() => router.push('/sifremi-unuttum')} />}
-        <BtnPrimary label="Kayıt Ol" full onPress={() => router.push('/kayit')} />
+        <BtnPrimary label="Kayıt Ol" style={{ width: '72%', alignSelf: 'center' }} onPress={() => router.push('/kayit')} />
       </View>
     </>
   );
@@ -219,7 +219,7 @@ function VenueLogin() {
 export default function Giris() {
   const [kind, setKind] = useState<'uye' | 'isletme'>('uye');
   return (
-    <AuthShell title="Giriş Yap">
+    <AuthShell title="Giriş Yap" brandLogo>
       <View style={{ marginBottom: 16 }}>
         <Toggle items={[{ key: 'uye', label: 'Üye Girişi' }, { key: 'isletme', label: 'M.Girişi' }]} value={kind} onChange={setKind} />
       </View>

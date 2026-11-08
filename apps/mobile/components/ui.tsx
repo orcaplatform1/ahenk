@@ -197,11 +197,12 @@ export function Sheet({ visible, onClose, children, pad }: { visible: boolean; o
 }
 
 // components/ui/Modal.tsx (glass-card, ortada)
-export function ModalBox({ visible, onClose, title, children }: { visible: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+// opaque: pencere arka planı saydam değil (sheet.bg); Sorun Bildir
+export function ModalBox({ visible, onClose, title, opaque, children }: { visible: boolean; onClose: () => void; title: string; opaque?: boolean; children: React.ReactNode }) {
   return (
     <RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={s.modalOverlay} onPress={onClose}>
-        <Pressable style={s.modal} onPress={() => undefined}>
+        <Pressable style={[s.modal, opaque && { backgroundColor: sheet.bg }]} onPress={() => undefined}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <T w={500} style={{ fontSize: 16 }}>{title}</T>
             <Pressable onPress={onClose} hitSlop={HIT} accessibilityLabel="Kapat"><T style={{ fontSize: 24, color: tw.muted, lineHeight: 26 }}>×</T></Pressable>
