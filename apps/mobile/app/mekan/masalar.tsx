@@ -15,7 +15,7 @@ function RowList({ rows, empty }: { rows: Row[]; empty: string }) {
     <View key={m.id} style={[panelCard, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 18 }]}>
       <View style={{ flex: 1 }}>
         <T style={{ fontSize: 14.4 }}>{d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long', timeZone: 'Europe/Istanbul' })}</T>
-        <T style={{ marginTop: 2, fontSize: 12, color: c.t888 }}>{d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })} · {TYPE_LABEL[m.type]}</T>
+        <T style={{ marginTop: 2.4, fontSize: 12, color: c.t888 }}>{d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })} · {TYPE_LABEL[m.type]}</T>
       </View>
       <T w={600} style={{ color: tw.accent, fontSize: 13.6 }}>{m.seats} kişi</T>
     </View>

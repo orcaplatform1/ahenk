@@ -324,8 +324,8 @@ export const btn = {
   // AccountTabBar sekme butonu
   accountTab: { box: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' }, text: { weight: 500, fontSize: 12, color: '#666' }, on: { box: { backgroundColor: 'rgba(192,57,43,0.18)', borderColor: 'rgba(192,57,43,0.35)' }, text: { color: '#ff6b6b' } } },
   // Mekân paneli üst sekme bağlantısı
-  venueTab: { box: { paddingVertical: 11, paddingHorizontal: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' }, text: { fontSize: 13.6, color: '#888' }, on: { box: { borderBottomColor: '#c0392b' }, text: { color: '#ff6b6b' } } },
-  venueLogout: { box: { minHeight: 44, paddingHorizontal: 8, justifyContent: 'center' }, text: { fontSize: 13, color: '#888' } },
+  venueTab: { box: { paddingVertical: 11.2, paddingHorizontal: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' }, text: { fontSize: 13.6, color: '#888' }, on: { box: { borderBottomColor: '#c0392b' }, text: { color: '#ff6b6b' } } },
+  venueLogout: { box: { minHeight: 44, paddingHorizontal: 8, justifyContent: 'center' }, text: { fontSize: 12.8, color: '#888' } },
   // Mekân Hesap: "Hesabı Sil", "Vazgeç", "Hesabı Kapat"
   venueDelete: { box: { minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 14.4, color: '#ff6b6b' } },
   venueCancel: { box: { flex: 1, minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }, text: { color: '#aaaaaa' } },

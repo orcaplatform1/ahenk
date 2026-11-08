@@ -31,7 +31,7 @@ export default function MekanLayout() {
   return (
     <View style={{ flex: 1, backgroundColor: tw.bg }}>
       <View style={{ paddingTop: insets.top, backgroundColor: 'rgba(18,18,18,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' }}>
-        <View style={{ paddingTop: 14, paddingHorizontal: 16 }}>
+        <View style={{ paddingTop: 14.4, paddingHorizontal: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <View style={{ flex: 1 }}>
               <Serif numberOfLines={1} style={{ fontSize: 20 }}>{me?.venue.name ?? 'Mekân Paneli'}</Serif>
