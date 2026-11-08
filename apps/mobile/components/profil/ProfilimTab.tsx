@@ -373,10 +373,11 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
       <View style={{ alignItems: 'center', gap: 12, paddingBottom: 8 }}>
         <BtnGhost label="Sorun Bildir" style={accountBtn.box} textStyle={accountBtn.text} onPress={() => setReportOpen(true)} />
         <BtnGhost label={logoutAllBusy ? 'Çıkış yapılıyor…' : 'Tüm cihazlardan çıkış yap'} style={accountBtn.box} textStyle={accountBtn.text} disabled={logoutAllBusy} onPress={logoutAll} />
+        <BtnGhost label="Çıkış Yap" full onPress={logout} />
+        {/* En alttaki öğe: Hesabımı Sil (ikonsuz, uygulamanın tehlike rengi #e74c3c — Kankalıktan Çıkar / iade butonlarıyla aynı) */}
         {deletePending
           ? <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>Hesap silme talebin alındı, en geç 48 saat içinde sonuçlanır.</T>
-          : <BtnGhost label="Hesabımı Sil" redDot style={accountBtn.box} textStyle={accountBtn.text} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
-        <BtnGhost label="Çıkış Yap" full onPress={logout} />
+          : <BtnGhost label="Hesabımı Sil" redDot style={accountBtn.box} textStyle={[accountBtn.text, { color: tw.primaryHover }]} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
       </View>
 
       <ProblemReport open={reportOpen} onClose={() => setReportOpen(false)} screen="Profilim" />
