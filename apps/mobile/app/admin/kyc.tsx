@@ -1,8 +1,9 @@
-// apps/web/app/admin/kyc/page.tsx karşılığı. Görseller Bearer başlığıyla yüklenir.
-// RAPORLANDI: canlılık videosu oynatıcısı için expo-video kurulu değil; video kutusu dokununca uygulama içi tarayıcıda açılır.
+// apps/web/app/admin/kyc/page.tsx karşılığı. Görseller ve canlılık videosu Bearer başlığıyla yüklenir; video uygulama içinde oynatılır (expo-video),
+// görsele dokununca dosya Bearer ile indirilip uygulama içinde açılır (web: blob yeni sekmede).
 import React, { useEffect, useState } from 'react';
 import { Image, Pressable, TextInput, View } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { openAuthedFile } from '@/lib/authFile';
 import { api } from '@/lib/api';
 import { BASE } from '@/lib/config';
 import { getAccess } from '@/lib/session';
@@ -32,13 +33,27 @@ function isValidTckn(v: string) {
 const fmtDate = (v: string) => new Date(v).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const abs = (u: string) => (u.startsWith('/') ? `${BASE}${u}` : u);
 
+function KycVideo({ uri, token }: { uri: string; token: string }) {
+  // web: <video controls preload="metadata" objectFit cover>
+  const player = useVideoPlayer({ uri, headers: { Authorization: `Bearer ${token}` } });
+  return <VideoView player={player} nativeControls contentFit="cover" style={{ width: '100%', height: '100%' }} />;
+}
+
 function MediaPreview({ url, label, isVideo, token }: { url: string | null; label: string; isVideo?: boolean; token: string | null }) {
   return (
     <View style={{ flex: 1, minWidth: 0, borderRadius: 8, overflow: 'hidden', backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border }}>
-      <Pressable disabled={!url} onPress={() => url && WebBrowser.openBrowserAsync(abs(url))} style={{ aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center' }}>
-        {url && !isVideo ? <Image source={{ uri: abs(url), headers: token ? { Authorization: `Bearer ${token}` } : undefined }} style={{ width: '100%', height: '100%' }} accessibilityLabel={label} />
-          : <AT style={{ fontSize: 10, color: adm.muted }}>{url ? '▶' : `${label} yüklenmemiş`}</AT>}
-      </Pressable>
+      <View style={{ aspectRatio: 16 / 9 }}>
+        {url && token ? (
+          isVideo ? <KycVideo uri={abs(url)} token={token} />
+            : <Pressable onPress={() => { openAuthedFile(abs(url)).catch(() => undefined); }} style={{ width: '100%', height: '100%' }}>
+                <Image source={{ uri: abs(url), headers: { Authorization: `Bearer ${token}` } }} resizeMode="cover" style={{ width: '100%', height: '100%' }} accessibilityLabel={label} />
+              </Pressable>
+        ) : (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <AT style={{ fontSize: 10, color: adm.muted }}>{url ? 'Yükleniyor…' : `${label} yüklenmemiş`}</AT>
+          </View>
+        )}
+      </View>
       <AT style={{ fontSize: 10, color: adm.muted, paddingVertical: 4, paddingHorizontal: 8 }}>{label}</AT>
     </View>
   );
