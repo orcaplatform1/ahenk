@@ -1,6 +1,7 @@
 // apps/web/app/profil/tabs/TabProfilim.tsx karşılığı
-import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useReduceMotion } from '@/lib/motion';
 import { api } from '@/lib/api';
 import { gColor } from '@/lib/masa';
 import { Btn, BtnGhost, BtnPrimary, Card, Head, Input, ModalBox, Row, Sheet, Switch, T } from '../ui';
@@ -8,7 +9,7 @@ import { getShakeEnabled, setShakeEnabled } from '@/lib/shakePref';
 import { OtpInput } from '../OtpInput';
 import { KankaSection } from './KankaSection';
 import { ProblemReport } from './ProblemReport';
-import { accountBtn, c, ll, sans, tw } from '@/theme/theme';
+import { accountBtn, adminChipPulse, c, ll, sans, tw } from '@/theme/theme';
 
 export interface City { id: string; name: string }
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
@@ -73,6 +74,34 @@ function CitySelect({ label, value, onChange, cities, optional, placeholder, tit
         <BtnPrimary label="Seç" full style={{ marginTop: 16 }} onPress={() => { onChange(tmp); setOpen(false); }} />
       </Sheet>
     </View>
+  );
+}
+
+// Web Navbar "Yönetim Paneli" rozeti: adminChip + navAdminPulse/navAdminDot nabzı (Hareketi Azalt açıkken durağan)
+function AdminChip({ onPress }: { onPress: () => void }) {
+  const reduce = useReduceMotion();
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (reduce) { v.setValue(0); return; }
+    const half = adminChipPulse.periodMs / 2;
+    const ease = Easing.bezier(0.42, 0, 0.58, 1);
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(v, { toValue: 1, duration: half, easing: ease, useNativeDriver: false }),
+      Animated.timing(v, { toValue: 0, duration: half, easing: ease, useNativeDriver: false }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [reduce, v]);
+  const p = adminChipPulse;
+  return (
+    <Animated.View style={{ alignSelf: 'flex-start', borderRadius: 8, shadowColor: p.shadowColor, shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: v.interpolate({ inputRange: [0, 1], outputRange: [...p.shadowOpacity] }), shadowRadius: v.interpolate({ inputRange: [0, 1], outputRange: [...p.shadowRadius] }) }}>
+      <Btn variant="adminChip" accessibilityLabel="Yönetim Paneli" onPress={onPress}>
+        <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#3b82f6', opacity: v.interpolate({ inputRange: [0, 1], outputRange: [...p.dotOpacity] }) }} />
+        <T w={700} style={{ fontSize: 11, color: '#93c5fd' }}>Yönetim Paneli</T>
+      </Btn>
+      <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8, borderWidth: 1, borderColor: p.borderOn, opacity: v }} />
+    </Animated.View>
   );
 }
 
@@ -175,10 +204,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
   return (
     <View style={{ gap: 24 }}>
       {(user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
-        <Btn variant="adminChip" accessibilityLabel="Yönetim Paneli" onPress={onAdmin}>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#3b82f6' }} />
-          <T w={700} style={{ fontSize: 11, color: '#93c5fd' }}>Yönetim Paneli</T>
-        </Btn>
+        <AdminChip onPress={onAdmin} />
       )}
       <CardP title="Hesap Bilgileri">
         {user.noShowWarning && (

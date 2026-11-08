@@ -368,6 +368,9 @@ export const accountBtn = { box: { width: '72%', alignSelf: 'center', paddingVer
 // 2,8 sn döngü: %0–60 ease-in-out hareket (1680 ms), %60–100 bekleme (1120 ms). Hareketi Azalt açıkken kapalı.
 export const winbackShine = { colors: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0)'], start: { x: 0, y: 0.4 }, end: { x: 1, y: 0.6 }, widthRatio: 0.4, from: -0.6, to: 1.3, skew: '-20deg', moveMs: 1680, restMs: 1120 } as const;
 
+// Navbar "Yönetim Paneli" rozeti nabzı (navAdminPulse / navAdminDot, 2,5 sn ease-in-out): gölge 10→18 px, rgba(59,130,246) 0,2→0,4; kenar #1a3a5c→#3b82f6; nokta opaklığı 1→0,35
+export const adminChipPulse = { periodMs: 2500, shadowColor: '#3b82f6', shadowOpacity: [0.2, 0.4], shadowRadius: [5, 9], borderOn: '#3b82f6', dotOpacity: [1, 0.35] } as const;
+
 export const adm = {
   bg: '#020c1b', surface: '#0a1628', card: '#0d1f3c', border: '#1a3a5c', text: '#e2e8f0', muted: '#64748b',
   red: '#ef4444', green: '#22c55e', amber: '#f59e0b', blue: '#3b82f6', cyan: '#22d3ee', navActive: '#93c5fd',
