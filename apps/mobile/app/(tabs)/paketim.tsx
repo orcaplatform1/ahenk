@@ -233,6 +233,8 @@ export default function Paketim() {
                         </View>
                       )}
                     </View>
+                    {/* web: inset 0 1px 0 rgba(255,255,255,.1) — kartın üst kenarında 1 px çizgi, iç köşe yarıçapı 15 (16 − 1 px kenarlık) boyunca köşelere uyar */}
+                    {!plan.featured && <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', zIndex: 20 }} />}
                   </View>
                 );
                 return plan.featured ? <GoldBorder key={plan.key}>{body}</GoldBorder> : <View key={plan.key} style={{ borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } }}>{body}</View>;
