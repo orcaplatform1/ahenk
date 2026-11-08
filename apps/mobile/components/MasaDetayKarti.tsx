@@ -5,6 +5,7 @@ import { Image, Modal, Pressable, ScrollView, TextInput, View, type ScrollViewIn
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { api } from '@/lib/api';
+import { startSosLive } from '@/lib/sosLive';
 import { formatMeetingTime, gColor, type MasaTuru } from '@/lib/masa';
 import { openMaps } from '@/lib/links';
 import { useAppRefresh } from '@/lib/useAppRefresh';
@@ -320,7 +321,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
 
   useEffect(() => {
     if (!sosVisible) return;
-    api.get<{ reportId: string | null }>(`/sos/meetings/${masa.id}/my-report`).then(d => { if (d?.reportId) setSosDone(true); }).catch(() => {});
+    api.get<{ reportId: string | null }>(`/sos/meetings/${masa.id}/my-report`).then(d => { if (d?.reportId) { setSosDone(true); startSosLive(d.reportId).catch(() => {}); } }).catch(() => {});
   }, [sosVisible, masa.id]);
 
   async function handleSos() {
@@ -334,8 +335,9 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
       if (perm.status !== 'granted') { setLocError('denied'); return; }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       try {
-        await api.post<{ reportId: string }>(`/sos/${masa.id}/report`, { threats, lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+        const r = await api.post<{ reportId: string }>(`/sos/${masa.id}/report`, { threats, lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
         setSosDone(true); setShowSos(false);
+        if (r?.reportId) startSosLive(r.reportId).catch(() => {});
       } catch (e) {
         const m = (e as Error).message;
         setSosError(m === '__rate_limit__' ? 'Çok fazla deneme yapıldı. Lütfen birkaç dakika sonra tekrar dene.' : m || 'Sunucu hatası. Lütfen tekrar dene.');

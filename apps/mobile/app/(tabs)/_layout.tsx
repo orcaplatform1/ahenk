@@ -4,6 +4,7 @@ import { Tabs } from 'expo-router';
 import { api } from '@/lib/api';
 import { buildInitials } from '@/lib/masa';
 import { useAppRefresh } from '@/lib/useAppRefresh';
+import { SOS_POLL_MS, syncSosLive } from '@/lib/sosLive';
 import { LineIcon, ProfileTabIcon } from '@/components/TabIcons';
 import { ShakeReport } from '@/components/ShakeReport';
 import { WinbackHost } from '@/components/Winback';
@@ -27,6 +28,12 @@ export default function TabsLayout() {
     return () => { clearInterval(id); unreadBus.listeners.delete(loadUnread); };
   }, [loadUnread]);
   useAppRefresh(loadUnread);
+  // Açık acil yardım talebi: talep edenin canlı konumu (web SosOpenReport); açık talep varken 30 sn'de bir denetlenir
+  const [sosOpen, setSosOpen] = useState(false);
+  const syncSos = useCallback(() => { syncSosLive().then((id) => setSosOpen(!!id)); }, []);
+  useEffect(() => { syncSos(); }, [syncSos]);
+  useEffect(() => { if (!sosOpen) return; const id = setInterval(syncSos, SOS_POLL_MS); return () => clearInterval(id); }, [sosOpen, syncSos]);
+  useAppRefresh(syncSos);
 
   return (
     <>
