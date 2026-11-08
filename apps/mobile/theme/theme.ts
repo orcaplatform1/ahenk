@@ -364,6 +364,10 @@ export const toggleSwitch = { width: 42, height: 24, radius: 9999, onBg: '#c0392
 // TabProfilim ACCOUNT_BTN (btn-ghost üzerine): genişlik %72, dolgu 9/10, yazı clamp(8px, 2.5vw, 10px), harf aralığı 0.04em
 export const accountBtn = { box: { width: '72%', alignSelf: 'center', paddingVertical: 9, paddingHorizontal: 10 }, text: { fontSize: 10, letterSpacing: 0.4 } } as const;
 // ── Yönetim Paneli (apps/web/lib/adminTheme.ts + globals.css .admin-shell / .adm-page / .adm-table mobil kuralları) ──
+// Winback "İndirimi Uygula" parlaması (.wb-cta::after + @keyframes wbShine): genişlik %40, left -60% → 130%, skewX(-20deg),
+// 2,8 sn döngü: %0–60 ease-in-out hareket (1680 ms), %60–100 bekleme (1120 ms). Hareketi Azalt açıkken kapalı.
+export const winbackShine = { colors: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0)'], start: { x: 0, y: 0.4 }, end: { x: 1, y: 0.6 }, widthRatio: 0.4, from: -0.6, to: 1.3, skew: '-20deg', moveMs: 1680, restMs: 1120 } as const;
+
 export const adm = {
   bg: '#020c1b', surface: '#0a1628', card: '#0d1f3c', border: '#1a3a5c', text: '#e2e8f0', muted: '#64748b',
   red: '#ef4444', green: '#22c55e', amber: '#f59e0b', blue: '#3b82f6', cyan: '#22d3ee', navActive: '#93c5fd',

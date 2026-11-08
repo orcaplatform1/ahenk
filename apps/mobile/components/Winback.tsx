@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import { startPurchase } from '@/lib/purchase';
 import { useReduceMotion } from '@/lib/motion';
 import { Btn, Serif, T } from './ui';
-import { ll, tw } from '@/theme/theme';
+import { btn, ll, tw, winbackShine } from '@/theme/theme';
 
 export interface WinbackPlan { plan: string; name: string; listTL: number; discountedTL: number; needsKanka: boolean }
 export interface WinbackState { active: boolean; amountTL?: number; plans?: WinbackPlan[]; kycApproved?: boolean; lapsed?: boolean; durationSeconds?: number; expiresAt?: string | null; serverNow?: string; autoOpen?: boolean }
@@ -128,7 +128,7 @@ function WinbackScreen({ state, remaining, merged, onMerge, onClose }: { state: 
                 </Btn>
               ))}
               <T numberOfLines={1} style={{ fontSize: 11, color: '#8f887f', textAlign: 'center', marginTop: 2, marginBottom: 14 }}>Referans indirimi bu indirimle birleşmez.</T>
-              <Btn variant="winbackCta" disabled={!selected || busy} label="İndirimi Uygula" onPress={apply} />
+              <WinbackCta disabled={!selected || busy} reduce={reduce} onPress={apply} />
               {!selected && <T style={st.hint}>Önce paketini seç</T>}
               {!state.kycApproved && <T style={st.hint}>Kimlik doğrulamanız onaylanana kadar indiriminizi koruyoruz.</T>}
               {!!error && <T style={{ fontSize: 13, color: tw.accent, textAlign: 'center', marginTop: 10 }}>{error}</T>}
@@ -137,6 +137,36 @@ function WinbackScreen({ state, remaining, merged, onMerge, onClose }: { state: 
         </ScrollView>
       </View>
     </Modal>
+  );
+}
+
+// .wb-cta + ::after parlama: yazı stili tema winbackCta'dan, parlama tema winbackShine'dan. w: buton tam genişliği (içerik + iki yan dolgu)
+function WinbackCta({ disabled, reduce, onPress }: { disabled: boolean; reduce: boolean; onPress: () => void }) {
+  const [w, setW] = useState(0);
+  const x = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (reduce || !w) return;
+    x.setValue(0);
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(x, { toValue: 1, duration: winbackShine.moveMs, easing: Easing.bezier(0.42, 0, 0.58, 1), useNativeDriver: true }),
+      Animated.delay(winbackShine.restMs),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [reduce, w, x]);
+  const { weight, ...text } = btn.winbackCta.text;
+  return (
+    <Btn variant="winbackCta" disabled={disabled} accessibilityLabel="İndirimi Uygula" onPress={onPress}>
+      <View onLayout={(e) => setW(e.nativeEvent.layout.width + 2 * (btn.winbackCta.box.padding as number))} style={{ alignSelf: 'stretch', alignItems: 'center' }}>
+        <T w={weight} style={text}>İndirimi Uygula</T>
+      </View>
+      {!reduce && w > 0 && (
+        <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: w * winbackShine.widthRatio,
+          transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [w * winbackShine.from, w * winbackShine.to] }) }, { skewX: winbackShine.skew }] }}>
+          <LinearGradient colors={winbackShine.colors as unknown as [string, string, string]} start={winbackShine.start} end={winbackShine.end} style={{ flex: 1 }} />
+        </Animated.View>
+      )}
+    </Btn>
   );
 }
 
