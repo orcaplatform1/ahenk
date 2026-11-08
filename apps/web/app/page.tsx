@@ -184,7 +184,7 @@ function Testimonials() {
 // Acil Yardım anlatımı; rapordaki metinle birebir aynı tutulur
 const SAFETY_STEPS = [
   { title: 'Olayı seç', body: 'Yaşadığın durumu birkaç dokunuşla seçersin. Uzun uzun anlatman gerekmez; o an tek işin kendine iyi bakmak.' },
-  { title: 'Konumun yanında', body: 'Konum iznin açıkken canlı konumun ekibimize ulaşır. Nerede olduğunu tarif etmezsin, sen ilerledikçe biz de seninle ilerleriz.' },
+  { title: 'Konumun yanında', body: 'Acil yardım talebinde bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar ekibimiz tarafından takip edilir. Nerede olduğunu tarif etmezsin, sen ilerledikçe biz de seninle ilerleriz.' },
   { title: 'Ekip devralır', body: 'Yalnızca bu işe bakan ekibimiz 7/24 ayakta. Talebin ulaştığı andan süreç sonuçlanana kadar seni takip eder, yarıda bırakmaz.' },
   { title: 'Gerekirse bir adım öteye', body: 'Durum gerektirdiğinde, ekibimizin kararıyla bilgiler yetkili mercilere iletilir.' },
 ];

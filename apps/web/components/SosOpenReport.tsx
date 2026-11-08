@@ -70,7 +70,7 @@ export default function SosOpenReport() {
     >
       <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#ff6b6b' }}>ACİL YARDIM TALEBİ ETKİN</p>
       <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,107,107,0.7)' }}>
-        Ekibimiz sizi aralıksız takip ediyor, konumunuzu kapatmayın, lokasyonunuz canlı paylaşılıyor. Şuan ihbarınız, canlı konumunuz, sizin ve masanızdakilerin kimlik bilgileri emniyetle paylaşılıyor.
+        Konumunuz emniyet birimleriyle paylaşılıyor ve talebiniz çözülene kadar ekibimiz tarafından aralıksız takip ediliyor, konumunuzu kapatmayın. İhbarınız, sizin ve masanızdakilerin kimlik bilgileri de emniyet birimleriyle paylaşılıyor.
       </p>
     </div>
   );
