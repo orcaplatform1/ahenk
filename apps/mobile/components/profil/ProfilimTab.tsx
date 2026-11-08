@@ -76,7 +76,7 @@ function CitySelect({ label, value, onChange, cities, optional, placeholder, tit
   );
 }
 
-export function ProfilimTab({ user, cities, onLoggedOut }: { user: UserData; cities: City[]; onLoggedOut: () => void }) {
+export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: UserData; cities: City[]; onLoggedOut: () => void; onAdmin: () => void }) {
   const [editingCities, setEditingCities] = useState(false);
   const [editingVenue, setEditingVenue] = useState(false);
   const [stats, setStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
@@ -174,6 +174,12 @@ export function ProfilimTab({ user, cities, onLoggedOut }: { user: UserData; cit
 
   return (
     <View style={{ gap: 24 }}>
+      {(user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
+        <Btn variant="adminChip" accessibilityLabel="Yönetim Paneli" onPress={onAdmin}>
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#3b82f6' }} />
+          <T w={700} style={{ fontSize: 11, color: '#93c5fd' }}>Yönetim Paneli</T>
+        </Btn>
+      )}
       <CardP title="Hesap Bilgileri">
         {user.noShowWarning && (
           <T w={500} style={{ fontSize: 14, lineHeight: 22, color: c.warnYellow }}>

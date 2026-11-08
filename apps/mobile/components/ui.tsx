@@ -89,10 +89,12 @@ export function Btn({ variant, label, children, selected, disabled, onPress, sty
   const boxStyle = [spec.box as ViewStyle, selected && spec.on ? spec.on.box as ViewStyle : null, disabled && { opacity: spec.disabledOpacity ?? 0.4 }, style];
   if (spec.gradient) {
     const g = spec.gradient;
+    const { shadowColor, shadowOpacity, shadowRadius, shadowOffset, ...inner } = spec.box as ViewStyle;
+    const outer: ViewStyle = { borderRadius: inner.borderRadius, shadowColor, shadowOpacity, shadowRadius, shadowOffset, alignSelf: inner.alignSelf, flex: inner.flex };
     return (
-      <Pressable onPress={onPress} disabled={disabled} hitSlop={hitSlop} accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ disabled, selected }} style={boxStyle.map((x, i) => (i === 0 ? { ...(spec.box as ViewStyle), padding: 0, paddingVertical: 0, paddingHorizontal: 0 } : x))}>
-        <LinearGradient colors={g.colors as [string, string, ...string[]]} locations={g.locations as [number, number, ...number[]] | undefined} start={g.start} end={g.end}
-          style={{ borderRadius: (spec.box as ViewStyle).borderRadius, alignItems: 'center', paddingVertical: (spec.box as ViewStyle).paddingVertical, padding: (spec.box as ViewStyle).padding }}>
+      <Pressable onPress={onPress} disabled={disabled} hitSlop={hitSlop} accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ disabled, selected }}
+        style={[outer, disabled && { opacity: spec.disabledOpacity ?? 0.4 }, style]}>
+        <LinearGradient colors={g.colors as [string, string, ...string[]]} locations={g.locations as [number, number, ...number[]] | undefined} start={g.start} end={g.end} style={[inner, { overflow: 'hidden' }]}>
           {content}
         </LinearGradient>
       </Pressable>

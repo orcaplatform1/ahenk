@@ -228,6 +228,36 @@ export const btn = {
   // Geçmiş Masalarım "Değerlendir" (ll-mono bakır bağlantı) ve kart açma oku
   monoLink: { box: { alignSelf: 'flex-start', marginBottom: 8 }, text: { fontSize: 11, color: '#e8a27a', fontFamily: 'JetBrainsMono_400Regular' } },
   chevron: { box: { padding: 6 }, text: { color: '#a39c93', fontSize: 14 } },
+  // Yönetim Paneli: menü bağlantısı (normal / aktif / Acil Yardım), Çıkış, "Okundu" gibi küçük butonlar, Navbar "Yönetim Paneli" rozeti
+  admNav: { box: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, text: { fontSize: 13, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)' }, text: { color: '#93c5fd' } } },
+  admNavSos: { box: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: 'transparent', flexDirection: 'row', alignItems: 'center' }, text: { weight: 600, fontSize: 13, color: '#ef4444' }, on: { box: { backgroundColor: 'rgba(239,68,68,0.2)', borderColor: 'rgba(239,68,68,0.4)' }, text: { weight: 700, color: '#ef4444' } } },
+  admLogout: { box: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10 }, text: { fontSize: 13, color: '#64748b' } },
+  admSmall: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, backgroundColor: '#0a1628', borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 10, color: '#64748b' } },
+  admClose: { box: { minWidth: 24, alignItems: 'center' }, text: { fontSize: 20, color: '#64748b' } },
+  adminChip: { box: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: '#1a3a5c', alignSelf: 'flex-start' }, text: { weight: 700, fontSize: 11, color: '#93c5fd' }, gradient: { colors: ['#0a1628', '#0d1f3c'], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } } },
+  admSelect: { box: { backgroundColor: '#020c1b', borderWidth: 1, borderColor: '#1a3a5c', borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 36 }, text: { fontSize: 13, color: '#64748b' }, on: { box: {}, text: { color: '#e2e8f0' } } },
+  admOption: { box: { paddingVertical: 9, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' }, text: { fontSize: 13, color: '#e2e8f0' }, on: { box: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.35)' }, text: { color: '#3b82f6' } } },
+  admDateOption: { box: { paddingVertical: 10, paddingHorizontal: 4, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' }, text: { fontSize: 14, color: '#e2e8f0', textAlign: 'center' }, on: { box: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.35)' }, text: { color: '#3b82f6' } } },
+  admCyan: { box: { marginTop: 14, padding: 9, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,211,238,0.1)', borderWidth: 1, borderColor: 'rgba(34,211,238,0.3)' }, text: { weight: 700, fontSize: 13, color: '#22d3ee' } },
+  admOutline: { box: { marginTop: 8, padding: 7, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 13, color: '#64748b' } },
+  admPager: { box: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 99, borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 11, color: '#64748b' }, disabledOpacity: 0.3 },
+  admOk: { box: { paddingVertical: 7, paddingHorizontal: 12, borderRadius: 8, backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { weight: 600, fontSize: 12, color: '#22c55e' }, disabledOpacity: 0.5 },
+  admNo: { box: { paddingVertical: 7, paddingHorizontal: 12, borderRadius: 8, backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }, text: { weight: 600, fontSize: 12, color: '#ef4444' }, disabledOpacity: 0.5 },
+  admX: { box: { padding: 2 }, text: { fontSize: 15, color: '#64748b' } },
+  admSegment: { box: { flex: 1, padding: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#1a3a5c' }, text: { weight: 600, fontSize: 13, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(34,211,238,0.1)', borderColor: 'rgba(34,211,238,0.3)' }, text: { color: '#22d3ee' } } },
+  admSave: { box: { marginTop: 12, padding: 10, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,211,238,0.1)', borderWidth: 1, borderColor: 'rgba(34,211,238,0.3)' }, text: { weight: 700, fontSize: 13, color: '#22d3ee' }, on: { box: { backgroundColor: 'rgba(34,197,94,0.15)', borderColor: 'rgba(34,197,94,0.3)' }, text: { color: '#22c55e' } }, disabledOpacity: 0.6 },
+  admReview: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 10, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(34,211,238,0.08)', borderColor: 'rgba(34,211,238,0.3)' }, text: {} } },
+  admOkSm: { box: { flex: 1, padding: 7, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { weight: 600, fontSize: 11, color: '#22c55e' }, disabledOpacity: 0.5 },
+  admNoSm: { box: { flex: 1, padding: 7, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }, text: { weight: 600, fontSize: 11, color: '#ef4444' }, disabledOpacity: 0.5 },
+  admAdd: { box: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 8, backgroundColor: 'rgba(34,211,238,0.1)', borderWidth: 1, borderColor: 'rgba(34,211,238,0.3)' }, text: { weight: 600, fontSize: 13, color: '#22d3ee' } },
+  admCyanFull: { box: { padding: 9, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,211,238,0.1)', borderWidth: 1, borderColor: 'rgba(34,211,238,0.3)' }, text: { weight: 700, fontSize: 13, color: '#22d3ee' }, disabledOpacity: 0.5 },
+  admActivate: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { fontSize: 10, color: '#22c55e' }, on: { box: { backgroundColor: 'rgba(100,116,139,0.1)', borderColor: 'rgba(100,116,139,0.25)' }, text: { color: '#64748b' } }, disabledOpacity: 0.5 },
+  admDetail: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 7, borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 10, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(34,211,238,0.08)', borderColor: 'rgba(34,211,238,0.3)' }, text: { color: '#22d3ee' } } },
+  admLink: { box: {}, text: { fontSize: 12, color: '#22d3ee' } },
+  admAmberSm: { box: { flex: 1, padding: 7, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }, text: { weight: 600, fontSize: 11, color: '#f59e0b' }, disabledOpacity: 0.5 },
+  admGreen: { box: { paddingVertical: 9, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.12)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.4)' }, text: { weight: 600, fontSize: 13, color: '#22c55e' }, disabledOpacity: 0.5 },
+  admGhost: { box: { paddingVertical: 9, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 13, color: '#64748b' } },
+  admCheck: { box: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32 }, text: { fontSize: 13, color: '#e2e8f0' } },
   // Kayıt "Kod gönder" (telefon satırı) ve numara "Ekle"
   otpSend: { box: { justifyContent: 'center', paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', backgroundColor: 'rgba(192,57,43,0.06)' }, text: { weight: 500, fontSize: 12, color: '#e74c3c' }, disabledOpacity: 0.4 },
   addSquare: { box: { justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }, text: { fontSize: 13, color: '#c9c2b8' } },
@@ -275,3 +305,15 @@ export const toggleSwitch = { width: 42, height: 24, radius: 9999, onBg: '#c0392
 
 // TabProfilim ACCOUNT_BTN (btn-ghost üzerine): genişlik %72, dolgu 9/10, yazı clamp(8px, 2.5vw, 10px), harf aralığı 0.04em
 export const accountBtn = { box: { width: '72%', alignSelf: 'center', paddingVertical: 9, paddingHorizontal: 10 }, text: { fontSize: 10, letterSpacing: 0.4 } } as const;
+// ── Yönetim Paneli (apps/web/lib/adminTheme.ts + globals.css .admin-shell / .adm-page / .adm-table mobil kuralları) ──
+export const adm = {
+  bg: '#020c1b', surface: '#0a1628', card: '#0d1f3c', border: '#1a3a5c', text: '#e2e8f0', muted: '#64748b',
+  red: '#ef4444', green: '#22c55e', amber: '#f59e0b', blue: '#3b82f6', cyan: '#22d3ee', navActive: '#93c5fd',
+  pagePad: 16, // .adm-page ≤640px
+  headerH: 52, drawerW: 208,
+  label: { fontFamily: 'JetBrainsMono_600SemiBold', fontSize: 11, letterSpacing: 1.1 },
+  tableLabel: { fontFamily: 'JetBrainsMono_400Regular', fontSize: 11, color: '#64748b' },
+} as const;
+
+// Yönetim Paneli Ayarlar anahtarı (admin/settings Toggle): 44×24, açıkken yeşil, kapalıyken yüzey + kenar
+export const admToggle = { width: 44, height: 24, onBg: '#22c55e', offBg: '#0a1628', offBorder: '#1a3a5c', knob: 16, inset: 3, travel: 20 } as const;

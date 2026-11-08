@@ -64,7 +64,7 @@ export default function Profilim() {
               </View>
             ) : user ? (
               <>
-                {tab === 'profil' && <ProfilimTab user={user} cities={cities} onLoggedOut={() => router.replace('/giris')} />}
+                {tab === 'profil' && <ProfilimTab user={user} cities={cities} onLoggedOut={() => router.replace('/giris')} onAdmin={() => router.push('/admin/stats')} />}
                 {tab === 'test' && <KisilikTab />}
                 {tab === 'rehber' && <RehberTab />}
                 {tab === 'kyc' && <KycTab />}
