@@ -29,7 +29,7 @@ function StatCard({ label, value, sub, prefix = '', fmtFn, accent }: { label: st
   const v = useCountUp(value);
   const color = accent ?? adm.cyan;
   return (
-    <ACard style={{ flexBasis: '47%', flexGrow: 1, gap: 4 }}>
+    <ACard style={{ gap: 4, flexGrow: 1 }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginBottom: 4 }}>
         <View style={{ width: 2, height: 12, borderRadius: 1, backgroundColor: color }} />
         <ALabel style={{ color, flexShrink: 1 }}>{label.toLocaleUpperCase('tr-TR')}</ALabel>
@@ -53,7 +53,8 @@ function PackageBar({ label, pct, count, color }: { label: string; pct: number; 
     </View>
   );
 }
-const Grid = ({ children }: { children: React.ReactNode }) => <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>{children}</View>;
+// web: grid repeat(2, 1fr), gap 12 — tek kalan kart yarım genişlikte
+const Grid = ({ children }: { children: React.ReactNode }) => <AGrid gap={12} style={{ marginBottom: 12 }}>{children}</AGrid>;
 
 export default function AdminStats() {
   const [data, setData] = useState<StatsOverview | null>(null);
@@ -120,7 +121,7 @@ export default function AdminStats() {
       <ACard style={{ padding: 0, overflow: 'hidden', marginBottom: 12 }}>
         <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border }}><ATitle>Şehir Bazlı Performans</ATitle></View>
         {loading ? <View style={{ padding: 16 }}>{skeleton(32, 4)}</View> : cities.length > 0 ? cities.map((r, i) => (
-          <ATableRow key={r.city} last={i === cities.length - 1} cells={[
+          <ATableRow borderColor="rgba(26,58,92,0.5)" key={r.city} last={i === cities.length - 1} cells={[
             ['Şehir', <AT key="c" w={600} style={{ fontSize: 13 }}>{r.city}</AT>], ['Masa', <AT key="m" style={{ fontSize: 13, color: adm.muted }}>{r.totalTables}</AT>],
             ['Kankamla', <AT key="k" style={{ fontSize: 13, color: adm.muted }}>{r.kankaTables ?? 0}</AT>], ['Üye', <AT key="u" style={{ fontSize: 13, color: adm.muted }}>{r.activeMembers}</AT>],
             ['Ciro', <AT key="ci" style={{ fontSize: 13, color: adm.muted }}>₺{fmtK(r.revenue)}</AT>], ['İndirim', <AT key="i" style={{ fontSize: 13, color: adm.muted }}>₺{fmtK(r.discount)}</AT>],

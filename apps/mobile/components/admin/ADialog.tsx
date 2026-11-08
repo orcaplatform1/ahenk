@@ -14,7 +14,7 @@ export function ADialog({ visible, onClose, title, children, maxWidth = 400 }: {
             <ScrollView keyboardShouldPersistTaps="handled">
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <ATitle>{title}</ATitle>
-                <Btn variant="admX" label="✕" accessibilityLabel="Kapat" textStyle={{ fontSize: 16 }} onPress={onClose} />
+                <Btn variant="admX" label="✕" accessibilityLabel="Kapat" textStyle={{ fontSize: 16 }} style={{ padding: 4 }} onPress={onClose} />
               </View>
               {children}
             </ScrollView>

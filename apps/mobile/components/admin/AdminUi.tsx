@@ -33,9 +33,9 @@ export function AError({ children }: { children?: string }) {
   return <AT style={{ fontSize: 13, color: adm.red, marginBottom: 16 }}>{children}</AT>;
 }
 // Mobil .adm-table: thead gizli; her satır blok, td[data-label] → "ETİKET .... değer" (etiket mono 11 #64748b, değer sağa yaslı, dolgu 4/14)
-export function ATableRow({ cells, onPress, last }: { cells: [string, React.ReactNode][]; onPress?: () => void; last?: boolean }) {
+export function ATableRow({ cells, onPress, last, borderColor = adm.border }: { cells: [string, React.ReactNode][]; onPress?: () => void; last?: boolean; borderColor?: string }) {
   const Row = (
-    <View style={{ paddingVertical: 8, borderBottomWidth: last ? 0 : 1, borderBottomColor: adm.border }}>
+    <View style={{ paddingVertical: 8, borderBottomWidth: last ? 0 : 1, borderBottomColor: borderColor }}>
       {cells.map(([k, v]) => (
         <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 4, paddingHorizontal: 14 }}>
           <Text style={withWebLH(adm.tableLabel, true)}>{k}</Text>

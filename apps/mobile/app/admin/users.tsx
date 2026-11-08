@@ -99,7 +99,7 @@ export default function AdminUsers() {
             {loading ? <View style={{ padding: 14, gap: 8 }}>{[0, 1, 2, 3, 4].map(i => <View key={i} style={{ height: 32, backgroundColor: adm.surface, borderRadius: 6, opacity: 0.5 }} />)}</View>
               : users.length === 0 ? <View style={{ paddingVertical: 40, alignItems: 'center' }}><AT w={600} style={{ fontSize: 13, color: adm.muted }}>Kullanıcı bulunamadı.</AT></View>
               : users.map((u, i) => { const s = SS[u.status] ?? SS.ACTIVE; return (
-                <ATableRow key={u.id} last={i === users.length - 1} cells={[
+                <ATableRow borderColor="rgba(26,58,92,0.5)" key={u.id} last={i === users.length - 1} cells={[
                   ['Kullanıcı', <View key="u" style={{ alignItems: 'flex-end' }}><AT w={600} numberOfLines={1} style={{ fontSize: 13 }}>{u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}</AT><AT numberOfLines={1} style={{ marginTop: 2, fontSize: 10, color: adm.muted }}>{u.email ?? u.phone ?? ''}</AT></View>],
                   ['Şehir', <View key="c" style={{ alignItems: 'flex-end' }}><AT style={{ fontSize: 13, color: adm.muted }}>{u.primaryCityName ?? '—'}</AT><AT style={{ fontSize: 11, color: adm.muted }}>Bu hafta: {u.activeCityName ?? '—'}</AT></View>],
                   ['Paket', <AT key="p" style={{ fontSize: 13, color: adm.muted }}>{planOf(u)}</AT>],

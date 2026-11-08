@@ -71,6 +71,7 @@ export default function AdminVenues() {
       if (files === 'denied') { setModalError('Fotoğraflara erişim izni verilmedi'); return; }
       if (!files.length) return;
       if (photos.length + pending.length + files.length > MAX_PHOTOS) { setModalError(`En fazla ${MAX_PHOTOS} fotoğraf eklenebilir`); return; }
+      if (files.some(f => !/^image\/(jpeg|png|webp|heic|heif)$/.test(f.type))) { setModalError('Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı'); return; }
       if (!editing) { setPending(p => [...p, ...files]); return; }
       setPhotoBusy(true);
       try { setPhotos(await uploadPhotos(editing.id, files)); loadVenues(selectedCity || undefined); } catch (e) { setModalError((e as Error).message); } finally { setPhotoBusy(false); }
