@@ -10,7 +10,8 @@ import { c, ll, llColumn, tw, liveGlow } from '@/theme/theme';
 
 interface Notif { id: string; title: string; body: string; data?: { event?: string; type?: string; meetingId?: string } | null; read: boolean; createdAt: string }
 interface Page { items: Notif[]; total: number; page: number; totalPages: number }
-const LIMIT = 20;
+// Backend kullanıcı başına son 25 bildirimi tutar; ekranda son 25 bildirim (tek sayfa)
+const LIMIT = 25;
 
 // GG.AA.YYYY SS:DD (Türkiye saati, Europe/Istanbul)
 function timeOf(iso: string) {

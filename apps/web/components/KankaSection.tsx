@@ -81,6 +81,13 @@ export function KankaSection() {
     api.get<KankaState>('/kanka/me').then(setState).catch(() => {});
   }, []);
   useEffect(() => { load(); }, [load]);
+  // Bekleyen davetin 48 saati dolunca buton kendiliğinden "Davet Et" olur (süre bitiminde durum yeniden yüklenir)
+  const pendingUntil = state?.outgoingInvite && !state.outgoingInvite.expired ? state.outgoingInvite.expiresAt : null;
+  useEffect(() => {
+    if (!pendingUntil) return;
+    const t = setTimeout(load, Math.max(0, new Date(pendingUntil).getTime() - Date.now()) + 1000);
+    return () => clearTimeout(t);
+  }, [pendingUntil, load]);
 
   if (!state) return null;
   const incoming = state.incomingInvites[0];
@@ -106,6 +113,10 @@ export function KankaSection() {
     try { await api.post('/kanka/unlink', {}); setSheet(null); load(); }
     catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
   }
+  async function cancelInvite() {
+    setBusy(true);
+    try { await api.post('/kanka/invite/cancel', {}); } catch { /* durum yeniden yüklenir */ } finally { setBusy(false); load(); }
+  }
   const open = (s: 'invite' | 'incoming' | 'kanka') => { setMsg(''); setSentLink(null); setSheet(s); };
 
   const pillBtn = 'px-4 py-1.5 rounded-full text-xs font-semibold';
@@ -122,6 +133,10 @@ export function KankaSection() {
           <button onClick={() => open('incoming')} className={pillBtn} style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.45)', color: '#4ade80' }}>
             Davet Var
           </button>
+        ) : pendingUntil ? (
+          <button onClick={cancelInvite} disabled={busy} className={`${pillBtn} disabled:opacity-50`} style={{ background: 'rgba(192,57,43,0.18)', border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b' }}>
+            İptal Et
+          </button>
         ) : (
           <button onClick={() => open('invite')} className={pillBtn} style={{ background: 'rgba(192,57,43,0.18)', border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b' }}>
             Davet Et
@@ -134,7 +149,7 @@ export function KankaSection() {
           <p className="text-xs text-[#888]">
             {state.outgoingInvite.expired
               ? 'Gönderdiğin davetin süresi doldu. "Davet Et" ile tekrar gönderebilirsin.'
-              : `Davetin gönderildi · ${hoursLeft(state.outgoingInvite.expiresAt)} saat geçerli. WhatsApp ulaşmazsa linki kendin ilet:`}
+              : `Davetin gönderildi · ${hoursLeft(state.outgoingInvite.expiresAt)} saat geçerli. WhatsApp bildirim yollamamışsa bağlantıyı kendin ilet:`}
           </p>
           {!state.outgoingInvite.expired && <CopyLink link={state.outgoingInvite.link} />}
         </div>

@@ -18,6 +18,7 @@ const SONAR_MAX_LABELS = 8;
 const HEATMAP_MAX = 9;
 const DENSITY_MAX = 15;
 const FEED_MAX = 20;
+const FEED_SOURCE_MEETINGS = 40;
 const HIGH_MATCH_RATIO = 0.7; // Eşleşme puanının en az %70'i "yüksek uyum"
 
 type FeedSegment = { t: "text"; v: string } | { t: "person"; v: string; g: string | null };
@@ -232,6 +233,8 @@ export class LiveLayerService {
   }
 
   // Olay tablosu yok: masa ve katılımcı kayıtlarından türetilir; en son FEED_MAX olay döner.
+  // Zaman penceresiyle silme yok: olay yalnız daha yeni FEED_MAX olay geldiğinde (21. olay) listeden düşer.
+  // Bu yüzden alt tarih sınırı yok; en yakın tarihli FEED_SOURCE_MEETINGS masa taranır (her masa en az 1 olay üretir).
   // Mekân adı, semt ve buluşma günü/saati akışa yazılmaz; kişiler yalnızca baş harfle görünür.
   private async feed(city: { id: string; name: string }) {
     const { start, end } = this.week();
@@ -239,7 +242,9 @@ export class LiveLayerService {
     const now = Date.now();
     const [meetings, lastWeekCount] = await Promise.all([
       this.prisma.meeting.findMany({
-        where: { cityId: city.id, status: { not: "CANCELLED" }, scheduledAt: { gte: prevStart, lt: end } },
+        where: { cityId: city.id, status: { not: "CANCELLED" }, scheduledAt: { lt: end } },
+        orderBy: { scheduledAt: "desc" },
+        take: FEED_SOURCE_MEETINGS,
         select: {
           id: true, type: true, title: true, maxParticipants: true, scheduledAt: true,
           participants: {

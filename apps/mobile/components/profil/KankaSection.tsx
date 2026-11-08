@@ -51,6 +51,13 @@ export function KankaSection() {
   const [sentLink, setSentLink] = useState<string | null>(null);
   const load = useCallback(() => { api.get<KankaState>('/kanka/me').then(setState).catch(() => {}); }, []);
   useEffect(() => { load(); }, [load]);
+  // Bekleyen davetin 48 saati dolunca buton kendiliğinden "Davet Et" olur (süre bitiminde durum yeniden yüklenir)
+  const pendingUntil = state?.outgoingInvite && !state.outgoingInvite.expired ? state.outgoingInvite.expiresAt : null;
+  useEffect(() => {
+    if (!pendingUntil) return;
+    const t = setTimeout(load, Math.max(0, new Date(pendingUntil).getTime() - Date.now()) + 1000);
+    return () => clearTimeout(t);
+  }, [pendingUntil, load]);
   if (!state) return null;
   const incoming = state.incomingInvites[0];
 
@@ -70,6 +77,10 @@ export function KankaSection() {
     setBusy(true); setMsg('');
     try { await api.post('/kanka/unlink', {}); setSheet(null); load(); } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
   }
+  async function cancelInvite() {
+    setBusy(true);
+    try { await api.post('/kanka/invite/cancel', {}); } catch { /* durum yeniden yüklenir */ } finally { setBusy(false); load(); }
+  }
   const open = (s: 'invite' | 'incoming' | 'kanka') => { setMsg(''); setSentLink(null); setSheet(s); };
 
   return (
@@ -80,6 +91,8 @@ export function KankaSection() {
           <Pressable onPress={() => open('kanka')} accessibilityLabel="Kanka"><Bubble initials={state.kanka.initials} gender={state.kanka.gender} /></Pressable>
         ) : incoming ? (
           <Btn variant="pillGreen" onPress={() => open('incoming')} label="Davet Var" />
+        ) : pendingUntil ? (
+          <Btn variant="pillRed" disabled={busy} onPress={cancelInvite} label="İptal Et" />
         ) : (
           <Btn variant="pillRed" onPress={() => open('invite')} label="Davet Et" />
         )}
@@ -87,7 +100,7 @@ export function KankaSection() {
       {!state.kanka && state.outgoingInvite && (
         <View style={{ gap: 8 }}>
           <T style={{ fontSize: 12, color: c.t888 }}>
-            {state.outgoingInvite.expired ? 'Gönderdiğin davetin süresi doldu. "Davet Et" ile tekrar gönderebilirsin.' : `Davetin gönderildi · ${hoursLeft(state.outgoingInvite.expiresAt)} saat geçerli. WhatsApp ulaşmazsa linki kendin ilet:`}
+            {state.outgoingInvite.expired ? 'Gönderdiğin davetin süresi doldu. "Davet Et" ile tekrar gönderebilirsin.' : `Davetin gönderildi · ${hoursLeft(state.outgoingInvite.expiresAt)} saat geçerli. WhatsApp bildirim yollamamışsa bağlantıyı kendin ilet:`}
           </T>
           {!state.outgoingInvite.expired && <CopyLink link={state.outgoingInvite.link} />}
         </View>
@@ -104,7 +117,7 @@ export function KankaSection() {
         </T>
       </View>
 
-      <Sheet visible={sheet === 'invite'} onClose={() => setSheet(null)}>
+      <Sheet visible={sheet === 'invite'} onClose={() => setSheet(null)} avoidKeyboard>
         <T w={700} style={{ fontSize: 16, marginBottom: 8 }}>Kanka Davet Et</T>
         {!state.kycApproved ? (
           <T style={{ fontSize: 13, color: c.t888, lineHeight: 20.8 }}>Kanka davet etmek için önce kimlik doğrulamanı (KYC) tamamlamalısın.</T>

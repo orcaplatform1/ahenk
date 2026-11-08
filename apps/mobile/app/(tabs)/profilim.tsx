@@ -38,7 +38,8 @@ export default function Profilim() {
   useFocusEffect(load);
 
   const kycApproved = user?.kyc?.status === 'APPROVED';
-  const tabs = TABS.filter(t => !(t.key === 'kyc' && kycApproved));
+  // KYC durumu (user) yüklenene kadar Kimlik Doğrulama sekmesi hiç gösterilmez; onaylıysa hiç görünmez
+  const tabs = TABS.filter(t => !(t.key === 'kyc' && (!user || kycApproved)));
 
   return (
     <View style={{ flex: 1, backgroundColor: tw.bg }}>

@@ -3,7 +3,7 @@
 import React, { forwardRef, useState } from 'react';
 import {
   useWindowDimensions,
-  ActivityIndicator, Modal as RNModal, Pressable, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, KeyboardAvoidingView, Modal as RNModal, Pressable, StyleSheet, Text, TextInput, View,
   type PressableProps, type TextInputInstance, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -183,15 +183,19 @@ export function Row({ label, value, color }: { label: string; value: string; col
 
 // Alttan açılan pencere (KankaSection Sheet)
 // pad: web'de bazı alt pencereler 20px 16px dolgu kullanır (CityPickerModalP, BirthDateField); varsayılan 24px 20px (KankaSection, TabProfilim)
-export function Sheet({ visible, onClose, children, pad }: { visible: boolean; onClose: () => void; children: React.ReactNode; pad?: { top: number; h: number } }) {
+// avoidKeyboard: klavye açılınca pencere klavyenin üstüne kayar (Kanka Davet Et)
+export function Sheet({ visible, onClose, children, pad, avoidKeyboard }: { visible: boolean; onClose: () => void; children: React.ReactNode; pad?: { top: number; h: number }; avoidKeyboard?: boolean }) {
   const insets = useSafeAreaInsets();
+  const body = (
+    <Pressable style={s.sheetOverlay} onPress={onClose}>
+      <Pressable style={[s.sheet, pad && { paddingTop: pad.top, paddingHorizontal: pad.h }, { paddingBottom: sheet.padBottom + insets.bottom }]} onPress={() => undefined}>
+        {children}
+      </Pressable>
+    </Pressable>
+  );
   return (
     <RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={s.sheetOverlay} onPress={onClose}>
-        <Pressable style={[s.sheet, pad && { paddingTop: pad.top, paddingHorizontal: pad.h }, { paddingBottom: sheet.padBottom + insets.bottom }]} onPress={() => undefined}>
-          {children}
-        </Pressable>
-      </Pressable>
+      {avoidKeyboard ? <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">{body}</KeyboardAvoidingView> : body}
     </RNModal>
   );
 }

@@ -43,7 +43,8 @@ function GoldBorder({ children }: { children: React.ReactNode }) {
           <LinearGradient colors={['transparent', 'transparent', c.gold1, c.gold2, 'transparent']} locations={[0, 0.42, 0.47, 0.5, 0.55]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={{ flex: 1 }} />
         </Animated.View>
       )}
-      <View style={{ borderRadius: 16, overflow: 'hidden' }}>{children}</View>
+      {/* Opak iç zemin: aktif (soluk, opaklık 0,45) kartta dönen altın ışık kartın içinden görünmez, yalnız 2 px kenarda gezer */}
+      <View style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: c.planLeft }}>{children}</View>
     </View>
   );
 }
@@ -133,8 +134,8 @@ export default function Paketim() {
                 </View>
                 <BtnPrimary label={refSending ? '…' : 'Davet Gönder'} full disabled={refSending} style={refSending ? { opacity: 0.5 } : undefined} onPress={sendReferral} />
                 <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
-                  <T style={{ color: c.tAaa, fontSize: 11, lineHeight: 16.5 }}>
-                    Davet ettiğiniz arkadaşınız, telefon numarasını ve kimlik doğrulamasını yaptıktan sonra sistem size otomatik indirim hakkı tanımlar. Arkadaşınız da başka arkadaşlarını davet edip bu şartlar yerine geldiğinde o da indirim hakkı kazanır. İndirim hakları toplu olarak kullanılamaz ve devredilemez. <T w={700} style={{ fontSize: 11, color: '#fff' }}>Her bir indirim hakkı, yalnızca bir paket satın alımında geçerlidir.</T>
+                  <T style={{ color: c.tAaa, fontSize: 12, lineHeight: 18 }}>
+                    Davet ettiğiniz arkadaşınız, telefon numarasını ve kimlik doğrulamasını yaptıktan sonra sistem size otomatik indirim hakkı tanımlar. Arkadaşınız da başka arkadaşlarını davet edip bu şartlar yerine geldiğinde o da indirim hakkı kazanır. İndirim hakları toplu olarak kullanılamaz ve devredilemez. <T w={700} style={{ fontSize: 12, color: '#fff' }}>Her bir indirim hakkı, yalnızca bir paket satın alımında geçerlidir.</T>
                   </T>
                 </View>
               </View>
@@ -161,7 +162,7 @@ export default function Paketim() {
                     </View>
                   );
                 })}
-                <T style={{ fontSize: 12, color: ll.time, lineHeight: 19.5, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12, marginTop: 4 }}>
+                <T style={{ fontSize: 12, color: '#fff', lineHeight: 19.5, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12, marginTop: 4 }}>
                   Paketler tek seferliktir; her masa hakkı {packageCycles} döngü (yaklaşık 1 ay) geçerlidir. Bu süre içinde hiç masa kurulamazsa tam iade talep edebilirsin. Bir masa kurulduysa kalan hakkın olsa da hizmet alınmış sayılır ve iade yapılmaz. İade talepleri 5 iş günü içinde değerlendirilir.
                 </T>
                 {refundMsg ? <T style={{ fontSize: 14, color: refundMsg.ok ? tw4.green400 : tw.accent }}>{refundMsg.text}</T>
@@ -221,7 +222,7 @@ export default function Paketim() {
                       </View>
                       {cs.showButton && (
                         <BtnPrimary full disabled={buying === plan.key || maintenance} style={(buying === plan.key || maintenance) ? { opacity: 0.5 } : undefined}
-                          label={buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : cs.needsKanka ? 'Önce Kanka Davet Et' : 'Paketi Seç'}
+                          label={buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : 'Paketi Seç'}
                           onPress={() => !kycApproved ? router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } }) : cs.needsKanka ? router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'profil' } }) : buy(plan.key)} />
                       )}
                     </View>

@@ -11,6 +11,7 @@ import { useMasaTabs } from '@/lib/useMasaTabs';
 import { LiveTabs } from '@/components/LiveTabs';
 import { KankaPairs } from '@/components/KankaPairs';
 import { DetayAvatar } from '@/components/DetayAvatar';
+import { Star } from '@/components/Star';
 import { MasaDetayKarti, type MasaDetayData, type VenuePhoto } from '@/components/MasaDetayKarti';
 import { ConfirmedRadarView, RezervasyonIptal } from '@/components/MasaBekleme';
 import { InlineLH, Btn, BtnGhost, BtnPrimary, Card, Head, Mono, Serif, SkeletonBlock, T, Glow } from '@/components/ui';
@@ -201,13 +202,19 @@ function HistoryListInner({ history }: { history: HistoryMeeting[] }) {
                 {!m.isReviewed && (
                   <Btn variant="monoTag" label="Değerlendir" onPress={() => router.push(`/degerlendirme/${m.id}`)} />
                 )}
-                <MasaDetayKarti masa={masa} archive />
+                {/* Değerlendirme: masa detay kartının en üstünde, Canlı Akış kartı (Card + ll.text) stilinde; puan kadar dolu yıldız · not */}
                 {m.review && (
-                  <View style={{ marginTop: 12 }}>
-                    <Mono style={{ marginBottom: 4, fontSize: 11, color: ll.label }}>DEĞERLENDİRMEN</Mono>
-                    <T style={{ fontSize: 13, color: ll.text }}>{m.review.rating}/5{m.review.comment ? ` · ${m.review.comment}` : ''}</T>
-                  </View>
+                  <Card style={{ marginBottom: 12 }}>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6, rowGap: 4 }}>
+                      <T w={600} style={{ fontSize: 13, color: ll.text }}>Değerlendirme:</T>
+                      <View style={{ flexDirection: 'row', gap: 2 }} accessibilityLabel={`${m.review.rating} yıldız`}>
+                        {Array.from({ length: m.review.rating }).map((_, k) => <Star key={k} filled size={16} />)}
+                      </View>
+                      {!!m.review.comment && <T style={{ fontSize: 13, color: ll.text }}>· {m.review.comment}</T>}
+                    </View>
+                  </Card>
                 )}
+                <MasaDetayKarti masa={masa} archive />
                 {!!m.blocked?.length && (
                   <View style={{ marginTop: 12 }}>
                     <Mono style={{ marginBottom: 4, fontSize: 11, color: ll.label }}>ENGELLEDİKLERİN</Mono>

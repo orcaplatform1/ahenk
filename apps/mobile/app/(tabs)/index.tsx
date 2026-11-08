@@ -212,6 +212,8 @@ export default function EslesmePaneli() {
             {/* Canlı Akış */}
             <Card>
               <Head title="Canlı Akış" right={<Note>Son 20 olay</Note>} />
+              {/* Son 20 olay tutulur; aynı anda en fazla 15 olay görünür, kalanı kart içinde kaydırılır */}
+              <ScrollView style={{ maxHeight: FEED_VISIBLE_HEIGHT }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {(pulse?.feed.events ?? []).length === 0 ? (
                 <T style={{ fontSize: 13, color: ll.label }}>Henüz olay yok.</T>
               ) : (pulse?.feed.events ?? []).slice(0, 20).map((e) => (
@@ -226,6 +228,7 @@ export default function EslesmePaneli() {
                   </View>
                 </View>
               ))}
+              </ScrollView>
             </Card>
 
             {/* Isı haritası */}
@@ -298,6 +301,9 @@ export default function EslesmePaneli() {
     </View>
   );
 }
+
+// 15 tek satırlık olay: feedRow 6+6 dolgu + 17,25 satır + 1 çizgi
+const FEED_VISIBLE_HEIGHT = 15 * (12 + 17.25 + 1);
 
 const st = StyleSheet.create({
   column: { width: '100%', maxWidth: llColumn.maxWidth, alignSelf: 'center', paddingTop: llColumn.padTop, paddingHorizontal: llColumn.padH, paddingBottom: llColumn.padBottom, gap: llColumn.gap },

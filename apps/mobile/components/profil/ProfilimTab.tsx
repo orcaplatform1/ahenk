@@ -201,10 +201,11 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
 
   return (
     <View style={{ gap: 24 }}>
-      {(user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
-        <AdminChip onPress={onAdmin} />
-      )}
       <CardP title="Hesap Bilgileri">
+        {/* Yönetim Paneli butonu: Hesap Bilgileri başlığının hemen altında */}
+        {(user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
+          <AdminChip onPress={onAdmin} />
+        )}
         {user.noShowWarning && (
           <T w={500} style={{ fontSize: 14, lineHeight: 22.75, color: c.warnYellow }}>
             Uyarı: {ORDINAL[user.noShowWarning.count - 1] ?? `${user.noShowWarning.count}.`} ihlal, masaya katılım sağlamadınız. Kalan uyarı hakkı {user.noShowWarning.remaining}
@@ -296,7 +297,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
       </Sheet>
 
       <CardP title="Hangi Şehirdeki Masalara Katılmak İstersiniz?">
-        <T style={{ fontSize: 12, color: ll.label, marginBottom: 12 }}>Bu şehirlerden birinde tatilde veya seyahatteyseniz, oradaki grup masası veya baş başa masasına katılabilirsiniz.</T>
+        <T style={{ fontSize: 12, color: ll.label, marginBottom: 12 }}>Bu şehirlerden birinde tatilde veya seyahatteyseniz, oradaki grup masası, baş başa masa veya kankamla masasına katılabilirsiniz.</T>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <CitySelect label="" value={activeCity} onChange={setActiveCity} cities={cities} optional placeholder="Şehir seç" title="Hangi şehirdeki masalara katılmak istersiniz?" />
           <BtnPrimary label={savingActive ? '…' : 'Kaydet'} disabled={savingActive} style={[{ alignSelf: 'stretch' }, savingActive && { opacity: 0.5 }]} onPress={() => { setPendingActive(activeCity || null); setActiveConfirm(true); }} />

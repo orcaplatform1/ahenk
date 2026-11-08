@@ -5,8 +5,10 @@ import type { LivePulse } from './types';
 
 type Event = LivePulse['feed']['events'][number];
 
-// Kart en son 20 olayı gösterir; 21. olay listeden düşer
+// Kart en son 20 olayı tutar; 21. olay listeden düşer. Aynı anda en fazla 15 olay görünür, kalanı kart içinde kaydırılır
 const MAX_ROWS = 20;
+// 15 tek satırlık olay: satır 6+6 px dolgu + 17,25 px satır (11,5 × 1,5) + 1 px çizgi
+const VISIBLE_ROWS_HEIGHT = 15 * (12 + 17.25 + 1);
 
 function Row({ event }: { event: Event }) {
   return (
@@ -36,7 +38,7 @@ export default function LiveFeed({ feed }: { feed: LivePulse['feed'] | null }) {
         <h2 className="ll-title">Canlı Akış</h2>
         <span className="ll-note">Son 20 olay</span>
       </div>
-      <div>
+      <div style={{ maxHeight: VISIBLE_ROWS_HEIGHT, overflowY: 'auto' }}>
         {events.length === 0 ? (
           <p style={{ margin: 0, fontSize: 13, color: '#a39c93' }}>Henüz olay yok.</p>
         ) : (

@@ -72,13 +72,13 @@ export class KankaService {
       };
     }
 
-    // Davet ettiğim (son davet): bekliyorsa link, süresi dolduysa "tekrar gönder"
+    // Davet ettiğim (son davet): bekliyorsa link, süresi dolduysa "tekrar gönder"; son davet iptal edildiyse yok sayılır
     const outgoing = await this.prisma.kankaInvite.findFirst({
-      where: { inviterId: userId, status: { in: ["PENDING", "EXPIRED"] } },
+      where: { inviterId: userId, status: { in: ["PENDING", "EXPIRED", "CANCELLED"] } },
       orderBy: { createdAt: "desc" },
       select: { token: true, status: true, expiresAt: true },
     });
-    const outgoingInvite = outgoing && !link
+    const outgoingInvite = outgoing && outgoing.status !== "CANCELLED" && !link
       ? {
           link: this.inviteLink(outgoing.token),
           expiresAt: outgoing.expiresAt,
@@ -164,6 +164,15 @@ export class KankaService {
     }
 
     return { link, expiresAt };
+  }
+
+  // ─── Daveti iptal et (davet eden) ───────────────────────────────────────────
+  // Bekleyen davet CANCELLED olur: link sayfası geçersiz gösterir (inviteByToken), kabul edilemez (incomingInvite PENDING ister)
+
+  async cancelInvite(userId: string) {
+    const r = await this.prisma.kankaInvite.updateMany({ where: { inviterId: userId, status: "PENDING" }, data: { status: "CANCELLED" } });
+    if (r.count === 0) throw new NotFoundException("İptal edilecek bekleyen davet yok.");
+    return { ok: true };
   }
 
   // ─── Davete yanıt ───────────────────────────────────────────────────────────

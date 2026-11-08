@@ -521,7 +521,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
       )}
       <Card title="Hangi Şehirdeki Masalara Katılmak İstersiniz?">
         <p className="text-xs text-[#a39c93] mb-3">
-          Bu şehirlerden birinde tatilde veya seyahatteyseniz, oradaki grup masası veya baş başa masasına katılabilirsiniz.
+          Bu şehirlerden birinde tatilde veya seyahatteyseniz, oradaki grup masası, baş başa masa veya kankamla masasına katılabilirsiniz.
         </p>
         <div className="flex gap-2">
           <Select

@@ -1,6 +1,7 @@
 // apps/web/app/admin/venues/page.tsx karşılığı (Mekanlar, yalnız SUPERADMIN). Fotoğraf: galeri veya kamera (expo-image-picker).
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, Linking, TextInput, View } from 'react-native';
+import { File as FsFile } from 'expo-file-system';
 import { api } from '@/lib/api';
 import { mediaUrl } from '@/lib/venueApi';
 import { chooseSource, pickFromCamera, pickFromLibrary, type PickedImage } from '@/lib/imagePick';
@@ -51,7 +52,8 @@ export default function AdminVenues() {
   }
   async function uploadPhotos(venueId: string, files: PickedImage[]) {
     const fd = new FormData();
-    files.forEach(f => fd.append('photos', { uri: f.uri, name: f.name, type: f.type } as unknown as Blob));
+    // Global fetch (expo/fetch) RN'nin { uri, name, type } parçasını desteklemiyor ("Unsupported FormDataPart implementation"); expo-file-system File kullanılır
+    files.forEach(f => fd.append('photos', new FsFile(f.uri) as unknown as Blob));
     const r = await api.form<{ photos?: string[] }>(`/admin/venues/${venueId}/photos`, fd);
     return r.photos ?? [];
   }

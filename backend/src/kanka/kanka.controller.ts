@@ -35,6 +35,15 @@ export class KankaController {
     return this.kanka.invite(req.user.id, dto.phone);
   }
 
+  @Post("invite/cancel")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Gönderilen bekleyen kanka davetini iptal et (link geçersiz olur)" })
+  cancelInvite(@Req() req: AuthedRequest) {
+    return this.kanka.cancelInvite(req.user.id);
+  }
+
   @Post("invites/:id/accept")
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)

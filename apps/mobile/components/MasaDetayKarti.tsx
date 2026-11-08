@@ -5,6 +5,7 @@ import { Image, Modal, Pressable, ScrollView, TextInput, View, type ScrollViewIn
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { api } from '@/lib/api';
+import { mediaUrl } from '@/lib/venueApi';
 import { requestSosAlwaysPermission, startSosLive } from '@/lib/sosLive';
 import { formatMeetingTime, gColor, type MasaTuru } from '@/lib/masa';
 import { openMaps } from '@/lib/links';
@@ -252,7 +253,7 @@ function Lightbox({ photos, start, onClose }: { photos: VenuePhoto[]; start: num
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-        <Image source={{ uri: photos[idx].url }} style={{ width: '90%', height: '75%', borderRadius: 12 }} resizeMode="contain" />
+        <Image source={{ uri: mediaUrl(photos[idx].url) }} style={{ width: '90%', height: '75%', borderRadius: 12 }} resizeMode="contain" />
         {!!photos[idx].caption && <T style={{ color: c.tAaa, fontSize: 13, marginTop: 12 }}>{photos[idx].caption}</T>}
         {photos.length > 1 && (
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
@@ -365,7 +366,8 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
         <View style={{ flexDirection: 'row', gap: 6, marginBottom: 18 }}>
           {photos.slice(0, 3).map((p, i) => (
             <Pressable key={i} onPress={() => setLightbox(i)} style={{ flex: 1, aspectRatio: 4 / 3, borderRadius: 8, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', maxWidth: photos.length === 1 ? '100%' : undefined }}>
-              <Image source={{ uri: p.url }} style={{ width: '100%', height: '100%' }} accessibilityLabel={p.caption ?? `Fotoğraf ${i + 1}`} />
+              {/* Backend göreli adres döner (/api/v1/media/venues/...); mobilde tam adrese çevrilir */}
+              <Image source={{ uri: mediaUrl(p.url) }} style={{ width: '100%', height: '100%' }} accessibilityLabel={p.caption ?? `Fotoğraf ${i + 1}`} />
             </Pressable>
           ))}
         </View>

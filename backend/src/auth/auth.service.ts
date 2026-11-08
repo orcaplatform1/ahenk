@@ -15,6 +15,7 @@ import bcrypt from "bcryptjs";
 import { DISTRICTS, districtsOf, isValidDistrict } from "../common/districts";
 import { randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
+import { pruneInAppNotifications } from "../notification/notification-limit";
 import { isMaintenanceMode } from "../admin/app-settings";
 import { groupPartOpen, kankaPartOpen, oneOnOnePartOpen, RIGHTS_SELECT } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
@@ -234,6 +235,7 @@ export class AuthService {
               sentAt: new Date(),
             },
           });
+          await pruneInAppNotifications(this.prisma, updated.referrerId);
         }
       }
     }

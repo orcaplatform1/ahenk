@@ -4,7 +4,8 @@ import { KeyboardAvoidingView, Modal, Pressable, ScrollView, TextInput, View, ty
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Defs, LinearGradient as SG, Path, Stop } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+import { Star } from '@/components/Star';
 import { api } from '@/lib/api';
 import { BtnGhost, BtnPrimary, Card, ModalBox, Mono, Serif, T, Title, PageGlow, Glow } from '@/components/ui';
 import { c, inputGlass, sans, tw, ll } from '@/theme/theme';
@@ -15,15 +16,6 @@ const genderColor = (g: string | null) => (g === 'FEMALE' ? '#f48fb1' : g === 'M
 const MIN = 20, MAX = 300;
 // Kartlar Eşleşme Paneli Canlı Akış kartıyla aynı: Card (.ll-card), başlık Title (serif), açıklama Note (mono, label), metin ll.text
 const note = { fontSize: 11, color: ll.label } as const;
-
-function Star({ filled }: { filled: boolean }) {
-  return (
-    <Svg width={40} height={40} viewBox="0 0 24 24">
-      <Defs><SG id="st" x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#c0392b" /><Stop offset="1" stopColor="#ff6b6b" /></SG></Defs>
-      <Path d="M12 2.6l2.9 5.9 6.5.95-4.7 4.58 1.1 6.47L12 17.45 6.2 20.5l1.1-6.47L2.6 9.45l6.5-.95L12 2.6z" fill={filled ? 'url(#st)' : 'rgba(255,255,255,0.04)'} stroke={filled ? 'none' : 'rgba(255,255,255,0.18)'} strokeWidth={1.2} strokeLinejoin="round" />
-    </Svg>
-  );
-}
 
 export default function Degerlendirme() {
   const router = useRouter();

@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { FcmService } from "./fcm/fcm.service";
 import { WhatsappNotifyService } from "./whatsapp-notify.service";
+import { pruneInAppNotifications } from "./notification-limit";
 import { NotificationType, KycStatus } from "../generated/prisma/client";
 
 type SendPayload = {
@@ -36,8 +37,9 @@ export class NotificationService {
       // Botlara hiçbir kanaldan bildirim gönderilmez
       if (!user || user.isBot) return;
 
-      // 1) IN_APP kaydı her zaman oluştur
+      // 1) IN_APP kaydı her zaman oluştur; kullanıcıda son 25 bildirim kalır
       await this.saveRecord(payload, NotificationType.IN_APP);
+      await pruneInAppNotifications(this.prisma, payload.userId);
 
       // 2) FCM push (token varsa)
       if (user.fcmToken) {

@@ -8,7 +8,7 @@ import { SOS_POLL_MS, syncSosLive } from '@/lib/sosLive';
 import { LineIcon, ProfileTabIcon } from '@/components/TabIcons';
 import { ShakeReport } from '@/components/ShakeReport';
 import { WinbackHost } from '@/components/Winback';
-import { sans, tabBar, tw } from '@/theme/theme';
+import { sans, tabBar, tabIcon, tw } from '@/theme/theme';
 
 interface Me { firstName: string; lastName: string; profile?: { gender?: string | null } }
 
@@ -45,7 +45,9 @@ export default function TabsLayout() {
         tabBarActiveTintColor: tabBar.active,
         tabBarInactiveTintColor: tabBar.inactive,
         tabBarStyle: { backgroundColor: tabBar.bg, borderTopColor: tabBar.border, borderTopWidth: 1 },
-        tabBarLabelStyle: { fontFamily: sans(500), fontSize: 10 },
+        // Sekme yazıları kaldırıldı; ikon kutusu büyük ikona göre (tabIcon.size)
+        tabBarShowLabel: false,
+        tabBarIconStyle: { width: tabIcon.size, height: tabIcon.size },
         tabBarBadgeStyle: { backgroundColor: tw.primary, color: '#fff', fontFamily: sans(600), fontSize: 10 },
         sceneStyle: { backgroundColor: '#0a0a0a' },
       }}

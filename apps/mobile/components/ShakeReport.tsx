@@ -6,14 +6,19 @@ import { Accelerometer } from 'expo-sensors';
 import { getShakeEnabled, onShakePref } from '@/lib/shakePref';
 import { ProblemReport, isProblemReportOpen } from './profil/ProblemReport';
 
-const THRESHOLD = 2.2; // g
+// Hassasiyet düşürüldü: 2.2 g → 2.7 g (eğme ~1 g, tek sert hareket yetmez)
+const THRESHOLD = 2.7; // g
 const COOLDOWN_MS = 2000;
+// Pencere yalnız art arda 2 sallamada açılır: iki sallama tepesi arası en az 250 ms, en fazla 1500 ms
+const SHAKE_GAP_MIN_MS = 250;
+const SHAKE_GAP_MAX_MS = 1500;
 
 export function ShakeReport() {
   const path = usePathname();
   const [enabled, setEnabled] = useState(true);
   const [open, setOpen] = useState(false);
   const last = useRef(0);
+  const firstShake = useRef(0);
   const openRef = useRef(false);
   openRef.current = open;
 
@@ -26,6 +31,10 @@ export function ShakeReport() {
       const g = Math.sqrt(x * x + y * y + z * z);
       const now = Date.now();
       if (g < THRESHOLD || openRef.current || isProblemReportOpen() || now - last.current < COOLDOWN_MS) return;
+      const gap = now - firstShake.current;
+      if (gap < SHAKE_GAP_MIN_MS) return; // aynı sallamanın devam eden okumaları
+      if (gap > SHAKE_GAP_MAX_MS) { firstShake.current = now; return; } // 1. sallama
+      firstShake.current = 0;
       last.current = now;
       setOpen(true);
     });

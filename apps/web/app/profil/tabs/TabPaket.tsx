@@ -204,7 +204,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
             {referralSending ? '…' : 'Davet Gönder'}
           </button>
           <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 14px' }}>
-            <p style={{ color: '#aaa', fontSize: 11, lineHeight: 1.5, margin: 0 }}>
+            <p style={{ color: '#aaa', fontSize: 12, lineHeight: 1.5, margin: 0 }}>
               Davet ettiğiniz arkadaşınız, telefon numarasını ve kimlik doğrulamasını yaptıktan sonra sistem size otomatik indirim hakkı tanımlar. Arkadaşınız da başka arkadaşlarını davet edip bu şartlar yerine geldiğinde o da indirim hakkı kazanır. İndirim hakları toplu olarak kullanılamaz ve devredilemez. <span style={{ fontWeight: 700, color: '#fff' }}>Her bir indirim hakkı, yalnızca bir paket satın alımında geçerlidir.</span>
             </p>
           </div>
@@ -265,7 +265,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
               </div>
             );
           })}
-          <p className="text-xs text-[#8f887f] leading-relaxed border-t border-white/5 pt-3 mt-1">
+          <p className="text-xs text-white leading-relaxed border-t border-white/5 pt-3 mt-1">
             Paketler tek seferliktir; her masa hakkı {packageCycles} döngü (yaklaşık 1 ay) geçerlidir. Bu süre içinde hiç masa kurulamazsa
             tam iade talep edebilirsin. Bir masa kurulduysa kalan hakkın olsa da hizmet alınmış sayılır ve iade yapılmaz.
             İade talepleri 5 iş günü içinde değerlendirilir.
@@ -302,6 +302,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
         @keyframes _pCardGoldBorder{to{transform:rotate(360deg)}}
         .p-feat-wrap{position:relative;border-radius:18px;padding:2px;overflow:hidden;}
         .p-feat-wrap::before{content:'';position:absolute;width:300%;height:300%;top:-100%;left:-100%;background:conic-gradient(from 0deg,transparent 68%,#c9a227 78%,#e8c84a 84%,transparent 93%);animation:_pCardGoldBorder 3s linear infinite;z-index:0;}
+        .p-feat-wrap::after{content:'';position:absolute;inset:2px;border-radius:16px;background:#0c0909;z-index:0;}
         .p-feat-inner{position:relative;z-index:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:row;flex:1;}
       `}</style>
 

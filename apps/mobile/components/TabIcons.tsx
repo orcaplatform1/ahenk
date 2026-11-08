@@ -15,7 +15,7 @@ export function ProfileTabIcon({ initials, gender, focused }: { initials: string
 }
 
 const SW = 1.5;
-export function LineIcon({ name, color, size = 24 }: { name: 'radar' | 'table' | 'bell' | 'package'; color: string; size?: number }) {
+export function LineIcon({ name, color, size = tabIcon.line }: { name: 'radar' | 'table' | 'bell' | 'package'; color: string; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={SW} strokeLinecap="round" strokeLinejoin="round">
       {name === 'radar' && (<>

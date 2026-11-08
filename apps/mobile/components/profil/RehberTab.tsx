@@ -1,7 +1,8 @@
 // apps/web/app/profil/tabs/TabRehber.tsx karşılığı + S-12: rehberden seçme (expo-contacts), liste web liste stilinde
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, View } from 'react-native';
-import * as Contacts from 'expo-contacts';
+// SDK 58: eski fonksiyon API'si (getContactsAsync) ana 'expo-contacts' girişinden çağrılınca hata fırlatıyor ("Rehber okunamadı."); aynı API expo-contacts/legacy'de
+import * as Contacts from 'expo-contacts/legacy';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
 import { Btn, BtnGhost, BtnPrimary, Card, Head, Input, T, Glow } from '../ui';

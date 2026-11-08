@@ -182,7 +182,8 @@ export const llTab = { minHeight: 44, padV: 8, padH: 2, gap: 6, labelSize: 11, l
 export const detayAvatar = { d: 48, strokeWidth: 2.5, fontSize: 11, fontSizeLong: 10, textColor: '#f0f0f0', letterSpacing: 0.02 } as const;
 
 // ── Sekme ikonu (S-09: 28 pt, oranlar DetayAvatar'dan) ────────────────────
-export const tabIcon = { size: 28, inactiveOpacity: 0.55 } as const;
+// Alt menü yazısız: ikon, ikon (24) + yazı (10 pt, ~12 satır) alanını doldurur → çizgi ikon 36; Profilim rozeti aynı oranda (28 × 1,5 = 42)
+export const tabIcon = { size: 42, line: 36, inactiveOpacity: 0.55 } as const;
 // Not: soluk görünüm opaklığı webde seçili olmayan .ll-tab.is-off opaklığıdır (0.55).
 
 // ── Animasyon süreleri (globals.css) ──────────────────────────────────────

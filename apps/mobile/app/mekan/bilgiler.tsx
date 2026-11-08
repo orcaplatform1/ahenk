@@ -1,6 +1,7 @@
 // apps/web/app/mekan/panel/bilgiler/page.tsx karşılığı. Fotoğraf: galeriden seçme veya kamerayla çekme (expo-image-picker).
 import React, { useEffect, useState } from 'react';
 import { Image, Pressable, TextInput, View } from 'react-native';
+import { File as FsFile } from 'expo-file-system';
 import { api } from '@/lib/api';
 import { VenueAuthError, mediaUrl, venueApi, type VenueMe } from '@/lib/venueApi';
 import { panelCard, useVenuePanel } from '@/lib/venueContext';
@@ -42,7 +43,8 @@ export default function Bilgiler() {
     if (picked.some((f) => (f.size ?? 0) > MAX_PHOTO_BYTES)) { setError('Her fotoğraf en fazla 5 MB olabilir.'); return; }
     if (me.venue.photos.length + picked.length > MAX_PHOTOS) { setError(`En fazla ${MAX_PHOTOS} fotoğraf eklenebilir.`); return; }
     const body = new FormData();
-    picked.forEach((f) => body.append('photos', { uri: f.uri, name: f.name, type: f.type } as unknown as Blob));
+    // Global fetch (expo/fetch) RN'nin { uri, name, type } parçasını desteklemiyor ("Unsupported FormDataPart implementation"); expo-file-system File kullanılır
+    picked.forEach((f) => body.append('photos', new FsFile(f.uri) as unknown as Blob));
     setUploading(true);
     try { setMe(await venueApi.post<VenueMe>('/photos', body)); } catch (e) { fail(e); } finally { setUploading(false); }
   }
