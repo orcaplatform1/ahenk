@@ -11,7 +11,8 @@ import { useReduceMotion } from '@/lib/motion';
 import { InlineLH, Btn, Serif, T } from './ui';
 import { btn, ll, tw, winbackShine } from '@/theme/theme';
 
-export interface WinbackPlan { plan: string; name: string; listTL: number; discountedTL: number; needsKanka: boolean }
+// mobileListTL / mobileDiscountedTL: mobilde gösterilen ve tahsil edilen fiyat (mobil fiyat − geri kazanım tutarı)
+export interface WinbackPlan { plan: string; name: string; listTL: number; discountedTL: number; mobileListTL: number; mobileDiscountedTL: number; needsKanka: boolean }
 export interface WinbackState { active: boolean; amountTL?: number; plans?: WinbackPlan[]; kycApproved?: boolean; lapsed?: boolean; durationSeconds?: number; expiresAt?: string | null; serverNow?: string; autoOpen?: boolean }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -122,8 +123,8 @@ function WinbackScreenInner({ state, remaining, merged, onMerge, onClose }: { st
                 <Btn key={p.plan} variant="winbackPlan" selected={selected === p.plan} accessibilityLabel={p.name} onPress={() => setSelected(p.plan)}>
                   <Serif style={{ fontSize: 18 }}>{p.name}</Serif>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                    <T style={{ fontSize: 12, color: '#8f887f', textDecorationLine: 'line-through', marginRight: 8 }}>{p.listTL}₺</T>
-                    <T w={700} style={{ fontSize: 20 }}>{p.discountedTL}₺</T>
+                    <T style={{ fontSize: 12, color: '#8f887f', textDecorationLine: 'line-through', marginRight: 8 }}>{p.mobileListTL}₺</T>
+                    <T w={700} style={{ fontSize: 20 }}>{p.mobileDiscountedTL}₺</T>
                   </View>
                 </Btn>
               ))}

@@ -194,8 +194,8 @@ export default function Paketim() {
                         {w ? (
                           <>
                             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
-                              <T w={700} style={{ fontSize: 24, lineHeight: 36 }}>{w.discountedTL}</T><T style={{ color: c.t888, fontSize: 13.6, marginBottom: 1 }}>₺</T>
-                              <T style={{ color: c.t555, fontSize: 12, lineHeight: 18, textDecorationLine: 'line-through', marginBottom: 1 }}>{w.listTL}₺</T>
+                              <T w={700} style={{ fontSize: 24, lineHeight: 36 }}>{w.mobileDiscountedTL}</T><T style={{ color: c.t888, fontSize: 13.6, marginBottom: 1 }}>₺</T>
+                              <T style={{ color: c.t555, fontSize: 12, lineHeight: 18, textDecorationLine: 'line-through', marginBottom: 1 }}>{w.mobileListTL}₺</T>
                             </View>
                             <T style={{ color: ll.copper, fontSize: 10.9, marginBottom: 2, fontVariant: ['tabular-nums'] }}>İndirim bitimine {clockMS(winback.remaining)}</T>
                           </>

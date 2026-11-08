@@ -90,6 +90,9 @@ export class WinbackService {
         name: PLAN_CONFIG[plan].nametr,
         listTL: prices[plan].webKurus / 100,
         discountedTL: prices[plan].webKurus / 100 - settings.amountTL,
+        // Mobil gösterim: mobilde tahsil edilen tutarla aynı (mobil fiyat − geri kazanım tutarı)
+        mobileListTL: prices[plan].mobileKurus / 100,
+        mobileDiscountedTL: prices[plan].mobileKurus / 100 - settings.amountTL,
         needsKanka: plan === SubscriptionPlan.KANKAMLA && !link,
       }));
 
