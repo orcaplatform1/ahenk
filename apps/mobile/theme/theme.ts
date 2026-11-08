@@ -293,6 +293,29 @@ export const btn = {
   admGreenAct: { box: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 6, backgroundColor: 'rgba(34,197,94,0.12)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.4)' }, text: { fontSize: 11, color: '#22c55e' }, disabledOpacity: 0.5 },
   admRefresh: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, backgroundColor: 'rgba(59,130,246,0.12)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)' }, text: { fontSize: 11, color: '#3b82f6' }, on: { box: { backgroundColor: 'rgba(34,197,94,0.12)', borderColor: 'rgba(34,197,94,0.35)' }, text: { color: '#22c55e' } }, disabledOpacity: 0.7 },
   admBack: { box: { paddingHorizontal: 4 }, text: { fontSize: 18, color: '#64748b' } },
+  // admin/matches: Tüm/Açık masalar sekmesi (7/16, hap, 13/600)
+  admMatchTab: { box: { paddingVertical: 7, paddingHorizontal: 16, borderRadius: 99, borderWidth: 1, borderColor: '#1a3a5c' }, text: { weight: 600, fontSize: 13, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.45)' }, text: { color: '#93c5fd' } } },
+  // admin/matches "Ata" / "Yerleştir" (7/16, r8, mavi, 11/600)
+  admBlueAta: { box: { paddingVertical: 7, paddingHorizontal: 16, borderRadius: 8, backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', justifyContent: 'center', flexShrink: 0 }, text: { weight: 600, fontSize: 11, color: '#93c5fd' }, disabledOpacity: 0.5 },
+  // admin/matches katılımcı "Çıkart" (3/8, r6, 10)
+  admRemoveXs: { box: { paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)' }, text: { fontSize: 10, color: '#ef4444' }, disabledOpacity: 0.5 },
+  // admin/matches "✓ Masayı Onayla" ve kullanıcı penceresi "KYC'yi Onayla" (9, r8, yeşil, 13/600)
+  admGreen9: { box: { padding: 9, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { weight: 600, fontSize: 13, color: '#22c55e' }, disabledOpacity: 0.5 },
+  // admin/matches "Masayı İptal Et" (9, r8, kırmızı .08/.3, 13/600)
+  admRed9: { box: { padding: 9, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }, text: { weight: 600, fontSize: 13, color: '#ef4444' } },
+  // admin/matches iptal onayı: Vazgeç / İptal Et (flex 1, 9, r8)
+  admCancelNo: { box: { flex: 1, padding: 9, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 13, color: '#64748b' } },
+  admCancelYes: { box: { flex: 1, padding: 9, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.15)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.4)' }, text: { weight: 600, fontSize: 13, color: '#ef4444' }, disabledOpacity: 0.5 },
+  // admin/matches kullanıcı penceresi Askıya Al / Aktifleştir / Hesabı Sil (5/12, r6, 11)
+  admAct6Amber: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }, text: { fontSize: 11, color: '#f59e0b' }, disabledOpacity: 0.5 },
+  admAct6Green: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { fontSize: 11, color: '#22c55e' }, disabledOpacity: 0.5 },
+  admAct6Red: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }, text: { fontSize: 11, color: '#ef4444' }, disabledOpacity: 0.5 },
+  // admin/matches kullanıcı penceresi ücretsiz abonelik "Ver" (7/16, r8, mavi, 13/600 #3b82f6)
+  admBlueVer: { box: { paddingVertical: 7, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', flexShrink: 0 }, text: { weight: 600, fontSize: 13, color: '#3b82f6' }, disabledOpacity: 0.5 },
+  // AdminOpenTables btnStyle (6/14, r8, mavi, 11/600): Şimdi yenile, Bot ekle, Ekle, Kapat
+  admOpenBtn: { box: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', justifyContent: 'center', flexShrink: 0 }, text: { weight: 600, fontSize: 11, color: '#93c5fd' }, disabledOpacity: 0.5 },
+  // AdminOpenTables katılımcı baş harf hapı (4/10, hap, 11 mono; kenar rengi cinsiyete göre)
+  admInitials: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 99, borderWidth: 1, borderColor: '#64748b' }, text: { fontSize: 11, color: '#e2e8f0', fontFamily: 'JetBrainsMono_400Regular' } },
   // Kayıt "Kod gönder" (telefon satırı) ve numara "Ekle"
   otpSend: { box: { justifyContent: 'center', paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', backgroundColor: 'rgba(192,57,43,0.06)' }, text: { weight: 500, fontSize: 12, color: '#e74c3c' }, disabledOpacity: 0.4 },
   addSquare: { box: { justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }, text: { fontSize: 13, color: '#c9c2b8' } },
