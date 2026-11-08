@@ -272,7 +272,7 @@ function SosModal({
           Yukarıdaki eylemlerin ihtimali olsa dahi lütfen işaretleyin (birden fazla seçeneği işaretleyebilirsin)
         </p>
         <p style={{ margin: '0 0 16px', fontSize: 11, color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif', fontStyle: 'italic', lineHeight: 1.5 }}>
-          İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar ekibimiz tarafından takip edilir.
+          İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar, uygulama kapansa bile ekibimiz tarafından takip edilir.
         </p>
 
         {locError === 'denied' && (
@@ -1144,7 +1144,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
                     margin: 0, fontSize: 10.5, lineHeight: 1.55,
                     color: 'rgba(255,107,107,0.65)', fontFamily: 'Inter, sans-serif',
                   }}>
-                    Masada veya masadan sonrasında, masadaki birisi tarafından fiziksel şiddet, alıkoyulma, taciz veya istismar eylemiyle karşı karşıya kalırsan ya da kalma ihtimali yaşarsan hemen butona bas ve eylemin türünü seçerek onayla. İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar ekibimiz tarafından takip edilir. Masadaki kişilerin kimlik bilgileri de emniyet birimleriyle anında paylaşılır. <strong style={{ color: 'rgba(255,107,107,0.85)' }}>Güvenliğin bizim için çok önemli.</strong>
+                    Masada veya masadan sonrasında, masadaki birisi tarafından fiziksel şiddet, alıkoyulma, taciz veya istismar eylemiyle karşı karşıya kalırsan ya da kalma ihtimali yaşarsan hemen butona bas ve eylemin türünü seçerek onayla. İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar, uygulama kapansa bile ekibimiz tarafından takip edilir. Masadaki kişilerin kimlik bilgileri de emniyet birimleriyle anında paylaşılır. <strong style={{ color: 'rgba(255,107,107,0.85)' }}>Güvenliğin bizim için çok önemli.</strong>
                   </p>
                 </div>
               </>

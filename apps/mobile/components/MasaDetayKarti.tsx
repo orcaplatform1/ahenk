@@ -226,7 +226,7 @@ function SosModal({ selected, onToggle, onConfirm, onClose, loading, locError, e
             })}
           </View>
           <T style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', lineHeight: 16.5, marginBottom: 16 }}>Yukarıdaki eylemlerin ihtimali olsa dahi lütfen işaretleyin (birden fazla seçeneği işaretleyebilirsin)</T>
-          <T style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', lineHeight: 16.5, marginBottom: 16 }}>İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar ekibimiz tarafından takip edilir.</T>
+          <T style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', lineHeight: 16.5, marginBottom: 16 }}>İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar, uygulama kapansa bile ekibimiz tarafından takip edilir.</T>
           {locError === 'denied' && warn('⚠ Konuma erişim engellendi. Ayarlar → Ahenk → Konum bölümünden konum iznini ver, ardından tekrar dene.')}
           {locError === 'off' && warn('⚠ Cihaz konumu kapalı. Konum servisini açtıktan sonra tekrar dene.')}
           {!!error && (
@@ -431,7 +431,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
               <Btn variant="sos" onPress={() => setShowSos(true)} label="Acil Yardım" />
               <View style={{ marginTop: 10, padding: 10, paddingHorizontal: 12, backgroundColor: 'rgba(192,57,43,0.07)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.22)', borderRadius: 8 }}>
                 <T style={{ fontSize: 10.5, lineHeight: 16.275, color: 'rgba(255,107,107,0.65)' }}>
-                  Masada veya masadan sonrasında, masadaki birisi tarafından fiziksel şiddet, alıkoyulma, taciz veya istismar eylemiyle karşı karşıya kalırsan ya da kalma ihtimali yaşarsan hemen butona bas ve eylemin türünü seçerek onayla. İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar ekibimiz tarafından takip edilir. Masadaki kişilerin kimlik bilgileri de emniyet birimleriyle anında paylaşılır. <T w={700} style={{ fontSize: 10.5, color: 'rgba(255,107,107,0.85)' }}>Güvenliğin bizim için çok önemli.</T>
+                  Masada veya masadan sonrasında, masadaki birisi tarafından fiziksel şiddet, alıkoyulma, taciz veya istismar eylemiyle karşı karşıya kalırsan ya da kalma ihtimali yaşarsan hemen butona bas ve eylemin türünü seçerek onayla. İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar, uygulama kapansa bile ekibimiz tarafından takip edilir. Masadaki kişilerin kimlik bilgileri de emniyet birimleriyle anında paylaşılır. <T w={700} style={{ fontSize: 10.5, color: 'rgba(255,107,107,0.85)' }}>Güvenliğin bizim için çok önemli.</T>
                 </T>
               </View>
             </>
