@@ -35,7 +35,7 @@ export default function MekanSifremiUnuttum() {
             <T style={{ color: c.t666, fontSize: 14, textAlign: 'center' }}>Mekân e-postanızı girin, kayıtlı WhatsApp numaranıza 6 haneli kod gönderelim.</T>
             <Input keyboardType="email-address" autoCapitalize="none" accessibilityLabel="E-posta" placeholder="E-posta" value={email} onChangeText={setEmail} />
             {!!error && <T style={{ fontSize: 12, color: tw.accent }}>{error}</T>}
-            <BtnPrimary label={loading ? 'Gönderiliyor…' : 'Kod Gönder'} full disabled={loading || !email} onPress={sendCode} />
+            <BtnPrimary label={loading ? 'Gönderiliyor…' : 'Kod Gönder'} full disabled={loading || !email} style={loading ? { opacity: 0.7 } : undefined} onPress={sendCode} />
           </View>
         ) : (
           <View style={{ gap: 12, marginTop: 24 }}>
@@ -44,7 +44,7 @@ export default function MekanSifremiUnuttum() {
             <Input secureTextEntry maxLength={20} textContentType="newPassword" accessibilityLabel="Yeni şifre" placeholder="Yeni şifre (6-20 karakter)" value={password} onChangeText={setPassword} />
             <Input secureTextEntry maxLength={20} textContentType="newPassword" accessibilityLabel="Yeni şifre tekrar" placeholder="Yeni şifre tekrar" value={confirm} onChangeText={setConfirm} />
             {!!error && <T style={{ fontSize: 12, color: tw.accent }}>{error}</T>}
-            <BtnPrimary label={loading ? 'Kaydediliyor…' : 'Şifreyi Güncelle'} full disabled={loading} onPress={reset} />
+            <BtnPrimary label={loading ? 'Kaydediliyor…' : 'Şifreyi Güncelle'} full disabled={loading} style={loading ? { opacity: 0.7 } : undefined} onPress={reset} />
           </View>
         )}
         <Btn variant="textSmall" style={{ alignSelf: 'center', marginTop: 20 }} label="Girişe dön" textStyle={{ color: c.t888 }} onPress={() => router.back()} />

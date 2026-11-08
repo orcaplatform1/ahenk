@@ -33,7 +33,7 @@ export function TestFlow({ questions, current, answers, onPick, onPrev, onNext, 
       <View style={{ gap: 12 }}>
         <View style={{ borderRadius: 16, padding: 20, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
           <Mono style={{ fontSize: 11, color: ll.label, marginBottom: 8 }}>SORU {current + 1}</Mono>
-          <Serif style={{ fontSize: 20, lineHeight: 26 }}>{q?.text}</Serif>
+          <Serif style={{ fontSize: 20, lineHeight: 27.5 }}>{q?.text}</Serif>
         </View>
         <View style={{ gap: 8 }}>
           {LIKERT.map(({ v, label }) => {

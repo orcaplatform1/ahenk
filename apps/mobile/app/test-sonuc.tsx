@@ -82,7 +82,7 @@ export default function TestSonuc() {
       <View style={{ alignItems: 'center', marginBottom: 40 }}>
         <Serif style={{ fontSize: 30, marginBottom: 8 }}>Kişilik Profilin</Serif>
         <T w={600} style={{ fontSize: 12, letterSpacing: 2.4, color: c.t888 }}>OCEAN · BIG FIVE MODELİ</T>
-        {!!profile && <T style={{ fontSize: 14, color: c.t888, marginTop: 12, lineHeight: 22, textAlign: 'center' }}>{profile}</T>}
+        {!!profile && <T style={{ fontSize: 14, color: c.t888, marginTop: 12, lineHeight: 22.75, textAlign: 'center' }}>{profile}</T>}
       </View>
       <View style={{ alignItems: 'center', marginBottom: 40 }}><Radar scores={score} /></View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>

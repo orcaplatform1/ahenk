@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { LIKERT, type Question } from '@/components/TestFlow';
-import { Btn, BtnGhost, BtnPrimary, Mono, Serif, Spinner, T } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Mono, PageGlow, Serif, Spinner, T } from '@/components/ui';
 import { c, glassCard, tw } from '@/theme/theme';
 
 export default function Test() {
@@ -46,7 +46,7 @@ export default function Test() {
             <Svg viewBox="0 0 24 24" width={40} height={40} fill="none"><Path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} stroke={c.red} d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></Svg>
           </View>
           <Serif style={{ fontSize: 30, marginBottom: 12 }}>Test Tamamlandı</Serif>
-          <T style={{ color: c.t888, fontSize: 14, lineHeight: 22, textAlign: 'center', marginBottom: 8 }}>OCEAN profilin oluşturuldu. Algoritma artık seni doğru insanlarla eşleştirebilir.</T>
+          <T style={{ color: c.t888, fontSize: 14, lineHeight: 22.75, textAlign: 'center', marginBottom: 8 }}>OCEAN profilin oluşturuldu. Algoritma artık seni doğru insanlarla eşleştirebilir.</T>
           <Mono style={{ fontSize: 12, letterSpacing: 1.2, color: c.t555, marginBottom: 32 }}>⏱ Sonraki test: 180 gün sonra</Mono>
           <BtnPrimary label="Profilimi Gör" full style={{ marginBottom: 12 }} onPress={() => router.replace('/test-sonuc')} />
           <BtnGhost label="Dashboard'a Dön" full onPress={() => router.replace('/(tabs)')} />
@@ -57,7 +57,7 @@ export default function Test() {
   if (error && questions.length === 0) {
     return (
       <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-        <T style={{ color: tw.accent, marginBottom: 16 }}>{error}</T>
+        <T style={{ color: tw.accent, fontSize: 16, marginBottom: 16 }}>{error}</T>
         <Btn variant="textLink" textStyle={{ fontSize: 14, color: c.t888 }} onPress={() => router.back()} label="← Dashboard" />
       </View>
     );
@@ -68,7 +68,11 @@ export default function Test() {
   const progress = (Object.keys(answers).length / total) * 100;
   const has = answers[q.id] !== undefined;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: tw.bg }} contentContainerStyle={{ maxWidth: 576, width: '100%', alignSelf: 'center', paddingHorizontal: 20, paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 }}>
+    <View style={{ flex: 1, backgroundColor: tw.bg }}>
+    {/* web: sağ üst 40vw rgba(192,57,43,.1) ve sol alt 35vw rgba(192,57,43,.07), şeffaf %65 */}
+    <PageGlow top={0.2} right={-0.05} w={0.4} h={0.4} color="rgb(192,57,43)" opacity={0.1} stop={0.65} />
+    <PageGlow bottom={0.1} left={-0.05} w={0.35} h={0.35} color="rgb(192,57,43)" opacity={0.07} stop={0.65} />
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ maxWidth: 576, width: '100%', alignSelf: 'center', paddingHorizontal: 20, paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 8 }}>
         <T w={600} style={{ flex: 1, fontSize: 12, letterSpacing: 2.16, color: c.t888 }}>BÖLÜM {String(q.section ?? 1).padStart(2, '0')}: {(q.sectionTitle ?? '').toLocaleUpperCase('tr-TR')}</T>
         <Mono style={{ fontSize: 12, color: c.t888 }}>{current + 1} / {total}</Mono>
@@ -91,11 +95,12 @@ export default function Test() {
         </View>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, gap: 12 }}>
-        <BtnGhost label="← Geri" disabled={current === 0} onPress={() => setCurrent(x => Math.max(0, x - 1))} />
-        <BtnPrimary label={submitting ? '…' : current === total - 1 ? 'Testi Bitir' : 'İleri →'} style={{ flex: 1 }} disabled={!has || submitting}
+        <BtnGhost label="← Geri" disabled={current === 0} style={current === 0 ? { opacity: 0.3 } : undefined} onPress={() => setCurrent(x => Math.max(0, x - 1))} />
+        <BtnPrimary label={submitting ? '…' : current === total - 1 ? 'Testi Bitir' : 'İleri →'} style={[{ flex: 1 }, (!has || submitting) && { opacity: 0.3 }]} disabled={!has || submitting}
           onPress={() => { if (!has) return; if (current === total - 1) submit(); else setCurrent(x => x + 1); }} />
       </View>
       {!!error && <T style={{ color: tw.accent, fontSize: 12, textAlign: 'center', marginTop: 16 }}>{error}</T>}
     </ScrollView>
+    </View>
   );
 }

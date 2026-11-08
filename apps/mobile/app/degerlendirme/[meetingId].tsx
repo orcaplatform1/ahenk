@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Defs, LinearGradient as SG, Path, Stop } from 'react-native-svg';
 import { api } from '@/lib/api';
-import { BtnGhost, BtnPrimary, ModalBox, Serif, T } from '@/components/ui';
+import { BtnGhost, BtnPrimary, ModalBox, Serif, T, PageGlow } from '@/components/ui';
 import { c, glassCard, inputGlass, sans, tw } from '@/theme/theme';
 
 interface Participant { userId: string; initials: string; gender: string | null; isRequester: boolean }
@@ -77,6 +77,8 @@ export default function Degerlendirme() {
           <Serif style={{ fontSize: 36 }}>Teşekkürler!</Serif>
         </View>
       </Modal>
+      {/* web: top -8%, ortada, 70vw, rgba(192,57,43,.09) → şeffaf %60 */}
+      <PageGlow top={-0.08} left={0.5} w={0.7} h={0.7} color="rgb(192,57,43)" opacity={0.09} stop={0.6} />
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ maxWidth: 512, width: '100%', alignSelf: 'center', paddingHorizontal: 20, paddingTop: insets.top + 48, paddingBottom: insets.bottom + 48 }}>
         <View style={{ marginBottom: 32 }}>
           <Serif style={{ fontSize: 30, lineHeight: 36, marginBottom: 8 }}>{info ? `${new Date(info.scheduledAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long' })} Tarihli Masada Ahenk Nasıldı?` : 'Masada Ahenk Nasıldı?'}</Serif>
@@ -147,14 +149,14 @@ export default function Degerlendirme() {
             {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}
             <View>
               <T style={{ fontSize: 12, color: c.t555, textAlign: 'center', marginBottom: 12 }}>Değerlendirme bir kez gönderilir, sonradan düzenlenemez.</T>
-              <BtnPrimary label={submitting ? 'Gönderiliyor…' : 'Değerlendirmeyi Gönder'} full disabled={submitting || rating === 0 || len < MIN} onPress={submit} />
+              <BtnPrimary label={submitting ? 'Gönderiliyor…' : 'Değerlendirmeyi Gönder'} full disabled={submitting || rating === 0 || len < MIN} style={(submitting || rating === 0 || len < MIN) ? { opacity: 0.5 } : undefined} onPress={submit} />
             </View>
           </View>
         )}
       </ScrollView>
       <ModalBox visible={confirm} onClose={() => setConfirm(false)} title="Engellemeyi onayla">
-        <T style={{ fontSize: 14, color: c.tCcc, lineHeight: 22, marginBottom: 8 }}><T w={700} style={{ color: tw.accent }}>{participants.filter(p => blocks.includes(p.userId)).map(p => p.initials).join(', ')}</T> engellenecek.</T>
-        <T style={{ fontSize: 14, color: c.t888, lineHeight: 22, marginBottom: 24 }}>Bu işlem geri alınamaz. Engellediğin kişilerle bir daha aynı masada eşleşmezsin.</T>
+        <T style={{ fontSize: 14, color: c.tCcc, lineHeight: 22.75, marginBottom: 8 }}><T w={700} style={{ color: tw.accent }}>{participants.filter(p => blocks.includes(p.userId)).map(p => p.initials).join(', ')}</T> engellenecek.</T>
+        <T style={{ fontSize: 14, color: c.t888, lineHeight: 22.75, marginBottom: 24 }}>Bu işlem geri alınamaz. Engellediğin kişilerle bir daha aynı masada eşleşmezsin.</T>
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <BtnGhost label="Vazgeç" style={{ flex: 1 }} onPress={() => setConfirm(false)} />
           <BtnPrimary label="Onayla ve Gönder" style={{ flex: 1 }} onPress={send} />

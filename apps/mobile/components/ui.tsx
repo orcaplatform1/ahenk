@@ -2,10 +2,12 @@
 // .input-glass, .ll-cta, Sheet (KankaSection/TabProfilim), Modal (components/ui/Modal.tsx), Skeleton, MaintenanceNotice.
 import React, { forwardRef, useState } from 'react';
 import {
+  useWindowDimensions,
   ActivityIndicator, Modal as RNModal, Pressable, StyleSheet, Text, TextInput, View,
   type PressableProps, type TextInputInstance, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Defs, Ellipse, RadialGradient as SvgRadial, Stop } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   btn, toggleSwitch, type BtnVariant,
@@ -262,3 +264,23 @@ const s = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 16 },
   modal: { width: '100%', maxWidth: 448, backgroundColor: glassCard.bg, borderWidth: 1, borderColor: glassCard.border, borderRadius: glassCard.radius, padding: 24 },
 });
+
+// Sayfa arka plan ışıması (web: position fixed, radial-gradient(circle, renk 0%, transparent stop), filter blur).
+// top/left/right/bottom ekran oranı, w/h ekran genişliği oranı (vw). blur RN'de yok: yumuşak geçiş degradenin kendisiyle verilir.
+export function PageGlow({ top, bottom, left, right, w, h, color, opacity, stop, center = false }: { top?: number; bottom?: number; left?: number; right?: number; w: number; h: number; color: string; opacity: number; stop: number; center?: boolean }) {
+  const { width: W, height: H } = useWindowDimensions();
+  const gw = W * w, gh = W * h;
+  const pos: { position: 'absolute'; width: number; height: number; top?: number; bottom?: number; left?: number; right?: number } = { position: 'absolute', width: gw, height: gh };
+  if (top !== undefined) pos.top = center ? H * top - gh / 2 : H * top;
+  if (bottom !== undefined) pos.bottom = H * bottom;
+  if (left !== undefined) pos.left = center || left === 0.5 ? W * left - gw / 2 : W * left;
+  if (right !== undefined) pos.right = W * right;
+  return (
+    <View pointerEvents="none" style={pos}>
+      <Svg width={gw} height={gh}>
+        <Defs><SvgRadial id="pg" cx="50%" cy="50%" rx="50%" ry="50%"><Stop offset="0" stopColor={color} stopOpacity={opacity} /><Stop offset={stop} stopColor={color} stopOpacity={0} /></SvgRadial></Defs>
+        <Ellipse cx={gw / 2} cy={gh / 2} rx={gw / 2} ry={gh / 2} fill="url(#pg)" />
+      </Svg>
+    </View>
+  );
+}

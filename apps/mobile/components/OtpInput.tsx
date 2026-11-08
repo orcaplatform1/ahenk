@@ -13,7 +13,9 @@ export function OtpInput({ value, onChange, onComplete, error }: { value: string
         {digits.map((d, i) => (
           <View key={i} style={{ width: 48, height: 60, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center',
             backgroundColor: d.trim() ? 'rgba(192,57,43,0.08)' : 'rgba(255,255,255,0.025)', borderColor: error ? tw.accent : i === value.length ? inputGlass.focusBorder : inputGlass.formBorder }}>
-            <T w={600} style={{ fontSize: 24 }}>{d.trim()}</T>
+            <T w={600} style={{ fontSize: 24, fontVariant: ['tabular-nums'] }}>{d.trim()}</T>
+            {/* web odak halkası: box-shadow 0 0 0 3px rgba(192,57,43,.22) */}
+            {i === value.length && !error && <View pointerEvents="none" style={{ position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 17, borderWidth: 3, borderColor: 'rgba(192,57,43,0.22)' }} />}
           </View>
         ))}
       </View>

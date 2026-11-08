@@ -11,12 +11,13 @@ import { API_PREFIX } from '@/lib/config';
 import { api, storeLogin } from '@/lib/api';
 import { gColor } from '@/lib/masa';
 import { PasswordInput } from '@/components/AuthShell';
+import { WelcomeOverlay } from '@/components/WelcomeOverlay';
 import { OtpInput } from '@/components/OtpInput';
 import { DateField, FieldLabel, ListPicker } from '@/components/Pickers';
 import { TestFlow, type Question } from '@/components/TestFlow';
 import { ContactPicker, normalizeTrPhone } from '@/components/profil/RehberTab';
-import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, Eyebrow, Input, Serif, Spinner, T, Title } from '@/components/ui';
-import { c, ll, tw } from '@/theme/theme';
+import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, Eyebrow, Input, Serif, Spinner, T, Title, PageGlow } from '@/components/ui';
+import { c, ll, tw, tw4 } from '@/theme/theme';
 
 interface City { id: string; name: string }
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE' | '';
@@ -150,13 +151,9 @@ export default function Kayit() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Modal visible={success} animationType="fade">
-        <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', paddingTop: '40%' }}>
-          <Image source={require('@/assets/logo.png')} style={{ width: 48, height: 48, borderRadius: 24, marginBottom: 32 }} />
-          <Serif style={{ fontSize: 36, marginBottom: 4 }}>Hoş geldin,</Serif>
-          <Serif style={{ fontSize: 36, textAlign: 'center' }}>{f.firstName} {f.lastName}</Serif>
-        </View>
-      </Modal>
+      <WelcomeOverlay visible={success} bg={ll.bg} name={`${f.firstName} ${f.lastName}`} />
+      {/* web: top -5%, ortada, 80vw × 60vw, rgba(192,57,43,.08) → şeffaf %60 */}
+      <PageGlow top={-0.05} left={0.5} w={0.8} h={0.6} color="rgb(192,57,43)" opacity={0.08} stop={0.6} />
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40, paddingHorizontal: 20, maxWidth: 576, width: '100%', alignSelf: 'center' }}>
         <View style={{ alignItems: 'center', gap: 8, marginBottom: 32 }}>
           <Image source={require('@/assets/logo.png')} style={{ width: 48, height: 48, borderRadius: 24 }} />
@@ -172,7 +169,7 @@ export default function Kayit() {
                   <T w={600} style={{ fontSize: 13, color: i === step ? c.red : ll.time }}>{i + 1}</T>
                 </View>
               )}
-              {i < STEPS.length - 1 && <View style={{ width: 40, height: 1, backgroundColor: i < step ? c.red : 'rgba(255,255,255,0.08)' }} />}
+              {i < STEPS.length - 1 && (i < step ? <LinearGradient colors={['#c0392b', '#ff6b6b']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ width: 40, height: 1 }} /> : <View style={{ width: 40, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />)}
             </View>
           ))}
         </View>
@@ -197,7 +194,7 @@ export default function Kayit() {
               </View>
               {phoneToken ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                  <T style={{ fontSize: 12, color: c.ok }}>✓ Telefon numaran doğrulandı</T>
+                  <T style={{ fontSize: 12, color: tw4.green400 }}>✓ Telefon numaran doğrulandı</T>
                   <Btn variant="textSmall" style={{ minHeight: 0 }} hitSlop={14} onPress={() => changePhone(f.phoneNumber)} label="Numarayı değiştir" />
                 </View>
               ) : otpSent && (
@@ -300,7 +297,7 @@ export default function Kayit() {
                 {f.contactNumbers.map(n => (
                   <View key={n} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
                     <T style={{ fontSize: 13, color: ll.label }}>{n}</T>
-                    <Btn variant="closeX" hitSlop={14} accessibilityLabel="Kaldır" onPress={() => set('contactNumbers', f.contactNumbers.filter(x => x !== n))} label="×" textStyle={{ fontSize: 18, color: ll.label }} />
+                    <Btn variant="closeX" hitSlop={14} accessibilityLabel="Kaldır" onPress={() => set('contactNumbers', f.contactNumbers.filter(x => x !== n))} label="×" textStyle={{ fontSize: 18, lineHeight: 18, color: ll.label }} />
                   </View>
                 ))}
                 <T style={{ fontSize: 12, color: ll.label }}>{f.contactNumbers.length}/50 numara eklendi</T>

@@ -3,13 +3,15 @@ import React, { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Btn, Input, T, Title } from './ui';
+import { Btn, Input, PageGlow, T, Title } from './ui';
 import { ll, sans } from '@/theme/theme';
 
 export function AuthShell({ title, subtitle, children }: { title?: string; subtitle?: string; children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* web: top -10%, ortada, 70vw, rgba(192,57,43,.09) → şeffaf %60 */}
+      <PageGlow top={-0.1} left={0.5} w={0.7} h={0.7} color="rgb(192,57,43)" opacity={0.09} stop={0.6} />
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }}>
         <View style={{ width: '100%', maxWidth: 384, alignSelf: 'center' }}>
           <View style={{ marginBottom: 32, alignItems: 'center' }}>

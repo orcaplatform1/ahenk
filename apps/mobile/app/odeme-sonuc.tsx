@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
-import { BtnGhost, BtnPrimary, Serif, T } from '@/components/ui';
+import { BtnGhost, BtnPrimary, PageGlow, Serif, T } from '@/components/ui';
 import { tw } from '@/theme/theme';
 
 export default function OdemeSonuc() {
@@ -14,6 +14,8 @@ export default function OdemeSonuc() {
   useEffect(() => { if (!ok) return; const t = setTimeout(() => router.replace('/(tabs)'), 3000); return () => clearTimeout(t); }, [ok, router]);
   return (
     <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, gap: 24 }}>
+      {/* web (odeme/basarili .12, basarisiz .07): top -10%, ortada, 70vw → şeffaf %60 */}
+      <PageGlow top={-0.1} left={0.5} w={0.7} h={0.7} color="rgb(192,57,43)" opacity={ok ? 0.12 : 0.07} stop={0.6} />
       {ok ? (
         <LinearGradient colors={['#c0392b', '#ff6b6b']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center' }}>
           <Svg width={44} height={44} viewBox="0 0 44 44" fill="none"><Path d="M9 22 L19 32 L35 14" stroke="white" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" /></Svg>

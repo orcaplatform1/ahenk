@@ -6,6 +6,7 @@ import { API_PREFIX } from '@/lib/config';
 import { api, storeLogin } from '@/lib/api';
 import { venueApi } from '@/lib/venueApi';
 import { AuthShell, PasswordInput, PhoneRow, Toggle } from '@/components/AuthShell';
+import { WelcomeOverlay } from '@/components/WelcomeOverlay';
 import { OtpInput } from '@/components/OtpInput';
 import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, Input, Serif, T } from '@/components/ui';
 import { c, ll, tw } from '@/theme/theme';
@@ -105,16 +106,7 @@ function MemberLogin() {
           )}
         </View>
       </Modal>
-      <Modal visible={!!welcome} animationType="fade">
-        <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', paddingTop: '40%' }}>
-          <View style={{ alignItems: 'center', gap: 8, marginBottom: 32 }}>
-            <Image source={require('@/assets/logo.png')} style={{ width: 48, height: 48, borderRadius: 24 }} />
-            <T w={600} style={{ fontSize: 15, letterSpacing: 1.8 }}>AHENK</T>
-          </View>
-          <Serif style={{ fontSize: 36, marginBottom: 4 }}>Hoş geldin,</Serif>
-          <Serif style={{ fontSize: 36, textAlign: 'center' }}>{welcome?.firstName} {welcome?.lastName}</Serif>
-        </View>
-      </Modal>
+      <WelcomeOverlay visible={!!welcome} bg={tw.bg} name={`${welcome?.firstName ?? ''} ${welcome?.lastName ?? ''}`} />
 
       <Card>
         <View style={{ marginBottom: 24 }}>
