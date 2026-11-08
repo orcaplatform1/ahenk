@@ -3,11 +3,14 @@ packages:
   - "packages/*"
   - "backend"
 allowBuilds:
-  '@nestjs/core': set this to true or false
-  '@prisma/client': set this to true or false
-  '@prisma/engines': set this to true or false
-  msgpackr-extract: set this to true or false
-  prisma: set this to true or false
-  protobufjs: set this to true or false
+  # Kurulum betikleri çalıştırılmaz (sunucuda da şimdiye kadar çalışmıyordu); EAS Build'de kurulum hatası vermemesi için açıkça false
+  '@firebase/util': false
+  '@nestjs/core': false
+  '@prisma/client': false
+  '@prisma/engines': false
+  '@scarf/scarf': false
+  msgpackr-extract: false
+  prisma: false
+  protobufjs: false
 overrides:
   '@types/react': ^19.3.0
