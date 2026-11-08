@@ -1,5 +1,5 @@
-// apps/web/app/admin/acil-yardim/page.tsx karşılığı (Acil Yardım Merkezi): 15 sn yenileme, açık talepte 1 sn canlı konum + açık adres.
-// RAPORLANDI: web'deki Leaflet/OpenStreetMap canlı harita mobilde yok (harita paketi kurulu değil); koordinatlar Haritada Gör bağlantısıyla açılır.
+// apps/web/app/admin/acil-yardim/page.tsx karşılığı (Acil Yardım Merkezi): 15 sn yenileme, açık taleplerde tek istekte 1 sn canlı konum + açık adres,
+// Leaflet/OpenStreetMap canlı harita (WebView). Açık adres yalnız backend Nominatim önbelleğinden gelir; uygulama Nominatim'e istek atmaz.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Linking, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import { myId, myRole } from '@/lib/adminRole';
 import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, AT, ATitle } from '@/components/admin/AdminUi';
 import { StatusPill } from '@/components/admin/StatusPill';
+import { SosLiveMap } from '@/components/admin/SosLiveMap';
 import { adm, mono } from '@/theme/theme';
 
 type LivePos = { lat: number; lng: number; timestamp: string };
@@ -128,7 +129,9 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { 
   const reqLoc = allLocs.find(l => l.userId === report.user?.id) ?? null;
   const others = allLocs.filter(l => l.userId !== report.user?.id);
   const close = reqLoc ? others.filter(o => haversineM(reqLoc.lat, reqLoc.lng, o.lat, o.lng) < 100) : [];
-  const marker = livePos ?? (reqLoc ? { lat: reqLoc.lat, lng: reqLoc.lng } : dLat != null && dLng != null ? { lat: dLat, lng: dLng } : null);
+  // Haritadaki işaret: talep edenin en yeni konumu (katılımcı konumu ya da talep konum güncellemesi); 1 sn'lik canlı konum varsa onu izler
+  const mapPos = reqLoc && (!latest || new Date(reqLoc.timestamp) >= new Date(latest.timestamp)) ? { lat: reqLoc.lat, lng: reqLoc.lng } : dLat != null && dLng != null ? { lat: dLat, lng: dLng } : null;
+  const marker = livePos ?? mapPos;
   return (
     <View style={{ borderRadius: 12, overflow: 'hidden', borderWidth: 1.5, borderColor: report.resolvedAt ? adm.border : 'rgba(239,68,68,0.6)', backgroundColor: adm.card, marginBottom: 12, shadowColor: 'rgba(239,68,68,0.12)', shadowOpacity: report.resolvedAt ? 0 : 1, shadowRadius: 12 }}>
       <Pressable onPress={() => { const n = !open; setOpen(n); if (n) loadDetail(); }} style={{ paddingVertical: 14, paddingHorizontal: 18, backgroundColor: report.resolvedAt ? adm.surface : 'rgba(239,68,68,0.08)', flexDirection: 'row', alignItems: 'center', gap: 14 }}>
@@ -177,6 +180,7 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress }: { 
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Section title="CANLI KONUM TAKİBİ" accent={adm.cyan}>
+                {marker && <SosLiveMap lat={marker.lat} lng={marker.lng} />}
                 {marker && !report.resolvedAt && (
                   <View style={{ marginBottom: 10 }}>
                     <Section title="AÇIK ADRES" accent={adm.cyan}>
