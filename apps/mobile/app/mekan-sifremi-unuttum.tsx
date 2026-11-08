@@ -5,8 +5,8 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { venueApi } from '@/lib/venueApi';
 import { OtpInput } from '@/components/OtpInput';
-import { Btn, BtnPrimary, Input, Serif, T } from '@/components/ui';
-import { c, tw } from '@/theme/theme';
+import { Btn, BtnPrimary, Input, Serif, T, Glow } from '@/components/ui';
+import { c, tw, ll } from '@/theme/theme';
 
 export default function MekanSifremiUnuttum() {
   const router = useRouter();
@@ -27,7 +27,8 @@ export default function MekanSifremiUnuttum() {
     try { await venueApi.post('/reset-password', { email, code, newPassword: password }); router.replace('/giris'); } catch (e) { setError((e as Error).message); setLoading(false); }
   }
   return (
-    <View style={{ flex: 1, backgroundColor: tw.bg, justifyContent: 'center', paddingHorizontal: 24, paddingTop: insets.top, paddingBottom: insets.bottom }}>
+    <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', justifyContent: 'center', paddingHorizontal: 24, paddingTop: insets.top, paddingBottom: insets.bottom }}>
+      <Glow />
       <View style={{ width: '100%', maxWidth: 384, alignSelf: 'center' }}>
         <Serif style={{ fontSize: 36, textAlign: 'center', marginBottom: 8 }}>Şifre Sıfırla</Serif>
         {!sent ? (

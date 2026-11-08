@@ -4,8 +4,8 @@ import { FlatList, Modal, Pressable, View } from 'react-native';
 import * as Contacts from 'expo-contacts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
-import { Btn, BtnGhost, BtnPrimary, Card, Head, Input, T } from '../ui';
-import { ll, tw } from '@/theme/theme';
+import { Btn, BtnGhost, BtnPrimary, Card, Head, Input, T, Glow } from '../ui';
+import { ll, tw, liveGlow } from '@/theme/theme';
 
 interface ServerBlock { id: string; phoneNumber?: string; hashedPhone?: string; createdAt: string }
 const MAX = 50;
@@ -45,7 +45,8 @@ export function ContactPicker({ visible, onClose, existing, remaining, onPick }:
   const shown = useMemo(() => rows.filter(r => !q || r.name.toLocaleLowerCase('tr-TR').includes(q.toLocaleLowerCase('tr-TR')) || r.phone.includes(q.replace(/\D/g, ''))), [rows, q]);
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
-      <View style={{ flex: 1, backgroundColor: '#121212', paddingTop: 16, paddingHorizontal: 16, paddingBottom: insets.bottom + 16, gap: 12 }}>
+      <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', paddingTop: 16, paddingHorizontal: 16, paddingBottom: insets.bottom + 16, gap: 12 }}>
+        <Glow top={liveGlow.offset - 16} right={liveGlow.offset - 16} />
         <Head title="Rehberden Seç" right={<Btn variant="closeX" accessibilityLabel="Kapat" label="×" textStyle={{ fontSize: 22, color: tw.muted }} onPress={onClose} />} />
         <Input placeholder="Ara" value={q} onChangeText={setQ} />
         {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}

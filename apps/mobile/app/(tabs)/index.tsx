@@ -11,7 +11,7 @@ import { gColor, getNextTarget, num, pad, type MasaTuru } from '@/lib/masa';
 import { CLOSING_DAY, SCAN_START_DAY, useMasaTabs } from '@/lib/useMasaTabs';
 import { isForeground, useAppRefresh } from '@/lib/useAppRefresh';
 import type { LiveFill, LiveOverview, LivePulse, OceanKey } from '@/lib/liveTypes';
-import { BtnPrimary, Card, Cta, Eyebrow, Head, MaintenanceNotice, Mono, Note, Serif, Spinner, T, Title } from '@/components/ui';
+import { BtnPrimary, Card, Cta, Glow, Eyebrow, Head, MaintenanceNotice, Mono, Note, Serif, Spinner, T, Title } from '@/components/ui';
 import { LiveTabs } from '@/components/LiveTabs';
 import { LiveSonar } from '@/components/Sonar';
 import { WinbackHost } from '@/components/Winback';
@@ -115,18 +115,6 @@ function label(initials: string) {
   return raw.length === 2 && !raw.includes('.') ? `${raw[0]}.${raw[1]}.`.toLocaleUpperCase('tr-TR') : raw.toLocaleUpperCase('tr-TR');
 }
 
-// .ll-glow
-export function Glow() {
-  return (
-    <View pointerEvents="none" style={{ position: 'absolute', top: -140, right: -140, width: 420, height: 420 }}>
-      <Svg width={420} height={420}>
-        <Defs><RadialGradient id="g" cx="50%" cy="50%" r="50%"><Stop offset="0" stopColor="rgb(200,56,44)" stopOpacity={0.28} /><Stop offset="0.7" stopColor="rgb(200,56,44)" stopOpacity={0} /></RadialGradient></Defs>
-        <Rect width={420} height={420} fill="url(#g)" />
-      </Svg>
-    </View>
-  );
-}
-
 export default function EslesmePaneli() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -135,7 +123,7 @@ export default function EslesmePaneli() {
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
   const tabItem = rawTabItem && Date.now() < Date.parse(rawTabItem.meeting.scheduledAt) + MEETING_GRACE_MS ? rawTabItem : undefined;
 
-  if (!ready) return <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center' }}><Spinner /></View>;
+  if (!ready) return <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}><Glow /><Spinner /></View>;
 
   const hasTabTable = !!tabItem;
   const tabSeatsLeft = tabItem ? Math.max(0, (tabItem.meeting.maxParticipants ?? 0) - tabItem.meeting.participants.filter(p => !p.cancelled).length) : null;
@@ -152,6 +140,11 @@ export default function EslesmePaneli() {
 
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg }}>
+      {/* web dashboard: position fixed, radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,.1) 0%, transparent 70%) — kaydırmayla kaymaz */}
+      <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width="100%" height="100%">
+        <Defs><RadialGradient id="dashfix" cx="70%" cy="30%" rx="50%" ry="40%"><Stop offset="0" stopColor="rgb(192,57,43)" stopOpacity={0.1} /><Stop offset="0.7" stopColor="rgb(192,57,43)" stopOpacity={0} /></RadialGradient></Defs>
+        <Rect width="100%" height="100%" fill="url(#dashfix)" />
+      </Svg>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top }}>
         <View style={{ paddingHorizontal: 16 }}>
           {me?.kyc?.status === 'REJECTED' && (

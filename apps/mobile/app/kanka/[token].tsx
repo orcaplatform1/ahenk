@@ -4,8 +4,8 @@ import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { API_PREFIX } from '@/lib/config';
 import { getAccess } from '@/lib/session';
-import { BtnGhost, BtnPrimary, Serif, Spinner, T } from '@/components/ui';
-import { c, gender as G, tw } from '@/theme/theme';
+import { BtnGhost, BtnPrimary, Serif, Spinner, T, Glow } from '@/components/ui';
+import { c, gender as G, tw, ll } from '@/theme/theme';
 
 export default function KankaDavet() {
   const router = useRouter();
@@ -18,7 +18,8 @@ export default function KankaDavet() {
   }, [token]);
   const clr = info?.inviterGender === 'FEMALE' ? G.female : G.male;
   return (
-    <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+    <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+      <Glow />
       <View style={{ alignItems: 'center', gap: 20, maxWidth: 420, width: '100%' }}>
         {!info ? <Spinner /> : info.valid ? (
           <>

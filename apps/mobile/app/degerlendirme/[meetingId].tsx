@@ -6,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Defs, LinearGradient as SG, Path, Stop } from 'react-native-svg';
 import { api } from '@/lib/api';
-import { BtnGhost, BtnPrimary, ModalBox, Serif, T, PageGlow } from '@/components/ui';
-import { c, glassCard, inputGlass, sans, tw } from '@/theme/theme';
+import { BtnGhost, BtnPrimary, ModalBox, Serif, T, PageGlow, Glow } from '@/components/ui';
+import { c, glassCard, inputGlass, sans, tw, ll } from '@/theme/theme';
 
 interface Participant { userId: string; initials: string; gender: string | null; isRequester: boolean }
 interface MeetingInfo { locationName: string | null; scheduledAt: string; reviewOpensAt: string; reviewClosesAt: string; reviewed: boolean; myNoShowIds?: string[] }
@@ -70,7 +70,7 @@ export default function Degerlendirme() {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: tw.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Modal visible={success} animationType="fade">
-        <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}><Glow />
           <LinearGradient colors={['#c0392b', '#ff6b6b']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
             <Svg width={40} height={40} viewBox="0 0 40 40" fill="none"><Path d="M8 20 L17 29 L32 13" stroke="white" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" /></Svg>
           </LinearGradient>

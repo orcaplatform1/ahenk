@@ -7,8 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { LIKERT, type Question } from '@/components/TestFlow';
-import { Btn, BtnGhost, BtnPrimary, Mono, PageGlow, Serif, Spinner, T } from '@/components/ui';
-import { c, glassCard, tw } from '@/theme/theme';
+import { Btn, BtnGhost, BtnPrimary, Mono, PageGlow, Serif, Spinner, T, Glow } from '@/components/ui';
+import { c, glassCard, tw, ll } from '@/theme/theme';
 
 export default function Test() {
   const router = useRouter();
@@ -40,7 +40,7 @@ export default function Test() {
 
   if (done) {
     return (
-      <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+      <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}><Glow />
         <View style={{ width: '100%', maxWidth: 384, alignItems: 'center' }}>
           <View style={{ width: 96, height: 96, borderRadius: 48, marginBottom: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(192,57,43,0.1)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.3)' }}>
             <Svg viewBox="0 0 24 24" width={40} height={40} fill="none"><Path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} stroke={c.red} d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></Svg>
@@ -56,14 +56,14 @@ export default function Test() {
   }
   if (error && questions.length === 0) {
     return (
-      <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+      <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}><Glow />
         <T style={{ color: tw.accent, fontSize: 16, marginBottom: 16 }}>{error}</T>
         <Btn variant="textLink" textStyle={{ fontSize: 14, color: c.t888 }} onPress={() => router.back()} label="← Dashboard" />
       </View>
     );
   }
   const q = questions[current];
-  if (!q) return <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center' }}><Spinner /></View>;
+  if (!q) return <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}><Glow /><Spinner /></View>;
   const total = questions.length;
   const progress = (Object.keys(answers).length / total) * 100;
   const has = answers[q.id] !== undefined;

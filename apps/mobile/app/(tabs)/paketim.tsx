@@ -9,9 +9,8 @@ import { api } from '@/lib/api';
 import { startPurchase } from '@/lib/purchase';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { useReduceMotion } from '@/lib/motion';
-import { Btn, BtnPrimary, Card, Head, MaintenanceNotice, Serif, SkeletonBlock, T } from '@/components/ui';
+import { Btn, BtnPrimary, Card, Head, MaintenanceNotice, Serif, SkeletonBlock, T, Glow } from '@/components/ui';
 import { clockMS, useWinback } from '@/components/Winback';
-import { Glow } from './index';
 import { c, ll, sans, tw, tw4 } from '@/theme/theme';
 
 interface Subscription { id: string; plan: string; usedAt?: string | null; groupRights: number; groupCycles: number; oneOnOneCycles: number; kankaRights?: number; kankaCycles?: number }
@@ -119,8 +118,8 @@ export default function Paketim() {
 
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
-      <Glow />
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 32, paddingHorizontal: 16, paddingBottom: 32, gap: 20, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
+        <Glow />
         {loading ? <SkeletonBlock lines={4} /> : (
           <>
             {maintenance && <MaintenanceNotice />}

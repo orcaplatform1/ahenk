@@ -7,11 +7,11 @@ import {
   type PressableProps, type TextInputInstance, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Defs, Ellipse, RadialGradient as SvgRadial, Stop } from 'react-native-svg';
+import Svg, { Defs, Ellipse, RadialGradient as SvgRadial, Rect as SvgRect, Stop } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   btn, toggleSwitch, type BtnVariant,
-  btnGhost, btnPrimary, c, fonts, glassCard, inputGlass, ll, llCard, llCta, llEyebrow, llHead, llNote, llTitle, mono, sans, sheet, tw, webLineHeight,
+  btnGhost, btnPrimary, c, fonts, glassCard, inputGlass, ll, llCard, llCta, llEyebrow, llHead, llNote, llTitle, mono, sans, sheet, tw, webLineHeight, liveGlow,
 } from '@/theme/theme';
 
 // Web satır yüksekliği: stilde lineHeight yoksa üye tarafında Tailwind boyutları için sınıf değeri, diğer boyutlarda 1.5×;
@@ -280,6 +280,19 @@ export function PageGlow({ top, bottom, left, right, w, h, color, opacity, stop,
       <Svg width={gw} height={gh}>
         <Defs><SvgRadial id="pg" cx="50%" cy="50%" rx="50%" ry="50%"><Stop offset="0" stopColor={color} stopOpacity={opacity} /><Stop offset={stop} stopColor={color} stopOpacity={0} /></SvgRadial></Defs>
         <Ellipse cx={gw / 2} cy={gh / 2} rx={gw / 2} ry={gh / 2} fill="url(#pg)" />
+      </Svg>
+    </View>
+  );
+}
+
+// .ll-glow: sağ üst kırmızı ışıma. Kaydırılan içeriğin (ScrollView içeriği) ilk çocuğu olarak konur; web'deki gibi sayfayla birlikte kayar.
+export function Glow({ top = liveGlow.offset, right = liveGlow.offset }: { top?: number; right?: number }) {
+  const g = liveGlow;
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', top, right, width: g.size, height: g.size }}>
+      <Svg width={g.size} height={g.size}>
+        <Defs><SvgRadial id="llglow" cx="50%" cy="50%" r="50%"><Stop offset="0" stopColor={g.color} stopOpacity={g.opacity} /><Stop offset={g.stop} stopColor={g.color} stopOpacity={0} /></SvgRadial></Defs>
+        <SvgRect width={g.size} height={g.size} fill="url(#llglow)" />
       </Svg>
     </View>
   );

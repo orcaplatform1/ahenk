@@ -378,6 +378,10 @@ export const tw4 = { green400: '#05df72', red800: '#9f0712', red900a20: 'rgba(13
 
 export const webLineHeight = { base: 1.5, tailwind: { 12: 16, 14: 20, 16: 24, 18: 28, 20: 28, 24: 32, 30: 36, 36: 40 } as Record<number, number> } as const;
 
+// Uygulama genel arka planı (web .live-layer + .ll-glow): zemin #0a0a0a; sağ üstte top/right -140 px, 420 px daire,
+// radial-gradient(circle, rgba(200,56,44,.28) 0%, transparent 70%). Işıma sayfa içeriğinin içinde: kaydırmayla birlikte yukarı gider.
+export const liveGlow = { offset: -140, size: 420, color: 'rgb(200,56,44)', opacity: 0.28, stop: 0.7 } as const;
+
 export const adm = {
   bg: '#020c1b', surface: '#0a1628', card: '#0d1f3c', border: '#1a3a5c', text: '#e2e8f0', muted: '#64748b',
   red: '#ef4444', green: '#22c55e', amber: '#f59e0b', blue: '#3b82f6', cyan: '#22d3ee', navActive: '#93c5fd',

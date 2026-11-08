@@ -7,8 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Defs, Line, Polygon, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { OCEAN_TRAITS } from '@/lib/oceanData';
-import { Btn, BtnGhost, BtnPrimary, Mono, Serif, Spinner, T } from '@/components/ui';
-import { c, glassCard, sans, tw } from '@/theme/theme';
+import { Btn, BtnGhost, BtnPrimary, Mono, Serif, Spinner, T, Glow } from '@/components/ui';
+import { c, glassCard, sans, tw, ll } from '@/theme/theme';
 
 type Score = Record<'openness' | 'conscientiousness' | 'extraversion' | 'agreeableness' | 'neuroticism', number>;
 
@@ -70,9 +70,9 @@ export default function TestSonuc() {
       .then(r => { if (!r.completed || !r.scores) { router.replace('/test'); return; } setScore(r.scores); setProfile(r.profile ?? ''); })
       .catch((e: Error) => setError(e.message)).finally(() => setLoading(false));
   }, [router]);
-  if (loading) return <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center' }}><Spinner /></View>;
+  if (loading) return <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}><Glow /><Spinner /></View>;
   if (error || !score) return (
-    <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+    <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}><Glow />
       <T style={{ color: tw.accent, marginBottom: 16 }}>{error || 'Sonuç bulunamadı.'}</T>
       <Btn variant="textLink" textStyle={{ fontSize: 14, color: c.t888 }} label="← Profile Dön" onPress={() => router.back()} />
     </View>

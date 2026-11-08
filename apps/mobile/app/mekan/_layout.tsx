@@ -6,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clearVenueTokens } from '@/lib/session';
 import { logoutVenueDevice, VenueAuthError, venueApi, type VenueMe } from '@/lib/venueApi';
 import { VenuePanelContext } from '@/lib/venueContext';
-import { Btn, Serif, T, InlineLH } from '@/components/ui';
-import { c, tw } from '@/theme/theme';
+import { Btn, Serif, T, InlineLH, Glow } from '@/components/ui';
+import { c, tw, ll } from '@/theme/theme';
 
 const NAV = [
   { href: '/mekan/bilgiler', label: 'Mekân Bilgileri' },
@@ -29,7 +29,7 @@ export default function MekanLayout() {
   async function logout() { await logoutVenueDevice(); onAuthLost(); }
 
   return (
-    <View style={{ flex: 1, backgroundColor: tw.bg }}>
+    <View style={{ flex: 1, backgroundColor: ll.bg }}>
       <View style={{ paddingTop: insets.top, backgroundColor: 'rgba(18,18,18,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' }}>
         <View style={{ paddingTop: 14.4, paddingHorizontal: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -50,6 +50,7 @@ export default function MekanLayout() {
         </View>
       </View>
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ maxWidth: 820, width: '100%', alignSelf: 'center', paddingTop: 20, paddingHorizontal: 16, paddingBottom: 48 + insets.bottom }}>
+        <Glow />
         {!!error && <T style={{ color: tw.accent, fontSize: 13.6 }}>{error}</T>}
         {me ? <VenuePanelContext.Provider value={{ me, setMe, onAuthLost }}><InlineLH><Slot /></InlineLH></VenuePanelContext.Provider> : !error && <T style={{ color: c.t666, fontSize: 13.6 }}>Yükleniyor…</T>}
       </ScrollView>

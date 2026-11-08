@@ -4,10 +4,9 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-nat
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
-import { BtnGhost, Card, ErrorText, Head, Mono, Spinner, T } from '@/components/ui';
-import { Glow } from './index';
+import { BtnGhost, Card, ErrorText, Head, Mono, Spinner, T, Glow } from '@/components/ui';
 import { unreadBus } from './_layout';
-import { ll, llColumn, tw } from '@/theme/theme';
+import { ll, llColumn, tw, liveGlow } from '@/theme/theme';
 
 interface Notif { id: string; title: string; body: string; data?: { event?: string } | null; read: boolean; createdAt: string }
 interface Page { items: Notif[]; total: number; page: number; totalPages: number }
@@ -60,11 +59,10 @@ export default function Bildirimler() {
     } catch (e) { setError((e as Error).message); }
   }
 
-  if (loading) return <View style={{ flex: 1, backgroundColor: ll.bg, alignItems: 'center', justifyContent: 'center' }}><Spinner /></View>;
+  if (loading) return <View style={{ flex: 1, backgroundColor: ll.bg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}><Glow /><Spinner /></View>;
 
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
-      <Glow />
       <FlatList
         data={items}
         keyExtractor={(n) => n.id}
@@ -74,6 +72,8 @@ export default function Bildirimler() {
         contentContainerStyle={{ paddingTop: insets.top + llColumn.padTop, paddingHorizontal: llColumn.padH, paddingBottom: llColumn.padBottom, maxWidth: llColumn.maxWidth, width: '100%', alignSelf: 'center' }}
         ListHeaderComponent={
           <View>
+            {/* Işıma listenin içeriğinde: üst dolgu ve yan dolgu kadar kaydırılarak içeriğin sağ üst köşesine hizalanır */}
+            <Glow top={liveGlow.offset - insets.top - llColumn.padTop} right={liveGlow.offset - llColumn.padH} />
             <Head title="Bildirimler" right={items.some((n) => !n.read) ? <BtnGhost label="Tümünü okundu işaretle" onPress={readAll} style={{ paddingHorizontal: 14 }} /> : undefined} />
             <ErrorText>{error}</ErrorText>
           </View>

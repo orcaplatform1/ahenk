@@ -4,12 +4,11 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'rea
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
-import { Btn, BtnGhost, SkeletonBlock, T } from '@/components/ui';
+import { Btn, BtnGhost, SkeletonBlock, T, Glow } from '@/components/ui';
 import { ProfilimTab, type City, type UserData } from '@/components/profil/ProfilimTab';
 import { KisilikTab } from '@/components/profil/KisilikTab';
 import { RehberTab } from '@/components/profil/RehberTab';
 import { KycTab } from '@/components/profil/KycTab';
-import { Glow } from './index';
 import { accountTab, ll, tabBar, tw } from '@/theme/theme';
 
 const TABS = [
@@ -55,8 +54,8 @@ export default function Profilim() {
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
-          <Glow />
           <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 32, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
+            <Glow />
             {loading ? <SkeletonBlock lines={4} /> : fetchError && !user ? (
               <View style={{ alignItems: 'center', paddingHorizontal: 24 }}>
                 <T style={{ color: tw.muted, fontSize: 14, marginBottom: 16 }}>Profil yüklenemedi. Lütfen tekrar deneyin.</T>
