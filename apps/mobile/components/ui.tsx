@@ -8,6 +8,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
+  btn, toggleSwitch, type BtnVariant,
   btnGhost, btnPrimary, c, fonts, glassCard, inputGlass, ll, llCard, llCta, llEyebrow, llHead, llNote, llTitle, mono, sans, sheet, tw,
 } from '@/theme/theme';
 
@@ -67,6 +68,50 @@ export function BtnGhost({ label, style, full, disabled, redDot, textStyle, noUp
       style={({ pressed }) => [s.btn, s.btnGhost, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: btnGhost.disabledOpacity }, style]}>
       <View style={[s.dot, { backgroundColor: redDot ? c.ghostRedDot : btnGhost.dotColor }]} />
       <Text style={[s.btnText, { fontFamily: sans(500), color: btnGhost.color }, textStyle]}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
+    </Pressable>
+  );
+}
+
+// Tema buton kaydındaki (theme.ts → btn) web buton stilleri. style yalnız yerleşim içindir (genişlik, kenar boşluğu, flex).
+export function Btn({ variant, label, children, selected, disabled, onPress, style, textStyle, accessibilityLabel, hitSlop = HIT }: {
+  variant: BtnVariant; label?: string; children?: React.ReactNode; selected?: boolean; disabled?: boolean; onPress?: () => void;
+  style?: StyleProp<ViewStyle>; textStyle?: StyleProp<TextStyle>; accessibilityLabel?: string; hitSlop?: PressableProps['hitSlop'];
+}) {
+  const spec = btn[variant] as import('@/theme/theme').BtnSpec;
+  const { weight = 400, ...textBase } = spec.text;
+  const onText = selected && spec.on ? spec.on.text as { weight?: 400 | 500 | 600 | 700 | 800 } : undefined;
+  const w = onText?.weight ?? weight;
+  const content = children ?? (
+    <Text style={[{ fontFamily: sans(w) }, textBase as TextStyle, selected && spec.on ? spec.on.text as TextStyle : null, textStyle]}>
+      {label !== undefined && spec.upper ? label.toLocaleUpperCase('tr-TR') : label}
+    </Text>
+  );
+  const boxStyle = [spec.box as ViewStyle, selected && spec.on ? spec.on.box as ViewStyle : null, disabled && { opacity: spec.disabledOpacity ?? 0.4 }, style];
+  if (spec.gradient) {
+    const g = spec.gradient;
+    return (
+      <Pressable onPress={onPress} disabled={disabled} hitSlop={hitSlop} accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ disabled, selected }} style={boxStyle.map((x, i) => (i === 0 ? { ...(spec.box as ViewStyle), padding: 0, paddingVertical: 0, paddingHorizontal: 0 } : x))}>
+        <LinearGradient colors={g.colors as [string, string, ...string[]]} locations={g.locations as [number, number, ...number[]] | undefined} start={g.start} end={g.end}
+          style={{ borderRadius: (spec.box as ViewStyle).borderRadius, alignItems: 'center', paddingVertical: (spec.box as ViewStyle).paddingVertical, padding: (spec.box as ViewStyle).padding }}>
+          {content}
+        </LinearGradient>
+      </Pressable>
+    );
+  }
+  return (
+    <Pressable onPress={onPress} disabled={disabled} hitSlop={hitSlop} accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ disabled, selected }} style={boxStyle}>
+      {content}
+    </Pressable>
+  );
+}
+
+// Anahtar (web CookieBanner Toggle)
+export function Switch({ value, onChange, accessibilityLabel }: { value: boolean; onChange: (v: boolean) => void; accessibilityLabel?: string }) {
+  const t = toggleSwitch;
+  return (
+    <Pressable onPress={() => onChange(!value)} hitSlop={{ top: 10, bottom: 10, left: 1, right: 1 }} accessibilityRole="switch" accessibilityState={{ checked: value }} accessibilityLabel={accessibilityLabel}
+      style={{ width: t.width, height: t.height, borderRadius: t.radius, backgroundColor: value ? t.onBg : t.offBg }}>
+      <View style={{ position: 'absolute', top: t.inset, left: value ? t.width - t.knob - t.inset : t.inset, width: t.knob, height: t.knob, borderRadius: t.knob / 2, backgroundColor: t.knobColor }} />
     </Pressable>
   );
 }

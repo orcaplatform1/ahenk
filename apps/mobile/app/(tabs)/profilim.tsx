@@ -4,12 +4,11 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'rea
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
-import { BtnGhost, SkeletonBlock, T } from '@/components/ui';
+import { Btn, BtnGhost, SkeletonBlock, T } from '@/components/ui';
 import { ProfilimTab, type City, type UserData } from '@/components/profil/ProfilimTab';
 import { KisilikTab } from '@/components/profil/KisilikTab';
 import { RehberTab } from '@/components/profil/RehberTab';
 import { KycTab } from '@/components/profil/KycTab';
-import { WinbackHost } from '@/components/Winback';
 import { Glow } from './index';
 import { accountTab, ll, tabBar, tw } from '@/theme/theme';
 
@@ -49,15 +48,11 @@ export default function Profilim() {
           {tabs.map(t => {
             const on = tab === t.key;
             return (
-              <Pressable key={t.key} onPress={() => setTab(t.key)} hitSlop={{ top: 8, bottom: 8 }} accessibilityRole="tab" accessibilityState={{ selected: on }}
-                style={{ paddingHorizontal: accountTab.padH, paddingVertical: accountTab.padV, borderRadius: accountTab.radius, borderWidth: 1, backgroundColor: on ? tabBar.activeBg : 'transparent', borderColor: on ? tabBar.activeBorder : 'transparent' }}>
-                <T w={500} style={{ fontSize: accountTab.size, color: on ? tabBar.active : tabBar.inactive }}>{t.label}</T>
-              </Pressable>
+              <Btn key={t.key} variant="accountTab" selected={on} label={t.label} hitSlop={{ top: 8, bottom: 8 }} onPress={() => setTab(t.key)} />
             );
           })}
         </ScrollView>
       </View>
-      <WinbackHost />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
           <Glow />

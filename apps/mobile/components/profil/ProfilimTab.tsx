@@ -3,11 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { api } from '@/lib/api';
 import { gColor } from '@/lib/masa';
-import { BtnGhost, BtnPrimary, Card, Head, HIT, Input, ModalBox, Row, Sheet, T } from '../ui';
+import { Btn, BtnGhost, BtnPrimary, Card, Head, Input, ModalBox, Row, Sheet, Switch, T } from '../ui';
+import { getShakeEnabled, setShakeEnabled } from '@/lib/shakePref';
 import { OtpInput } from '../OtpInput';
 import { KankaSection } from './KankaSection';
 import { ProblemReport } from './ProblemReport';
-import { c, ll, sans, tw } from '@/theme/theme';
+import { accountBtn, c, ll, sans, tw } from '@/theme/theme';
 
 export interface City { id: string; name: string }
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
@@ -35,21 +36,13 @@ function sortCities(cs: City[]) {
 }
 
 function SmallBtn({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable hitSlop={HIT} onPress={onPress} style={{ paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 6 }}>
-      <T style={{ fontSize: 12, color: ll.label }}>{label}</T>
-    </Pressable>
-  );
+  return <Btn variant="rowAction" label={label} onPress={onPress} />;
 }
 
 function CardP({ title, action, children }: { title: string; action?: { label: string; onPress: () => void }; children: React.ReactNode }) {
   return (
     <Card>
-      <Head title={title} right={action ? (
-        <Pressable hitSlop={HIT} onPress={action.onPress} style={{ paddingHorizontal: 12, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8 }}>
-          <T style={{ fontSize: 12, color: ll.label }}>{action.label}</T>
-        </Pressable>
-      ) : undefined} />
+      <Head title={title} right={action ? <Btn variant="cardAction" label={action.label} onPress={action.onPress} /> : undefined} />
       <View style={{ gap: 12 }}>{children}</View>
     </Card>
   );
@@ -63,24 +56,18 @@ function CitySelect({ label, value, onChange, cities, optional, placeholder, tit
   return (
     <View style={{ flex: 1 }}>
       {!!label && <T style={{ fontSize: 12, color: ll.text2, marginBottom: 4 }}>{label}</T>}
-      <Pressable onPress={() => { setTmp(value); setOpen(true); }} style={{ backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: value ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.12)', borderRadius: 12, paddingVertical: 11, paddingHorizontal: 14, minHeight: 44, justifyContent: 'center' }}>
-        <T style={{ fontSize: 14, color: value ? tw.text : 'rgba(255,255,255,0.55)' }}>{display}</T>
-      </Pressable>
+      <Btn variant="citySelectProfile" selected={!!value} label={display} onPress={() => { setTmp(value); setOpen(true); }} />
       <Sheet visible={open} onClose={() => setOpen(false)}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <T style={{ fontSize: 13, color: c.t888 }}>{title}</T>
-          <Pressable hitSlop={HIT} onPress={() => setOpen(false)}><T style={{ color: c.t555, fontSize: 20 }}>×</T></Pressable>
+          <Btn variant="closeX" label="×" accessibilityLabel="Kapat" onPress={() => setOpen(false)} />
         </View>
         <ScrollView style={{ maxHeight: 300 }}>
           {optional && (
-            <Pressable onPress={() => setTmp('')} style={{ paddingVertical: 13, paddingHorizontal: 14, borderRadius: 8, backgroundColor: tmp === '' ? 'rgba(192,57,43,0.12)' : 'transparent' }}>
-              <T w={tmp === '' ? 600 : 400} style={{ fontSize: 15, color: tmp === '' ? tw.accent : c.t888 }}>Seçmek istemiyorum</T>
-            </Pressable>
+            <Btn variant="listOption" selected={tmp === ''} label="Seçmek istemiyorum" textStyle={tmp === '' ? undefined : { color: c.t888 }} onPress={() => setTmp('')} />
           )}
           {sortCities(cities).map(x => (
-            <Pressable key={x.id} onPress={() => setTmp(x.id)} style={{ paddingVertical: 13, paddingHorizontal: 14, borderRadius: 8, backgroundColor: tmp === x.id ? 'rgba(192,57,43,0.12)' : 'transparent' }}>
-              <T w={tmp === x.id ? 600 : 400} style={{ fontSize: 15, color: tmp === x.id ? tw.accent : c.tCcc }}>{cityLabel(x.name)}</T>
-            </Pressable>
+            <Btn key={x.id} variant="listOption" selected={tmp === x.id} label={cityLabel(x.name)} onPress={() => setTmp(x.id)} />
           ))}
         </ScrollView>
         <BtnPrimary label="Seç" full style={{ marginTop: 16 }} onPress={() => { onChange(tmp); setOpen(false); }} />
@@ -124,7 +111,9 @@ export function ProfilimTab({ user, cities, onLoggedOut }: { user: UserData; cit
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [deletePending, setDeletePending] = useState(false);
+  const [shake, setShake] = useState(true);
 
+  useEffect(() => { getShakeEnabled().then(setShake); }, []);
   useEffect(() => {
     api.get<{ request: { id: string } | null }>('/users/me/deletion-request').then(r => setDeletePending(!!r?.request?.id)).catch(() => {});
     api.get<{ totalInvites: number; availableDiscounts: number }>('/referral/my-stats').then(setStats).catch(() => {});
@@ -181,7 +170,6 @@ export function ProfilimTab({ user, cities, onLoggedOut }: { user: UserData; cit
     catch (e) { setSaveError((e as Error).message); } finally { setSaving(false); }
   }
 
-  const accountBtn = { width: '72%' as const, alignSelf: 'center' as const, paddingHorizontal: 10 };
   const age = user.profile?.birthDate ? Math.floor((Date.now() - new Date(user.profile.birthDate).getTime()) / (365.25 * 24 * 3600 * 1000)) : null;
 
   return (
@@ -286,7 +274,7 @@ export function ProfilimTab({ user, cities, onLoggedOut }: { user: UserData; cit
         {!!activeCity && (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <T style={{ fontSize: 12, color: ll.label }}>Aktif: <T style={{ fontSize: 12, color: tw.text }}>{cities.find(x => x.id === activeCity)?.name ?? '—'}</T></T>
-            <Pressable hitSlop={HIT} disabled={savingActive} onPress={() => saveActiveCity(null)}><T style={{ fontSize: 12, color: ll.label }}>Temizle</T></Pressable>
+            <Btn variant="textSmall" disabled={savingActive} label="Temizle" onPress={() => saveActiveCity(null)} />
           </View>
         )}
         {!!activeCity && <T style={{ fontSize: 12, color: ll.label }}>Siz iptal edene kadar bu şehirdeki masalarla eşleşirsiniz.</T>}
@@ -312,10 +300,10 @@ export function ProfilimTab({ user, cities, onLoggedOut }: { user: UserData; cit
             {VENUE_OPTIONS.map(o => {
               const sel = venuePref === o.value;
               return (
-                <Pressable key={o.value} onPress={() => setVenuePref(o.value)} style={{ borderRadius: 12, padding: 16, backgroundColor: sel ? 'rgba(192,57,43,0.10)' : 'rgba(255,255,255,0.02)', borderWidth: sel ? 1.5 : 1, borderColor: sel ? 'rgba(192,57,43,0.5)' : 'rgba(255,255,255,0.12)' }}>
+                <Btn key={o.value} variant="venuePrefProfile" selected={sel} accessibilityLabel={o.label} onPress={() => setVenuePref(o.value)}>
                   <T w={500} style={{ fontSize: 14, color: sel ? tw.accent : tw.text }}>{o.label}</T>
                   <T style={{ fontSize: 12, color: ll.label, marginTop: 2 }}>{o.description}</T>
-                </Pressable>
+                </Btn>
               );
             })}
             {!!saveError && <T style={{ fontSize: 14, color: tw.accent }}>{saveError}</T>}
@@ -343,13 +331,20 @@ export function ProfilimTab({ user, cities, onLoggedOut }: { user: UserData; cit
         </View>
       </CardP>
 
+      <CardP title="Salla-Bildir">
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <T style={{ flex: 1, fontSize: 13, color: ll.text2 }}>Telefonu salladığında Sorun Bildir penceresi açılır, ekran görüntüsü otomatik eklenir.</T>
+          <Switch value={shake} onChange={(v) => { setShake(v); setShakeEnabled(v); }} accessibilityLabel="Salla-Bildir" />
+        </View>
+      </CardP>
+
       <View style={{ alignItems: 'center', gap: 12, paddingBottom: 8 }}>
-        <BtnGhost label="Sorun Bildir" style={accountBtn} onPress={() => setReportOpen(true)} />
-        <BtnGhost label="Çıkış Yap" style={accountBtn} onPress={logout} />
-        <BtnGhost label={logoutAllBusy ? 'Çıkış yapılıyor…' : 'Tüm cihazlardan çıkış yap'} style={accountBtn} disabled={logoutAllBusy} onPress={logoutAll} />
+        <BtnGhost label="Sorun Bildir" style={accountBtn.box} textStyle={accountBtn.text} onPress={() => setReportOpen(true)} />
+        <BtnGhost label={logoutAllBusy ? 'Çıkış yapılıyor…' : 'Tüm cihazlardan çıkış yap'} style={accountBtn.box} textStyle={accountBtn.text} disabled={logoutAllBusy} onPress={logoutAll} />
         {deletePending
           ? <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>Hesap silme talebin alındı, en geç 48 saat içinde sonuçlanır.</T>
-          : <BtnGhost label="Hesabımı Sil" redDot style={accountBtn} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
+          : <BtnGhost label="Hesabımı Sil" redDot style={accountBtn.box} textStyle={accountBtn.text} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
+        <BtnGhost label="Çıkış Yap" full onPress={logout} />
       </View>
 
       <ProblemReport open={reportOpen} onClose={() => setReportOpen(false)} screen="Profilim" />

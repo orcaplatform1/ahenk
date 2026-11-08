@@ -11,7 +11,7 @@ import { VENUE_PHOTO_MAX_BYTES, VENUE_PHOTO_MAX_COUNT } from "./venue-media";
 import {
   VenueChangePasswordDto, VenueDeactivateDto, VenueForgotPasswordDto,
   VenueInfoDto, VenueLoginDto, VenuePhotoDeleteDto, VenueResetPasswordDto,
-  VenueSendLoginOtpDto, VenueVerifyLoginOtpDto,
+  VenueRefreshDto, VenueSendLoginOtpDto, VenueVerifyLoginOtpDto,
 } from "./venue-panel.dto";
 
 type VenueRequest = Request & { venueAccount: VenueAccount };
@@ -38,12 +38,20 @@ export class VenuePanelController {
     res.cookie(VENUE_COOKIE, token, { ...this.cookieOptions(), maxAge: VENUE_SESSION_DAYS * 24 * 60 * 60 * 1000 });
   }
 
+  // Web (Origin başlıklı): yalnız çerez, gövdede token yok. Mobil (Origin'siz): çerez yazılmaz, gövdede erişim + yenileme token'ı
+  private async issue(req: Request, res: Response, account: VenueAccount) {
+    if (req.headers.origin) {
+      this.setSession(res, await this.service.sign(account));
+      return { success: true };
+    }
+    return { success: true, ...(await this.service.mobileTokens(account)) };
+  }
+
   @Post("login")
   @HttpCode(200)
   @Throttle({ default: { ttl: 60000, limit: 10 } })
-  async login(@Body() dto: VenueLoginDto, @Res({ passthrough: true }) res: Response) {
-    this.setSession(res, await this.service.login(dto.email, dto.password));
-    return { success: true };
+  async login(@Body() dto: VenueLoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return this.issue(req, res, await this.service.login(dto.email, dto.password));
   }
 
   @Post("send-login-otp")
@@ -56,9 +64,16 @@ export class VenuePanelController {
   @Post("verify-login-otp")
   @HttpCode(200)
   @Throttle({ default: { ttl: 60000, limit: 10 } })
-  async verifyLoginOtp(@Body() dto: VenueVerifyLoginOtpDto, @Res({ passthrough: true }) res: Response) {
-    this.setSession(res, await this.service.verifyLoginOtp(dto.phone, dto.code));
-    return { success: true };
+  async verifyLoginOtp(@Body() dto: VenueVerifyLoginOtpDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return this.issue(req, res, await this.service.verifyLoginOtp(dto.phone, dto.code));
+  }
+
+  // Mobil kalıcı oturum: yenileme token'ı ile yeni erişim + yenileme token'ı (365 gün kayan süre)
+  @Post("refresh")
+  @HttpCode(200)
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
+  refresh(@Body() dto: VenueRefreshDto) {
+    return this.service.refresh(dto.refreshToken);
   }
 
   @Post("logout")
@@ -118,8 +133,7 @@ export class VenuePanelController {
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @UseGuards(VenueAuthGuard)
   async changePassword(@Req() req: VenueRequest, @Body() dto: VenueChangePasswordDto, @Res({ passthrough: true }) res: Response) {
-    this.setSession(res, await this.service.changePassword(req.venueAccount, dto.currentPassword, dto.newPassword));
-    return { success: true };
+    return this.issue(req, res, await this.service.changePassword(req.venueAccount, dto.currentPassword, dto.newPassword));
   }
 
   @Post("deactivate")

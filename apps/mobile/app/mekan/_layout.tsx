@@ -1,12 +1,12 @@
 // Mekân paneli: apps/web/app/mekan/panel/layout.tsx (başlık: mekân adı + şehir + Çıkış, üstte 4 sekme). Üye alt menüsü yok (S-01).
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { clearTokens } from '@/lib/session';
+import { clearVenueTokens } from '@/lib/session';
 import { VenueAuthError, venueApi, type VenueMe } from '@/lib/venueApi';
 import { VenuePanelContext } from '@/lib/venueContext';
-import { Serif, T } from '@/components/ui';
+import { Btn, Serif, T } from '@/components/ui';
 import { c, tw } from '@/theme/theme';
 
 const NAV = [
@@ -22,7 +22,7 @@ export default function MekanLayout() {
   const insets = useSafeAreaInsets();
   const [me, setMe] = useState<VenueMe | null>(null);
   const [error, setError] = useState('');
-  const onAuthLost = useCallback(() => { clearTokens().finally(() => router.replace('/giris')); }, [router]);
+  const onAuthLost = useCallback(() => { clearVenueTokens().finally(() => router.replace('/giris')); }, [router]);
   useEffect(() => {
     venueApi.get<VenueMe>('/me').then(setMe).catch((e) => { if (e instanceof VenueAuthError) onAuthLost(); else setError((e as Error).message); });
   }, [onAuthLost]);
@@ -37,15 +37,13 @@ export default function MekanLayout() {
               <Serif numberOfLines={1} style={{ fontSize: 20 }}>{me?.venue.name ?? 'Mekân Paneli'}</Serif>
               {me && <T style={{ fontSize: 12, color: c.t666 }}>{me.venue.city}</T>}
             </View>
-            <Pressable onPress={logout} style={{ minHeight: 44, paddingHorizontal: 8, justifyContent: 'center' }}><T style={{ color: c.t888, fontSize: 13 }}>Çıkış</T></Pressable>
+            <Btn variant="venueLogout" label="Çıkış" onPress={logout} />
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 4, marginTop: 6 }}>
             {NAV.map(n => {
               const active = path === n.href;
               return (
-                <Pressable key={n.href} onPress={() => router.replace(n.href)} accessibilityRole="tab" accessibilityState={{ selected: active }} style={{ paddingVertical: 11, paddingHorizontal: 12, borderBottomWidth: 2, borderBottomColor: active ? c.red : 'transparent' }}>
-                  <T style={{ fontSize: 13.6, color: active ? tw.accent : c.t888 }}>{n.label}</T>
-                </Pressable>
+                <Btn key={n.href} variant="venueTab" selected={active} label={n.label} onPress={() => router.replace(n.href)} />
               );
             })}
           </ScrollView>

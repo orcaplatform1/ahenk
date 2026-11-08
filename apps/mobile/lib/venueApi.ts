@@ -1,8 +1,9 @@
-import { API_PREFIX, SITE } from './config';
+import { API_PREFIX } from './config';
+import { clearVenueTokens, getVenueAccess, getVenueRefresh, setVenueTokens } from './session';
 
-// Web lib/venueApi.ts'nin mobil karşılığı. Mekân oturumu çerezle taşınır (React Native çerez desteği,
-// credentials: 'include'). Backend CSRF kontrolü çerezli veri değiştiren isteklerde Origin bekler; istemci
-// web sitesinin kaynağını gönderir. venue-auth.guard.ts değişmedi.
+// Web lib/venueApi.ts'nin mobil karşılığı. Çerez kullanılmaz: mekân oturumu Authorization: Bearer ile taşınır,
+// token'lar expo-secure-store'da. Giriş uçları Origin'siz istekte gövdede { accessToken, refreshToken } döner.
+// Kalıcı oturum: 401'de ve uygulama açılışında POST /venue-panel/refresh (365 gün kayan süre).
 const BASE = `${API_PREFIX}/venue-panel`;
 
 export function mediaUrl(path: string): string {
@@ -19,19 +20,53 @@ export async function readError(res: Response): Promise<string> {
   return message ?? 'Bir hata oluştu. Lütfen tekrar deneyin.';
 }
 
-async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+type RefreshResult = 'ok' | 'expired' | 'offline';
+let refreshing: Promise<RefreshResult> | null = null;
+export function refreshVenueSession(): Promise<RefreshResult> {
+  if (refreshing) return refreshing;
+  refreshing = (async (): Promise<RefreshResult> => {
+    try {
+      const refreshToken = await getVenueRefresh();
+      if (!refreshToken) return 'expired';
+      const res = await fetch(`${BASE}/refresh`, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken }) });
+      if (res.status === 401 || res.status === 403) { await clearVenueTokens(); return 'expired'; }
+      if (!res.ok) return 'offline';
+      const d = await res.json() as { accessToken?: string; refreshToken?: string };
+      if (!d.accessToken || !d.refreshToken) return 'offline';
+      await setVenueTokens(d.accessToken, d.refreshToken);
+      return 'ok';
+    } catch { return 'offline'; }
+  })();
+  return refreshing.finally(() => { refreshing = null; });
+}
+
+const PUBLIC = ['/login', '/verify-login-otp', '/send-login-otp', '/forgot-password', '/reset-password'];
+
+async function request<T>(path: string, init: { method?: string; body?: unknown } = {}, retry = true): Promise<T> {
   const isForm = init.body instanceof FormData;
-  const headers: Record<string, string> = { Origin: SITE };
+  const token = PUBLIC.includes(path) ? null : await getVenueAccess();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
   if (init.body && !isForm) headers['Content-Type'] = 'application/json';
   const res = await fetch(`${BASE}${path}`, {
     method: init.method ?? 'GET',
-    credentials: 'include',
+    credentials: 'omit',
     headers,
     body: isForm ? (init.body as FormData) : init.body ? JSON.stringify(init.body) : undefined,
   });
-  if (res.status === 401 && !['/login', '/verify-login-otp'].includes(path)) throw new VenueAuthError('Oturum gerekli');
+  if (res.status === 401 && !PUBLIC.includes(path)) {
+    if (retry && token) {
+      const r = await refreshVenueSession();
+      if (r === 'ok') return request<T>(path, init, false);
+      if (r === 'offline') throw new Error('Bağlantı hatası, tekrar dene.');
+    }
+    throw new VenueAuthError('Oturum gerekli');
+  }
   if (!res.ok) throw new Error(await readError(res));
-  return res.json() as Promise<T>;
+  const data = await res.json() as T & { accessToken?: string; refreshToken?: string };
+  // Giriş ve şifre değişiminde yeni token'lar gelir
+  if (data && typeof data === 'object' && data.accessToken && data.refreshToken) await setVenueTokens(data.accessToken, data.refreshToken);
+  return data;
 }
 
 export const venueApi = {

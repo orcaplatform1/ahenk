@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Defs, Line, Polygon, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { OCEAN_TRAITS } from '@/lib/oceanData';
-import { BtnGhost, BtnPrimary, Mono, Serif, Spinner, T } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Mono, Serif, Spinner, T } from '@/components/ui';
 import { c, glassCard, sans, tw } from '@/theme/theme';
 
 type Score = Record<'openness' | 'conscientiousness' | 'extraversion' | 'agreeableness' | 'neuroticism', number>;
@@ -74,7 +74,7 @@ export default function TestSonuc() {
   if (error || !score) return (
     <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
       <T style={{ color: tw.accent, marginBottom: 16 }}>{error || 'Sonuç bulunamadı.'}</T>
-      <Pressable hitSlop={12} onPress={() => router.back()}><T style={{ fontSize: 14, color: c.t888 }}>← Profile Dön</T></Pressable>
+      <Btn variant="textLink" textStyle={{ fontSize: 14, color: c.t888 }} label="← Profile Dön" onPress={() => router.back()} />
     </View>
   );
   return (

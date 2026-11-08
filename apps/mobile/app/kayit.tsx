@@ -15,7 +15,7 @@ import { OtpInput } from '@/components/OtpInput';
 import { DateField, FieldLabel, ListPicker } from '@/components/Pickers';
 import { TestFlow, type Question } from '@/components/TestFlow';
 import { ContactPicker, normalizeTrPhone } from '@/components/profil/RehberTab';
-import { BtnGhost, BtnPrimary, Card, ErrorText, Eyebrow, Input, Serif, Spinner, T, Title } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, Eyebrow, Input, Serif, Spinner, T, Title } from '@/components/ui';
 import { c, ll, tw } from '@/theme/theme';
 
 interface City { id: string; name: string }
@@ -192,15 +192,13 @@ export default function Kayit() {
                 <View style={{ justifyContent: 'center', paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12 }}><T style={{ color: ll.label, fontSize: 13 }}>+90</T></View>
                 <Input form editable={!phoneToken} keyboardType="number-pad" textContentType="telephoneNumber" value={f.phoneNumber} onChangeText={t => changePhone(t.replace(/\D/g, '').slice(0, 10))} placeholder="5XX XXX XX XX" style={{ flex: 1, minWidth: 0, fontSize: 13, opacity: phoneToken ? 0.6 : 1 }} />
                 {!phoneToken && (
-                  <Pressable onPress={sendPhoneOtp} disabled={otpSending || resendIn > 0 || f.phoneNumber.length !== 10} style={{ justifyContent: 'center', paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', backgroundColor: 'rgba(192,57,43,0.06)', opacity: otpSending || resendIn > 0 || f.phoneNumber.length !== 10 ? 0.4 : 1 }}>
-                    <T w={500} style={{ fontSize: 12, color: c.ghostRedDot }}>{otpSending ? 'Gönderiliyor…' : resendIn > 0 ? `Tekrar (${resendIn} sn)` : otpSent ? 'Tekrar gönder' : 'Kod gönder'}</T>
-                  </Pressable>
+                  <Btn variant="otpSend" onPress={sendPhoneOtp} disabled={otpSending || resendIn > 0 || f.phoneNumber.length !== 10} label={otpSending ? 'Gönderiliyor…' : resendIn > 0 ? `Tekrar (${resendIn} sn)` : otpSent ? 'Tekrar gönder' : 'Kod gönder'} />
                 )}
               </View>
               {phoneToken ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
                   <T style={{ fontSize: 12, color: c.ok }}>✓ Telefon numaran doğrulandı</T>
-                  <Pressable hitSlop={12} onPress={() => changePhone(f.phoneNumber)}><T style={{ fontSize: 12, color: ll.label }}>Numarayı değiştir</T></Pressable>
+                  <Btn variant="textSmall" style={{ minHeight: 0 }} hitSlop={14} onPress={() => changePhone(f.phoneNumber)} label="Numarayı değiştir" />
                 </View>
               ) : otpSent && (
                 <View style={{ marginTop: 12, gap: 8 }}>
@@ -221,10 +219,7 @@ export default function Kayit() {
                 {(['MALE', 'FEMALE'] as const).map(g => {
                   const on = f.gender === g, col = gColor(g);
                   return (
-                    <Pressable key={g} onPress={() => set('gender', g)} accessibilityRole="radio" accessibilityState={{ selected: on }} hitSlop={8}
-                      style={{ paddingVertical: 6, paddingHorizontal: 16, borderRadius: 9999, borderWidth: 1.5, borderColor: on ? col : 'transparent', shadowColor: col, shadowOpacity: on ? 0.33 : 0, shadowRadius: 6 }}>
-                      <T style={{ fontSize: 13, color: on ? col : ll.time }}>{g === 'MALE' ? 'Erkek' : 'Kadın'}</T>
-                    </Pressable>
+                    <Btn key={g} variant="genderChip" selected={on} onPress={() => set('gender', g)} style={on ? { borderColor: col, shadowColor: col, shadowOpacity: 0.33, shadowRadius: 6 } : undefined} textStyle={on ? { color: col } : undefined} label={g === 'MALE' ? 'Erkek' : 'Kadın'} />
                   );
                 })}
               </View>
@@ -272,7 +267,7 @@ export default function Kayit() {
               {VENUE_OPTIONS.map(o => {
                 const sel = f.venuePreference === o.value;
                 return (
-                  <Pressable key={o.value} onPress={() => set('venuePreference', o.value)} style={{ borderRadius: 16, padding: 20, borderWidth: sel ? 1.5 : 1, backgroundColor: sel ? 'rgba(192,57,43,0.10)' : 'rgba(255,255,255,0.025)', borderColor: sel ? 'rgba(192,57,43,0.6)' : 'rgba(255,255,255,0.08)', flexDirection: 'row', gap: 16 }}>
+                  <Btn key={o.value} variant="venuePrefForm" selected={sel} accessibilityLabel={o.label} onPress={() => set('venuePreference', o.value)} style={{ flexDirection: 'row', gap: 16 }}>
                     <View style={{ flex: 1 }}>
                       <T w={500} style={{ fontSize: 15, marginBottom: 4, color: sel ? tw.accent : tw.text }}>{o.label}</T>
                       <T style={{ fontSize: 13, color: ll.label }}>{o.description}</T>
@@ -282,7 +277,7 @@ export default function Kayit() {
                         <Svg width={10} height={10} viewBox="0 0 10 10" fill="none"><Path d="M2 5 L4 7 L8 3" stroke="white" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" /></Svg>
                       </LinearGradient>
                     )}
-                  </Pressable>
+                  </Btn>
                 );
               })}
             </View>
@@ -297,7 +292,7 @@ export default function Kayit() {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <View style={{ justifyContent: 'center', paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12 }}><T style={{ color: ll.label, fontSize: 13 }}>+90</T></View>
               <Input form keyboardType="number-pad" value={f.contactInput} onChangeText={t => set('contactInput', t.replace(/\D/g, '').slice(0, 10))} placeholder="5XX XXX XX XX" onSubmitEditing={addContact} style={{ flex: 1, fontSize: 13 }} />
-              <Pressable onPress={addContact} style={{ justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}><T style={{ fontSize: 13, color: ll.text2 }}>Ekle</T></Pressable>
+              <Btn variant="addSquare" onPress={addContact} label="Ekle" />
             </View>
             <BtnGhost label="Rehberden Seç" full disabled={f.contactNumbers.length >= 50} onPress={() => setPicker(true)} />
             {f.contactNumbers.length > 0 && (
@@ -305,7 +300,7 @@ export default function Kayit() {
                 {f.contactNumbers.map(n => (
                   <View key={n} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
                     <T style={{ fontSize: 13, color: ll.label }}>{n}</T>
-                    <Pressable hitSlop={14} onPress={() => set('contactNumbers', f.contactNumbers.filter(x => x !== n))}><T style={{ fontSize: 18, color: ll.label }}>×</T></Pressable>
+                    <Btn variant="closeX" hitSlop={14} accessibilityLabel="Kaldır" onPress={() => set('contactNumbers', f.contactNumbers.filter(x => x !== n))} label="×" textStyle={{ fontSize: 18, color: ll.label }} />
                   </View>
                 ))}
                 <T style={{ fontSize: 12, color: ll.label }}>{f.contactNumbers.length}/50 numara eklendi</T>

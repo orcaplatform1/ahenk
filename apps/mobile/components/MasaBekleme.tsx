@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { cancelDeadline, formatMasaDate, isTableLocked, pad, tableTitleOf, type MasaTuru, type Participant } from '@/lib/masa';
 import { AhenkSonar } from './Sonar';
 import { DetayAvatar } from './DetayAvatar';
-import { Serif, T } from './ui';
+import { Btn, Serif, T } from './ui';
 import { c, sans, tw } from '@/theme/theme';
 
 const RADAR = 340; const C = RADAR / 2; const ORBIT_R = 142; const AV_D = 52;
@@ -120,20 +120,14 @@ export function RezervasyonIptal({ meetingId, scheduledAt, cancelRightUsed, onCa
             <TextInput value={note} onChangeText={setNote} maxLength={300} multiline numberOfLines={4} keyboardAppearance="dark"
               style={{ minHeight: 88, padding: 10, paddingHorizontal: 12, borderRadius: 10, marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', color: tw.text, fontSize: 13, fontFamily: sans(400), textAlignVertical: 'top' }} />
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Pressable onPress={handle} disabled={loading || !can} style={{ flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: 'rgba(192,57,43,0.25)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.55)', opacity: loading || !can ? 0.45 : 1 }}>
-                <T w={700} style={{ color: tw.accent, fontSize: 14 }}>{loading ? '…' : 'İptali Onayla'}</T>
-              </Pressable>
-              <Pressable onPress={() => { setShow(false); setError(''); }} style={{ flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}>
-                <T w={700} style={{ color: '#b0b0b0', fontSize: 14 }}>Vazgeç</T>
-              </Pressable>
+              <Btn variant="resConfirm" onPress={handle} disabled={loading || !can} label={loading ? '…' : 'İptali Onayla'} />
+              <Btn variant="resBack" onPress={() => { setShow(false); setError(''); }} label="Vazgeç" />
             </View>
             {!!error && <T style={{ marginTop: 12, fontSize: 13, color: tw.accent, textAlign: 'center' }}>{error}</T>}
           </Pressable>
         </Pressable>
       </Modal>
-      <Pressable onPress={() => setShow(true)} style={{ paddingVertical: 13, marginTop: 16, backgroundColor: 'rgba(192,57,43,0.2)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', borderRadius: 9999, alignItems: 'center' }}>
-        <T w={700} style={{ color: tw.accent, fontSize: 12, letterSpacing: 1.2 }}>REZERVASYON İPTAL</T>
-      </Pressable>
+      <Btn variant="resCancel" onPress={() => setShow(true)} label="Rezervasyon İptal" />
     </>
   );
 }

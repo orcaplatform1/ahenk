@@ -3,8 +3,10 @@ import * as SecureStore from 'expo-secure-store';
 // Üye oturumu: erişim ve yenileme token'ları expo-secure-store'da (S-20)
 const ACCESS = 'ahenk_access';
 const REFRESH = 'ahenk_refresh';
-// Mekân oturumu çerezde tutulur; burada yalnız oturum türü işareti saklanır
+// Oturum türü (üye / mekân). Mekân token'ları ayrı anahtarlarda (çerez kullanılmaz)
 const KIND = 'ahenk_kind';
+const V_ACCESS = 'ahenk_venue_access';
+const V_REFRESH = 'ahenk_venue_refresh';
 
 export type SessionKind = 'member' | 'venue';
 
@@ -33,6 +35,15 @@ export async function clearTokens() {
 export async function getKind(): Promise<SessionKind | null> {
   return (await SecureStore.getItemAsync(KIND)) as SessionKind | null;
 }
-export async function setVenueKind() {
+export async function setVenueTokens(access: string, refresh: string) {
+  await SecureStore.setItemAsync(V_ACCESS, access);
+  await SecureStore.setItemAsync(V_REFRESH, refresh);
   await SecureStore.setItemAsync(KIND, 'venue');
+}
+export async function getVenueAccess() { return SecureStore.getItemAsync(V_ACCESS); }
+export async function getVenueRefresh() { return SecureStore.getItemAsync(V_REFRESH); }
+export async function clearVenueTokens() {
+  await SecureStore.deleteItemAsync(V_ACCESS);
+  await SecureStore.deleteItemAsync(V_REFRESH);
+  await SecureStore.deleteItemAsync(KIND);
 }

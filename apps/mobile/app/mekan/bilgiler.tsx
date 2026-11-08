@@ -1,15 +1,16 @@
-// apps/web/app/mekan/panel/bilgiler/page.tsx karşılığı. RAPORLANDI: galeriden seçim paketi kurulu değil; fotoğraf kamerayla eklenir.
+// apps/web/app/mekan/panel/bilgiler/page.tsx karşılığı. Fotoğraf: galeriden seçme veya kamerayla çekme (expo-image-picker).
 import React, { useEffect, useState } from 'react';
 import { Image, Pressable, TextInput, View } from 'react-native';
 import { api } from '@/lib/api';
 import { VenueAuthError, mediaUrl, venueApi, type VenueMe } from '@/lib/venueApi';
 import { panelCard, useVenuePanel } from '@/lib/venueContext';
-import { PhotoCamera } from '@/components/profil/KycTab';
+import { chooseSource, pickFromCamera, pickFromLibrary, type PickedImage } from '@/lib/imagePick';
 import { ListPicker } from '@/components/Pickers';
-import { BtnPrimary, Input, Serif, T } from '@/components/ui';
+import { Btn, BtnPrimary, Input, Serif, T } from '@/components/ui';
 import { c, inputGlass, sans, tw } from '@/theme/theme';
 
 const MAX_PHOTOS = 3;
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALCOHOL = [{ value: 'ALCOHOLIC', label: 'Alkollü' }, { value: 'NON_ALCOHOLIC', label: 'Alkolsüz' }];
 
 function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
@@ -25,7 +26,6 @@ export default function Bilgiler() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [cam, setCam] = useState(false);
   const districtOptions = districts[me.venue.city] ?? [];
   useEffect(() => { api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => undefined); }, []);
   const fail = (e: unknown) => { if (e instanceof VenueAuthError) onAuthLost(); else setError((e as Error).message); };
@@ -34,13 +34,19 @@ export default function Bilgiler() {
     setSaving(true); setError(''); setMessage('');
     try { setMe(await venueApi.patch<VenueMe>('/info', { ...form, locationUrl: form.locationUrl.trim() })); setMessage('Bilgiler kaydedildi.'); } catch (e) { fail(e); } finally { setSaving(false); }
   }
-  async function addPhoto(uri: string) {
+  async function addPhotos(picked: PickedImage[] | 'denied') {
     setError(''); setMessage('');
-    if (me.venue.photos.length + 1 > MAX_PHOTOS) { setError(`En fazla ${MAX_PHOTOS} fotoğraf eklenebilir.`); return; }
+    if (picked === 'denied') { setError('Fotoğraflara erişim izni verilmedi. Ayarlar → Ahenk bölümünden izin verebilirsin.'); return; }
+    if (!picked.length) return;
+    if (picked.some((f) => (f.size ?? 0) > MAX_PHOTO_BYTES)) { setError('Her fotoğraf en fazla 5 MB olabilir.'); return; }
+    if (me.venue.photos.length + picked.length > MAX_PHOTOS) { setError(`En fazla ${MAX_PHOTOS} fotoğraf eklenebilir.`); return; }
     const body = new FormData();
-    body.append('photos', { uri, name: 'photo.jpg', type: 'image/jpeg' } as unknown as Blob);
+    picked.forEach((f) => body.append('photos', { uri: f.uri, name: f.name, type: f.type } as unknown as Blob));
     setUploading(true);
     try { setMe(await venueApi.post<VenueMe>('/photos', body)); } catch (e) { fail(e); } finally { setUploading(false); }
+  }
+  function addPhoto() {
+    chooseSource(async (src) => addPhotos(src === 'library' ? await pickFromLibrary(MAX_PHOTOS - me.venue.photos.length) : await pickFromCamera()));
   }
   async function removePhoto(url: string) {
     setError(''); setMessage('');
@@ -72,22 +78,17 @@ export default function Bilgiler() {
             <View key={url} style={{ width: 100, aspectRatio: 1, borderRadius: 10, overflow: 'hidden' }}>
               <Image source={{ uri: mediaUrl(url) }} style={{ width: '100%', height: '100%' }} accessibilityLabel={`Mekân fotoğrafı ${i + 1}`} />
               {me.venue.photos.length > 1 && (
-                <Pressable onPress={() => removePhoto(url)} accessibilityLabel={`Fotoğraf ${i + 1} sil`} hitSlop={6} style={{ position: 'absolute', top: 4, right: 4, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' }}>
-                  <T style={{ color: '#fff' }}>✕</T>
-                </Pressable>
+                <Btn variant="photoRemove" hitSlop={6} accessibilityLabel={`Fotoğraf ${i + 1} sil`} label="✕" onPress={() => removePhoto(url)} />
               )}
             </View>
           ))}
         </View>
         {me.venue.photos.length < MAX_PHOTOS && (
-          <Pressable disabled={uploading} onPress={() => setCam(true)} style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.2)', borderRadius: 10 }}>
-            <T style={{ color: tw.accent, fontSize: 14.4 }}>{uploading ? 'Yükleniyor…' : '+ Fotoğraf ekle'}</T>
-          </Pressable>
+          <Btn variant="venueAddPhoto" disabled={uploading} style={{ opacity: 1 }} label={uploading ? 'Yükleniyor…' : '+ Fotoğraf ekle'} onPress={addPhoto} />
         )}
       </View>
       {!!message && <T style={{ color: c.ok, fontSize: 13.6 }}>{message}</T>}
       {!!error && <T style={{ color: tw.accent, fontSize: 13.6 }}>{error}</T>}
-      <PhotoCamera visible={cam} onClose={() => setCam(false)} onShot={(s) => addPhoto(s.uri)} />
     </View>
   );
 }

@@ -11,7 +11,7 @@ import { useAppRefresh } from '@/lib/useAppRefresh';
 import { startSosTracking, stopSosTracking } from '@/lib/sosTask';
 import { DetayAvatar } from './DetayAvatar';
 import { KankaPairs, type KankaPerson } from './KankaPairs';
-import { BtnPrimary, HIT, Serif, T } from './ui';
+import { Btn, BtnPrimary, Serif, T } from './ui';
 import { c, sans, tw } from '@/theme/theme';
 
 export interface DetayParticipant { initials: string; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean }
@@ -118,9 +118,7 @@ function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }
                   </View>
                   <T style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{msgTime(m.createdAt)}</T>
                   {!m.isOwn && !isClosed && (
-                    <Pressable hitSlop={HIT} onPress={() => !m.reportedByMe && report(m.id)} style={{ paddingVertical: 2, marginTop: 2 }}>
-                      <T style={{ fontSize: 10, color: m.reportedByMe ? c.t333 : c.t444 }}>{m.reportedByMe ? '✓ Şikayet edildi' : 'Şikayet et'}</T>
-                    </Pressable>
+                    <Btn variant="reportLink" selected={m.reportedByMe} onPress={() => !m.reportedByMe && report(m.id)} label={m.reportedByMe ? '✓ Şikayet edildi' : 'Şikayet et'} />
                   )}
                 </View>
               </View>
@@ -184,9 +182,7 @@ function NoShowSection({ meetingId }: { meetingId: string }) {
       </View>
       {!!error && <T style={{ marginTop: 10, fontSize: 12, color: tw.accent }}>{error}</T>}
       {selected.size > 0 && (
-        <Pressable onPress={send} disabled={sending} style={{ marginTop: 12, paddingVertical: 11, borderRadius: 10, alignItems: 'center', backgroundColor: 'rgba(192,57,43,0.15)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', opacity: sending ? 0.6 : 1 }}>
-          <T w={600} style={{ fontSize: 13, color: tw.accent }}>{sending ? 'Gönderiliyor…' : 'Gelmedi olarak bildir'}</T>
-        </Pressable>
+        <Btn variant="noShowSend" onPress={send} disabled={sending} label={sending ? 'Gönderiliyor…' : 'Gelmedi olarak bildir'} />
       )}
     </View>
   );
@@ -220,13 +216,12 @@ function SosModal({ selected, onToggle, onConfirm, onClose, loading, locError, e
             {SOS_THREATS.map(t => {
               const on = selected.includes(t.value);
               return (
-                <Pressable key={t.value} onPress={() => onToggle(t.value)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11, paddingHorizontal: 14, borderRadius: 9, minHeight: 44,
-                  backgroundColor: on ? 'rgba(192,57,43,0.2)' : 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: on ? 'rgba(192,57,43,0.6)' : 'rgba(255,255,255,0.08)' }}>
+                <Btn key={t.value} variant="sosThreat" selected={on} onPress={() => onToggle(t.value)} accessibilityLabel={t.label}>
                   <View style={{ width: 16, height: 16, borderRadius: 4, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: on ? tw.accent : 'rgba(255,255,255,0.2)', backgroundColor: on ? 'rgba(192,57,43,0.3)' : 'transparent' }}>
                     <T style={{ fontSize: 10 }}>{on ? '✓' : ''}</T>
                   </View>
                   <T w={on ? 600 : 400} style={{ fontSize: 13, color: on ? tw.accent : c.tCcc }}>{t.label}</T>
-                </Pressable>
+                </Btn>
               );
             })}
           </View>
@@ -244,11 +239,7 @@ function SosModal({ selected, onToggle, onConfirm, onClose, loading, locError, e
             </View>
             <T style={{ flex: 1, fontSize: 11.5, color: 'rgba(255,255,255,0.75)', lineHeight: 17 }}>Acil yardım talebimin sahte olmadığını ve ihbardan kaynaklı doğacak tüm yasal sorumluluğu kabul ediyorum.</T>
           </Pressable>
-          <Pressable onPress={onConfirm} disabled={!can} style={{ opacity: can ? 1 : 0.45, borderRadius: 10, overflow: 'hidden' }}>
-            <LinearGradient colors={['#7b0000', '#c0392b', '#ff6b6b']} locations={[0, 0.6, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ paddingVertical: 14, alignItems: 'center' }}>
-              <T w={800} style={{ fontSize: 14, color: '#fff', letterSpacing: 1.12 }}>{loading ? 'Konum alınıyor…' : error ? 'Tekrar dene' : 'İhbarda Bulun'}</T>
-            </LinearGradient>
-          </Pressable>
+          <Btn variant="sosSubmit" onPress={onConfirm} disabled={!can} label={loading ? 'Konum alınıyor…' : error ? 'Tekrar dene' : 'İhbarda Bulun'} />
         </Pressable>
       </Pressable>
     </Modal>
@@ -267,9 +258,7 @@ function Lightbox({ photos, start, onClose }: { photos: VenuePhoto[]; start: num
             {photos.map((_, i) => <Pressable key={i} hitSlop={18} onPress={() => setIdx(i)} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: i === idx ? tw.text : 'rgba(255,255,255,0.25)' }} />)}
           </View>
         )}
-        <Pressable onPress={onClose} hitSlop={4} accessibilityLabel="Kapat" style={{ position: 'absolute', top: 56, right: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
-          <T style={{ fontSize: 18 }}>×</T>
-        </Pressable>
+        <Btn variant="lightboxClose" onPress={onClose} hitSlop={4} accessibilityLabel="Kapat" label="×" />
       </Pressable>
     </Modal>
   );
@@ -416,9 +405,7 @@ export function MasaDetayKarti({ masa, archive = false }: { masa: MasaDetayData;
 
       <View style={{ marginBottom: 10 }}>
         {onMyWayDone ? (
-          <View style={{ paddingVertical: 13, backgroundColor: 'rgba(39,174,96,0.12)', borderWidth: 1, borderColor: 'rgba(39,174,96,0.35)', borderRadius: 9999, alignItems: 'center' }}>
-            <T w={700} style={{ color: GREEN, fontSize: 12, letterSpacing: 1.2 }}>✓ YOLA ÇIKTIĞINI BİLDİRDİN</T>
-          </View>
+          <Btn variant="doneGreen" disabled style={{ opacity: 1 }} label="✓ Yola çıktığını bildirdin" />
         ) : (
           <BtnPrimary label={onMyWayLoading ? 'Bildiriliyor…' : 'Yola Çıktım'} full disabled={archive || onMyWayLoading} onPress={onMyWay} />
         )}
@@ -441,11 +428,7 @@ export function MasaDetayKarti({ masa, archive = false }: { masa: MasaDetayData;
             </View>
           ) : (
             <>
-              <Pressable onPress={() => setShowSos(true)} style={{ borderRadius: 12, overflow: 'hidden', shadowColor: 'rgba(192,57,43,0.45)', shadowOpacity: 1, shadowRadius: 10 }}>
-                <LinearGradient colors={['#7b0000', '#c0392b', '#ff6b6b']} locations={[0, 0.5, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ paddingVertical: 15, alignItems: 'center' }}>
-                  <T w={800} style={{ fontSize: 14, color: '#fff', letterSpacing: 1.68 }}>ACİL YARDIM</T>
-                </LinearGradient>
-              </Pressable>
+              <Btn variant="sos" onPress={() => setShowSos(true)} label="Acil Yardım" />
               <View style={{ marginTop: 10, padding: 10, paddingHorizontal: 12, backgroundColor: 'rgba(192,57,43,0.07)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.22)', borderRadius: 8 }}>
                 <T style={{ fontSize: 10.5, lineHeight: 16, color: 'rgba(255,107,107,0.65)' }}>
                   Masada veya masadan sonrasında, masadaki birisi tarafından fiziksel şiddet, alıkoyulma, taciz veya istismar eylemiyle karşı karşıya kalırsan ya da kalma ihtimali yaşarsan hemen butona bas ve eylemin türünü seçerek onayla. Konum bilgisi ve masadaki kişilerin kimlik bilgileri emniyet birimleriyle anında paylaşılır. <T w={700} style={{ fontSize: 10.5, color: 'rgba(255,107,107,0.85)' }}>Güvenliğin bizim için çok önemli.</T>

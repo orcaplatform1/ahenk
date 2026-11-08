@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { venueApi } from '@/lib/venueApi';
 import { OtpInput } from '@/components/OtpInput';
-import { BtnPrimary, Input, Serif, T } from '@/components/ui';
+import { Btn, BtnPrimary, Input, Serif, T } from '@/components/ui';
 import { c, tw } from '@/theme/theme';
 
 export default function MekanSifremiUnuttum() {
@@ -47,7 +47,7 @@ export default function MekanSifremiUnuttum() {
             <BtnPrimary label={loading ? 'Kaydediliyor…' : 'Şifreyi Güncelle'} full disabled={loading} onPress={reset} />
           </View>
         )}
-        <Pressable onPress={() => router.back()} style={{ alignItems: 'center', marginTop: 20, minHeight: 44, justifyContent: 'center' }}><T style={{ fontSize: 12, color: c.t888 }}>Girişe dön</T></Pressable>
+        <Btn variant="textSmall" style={{ alignSelf: 'center', marginTop: 20 }} label="Girişe dön" textStyle={{ color: c.t888 }} onPress={() => router.back()} />
       </View>
     </View>
   );

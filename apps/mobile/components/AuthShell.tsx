@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Input, T, Title } from './ui';
+import { Btn, Input, T, Title } from './ui';
 import { ll, sans } from '@/theme/theme';
 
 export function AuthShell({ title, subtitle, children }: { title?: string; subtitle?: string; children: React.ReactNode }) {
@@ -61,10 +61,7 @@ export function Toggle<K extends string>({ items, value, onChange }: { items: { 
       {items.map(it => {
         const on = it.key === value;
         return (
-          <Pressable key={it.key} onPress={() => onChange(it.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
-            style={{ flex: 1, paddingVertical: 8, minHeight: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, backgroundColor: on ? 'rgba(192,57,43,0.18)' : 'transparent', borderColor: on ? 'rgba(192,57,43,0.35)' : 'transparent' }}>
-            <T w={500} style={{ fontSize: 13, color: on ? '#ff6b6b' : '#666' }}>{it.label}</T>
-          </Pressable>
+          <Btn key={it.key} variant="segment" selected={on} label={it.label} onPress={() => onChange(it.key)} />
         );
       })}
     </View>

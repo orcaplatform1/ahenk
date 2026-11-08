@@ -3,6 +3,8 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getAccess, getKind } from '@/lib/session';
+import { refreshAtLaunch } from '@/lib/api';
+import { refreshVenueSession } from '@/lib/venueApi';
 import { useReduceMotion } from '@/lib/motion';
 import { c, sans, tw } from '@/theme/theme';
 
@@ -24,15 +26,13 @@ export default function Acilis() {
     let alive = true;
     const started = Date.now();
     (async () => {
+      // Kalıcı oturum: her açılışta mevcut yenileme akışı (üye: /auth/refresh, mekân: /venue-panel/refresh)
       const kind = await getKind();
-      const token = await getAccess();
+      let dest: '/mekan/bilgiler' | '/(tabs)' | '/giris' = '/giris';
+      if (kind === 'venue') dest = (await refreshVenueSession()) === 'expired' ? '/giris' : '/mekan/bilgiler';
+      else if (await getAccess()) dest = (await refreshAtLaunch()) === 'expired' ? '/giris' : '/(tabs)';
       const wait = Math.max(0, SPLASH_MS - (Date.now() - started));
-      setTimeout(() => {
-        if (!alive) return;
-        if (kind === 'venue') router.replace('/mekan/bilgiler');
-        else if (token) router.replace('/(tabs)');
-        else router.replace('/giris');
-      }, wait);
+      setTimeout(() => { if (alive) router.replace(dest); }, wait);
     })();
     return () => { alive = false; };
   }, [router]);

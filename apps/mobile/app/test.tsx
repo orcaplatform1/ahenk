@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { LIKERT, type Question } from '@/components/TestFlow';
-import { BtnGhost, BtnPrimary, Mono, Serif, Spinner, T } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Mono, Serif, Spinner, T } from '@/components/ui';
 import { c, glassCard, tw } from '@/theme/theme';
 
 export default function Test() {
@@ -58,7 +58,7 @@ export default function Test() {
     return (
       <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
         <T style={{ color: tw.accent, marginBottom: 16 }}>{error}</T>
-        <Pressable hitSlop={12} onPress={() => router.back()}><T style={{ fontSize: 14, color: c.t888 }}>← Dashboard</T></Pressable>
+        <Btn variant="textLink" textStyle={{ fontSize: 14, color: c.t888 }} onPress={() => router.back()} label="← Dashboard" />
       </View>
     );
   }
@@ -85,10 +85,7 @@ export default function Test() {
           {LIKERT.map(({ v, label }) => {
             const sel = answers[q.id] === v;
             return (
-              <Pressable key={v} onPress={() => setAnswers(p => ({ ...p, [q.id]: v }))} accessibilityRole="radio" accessibilityState={{ selected: sel }}
-                style={{ paddingHorizontal: 20, paddingVertical: 16, borderRadius: 12, borderWidth: 1, backgroundColor: sel ? 'rgba(192,57,43,0.12)' : 'rgba(255,255,255,0.02)', borderColor: sel ? 'rgba(192,57,43,0.55)' : 'rgba(255,255,255,0.12)' }}>
-                <T style={{ fontSize: 14, color: sel ? tw.accent : c.t888 }}>{label}</T>
-              </Pressable>
+              <Btn key={v} variant="likertTest" selected={sel} label={label} onPress={() => setAnswers(p => ({ ...p, [q.id]: v }))} />
             );
           })}
         </View>

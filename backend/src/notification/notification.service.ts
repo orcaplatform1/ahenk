@@ -193,7 +193,7 @@ export class NotificationService {
   async getNotifications(userId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
 
-    const [items, total] = await Promise.all([
+    const [items, total, unreadCount] = await Promise.all([
       this.prisma.notification.findMany({
         where: { userId, type: NotificationType.IN_APP },
         orderBy: { createdAt: "desc" },
@@ -202,9 +202,11 @@ export class NotificationService {
         select: { id: true, title: true, body: true, data: true, read: true, createdAt: true },
       }),
       this.prisma.notification.count({ where: { userId, type: NotificationType.IN_APP } }),
+      // Okunmamış toplamı (mobil Bildirimler rozeti)
+      this.prisma.notification.count({ where: { userId, type: NotificationType.IN_APP, read: false } }),
     ]);
 
-    return { items, total, page, totalPages: Math.ceil(total / limit) };
+    return { items, total, page, totalPages: Math.ceil(total / limit), unreadCount };
   }
 
   async markRead(userId: string, notificationId: string): Promise<void> {

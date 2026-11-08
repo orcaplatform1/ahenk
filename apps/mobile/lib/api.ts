@@ -9,31 +9,38 @@ type Listener = () => void;
 const authListeners = new Set<Listener>();
 export function onAuthLost(fn: Listener) { authListeners.add(fn); return () => { authListeners.delete(fn); }; }
 
-let refreshing: Promise<boolean> | null = null;
+type RefreshResult = 'ok' | 'expired' | 'offline';
+let refreshing: Promise<RefreshResult> | null = null;
 
-async function refreshSession(): Promise<boolean> {
+// Backend /auth/refresh: yeni erişim + yeni yenileme token'ı (365 gün kayan süre). Yalnız 401/403'te oturum düşer;
+// ağ hatası ve sunucu hatasında token'lar korunur (çıkış yapılmadıkça oturum açık kalır).
+async function refreshSessionResult(): Promise<RefreshResult> {
   if (refreshing) return refreshing;
-  refreshing = (async () => {
+  refreshing = (async (): Promise<RefreshResult> => {
     try {
       const refreshToken = await getRefresh();
-      if (!refreshToken) return false;
+      if (!refreshToken) return 'expired';
       const res = await fetch(`${API_PREFIX}/auth/refresh`, {
         method: 'POST',
         credentials: 'omit',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
       });
-      if (!res.ok) { await clearTokens(); return false; }
+      if (res.status === 401 || res.status === 403) { await clearTokens(); return 'expired'; }
+      if (!res.ok) return 'offline';
       const data = await res.json() as { accessToken?: string; refreshToken?: string };
-      if (!data.accessToken || !data.refreshToken) { await clearTokens(); return false; }
+      if (!data.accessToken || !data.refreshToken) return 'offline';
       await setTokens(data.accessToken, data.refreshToken);
-      return true;
+      return 'ok';
     } catch {
-      return false;
+      return 'offline';
     }
   })();
   try { return await refreshing; } finally { refreshing = null; }
 }
+
+// Uygulama her açıldığında çağrılır (açılış ekranı)
+export function refreshAtLaunch() { return refreshSessionResult(); }
 
 async function readMessage(res: Response): Promise<string> {
   const body = await res.json().catch(() => null) as { message?: string | string[] } | null;
@@ -59,9 +66,10 @@ async function apiFetch<T>(path: string, init: { method?: string; body?: unknown
     body: init.form ?? (init.body !== undefined ? JSON.stringify(init.body) : undefined),
   });
   if (res.status === 401 && retry && token) {
-    if (await refreshSession()) return apiFetch<T>(path, init, false);
-    authListeners.forEach((l) => l());
-    throw new ApiError('Oturum süresi doldu', 401, null);
+    const r = await refreshSessionResult();
+    if (r === 'ok') return apiFetch<T>(path, init, false);
+    if (r === 'expired') { authListeners.forEach((l) => l()); throw new ApiError('Oturum süresi doldu', 401, null); }
+    throw new ApiError('Bağlantı hatası, tekrar dene.', 0, null);
   }
   if (res.status === 429) throw new ApiError('__rate_limit__', 429, null);
   if (!res.ok) {

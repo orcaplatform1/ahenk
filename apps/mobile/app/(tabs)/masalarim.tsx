@@ -13,7 +13,7 @@ import { KankaPairs } from '@/components/KankaPairs';
 import { DetayAvatar } from '@/components/DetayAvatar';
 import { MasaDetayKarti, type MasaDetayData, type VenuePhoto } from '@/components/MasaDetayKarti';
 import { ConfirmedRadarView, RezervasyonIptal } from '@/components/MasaBekleme';
-import { BtnGhost, BtnPrimary, Card, Head, HIT, Mono, Serif, SkeletonBlock, T } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Card, Head, Mono, Serif, SkeletonBlock, T } from '@/components/ui';
 import { Glow } from './index';
 import { c, ll, llColumn, tw } from '@/theme/theme';
 
@@ -148,9 +148,7 @@ function HistoryList({ history }: { history: HistoryMeeting[] }) {
           <View key={m.id} style={{ borderBottomWidth: i < history.length - 1 ? 1 : 0, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44, paddingVertical: 6 }}>
               <T style={{ flex: 1, fontSize: 13, color: ll.text }}>{[fmtDate(m.date), HISTORY_TYPE[m.type ?? 'GROUP'], m.venueName, m.cityName].filter(Boolean).join(' - ')}</T>
-              <Pressable hitSlop={HIT} onPress={() => setOpenId(open ? null : m.id)} accessibilityLabel={open ? 'Masa kartını kapat' : 'Masa kartını aç'} style={{ padding: 6, transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
-                <T style={{ color: ll.label, fontSize: 14 }}>▾</T>
-              </Pressable>
+              <Btn variant="chevron" accessibilityLabel={open ? 'Masa kartını kapat' : 'Masa kartını aç'} style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }} label="▾" onPress={() => setOpenId(open ? null : m.id)} />
             </View>
             {open && (
               <View style={{ paddingBottom: 12 }}>
@@ -172,9 +170,7 @@ function HistoryList({ history }: { history: HistoryMeeting[] }) {
               </View>
             )}
             {!m.isReviewed && (
-              <Pressable hitSlop={HIT} onPress={() => router.push(`/degerlendirme/${m.id}`)} style={{ alignSelf: 'flex-start', marginBottom: 8 }}>
-                <Mono style={{ fontSize: 11, color: ll.copper }}>Değerlendir</Mono>
-              </Pressable>
+              <Btn variant="monoLink" label="Değerlendir" onPress={() => router.push(`/degerlendirme/${m.id}`)} />
             )}
           </View>
         );

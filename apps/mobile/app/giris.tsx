@@ -4,11 +4,10 @@ import { Image, Linking, Modal, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { API_PREFIX } from '@/lib/config';
 import { api, storeLogin } from '@/lib/api';
-import { setVenueKind } from '@/lib/session';
 import { venueApi } from '@/lib/venueApi';
 import { AuthShell, PasswordInput, PhoneRow, Toggle } from '@/components/AuthShell';
 import { OtpInput } from '@/components/OtpInput';
-import { BtnGhost, BtnPrimary, Card, ErrorText, Input, Serif, T } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, Input, Serif, T } from '@/components/ui';
 import { c, ll, tw } from '@/theme/theme';
 
 interface Sanction { type: 'WARNING' | 'SUSPENSION' | 'BAN'; reason: string; expiresAt: string | null; message: string }
@@ -142,19 +141,15 @@ function MemberLogin() {
         {method === 'whatsapp' && otpStep && (
           <>
             <BtnPrimary label={loading ? 'Doğrulanıyor…' : 'Giriş Yap'} full disabled={loading || !canSubmit} onPress={() => verifyOtp()} />
-            <Pressable disabled={resendIn > 0 || loading} onPress={sendOtp} style={{ minHeight: 44, justifyContent: 'center' }}>
-              <T style={{ fontSize: 13, color: ll.label, textAlign: 'center' }}>{resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}</T>
-            </Pressable>
-            <Pressable onPress={() => { setOtpStep(false); setOtp(''); setError(''); }} style={{ minHeight: 44, justifyContent: 'center' }}>
-              <T style={{ fontSize: 13, color: ll.label, textAlign: 'center' }}>← Numarayı değiştir</T>
-            </Pressable>
+            <Btn variant="textLink" disabled={resendIn > 0 || loading} style={{ opacity: 1 }} onPress={sendOtp} label={resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'} />
+            <Btn variant="textLink" onPress={() => { setOtpStep(false); setOtp(''); setError(''); }} label="← Numarayı değiştir" />
           </>
         )}
         {method === 'email' && <BtnPrimary label={loading ? 'Giriş yapılıyor…' : 'Giriş Yap'} disabled={loading || !canSubmit} style={{ width: '72%', alignSelf: 'center', marginTop: 4 }} onPress={emailLogin} />}
       </View>
       <View style={{ marginTop: 16, gap: 12 }}>
         <BtnGhost label="Şifremi Unuttum" style={{ width: '72%', alignSelf: 'center' }} onPress={() => router.push('/sifremi-unuttum')} />
-        <BtnPrimary label="Kayıt Ol" style={{ width: '72%', alignSelf: 'center' }} onPress={() => router.push('/kayit')} />
+        <BtnPrimary label="Kayıt Ol" full onPress={() => router.push('/kayit')} />
       </View>
     </>
   );
@@ -173,7 +168,8 @@ function VenueLogin() {
   const [error, setError] = useState('');
   const phoneValid = phone.length === 10 && phone.startsWith('5');
 
-  async function done() { await setVenueKind(); router.replace('/mekan/bilgiler'); }
+  // venueApi giriş yanıtındaki token'ları expo-secure-store'a yazar
+  async function done() { router.replace('/mekan/bilgiler'); }
   async function sendOtp() {
     setLoading(true); setError('');
     try { await venueApi.post('/send-login-otp', { phone: `+90${phone}` }); setOtpStep(true); setOtp(''); setResendIn(60); } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
@@ -213,12 +209,8 @@ function VenueLogin() {
         {method === 'whatsapp' && otpStep && (
           <>
             <BtnPrimary label={loading ? 'Doğrulanıyor…' : 'Giriş Yap'} full disabled={loading || otp.length !== 6} onPress={() => verify()} />
-            <Pressable disabled={resendIn > 0 || loading} onPress={sendOtp} style={{ minHeight: 44, justifyContent: 'center' }}>
-              <T style={{ fontSize: 13, color: ll.label, textAlign: 'center' }}>{resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}</T>
-            </Pressable>
-            <Pressable onPress={() => { setOtpStep(false); setOtp(''); setError(''); }} style={{ minHeight: 44, justifyContent: 'center' }}>
-              <T style={{ fontSize: 13, color: ll.label, textAlign: 'center' }}>← Numarayı değiştir</T>
-            </Pressable>
+            <Btn variant="textLink" disabled={resendIn > 0 || loading} style={{ opacity: 1 }} onPress={sendOtp} label={resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'} />
+            <Btn variant="textLink" onPress={() => { setOtpStep(false); setOtp(''); setError(''); }} label="← Numarayı değiştir" />
           </>
         )}
         {method === 'email' && <BtnPrimary label={loading ? 'Giriş yapılıyor…' : 'Giriş Yap'} disabled={loading || !email || !password} style={{ width: '72%', alignSelf: 'center', marginTop: 4 }} onPress={emailLogin} />}

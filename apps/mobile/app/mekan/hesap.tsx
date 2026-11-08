@@ -1,9 +1,9 @@
 // apps/web/app/mekan/panel/hesap/page.tsx karşılığı
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { VenueAuthError, venueApi } from '@/lib/venueApi';
 import { panelCard, useVenuePanel } from '@/lib/venueContext';
-import { BtnPrimary, Input, Serif, T } from '@/components/ui';
+import { Btn, BtnPrimary, Input, Serif, T } from '@/components/ui';
 import { c, tw } from '@/theme/theme';
 
 export default function Hesap() {
@@ -48,14 +48,14 @@ export default function Hesap() {
         <T w={600} style={{ fontSize: 16 }}>Hesabı Sil</T>
         <T style={{ color: c.t888, fontSize: 13.6 }}>Hesabınız kapatılır, mekânınız masa atamalarından çıkar ve panele tekrar giriş yapamazsınız.</T>
         {!confirming ? (
-          <Pressable onPress={() => setConfirming(true)} style={{ minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', alignItems: 'center', justifyContent: 'center' }}><T style={{ color: tw.accent, fontSize: 14.4 }}>Hesabı Sil</T></Pressable>
+          <Btn variant="venueDelete" label="Hesabı Sil" onPress={() => setConfirming(true)} />
         ) : (
           <View style={{ gap: 10 }}>
             <Input {...pass} accessibilityLabel="Onay için şifre" placeholder="Onaylamak için şifreniz" value={delPassword} onChangeText={setDelPassword} />
             {!!delError && <T style={{ color: tw.accent, fontSize: 12.8 }}>{delError}</T>}
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Pressable onPress={() => { setConfirming(false); setDelPassword(''); setDelError(''); }} style={{ flex: 1, minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}><T style={{ color: c.tAaa }}>Vazgeç</T></Pressable>
-              <Pressable onPress={deactivate} disabled={deleting} style={{ flex: 1, minHeight: 44, borderRadius: 10, backgroundColor: c.red, alignItems: 'center', justifyContent: 'center', opacity: deleting ? 0.6 : 1 }}><T style={{ color: '#fff' }}>{deleting ? '…' : 'Hesabı Kapat'}</T></Pressable>
+              <Btn variant="venueCancel" label="Vazgeç" onPress={() => { setConfirming(false); setDelPassword(''); setDelError(''); }} />
+              <Btn variant="venueConfirm" label={deleting ? '…' : 'Hesabı Kapat'} disabled={deleting} onPress={deactivate} />
             </View>
           </View>
         )}

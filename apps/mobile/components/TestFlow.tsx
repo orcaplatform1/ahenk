@@ -2,7 +2,7 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BtnGhost, BtnPrimary, Eyebrow, Mono, Serif, T } from './ui';
+import { Btn, BtnGhost, BtnPrimary, Eyebrow, Mono, Serif, T } from './ui';
 import { ll, tw } from '@/theme/theme';
 
 export interface Question { id: string; text: string; section?: number; sectionTitle?: string }
@@ -39,10 +39,7 @@ export function TestFlow({ questions, current, answers, onPick, onPrev, onNext, 
           {LIKERT.map(({ v, label }) => {
             const sel = q ? answers[q.id] === v : false;
             return (
-              <Pressable key={v} onPress={() => onPick(v)} accessibilityRole="radio" accessibilityState={{ selected: sel }}
-                style={{ paddingHorizontal: 20, paddingVertical: 14, borderRadius: 12, borderWidth: 1, backgroundColor: sel ? 'rgba(192,57,43,0.12)' : 'rgba(255,255,255,0.025)', borderColor: sel ? 'rgba(192,57,43,0.55)' : 'rgba(255,255,255,0.08)' }}>
-                <T style={{ fontSize: 13, color: sel ? tw.accent : ll.label }}>{label}</T>
-              </Pressable>
+              <Btn key={v} variant="likertForm" selected={sel} label={label} onPress={() => onPick(v)} />
             );
           })}
         </View>

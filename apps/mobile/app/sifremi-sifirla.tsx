@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '@/lib/api';
 import { AuthShell, PasswordInput } from '@/components/AuthShell';
 import { OtpInput } from '@/components/OtpInput';
-import { BtnGhost, BtnPrimary, Card, ErrorText, T } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, T } from '@/components/ui';
 import { ll, tw } from '@/theme/theme';
 
 export default function SifremiSifirla() {
@@ -58,9 +58,7 @@ export default function SifremiSifirla() {
             <ErrorText>{error}</ErrorText>
           </Card>
           <BtnPrimary label={loading ? 'Kaydediliyor…' : 'Şifremi Sıfırla'} full disabled={loading || code.length !== 6} onPress={submit} />
-          <Pressable disabled={resendIn > 0 || resending} onPress={resend} style={{ minHeight: 44, justifyContent: 'center' }}>
-            <T style={{ fontSize: 13, color: resendIn > 0 ? tw.muted : ll.label, textAlign: 'center' }}>{resending ? 'Gönderiliyor…' : resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}</T>
-          </Pressable>
+          <Btn variant="textLink" disabled={resendIn > 0 || resending} style={{ opacity: 1 }} textStyle={resendIn > 0 ? { color: tw.muted } : undefined} onPress={resend} label={resending ? 'Gönderiliyor…' : resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'} />
         </View>
       )}
       <View style={{ marginTop: 32, alignItems: 'center' }}><BtnGhost label="Girişe Dön" onPress={() => router.replace('/giris')} /></View>

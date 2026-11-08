@@ -1,7 +1,7 @@
 // Kayıt formu seçicileri: CityPickerField, SiteSelect (ilçe, aramalı), OccupationField, DateField (apps/web/app/kayit, components/BirthDateField)
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { BtnPrimary, HIT, Input, Mono, Sheet, T } from './ui';
+import { Btn, BtnPrimary, Input, Mono, Sheet, T } from './ui';
 import { c, ll, tw } from '@/theme/theme';
 
 export function FieldLabel({ children }: { children: string }) {
@@ -10,9 +10,7 @@ export function FieldLabel({ children }: { children: string }) {
 
 function FieldButton({ text, filled, onPress }: { text: string; filled: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={{ backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, minHeight: 44 }}>
-      <T style={{ fontSize: 13, color: filled ? tw.text : ll.label }}>{text}</T>
-    </Pressable>
+    <Btn variant="fieldSelect" selected={filled} label={text} onPress={onPress} />
   );
 }
 
@@ -31,14 +29,12 @@ export function ListPicker({ label, value, onChange, options, placeholder, title
       <Sheet visible={open} onClose={() => setOpen(false)}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <T style={{ fontSize: 13, color: c.t888 }}>{title}</T>
-          <Pressable hitSlop={HIT} onPress={() => setOpen(false)}><T style={{ color: c.t555, fontSize: 20 }}>×</T></Pressable>
+          <Btn variant="closeX" accessibilityLabel="Kapat" label="×" onPress={() => setOpen(false)} />
         </View>
         {searchable && <Input form placeholder={searchPlaceholder} value={q} onChangeText={setQ} style={{ marginBottom: 8 }} />}
         <ScrollView style={{ maxHeight: 300 }} keyboardShouldPersistTaps="handled">
           {shown.map(o => (
-            <Pressable key={o.value} onPress={() => setTmp(o.value)} style={{ paddingVertical: 13, paddingHorizontal: 14, borderRadius: 8, backgroundColor: tmp === o.value ? 'rgba(192,57,43,0.12)' : 'transparent' }}>
-              <T w={tmp === o.value ? 600 : 400} style={{ fontSize: 15, color: tmp === o.value ? tw.accent : c.tCcc }}>{o.label}</T>
-            </Pressable>
+            <Btn key={o.value} variant="listOption" selected={tmp === o.value} label={o.label} onPress={() => setTmp(o.value)} />
           ))}
         </ScrollView>
         <BtnPrimary label="Seç" full style={{ marginTop: 16 }} onPress={() => { onChange(tmp); setOpen(false); }} />
@@ -56,9 +52,7 @@ function Column({ title, options, selected, onSelect }: { title: string; options
       <T style={{ fontSize: 11, color: ll.label, textAlign: 'center', marginBottom: 6 }}>{title}</T>
       <ScrollView style={{ flex: 1 }}>
         {options.map(o => (
-          <Pressable key={o.value} onPress={() => onSelect(o.value)} style={{ paddingVertical: 10, borderRadius: 8, backgroundColor: o.value === selected ? 'rgba(192,57,43,0.12)' : 'transparent' }}>
-            <T w={o.value === selected ? 600 : 400} style={{ fontSize: 15, textAlign: 'center', color: o.value === selected ? tw.accent : c.tCcc }}>{o.label}</T>
-          </Pressable>
+          <Btn key={o.value} variant="listOption" selected={o.value === selected} label={o.label} style={{ paddingVertical: 10 }} textStyle={{ textAlign: 'center' }} onPress={() => onSelect(o.value)} />
         ))}
       </ScrollView>
     </View>
@@ -83,7 +77,7 @@ export function DateField({ label, value, onChange }: { label: string; value: st
       <Sheet visible={open} onClose={() => setOpen(false)}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <T style={{ fontSize: 13, color: ll.label }}>Doğum tarihi seç</T>
-          <Pressable hitSlop={HIT} onPress={() => setOpen(false)}><T style={{ color: ll.label, fontSize: 20 }}>×</T></Pressable>
+          <Btn variant="closeX" accessibilityLabel="Kapat" label="×" textStyle={{ color: ll.label }} onPress={() => setOpen(false)} />
         </View>
         <View style={{ flexDirection: 'row', gap: 8, height: 220 }}>
           <Column title="Gün" options={Array.from({ length: dim }, (_, i) => ({ value: i + 1, label: String(i + 1) }))} selected={d} onSelect={setD} />

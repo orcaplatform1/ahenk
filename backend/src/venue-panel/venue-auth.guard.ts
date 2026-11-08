@@ -9,6 +9,19 @@ export function venueJwtSecret(config: ConfigService): string {
   return `${config.getOrThrow<string>("JWT_SECRET")}:venue`;
 }
 
+// Mobil mekân yenileme token'ı: ayrı türetilmiş anahtar (erişim token'ı yenileme yerine geçmez, tersi de)
+export function venueRefreshSecret(config: ConfigService): string {
+  return `${config.getOrThrow<string>("JWT_REFRESH_SECRET")}:venue`;
+}
+
+// Web: HttpOnly çerez. Mobil: Authorization: Bearer (çerez saklamaz)
+function venueTokenFrom(req: { cookies?: Record<string, string>; headers: Record<string, string | string[] | undefined> }): string | null {
+  const fromCookie = req.cookies?.[VENUE_COOKIE];
+  if (fromCookie) return fromCookie;
+  const auth = req.headers.authorization;
+  return typeof auth === "string" && auth.startsWith("Bearer ") ? auth.slice(7) : null;
+}
+
 @Injectable()
 export class VenueAuthGuard implements CanActivate {
   constructor(
@@ -19,7 +32,7 @@ export class VenueAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-    const token = req.cookies?.[VENUE_COOKIE];
+    const token = venueTokenFrom(req);
     if (!token) throw new UnauthorizedException("Oturum bulunamadı");
 
     let payload: { sub: string; tv: number };

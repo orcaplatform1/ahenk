@@ -4,7 +4,7 @@ import { FlatList, Modal, Pressable, View } from 'react-native';
 import * as Contacts from 'expo-contacts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
-import { BtnGhost, BtnPrimary, Card, Head, HIT, Input, T } from '../ui';
+import { Btn, BtnGhost, BtnPrimary, Card, Head, Input, T } from '../ui';
 import { ll, tw } from '@/theme/theme';
 
 interface ServerBlock { id: string; phoneNumber?: string; hashedPhone?: string; createdAt: string }
@@ -46,7 +46,7 @@ export function ContactPicker({ visible, onClose, existing, remaining, onPick }:
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
       <View style={{ flex: 1, backgroundColor: '#121212', paddingTop: 16, paddingHorizontal: 16, paddingBottom: insets.bottom + 16, gap: 12 }}>
-        <Head title="Rehberden Seç" right={<Pressable hitSlop={HIT} onPress={onClose}><T style={{ fontSize: 22, color: tw.muted }}>×</T></Pressable>} />
+        <Head title="Rehberden Seç" right={<Btn variant="closeX" accessibilityLabel="Kapat" label="×" textStyle={{ fontSize: 22, color: tw.muted }} onPress={onClose} />} />
         <Input placeholder="Ara" value={q} onChangeText={setQ} />
         {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}
         <FlatList data={shown} keyExtractor={r => r.key} contentContainerStyle={{ gap: 8 }} renderItem={({ item }) => {
@@ -120,9 +120,7 @@ export function RehberTab() {
                 <T style={{ fontSize: 13, color: ll.text2 }}>{display(b, i)}</T>
                 <T style={{ fontSize: 12, color: ll.time, marginTop: 2 }}>{new Date(b.createdAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' })}</T>
               </View>
-              <Pressable hitSlop={HIT} disabled={deleting === b.id} onPress={() => del(b)} style={{ opacity: deleting === b.id ? 0.4 : 1 }}>
-                <T style={{ fontSize: 12, color: ll.label }}>{deleting === b.id ? '…' : 'Sil'}</T>
-              </Pressable>
+              <Btn variant="textSmall" disabled={deleting === b.id} label={deleting === b.id ? '…' : 'Sil'} onPress={() => del(b)} />
             </Card>
           ))}
         </View>

@@ -4,7 +4,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { api } from '@/lib/api';
-import { BtnGhost, BtnPrimary, HIT, Sheet, T } from '../ui';
+import { Btn, BtnGhost, BtnPrimary, HIT, Sheet, T } from '../ui';
 import { c, gender as G, sans, tw } from '@/theme/theme';
 
 type Gender = 'MALE' | 'FEMALE' | null;
@@ -71,7 +71,6 @@ export function KankaSection() {
     try { await api.post('/kanka/unlink', {}); setSheet(null); load(); } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
   }
   const open = (s: 'invite' | 'incoming' | 'kanka') => { setMsg(''); setSentLink(null); setSheet(s); };
-  const pill = { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 999, borderWidth: 1 } as const;
 
   return (
     <>
@@ -80,9 +79,9 @@ export function KankaSection() {
         {state.kanka ? (
           <Pressable onPress={() => open('kanka')} accessibilityLabel="Kanka"><Bubble initials={state.kanka.initials} gender={state.kanka.gender} /></Pressable>
         ) : incoming ? (
-          <Pressable hitSlop={HIT} onPress={() => open('incoming')} style={[pill, { backgroundColor: 'rgba(74,222,128,0.12)', borderColor: 'rgba(74,222,128,0.45)' }]}><T w={600} style={{ fontSize: 12, color: c.ok }}>Davet Var</T></Pressable>
+          <Btn variant="pillGreen" onPress={() => open('incoming')} label="Davet Var" />
         ) : (
-          <Pressable hitSlop={HIT} onPress={() => open('invite')} style={[pill, { backgroundColor: 'rgba(192,57,43,0.18)', borderColor: 'rgba(192,57,43,0.5)' }]}><T w={600} style={{ fontSize: 12, color: tw.accent }}>Davet Et</T></Pressable>
+          <Btn variant="pillRed" onPress={() => open('invite')} label="Davet Et" />
         )}
       </View>
       {!state.kanka && state.outgoingInvite && (
@@ -168,9 +167,7 @@ export function KankaSection() {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <BtnGhost label="Kapat" style={{ flex: 1 }} onPress={() => setSheet(null)} />
               {!state.kanka.locked && (
-                <Pressable onPress={unlink} disabled={busy} style={{ flex: 1, paddingVertical: 8, borderRadius: 999, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(192,57,43,0.6)', backgroundColor: 'rgba(192,57,43,0.06)', opacity: busy ? 0.5 : 1 }}>
-                  <T w={600} style={{ fontSize: 14, color: c.ghostRedDot }}>{busy ? '…' : 'Kankalıktan Çıkar'}</T>
-                </Pressable>
+                <Btn variant="dangerPill" onPress={unlink} disabled={busy} label={busy ? '…' : 'Kankalıktan Çıkar'} />
               )}
             </View>
           </>

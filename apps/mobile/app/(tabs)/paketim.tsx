@@ -9,8 +9,8 @@ import { api } from '@/lib/api';
 import { startPurchase } from '@/lib/purchase';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { useReduceMotion } from '@/lib/motion';
-import { BtnPrimary, Card, Head, MaintenanceNotice, Serif, SkeletonBlock, T } from '@/components/ui';
-import { clockMS, useWinback, WinbackHost } from '@/components/Winback';
+import { Btn, BtnPrimary, Card, Head, MaintenanceNotice, Serif, SkeletonBlock, T } from '@/components/ui';
+import { clockMS, useWinback } from '@/components/Winback';
 import { Glow } from './index';
 import { c, ll, sans, tw } from '@/theme/theme';
 
@@ -120,7 +120,6 @@ export default function Paketim() {
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
       <Glow />
-      <WinbackHost />
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 32, paddingHorizontal: 16, paddingBottom: 32, gap: 20, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
         {loading ? <SkeletonBlock lines={4} /> : (
           <>
@@ -168,13 +167,9 @@ export default function Paketim() {
                 </T>
                 {refundMsg ? <T style={{ fontSize: 14, color: refundMsg.ok ? c.ok : tw.accent }}>{refundMsg.text}</T>
                   : shownRefunds.length > 0 ? shownRefunds.map((o) => (
-                    <Pressable key={o} disabled={refundLoading} onPress={() => refund(o)} style={{ paddingVertical: 8, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(192,57,43,0.6)', backgroundColor: 'rgba(192,57,43,0.06)', minHeight: 44, justifyContent: 'center' }}>
-                      <T w={500} style={{ fontSize: 14, color: c.ghostRedDot }}>{refundLoading ? 'Gönderiliyor…' : REFUND_LABEL[o]}</T>
-                    </Pressable>
+                    <Btn key={o} variant="refund" disabled={refundLoading} onPress={() => refund(o)} label={refundLoading ? 'Gönderiliyor…' : REFUND_LABEL[o]} />
                   )) : (
-                    <View style={{ paddingVertical: 8, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', minHeight: 44, justifyContent: 'center' }}>
-                      <T w={500} style={{ fontSize: 14, color: 'rgba(255,255,255,0.25)' }}>İade Talep Et</T>
-                    </View>
+                    <Btn variant="refundDisabled" disabled label="İade Talep Et" style={{ opacity: 1 }} />
                   )}
               </Card>
             )}

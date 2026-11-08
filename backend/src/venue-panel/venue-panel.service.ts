@@ -5,13 +5,15 @@ import { MeetingStatus, ParticipantStatus, VenueAccount } from "../generated/pri
 import bcrypt from "bcryptjs";
 import { PrismaService } from "../prisma/prisma.service";
 import { OtpService } from "../auth/otp/otp.service";
-import { venueJwtSecret } from "./venue-auth.guard";
+import { venueJwtSecret, venueRefreshSecret } from "./venue-auth.guard";
 import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "./venue-media";
 import { CLEARED_MEETING_VENUE, meetingVenueFields, VenueAssignmentService } from "./venue-assignment.service";
 import { isValidDistrict } from "../common/districts";
 import { VenueInfoDto } from "./venue-panel.dto";
 
 export const VENUE_SESSION_DAYS = 7;
+// Mobil mekân yenileme token'ı süresi (her yenilemede baştan başlar)
+export const VENUE_REFRESH_DAYS = 365;
 const LEFT_STATUSES: ParticipantStatus[] = [ParticipantStatus.DECLINED, ParticipantStatus.CANCELLED];
 
 const LOGIN_BLOCKED: Record<string, string> = {
@@ -36,7 +38,30 @@ export class VenuePanelService {
     return email.trim().toLowerCase();
   }
 
-  private sign(account: Pick<VenueAccount, "id" | "tokenVersion">) {
+  // Mobil kalıcı oturum: 365 gün kayan süreli yenileme token'ı. tokenVersion artınca (şifre değişimi, pasife alma) geçersiz olur.
+  async mobileTokens(account: Pick<VenueAccount, "id" | "tokenVersion">) {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.sign(account),
+      this.jwt.signAsync({ sub: account.id, tv: account.tokenVersion, typ: "venue-refresh" }, { secret: venueRefreshSecret(this.config), expiresIn: `${VENUE_REFRESH_DAYS}d` }),
+    ]);
+    return { accessToken, refreshToken };
+  }
+
+  async refresh(refreshToken: string) {
+    let payload: { sub: string; tv: number; typ?: string };
+    try {
+      payload = await this.jwt.verifyAsync(refreshToken, { secret: venueRefreshSecret(this.config) });
+    } catch {
+      throw new UnauthorizedException("Oturum süresi doldu");
+    }
+    const account = await this.prisma.venueAccount.findUnique({ where: { id: payload.sub } });
+    if (payload.typ !== "venue-refresh" || !account || account.status !== "ACTIVE" || !account.venueId || account.tokenVersion !== payload.tv) {
+      throw new UnauthorizedException("Oturum geçersiz");
+    }
+    return this.mobileTokens(account);
+  }
+
+  sign(account: Pick<VenueAccount, "id" | "tokenVersion">) {
     return this.jwt.signAsync(
       { sub: account.id, tv: account.tokenVersion },
       { secret: venueJwtSecret(this.config), expiresIn: `${VENUE_SESSION_DAYS}d` },
@@ -51,7 +76,7 @@ export class VenuePanelService {
     }
     if (account.status !== "ACTIVE") throw new ForbiddenException(LOGIN_BLOCKED[account.status]);
     if (!account.venueId) throw new ForbiddenException("Mekân kaydı bulunamadı, destek ile iletişime geçin.");
-    return this.sign(account);
+    return account;
   }
 
   // Kod kayıtlı telefona WhatsApp ile gider; hesabın varlığı yanıttan anlaşılmaz
@@ -75,7 +100,7 @@ export class VenuePanelService {
     await this.otp.verify(phone, code);
     if (account.status !== "ACTIVE") throw new ForbiddenException(LOGIN_BLOCKED[account.status]);
     if (!account.venueId) throw new ForbiddenException("Mekân kaydı bulunamadı, destek ile iletişime geçin.");
-    return this.sign(account);
+    return account;
   }
 
   async forgotPassword(email: string) {
@@ -215,7 +240,7 @@ export class VenuePanelService {
       where: { id: account.id },
       data: { passwordHash: await bcrypt.hash(newPassword, 12), tokenVersion: { increment: 1 } },
     });
-    return this.sign(updated);
+    return updated;
   }
 
   // Kalıcı silme yok: hesap pasife alınır, mekân atamadan çıkar, yaklaşan masalar yeniden atamaya döner

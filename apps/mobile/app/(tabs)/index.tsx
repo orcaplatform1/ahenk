@@ -148,7 +148,7 @@ export default function EslesmePaneli() {
           )}
           {me?.maintenanceMode && <MaintenanceNotice />}
         </View>
-        <WinbackHost badge />
+        <WinbackHost badge auto={false} />
         <View style={{ overflow: 'hidden' }}>
           <Glow />
           <View style={st.column}>
