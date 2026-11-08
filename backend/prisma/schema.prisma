@@ -722,9 +722,21 @@ model VenueAccount {
   deactivatedAt DateTime?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
+  sessions      VenueSession[]
 
   @@index([phone])
   @@index([status])
+}
+
+// Mobil mekân oturumu (cihaz başına): yenileme token'ı sid taşır; çıkışta yalnız bu cihazın oturumu kapanır (tokenVersion değişmez)
+model VenueSession {
+  id        String       @id @default(cuid())
+  accountId String
+  account   VenueAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  revokedAt DateTime?
+  createdAt DateTime     @default(now())
+
+  @@index([accountId])
 }
 
 enum VenueAccountStatus {

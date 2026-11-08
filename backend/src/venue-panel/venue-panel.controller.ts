@@ -11,7 +11,7 @@ import { VENUE_PHOTO_MAX_BYTES, VENUE_PHOTO_MAX_COUNT } from "./venue-media";
 import {
   VenueChangePasswordDto, VenueDeactivateDto, VenueForgotPasswordDto,
   VenueInfoDto, VenueLoginDto, VenuePhotoDeleteDto, VenueResetPasswordDto,
-  VenueRefreshDto, VenueSendLoginOtpDto, VenueVerifyLoginOtpDto,
+  VenueLogoutDto, VenueRefreshDto, VenueSendLoginOtpDto, VenueVerifyLoginOtpDto,
 } from "./venue-panel.dto";
 
 type VenueRequest = Request & { venueAccount: VenueAccount };
@@ -76,10 +76,12 @@ export class VenuePanelController {
     return this.service.refresh(dto.refreshToken);
   }
 
+  // Web: çerez silinir. Mobil: gövdedeki yenileme token'ının cihaz oturumu kapanır (diğer cihazlar açık kalır)
   @Post("logout")
   @HttpCode(200)
-  logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Body() dto: VenueLogoutDto, @Res({ passthrough: true }) res: Response) {
     res.clearCookie(VENUE_COOKIE, this.cookieOptions());
+    if (dto?.refreshToken) await this.service.logoutDevice(dto.refreshToken);
     return { success: true };
   }
 

@@ -39,26 +39,44 @@ export class VenuePanelService {
   }
 
   // Mobil kalıcı oturum: 365 gün kayan süreli yenileme token'ı. tokenVersion artınca (şifre değişimi, pasife alma) geçersiz olur.
-  async mobileTokens(account: Pick<VenueAccount, "id" | "tokenVersion">) {
+  // Token cihaz oturumunu (VenueSession, sid) taşır: çıkışta yalnız o cihazın oturumu kapanır. sid verilmezse yeni cihaz oturumu açılır.
+  async mobileTokens(account: Pick<VenueAccount, "id" | "tokenVersion">, sid?: string) {
+    const sessionId = sid ?? (await this.prisma.venueSession.create({ data: { accountId: account.id }, select: { id: true } })).id;
     const [accessToken, refreshToken] = await Promise.all([
       this.sign(account),
-      this.jwt.signAsync({ sub: account.id, tv: account.tokenVersion, typ: "venue-refresh" }, { secret: venueRefreshSecret(this.config), expiresIn: `${VENUE_REFRESH_DAYS}d` }),
+      this.jwt.signAsync({ sub: account.id, tv: account.tokenVersion, typ: "venue-refresh", sid: sessionId }, { secret: venueRefreshSecret(this.config), expiresIn: `${VENUE_REFRESH_DAYS}d` }),
     ]);
     return { accessToken, refreshToken };
   }
 
-  async refresh(refreshToken: string) {
-    let payload: { sub: string; tv: number; typ?: string };
+  private async verifyRefresh(refreshToken: string) {
     try {
-      payload = await this.jwt.verifyAsync(refreshToken, { secret: venueRefreshSecret(this.config) });
+      return await this.jwt.verifyAsync<{ sub: string; tv: number; typ?: string; sid?: string }>(refreshToken, { secret: venueRefreshSecret(this.config) });
     } catch {
-      throw new UnauthorizedException("Oturum süresi doldu");
+      return null;
     }
+  }
+
+  async refresh(refreshToken: string) {
+    const payload = await this.verifyRefresh(refreshToken);
+    if (!payload) throw new UnauthorizedException("Oturum süresi doldu");
     const account = await this.prisma.venueAccount.findUnique({ where: { id: payload.sub } });
     if (payload.typ !== "venue-refresh" || !account || account.status !== "ACTIVE" || !account.venueId || account.tokenVersion !== payload.tv) {
       throw new UnauthorizedException("Oturum geçersiz");
     }
-    return this.mobileTokens(account);
+    if (payload.sid) {
+      const session = await this.prisma.venueSession.findUnique({ where: { id: payload.sid } });
+      if (!session || session.accountId !== account.id || session.revokedAt) throw new UnauthorizedException("Oturum geçersiz");
+    }
+    // sid'siz eski token: bu cihaz için oturum açılır
+    return this.mobileTokens(account, payload.sid);
+  }
+
+  // Mobil çıkış: yalnız bu cihazın oturumu kapanır; tokenVersion değişmez, diğer cihazlar açık kalır
+  async logoutDevice(refreshToken: string) {
+    const payload = await this.verifyRefresh(refreshToken);
+    if (!payload || payload.typ !== "venue-refresh" || !payload.sid) return;
+    await this.prisma.venueSession.updateMany({ where: { id: payload.sid, accountId: payload.sub, revokedAt: null }, data: { revokedAt: new Date() } });
   }
 
   sign(account: Pick<VenueAccount, "id" | "tokenVersion">) {

@@ -77,6 +77,12 @@ export const venueApi = {
   delete: <T>(path: string, body: unknown) => request<T>(path, { method: 'DELETE', body }),
 };
 
+// Çıkış: backend yalnız bu cihazın yenileme token'ının oturumunu kapatır (diğer cihazlar açık kalır)
+export async function logoutVenueDevice() {
+  const refreshToken = await getVenueRefresh();
+  await request('/logout', { method: 'POST', body: refreshToken ? { refreshToken } : {} }, false).catch(() => undefined);
+}
+
 export interface VenueMe {
   email: string;
   phone: string;

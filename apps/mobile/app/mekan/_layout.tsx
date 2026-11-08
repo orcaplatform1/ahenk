@@ -4,7 +4,7 @@ import { ScrollView, View } from 'react-native';
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clearVenueTokens } from '@/lib/session';
-import { VenueAuthError, venueApi, type VenueMe } from '@/lib/venueApi';
+import { logoutVenueDevice, VenueAuthError, venueApi, type VenueMe } from '@/lib/venueApi';
 import { VenuePanelContext } from '@/lib/venueContext';
 import { Btn, Serif, T } from '@/components/ui';
 import { c, tw } from '@/theme/theme';
@@ -26,7 +26,7 @@ export default function MekanLayout() {
   useEffect(() => {
     venueApi.get<VenueMe>('/me').then(setMe).catch((e) => { if (e instanceof VenueAuthError) onAuthLost(); else setError((e as Error).message); });
   }, [onAuthLost]);
-  async function logout() { await venueApi.post('/logout').catch(() => undefined); onAuthLost(); }
+  async function logout() { await logoutVenueDevice(); onAuthLost(); }
 
   return (
     <View style={{ flex: 1, backgroundColor: tw.bg }}>

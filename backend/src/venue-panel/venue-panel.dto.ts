@@ -37,6 +37,13 @@ export class VenueRefreshDto {
   refreshToken: string;
 }
 
+export class VenueLogoutDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  refreshToken?: string;
+}
+
 export class VenueForgotPasswordDto {
   @IsEmail({}, { message: "Geçerli bir e-posta adresi girin" })
   email: string;
