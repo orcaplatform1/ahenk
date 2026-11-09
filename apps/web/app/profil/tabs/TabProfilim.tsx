@@ -2,6 +2,7 @@
 
 import { gColor } from '@ahenk/ui';
 import { KankaSection } from '@/components/KankaSection';
+import { useMasaTabs } from '@/components/live/useMasaTabs';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
@@ -219,7 +220,12 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
   const [displayVenuePreference, setDisplayVenuePreference] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
   const [activeCity, setActiveCity] = useState<string>(user.activeCity ?? '');
   const [activeCityConfirm, setActiveCityConfirm] = useState(false);
-  const [pendingActiveCity, setPendingActiveCity] = useState<string | null>(null);
+  // "Dikkat" penceresinde Kabul Ediyorum'a basılınca yapılacak kayıt
+  const confirmAction = useRef<(() => void) | null>(null);
+  const askConfirm = (fn: () => void) => { confirmAction.current = fn; setActiveCityConfirm(true); };
+  // Aktif masa (Masa Kuruldu / Masa Oluşturuluyor) veya eşleşme süreci (Taramada / sonraki döngü bekleniyor) var mı
+  const { statuses } = useMasaTabs();
+  const inMatching = Object.values(statuses).some(st => st === 'TABLE' || st === 'FORMING' || st === 'SCANNING' || st === 'PENDING');
   const [savingActiveCity, setSavingActiveCity] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -504,7 +510,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
             </p>
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => { setActiveCityConfirm(false); saveActiveCity(pendingActiveCity); }}
+                onClick={() => { setActiveCityConfirm(false); confirmAction.current?.(); confirmAction.current = null; }}
                 className="btn-primary w-full justify-center"
               >
                 Kabul Ediyorum
@@ -534,7 +540,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
             title="Hangi şehirdeki masalara katılmak istersiniz?"
           />
           <button
-            onClick={() => { setPendingActiveCity(activeCity || null); setActiveCityConfirm(true); }}
+            onClick={() => { const v = activeCity || null; askConfirm(() => saveActiveCity(v)); }}
             disabled={savingActiveCity}
             className="btn-primary disabled:opacity-50 whitespace-nowrap"
           >
@@ -547,7 +553,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
               Aktif: <span className="text-[#f5f5f5]">{cities.find(c => c.id === activeCity)?.name ?? '—'}</span>
             </span>
             <button
-              onClick={() => saveActiveCity(null)}
+              onClick={() => (inMatching ? askConfirm(() => saveActiveCity(null)) : saveActiveCity(null))}
               disabled={savingActiveCity}
               className="text-xs text-[#a39c93] hover:text-[#ff6b6b] transition-colors"
             >
@@ -571,7 +577,7 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
             {saveError && <p className="text-accent text-sm">{saveError}</p>}
             <div className="flex gap-2">
               <button onClick={() => setEditingCities(false)} className="flex-1 btn-ghost justify-center">İptal</button>
-              <button onClick={saveCities} disabled={saving} className="flex-1 btn-primary">
+              <button onClick={() => (inMatching && primaryCityId !== displayPrimaryCity?.id ? askConfirm(saveCities) : saveCities())} disabled={saving} className="flex-1 btn-primary">
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
             </div>
