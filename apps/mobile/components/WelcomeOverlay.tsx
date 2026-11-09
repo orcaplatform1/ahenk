@@ -1,8 +1,8 @@
-// app/giris ve app/kayit "Hoş geldin" katmanı: pt-[18%] (genişliğin %18'i), top 30% merkezli 60vw ışıma (rgba(192,57,43,.12) → şeffaf %60),
+// app/giris ve app/kayit "Hoş geldin" katmanı: pt-[18%] (genişliğin %18'i), arka plan tamamen siyah (ışıma yok, durum/gezinme çubuğu altı dahil),
 // açılış ekranı AHENK yazılı logosu (ölçek 0,85 → 1, 0,1 sn gecikme, 0,4 sn), "Hoş geldin," (y 12 → 0, 0,4 sn gecikme), ad soyad (y 6 → 0, 0,55 sn gecikme, 0,35 sn)
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, Modal, View } from 'react-native';
-import { PageGlow, Serif } from './ui';
+import { Serif } from './ui';
 
 function Step({ delay, duration, dy = 0, scale = false, children, style }: { delay: number; duration: number; dy?: number; scale?: boolean; children: React.ReactNode; style?: object }) {
   const v = useRef(new Animated.Value(0)).current;
@@ -11,11 +11,10 @@ function Step({ delay, duration, dy = 0, scale = false, children, style }: { del
   return <Animated.View style={[style, { opacity: v, transform }]}>{children}</Animated.View>;
 }
 
-export function WelcomeOverlay({ visible, bg, name }: { visible: boolean; bg: string; name: string }) {
+export function WelcomeOverlay({ visible, name }: { visible: boolean; name: string }) {
   return (
-    <Modal visible={visible} animationType="fade">
-      <View style={{ flex: 1, backgroundColor: bg, alignItems: 'center', paddingTop: '18%' }}>
-        <PageGlow top={0.3} left={0.5} w={0.6} h={0.6} center color="rgb(192,57,43)" opacity={0.12} stop={0.6} />
+    <Modal visible={visible} animationType="fade" statusBarTranslucent navigationBarTranslucent>
+      <View style={{ flex: 1, backgroundColor: '#000000', alignItems: 'center', paddingTop: '18%' }}>
         {visible && (
           <>
             <Step delay={100} duration={400} scale style={{ alignItems: 'center', marginBottom: 56 }}>

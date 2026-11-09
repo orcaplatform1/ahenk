@@ -106,7 +106,7 @@ function MemberLogin() {
           )}
         </View>
       </Modal>
-      <WelcomeOverlay visible={!!welcome} bg={tw.bg} name={`${welcome?.firstName ?? ''} ${welcome?.lastName ?? ''}`} />
+      <WelcomeOverlay visible={!!welcome} name={`${welcome?.firstName ?? ''} ${welcome?.lastName ?? ''}`} />
 
       <Card>
         <View style={{ marginBottom: 24 }}>

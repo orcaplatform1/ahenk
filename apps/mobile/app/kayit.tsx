@@ -1,7 +1,7 @@
 // apps/web/app/kayit/page.tsx karşılığı: 5 adım (Temel Bilgiler + WhatsApp OTP → Şehir → OCEAN Testi → Mekan Tercihi → Numara Engelleme)
 // S-14: push bildirim izni kayıt tamamlanınca istenir (token alma Firebase dosyaları gelene kadar raporlandı)
 import React, { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,6 +12,7 @@ import { api, storeLogin } from '@/lib/api';
 import { gColor } from '@/lib/masa';
 import { PasswordInput } from '@/components/AuthShell';
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
+import { useKeyboardFieldScroll } from '@/lib/useKeyboardFieldScroll';
 import { OtpInput } from '@/components/OtpInput';
 import { DateField, FieldLabel, ListPicker } from '@/components/Pickers';
 import { TestFlow, type Question } from '@/components/TestFlow';
@@ -34,6 +35,7 @@ const cityLabel = (n: string) => (n === 'Balıkesir' ? 'Balıkesir (Ayvalık / A
 export default function Kayit() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const kb = useKeyboardFieldScroll();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -150,11 +152,11 @@ export default function Kayit() {
   const field = (label: string, el: React.ReactNode) => <View><FieldLabel>{label}</FieldLabel>{el}</View>;
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <WelcomeOverlay visible={success} bg={ll.bg} name={`${f.firstName} ${f.lastName}`} />
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg }} behavior="padding">
+      <WelcomeOverlay visible={success} name={`${f.firstName} ${f.lastName}`} />
       {/* web: top -5%, ortada, 80vw × 60vw, rgba(192,57,43,.08) → şeffaf %60 */}
       <PageGlow top={-0.05} left={0.5} w={0.8} h={0.6} color="rgb(192,57,43)" opacity={0.08} stop={0.6} />
-      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40, paddingHorizontal: 20, maxWidth: 576, width: '100%', alignSelf: 'center' }}>
+      <ScrollView {...kb} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40, paddingHorizontal: 20, maxWidth: 576, width: '100%', alignSelf: 'center' }}>
         <View style={{ alignItems: 'center', marginBottom: 32 }}>
           <Image source={require('@/assets/start_logo.jpg')} style={{ width: 120, height: 120, borderRadius: 60 }} />
         </View>

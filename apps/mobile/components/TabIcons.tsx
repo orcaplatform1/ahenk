@@ -5,18 +5,22 @@ import { Image, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { DetayAvatar } from './DetayAvatar';
-import { mono, tabBadge, tabIcon } from '@/theme/theme';
+import { sans, tabBadge, tabIcon } from '@/theme/theme';
 
-// Sekme ikonunun sağ üstünde sayı rozeti; sayı 0 iken görünmez
+// Bildirimler ikonunun sağ üstünde sayı rozeti; sayı 0 iken görünmez
 export function TabBadge({ count, children }: { count: number; children: React.ReactNode }) {
+  const b = tabBadge;
   return (
     <View>
       {children}
       {count > 0 && (
-        <LinearGradient colors={[...tabBadge.colors]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} accessibilityLabel={`${count}`}
-          style={{ position: 'absolute', top: tabBadge.top, right: tabBadge.right, minWidth: tabBadge.size, height: tabBadge.size, borderRadius: tabBadge.size / 2, paddingHorizontal: tabBadge.padH, borderWidth: tabBadge.borderWidth, borderColor: tabBadge.border, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontFamily: mono(600), fontSize: tabBadge.fontSize, color: tabBadge.text, includeFontPadding: false }}>{count > 99 ? '99+' : count}</Text>
-        </LinearGradient>
+        <View accessibilityLabel={`${count}`} style={{ position: 'absolute', top: b.top, right: b.right, borderRadius: b.size / 2 + b.ringWidth, padding: b.ringWidth, backgroundColor: b.ring,
+          shadowColor: b.glow, shadowOpacity: 0.7, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 6 }}>
+          <LinearGradient colors={[...b.colors]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+            style={{ minWidth: b.size, height: b.size, borderRadius: b.size / 2, paddingHorizontal: b.padH, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontFamily: sans(700), fontSize: b.fontSize, color: b.text, includeFontPadding: false, textAlignVertical: 'center' }}>{count > 99 ? '99+' : count}</Text>
+          </LinearGradient>
+        </View>
       )}
     </View>
   );
@@ -30,16 +34,16 @@ export function ProfileTabIcon({ initials, gender, focused }: { initials: string
   );
 }
 
-// Eşleşme Paneli / Masalarım / Bildirimler / Paketim: metal PNG ikon (kenar boşluğu kırpılmış, kare), renk boyama yok;
-// aktif tam görünür, pasif tabIcon.inactiveOpacity (Profilim rozetiyle aynı)
+// Eşleşme Paneli / Masalarım / Bildirimler / Paketim: tek renk PNG ikon (kenar boşluğu kırpılmış, kare);
+// aktif/pasif sekme rengi tintColor ile (tabBar.active / tabBar.inactive)
 const TAB_PNG = {
   radar: require('../assets/tabs/tarama.png'),
   table: require('../assets/tabs/masalarim.png'),
   bell: require('../assets/tabs/bildirimlerim.png'),
   package: require('../assets/tabs/paketlerim.png'),
 } as const;
-export function PngTabIcon({ name, focused }: { name: keyof typeof TAB_PNG; focused: boolean }) {
-  return <Image source={TAB_PNG[name]} resizeMode="contain" style={{ width: tabIcon.size, height: tabIcon.size, opacity: focused ? 1 : tabIcon.inactiveOpacity }} />;
+export function PngTabIcon({ name, color }: { name: keyof typeof TAB_PNG; color: string }) {
+  return <Image source={TAB_PNG[name]} resizeMode="contain" style={{ width: tabIcon.size, height: tabIcon.size, tintColor: color }} />;
 }
 
 const SW = 1.5;

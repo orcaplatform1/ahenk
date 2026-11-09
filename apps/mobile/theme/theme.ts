@@ -184,8 +184,9 @@ export const detayAvatar = { d: 48, strokeWidth: 2.5, fontSize: 11, fontSizeLong
 // ── Sekme ikonu (S-09: 28 pt, oranlar DetayAvatar'dan) ────────────────────
 // Alt menü yazısız: ikon, ikon (24) + yazı (10 pt, ~12 satır) alanını doldurur → çizgi ikon 36; Profilim rozeti aynı oranda (28 × 1,5 = 42)
 export const tabIcon = { size: 42, line: 36, inactiveOpacity: 0.55 } as const;
-// Alt menü sayı rozeti (Bildirimler, Paketim): kırmızı → bakır geçiş (ll.red → ll.copper2), ince çerçeve (ll.copper), mono yazı (ll.text)
-export const tabBadge = { colors: [ll.red, ll.copper2] as const, border: ll.copper, borderWidth: 1, text: ll.text, fontSize: 10, size: 18, padH: 5, top: -4, right: -10 } as const;
+// Alt menü sayı rozeti (yalnız Bildirimler): parlak kırmızı → koyu kırmızı geçiş (tabBar.active → #c0392b), alt menü zemini renginde halka
+// (ikondan ayrık görünür), hafif kırmızı ışıma, kalın beyaz yazı
+export const tabBadge = { colors: [tabBar.active, '#c0392b'] as const, ring: tabBar.bg, ringWidth: 2, glow: tabBar.active, text: '#ffffff', fontSize: 10, size: 20, padH: 5, top: -6, right: -9 } as const;
 // Not: soluk görünüm opaklığı webde seçili olmayan .ll-tab.is-off opaklığıdır (0.55).
 
 // ── Animasyon süreleri (globals.css) ──────────────────────────────────────

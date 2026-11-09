@@ -21,7 +21,7 @@ export default function SifremiUnuttum() {
     catch (e) { setError((e as Error).message); } finally { setLoading(false); }
   }
   return (
-    <AuthShell title="Şifre Sıfırla">
+    <AuthShell title="Şifre Sıfırla" brandLogo>
       <Card style={{ gap: 12 }}>
         <T style={{ color: ll.label, fontSize: 13, textAlign: 'center', marginBottom: 4 }}>Kayıtlı telefon numarana WhatsApp ile 6 haneli bir kod göndereceğiz.</T>
         <PhoneRow value={phone} onChange={(v) => { setPhone(v); setError(''); }} onSubmit={submit} autoFocus />

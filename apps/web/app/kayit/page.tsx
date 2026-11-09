@@ -300,11 +300,8 @@ function KayitPageInner() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="fixed inset-0 flex flex-col items-center justify-start pt-[18%]"
-            style={{ background: '#0a0a0a', zIndex: 100 }}
+            style={{ background: '#000000', zIndex: 100 }}
           >
-            <div className="fixed inset-0 pointer-events-none">
-              <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: '60vw', height: '60vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(192,57,43,0.12) 0%, transparent 60%)', filter: 'blur(60px)' }} />
-            </div>
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}

@@ -1,4 +1,4 @@
-// Alt menü (S-26): 5 sekme, AccountTabBar renkleri, ince çizgi ikonlar, Profilim'de baş harf rozeti, Bildirimler'de sayı rozeti
+// Alt menü (S-26): 5 sekme, AccountTabBar renkleri, ince çizgi ikonlar, Profilim'de baş harf rozeti, yalnız Bildirimler'de sayı rozeti
 import React, { useCallback, useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
 import { api } from '@/lib/api';
@@ -6,7 +6,6 @@ import { buildInitials } from '@/lib/masa';
 import { useAppRefresh } from '@/lib/useAppRefresh';
 import { SOS_POLL_MS, syncSosLive } from '@/lib/sosLive';
 import { PngTabIcon, ProfileTabIcon, TabBadge } from '@/components/TabIcons';
-import { remainingRights, type RightsSub } from '@/lib/planRights';
 import { ShakeReport } from '@/components/ShakeReport';
 import { WinbackHost } from '@/components/Winback';
 import { tabBar, tabIcon } from '@/theme/theme';
@@ -18,11 +17,8 @@ export const unreadBus = { listeners: new Set<() => void>(), emit() { this.liste
 export default function TabsLayout() {
   const [me, setMe] = useState<Me | null>(null);
   const [unread, setUnread] = useState(0);
-  const [rights, setRights] = useState(0);
   const loadUnread = useCallback(() => {
     api.get<{ unreadCount?: number }>('/notifications?page=1&limit=1').then((r) => setUnread(r?.unreadCount ?? 0)).catch(() => {});
-    // Paketim rozeti: aktif paketlerdeki kalan toplam masa hakkı
-    api.get<{ subscriptions?: RightsSub[]; packageCycles?: number }>('/payment/subscriptions').then((r) => setRights(remainingRights(r?.subscriptions ?? [], r?.packageCycles ?? 4))).catch(() => {});
   }, []);
   useEffect(() => {
     api.get<Me>('/auth/me').then(setMe).catch(() => {});
@@ -55,10 +51,10 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: '#0a0a0a' },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Eşleşme Paneli', tabBarIcon: ({ focused }) => <PngTabIcon name="radar" focused={focused} /> }} />
-      <Tabs.Screen name="masalarim" options={{ title: 'Masalarım', tabBarIcon: ({ focused }) => <PngTabIcon name="table" focused={focused} /> }} />
-      <Tabs.Screen name="bildirimler" options={{ title: 'Bildirimler', tabBarIcon: ({ focused }) => <TabBadge count={unread}><PngTabIcon name="bell" focused={focused} /></TabBadge> }} />
-      <Tabs.Screen name="paketim" options={{ title: 'Paketim', tabBarIcon: ({ focused }) => <TabBadge count={rights}><PngTabIcon name="package" focused={focused} /></TabBadge> }} />
+      <Tabs.Screen name="index" options={{ title: 'Eşleşme Paneli', tabBarIcon: ({ color }) => <PngTabIcon name="radar" color={String(color)} /> }} />
+      <Tabs.Screen name="masalarim" options={{ title: 'Masalarım', tabBarIcon: ({ color }) => <PngTabIcon name="table" color={String(color)} /> }} />
+      <Tabs.Screen name="bildirimler" options={{ title: 'Bildirimler', tabBarIcon: ({ color }) => <TabBadge count={unread}><PngTabIcon name="bell" color={String(color)} /></TabBadge> }} />
+      <Tabs.Screen name="paketim" options={{ title: 'Paketim', tabBarIcon: ({ color }) => <PngTabIcon name="package" color={String(color)} /> }} />
       <Tabs.Screen name="profilim" options={{ title: 'Profilim', tabBarIcon: ({ focused }) => <ProfileTabIcon initials={me ? buildInitials(me.firstName, me.lastName) : '?'} gender={me?.profile?.gender} focused={focused} /> }} />
     </Tabs>
     </>

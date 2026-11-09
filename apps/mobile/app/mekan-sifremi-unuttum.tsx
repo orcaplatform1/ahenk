@@ -1,11 +1,11 @@
 // apps/web/app/mekan/sifremi-unuttum/page.tsx karşılığı
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { venueApi } from '@/lib/venueApi';
 import { OtpInput } from '@/components/OtpInput';
-import { Btn, BtnPrimary, Input, Serif, T, Glow } from '@/components/ui';
+import { BtnGhost, BtnPrimary, Input, Serif, T, Glow } from '@/components/ui';
 import { c, tw, ll } from '@/theme/theme';
 
 export default function MekanSifremiUnuttum() {
@@ -30,10 +30,14 @@ export default function MekanSifremiUnuttum() {
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', justifyContent: 'center', paddingHorizontal: 24, paddingTop: insets.top, paddingBottom: insets.bottom }}>
       <Glow />
       <View style={{ width: '100%', maxWidth: 384, alignSelf: 'center' }}>
+        {/* Giriş ekranındaki AHENK yazılı logo, aynı boy */}
+        <View style={{ alignItems: 'center', marginBottom: 24 }}>
+          <Image source={require('@/assets/start_logo.jpg')} style={{ width: 120, height: 120, borderRadius: 60 }} accessibilityLabel="Ahenk" />
+        </View>
         <Serif style={{ fontSize: 36, textAlign: 'center', marginBottom: 8 }}>Şifre Sıfırla</Serif>
         {!sent ? (
           <View style={{ gap: 12, marginTop: 24 }}>
-            <T style={{ color: c.t666, fontSize: 14, textAlign: 'center' }}>Mekân e-postanızı girin, kayıtlı WhatsApp numaranıza 6 haneli kod gönderelim.</T>
+            <T style={{ color: c.t666, fontSize: 14, textAlign: 'center' }}>M. e-postanızı girin, kayıtlı WhatsApp numaranıza 6 haneli kod gönderelim.</T>
             <Input keyboardType="email-address" autoCapitalize="none" accessibilityLabel="E-posta" placeholder="E-posta" value={email} onChangeText={setEmail} />
             {!!error && <T style={{ fontSize: 12, color: tw.accent }}>{error}</T>}
             <BtnPrimary label={loading ? 'Gönderiliyor…' : 'Kod Gönder'} full disabled={loading || !email} style={loading ? { opacity: 0.7 } : undefined} onPress={sendCode} />
@@ -48,7 +52,7 @@ export default function MekanSifremiUnuttum() {
             <BtnPrimary label={loading ? 'Kaydediliyor…' : 'Şifreyi Güncelle'} full disabled={loading} style={loading ? { opacity: 0.7 } : undefined} onPress={reset} />
           </View>
         )}
-        <Btn variant="textSmall" style={{ alignSelf: 'center', marginTop: 20 }} label="Girişe dön" textStyle={{ color: c.t888 }} onPress={() => router.back()} />
+        <BtnGhost label="Girişe dön" full style={{ marginTop: 12 }} onPress={() => router.back()} />
       </View>
     </View>
   );
