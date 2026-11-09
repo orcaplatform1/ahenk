@@ -235,29 +235,29 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
             return (
               <div key={sub.id} className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-[#a39c93] uppercase tracking-wide">Aktif Paket</span>
-                  <span className="text-sm font-semibold text-[#f4f1ec]">{PLAN_LABEL[sub.plan] ?? sub.plan}</span>
+                  <span className="text-xs font-bold text-white uppercase tracking-wide">Aktif Paket</span>
+                  <span className="text-xs font-semibold" style={{ color: '#aaa' }}>{PLAN_LABEL[sub.plan] ?? sub.plan}</span>
                 </div>
                 {hasGroup && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#a39c93]">Grup masası hakkı</span>
-                    <span className="text-xs text-[#f4f1ec]">
+                    <span className="text-xs" style={{ color: '#aaa' }}>Grup masası hakkı</span>
+                    <span className="text-xs" style={{ color: '#aaa' }}>
                       {sub.groupCycles >= packageCycles ? 'Süresi doldu' : `${sub.groupRights}/${totalGroup} kaldı · ${sub.groupCycles}/${packageCycles} döngü`}
                     </span>
                   </div>
                 )}
                 {isKankamla && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#a39c93]">Kankamla masası hakkı</span>
-                    <span className="text-xs text-[#f4f1ec]">
+                    <span className="text-xs" style={{ color: '#aaa' }}>Kankamla masası hakkı</span>
+                    <span className="text-xs" style={{ color: '#aaa' }}>
                       {(sub.kankaCycles ?? 0) >= packageCycles ? 'Süresi doldu' : `${sub.kankaRights ?? 0}/2 kaldı · ${sub.kankaCycles ?? 0}/${packageCycles} döngü`}
                     </span>
                   </div>
                 )}
                 {hasOneOnOne && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#a39c93]">Başbaşa masası hakkı</span>
-                    <span className="text-xs text-[#f4f1ec]">
+                    <span className="text-xs" style={{ color: '#aaa' }}>Başbaşa masası hakkı</span>
+                    <span className="text-xs" style={{ color: '#aaa' }}>
                       {sub.usedAt ? 'Kullanıldı' : sub.oneOnOneCycles >= packageCycles ? 'Süresi doldu' : `1/1 kaldı · ${sub.oneOnOneCycles}/${packageCycles} döngü`}
                     </span>
                   </div>
@@ -265,11 +265,14 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
               </div>
             );
           })}
-          <p className="text-xs text-white leading-relaxed border-t border-white/5 pt-3 mt-1">
-            Paketler tek seferliktir; her masa hakkı {packageCycles} döngü (yaklaşık 1 ay) geçerlidir. Bu süre içinde hiç masa kurulamazsa
-            tam iade talep edebilirsin. Bir masa kurulduysa kalan hakkın olsa da hizmet alınmış sayılır ve iade yapılmaz.
-            İade talepleri 5 iş günü içinde değerlendirilir.
-          </p>
+          {/* Not: Sadakat Programı notuyla aynı kutu, yazı rengi ve boyu */}
+          <div className="mt-1" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 14px' }}>
+            <p style={{ color: '#aaa', fontSize: 12, lineHeight: 1.5, margin: 0 }}>
+              Paketler tek seferliktir; her masa hakkı {packageCycles} döngü (yaklaşık 1 ay) geçerlidir. Bu süre içinde hiç masa kurulamazsa
+              tam iade talep edebilirsin. Bir masa kurulduysa kalan hakkın olsa da hizmet alınmış sayılır ve iade yapılmaz.
+              İade talepleri 5 iş günü içinde değerlendirilir.
+            </p>
+          </div>
           {refundMsg ? (
             <p className={`text-sm ${refundMsg.ok ? 'text-green-400' : 'text-accent'}`}>{refundMsg.text}</p>
           ) : shownRefunds.length > 0 ? (

@@ -7,11 +7,6 @@ import { AccountDeletionService } from "./account-deletion.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 
-class SaveCitiesDto {
-  @IsString()
-  primaryCityId: string;
-}
-
 class UpdateVenuePreferenceDto {
   @IsEnum(VenuePreference)
   venuePreference: VenuePreference;
@@ -65,15 +60,6 @@ export class UsersController {
   @ApiOperation({ summary: "Hesap silme talebi oluştur" })
   requestDeletion(@CurrentUser() user: any) {
     return this.accountDeletion.request(user.id);
-  }
-
-  @Post("cities")
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Şehir tercihlerini kaydet" })
-  saveCities(@CurrentUser() user: any, @Body() dto: SaveCitiesDto) {
-    return this.usersService.saveCities(user.id, dto.primaryCityId);
   }
 
   @Patch("venue-preference")

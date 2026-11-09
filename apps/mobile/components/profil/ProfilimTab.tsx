@@ -106,14 +106,13 @@ function AdminChip({ onPress }: { onPress: () => void }) {
 }
 
 export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: UserData; cities: City[]; onLoggedOut: () => void; onAdmin: () => void }) {
-  const [editingCities, setEditingCities] = useState(false);
   const [editingVenue, setEditingVenue] = useState(false);
   const [stats, setStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
   const [refPhone, setRefPhone] = useState('');
   const [refSending, setRefSending] = useState(false);
   const [refMsg, setRefMsg] = useState('');
-  const [primaryCityId, setPrimaryCityId] = useState(user.profile?.primaryCity?.id ?? '');
-  const [displayPrimary, setDisplayPrimary] = useState<City | null>(user.profile?.primaryCity ?? null);
+  // Ana şehir üye tarafından değiştirilemez; yalnız admin panelinden düzeltilir
+  const displayPrimary: City | null = user.profile?.primaryCity ?? null;
   const [venuePref, setVenuePref] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
   const [displayVenue, setDisplayVenue] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
   const [activeCity, setActiveCity] = useState(user.activeCity ?? '');
@@ -186,12 +185,6 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
     setEmailSaving(true); setEmailError('');
     try { await api.patch('/users/change-email', { email: newEmail, currentPassword: emailPw }); setCurrentEmail(newEmail); setEmailMode(false); setNewEmail(''); setEmailPw(''); }
     catch (e) { setEmailError((e as Error).message); } finally { setEmailSaving(false); }
-  }
-  async function saveCities() {
-    if (!primaryCityId) { setSaveError('Ana şehir zorunlu.'); return; }
-    setSaving(true); setSaveError('');
-    try { await api.post('/users/cities', { primaryCityId }); setDisplayPrimary(cities.find(x => x.id === primaryCityId) ?? null); setEditingCities(false); }
-    catch (e) { setSaveError((e as Error).message); } finally { setSaving(false); }
   }
   async function saveActiveCity(cityId: string | null) {
     setSavingActive(true);
@@ -318,17 +311,9 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
         {!!saveError && <T style={{ fontSize: 14, color: tw.accent, marginTop: 4 }}>{saveError}</T>}
       </CardP>
 
-      <CardP title="Şehir Tercihleri" action={!editingCities ? { label: 'Düzenle', onPress: () => setEditingCities(true) } : undefined}>
-        {editingCities ? (
-          <View style={{ gap: 12 }}>
-            <CitySelect label="Ana Şehir *" value={primaryCityId} onChange={setPrimaryCityId} cities={cities} title="Ana şehir seç" />
-            {!!saveError && <T style={{ fontSize: 14, color: tw.accent }}>{saveError}</T>}
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <BtnGhost label="İptal" style={{ flex: 1 }} onPress={() => setEditingCities(false)} />
-              <BtnPrimary label={saving ? 'Kaydediliyor…' : 'Kaydet'} style={{ flex: 1 }} disabled={saving} onPress={() => (inMatching && primaryCityId !== displayPrimary?.id ? askConfirm(saveCities) : saveCities())} />
-            </View>
-          </View>
-        ) : <Row label="Ana Şehir" value={displayPrimary?.name ?? '—'} />}
+      {/* Şehir: ana şehir yalnız gösterilir (düzenleme yok) */}
+      <CardP title="Şehir">
+        <Row label="Ana Şehir" value={displayPrimary?.name ?? '—'} />
       </CardP>
 
       <CardP title="Mekan Tercihi" action={!editingVenue ? { label: 'Düzenle', onPress: () => setEditingVenue(true) } : undefined}>

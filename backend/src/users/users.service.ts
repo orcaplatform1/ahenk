@@ -41,14 +41,7 @@ export class UsersService {
     if (!city?.isActive) throw new BadRequestException("Bu şehir şu an aktif değil");
   }
 
-  async saveCities(userId: string, primaryCityId: string) {
-    await this.assertActiveCity(primaryCityId);
-    await this.prisma.profile.update({
-      where: { userId },
-      data: { primaryCity: primaryCityId },
-    });
-    return { ok: true };
-  }
+  // Ana şehir (primaryCity) üye tarafından değiştirilemez; yalnız admin panelinden (admin.service updateUser cityId) düzeltilir
 
   async updateVenuePreference(userId: string, venuePreference: VenuePreference) {
     await this.prisma.profile.update({

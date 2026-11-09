@@ -153,18 +153,21 @@ export default function Paketim() {
                   return (
                     <View key={s.id} style={{ gap: 8 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <T w={500} style={{ fontSize: 12, color: ll.label, letterSpacing: 0.3 }}>AKTİF PAKET</T>
-                        <T w={600} style={{ fontSize: 14, color: ll.text }}>{PLAN_LABEL[s.plan] ?? s.plan}</T>
+                        <T w={700} style={{ fontSize: 12, color: '#fff', letterSpacing: 0.3 }}>AKTİF PAKET</T>
+                        <T w={600} style={{ fontSize: 12, color: c.tAaa }}>{PLAN_LABEL[s.plan] ?? s.plan}</T>
                       </View>
-                      {g && <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><T style={{ fontSize: 12, color: ll.label }}>Grup masası hakkı</T><T style={{ fontSize: 12, color: ll.text }}>{s.groupCycles >= packageCycles ? 'Süresi doldu' : `${s.groupRights}/2 kaldı · ${s.groupCycles}/${packageCycles} döngü`}</T></View>}
-                      {k && <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><T style={{ fontSize: 12, color: ll.label }}>Kankamla masası hakkı</T><T style={{ fontSize: 12, color: ll.text }}>{(s.kankaCycles ?? 0) >= packageCycles ? 'Süresi doldu' : `${s.kankaRights ?? 0}/2 kaldı · ${s.kankaCycles ?? 0}/${packageCycles} döngü`}</T></View>}
-                      {o && <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><T style={{ fontSize: 12, color: ll.label }}>Başbaşa masası hakkı</T><T style={{ fontSize: 12, color: ll.text }}>{s.usedAt ? 'Kullanıldı' : s.oneOnOneCycles >= packageCycles ? 'Süresi doldu' : `1/1 kaldı · ${s.oneOnOneCycles}/${packageCycles} döngü`}</T></View>}
+                      {g && <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><T style={{ fontSize: 12, color: c.tAaa }}>Grup masası hakkı</T><T style={{ fontSize: 12, color: c.tAaa }}>{s.groupCycles >= packageCycles ? 'Süresi doldu' : `${s.groupRights}/2 kaldı · ${s.groupCycles}/${packageCycles} döngü`}</T></View>}
+                      {k && <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><T style={{ fontSize: 12, color: c.tAaa }}>Kankamla masası hakkı</T><T style={{ fontSize: 12, color: c.tAaa }}>{(s.kankaCycles ?? 0) >= packageCycles ? 'Süresi doldu' : `${s.kankaRights ?? 0}/2 kaldı · ${s.kankaCycles ?? 0}/${packageCycles} döngü`}</T></View>}
+                      {o && <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><T style={{ fontSize: 12, color: c.tAaa }}>Başbaşa masası hakkı</T><T style={{ fontSize: 12, color: c.tAaa }}>{s.usedAt ? 'Kullanıldı' : s.oneOnOneCycles >= packageCycles ? 'Süresi doldu' : `1/1 kaldı · ${s.oneOnOneCycles}/${packageCycles} döngü`}</T></View>}
                     </View>
                   );
                 })}
-                <T style={{ fontSize: 12, color: '#fff', lineHeight: 19.5, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingTop: 12, marginTop: 4 }}>
-                  Paketler tek seferliktir; her masa hakkı {packageCycles} döngü (yaklaşık 1 ay) geçerlidir. Bu süre içinde hiç masa kurulamazsa tam iade talep edebilirsin. Bir masa kurulduysa kalan hakkın olsa da hizmet alınmış sayılır ve iade yapılmaz. İade talepleri 5 iş günü içinde değerlendirilir.
-                </T>
+                {/* Not: Sadakat Programı notuyla aynı kutu, yazı rengi ve boyu */}
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, marginTop: 4 }}>
+                  <T style={{ color: c.tAaa, fontSize: 12, lineHeight: 18 }}>
+                    Paketler tek seferliktir; her masa hakkı {packageCycles} döngü (yaklaşık 1 ay) geçerlidir. Bu süre içinde hiç masa kurulamazsa tam iade talep edebilirsin. Bir masa kurulduysa kalan hakkın olsa da hizmet alınmış sayılır ve iade yapılmaz. İade talepleri 5 iş günü içinde değerlendirilir.
+                  </T>
+                </View>
                 {refundMsg ? <T style={{ fontSize: 14, color: refundMsg.ok ? tw4.green400 : tw.accent }}>{refundMsg.text}</T>
                   : shownRefunds.length > 0 ? shownRefunds.map((o) => (
                     <Btn key={o} variant="refund" disabled={refundLoading} onPress={() => refund(o)} label={refundLoading ? 'Gönderiliyor…' : REFUND_LABEL[o]} />

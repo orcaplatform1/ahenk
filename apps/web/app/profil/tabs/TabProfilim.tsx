@@ -205,7 +205,6 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
 const ACCOUNT_BTN: React.CSSProperties = { width: '72%', justifyContent: 'center', whiteSpace: 'nowrap', padding: '9px 10px', fontSize: 'clamp(8px, 2.5vw, 10px)', letterSpacing: '0.04em' };
 
 export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
-  const [editingCities, setEditingCities] = useState(false);
   const [editingVenue, setEditingVenue] = useState(false);
 
   /* Sadakat programı */
@@ -214,8 +213,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
   const [referralPhone, setReferralPhone] = useState('');
   const [referralSending, setReferralSending] = useState(false);
   const [referralMsg, setReferralMsg] = useState('');
-  const [primaryCityId, setPrimaryCityId] = useState(user.profile?.primaryCity?.id ?? '');
-  const [displayPrimaryCity, setDisplayPrimaryCity] = useState<City | null>(user.profile?.primaryCity ?? null);
+  // Ana şehir üye tarafından değiştirilemez; yalnız admin panelinden düzeltilir
+  const displayPrimaryCity: City | null = user.profile?.primaryCity ?? null;
   const [venuePreference, setVenuePreference] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
   const [displayVenuePreference, setDisplayVenuePreference] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
   const [activeCity, setActiveCity] = useState<string>(user.activeCity ?? '');
@@ -343,18 +342,6 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
 
   const kycStatus = user.kyc?.status ?? 'PENDING';
   const badge = KYC_BADGE[kycStatus] ?? KYC_BADGE.PENDING;
-
-  async function saveCities() {
-    if (!primaryCityId) { setSaveError('Ana şehir zorunlu.'); return; }
-    setSaving(true); setSaveError('');
-    try {
-      await api.post('/users/cities', { primaryCityId });
-      api.clearMeCache();
-      setDisplayPrimaryCity(cities.find(c => c.id === primaryCityId) ?? null);
-      setEditingCities(false);
-    } catch (e) { setSaveError((e as Error).message); }
-    finally { setSaving(false); }
-  }
 
   async function saveActiveCity(cityId: string | null) {
     setSavingActiveCity(true);
@@ -569,24 +556,9 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         {saveError && <p className="text-accent text-sm mt-1">{saveError}</p>}
       </Card>
 
-      {/* Şehir tercihleri */}
-      <Card title="Şehir Tercihleri" action={!editingCities ? { label: 'Düzenle', onClick: () => setEditingCities(true) } : undefined}>
-        {editingCities ? (
-          <div className="flex flex-col gap-3">
-            <Select label="Ana Şehir *" value={primaryCityId} onChange={setPrimaryCityId} cities={cities} title="Ana şehir seç" />
-            {saveError && <p className="text-accent text-sm">{saveError}</p>}
-            <div className="flex gap-2">
-              <button onClick={() => setEditingCities(false)} className="flex-1 btn-ghost justify-center">İptal</button>
-              <button onClick={() => (inMatching && primaryCityId !== displayPrimaryCity?.id ? askConfirm(saveCities) : saveCities())} disabled={saving} className="flex-1 btn-primary">
-                {saving ? 'Kaydediliyor…' : 'Kaydet'}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <Row label="Ana Şehir" value={displayPrimaryCity?.name ?? '—'} />
-          </>
-        )}
+      {/* Şehir: ana şehir yalnız gösterilir (düzenleme yok) */}
+      <Card title="Şehir">
+        <Row label="Ana Şehir" value={displayPrimaryCity?.name ?? '—'} />
       </Card>
 
       {/* Mekan tercihi */}
