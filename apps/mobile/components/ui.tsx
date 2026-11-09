@@ -11,7 +11,7 @@ import Svg, { Defs, Ellipse, RadialGradient as SvgRadial, Rect as SvgRect, Stop 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   btn, toggleSwitch, type BtnVariant,
-  btnGhost, btnPrimary, c, fonts, glassCard, inputGlass, ll, llCard, llCta, llEyebrow, llHead, llNote, llTitle, mono, sans, sheet, tw, webLineHeight, liveGlow,
+  btnGhost, btnPrimary, btnTone, c, fonts, glassCard, inputGlass, ll, llCard, llCta, llEyebrow, llHead, llNote, llTitle, mono, sans, sheet, tw, webLineHeight, liveGlow,
 } from '@/theme/theme';
 
 // Web satır yüksekliği: stilde lineHeight yoksa üye tarafında Tailwind boyutları için sınıf değeri, diğer boyutlarda 1.5×;
@@ -88,6 +88,20 @@ export function BtnGhost({ label, style, full, disabled, redDot, textStyle, noUp
       style={({ pressed }) => [s.btn, s.btnGhost, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: btnGhost.disabledOpacity }, style]}>
       <View style={[s.dot, { backgroundColor: redDot ? c.ghostRedDot : btnGhost.dotColor }]} />
       <Text style={withWebLH([s.btnText, { fontFamily: sans(500), color: btnGhost.color }, textStyle])}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
+    </Pressable>
+  );
+}
+
+// .btn-primary + .btn-tone-danger / .btn-tone-safe: geçişli dolgu, renkli gölge, nokta rengi tona göre
+export function BtnTone({ tone, label, style, full, disabled, textStyle, noUpper, ...rest }: BtnProps & { tone: 'danger' | 'safe' }) {
+  const t = btnTone[tone];
+  return (
+    <Pressable hitSlop={HIT} disabled={disabled} accessibilityRole="button" {...rest}
+      style={({ pressed }) => [{ borderRadius: btnPrimary.radius, alignSelf: 'flex-start', shadowColor: t.glow, shadowOpacity: 0.55, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 }, full && s.full, pressed && !disabled && { opacity: 0.85 }, disabled && { opacity: btnPrimary.disabledOpacity }, style]}>
+      <LinearGradient colors={[...t.colors]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={[s.btn, { alignSelf: 'stretch', borderColor: t.border }]}>
+        <View style={[s.dot, { backgroundColor: t.dot }]} />
+        <Text style={withWebLH([s.btnText, { fontFamily: sans(600), color: c.white }, textStyle])}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
+      </LinearGradient>
     </Pressable>
   );
 }

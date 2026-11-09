@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Image, KeyboardAvoidingView, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Btn, Input, PageGlow, T, Title } from './ui';
+import { Btn, Glow, Input, T, Title } from './ui';
 import { ll, sans } from '@/theme/theme';
 import { useKeyboardFieldScroll } from '@/lib/useKeyboardFieldScroll';
 
@@ -12,9 +12,9 @@ export function AuthShell({ title, subtitle, brandLogo, children }: { title?: st
   const insets = useSafeAreaInsets();
   const kb = useKeyboardFieldScroll();
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg }} behavior="padding">
-      {/* web: top -10%, ortada, 70vw, rgba(192,57,43,.09) → şeffaf %60 */}
-      <PageGlow top={-0.1} left={0.5} w={0.7} h={0.7} color="rgb(192,57,43)" opacity={0.09} stop={0.6} />
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }} behavior="padding">
+      {/* Arka plan: M. şifremi unuttum ekranındaki sağ üst kırmızımsı ışıma (Glow) */}
+      <Glow />
       <ScrollView {...kb} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }}>
         <View style={{ width: '100%', maxWidth: 384, alignSelf: 'center' }}>
           <View style={{ marginBottom: 32, alignItems: 'center' }}>

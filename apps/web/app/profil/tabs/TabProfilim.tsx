@@ -696,10 +696,10 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
         </p>
         {deleteError && <p className="text-[#ff6b6b] text-sm mt-3">{deleteError}</p>}
         <div className="mt-5 flex flex-col gap-3">
-          <button type="button" onClick={confirmDelete} disabled={deleteBusy} className="mx-auto block btn-primary disabled:opacity-40" style={{ width: '72%' }}>
-            {deleteBusy ? 'Gönderiliyor…' : 'Onaylıyorum'}
+          <button type="button" onClick={confirmDelete} disabled={deleteBusy} className="mx-auto block btn-primary btn-tone-danger disabled:opacity-40" style={{ width: '72%' }}>
+            {deleteBusy ? 'Gönderiliyor…' : 'Hesabı Sil'}
           </button>
-          <button type="button" onClick={() => setDeleteOpen(false)} className="mx-auto block btn-ghost" style={{ width: '72%' }}>
+          <button type="button" onClick={() => setDeleteOpen(false)} className="mx-auto block btn-primary btn-tone-safe" style={{ width: '72%' }}>
             Vazgeç
           </button>
         </div>

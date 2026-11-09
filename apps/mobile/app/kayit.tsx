@@ -17,7 +17,7 @@ import { OtpInput } from '@/components/OtpInput';
 import { DateField, FieldLabel, ListPicker } from '@/components/Pickers';
 import { TestFlow, type Question } from '@/components/TestFlow';
 import { ContactPicker, normalizeTrPhone } from '@/components/profil/RehberTab';
-import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, Eyebrow, Input, Serif, Spinner, T, Title, PageGlow } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, Eyebrow, Input, Serif, Spinner, T, Title, Glow } from '@/components/ui';
 import { c, ll, tw, tw4 } from '@/theme/theme';
 
 interface City { id: string; name: string }
@@ -152,10 +152,10 @@ export default function Kayit() {
   const field = (label: string, el: React.ReactNode) => <View><FieldLabel>{label}</FieldLabel>{el}</View>;
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg }} behavior="padding">
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }} behavior="padding">
       <WelcomeOverlay visible={success} name={`${f.firstName} ${f.lastName}`} />
-      {/* web: top -5%, ortada, 80vw × 60vw, rgba(192,57,43,.08) → şeffaf %60 */}
-      <PageGlow top={-0.05} left={0.5} w={0.8} h={0.6} color="rgb(192,57,43)" opacity={0.08} stop={0.6} />
+      {/* Arka plan: M. şifremi unuttum ekranındaki sağ üst kırmızımsı ışıma (Glow) */}
+      <Glow />
       <ScrollView {...kb} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40, paddingHorizontal: 20, maxWidth: 576, width: '100%', alignSelf: 'center' }}>
         <View style={{ alignItems: 'center', marginBottom: 32 }}>
           <Image source={require('@/assets/start_logo.jpg')} style={{ width: 120, height: 120, borderRadius: 60 }} />

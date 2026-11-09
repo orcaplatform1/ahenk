@@ -5,7 +5,7 @@ import { useReduceMotion } from '@/lib/motion';
 import { api } from '@/lib/api';
 import { gColor } from '@/lib/masa';
 import { useMasaTabs } from '@/lib/useMasaTabs';
-import { Btn, BtnGhost, BtnPrimary, Card, Head, Input, ModalBox, Row, Sheet, Switch, T } from '../ui';
+import { Btn, BtnGhost, BtnPrimary, BtnTone, Card, Head, Input, ModalBox, Row, Sheet, Switch, T } from '../ui';
 import { getShakeEnabled, setShakeEnabled } from '@/lib/shakePref';
 import { OtpInput } from '../OtpInput';
 import { KankaSection } from './KankaSection';
@@ -384,14 +384,14 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
           : <BtnGhost label="Hesabımı Sil" redDot style={accountBtn.box} textStyle={[accountBtn.text, { color: tw.primaryHover }]} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
       </View>
 
-      <ModalBox visible={deleteOpen} onClose={() => setDeleteOpen(false)} title="Hesabımı Sil">
+      <ModalBox visible={deleteOpen} onClose={() => setDeleteOpen(false)} title="Hesabımı Sil" opaque>
         <T style={{ fontSize: 14, color: ll.text2, lineHeight: 22.75 }}>
           Hesabını silmek üzeresin. Bu işlem geri alınamaz. Talebin onaylandıktan sonra hesabın en geç 48 saat içinde kalıcı olarak silinir. Profilin, kişilik testi sonuçların, kimlik doğrulama bilgilerin ve masa geçmişin sistemden kaldırılır. Kullanılmamış paket hakların iade edilmez ve kullanılamaz hâle gelir. Yasal zorunluluk gereği ödeme ve fatura kayıtların mevzuatta belirtilen süre boyunca saklanır.
         </T>
         {!!deleteError && <T style={{ color: tw.accent, fontSize: 14, marginTop: 12 }}>{deleteError}</T>}
         <View style={{ marginTop: 20, gap: 12 }}>
-          <BtnPrimary label={deleteBusy ? 'Gönderiliyor…' : 'Onaylıyorum'} style={{ width: '72%', alignSelf: 'center' }} disabled={deleteBusy} onPress={confirmDelete} />
-          <BtnGhost label="Vazgeç" style={{ width: '72%', alignSelf: 'center' }} onPress={() => setDeleteOpen(false)} />
+          <BtnTone tone="danger" label={deleteBusy ? 'Gönderiliyor…' : 'Hesabı Sil'} style={{ width: '72%', alignSelf: 'center' }} disabled={deleteBusy} onPress={confirmDelete} />
+          <BtnTone tone="safe" label="Vazgeç" style={{ width: '72%', alignSelf: 'center' }} onPress={() => setDeleteOpen(false)} />
         </View>
       </ModalBox>
     </View>

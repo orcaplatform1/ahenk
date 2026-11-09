@@ -166,6 +166,11 @@ export const btnGhost = {
   radius: 999, padV: 9, padH: 24, size: 11, letterSpacing: 0.14, border: 'rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.88)',
   dot: 4, dotColor: 'rgba(230,225,218,0.5)', gap: 8, disabledOpacity: 0.4,
 } as const;
+// Hesabı Sil (kırmızı) / Vazgeç (yeşil) butonları: web .btn-tone-danger / .btn-tone-safe
+export const btnTone = {
+  danger: { colors: ['#d6453a', '#9e2219'] as const, border: 'rgba(255,140,128,0.45)', dot: '#000000', glow: '#c0392b' },
+  safe: { colors: ['#2fa564', '#17663d'] as const, border: 'rgba(140,235,175,0.4)', dot: '#ffffff', glow: '#22a35a' },
+} as const;
 export const inputGlass = {
   bg: 'rgba(255,255,255,0.10)', border: 'rgba(255,255,255,0.10)', radius: 12, color: '#f5f5f5', placeholder: '#888888',
   focusBorder: 'rgba(192,57,43,0.6)', blur: 8,

@@ -67,8 +67,9 @@ export default function Acilis() {
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   return (
     <View style={{ flex: 1, backgroundColor: '#000000', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-      <Animated.View style={{ marginBottom: 32, transform: [{ rotate }] }}>
-        <Image source={require('@/assets/start_logo.jpg')} style={{ width: 184, height: 184, borderRadius: 92 }} />
+      {/* Yerel açılış ekranıyla (app.json expo-splash-screen imageWidth 160, ekran ortası) aynı boy ve aynı yer */}
+      <Animated.View style={{ transform: [{ rotate }] }}>
+        <Image source={require('@/assets/start_logo.jpg')} style={{ width: 160, height: 160, borderRadius: 80 }} />
       </Animated.View>
       {/* Yazı tipleri yüklenene kadar (birkaç ms) yer tutulur, yazı görünmez; yüklenmemiş yazı tipi adı kullanılmaz */}
       <Text style={{ position: 'absolute', left: 24, right: 24, bottom: insets.bottom + 16, color: tw.text, fontSize: 12, lineHeight: 18, textAlign: 'center', opacity: fontsReady ? 1 : 0, ...(fontsReady ? { fontFamily: sans(400) } : null) }}>
