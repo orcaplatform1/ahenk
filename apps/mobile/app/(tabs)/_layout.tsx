@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { buildInitials } from '@/lib/masa';
 import { useAppRefresh } from '@/lib/useAppRefresh';
 import { SOS_POLL_MS, syncSosLive } from '@/lib/sosLive';
-import { LineIcon, ProfileTabIcon, TabBadge } from '@/components/TabIcons';
+import { PngTabIcon, ProfileTabIcon, TabBadge } from '@/components/TabIcons';
 import { remainingRights, type RightsSub } from '@/lib/planRights';
 import { ShakeReport } from '@/components/ShakeReport';
 import { WinbackHost } from '@/components/Winback';
@@ -55,10 +55,10 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: '#0a0a0a' },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Eşleşme Paneli', tabBarIcon: ({ color }) => <LineIcon name="radar" color={String(color)} /> }} />
-      <Tabs.Screen name="masalarim" options={{ title: 'Masalarım', tabBarIcon: ({ color }) => <LineIcon name="table" color={String(color)} /> }} />
-      <Tabs.Screen name="bildirimler" options={{ title: 'Bildirimler', tabBarIcon: ({ color }) => <TabBadge count={unread}><LineIcon name="bell" color={String(color)} /></TabBadge> }} />
-      <Tabs.Screen name="paketim" options={{ title: 'Paketim', tabBarIcon: ({ color }) => <TabBadge count={rights}><LineIcon name="package" color={String(color)} /></TabBadge> }} />
+      <Tabs.Screen name="index" options={{ title: 'Eşleşme Paneli', tabBarIcon: ({ focused }) => <PngTabIcon name="radar" focused={focused} /> }} />
+      <Tabs.Screen name="masalarim" options={{ title: 'Masalarım', tabBarIcon: ({ focused }) => <PngTabIcon name="table" focused={focused} /> }} />
+      <Tabs.Screen name="bildirimler" options={{ title: 'Bildirimler', tabBarIcon: ({ focused }) => <TabBadge count={unread}><PngTabIcon name="bell" focused={focused} /></TabBadge> }} />
+      <Tabs.Screen name="paketim" options={{ title: 'Paketim', tabBarIcon: ({ focused }) => <TabBadge count={rights}><PngTabIcon name="package" focused={focused} /></TabBadge> }} />
       <Tabs.Screen name="profilim" options={{ title: 'Profilim', tabBarIcon: ({ focused }) => <ProfileTabIcon initials={me ? buildInitials(me.firstName, me.lastName) : '?'} gender={me?.profile?.gender} focused={focused} /> }} />
     </Tabs>
     </>

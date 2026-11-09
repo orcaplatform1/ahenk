@@ -1,7 +1,7 @@
 // Alt menü ikonları. Profilim: DetayAvatar'ın 28 pt kopyası, animasyonsuz (S-08…S-11).
 // Diğer sekmeler: ince çizgi ikonlar (S-26), web ikon çizgi kalınlığı 1.5 (Navbar ikonları).
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { DetayAvatar } from './DetayAvatar';
@@ -28,6 +28,18 @@ export function ProfileTabIcon({ initials, gender, focused }: { initials: string
       <DetayAvatar participant={{ initials, gender }} size={tabIcon.size} animated={false} />
     </View>
   );
+}
+
+// Eşleşme Paneli / Masalarım / Bildirimler / Paketim: metal PNG ikon (kenar boşluğu kırpılmış, kare), renk boyama yok;
+// aktif tam görünür, pasif tabIcon.inactiveOpacity (Profilim rozetiyle aynı)
+const TAB_PNG = {
+  radar: require('../assets/tabs/tarama.png'),
+  table: require('../assets/tabs/masalarim.png'),
+  bell: require('../assets/tabs/bildirimlerim.png'),
+  package: require('../assets/tabs/paketlerim.png'),
+} as const;
+export function PngTabIcon({ name, focused }: { name: keyof typeof TAB_PNG; focused: boolean }) {
+  return <Image source={TAB_PNG[name]} resizeMode="contain" style={{ width: tabIcon.size, height: tabIcon.size, opacity: focused ? 1 : tabIcon.inactiveOpacity }} />;
 }
 
 const SW = 1.5;
