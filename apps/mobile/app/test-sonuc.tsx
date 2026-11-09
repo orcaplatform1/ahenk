@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Defs, Line, Polygon, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { OCEAN_TRAITS } from '@/lib/oceanData';
-import { Btn, BtnGhost, BtnPrimary, Mono, Serif, Spinner, T, Glow } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Mono, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { c, glassCard, sans, tw, ll } from '@/theme/theme';
 
 type Score = Record<'openness' | 'conscientiousness' | 'extraversion' | 'agreeableness' | 'neuroticism', number>;
@@ -78,7 +78,9 @@ export default function TestSonuc() {
     </View>
   );
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: tw.bg }} contentContainerStyle={{ maxWidth: 576, width: '100%', alignSelf: 'center', paddingHorizontal: 20, paddingTop: insets.top + 48, paddingBottom: insets.bottom + 48 }}>
+    <View style={{ flex: 1, backgroundColor: tw.bg }}>
+      <ScreenGlow />
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ maxWidth: 576, width: '100%', alignSelf: 'center', paddingHorizontal: 20, paddingTop: insets.top + 48, paddingBottom: insets.bottom + 48 }}>
       <View style={{ alignItems: 'center', marginBottom: 40 }}>
         <Serif style={{ fontSize: 30, marginBottom: 8 }}>Kişilik Profilin</Serif>
         <T w={600} style={{ fontSize: 12, letterSpacing: 2.4, color: c.t888 }}>OCEAN · BIG FIVE MODELİ</T>
@@ -94,5 +96,6 @@ export default function TestSonuc() {
         <BtnGhost label="Profile Dön" full onPress={() => router.back()} />
       </View>
     </ScrollView>
+    </View>
   );
 }

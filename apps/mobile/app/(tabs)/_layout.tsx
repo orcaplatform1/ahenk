@@ -1,6 +1,7 @@
 // Alt menü (S-26): 5 sekme, AccountTabBar renkleri, ince çizgi ikonlar, Profilim'de baş harf rozeti, yalnız Bildirimler'de sayı rozeti
 import React, { useCallback, useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
 import { buildInitials } from '@/lib/masa';
 import { useAppRefresh } from '@/lib/useAppRefresh';
@@ -15,6 +16,7 @@ interface Me { firstName: string; lastName: string; profile?: { gender?: string 
 export const unreadBus = { listeners: new Set<() => void>(), emit() { this.listeners.forEach((l) => l()); } };
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
   const [me, setMe] = useState<Me | null>(null);
   const [unread, setUnread] = useState(0);
   const loadUnread = useCallback(() => {
@@ -44,8 +46,8 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: tabBar.active,
         tabBarInactiveTintColor: tabBar.inactive,
-        tabBarStyle: { backgroundColor: tabBar.bg, borderTopColor: tabBar.border, borderTopWidth: 1 },
-        // Sekme yazıları kaldırıldı; ikon kutusu büyük ikona göre (tabIcon.size)
+        tabBarStyle: { backgroundColor: tabBar.bg, borderTopColor: tabBar.border, borderTopWidth: 1, height: tabIcon.barHeight + insets.bottom },
+        // Sekme yazıları kaldırıldı; tüm ikonlar eşit boy (tabIcon.size), menü Instagram ölçüsünde ince (tabIcon.barHeight)
         tabBarShowLabel: false,
         tabBarIconStyle: { width: tabIcon.size, height: tabIcon.size },
         sceneStyle: { backgroundColor: '#0a0a0a' },

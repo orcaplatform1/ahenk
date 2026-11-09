@@ -9,7 +9,7 @@ import { venueApi } from '@/lib/venueApi';
 
 export default function MekanSifremiUnuttumPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +21,7 @@ export default function MekanSifremiUnuttumPage() {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      await venueApi.post('/forgot-password', { email });
+      await venueApi.post('/forgot-password', { phone: `+90${phone}` });
       setSent(true);
     } catch (err) { setError((err as Error).message); }
     finally { setLoading(false); }
@@ -34,7 +34,7 @@ export default function MekanSifremiUnuttumPage() {
     if (password !== confirm) { setError('Şifreler eşleşmiyor.'); return; }
     setLoading(true); setError('');
     try {
-      await venueApi.post('/reset-password', { email, code, newPassword: password });
+      await venueApi.post('/reset-password', { phone: `+90${phone}`, code, newPassword: password });
       router.push('/mekan/giris');
     } catch (err) { setError((err as Error).message); setLoading(false); }
   }
@@ -49,10 +49,14 @@ export default function MekanSifremiUnuttumPage() {
         <h1 className="font-serif text-4xl text-[#f5f5f5] text-center mb-2">Şifre Sıfırla</h1>
         {!sent ? (
           <form onSubmit={sendCode} className="flex flex-col gap-3 mt-6">
-            <p className="text-[#666] text-sm text-center">M. e-postanızı girin, kayıtlı WhatsApp numaranıza 6 haneli kod gönderelim.</p>
-            <input className="input-glass w-full px-4 py-3 text-sm" type="email" aria-label="E-posta" placeholder="E-posta" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <p className="text-[#666] text-sm text-center">M. telefon numaranızı girin, WhatsApp numaranıza 6 haneli kod gönderelim.</p>
+            {/* Üye şifre sıfırlamadaki telefon satırı */}
+            <div className="flex gap-2">
+              <div className="flex items-center px-4 text-[#a39c93] text-[13px] select-none shrink-0" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}>+90</div>
+              <input className="input-glass flex-1 px-4 py-3 text-sm" type="tel" inputMode="numeric" aria-label="Telefon" placeholder="5XX XXX XX XX" value={phone} onChange={(e) => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setError(''); }} required />
+            </div>
             {error && <p className="text-xs text-[#ff6b6b]">{error}</p>}
-            <button type="submit" disabled={loading} className="btn-primary w-full justify-center disabled:opacity-70">{loading ? 'Gönderiliyor…' : 'Kod Gönder'}</button>
+            <button type="submit" disabled={loading || !(phone.length === 10 && phone.startsWith('5'))} className="btn-primary w-full justify-center disabled:opacity-70">{loading ? 'Gönderiliyor…' : 'Kod Gönder'}</button>
           </form>
         ) : (
           <form onSubmit={reset} className="flex flex-col gap-3 mt-6">

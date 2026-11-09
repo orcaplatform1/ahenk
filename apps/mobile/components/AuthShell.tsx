@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Image, KeyboardAvoidingView, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Btn, Glow, Input, T, Title } from './ui';
+import { Btn, Glow, Input, T, Title, ScreenGlow } from './ui';
 import { ll, sans } from '@/theme/theme';
 import { useKeyboardFieldScroll } from '@/lib/useKeyboardFieldScroll';
 
@@ -13,6 +13,7 @@ export function AuthShell({ title, subtitle, brandLogo, children }: { title?: st
   const kb = useKeyboardFieldScroll();
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }} behavior="padding">
+      <ScreenGlow />
       {/* Arka plan: M. şifremi unuttum ekranındaki sağ üst kırmızımsı ışıma (Glow) */}
       <Glow />
       <ScrollView {...kb} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }}>

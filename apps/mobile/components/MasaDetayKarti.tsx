@@ -250,16 +250,35 @@ function SosModal({ selected, onToggle, onConfirm, onClose, loading, locError, e
 
 function Lightbox({ photos, start, onClose }: { photos: VenuePhoto[]; start: number; onClose: () => void }) {
   const [idx, setIdx] = useState(start);
+  const [w, setW] = useState(0);
+  const touchX = useRef<number | null>(null);
+  const swiped = useRef(false);
+  const next = () => setIdx(i => Math.min(i + 1, photos.length - 1));
+  const prev = () => setIdx(i => Math.max(i - 1, 0));
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-        <Image source={{ uri: mediaUrl(photos[idx].url) }} style={{ width: '90%', height: '75%', borderRadius: 12 }} resizeMode="contain" />
+        {/* Fotoğrafın sağ yarısına dokununca sonraki, sol yarısına dokununca önceki; sağa/sola kaydırma ile de geçiş (alttaki noktalar yok) */}
+        <Pressable
+          onLayout={e => setW(e.nativeEvent.layout.width)}
+          onTouchStart={e => { touchX.current = e.nativeEvent.pageX; swiped.current = false; }}
+          onTouchEnd={e => {
+            if (touchX.current === null) return;
+            const dx = e.nativeEvent.pageX - touchX.current;
+            touchX.current = null;
+            if (Math.abs(dx) < 40) return;
+            swiped.current = true;
+            if (dx < 0) next(); else prev();
+          }}
+          onPress={e => {
+            if (swiped.current) { swiped.current = false; return; }
+            if (e.nativeEvent.locationX >= w / 2) next(); else prev();
+          }}
+          style={{ width: '90%', height: '75%' }}
+        >
+          <Image source={{ uri: mediaUrl(photos[idx].url) }} style={{ width: '100%', height: '100%', borderRadius: 12 }} resizeMode="contain" />
+        </Pressable>
         {!!photos[idx].caption && <T style={{ color: c.tAaa, fontSize: 13, marginTop: 12 }}>{photos[idx].caption}</T>}
-        {photos.length > 1 && (
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
-            {photos.map((_, i) => <Pressable key={i} hitSlop={18} onPress={() => setIdx(i)} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: i === idx ? tw.text : 'rgba(255,255,255,0.25)' }} />)}
-          </View>
-        )}
         <Btn variant="lightboxClose" onPress={onClose} hitSlop={4} accessibilityLabel="Kapat" label="×" />
       </Pressable>
     </Modal>

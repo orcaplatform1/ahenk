@@ -17,7 +17,7 @@ import { OtpInput } from '@/components/OtpInput';
 import { DateField, FieldLabel, ListPicker } from '@/components/Pickers';
 import { TestFlow, type Question } from '@/components/TestFlow';
 import { ContactPicker, normalizeTrPhone } from '@/components/profil/RehberTab';
-import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, Eyebrow, Input, Serif, Spinner, T, Title, Glow } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, Eyebrow, Input, Serif, Spinner, T, Title, Glow, ScreenGlow } from '@/components/ui';
 import { c, ll, tw, tw4 } from '@/theme/theme';
 
 interface City { id: string; name: string }
@@ -153,6 +153,7 @@ export default function Kayit() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }} behavior="padding">
+      <ScreenGlow />
       <WelcomeOverlay visible={success} name={`${f.firstName} ${f.lastName}`} />
       {/* Arka plan: M. şifremi unuttum ekranındaki sağ üst kırmızımsı ışıma (Glow) */}
       <Glow />

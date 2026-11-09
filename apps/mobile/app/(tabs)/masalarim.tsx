@@ -14,7 +14,7 @@ import { DetayAvatar } from '@/components/DetayAvatar';
 import { Star } from '@/components/Star';
 import { MasaDetayKarti, type MasaDetayData, type VenuePhoto } from '@/components/MasaDetayKarti';
 import { ConfirmedRadarView, RezervasyonIptal } from '@/components/MasaBekleme';
-import { InlineLH, Btn, BtnGhost, BtnPrimary, Card, Head, Mono, Serif, SkeletonBlock, T, Glow } from '@/components/ui';
+import { InlineLH, Btn, BtnGhost, BtnPrimary, Card, Head, Mono, Serif, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
 import { c, ll, llColumn, tw } from '@/theme/theme';
 
 interface HistoryMeeting {
@@ -248,6 +248,7 @@ export default function Masalarim() {
 
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
+      <ScreenGlow />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 32, paddingHorizontal: 16, paddingBottom: 32, gap: 24, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
         <Glow />
         {!ready ? <SkeletonBlock lines={5} /> : (

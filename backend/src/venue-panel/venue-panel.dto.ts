@@ -45,13 +45,15 @@ export class VenueLogoutDto {
 }
 
 export class VenueForgotPasswordDto {
-  @IsEmail({}, { message: "Geçerli bir e-posta adresi girin" })
-  email: string;
+  @IsString()
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  phone: string;
 }
 
 export class VenueResetPasswordDto {
-  @IsEmail({}, { message: "Geçerli bir e-posta adresi girin" })
-  email: string;
+  @IsString()
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  phone: string;
 
   @IsString()
   @Matches(/^[0-9]{6}$/, { message: "Kod 6 haneli olmalı" })

@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clearVenueTokens } from '@/lib/session';
 import { logoutVenueDevice, VenueAuthError, venueApi, type VenueMe } from '@/lib/venueApi';
 import { VenuePanelContext } from '@/lib/venueContext';
-import { Btn, Serif, T, InlineLH, Glow } from '@/components/ui';
+import { Btn, Serif, T, InlineLH, Glow, ScreenGlow } from '@/components/ui';
 import { c, tw, ll } from '@/theme/theme';
 
 const NAV = [
@@ -30,6 +30,7 @@ export default function MekanLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg }}>
+      <ScreenGlow />
       <View style={{ paddingTop: insets.top, backgroundColor: 'rgba(18,18,18,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' }}>
         <View style={{ paddingTop: 14.4, paddingHorizontal: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>

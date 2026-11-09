@@ -124,6 +124,20 @@ function mapsUrl(url?: string | null, address?: string | null): string | null {
 // ── Lightbox ──────────────────────────────────────────────────────────────
 function Lightbox({ photos, startIdx, onClose }: { photos: VenuePhoto[]; startIdx: number; onClose: () => void }) {
   const [idx, setIdx] = useState(startIdx);
+  // Telefon genişliğinde (responsive) alttaki noktalar gösterilmez; masaüstünde kalır
+  const [narrow, setNarrow] = useState(false);
+  const touchX = useRef<number | null>(null);
+  const swiped = useRef(false);
+  const next = () => setIdx(i => Math.min(i + 1, photos.length - 1));
+  const prev = () => setIdx(i => Math.max(i - 1, 0));
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const u = () => setNarrow(mq.matches);
+    u();
+    mq.addEventListener('change', u);
+    return () => mq.removeEventListener('change', u);
+  }, []);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -150,13 +164,28 @@ function Lightbox({ photos, startIdx, onClose }: { photos: VenuePhoto[]; startId
         key={idx} src={photos[idx].url} alt={photos[idx].caption ?? ''}
         initial={{ scale: 0.93, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.3 }}
-        onClick={e => e.stopPropagation()}
-        style={{ maxWidth: '90vw', maxHeight: '75vh', objectFit: 'contain', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)' }}
+        onClick={e => {
+          e.stopPropagation();
+          if (swiped.current) { swiped.current = false; return; }
+          // Fotoğrafın sağ yarısı → sonraki, sol yarısı → önceki
+          const r = e.currentTarget.getBoundingClientRect();
+          if (e.clientX - r.left >= r.width / 2) next(); else prev();
+        }}
+        onTouchStart={e => { touchX.current = e.touches[0].clientX; swiped.current = false; }}
+        onTouchEnd={e => {
+          if (touchX.current === null) return;
+          const dx = e.changedTouches[0].clientX - touchX.current;
+          touchX.current = null;
+          if (Math.abs(dx) < 40) return;
+          swiped.current = true;
+          if (dx < 0) next(); else prev();
+        }}
+        style={{ maxWidth: '90vw', maxHeight: '75vh', cursor: photos.length > 1 ? 'pointer' : undefined, objectFit: 'contain', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)' }}
       />
       {photos[idx].caption && (
         <p style={{ color: '#aaa', fontSize: 13, marginTop: 12, fontFamily: 'Inter, sans-serif' }}>{photos[idx].caption}</p>
       )}
-      {photos.length > 1 && (
+      {photos.length > 1 && !narrow && (
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }} onClick={e => e.stopPropagation()}>
           {photos.map((_, i) => (
             <button key={i} onClick={() => setIdx(i)}

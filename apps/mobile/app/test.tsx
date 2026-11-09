@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { LIKERT, type Question } from '@/components/TestFlow';
-import { Btn, BtnGhost, BtnPrimary, Mono, PageGlow, Serif, Spinner, T, Glow } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Mono, PageGlow, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { c, glassCard, tw, ll } from '@/theme/theme';
 
 export default function Test() {
@@ -69,6 +69,7 @@ export default function Test() {
   const has = answers[q.id] !== undefined;
   return (
     <View style={{ flex: 1, backgroundColor: tw.bg }}>
+      <ScreenGlow />
     {/* web: sağ üst 40vw rgba(192,57,43,.1) ve sol alt 35vw rgba(192,57,43,.07), şeffaf %65 */}
     <PageGlow top={0.2} right={-0.05} w={0.4} h={0.4} color="rgb(192,57,43)" opacity={0.1} stop={0.65} />
     <PageGlow bottom={0.1} left={-0.05} w={0.35} h={0.35} color="rgb(192,57,43)" opacity={0.07} stop={0.65} />

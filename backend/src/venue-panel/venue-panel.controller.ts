@@ -89,14 +89,14 @@ export class VenuePanelController {
   @HttpCode(200)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   forgotPassword(@Body() dto: VenueForgotPasswordDto) {
-    return this.service.forgotPassword(dto.email);
+    return this.service.forgotPassword(dto.phone);
   }
 
   @Post("reset-password")
   @HttpCode(200)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   resetPassword(@Body() dto: VenueResetPasswordDto) {
-    return this.service.resetPassword(dto.email, dto.code, dto.newPassword);
+    return this.service.resetPassword(dto.phone, dto.code, dto.newPassword);
   }
 
   @Get("me")

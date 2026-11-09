@@ -304,6 +304,16 @@ export function PageGlow({ top, bottom, left, right, w, h, color, opacity, stop,
   );
 }
 
+// Eşleşme Paneli (app/(tabs)/index.tsx) sabit ışığının aynısı: ekrana sabit, sayfa kaydırılınca yerinde kalır (ScrollView dışına, kök View'in ilk çocuğu olarak konur)
+export function ScreenGlow() {
+  return (
+    <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width="100%" height="100%">
+      <Defs><SvgRadial id="screenfix" cx="70%" cy="30%" rx="50%" ry="40%"><Stop offset="0" stopColor="rgb(192,57,43)" stopOpacity={0.1} /><Stop offset="0.7" stopColor="rgb(192,57,43)" stopOpacity={0} /></SvgRadial></Defs>
+      <SvgRect width="100%" height="100%" fill="url(#screenfix)" />
+    </Svg>
+  );
+}
+
 // .ll-glow: sağ üst kırmızı ışıma. Kaydırılan içeriğin (ScrollView içeriği) ilk çocuğu olarak konur; web'deki gibi sayfayla birlikte kayar.
 export function Glow({ top = liveGlow.offset, right = liveGlow.offset }: { top?: number; right?: number }) {
   const g = liveGlow;

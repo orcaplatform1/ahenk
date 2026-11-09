@@ -121,16 +121,17 @@ export class VenuePanelService {
     return account;
   }
 
-  async forgotPassword(email: string) {
-    const account = await this.prisma.venueAccount.findUnique({ where: { email: this.normalizeEmail(email) } });
+  // Telefonla şifre sıfırlama: WhatsApp girişiyle aynı kural (numara tek hesaba bağlıysa kod gider)
+  async forgotPassword(phone: string) {
+    const account = await this.accountByPhone(phone);
     if (account?.status === "ACTIVE") {
       await this.otp.send(account.phone).catch((err) => this.logger.warn(`Mekân şifre kodu gönderilemedi: ${err}`));
     }
     return { message: "Hesap varsa kayıtlı WhatsApp numarasına kod gönderildi" };
   }
 
-  async resetPassword(email: string, code: string, newPassword: string) {
-    const account = await this.prisma.venueAccount.findUnique({ where: { email: this.normalizeEmail(email) } });
+  async resetPassword(phone: string, code: string, newPassword: string) {
+    const account = await this.accountByPhone(phone);
     if (account?.status !== "ACTIVE") throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
     await this.otp.verify(account.phone, code);
     await this.prisma.venueAccount.update({

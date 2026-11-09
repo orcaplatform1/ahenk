@@ -4,7 +4,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-nat
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
-import { BtnGhost, Card, ErrorText, Head, Mono, Spinner, T, Glow } from '@/components/ui';
+import { BtnGhost, Card, ErrorText, Head, Mono, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { unreadBus } from './_layout';
 import { c, ll, llColumn, tw, liveGlow } from '@/theme/theme';
 
@@ -76,6 +76,7 @@ export default function Bildirimler() {
 
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
+      <ScreenGlow />
       <FlatList
         data={items}
         keyExtractor={(n) => n.id}

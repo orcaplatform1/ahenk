@@ -187,8 +187,9 @@ export const llTab = { minHeight: 44, padV: 8, padH: 2, gap: 6, labelSize: 11, l
 export const detayAvatar = { d: 48, strokeWidth: 2.5, fontSize: 11, fontSizeLong: 10, textColor: '#f0f0f0', letterSpacing: 0.02 } as const;
 
 // ── Sekme ikonu (S-09: 28 pt, oranlar DetayAvatar'dan) ────────────────────
-// Alt menü yazısız: ikon, ikon (24) + yazı (10 pt, ~12 satır) alanını doldurur → çizgi ikon 36; Profilim rozeti aynı oranda (28 × 1,5 = 42)
-export const tabIcon = { size: 42, line: 36, inactiveOpacity: 0.55 } as const;
+// Alt menü Instagram ölçüsünde (dikeyde ince): tüm ikonlar Profilim rozetiyle eşit boy, 28
+// barHeight: alt güvenli alan hariç menü yüksekliği (varsayılan 49 → 44)
+export const tabIcon = { size: 28, line: 36, inactiveOpacity: 0.55, barHeight: 44 } as const;
 // Alt menü sayı rozeti (yalnız Bildirimler): parlak kırmızı → koyu kırmızı geçiş (tabBar.active → #c0392b), alt menü zemini renginde halka
 // (ikondan ayrık görünür), hafif kırmızı ışıma, kalın beyaz yazı
 export const tabBadge = { colors: [tabBar.active, '#c0392b'] as const, ring: tabBar.bg, ringWidth: 2, glow: tabBar.active, text: '#ffffff', fontSize: 10, size: 20, padH: 5, top: -6, right: -9 } as const;

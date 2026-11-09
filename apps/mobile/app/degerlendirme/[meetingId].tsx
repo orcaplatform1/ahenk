@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { Star } from '@/components/Star';
 import { api } from '@/lib/api';
-import { BtnGhost, BtnPrimary, Card, ModalBox, Mono, Serif, T, Title, PageGlow, Glow } from '@/components/ui';
+import { BtnGhost, BtnPrimary, Card, ModalBox, Mono, Serif, T, Title, PageGlow, Glow, ScreenGlow } from '@/components/ui';
 import { c, inputGlass, sans, tw, ll } from '@/theme/theme';
 
 interface Participant { userId: string; initials: string; gender: string | null; isRequester: boolean }
@@ -64,6 +64,7 @@ export default function Degerlendirme() {
   // Klavye açılınca içerik yukarı kayar (Android kenardan kenara düzende pencere küçülmez, iki platformda padding)
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: tw.bg }} behavior="padding">
+      <ScreenGlow />
       <Modal visible={success} animationType="fade">
         <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}><Glow />
           <LinearGradient colors={['#c0392b', '#ff6b6b']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
