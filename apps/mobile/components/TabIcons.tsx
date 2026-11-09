@@ -1,10 +1,26 @@
 // Alt menü ikonları. Profilim: DetayAvatar'ın 28 pt kopyası, animasyonsuz (S-08…S-11).
 // Diğer sekmeler: ince çizgi ikonlar (S-26), web ikon çizgi kalınlığı 1.5 (Navbar ikonları).
 import React from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { DetayAvatar } from './DetayAvatar';
-import { tabIcon } from '@/theme/theme';
+import { mono, tabBadge, tabIcon } from '@/theme/theme';
+
+// Sekme ikonunun sağ üstünde sayı rozeti; sayı 0 iken görünmez
+export function TabBadge({ count, children }: { count: number; children: React.ReactNode }) {
+  return (
+    <View>
+      {children}
+      {count > 0 && (
+        <LinearGradient colors={[...tabBadge.colors]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} accessibilityLabel={`${count}`}
+          style={{ position: 'absolute', top: tabBadge.top, right: tabBadge.right, minWidth: tabBadge.size, height: tabBadge.size, borderRadius: tabBadge.size / 2, paddingHorizontal: tabBadge.padH, borderWidth: tabBadge.borderWidth, borderColor: tabBadge.border, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontFamily: mono(600), fontSize: tabBadge.fontSize, color: tabBadge.text, includeFontPadding: false }}>{count > 99 ? '99+' : count}</Text>
+        </LinearGradient>
+      )}
+    </View>
+  );
+}
 
 export function ProfileTabIcon({ initials, gender, focused }: { initials: string; gender?: string | null; focused: boolean }) {
   return (

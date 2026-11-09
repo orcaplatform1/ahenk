@@ -4,6 +4,7 @@ import { Animated, Easing, Pressable, ScrollView, TextInput, View } from 'react-
 import { useReduceMotion } from '@/lib/motion';
 import { api } from '@/lib/api';
 import { gColor } from '@/lib/masa';
+import { useMasaTabs } from '@/lib/useMasaTabs';
 import { Btn, BtnGhost, BtnPrimary, Card, Head, Input, ModalBox, Row, Sheet, Switch, T } from '../ui';
 import { getShakeEnabled, setShakeEnabled } from '@/lib/shakePref';
 import { OtpInput } from '../OtpInput';
@@ -117,7 +118,12 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
   const [displayVenue, setDisplayVenue] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
   const [activeCity, setActiveCity] = useState(user.activeCity ?? '');
   const [activeConfirm, setActiveConfirm] = useState(false);
-  const [pendingActive, setPendingActive] = useState<string | null>(null);
+  // "Dikkat" penceresinde Kabul Ediyorum'a basılınca yapılacak kayıt
+  const confirmAction = useRef<(() => void) | null>(null);
+  const askConfirm = (fn: () => void) => { confirmAction.current = fn; setActiveConfirm(true); };
+  // Aktif masa (Masa Kuruldu / Masa Oluşturuluyor) veya eşleşme süreci (Taramada / sonraki döngü bekleniyor) var mı
+  const { statuses } = useMasaTabs();
+  const inMatching = Object.values(statuses).some(st => st === 'TABLE' || st === 'FORMING' || st === 'SCANNING' || st === 'PENDING');
   const [savingActive, setSavingActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -291,7 +297,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
           Eşleşme süreciniz <T style={{ fontSize: 13, color: tw.text }}>{displayPrimary?.name ?? 'ana şehriniz'}</T> üzerinden devam etmektedir. Şehri değiştirirseniz eşleşme sıranıza yeniden gireceksiniz.
         </T>
         <View style={{ gap: 8 }}>
-          <BtnPrimary label="Kabul Ediyorum" full onPress={() => { setActiveConfirm(false); saveActiveCity(pendingActive); }} />
+          <BtnPrimary label="Kabul Ediyorum" full onPress={() => { setActiveConfirm(false); confirmAction.current?.(); confirmAction.current = null; }} />
           <BtnGhost label="Kabul Etmiyorum" full onPress={() => setActiveConfirm(false)} />
         </View>
       </Sheet>
@@ -300,12 +306,12 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
         <T style={{ fontSize: 12, color: ll.label, marginBottom: 12 }}>Bu şehirlerden birinde tatilde veya seyahatteyseniz, oradaki grup masası, baş başa masa veya kankamla masasına katılabilirsiniz.</T>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <CitySelect label="" value={activeCity} onChange={setActiveCity} cities={cities} optional placeholder="Şehir seç" title="Hangi şehirdeki masalara katılmak istersiniz?" />
-          <BtnPrimary label={savingActive ? '…' : 'Kaydet'} disabled={savingActive} style={[{ alignSelf: 'stretch' }, savingActive && { opacity: 0.5 }]} onPress={() => { setPendingActive(activeCity || null); setActiveConfirm(true); }} />
+          <BtnPrimary label={savingActive ? '…' : 'Kaydet'} disabled={savingActive} style={[{ alignSelf: 'stretch' }, savingActive && { opacity: 0.5 }]} onPress={() => { const v = activeCity || null; askConfirm(() => saveActiveCity(v)); }} />
         </View>
         {!!activeCity && (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
             <T style={{ fontSize: 12, color: ll.label }}>Aktif: <T style={{ fontSize: 12, color: tw.text }}>{cities.find(x => x.id === activeCity)?.name ?? '—'}</T></T>
-            <Btn variant="textSmall" disabled={savingActive} label="Temizle" onPress={() => saveActiveCity(null)} />
+            <Btn variant="textSmall" disabled={savingActive} label="Temizle" onPress={() => (inMatching ? askConfirm(() => saveActiveCity(null)) : saveActiveCity(null))} />
           </View>
         )}
         {!!activeCity && <T style={{ fontSize: 12, color: ll.label, marginTop: 6 }}>Siz iptal edene kadar bu şehirdeki masalarla eşleşirsiniz.</T>}
@@ -319,7 +325,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
             {!!saveError && <T style={{ fontSize: 14, color: tw.accent }}>{saveError}</T>}
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <BtnGhost label="İptal" style={{ flex: 1 }} onPress={() => setEditingCities(false)} />
-              <BtnPrimary label={saving ? 'Kaydediliyor…' : 'Kaydet'} style={{ flex: 1 }} disabled={saving} onPress={saveCities} />
+              <BtnPrimary label={saving ? 'Kaydediliyor…' : 'Kaydet'} style={{ flex: 1 }} disabled={saving} onPress={() => (inMatching && primaryCityId !== displayPrimary?.id ? askConfirm(saveCities) : saveCities())} />
             </View>
           </View>
         ) : <Row label="Ana Şehir" value={displayPrimary?.name ?? '—'} />}
