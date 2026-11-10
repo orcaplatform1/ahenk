@@ -154,7 +154,7 @@ function KayitPageInner() {
   }, []);
 
   useEffect(() => {
-    api.get<City[]>('/auth/cities').then(setCities).catch(() => setError('Şehir listesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'));
+    api.get<City[]>('/auth/cities').then((list) => setCities(list.filter((c) => CITY_ORDER.includes(c.name)))).catch(() => setError('Şehir listesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'));
     api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => setError('İlçe listesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'));
   }, []);
 
@@ -943,7 +943,8 @@ function OccupationField({ label, value, onChange }: {
   );
 }
 
-const CITY_ORDER = ['İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Balıkesir', 'Aydın', 'Muğla'];
+// Kayıtta şimdilik yalnız bu 4 şehir seçilebilir
+const CITY_ORDER = ['İstanbul', 'Ankara', 'İzmir', 'Antalya'];
 
 function cityLabel(name: string) {
   return name === 'Balıkesir' ? 'Balıkesir (Ayvalık / Akçay)' : name;

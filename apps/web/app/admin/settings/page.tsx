@@ -117,7 +117,7 @@ export default function AdminSettings() {
               />
               <div>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>Canlı katman ilçe verisi</p>
-                <p style={{ margin: '2px 0 8px', fontSize: 11, color: MUTED }}>Statik: İstanbul yoğunluk tablosu. Gerçek: üyelerin ilçe verisinden hesaplanır.</p>
+                <p style={{ margin: '2px 0 8px', fontSize: 11, color: MUTED }}>Statik: Şehirler sayfasındaki ilçe listeleri. Gerçek: üyelerin ilçe verisinden hesaplanır.</p>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {([['static', 'Statik'], ['real', 'Gerçek']] as const).map(([value, label]) => {
                     const on = (settings.liveDistrictSource ?? 'static') === value;

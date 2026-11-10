@@ -26,7 +26,7 @@ import { IsEnum, IsOptional, IsString } from "class-validator";
 import { Request, Response } from "express";
 import { AdminService } from "./admin.service";
 import { PricingService } from "../payment/pricing.service";
-import { AdminAction, planTr, reasonTr, statusTr } from "./admin-action-log";
+import { AdminAction, districtLevelTr, planTr, reasonTr, statusTr } from "./admin-action-log";
 import {
   UpdateUserStatusDto,
   UpdateUserRoleDto,
@@ -38,6 +38,8 @@ import {
   UpdateVenueDto,
   CreateCityDto,
   UpdateCityDto,
+  CreateCityDistrictDto,
+  UpdateCityDistrictDto,
   CancelSubscriptionDto,
   UpdateSettingsDto,
   UpdateWinbackDto,
@@ -341,15 +343,52 @@ export class AdminController {
   }
 
   @Post("cities")
-  @Roles(UserRole.SUPERADMIN)
   createCity(@Body() dto: CreateCityDto) {
     return this.adminService.createCity(dto.name);
   }
 
   @Patch("cities/:id")
-  @Roles(UserRole.SUPERADMIN)
   updateCity(@Param("id") id: string, @Body() dto: UpdateCityDto) {
     return this.adminService.updateCity(id, dto);
+  }
+
+  // Şehir silme ve ilçe işlemleri ADMIN + SUPERADMIN; ADMIN işlemleri İşlem Kayıtları'nda görünür
+  @AdminAction("CITY_DELETE", (c) => `"${String((c.result as { name?: string })?.name ?? "")}" şehrini sildi`)
+  @Delete("cities/:id")
+  deleteCity(@Param("id") id: string) {
+    return this.adminService.deleteCity(id);
+  }
+
+  @Get("cities/:id/districts")
+  listCityDistricts(@Param("id") id: string) {
+    return this.adminService.listCityDistricts(id);
+  }
+
+  @AdminAction("CITY_DISTRICT_ADD", (c) => {
+    const r = c.result as { name?: string; cityName?: string; level?: number };
+    return `${r.cityName} şehrine "${r.name}" ilçesini ekledi (${districtLevelTr(r.level)})`;
+  })
+  @Post("cities/:id/districts")
+  addCityDistrict(@Param("id") id: string, @Body() dto: CreateCityDistrictDto) {
+    return this.adminService.addCityDistrict(id, dto.name, dto.level);
+  }
+
+  @AdminAction("CITY_DISTRICT_LEVEL", (c) => {
+    const r = c.result as { name?: string; cityName?: string; level?: number; oldLevel?: number };
+    return `${r.cityName} / ${r.name} ilçesinin seviyesini "${districtLevelTr(r.oldLevel)}" → "${districtLevelTr(r.level)}" yaptı`;
+  })
+  @Patch("cities/districts/:id")
+  updateCityDistrict(@Param("id") id: string, @Body() dto: UpdateCityDistrictDto) {
+    return this.adminService.updateCityDistrict(id, dto.level);
+  }
+
+  @AdminAction("CITY_DISTRICT_DELETE", (c) => {
+    const r = c.result as { name?: string; cityName?: string };
+    return `${r.cityName} şehrinden "${r.name}" ilçesini sildi`;
+  })
+  @Delete("cities/districts/:id")
+  deleteCityDistrict(@Param("id") id: string) {
+    return this.adminService.deleteCityDistrict(id);
   }
 
   // ─── Sistem ayarları ─────────────────────────────────────────────────────

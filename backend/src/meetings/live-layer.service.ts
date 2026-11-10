@@ -5,7 +5,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { WEIGHTS } from "../matching/matching.constants";
 import { MatchPerson, matchScore } from "../matching/match-score";
-import { densityListOf, type DensityRow } from "../common/districts";
+import { type DensityRow } from "../common/districts";
 import { liveDistrictSource } from "../admin/app-settings";
 import { meetingLockAt } from "./meeting-windows";
 import { superscript, tableInitials } from "./table-initials";
@@ -129,8 +129,7 @@ function fixedRealDensity(list: DensityRow[], demand: Map<string, number>): Dens
 }
 
 // Sabit listeli şehirde listede olmayan kayıt ilçesi sonarda ve ısı haritasında yok sayılır
-function shownDistrict(cityName: string, district: string | null | undefined): string | null {
-  const list = densityListOf(cityName);
+function shownDistrict(list: DensityRow[] | null, district: string | null | undefined): string | null {
   if (!district || (list && !list.some((d) => d.name === district))) return null;
   return district;
 }
@@ -173,8 +172,17 @@ export class LiveLayerService {
   }
 
   // Yoğunluk katmanı: sabit listeli şehirlerde liste hep görünür; diğer şehirlerde gerçek veri (yoksa null, eski görünüm sürer)
-  private async density(city: { name: string }, demand: Map<string, number>): Promise<Density> {
-    const list = densityListOf(city.name);
+  // Şehrin ilçe listesi: admin Şehirler penceresinden girilir (CityDistrict); seviye sırasıyla, aynı seviyede eklenme sırası. Liste yoksa null
+  private async densityList(city: { id: string }): Promise<DensityRow[] | null> {
+    const rows = await this.prisma.cityDistrict.findMany({
+      where: { cityId: city.id },
+      orderBy: [{ level: "asc" }, { createdAt: "asc" }],
+      select: { name: true, level: true },
+    });
+    return rows.length ? rows.map((r) => ({ name: r.name, level: r.level as DensityRow["level"] })) : null;
+  }
+
+  private async density(list: DensityRow[] | null, demand: Map<string, number>): Promise<Density> {
     if ((await liveDistrictSource(this.prisma)) === "real") return list ? fixedRealDensity(list, demand) : realDensity(demand);
     return list ? { mode: "static", districts: list.map((d) => ({ ...d, percent: null })) } : null;
   }
@@ -198,13 +206,14 @@ export class LiveLayerService {
         kyc: { select: { reviewedAt: true } },
       },
     });
+    const list = await this.densityList(city);
     const dots = users
       .map((u) => {
         // Havuza giriş: paket alınması ya da KYC onayı, hangisi daha geç olduysa
         const joinedAt = Math.max(u.subscriptions[0]?.createdAt.getTime() ?? 0, u.kyc?.reviewedAt?.getTime() ?? 0);
         const age = now - joinedAt;
         const state = age <= NEW_ENTRY_MS ? "new" : age <= ACTIVE_ENTRY_MS ? "active" : "pool";
-        return { key: opaque(u.id, start), district: shownDistrict(city.name, u.profile?.district), state, age };
+        return { key: opaque(u.id, start), district: shownDistrict(list, u.profile?.district), state, age };
       })
       .sort((a, b) => a.age - b.age)
       .slice(0, SONAR_MAX_DOTS)
@@ -212,7 +221,7 @@ export class LiveLayerService {
 
     const demand = new Map<string, number>();
     for (const u of users) {
-      const d = shownDistrict(city.name, u.profile?.district);
+      const d = shownDistrict(list, u.profile?.district);
       if (d) demand.set(d, (demand.get(d) ?? 0) + 1);
     }
 
@@ -228,7 +237,7 @@ export class LiveLayerService {
         .sort((a, b) => b[1].count - a[1].count)
         .slice(0, SONAR_MAX_LABELS)
         .map(([name, v]) => ({ name, active: v.active })),
-      density: await this.density(city, demand),
+      density: await this.density(list, demand),
     };
   }
 
@@ -357,9 +366,10 @@ export class LiveLayerService {
     const filled = group.filled + oneOnOne.filled + kanka.filled;
     const total = group.total + oneOnOne.total + kanka.total;
 
+    const list = await this.densityList(city);
     const demand = new Map<string, number>();
     for (const u of pool) {
-      const d = shownDistrict(city.name, u.profile?.district);
+      const d = shownDistrict(list, u.profile?.district);
       if (d) demand.set(d, (demand.get(d) ?? 0) + 1);
     }
     const sorted = [...demand.entries()].sort((a, b) => b[1] - a[1]).slice(0, HEATMAP_MAX);
@@ -374,7 +384,7 @@ export class LiveLayerService {
       groupSeatsLeft: group.total ? Math.max(0, group.total - group.filled) : null,
       fill: { group, oneOnOne, kanka },
       heatmap: sorted.map(([name, count]) => ({ name, percent: Math.round((count / peak) * 100) })),
-      density: await this.density(city, demand),
+      density: await this.density(list, demand),
       signal: {
         closeCount: me ? pool.filter((u) => u.id !== userId && matchRatio(me, u) >= HIGH_MATCH_RATIO).length : 0,
         top: ocean

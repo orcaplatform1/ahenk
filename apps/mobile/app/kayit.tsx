@@ -29,7 +29,8 @@ const VENUE_OPTIONS: { value: VenuePreference; label: string; description: strin
   { value: 'NON_ALCOHOLIC', label: 'Alkolsüz Mekan', description: 'Kafe veya alkolsüz restoran' },
   { value: 'NO_PREFERENCE', label: 'Her ikisi de uygun', description: 'Her iki mekan türü de uygundur' },
 ];
-const CITY_ORDER = ['İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Balıkesir', 'Aydın', 'Muğla'];
+// Kayıtta şimdilik yalnız bu 4 şehir seçilebilir
+const CITY_ORDER = ['İstanbul', 'Ankara', 'İzmir', 'Antalya'];
 const cityLabel = (n: string) => (n === 'Balıkesir' ? 'Balıkesir (Ayvalık / Akçay)' : n);
 
 export default function Kayit() {
@@ -62,7 +63,7 @@ export default function Kayit() {
 
   useEffect(() => { if (resendIn <= 0) return; const t = setTimeout(() => setResendIn(n => n - 1), 1000); return () => clearTimeout(t); }, [resendIn]);
   useEffect(() => {
-    api.get<City[]>('/auth/cities').then(setCities).catch(() => setError('Şehir listesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'));
+    api.get<City[]>('/auth/cities').then((list) => setCities(list.filter((c) => CITY_ORDER.includes(c.name)))).catch(() => setError('Şehir listesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'));
     api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => setError('İlçe listesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'));
   }, []);
 

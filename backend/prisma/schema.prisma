@@ -657,8 +657,23 @@ model City {
   isActive  Boolean   @default(true)
   venues    Venue[]
   meetings  Meeting[]
+  districts CityDistrict[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+// Admin Şehirler penceresinden girilen ilçeler: statik moddaki şehir yoğunluğu / tarama listesi
+// level: 1 Çok yoğun, 2 Yoğun, 3 Orta, 4 Düşük
+model CityDistrict {
+  id        String   @id @default(cuid())
+  cityId    String
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  name      String
+  level     Int
+  createdAt DateTime @default(now())
+
+  @@unique([cityId, name])
+  @@index([cityId, level])
 }
 
 model Venue {

@@ -256,6 +256,26 @@ export class UpdateCityDto {
   isActive?: boolean;
 }
 
+// İlçe seviyesi: 1 Çok yoğun, 2 Yoğun, 3 Orta, 4 Düşük
+export class CreateCityDistrictDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(60)
+  name: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(4)
+  level: number;
+}
+
+export class UpdateCityDistrictDto {
+  @IsInt()
+  @Min(1)
+  @Max(4)
+  level: number;
+}
+
 // ─── Abonelik ──────────────────────────────────────────────────────────────────
 
 export class CancelSubscriptionDto {

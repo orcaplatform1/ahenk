@@ -1153,11 +1153,66 @@ export class AdminService {
 
   // ─── Şehir CRUD ──────────────────────────────────────────────────────────
 
+  // Sıra: İstanbul, Ankara, İzmir, Antalya (sabit) → diğer aktif şehirler A-Z → pasif şehirler A-Z (Türkçe alfabe)
   async listCities() {
-    return this.prisma.city.findMany({
-      orderBy: { name: "asc" },
-      include: { _count: { select: { venues: true } } },
+    const cities = await this.prisma.city.findMany({
+      include: { _count: { select: { venues: true, districts: true } } },
     });
+    const pinned = ["İstanbul", "Ankara", "İzmir", "Antalya"];
+    const rank = (c: { name: string; isActive: boolean }) => {
+      const i = pinned.indexOf(c.name);
+      return i >= 0 ? i : c.isActive ? pinned.length : pinned.length + 1;
+    };
+    return cities.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "tr"));
+  }
+
+  // Şehir silme: bağlı ilçeler de silinir; mekânı veya masası olan şehir silinmez
+  async deleteCity(cityId: string) {
+    const city = await this.prisma.city.findUnique({
+      where: { id: cityId },
+      include: { _count: { select: { venues: true, meetings: true } } },
+    });
+    if (!city) throw new NotFoundException("Şehir bulunamadı");
+    if (city._count.venues || city._count.meetings) throw new BadRequestException("Bu şehre bağlı mekân/masa var, önce pasifleştirin");
+    await this.prisma.city.delete({ where: { id: cityId } });
+    return { deleted: true, name: city.name };
+  }
+
+  // ─── Şehir ilçeleri (statik yoğunluk / tarama listesi) ─────────────────────
+
+  async listCityDistricts(cityId: string) {
+    const city = await this.prisma.city.findUnique({ where: { id: cityId }, select: { id: true } });
+    if (!city) throw new NotFoundException("Şehir bulunamadı");
+    return this.prisma.cityDistrict.findMany({
+      where: { cityId },
+      orderBy: [{ level: "asc" }, { createdAt: "asc" }],
+      select: { id: true, name: true, level: true },
+    });
+  }
+
+  async addCityDistrict(cityId: string, name: string, level: number) {
+    const city = await this.prisma.city.findUnique({ where: { id: cityId }, select: { name: true } });
+    if (!city) throw new NotFoundException("Şehir bulunamadı");
+    const clean = name.trim();
+    if (!clean) throw new BadRequestException("İlçe adı girin");
+    const exists = await this.prisma.cityDistrict.findUnique({ where: { cityId_name: { cityId, name: clean } } });
+    if (exists) throw new ConflictException("Bu ilçe zaten ekli");
+    const row = await this.prisma.cityDistrict.create({ data: { cityId, name: clean, level }, select: { id: true, name: true, level: true } });
+    return { ...row, cityName: city.name };
+  }
+
+  async updateCityDistrict(districtId: string, level: number) {
+    const row = await this.prisma.cityDistrict.findUnique({ where: { id: districtId }, include: { city: { select: { name: true } } } });
+    if (!row) throw new NotFoundException("İlçe bulunamadı");
+    const updated = await this.prisma.cityDistrict.update({ where: { id: districtId }, data: { level }, select: { id: true, name: true, level: true } });
+    return { ...updated, cityName: row.city.name, oldLevel: row.level };
+  }
+
+  async deleteCityDistrict(districtId: string) {
+    const row = await this.prisma.cityDistrict.findUnique({ where: { id: districtId }, include: { city: { select: { name: true } } } });
+    if (!row) throw new NotFoundException("İlçe bulunamadı");
+    await this.prisma.cityDistrict.delete({ where: { id: districtId } });
+    return { deleted: true, name: row.name, cityName: row.city.name };
   }
 
   async createCity(name: string) {

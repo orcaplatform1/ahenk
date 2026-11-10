@@ -29,6 +29,8 @@ export const statusTr = (s: unknown) => STATUS_TR[String(s)] ?? String(s);
 const PLAN_TR: Record<string, string> = { MASADA: "Masada", KARSIMDA: "Karşımda", ICERDE: "İçerde" };
 export const planTr = (p: unknown) => PLAN_TR[String(p)] ?? String(p);
 export const reasonTr = (r: unknown) => (r ? ` (Sebep: ${String(r)})` : "");
+const DISTRICT_LEVEL_TR: Record<number, string> = { 1: "1. Çok yoğun", 2: "2. Yoğun", 3: "3. Orta", 4: "4. Düşük" };
+export const districtLevelTr = (l: unknown) => DISTRICT_LEVEL_TR[Number(l)] ?? String(l);
 
 @Injectable()
 export class AdminActionInterceptor implements NestInterceptor {

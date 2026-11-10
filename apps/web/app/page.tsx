@@ -614,7 +614,12 @@ export default function Home() {
   const [cities, setCities] = useState<{ name: string }[]>([]);
 
   useEffect(() => {
-    api.get<{ name: string }[]>('/auth/cities').then(setCities).catch(() => undefined);
+    // Sıra: İstanbul, Ankara, İzmir, Antalya; varsayılan seçili İstanbul
+    const order = ['İstanbul', 'Ankara', 'İzmir', 'Antalya'];
+    const rank = (n: string) => (order.indexOf(n) === -1 ? order.length : order.indexOf(n));
+    api.get<{ name: string }[]>('/auth/cities')
+      .then((list) => setCities([...list].sort((a, b) => rank(a.name) - rank(b.name) || a.name.localeCompare(b.name, 'tr'))))
+      .catch(() => undefined);
   }, []);
 
   const [ownedPlans, setOwnedPlans] = useState<Set<PlanKey>>(new Set());

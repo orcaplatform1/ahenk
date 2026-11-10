@@ -21,7 +21,7 @@ export const ADMIN_NAV: { href: string; label: string; alertKey?: boolean; sos?:
   { href: '/admin/refunds', label: 'İade Talepleri', superadminOnly: true },
   { href: '/admin/sonuclandirma', label: 'İade ve Ödeme Sonuçlandırma', superadminOnly: true },
   { href: '/admin/venues', label: 'Mekanlar', superadminOnly: true },
-  { href: '/admin/cities', label: 'Şehirler', superadminOnly: true },
+  { href: '/admin/cities', label: 'Şehirler' },
   { href: '/admin/denge', label: 'Bot Yönetimi', superadminOnly: true },
   { href: '/admin/fiyatlar', label: 'Paket Fiyatları', superadminOnly: true },
   { href: '/admin/islem-kayitlari', label: 'İşlem Kayıtları', superadminOnly: true },
