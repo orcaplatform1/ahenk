@@ -86,11 +86,11 @@ function placeLabels(bubbles: ReturnType<typeof placeBubbles>) {
 function DensityLayer({ density, flashes }: { density: SonarDensity; flashes: Record<string, number> }) {
   return (
     <>
-      {placeLabels(placeBubbles(density)).map((b) => (
+      {placeLabels(placeBubbles(density)).map((b, i) => (
         <g key={b.name}>
           {b.level === 1 && <circle className="ll-bubble-pulse" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
           {flashes[b.name] > 0 && <circle key={flashes[b.name]} className="ll-flash" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
-          <circle cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} />
+          <circle className="ll-bubble-breathe" style={{ animationDelay: `${-(i * 0.37) % 2.5}s` }} cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} />
           <text
             x={b.labelX}
             y={b.labelY}

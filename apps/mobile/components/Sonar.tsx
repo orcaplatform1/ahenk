@@ -45,6 +45,22 @@ function placeLabels(bubbles: ReturnType<typeof placeBubbles>) {
   });
 }
 
+// Web .ll-bubble-breathe karşılığı: 2,5 sn'de %85 ↔ %115, noktalar kaydırmalı
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+function BreathingCircle({ cx, cy, r, fill, opacity, index }: { cx: number; cy: number; r: number; fill: string; opacity: number; index: number }) {
+  const reduce = useReduceMotion();
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (reduce) return;
+    const half = { duration: 1250, easing: Easing.inOut(Easing.ease), useNativeDriver: false };
+    const loop = Animated.loop(Animated.sequence([Animated.timing(v, { toValue: 1, ...half }), Animated.timing(v, { toValue: 0, ...half })]));
+    const t = setTimeout(() => loop.start(), (index * 370) % 2500);
+    return () => { clearTimeout(t); loop.stop(); };
+  }, [reduce, v, index]);
+  if (reduce) return <Circle cx={cx} cy={cy} r={r} fill={fill} opacity={opacity} />;
+  return <AnimatedCircle cx={cx} cy={cy} r={v.interpolate({ inputRange: [0, 1], outputRange: [r * 0.85, r * 1.15] })} fill={fill} opacity={opacity} />;
+}
+
 export function AhenkSonar({ width = SIZE, children, sweep = true, scanOff = false }: { width?: number; children?: React.ReactNode; sweep?: boolean; scanOff?: boolean }) {
   const reduce = useReduceMotion();
   const spin = useRef(new Animated.Value(0)).current;
@@ -97,9 +113,9 @@ export function LiveSonar({ sonar, scanOff }: { sonar: LivePulse['sonar'] | null
       } />
       <View style={{ alignItems: 'center' }}>
         <AhenkSonar scanOff={scanOff}>
-          {density ? placeLabels(placeBubbles(density)).map((b) => (
+          {density ? placeLabels(placeBubbles(density)).map((b, i) => (
             <G key={b.name}>
-              <Circle cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} />
+              <BreathingCircle index={i} cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} />
               <SvgText x={b.labelX} y={b.labelY} fontSize={10.5} fontWeight={b.level <= 2 ? '700' : '400'} fill={b.level <= 2 ? ll.text : ll.text2} fontFamily={sans(b.level <= 2 ? 700 : 400)}>{b.name}</SvgText>
             </G>
           )) : (
