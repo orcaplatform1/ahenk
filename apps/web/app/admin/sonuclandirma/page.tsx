@@ -4,15 +4,11 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { BG, BORDER, TEXT, MUTED, RED, GREEN, AMBER, SANS, MONO } from '@/lib/adminTheme';
 
-interface RefundRow {
-  id: string; userName: string; phone: string | null; refundType: string; plan: string; status: string;
-  createdAt: string; iyzicoPaymentId: string | null; amountKurus: number;
-}
 interface PaymentRow {
   id: string; userName: string; phone: string | null; plan: string; status: string;
   amountKurus: number; iyzicoPaymentId: string | null; failureReason: string | null; createdAt: string;
 }
-interface Settlements { refunds: RefundRow[]; payments: PaymentRow[] }
+interface Settlements { payments: PaymentRow[] }
 
 const tl = (k: number) => `₺${(k / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const when = (d: string) => new Date(d).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' });
@@ -55,10 +51,6 @@ export default function AdminSonuclandirma() {
   }
   useEffect(load, []);
 
-  const settleRefund = (id: string, status: string) => async (note?: string) => {
-    await api.patch(`/admin/settlements/refunds/${id}`, { status, note });
-    load();
-  };
   const settlePayment = (id: string, status: string) => async (note?: string) => {
     await api.patch(`/admin/settlements/payments/${id}`, { status, note });
     load();
@@ -66,27 +58,11 @@ export default function AdminSonuclandirma() {
 
   return (
     <div className="adm-page" style={{ maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
-      <h1 className="ll-title" style={{ margin: '0 0 8px' }}>İade ve Ödeme Sonuçlandırma</h1>
+      <h1 className="ll-title" style={{ margin: '0 0 8px' }}>Ödeme Sonuçlandırma</h1>
       <p style={{ margin: '0 0 20px', fontSize: 13, color: AMBER, lineHeight: 1.5 }}>
         Bu ekrandan iyzico&apos;ya istek gitmez, para gönderilmez. Önce iyzico panelinden sonucu kontrol edin, sonra işleyin.
       </p>
       {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
-
-      <div className="ll-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
-        <div style={{ padding: '12px 18px' }}><h2 className="ll-title">İşleniyor Durumundaki İadeler</h2></div>
-        {data?.refunds.length === 0 && <p style={{ margin: 0, padding: '0 18px 16px', fontSize: 13, color: MUTED }}>Kayıt yok.</p>}
-        {data?.refunds.map((r) => (
-          <Row
-            key={r.id}
-            title={r.userName}
-            lines={[`${r.plan} · ${r.refundType} · ${tl(r.amountKurus)}`, `${when(r.createdAt)}${r.phone ? ` · ${r.phone}` : ''}`, `iyzico: ${r.iyzicoPaymentId ?? '—'}`]}
-            actions={[
-              { label: 'Para İade Edildi (Onayla)', style: OK_BTN, run: settleRefund(r.id, 'APPROVED') },
-              { label: 'Para Çıkmadı (Reddet)', style: NO_BTN, run: settleRefund(r.id, 'REJECTED') },
-            ]}
-          />
-        ))}
-      </div>
 
       <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '12px 18px' }}><h2 className="ll-title">İade Bekleyen Fazla Ödemeler</h2></div>

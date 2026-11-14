@@ -23,10 +23,10 @@ const SS: Record<string, { label: string; color: string; bg: string; border: str
   SUSPENDED: { label: 'Karantina', color: adm.amber, bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.3)' },
   DELETED: { label: 'Silindi', color: adm.muted, bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.3)' },
 };
-const PL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' };
+const PL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 const oceanAvg = (o: AdminUser['oceanScore']) => (o ? ((o.openness + o.conscientiousness + o.extraversion + o.agreeableness + o.neuroticism) / 5).toFixed(0) : '—');
 const planOf = (u: AdminUser) => (u.subscriptions?.length ? u.subscriptions.map(s => PL[s.plan] ?? s.plan).join(', ') : '—');
-const PLANS = [{ value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }];
+const PLANS = [{ value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }];
 const Sect = ({ children }: { children: React.ReactNode }) => <View style={{ borderTopWidth: 1, borderTopColor: adm.border, paddingTop: 14, gap: 8 }}>{children}</View>;
 
 export default function AdminUsers() {

@@ -10,7 +10,7 @@ import { StatusPill } from '@/components/admin/StatusPill';
 import { adm, sans } from '@/theme/theme';
 
 interface Sub {
-  id: string; plan: 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA'; kankaRights?: number; kankaCycles?: number; status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
+  id: string; plan: string; kankaRights?: number; kankaCycles?: number; status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
   startsAt: string; expiresAt: string | null; usedAt: string | null; cancelNote: string | null; missedGroupCycles: number; missedOneonOneCycles: number;
   groupRights: number; groupCycles: number; oneOnOneCycles: number; updatedAt: string;
   user: { id: string; email: string; phone: string | null; profile: { firstName: string; lastName: string } | null };
@@ -18,21 +18,21 @@ interface Sub {
 }
 interface ListResponse { items: { user: Sub['user']; subscriptions: Sub[] }[]; total: number; page: number; totalPages: number }
 const TABS = [{ key: 'ACTIVE', label: 'Aktif' }, { key: 'EXPIRED', label: 'Süresi Dolan / Kullanılan' }, { key: 'CANCELLED', label: 'İptal Edilen' }] as const;
-const PLAN_LABEL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' };
+const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 const PLATFORM_LABEL: Record<string, string> = { WEB: 'Web', ANDROID: 'Android', IOS: 'iOS' };
 const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
 function SubRow({ s, onCancel }: { s: Sub; onCancel: () => void }) {
-  const one = s.plan === 'KARSIMDA' || s.plan === 'ICERDE';
+  const one = s.plan === 'KARSIMDA' || s.plan === 'ICERDE' || s.plan.startsWith('PRIME_');
   return (
     <View style={{ paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: adm.surface, flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
       <View style={{ flex: 1, minWidth: 0, flexBasis: '100%' }}>
         <AT w={600} style={{ fontSize: 13 }}>{PLAN_LABEL[s.plan] ?? s.plan}</AT>
         <AMono style={{ marginTop: 3, fontSize: 11 }}>
           Başlangıç {fmtDate(s.startsAt)}{s.expiresAt ? ` · Bitiş ${fmtDate(s.expiresAt)}` : ''}
-          {s.plan === 'MASADA' || s.plan === 'ICERDE' ? ` · Grup hakkı: ${s.groupRights}/2 kaldı, döngü ${s.groupCycles}/4` : ''}
-          {s.plan === 'KANKAMLA' ? ` · Kankamla hakkı: ${s.kankaRights ?? 0}/2 kaldı, döngü ${s.kankaCycles ?? 0}/4` : ''}
-          {one ? ` · Başbaşa hakkı: ${s.usedAt ? `kullanıldı (${fmtDate(s.usedAt)})` : `kullanılmadı, döngü ${s.oneOnOneCycles}/4`}` : ''}
+          {s.plan === 'MASADA' || s.plan === 'ICERDE' || s.plan.startsWith('PRIME_') ? ` · Grup hakkı: ${s.groupRights}` : ''}
+          {s.plan === 'KANKAMLA' || s.plan.startsWith('PRIME_') ? ` · Kankamla hakkı: ${s.kankaRights ?? 0}` : ''}
+          {one ? ` · Başbaşa hakkı: ${s.usedAt ? `kullanıldı (${fmtDate(s.usedAt)})` : 'kullanılmadı'}` : ''}
         </AMono>
         <AT style={{ marginTop: 3, fontSize: 11, color: adm.muted }}>
           {s.payment ? `${PLATFORM_LABEL[s.payment.platform] ?? s.payment.platform} · ₺${(s.payment.amountKurus / 100).toFixed(2)}` : 'Ücretsiz (admin)'}
@@ -81,7 +81,7 @@ export default function AdminSubscriptions() {
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
         <AInput value={search} onChangeText={setSearch} onSubmitEditing={() => { setQuery(search.trim()); setPage(1); }} returnKeyType="search" placeholder="Ad, e-posta veya telefon… (Enter)" style={{ flexGrow: 1, minWidth: 0, flexBasis: '100%', paddingHorizontal: 12 }} />
         <View style={{ width: 160 }}>
-          <AdminSelect value={plan} onChange={v => { setPlan(v); setPage(1); }} placeholder="Tüm paketler" title="Paket filtresi" options={[{ value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }]} />
+          <AdminSelect value={plan} onChange={v => { setPlan(v); setPage(1); }} placeholder="Tüm paketler" title="Paket filtresi" options={[{ value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }]} />
         </View>
       </View>
       <AError>{error}</AError>

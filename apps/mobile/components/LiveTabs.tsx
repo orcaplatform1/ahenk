@@ -16,7 +16,7 @@ const TABS: { type: MasaTuru; label: string }[] = [
 
 export const STATUS_TEXT: Record<TabStatus, string> = {
   TABLE: 'Masa Kuruldu', FORMING: 'Masa Oluşturuluyor', CANCELLED: 'Rez. İptal', SCANNING: 'Taramada', KYC: 'Kimlik Bekleniyor',
-  KANKA: 'Kanka Bekleniyor', PENDING: 'Beklemede', FAILED: 'Başarısız', NONE: 'Abonelik Yok',
+  KANKA: 'Kanka Bekleniyor', PENDING: 'Beklemede', FAILED: 'Başarısız', PASSIVE: 'Eşleşme Pasif', NONE: 'Abonelik Yok',
 };
 
 const SMALL_RINGS: Partial<Record<MasaTuru, { r: number; stroke: number; rings: [number, number][] }>> = {

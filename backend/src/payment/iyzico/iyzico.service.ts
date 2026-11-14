@@ -177,4 +177,77 @@ export class IyzicoService {
       );
     });
   }
+
+  // ─── Prime: iyzico abonelik API'si (IYZICO_SUBSCRIPTION_ENABLED=true olunca kullanılır) ─────────────
+  // Ürün ve fiyatlandırma planları lansmanda createPrimePlans ile bir kez tanımlanır; dönen referans kodları
+  // IYZICO_PRIME_<1M|3M|6M|12M>_PLAN_REF env değişkenlerine yazılır. Planların deneme süresi (trialPeriodDays)
+  // ilk dönemin gününe eşittir: ilk dönem standart ödeme formuyla (indirim uygulanabilir) alınır, abonelik
+  // ilk tahsilatı dönem sonunda planın tam tutarıyla yapar ve aynı süreyle otomatik yeniler.
+
+  private call<T>(resource: string, method: string, request: object): Promise<T & { status: string; errorMessage?: string }> {
+    return new Promise((resolve) => {
+      (this.client as unknown as Record<string, Record<string, (r: object, cb: (e: Error | null, res: T & { status: string; errorMessage?: string }) => void) => void>>)[resource][method](
+        request,
+        (err, result) => {
+          if (err) {
+            this.logger.error(`iyzico ${resource}.${method} hatası:`, err);
+            resolve({ status: "failure", errorMessage: err.message } as T & { status: string; errorMessage?: string });
+          } else resolve(result);
+        },
+      );
+    });
+  }
+
+  async createPrimePlans(plans: { code: string; name: string; months: number; trialDays: number; priceKurus: number }[]) {
+    const product = await this.call<{ data?: { referenceCode: string } }>("subscriptionProduct", "create", {
+      locale: "tr", name: "Ahenk Prime", description: "Ahenk Prime abonelik",
+    });
+    if (product.status !== "success" || !product.data) return { status: "failure", errorMessage: product.errorMessage, plans: [] };
+    const out: { code: string; referenceCode?: string; errorMessage?: string }[] = [];
+    for (const pl of plans) {
+      const r = await this.call<{ data?: { referenceCode: string } }>("subscriptionPricingPlan", "create", {
+        locale: "tr",
+        productReferenceCode: product.data.referenceCode,
+        name: pl.name,
+        price: (pl.priceKurus / 100).toFixed(2),
+        currencyCode: "TRY",
+        paymentInterval: "MONTHLY",
+        paymentIntervalCount: pl.months,
+        trialPeriodDays: pl.trialDays,
+        planPaymentType: "RECURRING",
+      });
+      out.push({ code: pl.code, referenceCode: r.data?.referenceCode, errorMessage: r.status === "success" ? undefined : r.errorMessage });
+    }
+    return { status: "success", productReferenceCode: product.data.referenceCode, plans: out };
+  }
+
+  // Otomatik yenileme için abonelik ödeme formu (kart kaydı; deneme süresi boyunca tahsilat yapılmaz)
+  async initSubscriptionCheckoutForm(params: {
+    pricingPlanReferenceCode: string; conversationId: string; callbackUrl: string;
+    name: string; surname: string; email: string; gsmNumber?: string; identityNumber: string;
+  }): Promise<IyzicoCheckoutResult> {
+    const address = { contactName: `${params.name} ${params.surname}`, city: "Istanbul", country: "Turkey", address: "Türkiye" };
+    return this.call<IyzicoCheckoutResult>("subscriptionCheckoutForm", "initialize", {
+      locale: "tr",
+      conversationId: params.conversationId,
+      callbackUrl: params.callbackUrl,
+      pricingPlanReferenceCode: params.pricingPlanReferenceCode,
+      subscriptionInitialStatus: "ACTIVE",
+      customer: {
+        name: params.name, surname: params.surname, email: params.email,
+        gsmNumber: params.gsmNumber ?? "+905000000000", identityNumber: params.identityNumber,
+        billingAddress: address, shippingAddress: address,
+      },
+    });
+  }
+
+  async retrieveSubscriptionCheckoutForm(token: string) {
+    return this.call<{ data?: { referenceCode: string; subscriptionStatus: string; pricingPlanReferenceCode: string } }>(
+      "subscriptionCheckoutForm", "retrieve", { checkoutFormToken: token },
+    );
+  }
+
+  async cancelSubscription(subscriptionReferenceCode: string) {
+    return this.call<object>("subscription", "cancel", { subscriptionReferenceCode });
+  }
 }

@@ -43,7 +43,6 @@ import {
   CancelSubscriptionDto,
   UpdateSettingsDto,
   UpdateWinbackDto,
-  SettleRefundDto,
   SettlePaymentDto,
   DecideDeletionDto,
   CreateSanctionDto,
@@ -60,21 +59,12 @@ import {
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
-import { UserRole, RefundStatus, UserStatus } from "../generated/prisma/client";
+import { UserRole, UserStatus } from "../generated/prisma/client";
 import { WinbackService } from "../payment/winback.service";
 import { PaymentService } from "../payment/payment.service";
 import { AccountDeletionService } from "../users/account-deletion.service";
 import { SkipThrottle } from "@nestjs/throttler";
 import { SANCTION_REASONS } from "./sanction-reasons";
-
-class UpdateRefundDto {
-  @IsEnum(RefundStatus)
-  status: RefundStatus;
-
-  @IsOptional()
-  @IsString()
-  adminNote?: string;
-}
 
 @SkipThrottle()
 @Controller("admin")
@@ -451,18 +441,12 @@ export class AdminController {
     return this.winback.updateSettings(dto.amountTL, dto.plans);
   }
 
-  // ─── İade ve ödeme sonuçlandırma (sadece SUPERADMIN) ─────────────────────
+  // ─── Ödeme sonuçlandırma (sadece SUPERADMIN) ─────────────────────
 
   @Get("settlements")
   @Roles(UserRole.SUPERADMIN)
   listSettlements() {
     return this.paymentService.listSettlements();
-  }
-
-  @Patch("settlements/refunds/:id")
-  @Roles(UserRole.SUPERADMIN)
-  settleRefund(@Param("id") id: string, @Body() dto: SettleRefundDto, @Req() req: Request) {
-    return this.paymentService.settleRefund(id, dto.status, (req.user as { id: string }).id, dto.note);
   }
 
   @Patch("settlements/payments/:id")
@@ -537,12 +521,6 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   markAlertRead(@Param("id") id: string, @Req() req: Request) {
     return this.adminService.markAlertRead(id, (req.user as { role: UserRole }).role);
-  }
-
-  @Patch("refunds/:id")
-  @Roles(UserRole.SUPERADMIN)
-  updateRefund(@Param("id") id: string, @Body() dto: UpdateRefundDto, @Req() req: Request) {
-    return this.adminService.updateRefundStatus(id, dto.status, req.ip ?? "", dto.adminNote);
   }
 
   // ─── Stats ───────────────────────────────────────────────────────────────

@@ -93,8 +93,8 @@ function PoolScreen({ activePlan }: { activePlan: 'MASADA' | 'KARSIMDA' | 'ICERD
 
   /* Dönen halka animasyonu (CSS keyframe inline) */
   const PLAN_LABEL: Record<string, string> = {
-    MASADA: 'Masada',
-    KARSIMDA: 'Karşımda',
+    MASADA: 'Grup',
+    KARSIMDA: 'Başbaşa',
     ICERDE: 'İçerde',
   };
 

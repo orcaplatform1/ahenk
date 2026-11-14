@@ -53,7 +53,7 @@ model User {
   noShowReportsReceived     NoShowReport[]        @relation("NoShowReported")
   contactBlocks             ContactBlock[]
   adminAlerts               AdminAlert[]
-  refundRequests            RefundRequest[]
+  weeklySelections          WeeklySelection[]
   referralDiscountAvailable Boolean               @default(false)
   referralsSent             Referral[]            @relation("ReferralsSent")
   referralsReceived         Referral[]            @relation("ReferralsReceived")
@@ -545,17 +545,23 @@ model Subscription {
   cancelNote           String?            @db.Text
   missedGroupCycles    Int                @default(0)
   missedOneonOneCycles Int                @default(0)
-  // Paket hakları (tek seferlik paketler): Masada / İçerde 2 grup masası hakkı; başbaşa hakkı usedAt ile izlenir.
-  // Her kısım 4 döngü geçerli: döngü sayaçları her kilitte (grup / başbaşa) 1 artar.
+  // Paket hakları: Grup / İçerde / Prime 1 grup hakkı; başbaşa hakkı usedAt ile izlenir (Prime'da 30 günde bir sıfırlanır).
+  // Haklar kullanılana kadar geçerli; döngü sayaçları yalnız bilgi amaçlı artar (süre sınırı yok).
   groupRights          Int                @default(0)
   groupCycles          Int                @default(0)
   oneOnOneCycles       Int                @default(0)
-  // Kankamla: 2 masa hakkı, 4 döngü (Cumartesi kilidinde sayılır)
+  // Kankamla / Prime: 1 Kankamla masası hakkı
   kankaRights          Int                @default(0)
   kankaCycles          Int                @default(0)
   missedKankaCycles    Int                @default(0)
+  // Prime abonelik: expiresAt = dönem sonu; haklar rightsResetAt'te (satın almadan itibaren her 30 gün) yeniden 1+1+1 olur
+  rightsResetAt        DateTime?
+  autoRenew            Boolean            @default(false)
+  renewCancelledAt     DateTime? // "Aboneliği İptal Et": otomatik yenileme durur, haklar dönem sonuna kadar kullanılır
+  iyzicoSubscriptionRef String? // iyzico abonelik API referansı (web)
+  storePlatform        PaymentPlatform? // IOS / ANDROID uygulama içi satın alma
+  storeOriginalTransactionId String? // App Store originalTransactionId / Play purchaseToken
   payment              Payment?
-  refundRequests       RefundRequest[]
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
@@ -578,6 +584,8 @@ model Payment {
   failureReason        String?              @db.Text
   discountType         PaymentDiscountType? // init'te uygulanan indirim; ödeme başarılı olunca harcanır
   listKurus            Int? // indirimsiz liste fiyatı (o anki fiyattan); indirim tutarı istatistiği için
+  isRenewal            Boolean              @default(false) // Prime otomatik yenileme ödemesi (indirimsiz)
+  storeTransactionId   String?              @unique // App Store / Play uygulama içi satın alma işlem kimliği
   paidAt               DateTime?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
@@ -587,10 +595,14 @@ model Payment {
 }
 
 enum SubscriptionPlan {
-  MASADA // 349 TL/ay — grup buluşma
-  KARSIMDA // 449 TL/tek kullanım — başbaşa buluşma
-  ICERDE // 679 TL — MASADA (1 ay) + KARSIMDA (1 kullanım) "Tercih Edilen"
-  KANKAMLA // tek seferlik, 2 Kankamla masası hakkı; alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır
+  MASADA // "Grup" — tek seferlik, 1 grup buluşması hakkı (ham 299 TL)
+  KARSIMDA // "Başbaşa" — tek seferlik, 1 başbaşa buluşması hakkı (ham 399 TL)
+  ICERDE // "İçerde" — tek seferlik, 1 grup + 1 başbaşa buluşması hakkı (ham 599 TL)
+  KANKAMLA // "Kankamla" — tek seferlik, 1 Kankamla buluşması hakkı; alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır (ham 499 TL)
+  PRIME_1M // Prime 1 aylık (ham 899 TL) — her 30 günde 1 grup + 1 başbaşa + 1 kankamla, otomatik yenilenir
+  PRIME_3M // Prime 3 aylık (ham 2299 TL)
+  PRIME_6M // Prime 6 aylık (ham 3899 TL)
+  PRIME_12M // Prime 12 aylık (ham 6499 TL)
 }
 
 enum SubscriptionStatus {
@@ -939,39 +951,6 @@ enum AdminAlertType {
 // İADE TALEBİ
 // ─────────────────────────────────────────────
 
-model RefundRequest {
-  id             String       @id @default(cuid())
-  userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subscriptionId String
-  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  refundType     RefundType
-  status         RefundStatus @default(PENDING)
-  adminNote      String?      @db.Text
-  refundedKurus  Int? // onayda iyzico'dan iade edilen tutar
-  iyzicoRefundId String? // iyzico iade yanıtındaki paymentId
-  idempotencyKey String?      @unique // paket + iade türü başına tek iyzico iadesi (onay anında yazılır)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@index([userId])
-  @@index([status])
-}
-
-enum RefundType {
-  GROUP
-  ONEONE
-  FULL
-  KANKA // Kankamla paketi
-}
-
-enum RefundStatus {
-  PENDING
-  PROCESSING // iyzico'ya gönderildi / sonuç bekleniyor; yeniden gönderilmez
-  APPROVED
-  REJECTED
-}
-
 // ─────────────────────────────────────────────
 // SADAKAT PROGRAMI
 // ─────────────────────────────────────────────
@@ -1189,4 +1168,20 @@ model JantiHaydarRequest {
 
   @@index([createdAt])
   @@index([phone])
+}
+
+// Haftalık buluşma seçimi: Pazar 23:59'dan sonra (ISO hafta, TR saati) paketi olan kullanıcı bu hafta hangi türlerin
+// taramasına gireceğini seçer. Seçilmeyen türün taramasına girilmez, hakkı düşmez. Seçim değiştirilemez.
+// Son saatler: Grup Perşembe 18:00, Başbaşa Cuma 18:00, Kankamla Cumartesi 18:00
+model WeeklySelection {
+  id         String      @id @default(cuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  year       Int
+  weekNumber Int
+  type       MeetingType
+  createdAt  DateTime    @default(now())
+
+  @@unique([userId, year, weekNumber, type])
+  @@index([year, weekNumber, type])
 }

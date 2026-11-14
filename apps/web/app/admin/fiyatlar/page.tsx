@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 
-type PlanKey = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA';
+type PlanKey = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA' | 'PRIME_1M' | 'PRIME_3M' | 'PRIME_6M' | 'PRIME_12M';
 interface CurrentPrice {
   plan: PlanKey; name: string;
   netKurus: number; webKurus: number; mobileKurus: number;
@@ -31,9 +31,9 @@ function parseNet(v: string): number | null {
   const n = Number(v.replace(/\./g, '').replace(',', '.'));
   return Number.isFinite(n) && n >= 1 ? Math.round(n * 100) : null;
 }
-const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' };
-// Paket hakları (her kısım 4 döngü geçerli)
-const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '2 grup masası', KARSIMDA: '1 başbaşa masası', ICERDE: '2 grup + 1 başbaşa masası', KANKAMLA: '2 Kankamla masası (kanka ücretsiz)' };
+const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
+// Paket hakları (kullanılana kadar geçerli; Prime her 30 günde yenilenir)
+const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '1 grup buluşması', KARSIMDA: '1 başbaşa buluşması', ICERDE: '1 grup + 1 başbaşa buluşması', KANKAMLA: '1 Kankamla buluşması (kanka ücretsiz)', PRIME_1M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla', PRIME_3M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla', PRIME_6M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla', PRIME_12M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla' };
 
 // Geri kazanım indirimi: sabit TL + indirimin uygulanacağı paketler (AppConfig)
 function WinbackSettings() {

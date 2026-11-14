@@ -7,9 +7,8 @@ import { ACard, AError, AMono, APage, AT, ATitle } from '@/components/admin/Admi
 import { AInput } from '@/components/admin/AdminControls';
 import { adm } from '@/theme/theme';
 
-interface RefundRow { id: string; userName: string; phone: string | null; refundType: string; plan: string; status: string; createdAt: string; iyzicoPaymentId: string | null; amountKurus: number }
 interface PaymentRow { id: string; userName: string; phone: string | null; plan: string; status: string; amountKurus: number; iyzicoPaymentId: string | null; failureReason: string | null; createdAt: string }
-interface Settlements { refunds: RefundRow[]; payments: PaymentRow[] }
+interface Settlements { payments: PaymentRow[] }
 const tl = (k: number) => `₺${(k / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const when = (d: string) => new Date(d).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' });
 
@@ -36,21 +35,12 @@ export default function AdminSonuclandirma() {
   const [error, setError] = useState('');
   const load = () => { api.get<Settlements>('/admin/settlements').then(d => { setData(d); setError(''); }).catch((e: Error) => setError(e.message)); };
   useEffect(load, []);
-  const settleRefund = (id: string, status: string) => async (note?: string) => { await api.patch(`/admin/settlements/refunds/${id}`, { status, note }); load(); };
   const settlePayment = (id: string, status: string) => async (note?: string) => { await api.patch(`/admin/settlements/payments/${id}`, { status, note }); load(); };
   return (
     <APage maxWidth={760}>
-      <ATitle style={{ marginBottom: 8 }}>İade ve Ödeme Sonuçlandırma</ATitle>
+      <ATitle style={{ marginBottom: 8 }}>Ödeme Sonuçlandırma</ATitle>
       <AT style={{ marginBottom: 20, fontSize: 13, color: adm.amber, lineHeight: 19.5 }}>Bu ekrandan iyzico&apos;ya istek gitmez, para gönderilmez. Önce iyzico panelinden sonucu kontrol edin, sonra işleyin.</AT>
       <AError>{error}</AError>
-      <ACard style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
-        <View style={{ paddingVertical: 12, paddingHorizontal: 18 }}><ATitle>İşleniyor Durumundaki İadeler</ATitle></View>
-        {data?.refunds.length === 0 && <AT style={{ paddingHorizontal: 18, paddingBottom: 16, fontSize: 13, color: adm.muted }}>Kayıt yok.</AT>}
-        {data?.refunds.map(r => (
-          <Row key={r.id} title={r.userName} lines={[`${r.plan} · ${r.refundType} · ${tl(r.amountKurus)}`, `${when(r.createdAt)}${r.phone ? ` · ${r.phone}` : ''}`, `iyzico: ${r.iyzicoPaymentId ?? '—'}`]}
-            actions={[{ label: 'Para İade Edildi (Onayla)', variant: 'admOk', run: settleRefund(r.id, 'APPROVED') }, { label: 'Para Çıkmadı (Reddet)', variant: 'admNo', run: settleRefund(r.id, 'REJECTED') }]} />
-        ))}
-      </ACard>
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
         <View style={{ paddingVertical: 12, paddingHorizontal: 18 }}><ATitle>İade Bekleyen Fazla Ödemeler</ATitle></View>
         {data?.payments.length === 0 && <AT style={{ paddingHorizontal: 18, paddingBottom: 16, fontSize: 13, color: adm.muted }}>Kayıt yok.</AT>}

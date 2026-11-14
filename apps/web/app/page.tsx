@@ -942,7 +942,7 @@ export default function Home() {
                         className="btn-primary w-full"
                         style={{ justifyContent: 'center' }}
                       >
-                        Paket Seç
+                        Paket Al
                       </button>
                     )}
                   </div>

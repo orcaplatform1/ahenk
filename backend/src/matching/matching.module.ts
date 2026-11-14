@@ -1,3 +1,4 @@
+import { WeeklySelectionController, WeeklySelectionService } from "./weekly-selection";
 import { Module } from "@nestjs/common";
 import { BullModule } from "@nestjs/bull";
 import { MatchingService } from "./matching.service";
@@ -22,8 +23,8 @@ import { VenuePanelModule } from "../venue-panel/venue-panel.module";
     BullModule.registerQueue({ name: MATCHING_QUEUE }),
     BullModule.registerQueue({ name: ASSIGN_QUEUE }),
   ],
-  controllers: [MatchingController],
-  providers: [MatchingService, MatchingScheduler, AssignProcessor],
+  controllers: [MatchingController, WeeklySelectionController],
+  providers: [MatchingService, MatchingScheduler, AssignProcessor, WeeklySelectionService],
   exports: [MatchingService],
 })
 export class MatchingModule {}

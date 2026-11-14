@@ -45,7 +45,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
 };
 const VENUE_PACKAGES = ['SADE', 'ORTA', 'PREMIUM'];
 const TYPE_LABEL: Record<string, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Başbaşa' };
-const PLAN_LABEL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' };
+const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 const INACTIVE = ['CANCELLED', 'DECLINED', 'NO_SHOW'];
 const ROW_BORDER = 'rgba(26,58,92,0.5)';
 
@@ -441,7 +441,7 @@ export default function AdminMatches() {
                       <ALabel>ÜCRETSİZ ABONELİK VER</ALabel>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         <AdminSelect value={grantPlan} onChange={setGrantPlan} placeholder="Paket seç…" title="Paket seç" style={{ flex: 1, minWidth: 0 }}
-                          options={[{ value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }]} />
+                          options={[{ value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }]} />
                         <Btn variant="admBlueVer" disabled={!!userAction || !grantPlan} label={userAction === 'sub' ? '…' : 'Ver'} onPress={userGrantSubscription} />
                       </View>
                     </Sect>

@@ -9,7 +9,7 @@ import { ADialog } from '@/components/admin/ADialog';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { adm, mono } from '@/theme/theme';
 
-type PlanKey = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA';
+type PlanKey = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA' | 'PRIME_1M' | 'PRIME_3M' | 'PRIME_6M' | 'PRIME_12M';
 interface CurrentPrice { plan: PlanKey; name: string; netKurus: number; webKurus: number; mobileKurus: number; webDiscountKurus: number; mobileDiscountKurus: number; updatedAt: string }
 interface HistoryRow { plan: PlanKey; netKurus: number; webKurus: number; mobileKurus: number; createdAt: string; createdBy: { profile: { firstName: string; lastName: string } | null } | null }
 interface PricesResponse { current: CurrentPrice[]; history: HistoryRow[] }
@@ -17,8 +17,8 @@ const roundTL = (k: number) => Math.round(k / 100) * 100;
 function compute(net: number) { const web = roundTL(net * 1.2); const mobile = roundTL((net * 1.2) / 0.85); return { web, mobile, webDiscount: roundTL(web * 0.9), mobileDiscount: roundTL(mobile * 0.9) }; }
 const tl = (k: number) => `${(k / 100).toLocaleString('tr-TR', { maximumFractionDigits: 2 })} ₺`;
 function parseNet(v: string): number | null { const n = Number(v.replace(/\./g, '').replace(',', '.')); return Number.isFinite(n) && n >= 1 ? Math.round(n * 100) : null; }
-const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' };
-const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '2 grup masası', KARSIMDA: '1 başbaşa masası', ICERDE: '2 grup + 1 başbaşa masası', KANKAMLA: '2 Kankamla masası (kanka ücretsiz)' };
+const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
+const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '1 grup buluşması', KARSIMDA: '1 başbaşa buluşması', ICERDE: '1 grup + 1 başbaşa buluşması', KANKAMLA: '1 Kankamla buluşması (kanka ücretsiz)', PRIME_1M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla', PRIME_3M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla', PRIME_6M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla', PRIME_12M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla' };
 
 function WinbackSettings() {
   const [amount, setAmount] = useState('');

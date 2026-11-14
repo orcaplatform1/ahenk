@@ -20,6 +20,7 @@ import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { Gender, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "../generated/prisma/client";
 import { pickBot, alertBotNotFound, availableBots, recentlyMetBotIds } from "./bot-picker";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right";
+import { selectedThisWeek } from "./weekly-selection";
 import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, restoreGroupRights } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { ASSIGN_QUEUE, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT, enqueueAssign, randomBotDelayMs } from "./assign-queue";
@@ -535,7 +536,8 @@ export class MatchingService {
       };
       const [buyer, kanka] = await Promise.all([
         this.prisma.user.findFirst({
-          where: { id: sub.userId, status: "ACTIVE", isBot: false, oceanScore: { isNot: null }, kyc: { status: KycStatus.APPROVED }, ...notThisWeek },
+          // Paketin sahibi bu hafta Kankamla'yı seçmiş olmalı (weekly-selection.ts)
+          where: { id: sub.userId, status: "ACTIVE", isBot: false, oceanScore: { isNot: null }, kyc: { status: KycStatus.APPROVED }, ...notThisWeek, ...selectedThisWeek(MeetingType.KANKA) },
           select: ELIGIBLE_SELECT,
         }),
         this.prisma.user.findFirst({
@@ -1131,8 +1133,9 @@ export class MatchingService {
         isBot: false,
         oceanScore: { isNot: null },
         kyc: { status: KycStatus.APPROVED },
-        // Paketin o kısmı açık olmalı: hak kalmış ve 4 döngü dolmamış
+        // Paketin o kısmı açık olmalı (hak kalmış) ve kişi bu hafta bu türü seçmiş olmalı (weekly-selection.ts)
         subscriptions: { some: { ...(oneOnOne ? OPEN_ONE_ON_ONE_SUB : OPEN_GROUP_SUB), plan: { in: plans } } },
+        ...selectedThisWeek(oneOnOne ? MeetingType.ONE_ON_ONE : MeetingType.GROUP),
         // Bu hafta aynı türde aktif masası olan ya da rezervasyonunu iptal eden havuza girmez
         // (İçerde: grubu iptal eden yalnızca gruba, başbaşayı iptal eden yalnızca başbaşaya giremez)
         participations: {

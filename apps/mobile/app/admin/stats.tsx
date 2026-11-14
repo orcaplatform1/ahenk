@@ -6,8 +6,8 @@ import { ACard, AError, AGrid, ALabel, AMono, APage, AT, ATableRow, ATitle } fro
 import { adm } from '@/theme/theme';
 
 interface PackageDist { masadaPct: number; karsimdaPct: number; icerdePct: number; kankamlaPct: number; masadaCount: number; karsimdaCount: number; icerdeCount: number; kankamlaCount: number }
-interface StatsOverview { totalRevenue: number; totalRefund: number; netRevenue: number; vatAmount: number; netCommission: number; activeUsers: number; kycPending: number; matchRateThisWeek: number; referralRegisteredCount: number; referralTotalDiscountTL: number; totalMeetings: number; groupMeetings: number; oneOnOneMeetings: number; kankaMeetings: number; algorithmSuccessRate: number; packageDistribution: PackageDist }
-interface CityRow { city: string; totalTables: number; kankaTables: number; activeMembers: number; revenue: number; discount: number; refund: number; net: number; vat: number; trend: string }
+interface StatsOverview { totalRevenue: number; netRevenue: number; vatAmount: number; netCommission: number; activeUsers: number; kycPending: number; matchRateThisWeek: number; referralRegisteredCount: number; referralTotalDiscountTL: number; totalMeetings: number; groupMeetings: number; oneOnOneMeetings: number; kankaMeetings: number; algorithmSuccessRate: number; packageDistribution: PackageDist }
+interface CityRow { city: string; totalTables: number; kankaTables: number; activeMembers: number; revenue: number; discount: number; net: number; vat: number; trend: string }
 interface DashboardSummary { totalUsers: number; kycPending: number; activeMeetingsThisWeek: number; groupMeetingsThisWeek: number; oneOnOneMeetingsThisWeek: number; kankaMeetingsThisWeek: number; pioneer: { count: number; remaining: number } }
 
 function useCountUp(target: number, duration = 1200) {
@@ -91,8 +91,7 @@ export default function AdminStats() {
             <StatCard label="Aktif Üye" value={data.activeUsers} accent={adm.blue} sub={data.kycPending > 0 ? `${data.kycPending} KYC bekliyor` : undefined} />
           </Grid>
           <Grid>
-            <StatCard label="İade Tutarları" value={data.totalRefund} prefix="₺" fmtFn={fmtK} accent={adm.red} />
-            <StatCard label="Net Ciro" value={data.netRevenue} prefix="₺" fmtFn={fmtK} accent={adm.green} sub="Brüt ciro − iadeler" />
+            <StatCard label="Net Ciro" value={data.netRevenue} prefix="₺" fmtFn={fmtK} accent={adm.green} sub="Brüt ciro" />
             <StatCard label="KDV (%20)" value={data.vatAmount} prefix="₺" fmtFn={fmtK} accent={adm.amber} sub="Net ciro içindeki vergi" />
           </Grid>
           <ACard style={{ marginBottom: 12 }}>
@@ -125,7 +124,7 @@ export default function AdminStats() {
             ['Şehir', <AT key="c" w={600} style={{ fontSize: 13 }}>{r.city}</AT>], ['Masa', <AT key="m" style={{ fontSize: 13, color: adm.muted }}>{r.totalTables}</AT>],
             ['Kankamla', <AT key="k" style={{ fontSize: 13, color: adm.muted }}>{r.kankaTables ?? 0}</AT>], ['Üye', <AT key="u" style={{ fontSize: 13, color: adm.muted }}>{r.activeMembers}</AT>],
             ['Ciro', <AT key="ci" style={{ fontSize: 13, color: adm.muted }}>₺{fmtK(r.revenue)}</AT>], ['İndirim', <AT key="i" style={{ fontSize: 13, color: adm.muted }}>₺{fmtK(r.discount)}</AT>],
-            ['İade', <AT key="ia" style={{ fontSize: 13, color: r.refund > 0 ? adm.red : adm.muted }}>₺{fmtK(r.refund)}</AT>], ['Net', <AT key="n" w={600} style={{ fontSize: 13 }}>₺{fmtK(r.net)}</AT>],
+            ['Net', <AT key="n" w={600} style={{ fontSize: 13 }}>₺{fmtK(r.net)}</AT>],
             ['KDV', <AT key="v" style={{ fontSize: 13, color: adm.muted }}>₺{fmtK(r.vat)}</AT>],
             ['Trend', <AT key="t" w={600} style={{ fontSize: 13, color: String(r.trend).startsWith('-') ? adm.red : adm.green }}>{String(r.trend).startsWith('-') ? '↓ ' : '↑ '}{String(r.trend).replace('-', '')}</AT>],
           ]} />

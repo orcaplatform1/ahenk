@@ -34,11 +34,20 @@ interface OwnSub {
   kankaRights: number;
 }
 
+const isPrimePlan = (plan: string) => plan.startsWith('PRIME_');
 const SUB_OPEN: Record<MasaTuru, (s: OwnSub) => boolean> = {
-  GROUP: s => (s.plan === 'MASADA' || s.plan === 'ICERDE') && s.groupRights > 0,
-  ONE_ON_ONE: s => (s.plan === 'KARSIMDA' || s.plan === 'ICERDE') && !s.usedAt,
-  KANKA: s => s.plan === 'KANKAMLA' && s.kankaRights > 0,
+  GROUP: s => (s.plan === 'MASADA' || s.plan === 'ICERDE' || isPrimePlan(s.plan)) && s.groupRights > 0,
+  ONE_ON_ONE: s => (s.plan === 'KARSIMDA' || s.plan === 'ICERDE' || isPrimePlan(s.plan)) && !s.usedAt,
+  KANKA: s => (s.plan === 'KANKAMLA' || isPrimePlan(s.plan)) && s.kankaRights > 0,
 };
+
+// Haftalık buluşma seçimi (GET /weekly-selection)
+export interface WeeklySelection {
+  submitted: boolean;
+  selected: MasaTuru[];
+  options: { type: MasaTuru; deadline: string; open: boolean }[];
+  showModal: boolean;
+}
 
 export interface MeData {
   firstName: string;
@@ -71,6 +80,7 @@ export function useMasaTabs() {
   const [kanka, setKanka] = useState<{ initials: string; gender: string | null } | null>(null);
   const [subs, setSubs] = useState<OwnSub[]>([]);
   const [kycAt, setKycAt] = useState<string | null>(null);
+  const [selection, setSelection] = useState<WeeklySelection | null>(null);
 
   const pastList = () => MASA_TURLERI.filter(isPastClosing).join();
   const [pastClosed, setPastClosed] = useState(pastList);
@@ -79,6 +89,7 @@ export function useMasaTabs() {
   const refreshPlan = useCallback(() => Promise.all([
     api.get<MeData>('/auth/me').then(u => { if (u) setMe(u); }).catch(() => {}),
     api.get<{ subscriptions: OwnSub[] }>('/payment/subscriptions').then(r => { if (Array.isArray(r?.subscriptions)) setSubs(r.subscriptions); }).catch(() => {}),
+    api.get<WeeklySelection>('/weekly-selection').then(r => { if (r && Array.isArray(r.selected)) setSelection(r); }).catch(() => {}),
   ]), []);
 
   useEffect(() => {
@@ -102,6 +113,13 @@ export function useMasaTabs() {
       .catch(() => {})
       .finally(() => setDashLoaded(true));
   }, []);
+
+  // Haftalık seçim tek seferdir; gönderilince seçilen türlerin taramasına girilir
+  const submitSelection = useCallback(async (types: MasaTuru[]) => {
+    const r = await api.post<WeeklySelection>('/weekly-selection', { types });
+    setSelection(r);
+    void reload();
+  }, [reload]);
 
   useEffect(() => {
     reload();
@@ -148,7 +166,10 @@ export function useMasaTabs() {
   const tabAdminCancelled = !tabItem && adminCancelledTypes.includes(tab);
   const kycApproved = me?.kyc?.status === 'APPROVED';
   const tabPastClosing = pastClosed.split(',').includes(tab);
-  const scanning = owned.includes(tab) && kycApproved && !tabPastClosing && !cancelledTypes.includes(tab);
+  // Bu hafta seçilen türler: yalnız onların taramasına girilir
+  const selectedTypes = selection?.selected ?? [];
+  const hasPackage = subs.length > 0;
+  const scanning = owned.includes(tab) && kycApproved && !tabPastClosing && !cancelledTypes.includes(tab) && selectedTypes.includes(tab);
 
   // Havuza giriş: paket ve KYC onayının ikisi de tamamlandığı an; biri bilinmiyorsa null
   const poolEntry = (t: MasaTuru) => {
@@ -161,6 +182,9 @@ export function useMasaTabs() {
       return table && !isTableLocked(table.meeting.scheduledAt) ? 'FORMING' : 'TABLE';
     }
     if (cancelledTypes.includes(t)) return 'CANCELLED';
+    // Paketi olan kullanıcı bu hafta seçmediği türde pasif; hiç paketi olmayanda "Abonelik Yok"
+    if (!hasPackage) return 'NONE';
+    if (!selectedTypes.includes(t)) return 'PASSIVE';
     if (!rights[t]) return 'NONE';
     if (!kycApproved) return 'KYC';
     if (t === 'KANKA' && kankaWaiting) return 'KANKA';
@@ -176,7 +200,7 @@ export function useMasaTabs() {
     : undefined;
 
   return {
-    ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved,
+    ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, selection, submitSelection,
     tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled,
   };
 }

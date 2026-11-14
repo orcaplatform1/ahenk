@@ -4,7 +4,10 @@ import { PrismaService } from "../prisma/prisma.service";
 import { PLAN_CONFIG } from "./payment.constants";
 import { computePrices } from "./pricing";
 
-const PLANS = [SubscriptionPlan.MASADA, SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE, SubscriptionPlan.KANKAMLA];
+const PLANS = [
+  SubscriptionPlan.MASADA, SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE, SubscriptionPlan.KANKAMLA,
+  SubscriptionPlan.PRIME_1M, SubscriptionPlan.PRIME_3M, SubscriptionPlan.PRIME_6M, SubscriptionPlan.PRIME_12M,
+];
 
 @Injectable()
 export class PricingService {

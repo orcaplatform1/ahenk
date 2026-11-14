@@ -2,23 +2,32 @@ import { Prisma, PrismaClient, SubscriptionPlan, SubscriptionStatus, MeetingType
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
-// Tek seferlik paketler:
-// - Masada:   2 grup masası hakkı
-// - Karşımda: 1 başbaşa masası hakkı (usedAt ile izlenir)
-// - İçerde:   2 grup masası hakkı + 1 başbaşa masası hakkı
-// - Kankamla: 2 Kankamla masası hakkı (alıcının paketi; kankası ücretsiz katılır)
-// Her kısım 4 döngü geçerli. Döngü sayacı o türün her kilidinde (grup Perşembe, başbaşa Cuma) 1 artar.
-// Kısmın hakkı bitince ya da 4 döngü dolunca o kısım kapanır; bütün kısımları kapanan paket EXPIRED olur.
-export const PACKAGE_CYCLES = 4;
+// Tek seferlik paketler (haklar kullanılana kadar geçerli, süre / döngü sınırı yok):
+// - Grup (MASADA):       1 grup buluşması hakkı
+// - Başbaşa (KARSIMDA):  1 başbaşa buluşması hakkı (usedAt ile izlenir)
+// - İçerde (ICERDE):     1 grup + 1 başbaşa buluşması hakkı
+// - Kankamla (KANKAMLA): 1 Kankamla buluşması hakkı (alıcının paketi; kankası ücretsiz katılır)
+// Prime (PRIME_1M/3M/6M/12M): 1 grup + 1 başbaşa + 1 kankamla; satın almadan itibaren her 30 günde yeniden tanımlanır.
+// Döngü sayaçları yalnız bilgi amaçlı artar. Bütün kısımları kapanan tek seferlik paket EXPIRED olur;
+// Prime dönem sonuna kadar ACTIVE kalır (prime.ts).
+export const PRIME_PLANS: SubscriptionPlan[] = [SubscriptionPlan.PRIME_1M, SubscriptionPlan.PRIME_3M, SubscriptionPlan.PRIME_6M, SubscriptionPlan.PRIME_12M];
+export const isPrime = (plan: SubscriptionPlan): boolean => PRIME_PLANS.includes(plan);
 export const GROUP_RIGHTS: Record<SubscriptionPlan, number> = {
-  [SubscriptionPlan.MASADA]: 2,
+  [SubscriptionPlan.MASADA]: 1,
   [SubscriptionPlan.KARSIMDA]: 0,
-  [SubscriptionPlan.ICERDE]: 2,
+  [SubscriptionPlan.ICERDE]: 1,
   [SubscriptionPlan.KANKAMLA]: 0,
+  [SubscriptionPlan.PRIME_1M]: 1,
+  [SubscriptionPlan.PRIME_3M]: 1,
+  [SubscriptionPlan.PRIME_6M]: 1,
+  [SubscriptionPlan.PRIME_12M]: 1,
 };
-export const KANKA_RIGHTS = 2;
-export const GROUP_PLANS: SubscriptionPlan[] = [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE];
-export const ONE_ON_ONE_PLANS: SubscriptionPlan[] = [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE];
+export const KANKA_RIGHTS = 1;
+export const GROUP_PLANS: SubscriptionPlan[] = [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE, ...PRIME_PLANS];
+export const ONE_ON_ONE_PLANS: SubscriptionPlan[] = [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE, ...PRIME_PLANS];
+export const KANKA_PLANS: SubscriptionPlan[] = [SubscriptionPlan.KANKAMLA, ...PRIME_PLANS];
+// Pakette tanımlı başlangıç hakları (satın almada ve Prime 30 günlük yenilemede)
+export const kankaRightsOf = (plan: SubscriptionPlan): number => (KANKA_PLANS.includes(plan) ? KANKA_RIGHTS : 0);
 
 // Kilit anından bu kadar önce alınan paket o döngüye sayılmaz (atama 23:44'te durur, kilit 23:59)
 const CYCLE_COUNT_CUTOFF_MS = 15 * 60 * 1000;
@@ -34,15 +43,15 @@ type RightsSub = {
 };
 
 export function groupPartOpen(s: RightsSub): boolean {
-  return GROUP_PLANS.includes(s.plan) && s.groupRights > 0 && s.groupCycles < PACKAGE_CYCLES;
+  return GROUP_PLANS.includes(s.plan) && s.groupRights > 0;
 }
 
 export function oneOnOnePartOpen(s: RightsSub): boolean {
-  return ONE_ON_ONE_PLANS.includes(s.plan) && !s.usedAt && s.oneOnOneCycles < PACKAGE_CYCLES;
+  return ONE_ON_ONE_PLANS.includes(s.plan) && !s.usedAt;
 }
 
 export function kankaPartOpen(s: RightsSub): boolean {
-  return s.plan === SubscriptionPlan.KANKAMLA && (s.kankaRights ?? 0) > 0 && (s.kankaCycles ?? 0) < PACKAGE_CYCLES;
+  return KANKA_PLANS.includes(s.plan) && (s.kankaRights ?? 0) > 0;
 }
 
 // Havuz sorguları için: grup / başbaşa kısmı açık aktif paket
@@ -50,31 +59,29 @@ export const OPEN_GROUP_SUB: Prisma.SubscriptionWhereInput = {
   status: SubscriptionStatus.ACTIVE,
   plan: { in: GROUP_PLANS },
   groupRights: { gt: 0 },
-  groupCycles: { lt: PACKAGE_CYCLES },
 };
 export const OPEN_ONE_ON_ONE_SUB: Prisma.SubscriptionWhereInput = {
   status: SubscriptionStatus.ACTIVE,
   plan: { in: ONE_ON_ONE_PLANS },
   usedAt: null,
-  oneOnOneCycles: { lt: PACKAGE_CYCLES },
 };
 export const OPEN_KANKA_SUB: Prisma.SubscriptionWhereInput = {
   status: SubscriptionStatus.ACTIVE,
-  plan: SubscriptionPlan.KANKAMLA,
+  plan: { in: KANKA_PLANS },
   kankaRights: { gt: 0 },
-  kankaCycles: { lt: PACKAGE_CYCLES },
 };
 export const RIGHTS_SELECT = {
   plan: true, groupRights: true, groupCycles: true, usedAt: true, oneOnOneCycles: true, kankaRights: true, kankaCycles: true,
 } as const;
 
-// Kısımlarına göre paket durumu: açık kısım varsa ACTIVE, yoksa EXPIRED (iptal edilmiş paket değişmez)
+// Kısımlarına göre paket durumu: açık kısım varsa ACTIVE, yoksa EXPIRED (iptal edilmiş paket değişmez).
+// Prime hakları bitse de dönem sonuna kadar ACTIVE kalır (30 günde bir yenilenir; süre bitişi prime.ts'de).
 export async function syncPackageStatus(db: Db, subscriptionId: string): Promise<void> {
   const s = await db.subscription.findUnique({
     where: { id: subscriptionId },
     select: { status: true, ...RIGHTS_SELECT },
   });
-  if (!s || s.status === SubscriptionStatus.CANCELLED) return;
+  if (!s || s.status === SubscriptionStatus.CANCELLED || isPrime(s.plan)) return;
   const next = groupPartOpen(s) || oneOnOnePartOpen(s) || kankaPartOpen(s) ? SubscriptionStatus.ACTIVE : SubscriptionStatus.EXPIRED;
   if (next !== s.status) await db.subscription.update({ where: { id: subscriptionId }, data: { status: next } });
 }

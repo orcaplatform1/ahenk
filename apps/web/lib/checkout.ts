@@ -16,6 +16,11 @@ export async function startCheckout(plan: string, planName: string, useDiscount?
     ...(useDiscount ? { useDiscount } : {}),
   });
   rememberPendingPurchase(plan, planName, data.plan.amountKurus);
+  mountIyzicoForm(data.checkoutFormContent);
+}
+
+// iyzico formunu (ödeme ya da Prime abonelik formu) sayfaya yerleştirir
+export function mountIyzicoForm(checkoutFormContent: string) {
   // iyzico formu bu div'e yerleşir
   let container = document.getElementById('iyzipay-checkout-form');
   if (!container) {
@@ -26,7 +31,7 @@ export async function startCheckout(plan: string, planName: string, useDiscount?
   }
   // innerHTML ile eklenen script çalışmaz; her script yeniden oluşturulup eklenir
   const tmp = document.createElement('div');
-  tmp.innerHTML = data.checkoutFormContent;
+  tmp.innerHTML = checkoutFormContent;
   tmp.querySelectorAll('script').forEach((old) => {
     const s = document.createElement('script');
     if (old.src) s.src = old.src;

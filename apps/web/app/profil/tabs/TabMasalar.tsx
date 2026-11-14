@@ -8,6 +8,7 @@ import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { ConfirmedRadarView, KankaPairs, MasaDetayKarti, RezervasyonIptal, gColor, type DashboardItem, type MasaDetayData, type MasaTuru, type VenuePhoto } from '@ahenk/ui';
 import LiveTabs from '@/components/live/LiveTabs';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
+import WeeklySelectionModal from '@/components/live/WeeklySelectionModal';
 
 // GET /meetings/my-history yanıtı (sadece tamamlanmış masalar)
 interface HistoryMeeting {
@@ -494,7 +495,7 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
   kycApproved?: boolean;
   onGoKyc?: () => void;
 }) {
-  const { ready, kanka, tab, tabItem, selectTab, statuses, reload, tabAdminCancelled } = useMasaTabs();
+  const { ready, kanka, tab, tabItem, selectTab, statuses, reload, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -512,6 +513,7 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
 
   return (
     <div className="flex flex-col gap-6">
+      <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
       {!kycApproved && (
         <div
           className="flex items-center justify-between gap-4 px-5 py-4 rounded-2xl"
@@ -533,7 +535,7 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
       )}
       {locked && (
         <a href="/profil?tab=paket" className="btn-primary w-full justify-center">
-          Paket Seç
+          Paket Al
         </a>
       )}
 

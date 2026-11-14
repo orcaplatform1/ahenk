@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { buildInitials, fmtDate, gColor, type DashboardItem, type MasaTuru } from '@/lib/masa';
+import { WeeklySelectionModal } from '@/components/WeeklySelectionModal';
 import { useMasaTabs } from '@/lib/useMasaTabs';
 import { LiveTabs } from '@/components/LiveTabs';
 import { KankaPairs } from '@/components/KankaPairs';
@@ -236,7 +237,7 @@ export default function Masalarim() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { ready, me, items, kanka, tab, tabItem, selectTab, statuses, reload, tabAdminCancelled, kycApproved } = useMasaTabs();
+  const { ready, me, items, kanka, tab, tabItem, selectTab, statuses, reload, tabAdminCancelled, kycApproved, selection, submitSelection } = useMasaTabs();
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -249,6 +250,7 @@ export default function Masalarim() {
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
       <ScreenGlow />
+      <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 32, paddingHorizontal: 16, paddingBottom: 32, gap: 24, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
         <Glow />
         {!ready ? <SkeletonBlock lines={5} /> : (
@@ -259,7 +261,7 @@ export default function Masalarim() {
                 <BtnPrimary label="Doğrula" onPress={() => router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } })} />
               </View>
             )}
-            {locked && <BtnPrimary label="Paket Seç" full onPress={() => router.navigate('/(tabs)/paketim')} />}
+            {locked && <BtnPrimary label="Paket Al" full onPress={() => router.navigate('/(tabs)/paketim')} />}
             {locked && (
               <View style={{ backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.25)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
                 <T style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 16.5 }}>Aşağıda bulunan Masa Detay bilgileri şuanda önizlemedir. Paket alarak eşleştiğinizde, gerçek zamanlı randevu bilgileri yer alacaktır.</T>

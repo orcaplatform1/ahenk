@@ -8,40 +8,29 @@ import {
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { createHmac } from "crypto";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { Cron } from "@nestjs/schedule";
 import { PrismaService } from "../prisma/prisma.service";
 import { IyzicoCallbackResult, IyzicoService } from "./iyzico/iyzico.service";
-import { PLAN_CONFIG } from "./payment.constants";
+import { PLAN_CONFIG, PRIME_MONTHS } from "./payment.constants";
 import { PricingService } from "./pricing.service";
 import { WinbackService } from "./winback.service";
 import { isMaintenanceMode } from "../admin/app-settings";
-import { GROUP_RIGHTS, KANKA_RIGHTS, ONE_ON_ONE_PLANS, PACKAGE_CYCLES, groupPartOpen, oneOnOnePartOpen, syncPackageStatus } from "./package-rights";
+import { GROUP_RIGHTS, ONE_ON_ONE_PLANS, KANKA_PLANS, PRIME_PLANS, groupPartOpen, isPrime, kankaPartOpen, kankaRightsOf, oneOnOnePartOpen } from "./package-rights";
+import { PrimeService } from "./prime.service";
+import { StoreService, planOfProduct } from "./store.service";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { decryptIdentityNumber } from "../kyc/identity-number";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
-import { AdminAlertType, Prisma, SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, RefundType, ReferralStatus, PaymentDiscountType, UserStatus, MeetingType, MeetingStatus } from "../generated/prisma/client";
+import { AdminAlertType, Prisma, SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, ReferralStatus, PaymentDiscountType } from "../generated/prisma/client";
 
 type Db = PrismaService | Prisma.TransactionClient;
 
 const PENDING_MIN_AGE_MS = 45 * 60 * 1000;
 const PENDING_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 
-// İade türü → iade edilebilen paketler (İçerde'de grup / başbaşa kısmı ayrı ayrı ya da tamamı)
-const REFUND_PLANS: Record<RefundType, SubscriptionPlan[]> = {
-  [RefundType.GROUP]: [SubscriptionPlan.MASADA, SubscriptionPlan.ICERDE],
-  [RefundType.ONEONE]: [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE],
-  [RefundType.FULL]: [SubscriptionPlan.ICERDE],
-  [RefundType.KANKA]: [SubscriptionPlan.KANKAMLA],
-};
-const REFUND_SUB_SELECT = {
-  id: true, plan: true, createdAt: true, usedAt: true, groupCycles: true, oneOnOneCycles: true, kankaCycles: true,
-} as const;
-// Aynı kısmı kapsayan iade türleri birlikte işlenemez (İçerde'de FULL hem grup hem başbaşa kısmını kapsar)
-const refundsOverlap = (a: RefundType, b: RefundType): boolean =>
-  a === b || (a === RefundType.FULL && b !== RefundType.KANKA) || (b === RefundType.FULL && a !== RefundType.KANKA);
-type RefundSub = { id: string; plan: SubscriptionPlan; createdAt: Date; usedAt: Date | null; groupCycles: number; oneOnOneCycles: number; kankaCycles: number };
 
 
 @Injectable()
@@ -55,67 +44,35 @@ export class PaymentService {
     @InjectQueue(ASSIGN_QUEUE) private assignQueue: Queue,
     private pricing: PricingService,
     private winback: WinbackService,
+    private prime: PrimeService,
+    private store: StoreService,
   ) {}
 
   // ─── Mevcut abonelik durumu ───────────────────────────────────────────────
 
+  // Aktif paketler ve türüne göre kalan hak adedi (profildeki paket kutusu)
   async getSubscriptions(userId: string) {
     const subs = await this.prisma.subscription.findMany({
       where: { userId, status: SubscriptionStatus.ACTIVE },
       orderBy: { createdAt: "desc" },
       select: {
-        id: true,
-        plan: true,
-        status: true,
-        startsAt: true,
-        usedAt: true,
-        createdAt: true,
-        groupRights: true,
-        groupCycles: true,
-        oneOnOneCycles: true,
-        kankaRights: true,
-        kankaCycles: true,
-        payment: { select: { status: true } },
+        id: true, plan: true, status: true, startsAt: true, usedAt: true, createdAt: true,
+        groupRights: true, groupCycles: true, oneOnOneCycles: true, kankaRights: true, kankaCycles: true,
+        expiresAt: true, rightsResetAt: true, autoRenew: true, renewCancelledAt: true, storePlatform: true,
       },
     });
-
-    // Paket süresince kurulmuş masa varsa o tür için iade yok
-    const withTables = await Promise.all(subs.map(async ({ payment, ...s }) => ({
-      ...s,
-      paid: payment?.status === PaymentStatus.SUCCESS,
-      groupTableFormed: await this.tableFormedSince(userId, MeetingType.GROUP, s.createdAt),
-      oneOnOneTableFormed: await this.tableFormedSince(userId, MeetingType.ONE_ON_ONE, s.createdAt),
-    })));
-
+    const rights = {
+      group: subs.filter(groupPartOpen).reduce((n, s) => n + s.groupRights, 0),
+      oneOnOne: subs.filter(oneOnOnePartOpen).length,
+      kanka: subs.filter(kankaPartOpen).reduce((n, s) => n + s.kankaRights, 0),
+    };
     return {
-      subscriptions: withTables,
+      subscriptions: subs.map((s) => ({ ...s, isPrime: isPrime(s.plan), name: PLAN_CONFIG[s.plan].nametr })),
+      rights,
       hasMasada: subs.some(groupPartOpen),
       hasKarsimda: subs.some(oneOnOnePartOpen),
-      // Şu an talep edilebilecek iade türleri (süresi dolmuş paketler dahil; kural assertRefundAllowed)
-      refundOptions: await this.refundOptions(userId),
-      packageCycles: PACKAGE_CYCLES,
+      primeActive: subs.some((s) => isPrime(s.plan)),
     };
-  }
-
-  private async refundOptions(userId: string): Promise<RefundType[]> {
-    const options: RefundType[] = [];
-    for (const type of [RefundType.GROUP, RefundType.ONEONE, RefundType.FULL, RefundType.KANKA]) {
-      const subs = await this.prisma.subscription.findMany({
-        where: {
-          userId,
-          plan: { in: REFUND_PLANS[type] },
-          status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.EXPIRED] },
-          payment: { status: PaymentStatus.SUCCESS },
-          refundRequests: { none: { status: { in: ["PENDING", "PROCESSING"] } } },
-        },
-        select: REFUND_SUB_SELECT,
-      });
-      for (const sub of subs) {
-        const ok = await this.assertRefundAllowed(userId, sub, type).then(() => true, () => false);
-        if (ok) { options.push(type); break; }
-      }
-    }
-    return options;
   }
 
   // ─── iyzico Checkout Form başlat ─────────────────────────────────────────
@@ -132,8 +89,25 @@ export class PaymentService {
     };
   }
 
-  // Aktif paket kuralı: Masada → Masada/İçerde alınamaz; Karşımda → Karşımda/İçerde; İçerde → hiçbiri
+  // Satın alma kuralları:
+  // - Aktif Prime'ı olan ikinci Prime alamaz.
+  // - Aktif Prime'ı olan tek seferlik paket alamaz; istisna: Prime'da hakkı bitmiş tür varsa yalnız o türü içeren
+  //   tek seferlik paket alınabilir (İçerde iki türü de içerdiği için iki türün hakkı da bitmiş olmalı).
+  // - Aynı türün açık hakkı varken o türü içeren tek seferlik paket alınamaz (planConflict).
   private async assertCanBuy(userId: string, plan: SubscriptionPlan) {
+    const prime = await this.prisma.subscription.findFirst({
+      where: { userId, status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS } },
+      select: { plan: true, groupRights: true, groupCycles: true, usedAt: true, oneOnOneCycles: true, kankaRights: true, kankaCycles: true },
+    });
+    if (isPrime(plan)) {
+      if (prime) throw new ConflictException("Aktif Prime aboneliğin var; ikinci bir Prime alınamaz.");
+    } else if (prime) {
+      const blocked =
+        (GROUP_RIGHTS[plan] > 0 && groupPartOpen(prime)) ||
+        (ONE_ON_ONE_PLANS.includes(plan) && oneOnOnePartOpen(prime)) ||
+        (KANKA_PLANS.includes(plan) && kankaPartOpen(prime));
+      if (blocked) throw new ConflictException("Prime aboneliğinde bu türün hakkı duruyor; yalnız hakkı biten türün paketini alabilirsin.");
+    }
     // Kankamla: kanka seçmeden alınamaz; çiftte (iki kişiden birinde) aktif Kankamla paketi bitene kadar yenisi alınamaz
     if (plan === SubscriptionPlan.KANKAMLA) {
       const link = await activeKankaLink(this.prisma, userId);
@@ -152,6 +126,9 @@ export class PaymentService {
 
   // Satın alma kuralı: init'te ve ödeme dönüşünde (kilit altında) aynı kontrol yapılır
   private async planConflict(db: Db, userId: string, plan: SubscriptionPlan): Promise<boolean> {
+    if (isPrime(plan)) {
+      return (await db.subscription.count({ where: { userId, status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS } } })) > 0;
+    }
     if (plan === SubscriptionPlan.KANKAMLA) {
       const link = await activeKankaLink(db, userId);
       const pairActive = await db.subscription.count({
@@ -182,23 +159,23 @@ export class PaymentService {
 
     await this.assertCanBuy(userId, plan);
 
-    if (platform === PaymentPlatform.IOS) {
-      return { stub: true, message: "iOS ödemesi henüz aktif değil. StoreKit 2 desteği yakında gelecek." };
+    // Mobil: iOS App Store / Android Play Store uygulama içi satın alma (store.service.ts). Lansmana kadar pasif.
+    if (platform === PaymentPlatform.IOS || platform === PaymentPlatform.ANDROID) {
+      return this.store.purchaseInfo(plan, platform);
     }
 
-    // TC kimlik no KYC onayında girilir; yoksa ödeme başlatılmaz (iyzico'ya sahte numara gönderilmez)
-    const identity = await this.prisma.userIdentity.findUnique({ where: { userId }, select: { identityNumberEnc: true } });
-    if (!identity) {
-      throw new BadRequestException("Kimlik doğrulama bilgilerinde eksik var. Lütfen bilgi@ahenk.co adresiyle iletişime geç.");
+    // Web Prime: ilk dönem bu ödeme formuyla, otomatik yenileme iyzico abonelik API'siyle (lansmana kadar pasif)
+    if (isPrime(plan) && this.config.get<string>("IYZICO_SUBSCRIPTION_ENABLED") !== "true") {
+      throw new ServiceUnavailableException("Prime abonelik henüz aktif değil.");
     }
-    const identityNumber = decryptIdentityNumber(identity.identityNumberEnc, this.config.get("IDENTITY_ENC_KEY"));
+
+    const identityNumber = await this.identityNumberOf(userId);
 
     const planCfg = PLAN_CONFIG[plan];
-    // Fiyat platforma göre (web: ham + %20 KDV; Android: + mağaza komisyonu); indirim her ödenen pakette %10
+    // Web fiyatı: ham + %20 KDV; indirim (davet %10 ya da geri kazanım 100 TL, birlikte kullanılamaz) yalnız bu ödemede
     const price = await this.pricing.current(plan);
-    const isMobile = platform === PaymentPlatform.ANDROID;
-    const listKurus = isMobile ? price.mobileKurus : price.webKurus;
-    const discountedKurus = isMobile ? price.mobileDiscountKurus : price.webDiscountKurus;
+    const listKurus = price.webKurus;
+    const discountedKurus = price.webDiscountKurus;
     let amountKurus = listKurus;
     let discountType: PaymentDiscountType | null = null;
 
@@ -292,7 +269,7 @@ export class PaymentService {
 
   // ─── iyzico Callback işle ─────────────────────────────────────────────────
 
-  async handleCallback(token: string): Promise<{ success: boolean; message: string }> {
+  async handleCallback(token: string): Promise<{ success: boolean; message: string; prime?: boolean }> {
     const payment = await this.prisma.payment.findFirst({
       where: { iyzicoToken: token },
     });
@@ -390,7 +367,7 @@ export class PaymentService {
     if (outcome === "CREATED") await enqueueAssign(this.assignQueue, payment.userId);
 
     return outcome === "CREATED"
-      ? { success: true, message: "Ödeme başarıyla tamamlandı" }
+      ? { success: true, message: "Ödeme başarıyla tamamlandı", prime: isPrime(payment.plan) }
       : { success: true, message: "Ödeme zaten tamamlandı" };
   }
 
@@ -457,8 +434,8 @@ export class PaymentService {
   }
 
   // ─── Paket oluşturma (transaction içinde) ─────────────────────────────────
-  // Tek seferlik paket: Masada 2 grup hakkı, Karşımda 1 başbaşa hakkı, İçerde 2 grup + 1 başbaşa hakkı;
-  // her kısım 4 döngü geçerli (süre tarihle değil döngüyle biter: package-rights.ts)
+  // Tek seferlik: Grup 1 grup, Başbaşa 1 başbaşa, İçerde 1 grup + 1 başbaşa, Kankamla 1 kankamla hakkı (kullanılana kadar).
+  // Prime: 1 grup + 1 başbaşa + 1 kankamla; dönem ve 30 günlük yenileme prime.service.ts'de.
 
   private async createSubscriptions(
     tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
@@ -466,320 +443,164 @@ export class PaymentService {
     plan: SubscriptionPlan,
     paymentId: string,
   ) {
-    const sub = await tx.subscription.create({
-      data: { userId, plan, groupRights: GROUP_RIGHTS[plan], kankaRights: plan === SubscriptionPlan.KANKAMLA ? KANKA_RIGHTS : 0 },
-    });
+    const sub = isPrime(plan)
+      ? await this.prime.createPrime(tx, userId, plan, {})
+      : await tx.subscription.create({ data: { userId, plan, groupRights: GROUP_RIGHTS[plan], kankaRights: kankaRightsOf(plan) } });
     await tx.payment.update({ where: { id: paymentId }, data: { subscriptionId: sub.id } });
   }
 
-  // ─── İade Talebi ─────────────────────────────────────────────────────────
-
-  // İade: ilgili kısmın 4 döngüsü dolmuş ve o kısımda hiç masa kurulmamış olmalı (süresi dolmuş paket için de).
-  // Bir masa kurulduysa kalan hak olsa bile hizmet alınmış sayılır.
-  async requestRefund(userId: string, refundType: RefundType) {
-    const subs = await this.prisma.subscription.findMany({
-      where: {
-        userId,
-        plan: { in: REFUND_PLANS[refundType] },
-        status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.EXPIRED] },
-        payment: { status: PaymentStatus.SUCCESS },
-      },
-      orderBy: { createdAt: "desc" },
-      select: REFUND_SUB_SELECT,
-    });
-    if (subs.length === 0) throw new NotFoundException("İade talep edilebilecek ücretli paket bulunamadı.");
-
-    // Birden fazla uygun paket varsa iade şartını sağlayan en yenisi
-    let lastError: unknown = null;
-    let sub: (typeof subs)[number] | null = null;
-    for (const candidate of subs) {
-      try {
-        await this.assertRefundAllowed(userId, candidate, refundType);
-        sub = candidate;
-        break;
-      } catch (err) {
-        lastError = err;
-      }
-    }
-    if (!sub) throw lastError;
-
-    const existing = await this.prisma.refundRequest.findFirst({
-      where: { userId, subscriptionId: sub.id, status: { in: ["PENDING", "PROCESSING"] } },
-    });
-    if (existing) throw new ConflictException("Bu paket için bekleyen bir iade talebi zaten var.");
-
-    const refundRequest = await this.prisma.refundRequest.create({
-      data: { userId, subscriptionId: sub.id, refundType },
-    });
-
-    return { ok: true, refundRequestId: refundRequest.id };
+  // iyzico alıcı TC kimlik no: KYC onayında girilir. Ödeme KYC'den önce alındığı için henüz yoksa iyzico'nun
+  // kimlik numarası olmayan alıcılar için kabul ettiği 11111111111 gönderilir.
+  private async identityNumberOf(userId: string): Promise<string> {
+    const identity = await this.prisma.userIdentity.findUnique({ where: { userId }, select: { identityNumberEnc: true } });
+    return identity ? decryptIdentityNumber(identity.identityNumberEnc, this.config.get("IDENTITY_ENC_KEY")) : "11111111111";
   }
 
-  // Abonelik başladıktan sonra bu türde kurulmuş (iptal edilmemiş) bir masaya yerleşmiş mi
-  private async tableFormedSince(userId: string, type: MeetingType, since: Date): Promise<boolean> {
-    const count = await this.prisma.meetingParticipant.count({
-      where: {
-        userId,
-        meeting: { type, createdAt: { gte: since }, status: { not: MeetingStatus.CANCELLED } },
-      },
+  // ─── Prime otomatik yenileme (web, iyzico abonelik API'si) ────────────────
+  // İlk dönem ödendikten sonra kart kaydı için abonelik formu açılır (planın deneme süresi = ilk dönem, tahsilat yok).
+  async initPrimeAutoRenew(userId: string) {
+    if (this.config.get<string>("IYZICO_SUBSCRIPTION_ENABLED") !== "true") {
+      throw new ServiceUnavailableException("Prime abonelik henüz aktif değil.");
+    }
+    const sub = await this.prisma.subscription.findFirst({
+      where: { userId, status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS }, iyzicoSubscriptionRef: null, storePlatform: null },
+      select: { id: true, plan: true },
     });
-    return count > 0;
+    if (!sub) throw new NotFoundException("Otomatik yenileme başlatılacak Prime aboneliği bulunamadı.");
+    const planRef = this.config.get<string>(`IYZICO_${sub.plan}_PLAN_REF`);
+    if (!planRef) throw new ServiceUnavailableException("Prime abonelik planı tanımlı değil.");
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { profile: true } });
+    if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
+    const result = await this.iyzico.initSubscriptionCheckoutForm({
+      pricingPlanReferenceCode: planRef,
+      conversationId: `ahenk-prime-${sub.id}`,
+      callbackUrl: `${this.config.getOrThrow<string>("IYZICO_PRIME_CALLBACK_URL")}?sid=${sub.id}`,
+      name: user.profile?.firstName ?? "Kullanıcı",
+      surname: user.profile?.lastName ?? "",
+      email: user.email,
+      gsmNumber: user.phone ?? undefined,
+      identityNumber: await this.identityNumberOf(userId),
+    });
+    if (result.status !== "success") throw new BadRequestException(result.errorMessage ?? "Abonelik formu açılamadı");
+    return { token: result.token, checkoutFormContent: result.checkoutFormContent };
   }
 
-  // Kişi + (varsa) aktif kankası
-  private async kankaPairIds(userId: string): Promise<string[]> {
-    const link = await activeKankaLink(this.prisma, userId);
-    return link ? [userId, link.kankaId] : [userId];
+  async handlePrimeAutoRenewCallback(token: string, subscriptionId: string): Promise<boolean> {
+    const result = await this.iyzico.retrieveSubscriptionCheckoutForm(token);
+    const ref = result.data?.referenceCode;
+    if (result.status !== "success" || !ref) return false;
+    return this.prime.attachIyzicoSubscription(subscriptionId, ref, result.data!.pricingPlanReferenceCode, (plan) => this.config.get<string>(`IYZICO_${plan}_PLAN_REF`));
   }
 
-  // Paket + iade türü uyumu, 4 döngü dolmuş olması ve "masa kurulduysa hizmet alınmıştır" kuralı
-  private async assertRefundAllowed(userId: string, sub: RefundSub, refundType: RefundType) {
-    if (!REFUND_PLANS[refundType].includes(sub.plan)) {
-      throw new BadRequestException("Bu paket için bu iade türü geçerli değil.");
+  // iyzico abonelik webhook'u (yenileme başarılı / başarısız). İmza: X-IYZ-SIGNATURE-V3 =
+  // HMAC-SHA256(secretKey, merchantId + secretKey + iyziEventType + subscriptionReferenceCode + orderReferenceCode + customerReferenceCode)
+  async handleIyzicoSubscriptionWebhook(body: Record<string, string>, signature: string | undefined): Promise<void> {
+    const secret = this.config.get<string>("IYZICO_SECRET_KEY") ?? "";
+    const merchantId = this.config.get<string>("IYZICO_MERCHANT_ID") ?? "";
+    const expected = createHmac("sha256", secret)
+      .update(`${merchantId}${secret}${body.iyziEventType}${body.subscriptionReferenceCode}${body.orderReferenceCode}${body.customerReferenceCode}`)
+      .digest("hex");
+    if (!signature || signature !== expected) {
+      this.logger.warn("iyzico abonelik webhook imzası geçersiz");
+      return;
     }
-
-    const isGroup = refundType === RefundType.GROUP || refundType === RefundType.FULL;
-    const isOneone = refundType === RefundType.ONEONE || refundType === RefundType.FULL;
-    const isKanka = refundType === RefundType.KANKA;
-
-    // Aynı kısım daha önce iade edildiyse tekrar edilmez
-    const refunded = await this.prisma.refundRequest.findMany({
-      where: { subscriptionId: sub.id, status: "APPROVED" },
-      select: { refundType: true },
-    });
-    const groupRefunded = refunded.some((r) => r.refundType === RefundType.GROUP || r.refundType === RefundType.FULL);
-    const oneoneRefunded = refunded.some((r) => r.refundType === RefundType.ONEONE || r.refundType === RefundType.FULL);
-    if ((isGroup && groupRefunded) || (isOneone && oneoneRefunded) || (isKanka && refunded.length > 0)) {
-      throw new BadRequestException("Bu paket için iade zaten yapıldı.");
-    }
-
-    if (isGroup && sub.groupCycles < PACKAGE_CYCLES) {
-      throw new BadRequestException(`Grup masası iadesi için ${PACKAGE_CYCLES} döngünün dolması gerekir. Geçen: ${sub.groupCycles}/${PACKAGE_CYCLES}`);
-    }
-    if (isOneone && sub.oneOnOneCycles < PACKAGE_CYCLES) {
-      throw new BadRequestException(`Başbaşa masası iadesi için ${PACKAGE_CYCLES} döngünün dolması gerekir. Geçen: ${sub.oneOnOneCycles}/${PACKAGE_CYCLES}`);
-    }
-    if (isKanka && sub.kankaCycles < PACKAGE_CYCLES) {
-      throw new BadRequestException(`Kankamla iadesi için ${PACKAGE_CYCLES} döngünün dolması gerekir. Geçen: ${sub.kankaCycles}/${PACKAGE_CYCLES}`);
-    }
-    // Kankamla: masa kurulduysa ya da çift rezervasyonu kendisi iptal ettiyse (grupta olduğu gibi) hizmet alınmış sayılır
-    const kankaSelfCancelled = isKanka && (await this.prisma.meetingParticipant.count({
-      where: {
-        userId: { in: await this.kankaPairIds(userId) },
-        status: "CANCELLED",
-        leaveReason: { not: null },
-        meeting: { type: MeetingType.KANKA, createdAt: { gte: sub.createdAt } },
-      },
-    })) > 0;
-    if (isKanka && (kankaSelfCancelled || await this.tableFormedSince(userId, MeetingType.KANKA, sub.createdAt))) {
-      throw new BadRequestException("Kankamla masanız kurulduğu için bu hizmet alınmış sayılır; iade yapılamaz.");
-    }
-    if (isGroup && await this.tableFormedSince(userId, MeetingType.GROUP, sub.createdAt)) {
-      throw new BadRequestException("Grup masanız kurulduğu için bu hizmet alınmış sayılır; iade yapılamaz.");
-    }
-    if (isOneone && (sub.usedAt || await this.tableFormedSince(userId, MeetingType.ONE_ON_ONE, sub.createdAt))) {
-      throw new BadRequestException("Başbaşa masanız kurulduğu için bu hizmet alınmış sayılır; iade yapılamaz.");
+    const sub = await this.prisma.subscription.findFirst({ where: { iyzicoSubscriptionRef: body.subscriptionReferenceCode }, select: { id: true } });
+    if (!sub) return;
+    if (body.iyziEventType === "subscription.order.success") {
+      if ((await this.prisma.payment.count({ where: { iyzicoPaymentId: body.orderReferenceCode } })) > 0) return;
+      await this.prime.renew(sub.id, PaymentPlatform.WEB, { iyzicoPaymentId: body.orderReferenceCode });
+    } else if (body.iyziEventType === "subscription.order.failure") {
+      await this.prime.stopAutoRenew(sub.id);
     }
   }
 
-  // İade tutarı ödenen tutar üzerinden: İçerde'de tek tarafın iadesi yarısı, diğerlerinde tamamı
-  static refundAmountKurus(plan: SubscriptionPlan, refundType: RefundType, paidKurus: number): number {
-    if (plan === SubscriptionPlan.ICERDE && refundType !== RefundType.FULL) {
-      return Math.round(paidKurus / 2);
-    }
-    return paidKurus;
-  }
+  // ─── Mobil uygulama içi satın alma doğrulama (IAP_ENABLED=true olunca) ─────
+  // Mağaza işlemi sunucuda App Store / Play API'sinden doğrulanır; aynı işlem ikinci kez paket vermez.
+  async verifyStorePurchase(userId: string, platform: PaymentPlatform, productId: string, transactionIdOrToken: string) {
+    this.store.assertEnabled();
+    if (platform !== PaymentPlatform.IOS && platform !== PaymentPlatform.ANDROID) throw new BadRequestException("Geçersiz platform");
+    const v = platform === PaymentPlatform.IOS
+      ? await this.store.verifyApple(transactionIdOrToken)
+      : await this.store.verifyGoogle(productId, transactionIdOrToken);
+    const plan = v ? planOfProduct(v.productId) : null;
+    if (!v || !plan) throw new BadRequestException("Satın alma doğrulanamadı.");
+    if ((await this.prisma.payment.count({ where: { storeTransactionId: v.transactionId } })) > 0) return { success: true };
 
-  // Admin onayı: iyzico iadesi → talep APPROVED + abonelik CANCELLED
-  async approveRefund(refundId: string, ip: string, adminNote?: string) {
-    const refund = await this.prisma.refundRequest.findUnique({
-      where: { id: refundId },
-      include: {
-        user: { select: { status: true } },
-        subscription: {
-          select: {
-            ...REFUND_SUB_SELECT, status: true,
-            payment: { select: { status: true, amountKurus: true, iyzicoPaymentId: true } },
-          },
-        },
-      },
-    });
-    if (!refund) throw new NotFoundException("İade talebi bulunamadı.");
-    if (refund.status !== "PENDING") throw new BadRequestException("Bu iade talebi zaten sonuçlandırılmış.");
-    if (refund.user.status === UserStatus.BANNED || refund.user.status === UserStatus.SUSPENDED) {
-      throw new BadRequestException("Banlı veya askıdaki kullanıcıya iade yapılmaz.");
-    }
-
-    const sub = refund.subscription;
-    const payment = sub.payment;
-    if (payment?.status !== PaymentStatus.SUCCESS || !payment.iyzicoPaymentId) {
-      throw new BadRequestException("Bu paket için iade edilecek bir ödeme bulunmuyor.");
-    }
-    await this.assertRefundAllowed(refund.userId, sub, refund.refundType);
-
-    const amountKurus = PaymentService.refundAmountKurus(sub.plan, refund.refundType, payment.amountKurus);
-
-    // iyzico'dan önce talep kilitlenir: paket satırı FOR UPDATE ile tutulur, durum koşullu geçer, benzersiz anahtar
-    // (paket + iade türü) veritabanında aynı iadenin ikinci kez işlenmesini engeller. Eşzamanlı onaylardan biri kazanır.
-    await this.claimRefund(refund.id, sub.id, refund.refundType);
-
-    const result = await this.iyzico.refundPayment({
-      paymentId: payment.iyzicoPaymentId,
-      amountKurus,
-      conversationId: `ahenk-refund-${refund.id}`,
-      ip,
-    });
-    if (result.outcomeUnknown) {
-      // Para iade edilmiş olabilir: talep PROCESSING kalır, tekrar gönderilmez, elle kontrol gerekir
-      this.logger.error(`iyzico iade sonucu bilinmiyor: refund=${refund.id}`);
-      await this.paymentAlert(refund.userId);
-      throw new ServiceUnavailableException("iyzico yanıt vermedi. İade işleniyor durumunda bırakıldı; iyzico panelinden kontrol edin.");
-    }
-    if (result.status !== "success") {
-      // iyzico kesin olarak reddetti: para çıkmadı, talep yeniden denenebilir
-      await this.prisma.refundRequest.updateMany({
-        where: { id: refund.id, status: "PROCESSING" },
-        data: { status: "PENDING", idempotencyKey: null },
-      });
-      throw new BadRequestException(`iyzico iadesi başarısız: ${result.errorMessage ?? "bilinmeyen hata"}`);
-    }
-
-    // Tek kısımlı paket ya da İçerde'nin tamamı → paket iptal; İçerde'nin tek kısmı → sadece o kısım kapanır
-    const partial = sub.plan === SubscriptionPlan.ICERDE && refund.refundType !== RefundType.FULL;
-    try {
-      await this.finishRefund(refund, sub.id, partial, amountKurus, result.paymentId ?? null, adminNote);
-    } catch (err) {
-      // Para iade edildi, kayıt yazılamadı: talep PROCESSING kalır (yeniden gönderilmez)
-      this.logger.error(`iade yapıldı, kayıt yazılamadı: refund=${refund.id} ${err}`);
-      await this.paymentAlert(refund.userId);
-      throw new InternalServerErrorException("İade yapıldı ancak kayıt güncellenemedi. Talep işleniyor durumunda bırakıldı.");
-    }
-
-    return { ok: true, refundedKurus: amountKurus };
-  }
-
-  private async claimRefund(refundId: string, subscriptionId: string, refundType: RefundType) {
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        await tx.$queryRaw`SELECT id FROM "Subscription" WHERE id = ${subscriptionId} FOR UPDATE`;
-        const others = await tx.refundRequest.findMany({
-          where: { subscriptionId, id: { not: refundId }, status: { in: ["PROCESSING", "APPROVED"] } },
-          select: { refundType: true },
-        });
-        if (others.some((o) => refundsOverlap(o.refundType, refundType))) {
-          throw new ConflictException("Bu paket için iade zaten işleniyor ya da yapıldı.");
-        }
-        const { count } = await tx.refundRequest.updateMany({
-          where: { id: refundId, status: "PENDING" },
-          data: { status: "PROCESSING", idempotencyKey: `refund:${subscriptionId}:${refundType}` },
-        });
-        if (count === 0) throw new ConflictException("Bu iade talebi zaten işleniyor ya da sonuçlandırılmış.");
-      });
-    } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-        throw new ConflictException("Bu paket için iade zaten işleniyor ya da yapıldı.");
-      }
-      throw err;
-    }
-  }
-
-  private async finishRefund(
-    refund: { id: string; refundType: RefundType; adminNote: string | null },
-    subscriptionId: string,
-    partial: boolean,
-    amountKurus: number,
-    iyzicoRefundId: string | null,
-    adminNote?: string,
-  ) {
+    const price = await this.pricing.current(plan);
     await this.prisma.$transaction(async (tx) => {
-      await tx.refundRequest.update({
-        where: { id: refund.id },
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+      if ((await tx.payment.count({ where: { storeTransactionId: v.transactionId } })) > 0) return;
+      const payment = await tx.payment.create({
         data: {
-          status: "APPROVED",
-          adminNote: adminNote ?? refund.adminNote,
-          refundedKurus: amountKurus,
-          iyzicoRefundId,
+          userId, plan, amountKurus: price.mobileKurus, listKurus: price.mobileKurus, status: PaymentStatus.SUCCESS,
+          platform, paidAt: new Date(), storeTransactionId: v.transactionId,
         },
       });
-      if (!partial) {
-        await tx.subscription.update({
-          where: { id: subscriptionId },
-          data: { status: SubscriptionStatus.CANCELLED, cancelNote: "İade" },
-        });
-      } else {
-        await tx.subscription.update({
-          where: { id: subscriptionId },
-          data: refund.refundType === RefundType.GROUP ? { groupRights: 0 } : { oneOnOneCycles: PACKAGE_CYCLES },
-        });
-        await syncPackageStatus(tx, subscriptionId);
-      }
+      const sub = isPrime(plan)
+        ? await this.prime.createPrime(tx, userId, plan, {
+            autoRenew: v.autoRenewing ?? true, storePlatform: platform, storeOriginalTransactionId: v.originalTransactionId, expiresAt: v.expiresAt,
+          })
+        : await tx.subscription.create({ data: { userId, plan, groupRights: GROUP_RIGHTS[plan], kankaRights: kankaRightsOf(plan) } });
+      await tx.payment.update({ where: { id: payment.id }, data: { subscriptionId: sub.id } });
     });
+    await enqueueAssign(this.assignQueue, userId);
+    return { success: true };
   }
 
-  // ─── İade ve ödeme sonuçlandırma (SUPERADMIN, iyzico panelinden kontrol sonrası) ─────────────
+  // App Store Server Notifications V2: bildirimdeki işlem App Store API'sinden yeniden okunarak doğrulanır
+  async handleAppleNotification(signedPayload: string) {
+    if (!this.store.enabled()) return;
+    const n = this.store.decodeJws<{ notificationType: string; subtype?: string; data?: { signedTransactionInfo?: string } }>(signedPayload);
+    const tInfo = n?.data?.signedTransactionInfo ? this.store.decodeJws<{ transactionId: string }>(n.data.signedTransactionInfo) : null;
+    if (!n || !tInfo) return;
+    const v = await this.store.verifyApple(tInfo.transactionId);
+    if (!v) return;
+    const sub = await this.prisma.subscription.findFirst({ where: { storeOriginalTransactionId: v.originalTransactionId }, select: { id: true } });
+    if (!sub) return;
+    if (n.notificationType === "DID_RENEW") await this.prime.renew(sub.id, PaymentPlatform.IOS, { storeTransactionId: v.transactionId, expiresAt: v.expiresAt });
+    else if (n.notificationType === "DID_CHANGE_RENEWAL_STATUS" && n.subtype === "AUTO_RENEW_DISABLED") await this.prime.stopAutoRenew(sub.id);
+  }
 
-  // İyzico'ya istek gitmez, sadece kayıt sonuçlanır. PROCESSING iade: APPROVED ise para çıkmıştır, paket iade kuralıyla
-  // kapanır; REJECTED ise para çıkmamıştır, talep kapanır. Her işlem işlem kaydına yazılır.
+  // Google Play Real-time Developer Notifications (Pub/Sub push): bildirimdeki abonelik Play API'sinden yeniden okunur
+  async handleGoogleNotification(data: string) {
+    if (!this.store.enabled()) return;
+    const msg = JSON.parse(Buffer.from(data, "base64").toString("utf8")) as {
+      subscriptionNotification?: { notificationType: number; purchaseToken: string; subscriptionId: string };
+    };
+    const sn = msg.subscriptionNotification;
+    if (!sn) return;
+    const sub = await this.prisma.subscription.findFirst({ where: { storeOriginalTransactionId: sn.purchaseToken }, select: { id: true } });
+    if (!sub) return;
+    // 2 = SUBSCRIPTION_RENEWED, 3 = SUBSCRIPTION_CANCELED
+    if (sn.notificationType === 2) {
+      const v = await this.store.verifyGoogle(sn.subscriptionId, sn.purchaseToken);
+      if (v) await this.prime.renew(sub.id, PaymentPlatform.ANDROID, { storeTransactionId: v.transactionId, expiresAt: v.expiresAt });
+    } else if (sn.notificationType === 3) {
+      await this.prime.stopAutoRenew(sub.id);
+    }
+  }
+
+  async cancelPrimeRenewal(userId: string) {
+    return this.prime.cancelRenewal(userId);
+  }
+
+  // ─── Ödeme sonuçlandırma (SUPERADMIN, iyzico panelinden kontrol sonrası) ─────────────
+  // Para çekilmiş, paket verilmemiş (DUPLICATE) ödemeler. İyzico'ya istek gitmez, sadece kayıt sonuçlanır.
   async listSettlements() {
-    const [refunds, payments] = await Promise.all([
-      this.prisma.refundRequest.findMany({
-        where: { status: "PROCESSING" },
-        orderBy: { updatedAt: "asc" },
-        include: {
-          user: { select: { phone: true, profile: { select: { firstName: true, lastName: true } } } },
-          subscription: { select: { plan: true, payment: { select: { amountKurus: true, iyzicoPaymentId: true } } } },
-        },
-      }),
-      this.prisma.payment.findMany({
-        where: { status: PaymentStatus.DUPLICATE },
-        orderBy: { updatedAt: "asc" },
-        include: { user: { select: { phone: true, profile: { select: { firstName: true, lastName: true } } } } },
-      }),
-    ]);
+    const payments = await this.prisma.payment.findMany({
+      where: { status: PaymentStatus.DUPLICATE },
+      orderBy: { updatedAt: "asc" },
+      include: { user: { select: { phone: true, profile: { select: { firstName: true, lastName: true } } } } },
+    });
     const name = (u: { profile: { firstName: string; lastName: string } | null }) =>
       u.profile ? `${u.profile.firstName} ${u.profile.lastName}`.trim() : "Silinmiş kullanıcı";
     return {
-      refunds: refunds.map((r) => ({
-        id: r.id, userId: r.userId, userName: name(r.user), phone: r.user.phone, refundType: r.refundType,
-        plan: r.subscription.plan, status: r.status, createdAt: r.createdAt, updatedAt: r.updatedAt,
-        iyzicoPaymentId: r.subscription.payment?.iyzicoPaymentId ?? null,
-        amountKurus: PaymentService.refundAmountKurus(r.subscription.plan, r.refundType, r.subscription.payment?.amountKurus ?? 0),
-      })),
       payments: payments.map((p) => ({
         id: p.id, userId: p.userId, userName: name(p.user), phone: p.user.phone, plan: p.plan, status: p.status,
         amountKurus: p.amountKurus, iyzicoPaymentId: p.iyzicoPaymentId, failureReason: p.failureReason,
         createdAt: p.createdAt, updatedAt: p.updatedAt,
       })),
     };
-  }
-
-  async settleRefund(id: string, status: "APPROVED" | "REJECTED", adminId: string, adminNote?: string) {
-    const refund = await this.prisma.refundRequest.findUnique({
-      where: { id },
-      include: { subscription: { select: { id: true, plan: true, payment: { select: { amountKurus: true, iyzicoPaymentId: true } } } } },
-    });
-    if (!refund) throw new NotFoundException("İade talebi bulunamadı.");
-    if (refund.status !== "PROCESSING") throw new BadRequestException("Bu iade talebi işleniyor durumunda değil.");
-
-    if (status === "APPROVED") {
-      const sub = refund.subscription;
-      const amountKurus = PaymentService.refundAmountKurus(sub.plan, refund.refundType, sub.payment?.amountKurus ?? 0);
-      const partial = sub.plan === SubscriptionPlan.ICERDE && refund.refundType !== RefundType.FULL;
-      await this.finishRefund(refund, sub.id, partial, amountKurus, sub.payment?.iyzicoPaymentId ?? null, adminNote);
-    } else {
-      const { count } = await this.prisma.refundRequest.updateMany({
-        where: { id, status: "PROCESSING" },
-        data: { status: "REJECTED", idempotencyKey: null, adminNote: adminNote ?? refund.adminNote },
-      });
-      if (count === 0) throw new BadRequestException("Bu iade talebi zaten sonuçlandırılmış.");
-    }
-    await this.prisma.adminActionLog.create({
-      data: {
-        adminId, action: "REFUND_SETTLE", targetUserId: refund.userId,
-        description: `İşleniyor durumundaki iade ${status === "APPROVED" ? "onaylandı (para çıktı)" : "reddedildi (para çıkmadı)"}: ${id}${adminNote ? ` (Not: ${adminNote})` : ""}`,
-      },
-    });
-    return { ok: true, status };
   }
 
   async settlePayment(id: string, status: "REFUNDED" | "FAILED", adminId: string, note?: string) {
@@ -845,17 +666,18 @@ export class PaymentService {
   // Herkese açık paket fiyatları (web: ham + %20 KDV; mobil: + %15 mağaza komisyonu; indirimli: %10)
   async getPlans() {
     const prices = await this.pricing.all();
-    return Object.entries(PLAN_CONFIG).map(([plan, cfg]) => {
-      const p = prices[plan as SubscriptionPlan];
+    return Object.entries(PLAN_CONFIG).map(([key, cfg]) => {
+      const plan = key as SubscriptionPlan;
+      const p = prices[plan];
       return {
         plan,
         nametr: cfg.nametr,
         label: cfg.label,
-        // Tek seferlik paket hakları: grup / başbaşa masası sayısı, her kısım PACKAGE_CYCLES döngü geçerli
-        groupRights: GROUP_RIGHTS[plan as SubscriptionPlan],
-        oneOnOneRights: ONE_ON_ONE_PLANS.includes(plan as SubscriptionPlan) ? 1 : 0,
-        kankaRights: plan === SubscriptionPlan.KANKAMLA ? KANKA_RIGHTS : 0,
-        cycles: PACKAGE_CYCLES,
+        isPrime: isPrime(plan),
+        months: PRIME_MONTHS[plan] ?? null,
+        groupRights: GROUP_RIGHTS[plan],
+        oneOnOneRights: ONE_ON_ONE_PLANS.includes(plan) ? 1 : 0,
+        kankaRights: kankaRightsOf(plan),
         webTL: p.webKurus / 100,
         mobileTL: p.mobileKurus / 100,
         webDiscountTL: p.webDiscountKurus / 100,

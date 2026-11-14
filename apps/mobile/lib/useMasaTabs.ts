@@ -5,7 +5,7 @@ import { api } from './api';
 import { buildInitials, getNextTarget, isTableLocked, type DashboardItem, type MasaTuru } from './masa';
 import { isForeground, useAppRefresh } from './useAppRefresh';
 
-export type TabStatus = 'TABLE' | 'FORMING' | 'CANCELLED' | 'SCANNING' | 'KYC' | 'KANKA' | 'PENDING' | 'FAILED' | 'NONE';
+export type TabStatus = 'TABLE' | 'FORMING' | 'CANCELLED' | 'SCANNING' | 'KYC' | 'KANKA' | 'PENDING' | 'FAILED' | 'PASSIVE' | 'NONE';
 
 const DASHBOARD_POLL_MS = 15_000;
 const WEEK_MS = 7 * 86_400_000;
@@ -24,11 +24,20 @@ function lastClosing(tab: MasaTuru) {
 
 interface OwnSub { plan: string; createdAt: string; usedAt: string | null; groupRights: number; kankaRights: number }
 
+const isPrimePlan = (plan: string) => plan.startsWith('PRIME_');
 const SUB_OPEN: Record<MasaTuru, (s: OwnSub) => boolean> = {
-  GROUP: s => (s.plan === 'MASADA' || s.plan === 'ICERDE') && s.groupRights > 0,
-  ONE_ON_ONE: s => (s.plan === 'KARSIMDA' || s.plan === 'ICERDE') && !s.usedAt,
-  KANKA: s => s.plan === 'KANKAMLA' && s.kankaRights > 0,
+  GROUP: s => (s.plan === 'MASADA' || s.plan === 'ICERDE' || isPrimePlan(s.plan)) && s.groupRights > 0,
+  ONE_ON_ONE: s => (s.plan === 'KARSIMDA' || s.plan === 'ICERDE' || isPrimePlan(s.plan)) && !s.usedAt,
+  KANKA: s => (s.plan === 'KANKAMLA' || isPrimePlan(s.plan)) && s.kankaRights > 0,
 };
+
+// Haftalık buluşma seçimi (GET /weekly-selection) — web components/live/useMasaTabs.ts ile aynı
+export interface WeeklySelection {
+  submitted: boolean;
+  selected: MasaTuru[];
+  options: { type: MasaTuru; deadline: string; open: boolean }[];
+  showModal: boolean;
+}
 
 export interface MeData {
   id?: string;
@@ -55,6 +64,7 @@ export function useMasaTabs() {
   const [kanka, setKanka] = useState<{ initials: string; gender: string | null } | null>(null);
   const [subs, setSubs] = useState<OwnSub[]>([]);
   const [kycAt, setKycAt] = useState<string | null>(null);
+  const [selection, setSelection] = useState<WeeklySelection | null>(null);
 
   const pastList = () => MASA_TURLERI.filter(isPastClosing).join();
   const [pastClosed, setPastClosed] = useState(pastList);
@@ -62,6 +72,7 @@ export function useMasaTabs() {
   const refreshPlan = useCallback(() => Promise.all([
     api.get<MeData>('/auth/me').then(u => { if (u) setMe(u); }).catch(() => {}),
     api.get<{ subscriptions: OwnSub[] }>('/payment/subscriptions').then(r => { if (Array.isArray(r?.subscriptions)) setSubs(r.subscriptions); }).catch(() => {}),
+    api.get<WeeklySelection>('/weekly-selection').then(r => { if (r && Array.isArray(r.selected)) setSelection(r); }).catch(() => {}),
   ]), []);
 
   useEffect(() => {
@@ -83,6 +94,13 @@ export function useMasaTabs() {
       .catch(() => {})
       .finally(() => setDashLoaded(true));
   }, []);
+
+  // Haftalık seçim tek seferdir; gönderilince seçilen türlerin taramasına girilir
+  const submitSelection = useCallback(async (types: MasaTuru[]) => {
+    const r = await api.post<WeeklySelection>('/weekly-selection', { types });
+    setSelection(r);
+    void reload();
+  }, [reload]);
 
   useEffect(() => {
     reload();
@@ -116,7 +134,10 @@ export function useMasaTabs() {
   const tabAdminCancelled = !tabItem && adminCancelledTypes.includes(tab);
   const kycApproved = me?.kyc?.status === 'APPROVED';
   const tabPastClosing = pastClosed.split(',').includes(tab);
-  const scanning = owned.includes(tab) && kycApproved && !tabPastClosing && !cancelledTypes.includes(tab);
+  // Bu hafta seçilen türler: yalnız onların taramasına girilir
+  const selectedTypes = selection?.selected ?? [];
+  const hasPackage = subs.length > 0;
+  const scanning = owned.includes(tab) && kycApproved && !tabPastClosing && !cancelledTypes.includes(tab) && selectedTypes.includes(tab);
 
   const poolEntry = (t: MasaTuru) => {
     const bought = subs.filter(SUB_OPEN[t]).map(s => Date.parse(s.createdAt));
@@ -128,6 +149,9 @@ export function useMasaTabs() {
       return table && !isTableLocked(table.meeting.scheduledAt) ? 'FORMING' : 'TABLE';
     }
     if (cancelledTypes.includes(t)) return 'CANCELLED';
+    // Paketi olan kullanıcı bu hafta seçmediği türde pasif; hiç paketi olmayanda "Abonelik Yok"
+    if (!hasPackage) return 'NONE';
+    if (!selectedTypes.includes(t)) return 'PASSIVE';
     if (!rights[t]) return 'NONE';
     if (!kycApproved) return 'KYC';
     if (t === 'KANKA' && kankaWaiting) return 'KANKA';
@@ -139,5 +163,5 @@ export function useMasaTabs() {
 
   const selfParticipant = me ? { initials: buildInitials(me.firstName, me.lastName), gender: me.profile?.gender ?? null } : undefined;
 
-  return { ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled };
+  return { ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled, selection, submitSelection };
 }

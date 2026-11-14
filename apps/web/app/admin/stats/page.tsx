@@ -12,7 +12,6 @@ interface PackageDist {
 
 interface StatsOverview {
   totalRevenue: number;
-  totalRefund: number;
   netRevenue: number;
   vatAmount: number;
   netCommission: number;
@@ -36,7 +35,6 @@ interface CityRow {
   activeMembers: number;
   revenue: number;
   discount: number;
-  refund: number;
   net: number;
   vat: number;
   trend: string;
@@ -204,8 +202,7 @@ export default function AdminStats() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 12 }}>
-            <StatCard label="İade Tutarları" value={data.totalRefund} prefix="₺" fmtFn={fmtK} accent={RED} />
-            <StatCard label="Net Ciro" value={data.netRevenue} prefix="₺" fmtFn={fmtK} accent={GREEN} sub="Brüt ciro − iadeler" />
+            <StatCard label="Net Ciro" value={data.netRevenue} prefix="₺" fmtFn={fmtK} accent={GREEN} sub="Brüt ciro" />
             <StatCard label="KDV (%20)" value={data.vatAmount} prefix="₺" fmtFn={fmtK} accent={AMBER} sub="Net ciro içindeki vergi" />
           </div>
 
@@ -263,7 +260,7 @@ export default function AdminStats() {
             <table className="adm-table" style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  {['Şehir', 'Masa', 'Kankamla', 'Üye', 'Ciro', 'İndirim', 'İade', 'Net', 'KDV', 'Trend'].map(h => (
+                  {['Şehir', 'Masa', 'Kankamla', 'Üye', 'Ciro', 'İndirim', 'Net', 'KDV', 'Trend'].map(h => (
                     <th key={h} style={{ padding: '8px 14px', textAlign: 'left', ...LABEL, color: MUTED }}>{h}</th>
                   ))}
                 </tr>
@@ -277,7 +274,6 @@ export default function AdminStats() {
                     <td data-label="Üye" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>{row.activeMembers}</td>
                     <td data-label="Ciro" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>₺{fmtK(row.revenue)}</td>
                     <td data-label="İndirim" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>₺{fmtK(row.discount)}</td>
-                    <td data-label="İade" style={{ padding: '10px 14px', fontSize: 13, color: row.refund > 0 ? RED : MUTED }}>₺{fmtK(row.refund)}</td>
                     <td data-label="Net" style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: TEXT }}>₺{fmtK(row.net)}</td>
                     <td data-label="KDV" style={{ padding: '10px 14px', fontSize: 13, color: MUTED }}>₺{fmtK(row.vat)}</td>
                     <td data-label="Trend" style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: String(row.trend).startsWith('-') ? RED : GREEN }}>

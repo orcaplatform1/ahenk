@@ -9,7 +9,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { initialsOf } from "../meetings/cancellation-notice";
-import { OPEN_KANKA_SUB, PACKAGE_CYCLES } from "../payment/package-rights";
+import { OPEN_KANKA_SUB } from "../payment/package-rights";
 import { activeKankaLink, endKankaLinks, kankaLockReason } from "./kanka-links";
 
 const INVITE_TTL_MS = 48 * 60 * 60 * 1000;
@@ -113,7 +113,7 @@ export class KankaService {
         expiresAt: i.expiresAt,
       })),
       kankamla: sub
-        ? { role: sub.userId === userId ? "BUYER" : "KANKA", rightsLeft: sub.kankaRights, cycles: sub.kankaCycles, packageCycles: PACKAGE_CYCLES }
+        ? { role: sub.userId === userId ? "BUYER" : "KANKA", rightsLeft: sub.kankaRights, cycles: sub.kankaCycles }
         : null,
       canInvite: !link && me.kyc?.status === KycStatus.APPROVED,
       kycApproved: me.kyc?.status === KycStatus.APPROVED,

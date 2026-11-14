@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { trackConfirmedPurchase } from '@/lib/analytics';
+import { api } from '@/lib/api';
+import { mountIyzicoForm } from '@/lib/checkout';
 
 export default function OdemeBasariliPage() {
   const router = useRouter();
@@ -12,9 +14,23 @@ export default function OdemeBasariliPage() {
     void trackConfirmedPurchase();
   }, []);
 
+  // Ödeme başarılı: KYC onaylı değilse hemen KYC ekranına. Prime'da önce otomatik yenileme kart kaydı (iyzico abonelik formu).
   useEffect(() => {
-    const t = setTimeout(() => router.push('/dashboard'), 3000);
-    return () => clearTimeout(t);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const goNext = () => api.get<{ kyc?: { status: string } }>('/auth/me')
+      .then((m) => {
+        if (m.kyc?.status !== 'APPROVED') router.replace('/profil?tab=kyc');
+        else timer = setTimeout(() => router.push('/dashboard'), 3000);
+      })
+      .catch(() => router.replace('/profil?tab=kyc'));
+    if (new URLSearchParams(window.location.search).get('prime') === '1') {
+      api.post<{ checkoutFormContent: string }>('/payment/prime/autorenew/init', {})
+        .then((d) => mountIyzicoForm(d.checkoutFormContent))
+        .catch(() => goNext());
+    } else {
+      goNext();
+    }
+    return () => { if (timer) clearTimeout(timer); };
   }, [router]);
 
   return (

@@ -20,7 +20,7 @@ const ALERT_LABELS: Record<string, string> = {
   MISSED_KANKA_CYCLES: 'Kankamla masası üst üste kurulamadı',
   SOS_ALERT: 'Acil yardım talebi',
   BOT_NOT_FOUND: 'Uygun bot bulunamadı',
-  PAYMENT_ISSUE: 'Ödeme veya iade elle kontrol gerektiriyor',
+  PAYMENT_ISSUE: 'Ödeme elle kontrol gerektiriyor',
 };
 
 export default function AdminAlerts() {

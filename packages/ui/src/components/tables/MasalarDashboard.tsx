@@ -883,7 +883,7 @@ function LockedView({ type = 'GROUP' }: { type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA
           {line2}
         </p>
         <a href="/profil?tab=paket" className="btn-primary">
-          Paket Seç
+          Paket Al
         </a>
       </div>
 

@@ -17,7 +17,7 @@ import { randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { pruneInAppNotifications } from "../notification/notification-limit";
 import { isMaintenanceMode } from "../admin/app-settings";
-import { groupPartOpen, kankaPartOpen, oneOnOnePartOpen, RIGHTS_SELECT } from "../payment/package-rights";
+import { groupPartOpen, kankaPartOpen, oneOnOnePartOpen, OPEN_KANKA_SUB, RIGHTS_SELECT } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { UsersService } from "../users/users.service";
 import { hashPhone } from "../users/account-deletion.service";
@@ -71,7 +71,8 @@ export class AuthService {
     const link = await activeKankaLink(this.prisma, userId);
     const pairIds = link ? [userId, link.kankaId] : [userId];
     const sub = await this.prisma.subscription.findFirst({
-      where: { userId: { in: pairIds }, plan: "KANKAMLA", status: SubscriptionStatus.ACTIVE },
+      // Kankamla paketi ya da Kankamla hakkı açık Prime
+      where: { userId: { in: pairIds }, OR: [{ plan: "KANKAMLA", status: SubscriptionStatus.ACTIVE }, OPEN_KANKA_SUB] },
       orderBy: { createdAt: "asc" },
       select: { userId: true, ...RIGHTS_SELECT },
     });
@@ -515,7 +516,7 @@ export class AuthService {
     // Profildeki sarı uyarı için gelmedi uyarı sayacı (askıdan sonra sıfırlanır)
     const noShowCount = await this.prisma.userSanction.count({ where: await activeNoShowWarningsWhere(this.prisma, user.id) });
 
-    // Paketin açık kısmına göre (hak kalmış ve 4 döngü dolmamış): grup / başbaşa
+    // Paketin açık kısmına göre (hak kalmış): grup / başbaşa
     const hasMasada = activeSubs.some(groupPartOpen);
     const hasKarsimda = activeSubs.some(oneOnOnePartOpen);
     const hasIcerde = hasMasada && hasKarsimda && activeSubs.some((s) => s.plan === 'ICERDE');

@@ -1,69 +1,54 @@
-// Sekme 4 — Paketim: apps/web/app/profil/tabs/TabPaket.tsx. Ödeme: uygulama içi satın alma (S-13), mobil fiyat (mobileTL).
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+// Sekme 4 — Paketim: apps/web/app/profil/tabs/TabPaket.tsx. Ödeme: uygulama içi satın alma (App Store / Play Store), mobil fiyat (mobileTL).
+import React, { useCallback, useState } from 'react';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { api } from '@/lib/api';
-import { startPurchase } from '@/lib/purchase';
+import { PAY_INFO, openStoreSubscriptions, startPurchase } from '@/lib/purchase';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
-import { useReduceMotion } from '@/lib/motion';
-import { Btn, BtnPrimary, Card, Head, MaintenanceNotice, Serif, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
-import { clockMS, useWinback } from '@/components/Winback';
-import { c, ll, sans, tw, tw4 } from '@/theme/theme';
+import { BtnPrimary, Card, Head, MaintenanceNotice, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
+import { c, ll, sans, tw } from '@/theme/theme';
 
-interface Subscription { id: string; plan: string; usedAt?: string | null; groupRights: number; groupCycles: number; oneOnOneCycles: number; kankaRights?: number; kankaCycles?: number }
-type RefundOption = 'GROUP' | 'ONEONE' | 'FULL' | 'KANKA';
-const REFUND_LABEL: Record<RefundOption, string> = { FULL: 'İade Talep Et (tüm paket)', GROUP: 'Grup Masası İadesi Talep Et', ONEONE: 'Başbaşa Masası İadesi Talep Et', KANKA: 'Kankamla İadesi Talep Et' };
-type PlanKeyName = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA';
+interface Subscription { id: string; plan: string; name: string; isPrime: boolean; autoRenew: boolean; renewCancelledAt: string | null; storePlatform: string | null }
+interface Rights { group: number; oneOnOne: number; kanka: number }
+type PlanKeyName = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA' | 'PRIME_1M' | 'PRIME_3M' | 'PRIME_6M' | 'PRIME_12M';
 interface PlanPriceInfo { plan: PlanKeyName; nametr: string; webTL: number; mobileTL: number; webDiscountTL: number; mobileDiscountTL: number }
-interface DiscountInfo { referralDiscount: boolean; referralCount: number; inviteeDiscount: boolean }
 
-const PLANS = [
-  { key: 'MASADA', name: 'Masada', desc: '2 grup masası hakkı · 4 döngü geçerli', featured: false, bg: require('@/assets/plan-masada.webp'), features: ['2 Grup Masası Hakkı', 'Doğrulanmış Profiller', 'OCEAN Kişilik Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'] },
-  { key: 'KARSIMDA', name: 'Karşımda', desc: '1 başbaşa masası hakkı · 4 döngü geçerli', featured: false, bg: require('@/assets/plan-karsimda.webp'), features: ['Tek Seferlik Baş Başa Masa', 'Doğrulanmış Profiller', 'OCEAN + Yaş Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'] },
-  { key: 'ICERDE', name: 'İçerde', desc: '2 grup + 1 başbaşa masası hakkı · tek seferlik', featured: true, bg: require('@/assets/plan-icerde.webp'), features: ['2 Grup Masası + 1 Baş Başa Masa', 'Tüm Özellikler Dahil'] },
-  { key: 'KANKAMLA', name: 'Kankamla', desc: '2 Kankamla masası hakkı · kankan ücretsiz katılır', featured: false, bg: require('@/assets/plan-masada.webp'), features: ['2 Kankamla Masası Hakkı', 'Kankan Ücretsiz Katılır', '4 Kişilik Masa (2E + 2K)', 'Doğrulanmış Profiller', 'Masa Garantili (Ücret İade)'] },
+type CardKey = 'MASADA' | 'KARSIMDA' | 'KANKAMLA' | 'ICERDE' | 'PRIME';
+const PRIME_PLANS = [
+  { key: 'PRIME_1M', label: '1 Aylık' },
+  { key: 'PRIME_3M', label: '3 Aylık' },
+  { key: 'PRIME_6M', label: '6 Aylık' },
+  { key: 'PRIME_12M', label: '12 Aylık' },
+] as const;
+
+// web TabPaket CARDS ile aynı: tam genişlik tek renk kart; Prime altın tonunda, diğerleri tema renklerinden
+const CARDS: { key: CardKey; name: string; badge: string; desc: string; color: string; advantages: string[] }[] = [
+  { key: 'MASADA', name: 'Grup', badge: 'Tek Seferlik', desc: '1 Grup buluşması hakkı', color: '#d6453a', advantages: ['1 Grup buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
+  { key: 'KARSIMDA', name: 'Başbaşa', badge: 'Tek Seferlik', desc: '1 Başbaşa buluşması hakkı', color: '#c8743c', advantages: ['1 Başbaşa buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
+  { key: 'KANKAMLA', name: 'Kankamla', badge: 'Tek Seferlik', desc: '1 Kankamla buluşması hakkı', color: '#8f887f', advantages: ['1 Kankamla buluşması hakkı', 'Arkadaşın ücretsiz katılır', 'Hak kullanılana kadar geçerli'] },
+  { key: 'ICERDE', name: 'İçerde', badge: 'Tek Seferlik', desc: '1 Grup + 1 Başbaşa buluşması hakkı', color: '#c0392b', advantages: ['1 Grup buluşması hakkı', '1 Başbaşa buluşması hakkı', 'Haklar kullanılana kadar geçerli'] },
+  { key: 'PRIME', name: 'Prime', badge: 'Abonelik', desc: 'Her 30 günde 1 Grup + 1 Başbaşa + 1 Kankamla', color: '#c9a227', advantages: ['Her 30 günde 1 Grup buluşması hakkı', 'Her 30 günde 1 Başbaşa buluşması hakkı', 'Her 30 günde 1 Kankamla buluşması hakkı', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
 ];
-const PLAN_LABEL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' };
-
-// Öne çıkan kartın dönen altın kenarı (.p-feat-wrap)
-function GoldBorder({ children }: { children: React.ReactNode }) {
-  const reduce = useReduceMotion();
-  const spin = useRef(new Animated.Value(0)).current;
-  const [size, setSize] = useState({ w: 0, h: 0 });
-  useEffect(() => { if (reduce) return; const l = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: true })); l.start(); return () => l.stop(); }, [reduce, spin]);
-  const d = Math.max(size.w, size.h) * 3;
-  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-  return (
-    <View onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })} style={{ borderRadius: 18, padding: 2, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } }}>
-      {size.w > 0 && (
-        <Animated.View style={{ position: 'absolute', width: d, height: d, left: (size.w - d) / 2, top: (size.h - d) / 2, transform: [{ rotate }] }}>
-          <LinearGradient colors={['transparent', 'transparent', c.gold1, c.gold2, 'transparent']} locations={[0, 0.42, 0.47, 0.5, 0.55]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={{ flex: 1 }} />
-        </Animated.View>
-      )}
-      {/* Opak iç zemin: aktif (soluk, opaklık 0,45) kartta dönen altın ışık kartın içinden görünmez, yalnız 2 px kenarda gezer */}
-      <View style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: c.planLeft }}>{children}</View>
-    </View>
-  );
-}
+const PRIME_RENEW_INFO = 'İptal etmediğin sürece aboneliğin seçtiğin süre için aynı fiyatla otomatik olarak yenilenir.';
 
 function Check() {
-  return <Svg viewBox="0 0 20 20" width={11} height={11} fill={c.red}><Path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></Svg>;
+  return <Svg viewBox="0 0 20 20" width={16} height={16} fill={c.red}><Path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></Svg>;
+}
+function Arrow({ color }: { color: string }) {
+  return <Svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M9 6l6 6-6 6" /></Svg>;
 }
 
 export default function Paketim() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const winback = useWinback();
   const [loading, setLoading] = useState(true);
   const [subs, setSubs] = useState<Subscription[]>([]);
+  const [rights, setRights] = useState<Rights>({ group: 0, oneOnOne: 0, kanka: 0 });
   const [openParts, setOpenParts] = useState<OpenParts>({ group: false, oneOnOne: false });
-  const [refundOptions, setRefundOptions] = useState<RefundOption[]>([]);
-  const [packageCycles, setPackageCycles] = useState(4);
+  const [primeActive, setPrimeActive] = useState(false);
   const [prices, setPrices] = useState<Partial<Record<PlanKeyName, PlanPriceInfo>> | null>(null);
-  const [discount, setDiscount] = useState<DiscountInfo | null>(null);
   const [kankamla, setKankamla] = useState<KankamlaState | null>(null);
   const [kycApproved, setKycApproved] = useState(false);
   const [maintenance, setMaintenance] = useState(false);
@@ -71,22 +56,26 @@ export default function Paketim() {
   const [refPhone, setRefPhone] = useState('');
   const [refSending, setRefSending] = useState(false);
   const [refMsg, setRefMsg] = useState('');
-  const [refundLoading, setRefundLoading] = useState(false);
-  const [refundMsg, setRefundMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [buying, setBuying] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+  const [detail, setDetail] = useState<CardKey | null>(null);
+  const [primePlan, setPrimePlan] = useState<(typeof PRIME_PLANS)[number]['key']>('PRIME_1M');
   const [error, setError] = useState('');
 
+  const loadSubs = useCallback(() => api.get<{ subscriptions: Subscription[]; rights: Rights; hasMasada?: boolean; hasKarsimda?: boolean; primeActive?: boolean }>('/payment/subscriptions')
+    .then((r) => {
+      setSubs(r.subscriptions ?? []); setRights(r.rights ?? { group: 0, oneOnOne: 0, kanka: 0 });
+      setOpenParts({ group: !!r.hasMasada, oneOnOne: !!r.hasKarsimda }); setPrimeActive(!!r.primeActive);
+    }).catch(() => {}), []);
+
   const load = useCallback(() => {
-    api.get<{ subscriptions: Subscription[]; hasMasada?: boolean; hasKarsimda?: boolean; refundOptions?: RefundOption[]; packageCycles?: number }>('/payment/subscriptions')
-      .then((r) => { setSubs(r.subscriptions ?? []); setRefundOptions(r.refundOptions ?? []); if (r.packageCycles) setPackageCycles(r.packageCycles); })
-      .catch(() => {}).finally(() => setLoading(false));
+    loadSubs().finally(() => setLoading(false));
     api.get<PlanPriceInfo[]>('/payment/plans').then((l) => setPrices(Object.fromEntries(l.map((p) => [p.plan, p])))).catch(() => {});
-    api.get<DiscountInfo>('/payment/discount-info').then(setDiscount).catch(() => {});
-    api.get<{ kankamla?: KankamlaState; openParts?: OpenParts; kyc?: { status: string }; maintenanceMode?: boolean }>('/auth/me').then((m) => {
-      setKankamla(m.kankamla ?? null); if (m.openParts) setOpenParts(m.openParts); setKycApproved(m.kyc?.status === 'APPROVED'); setMaintenance(!!m.maintenanceMode);
+    api.get<{ kankamla?: KankamlaState; kyc?: { status: string }; maintenanceMode?: boolean }>('/auth/me').then((m) => {
+      setKankamla(m.kankamla ?? null); setKycApproved(m.kyc?.status === 'APPROVED'); setMaintenance(!!m.maintenanceMode);
     }).catch(() => {});
     api.get<{ totalInvites: number; availableDiscounts: number }>('/referral/my-stats').then(setStats).catch(() => {});
-  }, []);
+  }, [loadSubs]);
   useFocusEffect(load);
 
   async function sendReferral() {
@@ -98,24 +87,83 @@ export default function Paketim() {
       setStats(await api.get('/referral/my-stats'));
     } catch (e) { setRefMsg((e as Error).message || 'Gönderilemedi.'); } finally { setRefSending(false); }
   }
-  async function refund(t: RefundOption) {
-    setRefundLoading(true);
-    try { await api.post('/payment/refund-request', { refundType: t }); setRefundMsg({ ok: true, text: 'İade talebiniz alındı, en kısa sürede size ulaşacağız.' }); }
-    catch (e) { setRefundMsg({ ok: false, text: (e as Error).message || 'İşlem başarısız oldu.' }); } finally { setRefundLoading(false); }
-  }
+  // Ödeme başarılı olur olmaz: KYC onaylı değilse hemen KYC ekranı
   async function buy(plan: string) {
     setBuying(plan); setError('');
     try {
-      const use = discount?.referralDiscount ? 'REFERRER' : discount?.inviteeDiscount ? 'INVITEE' : undefined;
-      await startPurchase(plan, use);
-      router.push({ pathname: '/odeme-sonuc', params: { durum: 'basarili' } });
+      await startPurchase(plan);
+      if (!kycApproved) router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } });
+      else router.push({ pathname: '/odeme-sonuc', params: { durum: 'basarili' } });
     } catch (e) { setError((e as Error).message); } finally { setBuying(''); }
   }
+  async function cancelPrime() {
+    setCancelling(true); setError('');
+    try {
+      const r = await api.post<{ storeManaged?: string }>('/payment/prime/cancel', {});
+      if (r?.storeManaged) await openStoreSubscriptions();
+      await loadSubs();
+    } catch (e) { setError((e as Error).message); } finally { setCancelling(false); }
+  }
 
-  const owned = new Set(subs.map((s) => s.plan).filter((p): p is PlanKey => p === 'MASADA' || p === 'KARSIMDA' || p === 'ICERDE'));
-  const shownRefunds: RefundOption[] = refundOptions.includes('FULL') ? ['FULL'] : refundOptions.filter((o) => o !== 'FULL');
-  const priceOf = (k: string) => prices?.[k as PlanKeyName];
-  const winOf = (k: string) => (winback.live && winback.running ? winback.state?.plans?.find((p) => p.plan === k) : undefined);
+  // Mobil fiyat: mağazada tahsil edilen tutar (mobileTL)
+  const priceOf = (k: string) => prices?.[k as PlanKeyName]?.mobileTL ?? null;
+  const stateOf = (key: CardKey) => {
+    if (key === 'PRIME') return primeActive ? { blocked: true, badge: 'Aktif Paketiniz' as string | null, needsKanka: false } : { blocked: false, badge: null, needsKanka: false };
+    if (key === 'KANKAMLA') { const k = getKankamlaCardState(kankamla); return { blocked: !k.showButton, badge: k.badge, needsKanka: k.needsKanka }; }
+    const owned = new Set(subs.map((s) => s.plan).filter((p): p is PlanKey => p === 'MASADA' || p === 'KARSIMDA' || p === 'ICERDE'));
+    const cs = getPlanCardState(key, owned, openParts);
+    return { blocked: !cs.showButton, badge: cs.badge, needsKanka: false };
+  };
+  const prime = subs.find((s) => s.isPrime);
+
+  // ─── Detay ekranı ─────────────────────────────────────────────────────────
+  if (detail) {
+    const card = CARDS.find((x) => x.key === detail)!;
+    const isP = detail === 'PRIME';
+    const planKey = isP ? primePlan : detail;
+    const st = stateOf(detail);
+    const busy = st.blocked || buying === planKey || maintenance;
+    return (
+      <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
+        <ScreenGlow />
+        <ScrollView contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 32, gap: 16, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
+          {maintenance && <MaintenanceNotice />}
+          <Pressable onPress={() => { setDetail(null); setError(''); }} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}>
+            <T style={{ fontSize: 14, color: ll.label }}>← Paketler</T>
+          </Pressable>
+          <Card style={{ gap: 20 }}>
+            <T w={700} style={{ fontSize: 28, lineHeight: 34, color: isP ? '#e8c84a' : ll.text }}>{card.name}</T>
+            {isP && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {PRIME_PLANS.map((pl) => {
+                  const on = primePlan === pl.key;
+                  return (
+                    <Pressable key={pl.key} onPress={() => setPrimePlan(pl.key)} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                      style={{ width: '48%', minHeight: 56, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, borderWidth: on ? 2 : 1, borderColor: on ? '#c9a227' : 'rgba(255,255,255,0.12)', backgroundColor: on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)' }}>
+                      <T w={600} style={{ fontSize: 14, color: ll.text }}>{pl.label}</T>
+                      <T style={{ fontSize: 12, color: ll.text2, marginTop: 2 }}>{priceOf(pl.key) ?? '—'} ₺</T>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+            <View style={{ gap: 10 }}>
+              <T w={600} style={{ fontSize: 16, color: ll.text }}>Avantajlar</T>
+              {card.advantages.map((a) => (
+                <View key={a} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Check /><T style={{ fontSize: 14, color: ll.text2, flexShrink: 1 }}>{a}</T></View>
+              ))}
+            </View>
+            <T w={700} style={{ fontSize: 36, lineHeight: 40, color: ll.text }}>{priceOf(planKey) ?? '—'} ₺</T>
+            {!!error && <T style={{ fontSize: 14, color: tw.accent }}>{error}</T>}
+            <BtnPrimary full disabled={busy} style={[{ minHeight: 52 }, busy && { opacity: 0.5 }]}
+              label={buying === planKey ? 'Yönlendiriliyor…' : st.blocked ? (st.badge ?? (isP ? 'Abone Ol' : 'Paket Al')) : st.needsKanka ? 'Önce Kanka Davet Et' : isP ? 'Abone Ol' : 'Paket Al'}
+              onPress={() => st.needsKanka ? router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'profil' } }) : buy(planKey)} />
+            <T style={{ fontSize: 12, lineHeight: 18, color: ll.label, textAlign: 'center' }}>{PAY_INFO}{isP ? ` ${PRIME_RENEW_INFO}` : ''}</T>
+          </Card>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
@@ -147,102 +195,47 @@ export default function Paketim() {
               </View>
             </Card>
 
+            {/* Aktif paketler ve türüne göre kalan hak adedi: yalnız aktif paketi / aboneliği olana */}
             {subs.length > 0 && (
               <Card style={{ gap: 12 }}>
-                {subs.map((s) => {
-                  const g = s.plan === 'MASADA' || s.plan === 'ICERDE', o = s.plan === 'KARSIMDA' || s.plan === 'ICERDE', k = s.plan === 'KANKAMLA';
-                  return (
-                    <View key={s.id} style={{ gap: 8 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <T w={700} style={{ fontSize: 12, color: '#fff', letterSpacing: 0.3 }}>AKTİF PAKET</T>
-                        <T w={600} style={{ fontSize: 12, color: c.tAaa }}>{PLAN_LABEL[s.plan] ?? s.plan}</T>
-                      </View>
-                      {g && <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><T style={{ fontSize: 12, color: c.tAaa }}>Grup masası hakkı</T><T style={{ fontSize: 12, color: c.tAaa }}>{s.groupCycles >= packageCycles ? 'Süresi doldu' : `${s.groupRights}/2 kaldı · ${s.groupCycles}/${packageCycles} döngü`}</T></View>}
-                      {k && <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><T style={{ fontSize: 12, color: c.tAaa }}>Kankamla masası hakkı</T><T style={{ fontSize: 12, color: c.tAaa }}>{(s.kankaCycles ?? 0) >= packageCycles ? 'Süresi doldu' : `${s.kankaRights ?? 0}/2 kaldı · ${s.kankaCycles ?? 0}/${packageCycles} döngü`}</T></View>}
-                      {o && <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><T style={{ fontSize: 12, color: c.tAaa }}>Başbaşa masası hakkı</T><T style={{ fontSize: 12, color: c.tAaa }}>{s.usedAt ? 'Kullanıldı' : s.oneOnOneCycles >= packageCycles ? 'Süresi doldu' : `1/1 kaldı · ${s.oneOnOneCycles}/${packageCycles} döngü`}</T></View>}
-                    </View>
-                  );
-                })}
-                {/* Not: Sadakat Programı notuyla aynı kutu, yazı rengi ve boyu */}
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, marginTop: 4 }}>
-                  <T style={{ color: c.tAaa, fontSize: 12, lineHeight: 18 }}>
-                    Paketler tek seferliktir; her masa hakkı {packageCycles} döngü (yaklaşık 1 ay) geçerlidir. Bu süre içinde hiç masa kurulamazsa tam iade talep edebilirsin. Bir masa kurulduysa kalan hakkın olsa da hizmet alınmış sayılır ve iade yapılmaz. İade talepleri 5 iş günü içinde değerlendirilir.
-                  </T>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                  <T w={700} style={{ fontSize: 12, color: '#fff', letterSpacing: 0.3 }}>AKTİF PAKET</T>
+                  <T w={600} style={{ fontSize: 12, color: c.tAaa, flexShrink: 1, textAlign: 'right' }}>{subs.map((s) => s.name).join(', ')}</T>
                 </View>
-                {refundMsg ? <T style={{ fontSize: 14, color: refundMsg.ok ? tw4.green400 : tw.accent }}>{refundMsg.text}</T>
-                  : shownRefunds.length > 0 ? shownRefunds.map((o) => (
-                    <Btn key={o} variant="refund" disabled={refundLoading} onPress={() => refund(o)} label={refundLoading ? 'Gönderiliyor…' : REFUND_LABEL[o]} />
-                  )) : (
-                    <Btn variant="refundDisabled" disabled label="İade Talep Et" style={{ opacity: 1 }} />
-                  )}
+                {([['Grup', rights.group], ['Başbaşa', rights.oneOnOne], ['Kankamla', rights.kanka]] as const).map(([label, n]) => (
+                  <View key={label} style={{ flexDirection: 'row', justifyContent: 'space-between' }}><T style={{ fontSize: 12, color: c.tAaa }}>{label}</T><T style={{ fontSize: 12, color: c.tAaa }}>{n}</T></View>
+                ))}
+                {!!prime && !prime.renewCancelledAt && (
+                  <Pressable onPress={cancelPrime} disabled={cancelling} accessibilityRole="button"
+                    style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', opacity: cancelling ? 0.5 : 1 }}>
+                    <T w={500} style={{ fontSize: 14, color: ll.text2 }}>{cancelling ? '…' : 'Aboneliği İptal Et'}</T>
+                  </Pressable>
+                )}
               </Card>
             )}
 
             {!!error && <T style={{ fontSize: 14, color: tw.accent }}>{error}</T>}
 
-            <View style={{ gap: 16 }}>
-              {PLANS.map((plan) => {
-                const isK = plan.key === 'KANKAMLA';
-                const cs = isK ? getKankamlaCardState(kankamla) : { ...getPlanCardState(plan.key, owned, openParts), needsKanka: false };
-                const p = priceOf(plan.key), w = winOf(plan.key);
-                const body = (
-                  <View style={[{ flexDirection: 'row', minHeight: 240 }, !plan.featured && { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }, cs.dimmed && { opacity: 0.45 }]} pointerEvents={cs.dimmed ? 'none' : 'auto'}>
-                    <View style={{ width: '55%', backgroundColor: c.planLeft, paddingVertical: 16, paddingHorizontal: 12, gap: 8 }}>
-                      {!!cs.badge && (
-                        <View style={{ position: 'absolute', top: 8, left: 8, right: 8, zIndex: 10, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, borderWidth: 1,
-                          backgroundColor: cs.badgeRed ? 'rgba(192,57,43,0.85)' : 'rgba(40,40,40,0.85)', borderColor: cs.badgeRed ? 'rgba(192,57,43,0.6)' : 'rgba(255,255,255,0.12)' }}>
-                          <T w={600} style={{ fontSize: 10.4, lineHeight: 13, textAlign: 'center', color: cs.badgeRed ? '#fff' : c.tAaa }}>{cs.badge}</T>
+            <View style={{ gap: 12 }}>
+              {CARDS.map((card) => {
+                const st = stateOf(card.key);
+                const isP = card.key === 'PRIME';
+                const fg = isP ? '#1a1406' : '#fff';
+                return (
+                  <Pressable key={card.key} onPress={() => { setDetail(card.key); setError(''); }} accessibilityRole="button" accessibilityLabel={`${card.name}, ${card.desc}`}
+                    style={({ pressed }) => ({ backgroundColor: card.color, borderRadius: 18, paddingVertical: 18, paddingHorizontal: 20, minHeight: 76, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, opacity: st.blocked ? 0.55 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <T w={800} style={{ fontSize: 20, lineHeight: 26, color: fg }}>{card.name}</T>
+                        <View style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: isP ? 'rgba(26,20,6,0.18)' : 'rgba(0,0,0,0.22)' }}>
+                          <T w={600} style={{ fontSize: 10.4, color: fg }}>{st.badge ?? card.badge}</T>
                         </View>
-                      )}
-                      <View style={{ marginTop: cs.badge ? 20 : 0 }}>
-                        <Serif style={{ fontSize: 16, marginBottom: 3 }}>{plan.name}</Serif>
-                        {w ? (
-                          <>
-                            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
-                              <T w={700} style={{ fontSize: 24, lineHeight: 36 }}>{w.mobileDiscountedTL}</T><T style={{ color: c.t888, fontSize: 13.6, marginBottom: 1 }}>₺</T>
-                              <T style={{ color: c.t555, fontSize: 12, lineHeight: 18, textDecorationLine: 'line-through', marginBottom: 1 }}>{w.mobileListTL}₺</T>
-                            </View>
-                            <T style={{ color: ll.copper, fontSize: 10.9, marginBottom: 2, fontVariant: ['tabular-nums'] }}>İndirim bitimine {clockMS(winback.remaining)}</T>
-                          </>
-                        ) : discount?.referralDiscount ? (
-                          <>
-                            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
-                              <T w={700} style={{ fontSize: 24, lineHeight: 36 }}>{p?.mobileDiscountTL ?? '—'}</T><T style={{ color: c.t888, fontSize: 13.6, marginBottom: 1 }}>₺</T>
-                              <T style={{ color: c.t555, fontSize: 12, lineHeight: 18, textDecorationLine: 'line-through', marginBottom: 1 }}>{p?.mobileTL ?? '—'}₺</T>
-                            </View>
-                            <T style={{ color: c.ok, fontSize: 10.9, marginBottom: 2 }}>Kalan İndirim Hakkı: {discount.referralCount}</T>
-                          </>
-                        ) : (
-                          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginBottom: 2 }}>
-                            <T w={700} style={{ fontSize: 24, lineHeight: 36 }}>{p?.mobileTL ?? '—'}</T><T style={{ color: c.t888, fontSize: 13.6, marginBottom: 1 }}>₺</T>
-                          </View>
-                        )}
-                        <T style={{ fontSize: 10.9 }}>{plan.desc}</T>
                       </View>
-                      <View style={{ gap: 4, flex: 1 }}>
-                        {plan.features.map((f) => (
-                          <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><Check /><T style={{ fontSize: 11.2, color: c.tCcc, lineHeight: 14.56, flexShrink: 1 }}>{f}</T></View>
-                        ))}
-                      </View>
-                      {cs.showButton && (
-                        <BtnPrimary full disabled={buying === plan.key || maintenance} style={(buying === plan.key || maintenance) ? { opacity: 0.5 } : undefined}
-                          label={buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : 'Paketi Al'}
-                          onPress={() => !kycApproved ? router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } }) : cs.needsKanka ? router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'profil' } }) : buy(plan.key)} />
-                      )}
+                      <T numberOfLines={1} style={{ fontSize: 14, color: fg, opacity: 0.9 }}>{card.desc}</T>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Image source={plan.bg} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="cover" accessibilityLabel={plan.name} />
-                      {plan.featured && !cs.badge && (
-                        <View style={{ position: 'absolute', top: 12, right: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: 'rgba(10,5,5,0.75)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}>
-                          <T w={600} style={{ fontSize: 12, color: '#fff' }}>Tercih Edilen</T>
-                        </View>
-                      )}
-                    </View>
-                    {/* web: inset 0 1px 0 rgba(255,255,255,.1) — kartın üst kenarında 1 px çizgi, iç köşe yarıçapı 15 (16 − 1 px kenarlık) boyunca köşelere uyar */}
-                    {!plan.featured && <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', zIndex: 20 }} />}
-                  </View>
+                    <Arrow color={fg} />
+                  </Pressable>
                 );
-                return plan.featured ? <GoldBorder key={plan.key}>{body}</GoldBorder> : <View key={plan.key} style={{ borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 8 } }}>{body}</View>;
               })}
             </View>
           </>

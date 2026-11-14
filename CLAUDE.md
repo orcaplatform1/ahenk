@@ -37,17 +37,17 @@ ahenk/
 3. KULLANICI AKIŞI
 Kayıt → WhatsApp OTP → OCEAN Testi → Dashboard  (KYC YOK)
                                           ↓
-                               Abonelik almak isterse
+                               Paket / Prime almak isterse → ödeme (KYC istenmez)
                                           ↓
-                               KYC zorunlu → yükle → admin onay
+                               Ödeme başarılı olur olmaz → KYC ekranı → yükle → admin onay
                                           ↓
-                               Ödeme açılır → Masada / Karşımda / İçerde
+                               KYC onaylanınca buluşma taramalarına girebilir (haftalık seçim)
 
 TEST KURALLARI:
 - Test oturum gerektirmez (GET /test/questions herkese açık)
 - Cevaplar tek seferde gönderilir (POST /test/submit — 19 cevap zorunlu)
 - OCEAN skoru: her boyut 0-100 ((ortalama-1)/4*100), ters sorularda 6-score
-- Abonelik öncesi test tamamlanmış olmalı (TestCompletedGuard)
+- Paket satın alma öncesi test tamamlanmış olmalı (TestCompletedGuard)
 - Yeniden test: 180 gün sonra
 - Admin test kilidini açabilir: PATCH /test/admin/:userId/reset-lock → adminCanReset: true
 - Kullanıcı testi tamamlayınca adminCanReset otomatik false'a döner
@@ -69,29 +69,53 @@ EŞLEŞTİRME ALGORİTMASI (Modül 7):
 - 5. kişi sıradaki haftaya: MatchingWaitlist tablosunda saklanır, sonraki koşuda öncelikli
 
 KYC KURALLARI:
-- Kayıt, giriş ve OCEAN testi KYC gerektirmez
-- Abonelik satın alımı öncesinde KYC zorunlu (KycGuard)
+- Kayıt, giriş, OCEAN testi ve paket satın alma KYC gerektirmez (POST /payment/init üzerinde KycGuard yok)
+- Ödeme başarılı olur olmaz kullanıcı hemen KYC ekranına yönlendirilir (web /odeme/basarili → /profil?tab=kyc; mobil Profilim → kyc)
+- KYC onaylanmadan kullanıcı hiçbir buluşma taramasına giremez (havuz sorgularında kyc APPROVED şartı)
 - KYC onaylıysa kullanıcı profilinde isKycVerified: true → "Doğrulanmış ✓" rozeti
 - Durum: PENDING / APPROVED / REJECTED / SUSPICIOUS
-- REJECTED veya SUSPICIOUS → rejectReason yazılır, kullanıcı yeniden başvurabilir
+- REJECTED veya SUSPICIOUS → rejectReason yazılır, kullanıcı yeniden başvurabilir. İade yoktur
+- iyzico alıcı TC kimlik no: KYC onayında girilir; ödeme KYC'den önce olduğu için yoksa 11111111111 gönderilir
 - Dosyalar Cloudflare R2'de private, sadece imzalı URL ile admin görür
 
 ÖDEME SİSTEMİ (Modül 8):
-Paketler:
-  - MASADA: 349 TL/ay (yenilenen abonelik, grup buluşma hakkı)
-  - KARSIMDA: 449 TL/tek kullanım (başbaşa buluşma hakkı)
-  - ICERDE: 679 TL — "Tercih Edilen" etiketi; 1 ay MASADA + 1 tek kullanım KARSIMDA hakkını içerir
+Tek seferlik paketler (kodlar korunur; haklar kullanılana kadar geçerli, döngü / süre sınırı yok):
+  - MASADA   → "Grup":     1 grup buluşması hakkı, ham 299 TL
+  - KARSIMDA → "Başbaşa":  1 başbaşa buluşması hakkı, ham 399 TL
+  - KANKAMLA → "Kankamla": 1 kankamla buluşması hakkı, ham 499 TL (alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır)
+  - ICERDE   → "İçerde":   1 grup + 1 başbaşa buluşması hakkı, ham 599 TL
+Prime abonelik (PRIME_1M / PRIME_3M / PRIME_6M / PRIME_12M): ham 899 / 2299 / 3899 / 6499 TL
+  - Satın alındığı anda 1 grup + 1 başbaşa + 1 kankamla hakkı tanımlanır
+  - Satın alma tarihinden itibaren her 30 günde haklar sıfırlanır ve yeniden 1 + 1 + 1 olur; kullanılmayan haklar devretmez
+  - Dönem başında planın tam tutarı tek seferde çekilir; dönem bitince aynı süreyle otomatik yenilenir
+  - Aktif Prime'ı olan ikinci Prime alamaz
+  - Aktif Prime'ı olan tek seferlik paket alamaz; istisna: Prime'da hakkı bitmiş tür varsa yalnız o türü içeren tek seferlik paketi alabilir
+  - Profildeki paket kutusunda "Aboneliği İptal Et": otomatik yenileme durur, haklar dönem sonuna kadar kullanılır, iade yapılmaz
+Fiyatlar ham fiyattır; admin "Fiyatlar" tablosunda (PlanPrice) tutulur. Web = ham × 1,20 (KDV); mobil = ham × 1,20 ÷ 0,85 (mağaza komisyonu %15)
+İndirimler: %10 davet indirimi ve paketi / aboneliği olmayana gönderilen 100 TL indirim tüm tek seferlik paketlerde ve tüm Prime
+  planlarında geçerli; ikisi aynı ödemede birlikte kullanılamaz; Prime'da yalnız satın alma ödemesine uygulanır, yenilemeler indirimsiz
 Platform:
-  - Web / Android → iyzico Checkout Form
-  - iOS → StoreKit 2 stub (şimdilik "henüz aktif değil" döner)
+  - Web → iyzico. Tek seferlik: Checkout Form. Prime: ilk dönem Checkout Form, otomatik yenileme iyzico abonelik API'si
+    (IYZICO_SUBSCRIPTION_ENABLED=true olana kadar pasif; planlar lansmanda create-prime-plans ile tanımlanır)
+  - iOS → App Store, Android → Play Store uygulama içi satın alma (IAP_ENABLED=true olana kadar pasif)
 Akış:
-  - POST /payment/plans → herkese açık, paket listesi
-  - POST /payment/init → TestCompletedGuard + KycGuard + JWT zorunlu; iyzico token + form döner
-  - POST /payment/callback → iyzico'dan gelen callback, token ile doğrulama, abonelik aktifleşir
-  - GET /payment/subscriptions → JWT zorunlu, kullanıcının aktif abonelikleri
-ICERDE paketi DB'de tek Subscription kaydı olarak saklanır (plan=ICERDE); hasMasada ve hasKarsimda
-  sorguları ICERDE planını da kapsar.
-MASADA aboneliği 30 gün; KARSIMDA ve ICERDE'nin Subscription.expiresAt=null, usedAt ile tüketim takibi.
+  - GET /payment/plans → herkese açık, paket listesi
+  - POST /payment/init → TestCompletedGuard + JWT; web iyzico form, mobil mağaza ürün kimliği döner
+  - POST /payment/callback → iyzico callback; başarılıysa /odeme/basarili (Prime'da ?prime=1 → otomatik yenileme formu)
+  - POST /payment/store/verify → mobil satın alma doğrulama; store/apple-notification, store/google-notification yenilemeler
+  - POST /payment/prime/cancel, /payment/prime/autorenew/init, /payment/prime/autorenew/callback, /payment/prime/iyzico-webhook
+  - GET /payment/subscriptions → JWT zorunlu, aktif paketler + türüne göre kalan hak adedi
+İADE SİSTEMİ YOKTUR: kullanıcı iade talebi, admin iade ekranları ve iade endpoint'leri kaldırıldı; RefundRequest tablosu silindi.
+  (Para çekilip paket verilemeyen mükerrer ödemenin otomatik iyzico iadesi ve "Ödeme Sonuçlandırma" ekranı duruyor.)
+
+HAFTALIK BULUŞMA SEÇİMİ:
+  - Her Pazar 23:59'dan sonra paketi olan kullanıcıya Eşleşme Paneli / Masalarım'da pencere açılır
+  - Paketinde kalan türlerden bu hafta hangilerine gireceğini seçer (1, 2 ya da 3 tür); seçim değiştirilemez
+  - Sistem kimseyi otomatik taramaya sokmaz; yalnız seçilen türlerin taramasına girilir (WeeklySelection tablosu)
+  - Son saatler: Grup Perşembe 18:00, Başbaşa Cuma 18:00, Kankamla Cumartesi 18:00
+  - Süresinde seçim yapmayan o türün taramasına girmez, hakkı düşmez
+  - Eşleşme alanı: paketi olan kullanıcıda bu hafta seçilmeyen tür "Eşleşme Pasif"; hiç paketi olmayanda "Abonelik Yok"
+  - GET /weekly-selection, POST /weekly-selection {types[]} (JWT)
 
 BİLDİRİM SERVİSİ (Modül 9):
 Kanallar:
@@ -213,12 +237,8 @@ KULLANICI ENGELLEME (UserBlock):
   → Phase 3 karma masalarda da engelli çiftler aynı masaya yerleştirilmez
 
 PLATFORM KOMİSYON KURALLARI:
-- Web:          %0 komisyon  → kullanıcıya gösterilen fiyat = iyzico'ya gönderilen fiyat
-- Google Play:  %15 komisyon → iyzico fiyatı = net_fiyat / (1 - 0.15)
-- App Store:    %30 komisyon → iyzico fiyatı = net_fiyat / (1 - 0.30)
-Env değişkenleri: PLATFORM_FEE_WEB=0, PLATFORM_FEE_GOOGLE=0.15, PLATFORM_FEE_APPLE=0.30
-iOS StoreKit 2 ayrı modül olarak stub'lanmıştır; production'da aktif edilecek (şimdi "henüz aktif değil" döner)
-Paket fiyatları (MASADA 349, KARSIMDA 449, ICERDE 679) net fiyatlardır; platform eklenince yukarı çıkar
+- Fiyat hesabı: web = ham × 1,20; mobil (App Store ve Play Store) = ham × 1,20 ÷ (1 − 0,15) — mağaza komisyonu %15
+- Mobil ödeme uygulama içi satın almadır (App Store / Play Store); lansmana kadar pasif (IAP_ENABLED)
 
 AKTİF ŞEHİRLER (7 şehir):
 İstanbul, Ankara, İzmir, Antalya, Balıkesir, Muğla, Aydın

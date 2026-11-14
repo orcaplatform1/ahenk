@@ -19,7 +19,6 @@ import {
   Gender,
   VenueCategory,
   VenueType,
-  RefundStatus,
   ReferralStatus,
   SanctionType,
   PartnershipStatus,
@@ -34,7 +33,6 @@ import { vatOfGrossKurus } from "../payment/pricing";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { NotificationService } from "../notification/notification.service";
 import { meetingLockAt } from "../meetings/meeting-windows";
-import { PaymentService } from "../payment/payment.service";
 import { DELETED_PLACEHOLDER_PREFIX } from "../users/account-deletion.service";
 import type { AdminUpdateUserDto } from "./dto/admin.dto";
 import { KycService } from "../kyc/kyc.service";
@@ -53,7 +51,8 @@ import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } fro
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
 import { OVERLAPPING_PLANS } from "../payment/plan-overlap";
 import { trIsoWeekStart, trWeekStart, WEEK_MS } from "./tr-week";
-import { GROUP_RIGHTS, KANKA_RIGHTS, restoreGroupRights, restoreKankaRights } from "../payment/package-rights";
+import { GROUP_PLANS, GROUP_RIGHTS, KANKA_PLANS, ONE_ON_ONE_PLANS, isPrime, kankaRightsOf, restoreGroupRights, restoreKankaRights } from "../payment/package-rights";
+import { PrimeService } from "../payment/prime.service";
 import { activeKankaLink, endKankaLinks } from "../kanka/kanka-links";
 
 const PIONEER_MAX_QUOTA = 500;
@@ -76,7 +75,7 @@ export class AdminService {
     private prisma: PrismaService,
     private whatsapp: WhatsappNotifyService,
     private notifications: NotificationService,
-    private payment: PaymentService,
+    private prime: PrimeService,
     private kyc: KycService,
     @InjectQueue(ASSIGN_QUEUE) private assignQueue: Queue,
     private matching: MatchingService,
@@ -271,9 +270,9 @@ export class AdminService {
     ]);
     // Kalan haklar: aktif aboneliklerden, Abonelikler sayfasındaki değerlerle aynı
     const rights = {
-      group: user.subscriptions.filter((s) => s.plan === "MASADA" || s.plan === "ICERDE").reduce((sum, s) => sum + s.groupRights, 0),
-      oneOnOne: user.subscriptions.filter((s) => (s.plan === "KARSIMDA" || s.plan === "ICERDE") && !s.usedAt).length,
-      kanka: user.subscriptions.filter((s) => s.plan === "KANKAMLA").reduce((sum, s) => sum + s.kankaRights, 0),
+      group: user.subscriptions.filter((s) => GROUP_PLANS.includes(s.plan)).reduce((sum, s) => sum + s.groupRights, 0),
+      oneOnOne: user.subscriptions.filter((s) => ONE_ON_ONE_PLANS.includes(s.plan) && !s.usedAt).length,
+      kanka: user.subscriptions.filter((s) => KANKA_PLANS.includes(s.plan)).reduce((sum, s) => sum + s.kankaRights, 0),
     };
     const noShowWarnings = await this.noShowWarnings(userId);
     // Aktif kankası (Kankamla)
@@ -534,30 +533,29 @@ export class AdminService {
     const user = await this.prisma.user.findUnique({ where: { id: targetId } });
     if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
 
-    // Tek seferlik paket: haklar + 4 döngü (package-rights.ts); admin isterse ayrıca son tarih verebilir
+    // Tek seferlik paket: haklar kullanılana kadar (package-rights.ts); Prime: dönem + 30 günlük yenileme (prime.service.ts).
+    // Admin isterse ayrıca son tarih verebilir
     const expiry: Date | null = expiresAt ? new Date(expiresAt) : null;
 
-    // İçeriği çakışan aktif paketler (ücretli dahil) iade yapılmadan iptal edilir; bekleyen iade talepleri reddedilir.
+    // İçeriği çakışan aktif paketler (ücretli dahil) iade yapılmadan iptal edilir.
     // Çakışmayan paket kalır: Masada + Karşımda birlikte olabilir; İçerde ikisini de kapsar.
     const oldSubs = await this.prisma.subscription.findMany({
       where: { userId: targetId, status: SubscriptionStatus.ACTIVE, plan: { in: OVERLAPPING_PLANS[plan] } },
       select: { id: true },
     });
     const oldIds = oldSubs.map((s) => s.id);
-    const [, , sub] = await this.prisma.$transaction([
-      this.prisma.subscription.updateMany({
+    const sub = await this.prisma.$transaction(async (tx) => {
+      await tx.subscription.updateMany({
         where: { id: { in: oldIds } },
         data: { status: SubscriptionStatus.CANCELLED, cancelNote: `Admin yeni paket verdi: ${PLAN_CONFIG[plan].nametr}` },
-      }),
-      this.prisma.refundRequest.updateMany({
-        where: { subscriptionId: { in: oldIds }, status: RefundStatus.PENDING },
-        data: { status: RefundStatus.REJECTED, adminNote: "Paket admin tarafından değiştirildi" },
-      }),
-      this.prisma.subscription.create({
-        data: { userId: targetId, plan, status: "ACTIVE", expiresAt: expiry, groupRights: GROUP_RIGHTS[plan], kankaRights: plan === SubscriptionPlan.KANKAMLA ? KANKA_RIGHTS : 0 },
-        select: { id: true, plan: true, status: true, expiresAt: true },
-      }),
-    ]);
+      });
+      const created = isPrime(plan)
+        ? await this.prime.createPrime(tx, targetId, plan, { expiresAt: expiry ?? undefined })
+        : await tx.subscription.create({
+            data: { userId: targetId, plan, status: "ACTIVE", expiresAt: expiry, groupRights: GROUP_RIGHTS[plan], kankaRights: kankaRightsOf(plan) },
+          });
+      return { id: created.id, plan: created.plan, status: created.status, expiresAt: created.expiresAt };
+    });
 
     // Kişi havuza girdi: anında masaya atanır
     await enqueueAssign(this.assignQueue, targetId);
@@ -1660,7 +1658,6 @@ export class AdminService {
 
     return {
       totalRevenue,
-      totalRefund: finance.refundTL,
       netRevenue: finance.netTL,
       vatAmount: finance.vatTL,
       netCommission,
@@ -1678,18 +1675,12 @@ export class AdminService {
     };
   }
 
-  // Brüt (ödenen, indirim düşülmüş), indirim, onaylanan iade ve net tutarlar — TL
+  // Brüt (ödenen, indirim düşülmüş), indirim ve net tutarlar — TL
   private async financeTotals(userWhere: Prisma.UserWhereInput) {
-    const [payments, refunds] = await Promise.all([
-      this.prisma.payment.findMany({
-        where: { status: "SUCCESS", user: userWhere },
-        select: { plan: true, amountKurus: true, discountType: true, listKurus: true, platform: true },
-      }),
-      this.prisma.refundRequest.aggregate({
-        where: { status: RefundStatus.APPROVED, user: userWhere },
-        _sum: { refundedKurus: true },
-      }),
-    ]);
+    const payments = await this.prisma.payment.findMany({
+      where: { status: "SUCCESS", user: userWhere },
+      select: { plan: true, amountKurus: true, discountType: true, listKurus: true, platform: true },
+    });
     // Platform komisyonu (CLAUDE.md): PLATFORM_FEE_WEB / PLATFORM_FEE_GOOGLE / PLATFORM_FEE_APPLE
     const feeOf = (name: string, fallback: number) => {
       const v = Number(process.env[name]);
@@ -1709,11 +1700,10 @@ export class AdminService {
       // Liste fiyatı kaydı olmayan eski indirimli ödemelerde liste = tutar ÷ 0,90
       if (p.discountType) discountKurus += (p.listKurus ?? Math.round(p.amountKurus / 0.9)) - p.amountKurus;
     }
-    const refundKurus = refunds._sum.refundedKurus ?? 0;
     const tl = (k: number) => Math.round(k) / 100;
-    const netKurus = grossKurus - refundKurus;
+    const netKurus = grossKurus;
     // Net ciro KDV dahil: içindeki %20 KDV payı ayrıca gösterilir
-    return { commissionTL: tl(commissionKurus), grossTL: tl(grossKurus), discountTL: tl(discountKurus), refundTL: tl(refundKurus), netTL: tl(netKurus), vatTL: tl(vatOfGrossKurus(netKurus)) };
+    return { commissionTL: tl(commissionKurus), grossTL: tl(grossKurus), discountTL: tl(discountKurus), netTL: tl(netKurus), vatTL: tl(vatOfGrossKurus(netKurus)) };
   }
 
   // ─── Stats cities ─────────────────────────────────────────────────────────
@@ -1773,7 +1763,6 @@ export class AdminService {
           activeMembers,
           revenue: finance.grossTL,
           discount: finance.discountTL,
-          refund: finance.refundTL,
           net: finance.netTL,
           vat: finance.vatTL,
           trend,
@@ -1864,13 +1853,13 @@ export class AdminService {
     return { banned: true, cancelledSubscriptions: user.subscriptions.length };
   }
 
-  // ─── Uyarılar & İade Talepleri ────────────────────────────────────────────
+  // ─── Uyarılar ─────────────────────────────────────────────────────────────
 
   async getAlerts(viewerRole: UserRole) {
     // Bot uyarıları sadece SUPERADMIN'e (bot gizliliği)
     const alertWhere: Prisma.AdminAlertWhereInput =
       viewerRole === UserRole.SUPERADMIN ? {} : { alertType: { not: AdminAlertType.BOT_NOT_FOUND } };
-    const [alerts, refunds, unreadCount] = await Promise.all([
+    const [alerts, unreadCount] = await Promise.all([
       this.prisma.adminAlert.findMany({
         where: alertWhere,
         orderBy: { createdAt: "desc" },
@@ -1878,26 +1867,9 @@ export class AdminService {
           user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
         },
       }),
-      this.prisma.refundRequest.findMany({
-        orderBy: { createdAt: "desc" },
-        include: {
-          user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } },
-          subscription: { select: { plan: true, createdAt: true, payment: { select: { amountKurus: true, status: true } } } },
-        },
-      }),
       this.prisma.adminAlert.count({ where: { ...alertWhere, isRead: false } }),
     ]);
-    // Onaylananlarda iade edilen, bekleyenlerde iade edilecek tutar
-    const refundsWithAmount = refunds.map(({ subscription, ...r }) => {
-      const paid = subscription.payment?.status === "SUCCESS" ? subscription.payment.amountKurus : null;
-      return {
-        ...r,
-        subscription: { plan: subscription.plan, createdAt: subscription.createdAt },
-        refundAmountKurus: r.refundedKurus ?? (paid !== null ? PaymentService.refundAmountKurus(subscription.plan, r.refundType, paid) : null),
-      };
-    });
-    // İadeler sadece SUPERADMIN yetkisinde
-    return { alerts, refunds: viewerRole === UserRole.SUPERADMIN ? refundsWithAmount : [], unreadCount };
+    return { alerts, unreadCount };
   }
 
   async markAlertRead(id: string, viewerRole: UserRole) {
@@ -1906,22 +1878,6 @@ export class AdminService {
       throw new NotFoundException('Uyarı bulunamadı');
     }
     await this.prisma.adminAlert.update({ where: { id }, data: { isRead: true } });
-    return { ok: true };
-  }
-
-  async updateRefundStatus(id: string, status: RefundStatus, ip: string, adminNote?: string) {
-    if (status === RefundStatus.APPROVED) {
-      return this.payment.approveRefund(id, ip, adminNote);
-    }
-    // PROCESSING yalnızca iade akışının iç durumudur; dışarıdan atanamaz
-    if (status !== RefundStatus.REJECTED) throw new BadRequestException("Geçersiz iade durumu.");
-    const refund = await this.prisma.refundRequest.findUnique({ where: { id } });
-    if (!refund) throw new NotFoundException("İade talebi bulunamadı.");
-    const { count } = await this.prisma.refundRequest.updateMany({
-      where: { id, status: RefundStatus.PENDING },
-      data: { status, adminNote: adminNote ?? refund.adminNote },
-    });
-    if (count === 0) throw new BadRequestException("Bu iade talebi zaten sonuçlandırılmış.");
     return { ok: true };
   }
 
@@ -2107,14 +2063,10 @@ export class AdminService {
           data: { status: isBan ? UserStatus.BANNED : UserStatus.SUSPENDED },
         });
       }
-      // Abonelik iptal edilir, iade yapılmaz; bekleyen iade talepleri reddedilir
+      // Abonelik iptal edilir, iade yapılmaz
       await this.prisma.subscription.updateMany({
         where: { userId, status: SubscriptionStatus.ACTIVE },
         data: { status: SubscriptionStatus.CANCELLED, cancelNote: `${isBan ? "Banlama" : "Askı"}: ${reason}` },
-      });
-      await this.prisma.refundRequest.updateMany({
-        where: { userId, status: RefundStatus.PENDING },
-        data: { status: RefundStatus.REJECTED, adminNote: "Yaptırım nedeniyle iade yapılmaz" },
       });
       // Kankamla: kişi bu haftaki masasından kankasıyla düşer (karşı çift yeniden taramaya girer); ban → kankalık biter
       await this.matching.dropKankaPair(userId, isBan ? "Banlandı" : "Askıya alındı");

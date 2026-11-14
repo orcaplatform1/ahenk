@@ -14,7 +14,7 @@ const inputStyle: React.CSSProperties = {
 
 interface Subscription {
   id: string;
-  plan: 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA';
+  plan: string;
   kankaRights?: number;
   kankaCycles?: number;
   status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
@@ -40,7 +40,7 @@ const TABS = [
   { key: 'CANCELLED', label: 'İptal Edilen' },
 ] as const;
 
-const PLAN_LABEL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla' };
+const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 const PLATFORM_LABEL: Record<string, string> = { WEB: 'Web', ANDROID: 'Android', IOS: 'iOS' };
 
 function fmtDate(d: string | null) {
@@ -49,7 +49,7 @@ function fmtDate(d: string | null) {
 
 // Kişi kartındaki tek abonelik: hak/döngü bilgisi ve kendi iptal butonu
 function SubscriptionRow({ s, onCancel }: { s: Subscription; onCancel: () => void }) {
-  const oneOnOneRight = s.plan === 'KARSIMDA' || s.plan === 'ICERDE';
+  const oneOnOneRight = s.plan === 'KARSIMDA' || s.plan === 'ICERDE' || s.plan.startsWith('PRIME_');
   return (
     <div style={{ padding: '8px 10px', borderRadius: 8, background: SURFACE, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
       <div style={{ flex: 1, minWidth: 200 }}>
@@ -57,9 +57,9 @@ function SubscriptionRow({ s, onCancel }: { s: Subscription; onCancel: () => voi
         <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED, fontFamily: MONO }}>
           Başlangıç {fmtDate(s.startsAt)}
           {s.expiresAt ? ` · Bitiş ${fmtDate(s.expiresAt)}` : ''}
-          {s.plan === 'MASADA' || s.plan === 'ICERDE' ? ` · Grup hakkı: ${s.groupRights}/2 kaldı, döngü ${s.groupCycles}/4` : ''}
-          {s.plan === 'KANKAMLA' ? ` · Kankamla hakkı: ${s.kankaRights ?? 0}/2 kaldı, döngü ${s.kankaCycles ?? 0}/4` : ''}
-          {oneOnOneRight ? ` · Başbaşa hakkı: ${s.usedAt ? `kullanıldı (${fmtDate(s.usedAt)})` : `kullanılmadı, döngü ${s.oneOnOneCycles}/4`}` : ''}
+          {s.plan === 'MASADA' || s.plan === 'ICERDE' || s.plan.startsWith('PRIME_') ? ` · Grup hakkı: ${s.groupRights}` : ''}
+          {s.plan === 'KANKAMLA' || s.plan.startsWith('PRIME_') ? ` · Kankamla hakkı: ${s.kankaRights ?? 0}` : ''}
+          {oneOnOneRight ? ` · Başbaşa hakkı: ${s.usedAt ? `kullanıldı (${fmtDate(s.usedAt)})` : 'kullanılmadı'}` : ''}
         </p>
         <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED }}>
           {s.payment
@@ -88,10 +88,6 @@ function SubscriptionRow({ s, onCancel }: { s: Subscription; onCancel: () => voi
         </button>
       )}
       {s.status === 'EXPIRED' && <span style={{ ...LABEL, color: MUTED, flexShrink: 0 }}>SONA ERDİ</span>}
-      {/* 4 döngü dolmuş ve masa kurulamamış ücretli paket: kullanıcı iade talep edebilir (kesin kontrol talep anında) */}
-      {s.status !== 'CANCELLED' && !!s.payment && (s.missedGroupCycles >= 4 || s.missedOneonOneCycles >= 4) && (
-        <span style={{ ...LABEL, color: GREEN, flexShrink: 0 }}>İADE HAKKI</span>
-      )}
     </div>
   );
 }
@@ -175,7 +171,7 @@ export default function AdminSubscriptions() {
             placeholder="Tüm paketler"
             title="Paket filtresi"
             options={[
-              { value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' },
+              { value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' },
               { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
             ]}
           />

@@ -6,11 +6,12 @@ import LiveLayer from '@/components/live/LiveLayer';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import LiveParticipation from '@/components/live/LiveParticipation';
 import { WinbackHost } from '@/components/winback/WinbackHost';
+import WeeklySelectionModal from '@/components/live/WeeklySelectionModal';
 
 const MEETING_GRACE_MS = 3 * 60 * 60 * 1000;
 
 export default function DashboardPage() {
-  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, tabAdminCancelled } = useMasaTabs();
+  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
   // Buluşma saatinden 3 saat sonra masa panelden düşer: sayaç yeni haftaya geçer, Katılım ve kontenjan sıfırlanır
   // (dashboard 15 sn'de bir yenilendiği için sayfa yenilenmeden geçer)
   const tabItem = rawTabItem && Date.now() < Date.parse(rawTabItem.meeting.scheduledAt) + MEETING_GRACE_MS ? rawTabItem : undefined;
@@ -27,6 +28,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] pt-[52px]">
       <AccountTabBar kycApproved={kycApproved} />
       <WinbackHost badge />
+      <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
       <div
         className="fixed inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,0.1) 0%, transparent 70%)' }}

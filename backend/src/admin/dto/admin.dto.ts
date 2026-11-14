@@ -413,15 +413,7 @@ export class UpdateWinbackDto {
   plans: SubscriptionPlan[];
 }
 
-// İade ve ödeme sonuçlandırma
-export class SettleRefundDto {
-  @IsIn(["APPROVED", "REJECTED"])
-  status: "APPROVED" | "REJECTED";
-
-  @IsOptional() @IsString() @MaxLength(500)
-  note?: string;
-}
-
+// Ödeme sonuçlandırma
 export class SettlePaymentDto {
   @IsIn(["REFUNDED", "FAILED"])
   status: "REFUNDED" | "FAILED";

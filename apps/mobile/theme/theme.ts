@@ -209,9 +209,6 @@ export const shadow = {
 type Box = Record<string, unknown>;
 export interface BtnSpec { box: Box; text: Box & { weight?: 400 | 500 | 600 | 700 | 800 }; on?: { box: Box; text: Box }; gradient?: { colors: string[]; locations?: number[]; start: { x: number; y: number }; end: { x: number; y: number } }; upper?: boolean; disabledOpacity?: number }
 export const btn = {
-  // TabPaket iade butonu (rounded-xl, kırmızı kenar)
-  refund: { box: { paddingVertical: 8, borderRadius: 12, alignItems: 'center', justifyContent: 'center', minHeight: 44, borderWidth: 1, borderColor: 'rgba(192,57,43,0.6)', backgroundColor: 'rgba(192,57,43,0.06)' }, text: { weight: 500, fontSize: 14, color: '#e74c3c' } },
-  refundDisabled: { box: { paddingVertical: 8, borderRadius: 12, alignItems: 'center', justifyContent: 'center', minHeight: 44, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }, text: { weight: 500, fontSize: 14, color: 'rgba(255,255,255,0.25)' } },
   // KankaSection "Kankalıktan Çıkar" (rounded-full, kırmızı kenar)
   dangerPill: { box: { flex: 1, paddingVertical: 8, borderRadius: 999, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(192,57,43,0.6)', backgroundColor: 'rgba(192,57,43,0.06)', minHeight: 44 }, text: { weight: 600, fontSize: 14, color: '#e74c3c' }, disabledOpacity: 0.5 },
   // KankaSection "Davet Et" / "Davet Var" küçük hap butonları

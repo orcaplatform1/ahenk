@@ -4,10 +4,11 @@ import { MatchingService } from "./matching.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AiReportService } from "../meetings/ai-report.service";
 import { NotificationService } from "../notification/notification.service";
-import { SubscriptionPlan, SubscriptionStatus, KycStatus } from "../generated/prisma/client";
+import { SubscriptionPlan, SubscriptionStatus, KycStatus, MeetingType } from "../generated/prisma/client";
 import { cancellationNotice } from "../meetings/cancellation-notice";
 import { VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { reviewWindow } from "../meetings/meeting-windows";
+import { selectedThisWeek } from "./weekly-selection";
 import { closeGroupCycle, closeKankaCycle, closeOneOnOneCycle, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB } from "../payment/package-rights";
 
 @Injectable()
@@ -613,6 +614,8 @@ export class MatchingScheduler {
         // KYC onaylı olmayan (admin paket vermiş olsa bile) eşleşmeye giremez
         kyc: { status: KycStatus.APPROVED },
         subscriptions: { some: isGroup ? OPEN_GROUP_SUB : OPEN_ONE_ON_ONE_SUB },
+        // Yalnız bu hafta bu türü seçenler taramadadır
+        ...selectedThisWeek(isGroup ? MeetingType.GROUP : MeetingType.ONE_ON_ONE),
       },
       select: { id: true },
     });
@@ -659,6 +662,7 @@ export class MatchingScheduler {
         // KYC onaylı olmayan (admin paket vermiş olsa bile) eşleşmeye giremez
         kyc: { status: KycStatus.APPROVED },
         subscriptions: { some: OPEN_ONE_ON_ONE_SUB },
+        ...selectedThisWeek(MeetingType.ONE_ON_ONE),
       },
       select: { id: true, profile: { select: { gender: true, birthDate: true } } },
     });

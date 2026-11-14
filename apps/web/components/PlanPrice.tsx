@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
 // Paket fiyatları backend'den (SUPERADMIN fiyat sayfası). Web: ham + %20 KDV; mobil: + %15 mağaza komisyonu.
-export type PlanKeyName = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA';
+export type PlanKeyName = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA' | 'PRIME_1M' | 'PRIME_3M' | 'PRIME_6M' | 'PRIME_12M';
 export interface PlanPriceInfo {
   plan: PlanKeyName;
   nametr: string;
