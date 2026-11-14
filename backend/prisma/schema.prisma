@@ -67,7 +67,6 @@ model User {
   sosReports                SosReport[]
   resolvedSosReports        SosReport[]           @relation("SosResolvedBy")
   claimedSosReports         SosReport[]           @relation("SosClaimedBy")
-  identity                  UserIdentity?
   planPriceChanges          PlanPrice[]
   adminActionLogs           AdminActionLog[]
   winbackOffer              WinbackOffer?
@@ -486,15 +485,6 @@ model PlanPrice {
   createdAt           DateTime         @default(now())
 
   @@index([plan, createdAt])
-}
-
-model UserIdentity {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  identityNumberEnc String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
 }
 
 model KycSubmission {

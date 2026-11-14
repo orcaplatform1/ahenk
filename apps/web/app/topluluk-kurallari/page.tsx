@@ -156,7 +156,7 @@ const sections = [
           ))}
         </div>
         <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.65 }}>
-          Fiziksel tehdit veya cinsel taciz içeren davranışlar doğrudan kalıcı kapatma ile sonuçlanır ve yetkili makamlara bildirilir. Kapatılan hesaplar için ödenen abonelik ücreti iade edilmez.
+          Fiziksel tehdit veya cinsel taciz içeren davranışlar doğrudan kalıcı kapatma ile sonuçlanır ve yetkili makamlara bildirilir.
         </p>
       </>
     ),

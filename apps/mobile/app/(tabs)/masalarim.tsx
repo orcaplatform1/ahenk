@@ -17,6 +17,7 @@ import { MasaDetayKarti, type MasaDetayData, type VenuePhoto } from '@/component
 import { ConfirmedRadarView, RezervasyonIptal } from '@/components/MasaBekleme';
 import { InlineLH, Btn, BtnGhost, BtnPrimary, Card, Head, Mono, Serif, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
 import { c, ll, llColumn, tw } from '@/theme/theme';
+import { KycNoticeCard } from '@/components/KycNoticeCard';
 
 interface HistoryMeeting {
   id: string; date: string; type?: MasaTuru; venueName: string | null; cityName?: string | null; maxParticipants?: number;
@@ -253,6 +254,7 @@ export default function Masalarim() {
       <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 32, paddingHorizontal: 16, paddingBottom: 32, gap: 24, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
         <Glow />
+        <KycNoticeCard />
         {!ready ? <SkeletonBlock lines={5} /> : (
           <>
             {!kycApproved && (

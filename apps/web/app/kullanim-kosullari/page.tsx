@@ -130,18 +130,19 @@ const sections = [
   },
   {
     n: '07',
-    title: 'İptal ve İade Politikası',
+    title: 'İptal Politikası',
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
-          'Paketler tek seferlik olduğundan iptal edilecek bir abonelik yoktur.',
-          'Paketin bir kısmında 4 döngü boyunca hiç masa kurulamazsa o kısım için iade talep edilebilir (İçerde paketinde grup ve başbaşa kısımları ayrı değerlendirilir).',
-          'Bir masa kurulduysa kalan hak bulunsa dahi hizmet alınmış sayılır ve iade yapılmaz; kullanılmayan haklar için kısmi iade yapılmaz.',
+          'Prime üyelik 1, 3, 6 ve 12 aylık planlarla sunulur; her 30 günde 1 Grup, 1 Başbaşa ve 1 Kankamla buluşması hakkı tanımlanır.',
+          'Prime\'da kullanılmayan haklar bir sonraki 30 güne devretmez.',
+          'Prime aboneliği dönem sonunda aynı süreyle otomatik olarak yenilenir.',
+          'Prime aboneliği iptal edildiğinde otomatik yenileme durur, haklar dönem sonuna kadar kullanılabilir; iade yapılmaz.',
+          'Mağazadan (App Store / Google Play) alınan abonelik mağazadan, iyzico ile alınan abonelik web sitesinden ya da uygulamadan iptal edilir.',
           'Kankamla rezervasyonunu çiftten biri iptal ederse iki kişi birlikte masadan düşer ve paketten 1 masa hakkı düşer; pakette tek iptal hakkı vardır.',
           'Kanka daveti telefon numarasıyla yapılır ve 48 saat geçerlidir; davet yalnızca o numarayı doğrulamış hesap tarafından kabul edilebilir. Kanka, seçildiği hafta değiştirilemez. Bir kullanıcının banlanması kankalığı sona erdirir.',
-          'kimlik doğrulaması tamamlanmamış kullanıcılar eşleştirmeye dahil edilmez; bu nedenle iade talep edilemez.',
-          'Hesabın Ahenk tarafından kural ihlali nedeniyle kapatılması durumunda kalan haklar için iade yapılmaz.',
-          'Masa kurulduktan sonra bir veya birden fazla katılımcının buluşmaya katılmaması, hizmetin ifa edilmediği anlamına gelmez ve iade sebebi teşkil etmez.',
+          'kimlik doğrulaması tamamlanmamış kullanıcılar eşleştirmeye dahil edilmez.',
+          'Masa kurulduktan sonra bir veya birden fazla katılımcının buluşmaya katılmaması, hizmetin ifa edilmediği anlamına gelmez.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -160,7 +161,7 @@ const sections = [
           'Ahenk, eşleştirme sonucunda kurulan masada yer alan katılımcıların tamamının buluşmaya katılacağını garanti etmez. Buluşmaya katılım her kullanıcının kendi iradesine bağlıdır ve Ahenk tarafından zorunlu tutulamaz.',
           'Ahenk, masaların kurulabilmesi ve katılımcı dengesinin sağlanabilmesi amacıyla masa kompozisyonunda sistemsel düzenlemeler yapma hakkını saklı tutar.',
           'Ahenk, buluşma günü OCEAN uyum skorlarını yapay zeka yardımıyla analiz ederek gruba özel bir masa raporu oluşturabilir. Bu rapor yalnızca grup uyumunu özetleyen bilgilendirici bir içeriktir; herhangi bir taahhüt ya da garanti oluşturmaz.',
-          'Kullanıcı sayısının yetersiz olduğu şehir veya dönemlerde eşleştirme gerçekleşmeyebilir; bu durumda ilgili dönem için iade değerlendirilebilir.',
+          'Kullanıcı sayısının yetersiz olduğu şehir veya dönemlerde eşleştirme gerçekleşmeyebilir.',
           'Ahenk, buluşmanın gerçekleşeceği mekanın kalitesini veya hizmetini garanti etmez.',
           'Buluşma sırasında yaşanan kişisel anlaşmazlıklardan Ahenk sorumlu tutulamaz.',
         ].map((item) => (

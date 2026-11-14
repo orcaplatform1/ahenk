@@ -9,10 +9,11 @@ interface InitCheckoutResponse {
 }
 
 // iyzico ödeme formunu açar. Tutar backend'de hesaplanır (geri kazanım indirimi süresi içindeyse otomatik uygulanır).
-export async function startCheckout(plan: string, planName: string, useDiscount?: 'REFERRER' | 'INVITEE') {
+export async function startCheckout(plan: string, planName: string, identityNumber: string, useDiscount?: 'REFERRER' | 'INVITEE') {
   const data = await api.post<InitCheckoutResponse>('/payment/init', {
     plan,
     platform: 'WEB',
+    identityNumber,
     ...(useDiscount ? { useDiscount } : {}),
   });
   rememberPendingPurchase(plan, planName, data.plan.amountKurus);

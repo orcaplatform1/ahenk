@@ -8,6 +8,7 @@ import { TabProfilim, TabProfilimSkeleton } from './tabs/TabProfilim';
 import { TabTest } from './tabs/TabTest';
 import { TabMasalar } from './tabs/TabMasalar';
 import { TabPaket } from './tabs/TabPaket';
+import KycNoticeCard from '@/components/KycNoticeCard';
 import { TabKyc } from './tabs/TabKyc';
 import { TabRehber } from './tabs/TabRehber';
 import { AccountTabBar } from '@/components/AccountTabBar';
@@ -143,6 +144,7 @@ function ProfilPage() {
       <div className="live-layer" style={{ minHeight: 'calc(100vh - 100px)' }}>
       <div className="ll-glow" aria-hidden="true" />
       <div className="relative max-w-4xl mx-auto px-4 py-8">
+        <KycNoticeCard show={!kycApproved} />
 
         {/* Sekme içeriği */}
         <AnimatePresence mode="wait">

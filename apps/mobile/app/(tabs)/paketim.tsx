@@ -4,11 +4,14 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '@/lib/api';
 import { PAY_INFO, openStoreSubscriptions, startPurchase } from '@/lib/purchase';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { BtnPrimary, Card, Head, MaintenanceNotice, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
+import { useWinback } from '@/components/Winback';
 import { c, ll, sans, tw } from '@/theme/theme';
+import { KycNoticeCard } from '@/components/KycNoticeCard';
 
 interface Subscription { id: string; plan: string; name: string; isPrime: boolean; autoRenew: boolean; renewCancelledAt: string | null; storePlatform: string | null }
 interface Rights { group: number; oneOnOne: number; kanka: number }
@@ -24,12 +27,13 @@ const PRIME_PLANS = [
 ] as const;
 
 // web TabPaket CARDS ile aynı: tam genişlik tek renk kart; Prime altın tonunda, diğerleri tema renklerinden
-const CARDS: { key: CardKey; name: string; badge: string; desc: string; color: string; advantages: string[] }[] = [
-  { key: 'MASADA', name: 'Grup', badge: 'Tek Seferlik', desc: '1 Grup buluşması hakkı', color: '#d6453a', advantages: ['1 Grup buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
-  { key: 'KARSIMDA', name: 'Başbaşa', badge: 'Tek Seferlik', desc: '1 Başbaşa buluşması hakkı', color: '#c8743c', advantages: ['1 Başbaşa buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
-  { key: 'KANKAMLA', name: 'Kankamla', badge: 'Tek Seferlik', desc: '1 Kankamla buluşması hakkı', color: '#8f887f', advantages: ['1 Kankamla buluşması hakkı', 'Arkadaşın ücretsiz katılır', 'Hak kullanılana kadar geçerli'] },
-  { key: 'ICERDE', name: 'İçerde', badge: 'Tek Seferlik', desc: '1 Grup + 1 Başbaşa buluşması hakkı', color: '#c0392b', advantages: ['1 Grup buluşması hakkı', '1 Başbaşa buluşması hakkı', 'Haklar kullanılana kadar geçerli'] },
-  { key: 'PRIME', name: 'Prime', badge: 'Abonelik', desc: 'Her 30 günde 1 Grup + 1 Başbaşa + 1 Kankamla', color: '#c9a227', advantages: ['Her 30 günde 1 Grup buluşması hakkı', 'Her 30 günde 1 Başbaşa buluşması hakkı', 'Her 30 günde 1 Kankamla buluşması hakkı', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
+// badgeBg: Tinder GOLD tarzı hap rozetin dolgu rengi (kartın tonunun koyusu; Prime altın) — web TabPaket ile aynı
+const CARDS: { key: CardKey; name: string; badge: string; desc: string; color: string; badgeBg: string[]; advantages: string[] }[] = [
+  { key: 'MASADA', name: 'Grup', badge: 'Tek Seferlik', desc: '1 Grup buluşması hakkı', color: '#d6453a', badgeBg: ['#9e2f26'], advantages: ['1 Grup buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
+  { key: 'KARSIMDA', name: 'Başbaşa', badge: 'Tek Seferlik', desc: '1 Başbaşa buluşması hakkı', color: '#c8743c', badgeBg: ['#8f5228'], advantages: ['1 Başbaşa buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
+  { key: 'KANKAMLA', name: 'Kankamla', badge: 'Tek Seferlik', desc: '1 Kankamla buluşması hakkı', color: '#8f887f', badgeBg: ['#5f5a54'], advantages: ['1 Kankamla buluşması hakkı', 'Arkadaşın ücretsiz katılır', 'Hak kullanılana kadar geçerli'] },
+  { key: 'ICERDE', name: 'İçerde', badge: 'Tek Seferlik', desc: '1 Grup + 1 Başbaşa buluşması hakkı', color: '#c0392b', badgeBg: ['#86281e'], advantages: ['1 Grup buluşması hakkı', '1 Başbaşa buluşması hakkı', 'Haklar kullanılana kadar geçerli'] },
+  { key: 'PRIME', name: 'Prime', badge: 'Abonelik', desc: 'Her 30 günde 1 Grup + 1 Başbaşa + 1 Kankamla', color: '#c9a227', badgeBg: ['#f5d76e', '#c9a227', '#a8861a'], advantages: ['Her 30 günde 1 Grup buluşması hakkı', 'Her 30 günde 1 Başbaşa buluşması hakkı', 'Her 30 günde 1 Kankamla buluşması hakkı', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
 ];
 const PRIME_RENEW_INFO = 'İptal etmediğin sürece aboneliğin seçtiğin süre için aynı fiyatla otomatik olarak yenilenir.';
 
@@ -50,7 +54,6 @@ export default function Paketim() {
   const [primeActive, setPrimeActive] = useState(false);
   const [prices, setPrices] = useState<Partial<Record<PlanKeyName, PlanPriceInfo>> | null>(null);
   const [kankamla, setKankamla] = useState<KankamlaState | null>(null);
-  const [kycApproved, setKycApproved] = useState(false);
   const [maintenance, setMaintenance] = useState(false);
   const [stats, setStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
   const [refPhone, setRefPhone] = useState('');
@@ -61,6 +64,8 @@ export default function Paketim() {
   const [detail, setDetail] = useState<CardKey | null>(null);
   const [primePlan, setPrimePlan] = useState<(typeof PRIME_PLANS)[number]['key']>('PRIME_1M');
   const [error, setError] = useState('');
+  const [discount, setDiscount] = useState<{ referralDiscount: boolean; inviteeDiscount: boolean } | null>(null);
+  const winback = useWinback();
 
   const loadSubs = useCallback(() => api.get<{ subscriptions: Subscription[]; rights: Rights; hasMasada?: boolean; hasKarsimda?: boolean; primeActive?: boolean }>('/payment/subscriptions')
     .then((r) => {
@@ -71,10 +76,11 @@ export default function Paketim() {
   const load = useCallback(() => {
     loadSubs().finally(() => setLoading(false));
     api.get<PlanPriceInfo[]>('/payment/plans').then((l) => setPrices(Object.fromEntries(l.map((p) => [p.plan, p])))).catch(() => {});
-    api.get<{ kankamla?: KankamlaState; kyc?: { status: string }; maintenanceMode?: boolean }>('/auth/me').then((m) => {
-      setKankamla(m.kankamla ?? null); setKycApproved(m.kyc?.status === 'APPROVED'); setMaintenance(!!m.maintenanceMode);
+    api.get<{ kankamla?: KankamlaState; maintenanceMode?: boolean }>('/auth/me').then((m) => {
+      setKankamla(m.kankamla ?? null); setMaintenance(!!m.maintenanceMode);
     }).catch(() => {});
     api.get<{ totalInvites: number; availableDiscounts: number }>('/referral/my-stats').then(setStats).catch(() => {});
+    api.get<{ referralDiscount: boolean; inviteeDiscount: boolean }>('/payment/discount-info').then(setDiscount).catch(() => {});
   }, [loadSubs]);
   useFocusEffect(load);
 
@@ -87,13 +93,12 @@ export default function Paketim() {
       setStats(await api.get('/referral/my-stats'));
     } catch (e) { setRefMsg((e as Error).message || 'Gönderilemedi.'); } finally { setRefSending(false); }
   }
-  // Ödeme başarılı olur olmaz: KYC onaylı değilse hemen KYC ekranı
   async function buy(plan: string) {
     setBuying(plan); setError('');
     try {
-      await startPurchase(plan);
-      if (!kycApproved) router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } });
-      else router.push({ pathname: '/odeme-sonuc', params: { durum: 'basarili' } });
+      const use = discount?.referralDiscount ? 'REFERRER' : discount?.inviteeDiscount ? 'INVITEE' : undefined;
+      await startPurchase(plan, use);
+      router.push({ pathname: '/odeme-sonuc', params: { durum: 'basarili' } });
     } catch (e) { setError((e as Error).message); } finally { setBuying(''); }
   }
   async function cancelPrime() {
@@ -105,8 +110,16 @@ export default function Paketim() {
     } catch (e) { setError((e as Error).message); } finally { setCancelling(false); }
   }
 
-  // Mobil fiyat: mağazada tahsil edilen tutar (mobileTL)
-  const priceOf = (k: string) => prices?.[k as PlanKeyName]?.mobileTL ?? null;
+  // Mobil fiyat: mağazada tahsil edilen tutar. İndirim teklifi (100 TL ya da davet %10, birlikte değil) varsa indirimli fiyat
+  const winOf = (k: string) => (winback.live && winback.running ? winback.state?.plans?.find((p) => p.plan === k) : undefined);
+  const hasReferral = !!(discount?.referralDiscount || discount?.inviteeDiscount);
+  const priceView = (k: string): { now: number | null; old: number | null } => {
+    const w = winOf(k);
+    if (w) return { now: w.mobileDiscountedTL, old: w.mobileListTL };
+    const p = prices?.[k as PlanKeyName];
+    if (!p) return { now: null, old: null };
+    return hasReferral ? { now: p.mobileDiscountTL, old: p.mobileTL } : { now: p.mobileTL, old: null };
+  };
   const stateOf = (key: CardKey) => {
     if (key === 'PRIME') return primeActive ? { blocked: true, badge: 'Aktif Paketiniz' as string | null, needsKanka: false } : { blocked: false, badge: null, needsKanka: false };
     if (key === 'KANKAMLA') { const k = getKankamlaCardState(kankamla); return { blocked: !k.showButton, badge: k.badge, needsKanka: k.needsKanka }; }
@@ -127,6 +140,7 @@ export default function Paketim() {
       <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
         <ScreenGlow />
         <ScrollView contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 32, gap: 16, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
+          <KycNoticeCard />
           {maintenance && <MaintenanceNotice />}
           <Pressable onPress={() => { setDetail(null); setError(''); }} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}>
             <T style={{ fontSize: 14, color: ll.label }}>← Paketler</T>
@@ -141,7 +155,7 @@ export default function Paketim() {
                     <Pressable key={pl.key} onPress={() => setPrimePlan(pl.key)} accessibilityRole="radio" accessibilityState={{ selected: on }}
                       style={{ width: '48%', minHeight: 56, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, borderWidth: on ? 2 : 1, borderColor: on ? '#c9a227' : 'rgba(255,255,255,0.12)', backgroundColor: on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)' }}>
                       <T w={600} style={{ fontSize: 14, color: ll.text }}>{pl.label}</T>
-                      <T style={{ fontSize: 12, color: ll.text2, marginTop: 2 }}>{priceOf(pl.key) ?? '—'} ₺</T>
+                      <T style={{ fontSize: 12, color: ll.text2, marginTop: 2 }}>{priceView(pl.key).now ?? '—'} ₺</T>
                     </Pressable>
                   );
                 })}
@@ -153,7 +167,10 @@ export default function Paketim() {
                 <View key={a} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Check /><T style={{ fontSize: 14, color: ll.text2, flexShrink: 1 }}>{a}</T></View>
               ))}
             </View>
-            <T w={700} style={{ fontSize: 36, lineHeight: 40, color: ll.text }}>{priceOf(planKey) ?? '—'} ₺</T>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
+              {priceView(planKey).old !== null && <T style={{ fontSize: 18, lineHeight: 24, color: ll.time, textDecorationLine: 'line-through' }}>{priceView(planKey).old} ₺</T>}
+              <T w={700} style={{ fontSize: 36, lineHeight: 40, color: ll.text }}>{priceView(planKey).now ?? '—'} ₺</T>
+            </View>
             {!!error && <T style={{ fontSize: 14, color: tw.accent }}>{error}</T>}
             <BtnPrimary full disabled={busy} style={[{ minHeight: 52 }, busy && { opacity: 0.5 }]}
               label={buying === planKey ? 'Yönlendiriliyor…' : st.blocked ? (st.badge ?? (isP ? 'Abone Ol' : 'Paket Al')) : st.needsKanka ? 'Önce Kanka Davet Et' : isP ? 'Abone Ol' : 'Paket Al'}
@@ -170,6 +187,7 @@ export default function Paketim() {
       <ScreenGlow />
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 32, paddingHorizontal: 16, paddingBottom: 32, gap: 20, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
         <Glow />
+        <KycNoticeCard />
         {loading ? <SkeletonBlock lines={4} /> : (
           <>
             {maintenance && <MaintenanceNotice />}
@@ -227,9 +245,10 @@ export default function Paketim() {
                     <View style={{ flex: 1, gap: 4 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <T w={800} style={{ fontSize: 20, lineHeight: 26, color: fg }}>{card.name}</T>
-                        <View style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: isP ? 'rgba(26,20,6,0.18)' : 'rgba(0,0,0,0.22)' }}>
-                          <T w={600} style={{ fontSize: 10.4, color: fg }}>{st.badge ?? card.badge}</T>
-                        </View>
+                        <LinearGradient colors={(card.badgeBg.length > 1 ? card.badgeBg : [card.badgeBg[0], card.badgeBg[0]]) as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                          style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
+                          <T w={800} style={{ fontSize: 11.2, letterSpacing: 0.9, color: fg }}>{(st.badge ?? card.badge).toLocaleUpperCase('tr-TR')}</T>
+                        </LinearGradient>
                       </View>
                       <T numberOfLines={1} style={{ fontSize: 14, color: fg, opacity: 0.9 }}>{card.desc}</T>
                     </View>

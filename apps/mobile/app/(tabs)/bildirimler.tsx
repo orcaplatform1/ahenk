@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { BtnGhost, Card, ErrorText, Head, Mono, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { unreadBus } from './_layout';
 import { c, ll, llColumn, tw, liveGlow } from '@/theme/theme';
+import { KycNoticeCard } from '@/components/KycNoticeCard';
 
 interface Notif { id: string; title: string; body: string; data?: { event?: string; type?: string; meetingId?: string } | null; read: boolean; createdAt: string }
 interface Page { items: Notif[]; total: number; page: number; totalPages: number }
@@ -88,6 +89,7 @@ export default function Bildirimler() {
           <View>
             {/* Işıma listenin içeriğinde: üst dolgu ve yan dolgu kadar kaydırılarak içeriğin sağ üst köşesine hizalanır */}
             <Glow top={liveGlow.offset - insets.top - llColumn.padTop} right={liveGlow.offset - llColumn.padH} />
+            <View style={{ marginBottom: 16 }}><KycNoticeCard /></View>
             <Head title="Bildirimler" right={items.some((n) => !n.read) ? <BtnGhost label="Tümünü okundu işaretle" onPress={readAll} style={{ paddingHorizontal: 14 }} /> : undefined} />
             <ErrorText>{error}</ErrorText>
           </View>

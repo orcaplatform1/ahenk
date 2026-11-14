@@ -20,9 +20,8 @@ import { WinbackService } from "./winback.service";
 import { isMaintenanceMode } from "../admin/app-settings";
 import { GROUP_RIGHTS, ONE_ON_ONE_PLANS, KANKA_PLANS, PRIME_PLANS, groupPartOpen, isPrime, kankaPartOpen, kankaRightsOf, oneOnOnePartOpen } from "./package-rights";
 import { PrimeService } from "./prime.service";
-import { StoreService, planOfProduct } from "./store.service";
+import { StoreService, discountOfOffer, parseProduct } from "./store.service";
 import { activeKankaLink } from "../kanka/kanka-links";
-import { decryptIdentityNumber } from "../kyc/identity-number";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { AdminAlertType, Prisma, SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, ReferralStatus, PaymentDiscountType } from "../generated/prisma/client";
 
@@ -146,12 +145,30 @@ export class PaymentService {
     return (GROUP_RIGHTS[plan] > 0 && groupOpen) || (ONE_ON_ONE_PLANS.includes(plan) && oneOnOneOpen);
   }
 
+  // İndirim burada sadece kontrol edilir; hak ödeme başarılı olunca harcanır. Geri kazanım (100 TL) indirimi süresi
+  // içindeyse otomatik uygulanır ve davet indirimiyle (%10) birleşmez. Aktif paketi / Prime'ı olana geri kazanım uygulanmaz.
+  private async resolveDiscount(
+    userId: string, plan: SubscriptionPlan, listKurus: number, discountedKurus: number, useDiscount: 'REFERRER' | 'INVITEE' | undefined,
+  ): Promise<{ amountKurus: number; discountType: PaymentDiscountType | null }> {
+    const winbackKurus = await this.winback.discountedKurus(userId, plan, listKurus);
+    if (winbackKurus !== null) return { amountKurus: winbackKurus, discountType: PaymentDiscountType.WINBACK };
+    if (useDiscount === 'REFERRER') {
+      const referral = await this.prisma.referral.findFirst({ where: { referrerId: userId, status: ReferralStatus.KYC_APPROVED } });
+      if (referral) return { amountKurus: discountedKurus, discountType: PaymentDiscountType.REFERRER };
+    } else if (useDiscount === 'INVITEE') {
+      const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { referralDiscountAvailable: true } });
+      if (user?.referralDiscountAvailable) return { amountKurus: discountedKurus, discountType: PaymentDiscountType.INVITEE };
+    }
+    return { amountKurus: listKurus, discountType: null };
+  }
+
   async initCheckout(
     userId: string,
     plan: SubscriptionPlan,
     platform: PaymentPlatform,
     useDiscount: 'REFERRER' | 'INVITEE' | undefined,
     clientIp: string,
+    identityNumber?: string,
   ) {
     if (await isMaintenanceMode(this.prisma)) {
       throw new ServiceUnavailableException("Kısa bir bakım çalışması yapıyoruz. Paket satın alma geçici olarak durduruldu.");
@@ -161,7 +178,10 @@ export class PaymentService {
 
     // Mobil: iOS App Store / Android Play Store uygulama içi satın alma (store.service.ts). Lansmana kadar pasif.
     if (platform === PaymentPlatform.IOS || platform === PaymentPlatform.ANDROID) {
-      return this.store.purchaseInfo(plan, platform);
+      const p = await this.pricing.current(plan);
+      const d = await this.resolveDiscount(userId, plan, p.mobileKurus, p.mobileDiscountKurus, useDiscount);
+      const discount = d.discountType === PaymentDiscountType.WINBACK ? "WINBACK" : d.discountType ? "REFERRAL" : null;
+      return this.store.purchaseInfo(plan, platform, discount);
     }
 
     // Web Prime: ilk dönem bu ödeme formuyla, otomatik yenileme iyzico abonelik API'siyle (lansmana kadar pasif)
@@ -169,37 +189,17 @@ export class PaymentService {
       throw new ServiceUnavailableException("Prime abonelik henüz aktif değil.");
     }
 
-    const identityNumber = await this.identityNumberOf(userId);
+    // T.C. no her web ödemesinde kullanıcıdan alınır, yalnız iyzico'ya gider (saklanmaz)
+    if (!identityNumber || !/^\d{11}$/.test(identityNumber)) {
+      throw new BadRequestException("T.C. kimlik numarası 11 haneli rakam olmalı");
+    }
 
     const planCfg = PLAN_CONFIG[plan];
     // Web fiyatı: ham + %20 KDV; indirim (davet %10 ya da geri kazanım 100 TL, birlikte kullanılamaz) yalnız bu ödemede
     const price = await this.pricing.current(plan);
     const listKurus = price.webKurus;
     const discountedKurus = price.webDiscountKurus;
-    let amountKurus = listKurus;
-    let discountType: PaymentDiscountType | null = null;
-
-    // İndirim burada sadece kontrol edilir; hak ödeme başarılı olunca harcanır.
-    // Geri kazanım indirimi süresi içindeyse otomatik uygulanır, referans indirimiyle birleşmez.
-    const winbackKurus = await this.winback.discountedKurus(userId, plan, listKurus);
-    if (winbackKurus !== null) {
-      amountKurus = winbackKurus;
-      discountType = PaymentDiscountType.WINBACK;
-    } else if (useDiscount === 'REFERRER') {
-      const referral = await this.prisma.referral.findFirst({
-        where: { referrerId: userId, status: ReferralStatus.KYC_APPROVED },
-      });
-      if (referral) {
-        amountKurus = discountedKurus;
-        discountType = PaymentDiscountType.REFERRER;
-      }
-    } else if (useDiscount === 'INVITEE') {
-      const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { referralDiscountAvailable: true } });
-      if (user?.referralDiscountAvailable) {
-        amountKurus = discountedKurus;
-        discountType = PaymentDiscountType.INVITEE;
-      }
-    }
+    const { amountKurus, discountType } = await this.resolveDiscount(userId, plan, listKurus, discountedKurus, useDiscount);
 
     const conversationId = `ahenk-${userId}-${Date.now()}`;
     const callbackUrl = this.config.getOrThrow<string>("IYZICO_CALLBACK_URL");
@@ -449,16 +449,9 @@ export class PaymentService {
     await tx.payment.update({ where: { id: paymentId }, data: { subscriptionId: sub.id } });
   }
 
-  // iyzico alıcı TC kimlik no: KYC onayında girilir. Ödeme KYC'den önce alındığı için henüz yoksa iyzico'nun
-  // kimlik numarası olmayan alıcılar için kabul ettiği 11111111111 gönderilir.
-  private async identityNumberOf(userId: string): Promise<string> {
-    const identity = await this.prisma.userIdentity.findUnique({ where: { userId }, select: { identityNumberEnc: true } });
-    return identity ? decryptIdentityNumber(identity.identityNumberEnc, this.config.get("IDENTITY_ENC_KEY")) : "11111111111";
-  }
-
   // ─── Prime otomatik yenileme (web, iyzico abonelik API'si) ────────────────
   // İlk dönem ödendikten sonra kart kaydı için abonelik formu açılır (planın deneme süresi = ilk dönem, tahsilat yok).
-  async initPrimeAutoRenew(userId: string) {
+  async initPrimeAutoRenew(userId: string, identityNumber: string) {
     if (this.config.get<string>("IYZICO_SUBSCRIPTION_ENABLED") !== "true") {
       throw new ServiceUnavailableException("Prime abonelik henüz aktif değil.");
     }
@@ -479,7 +472,7 @@ export class PaymentService {
       surname: user.profile?.lastName ?? "",
       email: user.email,
       gsmNumber: user.phone ?? undefined,
-      identityNumber: await this.identityNumberOf(userId),
+      identityNumber,
     });
     if (result.status !== "success") throw new BadRequestException(result.errorMessage ?? "Abonelik formu açılamadı");
     return { token: result.token, checkoutFormContent: result.checkoutFormContent };
@@ -522,18 +515,34 @@ export class PaymentService {
     const v = platform === PaymentPlatform.IOS
       ? await this.store.verifyApple(transactionIdOrToken)
       : await this.store.verifyGoogle(productId, transactionIdOrToken);
-    const plan = v ? planOfProduct(v.productId) : null;
-    if (!v || !plan) throw new BadRequestException("Satın alma doğrulanamadı.");
+    const parsed = v ? parseProduct(v.productId) : null;
+    const plan = parsed?.plan ?? null;
+    if (!v || !parsed || !plan) throw new BadRequestException("Satın alma doğrulanamadı.");
+    // Kullanılan mobil indirim teklifi: tek seferlikte indirimli ürün, Prime'da teklif kimliği
+    const storeDiscount = parsed.discount ?? discountOfOffer(v.offerId);
     if ((await this.prisma.payment.count({ where: { storeTransactionId: v.transactionId } })) > 0) return { success: true };
 
     const price = await this.pricing.current(plan);
     await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
       if ((await tx.payment.count({ where: { storeTransactionId: v.transactionId } })) > 0) return;
+      // Mağaza indirimli tutarı tahsil etti: indirim hakkı harcanır (varsa); tutar mobil fiyat listesinden
+      let discountType: PaymentDiscountType | null = null;
+      let amountKurus = price.mobileKurus;
+      if (storeDiscount === "WINBACK") {
+        const { amountTL } = await this.winback.settings();
+        amountKurus = price.mobileKurus - amountTL * 100;
+        discountType = PaymentDiscountType.WINBACK;
+        await this.winback.consume(tx, userId);
+      } else if (storeDiscount === "REFERRAL") {
+        amountKurus = price.mobileDiscountKurus;
+        discountType = await this.availableDiscount(tx, userId);
+        if (discountType) await this.consumeDiscount(tx, userId, discountType);
+      }
       const payment = await tx.payment.create({
         data: {
-          userId, plan, amountKurus: price.mobileKurus, listKurus: price.mobileKurus, status: PaymentStatus.SUCCESS,
-          platform, paidAt: new Date(), storeTransactionId: v.transactionId,
+          userId, plan, amountKurus, listKurus: price.mobileKurus, status: PaymentStatus.SUCCESS,
+          platform, paidAt: new Date(), storeTransactionId: v.transactionId, discountType,
         },
       });
       const sub = isPrime(plan)

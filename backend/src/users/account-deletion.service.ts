@@ -147,7 +147,6 @@ export class AccountDeletionService {
       await tx.oceanScore.deleteMany({ where: { userId } });
       await tx.oceanAnswer.deleteMany({ where: { userId } });
       await tx.kycSubmission.deleteMany({ where: { userId } });
-      await tx.userIdentity.deleteMany({ where: { userId } });
       await tx.contactBlock.deleteMany({ where: { userId } });
       await tx.userBlock.deleteMany({ where: { OR: [{ blockerId: userId }, { blockedId: userId }] } });
       await tx.chatMessage.deleteMany({ where: { senderId: userId } });

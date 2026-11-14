@@ -20,7 +20,7 @@ import { Response } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from "@nestjs/swagger";
 import { KycStatus } from "../generated/prisma/client";
 import { KycService } from "./kyc.service";
-import { ReviewKycDto, SetIdentityNumberDto } from "./dto/review-kyc.dto";
+import { ReviewKycDto } from "./dto/review-kyc.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -109,20 +109,6 @@ export class KycController {
   @ApiOperation({ summary: "[Admin] Tek başvuruyu getir" })
   adminGetOne(@Param("id") id: string) {
     return this.kycService.adminGetOne(id);
-  }
-
-  // ─── Admin: TC ekle (TC girilmeden onaylanmış eski başvurular) ────────────
-
-  @AdminAction("KYC_IDENTITY_NUMBER", async (c) => {
-    const kyc = await c.db.kycSubmission.findUnique({ where: { id: c.params.id }, select: { userId: true } });
-    return { text: `${await c.userName(kyc?.userId)} kullanıcısının TC kimlik numarasını girdi`, targetUserId: kyc?.userId };
-  })
-  @Patch("admin/:id/identity-number")
-  @UseGuards(RolesGuard)
-  @Roles("ADMIN", "SUPERADMIN")
-  @ApiOperation({ summary: "[Admin] Onaylı başvuruya TC kimlik no ekle" })
-  adminSetIdentityNumber(@Param("id") id: string, @Body() dto: SetIdentityNumberDto) {
-    return this.kycService.setIdentityNumber(id, dto.identityNumber);
   }
 
   // ─── Admin: İncele ────────────────────────────────────────────────────────

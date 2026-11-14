@@ -1689,7 +1689,7 @@ export class AdminService {
     const fees: Record<string, number> = {
       WEB: feeOf("PLATFORM_FEE_WEB", 0),
       ANDROID: feeOf("PLATFORM_FEE_GOOGLE", 0.15),
-      IOS: feeOf("PLATFORM_FEE_APPLE", 0.3),
+      IOS: feeOf("PLATFORM_FEE_APPLE", 0.15),
     };
     let grossKurus = 0;
     let discountKurus = 0;

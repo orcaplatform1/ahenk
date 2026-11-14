@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { startCheckout } from '@/lib/checkout';
+import TcknModal from '@/components/paket/TcknModal';
 import { clockHMS, type WinbackState } from './useWinback';
 
 interface Props {
@@ -17,6 +18,7 @@ export function WinbackScreen({ state, remaining, merged, onMerge, onClose }: Pr
   const [selected, setSelected] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [tcOpen, setTcOpen] = useState(false);
   const plans = state.plans ?? [];
 
   useEffect(() => {
@@ -32,9 +34,18 @@ export function WinbackScreen({ state, remaining, merged, onMerge, onClose }: Pr
     if (!plan) return;
     // Kankamla kanka seçmeden alınamaz
     if (plan.needsKanka) { window.location.href = '/profil?tab=profil'; return; }
+    // Web ödemesinde T.C. No istenir (yalnız iyzico'ya gider)
+    setError('');
+    setTcOpen(true);
+  }
+
+  async function pay(identityNumber: string) {
+    const plan = plans.find((p) => p.plan === selected);
+    if (!plan) return;
     setBusy(true); setError('');
     try {
-      await startCheckout(plan.plan, plan.name);
+      await startCheckout(plan.plan, plan.name, identityNumber);
+      setTcOpen(false);
       onClose();
     } catch (e) {
       setError((e as Error).message);
@@ -120,6 +131,7 @@ export function WinbackScreen({ state, remaining, merged, onMerge, onClose }: Pr
           </div>
         )}
       </div>
+      <TcknModal open={tcOpen} busy={busy} error={error} onCancel={() => setTcOpen(false)} onSubmit={pay} />
     </div>
   );
 }

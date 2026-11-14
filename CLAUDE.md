@@ -39,7 +39,7 @@ Kayıt → WhatsApp OTP → OCEAN Testi → Dashboard  (KYC YOK)
                                           ↓
                                Paket / Prime almak isterse → ödeme (KYC istenmez)
                                           ↓
-                               Ödeme başarılı olur olmaz → KYC ekranı → yükle → admin onay
+                               Ödeme sonrası serbestçe gezer; KYC onaysızsa her sayfanın üstünde KYC kartı → yükle → admin onay
                                           ↓
                                KYC onaylanınca buluşma taramalarına girebilir (haftalık seçim)
 
@@ -70,12 +70,17 @@ EŞLEŞTİRME ALGORİTMASI (Modül 7):
 
 KYC KURALLARI:
 - Kayıt, giriş, OCEAN testi ve paket satın alma KYC gerektirmez (POST /payment/init üzerinde KycGuard yok)
-- Ödeme başarılı olur olmaz kullanıcı hemen KYC ekranına yönlendirilir (web /odeme/basarili → /profil?tab=kyc; mobil Profilim → kyc)
+- Ödeme sonrası zorunlu KYC yönlendirmesi yoktur; kullanıcı uygulamada ve sitede serbestçe gezer
+- KYC onaylanmamış kullanıcıda mobil uygulamanın tüm sekmelerinin ve web kullanıcı paneli sayfalarının en üstünde kart:
+  "Kullanıcı güvenliği sebebiyle masaya katılım için lütfen kimliğinizi doğrulayın." Basınca KYC ekranı açılır, onaylanınca kaybolur
 - KYC onaylanmadan kullanıcı hiçbir buluşma taramasına giremez (havuz sorgularında kyc APPROVED şartı)
+- Admin KYC onayında T.C. no girilmez, karşılaştırılmaz; UserIdentity tablosu kaldırıldı
 - KYC onaylıysa kullanıcı profilinde isKycVerified: true → "Doğrulanmış ✓" rozeti
 - Durum: PENDING / APPROVED / REJECTED / SUSPICIOUS
 - REJECTED veya SUSPICIOUS → rejectReason yazılır, kullanıcı yeniden başvurabilir. İade yoktur
-- iyzico alıcı TC kimlik no: KYC onayında girilir; ödeme KYC'den önce olduğu için yoksa 11111111111 gönderilir
+- T.C. NO: web'de "Paket Al" / "Abone Ol" sonrası açılan ödeme ekranında "T.C. No:" alanı zorunlu (11 haneli rakam);
+  altında not: "Ödeme altyapı hizmet sağlayıcı İyzico tarafından, mevzuat gereği satın alımlarda artık T.C.K.N. zorunludur."
+  Numara yalnız iyzico'ya gönderilir, veritabanına kaydedilmez, her web ödemesinde yeniden sorulur. Mobil uygulama içi satın almada T.C. alanı yok
 - Dosyalar Cloudflare R2'de private, sadece imzalı URL ile admin görür
 
 ÖDEME SİSTEMİ (Modül 8):
@@ -91,9 +96,16 @@ Prime abonelik (PRIME_1M / PRIME_3M / PRIME_6M / PRIME_12M): ham 899 / 2299 / 38
   - Aktif Prime'ı olan ikinci Prime alamaz
   - Aktif Prime'ı olan tek seferlik paket alamaz; istisna: Prime'da hakkı bitmiş tür varsa yalnız o türü içeren tek seferlik paketi alabilir
   - Profildeki paket kutusunda "Aboneliği İptal Et": otomatik yenileme durur, haklar dönem sonuna kadar kullanılır, iade yapılmaz
+    · iyzico ile alınan abonelik: web ve mobilde buton sunucu üzerinden doğrudan iptal eder
+    · App Store / Play Store ile alınan abonelik: mobilde mağazanın abonelik sayfası açılır; web'de "Aboneliğini mobil uygulama
+      üzerinden aldığın için iptal işlemini uygulamadan yapabilirsin." mesajı ve uygulamayı açan buton
 Fiyatlar ham fiyattır; admin "Fiyatlar" tablosunda (PlanPrice) tutulur. Web = ham × 1,20 (KDV); mobil = ham × 1,20 ÷ 0,85 (mağaza komisyonu %15)
 İndirimler: %10 davet indirimi ve paketi / aboneliği olmayana gönderilen 100 TL indirim tüm tek seferlik paketlerde ve tüm Prime
-  planlarında geçerli; ikisi aynı ödemede birlikte kullanılamaz; Prime'da yalnız satın alma ödemesine uygulanır, yenilemeler indirimsiz
+  planlarında geçerli (WINBACK_PLANS ayarında 8 plan); ikisi aynı ödemede birlikte kullanılamaz; Prime'da yalnız satın alma ödemesine
+  uygulanır, yenilemeler indirimsiz. Aktif tek seferlik paketi ya da aktif Prime'ı olana 100 TL indirim hiçbir koşulda gösterilmez/uygulanmaz
+Mobil indirim teklifleri (IAP_ENABLED ile pasif): tek seferlik paketlerde indirimli ayrı ürünler (<ürün>.davet10, <ürün>.indirim100);
+  Prime'da App Store promosyon teklifi (sunucu imzalı) / Google Play abonelik teklifi (teklif kimlikleri davet10, indirim100)
+Paket kartı rozetleri: Tinder GOLD tarzı hap, dolgu renkli, kalın, büyük harf; renk kartın tonuyla uyumlu, Prime altın
 Platform:
   - Web → iyzico. Tek seferlik: Checkout Form. Prime: ilk dönem Checkout Form, otomatik yenileme iyzico abonelik API'si
     (IYZICO_SUBSCRIPTION_ENABLED=true olana kadar pasif; planlar lansmanda create-prime-plans ile tanımlanır)
@@ -106,6 +118,7 @@ Akış:
   - POST /payment/prime/cancel, /payment/prime/autorenew/init, /payment/prime/autorenew/callback, /payment/prime/iyzico-webhook
   - GET /payment/subscriptions → JWT zorunlu, aktif paketler + türüne göre kalan hak adedi
 İADE SİSTEMİ YOKTUR: kullanıcı iade talebi, admin iade ekranları ve iade endpoint'leri kaldırıldı; RefundRequest tablosu silindi.
+  Landing ve yasal sayfalarda iade ifadesi yoktur (Mesafeli Satış Sözleşmesi cayma hakkı maddesi hariç); Prime kuralları yazılıdır.
   (Para çekilip paket verilemeyen mükerrer ödemenin otomatik iyzico iadesi ve "Ödeme Sonuçlandırma" ekranı duruyor.)
 
 HAFTALIK BULUŞMA SEÇİMİ:
@@ -238,6 +251,7 @@ KULLANICI ENGELLEME (UserBlock):
 
 PLATFORM KOMİSYON KURALLARI:
 - Fiyat hesabı: web = ham × 1,20; mobil (App Store ve Play Store) = ham × 1,20 ÷ (1 − 0,15) — mağaza komisyonu %15
+- Admin net gelir hesabı: PLATFORM_FEE_WEB=0, PLATFORM_FEE_GOOGLE=0.15, PLATFORM_FEE_APPLE=0.15
 - Mobil ödeme uygulama içi satın almadır (App Store / Play Store); lansmana kadar pasif (IAP_ENABLED)
 
 AKTİF ŞEHİRLER (7 şehir):

@@ -17,7 +17,7 @@ import { Request, Response } from "express";
 import { ConfigService } from "@nestjs/config";
 import { IsEnum, IsString } from "class-validator";
 import { PaymentService } from "./payment.service";
-import { InitCheckoutDto } from "./dto/init-checkout.dto";
+import { InitCheckoutDto, PrimeAutoRenewDto } from "./dto/init-checkout.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { TestCompletedGuard } from "../test/test.guard";
 import { PaymentPlatform } from "../generated/prisma/client";
@@ -88,7 +88,7 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, TestCompletedGuard)
   initCheckout(@Req() req: Request, @Body() dto: InitCheckoutDto) {
     const user = req.user as { id: string };
-    return this.paymentService.initCheckout(user.id, dto.plan, dto.platform, dto.useDiscount, req.ip ?? "");
+    return this.paymentService.initCheckout(user.id, dto.plan, dto.platform, dto.useDiscount, req.ip ?? "", dto.identityNumber);
   }
 
   // Mobil uygulama içi satın alma doğrulama (App Store / Play Store)
@@ -128,8 +128,8 @@ export class PaymentController {
   // Prime (web): ilk dönem ödendikten sonra otomatik yenileme için iyzico abonelik formu
   @Post("prime/autorenew/init")
   @UseGuards(JwtAuthGuard)
-  initPrimeAutoRenew(@Req() req: Request) {
-    return this.paymentService.initPrimeAutoRenew((req.user as { id: string }).id);
+  initPrimeAutoRenew(@Req() req: Request, @Body() dto: PrimeAutoRenewDto) {
+    return this.paymentService.initPrimeAutoRenew((req.user as { id: string }).id, dto.identityNumber);
   }
 
   @Post("prime/autorenew/callback")

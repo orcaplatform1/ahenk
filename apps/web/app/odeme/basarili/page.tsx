@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { trackConfirmedPurchase } from '@/lib/analytics';
 import { api } from '@/lib/api';
 import { mountIyzicoForm } from '@/lib/checkout';
+import TcknModal from '@/components/paket/TcknModal';
 
 export default function OdemeBasariliPage() {
   const router = useRouter();
@@ -14,24 +15,34 @@ export default function OdemeBasariliPage() {
     void trackConfirmedPurchase();
   }, []);
 
-  // Ödeme başarılı: KYC onaylı değilse hemen KYC ekranına. Prime'da önce otomatik yenileme kart kaydı (iyzico abonelik formu).
+  // Prime: otomatik yenileme için iyzico abonelik formu (T.C. No her web ödemesinde yeniden sorulur)
+  const [primeTc, setPrimeTc] = useState(false);
+  const [primeBusy, setPrimeBusy] = useState(false);
+  const [primeError, setPrimeError] = useState('');
+  const [waitPrime, setWaitPrime] = useState(true);
+
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const goNext = () => api.get<{ kyc?: { status: string } }>('/auth/me')
-      .then((m) => {
-        if (m.kyc?.status !== 'APPROVED') router.replace('/profil?tab=kyc');
-        else timer = setTimeout(() => router.push('/dashboard'), 3000);
-      })
-      .catch(() => router.replace('/profil?tab=kyc'));
-    if (new URLSearchParams(window.location.search).get('prime') === '1') {
-      api.post<{ checkoutFormContent: string }>('/payment/prime/autorenew/init', {})
-        .then((d) => mountIyzicoForm(d.checkoutFormContent))
-        .catch(() => goNext());
-    } else {
-      goNext();
+    if (new URLSearchParams(window.location.search).get('prime') === '1') setPrimeTc(true);
+    setWaitPrime(false);
+  }, []);
+
+  useEffect(() => {
+    if (waitPrime || primeTc) return;
+    const t = setTimeout(() => router.push('/dashboard'), 3000);
+    return () => clearTimeout(t);
+  }, [router, waitPrime, primeTc]);
+
+  async function startAutoRenew(identityNumber: string) {
+    setPrimeBusy(true); setPrimeError('');
+    try {
+      const d = await api.post<{ checkoutFormContent: string }>('/payment/prime/autorenew/init', { identityNumber });
+      mountIyzicoForm(d.checkoutFormContent);
+    } catch (e) {
+      setPrimeError((e as Error).message);
+    } finally {
+      setPrimeBusy(false);
     }
-    return () => { if (timer) clearTimeout(timer); };
-  }, [router]);
+  }
 
   return (
     <div
@@ -98,6 +109,7 @@ export default function OdemeBasariliPage() {
           3 saniye içinde otomatik yönlendirileceksin…
         </motion.p>
       </div>
+      <TcknModal open={primeTc} busy={primeBusy} error={primeError} onCancel={() => setPrimeTc(false)} onSubmit={startAutoRenew} />
     </div>
   );
 }

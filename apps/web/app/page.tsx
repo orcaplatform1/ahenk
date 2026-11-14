@@ -19,7 +19,7 @@ const plans = [
     desc: '2 grup masası hakkı · 4 döngü geçerli',
     featured: false,
     bgImage: '/plan-masada.webp',
-    features: ['2 Grup Masası Hakkı', 'Doğrulanmış Profiller', 'OCEAN Kişilik Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'],
+    features: ['2 Grup Masası Hakkı', 'Doğrulanmış Profiller', 'OCEAN Kişilik Uyumu', 'Yapay Zeka Masa Raporu'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
@@ -32,7 +32,7 @@ const plans = [
     desc: '1 başbaşa masası hakkı · 4 döngü geçerli',
     featured: false,
     bgImage: '/plan-karsimda.webp',
-    features: ['Tek Seferlik Baş Başa Masa', 'Doğrulanmış Profiller', 'OCEAN + Yaş Uyumu', 'Yapay Zeka Masa Raporu', 'Masa Garantili (Ücret İade)'],
+    features: ['Tek Seferlik Baş Başa Masa', 'Doğrulanmış Profiller', 'OCEAN + Yaş Uyumu', 'Yapay Zeka Masa Raporu'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -59,7 +59,7 @@ const plans = [
     featured: false,
     // Kankamla için ayrı görsel eklenene kadar grup masası görseli
     bgImage: '/plan-masada.webp',
-    features: ['2 Kankamla Masası Hakkı', 'Kankan Ücretsiz Katılır', '4 Kişilik Masa (2E + 2K)', 'Doğrulanmış Profiller', 'Masa Garantili (Ücret İade)'],
+    features: ['2 Kankamla Masası Hakkı', 'Kankan Ücretsiz Katılır', '4 Kişilik Masa (2E + 2K)', 'Doğrulanmış Profiller'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
@@ -968,6 +968,26 @@ export default function Home() {
                 <div key={plan.name} className="flex flex-col">{inner}</div>
               );
             })}
+          </div>
+
+          {/* Prime üyelik */}
+          <div className="ll-card mt-8 flex flex-col gap-4" style={{ border: '1px solid rgba(201,162,39,0.55)' }}>
+            <h3 className="font-serif text-2xl" style={{ color: '#e8c84a' }}>Prime Üyelik</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {([['PRIME_1M', '1 Aylık'], ['PRIME_3M', '3 Aylık'], ['PRIME_6M', '6 Aylık'], ['PRIME_12M', '12 Aylık']] as const).map(([key, label]) => (
+                <div key={key} className="rounded-xl px-3 py-3" style={{ border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.03)' }}>
+                  <p className="text-sm font-semibold text-[#f5f5f5]">{label}</p>
+                  <p className="text-xs text-[#c9c2b8] mt-1"><PlanPriceText plan={key} suffix=" ₺" /></p>
+                </div>
+              ))}
+            </div>
+            <ul className="flex flex-col gap-2 text-sm text-[#c9c2b8]" style={{ lineHeight: 1.5 }}>
+              <li>Her 30 günde 1 Grup, 1 Başbaşa ve 1 Kankamla buluşması hakkı.</li>
+              <li>Kullanılmayan haklar bir sonraki 30 güne devretmez.</li>
+              <li>Dönem sonunda abonelik aynı süreyle otomatik yenilenir.</li>
+              <li>Aboneliği iptal ettiğinde hakların dönem sonuna kadar kullanılabilir; iade yapılmaz.</li>
+              <li>Mağazadan (App Store / Google Play) alınan abonelik mağazadan, iyzico ile alınan abonelik web sitesinden ya da uygulamadan iptal edilir.</li>
+            </ul>
           </div>
         </section>
 

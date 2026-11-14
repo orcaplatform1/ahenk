@@ -153,42 +153,22 @@ const sections = [
   },
   {
     n: '06',
-    title: 'İptal ve İade Politikası',
+    title: 'İptal Politikası',
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1.25rem' }}>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
           {[
-            'Paketler tek seferlik olduğundan iptal edilecek bir abonelik yoktur; satın alınan haklar kullanıldığında ya da 4 döngü dolduğunda kendiliğinden sona erer.',
-            'Kullanılmayan haklar için kısmi iade yapılmaz; iade yalnızca aşağıdaki "Eşleşme Gerçekleşmemesi" koşulunda yapılır.',
-            'Teknik arıza veya Ahenk kaynaklı hizmet kesintisi durumunda iade değerlendirilebilir; talep için bilgi@ahenk.co adresine başvurulmalıdır.',
-            'Hesabın kural ihlali nedeniyle Ahenk tarafından kapatılması durumunda kalan haklar için iade yapılmaz.',
+            'Prime üyelik 1, 3, 6 ve 12 aylık planlarla sunulur; her 30 günde 1 Grup, 1 Başbaşa ve 1 Kankamla buluşması hakkı tanımlanır.',
+            'Prime\'da kullanılmayan haklar bir sonraki 30 güne devretmez.',
+            'Prime aboneliği dönem sonunda aynı süreyle otomatik olarak yenilenir.',
+            'Prime aboneliği iptal edildiğinde otomatik yenileme durur, haklar dönem sonuna kadar kullanılabilir; iade yapılmaz.',
+            'Mağazadan (App Store / Google Play) alınan abonelik mağazadan, iyzico ile alınan abonelik web sitesinden ya da uygulamadan iptal edilir.',
           ].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
             </li>
           ))}
         </ul>
-
-        <div style={{ padding: '1.1rem 1.25rem', background: 'rgba(192,57,43,0.06)', border: '1px solid rgba(192,57,43,0.2)', borderRadius: '12px' }}>
-          <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#c0392b', marginBottom: '0.85rem' }}>Eşleşme Gerçekleşmemesi Durumunda İade</p>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
-            {[
-              'Masada paketinde 4 grup döngüsü boyunca hiç grup masası kurulamazsa tam iade talep edilebilir.',
-              'Karşımda paketinde 4 başbaşa döngüsü boyunca başbaşa masası kurulamazsa tam iade talep edilebilir.',
-              'İçerde paketinde grup ve başbaşa kısımları ayrı değerlendirilir: bir kısımda 4 döngü boyunca hiç masa kurulamazsa o kısım için paket bedelinin yarısı, her iki kısımda da kurulamazsa tamamı iade edilebilir.',
-              'Kankamla paketinde 4 Kankamla döngüsü boyunca hiç masa kurulamazsa tam iade talep edilebilir. İade talebini yalnızca paketi satın alan kişi yapabilir; çiftin rezervasyonu kendisi iptal etmesi masanın kurulduğu anlamına gelir.',
-              'Kankanın buluşmaya katılmaması veya kankalığın sona ermesi iade sebebi değildir.',
-              'Paketin bir kısmında bir masa kurulduysa, kalan hak bulunsa dahi o kısım için hizmet alınmış sayılır ve iade yapılmaz.',
-              'Masa kurulduğu halde kullanıcının katılım sağlamaması durumunda iade yapılmaz.',
-              'Masa kurulduktan sonra bir veya birden fazla katılımcının buluşmaya katılmaması, hizmetin ifa edilmediği anlamına gelmez ve iade sebebi teşkil etmez.',
-              'İade talepleri profil sayfasındaki İade Talep Et butonu üzerinden iletilir ve 5 iş günü içinde değerlendirilir.',
-            ].map((item) => (
-              <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
-                <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
     ),
   },
@@ -201,7 +181,7 @@ const sections = [
           'Ahenk, OCEAN modeline dayalı algoritmik eşleştirme hizmeti sunar; belirli bir kişiyle eşleşme veya buluşmanın gerçekleşeceğine dair garanti vermez.',
           'Ahenk, eşleştirme sonucunda kurulan masada yer alan katılımcıların tamamının buluşmaya katılacağını garanti etmez. Buluşmaya katılım her kullanıcının kendi iradesine bağlıdır ve Ahenk tarafından zorunlu tutulamaz.',
           'Ahenk, masaların kurulabilmesi ve katılımcı dengesinin sağlanabilmesi amacıyla masa kompozisyonunda sistemsel düzenlemeler yapma hakkını saklı tutar.',
-          'Kullanıcı sayısının yetersiz olduğu şehir veya dönemlerde eşleştirme gerçekleşmeyebilir. Bu durumda Ahenk, kullanıcıya ilgili dönem için alternatif hizmet sunmayı veya iade değerlendirmeyi kabul eder.',
+          'Kullanıcı sayısının yetersiz olduğu şehir veya dönemlerde eşleştirme gerçekleşmeyebilir. Bu durumda Ahenk, kullanıcıya ilgili dönem için alternatif hizmet sunmayı kabul eder.',
           "Ahenk, buluşmaların gerçekleştiği mekânın hizmet kalitesinden sorumlu tutulamaz.",
           'Buluşmalar sırasında kullanıcılar arasında yaşanan kişisel anlaşmazlık, maddi veya manevi zararlardan Ahenk sorumlu tutulamaz.',
         ].map((item) => (

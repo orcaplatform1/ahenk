@@ -17,6 +17,7 @@ import { LiveTabs } from '@/components/LiveTabs';
 import { LiveSonar } from '@/components/Sonar';
 import { WinbackHost } from '@/components/Winback';
 import { LEVELS, ll, llColumn, heat, tw } from '@/theme/theme';
+import { KycNoticeCard } from '@/components/KycNoticeCard';
 
 const PULSE_MS = 15_000;
 const OVERVIEW_MS = 60_000;
@@ -136,6 +137,7 @@ export default function EslesmePaneli() {
       <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top }}>
         <View style={{ paddingHorizontal: 16 }}>
+          <View style={{ marginTop: 16, marginBottom: 16 }}><KycNoticeCard /></View>
           {me?.kyc?.status === 'REJECTED' && (
             <View style={{ marginBottom: 16, borderRadius: 16, padding: 16, backgroundColor: 'rgba(192,57,43,0.12)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.35)' }}>
               <T w={600} style={{ fontSize: 14, color: tw.accent, marginBottom: 4 }}>Kimlik doğrulamanız reddedildi</T>

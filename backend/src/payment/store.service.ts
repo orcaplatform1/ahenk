@@ -1,6 +1,7 @@
 import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
+import { createPrivateKey, randomUUID, sign } from "crypto";
 import { readFileSync } from "fs";
 import { PaymentPlatform, SubscriptionPlan } from "../generated/prisma/client";
 import { isPrime } from "./package-rights";
@@ -19,8 +20,26 @@ export const STORE_PRODUCT_IDS: Record<SubscriptionPlan, string> = {
   [SubscriptionPlan.PRIME_6M]: "co.ahenk.app.prime.6m",
   [SubscriptionPlan.PRIME_12M]: "co.ahenk.app.prime.12m",
 };
-export const planOfProduct = (productId: string): SubscriptionPlan | null =>
-  (Object.entries(STORE_PRODUCT_IDS).find(([, id]) => id === productId)?.[0] as SubscriptionPlan | undefined) ?? null;
+// Mobil indirim teklifleri (lansmana kadar pasif). Davet %10 ve 100 TL indirim aynı ödemede birlikte kullanılamaz.
+// - Tek seferlik paketler: App Store'da tek seferlik ürüne teklif tanımlanamadığı için iki platformda da indirimli ayrı ürün:
+//   <ürün>.davet10 (%10 indirimli mobil fiyat) ve <ürün>.indirim100 (mobil fiyat − 100 TL)
+// - Prime: App Store promosyon teklifi / Google Play abonelik teklifi; teklif kimlikleri davet10 ve indirim100,
+//   yalnız ilk dönem indirimli (yenilemeler tam fiyat)
+export type StoreDiscount = "REFERRAL" | "WINBACK";
+export const OFFER_IDS: Record<StoreDiscount, string> = { REFERRAL: "davet10", WINBACK: "indirim100" };
+export const discountOfOffer = (offerId: string | null | undefined): StoreDiscount | null =>
+  offerId === OFFER_IDS.REFERRAL ? "REFERRAL" : offerId === OFFER_IDS.WINBACK ? "WINBACK" : null;
+
+// Ürün kimliğinden paket ve (tek seferlikte) indirim türü
+export function parseProduct(productId: string): { plan: SubscriptionPlan; discount: StoreDiscount | null } | null {
+  for (const [plan, id] of Object.entries(STORE_PRODUCT_IDS) as [SubscriptionPlan, string][]) {
+    if (productId === id) return { plan, discount: null };
+    if (!isPrime(plan) && productId === `${id}.${OFFER_IDS.REFERRAL}`) return { plan, discount: "REFERRAL" };
+    if (!isPrime(plan) && productId === `${id}.${OFFER_IDS.WINBACK}`) return { plan, discount: "WINBACK" };
+  }
+  return null;
+}
+export const planOfProduct = (productId: string): SubscriptionPlan | null => parseProduct(productId)?.plan ?? null;
 
 export type VerifiedPurchase = {
   productId: string;
@@ -28,6 +47,7 @@ export type VerifiedPurchase = {
   originalTransactionId: string; // App Store originalTransactionId / Play purchaseToken (abonelik kimliği)
   expiresAt?: Date; // abonelikte dönem sonu
   autoRenewing?: boolean;
+  offerId?: string | null; // abonelikte kullanılan teklif (davet10 / indirim100)
 };
 
 @Injectable()
@@ -41,10 +61,29 @@ export class StoreService {
     return this.config.get<string>("IAP_ENABLED") === "true";
   }
 
-  // /payment/init (mobil): mağaza penceresinde açılacak ürün
-  purchaseInfo(plan: SubscriptionPlan, platform: PaymentPlatform) {
+  // /payment/init (mobil): mağaza penceresinde açılacak ürün ve (indirim hakkı varsa) teklif
+  purchaseInfo(plan: SubscriptionPlan, platform: PaymentPlatform, discount: StoreDiscount | null) {
     if (!this.enabled()) return { stub: true, message: "Uygulama içi satın alma henüz aktif değil." };
-    return { iap: true, platform, productId: STORE_PRODUCT_IDS[plan], type: isPrime(plan) ? "subs" : "in-app" };
+    const base = STORE_PRODUCT_IDS[plan];
+    if (!isPrime(plan)) {
+      return { iap: true, platform, type: "in-app", productId: discount ? `${base}.${OFFER_IDS[discount]}` : base };
+    }
+    const offerId = discount ? OFFER_IDS[discount] : null;
+    return {
+      iap: true, platform, type: "subs", productId: base,
+      offer: offerId ? (platform === PaymentPlatform.IOS ? this.signAppleOffer(base, offerId) : { offerId }) : null,
+    };
+  }
+
+  // App Store promosyon teklifi imzası: bundleId ⁣ keyId ⁣ ürün ⁣ teklif ⁣ appAccountToken(boş) ⁣ nonce ⁣ zaman
+  private signAppleOffer(productId: string, offerId: string) {
+    const keyIdentifier = this.config.getOrThrow<string>("APPLE_IAP_KEY_ID");
+    const nonce = randomUUID().toLowerCase();
+    const timestamp = Date.now();
+    const payload = [this.config.getOrThrow<string>("APPLE_BUNDLE_ID"), keyIdentifier, productId, offerId, "", nonce, String(timestamp)].join("\u2063");
+    const key = createPrivateKey(readFileSync(this.config.getOrThrow<string>("APPLE_IAP_KEY_PATH"), "utf8"));
+    const signature = sign("sha256", Buffer.from(payload, "utf8"), key).toString("base64");
+    return { offerId, identifier: offerId, keyIdentifier, nonce, signature, timestamp };
   }
 
   assertEnabled() {
@@ -75,6 +114,7 @@ export class StoreService {
     const { signedTransactionInfo } = (await res.json()) as { signedTransactionInfo: string };
     const t = this.jwt.decode(signedTransactionInfo) as {
       productId: string; transactionId: string; originalTransactionId: string; expiresDate?: number; revocationDate?: number; bundleId: string;
+      offerIdentifier?: string;
     };
     if (!t || t.revocationDate || t.bundleId !== this.config.get<string>("APPLE_BUNDLE_ID")) return null;
     return {
@@ -82,6 +122,7 @@ export class StoreService {
       transactionId: t.transactionId,
       originalTransactionId: t.originalTransactionId,
       expiresAt: t.expiresDate ? new Date(t.expiresDate) : undefined,
+      offerId: t.offerIdentifier ?? null,
     };
   }
 
@@ -115,7 +156,7 @@ export class StoreService {
       if (!res.ok) return null;
       const s = (await res.json()) as {
         subscriptionState: string; latestOrderId: string; acknowledgementState: string;
-        lineItems: { productId: string; expiryTime: string; autoRenewingPlan?: { autoRenewEnabled?: boolean } }[];
+        lineItems: { productId: string; expiryTime: string; autoRenewingPlan?: { autoRenewEnabled?: boolean }; offerDetails?: { offerId?: string } }[];
       };
       const item = s.lineItems?.find((l) => l.productId === productId);
       if (!item || !["SUBSCRIPTION_STATE_ACTIVE", "SUBSCRIPTION_STATE_IN_GRACE_PERIOD"].includes(s.subscriptionState)) return null;
@@ -125,6 +166,7 @@ export class StoreService {
       return {
         productId, transactionId: s.latestOrderId, originalTransactionId: purchaseToken,
         expiresAt: new Date(item.expiryTime), autoRenewing: item.autoRenewingPlan?.autoRenewEnabled ?? false,
+        offerId: item.offerDetails?.offerId ?? null,
       };
     }
     const res = await fetch(`${base}/products/${productId}/tokens/${encodeURIComponent(purchaseToken)}`, { headers });

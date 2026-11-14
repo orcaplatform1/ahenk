@@ -10,6 +10,7 @@ import { KisilikTab } from '@/components/profil/KisilikTab';
 import { RehberTab } from '@/components/profil/RehberTab';
 import { KycTab } from '@/components/profil/KycTab';
 import { accountTab, ll, tabBar, tw } from '@/theme/theme';
+import { KycNoticeCard } from '@/components/KycNoticeCard';
 
 const TABS = [
   { key: 'profil', label: 'Profilim' },
@@ -58,6 +59,7 @@ export default function Profilim() {
           <ScreenGlow />
           <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 32, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
             <Glow />
+            <View style={{ marginBottom: 16 }}><KycNoticeCard /></View>
             {loading ? <SkeletonBlock lines={4} /> : fetchError && !user ? (
               <View style={{ alignItems: 'center', paddingHorizontal: 24 }}>
                 <T style={{ color: tw.muted, fontSize: 14, marginBottom: 16 }}>Profil yüklenemedi. Lütfen tekrar deneyin.</T>

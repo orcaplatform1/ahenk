@@ -6,6 +6,7 @@ import LiveLayer from '@/components/live/LiveLayer';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import LiveParticipation from '@/components/live/LiveParticipation';
 import { WinbackHost } from '@/components/winback/WinbackHost';
+import KycNoticeCard from '@/components/KycNoticeCard';
 import WeeklySelectionModal from '@/components/live/WeeklySelectionModal';
 
 const MEETING_GRACE_MS = 3 * 60 * 60 * 1000;
@@ -34,6 +35,7 @@ export default function DashboardPage() {
         style={{ background: 'radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,0.1) 0%, transparent 70%)' }}
       />
       <div className="relative z-10 max-w-5xl mx-auto px-4">
+        <KycNoticeCard show={!!me && !kycApproved} />
         {me?.kyc?.status === 'REJECTED' && (
           <div className="mb-4 rounded-2xl px-4 py-4" style={{ background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.35)' }}>
             <p className="text-sm font-semibold text-[#ff6b6b] mb-1">Kimlik doğrulamanız reddedildi</p>

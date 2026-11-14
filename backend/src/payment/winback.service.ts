@@ -38,9 +38,7 @@ export class WinbackService {
   async settings(): Promise<{ amountTL: number; plans: SubscriptionPlan[] }> {
     const rows = await this.prisma.appConfig.findMany({ where: { key: { in: [AMOUNT_KEY, PLANS_KEY] } } });
     const value = (key: string) => rows.find((r) => r.key === key)?.value ?? "";
-    // Geri kazanım indirimi tüm tek seferlik paketlerde ve tüm Prime planlarında geçerlidir
-    // (WINBACK_PLANS ayarı okunmaz; admin ekranındaki paket seçimi uygulanmaz)
-    const plans = Object.keys(PLAN_CONFIG) as SubscriptionPlan[];
+    const plans = value(PLANS_KEY).split(",").filter((p) => p in PLAN_CONFIG) as SubscriptionPlan[];
     return { amountTL: Number(value(AMOUNT_KEY)) || 0, plans };
   }
 

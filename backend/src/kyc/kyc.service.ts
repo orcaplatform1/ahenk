@@ -10,9 +10,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
-import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
-import { encryptIdentityNumber, isValidTckn } from "./identity-number";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { NotificationService } from "../notification/notification.service";
 import { ReviewKycDto } from "./dto/review-kyc.dto";
@@ -57,15 +55,7 @@ export class KycService {
     private prisma: PrismaService,
     private notifications: NotificationService,
     @InjectQueue(ASSIGN_QUEUE) private assignQueue: Queue,
-    private config: ConfigService,
   ) {}
-
-  private encryptTckn(identityNumber: string | undefined): string {
-    if (!identityNumber || !isValidTckn(identityNumber)) {
-      throw new BadRequestException("Geçerli bir TC kimlik numarası girin");
-    }
-    return encryptIdentityNumber(identityNumber, this.config.get("IDENTITY_ENC_KEY"));
-  }
 
   // HEIC çevirme RAM/CPU yoğun: aynı anda en fazla 1 çevirme çalışır
   private heicQueue: Promise<unknown> = Promise.resolve();
@@ -216,18 +206,15 @@ export class KycService {
         take: l,
         orderBy: { submittedAt: "asc" },
         include: {
-          user: { select: { id: true, email: true, phone: true, profile: true, identity: { select: { id: true } } } },
+          user: { select: { id: true, email: true, phone: true, profile: true } },
           reviewedBy: { select: { id: true, email: true } },
         },
       }),
       this.prisma.kycSubmission.count({ where }),
     ]);
 
-    // TC numarası asla dönmez; sadece girilip girilmediği
-    const itemsWithUrls = items.map(({ user: { identity, ...user }, ...item }) => ({
+    const itemsWithUrls = items.map((item) => ({
       ...item,
-      user,
-      hasIdentityNumber: !!identity,
       idFrontUrl:   `/api/v1/kyc/admin/file/${item.id}/front`,
       idBackUrl:    `/api/v1/kyc/admin/file/${item.id}/back`,
       livenessUrl:  `/api/v1/kyc/admin/file/${item.id}/liveness`,
@@ -242,17 +229,13 @@ export class KycService {
     const kyc = await this.prisma.kycSubmission.findUnique({
       where: { id },
       include: {
-        user: { select: { id: true, email: true, phone: true, profile: true, identity: { select: { id: true } } } },
+        user: { select: { id: true, email: true, phone: true, profile: true } },
         reviewedBy: { select: { id: true, email: true } },
       },
     });
     if (!kyc) throw new NotFoundException("KYC başvurusu bulunamadı");
-    const { user: { identity, ...user }, ...rest } = kyc;
-
     return {
-      ...rest,
-      user,
-      hasIdentityNumber: !!identity,
+      ...kyc,
       fileUrls: {
         idFront:  `/api/v1/kyc/admin/file/${id}/front`,
         idBack:   `/api/v1/kyc/admin/file/${id}/back`,
@@ -292,19 +275,6 @@ export class KycService {
 
   // ─── Admin: İncele ────────────────────────────────────────────────────────
 
-  // TC girilmeden önce onaylanmış başvuruya TC ekleme (sonradan değiştirilemez)
-  async setIdentityNumber(id: string, identityNumber: string) {
-    const kyc = await this.prisma.kycSubmission.findUnique({
-      where: { id },
-      select: { userId: true, status: true, user: { select: { identity: { select: { id: true } } } } },
-    });
-    if (!kyc) throw new NotFoundException("KYC başvurusu bulunamadı");
-    if (kyc.status !== KycStatus.APPROVED) throw new BadRequestException("TC sadece onaylı başvuruya eklenir");
-    if (kyc.user.identity) throw new BadRequestException("TC kimlik numarası zaten girilmiş");
-    await this.prisma.userIdentity.create({ data: { userId: kyc.userId, identityNumberEnc: this.encryptTckn(identityNumber) } });
-    return { hasIdentityNumber: true };
-  }
-
   async adminReview(id: string, reviewerId: string, dto: ReviewKycDto) {
     const kyc = await this.prisma.kycSubmission.findUnique({ where: { id } });
     if (!kyc) throw new NotFoundException("KYC başvurusu bulunamadı");
@@ -313,17 +283,7 @@ export class KycService {
       throw new BadRequestException("Bu başvuru zaten onaylanmış");
     }
 
-    // TC kimlik no girilmeden onay verilemez
-    const identityNumberEnc = dto.status === KycStatus.APPROVED ? this.encryptTckn(dto.identityNumber) : null;
-
     const updated = await this.prisma.$transaction(async (tx) => {
-      if (identityNumberEnc) {
-        await tx.userIdentity.upsert({
-          where: { userId: kyc.userId },
-          update: { identityNumberEnc },
-          create: { userId: kyc.userId, identityNumberEnc },
-        });
-      }
       return tx.kycSubmission.update({
         where: { id },
         data: {

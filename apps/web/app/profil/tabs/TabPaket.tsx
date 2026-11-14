@@ -8,6 +8,7 @@ import { useWinback } from '@/components/winback/useWinback';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
+import TcknModal from '@/components/paket/TcknModal';
 
 // Aktif paket / abonelik (yalnız kullanıcının kendi aldıkları)
 interface Subscription {
@@ -30,12 +31,13 @@ const PRIME_PLANS = [
 ] as const;
 
 // Paket kartları: tam genişlik, tek renk; Prime altın tonunda, diğerleri tema renklerinden
-const CARDS: { key: CardKey; name: string; badge: string; desc: string; color: string; advantages: string[] }[] = [
-  { key: 'MASADA', name: 'Grup', badge: 'Tek Seferlik', desc: '1 Grup buluşması hakkı', color: '#d6453a', advantages: ['1 Grup buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
-  { key: 'KARSIMDA', name: 'Başbaşa', badge: 'Tek Seferlik', desc: '1 Başbaşa buluşması hakkı', color: '#c8743c', advantages: ['1 Başbaşa buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
-  { key: 'KANKAMLA', name: 'Kankamla', badge: 'Tek Seferlik', desc: '1 Kankamla buluşması hakkı', color: '#8f887f', advantages: ['1 Kankamla buluşması hakkı', 'Arkadaşın ücretsiz katılır', 'Hak kullanılana kadar geçerli'] },
-  { key: 'ICERDE', name: 'İçerde', badge: 'Tek Seferlik', desc: '1 Grup + 1 Başbaşa buluşması hakkı', color: '#c0392b', advantages: ['1 Grup buluşması hakkı', '1 Başbaşa buluşması hakkı', 'Haklar kullanılana kadar geçerli'] },
-  { key: 'PRIME', name: 'Prime', badge: 'Abonelik', desc: 'Her 30 günde 1 Grup + 1 Başbaşa + 1 Kankamla', color: '#c9a227', advantages: ['Her 30 günde 1 Grup buluşması hakkı', 'Her 30 günde 1 Başbaşa buluşması hakkı', 'Her 30 günde 1 Kankamla buluşması hakkı', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
+// badgeBg: Tinder GOLD tarzı hap rozetin dolgu rengi (kartın tonunun koyusu; Prime altın)
+const CARDS: { key: CardKey; name: string; badge: string; desc: string; color: string; badgeBg: string; advantages: string[] }[] = [
+  { key: 'MASADA', name: 'Grup', badge: 'Tek Seferlik', desc: '1 Grup buluşması hakkı', color: '#d6453a', badgeBg: '#9e2f26', advantages: ['1 Grup buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
+  { key: 'KARSIMDA', name: 'Başbaşa', badge: 'Tek Seferlik', desc: '1 Başbaşa buluşması hakkı', color: '#c8743c', badgeBg: '#8f5228', advantages: ['1 Başbaşa buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
+  { key: 'KANKAMLA', name: 'Kankamla', badge: 'Tek Seferlik', desc: '1 Kankamla buluşması hakkı', color: '#8f887f', badgeBg: '#5f5a54', advantages: ['1 Kankamla buluşması hakkı', 'Arkadaşın ücretsiz katılır', 'Hak kullanılana kadar geçerli'] },
+  { key: 'ICERDE', name: 'İçerde', badge: 'Tek Seferlik', desc: '1 Grup + 1 Başbaşa buluşması hakkı', color: '#c0392b', badgeBg: '#86281e', advantages: ['1 Grup buluşması hakkı', '1 Başbaşa buluşması hakkı', 'Haklar kullanılana kadar geçerli'] },
+  { key: 'PRIME', name: 'Prime', badge: 'Abonelik', desc: 'Her 30 günde 1 Grup + 1 Başbaşa + 1 Kankamla', color: '#c9a227', badgeBg: 'linear-gradient(135deg, #f5d76e, #c9a227 55%, #a8861a)', advantages: ['Her 30 günde 1 Grup buluşması hakkı', 'Her 30 günde 1 Başbaşa buluşması hakkı', 'Her 30 günde 1 Kankamla buluşması hakkı', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
 ];
 
 const PAY_INFO_WEB = 'Ödemen iyzico ile güvenli şekilde alınır.';
@@ -74,6 +76,8 @@ export function TabPaket({ maintenanceMode = false }: Props) {
   const [error, setError] = useState('');
   const [buying, setBuying] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [storeCancelMsg, setStoreCancelMsg] = useState(false);
+  const [payFor, setPayFor] = useState<{ plan: string; name: string } | null>(null);
   const [detail, setDetail] = useState<CardKey | null>(null);
   const [primePlan, setPrimePlan] = useState<(typeof PRIME_PLANS)[number]['key']>('PRIME_1M');
   const [discountInfo, setDiscountInfo] = useState<DiscountInfo | null>(null);
@@ -118,12 +122,21 @@ export function TabPaket({ maintenanceMode = false }: Props) {
     finally { setReferralSending(false); }
   }
 
-  async function handleBuy(plan: string, name: string) {
+  // "Paket Al" / "Abone Ol": önce T.C. No penceresi, sonra iyzico ödeme formu
+  function handleBuy(plan: string, name: string) {
+    setError('');
+    setPayFor({ plan, name });
+  }
+
+  async function pay(identityNumber: string) {
+    if (!payFor) return;
+    const { plan, name } = payFor;
     setBuying(plan);
     setError('');
     try {
       const useDiscount = discountInfo?.referralDiscount ? 'REFERRER' : discountInfo?.inviteeDiscount ? 'INVITEE' : undefined;
-      await startCheckout(plan, name, useDiscount);
+      await startCheckout(plan, name, identityNumber, useDiscount);
+      setPayFor(null);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -135,7 +148,9 @@ export function TabPaket({ maintenanceMode = false }: Props) {
     setCancelling(true);
     setError('');
     try {
-      await api.post('/payment/prime/cancel', {});
+      // Mağazadan (App Store / Play Store) alınan abonelik web'den iptal edilemez
+      const r = await api.post<{ storeManaged?: string }>('/payment/prime/cancel', {});
+      if (r?.storeManaged) setStoreCancelMsg(true);
       await loadSubs();
     } catch (e) {
       setError((e as Error).message);
@@ -237,6 +252,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
             {PAY_INFO_WEB}{isPrimeCard ? ` ${PRIME_RENEW_INFO}` : ''}
           </p>
         </div>
+        <TcknModal open={!!payFor} busy={!!buying} error={error} onCancel={() => setPayFor(null)} onSubmit={pay} />
       </div>
     );
   }
@@ -316,6 +332,14 @@ export function TabPaket({ maintenanceMode = false }: Props) {
               {cancelling ? '…' : 'Aboneliği İptal Et'}
             </button>
           )}
+          {storeCancelMsg && (
+            <div className="flex flex-col gap-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 14px' }}>
+              <p style={{ color: '#c9c2b8', fontSize: 12, lineHeight: 1.5, margin: 0 }}>
+                Aboneliğini mobil uygulama üzerinden aldığın için iptal işlemini uygulamadan yapabilirsin.
+              </p>
+              <a href="ahenk://" className="btn-primary w-full justify-center" style={{ minHeight: 44 }}>Uygulamayı Aç</a>
+            </div>
+          )}
         </div>
       )}
 
@@ -343,10 +367,10 @@ export function TabPaket({ maintenanceMode = false }: Props) {
                 <span className="flex items-center gap-2 flex-wrap">
                   <span className="font-extrabold" style={{ fontSize: '1.25rem', letterSpacing: '0.01em' }}>{card.name}</span>
                   <span
-                    className="rounded-full font-semibold"
-                    style={{ fontSize: '0.65rem', padding: '2px 8px', background: isPrimeCard ? 'rgba(26,20,6,0.18)' : 'rgba(0,0,0,0.22)', color: isPrimeCard ? '#1a1406' : '#fff' }}
+                    className="rounded-full font-extrabold"
+                    style={{ fontSize: '0.7rem', letterSpacing: '0.08em', padding: '3px 10px', background: card.badgeBg, color: isPrimeCard ? '#1a1406' : '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }}
                   >
-                    {st.badge ?? card.badge}
+                    {(st.badge ?? card.badge).toLocaleUpperCase('tr-TR')}
                   </span>
                 </span>
                 <span className="text-sm truncate" style={{ opacity: 0.9 }}>{card.desc}</span>
