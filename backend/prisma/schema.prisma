@@ -35,6 +35,7 @@ model User {
   refreshTokens             RefreshToken[]
   consents                  ConsentLog[]
   kyc                       KycSubmission?
+  profilePhotos             ProfilePhoto[]
   kycReviews                KycSubmission[]       @relation("KycReviewer")
   waitlistEntries           MatchingWaitlist[]
   subscriptions             Subscription[]
@@ -1174,4 +1175,28 @@ model WeeklySelection {
 
   @@unique([userId, year, weekNumber, type])
   @@index([year, weekNumber, type])
+}
+
+// ─────────────────────────────────────────────
+// PROFİL FOTOĞRAFI
+// ─────────────────────────────────────────────
+
+// Kullanıcının tek onaylı fotoğrafı (APPROVED) ve en fazla bir onay bekleyen fotoğrafı (PENDING) olur.
+// Dosyalar uploads/profile-photos/<userId>/ altında WebP. Onayda önceki onaylı, redde yeni fotoğraf dosya + kayıt silinir.
+model ProfilePhoto {
+  id         String             @id @default(cuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName   String
+  status     ProfilePhotoStatus @default(PENDING)
+  createdAt  DateTime           @default(now())
+  reviewedAt DateTime?
+
+  @@index([userId, status])
+  @@index([status])
+}
+
+enum ProfilePhotoStatus {
+  PENDING
+  APPROVED
 }

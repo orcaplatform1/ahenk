@@ -7,6 +7,7 @@ import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { PrismaModule } from "./prisma/prisma.module";
 import { RedisModule } from "./redis/redis.module";
 import { UsersModule } from "./users/users.module";
+import { ProfilePhotoModule } from "./profile-photo/profile-photo.module";
 import { AuthModule } from "./auth/auth.module";
 import { KycModule } from "./kyc/kyc.module";
 import { TestModule } from "./test/test.module";
@@ -54,6 +55,7 @@ import { isE2eFakeMode } from "./common/e2e/fake-layer";
     PrismaModule,
     RedisModule,
     UsersModule,
+    ProfilePhotoModule,
     AuthModule,
     KycModule,
     TestModule,

@@ -23,7 +23,8 @@ interface HistoryMeeting {
   id: string; date: string; type?: MasaTuru; venueName: string | null; cityName?: string | null; maxParticipants?: number;
   venueAddress?: string | null; venueMapsUrl?: string | null; venuePhotos?: VenuePhoto[];
   aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
-  participants?: { initials: string; gender: string | null; isSelf?: boolean; pair?: 'MINE' | 'OTHER' }[];
+  participants?: { initials: string; gender: string | null; isSelf?: boolean; pair?: 'MINE' | 'OTHER'; photoUrl?: string | null }[];
+  occupations?: string[];
   review?: { rating: number; comment: string | null } | null; blocked?: { initials: string; gender: string | null }[]; isReviewed?: boolean;
 }
 interface UserInfo { firstName: string; lastName: string; gender?: string | null }
@@ -163,7 +164,7 @@ function MasaBlock({ item, locked, cardType, userInfo, kanka, onCancelled, width
   if (locked || !m) return <EmptyMasaCard locked={locked} cardType={cardType} userInfo={userInfo} kanka={kanka} />;
   if (item.phase === 'REVEALED' && m.venueName) {
     const d: MasaDetayData = { id: m.id, type: m.type, maxParticipants: m.maxParticipants, scheduledAt: m.scheduledAt, sosEndsAt: m.sosEndsAt, venueName: m.venueName,
-      venueAddress: m.venueAddress, venueMapsUrl: m.venueMapsUrl, venuePhotos: m.venuePhotos, participants: m.participants, aiReport: m.aiReport };
+      venueAddress: m.venueAddress, venueMapsUrl: m.venueMapsUrl, venuePhotos: m.venuePhotos, participants: m.participants, occupations: m.occupations, aiReport: m.aiReport };
     return <Card><MasaDetayKarti masa={d} /></Card>;
   }
   if (m.participants.length > 0) {
@@ -192,7 +193,7 @@ function HistoryListInner({ history }: { history: HistoryMeeting[] }) {
       {history.map((m, i) => {
         const open = openId === m.id;
         const masa: MasaDetayData = { id: m.id, type: m.type, maxParticipants: m.maxParticipants, scheduledAt: m.date, sosEndsAt: m.date, venueName: m.venueName ?? 'Mekân bilgisi yok',
-          venueAddress: m.venueAddress, venueMapsUrl: m.venueMapsUrl, venuePhotos: m.venuePhotos, participants: m.participants ?? [], aiReport: m.aiReport };
+          venueAddress: m.venueAddress, venueMapsUrl: m.venueMapsUrl, venuePhotos: m.venuePhotos, participants: m.participants ?? [], occupations: m.occupations, aiReport: m.aiReport };
         return (
           <View key={m.id} style={{ borderBottomWidth: i < history.length - 1 ? 1 : 0, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44, paddingVertical: 6 }}>

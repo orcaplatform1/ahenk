@@ -19,6 +19,7 @@ const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; sup
   { href: '/admin/stats',        label: 'İstatistikler' },
   { href: '/admin/matches',      label: 'Masalar' },
   { href: '/admin/kyc',          label: 'KYC Bekleyenler' },
+  { href: '/admin/profil-fotograflari', label: 'Profil Fotoğrafları' },
   { href: '/admin/users',        label: 'Kullanıcılar' },
   { href: '/admin/subscriptions', label: 'Abonelikler' },
   { href: '/admin/alerts',       label: 'Uyarılar', alertKey: true },

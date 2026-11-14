@@ -11,15 +11,16 @@ import { formatMeetingTime, gColor, type MasaTuru } from '@/lib/masa';
 import { openMaps } from '@/lib/links';
 import { useAppRefresh } from '@/lib/useAppRefresh';
 import { DetayAvatar } from './DetayAvatar';
+import { PhotoViewer, pickAndUploadProfilePhoto } from './ProfilePhoto';
 import { KankaPairs, type KankaPerson } from './KankaPairs';
 import { InlineLH, Btn, BtnPrimary, Serif, T } from './ui';
 import { c, sans, tw } from '@/theme/theme';
 
-export interface DetayParticipant { initials: string; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean }
+export interface DetayParticipant { initials: string; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean; photoUrl?: string | null }
 export interface VenuePhoto { url: string; caption?: string }
 export interface MasaDetayData {
   id: string; type?: MasaTuru; maxParticipants?: number; scheduledAt: string; sosEndsAt: string; venueName: string;
-  venueAddress?: string | null; venueMapsUrl?: string | null; venuePhotos?: VenuePhoto[]; participants: DetayParticipant[];
+  venueAddress?: string | null; venueMapsUrl?: string | null; venuePhotos?: VenuePhoto[]; participants: DetayParticipant[]; occupations?: string[];
   aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
 }
 interface ChatMsg { id: string; content: string; createdAt: string; isOwn: boolean; senderInitials: string; senderGender?: string | null; seatNo?: number | null; reportedByMe: boolean }
@@ -310,6 +311,9 @@ function AiReport({ report }: { report?: MasaDetayData['aiReport'] }) {
 function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; archive?: boolean }) {
   const live = !archive;
   const [lightbox, setLightbox] = useState<number | null>(null);
+  // Katılımcı profil fotoğrafı tam ekran; kendi fotoğrafında düzenleme butonu
+  const [viewer, setViewer] = useState<{ url: string; self: boolean } | null>(null);
+  const openPhoto = (p: { photoUrl?: string | null; isSelf?: boolean }) => { if (p.photoUrl) setViewer({ url: p.photoUrl, self: !!p.isSelf }); };
   const [onMyWayDone, setOnMyWayDone] = useState(false);
   const [onMyWayLoading, setOnMyWayLoading] = useState(false);
   const [onMyWayWarn, setOnMyWayWarn] = useState('');
@@ -371,6 +375,8 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
   return (
     <View>
       {lightbox !== null && <Lightbox photos={photos} start={lightbox} onClose={() => setLightbox(null)} />}
+      <PhotoViewer url={viewer?.url ?? null} visible={!!viewer} onClose={() => setViewer(null)}
+        onEdit={viewer?.self ? () => { setViewer(null); pickAndUploadProfilePhoto(true).catch(() => undefined); } : undefined} />
       {showSos && <SosModal selected={threats} onToggle={t => setThreats(p => (p.includes(t) ? p.filter(x => x !== t) : [...p, t]))} onConfirm={handleSos}
         onClose={() => { setShowSos(false); setLocError(null); setSosError(''); setThreats([]); }} loading={sosLoading} locError={locError} error={sosError} />}
 
@@ -410,13 +416,23 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
       <View style={{ marginBottom: 20 }}>
         <T w={700} style={{ marginBottom: 12, fontSize: 9, letterSpacing: 1.26 }}>{isOneOnOne ? 'BAŞ BAŞA' : 'KATILIMCILAR'}</T>
         {masa.type === 'KANKA' ? (
-          <KankaPairs mine={masa.participants.filter(p => p.pair === 'MINE') as KankaPerson[]} other={masa.participants.filter(p => p.pair === 'OTHER') as KankaPerson[]} />
+          <KankaPairs mine={masa.participants.filter(p => p.pair === 'MINE') as KankaPerson[]} other={masa.participants.filter(p => p.pair === 'OTHER') as KankaPerson[]} onPhoto={openPhoto} />
         ) : (
           <View style={isOneOnOne ? { flexDirection: 'row', gap: 10, flexWrap: 'wrap' } : { flexDirection: 'row', flexWrap: 'wrap', gap: 10, width: 48 * 4 + 30 }}>
-            {ordered.map((p, i) => <DetayAvatar key={`${p.initials}-${i}`} participant={p} delay={0.52 + i * 0.1} />)}
+            {ordered.map((p, i) => p.photoUrl
+              ? <Pressable key={`${p.initials}-${i}`} onPress={() => openPhoto(p)} accessibilityRole="imagebutton" accessibilityLabel="Profil fotoğrafını büyüt" hitSlop={4}><DetayAvatar participant={p} delay={0.52 + i * 0.1} /></Pressable>
+              : <DetayAvatar key={`${p.initials}-${i}`} participant={p} delay={0.52 + i * 0.1} />)}
           </View>
         )}
       </View>
+
+      {/* Meslekler: her satırda bir meslek, yalnız yazı; sıra sunucuda her istekte karışık, kime ait olduğu gösterilmez */}
+      {!!masa.occupations?.length && (
+        <View style={{ marginBottom: 20 }}>
+          <T w={700} style={{ marginBottom: 8, fontSize: 13 }}>Meslekler:</T>
+          {masa.occupations.map((o, i) => <T key={i} style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 20 }}>{o}</T>)}
+        </View>
+      )}
 
       <AiReport report={masa.aiReport} />
 

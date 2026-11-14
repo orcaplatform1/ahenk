@@ -1,3 +1,4 @@
+import { approvedPhotoMap } from "../profile-photo/profile-photo.util";
 import { writeSeatScores } from "../matching/seat-scores";
 import {
   Injectable,
@@ -1467,6 +1468,9 @@ export class AdminService {
       },
     });
     const isSuperadmin = viewerRole === UserRole.SUPERADMIN;
+    const waiting = await this.matching.getOneOnOneWaiting();
+    // Onaylı profil fotoğrafı olan kullanıcıda kısaltma yerine fotoğraf
+    const photos = await approvedPhotoMap(this.prisma, [...meetings.flatMap((m) => m.participants.map((p) => p.user.id)), ...waiting.map((w) => w.userId)]);
     const tables = meetings.map((m) => {
       const males = m.participants.filter((p) => p.user.profile?.gender === Gender.MALE).length;
       const females = m.participants.length - males;
@@ -1485,6 +1489,7 @@ export class AdminService {
           userId: p.user.id,
           initials: `${p.user.profile?.firstName?.[0] ?? '?'}.${p.user.profile?.lastName?.[0] ?? '?'}.`,
           gender: p.user.profile?.gender ?? null,
+          photoUrl: photos.get(p.user.id) ?? null,
           age: p.user.profile?.birthDate
             ? Math.floor((Date.now() - p.user.profile.birthDate.getTime()) / (365.25 * 24 * 3600 * 1000))
             : null,
@@ -1496,7 +1501,7 @@ export class AdminService {
       group: tables.filter((t) => t.type === MeetingType.GROUP),
       oneOnOne: tables.filter((t) => t.type === MeetingType.ONE_ON_ONE),
       kanka: tables.filter((t) => t.type === MeetingType.KANKA),
-      waiting: await this.matching.getOneOnOneWaiting(),
+      waiting: waiting.map((w) => ({ ...w, photoUrl: photos.get(w.userId) ?? null })),
     };
   }
 

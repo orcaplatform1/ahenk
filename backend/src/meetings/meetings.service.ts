@@ -1,3 +1,4 @@
+import { approvedPhotoMap } from "../profile-photo/profile-photo.util";
 import {
   Injectable,
   NotFoundException,
@@ -29,6 +30,13 @@ function googleMapsUrl(name?: string | null, address?: string | null): string | 
   return q ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` : null;
 }
 
+// Fisher–Yates karıştırma
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
 @Injectable()
 export class MeetingsService {
   constructor(
@@ -54,6 +62,7 @@ export class MeetingsService {
           user: {
             select: {
               isBot: true,
+              occupationSector: true,
               profile: { select: { firstName: true, lastName: true, gender: true } },
             },
           },
@@ -123,6 +132,9 @@ export class MeetingsService {
       ? await this.kankaCancelRightUsed(userId)
       : false;
 
+    // Masa detay kartı: katılımcıların onaylı profil fotoğrafları
+    const photos = await approvedPhotoMap(this.prisma, parts.flatMap(({ meeting }) => meeting.participants.map((p) => p.userId)));
+
     const items = await Promise.all(
       parts.map(async ({ meeting: m }) => {
         const sat10UTC = new Date(m.scheduledAt.getTime() - 10 * 60 * 60 * 1000);
@@ -140,6 +152,7 @@ export class MeetingsService {
             return {
               initials: badges.get(p.userId)?.label ?? '?.?.',
               gender: p.user.profile?.gender ?? null,
+              photoUrl: photos.get(p.userId) ?? null,
               joinedAt: p.createdAt, // Katılım listesi giriş sırası
               ...(p.userId === userId && { isSelf: true }),
               ...(p.status === ParticipantStatus.CANCELLED && { cancelled: true }), // Grupta iptal son anına kadar listede kalır
@@ -149,7 +162,13 @@ export class MeetingsService {
             };
           });
 
-        const photos = [
+        // Meslekler: kime ait olduğu belli olmasın diye her istekte karışık sıra, kişiyle eşleşme bilgisi yok
+        const occupations = shuffled(m.participants
+          .filter((p) => !(p.status === ParticipantStatus.CANCELLED && hideCancelled))
+          .map((p) => p.user.occupationSector)
+          .filter((o): o is string => !!o));
+
+        const venuePhotos = [
           { url: m.venuePhotoUrl,  caption: m.venuePhotoCaption1 ?? 'Alan 1' },
           { url: m.venuePhoto2Url, caption: m.venuePhotoCaption2 ?? 'Alan 2' },
           { url: m.venuePhoto3Url, caption: m.venuePhotoCaption3 ?? 'Alan 3' },
@@ -180,7 +199,8 @@ export class MeetingsService {
               venueName: m.locationText,
               venueAddress: m.venueAddress,
               venueMapsUrl: m.locationUrl ?? googleMapsUrl(m.locationText, m.venueAddress),
-              venuePhotos: photos,
+              venuePhotos,
+              occupations,
               aiReport,
             }),
           },
@@ -238,6 +258,7 @@ export class MeetingsService {
                         neuroticism: true,
                       },
                     },
+                    occupationSector: true,
                     profile: { select: { primaryCity: true, firstName: true, lastName: true, gender: true } },
                   },
                 },
@@ -247,6 +268,7 @@ export class MeetingsService {
         },
       },
     });
+    const pastPhotos = await approvedPhotoMap(this.prisma, participations.flatMap((p) => p.meeting.participants.map((x) => x.userId)));
 
     const reviews = await this.prisma.meetingReview.findMany({
       where: { reviewerId: userId },
@@ -308,8 +330,11 @@ export class MeetingsService {
           { url: m.venuePhoto3Url, caption: m.venuePhotoCaption3 ?? 'Alan 3' },
         ].filter((x) => !!x.url),
         aiReport: m.aiReport ?? null,
+        // Meslekler: her istekte karışık sıra, kişiyle eşleşme bilgisi yok
+        occupations: shuffled(m.participants.map((x) => x.user.occupationSector).filter((o): o is string => !!o)),
         participants: m.participants.map((x) => ({
           ...person(x),
+          photoUrl: pastPhotos.get(x.userId) ?? null,
           ...(x.userId === userId && { isSelf: true }),
           ...(m.type === MeetingType.KANKA && {
             pair: x.userId === userId || x.userId === me?.kankaPartnerId ? ('MINE' as const) : ('OTHER' as const),

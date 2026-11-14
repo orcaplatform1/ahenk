@@ -11,6 +11,8 @@ export interface Participant {
   pair?: 'MINE' | 'OTHER';
   joinedAt?: string;
   cancelled?: boolean;
+  isSelf?: boolean;
+  photoUrl?: string | null;
 }
 
 export interface DashboardItem {
@@ -27,6 +29,7 @@ export interface DashboardItem {
     venueAddress?: string;
     venueMapsUrl?: string;
     venuePhotos?: Array<{ url: string; caption?: string }>;
+    occupations?: string[];
     aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
     cancelRightUsed?: boolean;
   };

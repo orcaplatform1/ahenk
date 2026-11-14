@@ -10,14 +10,14 @@ const FEMALE_C = '#f48fb1';
 
 const REFRESH_SEC = 30;
 
-interface OpenParticipant { userId: string; initials: string; gender: string | null; age: number | null; isBot?: boolean; }
+interface OpenParticipant { userId: string; initials: string; gender: string | null; age: number | null; isBot?: boolean; photoUrl?: string | null; }
 interface OpenTable {
   id: string; type: 'GROUP' | 'ONE_ON_ONE'; scheduledAt: string; city: string | null;
   maxParticipants: number; males: number; females: number; emptySeats: number;
   missing: { male: number; female: number };
   participants: OpenParticipant[];
 }
-interface WaitingUser { userId: string; initials: string; gender: string | null; age: number | null; city: string | null; cycleNo: number; }
+interface WaitingUser { userId: string; initials: string; gender: string | null; age: number | null; city: string | null; cycleNo: number; photoUrl?: string | null; }
 interface OpenResponse { group: OpenTable[]; oneOnOne: OpenTable[]; kanka?: OpenTable[]; waiting: WaitingUser[]; }
 interface BotOption { id: string; name: string; gender: string | null; age: number | null; }
 
@@ -71,6 +71,11 @@ function BotPicker({ listUrl, placeUrl, onPlaced, onError }: { listUrl: string; 
   );
 }
 
+// Onaylı profil fotoğrafı olan kullanıcıda kısaltma yerine küçük yuvarlak fotoğraf
+function PhotoDot({ url }: { url: string }) {
+  return <img src={url} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', display: 'block' }} />;
+}
+
 function TableCard({ t, isSuperadmin, onUserClick, onChanged, onError }: {
   t: OpenTable; isSuperadmin: boolean; onUserClick: (id: string) => void; onChanged: () => void; onError: (m: string) => void;
 }) {
@@ -93,9 +98,10 @@ function TableCard({ t, isSuperadmin, onUserClick, onChanged, onError }: {
             style={{
               padding: '4px 10px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontFamily: MONO,
               background: 'transparent', border: `1px solid ${genderColor(p.gender)}`, color: TEXT,
+              display: 'inline-flex', alignItems: 'center',
             }}
           >
-            {p.initials}{p.age !== null ? ` ${p.age}` : ''}{p.isBot ? ' · bot' : ''}
+            {p.photoUrl ? <PhotoDot url={p.photoUrl} /> : p.initials}{p.age !== null ? ` ${p.age}` : ''}{p.isBot ? ' · bot' : ''}
           </button>
         ))}
         {Array.from({ length: t.emptySeats }, (_, i) => (
@@ -133,9 +139,9 @@ function WaitingRow({ w, isSuperadmin, onUserClick, onChanged, onError }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <button
           onClick={() => onUserClick(w.userId)}
-          style={{ padding: '4px 10px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontFamily: MONO, background: 'transparent', border: `1px solid ${genderColor(w.gender)}`, color: TEXT }}
+          style={{ padding: '4px 10px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontFamily: MONO, background: 'transparent', border: `1px solid ${genderColor(w.gender)}`, color: TEXT, display: 'inline-flex', alignItems: 'center' }}
         >
-          {w.initials} {genderShort(w.gender)}{w.age !== null ? ` ${w.age}` : ''}
+          {w.photoUrl ? <PhotoDot url={w.photoUrl} /> : w.initials} {genderShort(w.gender)}{w.age !== null ? ` ${w.age}` : ''}
         </button>
         <span style={{ fontSize: 11, color: MUTED }}>{w.city ?? 'Şehir yok'}</span>
         <span style={{ fontSize: 11, fontWeight: 600, color: first ? AMBER : TEXT }}>

@@ -1,3 +1,4 @@
+import { approvedPhotoUrl } from "../profile-photo/profile-photo.util";
 import {
   Injectable,
   UnauthorizedException,
@@ -541,6 +542,9 @@ export class AuthService {
         ? { count: noShowCount, remaining: Math.max(NO_SHOW_WARNING_LIMIT - noShowCount, 0) }
         : null,
       maintenanceMode,
+      // Onaylı profil fotoğrafı (yoksa null) ve onay bekleyen fotoğraf var mı
+      profilePhotoUrl: await approvedPhotoUrl(this.prisma, user.id),
+      profilePhotoPending: (await this.prisma.profilePhoto.count({ where: { userId: user.id, status: 'PENDING' } })) > 0,
       profile: profile ? {
         gender: profile.gender,
         birthDate: profile.birthDate,

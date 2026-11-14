@@ -3,12 +3,13 @@ import * as SecureStore from 'expo-secure-store';
 // Üye oturumu: erişim ve yenileme token'ları expo-secure-store'da (S-20)
 const ACCESS = 'ahenk_access';
 const REFRESH = 'ahenk_refresh';
-// Oturum türü (üye / mekân). Mekân token'ları ayrı anahtarlarda (çerez kullanılmaz)
+// Oturum türü (yalnız üye; mekân girişi mobil uygulamada yok)
 const KIND = 'ahenk_kind';
-const V_ACCESS = 'ahenk_venue_access';
-const V_REFRESH = 'ahenk_venue_refresh';
 
-export type SessionKind = 'member' | 'venue';
+export type SessionKind = 'member';
+// "Bu cihazda beni hatırla": çıkışta yenileme token'ı ve kullanıcının adı bu anahtarlarda saklanır (Face ID / parmak izi ile geri açılır)
+const REMEMBER_REFRESH = 'ahenk_remember_refresh';
+const REMEMBER_NAME = 'ahenk_remember_name';
 
 let accessCache: string | null | undefined;
 
@@ -35,15 +36,29 @@ export async function clearTokens() {
 export async function getKind(): Promise<SessionKind | null> {
   return (await SecureStore.getItemAsync(KIND)) as SessionKind | null;
 }
-export async function setVenueTokens(access: string, refresh: string) {
-  await SecureStore.setItemAsync(V_ACCESS, access);
-  await SecureStore.setItemAsync(V_REFRESH, refresh);
-  await SecureStore.setItemAsync(KIND, 'venue');
+// Çıkış "Bu cihazda beni hatırla": oturum kapanır (erişim token'ı ve aktif oturum silinir), yenileme token'ı cihazda hatırlanır
+export async function rememberDevice(firstName: string) {
+  const refresh = await getRefresh();
+  await clearTokens();
+  if (!refresh) return;
+  await SecureStore.setItemAsync(REMEMBER_REFRESH, refresh);
+  await SecureStore.setItemAsync(REMEMBER_NAME, firstName);
 }
-export async function getVenueAccess() { return SecureStore.getItemAsync(V_ACCESS); }
-export async function getVenueRefresh() { return SecureStore.getItemAsync(V_REFRESH); }
-export async function clearVenueTokens() {
-  await SecureStore.deleteItemAsync(V_ACCESS);
-  await SecureStore.deleteItemAsync(V_REFRESH);
-  await SecureStore.deleteItemAsync(KIND);
+export async function getRemembered(): Promise<{ refresh: string; firstName: string } | null> {
+  const refresh = await SecureStore.getItemAsync(REMEMBER_REFRESH);
+  if (!refresh) return null;
+  return { refresh, firstName: (await SecureStore.getItemAsync(REMEMBER_NAME)) ?? '' };
+}
+// Hatırlanan yenileme token'ını aktif oturuma geri koyar (Face ID / parmak izi doğrulamasından sonra)
+export async function restoreRemembered(): Promise<boolean> {
+  const refresh = await SecureStore.getItemAsync(REMEMBER_REFRESH);
+  if (!refresh) return false;
+  await SecureStore.setItemAsync(REFRESH, refresh);
+  await SecureStore.setItemAsync(KIND, 'member');
+  return true;
+}
+// "Bu cihazda beni unut" ve yeni girişte: cihazdaki hatırlama bilgisi silinir
+export async function forgetDevice() {
+  await SecureStore.deleteItemAsync(REMEMBER_REFRESH);
+  await SecureStore.deleteItemAsync(REMEMBER_NAME);
 }

@@ -171,12 +171,28 @@ export default function EslesmePaneli() {
             <LiveSonar sonar={pulse?.sonar ?? null} scanOff={scanOff} />
 
             {/* Katılım */}
-            <Card style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 6 }}>
-              <Title>{people.length > 0 ? `Katılım ${people.length}/${total}:` : 'Katılım:'}</Title>
-              {people.map((p, i) => (
-                <T key={`${p.initials}-${i}`} w={700} style={{ fontSize: 14, lineHeight: 21, letterSpacing: 0.28, color: gColor(p.gender) }}>{label(p.initials)}</T>
-              ))}
-            </Card>
+            {tab === 'GROUP' ? (
+              // Grup: başlık tek başına, isimler bir alt satırda; her kısaltma cinsiyet renkli çerçeveli yuvarlak dairede
+              <Card>
+                <Title>{people.length > 0 ? `Katılım ${people.length}/${total}:` : 'Katılım:'}</Title>
+                {people.length > 0 && (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+                    {people.map((p, i) => (
+                      <View key={`${p.initials}-${i}`} style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: gColor(p.gender), alignItems: 'center', justifyContent: 'center' }}>
+                        <T w={700} style={{ fontSize: 12, letterSpacing: 0.24, color: gColor(p.gender) }}>{label(p.initials)}</T>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </Card>
+            ) : (
+              <Card style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 6 }}>
+                <Title>{people.length > 0 ? `Katılım ${people.length}/${total}:` : 'Katılım:'}</Title>
+                {people.map((p, i) => (
+                  <T key={`${p.initials}-${i}`} w={700} style={{ fontSize: 14, lineHeight: 21, letterSpacing: 0.28, color: gColor(p.gender) }}>{label(p.initials)}</T>
+                ))}
+              </Card>
+            )}
 
             {/* Canlı Akış */}
             <Card>

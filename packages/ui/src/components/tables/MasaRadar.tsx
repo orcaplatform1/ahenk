@@ -85,6 +85,8 @@ export interface Participant {
   pair?: 'MINE' | 'OTHER';
   joinedAt?: string; // Masaya giriş zamanı (Katılım listesi sırası)
   cancelled?: boolean; // İptal etti ama iptal son anına kadar listede dönüyor (Katılım alanında görünür)
+  isSelf?: boolean;
+  photoUrl?: string | null; // Onaylı profil fotoğrafı (yalnız masa detay kartında gösterilir)
 }
 
 export interface MasaData {
@@ -116,6 +118,7 @@ export interface DashboardItem {
     venueAddress?: string;
     venueMapsUrl?: string;
     venuePhotos?: Array<{ url: string; caption?: string }>;
+    occupations?: string[];
     aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
     cancelRightUsed?: boolean;
   };
@@ -232,8 +235,8 @@ function RevealCountdown({ scheduledAt }: { scheduledAt: string }) {
     <div style={{ display: 'flex', justifyContent: 'center', gap: 10, margin: '6px 0 10px' }}>
       {units.map(u => (
         <div key={u.lbl} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 30 }}>
-          <span style={{ fontFamily: '"SF Mono","Fira Code",monospace', fontSize: 18, fontWeight: 700, color: '#f5f5f5', lineHeight: 1 }}>{u.val}</span>
-          <span style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter, sans-serif', marginTop: 3 }}>{u.lbl}</span>
+          <span className={`ll-serif${u.lbl === 'SN' ? ' ll-blink' : ''}`} style={{ fontSize: 40, lineHeight: 1 }}>{u.val}</span>
+          <span style={{ fontSize: 10, color: '#a39c93', marginTop: 6 }}>{u.lbl}</span>
         </div>
       ))}
     </div>
@@ -334,7 +337,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
 
       <div style={{ textAlign: 'center', marginTop: 20, padding: '0 4px' }}>
         <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-serif, "DM Serif Display", serif)', fontSize: 18, fontWeight: 400, color: '#27ae60' }}>
-          {locked ? 'Masanız kuruldu. Mekan bilgileri masa detayında gözükecektir.' : full ? 'Masanız tamamlandı.' : 'Masanız Oluşturuluyor!'}
+          {locked ? 'Mekan bilgileri masa detayında gözükecektir.' : full ? 'Masanız tamamlandı.' : 'Masanız Oluşturuluyor!'}
         </p>
         {locked && <RevealCountdown scheduledAt={scheduledAt} />}
         <p style={{ margin: '0 0 8px', fontSize: 12, color: '#888', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>

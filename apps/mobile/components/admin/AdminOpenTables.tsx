@@ -1,6 +1,7 @@
 // apps/web/components/AdminOpenTables.tsx karşılığı: bu haftanın açık masaları + eşi bekleyenler, 30 sn'de bir yenilenir
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, View } from 'react-native';
+import { BASE } from '@/lib/config';
 import { api } from '@/lib/api';
 import { Btn } from '../ui';
 import { ACard, ALabel, AMono, AT } from './AdminUi';
@@ -11,20 +12,31 @@ const MALE_C = '#4fc3f7';
 const FEMALE_C = '#f48fb1';
 const REFRESH_SEC = 30;
 
-interface OpenParticipant { userId: string; initials: string; gender: string | null; age: number | null; isBot?: boolean }
+interface OpenParticipant { userId: string; initials: string; gender: string | null; age: number | null; isBot?: boolean; photoUrl?: string | null }
 interface OpenTable {
   id: string; type: 'GROUP' | 'ONE_ON_ONE'; scheduledAt: string; city: string | null;
   maxParticipants: number; males: number; females: number; emptySeats: number;
   missing: { male: number; female: number };
   participants: OpenParticipant[];
 }
-interface WaitingUser { userId: string; initials: string; gender: string | null; age: number | null; city: string | null; cycleNo: number }
+interface WaitingUser { userId: string; initials: string; gender: string | null; age: number | null; city: string | null; cycleNo: number; photoUrl?: string | null }
 interface OpenResponse { group: OpenTable[]; oneOnOne: OpenTable[]; kanka?: OpenTable[]; waiting: WaitingUser[] }
 interface BotOption { id: string; name: string; gender: string | null; age: number | null }
 
 const genderColor = (g: string | null) => (g === 'MALE' ? MALE_C : g === 'FEMALE' ? FEMALE_C : adm.muted);
 const genderShort = (g: string | null) => (g === 'MALE' ? 'E' : g === 'FEMALE' ? 'K' : '—');
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('tr-TR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
+
+// Onaylı profil fotoğrafı olan kullanıcıda kısaltma yerine küçük yuvarlak fotoğraf (admInitials çerçevesiyle); en az 44 pt dokunma alanı
+function PhotoChip({ url, color, text, onPress }: { url: string; color: string; text: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel="Kullanıcı detayı" hitSlop={10}
+      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 99, borderWidth: 1, borderColor: color }}>
+      <Image source={{ uri: url.startsWith('/') ? `${BASE}${url}` : url }} style={{ width: 20, height: 20, borderRadius: 10 }} />
+      {!!text && <AMono style={{ fontSize: 11, color: '#e2e8f0' }}>{text}</AMono>}
+    </Pressable>
+  );
+}
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <ALabel style={{ marginBottom: 10 }}>{children}</ALabel>;
@@ -66,8 +78,10 @@ function TableCard({ t, isSuperadmin, onUserClick, onChanged, onError }: { t: Op
       </View>
       <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
         {t.participants.map(p => (
-          <Btn key={p.userId} variant="admInitials" style={{ borderColor: genderColor(p.gender) }} accessibilityLabel="Kullanıcı detayı" onPress={() => onUserClick(p.userId)}
-            label={`${p.initials}${p.age !== null ? ` ${p.age}` : ''}${p.isBot ? ' · bot' : ''}`} />
+          p.photoUrl
+            ? <PhotoChip key={p.userId} url={p.photoUrl} color={genderColor(p.gender)} text={`${p.age !== null ? ` ${p.age}` : ''}${p.isBot ? ' · bot' : ''}`} onPress={() => onUserClick(p.userId)} />
+            : <Btn key={p.userId} variant="admInitials" style={{ borderColor: genderColor(p.gender) }} accessibilityLabel="Kullanıcı detayı" onPress={() => onUserClick(p.userId)}
+                label={`${p.initials}${p.age !== null ? ` ${p.age}` : ''}${p.isBot ? ' · bot' : ''}`} />
         ))}
         {Array.from({ length: t.emptySeats }, (_, i) => (
           <AT key={`e${i}`} style={{ paddingVertical: 4, paddingHorizontal: 10, borderRadius: 99, fontSize: 11, color: adm.muted, borderWidth: 1, borderStyle: 'dashed', borderColor: adm.border, overflow: 'hidden' }}>boş</AT>
@@ -93,8 +107,10 @@ function WaitingRow({ w, isSuperadmin, onUserClick, onChanged, onError }: { w: W
   return (
     <ACard>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <Btn variant="admInitials" style={{ borderColor: genderColor(w.gender) }} onPress={() => onUserClick(w.userId)}
-          label={`${w.initials} ${genderShort(w.gender)}${w.age !== null ? ` ${w.age}` : ''}`} />
+        {w.photoUrl
+          ? <PhotoChip url={w.photoUrl} color={genderColor(w.gender)} text={` ${genderShort(w.gender)}${w.age !== null ? ` ${w.age}` : ''}`} onPress={() => onUserClick(w.userId)} />
+          : <Btn variant="admInitials" style={{ borderColor: genderColor(w.gender) }} onPress={() => onUserClick(w.userId)}
+              label={`${w.initials} ${genderShort(w.gender)}${w.age !== null ? ` ${w.age}` : ''}`} />}
         <AT style={{ fontSize: 11, color: adm.muted }}>{w.city ?? 'Şehir yok'}</AT>
         <AT w={600} style={{ fontSize: 11, color: first ? adm.amber : adm.text }}>{w.cycleNo}. döngü{first ? ', ilk döngüde bot eklenmez' : ''}</AT>
         {isSuperadmin && <Btn variant="admOpenBtn" style={{ marginLeft: 'auto' }} label={botOpen ? 'Kapat' : 'Bot ile masa kur'} onPress={() => setBotOpen(o => !o)} />}

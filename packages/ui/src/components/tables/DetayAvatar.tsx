@@ -14,7 +14,7 @@ const AV_R = AV_D / 2;
 const AV_BR = AV_R - 2.5;
 const CIRCUMF = 2 * Math.PI * AV_BR;
 
-export function DetayAvatar({ participant, delay }: { participant: { initials?: string | null; gender?: string | null }; delay: number }) {
+export function DetayAvatar({ participant, delay }: { participant: { initials?: string | null; gender?: string | null; photoUrl?: string | null }; delay: number }) {
   const color = gColor(participant.gender);
   const bg    = gBg(participant.gender);
 
@@ -53,7 +53,11 @@ export function DetayAvatar({ participant, delay }: { participant: { initials?: 
           transition={{ delay: delay + 1.35, duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
         />
       </svg>
-      <div style={{
+      {participant.photoUrl && (
+        // Onaylı profil fotoğrafı: kısaltma yerine, cinsiyet renkli çerçevenin içinde
+        <img src={participant.photoUrl} alt="Profil fotoğrafı" style={{ position: 'absolute', inset: 4, width: AV_D - 8, height: AV_D - 8, borderRadius: '50%', objectFit: 'cover', pointerEvents: 'none' }} />
+      )}
+      {!participant.photoUrl && <div style={{
         position: 'absolute', inset: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: label.length > 4 ? 10 : 11, fontWeight: 700, color: '#f0f0f0',
@@ -61,7 +65,7 @@ export function DetayAvatar({ participant, delay }: { participant: { initials?: 
         userSelect: 'none', pointerEvents: 'none',
       }}>
         {label}
-      </div>
+      </div>}
     </motion.div>
   );
 }

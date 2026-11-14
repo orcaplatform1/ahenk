@@ -25,6 +25,24 @@ export default function LiveParticipation({ tab, item, self, kanka, scanning }: 
   const people: Person[] = item ? seated : waiting;
   const total = item?.meeting.maxParticipants ?? CAPACITY[tab];
 
+  // Grup: başlık tek başına, isimler bir alt satırda; her kısaltma cinsiyet renkli çerçeveli yuvarlak dairede
+  if (tab === 'GROUP') {
+    return (
+      <section className="ll-card" aria-live="polite">
+        <h2 className="ll-title">{people.length > 0 ? `Katılım ${people.length}/${total}:` : 'Katılım:'}</h2>
+        {people.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+            {people.map((p, i) => (
+              <span key={`${p.initials}-${i}`} style={{ width: 44, height: 44, borderRadius: '50%', border: `2px solid ${gColor(p.gender)}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, letterSpacing: '0.02em', fontFamily: 'Inter, sans-serif', color: gColor(p.gender) }}>
+                {label(p.initials)}
+              </span>
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
+
   return (
     <section className="ll-card" aria-live="polite" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 6 }}>
       <h2 className="ll-title">{people.length > 0 ? `Katılım ${people.length}/${total}:` : 'Katılım:'}</h2>

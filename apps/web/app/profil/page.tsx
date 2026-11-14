@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { TabProfilim, TabProfilimSkeleton } from './tabs/TabProfilim';
+import { ProfilePhotoHeader } from '@/components/ProfilePhoto';
+import { buildInitials } from '@ahenk/ui';
 import { TabTest } from './tabs/TabTest';
 import { TabMasalar } from './tabs/TabMasalar';
 import { TabPaket } from './tabs/TabPaket';
@@ -27,6 +29,7 @@ interface UserData {
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null;
   kankamla?: { open: boolean };
   maintenanceMode?: boolean;
+  profilePhotoUrl?: string | null;
   profile?: {
     gender?: string;
     birthDate?: string;
@@ -155,6 +158,7 @@ function ProfilPage() {
             exit={{ opacity: 0, y: 6 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
+            {activeTab === 'profil'  && <ProfilePhotoHeader photoUrl={user.profilePhotoUrl} initials={buildInitials(user.firstName, user.lastName)} gender={user.profile?.gender} kycApproved={kycApproved} />}
             {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} activePlan={user.activePlan ?? null} />}
             {activeTab === 'test'    && <TabTest />}
             {activeTab === 'masalar' && <TabMasalar userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender }} kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}

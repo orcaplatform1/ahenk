@@ -33,7 +33,7 @@ const SMALL_RINGS: Partial<Record<MasaTuru, { r: number; stroke: number; rings: 
   KANKA: { r: 9.557, stroke: 1.686, rings: [[-14.1, -8.1], [4.7, -8.1], [14.1, 8.1], [-4.7, 8.1]] },
 };
 
-function Rings({ type }: { type: MasaTuru }) {
+export function Rings({ type }: { type: MasaTuru }) {
   const small = SMALL_RINGS[type];
   if (small) {
     return (

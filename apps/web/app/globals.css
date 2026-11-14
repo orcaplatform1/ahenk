@@ -324,6 +324,9 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .ll-ring-copper { stroke: #3a2e2e; transition: stroke 0.5s ease; }
 .ll-tab.is-on .ll-ring-red { stroke: #ff3b30; }
 .ll-tab.is-on .ll-ring-copper { stroke: #e8823a; }
+/* Haftalık seçim kartlarındaki tür ikonu: eşleşme alanındaki halkaların açık (renkli) hâli, dönmez */
+.ll-ws-icon .ll-ring-red { stroke: #ff3b30; }
+.ll-ws-icon .ll-ring-copper { stroke: #e8823a; }
 .ll-tab-label { font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; white-space: nowrap; color: #8f887f; transition: color 0.5s ease; }
 .ll-tab.is-on .ll-tab-label { color: #fff; }
 .ll-tab-status { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; font-size: 10.5px; line-height: 1.2; color: #a39c93; }

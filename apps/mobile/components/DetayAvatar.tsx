@@ -1,6 +1,7 @@
 // packages/ui/src/components/tables/DetayAvatar.tsx karşılığı (48px, 2.5 kenar, 11px yazı)
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Text, View } from 'react-native';
+import { Animated, Easing, Image, Text, View } from 'react-native';
+import { BASE } from '@/lib/config';
 import Svg, { Circle } from 'react-native-svg';
 import { detayAvatar, sans } from '@/theme/theme';
 import { gBg, gColor, initialsLabel } from '@/lib/masa';
@@ -9,7 +10,7 @@ import { useReduceMotion } from '@/lib/motion';
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export function DetayAvatar({ participant, delay = 0, size = detayAvatar.d, animated = true }: {
-  participant: { initials?: string | null; gender?: string | null }; delay?: number; size?: number; animated?: boolean;
+  participant: { initials?: string | null; gender?: string | null; photoUrl?: string | null }; delay?: number; size?: number; animated?: boolean;
 }) {
   const reduce = useReduceMotion();
   const anim = animated && !reduce;
@@ -46,9 +47,15 @@ export function DetayAvatar({ participant, delay = 0, size = detayAvatar.d, anim
           strokeLinecap="round" strokeDasharray={`${circ}`} strokeDashoffset={dash} rotation={-90} origin={`${R}, ${R}`} />
         {anim && <AnimatedCircle cx={R} cy={R} r={BR} fill="none" stroke={color} strokeWidth={detayAvatar.strokeWidth * k} opacity={glow} />}
       </Svg>
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-        <Text numberOfLines={1} style={{ fontFamily: sans(700), fontSize, color: detayAvatar.textColor, letterSpacing: fontSize * detayAvatar.letterSpacing }}>{label}</Text>
-      </View>
+      {participant.photoUrl ? (
+        // Onaylı profil fotoğrafı: kısaltma yerine, cinsiyet renkli çerçevenin içinde
+        <Image source={{ uri: participant.photoUrl.startsWith('/') ? `${BASE}${participant.photoUrl}` : participant.photoUrl }} accessibilityLabel="Profil fotoğrafı"
+          style={{ position: 'absolute', top: detayAvatar.strokeWidth * k * 1.6, left: detayAvatar.strokeWidth * k * 1.6, width: size - detayAvatar.strokeWidth * k * 3.2, height: size - detayAvatar.strokeWidth * k * 3.2, borderRadius: size / 2 }} />
+      ) : (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+          <Text numberOfLines={1} style={{ fontFamily: sans(700), fontSize, color: detayAvatar.textColor, letterSpacing: fontSize * detayAvatar.letterSpacing }}>{label}</Text>
+        </View>
+      )}
     </Animated.View>
   );
 }

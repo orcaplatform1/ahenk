@@ -11,7 +11,7 @@ import { ShakeReport } from '@/components/ShakeReport';
 import { WinbackHost } from '@/components/Winback';
 import { tabBar, tabIcon } from '@/theme/theme';
 
-interface Me { firstName: string; lastName: string; profile?: { gender?: string | null } }
+interface Me { firstName: string; lastName: string; profilePhotoUrl?: string | null; profile?: { gender?: string | null } }
 
 export const unreadBus = { listeners: new Set<() => void>(), emit() { this.listeners.forEach((l) => l()); } };
 
@@ -57,7 +57,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="masalarim" options={{ title: 'Masalarım', tabBarIcon: ({ color }) => <PngTabIcon name="table" color={String(color)} /> }} />
       <Tabs.Screen name="bildirimler" options={{ title: 'Bildirimler', tabBarIcon: ({ color }) => <TabBadge count={unread}><PngTabIcon name="bell" color={String(color)} /></TabBadge> }} />
       <Tabs.Screen name="paketim" options={{ title: 'Paketim', tabBarIcon: ({ color }) => <PngTabIcon name="package" color={String(color)} /> }} />
-      <Tabs.Screen name="profilim" options={{ title: 'Profilim', tabBarIcon: ({ focused }) => <ProfileTabIcon initials={me ? buildInitials(me.firstName, me.lastName) : '?'} gender={me?.profile?.gender} focused={focused} /> }} />
+      <Tabs.Screen name="profilim" options={{ title: 'Profilim', tabBarIcon: ({ focused }) => <ProfileTabIcon initials={me ? buildInitials(me.firstName, me.lastName) : '?'} gender={me?.profile?.gender} photoUrl={me?.profilePhotoUrl} focused={focused} /> }} />
     </Tabs>
     </>
   );

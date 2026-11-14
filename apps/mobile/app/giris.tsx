@@ -1,19 +1,22 @@
-// Giriş ekranı: "Üye Girişi" (apps/web/app/giris/page.tsx'in aynısı) ve "İşletme Girişi" (varsayılan WhatsApp kodu, ikinci seçenek e-posta + şifre)
+// Mobil giriş ekranı (yalnız üye; mekân girişi mobil uygulamada yok). Tam ekran arka plan görseli; ortada Ahenk logosu,
+// altta yasal metin ve tam genişlikte üç buton: Telefon Numarası ile devam et → "Numaranı alabilir miyiz?" → WhatsApp kodu,
+// E-posta ile devam et → "E-postan nedir?" → "Şifreni gir", Kayıt Ol → kayıt akışı. Tüm adımlarda sol üstte geri ok.
 import React, { useEffect, useState } from 'react';
-import { Image, Linking, Modal, Pressable, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Linking, Modal, Platform, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { API_PREFIX } from '@/lib/config';
 import { api, storeLogin } from '@/lib/api';
-import { venueApi } from '@/lib/venueApi';
-import { AuthShell, PasswordInput, PhoneRow, Toggle } from '@/components/AuthShell';
+import { PasswordInput } from '@/components/AuthShell';
+import { AuthBackground, BackArrow, LegalNote, MailIcon, PhoneIcon, PillButton, StepScreen } from '@/components/AuthFlow';
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
 import { OtpInput } from '@/components/OtpInput';
-import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, Input, Serif, T } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, ErrorText, Input, T } from '@/components/ui';
 import { c, ll, tw } from '@/theme/theme';
 
 interface Sanction { type: 'WARNING' | 'SUSPENSION' | 'BAN'; reason: string; expiresAt: string | null; message: string }
 interface LoginResponse { user: { firstName: string; lastName?: string }; accessToken?: string; refreshToken?: string }
-type Method = 'whatsapp' | 'email';
+type Step = 'home' | 'phone' | 'otp' | 'email' | 'password';
 
 // Origin başlığı gönderilmez: backend Origin'siz istemciye token'ı gövdede döndürür
 async function authPost<T>(path: string, body: unknown): Promise<T> {
@@ -36,11 +39,11 @@ function useResend() {
   return [left, setLeft] as const;
 }
 
-function MemberLogin() {
+export default function Giris() {
   const router = useRouter();
-  const [method, setMethod] = useState<Method>('whatsapp');
+  const insets = useSafeAreaInsets();
+  const [step, setStep] = useState<Step>('home');
   const [phone, setPhone] = useState('');
-  const [otpStep, setOtpStep] = useState(false);
   const [otp, setOtp] = useState('');
   const [otpShake, setOtpShake] = useState(false);
   const [resendIn, setResendIn] = useResend();
@@ -52,7 +55,9 @@ function MemberLogin() {
   const [welcome, setWelcome] = useState<{ firstName: string; lastName: string } | null>(null);
 
   const phoneValid = phone.length === 10 && phone.startsWith('5');
-  const canSubmit = method === 'whatsapp' ? (otpStep ? otp.length === 6 : phoneValid) : (email.includes('@') && email.includes('.') && password.length >= 6 && password.length <= 20);
+  const emailValid = email.includes('@') && email.includes('.');
+  const passwordValid = password.length >= 6 && password.length <= 20;
+  const go = (s: Step) => { setError(''); setStep(s); };
   const fail = (e: unknown, shake = false) => {
     const err = e as Error & { sanction?: Sanction };
     if (err.sanction) setSanction(err.sanction);
@@ -61,7 +66,7 @@ function MemberLogin() {
 
   async function sendOtp() {
     setLoading(true); setError(''); setSanction(null);
-    try { await authPost('/auth/send-login-otp', { phone: `+90${phone}` }); setOtpStep(true); setOtp(''); setResendIn(60); } catch (e) { fail(e); } finally { setLoading(false); }
+    try { await authPost('/auth/send-login-otp', { phone: `+90${phone}` }); setStep('otp'); setOtp(''); setResendIn(60); } catch (e) { fail(e); } finally { setLoading(false); }
   }
   async function afterLogin(data: LoginResponse) {
     await storeLogin(data);
@@ -80,150 +85,100 @@ function MemberLogin() {
     setLoading(true); setError(''); setSanction(null);
     try { await afterLogin(await authPost<LoginResponse>('/auth/login', { email, password })); } catch (e) { fail(e); } finally { setLoading(false); }
   }
-  function switchMethod(m: Method) { setMethod(m); setError(''); setOtpStep(false); setOtp(''); }
 
-  return (
-    <>
-      <Modal visible={!!sanction} transparent animationType="fade" onRequestClose={() => setSanction(null)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-          {sanction && (
-            <View style={{ width: '100%', maxWidth: 384, borderRadius: 16, padding: 24, gap: 16, backgroundColor: '#1a0505', borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)' }}>
-              <View style={{ gap: 4 }}>
-                <T w={600} style={{ fontSize: 18, color: tw.accent }}>{sanction.type === 'WARNING' ? 'Uyarı' : sanction.type === 'SUSPENSION' ? 'Hesap Askıya Alındı' : 'Hesap Engellendi'}</T>
-                {!!sanction.expiresAt && <T style={{ fontSize: 12, color: ll.text2 }}>Bitiş: {new Date(sanction.expiresAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}</T>}
-              </View>
-              <T style={{ fontSize: 14, color: c.tCcc, lineHeight: 22 }}>{sanction.reason}</T>
-              <T style={{ fontSize: 12, color: ll.label }}>
-                Hatalı olduğunu düşünüyorsan <T style={{ fontSize: 12, color: c.red, textDecorationLine: 'underline' }} onPress={() => Linking.openURL('mailto:bilgi@ahenk.co')}>bilgi@ahenk.co</T> adresiyle iletişime geç.
-              </T>
-              {sanction.type === 'WARNING' ? (
-                <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
-                  <BtnGhost label="İptal" style={{ flex: 1 }} onPress={async () => { await api.logout(); setSanction(null); }} />
-                  <BtnPrimary label="Devam Et" style={{ flex: 1 }} onPress={() => { setSanction(null); router.replace('/(tabs)'); }} />
-                </View>
-              ) : <BtnGhost label="Kapat" full style={{ marginTop: 4 }} onPress={() => setSanction(null)} />}
+  const sanctionModal = (
+    <Modal visible={!!sanction} transparent animationType="fade" onRequestClose={() => setSanction(null)}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+        {sanction && (
+          <View style={{ width: '100%', maxWidth: 384, borderRadius: 16, padding: 24, gap: 16, backgroundColor: '#1a0505', borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)' }}>
+            <View style={{ gap: 4 }}>
+              <T w={600} style={{ fontSize: 18, color: tw.accent }}>{sanction.type === 'WARNING' ? 'Uyarı' : sanction.type === 'SUSPENSION' ? 'Hesap Askıya Alındı' : 'Hesap Engellendi'}</T>
+              {!!sanction.expiresAt && <T style={{ fontSize: 12, color: ll.text2 }}>Bitiş: {new Date(sanction.expiresAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}</T>}
             </View>
-          )}
+            <T style={{ fontSize: 14, color: c.tCcc, lineHeight: 22 }}>{sanction.reason}</T>
+            <T style={{ fontSize: 12, color: ll.label }}>
+              Hatalı olduğunu düşünüyorsan <T style={{ fontSize: 12, color: c.red, textDecorationLine: 'underline' }} onPress={() => Linking.openURL('mailto:bilgi@ahenk.co')}>bilgi@ahenk.co</T> adresiyle iletişime geç.
+            </T>
+            {sanction.type === 'WARNING' ? (
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+                <BtnGhost label="İptal" style={{ flex: 1 }} onPress={async () => { await api.logout(); setSanction(null); }} />
+                <BtnPrimary label="Devam Et" style={{ flex: 1 }} onPress={() => { setSanction(null); router.replace('/(tabs)'); }} />
+              </View>
+            ) : <BtnGhost label="Kapat" full style={{ marginTop: 4 }} onPress={() => setSanction(null)} />}
+          </View>
+        )}
+      </View>
+    </Modal>
+  );
+
+  let content: React.ReactNode;
+  if (step === 'home') {
+    content = (
+      <View style={{ flex: 1 }}>
+        <AuthBackground />
+        {router.canGoBack() && <BackArrow onPress={() => router.back()} />}
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: insets.top }}>
+          <Image source={require('@/assets/start_logo.jpg')} style={{ width: 120, height: 120, borderRadius: 60 }} accessibilityLabel="Ahenk" />
         </View>
-      </Modal>
+        <View style={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 16, gap: 12 }}>
+          <View style={{ marginBottom: 4 }}><LegalNote /></View>
+          <PillButton label="Telefon Numarası ile devam et" icon={(col) => <PhoneIcon color={col} />} onPress={() => go('phone')} />
+          <PillButton label="E-posta ile devam et" icon={(col) => <MailIcon color={col} />} onPress={() => go('email')} />
+          <PillButton label="Kayıt Ol" primary onPress={() => router.push('/kayit')} />
+        </View>
+      </View>
+    );
+  } else if (step === 'phone') {
+    content = (
+      <StepScreen title="Numaranı alabilir miyiz?" onBack={() => go('home')}
+        footer={<PillButton label={loading ? 'Gönderiliyor…' : 'İlerle'} primary disabled={loading || !phoneValid} onPress={sendOtp} />}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ justifyContent: 'center', paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12 }}>
+            <T style={{ color: ll.text, fontSize: 14 }}>TR +90</T>
+          </View>
+          <Input form style={{ flex: 1, paddingVertical: 14 }} keyboardType="number-pad" textContentType="telephoneNumber" autoComplete="tel" autoFocus value={phone}
+            onChangeText={(t) => { setPhone(t.replace(/\D/g, '').slice(0, 10)); setError(''); }} placeholder="5XX XXX XX XX" onSubmitEditing={() => phoneValid && sendOtp()} returnKeyType="next" />
+        </View>
+        <View style={{ marginTop: 12 }}><ErrorText>{error}</ErrorText></View>
+      </StepScreen>
+    );
+  } else if (step === 'otp') {
+    content = (
+      <StepScreen title="Kodu gir" subtitle={`+90${phone} numarasına WhatsApp ile gönderilen 6 haneli kodu gir.`} onBack={() => { setOtp(''); go('phone'); }}
+        footer={<>
+          <PillButton label={loading ? 'Doğrulanıyor…' : 'Giriş Yap'} primary disabled={loading || otp.length !== 6} onPress={() => verifyOtp()} />
+          <Btn variant="textLink" disabled={resendIn > 0 || loading} style={{ opacity: 1 }} onPress={sendOtp} label={resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'} />
+        </>}>
+        <OtpInput value={otp} onChange={(v) => { setOtp(v); setError(''); }} error={otpShake} />
+        <View style={{ marginTop: 12 }}><ErrorText center>{error}</ErrorText></View>
+      </StepScreen>
+    );
+  } else if (step === 'email') {
+    content = (
+      <StepScreen title="E-postan nedir?" onBack={() => go('home')}
+        footer={<PillButton label="İlerle" primary disabled={!emailValid} onPress={() => go('password')} />}>
+        <Input form style={{ paddingVertical: 14 }} keyboardType="email-address" autoCapitalize="none" textContentType="emailAddress" autoComplete="email" autoFocus value={email}
+          onChangeText={(t) => { setEmail(t); setError(''); }} placeholder="E-posta adresin" onSubmitEditing={() => emailValid && go('password')} returnKeyType="next" />
+      </StepScreen>
+    );
+  } else {
+    content = (
+      <StepScreen title="Şifreni gir" onBack={() => { setPassword(''); go('email'); }}
+        footer={<>
+          <PillButton label={loading ? 'Giriş yapılıyor…' : 'Giriş Yap'} primary disabled={loading || !passwordValid} onPress={emailLogin} />
+          <Btn variant="textLink" onPress={() => router.push('/sifremi-unuttum')} label="Şifremi unuttum" />
+        </>}>
+        <PasswordInput value={password} onChangeText={(t) => { setPassword(t); setError(''); }} placeholder="Şifren" onSubmitEditing={() => passwordValid && emailLogin()} />
+        <View style={{ marginTop: 12 }}><ErrorText>{error}</ErrorText></View>
+      </StepScreen>
+    );
+  }
+
+  return (
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {sanctionModal}
       <WelcomeOverlay visible={!!welcome} name={`${welcome?.firstName ?? ''} ${welcome?.lastName ?? ''}`} />
-
-      <Card>
-        <View style={{ marginBottom: 24 }}>
-          <Toggle items={[{ key: 'whatsapp', label: 'WhatsApp ile Giriş' }, { key: 'email', label: 'E-posta ile Giriş' }]} value={method} onChange={switchMethod} />
-        </View>
-        {method === 'whatsapp' && !otpStep && <View style={{ gap: 12 }}><PhoneRow value={phone} onChange={(v) => { setPhone(v); setError(''); }} onSubmit={() => phoneValid && sendOtp()} /><ErrorText>{error}</ErrorText></View>}
-        {method === 'whatsapp' && otpStep && (
-          <View style={{ gap: 16 }}>
-            <T style={{ color: ll.label, fontSize: 13, textAlign: 'center' }}>+90{phone} numarasına gönderilen 6 haneli kodu gir.</T>
-            <OtpInput value={otp} onChange={(v) => { setOtp(v); setError(''); }} error={otpShake} />
-            <ErrorText center>{error}</ErrorText>
-          </View>
-        )}
-        {method === 'email' && (
-          <View style={{ gap: 12 }}>
-            <Input form style={{ paddingVertical: 14 }} keyboardType="email-address" autoCapitalize="none" textContentType="emailAddress" autoComplete="email" value={email} onChangeText={(t) => { setEmail(t); setError(''); }} placeholder="E-posta adresin" />
-            <PasswordInput value={password} onChangeText={(t) => { setPassword(t); setError(''); }} placeholder="Şifren" onSubmitEditing={() => canSubmit && emailLogin()} />
-            <ErrorText>{error}</ErrorText>
-          </View>
-        )}
-      </Card>
-      <View style={{ marginTop: 16, gap: 12 }}>
-        {method === 'whatsapp' && !otpStep && <BtnPrimary label={loading ? 'Gönderiliyor…' : 'Kod Gönder'} disabled={loading || !phoneValid} style={{ width: '72%', alignSelf: 'center', marginTop: 4 }} onPress={sendOtp} />}
-        {method === 'whatsapp' && otpStep && (
-          <>
-            <BtnPrimary label={loading ? 'Doğrulanıyor…' : 'Giriş Yap'} full disabled={loading || !canSubmit} onPress={() => verifyOtp()} />
-            <Btn variant="textLink" disabled={resendIn > 0 || loading} style={{ opacity: 1 }} onPress={sendOtp} label={resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'} />
-            <Btn variant="textLink" onPress={() => { setOtpStep(false); setOtp(''); setError(''); }} label="← Numarayı değiştir" />
-          </>
-        )}
-        {method === 'email' && <BtnPrimary label={loading ? 'Giriş yapılıyor…' : 'Giriş Yap'} disabled={loading || !canSubmit} style={{ width: '72%', alignSelf: 'center', marginTop: 4 }} onPress={emailLogin} />}
-      </View>
-      <View style={{ marginTop: 16, gap: 12 }}>
-        {method === 'email' && <BtnGhost label="Şifremi Unuttum" style={{ width: '72%', alignSelf: 'center' }} onPress={() => router.push('/sifremi-unuttum')} />}
-        <BtnPrimary label="Kayıt Ol" style={{ width: '72%', alignSelf: 'center' }} onPress={() => router.push('/kayit')} />
-      </View>
-    </>
-  );
-}
-
-function VenueLogin() {
-  const router = useRouter();
-  const [method, setMethod] = useState<Method>('whatsapp');
-  const [phone, setPhone] = useState('');
-  const [otpStep, setOtpStep] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [resendIn, setResendIn] = useResend();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const phoneValid = phone.length === 10 && phone.startsWith('5');
-
-  // venueApi giriş yanıtındaki token'ları expo-secure-store'a yazar
-  async function done() { router.replace('/mekan/bilgiler'); }
-  async function sendOtp() {
-    setLoading(true); setError('');
-    try { await venueApi.post('/send-login-otp', { phone: `+90${phone}` }); setOtpStep(true); setOtp(''); setResendIn(60); } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
-  }
-  async function verify(code = otp) {
-    setLoading(true); setError('');
-    try { await venueApi.post('/verify-login-otp', { phone: `+90${phone}`, code }); await done(); } catch (e) { setError((e as Error).message); setLoading(false); }
-  }
-  async function emailLogin() {
-    setLoading(true); setError('');
-    try { await venueApi.post('/login', { email, password }); await done(); } catch (e) { setError((e as Error).message); setLoading(false); }
-  }
-  return (
-    <>
-      <Card>
-        <View style={{ marginBottom: 24 }}>
-          <Toggle items={[{ key: 'whatsapp', label: 'WhatsApp ile Giriş' }, { key: 'email', label: 'E-posta ile Giriş' }]} value={method} onChange={(m) => { setMethod(m); setError(''); setOtpStep(false); setOtp(''); }} />
-        </View>
-        {method === 'whatsapp' && !otpStep && <View style={{ gap: 12 }}><PhoneRow value={phone} onChange={(v) => { setPhone(v); setError(''); }} onSubmit={() => phoneValid && sendOtp()} /><ErrorText>{error}</ErrorText></View>}
-        {method === 'whatsapp' && otpStep && (
-          <View style={{ gap: 16 }}>
-            <T style={{ color: ll.label, fontSize: 13, textAlign: 'center' }}>+90{phone} numarasına gönderilen 6 haneli kodu gir.</T>
-            <OtpInput value={otp} onChange={(v) => { setOtp(v); setError(''); }} />
-            <ErrorText center>{error}</ErrorText>
-          </View>
-        )}
-        {method === 'email' && (
-          <View style={{ gap: 12 }}>
-            <Input form style={{ paddingVertical: 14 }} keyboardType="email-address" autoCapitalize="none" textContentType="emailAddress" value={email} onChangeText={(t) => { setEmail(t); setError(''); }} placeholder="E-posta" />
-            <PasswordInput value={password} onChangeText={(t) => { setPassword(t); setError(''); }} placeholder="Şifre" onSubmitEditing={emailLogin} />
-            <ErrorText>{error}</ErrorText>
-          </View>
-        )}
-      </Card>
-      <View style={{ marginTop: 16, gap: 12 }}>
-        {method === 'whatsapp' && !otpStep && <BtnPrimary label={loading ? 'Gönderiliyor…' : 'Kod Gönder'} disabled={loading || !phoneValid} style={{ width: '72%', alignSelf: 'center', marginTop: 4 }} onPress={sendOtp} />}
-        {method === 'whatsapp' && otpStep && (
-          <>
-            <BtnPrimary label={loading ? 'Doğrulanıyor…' : 'Giriş Yap'} full disabled={loading || otp.length !== 6} onPress={() => verify()} />
-            <Btn variant="textLink" disabled={resendIn > 0 || loading} style={{ opacity: 1 }} onPress={sendOtp} label={resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'} />
-            <Btn variant="textLink" onPress={() => { setOtpStep(false); setOtp(''); setError(''); }} label="← Numarayı değiştir" />
-          </>
-        )}
-        {method === 'email' && <BtnPrimary label={loading ? 'Giriş yapılıyor…' : 'Giriş Yap'} disabled={loading || !email || !password} style={{ width: '72%', alignSelf: 'center', marginTop: 4 }} onPress={emailLogin} />}
-      </View>
-      {method === 'email' && (
-        <View style={{ marginTop: 16 }}>
-          <BtnGhost label="Şifremi Unuttum" style={{ width: '72%', alignSelf: 'center' }} onPress={() => router.push('/mekan-sifremi-unuttum')} />
-        </View>
-      )}
-    </>
-  );
-}
-
-export default function Giris() {
-  const [kind, setKind] = useState<'uye' | 'isletme'>('uye');
-  return (
-    <AuthShell title="Giriş Yap" brandLogo>
-      <View style={{ marginBottom: 16 }}>
-        <Toggle items={[{ key: 'uye', label: 'Üye Girişi' }, { key: 'isletme', label: 'M.Girişi' }]} value={kind} onChange={setKind} />
-      </View>
-      {kind === 'uye' ? <MemberLogin /> : <VenueLogin />}
-    </AuthShell>
+      {content}
+    </KeyboardAvoidingView>
   );
 }

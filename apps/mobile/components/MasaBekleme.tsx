@@ -1,12 +1,13 @@
 // packages/ui ConfirmedRadarView + RezervasyonIptal karşılıkları
-import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Modal, Pressable, TextInput, View } from 'react-native';
+import { useReduceMotion } from '@/lib/motion';
 import { api } from '@/lib/api';
 import { cancelDeadline, formatMasaDate, isTableLocked, pad, tableTitleOf, type MasaTuru, type Participant } from '@/lib/masa';
 import { AhenkSonar } from './Sonar';
 import { DetayAvatar } from './DetayAvatar';
 import { InlineLH, Btn, Serif, T } from './ui';
-import { c, sans, tw } from '@/theme/theme';
+import { c, ll, sans, tw } from '@/theme/theme';
 
 const RADAR = 340; const C = RADAR / 2; const ORBIT_R = 142; const AV_D = 52;
 function orbitPts(n: number, r = ORBIT_R) {
@@ -14,6 +15,20 @@ function orbitPts(n: number, r = ORBIT_R) {
   return Array.from({ length: n }, (_, i) => { const a = -Math.PI / 2 + i * step; return { x: C + r * Math.cos(a), y: C + r * Math.sin(a) }; });
 }
 const revealAt = (s: string) => { const tr = new Date(new Date(s).getTime() + 3 * 3600 * 1000); return Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate(), 10 - 3, 0, 0, 0); };
+
+// Eşleşme Paneli sayacındaki .ll-blink karşılığı: opaklık 1 → 0,45 → 1, 1,4 sn; Hareketi Azalt açıkken durağan
+function Blink({ children }: { children: React.ReactNode }) {
+  const reduce = useReduceMotion();
+  const v = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (reduce) { v.setValue(1); return; }
+    const e = Easing.bezier(0.42, 0, 0.58, 1);
+    const loop = Animated.loop(Animated.sequence([Animated.timing(v, { toValue: 0.45, duration: 700, easing: e, useNativeDriver: true }), Animated.timing(v, { toValue: 1, duration: 700, easing: e, useNativeDriver: true })]));
+    loop.start();
+    return () => loop.stop();
+  }, [reduce, v]);
+  return <Animated.View style={{ opacity: v }}>{children}</Animated.View>;
+}
 
 function RevealCountdown({ scheduledAt }: { scheduledAt: string }) {
   const target = revealAt(scheduledAt);
@@ -25,8 +40,8 @@ function RevealCountdown({ scheduledAt }: { scheduledAt: string }) {
     <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginTop: 6, marginBottom: 10 }}>
       {units.map(u => (
         <View key={u.l} style={{ alignItems: 'center', minWidth: 30 }}>
-          <T w={700} style={{ fontSize: 18, lineHeight: 18, fontVariant: ['tabular-nums'] }}>{u.v}</T>
-          <T w={600} style={{ fontSize: 8, letterSpacing: 1.1, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{u.l}</T>
+          {u.l === 'SN' ? <Blink><Serif style={{ fontSize: 40, lineHeight: 40, color: ll.red3 }}>{u.v}</Serif></Blink> : <Serif style={{ fontSize: 40, lineHeight: 40, color: ll.text }}>{u.v}</Serif>}
+          <T style={{ fontSize: 10, color: ll.label, marginTop: 6 }}>{u.l}</T>
         </View>
       ))}
     </View>
@@ -68,7 +83,7 @@ function ConfirmedRadarViewInner({ participants, maxParticipants, type, schedule
             ))}
             {ordered.map((p, i) => positions[i] && (
               <View key={p.id ?? `${p.initials}-${i}`} style={{ position: 'absolute', left: positions[i].x - AV_D / 2, top: positions[i].y - AV_D / 2 }}>
-                <DetayAvatar participant={p} size={AV_D} delay={i * 0.12} />
+                <DetayAvatar participant={{ ...p, photoUrl: null }} size={AV_D} delay={i * 0.12} />
               </View>
             ))}
           </View>
@@ -78,7 +93,7 @@ function ConfirmedRadarViewInner({ participants, maxParticipants, type, schedule
         <T style={{ fontSize: 14, color: c.t666 }}>Katılımcı: <T w={700} style={{ color: c.green }}>{ordered.length}</T><T style={{ color: c.t444 }}> / </T><T w={700} style={{ color: c.green }}>{maxP}</T></T>
       </View>
       <View style={{ alignItems: 'center', marginTop: 20, paddingHorizontal: 4 }}>
-        <Serif style={{ marginBottom: 6, fontSize: 18, color: c.green, textAlign: 'center' }}>{locked ? 'Masanız kuruldu. Mekan bilgileri masa detayında gözükecektir.' : full ? 'Masanız tamamlandı.' : 'Masanız Oluşturuluyor!'}</Serif>
+        <Serif style={{ marginBottom: 6, fontSize: 18, color: c.green, textAlign: 'center' }}>{locked ? 'Mekan bilgileri masa detayında gözükecektir.' : full ? 'Masanız tamamlandı.' : 'Masanız Oluşturuluyor!'}</Serif>
         {locked && <RevealCountdown scheduledAt={scheduledAt} />}
         <T style={{ marginBottom: 8, fontSize: 12, color: c.t888, letterSpacing: 0.12, textAlign: 'center' }}>Masa buluşma tarihi: {formatMasaDate(scheduledAt)}</T>
         <T style={{ fontSize: 12, color: c.t555, lineHeight: 18.6, textAlign: 'center' }}>{infoText}</T>

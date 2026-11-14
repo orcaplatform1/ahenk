@@ -6,10 +6,15 @@ import { Pressable, View } from 'react-native';
 import type { MasaTuru } from '@/lib/masa';
 import type { WeeklySelection } from '@/lib/useMasaTabs';
 import { BtnGhost, BtnPrimary, ModalBox, T } from './ui';
+import { Rings } from './LiveTabs';
 import { ll } from '@/theme/theme';
 
-const LABEL: Record<MasaTuru, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Başbaşa', KANKA: 'Kankamla' };
-const DEADLINE_TEXT: Record<MasaTuru, string> = { GROUP: 'Perşembe 18:00', ONE_ON_ONE: 'Cuma 18:00', KANKA: 'Cumartesi 18:00' };
+// Kart: solda eşleşme alanındaki tür ikonu (halkalar), sağda kalın başlık ve küçük alt metin
+const CARD: Record<MasaTuru, { title: string; text: string }> = {
+  GROUP: { title: 'Grup Masası', text: '4-6 kişilik erkek ve kadınların eşit atandığı masa türüdür. Buluşma her cuma 20:00\'da gerçekleşir.' },
+  ONE_ON_ONE: { title: 'Baş Başa Masası', text: 'Karşı cinsinizin atandığı masa türüdür. Buluşma her cumartesi 20:00\'da gerçekleşir.' },
+  KANKA: { title: 'Kankamla Masası', text: 'Kankanız ile katılım sağlayıp, karşı cins kankaların atandığı masa türüdür. Buluşma her pazar 20:00\'da gerçekleşir.' },
+};
 
 export function WeeklySelectionModal({ selection, onSubmit }: { selection: WeeklySelection | null; onSubmit: (types: MasaTuru[]) => Promise<void> }) {
   const [picked, setPicked] = useState<MasaTuru[]>([]);
@@ -25,7 +30,7 @@ export function WeeklySelectionModal({ selection, onSubmit }: { selection: Weekl
   }
 
   return (
-    <ModalBox visible={visible} onClose={() => setClosed(true)} title="Bu hafta hangi buluşmalara katılmak istersin?" opaque>
+    <ModalBox visible={visible} onClose={() => setClosed(true)} title="Bu hafta hangi masaya katılmak için eşleşme taramasına girmek istiyorsunuz?" opaque>
       <View style={{ gap: 8 }}>
         {(selection?.options ?? []).map((o) => {
           const on = picked.includes(o.type);
@@ -37,13 +42,16 @@ export function WeeklySelectionModal({ selection, onSubmit }: { selection: Weekl
               accessibilityRole="checkbox"
               accessibilityState={{ checked: on, disabled: !o.open }}
               style={{
-                minHeight: 52, borderRadius: 12, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                minHeight: 52, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12,
                 borderWidth: on ? 2 : 1, borderColor: on ? ll.red : 'rgba(255,255,255,0.12)', backgroundColor: on ? 'rgba(214,69,58,0.12)' : 'rgba(255,255,255,0.03)',
                 opacity: o.open ? 1 : 0.4,
               }}
             >
-              <T w={600} style={{ fontSize: 14, color: ll.text }}>{LABEL[o.type]}</T>
-              <T style={{ fontSize: 12, color: ll.label }}>{o.open ? `Son seçim: ${DEADLINE_TEXT[o.type]}` : 'Süre doldu'}</T>
+              <Rings type={o.type} on still />
+              <View style={{ flex: 1, gap: 4 }}>
+                <T w={700} style={{ fontSize: 14, color: ll.text }}>{CARD[o.type].title}</T>
+                <T style={{ fontSize: 12, lineHeight: 17.4, color: ll.label }}>{CARD[o.type].text}</T>
+              </View>
             </Pressable>
           );
         })}

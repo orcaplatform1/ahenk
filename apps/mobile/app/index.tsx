@@ -4,9 +4,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { getAccess, getKind } from '@/lib/session';
+import { getAccess, getRemembered } from '@/lib/session';
 import { api, prefetch, refreshAtLaunch } from '@/lib/api';
-import { prefetchVenue, refreshVenueSession } from '@/lib/venueApi';
 import { loadFonts, loadImages } from '@/lib/boot';
 import { useReduceMotion } from '@/lib/motion';
 import { c, sans, tw } from '@/theme/theme';
@@ -39,13 +38,13 @@ export default function Acilis() {
     const fonts = loadFonts().catch(() => undefined).finally(() => { if (alive) setFontsReady(true); });
     const images = loadImages().catch(() => undefined);
     (async () => {
-      // Kalıcı oturum: her açılışta mevcut yenileme akışı (üye: /auth/refresh, mekân: /venue-panel/refresh)
-      // Yönlendirme: ADMIN/SUPERADMIN → Yönetim Paneli, üye → Eşleşme Paneli (1. sekme), mekân → Mekân paneli, oturum yok → Giriş
-      const kind = await getKind();
-      let dest: '/mekan/bilgiler' | '/(tabs)' | '/admin' | '/giris' = '/giris';
+      // Kalıcı oturum: her açılışta mevcut yenileme akışı (/auth/refresh)
+      // Yönlendirme: ADMIN/SUPERADMIN → Yönetim Paneli, üye → Eşleşme Paneli (1. sekme), oturum yok → Giriş;
+      // oturum yok ama cihaz hatırlanıyorsa ("Bu cihazda beni hatırla") → Tekrar hoş geldin ekranı
+      let dest: '/(tabs)' | '/admin' | '/giris' | '/tekrar-hosgeldin' = '/giris';
       let data: Promise<unknown> = Promise.resolve();
-      if (kind === 'venue') {
-        if ((await refreshVenueSession()) !== 'expired') { dest = '/mekan/bilgiler'; data = Promise.all([prefetchVenue(['/me']), prefetch(['/auth/districts'])]); }
+      if (!(await getAccess()) && (await getRemembered())) {
+        dest = '/tekrar-hosgeldin';
       } else if (await getAccess()) {
         if ((await refreshAtLaunch()) !== 'expired') {
           await prefetch(['/auth/me']);

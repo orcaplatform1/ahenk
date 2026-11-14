@@ -29,7 +29,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ gestureEnabled: false, animation: 'fade' }} />
         <Stack.Screen name="giris" options={{ gestureEnabled: false, animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ gestureEnabled: false, animation: 'fade' }} />
-        <Stack.Screen name="mekan" options={{ gestureEnabled: false, animation: 'fade' }} />
+        <Stack.Screen name="tekrar-hosgeldin" options={{ gestureEnabled: false, animation: 'fade' }} />
       </Stack>
     </SafeAreaProvider>
   );

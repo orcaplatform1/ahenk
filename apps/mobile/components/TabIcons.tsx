@@ -26,10 +26,10 @@ export function TabBadge({ count, children }: { count: number; children: React.R
   );
 }
 
-export function ProfileTabIcon({ initials, gender, focused }: { initials: string; gender?: string | null; focused: boolean }) {
+export function ProfileTabIcon({ initials, gender, photoUrl, focused }: { initials: string; gender?: string | null; photoUrl?: string | null; focused: boolean }) {
   return (
     <View style={{ opacity: focused ? 1 : tabIcon.inactiveOpacity }}>
-      <DetayAvatar participant={{ initials, gender }} size={tabIcon.size} animated={false} />
+      <DetayAvatar participant={{ initials, gender, photoUrl }} size={tabIcon.size} animated={false} />
     </View>
   );
 }

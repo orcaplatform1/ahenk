@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { api, API_PREFIX } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { useProfilePhotoPicker } from '@/components/ProfilePhoto';
 import { ConfirmedRadarView, KankaPairs, MasaDetayKarti, RezervasyonIptal, gColor, type DashboardItem, type MasaDetayData, type MasaTuru, type VenuePhoto } from '@ahenk/ui';
 import LiveTabs from '@/components/live/LiveTabs';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
@@ -22,7 +23,8 @@ interface HistoryMeeting {
   venueMapsUrl?: string | null;
   venuePhotos?: VenuePhoto[];
   aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
-  participants?: { initials: string; gender: string | null; isSelf?: boolean; pair?: 'MINE' | 'OTHER' }[];
+  participants?: { initials: string; gender: string | null; isSelf?: boolean; pair?: 'MINE' | 'OTHER'; photoUrl?: string | null }[];
+  occupations?: string[];
   review?: { rating: number; comment: string | null } | null;
   blocked?: { initials: string; gender: string | null }[];
   isReviewed?: boolean;
@@ -421,6 +423,8 @@ function MasaBlock({
   onCancelled?: () => void;
 }) {
   const meeting = item?.meeting;
+  // Kendi profil fotoğrafını masa detay kartından düzenleme (masa katılımcısı KYC onaylıdır; sunucu yine de kontrol eder)
+  const photo = useProfilePhotoPicker(true);
 
   let content: React.ReactNode;
 
@@ -438,6 +442,7 @@ function MasaBlock({
       venueMapsUrl: meeting.venueMapsUrl,
       venuePhotos: meeting.venuePhotos,
       participants: meeting.participants,
+      occupations: meeting.occupations,
       aiReport: meeting.aiReport,
     };
     content = (
@@ -445,7 +450,10 @@ function MasaBlock({
         <MasaDetayKarti
           masa={detayData}
           apiBase={API_PREFIX}
+          onEditOwnPhoto={photo.pick}
         />
+        {photo.input}
+        {photo.message && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13, color: '#ff6b6b', textAlign: 'center' }}>{photo.message}</p>}
       </div>
     );
   } else if (meeting.participants.length > 0) {
@@ -607,6 +615,8 @@ function HistoryList({ history }: { history: HistoryMeeting[] }) {
 
 // Salt görüntüleme: sohbet yok, yalnızca Haritada Gör çalışır
 function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
+  // Masa katılımcısı KYC onaylıdır; sunucu yine de kontrol eder
+  const photo = useProfilePhotoPicker(true);
   const masa: MasaDetayData = {
     id: m.id,
     type: m.type,
@@ -618,11 +628,14 @@ function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
     venueMapsUrl: m.venueMapsUrl,
     venuePhotos: m.venuePhotos,
     participants: m.participants ?? [],
+    occupations: m.occupations,
     aiReport: m.aiReport,
   };
   return (
     <div style={{ paddingBottom: 12 }}>
-      <MasaDetayKarti masa={masa} archive />
+      <MasaDetayKarti masa={masa} archive onEditOwnPhoto={photo.pick} />
+      {photo.input}
+      {photo.message && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13, color: '#ff6b6b', textAlign: 'center' }}>{photo.message}</p>}
       {m.review && (
         <div style={{ marginTop: 12 }}>
           <p className="ll-mono" style={{ margin: '0 0 4px', fontSize: 11, color: '#a39c93' }}>DEĞERLENDİRMEN</p>

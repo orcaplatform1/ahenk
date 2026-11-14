@@ -147,6 +147,52 @@ HAFTALIK BULUŞMA SEÇİMİ:
   - Süresinde seçim yapmayan o türün taramasına girmez, hakkı düşmez
   - Eşleşme alanı: paketi olan kullanıcıda bu hafta seçilmeyen tür "Eşleşme Pasif"; hiç paketi olmayanda "Abonelik Yok"
   - GET /weekly-selection, POST /weekly-selection {types[]} (JWT)
+  - Pencere tasarımı (web + mobil): başlık "Bu hafta hangi masaya katılmak için eşleşme taramasına girmek istiyorsunuz?";
+    her tür için kart: solda eşleşme alanındaki halka ikonu, sağda kalın başlık + küçük alt metin
+    (Grup Masası / Baş Başa Masası / Kankamla Masası metinleri; buluşma Cuma / Cumartesi / Pazar 20:00). Yalnız paketinde hakkı
+    olan türlerin kartı görünür. "Sonra" ve "Seçimi Onayla" butonları, son saatler ve seçimin değiştirilemezliği aynen
+  - Eşleşme taraması Katılım satırı: Grupta "Katılım x/6:" tek başına, isimler bir alt satırda; her kısaltma cinsiyet renkli
+    çerçeveli yuvarlak dairede (web + mobil). Başbaşa ve Kankamla satırı eskisi gibi
+
+PROFİL FOTOĞRAFI (web + mobil):
+  - Profilim ekranının en üstünde büyük yuvarlak profil alanı (KYC kartının altında): fotoğraf yoksa ad soyad kısaltması,
+    çerçeve cinsiyet rengi; sağ altta palet renginde kalem ikonlu düzenleme butonu. Fotoğraf zorunlu değil
+  - Yalnız KYC onaylandıktan sonra yüklenir; onaysızda kalem: "Profil fotoğrafı kimlik doğrulamasından sonra yüklenebilir."
+  - Yalnız galeriden seçilir (mobilde kamera seçeneği yok; web'de capture özniteliği yok). Kullanıcının tek profil fotoğrafı olur
+  - Yüklenen fotoğraf admin onayına düşer (ProfilePhoto tablosu, PENDING / APPROVED); onay beklerken önceki onaylı fotoğraf,
+    yoksa kısaltma görünür. Yeni yükleme önceki onay bekleyen fotoğrafı (dosya + kayıt) siler
+  - Admin onayı: yeni fotoğraf geçerli, önceki onaylı fotoğraf dosya + kayıt silinir. Admin reddi: yeni fotoğraf dosya + kayıt
+    silinir, önceki onaylı kalır, kullanıcıya bildirim "Yüklediğin fotoğraf kimliğindeki fotoğrafla eşleşmiyor."
+  - Dosyalar uploads/profile-photos/<userId>/ altında WebP; onaylılar GET /media/profile-photos/:userId/:file ile herkese açık
+  - Uçlar: GET/POST /users/me/profile-photo (JWT); GET /admin/profile-photos, GET /admin/profile-photos/:id/file,
+    POST /admin/profile-photos/:id/approve, POST /admin/profile-photos/:id/reject (ADMIN/SUPERADMIN). /auth/me → profilePhotoUrl
+  - Admin "Profil Fotoğrafları" ekranı (web + mobil): yüklenen fotoğraf ve KYC kimlik ön yüzü yan yana, Onayla / Reddet
+  - Mobil alt menü profil sekmesinde onaylı fotoğraf varsa kısaltma yerine fotoğraf
+  - Admin panelinde kullanıcıların tıklanabildiği kısaltmalarda (Açık Masalar katılımcıları ve başbaşada eşi bekleyenler, web + mobil)
+    onaylı fotoğraf varsa kısaltma yerine fotoğraf
+
+MASA DETAY KARTI (web + mobil):
+  - Katılımcıların onaylı profil fotoğrafları herkese görünür; fotoğrafı olmayanda kısaltma. Fotoğrafa basınca tam ekran büyük görünüm;
+    kişi kendi fotoğrafına basarsa sağ altta palet renginde kalem butonu (yükleme akışı). Bekleme radarında fotoğraf gösterilmez
+  - "Meslekler:" başlığı ve altında katılımcıların meslekleri (User.occupationSector): her satırda bir, yalnız yazı, ikonsuz;
+    sıra her istekte sunucuda karışık, kime ait olduğu hiçbir şekilde gönderilmez
+
+MOBİL GİRİŞ (yalnız mobil uygulama):
+  - Mekân girişi ("M.Girişi") ve mekân paneli mobil uygulamada yok (web'deki mekân girişi aynen)
+  - Giriş ekranı: tam ekran arka plan görseli (assets/mobilappscreen.webp; ekranı kaplar, kenarlardan kırpılır, esnetilmez, ortalı);
+    ortada Ahenk logosu; altta yasal metin "Devam ederek Kullanım Koşulları'nı kabul edersin. Verilerini nasıl işlediğimizi öğrenmek
+    için Gizlilik Politikası ve Çerez Politikası'nı inceleyebilirsin." (/kullanim-kosullari, /gizlilik-politikasi, /cerez-politikasi);
+    altında tam genişlikte yuvarlak üç buton: "Telefon Numarası ile devam et" (telefon ikonu), "E-posta ile devam et" (zarf ikonu), "Kayıt Ol"
+  - Telefon → "Numaranı alabilir miyiz?" (TR +90 + numara, İlerle) → WhatsApp kod ekranı. E-posta → "E-postan nedir?" (İlerle) →
+    "Şifreni gir" (Giriş Yap, Şifremi unuttum). Kayıt Ol → mevcut kayıt akışı. Giriş adımlarında sol üstte geri ok
+  - Profilim'de "Çıkış Yap" → "Bu cihazda beni hatırla" / "Bu cihazda beni unut". Unut: oturum kapanır, hatırlama bilgisi silinir.
+    Hatırla: oturum kapanır, yenileme token'ı ve ad cihazda (secure-store) saklanır; açılışta "Tekrar hoş geldin, [ad]!" + "Giriş Yap"
+    (aynı arka plan, altta yasal metin) → Face ID / parmak izi (expo-local-authentication) → "Cihaz Doğrulandı" (palet renginde onay
+    dairesi) → şifresiz giriş. Başarısız ya da cihazda yoksa normal giriş ekranı. Yeni girişte hatırlama bilgisi silinir
+  - Profilim'de çıkış butonları ile "Hesabımı Sil" arasında küçük uygulama logosu ve "Versiyon 0.1.0"; mobil sürüm 0.1.0
+
+İPTAL EDİLEN KONU: Admin'in verdiği paketin hangi admin tarafından verildiğinin kaydı / gösterimi (rapor104 ve rapor105'te sorulan)
+  iptal edildi; tekrar sorulmayacak.
 
 BİLDİRİM SERVİSİ (Modül 9):
 Kanallar:

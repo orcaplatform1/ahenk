@@ -1,5 +1,5 @@
 import { API_PREFIX } from './config';
-import { clearTokens, getAccess, getRefresh, setTokens } from './session';
+import { clearTokens, forgetDevice, getAccess, getRefresh, setTokens } from './session';
 
 // Web lib/api.ts davranışının mobil karşılığı: aynı uçlar, aynı hata mesajları.
 // Oturum: HttpOnly çerez yerine Bearer token (Origin'siz istemciye backend token'ı gövdede döndürür).
@@ -83,7 +83,11 @@ async function apiFetch<T>(path: string, init: { method?: string; body?: unknown
 
 // Giriş/kayıt yanıtı: { user, accessToken, refreshToken }
 export async function storeLogin(data: { accessToken?: string; refreshToken?: string }) {
-  if (data.accessToken && data.refreshToken) await setTokens(data.accessToken, data.refreshToken);
+  if (data.accessToken && data.refreshToken) {
+    await setTokens(data.accessToken, data.refreshToken);
+    // Yeni girişte önceki "beni hatırla" bilgisi silinir (eski hesabın hatırlanan oturumu kalmaz)
+    await forgetDevice();
+  }
 }
 
 // Açılış ön yüklemesi: açılış ekranı hedef ekranın GET isteklerini önceden başlatır; 15 sn içinde aynı yola gelen

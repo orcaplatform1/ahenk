@@ -3,7 +3,7 @@
     "name": "Ahenk",
     "slug": "ahenk1",
     "scheme": "ahenk",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/app-icon.png",
@@ -71,6 +71,12 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Bu cihazda hatırlanan hesabına Face ID ile giriş yapmak için kullanılır."
+        }
+      ],
       "expo-font",
       "expo-web-browser",
       [

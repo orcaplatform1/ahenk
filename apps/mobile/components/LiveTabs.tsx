@@ -24,15 +24,16 @@ const SMALL_RINGS: Partial<Record<MasaTuru, { r: number; stroke: number; rings: 
   KANKA: { r: 9.557, stroke: 1.686, rings: [[-14.1, -8.1], [4.7, -8.1], [14.1, 8.1], [-4.7, 8.1]] },
 };
 
-function Rings({ type, on }: { type: MasaTuru; on: boolean }) {
+// still: renkli (açık) hâl, dönmez — haftalık seçim kartları
+export function Rings({ type, on, still }: { type: MasaTuru; on: boolean; still?: boolean }) {
   const reduce = useReduceMotion();
   const spin = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    if (!on || reduce) { spin.setValue(0); return; }
+    if (!on || reduce || still) { spin.setValue(0); return; }
     const loop = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 3200, easing: Easing.linear, useNativeDriver: true }));
     loop.start();
     return () => loop.stop();
-  }, [on, reduce, spin]);
+  }, [on, reduce, spin, still]);
   const red = on ? rings.redOn : rings.redOff;
   const copper = on ? rings.copperOn : rings.copperOff;
   const small = SMALL_RINGS[type];

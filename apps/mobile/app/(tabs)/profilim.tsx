@@ -11,6 +11,8 @@ import { RehberTab } from '@/components/profil/RehberTab';
 import { KycTab } from '@/components/profil/KycTab';
 import { accountTab, ll, tabBar, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
+import { ProfilePhotoHeader } from '@/components/ProfilePhoto';
+import { buildInitials } from '@/lib/masa';
 
 const TABS = [
   { key: 'profil', label: 'Profilim' },
@@ -60,6 +62,8 @@ export default function Profilim() {
           <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 32, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
             <Glow />
             <View style={{ marginBottom: 16 }}><KycNoticeCard /></View>
+            {/* En üstte büyük yuvarlak profil alanı (fotoğraf yoksa ad soyad kısaltması) */}
+            {user && tab === 'profil' && <ProfilePhotoHeader photoUrl={user.profilePhotoUrl} initials={buildInitials(user.firstName, user.lastName)} gender={user.profile?.gender} kycApproved={kycApproved} />}
             {loading ? <SkeletonBlock lines={4} /> : fetchError && !user ? (
               <View style={{ alignItems: 'center', paddingHorizontal: 24 }}>
                 <T style={{ color: tw.muted, fontSize: 14, marginBottom: 16 }}>Profil yüklenemedi. Lütfen tekrar deneyin.</T>

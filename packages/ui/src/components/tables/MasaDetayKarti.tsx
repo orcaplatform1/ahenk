@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { KankaPairs, type KankaPerson } from './KankaPairs';
 import { DetayAvatar } from './DetayAvatar';
+import { PhotoViewer } from './PhotoViewer';
 import { gColor } from './MasaRadar';
 
 type KankaParticipant = KankaPerson & { pair?: 'MINE' | 'OTHER' };
@@ -12,6 +13,8 @@ type KankaParticipant = KankaPerson & { pair?: 'MINE' | 'OTHER' };
 export interface DetayParticipant {
   initials: string;
   gender: 'MALE' | 'FEMALE' | string | null;
+  isSelf?: boolean;
+  photoUrl?: string | null;
 }
 
 export interface VenuePhoto {
@@ -36,6 +39,7 @@ export interface MasaDetayData {
   venueMapsUrl?: string | null;
   venuePhotos?: VenuePhoto[];
   participants: DetayParticipant[];
+  occupations?: string[]; // Her istekte karışık sıra; kime ait olduğu gösterilmez
   aiReport?: AiReport | null;
 }
 
@@ -78,6 +82,7 @@ interface Props {
   // Verilirse Bearer başlığı eklenir; web oturumu HttpOnly çerezle gider (credentials: 'include')
   token?: string;
   archive?: boolean; // Geçmiş masa: yalnızca Haritada Gör çalışır, sohbet ve acil yardım yok (apiBase verilmez)
+  onEditOwnPhoto?: () => void; // Kendi fotoğrafının tam ekran görünümündeki kalem butonu
 }
 
 function jsonHeaders(token?: string): Record<string, string> {
@@ -664,8 +669,11 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
   );
 }
 
-export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props) {
+export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOwnPhoto }: Props) {
   const [lightboxIdx,   setLightboxIdx]   = useState<number | null>(null);
+  // Katılımcı profil fotoğrafı tam ekran; kendi fotoğrafında düzenleme butonu
+  const [viewer, setViewer] = useState<{ url: string; self: boolean } | null>(null);
+  const openPhoto = (p: { photoUrl?: string | null; isSelf?: boolean }) => { if (p.photoUrl) setViewer({ url: p.photoUrl, self: !!p.isSelf }); };
   const [onMyWayDone,   setOnMyWayDone]   = useState(false);
   const [onMyWayLoading,setOnMyWayLoading]= useState(false);
   const [onMyWayWarn,   setOnMyWayWarn]   = useState('');
@@ -810,6 +818,8 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
           />
         )}
       </AnimatePresence>
+      <PhotoViewer url={viewer?.url ?? null} onClose={() => setViewer(null)}
+        onEdit={viewer?.self && onEditOwnPhoto ? () => { setViewer(null); onEditOwnPhoto(); } : undefined} />
 
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -953,15 +963,30 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false }: Props)
             <KankaPairs
               mine={(masa.participants as KankaParticipant[]).filter(p => p.pair === 'MINE')}
               other={(masa.participants as KankaParticipant[]).filter(p => p.pair === 'OTHER')}
+              onPhoto={openPhoto}
             />
           ) : (
           <div style={isOneOnOne ? { display: 'flex', gap: 10, flexWrap: 'wrap' } : { display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gap: 10 }}>
-            {ordered.map((p, i) => (
+            {ordered.map((p, i) => p.photoUrl ? (
+              <button key={`${p.initials}-${i}`} type="button" onClick={() => openPhoto(p)} aria-label="Profil fotoğrafını büyüt" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                <DetayAvatar participant={p} delay={0.52 + i * 0.1} />
+              </button>
+            ) : (
               <DetayAvatar key={`${p.initials}-${i}`} participant={p} delay={0.52 + i * 0.1} />
             ))}
           </div>
           )}
         </motion.div>
+
+        {/* Meslekler: her satırda bir meslek, yalnız yazı; sıra sunucuda her istekte karışık, kime ait olduğu gösterilmez */}
+        {!!masa.occupations?.length && (
+          <div style={{ marginBottom: 20 }}>
+            <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>Meslekler:</p>
+            {masa.occupations.map((o, i) => (
+              <p key={i} style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: 'rgba(255,255,255,0.72)', fontFamily: 'Inter, sans-serif' }}>{o}</p>
+            ))}
+          </div>
+        )}
 
         {!masa.aiReport && (
           <motion.div
