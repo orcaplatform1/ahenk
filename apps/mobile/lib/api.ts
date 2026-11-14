@@ -106,11 +106,19 @@ export function prefetch(paths: string[]) {
   }));
 }
 
+// Aynı anda süren aynı GET isteği tekrar atılmaz, süren isteğin yanıtı paylaşılır (sekme açılışında Eşleşme Paneli, KYC kartı ve
+// alt menü aynı anda /auth/me istiyordu). Yanıt gelince kayıt silinir; sonraki çağrı yeni istek atar.
+const inflight = new Map<string, Promise<unknown>>();
+
 export const api = {
   get: <T>(path: string) => {
     const hit = prefetched.get(path);
     if (hit && Date.now() - hit.at < PREFETCH_TTL_MS) return hit.p as Promise<T>;
-    return apiFetch<T>(path);
+    const running = inflight.get(path);
+    if (running) return running as Promise<T>;
+    const p = apiFetch<T>(path).finally(() => { inflight.delete(path); });
+    inflight.set(path, p);
+    return p;
   },
   post: <T>(path: string, body: unknown = {}) => apiFetch<T>(path, { method: 'POST', body }),
   patch: <T>(path: string, body: unknown = {}) => apiFetch<T>(path, { method: 'PATCH', body }),

@@ -131,10 +131,12 @@ Sadakat Programı (%10 davet indirimi): davet edilen kişi herhangi bir tek sefe
   uygulanır, yenilemeler indirimsiz. Aktif tek seferlik paketi ya da aktif Prime'ı olana 100 TL indirim hiçbir koşulda gösterilmez/uygulanmaz
 Mobil indirim teklifleri (IAP_ENABLED ile pasif): tek seferlik paketlerde indirimli ayrı ürünler (<ürün>.davet10, <ürün>.indirim100);
   Prime'da App Store promosyon teklifi (sunucu imzalı) / Google Play abonelik teklifi (teklif kimlikleri davet10, indirim100)
-Paket kartı rozetleri: Tinder GOLD tarzı hap, dolgu renkli, kalın, büyük harf; renk kartın tonuyla uyumlu, İçerde ve Prime altın
+Paket kartı rozetleri: Tinder GOLD tarzı hap, dolgu renkli, kalın, büyük harf, küçük (web 0.62rem / 2px 8px, mobil 9.9 / 2-8);
+  renk kartın tonuyla uyumlu, İçerde altın, Prime "ABONELİK" şarap kırmızısı #7A1F2B (yazı #f4f1ec)
 Paket kartı tasarımı (web + mobil, landing dahil): premium; her kartta aynı renk ailesinde koyudan ortaya geçişli (gradient) arka plan,
-  açık / soluk ton yok. Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, altın çerçeve ve altın
-  detaylı. Prime detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen" etiketi; bu kart altın çerçeveli, hafif altın geçişli.
+  açık / soluk ton yok. Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, paket listesinde
+  çerçeve palet kırmızısı (#d6453a), "Prime Paket" yazısı ve sağdaki ok #7A1F2B. Prime avantajlarının ilki "Her masada öncelikli
+  eşleşme hakkı". Prime detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen" etiketi; bu kart altın çerçeveli, hafif altın geçişli.
   Seçili plan kartının çerçevesi Ahenk paleti kırmızısı (#d6453a); 3 aylık seçiliyse çerçeve kırmızı, etiket kalır (web + mobil).
   Grup Paketi avantajı "Masada erkek ve kadın eşit sayı"
 Paket kartı yazıları (kart kısa açıklaması; avantajlar PaketKarti.tsx CARDS ve mobil paketim.tsx CARDS'ta aynı liste):
@@ -173,6 +175,10 @@ HAFTALIK BULUŞMA SEÇİMİ:
   - Son saatler: Grup Perşembe 18:00, Baş Başa Cuma 18:00, Kankamla Cumartesi 18:00
   - Süresinde seçim yapmayan o türün taramasına girmez, hakkı düşmez
   - Eşleşme alanı: paketi olan kullanıcıda bu hafta seçilmeyen tür "Eşleşme Pasif"; hiç paketi olmayanda "Abonelik Yok"
+  - Eşleşme taraması bekleme durumu (web + mobil, useMasaTabs isScanWaiting): bu hafta seçilen türlerden en az birinin buluşma saati
+    (Grup Cuma, Baş Başa Cumartesi, Kankamla Pazar 20:00) geçmemişse tarama aktif; değilse (paket yok, seçim yok ya da saatler geçmiş)
+    bekleme: radar ışığı durur, bütün semt noktaları "Düşük" grisinde / aynı boy / hareketsiz, "Semt Masa Yoğunluğu" kartları gri ve
+    "Tarama bekleniyor". Yeni hafta (Pazar 23:59) seçimin haftasından yeniden hesaplanır
   - GET /weekly-selection, POST /weekly-selection {types[]} (JWT)
   - Pencere tasarımı (web + mobil): başlık "Bu hafta hangi masaya katılmak için eşleşme taramasına girmek istiyorsunuz?";
     her tür için kart: solda eşleşme alanındaki halka ikonu, sağda kalın başlık + küçük alt metin
@@ -193,7 +199,9 @@ PROFİL FOTOĞRAFI (web + mobil):
   - Mobilde masa kartından fotoğraf yüklenince kullanıcı bilgisi (/auth/me) yenilenir; Profilim'deki "Fotoğrafın onay sürecinde." hemen görünür
   - Admin onayı: yeni fotoğraf geçerli, önceki onaylı fotoğraf dosya + kayıt silinir. Admin reddi: yeni fotoğraf dosya + kayıt
     silinir, önceki onaylı kalır, kullanıcıya bildirim "Yüklediğin fotoğraf kimliğindeki fotoğrafla eşleşmiyor."
-  - Dosyalar uploads/profile-photos/<userId>/ altında WebP; onaylılar GET /media/profile-photos/:userId/:file ile herkese açık
+  - Dosyalar uploads/profile-photos/<userId>/ altında WebP, iki boyut: p-….webp uzun kenar 1080 (tam ekran, Profilim büyük daire),
+    p-….s.webp uzun kenar 200 (alt menü, liste, küçük daireler; mobil lib/photo.ts). Onaylılar GET /media/profile-photos/:userId/:file
+    ile herkese açık. Eski fotoğraflar backend/scripts/profile-photo-sizes.js ile dönüştürülür
   - Uçlar: GET/POST /users/me/profile-photo (JWT); GET /admin/profile-photos, GET /admin/profile-photos/:id/file,
     POST /admin/profile-photos/:id/approve, POST /admin/profile-photos/:id/reject (ADMIN/SUPERADMIN). /auth/me → profilePhotoUrl
   - Admin "Profil Fotoğrafları" ekranı (web + mobil): yüklenen fotoğraf ve KYC kimlik ön yüzü yan yana, Onayla / Reddet; görsellere basınca
@@ -222,6 +230,9 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     altında tam genişlikte yuvarlak üç buton: "Telefon Numarası ile devam et" (telefon ikonu), "E-posta ile devam et" (zarf ikonu), "Kayıt Ol"
   - Telefon → "Numaranı alabilir miyiz?" (TR +90 + numara, İlerle) → WhatsApp kod ekranı. E-posta → "E-postan nedir?" (İlerle) →
     "Şifreni gir" (Giriş Yap, "Şifremi unuttum" butonu — PillButton normal stil). Kayıt Ol → mevcut kayıt akışı. Giriş adımlarında sol üstte geri ok
+  - "Kayıt Ol" (app/kayit.tsx) aynı sade görünüm: logo / kart yok, sol üstte geri ok, sola hizalı kalın başlıklar, tam genişlikte butonlar
+  - Mobilde Janti Haydar garson görselleri yoktur (Eşleşme Paneli geri sayım kartı dahil); web'de duruyor
+  - Admin "Yeni Bot" / "Botu Düzenle" penceresi klavye açılınca kayar, odaklı alan klavyenin üstünde (ADialog keyboardScroll)
   - Şifre sıfırlama ekranları (sifremi-unuttum, sifremi-sifirla) aynı sade tasarım (StepScreen): logo / kart yok, sol üstte geri ok,
     sola hizalı kalın başlık. 1. adım "Şifreni sıfırla" + "Kayıtlı telefon numarana WhatsApp ile 6 haneli bir kod göndereceğiz." +
     TR +90 ve numara + en altta tam genişlikte "Kod Gönder"; "Girişe Dön" yok. 2. adım "Yeni şifre": kod, yeni şifre, şifre tekrar,
@@ -244,6 +255,8 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
   - Android APK sadece arm64-v8a mimarisiyle, release modunda derlenir (EAS preview profili; plugins/withAndroidRelease.js: R8 kod
     küçültme + kaynak küçültme açık, reactNativeArchitectures=arm64-v8a, Hermes açık). APK https://ahenk.co/apk/ahenk-<sürüm>.apk
   - Eşleşme Paneli: KYC kartı yokken üstte boşluk kalmaz, Grup / Baş Başa / Kankamla halkaları durum çubuğunun hemen altından başlar
+  - Mobilde aynı anda süren aynı GET isteği bir kez atılır (lib/api.ts); /auth/me açılışta ön yüklenir. Backend /auth/me ve
+    /meetings/dashboard sorguları paralel çalışır
   - Mobil yoklamalar yalnız odaktaki sekmede çalışır (useMasaTabs, Eşleşme Paneli canlı veriler); uygulama içi görseller gösterildikleri
     boya yakın çözünürlükte tutulur
 

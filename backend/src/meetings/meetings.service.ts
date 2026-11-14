@@ -70,7 +70,9 @@ export class MeetingsService {
       },
     } as const;
 
-    const parts = await this.prisma.meetingParticipant.findMany({
+    // Birbirinden bağımsız dört sorgu paralel çalışır (önceden sırayla bekleniyordu; sayfa 15 sn'de bir yoklanıyor)
+    const weekStart = trWeekStart();
+    const partsQ = this.prisma.meetingParticipant.findMany({
       where: {
         userId,
         // İptal eden kullanıcı masayı artık görmez
@@ -86,8 +88,7 @@ export class MeetingsService {
     }).then((rows) => rows.filter(({ meeting }) => meetingCardEnd(meeting.scheduledAt) > new Date()));
 
     // Bu hafta masası olan türler: buluşma bitip kart kalksa da /dashboard sekmesi "Masa Kuruldu" kalır
-    const weekStart = trWeekStart();
-    const weekRows = await this.prisma.meetingParticipant.findMany({
+    const weekRowsQ = this.prisma.meetingParticipant.findMany({
       where: {
         userId,
         status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED] },
@@ -98,10 +99,9 @@ export class MeetingsService {
       },
       select: { meeting: { select: { type: true } } },
     });
-    const weekTableTypes = [...new Set(weekRows.map((r) => r.meeting.type))];
 
     // Bu hafta kendisi rezervasyonunu iptal ettiği türler (sekmede "Rez. İptal")
-    const cancelledRows = await this.prisma.meetingParticipant.findMany({
+    const cancelledRowsQ = this.prisma.meetingParticipant.findMany({
       where: {
         userId,
         status: ParticipantStatus.CANCELLED,
@@ -110,10 +110,9 @@ export class MeetingsService {
       },
       select: { meeting: { select: { type: true } } },
     });
-    const weekCancelledTypes = [...new Set(cancelledRows.map((r) => r.meeting.type))];
 
     // Bu hafta kurulmuş (kilitli) iken admin tarafından iptal edilen masaların türleri
-    const adminCancelledRows = await this.prisma.meetingParticipant.findMany({
+    const adminCancelledRowsQ = this.prisma.meetingParticipant.findMany({
       where: {
         userId,
         status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED, ParticipantStatus.NO_SHOW] },
@@ -121,19 +120,21 @@ export class MeetingsService {
       },
       select: { meeting: { select: { type: true, scheduledAt: true, updatedAt: true, cancelledAt: true } } },
     });
+    const [parts, weekRows, cancelledRows, adminCancelledRows] = await Promise.all([partsQ, weekRowsQ, cancelledRowsQ, adminCancelledRowsQ]);
+    const weekTableTypes = [...new Set(weekRows.map((r) => r.meeting.type))];
+    const weekCancelledTypes = [...new Set(cancelledRows.map((r) => r.meeting.type))];
     const weekAdminCancelledTypes = [...new Set(adminCancelledRows
       // İptal anı (cancelledAt); alan boş olan eski kayıtlarda son güncellenme zamanı
       .filter((r) => (r.meeting.cancelledAt ?? r.meeting.updatedAt).getTime() >= meetingLockAt(r.meeting.scheduledAt))
       .map((r) => r.meeting.type))];
 
     if (parts.length === 0) return { items: [], weekTableTypes, weekCancelledTypes, weekAdminCancelledTypes };
-    const cancelRightUsed = await this.groupCancelRightUsed(userId);
-    const kankaCancelUsed = parts.some(({ meeting }) => meeting.type === MeetingType.KANKA)
-      ? await this.kankaCancelRightUsed(userId)
-      : false;
-
-    // Masa detay kartı: katılımcıların onaylı profil fotoğrafları
-    const photos = await approvedPhotoMap(this.prisma, parts.flatMap(({ meeting }) => meeting.participants.map((p) => p.userId)));
+    // İptal hakları ve masa detay kartındaki katılımcıların onaylı profil fotoğrafları (paralel)
+    const [cancelRightUsed, kankaCancelUsed, photos] = await Promise.all([
+      this.groupCancelRightUsed(userId),
+      parts.some(({ meeting }) => meeting.type === MeetingType.KANKA) ? this.kankaCancelRightUsed(userId) : Promise.resolve(false),
+      approvedPhotoMap(this.prisma, parts.flatMap(({ meeting }) => meeting.participants.map((p) => p.userId))),
+    ]);
 
     const items = await Promise.all(
       parts.map(async ({ meeting: m }) => {

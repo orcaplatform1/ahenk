@@ -503,7 +503,8 @@ export class AuthService {
   }
 
   async getMe(user: any) {
-    const [primaryCity, activeSubs, activeSanction, maintenanceMode] = await Promise.all([
+    // Bütün sorgular paralel (önceden gelmedi sayacı, Kankamla durumu ve fotoğraf sorguları sırayla bekleniyordu)
+    const [primaryCity, activeSubs, activeSanction, maintenanceMode, noShowCount, kankamla, profilePhotoUrl, pendingPhotos] = await Promise.all([
       user.profile?.primaryCity
         ? this.prisma.city.findUnique({ where: { id: user.profile.primaryCity }, select: { id: true, name: true } })
         : Promise.resolve(null),
@@ -513,9 +514,12 @@ export class AuthService {
       }),
       this.currentSanction(user.id),
       isMaintenanceMode(this.prisma),
+      // Profildeki sarı uyarı için gelmedi uyarı sayacı (askıdan sonra sıfırlanır)
+      activeNoShowWarningsWhere(this.prisma, user.id).then((where) => this.prisma.userSanction.count({ where })),
+      this.kankamlaState(user.id),
+      approvedPhotoUrl(this.prisma, user.id),
+      this.prisma.profilePhoto.count({ where: { userId: user.id, status: 'PENDING' } }),
     ]);
-    // Profildeki sarı uyarı için gelmedi uyarı sayacı (askıdan sonra sıfırlanır)
-    const noShowCount = await this.prisma.userSanction.count({ where: await activeNoShowWarningsWhere(this.prisma, user.id) });
 
     // Paketin açık kısmına göre (hak kalmış): grup / başbaşa
     const hasMasada = activeSubs.some(groupPartOpen);
@@ -536,15 +540,15 @@ export class AuthService {
       // Açık kısımlar (hak kalmış, 4 döngü dolmamış): satın alma kuralı bunlara göre
       openParts: { group: hasMasada, oneOnOne: hasKarsimda },
       // Kankamla: çiftte (kendisi ya da kankası) aktif paket; "BUYER" parayı ödeyen, "KANKA" ücretsiz katılan
-      kankamla: await this.kankamlaState(user.id),
+      kankamla,
       activeSanction: activeSanction ?? null,
       noShowWarning: noShowCount > 0
         ? { count: noShowCount, remaining: Math.max(NO_SHOW_WARNING_LIMIT - noShowCount, 0) }
         : null,
       maintenanceMode,
       // Onaylı profil fotoğrafı (yoksa null) ve onay bekleyen fotoğraf var mı
-      profilePhotoUrl: await approvedPhotoUrl(this.prisma, user.id),
-      profilePhotoPending: (await this.prisma.profilePhoto.count({ where: { userId: user.id, status: 'PENDING' } })) > 0,
+      profilePhotoUrl,
+      profilePhotoPending: pendingPhotos > 0,
       profile: profile ? {
         gender: profile.gender,
         birthDate: profile.birthDate,

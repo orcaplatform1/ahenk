@@ -28,6 +28,8 @@ export default function Acilis() {
       } else if (await getAccess()) {
         if ((await refreshAtLaunch()) !== 'expired') {
           await prefetch(['/auth/me']);
+          // /auth/me ön yüklemeye alınır: rol kontrolü ve açılan ekranlardaki /auth/me çağrıları aynı yanıtı kullanır (tekrar istek yok)
+          prefetch(['/auth/me']);
           const me = await api.get<{ role: string }>('/auth/me').catch(() => null);
           const admin = me?.role === 'ADMIN' || me?.role === 'SUPERADMIN';
           dest = admin ? '/admin' : '/(tabs)';
