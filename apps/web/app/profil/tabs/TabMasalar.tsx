@@ -514,25 +514,6 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
   return (
     <div className="flex flex-col gap-6">
       <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
-      {!kycApproved && (
-        <div
-          className="flex items-center justify-between gap-4 px-5 py-4 rounded-2xl"
-          style={{
-            background: '#000',
-            border: '1px solid #722F37',
-          }}
-        >
-          <p className="text-sm leading-snug" style={{ color: 'rgba(192,57,43,0.85)' }}>
-            Masaya katılmak için kimlik doğrulaması gereklidir.
-          </p>
-          <button
-            onClick={onGoKyc}
-            className="btn-primary whitespace-nowrap shrink-0"
-          >
-            Doğrula
-          </button>
-        </div>
-      )}
       {locked && (
         <a href="/profil?tab=paket" className="btn-primary w-full justify-center">
           Paket Al

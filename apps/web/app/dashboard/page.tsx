@@ -57,16 +57,6 @@ export default function DashboardPage() {
         statuses={statuses}
         tabPastClosing={tabPastClosing}
         onTab={selectTab}
-        notice={me && !kycApproved ? (
-          <section className="ll-card" style={{ textAlign: 'center' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/lock-icon.webp" width={64} height={64} alt="" style={{ display: 'block', margin: '0 auto 14px' }} />
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.65, margin: '0 0 22px' }}>
-              Eşleşme taramasına katılabilmek için kimlik doğrulamanızı (KYC) tamamlamalısınız.
-            </p>
-            <a href="/profil?tab=kyc" className="btn-primary">Kimliğimi Doğrula</a>
-          </section>
-        ) : undefined}
         participation={<LiveParticipation tab={tab} item={tabItem} self={selfParticipant} kanka={kanka} scanning={scanning} />}
       />
     </div>

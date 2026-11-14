@@ -9,6 +9,8 @@ import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenPa
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
 import TcknModal from '@/components/paket/TcknModal';
+import { APP_STORE_URL, PLAY_STORE_URL, devicePlatform } from '@/lib/appLinks';
+import { CARDS, Check, PRIME_PLANS, PaketKarti, type CardKey } from '@/components/paket/PaketKarti';
 
 // Aktif paket / abonelik (yalnız kullanıcının kendi aldıkları)
 interface Subscription {
@@ -22,46 +24,12 @@ interface Subscription {
 }
 interface Rights { group: number; oneOnOne: number; kanka: number }
 
-type CardKey = 'MASADA' | 'KARSIMDA' | 'KANKAMLA' | 'ICERDE' | 'PRIME';
-const PRIME_PLANS = [
-  { key: 'PRIME_1M', label: '1 Aylık' },
-  { key: 'PRIME_3M', label: '3 Aylık' },
-  { key: 'PRIME_6M', label: '6 Aylık' },
-  { key: 'PRIME_12M', label: '12 Aylık' },
-] as const;
-
-// Paket kartları: tam genişlik, tek renk; Prime altın tonunda, diğerleri tema renklerinden
-// badgeBg: Tinder GOLD tarzı hap rozetin dolgu rengi (kartın tonunun koyusu; Prime altın)
-const CARDS: { key: CardKey; name: string; badge: string; desc: string; color: string; badgeBg: string; advantages: string[] }[] = [
-  { key: 'MASADA', name: 'Grup', badge: 'Tek Seferlik', desc: '1 Grup buluşması hakkı', color: '#d6453a', badgeBg: '#9e2f26', advantages: ['1 Grup buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
-  { key: 'KARSIMDA', name: 'Başbaşa', badge: 'Tek Seferlik', desc: '1 Başbaşa buluşması hakkı', color: '#c8743c', badgeBg: '#8f5228', advantages: ['1 Başbaşa buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
-  { key: 'KANKAMLA', name: 'Kankamla', badge: 'Tek Seferlik', desc: '1 Kankamla buluşması hakkı', color: '#8f887f', badgeBg: '#5f5a54', advantages: ['1 Kankamla buluşması hakkı', 'Arkadaşın ücretsiz katılır', 'Hak kullanılana kadar geçerli'] },
-  { key: 'ICERDE', name: 'İçerde', badge: 'Tek Seferlik', desc: '1 Grup + 1 Başbaşa buluşması hakkı', color: '#c0392b', badgeBg: '#86281e', advantages: ['1 Grup buluşması hakkı', '1 Başbaşa buluşması hakkı', 'Haklar kullanılana kadar geçerli'] },
-  { key: 'PRIME', name: 'Prime', badge: 'Abonelik', desc: 'Her 30 günde 1 Grup + 1 Başbaşa + 1 Kankamla', color: '#c9a227', badgeBg: 'linear-gradient(135deg, #f5d76e, #c9a227 55%, #a8861a)', advantages: ['Her 30 günde 1 Grup buluşması hakkı', 'Her 30 günde 1 Başbaşa buluşması hakkı', 'Her 30 günde 1 Kankamla buluşması hakkı', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
-];
-
 const PAY_INFO_WEB = 'Ödemen iyzico ile güvenli şekilde alınır.';
 const PRIME_RENEW_INFO = 'İptal etmediğin sürece aboneliğin seçtiğin süre için aynı fiyatla otomatik olarak yenilenir.';
 
 interface DiscountInfo { referralDiscount: boolean; referralCount: number; inviteeDiscount: boolean; }
 
 interface Props { maintenanceMode?: boolean; }
-
-function Check() {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: 16, height: 16, flexShrink: 0, color: '#c0392b' }}>
-      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-    </svg>
-  );
-}
-
-function Arrow() {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M9 6l6 6-6 6" />
-    </svg>
-  );
-}
 
 export function TabPaket({ maintenanceMode = false }: Props) {
   const prices = usePlanPrices();
@@ -337,7 +305,18 @@ export function TabPaket({ maintenanceMode = false }: Props) {
               <p style={{ color: '#c9c2b8', fontSize: 12, lineHeight: 1.5, margin: 0 }}>
                 Aboneliğini mobil uygulama üzerinden aldığın için iptal işlemini uygulamadan yapabilirsin.
               </p>
-              <a href="ahenk://" className="btn-primary w-full justify-center" style={{ minHeight: 44 }}>Uygulamayı Aç</a>
+              {/* Mağaza yönlendirmesi: iOS → App Store, Android → Play Store, masaüstü → iki mağaza butonu */}
+              {devicePlatform() === 'desktop' ? (
+                <div className="flex gap-2">
+                  <a href={APP_STORE_URL || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!APP_STORE_URL} className="btn-primary flex-1 justify-center" style={{ minHeight: 44, ...(APP_STORE_URL ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>App Store</a>
+                  <a href={PLAY_STORE_URL || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!PLAY_STORE_URL} className="btn-primary flex-1 justify-center" style={{ minHeight: 44, ...(PLAY_STORE_URL ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>Play Store</a>
+                </div>
+              ) : (
+                (() => {
+                  const url = devicePlatform() === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
+                  return <a href={url || undefined} aria-disabled={!url} className="btn-primary w-full justify-center" style={{ minHeight: 44, ...(url ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>Uygulamayı Aç</a>;
+                })()
+              )}
             </div>
           )}
         </div>
@@ -348,35 +327,8 @@ export function TabPaket({ maintenanceMode = false }: Props) {
       <div className="flex flex-col gap-3">
         {CARDS.map((card) => {
           const st = stateOf(card.key);
-          const isPrimeCard = card.key === 'PRIME';
           return (
-            <button
-              key={card.key}
-              onClick={() => { setDetail(card.key); setError(''); window.scrollTo({ top: 0, behavior: 'instant' }); }}
-              className="w-full flex items-center justify-between gap-3 text-left transition-transform active:scale-[0.99]"
-              style={{
-                background: card.color,
-                borderRadius: 18,
-                padding: '18px 20px',
-                minHeight: 76,
-                color: isPrimeCard ? '#1a1406' : '#fff',
-                opacity: st.blocked ? 0.55 : 1,
-              }}
-            >
-              <span className="flex flex-col gap-1 min-w-0">
-                <span className="flex items-center gap-2 flex-wrap">
-                  <span className="font-extrabold" style={{ fontSize: '1.25rem', letterSpacing: '0.01em' }}>{card.name}</span>
-                  <span
-                    className="rounded-full font-extrabold"
-                    style={{ fontSize: '0.7rem', letterSpacing: '0.08em', padding: '3px 10px', background: card.badgeBg, color: isPrimeCard ? '#1a1406' : '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }}
-                  >
-                    {(st.badge ?? card.badge).toLocaleUpperCase('tr-TR')}
-                  </span>
-                </span>
-                <span className="text-sm truncate" style={{ opacity: 0.9 }}>{card.desc}</span>
-              </span>
-              <Arrow />
-            </button>
+            <PaketKarti key={card.key} card={card} badge={st.badge} blocked={st.blocked} onClick={() => { setDetail(card.key); setError(''); window.scrollTo({ top: 0, behavior: 'instant' }); }} />
           );
         })}
       </div>

@@ -238,7 +238,7 @@ export default function Masalarim() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { ready, me, items, kanka, tab, tabItem, selectTab, statuses, reload, tabAdminCancelled, kycApproved, selection, submitSelection } = useMasaTabs();
+  const { ready, me, items, kanka, tab, tabItem, selectTab, statuses, reload, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -257,12 +257,6 @@ export default function Masalarim() {
         <KycNoticeCard />
         {!ready ? <SkeletonBlock lines={5} /> : (
           <>
-            {!kycApproved && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingHorizontal: 20, paddingVertical: 16, borderRadius: 16, backgroundColor: '#000', borderWidth: 1, borderColor: c.wineBorder }}>
-                <T style={{ flex: 1, fontSize: 14, lineHeight: 19.25, color: 'rgba(192,57,43,0.85)' }}>Masaya katılmak için kimlik doğrulaması gereklidir.</T>
-                <BtnPrimary label="Doğrula" onPress={() => router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } })} />
-              </View>
-            )}
             {locked && <BtnPrimary label="Paket Al" full onPress={() => router.navigate('/(tabs)/paketim')} />}
             {locked && (
               <View style={{ backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.25)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>

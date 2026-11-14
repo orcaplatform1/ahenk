@@ -101,10 +101,11 @@ const sections = [
       <>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.65rem', marginBottom: '1.25rem' }}>
           {[
-            { name: 'Masada', price: <PlanPriceText plan="MASADA" suffix="₺" />, desc: '2 grup masası hakkı, 4 döngü geçerli' },
-            { name: 'Karşımda', price: <PlanPriceText plan="KARSIMDA" suffix="₺" />, desc: '1 başbaşa masası hakkı, 4 döngü geçerli' },
-            { name: 'İçerde', price: <PlanPriceText plan="ICERDE" suffix="₺" />, desc: '2 grup + 1 başbaşa masası hakkı (her kısım 4 döngü geçerli), öncelikli eşleştirme' },
-            { name: 'Kankamla', price: <PlanPriceText plan="KANKAMLA" suffix="₺" />, desc: '2 Kankamla masası hakkı (4 döngü geçerli); alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır, 4 kişilik masa' },
+            { name: 'Grup', price: <PlanPriceText plan="MASADA" suffix="₺" />, desc: '1 grup buluşması hakkı' },
+            { name: 'Başbaşa', price: <PlanPriceText plan="KARSIMDA" suffix="₺" />, desc: '1 başbaşa buluşması hakkı' },
+            { name: 'Kankamla', price: <PlanPriceText plan="KANKAMLA" suffix="₺" />, desc: '1 kankamla buluşması hakkı; alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır, 4 kişilik masa' },
+            { name: 'İçerde', price: <PlanPriceText plan="ICERDE" suffix="₺" />, desc: '1 grup + 1 başbaşa buluşması hakkı' },
+            { name: 'Prime', price: null, desc: '1, 3, 6 ve 12 aylık planlar; her 30 günde 1 grup, 1 başbaşa ve 1 kankamla hakkı' },
           ].map((pkg) => (
             <div key={pkg.name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1.1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
               <span style={{ fontWeight: 700, color: '#f4f1ec', minWidth: '90px', fontSize: 13 }}>{pkg.name}</span>
@@ -116,7 +117,7 @@ const sections = [
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.5rem' }}>
           {[
             'Ödemeler iyzico Ödeme Hizmetleri A.Ş. altyapısı üzerinden kredi kartı veya banka kartıyla tahsil edilir.',
-            'Paketler tek seferliktir; abonelik ve otomatik yenileme yoktur. Haklar kullanıldığında ya da 4 döngü (yaklaşık 1 ay) dolduğunda paket sona erer.',
+            'Tek seferlik paketlerde haklar kullanılana kadar geçerlidir.',
             'Fiyatlar KDV dahildir.',
             'Ahenk, makul süre öncesinden bildirim yapmak kaydıyla paket fiyatlarını güncelleme hakkını saklı tutar.',
           ].map((item) => (

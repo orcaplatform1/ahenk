@@ -9,64 +9,10 @@ import { api } from '@/lib/api';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { HeroCountdown } from '@/components/HeroCountdown';
 import { PlanPriceText } from '@/components/PlanPrice';
+import { CARDS, Check, PaketKarti, type CardKey } from '@/components/paket/PaketKarti';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
 
 
-const plans = [
-  {
-    name: 'Masada',
-    planKey: 'MASADA' as const,
-    desc: '2 grup masası hakkı · 4 döngü geçerli',
-    featured: false,
-    bgImage: '/plan-masada.webp',
-    features: ['2 Grup Masası Hakkı', 'Doğrulanmış Profiller', 'OCEAN Kişilik Uyumu', 'Yapay Zeka Masa Raporu'],
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-      </svg>
-    ),
-  },
-  {
-    name: 'Karşımda',
-    planKey: 'KARSIMDA' as const,
-    desc: '1 başbaşa masası hakkı · 4 döngü geçerli',
-    featured: false,
-    bgImage: '/plan-karsimda.webp',
-    features: ['Tek Seferlik Baş Başa Masa', 'Doğrulanmış Profiller', 'OCEAN + Yaş Uyumu', 'Yapay Zeka Masa Raporu'],
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-      </svg>
-    ),
-  },
-  {
-    name: 'İçerde',
-    planKey: 'ICERDE' as const,
-    desc: '2 grup + 1 başbaşa masası hakkı · tek seferlik',
-    featured: true,
-    bgImage: '/plan-icerde.webp',
-    features: ['2 Grup Masası + 1 Baş Başa Masa', 'Tüm Özellikler Dahil'],
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-      </svg>
-    ),
-  },
-  {
-    name: 'Kankamla',
-    planKey: 'KANKAMLA' as const,
-    desc: '2 Kankamla masası hakkı · kankan ücretsiz katılır',
-    featured: false,
-    // Kankamla için ayrı görsel eklenene kadar grup masası görseli
-    bgImage: '/plan-masada.webp',
-    features: ['2 Kankamla Masası Hakkı', 'Kankan Ücretsiz Katılır', '4 Kişilik Masa (2E + 2K)', 'Doğrulanmış Profiller'],
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-      </svg>
-    ),
-  },
-];
 
 
 
@@ -624,6 +570,7 @@ export default function Home() {
 
   const [ownedPlans, setOwnedPlans] = useState<Set<PlanKey>>(new Set());
   const [openParts, setOpenParts] = useState<OpenParts>({ group: false, oneOnOne: false });
+  const [openCard, setOpenCard] = useState<CardKey | null>(null);
   const [authState, setAuthState] = useState<{ loggedIn: boolean; kycApproved: boolean } | null>(null);
   const [kankamla, setKankamla] = useState<KankamlaState | null>(null);
 
@@ -881,91 +828,30 @@ export default function Home() {
               Paketler
             </h2>
           </div>
-          <style dangerouslySetInnerHTML={{ __html: `
-            @keyframes _cardGoldBorder{to{transform:rotate(360deg)}}
-            .lp-feat-wrap{position:relative;border-radius:18px;padding:2px;overflow:hidden;}
-            .lp-feat-wrap::before{content:'';position:absolute;width:300%;height:300%;top:-100%;left:-100%;background:conic-gradient(from 0deg,transparent 68%,#c9a227 78%,#e8c84a 84%,transparent 93%);animation:_cardGoldBorder 3s linear infinite;z-index:0;}
-            .lp-feat-inner{position:relative;z-index:1;border-radius:16px;overflow:hidden;display:flex;flex-direction:row;flex:1;}
-          ` }} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {plans.map((plan) => {
-              const cardKey = plan.planKey;
-              const cs = cardKey === 'KANKAMLA' ? getKankamlaCardState(kankamla) : getPlanCardState(cardKey, ownedPlans, openParts);
-              const inner = (
-                <div
-                  className={plan.featured ? 'lp-feat-inner' : 'relative rounded-2xl overflow-hidden flex-1'}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    minHeight: 260,
-                    ...((!plan.featured) ? {
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.5)',
-                    } : {}),
-                    ...(cs.dimmed ? { opacity: 0.45, pointerEvents: 'none' as const } : {}),
-                  }}
-                >
-                  {/* Sol: metin */}
-                  <div style={{ width: '55%', flexShrink: 0, background: '#0c0909', display: 'flex', flexDirection: 'column', padding: '18px 14px', gap: 10, position: 'relative' }}>
-                    {cs.badge && (
-                      <span className="absolute top-3 inset-x-2 z-10 px-2 py-0.5 text-center leading-tight rounded-full"
-                        style={{
-                          fontSize: '0.65rem', fontWeight: 600,
-                          ...(cs.badgeRed
-                            ? { background: 'rgba(192,57,43,0.85)', color: '#fff', border: '1px solid rgba(192,57,43,0.6)' }
-                            : { background: 'rgba(40,40,40,0.85)', color: '#aaa', border: '1px solid rgba(255,255,255,0.12)' }),
-                        }}>
-                        {cs.badge}
-                      </span>
-                    )}
-                    <div style={{ marginTop: cs.badge ? 22 : 0 }}>
-                      <h3 className="font-serif text-[#f5f5f5]" style={{ fontSize: '1.1rem', marginBottom: 4 }}>{plan.name}</h3>
-                      <div className="flex items-end gap-1" style={{ marginBottom: 2 }}>
-                        <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.7rem' }}><PlanPriceText plan={plan.planKey} /></span>
-                        <span className="text-[#888]" style={{ fontSize: '0.9rem', marginBottom: 2 }}>₺</span>
-                      </div>
-                      <p style={{ color: '#f5f5f5', fontSize: '0.7rem' }}>{plan.desc}</p>
+          {/* Paket ekranıyla aynı Tinder tarzı kartlar; karta basınca avantajlar açılır */}
+          <div className="flex flex-col gap-3">
+            {CARDS.map((card) => {
+              const cs = card.key === 'PRIME' ? null : card.key === 'KANKAMLA' ? getKankamlaCardState(kankamla) : getPlanCardState(card.key, ownedPlans, openParts);
+              const open = openCard === card.key;
+              return (
+                <div key={card.key} className="flex flex-col gap-2">
+                  <PaketKarti card={card} badge={cs?.badge ?? null} blocked={!!cs && !cs.showButton} onClick={() => setOpenCard(open ? null : card.key)} />
+                  {open && (
+                    <div className="ll-card flex flex-col gap-3">
+                      <h4 className="text-base font-semibold text-[#f5f5f5]">Avantajlar</h4>
+                      <ul className="flex flex-col gap-2.5">
+                        {card.advantages.map((a) => (
+                          <li key={a} className="flex items-center gap-2 text-sm text-[#c9c2b8]"><Check />{a}</li>
+                        ))}
+                      </ul>
+                      {(!cs || cs.showButton) && (
+                        <button onClick={() => handlePlanSelect(card.key)} className="btn-primary w-full justify-center" style={{ minHeight: 48 }}>
+                          {card.key === 'PRIME' ? 'Abone Ol' : 'Paket Al'}
+                        </button>
+                      )}
                     </div>
-                    <ul style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1 }}>
-                      {plan.features.map((f) => (
-                        <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', color: '#ccc', lineHeight: 1.3 }}>
-                          <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: 12, height: 12, flexShrink: 0, color: '#c0392b' }}>
-                            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                          </svg>
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    {cs.showButton && (
-                      <button
-                        onClick={() => handlePlanSelect(cardKey)}
-                        className="btn-primary w-full"
-                        style={{ justifyContent: 'center' }}
-                      >
-                        Paket Al
-                      </button>
-                    )}
-                  </div>
-                  {/* Sağ: görsel */}
-                  <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={plan.bgImage} alt={plan.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
-                    {plan.featured && !cs.badge && (
-                      <span className="absolute top-3 right-3 z-10 px-2 py-0.5 text-xs font-semibold rounded-full text-white"
-                        style={{ background: 'rgba(10,5,5,0.75)', border: '1px solid rgba(255,255,255,0.18)' }}>
-                        Tercih Edilen
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
-              );
-
-              return plan.featured ? (
-                <div key={plan.name} className="lp-feat-wrap flex flex-col" style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-                  {inner}
-                </div>
-              ) : (
-                <div key={plan.name} className="flex flex-col">{inner}</div>
               );
             })}
           </div>
@@ -982,7 +868,6 @@ export default function Home() {
               ))}
             </div>
             <ul className="flex flex-col gap-2 text-sm text-[#c9c2b8]" style={{ lineHeight: 1.5 }}>
-              <li>Her 30 günde 1 Grup, 1 Başbaşa ve 1 Kankamla buluşması hakkı.</li>
               <li>Kullanılmayan haklar bir sonraki 30 güne devretmez.</li>
               <li>Dönem sonunda abonelik aynı süreyle otomatik yenilenir.</li>
               <li>Aboneliği iptal ettiğinde hakların dönem sonuna kadar kullanılabilir; iade yapılmaz.</li>

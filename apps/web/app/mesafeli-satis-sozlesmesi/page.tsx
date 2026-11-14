@@ -37,26 +37,26 @@ const sections = [
     content: (
       <>
         <p style={{ marginBottom: '1.25rem', lineHeight: 1.75 }}>
-          İşbu sözleşme, Alıcı'nın aşağıda belirtilen tek seferlik dijital hizmet paketlerinden birini satın alması ve Satıcı'nın bu hizmeti sunması karşılıklı yükümlülüklerini düzenler. Hizmetler <strong style={{ color: '#f4f1ec' }}>tamamen dijital niteliktedir</strong>; fiziksel teslimat söz konusu değildir.
+          İşbu sözleşme, Alıcı'nın aşağıda belirtilen tek seferlik dijital hizmet paketlerinden ya da Prime aboneliğinden birini satın alması ve Satıcı'nın bu hizmeti sunması karşılıklı yükümlülüklerini düzenler. Hizmetler <strong style={{ color: '#f4f1ec' }}>tamamen dijital niteliktedir</strong>; fiziksel teslimat söz konusu değildir.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.85rem' }}>
           {[
             {
-              name: 'Masada Paketi',
+              name: 'Grup Paketi',
               price: <PlanPriceText plan="MASADA" suffix="₺" />,
               items: [
-                'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle 2 grup masası buluşması hakkı',
-                'Haklar, satın alımdan sonraki 4 grup döngüsü (yaklaşık 1 ay) içinde kullanılır',
+                'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle 1 grup buluşması hakkı',
+                'Hak kullanılana kadar geçerlidir',
                 'Grup masası 4-6 kişi',
                 'Mekan seçimi ve rezervasyonu Ahenk tarafından yapılır',
               ],
             },
             {
-              name: 'Karşımda Paketi',
+              name: 'Başbaşa Paketi',
               price: <PlanPriceText plan="KARSIMDA" suffix="₺" />,
               items: [
-                'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle 1 başbaşa masası buluşması hakkı',
-                'Hak, satın alımdan sonraki 4 başbaşa döngüsü (yaklaşık 1 ay) içinde kullanılır',
+                'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle 1 başbaşa buluşması hakkı',
+                'Hak kullanılana kadar geçerlidir',
                 'Baş Başa 2 kişi',
                 'Mekan seçimi ve rezervasyonu Ahenk tarafından yapılır',
               ],
@@ -65,18 +65,26 @@ const sections = [
               name: 'İçerde Paketi',
               price: <PlanPriceText plan="ICERDE" suffix="₺" />,
               items: [
-                '2 grup masası + 1 başbaşa masası buluşması hakkı, öncelikli eşleştirme',
-                'Grup ve başbaşa hakları ayrı ayrı 4\'er döngü (yaklaşık 1 ay) içinde kullanılır',
+                '1 grup + 1 başbaşa buluşması hakkı',
+                'Haklar kullanılana kadar geçerlidir',
               ],
             },
             {
               name: 'Kankamla Paketi',
               price: <PlanPriceText plan="KANKAMLA" suffix="₺" />,
               items: [
-                '2 Kankamla masası hakkı: Alıcı ve aynı cinsiyetteki kankası, karşı cinsten bir kanka çiftiyle 4 kişilik masada buluşur',
+                '1 kankamla buluşması hakkı: Alıcı ve aynı cinsiyetteki kankası, karşı cinsten bir kanka çiftiyle 4 kişilik masada buluşur',
                 'Paketi yalnızca alıcı satın alır; kankası ücretsiz katılır. Paket, kanka seçilmeden satın alınamaz',
-                'Haklar, satın alımdan sonraki 4 Kankamla döngüsü (yaklaşık 1 ay) içinde kullanılır',
+                'Hak kullanılana kadar geçerlidir',
                 'Mekan seçimi ve rezervasyonu Ahenk tarafından yapılır',
+              ],
+            },
+            {
+              name: 'Prime',
+              price: null,
+              items: [
+                '1, 3, 6 ve 12 aylık planlar',
+                'Her 30 günde 1 grup, 1 başbaşa ve 1 kankamla buluşması hakkı',
               ],
             },
           ].map((pkg) => (
@@ -95,7 +103,7 @@ const sections = [
             </div>
           ))}
         </div>
-        <p style={{ marginTop: '0.85rem', color: '#8f887f', fontSize: 13 }}>Tüm fiyatlar KDV dahildir. Paketler tek seferliktir; abonelik ve otomatik yenileme yoktur.</p>
+        <p style={{ marginTop: '0.85rem', color: '#8f887f', fontSize: 13 }}>Tüm fiyatlar KDV dahildir. Tek seferlik paketlerde haklar kullanılana kadar geçerlidir.</p>
       </>
     ),
   },
@@ -125,7 +133,7 @@ const sections = [
           'Ödemenin onaylanmasının ardından paket anında aktifleşir ve kullanıcı hesabına tanımlanır.',
           'Hizmet tamamen dijital niteliktedir; fiziksel ürün veya teslimat söz konusu değildir.',
           'Kullanıcının paket süresince hizmetten yararlanabilmesi için kimlik doğrulamasını tamamlamış olması zorunludur.',
-          'Bir döngü, ilgili masa türünün haftalık eşleştirme dönemidir; paket hakları kullanıldığında ya da 4 döngü dolduğunda sona erer.',
+          'Tek seferlik paket hakları kullanılana kadar geçerlidir; Prime hakları her 30 günde yeniden tanımlanır.',
           'Kimlik doğrulaması tamamlanmadan eşleştirmeye dahil olunamaz.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>

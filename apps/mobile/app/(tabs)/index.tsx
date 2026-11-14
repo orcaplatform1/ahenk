@@ -107,7 +107,7 @@ function label(initials: string) {
 export default function EslesmePaneli() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
+  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, scanning, selfParticipant, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
   const tabItem = rawTabItem && Date.now() < Date.parse(rawTabItem.meeting.scheduledAt) + MEETING_GRACE_MS ? rawTabItem : undefined;
@@ -151,15 +151,6 @@ export default function EslesmePaneli() {
         <View style={{ overflow: 'hidden' }}>
           <Glow />
           <View style={st.column}>
-            {me && !kycApproved && (
-              <Card style={{ alignItems: 'center' }}>
-                <Image source={require('@/assets/lock-icon.webp')} style={{ width: 64, height: 64, marginBottom: 14 }} />
-                <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 21.45, textAlign: 'center', marginBottom: 22 }}>
-                  Eşleşme taramasına katılabilmek için kimlik doğrulamanızı (KYC) tamamlamalısınız.
-                </T>
-                <BtnPrimary label="Kimliğimi Doğrula" style={{ alignSelf: 'center' }} onPress={() => router.push({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } })} />
-              </Card>
-            )}
             <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
 
             {/* Geri sayım */}
