@@ -1,16 +1,55 @@
 // Mobil giriş akışının ortak parçaları: tam ekran arka plan, sol üst geri ok, yasal metin, tam genişlikte yuvarlak butonlar.
 // Renkler Ahenk paletinden (theme). HIG: güvenli alan, en az 44 pt dokunma alanı.
-import React from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Image, Pressable, useWindowDimensions, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { openLegal } from '@/lib/links';
 import { T } from './ui';
 import { ll, tw } from '@/theme/theme';
 
-// Tam ekran arka plan: ekranı tamamen kaplar, oran farkında kenarlardan kırpılır (esnetilmez), ortadan hizalı
-export function AuthBackground() {
-  return <Image source={require('@/assets/mobilappscreen.webp')} resizeMode="cover" style={StyleSheet.absoluteFill} accessibilityIgnoresInvertColors />;
+// Dönüşümlü giriş arka planları: giriş ve "Tekrar hoş geldin" ekranı her açıldığında sıradaki görsel
+// (1 → 2 → 3 → 1 …). En son gösterilen sıra cihazda (AsyncStorage) saklanır; uygulama kapatılıp açılınca kaldığı yerden sürer.
+export const AUTH_BACKGROUNDS = [
+  require('@/assets/mobilappscreen.webp'),
+  require('@/assets/mobilappscreen2.webp'),
+  require('@/assets/mobilappscreen3.webp'),
+];
+const AUTH_BG_KEY = 'ahenk_auth_bg_index';
+let lastShownBg: number | null = null;
+
+// Ekran açılışında (bileşen bağlanınca) bir kez sıradaki görselin sırasını verir; okuma bitene kadar null (arka plan siyah)
+export function useAuthBackgroundIndex(): number | null {
+  const [index, setIndex] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      let last = lastShownBg;
+      if (last === null) {
+        const saved = await AsyncStorage.getItem(AUTH_BG_KEY).catch(() => null);
+        const n = Number(saved);
+        last = saved !== null && Number.isInteger(n) && n >= 0 && n < AUTH_BACKGROUNDS.length ? n : AUTH_BACKGROUNDS.length - 1;
+      }
+      const next = (last + 1) % AUTH_BACKGROUNDS.length;
+      lastShownBg = next;
+      AsyncStorage.setItem(AUTH_BG_KEY, String(next)).catch(() => {});
+      if (alive) setIndex(next);
+    })();
+    return () => { alive = false; };
+  }, []);
+  return index;
+}
+
+// Tam ekran arka plan: görseli içeren alan tam olarak ekran genişliği ve yüksekliği kadar; ekstra büyütme / ölçekleme yok,
+// "cover" modunda, ortalı, esnetilmeden (oran farkında kenarlardan kırpılır). Üç görsel de aynı şekilde yerleşir.
+export function AuthBackground({ index }: { index: number | null }) {
+  const { width, height } = useWindowDimensions();
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, width, height, overflow: 'hidden', backgroundColor: '#000000' }}>
+      {index !== null && <Image source={AUTH_BACKGROUNDS[index]} resizeMode="cover" style={{ width, height }} accessibilityIgnoresInvertColors />}
+    </View>
+  );
 }
 
 export function BackArrow({ onPress }: { onPress: () => void }) {

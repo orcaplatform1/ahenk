@@ -14,7 +14,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { NotificationService } from "../notification/notification.service";
 import { ReviewKycDto } from "./dto/review-kyc.dto";
-import { KycStatus, ReferralStatus } from "../generated/prisma/client";
+import { KycStatus } from "../generated/prisma/client";
 import convertHeic = require("heic-convert");
 
 const UPLOAD_DIR = path.join(process.cwd(), "..", "uploads", "kyc");
@@ -303,10 +303,6 @@ export class KycService {
     if (dto.status === KycStatus.APPROVED) {
       // Paketi olan kişi KYC onayıyla havuza girer: anında masaya atanır
       await enqueueAssign(this.assignQueue, kyc.userId);
-      this.prisma.referral.updateMany({
-        where: { referredId: kyc.userId, status: ReferralStatus.REGISTERED },
-        data:  { status: ReferralStatus.KYC_APPROVED },
-      }).catch(() => {});
     }
 
     return updated;

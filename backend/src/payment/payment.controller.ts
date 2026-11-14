@@ -117,7 +117,7 @@ export class PaymentController {
     return { ok: true };
   }
 
-  // Prime: "Aboneliği İptal Et" — otomatik yenileme durur, haklar dönem sonuna kadar kullanılır, iade yapılmaz
+  // Prime: "Aboneliği İptal Et" — otomatik yenileme durur, iptal anındaki haklar kullanılana kadar geçerli, iade yapılmaz
   @Post("prime/cancel")
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)

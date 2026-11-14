@@ -70,18 +70,29 @@ export const OPEN_KANKA_SUB: Prisma.SubscriptionWhereInput = {
   plan: { in: KANKA_PLANS },
   kankaRights: { gt: 0 },
 };
+// Süren Prime aboneliği: iptal edilmemiş ya da iptal edilmiş ama dönemi henüz bitmemiş Prime.
+// İptal edilen Prime'ın dönemi bitince elde kalan hakları kullanılana kadar durur; bu kayıt artık "aktif Prime" sayılmaz
+// (ikinci Prime / tek seferlik paket kuralları ve profildeki Prime durumu için).
+export function livePrimeWhere(now: Date = new Date()): Prisma.SubscriptionWhereInput {
+  return { status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS }, OR: [{ renewCancelledAt: null }, { expiresAt: null }, { expiresAt: { gt: now } }] };
+}
+export function isLivePrime(s: { plan: SubscriptionPlan; renewCancelledAt?: Date | null; expiresAt?: Date | null }, now: Date = new Date()): boolean {
+  return isPrime(s.plan) && (!s.renewCancelledAt || !s.expiresAt || s.expiresAt.getTime() > now.getTime());
+}
+
 export const RIGHTS_SELECT = {
   plan: true, groupRights: true, groupCycles: true, usedAt: true, oneOnOneCycles: true, kankaRights: true, kankaCycles: true,
 } as const;
 
 // Kısımlarına göre paket durumu: açık kısım varsa ACTIVE, yoksa EXPIRED (iptal edilmiş paket değişmez).
-// Prime hakları bitse de dönem sonuna kadar ACTIVE kalır (30 günde bir yenilenir; süre bitişi prime.ts'de).
+// Prime hakları bitse de abonelik sürdükçe ACTIVE kalır (30 günde bir yenilenir; süre bitişi prime.service.ts'de).
+// İptal edilen Prime'ın dönemi bittiyse elde kalan haklar kullanılana kadar durur: tek seferlik paket gibi haklara göre.
 export async function syncPackageStatus(db: Db, subscriptionId: string): Promise<void> {
   const s = await db.subscription.findUnique({
     where: { id: subscriptionId },
-    select: { status: true, ...RIGHTS_SELECT },
+    select: { status: true, renewCancelledAt: true, expiresAt: true, ...RIGHTS_SELECT },
   });
-  if (!s || s.status === SubscriptionStatus.CANCELLED || isPrime(s.plan)) return;
+  if (!s || s.status === SubscriptionStatus.CANCELLED || isLivePrime(s)) return;
   const next = groupPartOpen(s) || oneOnOnePartOpen(s) || kankaPartOpen(s) ? SubscriptionStatus.ACTIVE : SubscriptionStatus.EXPIRED;
   if (next !== s.status) await db.subscription.update({ where: { id: subscriptionId }, data: { status: next } });
 }

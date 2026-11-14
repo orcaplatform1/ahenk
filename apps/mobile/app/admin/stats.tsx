@@ -82,7 +82,7 @@ export default function AdminStats() {
           {summary && (
             <Grid>
               <StatCard label="Toplam Üye" value={summary.totalUsers} accent={adm.blue} sub={summary.kycPending > 0 ? `${summary.kycPending} KYC bekliyor` : 'Bekleyen KYC yok'} />
-              <StatCard label="Bu Hafta Masa" value={summary.activeMeetingsThisWeek} accent={adm.cyan} sub={`Grup ${summary.groupMeetingsThisWeek} · Başbaşa ${summary.oneOnOneMeetingsThisWeek} · Kankamla ${summary.kankaMeetingsThisWeek}`} />
+              <StatCard label="Bu Hafta Masa" value={summary.activeMeetingsThisWeek} accent={adm.cyan} sub={`Grup ${summary.groupMeetingsThisWeek} · Baş Başa ${summary.oneOnOneMeetingsThisWeek} · Kankamla ${summary.kankaMeetingsThisWeek}`} />
               <StatCard label="Öncü Rozeti" value={summary.pioneer.count} accent={adm.amber} sub={`Kalan kota: ${summary.pioneer.remaining}`} />
             </Grid>
           )}
@@ -99,7 +99,7 @@ export default function AdminStats() {
             <ATitle style={{ marginBottom: 12 }}>Kurulan Masa</ATitle>
             <AMono w={600} style={{ marginBottom: 16, fontSize: 20, color: adm.text }}>{tm.toLocaleString('tr-TR')}</AMono>
             <AGrid gap={10}>
-              {([['Grup', gm], ['Başbaşa', om], ['Kankamla', km]] as const).map(([l, v]) => (
+              {([['Grup', gm], ['Baş Başa', om], ['Kankamla', km]] as const).map(([l, v]) => (
                 <View key={l} style={{ backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 16 }}>
                   <AT style={{ marginBottom: 4, fontSize: 10, color: adm.muted }}>{l}</AT>
                   <AMono w={600} style={{ fontSize: 20, color: adm.text }}>{v.toLocaleString('tr-TR')}</AMono>
@@ -110,7 +110,7 @@ export default function AdminStats() {
           <ACard style={{ marginBottom: 12 }}>
             <ATitle style={{ marginBottom: 8 }}>Algoritma Başarısı</ATitle>
             <AMono w={600} style={{ marginBottom: 4, fontSize: 20, color: adm.text }}>%{algo}</AMono>
-            <AT style={{ fontSize: 11, color: adm.muted }}>Tamamlanan / toplam masa oranı (Grup, Başbaşa ve Kankamla)</AT>
+            <AT style={{ fontSize: 11, color: adm.muted }}>Tamamlanan / toplam masa oranı (Grup, Baş Başa ve Kankamla)</AT>
           </ACard>
           <Grid>
             <StatCard label="Referans Kayıt" value={data.referralRegisteredCount} accent={adm.cyan} />

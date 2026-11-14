@@ -60,7 +60,7 @@ const STATUS_STYLE: Record<string, { label: string; color: string; bg: string; b
 };
 
 const PLAN_LABEL: Record<string, string> = {
-  MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla',
+  MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla',
   PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık',
 };
 
@@ -231,7 +231,7 @@ export default function AdminUsers() {
             title="Üye filtresi"
             options={[
               { value: '', label: 'Tüm üyeler' }, { value: 'NO_PLAN', label: 'Aboneliksiz' },
-              { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' },
+              { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' },
               { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
               { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' },
               { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' },
@@ -387,7 +387,7 @@ export default function AdminUsers() {
                     <span style={{ fontSize: 11, color: MUTED }}>{userModal.profile.occupation}</span>
                   )}
                   <span style={{ fontSize: 11, color: MUTED }}>Grup hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.group ?? 0}</span></span>
-                  <span style={{ fontSize: 11, color: MUTED }}>Başbaşa hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.oneOnOne ?? 0}</span></span>
+                  <span style={{ fontSize: 11, color: MUTED }}>Baş Başa hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.oneOnOne ?? 0}</span></span>
                   <span style={{ fontSize: 11, color: MUTED }}>Kankamla hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.kanka ?? 0}</span></span>
                   <span style={{ fontSize: 11, color: MUTED }}>Kanka: <span style={{ color: '#93c5fd' }}>{userModal.kanka ? userModal.kanka.name : 'yok'}</span></span>
                 </div>
@@ -566,7 +566,7 @@ export default function AdminUsers() {
                       title="Paket seç"
                       style={{ flex: 1, width: 'auto', minWidth: 0 }}
                       options={[
-              { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' },
+              { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' },
               { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
               { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' },
               { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' },

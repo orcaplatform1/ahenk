@@ -23,10 +23,10 @@ const SS: Record<string, { label: string; color: string; bg: string; border: str
   SUSPENDED: { label: 'Karantina', color: adm.amber, bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.3)' },
   DELETED: { label: 'Silindi', color: adm.muted, bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.3)' },
 };
-const PL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
+const PL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 const oceanAvg = (o: AdminUser['oceanScore']) => (o ? ((o.openness + o.conscientiousness + o.extraversion + o.agreeableness + o.neuroticism) / 5).toFixed(0) : '—');
 const planOf = (u: AdminUser) => (u.subscriptions?.length ? u.subscriptions.map(s => PL[s.plan] ?? s.plan).join(', ') : '—');
-const PLANS = [{ value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }];
+const PLANS = [{ value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }];
 // Paket verme: tek seferlik paketler + ücretsiz Prime (1/3/6/12 ay)
 const GRANT_PLANS = [...PLANS, { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' }, { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' }];
 const Sect = ({ children }: { children: React.ReactNode }) => <View style={{ borderTopWidth: 1, borderTopColor: adm.border, paddingTop: 14, gap: 8 }}>{children}</View>;
@@ -133,7 +133,7 @@ export default function AdminUsers() {
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                     {!!m.profile?.birthDate && <AT style={{ fontSize: 11, color: adm.muted }}>{Math.floor((Date.now() - new Date(m.profile.birthDate).getTime()) / 31557600000)} yaş</AT>}
                     {!!m.profile?.occupation && <AT style={{ fontSize: 11, color: adm.muted }}>{m.profile.occupation}</AT>}
-                    {([['Grup hakkı', m.rights?.group ?? 0], ['Başbaşa hakkı', m.rights?.oneOnOne ?? 0], ['Kankamla hakkı', m.rights?.kanka ?? 0], ['Kanka', m.kanka ? m.kanka.name : 'yok']] as const).map(([k, v]) => (
+                    {([['Grup hakkı', m.rights?.group ?? 0], ['Baş Başa hakkı', m.rights?.oneOnOne ?? 0], ['Kankamla hakkı', m.rights?.kanka ?? 0], ['Kanka', m.kanka ? m.kanka.name : 'yok']] as const).map(([k, v]) => (
                       <AT key={k} style={{ fontSize: 11, color: adm.muted }}>{k}: <AT style={{ fontSize: 11, color: '#93c5fd' }}>{String(v)}</AT></AT>
                     ))}
                   </View>

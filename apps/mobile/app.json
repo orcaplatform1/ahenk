@@ -3,7 +3,7 @@
     "name": "Ahenk",
     "slug": "ahenk1",
     "scheme": "ahenk",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/app-icon.png",
@@ -66,7 +66,8 @@
             "DEFAULT"
           ]
         }
-      ]
+      ],
+      "versionCode": 2
     },
     "plugins": [
       "expo-router",
@@ -114,7 +115,8 @@
       ],
       "expo-notifications",
       "expo-iap",
-      "./plugins/withAutofillHighlight"
+      "./plugins/withAutofillHighlight",
+      "./plugins/withAndroidRelease"
     ],
     "experiments": {
       "typedRoutes": false

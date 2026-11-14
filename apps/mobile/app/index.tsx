@@ -1,18 +1,12 @@
-// Açılış ekranı (S-22): 3 sn, arka plan tamamen siyah (ışıma yok), logo kendi merkezi etrafında düz dönerek; ekranın en altında Traders.TR markası.
-// Bu 3 sn boyunca arka planda: yazı tipleri, görseller, oturum yenileme + /auth/me rol kontrolü ve gidilecek ekranın açılış verileri yüklenir.
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// Açılış yönlendirmesi: dönen logolu 3 sn'lik açılış ekranı kaldırıldı. Yerel açılış görseli (expo-splash-screen) görünürken
+// yazı tipleri yüklenir, oturum yenilenir + /auth/me rol kontrolü yapılır ve hemen gidilecek ekrana geçilir.
+// Gidilecek ekranın açılış verileri arka planda ön yüklenir (beklenmez; ekranlar aynı yolları api.get ile çağırır).
+import React, { useEffect } from 'react';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getAccess, getRemembered } from '@/lib/session';
 import { api, prefetch, refreshAtLaunch } from '@/lib/api';
 import { loadFonts, loadImages } from '@/lib/boot';
-import { useReduceMotion } from '@/lib/motion';
-import { c, sans, tw } from '@/theme/theme';
-
-const SPLASH_MS = 3000;
-// Hedef ekran verisi 3 sn'de bitmediyse en fazla bu süreye kadar beklenir; sonra ekran açılır, süren istekler ekrana aynı yanıtla ulaşır
-const DATA_WAIT_MAX_MS = 6000;
 
 // Gidilecek ekranın ilk açılışta istediği GET uçları (ekranlar aynı yolları api.get ile çağırır, ön yüklenen yanıt kullanılır)
 const ADMIN_DATA = ['/admin/alerts', '/admin/stats/overview', '/admin/stats/cities', '/admin/dashboard'];
@@ -20,29 +14,15 @@ const MEMBER_DATA = ['/payment/subscriptions', '/kyc/status', '/kanka/me', '/mee
 
 export default function Acilis() {
   const router = useRouter();
-  const reduce = useReduceMotion();
-  const insets = useSafeAreaInsets();
-  const spin = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (reduce) return;
-    const loop = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: true }));
-    loop.start();
-    return () => loop.stop();
-  }, [reduce, spin]);
-
-  const [fontsReady, setFontsReady] = useState(false);
   useEffect(() => {
     let alive = true;
-    const started = Date.now();
-    const fonts = loadFonts().catch(() => undefined).finally(() => { if (alive) setFontsReady(true); });
-    const images = loadImages().catch(() => undefined);
+    const fonts = loadFonts().catch(() => undefined);
+    loadImages().catch(() => undefined);
     (async () => {
-      // Kalıcı oturum: her açılışta mevcut yenileme akışı (/auth/refresh)
       // Yönlendirme: ADMIN/SUPERADMIN → Yönetim Paneli, üye → Eşleşme Paneli (1. sekme), oturum yok → Giriş;
       // oturum yok ama cihaz hatırlanıyorsa ("Bu cihazda beni hatırla") → Tekrar hoş geldin ekranı
       let dest: '/(tabs)' | '/admin' | '/giris' | '/tekrar-hosgeldin' = '/giris';
-      let data: Promise<unknown> = Promise.resolve();
       if (!(await getAccess()) && (await getRemembered())) {
         dest = '/tekrar-hosgeldin';
       } else if (await getAccess()) {
@@ -51,33 +31,14 @@ export default function Acilis() {
           const me = await api.get<{ role: string }>('/auth/me').catch(() => null);
           const admin = me?.role === 'ADMIN' || me?.role === 'SUPERADMIN';
           dest = admin ? '/admin' : '/(tabs)';
-          data = prefetch(admin ? ADMIN_DATA : MEMBER_DATA);
+          prefetch(admin ? ADMIN_DATA : MEMBER_DATA);
         }
       }
-      const capped = Promise.race([data, new Promise((r) => setTimeout(r, Math.max(0, DATA_WAIT_MAX_MS - (Date.now() - started))))]);
-      await Promise.all([fonts, images, capped]);
-      const wait = Math.max(0, SPLASH_MS - (Date.now() - started));
-      setTimeout(() => { if (alive) router.replace(dest); }, wait);
+      await fonts;
+      if (alive) router.replace(dest);
     })();
     return () => { alive = false; };
   }, [router]);
 
-  // Web Navbar logosu gibi kendi merkezi etrafında saat yönünde düz dönüş (rotate 0→360deg)
-  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-  return (
-    <View style={{ flex: 1, backgroundColor: '#000000', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-      {/* Yerel açılış ekranıyla (app.json expo-splash-screen imageWidth 160, ekran ortası) aynı boy ve aynı yer */}
-      <Animated.View style={{ transform: [{ rotate }] }}>
-        <Image source={require('@/assets/start_logo.jpg')} style={{ width: 160, height: 160, borderRadius: 80 }} />
-      </Animated.View>
-      {/* Yazı tipleri yüklenene kadar (birkaç ms) yer tutulur, yazı görünmez; yüklenmemiş yazı tipi adı kullanılmaz */}
-      <Text style={{ position: 'absolute', left: 24, right: 24, bottom: insets.bottom + 16, color: tw.text, fontSize: 12, lineHeight: 18, textAlign: 'center', opacity: fontsReady ? 1 : 0, ...(fontsReady ? { fontFamily: sans(400) } : null) }}>
-        Ahenk bir{' '}
-        <Text style={{ color: c.tradersText, ...(fontsReady ? { fontFamily: sans(700) } : { fontWeight: '700' }) }}>Traders</Text>
-        <Text style={{ color: c.tradersTR, ...(fontsReady ? { fontFamily: sans(800) } : { fontWeight: '800' }) }}>.TR</Text>
-        <Text> 🇹🇷</Text>
-        {' '}ticari markasıdır.
-      </Text>
-    </View>
-  );
+  return <View style={{ flex: 1, backgroundColor: '#000000' }} />;
 }

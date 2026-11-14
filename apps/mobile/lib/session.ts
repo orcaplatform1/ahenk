@@ -37,12 +37,14 @@ export async function getKind(): Promise<SessionKind | null> {
   return (await SecureStore.getItemAsync(KIND)) as SessionKind | null;
 }
 // Çıkış "Bu cihazda beni hatırla": oturum kapanır (erişim token'ı ve aktif oturum silinir), yenileme token'ı cihazda hatırlanır
-export async function rememberDevice(firstName: string) {
+// Sonuç: true → cihaz hatırlandı (Tekrar hoş geldin ekranına gidilir), false → saklanacak token yoktu
+export async function rememberDevice(firstName: string): Promise<boolean> {
   const refresh = await getRefresh();
   await clearTokens();
-  if (!refresh) return;
+  if (!refresh) return false;
   await SecureStore.setItemAsync(REMEMBER_REFRESH, refresh);
   await SecureStore.setItemAsync(REMEMBER_NAME, firstName);
+  return true;
 }
 export async function getRemembered(): Promise<{ refresh: string; firstName: string } | null> {
   const refresh = await SecureStore.getItemAsync(REMEMBER_REFRESH);

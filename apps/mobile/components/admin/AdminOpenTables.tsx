@@ -162,9 +162,9 @@ export function AdminOpenTables({ isSuperadmin, onUserClick }: { isSuperadmin: b
             {data.group.length === 0 && <Empty>Açık grup masası yok</Empty>}
             {data.group.map(t => <TableCard key={t.id} t={t} {...common} />)}
           </View>
-          <SectionTitle>BAŞBAŞA MASALARI ({data.oneOnOne.length})</SectionTitle>
+          <SectionTitle>BAŞ BAŞA MASALARI ({data.oneOnOne.length})</SectionTitle>
           <View style={{ gap: 10, marginBottom: 24 }}>
-            {data.oneOnOne.length === 0 && <Empty>Kurulmuş başbaşa masası yok</Empty>}
+            {data.oneOnOne.length === 0 && <Empty>Kurulmuş baş başa masası yok</Empty>}
             {data.oneOnOne.map(t => <TableCard key={t.id} t={t} {...common} />)}
           </View>
           <SectionTitle>KANKAMLA MASALARI ({data.kanka?.length ?? 0})</SectionTitle>
@@ -172,7 +172,7 @@ export function AdminOpenTables({ isSuperadmin, onUserClick }: { isSuperadmin: b
             {(data.kanka?.length ?? 0) === 0 && <Empty>Kurulmuş Kankamla masası yok</Empty>}
             {(data.kanka ?? []).map(t => <TableCard key={t.id} t={t} {...common} />)}
           </View>
-          <SectionTitle>BAŞBAŞA: EŞİ BEKLEYENLER ({data.waiting.length})</SectionTitle>
+          <SectionTitle>BAŞ BAŞA: EŞİ BEKLEYENLER ({data.waiting.length})</SectionTitle>
           <View style={{ gap: 10 }}>
             {data.waiting.length === 0 && <Empty>Eşi bekleyen yok</Empty>}
             {data.waiting.map(w => <WaitingRow key={w.userId} w={w} {...common} />)}

@@ -97,7 +97,7 @@ export default function AdminSettings() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <Toggle
                 label="Eşleştirme Aktif"
-                desc="Grup ve başbaşa masa ataması yapılsın mı"
+                desc="Grup ve baş başa masa ataması yapılsın mı"
                 value={settings.matchingEnabled}
                 onChange={v => setSettings(s => s ? { ...s, matchingEnabled: v } : s)}
               />

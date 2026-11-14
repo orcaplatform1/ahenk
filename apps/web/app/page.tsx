@@ -235,7 +235,7 @@ function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:stri
           { title: 'Algoritma ne yapıyor?', body: 'Profilini oluşturduktan sonra algoritma devreye girer. Seni sadece sana benzer insanlarla değil, seninle gerçek bir ahenk kurabilecek insanlarla eşleştirir. Meslek alanın, yaşın ve mekan tercihin de hesaba katılır ama bunlar yardımcı faktörler. Asıl ağırlık kişilik uyumunda.' },
           { title: 'Masa nasıl kurulur?', body: 'Her hafta belirli bir gün eşleşmeler kapanır. Algoritma o ana kadar biriken profilleri değerlendirir, en yüksek uyum skoruna sahip grupları veya iki kişiyi bir araya getirir ve masayı kurar. Sen sadece onayı beklersin.' },
           { title: 'Buluşma sonrası ne olur?', body: 'Her buluşmanın ardından Ahenk, masa hakkında kısa bir yapay zeka raporu oluşturur. Grubun genel uyum skoru, öne çıkan kişilik dinamikleri ve masa enerjisi hakkında bir özet; sadece senin için, sadece o akşam için.' },
-          { title: 'Başbaşa buluşmalar farklı mı?', body: 'Grup masalarında ahenk aranır, başbaşa buluşmalarda ise derinlik. İki kişilik eşleşmelerde algoritma çok daha hassas çalışır: yaş uyumu, kişilik dengesi ve beklenti örtüşmesi ön plana çıkar. Karşındaki kişi rastgele değil, seninle birebir örtüşen biri.' },
+          { title: 'Baş Başa buluşmalar farklı mı?', body: 'Grup masalarında ahenk aranır, baş başa buluşmalarda ise derinlik. İki kişilik eşleşmelerde algoritma çok daha hassas çalışır: yaş uyumu, kişilik dengesi ve beklenti örtüşmesi ön plana çıkar. Karşındaki kişi rastgele değil, seninle birebir örtüşen biri.' },
           { title: '180 günde bir yenilenir.', body: 'Kişilik sabit, ama bağlam değişir. Bu yüzden OCEAN profilin 180 günde bir güncellenir; o dönemki sen, o dönemki ahenginle buluşur.' },
         ]} />
       </section>
@@ -251,7 +251,7 @@ function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:stri
           { title: 'Yabancıyla tanışmak bu kadar zor mu olmalı?', body: 'Bir arkadaşının arkadaşıyla tanışırsın; sormadan, araştırmadan, sadece güvenirsin. Ahenk tam bunu yapıyor. Aramana gerek yok, seçmene gerek yok. Algoritma seçer, sen sadece gelirsin.' },
           { title: 'Kim olduğunu biliyoruz.', body: 'Platforma katılmak için telefon numaranı doğruluyor, kimliğin kontrol ediliyor ve kısa bir video doğrulaması yapılıyor. Masanda oturan herkes aynı süreçten geçti. Anonim hesap yok, sahte profil yok.' },
           { title: 'Nerede buluşuyorsunuz?', body: 'Her buluşma şehrindeki restoran ve kafelerden gerçekleşir. Kişilik profiline ve mekan tercihine göre o haftaki buluşma yeri belirlenir. Adres ve saat bilgisi buluşmadan önce sana iletilir. Özel bir anlaşma veya ekstra ücret yok; sadece kendi hesabını ödersin.' },
-          { title: 'Yalnız değilsin.', body: 'Grup masası 4-6 kişi, Baş Başa 2 kişi, Kankamla 4 kişi. Başbaşa buluşmalarda ise eşleşme çift yönlü onaylanmış; karşındaki kişi de aynı süreci tamamlamış, aynı şartları kabul etmiş biri.' },
+          { title: 'Yalnız değilsin.', body: 'Grup masası 4-6 kişi, Baş Başa 2 kişi, Kankamla 4 kişi. Baş Başa buluşmalarda ise eşleşme çift yönlü onaylanmış; karşındaki kişi de aynı süreci tamamlamış, aynı şartları kabul etmiş biri.' },
           { title: 'Kimseyi tanımak zorunda değilsin.', body: 'Masadaki diğer kişilerin soyadını, mesleğini, yaşını önceden göremezsin; onlar da seninkini göremez. Buluşma anında tanışırsınız. Bu hem heyecan hem de eşitlik demek.' },
           { title: 'Bir sorun olursa?', body: 'Buluşma sonrası değerlendirme sistemi var. Bir daha eşleşmek istemediğin biri varsa belirtirsin; bir daha o kişiyle asla karşılaşmazsın. Ciddi bir durum bildirirsen kürasyon ekibimiz devreye girerek inceler ve o kişinin hesabı süresiz yasaklanır, tekrar kayıt yapmasına bir daha izin verilmez.' },
         ]} />
@@ -866,7 +866,7 @@ export default function Home() {
             <ul className="flex flex-col gap-2 text-sm text-[#c9c2b8]" style={{ lineHeight: 1.5 }}>
               <li>Kullanılmayan haklar bir sonraki 30 güne devretmez.</li>
               <li>Dönem sonunda abonelik aynı süreyle otomatik yenilenir.</li>
-              <li>Aboneliği iptal ettiğinde hakların dönem sonuna kadar kullanılabilir; iade yapılmaz.</li>
+              <li>Aboneliği iptal ettiğinde, iptal anında elinde kalan hakların süre sınırı olmadan, kullanılana kadar geçerli kalır; iade yapılmaz.</li>
               <li>Mağazadan (App Store / Google Play) alınan abonelik mağazadan, iyzico ile alınan abonelik web sitesinden ya da uygulamadan iptal edilir.</li>
             </ul>
           </div>

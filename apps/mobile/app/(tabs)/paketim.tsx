@@ -1,6 +1,6 @@
 // Sekme 4 — Paketim: apps/web/app/profil/tabs/TabPaket.tsx. Ödeme: uygulama içi satın alma (App Store / Play Store), mobil fiyat (mobileTL).
 import React, { useCallback, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { BackHandler, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '@/lib/api';
 import { PAY_INFO, openStoreSubscriptions, startPurchase } from '@/lib/purchase';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
-import { BtnPrimary, Card, Head, MaintenanceNotice, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
+import { Btn, BtnPrimary, Card, Head, MaintenanceNotice, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
 import { useWinback } from '@/components/Winback';
 import { c, ll, sans, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
@@ -26,14 +26,21 @@ const PRIME_PLANS = [
   { key: 'PRIME_12M', label: '12 Aylık' },
 ] as const;
 
-// web TabPaket CARDS ile aynı: tam genişlik tek renk kart; Prime altın tonunda, diğerleri tema renklerinden
-// badgeBg: Tinder GOLD tarzı hap rozetin dolgu rengi (kartın tonunun koyusu; Prime altın) — web TabPaket ile aynı
-const CARDS: { key: CardKey; name: string; badge: string; desc: string; color: string; badgeBg: string[]; advantages: string[] }[] = [
-  { key: 'MASADA', name: 'Grup', badge: 'Tek Seferlik', desc: '1 Grup buluşması hakkı', color: '#d6453a', badgeBg: ['#9e2f26'], advantages: ['1 Grup buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
-  { key: 'KARSIMDA', name: 'Başbaşa', badge: 'Tek Seferlik', desc: '1 Başbaşa buluşması hakkı', color: '#c8743c', badgeBg: ['#8f5228'], advantages: ['1 Başbaşa buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
-  { key: 'KANKAMLA', name: 'Kankamla', badge: 'Tek Seferlik', desc: '1 Kankamla buluşması hakkı', color: '#8f887f', badgeBg: ['#5f5a54'], advantages: ['1 Kankamla buluşması hakkı', 'Arkadaşın ücretsiz katılır', 'Hak kullanılana kadar geçerli'] },
-  { key: 'ICERDE', name: 'İçerde', badge: 'Tek Seferlik', desc: '1 Grup + 1 Başbaşa buluşması hakkı', color: '#c0392b', badgeBg: ['#86281e'], advantages: ['1 Grup buluşması hakkı', '1 Başbaşa buluşması hakkı', 'Haklar kullanılana kadar geçerli'] },
-  { key: 'PRIME', name: 'Prime', badge: 'Abonelik', desc: 'Her 30 günde 1 Grup + 1 Başbaşa + 1 Kankamla', color: '#c9a227', badgeBg: ['#f5d76e', '#c9a227', '#a8861a'], advantages: ['Her 30 günde 1 Grup buluşması hakkı', 'Her 30 günde 1 Başbaşa buluşması hakkı', 'Her 30 günde 1 Kankamla buluşması hakkı', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
+// web components/paket/PaketKarti.tsx CARDS ile aynı: premium kart — aynı renk ailesinde koyudan ortaya geçişli arka plan.
+// Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, altın çerçeve ve altın detaylı.
+// badgeBg / badgeFg: Tinder GOLD tarzı hap rozet (kartın renk tonuna uyumlu; İçerde ve Prime altın)
+const GOLD = ['#f5d76e', '#c9a227', '#a8861a'];
+const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient: [string, string]; fg: string; nameColor: string; border?: string; badgeBg: string[]; badgeFg: string; advantages: string[] }[] = [
+  { key: 'MASADA', name: 'Grup Paketi', badge: 'Tek Seferlik', desc: "1 Grup Masası'nda buluşma hakkı", gradient: ['#06301c', '#1c7a49'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: ['#2e9e62'], badgeFg: '#ffffff',
+    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', "1 Grup Masası'nda buluşma hakkı", 'Masada erkek ve kadın eşit eşit sayı', 'Bu hak masada sen buluşana kadar geçerli'] },
+  { key: 'KARSIMDA', name: 'Baş Başa Paketi', badge: 'Tek Seferlik', desc: "1 Baş Başa Masası'nda buluşma hakkı", gradient: ['#3d0907', '#a3231b'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: ['#d6453a'], badgeFg: '#ffffff',
+    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Baş Başa Masası'nda buluşma hakkı", 'Bu hak masada sen buluşana kadar geçerli'] },
+  { key: 'KANKAMLA', name: 'Kankamla Paketi', badge: 'Tek Seferlik', desc: "1 Kankamla Masası'nda buluşma hakkı", gradient: ['#071a3a', '#1d4f9c'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: ['#3b7dd8'], badgeFg: '#ffffff',
+    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Kankamla Masası'nda buluşma hakkı", 'Kankanı davet ederek ücretsiz çağırma', 'Bu hak masada sen buluşana kadar geçerli'] },
+  { key: 'ICERDE', name: 'İçerde Paketi', badge: 'Tek Seferlik', desc: "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı", gradient: ['#3a2804', '#9c7412'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: GOLD, badgeFg: '#1a1406',
+    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı", 'Bu haklar masada sen buluşana kadar geçerli'] },
+  { key: 'PRIME', name: 'Prime Paket', badge: 'Abonelik', desc: 'Her ay 1 Grup + 1 Baş Başa + 1 Kankamla Masası', gradient: ['#000000', '#2b2d31'], fg: '#f4f1ec', nameColor: '#e8c84a', border: '#c9a227', badgeBg: GOLD, badgeFg: '#1a1406',
+    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "Her ay 1 Grup Masası + 1 Baş Başa Masası + 1 Kankamla Masası'nda buluşma hakkı", 'Aboneliği iptal etsen dahi, bu haklar masada sen buluşana kadar geçerli', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
 ];
 const PRIME_RENEW_INFO = 'İptal etmediğin sürece aboneliğin seçtiğin süre için aynı fiyatla otomatik olarak yenilenir.';
 
@@ -83,6 +90,12 @@ export default function Paketim() {
     api.get<{ referralDiscount: boolean; inviteeDiscount: boolean }>('/payment/discount-info').then(setDiscount).catch(() => {});
   }, [loadSubs]);
   useFocusEffect(load);
+  // Paket detay ekranında Android geri tuşu / hareketi Eşleşme Paneli'ne değil, Paketim'deki paket listesine döner
+  useFocusEffect(useCallback(() => {
+    if (!detail) return undefined;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { setDetail(null); setError(''); return true; });
+    return () => sub.remove();
+  }, [detail]));
 
   async function sendReferral() {
     if (!refPhone || refPhone.length !== 10 || !refPhone.startsWith('5')) { setRefMsg('Geçerli bir numara girin (5 ile başlayan 10 hane).'); return; }
@@ -121,11 +134,11 @@ export default function Paketim() {
     return hasReferral ? { now: p.mobileDiscountTL, old: p.mobileTL } : { now: p.mobileTL, old: null };
   };
   const stateOf = (key: CardKey) => {
-    if (key === 'PRIME') return primeActive ? { blocked: true, badge: 'Aktif Paketiniz' as string | null, needsKanka: false } : { blocked: false, badge: null, needsKanka: false };
-    if (key === 'KANKAMLA') { const k = getKankamlaCardState(kankamla); return { blocked: !k.showButton, badge: k.badge, needsKanka: k.needsKanka }; }
+    if (key === 'PRIME') return primeActive ? { blocked: true, badge: 'Aktif Paketiniz' as string | null } : { blocked: false, badge: null };
+    if (key === 'KANKAMLA') { const k = getKankamlaCardState(kankamla); return { blocked: !k.showButton, badge: k.badge }; }
     const owned = new Set(subs.map((s) => s.plan).filter((p): p is PlanKey => p === 'MASADA' || p === 'KARSIMDA' || p === 'ICERDE'));
     const cs = getPlanCardState(key, owned, openParts);
-    return { blocked: !cs.showButton, badge: cs.badge, needsKanka: false };
+    return { blocked: !cs.showButton, badge: cs.badge };
   };
   const prime = subs.find((s) => s.isPrime);
 
@@ -142,20 +155,31 @@ export default function Paketim() {
         <ScrollView contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 32, gap: 16, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
           <KycNoticeCard />
           {maintenance && <MaintenanceNotice />}
-          <Pressable onPress={() => { setDetail(null); setError(''); }} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}>
-            <T style={{ fontSize: 14, color: ll.label }}>← Paketler</T>
-          </Pressable>
+          {/* "← Paketler": Paketim'deki paket listesine döner; mevcut pillRed etiket stili (yuvarlak köşeli) */}
+          <Btn variant="pillRed" label="← Paketler" style={{ alignSelf: 'flex-start' }} onPress={() => { setDetail(null); setError(''); }} />
           <Card style={{ gap: 20 }}>
             <T w={700} style={{ fontSize: 28, lineHeight: 34, color: isP ? '#e8c84a' : ll.text }}>{card.name}</T>
             {isP && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 8 }}>
                 {PRIME_PLANS.map((pl) => {
                   const on = primePlan === pl.key;
+                  // 3 aylık plan: "Tercih Edilen" etiketi, altın çerçeve ve hafif altın geçişli arka plan (web TabPaket ile aynı)
+                  const pref = pl.key === 'PRIME_3M';
                   return (
                     <Pressable key={pl.key} onPress={() => setPrimePlan(pl.key)} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                      style={{ width: '48%', minHeight: 56, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, borderWidth: on ? 2 : 1, borderColor: on ? '#c9a227' : 'rgba(255,255,255,0.12)', backgroundColor: on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)' }}>
-                      <T w={600} style={{ fontSize: 14, color: ll.text }}>{pl.label}</T>
-                      <T style={{ fontSize: 12, color: ll.text2, marginTop: 2 }}>{priceView(pl.key).now ?? '—'} ₺</T>
+                      style={{ width: '48%', minHeight: 56, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on || pref ? '#c9a227' : 'rgba(255,255,255,0.12)', backgroundColor: pref ? 'transparent' : on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)' }}>
+                      {pref && <LinearGradient colors={['rgba(201,162,39,0.22)', 'rgba(201,162,39,0.06)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 11 }} />}
+                      <View style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
+                        <T w={600} style={{ fontSize: 14, color: ll.text }}>{pl.label}</T>
+                        <T style={{ fontSize: 12, color: ll.text2, marginTop: 2 }}>{priceView(pl.key).now ?? '—'} ₺</T>
+                      </View>
+                      {pref && (
+                        <View pointerEvents="none" style={{ position: 'absolute', top: -10, left: 0, right: 0, alignItems: 'center' }}>
+                          <LinearGradient colors={GOLD as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
+                            <T w={800} style={{ fontSize: 9.9, letterSpacing: 0.8, color: '#1a1406' }}>TERCİH EDİLEN</T>
+                          </LinearGradient>
+                        </View>
+                      )}
                     </Pressable>
                   );
                 })}
@@ -173,8 +197,8 @@ export default function Paketim() {
             </View>
             {!!error && <T style={{ fontSize: 14, color: tw.accent }}>{error}</T>}
             <BtnPrimary full disabled={busy} style={[{ minHeight: 52 }, busy && { opacity: 0.5 }]}
-              label={buying === planKey ? 'Yönlendiriliyor…' : st.blocked ? (st.badge ?? (isP ? 'Abone Ol' : 'Paket Al')) : st.needsKanka ? 'Önce Kanka Davet Et' : isP ? 'Abone Ol' : 'Paket Al'}
-              onPress={() => st.needsKanka ? router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'profil' } }) : buy(planKey)} />
+              label={buying === planKey ? 'Yönlendiriliyor…' : st.blocked ? (st.badge ?? (isP ? 'Abone Ol' : 'Paket Al')) : isP ? 'Abone Ol' : 'Paket Al'}
+              onPress={() => buy(planKey)} />
             <T style={{ fontSize: 12, lineHeight: 18, color: ll.label, textAlign: 'center' }}>{PAY_INFO}{isP ? ` ${PRIME_RENEW_INFO}` : ''}</T>
           </Card>
         </ScrollView>
@@ -202,7 +226,7 @@ export default function Paketim() {
                 <BtnPrimary label={refSending ? '…' : 'Davet Gönder'} full disabled={refSending} style={refSending ? { opacity: 0.5 } : undefined} onPress={sendReferral} />
                 <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
                   <T style={{ color: c.tAaa, fontSize: 12, lineHeight: 18 }}>
-                    Davet ettiğiniz arkadaşınız, telefon numarasını ve kimlik doğrulamasını yaptıktan sonra sistem size otomatik indirim hakkı tanımlar. Arkadaşınız da başka arkadaşlarını davet edip bu şartlar yerine geldiğinde o da indirim hakkı kazanır. İndirim hakları toplu olarak kullanılamaz ve devredilemez. <T w={700} style={{ fontSize: 12, color: '#fff' }}>Her bir indirim hakkı, yalnızca bir paket satın alımında geçerlidir.</T>
+                    Davet ettiğin arkadaşın herhangi bir paket aldığında veya abone olduğunda sana %10 indirim hakkı tanımlanır. Her indirim hakkı yalnızca bir paket satın alımında geçerlidir, toplu kullanılamaz ve devredilemez.
                   </T>
                 </View>
               </View>
@@ -220,7 +244,7 @@ export default function Paketim() {
                   <T w={700} style={{ fontSize: 12, color: '#fff', letterSpacing: 0.3 }}>AKTİF PAKET</T>
                   <T w={600} style={{ fontSize: 12, color: c.tAaa, flexShrink: 1, textAlign: 'right' }}>{subs.map((s) => s.name).join(', ')}</T>
                 </View>
-                {([['Grup', rights.group], ['Başbaşa', rights.oneOnOne], ['Kankamla', rights.kanka]] as const).map(([label, n]) => (
+                {([['Grup', rights.group], ['Baş Başa', rights.oneOnOne], ['Kankamla', rights.kanka]] as const).map(([label, n]) => (
                   <View key={label} style={{ flexDirection: 'row', justifyContent: 'space-between' }}><T style={{ fontSize: 12, color: c.tAaa }}>{label}</T><T style={{ fontSize: 12, color: c.tAaa }}>{n}</T></View>
                 ))}
                 {!!prime && !prime.renewCancelledAt && (
@@ -237,22 +261,24 @@ export default function Paketim() {
             <View style={{ gap: 12 }}>
               {CARDS.map((card) => {
                 const st = stateOf(card.key);
-                const isP = card.key === 'PRIME';
-                const fg = isP ? '#1a1406' : '#fff';
+                const fg = card.fg;
                 return (
                   <Pressable key={card.key} onPress={() => { setDetail(card.key); setError(''); }} accessibilityRole="button" accessibilityLabel={`${card.name}, ${card.desc}`}
-                    style={({ pressed }) => ({ backgroundColor: card.color, borderRadius: 18, paddingVertical: 18, paddingHorizontal: 20, minHeight: 76, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, opacity: st.blocked ? 0.55 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
-                    <View style={{ flex: 1, gap: 4 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <T w={800} style={{ fontSize: 20, lineHeight: 26, color: fg }}>{card.name}</T>
-                        <LinearGradient colors={(card.badgeBg.length > 1 ? card.badgeBg : [card.badgeBg[0], card.badgeBg[0]]) as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                          style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
-                          <T w={800} style={{ fontSize: 11.2, letterSpacing: 0.9, color: fg }}>{(st.badge ?? card.badge).toLocaleUpperCase('tr-TR')}</T>
-                        </LinearGradient>
+                    style={({ pressed }) => ({ borderRadius: 18, borderWidth: 1, borderColor: card.border ?? 'rgba(255,255,255,0.08)', overflow: 'hidden', opacity: st.blocked ? 0.55 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
+                    <LinearGradient colors={card.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                      style={{ paddingVertical: 18, paddingHorizontal: 20, minHeight: 76, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <View style={{ flex: 1, gap: 4 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <T w={800} style={{ fontSize: 20, lineHeight: 26, color: card.nameColor }}>{card.name}</T>
+                          <LinearGradient colors={(card.badgeBg.length > 1 ? card.badgeBg : [card.badgeBg[0], card.badgeBg[0]]) as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                            style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
+                            <T w={800} style={{ fontSize: 11.2, letterSpacing: 0.9, color: card.badgeFg }}>{(st.badge ?? card.badge).toLocaleUpperCase('tr-TR')}</T>
+                          </LinearGradient>
+                        </View>
+                        <T numberOfLines={1} style={{ fontSize: 14, color: fg, opacity: 0.9 }}>{card.desc}</T>
                       </View>
-                      <T numberOfLines={1} style={{ fontSize: 14, color: fg, opacity: 0.9 }}>{card.desc}</T>
-                    </View>
-                    <Arrow color={fg} />
+                      <Arrow color={card.border ?? fg} />
+                    </LinearGradient>
                   </Pressable>
                 );
               })}

@@ -105,7 +105,7 @@ export default function HikayemizPage() {
       {/* Bölüm 2 */}
       <TwoCol
         title="İki format, tek felsefe."
-        body="Ahenk'te üç buluşma formatı sunuyoruz: Grup masası 4-6 kişi, Baş Başa 2 kişi, Kankamla 4 kişi. Grup masalarında algoritmanın bir araya getirdiği insanlar buluşuyor. Başbaşa buluşmalarda ise algoritma sizi ikili olarak eşleştiriyor; derinlemesine, bire bir, karşılıklı. Her formatta buluşma bir restoran ya da kafede, kamuya açık bir ortamda, yüz yüze gerçekleşiyor. Kapalı kapılar yok, belirsizlik yok. Sadece gerçek insanlar, gerçek bir ortam."
+        body="Ahenk'te üç buluşma formatı sunuyoruz: Grup masası 4-6 kişi, Baş Başa 2 kişi, Kankamla 4 kişi. Grup masalarında algoritmanın bir araya getirdiği insanlar buluşuyor. Baş Başa buluşmalarda ise algoritma sizi ikili olarak eşleştiriyor; derinlemesine, bire bir, karşılıklı. Her formatta buluşma bir restoran ya da kafede, kamuya açık bir ortamda, yüz yüze gerçekleşiyor. Kapalı kapılar yok, belirsizlik yok. Sadece gerçek insanlar, gerçek bir ortam."
       />
 
       {/* Bölüm 3 */}
@@ -126,13 +126,13 @@ export default function HikayemizPage() {
       {/* Bölüm 5 */}
       <TwoCol
         title="Fiyat mı?"
-        body={`Türkiye'deki benzer platformlar çok daha yüksek ücret talep ediyor ve performans olarak bizden çok daha geride. Ahenk'te 2 grup masası hakkı ${tl(prices?.MASADA?.webTL)} TL, başbaşa masası ${tl(prices?.KARSIMDA?.webTL)} TL. İçerde paketinde ikisini birden alıyorsun (2 grup + 1 başbaşa), ${tl(prices?.ICERDE?.webTL)} TL. Paketler tek seferlik; abonelik ve otomatik ödeme yok. Bunların dışında gizli bir ücret yok. Mekan masrafı sana ait; biz sadece masayı kuruyoruz.`}
+        body={`Türkiye'deki benzer platformlar çok daha yüksek ücret talep ediyor ve performans olarak bizden çok daha geride. Ahenk'te Grup Paketi ${tl(prices?.MASADA?.webTL)} TL, Baş Başa Paketi ${tl(prices?.KARSIMDA?.webTL)} TL, Kankamla Paketi ${tl(prices?.KANKAMLA?.webTL)} TL. İçerde Paketi'nde Grup + Baş Başa birlikte, ${tl(prices?.ICERDE?.webTL)} TL. Tek seferlik paketlerin yanında Prime abonelik de var: her ay 1 Grup + 1 Baş Başa + 1 Kankamla Masası. Bunların dışında gizli bir ücret yok. Mekan masrafı sana ait; biz sadece masayı kuruyoruz.`}
       />
 
       {/* Bölüm 6 */}
       <TwoCol
         title="Neredeyiz?"
-        body={`Ahenk şu an ${activeCities.join(', ')} şehirlerinde aktif. Her Cuma grup masaları, her Cumartesi başbaşa buluşmalar gerçekleşiyor. Topluluk büyüdükçe yeni şehirler ekleniyor.`}
+        body={`Ahenk şu an ${activeCities.join(', ')} şehirlerinde aktif. Her Cuma grup masaları, her Cumartesi baş başa buluşmalar gerçekleşiyor. Topluluk büyüdükçe yeni şehirler ekleniyor.`}
       />
 
       {/* Kapanış */}

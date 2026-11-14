@@ -6,9 +6,9 @@ export interface KankamlaState { hasKanka: boolean; pairPackageActive: boolean; 
 
 export function getKankamlaCardState(k: KankamlaState | null) {
   if (k?.pairPackageActive) {
-    return { dimmed: true, badge: k.role === 'BUYER' ? 'Aktif Paketiniz' : 'Kankanda Aktif Paket', badgeRed: k.role === 'BUYER', showButton: false, needsKanka: false };
+    return { dimmed: true, badge: k.role === 'BUYER' ? 'Aktif Paketiniz' : 'Kankanda Aktif Paket', badgeRed: k.role === 'BUYER', showButton: false };
   }
-  return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true, needsKanka: !k?.hasKanka };
+  return { dimmed: false, badge: null as string | null, badgeRed: false, showButton: true };
 }
 
 // Backend assertCanBuy ile aynı kural: grup kısmı açıksa (hak kalmış, 4 döngü dolmamış) Masada / İçerde,

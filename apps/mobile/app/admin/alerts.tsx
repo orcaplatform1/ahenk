@@ -8,7 +8,7 @@ import { adm } from '@/theme/theme';
 
 interface AlertItem { id: string; alertType: string; userId: string; user?: { profile?: { firstName?: string; lastName?: string } | null } | null; isRead: boolean; createdAt: string }
 const ALERT_LABELS: Record<string, string> = {
-  MISSED_GROUP_CYCLES: 'Grup masası üst üste kurulamadı', MISSED_ONEONE_CYCLES: 'Başbaşa masası üst üste kurulamadı', MISSED_KANKA_CYCLES: 'Kankamla masası üst üste kurulamadı',
+  MISSED_GROUP_CYCLES: 'Grup masası üst üste kurulamadı', MISSED_ONEONE_CYCLES: 'Baş Başa masası üst üste kurulamadı', MISSED_KANKA_CYCLES: 'Kankamla masası üst üste kurulamadı',
   SOS_ALERT: 'Acil yardım talebi', BOT_NOT_FOUND: 'Uygun bot bulunamadı', PAYMENT_ISSUE: 'Ödeme elle kontrol gerektiriyor',
 };
 

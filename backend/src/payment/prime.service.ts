@@ -3,7 +3,7 @@ import { Cron } from "@nestjs/schedule";
 import { PaymentPlatform, PaymentStatus, Prisma, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { PRIME_MONTHS } from "./payment.constants";
-import { GROUP_RIGHTS, KANKA_RIGHTS, PRIME_PLANS } from "./package-rights";
+import { GROUP_RIGHTS, KANKA_RIGHTS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, PRIME_PLANS, livePrimeWhere } from "./package-rights";
 import { PricingService } from "./pricing.service";
 import { IyzicoService } from "./iyzico/iyzico.service";
 
@@ -14,7 +14,8 @@ type Db = PrismaService | Prisma.TransactionClient;
 // - Satın alma tarihinden itibaren her 30 günde haklar sıfırlanıp yeniden 1 + 1 + 1 olur; kullanılmayan haklar devretmez.
 // - Dönem (1/3/6/12 ay) başında planın tam tutarı tek seferde çekilir; dönem bitince aynı süreyle otomatik yenilenir
 //   (web: iyzico abonelik API'si, mobil: App Store / Play Store). Yenileme ödemeleri indirimsizdir.
-// - "Aboneliği İptal Et": otomatik yenileme durur, haklar dönem sonuna kadar kullanılır, iade yapılmaz.
+// - "Aboneliği İptal Et": otomatik yenileme durur, iade yapılmaz. İptal anında elde kalan haklar süre sınırı olmadan,
+//   kullanılana kadar geçerli kalır (30 günlük yenileme durur, dönem sonunda haklar silinmez).
 export const PRIME_RESET_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -88,19 +89,20 @@ export class PrimeService {
     ]);
   }
 
-  // Otomatik yenileme sağlayıcıda durdu (iptal / ödeme alınamadı): dönem sonunda abonelik biter
+  // Otomatik yenileme sağlayıcıda durdu (iptal / ödeme alınamadı): abonelik iptal edilmiş sayılır. İptal anındaki haklar
+  // kullanılana kadar geçerli kalır: 30 günlük yenileme durur (rightsResetAt boşalır), dönem sonunda haklar silinmez.
   async stopAutoRenew(subscriptionId: string) {
     await this.prisma.subscription.update({
       where: { id: subscriptionId },
-      data: { autoRenew: false, renewCancelledAt: new Date() },
+      data: { autoRenew: false, renewCancelledAt: new Date(), rightsResetAt: null },
     });
   }
 
-  // "Aboneliği İptal Et": otomatik yenileme durur, haklar dönem sonuna kadar kullanılır, iade yapılmaz.
+  // "Aboneliği İptal Et": otomatik yenileme durur, iade yapılmaz; iptal anında elde kalan haklar kullanılana kadar geçerli.
   // Mağaza aboneliği uygulama içinden iptal edilemez (Apple / Google kuralı): kullanıcı mağazanın abonelik sayfasına yönlendirilir.
   async cancelRenewal(userId: string) {
     const sub = await this.prisma.subscription.findFirst({
-      where: { userId, status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS } },
+      where: { userId, ...livePrimeWhere(), renewCancelledAt: null },
       select: { id: true, autoRenew: true, iyzicoSubscriptionRef: true, storePlatform: true, expiresAt: true },
     });
     if (!sub) throw new NotFoundException("Aktif Prime aboneliğin bulunamadı.");
@@ -113,7 +115,8 @@ export class PrimeService {
     return { cancelled: true, expiresAt: sub.expiresAt };
   }
 
-  // Her saat: 30 günü dolan Prime'ların hakları yeniden 1 + 1 + 1 olur (devretmez); dönemi biten ve yenilenmeyen Prime biter
+  // Her saat: 30 günü dolan Prime'ların hakları yeniden 1 + 1 + 1 olur (devretmez); dönemi biten ve yenilenmeyen Prime biter.
+  // İptal edilmiş Prime (renewCancelledAt dolu) dönem sonunda, elinde kullanılmamış hak varsa bitmez; haklar kullanılana kadar durur.
   @Cron("5 * * * *", { timeZone: "Europe/Istanbul" })
   async hourly(): Promise<void> {
     const now = new Date();
@@ -130,7 +133,13 @@ export class PrimeService {
       });
     }
     const { count } = await this.prisma.subscription.updateMany({
-      where: { status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS }, expiresAt: { lte: now } },
+      where: {
+        status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS }, expiresAt: { lte: now },
+        OR: [
+          { renewCancelledAt: null },
+          { NOT: { OR: [{ groupRights: OPEN_GROUP_SUB.groupRights }, { usedAt: OPEN_ONE_ON_ONE_SUB.usedAt }, { kankaRights: OPEN_KANKA_SUB.kankaRights }] } },
+        ],
+      },
       data: { status: SubscriptionStatus.EXPIRED },
     });
     if (due.length || count) this.logger.log(`Prime: ${due.length} hak yenilendi, ${count} abonelik bitti`);

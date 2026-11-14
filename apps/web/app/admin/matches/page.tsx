@@ -110,8 +110,8 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
 };
 
 const VENUE_PACKAGES = ['SADE', 'ORTA', 'PREMIUM'];
-const TYPE_LABEL: Record<string, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Başbaşa' };
-const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
+const TYPE_LABEL: Record<string, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Baş Başa' };
+const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -990,7 +990,7 @@ export default function AdminMatches() {
                       title="Paket seç"
                       style={{ flex: 1, width: 'auto', minWidth: 0 }}
                       options={[
-              { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' },
+              { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' },
               { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
               { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' },
               { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' },

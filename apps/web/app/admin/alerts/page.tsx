@@ -16,7 +16,7 @@ interface AlertItem {
 
 const ALERT_LABELS: Record<string, string> = {
   MISSED_GROUP_CYCLES: 'Grup masası üst üste kurulamadı',
-  MISSED_ONEONE_CYCLES: 'Başbaşa masası üst üste kurulamadı',
+  MISSED_ONEONE_CYCLES: 'Baş Başa masası üst üste kurulamadı',
   MISSED_KANKA_CYCLES: 'Kankamla masası üst üste kurulamadı',
   SOS_ALERT: 'Acil yardım talebi',
   BOT_NOT_FOUND: 'Uygun bot bulunamadı',

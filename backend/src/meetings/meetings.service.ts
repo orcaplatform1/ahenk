@@ -609,7 +609,7 @@ export class MeetingsService {
     });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
     if (meeting.type !== MeetingType.ONE_ON_ONE) {
-      throw new BadRequestException("Bu endpoint sadece başbaşa buluşmalar için geçerlidir");
+      throw new BadRequestException("Bu endpoint sadece baş başa buluşmalar için geçerlidir");
     }
 
     const blocker = meeting.participants.find((p) => p.userId === blockerId);

@@ -1,5 +1,5 @@
 // Kök yerleşim: yazı tipleri, güvenli alan, durum çubuğu (açık içerik — web tamamen koyu tema), yığın gezinme.
-// Açılış ekranı (/) yazı tiplerini beklemeden hemen gösterilir; yazı tipleri 3 sn'lik açılış sırasında yüklenir (lib/boot).
+// Açılış yönlendirmesi (/) yazı tiplerini ve oturumu yükler, yerel açılış görseli bu sırada görünür (lib/boot).
 // Uygulama doğrudan başka bir yola (bağlantı) açılırsa yazı tipleri yüklenene kadar yerel açılış görseli kalır.
 import React, { useEffect, useState } from 'react';
 import { Stack, usePathname, useRouter } from 'expo-router';
@@ -18,7 +18,8 @@ export default function RootLayout() {
   const [loaded, setLoaded] = useState(false);
   useEffect(() => { loadFonts().catch(() => undefined).finally(() => setLoaded(true)); }, []);
   const splash = path === '/';
-  useEffect(() => { if (loaded || splash) SplashScreen.hideAsync().catch(() => {}); }, [loaded, splash]);
+  // Yerel açılış görseli, açılış yönlendirmesi (/) gidilecek ekrana geçince kapanır (dönen logolu açılış ekranı yok)
+  useEffect(() => { if (loaded && !splash) SplashScreen.hideAsync().catch(() => {}); }, [loaded, splash]);
   useEffect(() => onAuthLost(() => router.replace('/giris')), [router]);
 
   if (!loaded && !splash) return null;

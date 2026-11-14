@@ -6,7 +6,7 @@ import { panelCard, useVenuePanel } from '../context';
 
 interface Row { id: string; scheduledAt: string; type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'; seats: number }
 
-const TYPE_LABEL: Record<Row['type'], string> = { GROUP: 'Grup masası', ONE_ON_ONE: 'Başbaşa masa', KANKA: 'Kankamla masası' };
+const TYPE_LABEL: Record<Row['type'], string> = { GROUP: 'Grup masası', ONE_ON_ONE: 'Baş Başa masa', KANKA: 'Kankamla masası' };
 
 function RowList({ rows, empty }: { rows: Row[]; empty: string }) {
   if (rows.length === 0) return <p style={{ color: '#666', fontSize: '0.85rem', margin: 0 }}>{empty}</p>;

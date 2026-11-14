@@ -15,6 +15,7 @@ const IMAGES = [
   require('@/assets/maskot/jantihaydar_run.webp'), require('@/assets/maskot/jantihaydar_stop.webp'),
   require('@/assets/plan-masada.webp'), require('@/assets/plan-karsimda.webp'), require('@/assets/plan-icerde.webp'),
   require('@/assets/kyc-liveness-demo.png'),
+  require('@/assets/mobilappscreen.webp'), require('@/assets/mobilappscreen2.webp'), require('@/assets/mobilappscreen3.webp'),
 ];
 
 let fontsPromise: Promise<void> | null = null;

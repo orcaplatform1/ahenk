@@ -209,9 +209,9 @@ export function AdminOpenTables({ isSuperadmin, onUserClick }: { isSuperadmin: b
             {data.group.map(t => <TableCard key={t.id} t={t} {...common} />)}
           </div>
 
-          <p style={sectionTitle}>BAŞBAŞA MASALARI ({data.oneOnOne.length})</p>
+          <p style={sectionTitle}>BAŞ BAŞA MASALARI ({data.oneOnOne.length})</p>
           <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
-            {data.oneOnOne.length === 0 && <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Kurulmuş başbaşa masası yok</p>}
+            {data.oneOnOne.length === 0 && <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Kurulmuş baş başa masası yok</p>}
             {data.oneOnOne.map(t => <TableCard key={t.id} t={t} {...common} />)}
           </div>
 
@@ -222,7 +222,7 @@ export function AdminOpenTables({ isSuperadmin, onUserClick }: { isSuperadmin: b
             {(data.kanka ?? []).map(t => <TableCard key={t.id} t={t} {...common} />)}
           </div>
 
-          <p style={sectionTitle}>BAŞBAŞA: EŞİ BEKLEYENLER ({data.waiting.length})</p>
+          <p style={sectionTitle}>BAŞ BAŞA: EŞİ BEKLEYENLER ({data.waiting.length})</p>
           <div style={{ display: 'grid', gap: 10 }}>
             {data.waiting.length === 0 && <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Eşi bekleyen yok</p>}
             {data.waiting.map(w => <WaitingRow key={w.userId} w={w} {...common} />)}

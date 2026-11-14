@@ -52,7 +52,7 @@ import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } fro
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
 import { OVERLAPPING_PLANS } from "../payment/plan-overlap";
 import { trIsoWeekStart, trWeekStart, WEEK_MS } from "./tr-week";
-import { GROUP_PLANS, GROUP_RIGHTS, KANKA_PLANS, ONE_ON_ONE_PLANS, PRIME_PLANS, isPrime, kankaRightsOf, restoreGroupRights, restoreKankaRights } from "../payment/package-rights";
+import { GROUP_PLANS, GROUP_RIGHTS, KANKA_PLANS, ONE_ON_ONE_PLANS, isPrime, livePrimeWhere, kankaRightsOf, restoreGroupRights, restoreKankaRights } from "../payment/package-rights";
 import { PrimeService } from "../payment/prime.service";
 import { activeKankaLink, endKankaLinks } from "../kanka/kanka-links";
 
@@ -543,7 +543,7 @@ export class AdminService {
     // otomatik yenileme yok, süre bitince kendiliğinden biter (prime.service.ts). Aktif Prime'ı olana ikinci Prime verilmez.
     const expiry: Date | null = expiresAt ? new Date(expiresAt) : null;
     if (isPrime(plan)) {
-      const active = await this.prisma.subscription.count({ where: { userId: targetId, status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS } } });
+      const active = await this.prisma.subscription.count({ where: { userId: targetId, ...livePrimeWhere() } });
       if (active > 0) throw new ConflictException("Bu kullanıcının aktif Prime'ı var; ikinci bir Prime verilemez.");
     }
 

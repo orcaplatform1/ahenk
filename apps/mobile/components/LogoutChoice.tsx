@@ -4,12 +4,21 @@
 // Admin hesabında (remember=false) yalnız "Bu cihazda beni unut" ve "Vazgeç"; hatırlama bilgisi hiçbir koşulda kaydedilmez.
 import React from 'react';
 import { View } from 'react-native';
-import { api } from '@/lib/api';
+import { useRouter } from 'expo-router';
+import { api, settleRefresh } from '@/lib/api';
 import { forgetDevice, rememberDevice } from '@/lib/session';
 import { BtnGhost, BtnPrimary, Sheet, T } from './ui';
 
 export function LogoutChoice({ visible, onClose, firstName = '', onLoggedOut, remember: allowRemember = true }: { visible: boolean; onClose: () => void; firstName?: string; onLoggedOut: () => void; remember?: boolean }) {
-  async function remember() { if (!allowRemember) return; onClose(); await rememberDevice(firstName); onLoggedOut(); }
+  const router = useRouter();
+  // Hatırla: süren token yenilemesi beklenir, yenileme token'ı ve ad saklanır, doğrudan "Tekrar hoş geldin, [ad]!" ekranına gidilir
+  // (önceden normal giriş ekranına gidiliyordu; orada yeniden giriş yapılınca hatırlama bilgisi siliniyordu)
+  async function remember() {
+    if (!allowRemember) return;
+    onClose();
+    await settleRefresh();
+    if (await rememberDevice(firstName)) router.replace('/tekrar-hosgeldin'); else onLoggedOut();
+  }
   async function forget() { onClose(); await api.logout(); await forgetDevice(); onLoggedOut(); }
   return (
     <Sheet visible={visible} onClose={onClose}>

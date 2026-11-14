@@ -44,8 +44,8 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
   CANCELLED: { label: 'İptal', color: adm.red, bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)' },
 };
 const VENUE_PACKAGES = ['SADE', 'ORTA', 'PREMIUM'];
-const TYPE_LABEL: Record<string, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Başbaşa' };
-const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
+const TYPE_LABEL: Record<string, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Baş Başa' };
+const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 const INACTIVE = ['CANCELLED', 'DECLINED', 'NO_SHOW'];
 const ROW_BORDER = 'rgba(26,58,92,0.5)';
 
@@ -441,7 +441,7 @@ export default function AdminMatches() {
                       <ALabel>ÜCRETSİZ ABONELİK VER</ALabel>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         <AdminSelect value={grantPlan} onChange={setGrantPlan} placeholder="Paket seç…" title="Paket seç" style={{ flex: 1, minWidth: 0 }}
-                          options={[{ value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }, { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' }, { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' }]} />
+                          options={[{ value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }, { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' }, { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' }]} />
                         <Btn variant="admBlueVer" disabled={!!userAction || !grantPlan} label={userAction === 'sub' ? '…' : 'Ver'} onPress={userGrantSubscription} />
                       </View>
                     </Sect>

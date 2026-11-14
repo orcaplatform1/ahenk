@@ -20,7 +20,7 @@ const sections = [
     title: 'Hizmet Tanımı',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Ahenk, <strong style={{ color: '#f4f1ec' }}>OCEAN Big Five</strong> kişilik modeline dayalı algoritmik eşleştirme sistemiyle kullanıcıları şehirlerindeki restoran ve kafelerde grup masası veya başbaşa buluşmalar için bir araya getiren dijital bir sosyal platform hizmetidir. Ahenk; mekan seçimi, masa rezervasyonu ve algoritmik eşleştirmeyi organize eder ancak buluşma sırasında yaşanan kişisel deneyimlerden sorumlu tutulamaz.
+        Ahenk, <strong style={{ color: '#f4f1ec' }}>OCEAN Big Five</strong> kişilik modeline dayalı algoritmik eşleştirme sistemiyle kullanıcıları şehirlerindeki restoran ve kafelerde grup masası veya baş başa buluşmalar için bir araya getiren dijital bir sosyal platform hizmetidir. Ahenk; mekan seçimi, masa rezervasyonu ve algoritmik eşleştirmeyi organize eder ancak buluşma sırasında yaşanan kişisel deneyimlerden sorumlu tutulamaz.
       </p>
     ),
   },
@@ -102,10 +102,10 @@ const sections = [
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.65rem', marginBottom: '1.25rem' }}>
           {[
             { name: 'Grup', price: <PlanPriceText plan="MASADA" suffix="₺" />, desc: '1 grup buluşması hakkı' },
-            { name: 'Başbaşa', price: <PlanPriceText plan="KARSIMDA" suffix="₺" />, desc: '1 başbaşa buluşması hakkı' },
+            { name: 'Baş Başa', price: <PlanPriceText plan="KARSIMDA" suffix="₺" />, desc: '1 baş başa buluşması hakkı' },
             { name: 'Kankamla', price: <PlanPriceText plan="KANKAMLA" suffix="₺" />, desc: '1 kankamla buluşması hakkı; alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır, 4 kişilik masa' },
-            { name: 'İçerde', price: <PlanPriceText plan="ICERDE" suffix="₺" />, desc: '1 grup + 1 başbaşa buluşması hakkı' },
-            { name: 'Prime', price: null, desc: '1, 3, 6 ve 12 aylık planlar; her 30 günde 1 grup, 1 başbaşa ve 1 kankamla hakkı' },
+            { name: 'İçerde', price: <PlanPriceText plan="ICERDE" suffix="₺" />, desc: '1 grup + 1 baş başa buluşması hakkı' },
+            { name: 'Prime', price: null, desc: '1, 3, 6 ve 12 aylık planlar; her 30 günde 1 grup, 1 baş başa ve 1 kankamla hakkı' },
           ].map((pkg) => (
             <div key={pkg.name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1.1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
               <span style={{ fontWeight: 700, color: '#f4f1ec', minWidth: '90px', fontSize: 13 }}>{pkg.name}</span>
@@ -135,10 +135,10 @@ const sections = [
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
-          'Prime üyelik 1, 3, 6 ve 12 aylık planlarla sunulur; her 30 günde 1 Grup, 1 Başbaşa ve 1 Kankamla buluşması hakkı tanımlanır.',
+          'Prime üyelik 1, 3, 6 ve 12 aylık planlarla sunulur; her 30 günde 1 Grup, 1 Baş Başa ve 1 Kankamla buluşması hakkı tanımlanır.',
           'Prime\'da kullanılmayan haklar bir sonraki 30 güne devretmez.',
           'Prime aboneliği dönem sonunda aynı süreyle otomatik olarak yenilenir.',
-          'Prime aboneliği iptal edildiğinde otomatik yenileme durur, haklar dönem sonuna kadar kullanılabilir; iade yapılmaz.',
+          'Prime aboneliği iptal edildiğinde otomatik yenileme durur; iptal anında elde kalan haklar süre sınırı olmadan, kullanılana kadar geçerli kalır; iade yapılmaz.',
           'Mağazadan (App Store / Google Play) alınan abonelik mağazadan, iyzico ile alınan abonelik web sitesinden ya da uygulamadan iptal edilir.',
           'Kankamla rezervasyonunu çiftten biri iptal ederse iki kişi birlikte masadan düşer ve paketten 1 masa hakkı düşer; pakette tek iptal hakkı vardır.',
           'Kanka daveti telefon numarasıyla yapılır ve 48 saat geçerlidir; davet yalnızca o numarayı doğrulamış hesap tarafından kabul edilebilir. Kanka, seçildiği hafta değiştirilemez. Bir kullanıcının banlanması kankalığı sona erdirir.',

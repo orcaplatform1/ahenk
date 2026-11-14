@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, ScrollView, StyleSheet, View } from 'react-native';
 import { useReduceMotion } from '@/lib/motion';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useIsFocused, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { api } from '@/lib/api';
@@ -45,7 +45,9 @@ function heatColor(index: number, count: number) {
 function useLivePoll<T>(path: string, intervalMs: number) {
   const [data, setData] = useState<T | null>(null);
   const load = useCallback(() => { if (!isForeground()) return; api.get<T>(path).then((d) => { if (d) setData(d); }).catch(() => undefined); }, [path]);
-  useEffect(() => { load(); const id = setInterval(load, intervalMs); return () => clearInterval(id); }, [load, intervalMs]);
+  // Yalnız Eşleşme Paneli odaktayken yoklanır (başka sekmedeyken istek atılmaz); sekmeye dönülünce hemen yenilenir
+  const focused = useIsFocused();
+  useEffect(() => { if (!focused) return undefined; load(); const id = setInterval(load, intervalMs); return () => clearInterval(id); }, [load, intervalMs, focused]);
   useAppRefresh(load);
   return data;
 }
@@ -137,7 +139,8 @@ export default function EslesmePaneli() {
       <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top }}>
         <View style={{ paddingHorizontal: 16 }}>
-          <View style={{ marginTop: 16, marginBottom: 16 }}><KycNoticeCard /></View>
+          {/* KYC kartı yalnız KYC onaysızken (kart görünürken) yer ve boşluk kaplar; kart yokken halkalar durum çubuğunun hemen altından başlar */}
+          {me?.kyc?.status !== 'APPROVED' && <View style={{ marginTop: 16, marginBottom: 16 }}><KycNoticeCard /></View>}
           {me?.kyc?.status === 'REJECTED' && (
             <View style={{ marginBottom: 16, borderRadius: 16, padding: 16, backgroundColor: 'rgba(192,57,43,0.12)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.35)' }}>
               <T w={600} style={{ fontSize: 14, color: tw.accent, marginBottom: 4 }}>Kimlik doğrulamanız reddedildi</T>
@@ -150,7 +153,8 @@ export default function EslesmePaneli() {
         <WinbackHost badge auto={false} />
         <View style={{ overflow: 'hidden' }}>
           <Glow />
-          <View style={st.column}>
+          {/* Halkalar yukarıda: sütunun üst boşluğu bu ekranda yok */}
+          <View style={[st.column, { paddingTop: 0 }]}>
             <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
 
             {/* Geri sayım */}

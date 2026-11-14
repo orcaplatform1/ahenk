@@ -174,7 +174,7 @@ export default function AdminStats() {
                 label="Bu Hafta Masa"
                 value={summary.activeMeetingsThisWeek}
                 accent={CYAN}
-                sub={`Grup ${summary.groupMeetingsThisWeek} · Başbaşa ${summary.oneOnOneMeetingsThisWeek} · Kankamla ${summary.kankaMeetingsThisWeek}`}
+                sub={`Grup ${summary.groupMeetingsThisWeek} · Baş Başa ${summary.oneOnOneMeetingsThisWeek} · Kankamla ${summary.kankaMeetingsThisWeek}`}
               />
               <StatCard
                 label="Öncü Rozeti"
@@ -224,7 +224,7 @@ export default function AdminStats() {
                 <p style={{ margin: 0, fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>{groupMeetingsAnim.toLocaleString('tr-TR')}</p>
               </div>
               <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 16px' }}>
-                <p style={{ margin: '0 0 4px', fontSize: 10, color: MUTED }}>Başbaşa</p>
+                <p style={{ margin: '0 0 4px', fontSize: 10, color: MUTED }}>Baş Başa</p>
                 <p style={{ margin: 0, fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>{oneOnOneAnim.toLocaleString('tr-TR')}</p>
               </div>
               <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 16px' }}>
@@ -240,7 +240,7 @@ export default function AdminStats() {
               <h2 className="ll-title">Algoritma Başarısı</h2>
             </div>
             <p style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO }}>%{algoSuccessAnim}</p>
-            <p style={{ margin: 0, fontSize: 11, color: MUTED }}>Tamamlanan / toplam masa oranı (Grup, Başbaşa ve Kankamla)</p>
+            <p style={{ margin: 0, fontSize: 11, color: MUTED }}>Tamamlanan / toplam masa oranı (Grup, Baş Başa ve Kankamla)</p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 12 }}>

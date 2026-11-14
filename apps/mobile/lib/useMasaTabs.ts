@@ -1,6 +1,7 @@
 // apps/web/components/live/useMasaTabs.ts ile aynı hesap (S-05). localStorage → AsyncStorage.
 import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useIsFocused } from 'expo-router';
 import { api } from './api';
 import { buildInitials, getNextTarget, isTableLocked, type DashboardItem, type MasaTuru } from './masa';
 import { isForeground, useAppRefresh } from './useAppRefresh';
@@ -102,17 +103,22 @@ export function useMasaTabs() {
     void reload();
   }, [reload]);
 
+  // Bu kanca üç sekmede (Eşleşme Paneli, Masalarım, Profilim) aynı anda bağlı kalır; 15 sn'lik yenileme yalnız odaktaki
+  // sekmede çalışır (önceden üç sekme aynı istekleri ayrı ayrı tekrarlıyordu). Sekmeye dönülünce hemen yenilenir.
+  const focused = useIsFocused();
   useEffect(() => {
+    if (!focused) return undefined;
     reload();
     const id = setInterval(reload, DASHBOARD_POLL_MS);
     return () => clearInterval(id);
-  }, [reload]);
+  }, [reload, focused]);
   useAppRefresh(useCallback(() => { reload(); refreshPlan(); }, [reload, refreshPlan]));
 
   useEffect(() => {
+    if (!focused) return undefined;
     const id = setInterval(() => setPastClosed(pastList()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [focused]);
 
   const selectTab = useCallback((t: MasaTuru) => {
     setChosenTab(t);

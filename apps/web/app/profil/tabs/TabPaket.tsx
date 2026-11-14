@@ -143,13 +143,13 @@ export function TabPaket({ maintenanceMode = false }: Props) {
 
   // Kartın satın alma durumu (backend assertCanBuy ile aynı kurallar)
   const stateOf = (key: CardKey) => {
-    if (key === 'PRIME') return primeActive ? { blocked: true, badge: 'Aktif Paketiniz' as string | null, needsKanka: false } : { blocked: false, badge: null, needsKanka: false };
+    if (key === 'PRIME') return primeActive ? { blocked: true, badge: 'Aktif Paketiniz' as string | null } : { blocked: false, badge: null };
     if (key === 'KANKAMLA') {
       const k = getKankamlaCardState(kankamla);
-      return { blocked: !k.showButton, badge: k.badge, needsKanka: k.needsKanka };
+      return { blocked: !k.showButton, badge: k.badge };
     }
     const c = getPlanCardState(key, ownedPlans, openParts);
-    return { blocked: !c.showButton, badge: c.badge, needsKanka: false };
+    return { blocked: !c.showButton, badge: c.badge };
   };
 
   const ownSubs = subscriptions;
@@ -172,18 +172,28 @@ export function TabPaket({ maintenanceMode = false }: Props) {
           <h3 className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.75rem', color: isPrimeCard ? '#e8c84a' : '#f5f5f5' }}>{card.name}</h3>
 
           {isPrimeCard && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
               {PRIME_PLANS.map((pl) => {
                 const on = primePlan === pl.key;
                 const p = priceView(pl.key);
+                // 3 aylık plan: "Tercih Edilen" etiketi, altın çerçeve ve hafif altın geçişli arka plan
+                const pref = pl.key === 'PRIME_3M';
                 return (
                   <button
                     key={pl.key}
                     onClick={() => setPrimePlan(pl.key)}
-                    className="rounded-xl px-3 py-3 text-left transition-colors"
-                    style={{ border: on ? '2px solid #c9a227' : '1px solid rgba(255,255,255,0.12)', background: on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)' }}
+                    className="relative rounded-xl px-3 py-3 text-left transition-colors"
+                    style={{
+                      border: on ? '2px solid #c9a227' : pref ? '1px solid #c9a227' : '1px solid rgba(255,255,255,0.12)',
+                      background: pref ? 'linear-gradient(135deg, rgba(201,162,39,0.22), rgba(201,162,39,0.06))' : on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)',
+                    }}
                     aria-pressed={on}
                   >
+                    {pref && (
+                      <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 rounded-full font-extrabold whitespace-nowrap" style={{ fontSize: '0.62rem', letterSpacing: '0.08em', padding: '2px 8px', background: 'linear-gradient(135deg, #f5d76e, #c9a227 55%, #a8861a)', color: '#1a1406' }}>
+                        TERCİH EDİLEN
+                      </span>
+                    )}
                     <span className="block text-sm font-semibold text-[#f5f5f5]">{pl.label}</span>
                     <span className="block text-xs text-[#c9c2b8] mt-1">{p.now ?? '—'} ₺</span>
                   </button>
@@ -209,12 +219,12 @@ export function TabPaket({ maintenanceMode = false }: Props) {
           {error && <p className="text-accent text-sm">{error}</p>}
 
           <button
-            onClick={() => st.needsKanka ? (window.location.href = '/profil?tab=profil') : handleBuy(planKey, isPrimeCard ? `Prime ${PRIME_PLANS.find((p) => p.key === primePlan)!.label}` : card.name)}
+            onClick={() => handleBuy(planKey, isPrimeCard ? `Prime ${PRIME_PLANS.find((p) => p.key === primePlan)!.label}` : card.name)}
             disabled={st.blocked || buying === planKey || maintenanceMode}
             className="btn-primary w-full justify-center disabled:opacity-50"
             style={{ minHeight: 52, fontSize: '1rem' }}
           >
-            {buying === planKey ? 'Yönlendiriliyor…' : st.blocked ? (st.badge ?? (isPrimeCard ? 'Abone Ol' : 'Paket Al')) : st.needsKanka ? 'Önce Kanka Davet Et' : isPrimeCard ? 'Abone Ol' : 'Paket Al'}
+            {buying === planKey ? 'Yönlendiriliyor…' : st.blocked ? (st.badge ?? (isPrimeCard ? 'Abone Ol' : 'Paket Al')) : isPrimeCard ? 'Abone Ol' : 'Paket Al'}
           </button>
           <p className="text-xs text-[#a39c93] text-center" style={{ lineHeight: 1.5 }}>
             {PAY_INFO_WEB}{isPrimeCard ? ` ${PRIME_RENEW_INFO}` : ''}
@@ -252,7 +262,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
           </button>
           <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 14px' }}>
             <p style={{ color: '#aaa', fontSize: 12, lineHeight: 1.5, margin: 0 }}>
-              Davet ettiğiniz arkadaşınız, telefon numarasını ve kimlik doğrulamasını yaptıktan sonra sistem size otomatik indirim hakkı tanımlar. Arkadaşınız da başka arkadaşlarını davet edip bu şartlar yerine geldiğinde o da indirim hakkı kazanır. İndirim hakları toplu olarak kullanılamaz ve devredilemez. <span style={{ fontWeight: 700, color: '#fff' }}>Her bir indirim hakkı, yalnızca bir paket satın alımında geçerlidir.</span>
+              Davet ettiğin arkadaşın herhangi bir paket aldığında veya abone olduğunda sana %10 indirim hakkı tanımlanır. Her indirim hakkı yalnızca bir paket satın alımında geçerlidir, toplu kullanılamaz ve devredilemez.
             </p>
           </div>
         </div>
@@ -283,7 +293,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
             <span className="text-xs" style={{ color: '#aaa' }}>{rights.group}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-xs" style={{ color: '#aaa' }}>Başbaşa</span>
+            <span className="text-xs" style={{ color: '#aaa' }}>Baş Başa</span>
             <span className="text-xs" style={{ color: '#aaa' }}>{rights.oneOnOne}</span>
           </div>
           <div className="flex items-center justify-between">

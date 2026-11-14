@@ -52,10 +52,10 @@ const sections = [
               ],
             },
             {
-              name: 'Başbaşa Paketi',
+              name: 'Baş Başa Paketi',
               price: <PlanPriceText plan="KARSIMDA" suffix="₺" />,
               items: [
-                'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle 1 başbaşa buluşması hakkı',
+                'OCEAN Big Five modeline dayalı algoritmik eşleştirmeyle 1 baş başa buluşması hakkı',
                 'Hak kullanılana kadar geçerlidir',
                 'Baş Başa 2 kişi',
                 'Mekan seçimi ve rezervasyonu Ahenk tarafından yapılır',
@@ -65,7 +65,7 @@ const sections = [
               name: 'İçerde Paketi',
               price: <PlanPriceText plan="ICERDE" suffix="₺" />,
               items: [
-                '1 grup + 1 başbaşa buluşması hakkı',
+                '1 grup + 1 baş başa buluşması hakkı',
                 'Haklar kullanılana kadar geçerlidir',
               ],
             },
@@ -84,7 +84,7 @@ const sections = [
               price: null,
               items: [
                 '1, 3, 6 ve 12 aylık planlar',
-                'Her 30 günde 1 grup, 1 başbaşa ve 1 kankamla buluşması hakkı',
+                'Her 30 günde 1 grup, 1 baş başa ve 1 kankamla buluşması hakkı',
               ],
             },
           ].map((pkg) => (
@@ -166,10 +166,10 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1.25rem' }}>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
           {[
-            'Prime üyelik 1, 3, 6 ve 12 aylık planlarla sunulur; her 30 günde 1 Grup, 1 Başbaşa ve 1 Kankamla buluşması hakkı tanımlanır.',
+            'Prime üyelik 1, 3, 6 ve 12 aylık planlarla sunulur; her 30 günde 1 Grup, 1 Baş Başa ve 1 Kankamla buluşması hakkı tanımlanır.',
             'Prime\'da kullanılmayan haklar bir sonraki 30 güne devretmez.',
             'Prime aboneliği dönem sonunda aynı süreyle otomatik olarak yenilenir.',
-            'Prime aboneliği iptal edildiğinde otomatik yenileme durur, haklar dönem sonuna kadar kullanılabilir; iade yapılmaz.',
+            'Prime aboneliği iptal edildiğinde otomatik yenileme durur; iptal anında elde kalan haklar süre sınırı olmadan, kullanılana kadar geçerli kalır; iade yapılmaz.',
             'Mağazadan (App Store / Google Play) alınan abonelik mağazadan, iyzico ile alınan abonelik web sitesinden ya da uygulamadan iptal edilir.',
           ].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>

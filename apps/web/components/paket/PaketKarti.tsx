@@ -9,14 +9,20 @@ export const PRIME_PLANS = [
   { key: 'PRIME_12M', label: '12 Aylık' },
 ] as const;
 
-// Paket kartları: tam genişlik, tek renk; Prime altın tonunda, diğerleri tema renklerinden
-// badgeBg: Tinder GOLD tarzı hap rozetin dolgu rengi (kartın tonunun koyusu; Prime altın)
-export const CARDS: { key: CardKey; name: string; badge: string; desc: string; color: string; badgeBg: string; advantages: string[] }[] = [
-  { key: 'MASADA', name: 'Grup', badge: 'Tek Seferlik', desc: '1 Grup buluşması hakkı', color: '#d6453a', badgeBg: '#9e2f26', advantages: ['1 Grup buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
-  { key: 'KARSIMDA', name: 'Başbaşa', badge: 'Tek Seferlik', desc: '1 Başbaşa buluşması hakkı', color: '#c8743c', badgeBg: '#8f5228', advantages: ['1 Başbaşa buluşması hakkı', 'Hak kullanılana kadar geçerli'] },
-  { key: 'KANKAMLA', name: 'Kankamla', badge: 'Tek Seferlik', desc: '1 Kankamla buluşması hakkı', color: '#8f887f', badgeBg: '#5f5a54', advantages: ['1 Kankamla buluşması hakkı', 'Arkadaşın ücretsiz katılır', 'Hak kullanılana kadar geçerli'] },
-  { key: 'ICERDE', name: 'İçerde', badge: 'Tek Seferlik', desc: '1 Grup + 1 Başbaşa buluşması hakkı', color: '#c0392b', badgeBg: '#86281e', advantages: ['1 Grup buluşması hakkı', '1 Başbaşa buluşması hakkı', 'Haklar kullanılana kadar geçerli'] },
-  { key: 'PRIME', name: 'Prime', badge: 'Abonelik', desc: 'Her 30 günde 1 Grup + 1 Başbaşa + 1 Kankamla', color: '#c9a227', badgeBg: 'linear-gradient(135deg, #f5d76e, #c9a227 55%, #a8861a)', advantages: ['Her 30 günde 1 Grup buluşması hakkı', 'Her 30 günde 1 Başbaşa buluşması hakkı', 'Her 30 günde 1 Kankamla buluşması hakkı', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
+// Paket kartları: tam genişlik, premium görünüm — aynı renk ailesinde koyudan ortaya geçişli (gradient) arka plan; açık / soluk ton yok.
+// Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, altın çerçeve ve altın detaylı.
+// badgeBg / badgeFg: Tinder GOLD tarzı hap rozet (kartın renk tonuna uyumlu; İçerde ve Prime altın)
+export const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient: [string, string]; fg: string; nameColor: string; border?: string; badgeBg: string; badgeFg: string; advantages: string[] }[] = [
+  { key: 'MASADA', name: 'Grup Paketi', badge: 'Tek Seferlik', desc: "1 Grup Masası'nda buluşma hakkı", gradient: ['#06301c', '#1c7a49'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: '#2e9e62', badgeFg: '#ffffff',
+    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', "1 Grup Masası'nda buluşma hakkı", 'Masada erkek ve kadın eşit eşit sayı', 'Bu hak masada sen buluşana kadar geçerli'] },
+  { key: 'KARSIMDA', name: 'Baş Başa Paketi', badge: 'Tek Seferlik', desc: "1 Baş Başa Masası'nda buluşma hakkı", gradient: ['#3d0907', '#a3231b'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: '#d6453a', badgeFg: '#ffffff',
+    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Baş Başa Masası'nda buluşma hakkı", 'Bu hak masada sen buluşana kadar geçerli'] },
+  { key: 'KANKAMLA', name: 'Kankamla Paketi', badge: 'Tek Seferlik', desc: "1 Kankamla Masası'nda buluşma hakkı", gradient: ['#071a3a', '#1d4f9c'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: '#3b7dd8', badgeFg: '#ffffff',
+    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Kankamla Masası'nda buluşma hakkı", 'Kankanı davet ederek ücretsiz çağırma', 'Bu hak masada sen buluşana kadar geçerli'] },
+  { key: 'ICERDE', name: 'İçerde Paketi', badge: 'Tek Seferlik', desc: "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı", gradient: ['#3a2804', '#9c7412'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: 'linear-gradient(135deg, #f5d76e, #c9a227 55%, #a8861a)', badgeFg: '#1a1406',
+    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı", 'Bu haklar masada sen buluşana kadar geçerli'] },
+  { key: 'PRIME', name: 'Prime Paket', badge: 'Abonelik', desc: 'Her ay 1 Grup + 1 Baş Başa + 1 Kankamla Masası', gradient: ['#000000', '#2b2d31'], fg: '#f4f1ec', nameColor: '#e8c84a', border: '#c9a227', badgeBg: 'linear-gradient(135deg, #f5d76e, #c9a227 55%, #a8861a)', badgeFg: '#1a1406',
+    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "Her ay 1 Grup Masası + 1 Baş Başa Masası + 1 Kankamla Masası'nda buluşma hakkı", 'Aboneliği iptal etsen dahi, bu haklar masada sen buluşana kadar geçerli', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
 ];
 
 export function Check() {
@@ -36,35 +42,36 @@ export function Arrow() {
 }
 
 
-// Tinder tarzı kart: tam genişlik, tek renk, solda kalın ad + GOLD tarzı rozet, altında tek satır açıklama, sağda ok
+// Tinder tarzı kart: tam genişlik, koyudan ortaya geçişli arka plan, solda kalın ad + GOLD tarzı rozet, altında tek satır açıklama, sağda ok
 export function PaketKarti({ card, badge, blocked, onClick }: { card: (typeof CARDS)[number]; badge?: string | null; blocked?: boolean; onClick: () => void }) {
-  const isPrimeCard = card.key === 'PRIME';
   return (
     <button
       onClick={onClick}
       className="w-full flex items-center justify-between gap-3 text-left transition-transform active:scale-[0.99]"
       style={{
-        background: card.color,
+        background: `linear-gradient(135deg, ${card.gradient[0]} 0%, ${card.gradient[1]} 100%)`,
+        border: card.border ? `1px solid ${card.border}` : '1px solid rgba(255,255,255,0.08)',
         borderRadius: 18,
         padding: '18px 20px',
         minHeight: 76,
-        color: isPrimeCard ? '#1a1406' : '#fff',
+        color: card.fg,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
         opacity: blocked ? 0.55 : 1,
       }}
     >
       <span className="flex flex-col gap-1 min-w-0">
         <span className="flex items-center gap-2 flex-wrap">
-          <span className="font-extrabold" style={{ fontSize: '1.25rem', letterSpacing: '0.01em' }}>{card.name}</span>
+          <span className="font-extrabold" style={{ fontSize: '1.25rem', letterSpacing: '0.01em', color: card.nameColor }}>{card.name}</span>
           <span
             className="rounded-full font-extrabold"
-            style={{ fontSize: '0.7rem', letterSpacing: '0.08em', padding: '3px 10px', background: card.badgeBg, color: isPrimeCard ? '#1a1406' : '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }}
+            style={{ fontSize: '0.7rem', letterSpacing: '0.08em', padding: '3px 10px', background: card.badgeBg, color: card.badgeFg, boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }}
           >
             {(badge ?? card.badge).toLocaleUpperCase('tr-TR')}
           </span>
         </span>
         <span className="text-sm truncate" style={{ opacity: 0.9 }}>{card.desc}</span>
       </span>
-      <Arrow />
+      <span style={{ color: card.border ?? card.fg }}><Arrow /></span>
     </button>
   );
 }

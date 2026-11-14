@@ -167,9 +167,7 @@ export function KankaSection() {
       <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 14px' }}>
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#c0392b', margin: '0 0 6px' }}>KANKAMLA NASIL İŞLER?</p>
         <p style={{ fontSize: 12, color: '#aaa', lineHeight: 1.6, margin: 0 }}>
-          Aynı cinsiyetten, kimliği doğrulanmış bir arkadaşını kanka olarak davet et. Kankamla paketini <strong style={{ color: '#f5f5f5' }}>sadece birinizin alması yeterli</strong>; kankan ücretsiz katılır.
-          Paket 2 masa hakkı verir ve her hak 4 döngü geçerlidir. İkiniz, karşı cinsten bir kanka çiftiyle Pazar akşamı 4 kişilik masada buluşursunuz.
-          Davet 48 saat geçerlidir; kanka seçildiği hafta değiştirilemez.
+          Kankamla Paketi'ni al, ardından aynı cinsiyetten bir arkadaşını kanka olarak davet et. Kankan ücretsiz katılır; davet linkinden geldiğinde kimlik doğrulaması yapması zorunludur. İkiniz, karşı cinsten bir kanka çiftiyle Pazar akşamı 4 kişilik masada buluşursunuz. Davet 48 saat geçerlidir; kanka seçildiği hafta değiştirilemez.
         </p>
       </div>
 

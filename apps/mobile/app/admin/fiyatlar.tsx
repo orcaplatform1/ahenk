@@ -17,8 +17,8 @@ const roundTL = (k: number) => Math.round(k / 100) * 100;
 function compute(net: number) { const web = roundTL(net * 1.2); const mobile = roundTL((net * 1.2) / 0.85); return { web, mobile, webDiscount: roundTL(web * 0.9), mobileDiscount: roundTL(mobile * 0.9) }; }
 const tl = (k: number) => `${(k / 100).toLocaleString('tr-TR', { maximumFractionDigits: 2 })} ₺`;
 function parseNet(v: string): number | null { const n = Number(v.replace(/\./g, '').replace(',', '.')); return Number.isFinite(n) && n >= 1 ? Math.round(n * 100) : null; }
-const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
-const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '1 grup buluşması', KARSIMDA: '1 başbaşa buluşması', ICERDE: '1 grup + 1 başbaşa buluşması', KANKAMLA: '1 Kankamla buluşması (kanka ücretsiz)', PRIME_1M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla', PRIME_3M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla', PRIME_6M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla', PRIME_12M: 'her 30 günde 1 grup + 1 başbaşa + 1 kankamla' };
+const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
+const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '1 grup buluşması', KARSIMDA: '1 baş başa buluşması', ICERDE: '1 grup + 1 baş başa buluşması', KANKAMLA: '1 Kankamla buluşması (kanka ücretsiz)', PRIME_1M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla', PRIME_3M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla', PRIME_6M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla', PRIME_12M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla' };
 
 function WinbackSettings() {
   const [amount, setAmount] = useState('');

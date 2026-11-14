@@ -93,7 +93,7 @@ export class WinbackService {
         // Mobil gösterim: mobilde tahsil edilen tutarla aynı (mobil fiyat − geri kazanım tutarı)
         mobileListTL: prices[plan].mobileKurus / 100,
         mobileDiscountedTL: prices[plan].mobileKurus / 100 - settings.amountTL,
-        needsKanka: plan === SubscriptionPlan.KANKAMLA && !link,
+        needsKanka: false,
       }));
 
     return {

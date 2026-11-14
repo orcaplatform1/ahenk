@@ -40,7 +40,7 @@ const TABS = [
   { key: 'CANCELLED', label: 'İptal Edilen' },
 ] as const;
 
-const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
+const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 const PLATFORM_LABEL: Record<string, string> = { WEB: 'Web', ANDROID: 'Android', IOS: 'iOS' };
 
 function fmtDate(d: string | null) {
@@ -59,14 +59,14 @@ function SubscriptionRow({ s, onCancel }: { s: Subscription; onCancel: () => voi
           {s.expiresAt ? ` · Bitiş ${fmtDate(s.expiresAt)}` : ''}
           {s.plan === 'MASADA' || s.plan === 'ICERDE' || s.plan.startsWith('PRIME_') ? ` · Grup hakkı: ${s.groupRights}` : ''}
           {s.plan === 'KANKAMLA' || s.plan.startsWith('PRIME_') ? ` · Kankamla hakkı: ${s.kankaRights ?? 0}` : ''}
-          {oneOnOneRight ? ` · Başbaşa hakkı: ${s.usedAt ? `kullanıldı (${fmtDate(s.usedAt)})` : 'kullanılmadı'}` : ''}
+          {oneOnOneRight ? ` · Baş Başa hakkı: ${s.usedAt ? `kullanıldı (${fmtDate(s.usedAt)})` : 'kullanılmadı'}` : ''}
         </p>
         <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED }}>
           {s.payment
             ? `${PLATFORM_LABEL[s.payment.platform] ?? s.payment.platform} · ₺${(s.payment.amountKurus / 100).toFixed(2)}`
             : 'Ücretsiz (admin)'}
           {s.status === 'ACTIVE' && (s.missedGroupCycles > 0 || s.missedOneonOneCycles > 0)
-            ? ` · Masa kurulamayan döngü: grup ${s.missedGroupCycles}, başbaşa ${s.missedOneonOneCycles}`
+            ? ` · Masa kurulamayan döngü: grup ${s.missedGroupCycles}, baş başa ${s.missedOneonOneCycles}`
             : ''}
         </p>
         {s.status === 'CANCELLED' && (
@@ -171,7 +171,7 @@ export default function AdminSubscriptions() {
             placeholder="Tüm paketler"
             title="Paket filtresi"
             options={[
-              { value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' },
+              { value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' },
               { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
               { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' },
               { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' },

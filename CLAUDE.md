@@ -90,13 +90,21 @@ KYC KURALLARI:
 
 ÖDEME SİSTEMİ (Modül 8):
 Tek seferlik paketler (kodlar korunur; haklar kullanılana kadar geçerli, döngü / süre sınırı yok):
-  - MASADA   → "Grup":     1 grup buluşması hakkı, ham 299 TL
-  - KARSIMDA → "Başbaşa":  1 başbaşa buluşması hakkı, ham 399 TL
-  - KANKAMLA → "Kankamla": 1 kankamla buluşması hakkı, ham 499 TL (alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır)
-  - ICERDE   → "İçerde":   1 grup + 1 başbaşa buluşması hakkı, ham 599 TL
+  - MASADA   → "Grup Paketi":     1 grup buluşması hakkı, ham 299 TL
+  - KARSIMDA → "Baş Başa Paketi": 1 baş başa buluşması hakkı, ham 399 TL
+  - KANKAMLA → "Kankamla Paketi": 1 kankamla buluşması hakkı, ham 499 TL (alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır)
+    · Kanka davet edilmeden satın alınır; kullanıcı paketi aldıktan sonra kankasını davet eder (detay ekranında "Paket Al";
+      "Önce Kanka Davet Et" yoktur). Davet linkinden gelen kankanın daveti kabul etmesi ve masaya katılması için KYC onayı zorunlu
+  - ICERDE   → "İçerde Paketi":   1 grup + 1 baş başa buluşması hakkı, ham 599 TL
+  Prime'ın görünen adı "Prime Paket". Kullanıcıya görünen bütün metinlerde "Başbaşa" değil "Baş Başa" yazılır (paket kodları aynen)
 Prime abonelik (PRIME_1M / PRIME_3M / PRIME_6M / PRIME_12M): ham 899 / 2299 / 3899 / 6499 TL
-  - Satın alındığı anda 1 grup + 1 başbaşa + 1 kankamla hakkı tanımlanır
-  - Satın alma tarihinden itibaren her 30 günde haklar sıfırlanır ve yeniden 1 + 1 + 1 olur; kullanılmayan haklar devretmez
+  - Satın alındığı anda 1 grup + 1 baş başa + 1 kankamla hakkı tanımlanır
+  - Abonelik devam ettiği sürece satın alma tarihinden itibaren her 30 günde haklar sıfırlanır ve yeniden 1 + 1 + 1 olur;
+    kullanılmayan haklar devretmez
+  - Abonelik iptal edilince (kullanıcı iptali ya da mağaza / iyzico yenilemeyi durdurunca) iptal anında elde kalan Prime hakları süre
+    sınırı olmadan, kullanılana kadar geçerli kalır: 30 günlük yenileme durur, dönem sonunda haklar silinmez. İptal edilen Prime'ın
+    dönemi bitince bu kayıt "aktif Prime" sayılmaz (ikinci Prime / tek seferlik paket kuralı ve profildeki Prime durumu); hakların
+    tamamı kullanılınca biter (backend package-rights.ts livePrimeWhere / isLivePrime)
   - Dönem başında planın tam tutarı tek seferde çekilir; dönem bitince aynı süreyle otomatik yenilenir
   - Aktif Prime'ı olan ikinci Prime alamaz
   - Aktif Prime'ı olan tek seferlik paket alamaz; istisna: Prime'da hakkı bitmiş tür varsa yalnız o türü içeren tek seferlik paketi alabilir
@@ -106,21 +114,38 @@ Prime abonelik (PRIME_1M / PRIME_3M / PRIME_6M / PRIME_12M): ham 899 / 2299 / 38
   - Admin panelinde (web + mobil) tek seferlik paketlerin olduğu her filtre / listede Prime 1/3/6/12 aylık da vardır
     (Kullanıcılar üye filtresi, Abonelikler paket filtresi, paket verme ekranları, işlem kaydı paket adları);
     İstatistikler → Paket Dağılımı'nda Prime planları ayrı ayrı (yüzdeler tek seferlik + Prime toplamına göre) ve "Aktif Prime" kartı
-  - Profildeki paket kutusunda "Aboneliği İptal Et": otomatik yenileme durur, haklar dönem sonuna kadar kullanılır, iade yapılmaz
+  - Profildeki paket kutusunda "Aboneliği İptal Et": otomatik yenileme durur, iptal anında elde kalan haklar kullanılana kadar geçerli,
+    iade yapılmaz
     · iyzico ile alınan abonelik: web ve mobilde buton sunucu üzerinden doğrudan iptal eder
     · App Store / Play Store ile alınan abonelik: mobilde mağazanın abonelik sayfası açılır; web'de "Aboneliğini mobil uygulama
       üzerinden aldığın için iptal işlemini uygulamadan yapabilirsin." mesajı ve "Uygulamayı Aç" butonu: iOS / Android'de önce ahenk://
       ile uygulama açılmaya çalışılır, 1,5 sn içinde sayfa görünür kalırsa iOS'ta App Store'a, Android'de Play Store'a yönlendirilir;
       uygulama açılırsa yönlendirme yapılmaz. Masaüstünde App Store ve Play Store butonları. Bağlantılar apps/web/lib/appLinks.ts
 Fiyatlar ham fiyattır; admin "Fiyatlar" tablosunda (PlanPrice) tutulur. Web = ham × 1,20 (KDV); mobil = ham × 1,20 ÷ 0,85 (mağaza komisyonu %15)
+Sadakat Programı (%10 davet indirimi): davet edilen kişi herhangi bir tek seferlik paket aldığında ya da Prime aboneliği başlattığında
+  (ücretli satın alma: iyzico ya da mağaza) davet edene %10 indirim hakkı tanımlanır; KYC şartı yoktur. Kutudaki metin: "Davet ettiğin
+  arkadaşın herhangi bir paket aldığında veya abone olduğunda sana %10 indirim hakkı tanımlanır. Her indirim hakkı yalnızca bir paket
+  satın alımında geçerlidir, toplu kullanılamaz ve devredilemez." (Referral durum adı KYC_APPROVED şemada aynen, "hak tanımlandı" anlamında)
 İndirimler: %10 davet indirimi ve paketi / aboneliği olmayana gönderilen 100 TL indirim tüm tek seferlik paketlerde ve tüm Prime
   planlarında geçerli (WINBACK_PLANS ayarında 8 plan); ikisi aynı ödemede birlikte kullanılamaz; Prime'da yalnız satın alma ödemesine
   uygulanır, yenilemeler indirimsiz. Aktif tek seferlik paketi ya da aktif Prime'ı olana 100 TL indirim hiçbir koşulda gösterilmez/uygulanmaz
 Mobil indirim teklifleri (IAP_ENABLED ile pasif): tek seferlik paketlerde indirimli ayrı ürünler (<ürün>.davet10, <ürün>.indirim100);
   Prime'da App Store promosyon teklifi (sunucu imzalı) / Google Play abonelik teklifi (teklif kimlikleri davet10, indirim100)
-Paket kartı rozetleri: Tinder GOLD tarzı hap, dolgu renkli, kalın, büyük harf; renk kartın tonuyla uyumlu, Prime altın
+Paket kartı rozetleri: Tinder GOLD tarzı hap, dolgu renkli, kalın, büyük harf; renk kartın tonuyla uyumlu, İçerde ve Prime altın
+Paket kartı tasarımı (web + mobil, landing dahil): premium; her kartta aynı renk ailesinde koyudan ortaya geçişli (gradient) arka plan,
+  açık / soluk ton yok. Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, altın çerçeve ve altın
+  detaylı. Prime detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen" etiketi; bu kart altın çerçeveli, hafif altın geçişli
+Paket kartı yazıları (kart kısa açıklaması; avantajlar PaketKarti.tsx CARDS ve mobil paketim.tsx CARDS'ta aynı liste):
+  Grup Paketi "1 Grup Masası'nda buluşma hakkı"; Baş Başa Paketi "1 Baş Başa Masası'nda buluşma hakkı"; Kankamla Paketi
+  "1 Kankamla Masası'nda buluşma hakkı"; İçerde Paketi "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı"; Prime Paket
+  "Her ay 1 Grup + 1 Baş Başa + 1 Kankamla Masası"
+Mobil paket detay ekranında "← Paketler" (mevcut pillRed etiket stili) ve Android geri tuşu Paketim'deki paket listesine döner
+Profilim "KANKAMLA NASIL İŞLER?" metni: "Kankamla Paketi'ni al, ardından aynı cinsiyetten bir arkadaşını kanka olarak davet et. Kankan
+  ücretsiz katılır; davet linkinden geldiğinde kimlik doğrulaması yapması zorunludur. İkiniz, karşı cinsten bir kanka çiftiyle Pazar
+  akşamı 4 kişilik masada buluşursunuz. Davet 48 saat geçerlidir; kanka seçildiği hafta değiştirilemez." Web ve mobilde "2 masa hakkı",
+  "2 hak", "4 döngü" ifadeleri yoktur
 Landing "Paket Al": giriş yapmamışsa Giriş; giriş yapmışsa (KYC onaylı ya da değil) Profil → Paketim
-Paket kartları (Grup, Başbaşa, Kankamla, İçerde, Prime) tek kaynaktan: apps/web/components/paket/PaketKarti.tsx — paket ekranı ve landing
+Paket kartları (Grup, Baş Başa, Kankamla, İçerde, Prime) tek kaynaktan: apps/web/components/paket/PaketKarti.tsx — paket ekranı ve landing
   aynı kartı, açıklamayı ve avantaj listesini kullanır. Landing'de eski görselli paket kartları yoktur; Prime kuralları bölümü durur
 Platform:
   - Web → iyzico. Tek seferlik: Checkout Form. Prime: ilk dönem Checkout Form, otomatik yenileme iyzico abonelik API'si
@@ -135,7 +160,7 @@ Akış:
   - GET /payment/subscriptions → JWT zorunlu, aktif paketler + türüne göre kalan hak adedi
 İADE SİSTEMİ YOKTUR: kullanıcı iade talebi, admin iade ekranları ve iade endpoint'leri kaldırıldı; RefundRequest tablosu silindi.
   Landing ve yasal sayfalarda iade ifadesi yoktur (Mesafeli Satış Sözleşmesi cayma hakkı maddesi hariç); Prime kuralları yazılıdır.
-  Yasal sayfalardaki paket tanımları yeni paketlerdir (Grup / Başbaşa / Kankamla / İçerde 1'er hak, kullanılana kadar; Prime 1/3/6/12 ay);
+  Yasal sayfalardaki paket tanımları yeni paketlerdir (Grup / Baş Başa / Kankamla / İçerde 1'er hak, kullanılana kadar; Prime 1/3/6/12 ay);
   "2 grup hakkı" ve "4 döngü" ifadeleri yoktur.
   (Para çekilip paket verilemeyen mükerrer ödemenin otomatik iyzico iadesi ve "Ödeme Sonuçlandırma" ekranı duruyor.)
 
@@ -143,7 +168,7 @@ HAFTALIK BULUŞMA SEÇİMİ:
   - Her Pazar 23:59'dan sonra paketi olan kullanıcıya Eşleşme Paneli / Masalarım'da pencere açılır
   - Paketinde kalan türlerden bu hafta hangilerine gireceğini seçer (1, 2 ya da 3 tür); seçim değiştirilemez
   - Sistem kimseyi otomatik taramaya sokmaz; yalnız seçilen türlerin taramasına girilir (WeeklySelection tablosu)
-  - Son saatler: Grup Perşembe 18:00, Başbaşa Cuma 18:00, Kankamla Cumartesi 18:00
+  - Son saatler: Grup Perşembe 18:00, Baş Başa Cuma 18:00, Kankamla Cumartesi 18:00
   - Süresinde seçim yapmayan o türün taramasına girmez, hakkı düşmez
   - Eşleşme alanı: paketi olan kullanıcıda bu hafta seçilmeyen tür "Eşleşme Pasif"; hiç paketi olmayanda "Abonelik Yok"
   - GET /weekly-selection, POST /weekly-selection {types[]} (JWT)
@@ -152,7 +177,7 @@ HAFTALIK BULUŞMA SEÇİMİ:
     (Grup Masası / Baş Başa Masası / Kankamla Masası metinleri; buluşma Cuma / Cumartesi / Pazar 20:00). Yalnız paketinde hakkı
     olan türlerin kartı görünür. "Sonra" ve "Seçimi Onayla" butonları, son saatler ve seçimin değiştirilemezliği aynen
   - Eşleşme taraması Katılım satırı: Grupta "Katılım x/6:" tek başına, isimler bir alt satırda; her kısaltma cinsiyet renkli
-    çerçeveli yuvarlak dairede (web + mobil). Başbaşa ve Kankamla satırı eskisi gibi
+    çerçeveli yuvarlak dairede (web + mobil). Baş Başa ve Kankamla satırı eskisi gibi
 
 PROFİL FOTOĞRAFI (web + mobil):
   - Profilim ekranının en üstünde büyük yuvarlak profil alanı (KYC kartının altında): fotoğraf yoksa ad soyad kısaltması,
@@ -183,7 +208,10 @@ MASA DETAY KARTI (web + mobil):
 MOBİL GİRİŞ (yalnız mobil uygulama):
   - Mekân girişi ("M.Girişi") ve mekân paneli mobil uygulamada yok (web'deki mekân girişi aynen)
   - Giriş ekranı: tam ekran arka plan görseli (assets/mobilappscreen.webp; ekranı kaplar, kenarlardan kırpılır, esnetilmez, ortalı);
-    ortada Ahenk logosu; altta yasal metin "Devam ederek Kullanım Koşulları'nı kabul edersin. Verilerini nasıl işlediğimizi öğrenmek
+    logo yok (giriş ve "Tekrar hoş geldin" ekranında); görseli içeren alan tam ekran genişliği ve yüksekliği kadar, ekstra büyütme yok;
+    arka plan dönüşümlü: mobilappscreen.webp → mobilappscreen2.webp → mobilappscreen3.webp → baştan; giriş ya da "Tekrar hoş geldin"
+    ekranı her açıldığında sıradaki görsel (açılış, beni hatırla / beni unut çıkışı dahil), son sıra cihazda saklanır (AuthFlow.tsx);
+    altta yasal metin "Devam ederek Kullanım Koşulları'nı kabul edersin. Verilerini nasıl işlediğimizi öğrenmek
     için Gizlilik Politikası ve Çerez Politikası'nı inceleyebilirsin." (/kullanim-kosullari, /gizlilik-politikasi, /cerez-politikasi);
     altında tam genişlikte yuvarlak üç buton: "Telefon Numarası ile devam et" (telefon ikonu), "E-posta ile devam et" (zarf ikonu), "Kayıt Ol"
   - Telefon → "Numaranı alabilir miyiz?" (TR +90 + numara, İlerle) → WhatsApp kod ekranı. E-posta → "E-postan nedir?" (İlerle) →
@@ -195,8 +223,16 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     Unut: oturum kapanır, hatırlama bilgisi silinir.
     Hatırla: oturum kapanır, yenileme token'ı ve ad cihazda (secure-store) saklanır; açılışta "Tekrar hoş geldin, [ad]!" + "Giriş Yap"
     (aynı arka plan, altta yasal metin) → Face ID / parmak izi (expo-local-authentication) → "Cihaz Doğrulandı" (palet renginde onay
-    dairesi) → şifresiz giriş. Başarısız ya da cihazda yoksa normal giriş ekranı. Yeni girişte hatırlama bilgisi silinir
-  - Profilim'de çıkış butonları ile "Hesabımı Sil" arasında küçük uygulama logosu ve "Versiyon 0.1.0"; mobil sürüm 0.1.0
+    dairesi) → şifresiz giriş. Başarısız ya da cihazda yoksa normal giriş ekranı. Yeni girişte hatırlama bilgisi silinir.
+    "Beni hatırla" ile çıkışta doğrudan "Tekrar hoş geldin, [ad]!" ekranına gidilir (süren token yenilemesi beklenir); uygulama kapatılıp
+    açılınca da bu ekran görünür
+  - Açılışta dönen logolu 3 sn'lik ekran yoktur; yerel açılış görseli görünürken yazı tipleri / oturum yüklenir, hemen hedef ekrana geçilir
+  - Profilim'de çıkış butonları ile "Hesabımı Sil" arasında küçük uygulama logosu ve "Versiyon 0.1.1"; mobil sürüm 0.1.1 (Android versionCode 2)
+  - Android APK sadece arm64-v8a mimarisiyle, release modunda derlenir (EAS preview profili; plugins/withAndroidRelease.js: R8 kod
+    küçültme + kaynak küçültme açık, reactNativeArchitectures=arm64-v8a, Hermes açık). APK https://ahenk.co/apk/ahenk-<sürüm>.apk
+  - Eşleşme Paneli: KYC kartı yokken üstte boşluk kalmaz, Grup / Baş Başa / Kankamla halkaları durum çubuğunun hemen altından başlar
+  - Mobil yoklamalar yalnız odaktaki sekmede çalışır (useMasaTabs, Eşleşme Paneli canlı veriler); uygulama içi görseller gösterildikleri
+    boya yakın çözünürlükte tutulur
 
 İPTAL EDİLEN KONU: Admin'in verdiği paketin hangi admin tarafından verildiğinin kaydı / gösterimi (rapor104 ve rapor105'te sorulan)
   iptal edildi; tekrar sorulmayacak.

@@ -117,7 +117,7 @@ export function AdminNoShowWarnings({ userId, reports, warnings, canSanction, us
         return (
           <View key={meeting.id} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <AT style={{ flex: 1, fontSize: 11, color: adm.muted }}>
-              {new Date(meeting.scheduledAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' })} · {meeting.type === 'ONE_ON_ONE' ? 'Başbaşa' : 'Grup'}{meeting.locationText ? ` · ${meeting.locationText}` : ''}, bildiren: <AT style={{ fontSize: 11 }}>{reporters.join(', ')}</AT>
+              {new Date(meeting.scheduledAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' })} · {meeting.type === 'ONE_ON_ONE' ? 'Baş Başa' : 'Grup'}{meeting.locationText ? ` · ${meeting.locationText}` : ''}, bildiren: <AT style={{ fontSize: 11 }}>{reporters.join(', ')}</AT>
             </AT>
             {warned ? <AT style={{ fontSize: 10, color: adm.muted }}>Uyarı verildi</AT> : weekWarned ? <AT style={{ fontSize: 10, color: adm.muted }}>Bu hafta için uyarı verildi</AT>
               : canSanction ? <Btn variant="admAmberXs" disabled={!!warning} label={warning === meeting.id ? '…' : 'Uyarı Ver'} onPress={() => give(meeting.id)} /> : null}

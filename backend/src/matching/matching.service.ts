@@ -140,7 +140,7 @@ export async function tableTitle(
     const hit = /(\d+)\s*$/.exec(m.title);
     return hit ? Math.max(max, Number(hit[1])) : max;
   }, 0);
-  const label = type === MeetingType.GROUP ? "Grup" : type === MeetingType.KANKA ? "Kankamla" : "Başbaşa";
+  const label = type === MeetingType.GROUP ? "Grup" : type === MeetingType.KANKA ? "Kankamla" : "Baş Başa";
   return `${city?.name ?? ""} ${label} ${maxNo + 1}`.trim();
 }
 

@@ -4,7 +4,7 @@ import { SubscriptionPlan } from "../generated/prisma/client";
 // haklar package-rights.ts'de, Prime dönem / yenileme kuralları prime.ts'de
 export const PLAN_CONFIG: Record<SubscriptionPlan, { nametr: string; label: string | null }> = {
   [SubscriptionPlan.MASADA]: { nametr: "Grup", label: null },
-  [SubscriptionPlan.KARSIMDA]: { nametr: "Başbaşa", label: null },
+  [SubscriptionPlan.KARSIMDA]: { nametr: "Baş Başa", label: null },
   [SubscriptionPlan.ICERDE]: { nametr: "İçerde", label: null },
   [SubscriptionPlan.KANKAMLA]: { nametr: "Kankamla", label: null },
   [SubscriptionPlan.PRIME_1M]: { nametr: "Prime 1 Aylık", label: null },

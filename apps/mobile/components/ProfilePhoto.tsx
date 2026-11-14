@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Image, Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { File as FsFile } from 'expo-file-system';
 import { api } from '@/lib/api';
 import { BASE } from '@/lib/config';
 import { gColor } from '@/lib/masa';
@@ -52,7 +53,9 @@ export async function pickAndUploadProfilePhoto(kycApproved: boolean): Promise<b
   if (!picked.length) return false;
   const p = picked[0];
   const form = new FormData();
-  form.append('photo', { uri: p.uri, name: p.name, type: p.type } as unknown as Blob);
+  // Global fetch (expo/fetch) RN'nin { uri, name, type } parçasını desteklemiyor ("Unsupported FormDataPart implementation");
+  // expo-file-system File nesnesi dosya içeriğini sağladığı için gövdeye yazılır (ProblemReport / admin mekân fotoğrafı ile aynı yöntem)
+  form.append('photo', new FsFile(p.uri) as unknown as Blob);
   try { await api.form('/users/me/profile-photo', form); Alert.alert('Profil Fotoğrafı', PENDING_PHOTO_MESSAGE); return true; }
   catch (e) { Alert.alert('Profil Fotoğrafı', (e as Error).message); return false; }
 }

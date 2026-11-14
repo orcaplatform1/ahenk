@@ -1,14 +1,14 @@
-// Mobil giriş ekranı (yalnız üye; mekân girişi mobil uygulamada yok). Tam ekran arka plan görseli; ortada Ahenk logosu,
+// Mobil giriş ekranı (yalnız üye; mekân girişi mobil uygulamada yok). Tam ekran arka plan görseli (logo yok);
 // altta yasal metin ve tam genişlikte üç buton: Telefon Numarası ile devam et → "Numaranı alabilir miyiz?" → WhatsApp kodu,
 // E-posta ile devam et → "E-postan nedir?" → "Şifreni gir", Kayıt Ol → kayıt akışı. Tüm adımlarda sol üstte geri ok.
 import React, { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, Linking, Modal, Platform, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Modal, Platform, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { API_PREFIX } from '@/lib/config';
 import { api, storeLogin } from '@/lib/api';
 import { PasswordInput } from '@/components/AuthShell';
-import { AuthBackground, BackArrow, LegalNote, MailIcon, PhoneIcon, PillButton, StepScreen } from '@/components/AuthFlow';
+import { AuthBackground, useAuthBackgroundIndex, BackArrow, LegalNote, MailIcon, PhoneIcon, PillButton, StepScreen } from '@/components/AuthFlow';
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
 import { OtpInput } from '@/components/OtpInput';
 import { Btn, BtnGhost, BtnPrimary, ErrorText, Input, T } from '@/components/ui';
@@ -43,6 +43,8 @@ export default function Giris() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState<Step>('home');
+  // Dönüşümlü arka plan: ekran her açıldığında sıradaki görsel (adımlar arasında geçişte değişmez)
+  const bgIndex = useAuthBackgroundIndex();
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [otpShake, setOtpShake] = useState(false);
@@ -115,11 +117,9 @@ export default function Giris() {
   if (step === 'home') {
     content = (
       <View style={{ flex: 1 }}>
-        <AuthBackground />
+        <AuthBackground index={bgIndex} />
         {router.canGoBack() && <BackArrow onPress={() => router.back()} />}
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: insets.top }}>
-          <Image source={require('@/assets/start_logo.jpg')} style={{ width: 120, height: 120, borderRadius: 60 }} accessibilityLabel="Ahenk" />
-        </View>
+        <View style={{ flex: 1, paddingTop: insets.top }} />
         <View style={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 16, gap: 12 }}>
           <View style={{ marginBottom: 4 }}><LegalNote /></View>
           <PillButton label="Telefon Numarası ile devam et" icon={(col) => <PhoneIcon color={col} />} onPress={() => go('phone')} />

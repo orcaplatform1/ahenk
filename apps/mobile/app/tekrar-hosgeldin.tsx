@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { api, refreshAtLaunch } from '@/lib/api';
 import { forgetDevice, getRemembered, restoreRemembered } from '@/lib/session';
-import { AuthBackground, BackArrow, LegalNote, PillButton } from '@/components/AuthFlow';
+import { AuthBackground, useAuthBackgroundIndex, BackArrow, LegalNote, PillButton } from '@/components/AuthFlow';
 import { Serif, T } from '@/components/ui';
 import { ll, tw } from '@/theme/theme';
 
@@ -36,6 +36,7 @@ export default function TekrarHosgeldin() {
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [verified, setVerified] = useState(false);
+  const bgIndex = useAuthBackgroundIndex();
 
   useEffect(() => { getRemembered().then((r) => { if (r) setName(r.firstName); else router.replace('/giris'); }); }, [router]);
 
@@ -68,7 +69,7 @@ export default function TekrarHosgeldin() {
 
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg }}>
-      <AuthBackground />
+      <AuthBackground index={bgIndex} />
       <BackArrow onPress={() => router.replace('/giris')} />
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingTop: insets.top, gap: 24 }}>
         <Serif style={{ fontSize: 32, lineHeight: 40, textAlign: 'center', color: ll.text }}>Tekrar hoş geldin, {name}!</Serif>

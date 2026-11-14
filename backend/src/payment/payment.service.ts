@@ -18,7 +18,7 @@ import { PLAN_CONFIG, PRIME_MONTHS } from "./payment.constants";
 import { PricingService } from "./pricing.service";
 import { WinbackService } from "./winback.service";
 import { isMaintenanceMode } from "../admin/app-settings";
-import { GROUP_RIGHTS, ONE_ON_ONE_PLANS, KANKA_PLANS, PRIME_PLANS, groupPartOpen, isPrime, kankaPartOpen, kankaRightsOf, oneOnOnePartOpen } from "./package-rights";
+import { GROUP_RIGHTS, ONE_ON_ONE_PLANS, KANKA_PLANS, groupPartOpen, isLivePrime, isPrime, kankaPartOpen, kankaRightsOf, livePrimeWhere, oneOnOnePartOpen } from "./package-rights";
 import { PrimeService } from "./prime.service";
 import { StoreService, discountOfOffer, parseProduct } from "./store.service";
 import { activeKankaLink } from "../kanka/kanka-links";
@@ -70,7 +70,7 @@ export class PaymentService {
       rights,
       hasMasada: subs.some(groupPartOpen),
       hasKarsimda: subs.some(oneOnOnePartOpen),
-      primeActive: subs.some((s) => isPrime(s.plan)),
+      primeActive: subs.some((s) => isLivePrime(s)),
     };
   }
 
@@ -95,7 +95,7 @@ export class PaymentService {
   // - Aynı türün açık hakkı varken o türü içeren tek seferlik paket alınamaz (planConflict).
   private async assertCanBuy(userId: string, plan: SubscriptionPlan) {
     const prime = await this.prisma.subscription.findFirst({
-      where: { userId, status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS } },
+      where: { userId, ...livePrimeWhere() },
       select: { plan: true, groupRights: true, groupCycles: true, usedAt: true, oneOnOneCycles: true, kankaRights: true, kankaCycles: true },
     });
     if (isPrime(plan)) {
@@ -107,12 +107,9 @@ export class PaymentService {
         (KANKA_PLANS.includes(plan) && kankaPartOpen(prime));
       if (blocked) throw new ConflictException("Prime aboneliğinde bu türün hakkı duruyor; yalnız hakkı biten türün paketini alabilirsin.");
     }
-    // Kankamla: kanka seçmeden alınamaz; çiftte (iki kişiden birinde) aktif Kankamla paketi bitene kadar yenisi alınamaz
+    // Kankamla: kanka davet edilmeden alınabilir (kanka satın almadan sonra davet edilir);
+    // çiftte (iki kişiden birinde) aktif Kankamla paketi bitene kadar yenisi alınamaz
     if (plan === SubscriptionPlan.KANKAMLA) {
-      const link = await activeKankaLink(this.prisma, userId);
-      if (!link) {
-        throw new BadRequestException("Kankamla paketini almak için önce Profilim'den bir kanka davet etmelisin.");
-      }
       if (await this.planConflict(this.prisma, userId, plan)) {
         throw new ConflictException("Sizin ya da kankanızın aktif Kankamla paketi var; paket bitene kadar yenisi alınamaz.");
       }
@@ -126,7 +123,7 @@ export class PaymentService {
   // Satın alma kuralı: init'te ve ödeme dönüşünde (kilit altında) aynı kontrol yapılır
   private async planConflict(db: Db, userId: string, plan: SubscriptionPlan): Promise<boolean> {
     if (isPrime(plan)) {
-      return (await db.subscription.count({ where: { userId, status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS } } })) > 0;
+      return (await db.subscription.count({ where: { userId, ...livePrimeWhere() } })) > 0;
     }
     if (plan === SubscriptionPlan.KANKAMLA) {
       const link = await activeKankaLink(db, userId);
@@ -447,6 +444,17 @@ export class PaymentService {
       ? await this.prime.createPrime(tx, userId, plan, {})
       : await tx.subscription.create({ data: { userId, plan, groupRights: GROUP_RIGHTS[plan], kankaRights: kankaRightsOf(plan) } });
     await tx.payment.update({ where: { id: paymentId }, data: { subscriptionId: sub.id } });
+    await this.grantReferrerDiscount(tx, userId);
+  }
+
+  // Sadakat programı: davet edilen kişi herhangi bir tek seferlik paket aldığında ya da Prime aboneliği başlattığında
+  // davet edene %10 indirim hakkı tanımlanır (KYC şartı yok). Durum adı (KYC_APPROVED) şemada eskisi gibi kalır:
+  // "indirim hakkı tanımlandı" anlamında kullanılır.
+  private async grantReferrerDiscount(db: Db, userId: string) {
+    await db.referral.updateMany({
+      where: { referredId: userId, status: ReferralStatus.REGISTERED },
+      data: { status: ReferralStatus.KYC_APPROVED },
+    });
   }
 
   // ─── Prime otomatik yenileme (web, iyzico abonelik API'si) ────────────────
@@ -456,7 +464,7 @@ export class PaymentService {
       throw new ServiceUnavailableException("Prime abonelik henüz aktif değil.");
     }
     const sub = await this.prisma.subscription.findFirst({
-      where: { userId, status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS }, iyzicoSubscriptionRef: null, storePlatform: null },
+      where: { userId, ...livePrimeWhere(), renewCancelledAt: null, iyzicoSubscriptionRef: null, storePlatform: null },
       select: { id: true, plan: true },
     });
     if (!sub) throw new NotFoundException("Otomatik yenileme başlatılacak Prime aboneliği bulunamadı.");
@@ -551,6 +559,7 @@ export class PaymentService {
           })
         : await tx.subscription.create({ data: { userId, plan, groupRights: GROUP_RIGHTS[plan], kankaRights: kankaRightsOf(plan) } });
       await tx.payment.update({ where: { id: payment.id }, data: { subscriptionId: sub.id } });
+      await this.grantReferrerDiscount(tx, userId);
     });
     await enqueueAssign(this.assignQueue, userId);
     return { success: true };

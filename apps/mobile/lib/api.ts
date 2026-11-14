@@ -42,6 +42,10 @@ async function refreshSessionResult(): Promise<RefreshResult> {
 // Uygulama her açıldığında çağrılır (açılış ekranı)
 export function refreshAtLaunch() { return refreshSessionResult(); }
 
+// Süren bir token yenilemesi varsa bitmesini bekler. "Beni hatırla" çıkışında kullanılır: yenileme sürerken eski (iptal
+// edilecek) yenileme token'ı saklanırsa ya da yenileme çıkıştan sonra token'ları geri yazarsa hatırlanan giriş çalışmaz.
+export async function settleRefresh() { if (refreshing) await refreshing.catch(() => undefined); }
+
 async function readMessage(res: Response): Promise<string> {
   const body = await res.json().catch(() => null) as { message?: string | string[] } | null;
   const msg = Array.isArray(body?.message) ? body?.message[0] : body?.message;
