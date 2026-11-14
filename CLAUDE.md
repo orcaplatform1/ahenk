@@ -134,7 +134,9 @@ Mobil indirim teklifleri (IAP_ENABLED ile pasif): tek seferlik paketlerde indiri
 Paket kartı rozetleri: Tinder GOLD tarzı hap, dolgu renkli, kalın, büyük harf; renk kartın tonuyla uyumlu, İçerde ve Prime altın
 Paket kartı tasarımı (web + mobil, landing dahil): premium; her kartta aynı renk ailesinde koyudan ortaya geçişli (gradient) arka plan,
   açık / soluk ton yok. Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, altın çerçeve ve altın
-  detaylı. Prime detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen" etiketi; bu kart altın çerçeveli, hafif altın geçişli
+  detaylı. Prime detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen" etiketi; bu kart altın çerçeveli, hafif altın geçişli.
+  Seçili plan kartının çerçevesi Ahenk paleti kırmızısı (#d6453a); 3 aylık seçiliyse çerçeve kırmızı, etiket kalır (web + mobil).
+  Grup Paketi avantajı "Masada erkek ve kadın eşit sayı"
 Paket kartı yazıları (kart kısa açıklaması; avantajlar PaketKarti.tsx CARDS ve mobil paketim.tsx CARDS'ta aynı liste):
   Grup Paketi "1 Grup Masası'nda buluşma hakkı"; Baş Başa Paketi "1 Baş Başa Masası'nda buluşma hakkı"; Kankamla Paketi
   "1 Kankamla Masası'nda buluşma hakkı"; İçerde Paketi "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı"; Prime Paket
@@ -194,7 +196,11 @@ PROFİL FOTOĞRAFI (web + mobil):
   - Dosyalar uploads/profile-photos/<userId>/ altında WebP; onaylılar GET /media/profile-photos/:userId/:file ile herkese açık
   - Uçlar: GET/POST /users/me/profile-photo (JWT); GET /admin/profile-photos, GET /admin/profile-photos/:id/file,
     POST /admin/profile-photos/:id/approve, POST /admin/profile-photos/:id/reject (ADMIN/SUPERADMIN). /auth/me → profilePhotoUrl
-  - Admin "Profil Fotoğrafları" ekranı (web + mobil): yüklenen fotoğraf ve KYC kimlik ön yüzü yan yana, Onayla / Reddet
+  - Admin "Profil Fotoğrafları" ekranı (web + mobil): yüklenen fotoğraf ve KYC kimlik ön yüzü yan yana, Onayla / Reddet; görsellere basınca
+    uygulama / sayfa içinde tam ekran büyük görünüm (görselin tamamı), basınca / geri tuşu / Esc ile kapanır. Profil fotoğrafı alanlarında
+    Janti Haydar görseli yoktur
+  - Profilim'deki profil fotoğrafına basınca tam ekran büyük görünüm (Instagram gibi); kalem butonu yükleme akışını açar. Büyük görünüm
+    ekrana (fotoğraf dahil) basınca ya da geri tuşuyla kapanır (masa detay kartında da aynı)
   - Mobil alt menü profil sekmesinde onaylı fotoğraf varsa kısaltma yerine fotoğraf
   - Admin panelinde kullanıcıların tıklanabildiği kısaltmalarda (Açık Masalar katılımcıları ve başbaşada eşi bekleyenler, web + mobil)
     onaylı fotoğraf varsa kısaltma yerine fotoğraf
@@ -215,7 +221,14 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     için Gizlilik Politikası ve Çerez Politikası'nı inceleyebilirsin." (/kullanim-kosullari, /gizlilik-politikasi, /cerez-politikasi);
     altında tam genişlikte yuvarlak üç buton: "Telefon Numarası ile devam et" (telefon ikonu), "E-posta ile devam et" (zarf ikonu), "Kayıt Ol"
   - Telefon → "Numaranı alabilir miyiz?" (TR +90 + numara, İlerle) → WhatsApp kod ekranı. E-posta → "E-postan nedir?" (İlerle) →
-    "Şifreni gir" (Giriş Yap, Şifremi unuttum). Kayıt Ol → mevcut kayıt akışı. Giriş adımlarında sol üstte geri ok
+    "Şifreni gir" (Giriş Yap, "Şifremi unuttum" butonu — PillButton normal stil). Kayıt Ol → mevcut kayıt akışı. Giriş adımlarında sol üstte geri ok
+  - Şifre sıfırlama ekranları (sifremi-unuttum, sifremi-sifirla) aynı sade tasarım (StepScreen): logo / kart yok, sol üstte geri ok,
+    sola hizalı kalın başlık. 1. adım "Şifreni sıfırla" + "Kayıtlı telefon numarana WhatsApp ile 6 haneli bir kod göndereceğiz." +
+    TR +90 ve numara + en altta tam genişlikte "Kod Gönder"; "Girişe Dön" yok. 2. adım "Yeni şifre": kod, yeni şifre, şifre tekrar,
+    "Şifremi Sıfırla", "Kodu tekrar gönder"
+  - Mobilde sistem uyarı penceresi (Alert.alert) kullanılmaz: components/AppAlert.tsx showAlert (Ahenk paleti; tek buton "Tamam"
+    BtnPrimary, vazgeç BtnGhost, onay BtnPrimary, silme / ban BtnTone danger). iOS'taki ActionSheetIOS seçim menüleri ayrı
+  - "Rehberden Seç" penceresinde başlık ve X güvenli alanın içinde (Android'de durum çubuğunun altında)
   - Mobil uygulamadaki "Çıkış" butonları ortak components/LogoutChoice.tsx kullanır. Kullanıcı hesabında (Profilim "Çıkış Yap")
     "Bu cihazda beni hatırla" / "Bu cihazda beni unut" / "Vazgeç". Admin hesabında (Yönetim Paneli "Çıkış") yalnız "Bu cihazda beni unut"
     ve "Vazgeç"; "Bu cihazda beni hatırla" yoktur. Admin hesabında hatırlama bilgisi hiçbir koşulda cihaza kaydedilmez; "Tekrar hoş

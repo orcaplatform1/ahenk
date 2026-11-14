@@ -15,17 +15,33 @@ async function fetchBlob(path: string): Promise<string | null> {
   } catch { return null; }
 }
 
+// Görsele basınca sayfa içinde tam ekran büyük görünüm (görselin tamamı); ekrana basınca ya da Esc ile kapanır
+function FullView({ src, label, onClose }: { src: string; label: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div onClick={onClose} role="dialog" aria-label={label} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}>
+      <img src={src} alt={label} style={{ maxWidth: '100vw', maxHeight: '100vh', objectFit: 'contain', display: 'block' }} />
+    </div>
+  );
+}
+
 function Preview({ url, label }: { url: string | null; label: string }) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
   useEffect(() => { if (url) fetchBlob(url).then(setBlobUrl); }, [url]);
   return (
     <div style={{ borderRadius: 8, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: SURFACE, border: `1px solid ${BORDER}` }}>
       <div style={{ aspectRatio: '1/1', position: 'relative' }}>
         {blobUrl
-          ? <img src={blobUrl} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer', display: 'block' }} onClick={() => window.open(blobUrl, '_blank')} />
+          ? <img src={blobUrl} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer', display: 'block' }} onClick={() => setOpen(true)} />
           : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><p style={{ margin: 0, fontSize: 10, color: MUTED }}>{url ? 'Yükleniyor…' : `${label} yok`}</p></div>}
       </div>
       <p style={{ margin: 0, fontSize: 10, color: MUTED, padding: '4px 8px' }}>{label}</p>
+      {open && blobUrl && <FullView src={blobUrl} label={label} onClose={() => setOpen(false)} />}
     </div>
   );
 }

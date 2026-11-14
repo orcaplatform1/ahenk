@@ -1,11 +1,13 @@
-// apps/web/app/sifremi-sifirla/page.tsx karşılığı
+// Şifre sıfırlama (2. adım: kod + yeni şifre): "Şifreni gir" ekranıyla aynı sade tasarım (AuthFlow StepScreen) — logo ve kart yok,
+// sol üstte geri ok (önceki adıma döner), sola hizalı kalın başlık, alanlar, en altta tam genişlikte buton.
 import React, { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '@/lib/api';
-import { AuthShell, PasswordInput } from '@/components/AuthShell';
+import { PasswordInput } from '@/components/AuthShell';
+import { PillButton, StepScreen } from '@/components/AuthFlow';
 import { OtpInput } from '@/components/OtpInput';
-import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, T } from '@/components/ui';
+import { Btn, ErrorText } from '@/components/ui';
 import { ll, tw } from '@/theme/theme';
 
 export default function SifremiSifirla() {
@@ -36,32 +38,36 @@ export default function SifremiSifirla() {
     try { await api.post('/auth/reset-password', { phone, code, newPassword: password }); setSuccess(true); setTimeout(() => router.replace('/giris'), 2000); }
     catch (e) { setError((e as Error).message); setCodeError(true); setTimeout(() => setCodeError(false), 500); } finally { setLoading(false); }
   }
-  return (
-    <AuthShell title="Yeni Şifre" subtitle="Kodu gir ve hesabın için yeni bir şifre belirle.">
-      {!valid ? (
-        <Card style={{ alignItems: 'center', gap: 16 }}>
-          <T style={{ color: ll.text2, fontSize: 14, textAlign: 'center' }}>Bağlantı geçersiz. Lütfen kodu yeniden iste.</T>
-          <BtnPrimary label="Kod İste" style={{ alignSelf: 'center' }} onPress={() => router.replace('/sifremi-unuttum')} />
-        </Card>
-      ) : success ? (
-        <View style={{ alignItems: 'center', gap: 4, paddingVertical: 16 }}>
-          <T w={600} style={{ marginBottom: 4 }}>Şifren güncellendi</T>
-          <T style={{ color: ll.label, fontSize: 13 }}>Giriş sayfasına yönlendiriliyorsun…</T>
-        </View>
-      ) : (
-        <View style={{ gap: 16 }}>
-          <Card style={{ gap: 12 }}>
-            <T style={{ color: ll.label, fontSize: 13, textAlign: 'center' }}>{phone} numarasına WhatsApp ile gönderilen 6 haneli kodu gir.</T>
-            <OtpInput value={code} onChange={(v) => { setCode(v); setError(''); }} error={codeError} />
-            <PasswordInput value={password} onChangeText={(t) => { setPassword(t); setError(''); }} placeholder="Yeni şifre" />
-            <PasswordInput value={confirm} onChangeText={(t) => { setConfirm(t); setError(''); }} placeholder="Şifre tekrar" onSubmitEditing={submit} />
-            <ErrorText>{error}</ErrorText>
-          </Card>
-          <BtnPrimary label={loading ? 'Kaydediliyor…' : 'Şifremi Sıfırla'} full disabled={loading || code.length !== 6} onPress={submit} />
+
+  let content: React.ReactNode;
+  if (!valid) {
+    content = (
+      <StepScreen title="Şifreni sıfırla" subtitle="Bağlantı geçersiz. Lütfen kodu yeniden iste." onBack={() => router.back()}
+        footer={<PillButton label="Kod İste" primary onPress={() => router.replace('/sifremi-unuttum')} />}>
+        <View />
+      </StepScreen>
+    );
+  } else if (success) {
+    content = (
+      <StepScreen title="Şifren güncellendi" subtitle="Giriş sayfasına yönlendiriliyorsun…" onBack={() => router.replace('/giris')} footer={null}>
+        <View />
+      </StepScreen>
+    );
+  } else {
+    content = (
+      <StepScreen title="Yeni şifre" subtitle={`${phone} numarasına WhatsApp ile gönderilen 6 haneli kodu gir ve yeni şifreni belirle.`} onBack={() => router.back()}
+        footer={<>
+          <PillButton label={loading ? 'Kaydediliyor…' : 'Şifremi Sıfırla'} primary disabled={loading || code.length !== 6} onPress={submit} />
           <Btn variant="textLink" disabled={resendIn > 0 || resending} style={{ opacity: 1 }} textStyle={resendIn > 0 ? { color: tw.muted } : undefined} onPress={resend} label={resending ? 'Gönderiliyor…' : resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'} />
+        </>}>
+        <View style={{ gap: 12 }}>
+          <OtpInput value={code} onChange={(v) => { setCode(v); setError(''); }} error={codeError} />
+          <PasswordInput value={password} onChangeText={(t) => { setPassword(t); setError(''); }} placeholder="Yeni şifre" />
+          <PasswordInput value={confirm} onChangeText={(t) => { setConfirm(t); setError(''); }} placeholder="Şifre tekrar" onSubmitEditing={submit} />
+          <ErrorText>{error}</ErrorText>
         </View>
-      )}
-      <View style={{ marginTop: 32, alignItems: 'center' }}><BtnGhost label="Girişe Dön" onPress={() => router.replace('/giris')} /></View>
-    </AuthShell>
-  );
+      </StepScreen>
+    );
+  }
+  return <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>{content}</KeyboardAvoidingView>;
 }

@@ -32,7 +32,7 @@ const PRIME_PLANS = [
 const GOLD = ['#f5d76e', '#c9a227', '#a8861a'];
 const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient: [string, string]; fg: string; nameColor: string; border?: string; badgeBg: string[]; badgeFg: string; advantages: string[] }[] = [
   { key: 'MASADA', name: 'Grup Paketi', badge: 'Tek Seferlik', desc: "1 Grup Masası'nda buluşma hakkı", gradient: ['#06301c', '#1c7a49'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: ['#2e9e62'], badgeFg: '#ffffff',
-    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', "1 Grup Masası'nda buluşma hakkı", 'Masada erkek ve kadın eşit eşit sayı', 'Bu hak masada sen buluşana kadar geçerli'] },
+    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', "1 Grup Masası'nda buluşma hakkı", 'Masada erkek ve kadın eşit sayı', 'Bu hak masada sen buluşana kadar geçerli'] },
   { key: 'KARSIMDA', name: 'Baş Başa Paketi', badge: 'Tek Seferlik', desc: "1 Baş Başa Masası'nda buluşma hakkı", gradient: ['#3d0907', '#a3231b'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: ['#d6453a'], badgeFg: '#ffffff',
     advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Baş Başa Masası'nda buluşma hakkı", 'Bu hak masada sen buluşana kadar geçerli'] },
   { key: 'KANKAMLA', name: 'Kankamla Paketi', badge: 'Tek Seferlik', desc: "1 Kankamla Masası'nda buluşma hakkı", gradient: ['#071a3a', '#1d4f9c'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: ['#3b7dd8'], badgeFg: '#ffffff',
@@ -167,7 +167,7 @@ export default function Paketim() {
                   const pref = pl.key === 'PRIME_3M';
                   return (
                     <Pressable key={pl.key} onPress={() => setPrimePlan(pl.key)} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                      style={{ width: '48%', minHeight: 56, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on || pref ? '#c9a227' : 'rgba(255,255,255,0.12)', backgroundColor: pref ? 'transparent' : on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)' }}>
+                      style={{ width: '48%', minHeight: 56, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? ll.red : pref ? '#c9a227' : 'rgba(255,255,255,0.12)', backgroundColor: pref ? 'transparent' : on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)' }}>
                       {pref && <LinearGradient colors={['rgba(201,162,39,0.22)', 'rgba(201,162,39,0.06)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 11 }} />}
                       <View style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
                         <T w={600} style={{ fontSize: 14, color: ll.text }}>{pl.label}</T>

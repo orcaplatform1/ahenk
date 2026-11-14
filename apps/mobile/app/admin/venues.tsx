@@ -1,6 +1,7 @@
 // apps/web/app/admin/venues/page.tsx karşılığı (Mekanlar, yalnız SUPERADMIN). Fotoğraf: galeri veya kamera (expo-image-picker).
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Linking, TextInput, View } from 'react-native';
+import { Image, Linking, TextInput, View } from 'react-native';
+import { showAlert } from '@/components/AppAlert';
 import { File as FsFile } from 'expo-file-system';
 import { api } from '@/lib/api';
 import { mediaUrl } from '@/lib/venueApi';
@@ -81,7 +82,7 @@ export default function AdminVenues() {
   }
   function removePhoto(url: string) {
     if (!editing) return;
-    Alert.alert('Fotoğraf silinsin mi?', undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: async () => {
+    showAlert('Fotoğraf silinsin mi?', undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: async () => {
       setPhotoBusy(true); setModalError('');
       try {
         const r2 = await fetchDelete(editing.id, url);
@@ -94,7 +95,7 @@ export default function AdminVenues() {
     return r.photos ?? [];
   }
   function deleteVenue(v: Venue) {
-    Alert.alert(`${v.name} silinsin mi? Bu işlem geri alınamaz. Masaların mekân adı ve adresi korunur.${v.account ? ' Panel hesabı kapatılır.' : ''}`, undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: async () => {
+    showAlert(`${v.name} silinsin mi? Bu işlem geri alınamaz. Masaların mekân adı ve adresi korunur.${v.account ? ' Panel hesabı kapatılır.' : ''}`, undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: async () => {
       setError(''); try { await api.delete(`/admin/venues/${v.id}`); } catch (e) { setError(`Silinemedi: ${(e as Error).message}`); } loadVenues(selectedCity || undefined);
     } }]);
   }

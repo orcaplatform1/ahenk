@@ -1,10 +1,11 @@
-// apps/web/app/sifremi-unuttum/page.tsx karşılığı
+// Şifre sıfırlama (1. adım): "Şifreni gir" ve "Numaranı alabilir miyiz?" ekranlarıyla aynı sade tasarım (AuthFlow StepScreen):
+// sol üstte geri ok ("Şifreni gir" ekranına döner), sola hizalı kalın başlık, açıklama, TR +90 + numara, en altta tam genişlikte "Kod Gönder".
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '@/lib/api';
-import { AuthShell, PhoneRow } from '@/components/AuthShell';
-import { BtnGhost, BtnPrimary, Card, ErrorText, T } from '@/components/ui';
+import { PillButton, StepScreen } from '@/components/AuthFlow';
+import { ErrorText, Input, T } from '@/components/ui';
 import { ll } from '@/theme/theme';
 
 export default function SifremiUnuttum() {
@@ -21,14 +22,18 @@ export default function SifremiUnuttum() {
     catch (e) { setError((e as Error).message); } finally { setLoading(false); }
   }
   return (
-    <AuthShell title="Şifre Sıfırla" brandLogo>
-      <Card style={{ gap: 12 }}>
-        <T style={{ color: ll.label, fontSize: 13, textAlign: 'center', marginBottom: 4 }}>Kayıtlı telefon numarana WhatsApp ile 6 haneli bir kod göndereceğiz.</T>
-        <PhoneRow value={phone} onChange={(v) => { setPhone(v); setError(''); }} onSubmit={submit} autoFocus />
-        <ErrorText>{error}</ErrorText>
-      </Card>
-      <View style={{ marginTop: 16 }}><BtnPrimary label={loading ? 'Gönderiliyor…' : 'Kod Gönder'} disabled={loading || !valid} style={{ width: '72%', alignSelf: 'center', marginTop: 4 }} onPress={submit} /></View>
-      <View style={{ marginTop: 16 }}><BtnGhost label="Girişe Dön" style={{ width: '72%', alignSelf: 'center' }} onPress={() => router.back()} /></View>
-    </AuthShell>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <StepScreen title="Şifreni sıfırla" subtitle="Kayıtlı telefon numarana WhatsApp ile 6 haneli bir kod göndereceğiz." onBack={() => router.back()}
+        footer={<PillButton label={loading ? 'Gönderiliyor…' : 'Kod Gönder'} primary disabled={loading || !valid} onPress={submit} />}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ justifyContent: 'center', paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12 }}>
+            <T style={{ color: ll.text, fontSize: 14 }}>TR +90</T>
+          </View>
+          <Input form style={{ flex: 1, paddingVertical: 14 }} keyboardType="number-pad" textContentType="telephoneNumber" autoComplete="tel" autoFocus value={phone}
+            onChangeText={(t) => { setPhone(t.replace(/\D/g, '').slice(0, 10)); setError(''); }} placeholder="5XX XXX XX XX" onSubmitEditing={submit} returnKeyType="send" />
+        </View>
+        <View style={{ marginTop: 12 }}><ErrorText>{error}</ErrorText></View>
+      </StepScreen>
+    </KeyboardAvoidingView>
   );
 }

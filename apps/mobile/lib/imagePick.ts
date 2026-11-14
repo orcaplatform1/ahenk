@@ -1,5 +1,6 @@
 // Galeri / kamera görsel seçimi (expo-image-picker). KYC bu yardımcıyı kullanmaz (yalnız kamera, components/profil/KycTab.tsx).
-import { ActionSheetIOS, Alert, Platform } from 'react-native';
+import { ActionSheetIOS, Platform } from 'react-native';
+import { showAlert } from '@/components/AppAlert';
 import * as ImagePicker from 'expo-image-picker';
 
 export interface PickedImage { uri: string; name: string; type: string; size?: number }
@@ -31,7 +32,7 @@ export function chooseSource(onPick: (src: 'library' | 'camera') => void) {
   if (Platform.OS === 'ios') {
     ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: 2 }, (i) => { if (i === 0) onPick('library'); else if (i === 1) onPick('camera'); });
   } else {
-    Alert.alert('Fotoğraf ekle', undefined, [
+    showAlert('Fotoğraf ekle', undefined, [
       { text: options[0], onPress: () => onPick('library') },
       { text: options[1], onPress: () => onPick('camera') },
       { text: options[2], style: 'cancel' },

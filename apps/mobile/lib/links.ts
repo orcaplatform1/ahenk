@@ -1,4 +1,5 @@
-import { ActionSheetIOS, Alert, Linking, Platform } from 'react-native';
+import { ActionSheetIOS, Linking, Platform } from 'react-native';
+import { showAlert } from '@/components/AppAlert';
 import * as WebBrowser from 'expo-web-browser';
 import { SITE } from './config';
 
@@ -17,7 +18,7 @@ export function openMaps(mapsUrl?: string | null, address?: string | null, label
   if (Platform.OS === 'ios') {
     ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: 2 }, pick);
   } else {
-    Alert.alert('Haritada Gör', undefined, [
+    showAlert('Haritada Gör', undefined, [
       { text: options[0], onPress: () => pick(0) },
       { text: options[1], onPress: () => pick(1) },
       { text: options[2], style: 'cancel' },

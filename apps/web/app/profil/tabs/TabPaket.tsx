@@ -184,7 +184,8 @@ export function TabPaket({ maintenanceMode = false }: Props) {
                     onClick={() => setPrimePlan(pl.key)}
                     className="relative rounded-xl px-3 py-3 text-left transition-colors"
                     style={{
-                      border: on ? '2px solid #c9a227' : pref ? '1px solid #c9a227' : '1px solid rgba(255,255,255,0.12)',
+                      // Seçili plan: Ahenk paleti kırmızısı (--ll-red); 3 aylık seçili değilken altın çerçeve
+                      border: on ? '2px solid #d6453a' : pref ? '1px solid #c9a227' : '1px solid rgba(255,255,255,0.12)',
                       background: pref ? 'linear-gradient(135deg, rgba(201,162,39,0.22), rgba(201,162,39,0.06))' : on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)',
                     }}
                     aria-pressed={on}

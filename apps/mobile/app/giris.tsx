@@ -166,7 +166,8 @@ export default function Giris() {
       <StepScreen title="Şifreni gir" onBack={() => { setPassword(''); go('email'); }}
         footer={<>
           <PillButton label={loading ? 'Giriş yapılıyor…' : 'Giriş Yap'} primary disabled={loading || !passwordValid} onPress={emailLogin} />
-          <Btn variant="textLink" onPress={() => router.push('/sifremi-unuttum')} label="Şifremi unuttum" />
+          {/* "Şifremi unuttum": mevcut PillButton (normal, primary olmayan) stilinde buton */}
+          <PillButton label="Şifremi unuttum" onPress={() => router.push('/sifremi-unuttum')} />
         </>}>
         <PasswordInput value={password} onChangeText={(t) => { setPassword(t); setError(''); }} placeholder="Şifren" onSubmitEditing={() => passwordValid && emailLogin()} />
         <View style={{ marginTop: 12 }}><ErrorText>{error}</ErrorText></View>

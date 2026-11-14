@@ -1,6 +1,7 @@
 // apps/web/app/test/page.tsx karşılığı. S-25: test sırasında geri kaydırmada uyarı gösterilir.
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import { showAlert } from '@/components/AppAlert';
 import { usePreventRemove, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,7 +27,7 @@ export default function Test() {
 
   const [allowLeave, setAllowLeave] = useState(false);
   usePreventRemove(!allowLeave && !done && Object.keys(answers).length > 0, ({ repeat }) => {
-    Alert.alert('Testten çıkılsın mı?', 'Verdiğin cevaplar kaydedilmeyecek.', [
+    showAlert('Testten çıkılsın mı?', 'Verdiğin cevaplar kaydedilmeyecek.', [
       { text: 'Vazgeç', style: 'cancel' },
       { text: 'Çık', style: 'destructive', onPress: () => { setAllowLeave(true); setTimeout(repeat, 0); } },
     ]);

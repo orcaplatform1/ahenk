@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { loadFonts } from '@/lib/boot';
 import { onAuthLost } from '@/lib/api';
 import '@/lib/sosLive';
+import { AppAlertHost } from '@/components/AppAlert';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -32,6 +33,8 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ gestureEnabled: false, animation: 'fade' }} />
         <Stack.Screen name="tekrar-hosgeldin" options={{ gestureEnabled: false, animation: 'fade' }} />
       </Stack>
+      {/* Uygulama genelindeki uyarı penceresi (Alert.alert yerine Ahenk paletinde) */}
+      <AppAlertHost />
     </SafeAreaProvider>
   );
 }

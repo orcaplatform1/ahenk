@@ -1,6 +1,7 @@
 // apps/web/app/admin/quality/page.tsx karşılığı (Şikayetler)
 import React, { useEffect, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
+import { showAlert } from '@/components/AppAlert';
 import { api } from '@/lib/api';
 import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
@@ -27,7 +28,7 @@ export default function AdminQuality() {
     try { await api.post(`/admin/users/${userId}/quarantine`, reason ? { reason } : {}); load(); } catch (e) { setError(`Askıya alınamadı: ${(e as Error).message}`); } finally { setBusy(null); }
   }
   function ban(userId: string) {
-    Alert.alert('Kullanıcıyı ban et?', undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: async () => {
+    showAlert('Kullanıcıyı ban et?', undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: async () => {
       setBusy(userId + '_b'); setError('');
       try { await api.post(`/admin/users/${userId}/ban`, reason ? { reason } : {}); load(); } catch (e) { setError(`Banlanamadı: ${(e as Error).message}`); } finally { setBusy(null); }
     } }]);

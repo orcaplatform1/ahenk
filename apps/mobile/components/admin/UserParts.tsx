@@ -1,6 +1,7 @@
 // apps/web/components/AdminDeletionRequests, AdminSanctionHistory, AdminNoShowWarnings, AdminUserEdit karşılıkları
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
+import { showAlert } from '@/components/AppAlert';
 import { api } from '@/lib/api';
 import { myRole } from '@/lib/adminRole';
 import { OCCUPATION_SECTORS } from '@/lib/occupations';
@@ -10,7 +11,7 @@ import { AdminDatePicker, AdminSelect, AInput } from './AdminControls';
 import { adm } from '@/theme/theme';
 
 const when = (d: string) => new Date(d).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' });
-const confirmAsk = (title: string, run: () => void) => Alert.alert(title, undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: run }]);
+const confirmAsk = (title: string, run: () => void) => showAlert(title, undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: run }]);
 
 interface DeletionRequest { id: string; userId: string; userName: string; status: 'PENDING' | 'APPROVED' | 'REJECTED'; createdAt: string; decidedAt: string | null; retainedIdentity?: { firstName: string | null; lastName: string | null; email: string; phone: string | null } | null }
 const DSTATUS: Record<string, { label: string; color: string }> = { PENDING: { label: 'Bekliyor', color: adm.amber }, APPROVED: { label: 'Onaylandı', color: adm.green }, REJECTED: { label: 'Reddedildi', color: adm.red } };

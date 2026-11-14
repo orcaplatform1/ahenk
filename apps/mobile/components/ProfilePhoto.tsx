@@ -1,7 +1,8 @@
 // Profil fotoğrafı: yuvarlak avatar (fotoğraf yoksa ad soyad kısaltması, çerçeve cinsiyet rengi), tam ekran görünüm
 // (Instagram profil fotoğrafı gibi) ve galeriden yükleme. Yükleme yalnız KYC onaylıysa; fotoğraf admin onayına düşer.
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Modal, Pressable, useWindowDimensions, View } from 'react-native';
+import { Image, Modal, Pressable, useWindowDimensions, View } from 'react-native';
+import { showAlert } from '@/components/AppAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { File as FsFile } from 'expo-file-system';
@@ -45,22 +46,23 @@ export function Avatar({ photoUrl, initials, gender, size, borderWidth = 2 }: { 
   );
 }
 
-// Galeriden seç (kamera yok) → yükle. Sonuç: true yüklendi, false vazgeçildi; hata mesajı Alert ile
+// Galeriden seç (kamera yok) → yükle. Sonuç: true yüklendi, false vazgeçildi; hata mesajı Ahenk uyarı penceresiyle (showAlert)
 export async function pickAndUploadProfilePhoto(kycApproved: boolean): Promise<boolean> {
-  if (!kycApproved) { Alert.alert('Profil Fotoğrafı', KYC_PHOTO_MESSAGE); return false; }
+  if (!kycApproved) { showAlert('Profil Fotoğrafı', KYC_PHOTO_MESSAGE); return false; }
   const picked = await pickFromLibrary(1);
-  if (picked === 'denied') { Alert.alert('Profil Fotoğrafı', 'Galeri izni verilmedi.'); return false; }
+  if (picked === 'denied') { showAlert('Profil Fotoğrafı', 'Galeri izni verilmedi.'); return false; }
   if (!picked.length) return false;
   const p = picked[0];
   const form = new FormData();
   // Global fetch (expo/fetch) RN'nin { uri, name, type } parçasını desteklemiyor ("Unsupported FormDataPart implementation");
   // expo-file-system File nesnesi dosya içeriğini sağladığı için gövdeye yazılır (ProblemReport / admin mekân fotoğrafı ile aynı yöntem)
   form.append('photo', new FsFile(p.uri) as unknown as Blob);
-  try { await api.form('/users/me/profile-photo', form); Alert.alert('Profil Fotoğrafı', PENDING_PHOTO_MESSAGE); return true; }
-  catch (e) { Alert.alert('Profil Fotoğrafı', (e as Error).message); return false; }
+  try { await api.form('/users/me/profile-photo', form); showAlert('Profil Fotoğrafı', PENDING_PHOTO_MESSAGE); return true; }
+  catch (e) { showAlert('Profil Fotoğrafı', (e as Error).message); return false; }
 }
 
-// Tam ekran büyük görünüm; onEdit verilirse fotoğrafın sağ altında düzenleme butonu
+// Tam ekran büyük görünüm (Instagram profil fotoğrafı gibi); ekrana (fotoğraf dahil) basınca ya da geri tuşuyla kapanır.
+// onEdit verilirse fotoğrafın sağ altında düzenleme butonu (yalnız ona basmak yükleme akışını açar)
 export function PhotoViewer({ url, visible, onClose, onEdit }: { url: string | null; visible: boolean; onClose: () => void; onEdit?: () => void }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -69,10 +71,10 @@ export function PhotoViewer({ url, visible, onClose, onEdit }: { url: string | n
     <Modal visible={visible && !!url} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <Pressable onPress={onClose} accessibilityLabel="Kapat" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' }}>
         {!!url && (
-          <Pressable onPress={() => undefined} style={{ width: size, height: size }}>
+          <View style={{ width: size, height: size }}>
             <Image source={{ uri: absPhoto(url) }} style={{ width: size, height: size, borderRadius: size / 2 }} resizeMode="cover" accessibilityLabel="Profil fotoğrafı" />
             {onEdit && <View style={{ position: 'absolute', right: size * 0.08, bottom: size * 0.08 }}><EditBadge size={48} onPress={onEdit} /></View>}
-          </Pressable>
+          </View>
         )}
       </Pressable>
     </Modal>
@@ -85,12 +87,18 @@ export function ProfilePhotoHeader({ photoUrl, initials, gender, kycApproved, pe
   const SIZE = 112;
   const [isPending, setPending] = useState(!!pending);
   useEffect(() => { setPending(!!pending); }, [pending]);
+  // Fotoğrafa basınca tam ekran büyük görünüm; kalem (dairedeki ya da büyük görünümdeki) mevcut yükleme akışını açar
+  const [viewer, setViewer] = useState(false);
+  const upload = () => { pickAndUploadProfilePhoto(kycApproved).then((ok) => { if (ok) setPending(true); }).catch(() => undefined); };
   return (
     <View style={{ alignItems: 'center', marginBottom: 24 }}>
       <View style={{ width: SIZE, height: SIZE }}>
-        <Avatar photoUrl={photoUrl} initials={initials} gender={gender} size={SIZE} borderWidth={3} />
-        <View style={{ position: 'absolute', right: 0, bottom: 0 }}><EditBadge size={36} onPress={() => { pickAndUploadProfilePhoto(kycApproved).then((ok) => { if (ok) setPending(true); }).catch(() => undefined); }} /></View>
+        <Pressable disabled={!photoUrl} onPress={() => setViewer(true)} accessibilityRole="imagebutton" accessibilityLabel="Profil fotoğrafını büyüt">
+          <Avatar photoUrl={photoUrl} initials={initials} gender={gender} size={SIZE} borderWidth={3} />
+        </Pressable>
+        <View style={{ position: 'absolute', right: 0, bottom: 0 }}><EditBadge size={36} onPress={upload} /></View>
       </View>
+      <PhotoViewer url={photoUrl ?? null} visible={viewer} onClose={() => setViewer(false)} onEdit={() => { setViewer(false); upload(); }} />
       {isPending && <T style={{ marginTop: 10, fontSize: 12, color: ll.label }}>{PENDING_PHOTO_MESSAGE}</T>}
     </View>
   );

@@ -1,6 +1,7 @@
 // apps/web/app/admin/denge/page.tsx karşılığı (Bot Yönetimi, yalnız SUPERADMIN)
 import React, { useEffect, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
+import { showAlert } from '@/components/AppAlert';
 import { api } from '@/lib/api';
 import { OCCUPATION_SECTORS } from '@/lib/occupations';
 import { Btn } from '@/components/ui';
@@ -57,7 +58,7 @@ export default function AdminBots() {
   }
   async function toggleStatus(b: Bot) { setError(''); try { await api.patch(`/matching/admin/bots/${b.id}/status`, { active: b.status !== 'ACTIVE' }); } catch (e) { setError(`Güncellenemedi: ${(e as Error).message}`); } load(); }
   function deleteBot(id: string) {
-    Alert.alert('Botu sil?', undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: async () => { setError(''); try { await api.delete(`/matching/admin/bots/${id}`); } catch (e) { setError(`Silinemedi: ${(e as Error).message}`); } load(); } }]);
+    showAlert('Botu sil?', undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: async () => { setError(''); try { await api.delete(`/matching/admin/bots/${id}`); } catch (e) { setError(`Silinemedi: ${(e as Error).message}`); } load(); } }]);
   }
   return (
     <APage maxWidth={760}>

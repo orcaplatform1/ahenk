@@ -1,6 +1,6 @@
 // apps/web/app/profil/tabs/TabRehber.tsx karşılığı + S-12: rehberden seçme (expo-contacts), liste web liste stilinde
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, View } from 'react-native';
+import { FlatList, Modal, Platform, Pressable, View } from 'react-native';
 // SDK 58: eski fonksiyon API'si (getContactsAsync) ana 'expo-contacts' girişinden çağrılınca hata fırlatıyor ("Rehber okunamadı."); aynı API expo-contacts/legacy'de
 import * as Contacts from 'expo-contacts/legacy';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,7 +46,9 @@ export function ContactPicker({ visible, onClose, existing, remaining, onPick }:
   const shown = useMemo(() => rows.filter(r => !q || r.name.toLocaleLowerCase('tr-TR').includes(q.toLocaleLowerCase('tr-TR')) || r.phone.includes(q.replace(/\D/g, ''))), [rows, q]);
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
-      <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', paddingTop: 16, paddingHorizontal: 16, paddingBottom: insets.bottom + 16, gap: 12 }}>
+      {/* Android'de pencere tam ekran ve durum çubuğunun altına uzanır: başlık ve X güvenli alanın içinde (durum çubuğunun altında).
+          iOS pageSheet zaten durum çubuğunun altından başlar. */}
+      <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', paddingTop: (Platform.OS === 'android' ? insets.top : 0) + 16, paddingHorizontal: 16, paddingBottom: insets.bottom + 16, gap: 12 }}>
         <Glow top={liveGlow.offset - 16} right={liveGlow.offset - 16} />
         <Head title="Rehberden Seç" right={<Btn variant="closeX" accessibilityLabel="Kapat" label="×" textStyle={{ fontSize: 22, color: tw.muted }} onPress={onClose} />} />
         <Input placeholder="Ara" value={q} onChangeText={setQ} />

@@ -1,8 +1,7 @@
 // apps/web/app/admin/profil-fotograflari/page.tsx karşılığı: onay bekleyen profil fotoğrafları;
 // yüklenen fotoğraf ve KYC kimlik ön yüzü yan yana (Bearer ile yüklenir), altında Onayla / Reddet
 import React, { useCallback, useEffect, useState } from 'react';
-import { Image, Pressable, View } from 'react-native';
-import { openAuthedFile } from '@/lib/authFile';
+import { Image, Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import { api } from '@/lib/api';
 import { BASE } from '@/lib/config';
 import { getAccess } from '@/lib/session';
@@ -13,12 +12,25 @@ import { adm } from '@/theme/theme';
 interface PendingPhoto { id: string; userId: string; createdAt: string; firstName: string; lastName: string; gender: string | null; photoUrl: string; idFrontUrl: string | null }
 const abs = (u: string) => (u.startsWith('/') ? `${BASE}${u}` : u);
 
+// Görsele basınca uygulama içinde tam ekran büyük görünüm (görselin tamamı, "contain"); ekrana basınca ya da geri tuşuyla kapanır
+function FullView({ uri, token, label, onClose }: { uri: string | null; token: string | null; label: string; onClose: () => void }) {
+  const { width, height } = useWindowDimensions();
+  return (
+    <Modal visible={!!uri} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <Pressable onPress={onClose} accessibilityLabel="Kapat" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' }}>
+        {!!uri && !!token && <Image source={{ uri, headers: { Authorization: `Bearer ${token}` } }} resizeMode="contain" style={{ width, height }} accessibilityLabel={label} />}
+      </Pressable>
+    </Modal>
+  );
+}
+
 function Preview({ url, label, token }: { url: string | null; label: string; token: string | null }) {
+  const [open, setOpen] = useState(false);
   return (
     <View style={{ flex: 1, minWidth: 0, borderRadius: 8, overflow: 'hidden', backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border }}>
       <View style={{ aspectRatio: 1 }}>
         {url && token ? (
-          <Pressable onPress={() => { openAuthedFile(abs(url)).catch(() => undefined); }} style={{ width: '100%', height: '100%' }} accessibilityLabel={label}>
+          <Pressable onPress={() => setOpen(true)} style={{ width: '100%', height: '100%' }} accessibilityRole="imagebutton" accessibilityLabel={`${label} — büyüt`}>
             <Image source={{ uri: abs(url), headers: { Authorization: `Bearer ${token}` } }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
           </Pressable>
         ) : (
@@ -26,6 +38,7 @@ function Preview({ url, label, token }: { url: string | null; label: string; tok
         )}
       </View>
       <AT style={{ fontSize: 10, color: adm.muted, paddingVertical: 4, paddingHorizontal: 8 }}>{label}</AT>
+      <FullView uri={open && url ? abs(url) : null} token={token} label={label} onClose={() => setOpen(false)} />
     </View>
   );
 }
