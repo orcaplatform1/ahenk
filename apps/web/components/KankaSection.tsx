@@ -175,9 +175,7 @@ export function KankaSection() {
       {sheet === 'invite' && (
         <Sheet onClose={() => setSheet(null)}>
           <p style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5', marginBottom: 8 }}>Kanka Davet Et</p>
-          {!state.kycApproved ? (
-            <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6 }}>Kanka davet etmek için önce kimlik doğrulamanı (KYC) tamamlamalısın.</p>
-          ) : sentLink ? (
+          {!state.kycApproved ? null : sentLink ? (
             <div className="flex flex-col gap-3">
               <p style={{ fontSize: 13, color: '#4ade80' }}>Davet gönderildi. 48 saat geçerli.</p>
               <p style={{ fontSize: 12, color: '#888', lineHeight: 1.5 }}>Davet WhatsApp ile iletildi. Ulaşmazsa bu linki kopyalayıp kankana kendin gönder:</p>
@@ -212,7 +210,6 @@ export function KankaSection() {
               <strong style={{ color: '#f5f5f5' }}>{incoming.inviterInitials}</strong> sizi kanka olmak için davet etti.
             </p>
           </div>
-          {!state.kycApproved && <p style={{ fontSize: 12, color: '#f59e0b', marginBottom: 10 }}>Kabul etmek için önce kimlik doğrulamanı (KYC) tamamlamalısın.</p>}
           {msg && <p style={{ fontSize: 12, color: '#ff6b6b', marginBottom: 10 }}>{msg}</p>}
           <div className="flex flex-col gap-2">
             <button onClick={() => respond('accept')} disabled={busy} className="btn-primary justify-center disabled:opacity-50">{busy ? '…' : 'Kabul Et'}</button>

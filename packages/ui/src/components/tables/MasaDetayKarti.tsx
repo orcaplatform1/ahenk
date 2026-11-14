@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { KankaPairs, type KankaPerson } from './KankaPairs';
 import { DetayAvatar } from './DetayAvatar';
-import { gColor } from './MasalarDashboard';
+import { gColor } from './MasaRadar';
 
 type KankaParticipant = KankaPerson & { pair?: 'MINE' | 'OTHER' };
 

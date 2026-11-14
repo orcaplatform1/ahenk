@@ -441,7 +441,7 @@ export default function AdminMatches() {
                       <ALabel>ÜCRETSİZ ABONELİK VER</ALabel>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         <AdminSelect value={grantPlan} onChange={setGrantPlan} placeholder="Paket seç…" title="Paket seç" style={{ flex: 1, minWidth: 0 }}
-                          options={[{ value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }]} />
+                          options={[{ value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }, { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' }, { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' }]} />
                         <Btn variant="admBlueVer" disabled={!!userAction || !grantPlan} label={userAction === 'sub' ? '…' : 'Ver'} onPress={userGrantSubscription} />
                       </View>
                     </Sect>

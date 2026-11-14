@@ -74,6 +74,8 @@ KYC KURALLARI:
 - KYC onaylanmamış kullanıcıda mobil uygulamanın tüm sekmelerinin ve web kullanıcı paneli sayfalarının en üstünde kart:
   "Kullanıcı güvenliği sebebiyle masaya katılım için lütfen kimliğinizi doğrulayın." Basınca KYC ekranı açılır, onaylanınca kaybolur
 - KYC kartının gösterildiği ekranlarda eski "Kimliğimi Doğrula" / "Doğrula" uyarıları yoktur (Eşleşme Paneli, Masalarım; web + mobil)
+- Kanka bölümünde KYC bilgi yazısı yoktur (web + mobil); KYC onaysız kişinin kanka daveti / kabulü ve masaya katılamaması kuralı backend'de aynen
+- 100 TL indirim ekranında KYC notu yoktur
 - KYC onaylanmadan kullanıcı hiçbir buluşma taramasına giremez (havuz sorgularında kyc APPROVED şartı)
 - Admin KYC onayında T.C. no girilmez, karşılaştırılmaz; UserIdentity tablosu kaldırıldı
 - KYC onaylıysa kullanıcı profilinde isKycVerified: true → "Doğrulanmış ✓" rozeti
@@ -96,12 +98,15 @@ Prime abonelik (PRIME_1M / PRIME_3M / PRIME_6M / PRIME_12M): ham 899 / 2299 / 38
   - Dönem başında planın tam tutarı tek seferde çekilir; dönem bitince aynı süreyle otomatik yenilenir
   - Aktif Prime'ı olan ikinci Prime alamaz
   - Aktif Prime'ı olan tek seferlik paket alamaz; istisna: Prime'da hakkı bitmiş tür varsa yalnız o türü içeren tek seferlik paketi alabilir
+  - Admin ücretsiz Prime verebilir (paket verme ekranında Prime 1/3/6/12 aylık): ödeme alınmaz, haklar normal Prime gibi
+    (1+1+1, 30 günde yenilenir, devretmez), otomatik yenileme yok, süre bitince biter. Aktif Prime'ı olana ikinci Prime verilemez
+    (admin ekranında uyarı)
   - Profildeki paket kutusunda "Aboneliği İptal Et": otomatik yenileme durur, haklar dönem sonuna kadar kullanılır, iade yapılmaz
     · iyzico ile alınan abonelik: web ve mobilde buton sunucu üzerinden doğrudan iptal eder
     · App Store / Play Store ile alınan abonelik: mobilde mağazanın abonelik sayfası açılır; web'de "Aboneliğini mobil uygulama
-      üzerinden aldığın için iptal işlemini uygulamadan yapabilirsin." mesajı ve altında mağaza yönlendirmesi: iOS → App Store,
-      Android → Play Store, masaüstü → App Store ve Play Store butonları. Bağlantılar apps/web/lib/appLinks.ts (lansmanda doldurulacak).
-      Site içinden uygulamayı otomatik açma (Universal Links / App Links) aynı alan adındaki bağlantıda çalışmadığı için kullanılmaz
+      üzerinden aldığın için iptal işlemini uygulamadan yapabilirsin." mesajı ve "Uygulamayı Aç" butonu: iOS / Android'de önce ahenk://
+      ile uygulama açılmaya çalışılır, 1,5 sn içinde sayfa görünür kalırsa iOS'ta App Store'a, Android'de Play Store'a yönlendirilir;
+      uygulama açılırsa yönlendirme yapılmaz. Masaüstünde App Store ve Play Store butonları. Bağlantılar apps/web/lib/appLinks.ts
 Fiyatlar ham fiyattır; admin "Fiyatlar" tablosunda (PlanPrice) tutulur. Web = ham × 1,20 (KDV); mobil = ham × 1,20 ÷ 0,85 (mağaza komisyonu %15)
 İndirimler: %10 davet indirimi ve paketi / aboneliği olmayana gönderilen 100 TL indirim tüm tek seferlik paketlerde ve tüm Prime
   planlarında geçerli (WINBACK_PLANS ayarında 8 plan); ikisi aynı ödemede birlikte kullanılamaz; Prime'da yalnız satın alma ödemesine
@@ -109,6 +114,7 @@ Fiyatlar ham fiyattır; admin "Fiyatlar" tablosunda (PlanPrice) tutulur. Web = h
 Mobil indirim teklifleri (IAP_ENABLED ile pasif): tek seferlik paketlerde indirimli ayrı ürünler (<ürün>.davet10, <ürün>.indirim100);
   Prime'da App Store promosyon teklifi (sunucu imzalı) / Google Play abonelik teklifi (teklif kimlikleri davet10, indirim100)
 Paket kartı rozetleri: Tinder GOLD tarzı hap, dolgu renkli, kalın, büyük harf; renk kartın tonuyla uyumlu, Prime altın
+Landing "Paket Al": giriş yapmamışsa Giriş; giriş yapmışsa (KYC onaylı ya da değil) Profil → Paketim
 Paket kartları (Grup, Başbaşa, Kankamla, İçerde, Prime) tek kaynaktan: apps/web/components/paket/PaketKarti.tsx — paket ekranı ve landing
   aynı kartı, açıklamayı ve avantaj listesini kullanır. Landing'de eski görselli paket kartları yoktur; Prime kuralları bölümü durur
 Platform:

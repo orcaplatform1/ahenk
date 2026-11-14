@@ -126,7 +126,6 @@ export function WinbackScreen({ state, remaining, merged, onMerge, onClose }: Pr
             <p className="wb-note">Referans indirimi bu indirimle birleşmez.</p>
             <button type="button" className="wb-cta" disabled={!selected || busy} onClick={apply}>İndirimi Uygula</button>
             {!selected && <p className="wb-hint">Önce paketini seç</p>}
-            {!state.kycApproved && <p className="wb-hint">Kimlik doğrulamanız onaylanana kadar indiriminizi koruyoruz.</p>}
             {error && <p className="wb-err">{error}</p>}
           </div>
         )}

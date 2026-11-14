@@ -27,6 +27,8 @@ const PL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Başbaşa', ICER
 const oceanAvg = (o: AdminUser['oceanScore']) => (o ? ((o.openness + o.conscientiousness + o.extraversion + o.agreeableness + o.neuroticism) / 5).toFixed(0) : '—');
 const planOf = (u: AdminUser) => (u.subscriptions?.length ? u.subscriptions.map(s => PL[s.plan] ?? s.plan).join(', ') : '—');
 const PLANS = [{ value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }];
+// Paket verme: tek seferlik paketler + ücretsiz Prime (1/3/6/12 ay)
+const GRANT_PLANS = [...PLANS, { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' }, { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' }];
 const Sect = ({ children }: { children: React.ReactNode }) => <View style={{ borderTopWidth: 1, borderTopColor: adm.border, paddingTop: 14, gap: 8 }}>{children}</View>;
 
 export default function AdminUsers() {
@@ -188,7 +190,7 @@ export default function AdminUsers() {
                       <ALabel>ÜCRETSİZ ABONELİK VER</ALabel>
                       {!kycOk && <AT style={{ fontSize: 10, color: adm.red }}>KYC onaylı değil: paket verilse bile kullanıcı KYC tamamlanana kadar eşleşmeye katılamaz.</AT>}
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                        <View style={{ flex: 1 }}><AdminSelect value={grant} onChange={setGrant} placeholder="Paket seç…" title="Paket seç" options={PLANS} /></View>
+                        <View style={{ flex: 1 }}><AdminSelect value={grant} onChange={setGrant} placeholder="Paket seç…" title="Paket seç" options={GRANT_PLANS} /></View>
                         <Btn variant="admCyanVer" disabled={!!action || !grant} label={action === 'sub' ? '…' : 'Ver'} onPress={grantSub} />
                       </View>
                     </Sect>

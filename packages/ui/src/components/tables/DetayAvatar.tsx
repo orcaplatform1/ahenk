@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { gColor } from './MasalarDashboard';
+import { gColor } from './MasaRadar';
 
 function gBg(g?: string | null) {
   if (g === 'FEMALE') return 'rgba(244,143,177,0.12)';

@@ -592,11 +592,7 @@ export default function Home() {
       router.push('/giris');
       return;
     }
-    if (!authState.kycApproved) {
-      router.push('/profil');
-      return;
-    }
-    // Giriş yapmış + KYC onaylı → profil paket sekmesine
+    // Giriş yapmış kullanıcı (KYC onaylı ya da değil) → profil paket sekmesine
     router.push('/profil?tab=paket');
   }
 

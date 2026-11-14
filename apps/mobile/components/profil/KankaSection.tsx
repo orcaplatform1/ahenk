@@ -119,9 +119,7 @@ export function KankaSection() {
 
       <Sheet visible={sheet === 'invite'} onClose={() => setSheet(null)} avoidKeyboard>
         <T w={700} style={{ fontSize: 16, marginBottom: 8 }}>Kanka Davet Et</T>
-        {!state.kycApproved ? (
-          <T style={{ fontSize: 13, color: c.t888, lineHeight: 20.8 }}>Kanka davet etmek için önce kimlik doğrulamanı (KYC) tamamlamalısın.</T>
-        ) : sentLink ? (
+        {!state.kycApproved ? null : sentLink ? (
           <View style={{ gap: 12 }}>
             <T style={{ fontSize: 13, color: c.ok }}>Davet gönderildi. 48 saat geçerli.</T>
             <T style={{ fontSize: 12, color: c.t888, lineHeight: 18 }}>Davet WhatsApp ile iletildi. Ulaşmazsa bu linki kopyalayıp kankana kendin gönder:</T>
@@ -153,7 +151,6 @@ export function KankaSection() {
               <Bubble initials={incoming.inviterInitials} gender={incoming.inviterGender} size={48} />
               <T style={{ flex: 1, fontSize: 14, color: c.tCcc, lineHeight: 21 }}><T w={700} style={{ fontSize: 14 }}>{incoming.inviterInitials}</T> sizi kanka olmak için davet etti.</T>
             </View>
-            {!state.kycApproved && <T style={{ fontSize: 12, lineHeight: 18, color: c.warnAmber, marginBottom: 10 }}>Kabul etmek için önce kimlik doğrulamanı (KYC) tamamlamalısın.</T>}
             {!!msg && <T style={{ fontSize: 12, lineHeight: 18, color: tw.accent, marginBottom: 10 }}>{msg}</T>}
             <View style={{ gap: 8 }}>
               <BtnPrimary label={busy ? '…' : 'Kabul Et'} full disabled={busy} style={busy ? { opacity: 0.5 } : undefined} onPress={() => respond('accept')} />

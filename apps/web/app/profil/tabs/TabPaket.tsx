@@ -9,7 +9,7 @@ import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenPa
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
 import TcknModal from '@/components/paket/TcknModal';
-import { APP_STORE_URL, PLAY_STORE_URL, devicePlatform } from '@/lib/appLinks';
+import { APP_STORE_URL, PLAY_STORE_URL, devicePlatform, openAppOrStore } from '@/lib/appLinks';
 import { CARDS, Check, PRIME_PLANS, PaketKarti, type CardKey } from '@/components/paket/PaketKarti';
 
 // Aktif paket / abonelik (yalnız kullanıcının kendi aldıkları)
@@ -305,17 +305,14 @@ export function TabPaket({ maintenanceMode = false }: Props) {
               <p style={{ color: '#c9c2b8', fontSize: 12, lineHeight: 1.5, margin: 0 }}>
                 Aboneliğini mobil uygulama üzerinden aldığın için iptal işlemini uygulamadan yapabilirsin.
               </p>
-              {/* Mağaza yönlendirmesi: iOS → App Store, Android → Play Store, masaüstü → iki mağaza butonu */}
+              {/* Mobil: önce ahenk:// ile uygulama, 1,5 sn'de açılmazsa mağaza; masaüstü: iki mağaza butonu */}
               {devicePlatform() === 'desktop' ? (
                 <div className="flex gap-2">
                   <a href={APP_STORE_URL || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!APP_STORE_URL} className="btn-primary flex-1 justify-center" style={{ minHeight: 44, ...(APP_STORE_URL ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>App Store</a>
                   <a href={PLAY_STORE_URL || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!PLAY_STORE_URL} className="btn-primary flex-1 justify-center" style={{ minHeight: 44, ...(PLAY_STORE_URL ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>Play Store</a>
                 </div>
               ) : (
-                (() => {
-                  const url = devicePlatform() === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
-                  return <a href={url || undefined} aria-disabled={!url} className="btn-primary w-full justify-center" style={{ minHeight: 44, ...(url ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>Uygulamayı Aç</a>;
-                })()
+                <button onClick={() => openAppOrStore(devicePlatform() === 'ios' ? 'ios' : 'android')} className="btn-primary w-full justify-center" style={{ minHeight: 44 }}>Uygulamayı Aç</button>
               )}
             </div>
           )}

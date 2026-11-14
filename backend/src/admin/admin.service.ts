@@ -51,7 +51,7 @@ import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } fro
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
 import { OVERLAPPING_PLANS } from "../payment/plan-overlap";
 import { trIsoWeekStart, trWeekStart, WEEK_MS } from "./tr-week";
-import { GROUP_PLANS, GROUP_RIGHTS, KANKA_PLANS, ONE_ON_ONE_PLANS, isPrime, kankaRightsOf, restoreGroupRights, restoreKankaRights } from "../payment/package-rights";
+import { GROUP_PLANS, GROUP_RIGHTS, KANKA_PLANS, ONE_ON_ONE_PLANS, PRIME_PLANS, isPrime, kankaRightsOf, restoreGroupRights, restoreKankaRights } from "../payment/package-rights";
 import { PrimeService } from "../payment/prime.service";
 import { activeKankaLink, endKankaLinks } from "../kanka/kanka-links";
 
@@ -533,9 +533,14 @@ export class AdminService {
     const user = await this.prisma.user.findUnique({ where: { id: targetId } });
     if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
 
-    // Tek seferlik paket: haklar kullanılana kadar (package-rights.ts); Prime: dönem + 30 günlük yenileme (prime.service.ts).
-    // Admin isterse ayrıca son tarih verebilir
+    // Tek seferlik paket: haklar kullanılana kadar (package-rights.ts); admin isterse ayrıca son tarih verebilir.
+    // Prime (ücretsiz, ödeme alınmaz): 1/3/6/12 ay; verildiği anda 1+1+1 hak, 30 günde bir yenilenir, devretmez;
+    // otomatik yenileme yok, süre bitince kendiliğinden biter (prime.service.ts). Aktif Prime'ı olana ikinci Prime verilmez.
     const expiry: Date | null = expiresAt ? new Date(expiresAt) : null;
+    if (isPrime(plan)) {
+      const active = await this.prisma.subscription.count({ where: { userId: targetId, status: SubscriptionStatus.ACTIVE, plan: { in: PRIME_PLANS } } });
+      if (active > 0) throw new ConflictException("Bu kullanıcının aktif Prime'ı var; ikinci bir Prime verilemez.");
+    }
 
     // İçeriği çakışan aktif paketler (ücretli dahil) iade yapılmadan iptal edilir.
     // Çakışmayan paket kalır: Masada + Karşımda birlikte olabilir; İçerde ikisini de kapsar.
@@ -550,7 +555,7 @@ export class AdminService {
         data: { status: SubscriptionStatus.CANCELLED, cancelNote: `Admin yeni paket verdi: ${PLAN_CONFIG[plan].nametr}` },
       });
       const created = isPrime(plan)
-        ? await this.prime.createPrime(tx, targetId, plan, { expiresAt: expiry ?? undefined })
+        ? await this.prime.createPrime(tx, targetId, plan, { autoRenew: false })
         : await tx.subscription.create({
             data: { userId: targetId, plan, status: "ACTIVE", expiresAt: expiry, groupRights: GROUP_RIGHTS[plan], kankaRights: kankaRightsOf(plan) },
           });
