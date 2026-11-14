@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useReduceMotion } from '@/lib/motion';
 import { api } from '@/lib/api';
-import { forgetDevice, rememberDevice } from '@/lib/session';
+import { LogoutChoice } from '../LogoutChoice';
 
 const APP_VERSION = '0.1.0';
 import { gColor } from '@/lib/masa';
@@ -20,7 +20,7 @@ export interface UserData {
   id: string; firstName: string; lastName: string; email: string; phone?: string; role?: string; activeCity?: string | null; occupationSector?: string;
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null; maintenanceMode?: boolean;
   profile?: { gender?: string; birthDate?: string; primaryCity?: City; venuePreference?: VenuePreference };
-  kyc?: { status: string }; profilePhotoUrl?: string | null; noShowWarning?: { count: number; remaining: number } | null;
+  kyc?: { status: string }; profilePhotoUrl?: string | null; profilePhotoPending?: boolean; noShowWarning?: { count: number; remaining: number } | null;
 }
 
 const VENUE_OPTIONS: { value: VenuePreference; label: string; description: string }[] = [
@@ -163,8 +163,6 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
   // Çıkış: "Bu cihazda beni hatırla" (oturum kapanır, cihaz hatırlanır; açılışta Tekrar hoş geldin + Face ID / parmak izi)
   // ya da "Bu cihazda beni unut" (oturum kapanır, hatırlama bilgisi silinir)
   const [logoutOpen, setLogoutOpen] = useState(false);
-  async function logoutRemember() { setLogoutOpen(false); await rememberDevice(user.firstName); onLoggedOut(); }
-  async function logoutForget() { setLogoutOpen(false); await api.logout(); await forgetDevice(); onLoggedOut(); }
   async function confirmDelete() {
     setDeleteBusy(true); setDeleteError('');
     try { await api.post('/users/me/deletion-request', {}); setDeletePending(true); setDeleteOpen(false); } catch (e) { setDeleteError((e as Error).message); } finally { setDeleteBusy(false); }
@@ -381,14 +379,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
           : <BtnGhost label="Hesabımı Sil" redDot style={accountBtn.box} textStyle={[accountBtn.text, { color: tw.primaryHover }]} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
       </View>
 
-      <Sheet visible={logoutOpen} onClose={() => setLogoutOpen(false)}>
-        <T w={700} style={{ fontSize: 16, marginBottom: 16, textAlign: 'center' }}>Çıkış Yap</T>
-        <View style={{ gap: 12 }}>
-          <BtnPrimary label="Bu cihazda beni hatırla" full onPress={logoutRemember} />
-          <BtnGhost label="Bu cihazda beni unut" full onPress={logoutForget} />
-          <BtnGhost label="Vazgeç" full onPress={() => setLogoutOpen(false)} />
-        </View>
-      </Sheet>
+      <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} firstName={user.firstName} onLoggedOut={onLoggedOut} />
 
       <ModalBox visible={deleteOpen} onClose={() => setDeleteOpen(false)} title="Hesabımı Sil" opaque>
         <T style={{ fontSize: 14, color: ll.text2, lineHeight: 22.75 }}>

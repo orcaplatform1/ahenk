@@ -1,6 +1,6 @@
 // Profil fotoğrafı: yuvarlak avatar (fotoğraf yoksa ad soyad kısaltması, çerçeve cinsiyet rengi), tam ekran görünüm
 // (Instagram profil fotoğrafı gibi) ve galeriden yükleme. Yükleme yalnız KYC onaylıysa; fotoğraf admin onayına düşer.
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Image, Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -9,9 +9,10 @@ import { BASE } from '@/lib/config';
 import { gColor } from '@/lib/masa';
 import { pickFromLibrary } from '@/lib/imagePick';
 import { T } from './ui';
-import { tw } from '@/theme/theme';
+import { ll, tw } from '@/theme/theme';
 
 export const KYC_PHOTO_MESSAGE = 'Profil fotoğrafı kimlik doğrulamasından sonra yüklenebilir.';
+export const PENDING_PHOTO_MESSAGE = 'Fotoğrafın onay sürecinde.';
 export const absPhoto = (u: string) => (u.startsWith('/') ? `${BASE}${u}` : u);
 
 export function PencilIcon({ size = 16, color = '#fff' }: { size?: number; color?: string }) {
@@ -52,7 +53,7 @@ export async function pickAndUploadProfilePhoto(kycApproved: boolean): Promise<b
   const p = picked[0];
   const form = new FormData();
   form.append('photo', { uri: p.uri, name: p.name, type: p.type } as unknown as Blob);
-  try { await api.form('/users/me/profile-photo', form); return true; }
+  try { await api.form('/users/me/profile-photo', form); Alert.alert('Profil Fotoğrafı', PENDING_PHOTO_MESSAGE); return true; }
   catch (e) { Alert.alert('Profil Fotoğrafı', (e as Error).message); return false; }
 }
 
@@ -75,15 +76,19 @@ export function PhotoViewer({ url, visible, onClose, onEdit }: { url: string | n
   );
 }
 
-// Profilim ekranının en üstündeki büyük yuvarlak profil alanı; sağ altta kalem ikonlu düzenleme butonu
-export function ProfilePhotoHeader({ photoUrl, initials, gender, kycApproved }: { photoUrl?: string | null; initials: string; gender?: string | null; kycApproved: boolean }) {
+// Profilim ekranının en üstündeki büyük yuvarlak profil alanı; sağ altta kalem ikonlu düzenleme butonu.
+// Onay bekleyen fotoğraf varsa dairenin altında küçük punto "Fotoğrafın onay sürecinde." (onay / retle /auth/me'den kalkar)
+export function ProfilePhotoHeader({ photoUrl, initials, gender, kycApproved, pending }: { photoUrl?: string | null; initials: string; gender?: string | null; kycApproved: boolean; pending?: boolean }) {
   const SIZE = 112;
+  const [isPending, setPending] = useState(!!pending);
+  useEffect(() => { setPending(!!pending); }, [pending]);
   return (
     <View style={{ alignItems: 'center', marginBottom: 24 }}>
       <View style={{ width: SIZE, height: SIZE }}>
         <Avatar photoUrl={photoUrl} initials={initials} gender={gender} size={SIZE} borderWidth={3} />
-        <View style={{ position: 'absolute', right: 0, bottom: 0 }}><EditBadge size={36} onPress={() => { pickAndUploadProfilePhoto(kycApproved).catch(() => undefined); }} /></View>
+        <View style={{ position: 'absolute', right: 0, bottom: 0 }}><EditBadge size={36} onPress={() => { pickAndUploadProfilePhoto(kycApproved).then((ok) => { if (ok) setPending(true); }).catch(() => undefined); }} /></View>
       </View>
+      {isPending && <T style={{ marginTop: 10, fontSize: 12, color: ll.label }}>{PENDING_PHOTO_MESSAGE}</T>}
     </View>
   );
 }

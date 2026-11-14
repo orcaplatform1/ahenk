@@ -161,6 +161,8 @@ PROFİL FOTOĞRAFI (web + mobil):
   - Yalnız galeriden seçilir (mobilde kamera seçeneği yok; web'de capture özniteliği yok). Kullanıcının tek profil fotoğrafı olur
   - Yüklenen fotoğraf admin onayına düşer (ProfilePhoto tablosu, PENDING / APPROVED); onay beklerken önceki onaylı fotoğraf,
     yoksa kısaltma görünür. Yeni yükleme önceki onay bekleyen fotoğrafı (dosya + kayıt) siler
+  - Yükleyince "Fotoğrafın onay sürecinde." mesajı; onay bekleyen fotoğrafı olanda Profilim'deki profil dairesinin altında küçük punto
+    "Fotoğrafın onay sürecinde." (/auth/me profilePhotoPending); onay ya da retle kaybolur (web + mobil)
   - Admin onayı: yeni fotoğraf geçerli, önceki onaylı fotoğraf dosya + kayıt silinir. Admin reddi: yeni fotoğraf dosya + kayıt
     silinir, önceki onaylı kalır, kullanıcıya bildirim "Yüklediğin fotoğraf kimliğindeki fotoğrafla eşleşmiyor."
   - Dosyalar uploads/profile-photos/<userId>/ altında WebP; onaylılar GET /media/profile-photos/:userId/:file ile herkese açık
@@ -185,7 +187,9 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     altında tam genişlikte yuvarlak üç buton: "Telefon Numarası ile devam et" (telefon ikonu), "E-posta ile devam et" (zarf ikonu), "Kayıt Ol"
   - Telefon → "Numaranı alabilir miyiz?" (TR +90 + numara, İlerle) → WhatsApp kod ekranı. E-posta → "E-postan nedir?" (İlerle) →
     "Şifreni gir" (Giriş Yap, Şifremi unuttum). Kayıt Ol → mevcut kayıt akışı. Giriş adımlarında sol üstte geri ok
-  - Profilim'de "Çıkış Yap" → "Bu cihazda beni hatırla" / "Bu cihazda beni unut". Unut: oturum kapanır, hatırlama bilgisi silinir.
+  - Mobil uygulamadaki bütün "Çıkış" butonlarında (Profilim "Çıkış Yap" ve Yönetim Paneli "Çıkış", ortak components/LogoutChoice.tsx)
+    "Bu cihazda beni hatırla" / "Bu cihazda beni unut" / "Vazgeç"; admin çıkışında da aynı akış (Tekrar hoş geldin → admin Yönetim
+    Paneli'ne girer). Unut: oturum kapanır, hatırlama bilgisi silinir.
     Hatırla: oturum kapanır, yenileme token'ı ve ad cihazda (secure-store) saklanır; açılışta "Tekrar hoş geldin, [ad]!" + "Giriş Yap"
     (aynı arka plan, altta yasal metin) → Face ID / parmak izi (expo-local-authentication) → "Cihaz Doğrulandı" (palet renginde onay
     dairesi) → şifresiz giriş. Başarısız ya da cihazda yoksa normal giriş ekranı. Yeni girişte hatırlama bilgisi silinir

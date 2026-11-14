@@ -6,6 +6,7 @@ import { API_PREFIX } from '@/lib/api';
 // Profil fotoğrafı: yalnız KYC onaylıysa yüklenir; fotoğraf admin onayına düşer. Dosya seçimi galeri / dosyalardan
 // (capture özniteliği yok; kamera seçeneği sunulmaz)
 export const KYC_PHOTO_MESSAGE = 'Profil fotoğrafı kimlik doğrulamasından sonra yüklenebilir.';
+export const PENDING_PHOTO_MESSAGE = 'Fotoğrafın onay sürecinde.';
 const MALE = '#4fc3f7';
 const FEMALE = '#f48fb1';
 export const genderColor = (g?: string | null) => (g === 'FEMALE' ? FEMALE : MALE);
@@ -25,6 +26,7 @@ export function useProfilePhotoPicker(kycApproved: boolean) {
   const ref = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
   const pick = () => {
     setMessage('');
     if (!kycApproved) { setMessage(KYC_PHOTO_MESSAGE); return; }
@@ -36,11 +38,11 @@ export function useProfilePhotoPicker(kycApproved: boolean) {
         const f = e.target.files?.[0];
         e.target.value = '';
         if (!f) return;
-        setBusy(true);
-        try { await uploadPhoto(f); } catch (err) { setMessage((err as Error).message); } finally { setBusy(false); }
+        setBusy(true); setUploaded(false);
+        try { await uploadPhoto(f); setUploaded(true); setMessage(PENDING_PHOTO_MESSAGE); } catch (err) { setMessage((err as Error).message); } finally { setBusy(false); }
       }} />
   );
-  return { pick, input, message, busy };
+  return { pick, input, message, busy, uploaded };
 }
 
 function Pencil() {
@@ -49,8 +51,10 @@ function Pencil() {
 
 // Profilim ekranının en üstündeki büyük yuvarlak profil alanı: fotoğraf yoksa ad soyad kısaltması, çerçeve cinsiyet rengi,
 // sağ altta palet renginde kalem ikonlu düzenleme butonu
-export function ProfilePhotoHeader({ photoUrl, initials, gender, kycApproved }: { photoUrl?: string | null; initials: string; gender?: string | null; kycApproved: boolean }) {
-  const { pick, input, message, busy } = useProfilePhotoPicker(kycApproved);
+// Onay bekleyen fotoğraf varsa (ya da şimdi yüklendiyse) dairenin altında küçük punto "Fotoğrafın onay sürecinde."; onay / retle kalkar
+export function ProfilePhotoHeader({ photoUrl, initials, gender, kycApproved, pending }: { photoUrl?: string | null; initials: string; gender?: string | null; kycApproved: boolean; pending?: boolean }) {
+  const { pick, input, message, busy, uploaded } = useProfilePhotoPicker(kycApproved);
+  const showPending = !!pending || uploaded;
   const SIZE = 112;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
@@ -66,7 +70,8 @@ export function ProfilePhotoHeader({ photoUrl, initials, gender, kycApproved }: 
         </button>
       </div>
       {input}
-      {message && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13, color: '#ff6b6b', textAlign: 'center' }}>{message}</p>}
+      {showPending && <p role="status" style={{ margin: '10px 0 0', fontSize: 12, color: '#a39c93', textAlign: 'center' }}>{PENDING_PHOTO_MESSAGE}</p>}
+      {message && message !== PENDING_PHOTO_MESSAGE && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13, color: '#ff6b6b', textAlign: 'center' }}>{message}</p>}
     </div>
   );
 }

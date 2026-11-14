@@ -453,7 +453,7 @@ function MasaBlock({
           onEditOwnPhoto={photo.pick}
         />
         {photo.input}
-        {photo.message && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13, color: '#ff6b6b', textAlign: 'center' }}>{photo.message}</p>}
+        {photo.message && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13, color: photo.uploaded ? '#a39c93' : '#ff6b6b', textAlign: 'center' }}>{photo.message}</p>}
       </div>
     );
   } else if (meeting.participants.length > 0) {
@@ -635,7 +635,7 @@ function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
     <div style={{ paddingBottom: 12 }}>
       <MasaDetayKarti masa={masa} archive onEditOwnPhoto={photo.pick} />
       {photo.input}
-      {photo.message && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13, color: '#ff6b6b', textAlign: 'center' }}>{photo.message}</p>}
+      {photo.message && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13, color: photo.uploaded ? '#a39c93' : '#ff6b6b', textAlign: 'center' }}>{photo.message}</p>}
       {m.review && (
         <div style={{ marginTop: 12 }}>
           <p className="ll-mono" style={{ margin: '0 0 4px', fontSize: 11, color: '#a39c93' }}>DEĞERLENDİRMEN</p>
