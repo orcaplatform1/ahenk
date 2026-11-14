@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 
 // Profilim → "Aktif Kankanız" (Kankamla). Davet telefonla yapılır; davet linki her zaman kopyalanabilir gösterilir
@@ -175,7 +176,12 @@ export function KankaSection() {
       {sheet === 'invite' && (
         <Sheet onClose={() => setSheet(null)}>
           <p style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5', marginBottom: 8 }}>Kanka Davet Et</p>
-          {!state.kycApproved ? null : sentLink ? (
+          {!state.kycApproved ? (
+            <div className="flex flex-col gap-3">
+              <p style={{ fontSize: 13, color: '#aaa', lineHeight: 1.5 }}>Kanka davet etmek için önce kimliğini doğrula.</p>
+              <Link href="/profil?tab=kyc" onClick={() => setSheet(null)} className="btn-primary justify-center" style={{ minHeight: 44 }}>Kimliğimi Doğrula</Link>
+            </div>
+          ) : sentLink ? (
             <div className="flex flex-col gap-3">
               <p style={{ fontSize: 13, color: '#4ade80' }}>Davet gönderildi. 48 saat geçerli.</p>
               <p style={{ fontSize: 12, color: '#888', lineHeight: 1.5 }}>Davet WhatsApp ile iletildi. Ulaşmazsa bu linki kopyalayıp kankana kendin gönder:</p>

@@ -182,6 +182,10 @@ export class AdminService {
     else if (params.type === 'KARSIMDA') where.subscriptions = { some: { plan: 'KARSIMDA', status: SubscriptionStatus.ACTIVE } };
     else if (params.type === 'ICERDE')  where.subscriptions = { some: { plan: 'ICERDE', status: SubscriptionStatus.ACTIVE } };
     else if (params.type === 'KANKAMLA') where.subscriptions = { some: { plan: 'KANKAMLA', status: SubscriptionStatus.ACTIVE } };
+    else if (params.type === 'PRIME_1M')  where.subscriptions = { some: { plan: 'PRIME_1M', status: SubscriptionStatus.ACTIVE } };
+    else if (params.type === 'PRIME_3M')  where.subscriptions = { some: { plan: 'PRIME_3M', status: SubscriptionStatus.ACTIVE } };
+    else if (params.type === 'PRIME_6M')  where.subscriptions = { some: { plan: 'PRIME_6M', status: SubscriptionStatus.ACTIVE } };
+    else if (params.type === 'PRIME_12M') where.subscriptions = { some: { plan: 'PRIME_12M', status: SubscriptionStatus.ACTIVE } };
     else if (params.type === 'NO_PLAN') where.subscriptions = { none: { status: SubscriptionStatus.ACTIVE } };
     if (params.search) {
       where.OR = [
@@ -1612,6 +1616,10 @@ export class AdminService {
       subKarsimda,
       subIcerde,
       subKankamla,
+      subPrime1m,
+      subPrime3m,
+      subPrime6m,
+      subPrime12m,
     ] = await Promise.all([
       // Bot dahil tüm aktif kullanıcılar
       this.prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
@@ -1628,6 +1636,10 @@ export class AdminService {
       this.prisma.subscription.count({ where: { plan: SubscriptionPlan.KARSIMDA, status: SubscriptionStatus.ACTIVE } }),
       this.prisma.subscription.count({ where: { plan: SubscriptionPlan.ICERDE, status: SubscriptionStatus.ACTIVE } }),
       this.prisma.subscription.count({ where: { plan: SubscriptionPlan.KANKAMLA, status: SubscriptionStatus.ACTIVE } }),
+      this.prisma.subscription.count({ where: { plan: SubscriptionPlan.PRIME_1M, status: SubscriptionStatus.ACTIVE } }),
+      this.prisma.subscription.count({ where: { plan: SubscriptionPlan.PRIME_3M, status: SubscriptionStatus.ACTIVE } }),
+      this.prisma.subscription.count({ where: { plan: SubscriptionPlan.PRIME_6M, status: SubscriptionStatus.ACTIVE } }),
+      this.prisma.subscription.count({ where: { plan: SubscriptionPlan.PRIME_12M, status: SubscriptionStatus.ACTIVE } }),
     ]);
 
     // Ciro: gerçek başarılı ödemeler (ücretsiz paket ve bot hariç), indirim düşülmüş
@@ -1646,19 +1658,30 @@ export class AdminService {
         ? Math.round((completedMeetings / (completedMeetings + cancelledMeetings)) * 100)
         : 0;
 
-    const totalSubs = subMasada + subKarsimda + subIcerde + subKankamla;
+    const activePrime = subPrime1m + subPrime3m + subPrime6m + subPrime12m;
+    const totalSubs = subMasada + subKarsimda + subIcerde + subKankamla + activePrime;
     const packageDistribution = totalSubs > 0 ? {
       masadaPct: Math.round((subMasada / totalSubs) * 100),
       karsimdaPct: Math.round((subKarsimda / totalSubs) * 100),
       icerdePct: Math.round((subIcerde / totalSubs) * 100),
       kankamlaPct: Math.round((subKankamla / totalSubs) * 100),
+      prime1mPct: Math.round((subPrime1m / totalSubs) * 100),
+      prime3mPct: Math.round((subPrime3m / totalSubs) * 100),
+      prime6mPct: Math.round((subPrime6m / totalSubs) * 100),
+      prime12mPct: Math.round((subPrime12m / totalSubs) * 100),
       masadaCount: subMasada,
       karsimdaCount: subKarsimda,
       icerdeCount: subIcerde,
       kankamlaCount: subKankamla,
+      prime1mCount: subPrime1m,
+      prime3mCount: subPrime3m,
+      prime6mCount: subPrime6m,
+      prime12mCount: subPrime12m,
     } : {
       masadaPct: 0, karsimdaPct: 0, icerdePct: 0, kankamlaPct: 0,
+      prime1mPct: 0, prime3mPct: 0, prime6mPct: 0, prime12mPct: 0,
       masadaCount: 0, karsimdaCount: 0, icerdeCount: 0, kankamlaCount: 0,
+      prime1mCount: 0, prime3mCount: 0, prime6mCount: 0, prime12mCount: 0,
     };
 
     return {
@@ -1677,6 +1700,7 @@ export class AdminService {
       kankaMeetings,
       algorithmSuccessRate,
       packageDistribution,
+      activePrime,
     };
   }
 

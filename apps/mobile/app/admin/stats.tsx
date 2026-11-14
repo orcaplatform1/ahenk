@@ -5,8 +5,8 @@ import { api } from '@/lib/api';
 import { ACard, AError, AGrid, ALabel, AMono, APage, AT, ATableRow, ATitle } from '@/components/admin/AdminUi';
 import { adm } from '@/theme/theme';
 
-interface PackageDist { masadaPct: number; karsimdaPct: number; icerdePct: number; kankamlaPct: number; masadaCount: number; karsimdaCount: number; icerdeCount: number; kankamlaCount: number }
-interface StatsOverview { totalRevenue: number; netRevenue: number; vatAmount: number; netCommission: number; activeUsers: number; kycPending: number; matchRateThisWeek: number; referralRegisteredCount: number; referralTotalDiscountTL: number; totalMeetings: number; groupMeetings: number; oneOnOneMeetings: number; kankaMeetings: number; algorithmSuccessRate: number; packageDistribution: PackageDist }
+interface PackageDist { masadaPct: number; karsimdaPct: number; icerdePct: number; kankamlaPct: number; masadaCount: number; karsimdaCount: number; icerdeCount: number; kankamlaCount: number; prime1mPct: number; prime3mPct: number; prime6mPct: number; prime12mPct: number; prime1mCount: number; prime3mCount: number; prime6mCount: number; prime12mCount: number }
+interface StatsOverview { totalRevenue: number; netRevenue: number; vatAmount: number; netCommission: number; activeUsers: number; kycPending: number; matchRateThisWeek: number; referralRegisteredCount: number; referralTotalDiscountTL: number; totalMeetings: number; groupMeetings: number; oneOnOneMeetings: number; kankaMeetings: number; algorithmSuccessRate: number; packageDistribution: PackageDist; activePrime: number }
 interface CityRow { city: string; totalTables: number; kankaTables: number; activeMembers: number; revenue: number; discount: number; net: number; vat: number; trend: string }
 interface DashboardSummary { totalUsers: number; kycPending: number; activeMeetingsThisWeek: number; groupMeetingsThisWeek: number; oneOnOneMeetingsThisWeek: number; kankaMeetingsThisWeek: number; pioneer: { count: number; remaining: number } }
 
@@ -89,6 +89,7 @@ export default function AdminStats() {
           <Grid>
             <StatCard label="Brüt Ciro" value={data.totalRevenue} prefix="₺" fmtFn={fmtK} accent={adm.green} sub={data.matchRateThisWeek !== 0 ? `${data.matchRateThisWeek > 0 ? '↑' : '↓'} %${Math.abs(data.matchRateThisWeek)} bu hafta` : undefined} />
             <StatCard label="Aktif Üye" value={data.activeUsers} accent={adm.blue} sub={data.kycPending > 0 ? `${data.kycPending} KYC bekliyor` : undefined} />
+            <StatCard label="Aktif Prime" value={data.activePrime ?? 0} accent={adm.amber} />
           </Grid>
           <Grid>
             <StatCard label="Net Ciro" value={data.netRevenue} prefix="₺" fmtFn={fmtK} accent={adm.green} sub="Brüt ciro" />
@@ -138,6 +139,10 @@ export default function AdminStats() {
             <PackageBar label="Karşımda" pct={pkg?.karsimdaPct ?? 0} count={pkg?.karsimdaCount ?? 0} color={adm.cyan} />
             <PackageBar label="İçerde" pct={pkg?.icerdePct ?? 0} count={pkg?.icerdeCount ?? 0} color={adm.green} />
             <PackageBar label="Kankamla" pct={pkg?.kankamlaPct ?? 0} count={pkg?.kankamlaCount ?? 0} color={adm.amber} />
+            <PackageBar label="Prime 1 Aylık" pct={pkg?.prime1mPct ?? 0} count={pkg?.prime1mCount ?? 0} color={adm.amber} />
+            <PackageBar label="Prime 3 Aylık" pct={pkg?.prime3mPct ?? 0} count={pkg?.prime3mCount ?? 0} color={adm.amber} />
+            <PackageBar label="Prime 6 Aylık" pct={pkg?.prime6mPct ?? 0} count={pkg?.prime6mCount ?? 0} color={adm.amber} />
+            <PackageBar label="Prime 12 Aylık" pct={pkg?.prime12mPct ?? 0} count={pkg?.prime12mCount ?? 0} color={adm.amber} />
           </View>
         )}
       </ACard>

@@ -75,6 +75,8 @@ KYC KURALLARI:
   "Kullanıcı güvenliği sebebiyle masaya katılım için lütfen kimliğinizi doğrulayın." Basınca KYC ekranı açılır, onaylanınca kaybolur
 - KYC kartının gösterildiği ekranlarda eski "Kimliğimi Doğrula" / "Doğrula" uyarıları yoktur (Eşleşme Paneli, Masalarım; web + mobil)
 - Kanka bölümünde KYC bilgi yazısı yoktur (web + mobil); KYC onaysız kişinin kanka daveti / kabulü ve masaya katılamaması kuralı backend'de aynen
+- KYC onaysız kullanıcıda "Kanka Davet Et" penceresinde başlık altında "Kanka davet etmek için önce kimliğini doğrula." yazısı ve
+  "Kimliğimi Doğrula" butonu (KYC ekranını açar) vardır (web + mobil)
 - 100 TL indirim ekranında KYC notu yoktur
 - KYC onaylanmadan kullanıcı hiçbir buluşma taramasına giremez (havuz sorgularında kyc APPROVED şartı)
 - Admin KYC onayında T.C. no girilmez, karşılaştırılmaz; UserIdentity tablosu kaldırıldı
@@ -101,6 +103,9 @@ Prime abonelik (PRIME_1M / PRIME_3M / PRIME_6M / PRIME_12M): ham 899 / 2299 / 38
   - Admin ücretsiz Prime verebilir (paket verme ekranında Prime 1/3/6/12 aylık): ödeme alınmaz, haklar normal Prime gibi
     (1+1+1, 30 günde yenilenir, devretmez), otomatik yenileme yok, süre bitince biter. Aktif Prime'ı olana ikinci Prime verilemez
     (admin ekranında uyarı)
+  - Admin panelinde (web + mobil) tek seferlik paketlerin olduğu her filtre / listede Prime 1/3/6/12 aylık da vardır
+    (Kullanıcılar üye filtresi, Abonelikler paket filtresi, paket verme ekranları, işlem kaydı paket adları);
+    İstatistikler → Paket Dağılımı'nda Prime planları ayrı ayrı (yüzdeler tek seferlik + Prime toplamına göre) ve "Aktif Prime" kartı
   - Profildeki paket kutusunda "Aboneliği İptal Et": otomatik yenileme durur, haklar dönem sonuna kadar kullanılır, iade yapılmaz
     · iyzico ile alınan abonelik: web ve mobilde buton sunucu üzerinden doğrudan iptal eder
     · App Store / Play Store ile alınan abonelik: mobilde mağazanın abonelik sayfası açılır; web'de "Aboneliğini mobil uygulama

@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { useRouter } from 'expo-router';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { Btn, BtnGhost, BtnPrimary, HIT, Sheet, T } from '../ui';
@@ -43,6 +44,7 @@ function CopyLink({ link }: { link: string }) {
 const hoursLeft = (iso: string) => Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 3600000));
 
 export function KankaSection() {
+  const router = useRouter();
   const [state, setState] = useState<KankaState | null>(null);
   const [sheet, setSheet] = useState<'invite' | 'incoming' | 'kanka' | null>(null);
   const [phone, setPhone] = useState('');
@@ -119,7 +121,12 @@ export function KankaSection() {
 
       <Sheet visible={sheet === 'invite'} onClose={() => setSheet(null)} avoidKeyboard>
         <T w={700} style={{ fontSize: 16, marginBottom: 8 }}>Kanka Davet Et</T>
-        {!state.kycApproved ? null : sentLink ? (
+        {!state.kycApproved ? (
+          <View style={{ gap: 12 }}>
+            <T style={{ fontSize: 13, color: c.tAaa, lineHeight: 19.5 }}>Kanka davet etmek için önce kimliğini doğrula.</T>
+            <BtnPrimary label="Kimliğimi Doğrula" full onPress={() => { setSheet(null); router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } }); }} />
+          </View>
+        ) : sentLink ? (
           <View style={{ gap: 12 }}>
             <T style={{ fontSize: 13, color: c.ok }}>Davet gönderildi. 48 saat geçerli.</T>
             <T style={{ fontSize: 12, color: c.t888, lineHeight: 18 }}>Davet WhatsApp ile iletildi. Ulaşmazsa bu linki kopyalayıp kankana kendin gönder:</T>

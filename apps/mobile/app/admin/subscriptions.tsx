@@ -81,7 +81,7 @@ export default function AdminSubscriptions() {
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
         <AInput value={search} onChangeText={setSearch} onSubmitEditing={() => { setQuery(search.trim()); setPage(1); }} returnKeyType="search" placeholder="Ad, e-posta veya telefon… (Enter)" style={{ flexGrow: 1, minWidth: 0, flexBasis: '100%', paddingHorizontal: 12 }} />
         <View style={{ width: 160 }}>
-          <AdminSelect value={plan} onChange={v => { setPlan(v); setPage(1); }} placeholder="Tüm paketler" title="Paket filtresi" options={[{ value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }]} />
+          <AdminSelect value={plan} onChange={v => { setPlan(v); setPage(1); }} placeholder="Tüm paketler" title="Paket filtresi" options={[{ value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Başbaşa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }, { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' }, { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' }]} />
         </View>
       </View>
       <AError>{error}</AError>

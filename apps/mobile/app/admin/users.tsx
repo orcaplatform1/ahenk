@@ -89,7 +89,7 @@ export default function AdminUsers() {
             <AInput value={search} onChangeText={t => { setSearch(t); setPage(1); }} placeholder="Ad, soyad veya e-posta..." style={{ flexGrow: 1, minWidth: 0, flexBasis: '100%', backgroundColor: adm.surface, paddingHorizontal: 12 }} />
             <AInput value={city} onChangeText={t => { setCity(t); setPage(1); }} placeholder="Şehir..." style={{ width: 120, backgroundColor: adm.surface, paddingHorizontal: 12 }} />
             <View style={{ width: 160 }}>
-              <AdminSelect value={type} onChange={v => { setType(v); setPage(1); }} placeholder="Tüm üyeler" title="Üye filtresi" options={[{ value: '', label: 'Tüm üyeler' }, { value: 'NO_PLAN', label: 'Aboneliksiz' }, ...PLANS, { value: 'ADMIN', label: 'Admin' }, { value: 'SUPERADMIN', label: 'Superadmin' }]} />
+              <AdminSelect value={type} onChange={v => { setType(v); setPage(1); }} placeholder="Tüm üyeler" title="Üye filtresi" options={[{ value: '', label: 'Tüm üyeler' }, { value: 'NO_PLAN', label: 'Aboneliksiz' }, ...GRANT_PLANS, { value: 'ADMIN', label: 'Admin' }, { value: 'SUPERADMIN', label: 'Superadmin' }]} />
             </View>
           </View>
           <AError>{error}</AError>
