@@ -225,7 +225,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
       </div>
 
       {/* Aktif paketler: kalan haklar ve döngüler; iade (süresi dolmuş paket için de) */}
-      {(subscriptions.length > 0 || shownRefunds.length > 0) && (
+      {subscriptions.length > 0 && (
         <div className="ll-card flex flex-col gap-3">
           {subscriptions.map((sub) => {
             const hasGroup = sub.plan === 'MASADA' || sub.plan === 'ICERDE';
@@ -389,7 +389,7 @@ export function TabPaket({ kycApproved, onGoKyc, maintenanceMode = false }: Prop
                   disabled={buying === plan.key || maintenanceMode}
                   className="btn-primary w-full justify-center disabled:opacity-50"
                 >
-                  {buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : cs.needsKanka ? 'Önce Kanka Davet Et' : 'Paketi Seç'}
+                  {buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : cs.needsKanka ? 'Önce Kanka Davet Et' : 'Paketi Al'}
                 </button>
               )}
             </div>

@@ -304,7 +304,7 @@ export default function AdminMatches() {
                 const emptySeats = sel.maxParticipants - sel.participants.filter(p => !INACTIVE.includes(p.status)).length;
                 return (
                   <View>
-                    <ALabel style={{ marginBottom: 8 }}>BOT YERLEŞTİR ({emptySeats > 0 ? `${emptySeats} boş sandalye` : 'boş sandalye yok'})</ALabel>
+                    <ALabel style={{ marginBottom: 8 }}>BOT YERLEŞTİR ({emptySeats > 0 ? `${emptySeats} boş koltuk` : 'boş koltuk yok'})</ALabel>
                     {emptySeats > 0 && (
                       <View style={{ flexDirection: 'row', gap: 8 }}>
                         <AdminSelect value={botToPlace} onChange={setBotToPlace} placeholder={bots.length ? 'Bot seçin (eksik cinsiyet)' : 'Uygun bot yok'} title="Bot seç" style={{ flex: 1, minWidth: 0 }}

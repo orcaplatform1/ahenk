@@ -304,7 +304,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
         {!!activeCity && (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
             <T style={{ fontSize: 12, color: ll.label }}>Aktif: <T style={{ fontSize: 12, color: tw.text }}>{cities.find(x => x.id === activeCity)?.name ?? '—'}</T></T>
-            <Btn variant="textSmall" disabled={savingActive} label="Temizle" onPress={() => (inMatching ? askConfirm(() => saveActiveCity(null)) : saveActiveCity(null))} />
+            <Btn variant="cardAction" disabled={savingActive} label="Temizle" onPress={() => (inMatching ? askConfirm(() => saveActiveCity(null)) : saveActiveCity(null))} />
           </View>
         )}
         {!!activeCity && <T style={{ fontSize: 12, color: ll.label, marginTop: 6 }}>Siz iptal edene kadar bu şehirdeki masalarla eşleşirsiniz.</T>}

@@ -74,7 +74,7 @@ function TableCard({ t, isSuperadmin, onUserClick, onChanged, onError }: { t: Op
         ))}
       </View>
       <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <AT style={{ fontSize: 11, color: adm.muted }}>{t.emptySeats > 0 ? `${t.emptySeats} boş sandalye` : 'Dolu'}</AT>
+        <AT style={{ fontSize: 11, color: adm.muted }}>{t.emptySeats > 0 ? `${t.emptySeats} boş koltuk` : 'Dolu'}</AT>
         {!!missing && <AT style={{ fontSize: 11, color: adm.amber }}>Eksik: {missing}</AT>}
         {isSuperadmin && t.emptySeats > 0 && <Btn variant="admOpenBtn" style={{ marginLeft: 'auto' }} label={botOpen ? 'Kapat' : 'Bot ekle'} onPress={() => setBotOpen(o => !o)} />}
       </View>

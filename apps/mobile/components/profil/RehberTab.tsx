@@ -122,7 +122,7 @@ export function RehberTab() {
                 <T style={{ fontSize: 13, color: ll.text2 }}>{display(b, i)}</T>
                 <T style={{ fontSize: 12, color: ll.time, marginTop: 2 }}>{new Date(b.createdAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' })}</T>
               </View>
-              <Btn variant="textSmall" disabled={deleting === b.id} label={deleting === b.id ? '…' : 'Sil'} onPress={() => del(b)} />
+              <Btn variant="cardAction" disabled={deleting === b.id} label={deleting === b.id ? '…' : 'Sil'} onPress={() => del(b)} />
             </Card>
           ))}
         </View>

@@ -299,7 +299,7 @@ export class LiveLayerService {
         if (!st.join) {
           const idx = seated.indexOf(st.p);
           if (idx >= 0) seated.splice(idx, 1);
-          push(`${k}:cancel`, st.at, [{ t: "text", v: `${head}${label}${no !== null ? `'${locativeSuffix(no)}` : ""} 1 sandalye açıldı` }]);
+          push(`${k}:cancel`, st.at, [{ t: "text", v: `${head}${label}${no !== null ? `'${locativeSuffix(no)}` : ""} 1 koltuk açıldı` }]);
           return;
         }
         seated.push(st.p);
@@ -310,7 +310,7 @@ export class LiveLayerService {
         push(`${k}:join`, st.at, [{ t: "text", v: `${head}${label}${no !== null ? `'${dativeSuffix(no)}` : ""} ` }, person(st.p), { t: "text", v: " katıldı" }]);
         if (m.type === MeetingType.ONE_ON_ONE) return;
         const left = m.maxParticipants - seated.length;
-        if (left > 0) push(`${k}:left`, st.at + 1, [{ t: "text", v: `${head}${label}${no !== null ? `'${locativeSuffix(no)}` : ""} ${left} sandalye kaldı` }]);
+        if (left > 0) push(`${k}:left`, st.at + 1, [{ t: "text", v: `${head}${label}${no !== null ? `'${locativeSuffix(no)}` : ""} ${left} koltuk kaldı` }]);
         else push(`${k}:full`, st.at + 1, [{ t: "text", v: `${head}${label} tamamlandı (${seated.length}/${m.maxParticipants})` }]);
       });
 

@@ -10,12 +10,12 @@ import { api } from '@/lib/api';
 import { gColor, getNextTarget, num, pad, type MasaTuru } from '@/lib/masa';
 import { CLOSING_DAY, SCAN_START_DAY, useMasaTabs } from '@/lib/useMasaTabs';
 import { isForeground, useAppRefresh } from '@/lib/useAppRefresh';
-import type { LiveFill, LiveOverview, LivePulse, OceanKey } from '@/lib/liveTypes';
+import type { LiveOverview, LivePulse, OceanKey } from '@/lib/liveTypes';
 import { BtnPrimary, Card, Cta, Glow, Eyebrow, Head, MaintenanceNotice, Mono, Note, Serif, Spinner, T, Title } from '@/components/ui';
 import { LiveTabs } from '@/components/LiveTabs';
 import { LiveSonar } from '@/components/Sonar';
 import { WinbackHost } from '@/components/Winback';
-import { LEVELS, ll, llColumn, llMetric, heat, tw } from '@/theme/theme';
+import { LEVELS, ll, llColumn, heat, tw } from '@/theme/theme';
 
 const PULSE_MS = 15_000;
 const OVERVIEW_MS = 60_000;
@@ -97,19 +97,6 @@ function Bar({ ratio, colors, height }: { ratio: number; colors: string[]; heigh
   );
 }
 
-function FillRow({ label, fill, colors }: { label: string; fill: LiveFill; colors: string[] }) {
-  const ratio = fill.total ? Math.min(1, fill.filled / fill.total) : 0;
-  return (
-    <View>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
-        <T style={{ fontSize: 13, color: ll.text }}>{label}</T>
-        <Mono style={{ fontSize: 12, lineHeight: 18, color: ll.text2 }}>{num(fill.filled)} / {num(fill.total)}</Mono>
-      </View>
-      <Bar ratio={ratio} colors={colors} height={8} />
-    </View>
-  );
-}
-
 function label(initials: string) {
   const raw = initials.trim();
   return raw.length === 2 && !raw.includes('.') ? `${raw[0]}.${raw[1]}.`.toLocaleUpperCase('tr-TR') : raw.toLocaleUpperCase('tr-TR');
@@ -181,23 +168,10 @@ export default function EslesmePaneli() {
               <T style={{ fontSize: 13, color: ll.text2, lineHeight: 19.5 }}>
                 {waitingScan ? "Pazar 23:59'da yeni tarama başlar." : TABLE_TEXT[tab].note}
                 {!waitingScan && tabSeatsLeft !== null && !(meetingTarget !== null && tabSeatsLeft === 0)
-                  ? `\n${tabSeatsLeft > 0 ? `Masanızda boş ${num(tabSeatsLeft)} sandalye kaldı.` : 'Masanızda kontenjan doldu.'}` : ''}
+                  ? `\n${tabSeatsLeft > 0 ? `Masanızda ${num(tabSeatsLeft)} boş koltuk kaldı.` : 'Masanızda kontenjan doldu.'}` : ''}
               </T>
             </View>
 
-            {/* Metrikler */}
-            <View style={{ flexDirection: 'row', gap: 8 }} accessibilityLabel="Bu hafta özet">
-              {[
-                { label: 'şu an havuzda', value: overview ? num(overview.metrics.pool) : '–', color: ll.text },
-                { label: 'bu hafta masa', value: overview ? num(overview.metrics.tables) : '–', color: ll.text },
-                { label: 'doluluk', value: overview ? `%${overview.metrics.fillPercent}` : '–', color: ll.red3 },
-              ].map((m) => (
-                <View key={m.label} style={st.metric}>
-                  <Mono w={600} style={{ fontSize: 20, lineHeight: 30, color: m.color }}>{m.value}</Mono>
-                  <T style={{ fontSize: 11, color: ll.label, marginTop: 4 }}>{m.label}</T>
-                </View>
-              ))}
-            </View>
 
             <LiveSonar sonar={pulse?.sonar ?? null} scanOff={scanOff} />
 
@@ -279,20 +253,8 @@ export default function EslesmePaneli() {
               </Card>
             )}
 
-            {/* Dolum */}
-            {overview && (
-              <View>
-                <Head title="Bu Hafta Dolum" />
-                <View style={{ gap: 14 }}>
-                  <FillRow label="Grup Masası · Cuma" fill={overview.fill.group} colors={['#d6453a', '#ff8a7e']} />
-                  <FillRow label="Baş Başa Masası · Cumartesi" fill={overview.fill.oneOnOne} colors={['#c8743c', '#e8a27a']} />
-                  <FillRow label="Kankamla Masası · Pazar" fill={overview.fill.kanka} colors={['#8f887f', '#c9c2b8']} />
-                </View>
-              </View>
-            )}
-
             <Cta
-              label={overview?.hasTable ? 'Masanı Gör' : seats !== null ? `Masanı Ayır · ${num(seats)} sandalye kaldı` : 'Masanı Ayır'}
+              label={overview?.hasTable ? 'Masanı Gör' : seats !== null ? `Masanı Ayır · ${num(seats)} koltuk kaldı` : 'Masanı Ayır'}
               onPress={() => router.push(overview?.hasTable || me?.activePlan ? '/(tabs)/masalarim' : '/(tabs)/paketim')}
             />
           </View>
@@ -309,7 +271,6 @@ const st = StyleSheet.create({
   column: { width: '100%', maxWidth: llColumn.maxWidth, alignSelf: 'center', paddingTop: llColumn.padTop, paddingHorizontal: llColumn.padH, paddingBottom: llColumn.padBottom, gap: llColumn.gap },
   card: { borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 18 },
   maskot: { width: 80, height: 80 * 1639 / 960, alignSelf: 'center' },
-  metric: { flex: 1, minWidth: 0, borderRadius: llMetric.radius, borderWidth: 1, borderColor: llMetric.borderColor, backgroundColor: llMetric.bg, paddingVertical: llMetric.padV, paddingHorizontal: llMetric.padH },
   feedRow: { flexDirection: 'row', gap: 8, alignItems: 'baseline', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
   heat: { flexDirection: 'row', flexWrap: 'wrap', gap: heat.gap },
   heatCell: { width: '31.9%', height: heat.height, borderRadius: heat.radius, padding: heat.padding, justifyContent: 'space-between' },

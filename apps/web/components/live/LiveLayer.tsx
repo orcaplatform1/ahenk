@@ -11,7 +11,7 @@ import LiveSonar from './LiveSonar';
 import { LEVELS } from './levels';
 import LiveFeed from './LiveFeed';
 import LiveTabs, { type TabStatus } from './LiveTabs';
-import type { LiveFill, LiveOverview, LivePulse, OceanKey } from './types';
+import type { LiveOverview, LivePulse, OceanKey } from './types';
 
 const PULSE_MS = 15_000;
 const OVERVIEW_MS = 60_000;
@@ -91,21 +91,6 @@ function Countdown({ day, targetAt }: { day: number; targetAt?: number | null })
   );
 }
 
-function FillRow({ label, fill, gradient }: { label: string; fill: LiveFill; gradient: string }) {
-  const ratio = fill.total ? Math.min(1, fill.filled / fill.total) : 0;
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
-        <span style={{ fontSize: 13 }}>{label}</span>
-        <span className="ll-mono" style={{ fontSize: 12, color: '#c9c2b8' }}>{num(fill.filled)} / {num(fill.total)}</span>
-      </div>
-      <div className="ll-bar" style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.07)' }}>
-        <span style={{ background: gradient, transform: `scaleX(${ratio})` }} />
-      </div>
-    </div>
-  );
-}
-
 // Seviye rengi: 1 en opak, 4 en soluk
 const LEVEL_ALPHA = { 1: 'd9', 2: 'a6', 3: '73', 4: '4d' } as const;
 
@@ -169,24 +154,10 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
             {waitingScan ? "Pazar 23:59'da yeni tarama başlar." : TABLE_TEXT[tab].note}
             {!waitingScan && tabSeatsLeft !== null && !(meetingTarget !== null && tabSeatsLeft === 0) && (
               <span style={{ display: 'block' }}>
-                {tabSeatsLeft > 0 ? `Masanızda boş ${num(tabSeatsLeft)} sandalye kaldı.` : 'Masanızda kontenjan doldu.'}
+                {tabSeatsLeft > 0 ? `Masanızda ${num(tabSeatsLeft)} boş koltuk kaldı.` : 'Masanızda kontenjan doldu.'}
               </span>
             )}
           </p>
-        </section>
-
-        {/* Metrikler */}
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }} aria-label="Bu hafta özet">
-          {[
-            { label: 'şu an havuzda', value: overview ? num(overview.metrics.pool) : '–', color: '#f4f1ec' },
-            { label: 'bu hafta masa', value: overview ? num(overview.metrics.tables) : '–', color: '#f4f1ec' },
-            { label: 'doluluk', value: overview ? `%${overview.metrics.fillPercent}` : '–', color: '#ff8a7e' },
-          ].map((m) => (
-            <div key={m.label} className="ll-metric">
-              <div className="ll-mono" style={{ fontSize: 20, fontWeight: 600, color: m.color }}>{m.value}</div>
-              <div style={{ fontSize: 11, color: '#a39c93', marginTop: 4 }}>{m.label}</div>
-            </div>
-          ))}
         </section>
 
         <div className={scanOff || statuses[tab] === 'KYC' || statuses[tab] === 'KANKA' ? 'll-scan-off' : undefined}>
@@ -249,20 +220,8 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
           </section>
         )}
 
-        {/* Dolum */}
-        {overview && (
-          <section>
-            <div className="ll-head"><h2 className="ll-title">Bu Hafta Dolum</h2></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <FillRow label="Grup Masası · Cuma" fill={overview.fill.group} gradient="linear-gradient(90deg, #d6453a, #ff8a7e)" />
-              <FillRow label="Baş Başa Masası · Cumartesi" fill={overview.fill.oneOnOne} gradient="linear-gradient(90deg, #c8743c, #e8a27a)" />
-              <FillRow label="Kankamla Masası · Pazar" fill={overview.fill.kanka} gradient="linear-gradient(90deg, #8f887f, #c9c2b8)" />
-            </div>
-          </section>
-        )}
-
         <button type="button" className="ll-cta" onClick={primaryAction}>
-          {overview?.hasTable ? 'Masanı Gör' : seats !== null ? `Masanı Ayır · ${num(seats)} sandalye kaldı` : 'Masanı Ayır'}
+          {overview?.hasTable ? 'Masanı Gör' : seats !== null ? `Masanı Ayır · ${num(seats)} koltuk kaldı` : 'Masanı Ayır'}
         </button>
       </div>
     </div>

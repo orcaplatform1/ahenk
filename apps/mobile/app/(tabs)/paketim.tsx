@@ -147,7 +147,7 @@ export default function Paketim() {
               </View>
             </Card>
 
-            {(subs.length > 0 || shownRefunds.length > 0) && (
+            {subs.length > 0 && (
               <Card style={{ gap: 12 }}>
                 {subs.map((s) => {
                   const g = s.plan === 'MASADA' || s.plan === 'ICERDE', o = s.plan === 'KARSIMDA' || s.plan === 'ICERDE', k = s.plan === 'KANKAMLA';
@@ -226,7 +226,7 @@ export default function Paketim() {
                       </View>
                       {cs.showButton && (
                         <BtnPrimary full disabled={buying === plan.key || maintenance} style={(buying === plan.key || maintenance) ? { opacity: 0.5 } : undefined}
-                          label={buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : 'Paketi Seç'}
+                          label={buying === plan.key ? 'Yönlendiriliyor…' : !kycApproved ? 'Paket Seç' : 'Paketi Al'}
                           onPress={() => !kycApproved ? router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } }) : cs.needsKanka ? router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'profil' } }) : buy(plan.key)} />
                       )}
                     </View>

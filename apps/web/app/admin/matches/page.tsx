@@ -627,7 +627,7 @@ export default function AdminMatches() {
             return (
               <div>
                 <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>
-                  BOT YERLEŞTİR ({emptySeats > 0 ? `${emptySeats} boş sandalye` : 'boş sandalye yok'})
+                  BOT YERLEŞTİR ({emptySeats > 0 ? `${emptySeats} boş koltuk` : 'boş koltuk yok'})
                 </p>
                 {emptySeats > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, minWidth: 0, maxWidth: '100%' }}>

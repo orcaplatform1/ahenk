@@ -542,7 +542,8 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
             <button
               onClick={() => (inMatching ? askConfirm(() => saveActiveCity(null)) : saveActiveCity(null))}
               disabled={savingActiveCity}
-              className="text-xs text-[#a39c93] hover:text-[#ff6b6b] transition-colors"
+              className="text-xs text-[#a39c93] hover:text-[#f5f5f5] transition-colors px-3 py-1"
+              style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}
             >
               Temizle
             </button>

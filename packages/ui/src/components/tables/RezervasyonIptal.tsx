@@ -165,9 +165,11 @@ export function RezervasyonIptal({ meetingId, scheduledAt, cancelRightUsed, apiB
 
   if (cancelRightUsed) {
     return (
-      <p style={{ margin: '16px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-        Bu paket için iptal hakkınızı kullandınız.
-      </p>
+      <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 14px' }}>
+        <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
+          Bu paket için iptal hakkınızı kullandınız.
+        </p>
+      </div>
     );
   }
 

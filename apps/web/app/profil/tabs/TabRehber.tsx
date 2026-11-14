@@ -106,7 +106,8 @@ export function TabRehber() {
               <button
                 onClick={() => handleServerDelete(b)}
                 disabled={deleting === b.id}
-                className="text-xs text-[#a39c93] hover:text-[#ff6b6b] transition-colors disabled:opacity-40"
+                className="text-xs text-[#a39c93] hover:text-[#f5f5f5] transition-colors disabled:opacity-40 px-3 py-1"
+                style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}
               >
                 {deleting === b.id ? '…' : 'Sil'}
               </button>

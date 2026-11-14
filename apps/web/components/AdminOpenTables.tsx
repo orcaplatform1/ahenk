@@ -103,7 +103,7 @@ function TableCard({ t, isSuperadmin, onUserClick, onChanged, onError }: {
         ))}
       </div>
       <div style={{ display: 'flex', gap: 12, fontSize: 11, color: MUTED, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span>{t.emptySeats > 0 ? `${t.emptySeats} boş sandalye` : 'Dolu'}</span>
+        <span>{t.emptySeats > 0 ? `${t.emptySeats} boş koltuk` : 'Dolu'}</span>
         {missing && <span style={{ color: AMBER }}>Eksik: {missing}</span>}
         {isSuperadmin && t.emptySeats > 0 && (
           <button onClick={() => setBotOpen(o => !o)} style={{ ...btnStyle(false), marginLeft: 'auto' }}>{botOpen ? 'Kapat' : 'Bot ekle'}</button>

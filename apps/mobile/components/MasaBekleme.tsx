@@ -106,7 +106,11 @@ function RezervasyonIptalInner({ meetingId, scheduledAt, cancelRightUsed, onCanc
       <T style={{ fontSize: 13, color: c.red }}>Rezervasyonunuz iptal edildi.</T>
     </View>
   );
-  if (cancelRightUsed) return <T style={{ marginTop: 16, fontSize: 12, color: 'rgba(255,255,255,0.62)', textAlign: 'center' }}>Bu paket için iptal hakkınızı kullandınız.</T>;
+  if (cancelRightUsed) return (
+    <View style={{ marginTop: 16, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
+      <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.62)', textAlign: 'center' }}>Bu paket için iptal hakkınızı kullandınız.</T>
+    </View>
+  );
   const can = note.trim().length > 0;
   return (
     <>
