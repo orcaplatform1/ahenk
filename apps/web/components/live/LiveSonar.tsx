@@ -83,10 +83,19 @@ function placeLabels(bubbles: ReturnType<typeof placeBubbles>) {
   });
 }
 
-function DensityLayer({ density, flashes }: { density: SonarDensity; flashes: Record<string, number> }) {
+// Bekleme durumu (waiting): bütün semt noktaları "Düşük" grisinde, aynı büyüklükte ve hareketsiz (parlama / nefes / nabız yok)
+const WAIT_DOT = { color: LEVELS[4].color, r: LEVELS[4].r, opacity: LEVELS[4].opacity };
+
+function DensityLayer({ density, flashes, waiting }: { density: SonarDensity; flashes: Record<string, number>; waiting: boolean }) {
   return (
     <>
-      {placeLabels(placeBubbles(density)).map((b, i) => (
+      {placeLabels(placeBubbles(density)).map((b, i) => waiting ? (
+        <g key={b.name}>
+          <circle cx={b.x} cy={b.y} r={WAIT_DOT.r} fill={WAIT_DOT.color} opacity={WAIT_DOT.opacity} />
+          <text x={b.labelX} y={b.labelY} fontSize="10.5" fontWeight={b.level <= 2 ? 700 : 400} fill={b.level <= 2 ? '#f4f1ec' : '#c9c2b8'}
+            style={{ fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>{b.name}</text>
+        </g>
+      ) : (
         <g key={b.name}>
           {b.level === 1 && <circle className="ll-bubble-pulse" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
           {flashes[b.name] > 0 && <circle key={flashes[b.name]} className="ll-flash" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
@@ -107,15 +116,15 @@ function DensityLayer({ density, flashes }: { density: SonarDensity; flashes: Re
   );
 }
 
-function DotLayer({ sonar }: { sonar: LivePulse['sonar'] | null }) {
+function DotLayer({ sonar, waiting }: { sonar: LivePulse['sonar'] | null; waiting: boolean }) {
   return (
     <>
       {(sonar?.dots ?? []).map((d) => {
         const p = point(dotAngle(d.key, d.district), RING_RADIUS[d.state]);
-        const style = DOT[d.state];
+        const style = waiting ? WAIT_DOT : DOT[d.state];
         return (
           <g key={d.key}>
-            {d.state === 'new' && <circle className="ll-dot-new" cx={p.x} cy={p.y} r={style.r} fill={style.color} />}
+            {!waiting && d.state === 'new' && <circle className="ll-dot-new" cx={p.x} cy={p.y} r={style.r} fill={style.color} />}
             <circle cx={p.x} cy={p.y} r={style.r} fill={style.color} />
           </g>
         );
@@ -141,7 +150,7 @@ function DotLayer({ sonar }: { sonar: LivePulse['sonar'] | null }) {
   );
 }
 
-export default function LiveSonar({ sonar }: { sonar: LivePulse['sonar'] | null }) {
+export default function LiveSonar({ sonar, waiting = false }: { sonar: LivePulse['sonar'] | null; waiting?: boolean }) {
   const dots = sonar?.dots ?? [];
   const density = sonar?.density ?? null;
   const counts = { new: 0, active: 0, pool: 0 };
@@ -185,7 +194,7 @@ export default function LiveSonar({ sonar }: { sonar: LivePulse['sonar'] | null 
             ? `Eşleşme taraması: ilçe yoğunluğu, ${density.districts.length} ilçe. Kişisel bilgi gösterilmez.`
             : `Eşleşme taraması: bu hafta havuzda ${dots.length} kişi görünüyor, ${counts.new} yeni giriş, ${counts.active} aktif. Kişisel bilgi gösterilmez.`}
         >
-          {density ? <DensityLayer density={density} flashes={flashes} /> : <DotLayer sonar={sonar} />}
+          {density ? <DensityLayer density={density} flashes={flashes} waiting={waiting} /> : <DotLayer sonar={sonar} waiting={waiting} />}
         </AhenkSonar>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '6px 16px', marginTop: 10 }}>

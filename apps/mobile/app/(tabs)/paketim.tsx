@@ -27,10 +27,10 @@ const PRIME_PLANS = [
 ] as const;
 
 // web components/paket/PaketKarti.tsx CARDS ile aynı: premium kart — aynı renk ailesinde koyudan ortaya geçişli arka plan.
-// Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, altın çerçeve ve altın detaylı.
+// Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, kırmızı (palet) çerçeve; rozet, ad ve ok şarap kırmızısı (#7A1F2B).
 // badgeBg / badgeFg: Tinder GOLD tarzı hap rozet (kartın renk tonuna uyumlu; İçerde ve Prime altın)
 const GOLD = ['#f5d76e', '#c9a227', '#a8861a'];
-const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient: [string, string]; fg: string; nameColor: string; border?: string; badgeBg: string[]; badgeFg: string; advantages: string[] }[] = [
+const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient: [string, string]; fg: string; nameColor: string; border?: string; badgeBg: string[]; badgeFg: string; arrowColor?: string; advantages: string[] }[] = [
   { key: 'MASADA', name: 'Grup Paketi', badge: 'Tek Seferlik', desc: "1 Grup Masası'nda buluşma hakkı", gradient: ['#06301c', '#1c7a49'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: ['#2e9e62'], badgeFg: '#ffffff',
     advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', "1 Grup Masası'nda buluşma hakkı", 'Masada erkek ve kadın eşit sayı', 'Bu hak masada sen buluşana kadar geçerli'] },
   { key: 'KARSIMDA', name: 'Baş Başa Paketi', badge: 'Tek Seferlik', desc: "1 Baş Başa Masası'nda buluşma hakkı", gradient: ['#3d0907', '#a3231b'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: ['#d6453a'], badgeFg: '#ffffff',
@@ -39,8 +39,8 @@ const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient
     advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Kankamla Masası'nda buluşma hakkı", 'Kankanı davet ederek ücretsiz çağırma', 'Bu hak masada sen buluşana kadar geçerli'] },
   { key: 'ICERDE', name: 'İçerde Paketi', badge: 'Tek Seferlik', desc: "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı", gradient: ['#3a2804', '#9c7412'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: GOLD, badgeFg: '#1a1406',
     advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı", 'Bu haklar masada sen buluşana kadar geçerli'] },
-  { key: 'PRIME', name: 'Prime Paket', badge: 'Abonelik', desc: 'Her ay 1 Grup + 1 Baş Başa + 1 Kankamla Masası', gradient: ['#000000', '#2b2d31'], fg: '#f4f1ec', nameColor: '#e8c84a', border: '#c9a227', badgeBg: GOLD, badgeFg: '#1a1406',
-    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "Her ay 1 Grup Masası + 1 Baş Başa Masası + 1 Kankamla Masası'nda buluşma hakkı", 'Aboneliği iptal etsen dahi, bu haklar masada sen buluşana kadar geçerli', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
+  { key: 'PRIME', name: 'Prime Paket', badge: 'Abonelik', desc: 'Her ay 1 Grup + 1 Baş Başa + 1 Kankamla Masası', gradient: ['#000000', '#2b2d31'], fg: '#f4f1ec', nameColor: '#7A1F2B', border: ll.red, badgeBg: ['#7A1F2B'], badgeFg: '#f4f1ec', arrowColor: '#7A1F2B',
+    advantages: ['Her masada öncelikli eşleşme hakkı', 'Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "Her ay 1 Grup Masası + 1 Baş Başa Masası + 1 Kankamla Masası'nda buluşma hakkı", 'Aboneliği iptal etsen dahi, bu haklar masada sen buluşana kadar geçerli', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
 ];
 const PRIME_RENEW_INFO = 'İptal etmediğin sürece aboneliğin seçtiğin süre için aynı fiyatla otomatik olarak yenilenir.';
 
@@ -271,13 +271,13 @@ export default function Paketim() {
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <T w={800} style={{ fontSize: 20, lineHeight: 26, color: card.nameColor }}>{card.name}</T>
                           <LinearGradient colors={(card.badgeBg.length > 1 ? card.badgeBg : [card.badgeBg[0], card.badgeBg[0]]) as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                            style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
-                            <T w={800} style={{ fontSize: 11.2, letterSpacing: 0.9, color: card.badgeFg }}>{(st.badge ?? card.badge).toLocaleUpperCase('tr-TR')}</T>
+                            style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
+                            <T w={800} style={{ fontSize: 9.9, letterSpacing: 0.8, color: card.badgeFg }}>{(st.badge ?? card.badge).toLocaleUpperCase('tr-TR')}</T>
                           </LinearGradient>
                         </View>
                         <T numberOfLines={1} style={{ fontSize: 14, color: fg, opacity: 0.9 }}>{card.desc}</T>
                       </View>
-                      <Arrow color={card.border ?? fg} />
+                      <Arrow color={card.arrowColor ?? card.border ?? fg} />
                     </LinearGradient>
                   </Pressable>
                 );

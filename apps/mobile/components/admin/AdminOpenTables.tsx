@@ -1,7 +1,7 @@
 // apps/web/components/AdminOpenTables.tsx karşılığı: bu haftanın açık masaları + eşi bekleyenler, 30 sn'de bir yenilenir
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, Pressable, View } from 'react-native';
-import { BASE } from '@/lib/config';
+import { smallPhotoUrl } from '@/lib/photo';
 import { api } from '@/lib/api';
 import { Btn } from '../ui';
 import { ACard, ALabel, AMono, AT } from './AdminUi';
@@ -32,7 +32,7 @@ function PhotoChip({ url, color, text, onPress }: { url: string; color: string; 
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel="Kullanıcı detayı" hitSlop={10}
       style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 99, borderWidth: 1, borderColor: color }}>
-      <Image source={{ uri: url.startsWith('/') ? `${BASE}${url}` : url }} style={{ width: 20, height: 20, borderRadius: 10 }} />
+      <Image source={{ uri: smallPhotoUrl(url) }} style={{ width: 20, height: 20, borderRadius: 10 }} />
       {!!text && <AMono style={{ fontSize: 11, color: '#e2e8f0' }}>{text}</AMono>}
     </Pressable>
   );

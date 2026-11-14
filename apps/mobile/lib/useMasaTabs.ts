@@ -16,6 +16,19 @@ const MASA_TURLERI: MasaTuru[] = ['GROUP', 'ONE_ON_ONE', 'KANKA'];
 export const CLOSING_DAY: Record<MasaTuru, number> = { GROUP: 4, ONE_ON_ONE: 5, KANKA: 6 };
 export const SCAN_START_DAY = 0;
 
+// Eşleşme taraması bekleme durumu: kullanıcının bu hafta seçtiği türlerden en az birinin buluşma saati henüz geçmemişse tarama aktif;
+// değilse (paketi yok, bu hafta tür seçmemiş ya da seçtiği türlerin buluşma saati geçmiş) bekleme. Buluşma saatleri (TR):
+// Grup Cuma 20:00, Baş Başa Cumartesi 20:00, Kankamla Pazar 20:00 — her biri o türün seçim son saatinden (Perşembe / Cuma / Cumartesi
+// 18:00) 26 saat sonra; son saat seçimin ait olduğu haftadan geldiği için yeni haftada (Pazar 23:59 sonrası) yeniden hesaplanır.
+const MEETING_AFTER_DEADLINE_MS = 26 * 3_600_000;
+export function isScanWaiting(selection: WeeklySelection | null | undefined, now = Date.now()): boolean {
+  if (!selection) return true;
+  return !selection.selected.some((t) => {
+    const opt = selection.options.find((o) => o.type === t);
+    return !!opt && now < Date.parse(opt.deadline) + MEETING_AFTER_DEADLINE_MS;
+  });
+}
+
 export function isPastClosing(tab: MasaTuru) {
   return getNextTarget(SCAN_START_DAY).getTime() < getNextTarget(CLOSING_DAY[tab]).getTime();
 }
@@ -114,6 +127,16 @@ export function useMasaTabs() {
   }, [reload, focused]);
   useAppRefresh(useCallback(() => { reload(); refreshPlan(); }, [reload, refreshPlan]));
 
+  // Tarama bekleme durumu: seçim değişince ve 30 sn'de bir (buluşma saati geçince) yeniden hesaplanır; yalnız odaktaki sekmede
+  const [scanWaiting, setScanWaiting] = useState(true);
+  useEffect(() => {
+    const upd = () => setScanWaiting(isScanWaiting(selection));
+    upd();
+    if (!focused) return undefined;
+    const id = setInterval(upd, 30_000);
+    return () => clearInterval(id);
+  }, [selection, focused]);
+
   useEffect(() => {
     if (!focused) return undefined;
     const id = setInterval(() => setPastClosed(pastList()), 1000);
@@ -169,5 +192,5 @@ export function useMasaTabs() {
 
   const selfParticipant = me ? { initials: buildInitials(me.firstName, me.lastName), gender: me.profile?.gender ?? null } : undefined;
 
-  return { ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled, selection, submitSelection };
+  return { ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled, selection, submitSelection, scanWaiting };
 }

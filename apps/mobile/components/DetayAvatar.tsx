@@ -1,7 +1,7 @@
 // packages/ui/src/components/tables/DetayAvatar.tsx karşılığı (48px, 2.5 kenar, 11px yazı)
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, Text, View } from 'react-native';
-import { BASE } from '@/lib/config';
+import { smallPhotoUrl } from '@/lib/photo';
 import Svg, { Circle } from 'react-native-svg';
 import { detayAvatar, sans } from '@/theme/theme';
 import { gBg, gColor, initialsLabel } from '@/lib/masa';
@@ -48,8 +48,8 @@ export function DetayAvatar({ participant, delay = 0, size = detayAvatar.d, anim
         {anim && <AnimatedCircle cx={R} cy={R} r={BR} fill="none" stroke={color} strokeWidth={detayAvatar.strokeWidth * k} opacity={glow} />}
       </Svg>
       {participant.photoUrl ? (
-        // Onaylı profil fotoğrafı: kısaltma yerine, cinsiyet renkli çerçevenin içinde
-        <Image source={{ uri: participant.photoUrl.startsWith('/') ? `${BASE}${participant.photoUrl}` : participant.photoUrl }} accessibilityLabel="Profil fotoğrafı"
+        // Onaylı profil fotoğrafı (küçük 200 px sürümü): kısaltma yerine, cinsiyet renkli çerçevenin içinde
+        <Image source={{ uri: smallPhotoUrl(participant.photoUrl) }} accessibilityLabel="Profil fotoğrafı"
           style={{ position: 'absolute', top: detayAvatar.strokeWidth * k * 1.6, left: detayAvatar.strokeWidth * k * 1.6, width: size - detayAvatar.strokeWidth * k * 3.2, height: size - detayAvatar.strokeWidth * k * 3.2, borderRadius: size / 2 }} />
       ) : (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>

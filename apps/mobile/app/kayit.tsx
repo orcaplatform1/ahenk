@@ -1,7 +1,7 @@
 // apps/web/app/kayit/page.tsx karşılığı: 5 adım (Temel Bilgiler + WhatsApp OTP → Şehir → OCEAN Testi → Mekan Tercihi → Numara Engelleme)
 // S-14: push bildirim izni kayıt tamamlanınca istenir (token alma Firebase dosyaları gelene kadar raporlandı)
 import React, { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,13 +11,14 @@ import { API_PREFIX } from '@/lib/config';
 import { api, storeLogin } from '@/lib/api';
 import { gColor } from '@/lib/masa';
 import { PasswordInput } from '@/components/AuthShell';
+import { BackArrow, PillButton } from '@/components/AuthFlow';
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
 import { useKeyboardFieldScroll } from '@/lib/useKeyboardFieldScroll';
 import { OtpInput } from '@/components/OtpInput';
 import { DateField, FieldLabel, ListPicker } from '@/components/Pickers';
 import { TestFlow, type Question } from '@/components/TestFlow';
 import { ContactPicker, normalizeTrPhone } from '@/components/profil/RehberTab';
-import { Btn, BtnGhost, BtnPrimary, Card, ErrorText, Eyebrow, Input, Serif, Spinner, T, Title, Glow, ScreenGlow } from '@/components/ui';
+import { Btn, BtnGhost, ErrorText, Eyebrow, Input, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { c, ll, tw, tw4 } from '@/theme/theme';
 
 interface City { id: string; name: string }
@@ -146,7 +147,8 @@ export default function Kayit() {
   const header = (n: number, title: string, sub?: string) => (
     <View>
       <Eyebrow style={{ marginBottom: 4 }}>ADIM {n}</Eyebrow>
-      <Title style={{ marginBottom: 4 }}>{title}</Title>
+      {/* Giriş akışındaki ekranlarla aynı: sola hizalı kalın başlık (StepScreen başlık stili) */}
+      <T w={700} style={{ fontSize: 26, lineHeight: 32, color: ll.text, marginBottom: 4 }}>{title}</T>
       {!!sub && <T style={{ color: ll.label, fontSize: 13 }}>{sub}</T>}
     </View>
   );
@@ -158,10 +160,9 @@ export default function Kayit() {
       <WelcomeOverlay visible={success} name={`${f.firstName} ${f.lastName}`} />
       {/* Arka plan: M. şifremi unuttum ekranındaki sağ üst kırmızımsı ışıma (Glow) */}
       <Glow />
-      <ScrollView {...kb} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40, paddingHorizontal: 20, maxWidth: 576, width: '100%', alignSelf: 'center' }}>
-        <View style={{ alignItems: 'center', marginBottom: 32 }}>
-          <Image source={require('@/assets/start_logo.jpg')} style={{ width: 120, height: 120, borderRadius: 60 }} />
-        </View>
+      {/* Sol üstte geri ok (giriş ekranına döner); logo ve kart yok — giriş akışındaki diğer ekranlarla aynı sade görünüm */}
+      <BackArrow onPress={() => router.back()} />
+      <ScrollView {...kb} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + 24, paddingHorizontal: 24, maxWidth: 576, width: '100%', alignSelf: 'center' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 40 }}>
           {STEPS.map((_, i) => (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -178,7 +179,7 @@ export default function Kayit() {
         </View>
 
         {step === 0 && (
-          <Card style={{ gap: 20 }}>
+          <View style={{ gap: 20 }}>
             {header(1, 'Temel Bilgiler', 'Hesabını oluştur.')}
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>{field('Ad', <Input form textContentType="givenName" value={f.firstName} onChangeText={v => set('firstName', v)} style={{ fontSize: 13 }} />)}</View>
@@ -225,12 +226,12 @@ export default function Kayit() {
               </View>
             </View>
             {!!error && <T style={{ color: tw.accent, fontSize: 13 }}>{error}</T>}
-            <BtnPrimary label="Devam Et" full disabled={loading} onPress={step1} />
-          </Card>
+            <PillButton label="Devam Et" primary disabled={loading} onPress={step1} />
+          </View>
         )}
 
         {step === 1 && (
-          <Card style={{ gap: 20 }}>
+          <View style={{ gap: 20 }}>
             {header(2, 'Şehir Seçimi', 'Hangi şehirde buluşmak istediğini seç. Yaşadığın şehir değil, katılmak istediğin şehir.')}
             <ListPicker label="Ana Şehir *" value={f.primaryCityId} onChange={v => setF(p => ({ ...p, primaryCityId: v, district: '' }))} options={sortedCities.map(x => ({ value: x.id, label: cityLabel(x.name) }))} placeholder="Şehir seç" title="Ana şehir seç" />
             {districtOptions.length > 0 && <ListPicker key={f.primaryCityId} label="İlçe *" value={f.district} onChange={v => set('district', v)} options={districtOptions.map(d => ({ value: d, label: d }))} placeholder="İlçe seç" title="İlçe" searchable searchPlaceholder="İlçe ara" />}
@@ -238,15 +239,15 @@ export default function Kayit() {
               <T style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 16.5 }}>Farklı bir şehirde olduğun haftalarda profilindeki &quot;Bu Hafta Hangi Şehirdesiniz?&quot; kartından geçici şehir seçebilirsin.</T>
             </View>
             {!!error && <T style={{ color: tw.accent, fontSize: 13 }}>{error}</T>}
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
-              <BtnGhost label="Geri" onPress={() => { setStep(0); setError(''); }} />
-              <BtnPrimary label={loading ? 'Kaydediliyor…' : 'Devam Et'} style={{ flex: 1 }} disabled={loading} onPress={step2} />
+            <View style={{ gap: 12, marginTop: 4 }}>
+              <PillButton label={loading ? 'Kaydediliyor…' : 'Devam Et'} primary disabled={loading} onPress={step2} />
+              <PillButton label="Geri" onPress={() => { setStep(0); setError(''); }} />
             </View>
-          </Card>
+          </View>
         )}
 
         {step === 2 && (
-          <Card style={{ gap: 16 }}>
+          <View style={{ gap: 16 }}>
             {questions.length === 0 ? <View style={{ paddingVertical: 64, alignItems: 'center' }}><Spinner /></View> : (
               <TestFlow questions={questions} current={tCurrent} answers={answers} submitting={tSubmitting}
                 onPick={v => { const q = questions[tCurrent]; if (q) setAnswers(p => ({ ...p, [q.id]: v })); }}
@@ -254,11 +255,11 @@ export default function Kayit() {
                 onNext={() => { const q = questions[tCurrent]; if (!q || answers[q.id] === undefined) return; if (tCurrent === questions.length - 1) submitTest(); else setTCurrent(x => x + 1); }} />
             )}
             <ErrorText>{error}</ErrorText>
-          </Card>
+          </View>
         )}
 
         {step === 3 && (
-          <Card style={{ gap: 20 }}>
+          <View style={{ gap: 20 }}>
             {header(4, 'Eşleşmenizin yapılacağı mekan ortamı nasıl olsun istersiniz?')}
             <View style={{ backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.25)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
               <T style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 16.5 }}>Bu tercih, sizi doğru mekan ortamındaki kişilerle eşleştirmek için kullanılır. İstediğiniz zaman profilinizden değiştirebilirsiniz.</T>
@@ -282,12 +283,12 @@ export default function Kayit() {
               })}
             </View>
             {!!error && <T style={{ color: tw.accent, fontSize: 13 }}>{error}</T>}
-            <BtnPrimary label={loading ? 'Kaydediliyor…' : 'Devam Et'} full disabled={loading || !f.venuePreference} onPress={step3} />
-          </Card>
+            <PillButton label={loading ? 'Kaydediliyor…' : 'Devam Et'} primary disabled={loading || !f.venuePreference} onPress={step3} />
+          </View>
         )}
 
         {step === 4 && (
-          <Card style={{ gap: 20 }}>
+          <View style={{ gap: 20 }}>
             {header(5, 'Numara Engelleme', 'Tanıdıklarınla karşılaşmak istemiyorsan numara ekleyebilirsin.')}
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <View style={{ justifyContent: 'center', paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12 }}><T style={{ color: ll.label, fontSize: 13 }}>+90</T></View>
@@ -307,10 +308,10 @@ export default function Kayit() {
               </View>
             )}
             {!!error && <T style={{ color: tw.accent, fontSize: 13 }}>{error}</T>}
-            <BtnPrimary label={loading ? 'Kaydediliyor…' : 'Tamamla →'} full disabled={loading} style={{ marginTop: 4 }} onPress={finish} />
+            <View style={{ marginTop: 4 }}><PillButton label={loading ? 'Kaydediliyor…' : 'Tamamla →'} primary disabled={loading} onPress={finish} /></View>
             <ContactPicker visible={picker} onClose={() => setPicker(false)} existing={f.contactNumbers} remaining={50 - f.contactNumbers.length}
               onPick={(ps) => setF(p => ({ ...p, contactNumbers: [...p.contactNumbers, ...ps.filter(x => normalizeTrPhone(x) && !p.contactNumbers.includes(x))].slice(0, 50) }))} />
-          </Card>
+          </View>
         )}
       </ScrollView>
     </KeyboardAvoidingView>

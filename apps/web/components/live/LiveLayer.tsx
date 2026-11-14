@@ -93,6 +93,9 @@ function Countdown({ day, targetAt }: { day: number; targetAt?: number | null })
 
 // Seviye rengi: 1 en opak, 4 en soluk
 const LEVEL_ALPHA = { 1: 'd9', 2: 'a6', 3: '73', 4: '4d' } as const;
+// Tarama bekleme durumu: yoğunluk kartları "Düşük" kartının grisinde, yazı "Tarama bekleniyor"
+const WAIT_CELL = `${LEVELS[4].color}${LEVEL_ALPHA[4]}`;
+const WAIT_TEXT = 'Tarama bekleniyor';
 
 // Yoğunluk sırasına göre üç bant; bant içinde sıra ilerledikçe renk solar
 function heatColor(index: number, count: number) {
@@ -106,11 +109,12 @@ function heatColor(index: number, count: number) {
   return `rgba(255,255,255,${mix(0.08, 0.045)})`;
 }
 
-export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, scanOff, tab, statuses, tabPastClosing, onTab, notice, participation }: {
+export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, scanOff, scanWaiting = false, tab, statuses, tabPastClosing, onTab, notice, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
   tabSeatsLeft: number | null; // Kullanıcının masasındaki boş sandalye; masası yoksa null
   scanOff?: boolean; // Kurulmuş masası admin tarafından iptal edildi: tarama animasyonu başlamaz
+  scanWaiting?: boolean; // Tarama bekleme durumu (useMasaTabs isScanWaiting): ışık durur, noktalar ve yoğunluk kartları gri
   meetingAt: string | null; // Kurulmuş aktif masanın buluşma anı (buluşmadan 3 saat sonrasına kadar); yoksa null
   tab: MasaTuru;
   statuses: Record<MasaTuru, TabStatus>;
@@ -160,8 +164,8 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
           </p>
         </section>
 
-        <div className={scanOff || statuses[tab] === 'KYC' || statuses[tab] === 'KANKA' ? 'll-scan-off' : undefined}>
-          <LiveSonar sonar={pulse?.sonar ?? null} />
+        <div className={scanOff || scanWaiting || statuses[tab] === 'KYC' || statuses[tab] === 'KANKA' ? 'll-scan-off' : undefined}>
+          <LiveSonar sonar={pulse?.sonar ?? null} waiting={scanWaiting} />
         </div>
         <div key={tab} className="ll-fade">{participation}</div>
         <LiveFeed feed={pulse?.feed ?? null} />
@@ -174,18 +178,18 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
           {overview?.density ? (
             <div className="ll-heat">
               {overview.density.districts.map((d) => (
-                <div key={d.name} className="ll-heat-cell" style={{ background: `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }}>
+                <div key={d.name} className="ll-heat-cell" style={{ background: scanWaiting ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }}>
                   <span style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-                  <span className="ll-mono" style={{ fontSize: d.percent === null ? 11 : 15 }}>{d.percent === null ? LEVELS[d.level].label : `%${d.percent}`}</span>
+                  <span className="ll-mono" style={{ fontSize: scanWaiting || d.percent === null ? 11 : 15 }}>{scanWaiting ? WAIT_TEXT : d.percent === null ? LEVELS[d.level].label : `%${d.percent}`}</span>
                 </div>
               ))}
             </div>
           ) : overview?.heatmap.length ? (
             <div className="ll-heat">
               {overview.heatmap.map((d, i) => (
-                <div key={d.name} className="ll-heat-cell" style={{ background: heatColor(i, overview.heatmap.length) }}>
+                <div key={d.name} className="ll-heat-cell" style={{ background: scanWaiting ? WAIT_CELL : heatColor(i, overview.heatmap.length) }}>
                   <span style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-                  <span className="ll-mono" style={{ fontSize: 15 }}>%{d.percent}</span>
+                  <span className="ll-mono" style={{ fontSize: scanWaiting ? 11 : 15 }}>{scanWaiting ? WAIT_TEXT : `%${d.percent}`}</span>
                 </div>
               ))}
             </div>

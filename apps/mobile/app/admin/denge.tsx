@@ -97,7 +97,7 @@ export default function AdminBots() {
             );
           })}
       </ACard>
-      <ADialog visible={!!modal} onClose={() => setModal(null)} title={modal === 'add' ? 'Yeni Bot' : 'Botu Düzenle'} maxWidth={420}>
+      <ADialog visible={!!modal} onClose={() => setModal(null)} title={modal === 'add' ? 'Yeni Bot' : 'Botu Düzenle'} maxWidth={420} keyboardScroll>
         <View style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <AInput value={form.firstName} onChangeText={v => set('firstName', v)} placeholder="Ad" style={{ flex: 1, paddingHorizontal: 12 }} />

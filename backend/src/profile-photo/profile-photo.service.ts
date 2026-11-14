@@ -6,7 +6,7 @@ import { KycStatus, ProfilePhotoStatus } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { detectImageKind, ImageKind, toWebp } from "../common/image-webp";
-import { PROFILE_PHOTO_DIR, profilePhotoUrl } from "./profile-photo.util";
+import { PROFILE_PHOTO_DIR, photoSizes, profilePhotoUrl, smallPhotoName } from "./profile-photo.util";
 
 const PHOTO_KINDS: ImageKind[] = ["jpg", "png", "webp", "heic", "heif"];
 export const KYC_REQUIRED_MESSAGE = "Profil fotoğrafı kimlik doğrulamasından sonra yüklenebilir.";
@@ -20,8 +20,10 @@ export class ProfilePhotoService {
     return path.join(PROFILE_PHOTO_DIR, userId, fileName);
   }
 
+  // Büyük (1080) ve küçük (200) dosya birlikte silinir
   private removeFile(userId: string, fileName: string) {
     fs.rmSync(this.filePath(userId, fileName), { force: true });
+    fs.rmSync(this.filePath(userId, smallPhotoName(fileName)), { force: true });
   }
 
   // Kullanıcı: yükle (yalnız KYC onaylıysa). Önceki onay bekleyen fotoğraf varsa dosya + kayıt silinir; onaylı fotoğraf onaya kadar kalır
@@ -31,11 +33,12 @@ export class ProfilePhotoService {
     if (!file?.buffer?.length) throw new BadRequestException("Fotoğraf seçilmedi");
     const kind = detectImageKind(file.buffer);
     if (!kind || !PHOTO_KINDS.includes(kind)) throw new BadRequestException("Fotoğraf JPEG, PNG, WebP, HEIC veya HEIF olmalı");
-    const webp = await toWebp(file.buffer, kind);
+    const { large, small } = await photoSizes(await toWebp(file.buffer, kind));
     const dir = path.join(PROFILE_PHOTO_DIR, userId);
     fs.mkdirSync(dir, { recursive: true });
     const fileName = `p-${Date.now()}-${randomBytes(6).toString("hex")}.webp`;
-    fs.writeFileSync(path.join(dir, fileName), webp);
+    fs.writeFileSync(path.join(dir, fileName), large);
+    fs.writeFileSync(path.join(dir, smallPhotoName(fileName)), small);
 
     const oldPending = await this.prisma.profilePhoto.findMany({ where: { userId, status: ProfilePhotoStatus.PENDING } });
     await this.prisma.$transaction([
@@ -53,10 +56,11 @@ export class ProfilePhotoService {
     return { photoUrl: approved ? profilePhotoUrl(userId, approved.fileName) : null, pending: rows.some((r) => r.status === ProfilePhotoStatus.PENDING) };
   }
 
-  // Herkese açık sunum: yalnız onaylı kayıt
+  // Herkese açık sunum: yalnız onaylı kayıt; büyük (p-…webp) ya da küçük (p-….s.webp) dosya
   async publicFile(userId: string, fileName: string): Promise<string> {
-    if (!/^[a-z0-9]+$/i.test(userId) || !/^p-\d+-[a-f0-9]{12}\.webp$/.test(fileName)) throw new NotFoundException();
-    const row = await this.prisma.profilePhoto.findFirst({ where: { userId, fileName, status: ProfilePhotoStatus.APPROVED }, select: { id: true } });
+    const m = /^(p-\d+-[a-f0-9]{12})(\.s)?\.webp$/.exec(fileName);
+    if (!/^[a-z0-9]+$/i.test(userId) || !m) throw new NotFoundException();
+    const row = await this.prisma.profilePhoto.findFirst({ where: { userId, fileName: `${m[1]}.webp`, status: ProfilePhotoStatus.APPROVED }, select: { id: true } });
     const fp = this.filePath(userId, fileName);
     if (!row || !fs.existsSync(fp)) throw new NotFoundException();
     return fp;

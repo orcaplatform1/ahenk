@@ -1,6 +1,6 @@
 // Sekme 1 — Eşleşme Paneli: apps/web/app/dashboard/page.tsx + components/live/LiveLayer.tsx
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Easing, ScrollView, StyleSheet, View } from 'react-native';
 import { useReduceMotion } from '@/lib/motion';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useIsFocused, useRouter } from 'expo-router';
@@ -30,6 +30,9 @@ const TABLE_TEXT: Record<MasaTuru, { title: string; note: string }> = {
 };
 const OCEAN_LABEL: Record<OceanKey, string> = { openness: 'Açıklık', conscientiousness: 'Sorumluluk', extraversion: 'Dışadönüklük', agreeableness: 'Uyumluluk', neuroticism: 'Duygusal Denge' };
 const LEVEL_ALPHA = { 1: 'd9', 2: 'a6', 3: '73', 4: '4d' } as const;
+// Tarama bekleme durumu: yoğunluk kartları "Düşük" kartının grisinde, yazı "Tarama bekleniyor"
+const WAIT_CELL = `${LEVELS[4].color}${LEVEL_ALPHA[4]}`;
+const WAIT_TEXT = 'Tarama bekleniyor';
 
 function heatColor(index: number, count: number) {
   const band = count <= 1 ? 0 : Math.min(2, Math.floor((index / count) * 3));
@@ -109,7 +112,7 @@ function label(initials: string) {
 export default function EslesmePaneli() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, scanning, selfParticipant, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
+  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, scanning, selfParticipant, tabAdminCancelled, selection, submitSelection, scanWaiting } = useMasaTabs();
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
   const tabItem = rawTabItem && Date.now() < Date.parse(rawTabItem.meeting.scheduledAt) + MEETING_GRACE_MS ? rawTabItem : undefined;
@@ -160,8 +163,6 @@ export default function EslesmePaneli() {
             {/* Geri sayım */}
             <View style={[st.card, { borderColor: 'rgba(232,162,122,0.22)', overflow: 'hidden' }]}>
               <LinearGradient colors={['rgba(214,69,58,0.14)', 'rgba(255,255,255,0.02)']} locations={[0, 0.6]} start={{ x: 0.33, y: 0.03 }} end={{ x: 0.67, y: 0.97 }} style={StyleSheet.absoluteFill} />
-              {hasTabTable && statuses[tab] === 'FORMING' && <Image source={require('@/assets/maskot/jantihaydar_run.webp')} style={st.maskot} resizeMode="contain" />}
-              {!hasTabTable && <Image source={require('@/assets/maskot/jantihaydar_stop.webp')} style={st.maskot} resizeMode="contain" />}
               <Eyebrow>{meetingTarget !== null ? 'Buluşmanıza kalan süre' : waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</Eyebrow>
               <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} targetAt={meetingTarget} />
               <T style={{ fontSize: 13, color: ll.text2, lineHeight: 19.5 }}>
@@ -172,7 +173,7 @@ export default function EslesmePaneli() {
             </View>
 
 
-            <LiveSonar sonar={pulse?.sonar ?? null} scanOff={scanOff} />
+            <LiveSonar sonar={pulse?.sonar ?? null} scanOff={scanOff} waiting={scanWaiting} />
 
             {/* Katılım */}
             {tab === 'GROUP' ? (
@@ -226,18 +227,19 @@ export default function EslesmePaneli() {
               {overview?.density ? (
                 <View style={st.heat}>
                   {overview.density.districts.map((d) => (
-                    <View key={d.name} style={[st.heatCell, { backgroundColor: `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }]}>
+                    // Bekleme durumunda bütün kartlar "Düşük" grisinde, yoğunluk yerine "Tarama bekleniyor"
+                    <View key={d.name} style={[st.heatCell, { backgroundColor: scanWaiting ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }]}>
                       <T w={700} numberOfLines={1} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
-                      <Mono style={{ fontSize: d.percent === null ? 11 : 15, color: tw.text }}>{d.percent === null ? LEVELS[d.level].label : `%${d.percent}`}</Mono>
+                      <Mono style={{ fontSize: scanWaiting || d.percent === null ? 11 : 15, color: tw.text }}>{scanWaiting ? WAIT_TEXT : d.percent === null ? LEVELS[d.level].label : `%${d.percent}`}</Mono>
                     </View>
                   ))}
                 </View>
               ) : overview?.heatmap.length ? (
                 <View style={st.heat}>
                   {overview.heatmap.map((d, i) => (
-                    <View key={d.name} style={[st.heatCell, { backgroundColor: heatColor(i, overview.heatmap.length) }]}>
+                    <View key={d.name} style={[st.heatCell, { backgroundColor: scanWaiting ? WAIT_CELL : heatColor(i, overview.heatmap.length) }]}>
                       <T w={700} numberOfLines={1} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
-                      <Mono style={{ fontSize: 15, color: tw.text }}>%{d.percent}</Mono>
+                      <Mono style={{ fontSize: scanWaiting ? 11 : 15, color: tw.text }}>{scanWaiting ? WAIT_TEXT : `%${d.percent}`}</Mono>
                     </View>
                   ))}
                 </View>
@@ -285,7 +287,6 @@ const FEED_VISIBLE_HEIGHT = 15 * (12 + 17.25 + 1);
 const st = StyleSheet.create({
   column: { width: '100%', maxWidth: llColumn.maxWidth, alignSelf: 'center', paddingTop: llColumn.padTop, paddingHorizontal: llColumn.padH, paddingBottom: llColumn.padBottom, gap: llColumn.gap },
   card: { borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 18 },
-  maskot: { width: 80, height: 80 * 1639 / 960, alignSelf: 'center' },
   feedRow: { flexDirection: 'row', gap: 8, alignItems: 'baseline', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
   heat: { flexDirection: 'row', flexWrap: 'wrap', gap: heat.gap },
   heatCell: { width: '31.9%', height: heat.height, borderRadius: heat.radius, padding: heat.padding, justifyContent: 'space-between' },
