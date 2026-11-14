@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
-import { api } from '@/lib/api';
+import { api, prefetch } from '@/lib/api';
 import { mediaUrl } from '@/lib/venueApi';
 import { requestSosAlwaysPermission, startSosLive } from '@/lib/sosLive';
 import { formatMeetingTime, gColor, type MasaTuru } from '@/lib/masa';
@@ -376,7 +376,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
     <View>
       {lightbox !== null && <Lightbox photos={photos} start={lightbox} onClose={() => setLightbox(null)} />}
       <PhotoViewer url={viewer?.url ?? null} visible={!!viewer} onClose={() => setViewer(null)}
-        onEdit={viewer?.self ? () => { setViewer(null); pickAndUploadProfilePhoto(true).catch(() => undefined); } : undefined} />
+        onEdit={viewer?.self ? () => { setViewer(null); pickAndUploadProfilePhoto(true).then((ok) => { if (ok) prefetch(['/auth/me']); }).catch(() => undefined); } : undefined} />
       {showSos && <SosModal selected={threats} onToggle={t => setThreats(p => (p.includes(t) ? p.filter(x => x !== t) : [...p, t]))} onConfirm={handleSos}
         onClose={() => { setShowSos(false); setLocError(null); setSosError(''); setThreats([]); }} loading={sosLoading} locError={locError} error={sosError} />}
 

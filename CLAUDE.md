@@ -163,6 +163,7 @@ PROFİL FOTOĞRAFI (web + mobil):
     yoksa kısaltma görünür. Yeni yükleme önceki onay bekleyen fotoğrafı (dosya + kayıt) siler
   - Yükleyince "Fotoğrafın onay sürecinde." mesajı; onay bekleyen fotoğrafı olanda Profilim'deki profil dairesinin altında küçük punto
     "Fotoğrafın onay sürecinde." (/auth/me profilePhotoPending); onay ya da retle kaybolur (web + mobil)
+  - Mobilde masa kartından fotoğraf yüklenince kullanıcı bilgisi (/auth/me) yenilenir; Profilim'deki "Fotoğrafın onay sürecinde." hemen görünür
   - Admin onayı: yeni fotoğraf geçerli, önceki onaylı fotoğraf dosya + kayıt silinir. Admin reddi: yeni fotoğraf dosya + kayıt
     silinir, önceki onaylı kalır, kullanıcıya bildirim "Yüklediğin fotoğraf kimliğindeki fotoğrafla eşleşmiyor."
   - Dosyalar uploads/profile-photos/<userId>/ altında WebP; onaylılar GET /media/profile-photos/:userId/:file ile herkese açık
@@ -187,9 +188,11 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     altında tam genişlikte yuvarlak üç buton: "Telefon Numarası ile devam et" (telefon ikonu), "E-posta ile devam et" (zarf ikonu), "Kayıt Ol"
   - Telefon → "Numaranı alabilir miyiz?" (TR +90 + numara, İlerle) → WhatsApp kod ekranı. E-posta → "E-postan nedir?" (İlerle) →
     "Şifreni gir" (Giriş Yap, Şifremi unuttum). Kayıt Ol → mevcut kayıt akışı. Giriş adımlarında sol üstte geri ok
-  - Mobil uygulamadaki bütün "Çıkış" butonlarında (Profilim "Çıkış Yap" ve Yönetim Paneli "Çıkış", ortak components/LogoutChoice.tsx)
-    "Bu cihazda beni hatırla" / "Bu cihazda beni unut" / "Vazgeç"; admin çıkışında da aynı akış (Tekrar hoş geldin → admin Yönetim
-    Paneli'ne girer). Unut: oturum kapanır, hatırlama bilgisi silinir.
+  - Mobil uygulamadaki "Çıkış" butonları ortak components/LogoutChoice.tsx kullanır. Kullanıcı hesabında (Profilim "Çıkış Yap")
+    "Bu cihazda beni hatırla" / "Bu cihazda beni unut" / "Vazgeç". Admin hesabında (Yönetim Paneli "Çıkış") yalnız "Bu cihazda beni unut"
+    ve "Vazgeç"; "Bu cihazda beni hatırla" yoktur. Admin hesabında hatırlama bilgisi hiçbir koşulda cihaza kaydedilmez; "Tekrar hoş
+    geldin" ekranı, Face ID ve parmak iziyle giriş yoktur; admin her girişte normal giriş ekranından şifreyle girer.
+    Unut: oturum kapanır, hatırlama bilgisi silinir.
     Hatırla: oturum kapanır, yenileme token'ı ve ad cihazda (secure-store) saklanır; açılışta "Tekrar hoş geldin, [ad]!" + "Giriş Yap"
     (aynı arka plan, altta yasal metin) → Face ID / parmak izi (expo-local-authentication) → "Cihaz Doğrulandı" (palet renginde onay
     dairesi) → şifresiz giriş. Başarısız ya da cihazda yoksa normal giriş ekranı. Yeni girişte hatırlama bilgisi silinir

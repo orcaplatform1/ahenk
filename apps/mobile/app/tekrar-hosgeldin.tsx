@@ -48,10 +48,11 @@ export default function TekrarHosgeldin() {
     // Hatırlanan token yenilemede tüketildi; yeni oturum token'ları aktif. Hatırlama bilgisi sonraki "beni hatırla" çıkışında yeniden yazılır
     await forgetDevice();
     if (r !== 'ok') { setBusy(false); router.replace('/giris'); return; }
-    setVerified(true);
     const me = await api.get<{ role?: string }>('/auth/me').catch(() => null);
-    const admin = me?.role === 'ADMIN' || me?.role === 'SUPERADMIN';
-    setTimeout(() => router.replace(admin ? '/admin' : '/(tabs)'), VERIFIED_MS);
+    // Admin hesabında hatırlanan giriş yoktur: oturum kapanır, normal giriş ekranından şifreyle girilir
+    if (me?.role === 'ADMIN' || me?.role === 'SUPERADMIN') { await api.logout(); setBusy(false); router.replace('/giris'); return; }
+    setVerified(true);
+    setTimeout(() => router.replace('/(tabs)'), VERIFIED_MS);
   }
 
   if (verified) {

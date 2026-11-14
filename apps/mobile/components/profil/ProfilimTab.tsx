@@ -379,7 +379,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
           : <BtnGhost label="Hesabımı Sil" redDot style={accountBtn.box} textStyle={[accountBtn.text, { color: tw.primaryHover }]} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
       </View>
 
-      <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} firstName={user.firstName} onLoggedOut={onLoggedOut} />
+      <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} firstName={user.firstName} onLoggedOut={onLoggedOut} remember={user.role !== 'ADMIN' && user.role !== 'SUPERADMIN'} />
 
       <ModalBox visible={deleteOpen} onClose={() => setDeleteOpen(false)} title="Hesabımı Sil" opaque>
         <T style={{ fontSize: 14, color: ll.text2, lineHeight: 22.75 }}>
