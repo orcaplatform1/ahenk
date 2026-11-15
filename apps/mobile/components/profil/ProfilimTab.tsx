@@ -382,8 +382,6 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
       </CardP>
 
       <View style={{ alignItems: 'center', gap: 12, paddingBottom: 8 }}>
-        <BtnGhost label="Çıkış Yap" style={accountBtn.box} textStyle={accountBtn.text} onPress={() => setLogoutOpen(true)} />
-        <BtnGhost label={logoutAllBusy ? 'Çıkış yapılıyor…' : 'Tüm cihazlardan çıkış yap'} style={accountBtn.box} textStyle={accountBtn.text} disabled={logoutAllBusy} onPress={logoutAll} />
         {/* Yasal bağlantılar: web sitesindeki sayfalar uygulama içi tarayıcıda açılır. Satırlar en az 44 pt (HIG dokunma alanı) */}
         <Card style={{ alignSelf: 'stretch', paddingVertical: 4 }}>
           {LEGAL_LINKS.map((l, i) => (
@@ -394,6 +392,8 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
             </Pressable>
           ))}
         </Card>
+        <BtnGhost label="Çıkış Yap" style={accountBtn.box} textStyle={accountBtn.text} onPress={() => setLogoutOpen(true)} />
+        <BtnGhost label={logoutAllBusy ? 'Çıkış yapılıyor…' : 'Tüm cihazlardan çıkış yap'} style={accountBtn.box} textStyle={accountBtn.text} disabled={logoutAllBusy} onPress={logoutAll} />
         {/* Çıkış ile Hesabımı Sil arasında küçük uygulama logosu ve sürüm */}
         <View style={{ alignItems: 'center', gap: 6, paddingVertical: 4 }}>
           <Image source={require('@/assets/app-icon-small.png')} style={{ width: 40, height: 40, borderRadius: 10 }} accessibilityLabel="Ahenk" />
@@ -405,7 +405,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
           : <BtnGhost label="Hesabımı Sil" redDot style={accountBtn.box} textStyle={[accountBtn.text, { color: tw.primaryHover }]} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
       </View>
 
-      <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} firstName={user.firstName} onLoggedOut={onLoggedOut} remember={user.role !== 'ADMIN' && user.role !== 'SUPERADMIN'} />
+      <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} firstName={user.firstName} onLoggedOut={onLoggedOut} />
 
       <ModalBox visible={deleteOpen} onClose={() => setDeleteOpen(false)} title="Hesabımı Sil" opaque>
         <T style={{ fontSize: 14, color: ll.text2, lineHeight: 22.75 }}>

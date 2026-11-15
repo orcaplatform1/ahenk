@@ -178,10 +178,10 @@ const sections = [
           {[
             'Yalnızca kimlik doğrulama amacıyla işlenir',
             'Kullanıcının açık rızasıyla alınır',
-            'Cloudflare R2 private bucket\'ta AES-256 şifrelemeyle saklanır',
-            'Yalnızca imzalı URL ile yetkili admin personeli tarafından erişilebilir',
+            'Ahenk\'in kendi sunucusunda AES-256-GCM ile şifreli saklanır',
+            'Yalnızca yetkili admin personeli tarafından, yetkili uç üzerinden bellekte çözülmüş hâliyle görüntülenebilir',
             'Üçüncü taraflarla paylaşılmaz',
-            '10 yıl süreyle saklanır',
+            'Hesap silinene kadar saklanır; yeniden başvuruda önceki dosyalar, hesap silinince dosyalar ve kayıt silinir',
           ].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -201,11 +201,11 @@ const sections = [
           <strong style={{ color: '#f4f1ec' }}>iyzico Ödeme Hizmetleri A.Ş.</strong>
           : ödeme ve paket işlemleri için zorunlu finansal veriler aktarılır; iyzico kendi KVKK yükümlülüklerini yerine getirmektedir.
         </p>
-        <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Yurt Dışı Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
-          <strong style={{ color: '#f4f1ec' }}>Cloudflare Inc. (ABD)</strong>
-          : kimlik belgeleri ve liveness videosu R2 private bucket'ta saklanır. Bu aktarım AB Standart Sözleşme Maddeleri (SCCs) ve Cloudflare'in veri işleme sözleşmesi kapsamında gerçekleştirilir.
+          <strong style={{ color: '#f4f1ec' }}>Kimlik belgeleri ve liveness videosu</strong>
+          : yurt dışına aktarılmaz; Ahenk&apos;in kendi sunucusunda AES-256-GCM ile şifreli saklanır.
         </p>
+        <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Yurt Dışı Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Google Analytics ve Meta Pixel</strong>
           : bu araçlar aracılığıyla çerez verisi işlenir. Bu veri yurt dışındaki sunuculara aktarılabilir. Aktarım açık rızanıza dayanır ve rızanızı çerez tercihlerinden her zaman geri alabilirsiniz.
@@ -232,9 +232,9 @@ const sections = [
       <div>
         {[
           ['Kullanıcı hesap ve profil verileri', 'Hesap silinene kadar + 2 yıl'],
-          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl, yasal yükümlülük'],
+          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', 'Hesap silinene kadar; yeniden başvuruda önceki dosyalar, hesap silinince dosyalar ve kayıt silinir'],
           ['OCEAN test sonuçları', 'Hesap aktif olduğu sürece; hesap silindiğinde imha edilir'],
-          ['Ödeme ve fatura kayıtları', '10 yıl, Vergi Usul Kanunu'],
+          ['Ödeme ve fatura kayıtları', '5 yıl, Vergi Usul Kanunu'],
           ['Rehber engelleme için eklenen telefon numaraları', 'Kullanıcı tarafından silinene kadar'],
           ['IP adresi ve oturum logları', '2 yıl'],
         ].map(([label, value], i, arr) => (

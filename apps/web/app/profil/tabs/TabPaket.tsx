@@ -332,11 +332,14 @@ export function TabPaket({ maintenanceMode = false }: Props) {
 
       {error && <p className="text-accent text-sm">{error}</p>}
 
-      <div className="flex flex-col gap-3">
+      {/* 2 sütunlu grid: Grup + Baş Başa, Kankamla + İçerde, Prime Paket tam genişlik; dar ekranda tek sütun */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
         {CARDS.map((card) => {
           const st = stateOf(card.key);
           return (
-            <PaketKarti key={card.key} card={card} badge={st.badge} blocked={st.blocked} onClick={() => { setDetail(card.key); setError(''); window.scrollTo({ top: 0, behavior: 'instant' }); }} />
+            <div key={card.key} className={card.key === 'PRIME' ? 'sm:col-span-2' : undefined}>
+            <PaketKarti card={card} badge={st.badge} blocked={st.blocked} onClick={() => { setDetail(card.key); setError(''); window.scrollTo({ top: 0, behavior: 'instant' }); }} />
+            </div>
           );
         })}
       </div>

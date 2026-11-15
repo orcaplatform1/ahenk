@@ -5,6 +5,9 @@ import { Prisma, SanctionType, SubscriptionStatus, UserRole, UserStatus } from "
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { endKankaLinks } from "../kanka/kanka-links";
+import * as path from "path";
+import { PROFILE_PHOTO_DIR } from "../profile-photo/profile-photo.util";
+import { PROBLEM_REPORT_DIR } from "../problem-reports/problem-reports.service";
 
 // Silinen hesabın masa geçmişini ve değerlendirmelerini taşıyan, kimliksiz yer tutucu satırın e-posta öneki
 export const DELETED_PLACEHOLDER_PREFIX = "silinmis-masa-";
@@ -111,6 +114,9 @@ export class AccountDeletionService {
       ? { firstName: user.profile?.firstName ?? null, lastName: user.profile?.lastName ?? null, email: user.email, phone: user.phone }
       : Prisma.JsonNull;
 
+    // Sorun bildirimlerinin görsel klasörleri (kayıtlar transaction'da, dosyalar sonrasında silinir)
+    const problemReportIds = (await this.prisma.problemReport.findMany({ where: { userId }, select: { id: true } })).map((r) => r.id);
+
     const exKankas = await this.prisma.$transaction(async (tx) => {
       const { count } = await tx.accountDeletionRequest.updateMany({
         where: { id, status: "PENDING" },
@@ -145,6 +151,8 @@ export class AccountDeletionService {
       await tx.refreshToken.deleteMany({ where: { userId } });
       await tx.matchingWaitlist.deleteMany({ where: { userId } });
       await tx.winbackOffer.deleteMany({ where: { userId } });
+      await tx.profilePhoto.deleteMany({ where: { userId } });
+      await tx.problemReport.deleteMany({ where: { userId } });
       await tx.referral.updateMany({ where: { referredId: userId }, data: { invitedPhone: null } });
 
       // Kullanılmamış haklar kullanılamaz hâle gelir (Subscription kaydı saklanır)
@@ -181,6 +189,12 @@ export class AccountDeletionService {
       if (!file) continue;
       try { fs.unlinkSync(file); } catch (err) {
         if ((err as NodeJS.ErrnoException).code !== "ENOENT") this.logger.error(`KYC dosyası silinemedi: request=${id} ${err}`);
+      }
+    }
+    // Profil fotoğrafları (uploads/profile-photos/<userId>/) ve sorun bildirimi görselleri (uploads/problem-reports/<id>/) diskten silinir
+    for (const dir of [path.join(PROFILE_PHOTO_DIR, userId), ...problemReportIds.map((rid) => path.join(PROBLEM_REPORT_DIR, rid))]) {
+      try { fs.rmSync(dir, { recursive: true, force: true }); } catch (err) {
+        this.logger.error(`Dosya klasörü silinemedi: request=${id} ${err}`);
       }
     }
     for (const kankaId of exKankas) {

@@ -13,7 +13,7 @@ const SECTIONS: { title: string; body: string }[] = [
   { title: 'Hangi özellik için?', body: 'Konumun yalnızca Acil Yardım özelliği için kullanılır.' },
   {
     title: 'Ne zaman toplanır?',
-    body: 'Yalnızca bir masada Acil Yardım talebi gönderdiğinde, talep anında alınır. Talep gönderildikten sonra konumun, talep çözülene kadar yaklaşık 10 saniyede bir toplanmaya devam eder. "Her zaman" iznini verirsen konumun arka planda, uygulama kapalıyken veya kullanılmıyorken de toplanır. Talep çözülünce konum toplama durur. Diğer katılımcıların konumu alınmaz.',
+    body: 'Yalnızca bir masada Acil Yardım talebi gönderdiğinde, talep anında alınır. Talep gönderildikten sonra konumun, talep çözülene kadar yaklaşık 10 saniyede bir toplanmaya devam eder. "Her zaman" iznini verirsen konumun arka planda, uygulama kapalıyken veya kullanılmıyorken de toplanır; Android\'de telefon yeniden başlatılırsa açık talep için konum gönderimi uygulamayı açman gerekmeden yeniden başlar. Talep çözülünce konum toplama durur. Diğer katılımcıların konumu alınmaz.',
   },
   {
     title: 'Kiminle paylaşılır?',

@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { api, refreshAtLaunch } from '@/lib/api';
 import { forgetDevice, getRemembered, restoreRemembered } from '@/lib/session';
+import { isAdminRole, markAdminVerified } from '@/lib/adminLock';
 import { AuthBackground, useAuthBackgroundIndex, BackArrow, LegalNote, PillButton } from '@/components/AuthFlow';
 import { Serif, T } from '@/components/ui';
 import { ll, tw } from '@/theme/theme';
@@ -50,10 +51,11 @@ export default function TekrarHosgeldin() {
     await forgetDevice();
     if (r !== 'ok') { setBusy(false); router.replace('/giris'); return; }
     const me = await api.get<{ role?: string }>('/auth/me').catch(() => null);
-    // Admin hesabında hatırlanan giriş yoktur: oturum kapanır, normal giriş ekranından şifreyle girilir
-    if (me?.role === 'ADMIN' || me?.role === 'SUPERADMIN') { await api.logout(); setBusy(false); router.replace('/giris'); return; }
+    // ADMIN / SUPERADMIN de hatırlanan girişi kullanır: biyometri az önce doğrulandığı için yönetim paneli kilidi açık gelir
+    const admin = isAdminRole(me?.role);
+    if (admin) markAdminVerified();
     setVerified(true);
-    setTimeout(() => router.replace('/(tabs)'), VERIFIED_MS);
+    setTimeout(() => router.replace(admin ? '/admin' : '/(tabs)'), VERIFIED_MS);
   }
 
   if (verified) {

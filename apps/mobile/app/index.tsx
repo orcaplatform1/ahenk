@@ -7,6 +7,8 @@ import { useRouter } from 'expo-router';
 import { getAccess, getRemembered } from '@/lib/session';
 import { api, prefetch, refreshAtLaunch } from '@/lib/api';
 import { loadFonts, loadImages } from '@/lib/boot';
+import { lockAdminAtLaunch } from '@/lib/adminLock';
+import { setAdminIdentity } from '@/lib/adminRole';
 
 // Gidilecek ekranın ilk açılışta istediği GET uçları (ekranlar aynı yolları api.get ile çağırır, ön yüklenen yanıt kullanılır)
 const ADMIN_DATA = ['/admin/alerts', '/admin/stats/overview', '/admin/stats/cities', '/admin/dashboard'];
@@ -33,6 +35,8 @@ export default function Acilis() {
           const me = await api.get<{ role: string }>('/auth/me').catch(() => null);
           const admin = me?.role === 'ADMIN' || me?.role === 'SUPERADMIN';
           dest = admin ? '/admin' : '/(tabs)';
+          // Admin kalıcı oturumu: uygulama sıfırdan açılınca biyometrik doğrulama (kilit ekranı yönetim panelinin üstünde açılır)
+          if (admin && me) { setAdminIdentity({ id: (me as { id?: string }).id ?? '', role: me.role }); lockAdminAtLaunch(); }
           prefetch(admin ? ADMIN_DATA : MEMBER_DATA);
         }
       }

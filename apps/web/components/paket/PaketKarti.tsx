@@ -42,7 +42,7 @@ export function Arrow() {
 }
 
 
-// Tinder tarzı kart: tam genişlik, koyudan ortaya geçişli arka plan, solda kalın ad + GOLD tarzı rozet, altında tek satır açıklama, sağda ok
+// Tinder tarzı kart: bulunduğu hücrenin tam genişliği (paket listeleri 2 sütunlu grid), koyudan ortaya geçişli arka plan, solda kalın ad + GOLD tarzı rozet, altında tek satır açıklama, sağda ok
 export function PaketKarti({ card, badge, blocked, onClick }: { card: (typeof CARDS)[number]; badge?: string | null; blocked?: boolean; onClick: () => void }) {
   return (
     <button
@@ -61,7 +61,8 @@ export function PaketKarti({ card, badge, blocked, onClick }: { card: (typeof CA
     >
       <span className="flex flex-col gap-1 min-w-0">
         <span className="flex items-center gap-2 flex-wrap">
-          <span className="font-extrabold" style={{ fontSize: '1.25rem', letterSpacing: '0.01em', color: card.nameColor }}>{card.name}</span>
+          {/* Tipografi: landing "Prime Abonelik" kartı başlığıyla aynı (font-serif, normal ağırlık, text-2xl); açıklama text-sm sans */}
+          <span className="font-serif text-2xl" style={{ color: card.nameColor }}>{card.name}</span>
           <span
             className="rounded-full font-extrabold"
             style={{ fontSize: '0.62rem', letterSpacing: '0.08em', padding: '2px 8px', background: card.badgeBg, color: card.badgeFg, boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }}

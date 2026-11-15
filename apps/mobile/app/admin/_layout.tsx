@@ -41,6 +41,7 @@ export default function AdminLayout() {
   const insets = useSafeAreaInsets();
   const [ready, setReady] = useState(false);
   const [role, setRole] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState('');
   const [unread, setUnread] = useState(0);
   const [drawer, setDrawer] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -49,10 +50,10 @@ export default function AdminLayout() {
 
   useEffect(() => {
     let cancelled = false;
-    api.get<{ id: string; role: string }>('/auth/me').then(me => {
+    api.get<{ id: string; role: string; firstName?: string }>('/auth/me').then(me => {
       if (cancelled) return;
       if (me?.role !== 'ADMIN' && me?.role !== 'SUPERADMIN') { router.replace('/(tabs)'); return; }
-      setAdminIdentity({ id: me.id, role: me.role }); setRole(me.role); setReady(true);
+      setAdminIdentity({ id: me.id, role: me.role }); setRole(me.role); setFirstName(me.firstName ?? ''); setReady(true);
       api.get<{ unreadCount: number }>('/admin/alerts').then(d => setUnread(d.unreadCount ?? 0)).catch(() => {});
     }).catch(() => { if (!cancelled) router.replace('/giris'); });
     return () => { cancelled = true; };
@@ -70,7 +71,7 @@ export default function AdminLayout() {
   // kapanma animasyonu bitene kadar görünür kalıyor, panel açılırken ekran karanlık/soluk görünüyordu.
   useEffect(() => { if (drawerOpen.current) openDrawer(false); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Çıkış: admin için yalnız "Bu cihazda beni unut" / "Vazgeç" (beni hatırla yok). Çekmece Modal'ı kapanınca pencere açılır (iç içe Modal olmaz)
+  // Çıkış: "Bu cihazda beni hatırla" / "Bu cihazda beni unut" / "Vazgeç" (üyelerle aynı). Çekmece Modal'ı kapanınca pencere açılır (iç içe Modal olmaz)
   function logout() { openDrawer(false); setTimeout(() => setLogoutOpen(true), 300); }
   function loggedOut() { setAdminIdentity(null); router.replace('/giris'); }
   const go = (href: string) => { openDrawer(false); router.navigate(href as never); };
@@ -129,7 +130,7 @@ export default function AdminLayout() {
           </ScrollView>
         </Animated.View>
       </Modal>
-      <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} onLoggedOut={loggedOut} remember={false} />
+      <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} firstName={firstName} onLoggedOut={loggedOut} />
     </View>
   );
 }

@@ -10,7 +10,7 @@ import { PAY_INFO, openStoreSubscriptions, restoreStorePurchases, startPurchase 
 import { openLegal } from '@/lib/links';
 import { showAlert } from '@/components/AppAlert';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
-import { Btn, BtnGhost, BtnPrimary, Card, Head, MaintenanceNotice, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Card, Head, MaintenanceNotice, Serif, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
 import { useWinback } from '@/components/Winback';
 import { c, ll, sans, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
@@ -179,12 +179,11 @@ export default function Paketim() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 8 }}>
                 {PRIME_PLANS.map((pl) => {
                   const on = primePlan === pl.key;
-                  // 3 aylık plan: "Tercih Edilen" etiketi, altın çerçeve ve hafif altın geçişli arka plan (web TabPaket ile aynı)
+                  // 3 aylık plan: yalnız "Tercih Edilen" etiketi; kart diğer süre kartlarıyla aynı düz görünüm (seçili kartta kırmızı çerçeve)
                   const pref = pl.key === 'PRIME_3M';
                   return (
                     <Pressable key={pl.key} onPress={() => setPrimePlan(pl.key)} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                      style={{ width: '48%', minHeight: 56, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? ll.red : pref ? '#c9a227' : 'rgba(255,255,255,0.12)', backgroundColor: pref ? 'transparent' : on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)' }}>
-                      {pref && <LinearGradient colors={['rgba(201,162,39,0.22)', 'rgba(201,162,39,0.06)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 11 }} />}
+                      style={{ width: '48%', minHeight: 56, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? ll.red : 'rgba(255,255,255,0.12)', backgroundColor: on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)' }}>
                       <View style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
                         <T w={600} style={{ fontSize: 14, color: ll.text }}>{pl.label}</T>
                         <T style={{ fontSize: 12, color: ll.text2, marginTop: 2 }}>{priceView(pl.key).now ?? '—'} ₺</T>
@@ -302,7 +301,8 @@ export default function Paketim() {
                       style={{ paddingVertical: 18, paddingHorizontal: 20, minHeight: 76, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                       <View style={{ flex: 1, gap: 4 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <T w={800} style={{ fontSize: 20, lineHeight: 26, color: card.nameColor }}>{card.name}</T>
+                          {/* Tipografi: web PaketKarti / landing "Prime Abonelik" başlığıyla aynı (serif, normal ağırlık, 24/32); açıklama 14 sans */}
+                          <Serif style={{ fontSize: 24, lineHeight: 32, color: card.nameColor }}>{card.name}</Serif>
                           <LinearGradient colors={(card.badgeBg.length > 1 ? card.badgeBg : [card.badgeBg[0], card.badgeBg[0]]) as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                             style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
                             <T w={800} style={{ fontSize: 9.9, letterSpacing: 0.8, color: card.badgeFg }}>{(st.badge ?? card.badge).toLocaleUpperCase('tr-TR')}</T>

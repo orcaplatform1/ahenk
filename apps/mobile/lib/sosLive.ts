@@ -5,6 +5,9 @@
 // alınınca iOS'ta mavi konum göstergesiyle (showsBackgroundLocationIndicator, UIBackgroundModes location), Android'de ön plan hizmetiyle sürer.
 // SOS talebi gönderildikten sonra "Her zaman" izni istenir (yalnız SOS formunda); reddedilirse gönderim Kullanırken yöntemiyle sürer.
 // Android: killServiceOnDestroy false — uygulama kaydırılarak kapatılınca ön plan hizmeti ve gönderim durmaz.
+// Android yeniden başlatma: RECEIVE_BOOT_COMPLETED ile expo-task-manager (TaskBroadcastReceiver) açılışta kayıtlı konum görevini geri yükler;
+// görev yalnız açık talep varken kayıtlıdır (talep kapanınca stopSosLive kaydı siler). "Her zaman" izni olmadan sistem arka planda
+// konum vermez. Gönderim kullanıcı uygulamayı açmadan sürer; sunucu talebin kapandığını bildirirse ya da yerel talep kaydı yoksa durur.
 // iOS: expo-location görevi önemli konum değişikliği izlemesini (startMonitoringSignificantLocationChanges) her zaman başlatır;
 // "Her zaman" izni varsa iOS zorla kapatılan uygulamayı konum değişince yeniden başlatır, görev (app/_layout.tsx kaydı) gönderime devam eder.
 import * as Location from 'expo-location';
@@ -21,7 +24,9 @@ TaskManager.defineTask(SOS_LIVE_TASK, async ({ data, error }) => {
   const locs = (data as { locations?: Location.LocationObject[] } | undefined)?.locations;
   const last = locs?.[locs.length - 1];
   const reportId = await AsyncStorage.getItem(KEY);
-  if (!last || !reportId) return;
+  // Açık talep yoksa (ör. cihaz kapalıyken talep çözüldü, açılışta görev geri yüklendi) gönderim hiçbir şey yapmadan durur
+  if (!reportId) { await stopSosLive(); return; }
+  if (!last) return;
   try {
     const r = await api.post<{ active?: boolean }>(`/sos/reports/${reportId}/location`, {
       lat: last.coords.latitude, lng: last.coords.longitude, accuracy: last.coords.accuracy ?? undefined,

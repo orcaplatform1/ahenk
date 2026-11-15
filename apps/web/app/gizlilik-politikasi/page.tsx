@@ -88,7 +88,7 @@ const sections = [
           'Kullanıcı hesabının oluşturulması ve yönetilmesi',
           'Kimlik doğrulama sürecinin yürütülmesi ve güvenli platform ortamının sağlanması',
           'OCEAN kişilik modeline dayalı algoritmik eşleştirme ile uyumlu masa buluşmalarının organize edilmesi',
-          'OCEAN skorlarının yapay zeka destekli analizi ile masa uyum raporu oluşturulması (yalnızca toplu skor verisi kullanılır; bireysel kimlik bilgisi yapay zeka sistemine aktarılmaz)',
+          'Masa uyum raporu oluşturulması: buluşma günü sabahı onaylı masadaki her katılımcının OCEAN skorları ve cinsiyeti kişi başı olarak yapay zekâ hizmeti Anthropic\'e gönderilir; oluşan rapor masa katılımcılarına masa kartında gösterilir. Ad, iletişim ve kimlik bilgisi yapay zekâ sistemine aktarılmaz',
           'Paket satın alma ve ödeme işlemlerinin gerçekleştirilmesi',
           'Kullanıcıyla e-posta ve sistem bildirimleri aracılığıyla iletişim kurulması',
           'Yasal yükümlülüklerin yerine getirilmesi ve yetkili kurumlara bildirim yapılması',
@@ -145,7 +145,7 @@ const sections = [
           ['Kullanıcı hesap verileri', 'Hesap silinene kadar + 2 yıl'],
           ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', 'Hesap silinene kadar; yeniden başvuruda önceki dosyalar silinir, hesap silinince dosyalar ve kayıt silinir'],
           ['OCEAN testi sonuçları', 'Hesap aktif olduğu sürece'],
-          ['Ödeme kayıtları', '10 yıl, Vergi Usul Kanunu'],
+          ['Ödeme kayıtları', '5 yıl, Vergi Usul Kanunu'],
           ['Rehber engelleme için eklenen telefon numaraları', 'Kullanıcı silene kadar'],
         ].map(([label, value], i) => (
           <div

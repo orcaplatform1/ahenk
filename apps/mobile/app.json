@@ -17,7 +17,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Kimlik doğrulama için kimlik fotoğrafı ve canlılık videosu çekilir.",
         "NSMicrophoneUsageDescription": "Kimlik doğrulama canlılık videosu kaydı için gereklidir.",
-        "NSPhotoLibraryUsageDescription": "Profil fotoğrafını galerinden seçip yüklemek için fotoğraflarına erişim gerekir.",
+        "NSPhotoLibraryUsageDescription": "Profil fotoğrafını ve sorun bildirimi görsellerini galerinden seçip yüklemek için; yönetim paneli hesaplarında ayrıca bot ve mekân fotoğraflarını yüklemek için fotoğraflarına erişim gerekir.",
+        "NSFaceIDUsageDescription": "Yönetim paneli hesabınızı korumak için Face ID kullanılır.",
         "NSContactsUsageDescription": "Rehberindeki numaraları engelleme listesine eklemek için kullanılır.",
         "NSLocationWhenInUseUsageDescription": "Acil yardım talebinde bulunduğunda konumun emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Acil yardım talebinde bulunduğunda, uygulama kapansa bile konumun talep çözülene kadar emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir.",
@@ -194,13 +195,13 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_LOCATION",
         "android.permission.POST_NOTIFICATIONS"
       ],
       "blockedPermissions": [
-        "android.permission.WRITE_CONTACTS",
-        "android.permission.RECEIVE_BOOT_COMPLETED"
+        "android.permission.WRITE_CONTACTS"
       ],
       "intentFilters": [
         {
@@ -226,7 +227,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Bu cihazda hatırlanan hesabına Face ID ile giriş yapmak için kullanılır."
+          "faceIDPermission": "Yönetim paneli hesabınızı korumak için Face ID kullanılır."
         }
       ],
       "expo-font",

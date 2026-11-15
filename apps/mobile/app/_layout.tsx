@@ -10,6 +10,7 @@ import { loadFonts } from '@/lib/boot';
 import { onAuthLost } from '@/lib/api';
 import '@/lib/sosLive';
 import { AppAlertHost } from '@/components/AppAlert';
+import { AdminLockOverlay } from '@/components/AdminLockOverlay';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -46,6 +47,8 @@ export default function RootLayout() {
       </Stack>
       {/* Uygulama genelindeki uyarı penceresi (Alert.alert yerine Ahenk paletinde) */}
       <AppAlertHost />
+      {/* ADMIN / SUPERADMIN kalıcı oturumunda biyometrik kilit (açılışta ve 5 dk'dan uzun arka plan sonrası) */}
+      <AdminLockOverlay />
     </SafeAreaProvider>
   );
 }

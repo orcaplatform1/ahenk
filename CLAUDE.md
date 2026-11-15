@@ -86,7 +86,11 @@ KYC KURALLARI:
 - T.C. NO: web'de "Paket Al" / "Abone Ol" sonrası açılan ödeme ekranında "T.C. No:" alanı zorunlu (11 haneli rakam);
   altında not: "Ödeme altyapı hizmet sağlayıcı İyzico tarafından, mevzuat gereği satın alımlarda artık T.C.K.N. zorunludur."
   Numara yalnız iyzico'ya gönderilir, veritabanına kaydedilmez, her web ödemesinde yeniden sorulur. Mobil uygulama içi satın almada T.C. alanı yok
-- Dosyalar Cloudflare R2'de private, sadece imzalı URL ile admin görür
+- KYC dosyaları (ön yüz, arka yüz, canlılık videosu) Ahenk'in kendi sunucusunda (uploads/kyc/<userId>/) AES-256-GCM ile şifreli
+  "<ad>.<uzantı>.enc" olarak saklanır (backend/src/kyc/kyc-crypto.ts; anahtar backend/.env KYC_ENCRYPTION_KEY, 64 hex, .env izni 600).
+  Yalnız yetkili admin ucu GET /kyc/admin/file/:id/:type bellekte çözüp gönderir; çözülmüş hâli diske yazılmaz. Eski düz dosyalar
+  backend/scripts/kyc-encrypt-existing.js ile şifrelendi (şifreli kopya → çöz → bayt karşılaştır → düz orijinal silinir).
+  Anahtar kaybolursa KYC dosyaları kurtarılamaz; sunucu dışında yedeklenmeli
 
 ÖDEME SİSTEMİ (Modül 8):
 Tek seferlik paketler (kodlar korunur; haklar kullanılana kadar geçerli, döngü / süre sınırı yok):
@@ -138,8 +142,11 @@ Paket kartı rozetleri: Tinder GOLD tarzı hap, dolgu renkli, kalın, büyük ha
 Paket kartı tasarımı (web + mobil, landing dahil): premium; her kartta aynı renk ailesinde koyudan ortaya geçişli (gradient) arka plan,
   açık / soluk ton yok. Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, paket listesinde
   çerçeve palet kırmızısı (#d6453a), "Prime Paket" yazısı ve sağdaki ok #7A1F2B. Prime avantajlarının ilki "Her masada öncelikli
-  eşleşme hakkı". Prime detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen" etiketi; bu kart altın çerçeveli, hafif altın geçişli.
+  eşleşme hakkı". Prime detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen" etiketi. Web'de bu kart altın çerçeveli, hafif
+  altın geçişli; mobilde altın çerçeve / arka plan yok, diğer süre kartlarıyla aynı düz görünüm (etiket kalır).
   Seçili plan kartının çerçevesi Ahenk paleti kırmızısı (#d6453a); 3 aylık seçiliyse çerçeve kırmızı, etiket kalır (web + mobil).
+  Paket kartı tipografisi (web + mobil, bütün paket kartları ve "Prime Abonelik" kutusu): başlık serif (DM Serif Display), normal
+  ağırlık, web text-2xl (24/32) / mobil Serif 24/32; açıklama sans, normal ağırlık, 14 (text-sm). Renkler ve rozetler aynı
   Grup Paketi avantajı "Masada erkek ve kadın eşit sayı"
 Paket kartı yazıları (kart kısa açıklaması; avantajlar PaketKarti.tsx CARDS ve mobil paketim.tsx CARDS'ta aynı liste):
   Grup Paketi "1 Grup Masası'nda buluşma hakkı"; Baş Başa Paketi "1 Baş Başa Masası'nda buluşma hakkı"; Kankamla Paketi
@@ -151,6 +158,9 @@ Profilim "KANKAMLA NASIL İŞLER?" metni: "Kankamla Paketi'ni al, ardından ayn�
   akşamı 4 kişilik masada buluşursunuz. Davet 48 saat geçerlidir; kanka seçildiği hafta değiştirilemez." Web ve mobilde "2 masa hakkı",
   "2 hak", "4 döngü" ifadeleri yoktur
 Landing "Paket Al": giriş yapmamışsa Giriş; giriş yapmışsa (KYC onaylı ya da değil) Profil → Paketim
+Web paket listeleri (landing #pricing ve Profil → Paketim): landing başlığı "Fiyatlandırma". Kartlar 2 sütunlu grid (sm ve üstü; dar
+  ekranda tek sütun): Grup + Baş Başa, Kankamla + İçerde, Prime Paket tam genişlik; landing'de 4. satır "Prime Abonelik" kutusu tam
+  genişlik (eski "Prime Üyelik"; başlık #7A1F2B, çerçeve #d6453a — altın renk yok). Prime Paket detay ekranı tam ekran (değişmedi)
 Paket kartları (Grup, Baş Başa, Kankamla, İçerde, Prime) tek kaynaktan: apps/web/components/paket/PaketKarti.tsx — paket ekranı ve landing
   aynı kartı, açıklamayı ve avantaj listesini kullanır. Landing'de eski görselli paket kartları yoktur; Prime kuralları bölümü durur
 Platform:
@@ -246,10 +256,15 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
   - Mobilde sistem uyarı penceresi (Alert.alert) kullanılmaz: components/AppAlert.tsx showAlert (Ahenk paleti; tek buton "Tamam"
     BtnPrimary, vazgeç BtnGhost, onay BtnPrimary, silme / ban BtnTone danger). iOS'taki ActionSheetIOS seçim menüleri ayrı
   - "Rehberden Seç" penceresinde başlık ve X güvenli alanın içinde (Android'de durum çubuğunun altında)
-  - Mobil uygulamadaki "Çıkış" butonları ortak components/LogoutChoice.tsx kullanır. Kullanıcı hesabında (Profilim "Çıkış Yap")
-    "Bu cihazda beni hatırla" / "Bu cihazda beni unut" / "Vazgeç". Admin hesabında (Yönetim Paneli "Çıkış") yalnız "Bu cihazda beni unut"
-    ve "Vazgeç"; "Bu cihazda beni hatırla" yoktur. Admin hesabında hatırlama bilgisi hiçbir koşulda cihaza kaydedilmez; "Tekrar hoş
-    geldin" ekranı, Face ID ve parmak iziyle giriş yoktur; admin her girişte normal giriş ekranından şifreyle girer.
+  - Mobil uygulamadaki "Çıkış" butonları ortak components/LogoutChoice.tsx kullanır. Üye, ADMIN ve SUPERADMIN hesaplarında (Profilim
+    "Çıkış Yap", Yönetim Paneli "Çıkış") "Bu cihazda beni hatırla" / "Bu cihazda beni unut" / "Vazgeç". ADMIN / SUPERADMIN de
+    "Tekrar hoş geldin" ekranını kullanır (doğrulama sonrası Yönetim Paneli). Web'de kalıcı oturum (365 gün yenileme çerezi) bütün
+    rollerde aynı; rol ayrımı yoktur.
+  - ADMIN / SUPERADMIN biyometrik kilit (mobil, lib/adminLock.ts + components/AdminLockOverlay.tsx): kalıcı oturumda uygulama sıfırdan
+    açıldığında ve uygulama arka planda 5 dakikadan uzun kaldıktan sonra öne gelince tam ekran "Yönetim paneli kilitli" + Face ID /
+    Touch ID / parmak izi / yüz tanıma; biyometrik tanımlı değilse cihaz şifresi (disableDeviceFallback false). Başarısızsa oturum
+    kapanmaz, "Tekrar Dene". Hiç ekran kilidi yoksa açılmaz, uyarı + "Tekrar Dene". "Tekrar hoş geldin" biyometrisinden hemen sonra
+    tekrar sorulmaz. NSFaceIDUsageDescription: "Yönetim paneli hesabınızı korumak için Face ID kullanılır." Normal üyelerde kilit yok
     Unut: oturum kapanır, hatırlama bilgisi silinir.
     Hatırla: oturum kapanır, yenileme token'ı ve ad cihazda (secure-store) saklanır; açılışta "Tekrar hoş geldin, [ad]!" + "Giriş Yap"
     (aynı arka plan, altta yasal metin) → Face ID / parmak izi (expo-local-authentication) → "Cihaz Doğrulandı" (palet renginde onay
@@ -257,7 +272,27 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     "Beni hatırla" ile çıkışta doğrudan "Tekrar hoş geldin, [ad]!" ekranına gidilir (süren token yenilemesi beklenir); uygulama kapatılıp
     açılınca da bu ekran görünür
   - Mobil açılışta yerel açılış görseli (siyah zemin, Ahenk logosu) en az 3 sn görünür; 3 sn dolmadan, yazı tipleri yüklenmeden ve açılış yönlendirmesi bitmeden kapanmaz.
-  - Profilim'de çıkış butonları ile "Hesabımı Sil" arasında küçük uygulama logosu ve "Versiyon 0.1.2"; mobil sürüm 0.1.2 (Android versionCode 3)
+  - Profilim alt bölümü sırası (mobil): yasal bağlantılar kartı (Gizlilik Politikası, Kullanım Koşulları, KVKK Aydınlatma Metni,
+    Hesap Silme — web sayfaları uygulama içi tarayıcıda, satırlar 44 pt) → "Çıkış Yap" → "Tüm cihazlardan çıkış yap" → küçük uygulama
+    logosu → "Versiyon 0.1.2" → "Hesabımı Sil". Mobil sürüm 0.1.2 (Android versionCode 3)
+  - Mağaza ayarları (app.json): iOS bundleIdentifier co.ahenk.app (Android package ile aynı); eas.json "production" profili (Android AAB,
+    iOS mağaza), "preview" APK profili duruyor. iOS privacy manifest app.json ios.privacyManifests'te (prebuild PrivacyInfo.xcprivacy
+    üretir): NSPrivacyTracking false; UserDefaults CA92.1, FileTimestamp C617.1 / 0A2A.1 / 3B52.1, SystemBootTime 35F9.1, DiskSpace
+    E174.1 / 85F4.1; toplanan veri türleri Name, EmailAddress, PhoneNumber, PreciseLocation, SensitiveInfo, PhotosorVideos, AudioData,
+    Contacts, EmailsOrTextMessages, OtherUserContent, CustomerSupport, UserID, PurchaseHistory, OtherDataTypes (kimliğe bağlı, takip yok,
+    uygulama işlevi). NSPhotoLibraryUsageDescription: profil fotoğrafı, sorun bildirimi görselleri, yönetim panelinde bot ve mekân
+    fotoğrafları. Android blockedPermissions: WRITE_CONTACTS (tools:node="remove"); RECEIVE_BOOT_COMPLETED izni var
+  - Acil yardım konum açıklama ekranı (components/LocationDisclosure.tsx, iOS + Android): ön plan ya da arka plan konum izni istenmeden
+    önce tam ekran (Ahenk, Acil Yardım, ne zaman toplandığı — talep süresince ~10 sn'de bir, "Her zaman" izniyle arka planda / uygulama
+    kapalıyken, Android'de telefon yeniden başlatılınca da —, kiminle paylaşıldığı — acil yardım ekibi, emniyet, OpenStreetMap Nominatim).
+    "Devam Et" izni ister, "Şimdi Değil" izin istemeden döner. Aynı talep akışında en fazla bir kez
+  - Android yeniden başlatma: açık acil yardım talebi varken kayıtlı konum görevi expo-task-manager (RECEIVE_BOOT_COMPLETED) ile açılışta
+    geri yüklenir, gönderim uygulama açılmadan sürer ("Her zaman" izni gerekir). Görev talep kapanınca silinir; yerel talep kaydı yoksa ya
+    da sunucu talebin kapandığını bildirirse gönderim durur (lib/sosLive.ts). iOS önemli konum değişikliği davranışı aynı
+  - Prime abonelik ekranı (mobil): butonun altında abonelik adı / süresi / fiyatı, otomatik yenileme (dönem bitiminden en az 24 saat önce
+    iptal edilmezse), ödemenin Apple / Google hesabından alındığı ve mağaza hesap ayarlarından yönetim / iptal bilgisi, Kullanım Koşulları
+    (EULA) ve Gizlilik Politikası linkleri, "Satın Alımları Geri Yükle" (expo-iap restorePurchases + getAvailablePurchases → POST
+    /payment/store/verify). IAP kapalıysa (GET /payment/store/status {enabled}) mağazaya bağlanmadan "Şu anda kullanılamıyor"
   - Android APK sadece arm64-v8a mimarisiyle, release modunda derlenir (EAS preview profili; plugins/withAndroidRelease.js: R8 kod
     küçültme + kaynak küçültme açık, reactNativeArchitectures=arm64-v8a, Hermes açık). APK https://ahenk.co/apk/ahenk-<sürüm>.apk
   - Eşleşme Paneli: KYC kartı yokken üstte boşluk kalmaz, Grup / Baş Başa / Kankamla halkaları durum çubuğunun hemen altından başlar
@@ -265,6 +300,21 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     /meetings/dashboard sorguları paralel çalışır
   - Mobil yoklamalar yalnız odaktaki sekmede çalışır (useMasaTabs, Eşleşme Paneli canlı veriler); uygulama içi görseller gösterildikleri
     boya yakın çözünürlükte tutulur
+
+HESAP SİLME:
+  - Talep durumları yalnız PENDING / APPROVED (DeletionRequestStatus); admin reddi yoktur. PATCH /admin/deletion-requests/:id yalnız
+    {status:"APPROVED"} (SUPERADMIN). Panelde (web + mobil) yalnız "Onayla"; talep en geç 48 saat içinde sonuçlanır
+  - Onayda silinenler: profil, OCEAN, KYC kaydı + dosyaları, rehber / kullanıcı engelleri, sohbet mesajları, bildirimler, oturumlar,
+    bekleme listesi, winback, davet telefonu, profil fotoğrafları (ProfilePhoto + uploads/profile-photos/<userId>/), sorun bildirimleri
+    (ProblemReport + uploads/problem-reports/<id>/); hesap anonimleşir; masa geçmişi ve değerlendirmeler kimliksiz kayda taşınır
+  - Saklanan: ödeme ve fatura kayıtları 5 yıl (VUK); acil yardım / şikâyet / yaptırıma karışan kişinin kimlik bilgisi silinmeden sonra
+    2 yıl (yalnız SUPERADMIN); banlı hesabın telefon özeti
+  - Herkese açık https://ahenk.co/hesap-silme (apps/web/app/hesap-silme): giriş yapmamış kullanıcı otomatik /giris?donus=/hesap-silme'ye
+    gider, giriş sonrası geri döner (giriş sayfasında izinli dönüş yolu yalnız /hesap-silme) ve talep oluşturur. Silinen / saklanan
+    veriler ve süre yazılıdır. Footer Yasal grubunda "Hesap Silme" linki
+  - Gizlilik Politikası ve KVKK: KYC Ahenk sunucusunda AES-256-GCM şifreli, hesap silinene kadar; üçüncü taraflar iyzico, Meta (WhatsApp
+    Business API), Google Firebase Cloud Messaging, Anthropic (masa uyum raporu: katılımcı başı OCEAN skoru + cinsiyet, rapor masa
+    kartında), OpenStreetMap Nominatim, Apple / Google mağazaları, Google Analytics / Meta Pixel (web çerezleri). Cloudflare yoktur
 
 İPTAL EDİLEN KONU: Admin'in verdiği paketin hangi admin tarafından verildiğinin kaydı / gösterimi (rapor104 ve rapor105'te sorulan)
   iptal edildi; tekrar sorulmayacak.

@@ -5,14 +5,16 @@ import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
 import { Modal } from '@/components/ui/Modal';
 
-// Herkese açık hesap silme sayfası (Google Play hesap silme bağlantısı). Bilgi herkese görünür; talep için giriş gerekir:
-// giriş yapmamış kişi mevcut giriş akışına gider, giriş sonrası buraya döner (giris?donus=/hesap-silme) ve
+// Herkese açık hesap silme sayfası (Google Play hesap silme bağlantısı). Giriş yapmamış kişi otomatik olarak mevcut giriş
+// sayfasına yönlendirilir, giriş sonrası buraya döner (giris?donus=/hesap-silme) ve
 // Profilim'deki mevcut talep akışını (POST /users/me/deletion-request) başlatır.
 // Metin backend/src/users/account-deletion.service.ts approve() kurallarına göre yazılmıştır.
 
 const DELETED = [
   'Profil bilgilerin (ad, soyad, doğum tarihi, cinsiyet, şehir ve diğer profil alanları)',
   'Kişilik testi (OCEAN) cevapların ve sonuçların',
+  'Profil fotoğrafların (kayıtlar ve sunucudaki dosyalar)',
+  'Sorun bildirimlerin (kayıtlar ve sunucudaki görseller)',
   'Kimlik doğrulama (KYC) kaydın; kimlik ön ve arka yüz görselleri ile canlılık videosu sunucudan silinir',
   'Rehber engelleme için eklediğin telefon numaraları ve kullanıcı engellemelerin',
   'Gönderdiğin sohbet mesajları',
@@ -28,7 +30,7 @@ const ANONYMIZED = [
 ];
 
 const RETAINED: [string, string][] = [
-  ['Ödeme ve abonelik (satın alma) kayıtları', '10 yıl, Vergi Usul Kanunu'],
+  ['Ödeme ve abonelik (satın alma) kayıtları', '5 yıl, Vergi Usul Kanunu'],
   ['Acil yardım talebi, şikâyet ya da yaptırım (uyarı, askı, ban) kaydına karışmış kişinin ad, soyad, e-posta ve telefonu', 'Hesap silindikten sonra 2 yıl; yasal yükümlülükler, olası hukuki uyuşmazlıklar ve resmi makam talepleri için. Yalnız yetkili yönetici görür'],
   ['Kalıcı olarak banlanmış hesabın telefon numarasının tek yönlü özeti (hash)', 'Banlı kişinin yeniden kayıt olmasını engellemek için saklanır'],
 ];
@@ -41,11 +43,11 @@ export default function HesapSilmePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const has = api.hasSession();
-    setSession(has);
-    if (!has) return;
+    const toLogin = () => window.location.replace('/giris?donus=/hesap-silme');
+    if (!api.hasSession()) { toLogin(); return; }
+    setSession(true);
     api.silentGet<{ request: { id: string } | null }>('/users/me/deletion-request')
-      .then((r) => { if (r === null) setSession(false); else setPending(!!r?.request?.id); })
+      .then((r) => { if (r === null) toLogin(); else setPending(!!r?.request?.id); })
       .catch(() => {});
   }, []);
 
@@ -85,12 +87,7 @@ export default function HesapSilmePage() {
         <div style={{ marginTop: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {card('Talep Oluştur', (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {session === null ? null : !session ? (
-                <>
-                  <p>Silme talebi oluşturmak için hesabına giriş yapman gerekir. Giriş yaptıktan sonra bu sayfaya geri dönersin.</p>
-                  <a href="/giris?donus=/hesap-silme" className="mx-auto block btn-primary justify-center" style={{ width: '72%', textAlign: 'center' }}>Giriş Yap</a>
-                </>
-              ) : pending ? (
+              {!session ? null : pending ? (
                 <p style={{ textAlign: 'center', color: '#a39c93' }}>Hesap silme talebin alındı, en geç 48 saat içinde sonuçlanır.</p>
               ) : (
                 <button type="button" onClick={() => { setError(''); setOpen(true); }} className="mx-auto block btn-ghost btn-ghost-red-dot" style={{ width: '72%' }}>
