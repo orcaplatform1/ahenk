@@ -14,13 +14,12 @@ import {
   HttpCode,
   HttpStatus,
   UseInterceptors,
-  UploadedFile,
   UploadedFiles,
   Res,
   BadRequestException,
 } from "@nestjs/common";
 import { HideEmailForAdminInterceptor, KeepEmails } from "./hide-email.interceptor";
-import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
+import { FilesInterceptor } from "@nestjs/platform-express";
 import { VENUE_PHOTO_MAX_BYTES, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
 import { IsEnum, IsOptional, IsString } from "class-validator";
 import { Request, Response } from "express";
@@ -50,7 +49,6 @@ import {
   NoShowWarningDto,
   AdminUpdateUserDto,
   PlaceBotDto,
-  UpdateVenuePhotosDto,
   AdminVenuePhotoDeleteDto,
   UpdatePartnershipDto,
   UpdateCareerDto,
@@ -257,24 +255,6 @@ export class AdminController {
     return this.adminService.assignMeetingVenue(id, dto.venueId);
   }
 
-  @AdminAction("MEETING_VENUE_INFO", async (c) => `${await c.meetingName(c.params.id)} masasının mekan adresini ve fotoğraf bilgilerini güncelledi`)
-  @Patch("meetings/:id/venue-photos")
-  updateMeetingVenuePhotos(@Param("id") id: string, @Body() dto: UpdateVenuePhotosDto) {
-    return this.adminService.updateMeetingVenuePhotos(id, dto);
-  }
-
-  // Mekan fotoğrafı yükle (multipart: file + slot 1|2|3) — sunucu diskine kaydedilir
-  @AdminAction("MEETING_VENUE_PHOTO", async (c) => `${await c.meetingName(c.params.id)} masasına ${c.query.slot}. mekan fotoğrafını yükledi`)
-  @Post("meetings/:id/venue-photo")
-  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }))
-  uploadVenuePhoto(
-    @Param("id") id: string,
-    @Query("slot", ParseIntPipe) slot: number,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.adminService.saveVenuePhoto(id, slot, file);
-  }
-
   @AdminAction("MEETING_CANCEL", async (c) => `${await c.meetingName(c.params.id)} masasını iptal etti`)
   @Delete("meetings/:id")
   cancelMeeting(@Param("id") id: string) {
@@ -469,11 +449,6 @@ export class AdminController {
   }
 
   // ─── Matches ─────────────────────────────────────────────────────────────
-
-  @Get("matches/pending")
-  getPendingMatches(@Req() req: Request) {
-    return this.adminService.getPendingMatches((req.user as { role: UserRole }).role);
-  }
 
   @Get("matches/open")
   getOpenTables(@Req() req: Request) {

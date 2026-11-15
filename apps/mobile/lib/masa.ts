@@ -51,12 +51,6 @@ export function buildInitials(firstName?: string | null, lastName?: string | nul
   return `${f.toUpperCase()}.${l.toUpperCase()}.`;
 }
 
-export function isMatchingClosed(type: MasaTuru): boolean {
-  const dayTR = new Date(Date.now() + 3 * 60 * 60 * 1000).getUTCDay();
-  if (type === 'KANKA') return dayTR === 0;
-  return type === 'GROUP' ? (dayTR === 5 || dayTR === 6 || dayTR === 0) : (dayTR === 6 || dayTR === 0);
-}
-
 // Masa kilidi: masa gününden 1 gün önce 23:59 TR
 export function isTableLocked(scheduledAt: string): boolean {
   const tr = new Date(new Date(scheduledAt).getTime() + 3 * 60 * 60 * 1000);

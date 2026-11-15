@@ -29,10 +29,6 @@ function fmtDate(d: string) {
 }
 
 const sectionTitle: React.CSSProperties = { margin: '0 0 10px', ...LABEL, color: MUTED };
-const selectStyle: React.CSSProperties = {
-  background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '6px 10px',
-  fontSize: 13, color: TEXT, outline: 'none', fontFamily: SANS, flex: 1, minWidth: 0,
-};
 const btnStyle = (disabled: boolean): React.CSSProperties => ({
   padding: '6px 14px', borderRadius: 8, cursor: disabled ? 'not-allowed' : 'pointer',
   background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)',

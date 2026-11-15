@@ -147,7 +147,6 @@ export function mono(weight: 400 | 500 | 600 | 700 = 400): string {
 
 // ── Bileşen ölçüleri (globals.css) ────────────────────────────────────────
 export const llCard = { radius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', bg: 'rgba(255,255,255,0.025)', padding: 18 } as const;
-export const llMetric = { radius: 16, borderColor: 'rgba(255,255,255,0.08)', bg: 'rgba(255,255,255,0.03)', padV: 12, padH: 10 } as const;
 export const llColumn = { maxWidth: 480, padTop: 16, padH: 20, padBottom: 28, gap: 28 } as const;
 export const llHead = { gap: 12, marginBottom: 12 } as const;
 export const llTitle = { size: 23, lineHeight: 1.2 } as const;

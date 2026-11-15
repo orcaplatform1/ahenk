@@ -33,9 +33,6 @@ export async function clearTokens() {
   await SecureStore.deleteItemAsync(REFRESH);
   await SecureStore.deleteItemAsync(KIND);
 }
-export async function getKind(): Promise<SessionKind | null> {
-  return (await SecureStore.getItemAsync(KIND)) as SessionKind | null;
-}
 // Çıkış "Bu cihazda beni hatırla": oturum kapanır (erişim token'ı ve aktif oturum silinir), yenileme token'ı cihazda hatırlanır
 // Sonuç: true → cihaz hatırlandı (Tekrar hoş geldin ekranına gidilir), false → saklanacak token yoktu
 export async function rememberDevice(firstName: string): Promise<boolean> {

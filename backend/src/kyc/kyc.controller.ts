@@ -100,17 +100,6 @@ export class KycController {
     return this.kycService.serveAdminFile(submissionId, type, res);
   }
 
-  // ─── Admin: Tek başvuru ───────────────────────────────────────────────────
-
-  @Get("admin/:id")
-  @UseGuards(RolesGuard)
-  @Roles("ADMIN", "SUPERADMIN")
-  @UseInterceptors(HideEmailForAdminInterceptor)
-  @ApiOperation({ summary: "[Admin] Tek başvuruyu getir" })
-  adminGetOne(@Param("id") id: string) {
-    return this.kycService.adminGetOne(id);
-  }
-
   // ─── Admin: İncele ────────────────────────────────────────────────────────
 
   @AdminAction("KYC_REVIEW", async (c) => {

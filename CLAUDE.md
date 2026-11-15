@@ -105,6 +105,8 @@ Prime abonelik (PRIME_1M / PRIME_3M / PRIME_6M / PRIME_12M): ham 899 / 2299 / 38
     sınırı olmadan, kullanılana kadar geçerli kalır: 30 günlük yenileme durur, dönem sonunda haklar silinmez. İptal edilen Prime'ın
     dönemi bitince bu kayıt "aktif Prime" sayılmaz (ikinci Prime / tek seferlik paket kuralı ve profildeki Prime durumu); hakların
     tamamı kullanılınca biter (backend package-rights.ts livePrimeWhere / isLivePrime)
+  - Prime expiry: saatlik expire işi (matching.scheduler.ts expireSubscriptions) Prime planlarını atlar; Prime'ı yalnızca
+    prime.service.ts kapatır. İptal edilmiş Prime hakları bitince kapanır; iptal edilmemiş ve yenilenmemiş Prime expiresAt'te kapanır
   - Dönem başında planın tam tutarı tek seferde çekilir; dönem bitince aynı süreyle otomatik yenilenir
   - Aktif Prime'ı olan ikinci Prime alamaz
   - Aktif Prime'ı olan tek seferlik paket alamaz; istisna: Prime'da hakkı bitmiş tür varsa yalnız o türü içeren tek seferlik paketi alabilir
@@ -155,6 +157,10 @@ Platform:
   - Web → iyzico. Tek seferlik: Checkout Form. Prime: ilk dönem Checkout Form, otomatik yenileme iyzico abonelik API'si
     (IYZICO_SUBSCRIPTION_ENABLED=true olana kadar pasif; planlar lansmanda create-prime-plans ile tanımlanır)
   - iOS → App Store, Android → Play Store uygulama içi satın alma (IAP_ENABLED=true olana kadar pasif)
+  - Mağaza bildirimleri: App Store bildirimleri JWS imzası ve Apple Root CA - G3 sertifika zinciriyle doğrulanır
+    (backend/certs/AppleRootCA-G3.cer). Google Play bildirimleri Pub/Sub OIDC JWT ile doğrulanır
+    (GOOGLE_PUBSUB_AUDIENCE, GOOGLE_PUBSUB_SERVICE_ACCOUNT; tanımlı değilse bütün Google bildirimleri reddedilir).
+    Doğrulanmayan bildirim reddedilir
 Akış:
   - GET /payment/plans → herkese açık, paket listesi
   - POST /payment/init → TestCompletedGuard + JWT; web iyzico form, mobil mağaza ürün kimliği döner
@@ -455,6 +461,8 @@ Admin işlemleri (masa detayında veya kullanıcı profilinde):
   - Uyarı ver: sebep zorunlu, kullanıcı giriş yapabilir ama uyarı mesajı görür ve devam edebilir
   - Askıya al: sebep + süre zorunlu; kullanıcı o süre boyunca giriş yapamaz
   - Banla: sebep zorunlu; kullanıcı kalıcı olarak giriş yapamaz
+  - Ban, askıya alma ve admin iptali iyzico aboneliğini de iptal eder (iyzico hatası loglanır, işlem sürer); sunucuda iptal
+    edilmiş kayda sonradan gelen yenileme bildirimi kaydı yeniden aktif etmez, yalnız loglanır
 Kullanıcı giriş ekranında:
   - Uyarı varsa: uyarı metni gösterilir, "Devam et" butonu ile geçilebilir
   - Askıya alınmışsa: askıya alma nedeni + süre gösterilir, giriş engellenir
@@ -521,6 +529,13 @@ RATE LIMITING:
   - ThrottlerModule backend'e eklenmiştir.
   - 4 ayrı named throttler: short (10 req/3s), medium (30 req/10s), long (100 req/1m), auth (5 req/1m).
   - Auth endpoint'leri (login, register, OTP) auth throttler ile korunur.
+  - OTP: deneme sayacı atomiktir, kod başına 3 deneme. Telefon başına Türkiye takvim gününde (Europe/Istanbul) günde 10 kod;
+    üye OTP'si ve mekân paneli OTP'si ortak sayaçtadır, başarısız gönderimler sayılmaz. Sınır aşılınca:
+    "Bugünlük doğrulama kodu hakkın doldu. Yarın tekrar deneyebilirsin."
+  - Rate limit: login, telefon değiştirme, şifre sıfırlama ve şifremi unuttum endpoint'lerinde Redis tabanlı dakikada 5 limit
+    (IP + telefon; e-posta + şifre girişinde IP + e-posta).
+  - Hesap kilidi: yanlış şifre ve yanlış OTP denemeleri hesap başına birlikte sayılır; 5 başarısız denemeden sonra hesap
+    15 dakika kilitlenir. Mesaj: "Çok fazla hatalı deneme yapıldı. Hesabın 15 dakika boyunca kilitlendi."
 
 API CLIENT KURALLAR (web):
   - apps/web/lib/api.ts içinde PREFIX sabiti API_PREFIX olarak export edilir.

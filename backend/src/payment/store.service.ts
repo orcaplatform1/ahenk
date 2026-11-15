@@ -1,8 +1,9 @@
 import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import { createPrivateKey, randomUUID, sign } from "crypto";
+import { X509Certificate, createPrivateKey, createPublicKey, randomUUID, sign, verify } from "crypto";
 import { readFileSync } from "fs";
+import { join } from "path";
 import { PaymentPlatform, SubscriptionPlan } from "../generated/prisma/client";
 import { isPrime } from "./package-rights";
 
@@ -49,6 +50,12 @@ export type VerifiedPurchase = {
   autoRenewing?: boolean;
   offerId?: string | null; // abonelikte kullanılan teklif (davet10 / indirim100)
 };
+
+type GoogleJwk = { kid?: string; [key: string]: unknown };
+
+// Apple'ın sertifika işaretleri (DER kodlu OID): yaprak 1.2.840.113635.100.6.11.1, ara 1.2.840.113635.100.6.2.1
+const APPLE_LEAF_OID = Buffer.from("060a2a864886f76364060b01", "hex");
+const APPLE_INTERMEDIATE_OID = Buffer.from("06092a864886f76364060201", "hex");
 
 @Injectable()
 export class StoreService {
@@ -112,10 +119,10 @@ export class StoreService {
       return null;
     }
     const { signedTransactionInfo } = (await res.json()) as { signedTransactionInfo: string };
-    const t = this.jwt.decode(signedTransactionInfo) as {
+    const t = this.verifyAppleJws<{
       productId: string; transactionId: string; originalTransactionId: string; expiresDate?: number; revocationDate?: number; bundleId: string;
       offerIdentifier?: string;
-    };
+    }>(signedTransactionInfo);
     if (!t || t.revocationDate || t.bundleId !== this.config.get<string>("APPLE_BUNDLE_ID")) return null;
     return {
       productId: t.productId,
@@ -179,7 +186,83 @@ export class StoreService {
     return { productId, transactionId: p.orderId, originalTransactionId: purchaseToken };
   }
 
-  decodeJws<T>(jws: string): T | null {
-    return (this.jwt.decode(jws) as T) ?? null;
+  // ─── App Store imzalı veri (JWS) doğrulaması ──────────────────────────────
+  // İmza ve x5c sertifika zinciri Apple Root CA - G3 (certs/AppleRootCA-G3.cer) ile doğrulanır:
+  // yaprak → ara → kök imzaları, geçerlilik tarihleri, Apple'ın yaprak / ara sertifika işaretleri ve ES256 imzası.
+  // Doğrulanamayan veri null döner (çağıran reddeder ve loglar).
+  private appleRoot: X509Certificate | null = null;
+  private appleRootCert(): X509Certificate {
+    this.appleRoot ??= new X509Certificate(readFileSync(join(process.cwd(), "certs", "AppleRootCA-G3.cer")));
+    return this.appleRoot;
+  }
+
+  verifyAppleJws<T>(jws: string): T | null {
+    try {
+      const [h, p, sig] = jws.split(".");
+      if (!h || !p || !sig) return null;
+      const header = JSON.parse(Buffer.from(h, "base64url").toString("utf8")) as { alg?: string; x5c?: string[] };
+      if (header.alg !== "ES256" || !Array.isArray(header.x5c) || header.x5c.length !== 3) return null;
+      const [leaf, intermediate, root] = header.x5c.map((c) => new X509Certificate(Buffer.from(c, "base64")));
+      const trusted = this.appleRootCert();
+      const now = Date.now();
+      const valid = (c: X509Certificate) => new Date(c.validFrom).getTime() <= now && now <= new Date(c.validTo).getTime();
+      const chainOk =
+        root.raw.equals(trusted.raw) &&
+        valid(leaf) && valid(intermediate) && valid(trusted) &&
+        intermediate.checkIssued(trusted) && intermediate.verify(trusted.publicKey) &&
+        leaf.checkIssued(intermediate) && leaf.verify(intermediate.publicKey) &&
+        leaf.raw.includes(APPLE_LEAF_OID) && intermediate.raw.includes(APPLE_INTERMEDIATE_OID);
+      if (!chainOk) return null;
+      const signed = verify("sha256", Buffer.from(`${h}.${p}`), { key: leaf.publicKey, dsaEncoding: "ieee-p1363" }, Buffer.from(sig, "base64url"));
+      if (!signed) return null;
+      return JSON.parse(Buffer.from(p, "base64url").toString("utf8")) as T;
+    } catch (err) {
+      this.logger.warn(`App Store JWS doğrulama hatası: ${err}`);
+      return null;
+    }
+  }
+
+  // ─── Google Pub/Sub push kimlik doğrulaması (OIDC JWT) ────────────────────
+  // Authorization: Bearer <JWT>. İmza Google'ın açık anahtarlarıyla (RS256) doğrulanır; iss, aud
+  // (GOOGLE_PUBSUB_AUDIENCE), e-posta (GOOGLE_PUBSUB_SERVICE_ACCOUNT) ve süre kontrol edilir.
+  // İki anahtar tanımlı değilse bütün bildirimler reddedilir.
+  private googleKeys: { at: number; keys: GoogleJwk[] } | null = null;
+  private async googleJwks(): Promise<GoogleJwk[]> {
+    if (this.googleKeys && Date.now() - this.googleKeys.at < 60 * 60 * 1000) return this.googleKeys.keys;
+    const res = await fetch("https://www.googleapis.com/oauth2/v3/certs");
+    if (!res.ok) throw new Error(`Google açık anahtarları okunamadı: HTTP ${res.status}`);
+    const { keys } = (await res.json()) as { keys: GoogleJwk[] };
+    this.googleKeys = { at: Date.now(), keys };
+    return keys;
+  }
+
+  async verifyGooglePush(authorization: string | undefined): Promise<boolean> {
+    const audience = this.config.get<string>("GOOGLE_PUBSUB_AUDIENCE");
+    const serviceAccount = this.config.get<string>("GOOGLE_PUBSUB_SERVICE_ACCOUNT");
+    if (!audience || !serviceAccount) return false;
+    try {
+      const token = /^Bearer (.+)$/.exec(authorization ?? "")?.[1];
+      const [h, p, sig] = (token ?? "").split(".");
+      if (!h || !p || !sig) return false;
+      const header = JSON.parse(Buffer.from(h, "base64url").toString("utf8")) as { alg?: string; kid?: string };
+      if (header.alg !== "RS256" || !header.kid) return false;
+      const jwk = (await this.googleJwks()).find((k) => k.kid === header.kid);
+      if (!jwk) return false;
+      const signed = verify("RSA-SHA256", Buffer.from(`${h}.${p}`), createPublicKey({ key: jwk, format: "jwk" } as Parameters<typeof createPublicKey>[0]), Buffer.from(sig, "base64url"));
+      if (!signed) return false;
+      const claims = JSON.parse(Buffer.from(p, "base64url").toString("utf8")) as {
+        iss?: string; aud?: string; email?: string; email_verified?: boolean; exp?: number;
+      };
+      return (
+        (claims.iss === "https://accounts.google.com" || claims.iss === "accounts.google.com") &&
+        claims.aud === audience &&
+        claims.email === serviceAccount &&
+        claims.email_verified === true &&
+        typeof claims.exp === "number" && claims.exp * 1000 > Date.now()
+      );
+    } catch (err) {
+      this.logger.warn(`Pub/Sub kimlik doğrulama hatası: ${err}`);
+      return false;
+    }
   }
 }

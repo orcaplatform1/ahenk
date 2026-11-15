@@ -6,6 +6,7 @@ import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { JwtRefreshStrategy } from "./strategies/jwt-refresh.strategy";
 import { OtpService } from "./otp/otp.service";
+import { LoginGuardService } from "./login-guard.service";
 import { WhatsappService } from "./whatsapp/whatsapp.service";
 import { UsersModule } from "../users/users.module";
 
@@ -16,7 +17,7 @@ import { UsersModule } from "../users/users.module";
     UsersModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtRefreshStrategy, OtpService, WhatsappService],
+  providers: [AuthService, JwtStrategy, JwtRefreshStrategy, OtpService, WhatsappService, LoginGuardService],
   exports: [AuthService, JwtStrategy, OtpService],
 })
 export class AuthModule {}

@@ -10,12 +10,6 @@ interface KycStatus {
   rejectReason?: string;
 }
 
-interface UploadUrls {
-  idFront:  { uploadUrl: string; key: string };
-  idBack:   { uploadUrl: string; key: string };
-  liveness: { uploadUrl: string; key: string };
-}
-
 async function uploadKyc(
   idFront: File,
   idBack: File,

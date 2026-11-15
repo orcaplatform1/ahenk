@@ -72,21 +72,68 @@ export class PrimeService {
     const sub = await this.prisma.subscription.findUnique({ where: { id: subscriptionId } });
     if (!sub || !PRIME_PLANS.includes(sub.plan)) throw new NotFoundException("Prime aboneliği bulunamadı");
     if (ref.storeTransactionId && (await this.prisma.payment.count({ where: { storeTransactionId: ref.storeTransactionId } })) > 0) return;
+    // Sunucuda iptal edilmiş kayıt (ban / askı / admin iptali) geç gelen yenileme bildirimiyle yeniden aktif edilmez
+    if (sub.status === SubscriptionStatus.CANCELLED) {
+      this.logger.warn(`İptal edilmiş Prime için yenileme bildirimi geldi, işlenmedi: sub=${sub.id} user=${sub.userId} platform=${platform} ödeme=${ref.iyzicoPaymentId ?? ref.storeTransactionId ?? "-"}`);
+      return;
+    }
     const price = await this.pricing.current(sub.plan);
     const amountKurus = platform === PaymentPlatform.WEB ? price.webKurus : price.mobileKurus;
-    const base = sub.expiresAt && sub.expiresAt.getTime() > Date.now() ? sub.expiresAt : new Date();
+    const now = new Date();
+    const base = sub.expiresAt && sub.expiresAt.getTime() > now.getTime() ? sub.expiresAt : now;
+    // Yenileme ödendi: iptal işareti kalkar, 30 günlük hak sıfırlaması satın alma tarihinden sayılarak yeniden kurulur.
+    // İptalliyken 30 günlük bir sınır geçtiyse haklar şimdi 1 + 1 + 1 olur (devretmez).
+    const reset: Prisma.SubscriptionUpdateInput = {};
+    if (sub.renewCancelledAt || !sub.rightsResetAt) {
+      const period = PRIME_RESET_DAYS * DAY_MS;
+      const start = sub.startsAt.getTime();
+      const next = start + (Math.floor((now.getTime() - start) / period) + 1) * period;
+      reset.rightsResetAt = new Date(next);
+      const stoppedAt = (sub.renewCancelledAt ?? now).getTime();
+      if (next - period > stoppedAt) {
+        reset.groupRights = GROUP_RIGHTS[sub.plan];
+        reset.usedAt = null;
+        reset.kankaRights = KANKA_RIGHTS;
+      }
+    }
     await this.prisma.$transaction([
       this.prisma.payment.create({
         data: {
           userId: sub.userId, plan: sub.plan, amountKurus, listKurus: amountKurus, status: PaymentStatus.SUCCESS, platform,
-          isRenewal: true, paidAt: new Date(), iyzicoPaymentId: ref.iyzicoPaymentId ?? null, storeTransactionId: ref.storeTransactionId ?? null,
+          isRenewal: true, paidAt: now, iyzicoPaymentId: ref.iyzicoPaymentId ?? null, storeTransactionId: ref.storeTransactionId ?? null,
         },
       }),
       this.prisma.subscription.update({
         where: { id: sub.id },
-        data: { status: SubscriptionStatus.ACTIVE, expiresAt: ref.expiresAt ?? addMonths(base, PRIME_MONTHS[sub.plan] ?? 1) },
+        data: {
+          status: SubscriptionStatus.ACTIVE, expiresAt: ref.expiresAt ?? addMonths(base, PRIME_MONTHS[sub.plan] ?? 1),
+          autoRenew: true, renewCancelledAt: null, ...reset,
+        },
       }),
     ]);
+  }
+
+  // Sunucuda iptal edilen abonelikler (ban, askıya alma, admin iptali, admin paket verirken çakışan paket):
+  // iyzico aboneliği de iyzico API ile iptal edilir. Hata loglanır, çağıran işleme devam eder.
+  async cancelAtIyzico(subscriptionIds: string[], reason: string): Promise<void> {
+    if (subscriptionIds.length === 0) return;
+    const subs = await this.prisma.subscription.findMany({
+      where: { id: { in: subscriptionIds }, iyzicoSubscriptionRef: { not: null } },
+      select: { id: true, iyzicoSubscriptionRef: true },
+    });
+    for (const s of subs) {
+      try {
+        const r = await this.iyzico.cancelSubscription(s.iyzicoSubscriptionRef!);
+        if (r.status === "success") {
+          await this.prisma.subscription.update({ where: { id: s.id }, data: { autoRenew: false } });
+          this.logger.log(`iyzico aboneliği iptal edildi (${reason}): sub=${s.id}`);
+        } else {
+          this.logger.error(`iyzico abonelik iptali başarısız (${reason}): sub=${s.id} ${r.errorMessage}`);
+        }
+      } catch (err) {
+        this.logger.error(`iyzico abonelik iptali hatası (${reason}): sub=${s.id} ${err}`);
+      }
+    }
   }
 
   // Otomatik yenileme sağlayıcıda durdu (iptal / ödeme alınamadı): abonelik iptal edilmiş sayılır. İptal anındaki haklar

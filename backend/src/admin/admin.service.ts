@@ -45,8 +45,7 @@ import { availableBots, recentlyMetBotIds } from "../matching/bot-picker";
 import { MatchingService, tableTitle } from "../matching/matching.service";
 import { isValidDistrict } from "../common/districts";
 import { meetingVenueFields, seatsBookedAt, VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
-import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT, venuePhotoKind } from "../venue-panel/venue-media";
-import { toWebp } from "../common/image-webp";
+import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
 import { CAREER_CV_DIR } from "../careers/career-cv";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
@@ -542,19 +541,21 @@ export class AdminService {
     // Prime (ücretsiz, ödeme alınmaz): 1/3/6/12 ay; verildiği anda 1+1+1 hak, 30 günde bir yenilenir, devretmez;
     // otomatik yenileme yok, süre bitince kendiliğinden biter (prime.service.ts). Aktif Prime'ı olana ikinci Prime verilmez.
     const expiry: Date | null = expiresAt ? new Date(expiresAt) : null;
-    if (isPrime(plan)) {
-      const active = await this.prisma.subscription.count({ where: { userId: targetId, ...livePrimeWhere() } });
-      if (active > 0) throw new ConflictException("Bu kullanıcının aktif Prime'ı var; ikinci bir Prime verilemez.");
-    }
-
-    // İçeriği çakışan aktif paketler (ücretli dahil) iade yapılmadan iptal edilir.
-    // Çakışmayan paket kalır: Masada + Karşımda birlikte olabilir; İçerde ikisini de kapsar.
-    const oldSubs = await this.prisma.subscription.findMany({
-      where: { userId: targetId, status: SubscriptionStatus.ACTIVE, plan: { in: OVERLAPPING_PLANS[plan] } },
-      select: { id: true },
-    });
-    const oldIds = oldSubs.map((s) => s.id);
+    // Kişinin satırı kilitlenir: eşzamanlı iki istek sırayla işlenir, ikincisi ilk verilen Prime'ı görür (iki Prime oluşmaz)
+    let oldIds: string[] = [];
     const sub = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${targetId} FOR UPDATE`;
+      if (isPrime(plan)) {
+        const active = await tx.subscription.count({ where: { userId: targetId, ...livePrimeWhere() } });
+        if (active > 0) throw new ConflictException("Bu kullanıcının aktif Prime'ı var; ikinci bir Prime verilemez.");
+      }
+      // İçeriği çakışan aktif paketler (ücretli dahil) iade yapılmadan iptal edilir.
+      // Çakışmayan paket kalır: Masada + Karşımda birlikte olabilir; İçerde ikisini de kapsar.
+      const oldSubs = await tx.subscription.findMany({
+        where: { userId: targetId, status: SubscriptionStatus.ACTIVE, plan: { in: OVERLAPPING_PLANS[plan] } },
+        select: { id: true },
+      });
+      oldIds = oldSubs.map((s) => s.id);
       await tx.subscription.updateMany({
         where: { id: { in: oldIds } },
         data: { status: SubscriptionStatus.CANCELLED, cancelNote: `Admin yeni paket verdi: ${PLAN_CONFIG[plan].nametr}` },
@@ -566,6 +567,8 @@ export class AdminService {
           });
       return { id: created.id, plan: created.plan, status: created.status, expiresAt: created.expiresAt };
     });
+    // İptal edilen paketlerin iyzico aboneliği de iptal edilir (hata loglanır, işlem sürer)
+    await this.prime.cancelAtIyzico(oldIds, "admin yeni paket verdi");
 
     // Kişi havuza girdi: anında masaya atanır
     await enqueueAssign(this.assignQueue, targetId);
@@ -927,68 +930,7 @@ export class AdminService {
     return { id: meetingId, venueId, locationText: venue.name };
   }
 
-  async updateMeetingVenuePhotos(
-    meetingId: string,
-    data: {
-      venueAddress?: string;
-      venuePhotoUrl?: string;  venuePhotoCaption1?: string;
-      venuePhoto2Url?: string; venuePhotoCaption2?: string;
-      venuePhoto3Url?: string; venuePhotoCaption3?: string;
-    },
-  ) {
-    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
-    if (!meeting) throw new NotFoundException("Masa bulunamadı");
-    // undefined → dokunma, boş string → temizle
-    const v = (x?: string) => (x === undefined ? undefined : x.trim() === "" ? null : x.trim());
-    return this.prisma.meeting.update({
-      where: { id: meetingId },
-      data: {
-        venueAddress:       v(data.venueAddress),
-        venuePhotoUrl:      v(data.venuePhotoUrl),
-        venuePhotoCaption1: v(data.venuePhotoCaption1),
-        venuePhoto2Url:     v(data.venuePhoto2Url),
-        venuePhotoCaption2: v(data.venuePhotoCaption2),
-        venuePhoto3Url:     v(data.venuePhoto3Url),
-        venuePhotoCaption3: v(data.venuePhotoCaption3),
-      },
-      select: {
-        id: true, venueAddress: true,
-        venuePhotoUrl: true, venuePhotoCaption1: true,
-        venuePhoto2Url: true, venuePhotoCaption2: true,
-        venuePhoto3Url: true, venuePhotoCaption3: true,
-      },
-    });
-  }
-
   // ─── Mekan fotoğrafı yükle (sunucu diski) ─────────────────────────────────
-
-  async saveVenuePhoto(meetingId: string, slot: number, file?: Express.Multer.File) {
-    if (![1, 2, 3].includes(slot)) throw new BadRequestException("Geçersiz fotoğraf alanı (1, 2 veya 3)");
-    if (!file) throw new BadRequestException("Fotoğraf dosyası gerekli");
-    // Tür içerikten belirlenir; JPEG/PNG/WebP/HEIC/HEIF kabul edilir ve WebP olarak saklanır (kalite 82, boyut değişmez)
-    const kind = venuePhotoKind(file.buffer);
-    if (!kind) throw new BadRequestException("JPEG, PNG, WebP, HEIC veya HEIF yükleyin");
-    const webp = await toWebp(file.buffer, kind);
-
-    const meeting = await this.prisma.meeting.findUnique({ where: { id: meetingId } });
-    if (!meeting) throw new NotFoundException("Masa bulunamadı");
-
-    const field = (["venuePhotoUrl", "venuePhoto2Url", "venuePhoto3Url"] as const)[slot - 1];
-    const dir = path.join(VENUE_UPLOAD_DIR, meetingId);
-    fs.mkdirSync(dir, { recursive: true });
-    const fileName = `photo${slot}-${Date.now()}.webp`;
-    fs.writeFileSync(path.join(dir, fileName), webp);
-
-    // Aynı alandaki eski yerel dosyayı sil
-    const old = meeting[field];
-    if (old?.startsWith(`${VENUE_PUBLIC_PREFIX}/${meetingId}/`)) {
-      try { fs.unlinkSync(path.join(dir, path.basename(old))); } catch {}
-    }
-
-    const url = `${VENUE_PUBLIC_PREFIX}/${meetingId}/${fileName}`;
-    await this.prisma.meeting.update({ where: { id: meetingId }, data: { [field]: url } });
-    return { slot, url };
-  }
 
   // ─── Masa iptal ──────────────────────────────────────────────────────────
 
@@ -1323,11 +1265,14 @@ export class AdminService {
     if (sub.status === SubscriptionStatus.CANCELLED) {
       throw new BadRequestException("Abonelik zaten iptal edilmiş");
     }
-    return this.prisma.subscription.update({
+    const cancelled = await this.prisma.subscription.update({
       where: { id: subscriptionId },
       data: { status: SubscriptionStatus.CANCELLED, cancelNote: cancelNote ?? null },
       select: { id: true, status: true, cancelNote: true },
     });
+    // iyzico aboneliği de iptal edilir (hata loglanır, işlem sürer)
+    await this.prime.cancelAtIyzico([subscriptionId], "admin iptali");
+    return cancelled;
   }
 
   // ─── Sistem ayarları ─────────────────────────────────────────────────────
@@ -1364,75 +1309,6 @@ export class AdminService {
   }
 
   // ─── Admin matches ───────────────────────────────────────────────────────
-
-  async getPendingMatches(viewerRole: UserRole) {
-    const meetings = await this.prisma.meeting.findMany({
-      where: { status: MeetingStatus.PENDING },
-      orderBy: { scheduledAt: 'asc' },
-      select: {
-        id: true,
-        scheduledAt: true,
-        maxParticipants: true,
-        locationText: true,
-        venuePhotoUrl: true,
-        participants: {
-          where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
-          select: {
-            matchScore: true,
-            user: {
-              select: {
-                id: true,
-                isBot: true,
-                profile: { select: { firstName: true, lastName: true, gender: true } },
-                oceanScore: {
-                  select: {
-                    openness: true,
-                    conscientiousness: true,
-                    extraversion: true,
-                    agreeableness: true,
-                    neuroticism: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return meetings.map((m) => {
-      const scores = m.participants
-        .map((p) => p.matchScore)
-        .filter((s): s is number => s !== null);
-      const avgScore = scores.length > 0
-        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-        : null;
-
-      const seats = Array.from({ length: m.maxParticipants }, (_, i) => {
-        const p = m.participants[i];
-        if (!p) return { type: 'EMPTY' as const };
-        const first = p.user.profile?.firstName ?? '';
-        const last = p.user.profile?.lastName ?? '';
-        return {
-          // Bot bilgisi yalnızca SUPERADMIN'e
-          type: p.user.isBot && viewerRole === UserRole.SUPERADMIN ? ('BOT' as const) : ('REAL' as const),
-          userId: p.user.id,
-          initials: `${first[0] ?? '?'}.${last[0] ?? '?'}.`,
-          gender: p.user.profile?.gender ?? null,
-          matchScore: p.matchScore,
-          oceanScore: p.user.oceanScore,
-        };
-      });
-
-      return {
-        id: m.id,
-        scheduledAt: m.scheduledAt,
-        locationName: m.locationText ?? null,
-        avgCompatibilityScore: avgScore,
-        seats,
-      };
-    });
-  }
 
   async approveMatch(meetingId: string) {
     const meeting = await this.prisma.meeting.findUnique({
@@ -2097,11 +1973,16 @@ export class AdminService {
           data: { status: isBan ? UserStatus.BANNED : UserStatus.SUSPENDED },
         });
       }
-      // Abonelik iptal edilir, iade yapılmaz
-      await this.prisma.subscription.updateMany({
+      // Abonelik iptal edilir, iade yapılmaz; iyzico aboneliği de iptal edilir (hata loglanır, işlem sürer)
+      const activeSubs = await this.prisma.subscription.findMany({
         where: { userId, status: SubscriptionStatus.ACTIVE },
+        select: { id: true },
+      });
+      await this.prisma.subscription.updateMany({
+        where: { id: { in: activeSubs.map((s) => s.id) }, status: SubscriptionStatus.ACTIVE },
         data: { status: SubscriptionStatus.CANCELLED, cancelNote: `${isBan ? "Banlama" : "Askı"}: ${reason}` },
       });
+      await this.prime.cancelAtIyzico(activeSubs.map((s) => s.id), isBan ? "ban" : "askı");
       // Kankamla: kişi bu haftaki masasından kankasıyla düşer (karşı çift yeniden taramaya girer); ban → kankalık biter
       await this.matching.dropKankaPair(userId, isBan ? "Banlandı" : "Askıya alındı");
       // Grup ve başbaşa: kişi yapılmamış masalardan çıkar; iptal olan başbaşa masası mekâna bildirilir

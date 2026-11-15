@@ -22,7 +22,8 @@ import { groupPartOpen, kankaPartOpen, oneOnOnePartOpen, OPEN_KANKA_SUB, RIGHTS_
 import { activeKankaLink } from "../kanka/kanka-links";
 import { UsersService } from "../users/users.service";
 import { hashPhone } from "../users/account-deletion.service";
-import { OtpService, OTP_RESEND_SECONDS } from "./otp/otp.service";
+import { OtpService, OtpMismatchException, OTP_RESEND_SECONDS } from "./otp/otp.service";
+import { LoginGuardService } from "./login-guard.service";
 import { RedisService } from "../redis/redis.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -40,7 +41,20 @@ export class AuthService {
     private config: ConfigService,
     private otpService: OtpService,
     private redis: RedisService,
+    private loginGuard: LoginGuardService,
   ) {}
+
+  // Giriş / şifre sıfırlama kodu: yanlış kod hesabın hatalı deneme sayacına yazılır (5 denemede 15 dk kilit)
+  private async verifyOtpForAccount(userId: string, phone: string, code: string) {
+    await this.loginGuard.assertNotLocked(userId);
+    try {
+      await this.otpService.verify(phone, code);
+    } catch (err) {
+      if (err instanceof OtpMismatchException) await this.loginGuard.fail(userId);
+      throw err;
+    }
+    await this.loginGuard.success(userId);
+  }
 
   // ─── Kayıt: telefon doğrulama (hesap oluşmadan önce WhatsApp OTP) ────────
 
@@ -256,8 +270,13 @@ export class AuthService {
 
     if (!user) throw new UnauthorizedException("E-posta veya şifre hatalı");
 
+    await this.loginGuard.assertNotLocked(user.id);
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!passwordMatch) throw new UnauthorizedException("E-posta veya şifre hatalı");
+    if (!passwordMatch) {
+      await this.loginGuard.fail(user.id);
+      throw new UnauthorizedException("E-posta veya şifre hatalı");
+    }
+    await this.loginGuard.success(user.id);
     // Yaptırım bilgisi sadece şifre doğruysa gösterilir
     await this.checkSanction(user.id, user.status);
 
@@ -361,7 +380,7 @@ export class AuthService {
     // Kayıtsız numarada süresi dolmuş kod yanıtıyla aynı (bu numara için kod hiç üretilmedi)
     if (!user || user.isBot) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
 
-    await this.otpService.verify(phone, code);
+    await this.verifyOtpForAccount(user.id, phone, code);
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
@@ -380,7 +399,7 @@ export class AuthService {
     });
     if (!user) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
 
-    await this.otpService.verify(phone, code);
+    await this.verifyOtpForAccount(user.id, phone, code);
     // Yaptırım bilgisi sadece kod doğruysa gösterilir
     await this.checkSanction(user.id, user.status);
 
@@ -391,35 +410,6 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user.id, user.email, user.role, user.tokenVersion);
     return { user: this.sanitizeUser(user), ...tokens };
-  }
-
-  // ─── WhatsApp OTP ─────────────────────────────────────────────────────────
-
-  // Oturumdaki kişi yalnız kendi hesabındaki numarayı doğrulayabilir
-  private async assertOwnPhone(userId: string, phone: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { phone: true } });
-    if (!user?.phone || user.phone !== phone) {
-      throw new ForbiddenException("Yalnızca hesabınızdaki telefon numarasını doğrulayabilirsiniz");
-    }
-  }
-
-  async sendOtp(userId: string, phone: string) {
-    await this.assertOwnPhone(userId, phone);
-    await this.otpService.send(phone);
-    return { message: "OTP gönderildi" };
-  }
-
-  async verifyOtp(userId: string, phone: string, code: string) {
-    await this.assertOwnPhone(userId, phone);
-    await this.otpService.verify(phone, code);
-
-    // Telefonu doğrulanmış olarak işaretle
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { phoneVerified: true },
-    });
-
-    return { message: "Telefon numarası doğrulandı" };
   }
 
   // ─── Token üretimi ────────────────────────────────────────────────────────

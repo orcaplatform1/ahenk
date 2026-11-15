@@ -1,4 +1,4 @@
-import { Injectable, Logger, ForbiddenException } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import Anthropic from "@anthropic-ai/sdk";
@@ -12,29 +12,6 @@ export class AiReportService {
     private prisma: PrismaService,
     private config: ConfigService,
   ) {}
-
-  // Sadece masanın iptal etmemiş katılımcısı, masa açıldıktan sonra görebilir
-  // (açılış: mekan atanmış ve buluşmadan 10 saat önce — grup Cumartesi 10:00, başbaşa Pazar 10:00)
-  async getReport(meetingId: string, userId: string) {
-    const participant = await this.prisma.meetingParticipant.findUnique({
-      where: { meetingId_userId: { meetingId, userId } },
-      select: {
-        status: true,
-        meeting: { select: { scheduledAt: true, locationText: true } },
-      },
-    });
-    if (!participant || ["CANCELLED", "DECLINED", "NO_SHOW"].includes(participant.status)) {
-      throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
-    }
-
-    const revealAt = new Date(participant.meeting.scheduledAt.getTime() - 10 * 60 * 60 * 1000);
-    if (!participant.meeting.locationText || new Date() < revealAt) return null;
-
-    const report = await this.prisma.meetingAiReport.findUnique({
-      where: { meetingId },
-    });
-    return report ?? null;
-  }
 
   async generateReport(meetingId: string): Promise<void> {
     const apiKey = this.config.get<string>("CLAUDE_API_KEY");

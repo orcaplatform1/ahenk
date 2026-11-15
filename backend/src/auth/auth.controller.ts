@@ -21,11 +21,12 @@ import { Throttle, SkipThrottle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { SendOtpDto, VerifyOtpDto, SendLoginOtpDto, VerifyLoginOtpDto, ForgotPasswordDto, ResetPasswordDto, RegisterSendOtpDto, RegisterVerifyOtpDto } from "./dto/send-otp.dto";
+import { SendLoginOtpDto, VerifyLoginOtpDto, ForgotPasswordDto, ResetPasswordDto, RegisterSendOtpDto, RegisterVerifyOtpDto } from "./dto/send-otp.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 import { CurrentUser } from "./decorators/current-user.decorator";
 
+import { LoginGuardService } from "./login-guard.service";
 import { ACCESS_COOKIE, REFRESH_COOKIE, SESSION_COOKIE, refreshTokenFromRequest } from "./auth-cookies";
 
 @ApiTags("Auth")
@@ -35,6 +36,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private config: ConfigService,
+    private loginGuard: LoginGuardService,
   ) {}
 
   @Post("register/send-otp")
@@ -74,6 +76,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
+    await this.loginGuard.hit("login", req.ip, dto.email);
     const { user, accessToken, refreshToken } = await this.authService.login(dto);
     return this.issueSession(req, res, user, accessToken, refreshToken);
   }
@@ -132,7 +135,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: "Şifre sıfırlama — WhatsApp kodu gönder (public)" })
-  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
+    await this.loginGuard.hit("forgot-password", req.ip, dto.phone);
     return this.authService.forgotPassword(dto.phone);
   }
 
@@ -140,7 +144,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: "Şifre sıfırlama — kod + yeni şifre (public)" })
-  async resetPassword(@Body() dto: ResetPasswordDto) {
+  async resetPassword(@Body() dto: ResetPasswordDto, @Req() req: Request) {
+    await this.loginGuard.hit("reset-password", req.ip, dto.phone);
     return this.authService.resetPassword(dto.phone, dto.code, dto.newPassword);
   }
 
@@ -148,7 +153,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: "WhatsApp OTP ile giriş — kod gönder (public)" })
-  async sendLoginOtp(@Body() dto: SendLoginOtpDto) {
+  async sendLoginOtp(@Body() dto: SendLoginOtpDto, @Req() req: Request) {
+    await this.loginGuard.hit("send-login-otp", req.ip, dto.phone);
     return this.authService.sendLoginOtp(dto.phone);
   }
 
@@ -161,27 +167,9 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
+    await this.loginGuard.hit("verify-login-otp", req.ip, dto.phone);
     const { user, accessToken, refreshToken } = await this.authService.verifyLoginOtp(dto.phone, dto.code);
     return this.issueSession(req, res, user, accessToken, refreshToken);
-  }
-
-  @Post("send-otp")
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "WhatsApp OTP gönder (telefon doğrulama)" })
-  async sendOtp(@CurrentUser() user: { id: string }, @Body() dto: SendOtpDto) {
-    return this.authService.sendOtp(user.id, dto.phone);
-  }
-
-  @Post("verify-otp")
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "WhatsApp OTP doğrula" })
-  async verifyOtp(@CurrentUser() user: { id: string }, @Body() dto: VerifyOtpDto) {
-    return this.authService.verifyOtp(user.id, dto.phone, dto.code);
   }
 
   // Herkese açık liste: sayfa yüklemelerinde sık çağrılır, kimlik uçlarının dar sınırı uygulanmaz

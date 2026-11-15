@@ -74,25 +74,4 @@ export class ReferralService {
 
     return { ok: true, inviteCode: referral.inviteCode };
   }
-
-  async applyReferrerDiscount(userId: string): Promise<{ referralId: string; discountKurus: number; originalKurus: number } | null> {
-    const referral = await this.prisma.referral.findFirst({
-      where: { referrerId: userId, status: ReferralStatus.KYC_APPROVED },
-    });
-    return referral ? { referralId: referral.id, discountKurus: 0, originalKurus: 0 } : null;
-  }
-
-  async markReferrerDiscountUsed(referralId: string) {
-    await this.prisma.referral.update({
-      where: { id: referralId },
-      data: { discountUsedAt: new Date(), status: ReferralStatus.DISCOUNT_USED },
-    });
-  }
-
-  async markInviteeDiscountUsed(userId: string) {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { referralDiscountAvailable: false },
-    });
-  }
 }

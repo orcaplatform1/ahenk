@@ -3,5 +3,4 @@
 import { BASE } from './config';
 
 const abs = (u: string) => (u.startsWith('/') ? `${BASE}${u}` : u);
-export const largePhotoUrl = (u: string) => abs(u);
 export const smallPhotoUrl = (u: string) => abs(u.replace(/\.webp$/, '.s.webp'));

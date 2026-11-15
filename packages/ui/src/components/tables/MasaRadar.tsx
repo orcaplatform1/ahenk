@@ -89,19 +89,6 @@ export interface Participant {
   photoUrl?: string | null; // Onaylı profil fotoğrafı (yalnız masa detay kartında gösterilir)
 }
 
-export interface MasaData {
-  id: string;
-  type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
-  scheduledAt: string;
-  maxParticipants?: number;
-  locationName?: string | null;
-  locationText?: string | null;
-  locationMapsUrl?: string | null;
-  locationAddress?: string;
-  venuePhotoUrl?: string | null;
-  participants: Participant[];
-}
-
 export type MasaTuru = 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
 
 export interface DashboardItem {

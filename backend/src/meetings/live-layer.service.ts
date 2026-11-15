@@ -91,12 +91,6 @@ const matchRatio = (a: MatchPerson, b: MatchPerson) => matchScore(a, b) / (WEIGH
 const opaque = (id: string, weekStart: Date) =>
   createHash("sha256").update(`${id}:${weekStart.getTime()}`).digest("hex").slice(0, 12);
 
-function topDistrict(districts: (string | null | undefined)[]): string | null {
-  const counts = new Map<string, number>();
-  for (const d of districts) if (d) counts.set(d, (counts.get(d) ?? 0) + 1);
-  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-}
-
 type Density = { mode: "static" | "real"; districts: { name: string; level: 1 | 2 | 3 | 4; percent: number | null }[] } | null;
 
 // Gerçek veri: ilçeler yoğunluk sırasına göre dört eşit seviyeye bölünür

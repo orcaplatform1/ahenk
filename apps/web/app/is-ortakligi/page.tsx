@@ -28,26 +28,6 @@ function useCountUp(target: number, duration = 1600, start = false) {
   return count;
 }
 
-/* ── Styles helpers ───────────────────────────────────────────── */
-const btnGrad: React.CSSProperties = {
-  background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)',
-  border: 'none',
-  borderRadius: '9999px',
-  color: '#fff',
-  fontWeight: 700,
-  cursor: 'pointer',
-  transition: 'filter 0.2s',
-};
-
-const btnOutline: React.CSSProperties = {
-  background: 'transparent',
-  border: '1px solid rgba(255,255,255,0.15)',
-  borderRadius: '9999px',
-  color: '#aaa',
-  cursor: 'pointer',
-  transition: 'border-color 0.2s',
-};
-
 const VENUE_TYPES = ['Restoran', 'Kafe', 'Bistro', 'Bar', 'Diğer'];
 const ALCOHOL_OPTIONS = [
   { value: 'ALCOHOLIC', label: 'Alkollü' },

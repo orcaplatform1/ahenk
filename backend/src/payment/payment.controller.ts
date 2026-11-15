@@ -11,6 +11,7 @@ import {
   HttpCode,
   Headers,
   BadRequestException,
+  ForbiddenException,
   Logger,
 } from "@nestjs/common";
 import { Request, Response } from "express";
@@ -106,12 +107,17 @@ export class PaymentController {
     return { ok: true };
   }
 
-  // Google Play RTDN (Pub/Sub push); ?token= GOOGLE_RTDN_TOKEN ile korunur
+  // Google Play RTDN (Pub/Sub push); ?token= GOOGLE_RTDN_TOKEN ve Pub/Sub OIDC JWT (Authorization) ile korunur.
+  // İkisinden biri doğrulanmazsa bildirim reddedilir.
   @Post("store/google-notification")
   @HttpCode(HttpStatus.OK)
-  async googleNotification(@Query("token") token: string, @Body() body: { message?: { data?: string } }) {
+  async googleNotification(@Query("token") token: string, @Headers("authorization") authorization: string | undefined, @Body() body: { message?: { data?: string } }) {
     const expected = this.config.get<string>("GOOGLE_RTDN_TOKEN");
-    if (expected && token === expected && body?.message?.data) {
+    if (!expected || token !== expected || !(await this.paymentService.verifyGooglePush(authorization))) {
+      this.logger.warn("Play bildirimi reddedildi: token / Pub/Sub kimliği doğrulanamadı");
+      throw new ForbiddenException("Bildirim doğrulanamadı");
+    }
+    if (body?.message?.data) {
       await this.paymentService.handleGoogleNotification(body.message.data).catch((e) => this.logger.error(`Play bildirimi: ${e}`));
     }
     return { ok: true };

@@ -53,6 +53,18 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.client.ttl(key);
   }
 
+  // Atomik sayaç: değer 1 artar; anahtar yeni oluştuysa süre tanımlanır (tek Lua betiği, eşzamanlı isteklerde güvenli)
+  async incrWithTtl(key: string, ttlSeconds: number): Promise<number> {
+    return (await this.client.eval(
+      "local n = redis.call('INCR', KEYS[1]) if n == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end return n",
+      1, key, String(ttlSeconds),
+    )) as number;
+  }
+
+  async decr(key: string): Promise<void> {
+    await this.client.decr(key);
+  }
+
   async exists(key: string): Promise<boolean> {
     return (await this.client.exists(key)) === 1;
   }

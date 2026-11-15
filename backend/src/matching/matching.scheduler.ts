@@ -4,12 +4,13 @@ import { MatchingService } from "./matching.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AiReportService } from "../meetings/ai-report.service";
 import { NotificationService } from "../notification/notification.service";
-import { SubscriptionPlan, SubscriptionStatus, KycStatus, MeetingType } from "../generated/prisma/client";
+import { Prisma, SubscriptionPlan, SubscriptionStatus, KycStatus, MeetingType } from "../generated/prisma/client";
 import { cancellationNotice } from "../meetings/cancellation-notice";
 import { VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { reviewWindow } from "../meetings/meeting-windows";
 import { selectedThisWeek } from "./weekly-selection";
-import { closeGroupCycle, closeKankaCycle, closeOneOnOneCycle, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB } from "../payment/package-rights";
+import { closeGroupCycle, closeKankaCycle, closeOneOnOneCycle, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, PRIME_PLANS, restoreGroupRights, restoreKankaRights } from "../payment/package-rights";
+import { restoreOneOnOneRights } from "./one-on-one-right";
 
 @Injectable()
 export class MatchingScheduler {
@@ -72,6 +73,22 @@ export class MatchingScheduler {
     }
   }
 
+  // Hak düşümü adımı: tek transaction içinde çalışır (yarıda kalırsa hiçbir paket değişmez); hata olursa 3 kez
+  // yeniden denenir, her hata loglanır. Sonraki adımlar her durumda çalışır.
+  private async rightsStep(label: string, fn: (tx: Prisma.TransactionClient) => Promise<unknown>): Promise<void> {
+    const ATTEMPTS = 3;
+    for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+      try {
+        await this.prisma.$transaction((tx) => fn(tx), { maxWait: 10_000, timeout: 120_000 });
+        return;
+      } catch (err) {
+        this.logger.error(`${label} hatası (deneme ${attempt}/${ATTEMPTS}): ${err}`);
+        if (attempt < ATTEMPTS) await new Promise((r) => setTimeout(r, 5_000));
+      }
+    }
+    this.logger.error(`${label}: ${ATTEMPTS} denemede tamamlanamadı, hak düşümü yapılmadı`);
+  }
+
   // Her saat başı: saati 6 saat geçmiş masaları kapat
   // ACTIVE → COMPLETED (iptal etmeyen katılımcılar ATTENDED). Mekânı atanmış PENDING masanın kartı açılmıştır, o da
   // tamamlanır; yalnız mekânsız PENDING masa (kartı hiç açılmamış) CANCELLED olur.
@@ -96,10 +113,29 @@ export class MatchingScheduler {
         ]);
       }
 
-      const { count: cancelled } = await this.prisma.meeting.updateMany({
+      // Mekânsız kalan masa iptal olur; admin iptalindeki gibi düşülen haklar (kendi iptal etmemiş olanlara) geri verilir
+      const unplaced = await this.prisma.meeting.findMany({
         where: { status: "PENDING", locationText: null, scheduledAt: { lte: threshold } },
-        data: { status: "CANCELLED", cancelledAt: new Date() },
+        select: { id: true, type: true, createdAt: true, participants: { select: { userId: true, status: true } } },
       });
+      let cancelled = 0;
+      for (const meeting of unplaced) {
+        const done = await this.prisma.$transaction(async (tx) => {
+          const claimed = await tx.meeting.updateMany({
+            where: { id: meeting.id, status: "PENDING", locationText: null },
+            data: { status: "CANCELLED", cancelledAt: new Date() },
+          });
+          if (claimed.count === 0) return false;
+          const stillIn = meeting.participants
+            .filter((p) => !["CANCELLED", "DECLINED", "NO_SHOW"].includes(p.status))
+            .map((p) => p.userId);
+          if (meeting.type === MeetingType.ONE_ON_ONE) await restoreOneOnOneRights(tx, meeting.createdAt, stillIn);
+          if (meeting.type === MeetingType.GROUP) await restoreGroupRights(tx, meeting.id, stillIn);
+          if (meeting.type === MeetingType.KANKA) await restoreKankaRights(tx, meeting.id, stillIn);
+          return true;
+        });
+        if (done) cancelled++;
+      }
 
       if (finished.length > 0 || cancelled > 0) {
         this.logger.log(`Masa kapanışı: ${finished.length} tamamlandı, ${cancelled} onaysız iptal`);
@@ -109,12 +145,13 @@ export class MatchingScheduler {
     }
   }
 
-  // Her saat başı: süresi dolan abonelikleri EXPIRED yap
+  // Her saat başı: süresi dolan tek seferlik paketleri EXPIRED yap. Prime burada kapatılmaz (prime.service.ts hourly):
+  // iptal edilmiş Prime yalnız hakları bitince, iptal edilmemiş ve yenilenmemiş Prime expiresAt gelince kapanır.
   @Cron("0 * * * *", { timeZone: "Europe/Istanbul" })
   async expireSubscriptions(): Promise<void> {
     try {
       const { count } = await this.prisma.subscription.updateMany({
-        where: { status: SubscriptionStatus.ACTIVE, expiresAt: { lte: new Date() } },
+        where: { status: SubscriptionStatus.ACTIVE, plan: { notIn: PRIME_PLANS }, expiresAt: { lte: new Date() } },
         data: { status: SubscriptionStatus.EXPIRED },
       });
       if (count > 0) this.logger.log(`${count} aboneliğin süresi doldu`);
@@ -250,10 +287,11 @@ export class MatchingScheduler {
     await this.step("Perşembe kapanışı", () => this.matchingService.runThursdayClosing());
     await this.step("Grup döngü takibi", () => this.updateMissedCycles("GROUP"));
     // Paket hakları: grup döngüsü sayılır, masası kurulanın 1 grup hakkı düşer
-    await this.step("Grup hak düşümü", async () => {
-      const { week: weekNumber, year } = this.getISOWeek(new Date());
-      const cycle = await this.prisma.matchingCycle.findUnique({ where: { weekNumber_year: { weekNumber, year } }, select: { id: true } });
-      await closeGroupCycle(this.prisma, cycle?.id ?? null);
+    const groupLockAt = new Date();
+    await this.rightsStep("Grup hak düşümü", async (tx) => {
+      const { week: weekNumber, year } = this.getISOWeek(groupLockAt);
+      const cycle = await tx.matchingCycle.findUnique({ where: { weekNumber_year: { weekNumber, year } }, select: { id: true } });
+      await closeGroupCycle(tx, cycle?.id ?? null, groupLockAt);
     });
     this.logger.log("Perşembe kapanışı tamamlandı");
   }
@@ -398,7 +436,8 @@ export class MatchingScheduler {
     await this.step("Cuma ONE_ON_ONE kapanışı", () => this.runOneOnOneClosing());
     await this.step("Başbaşa döngü takibi", () => this.updateMissedCycles("ONE_ON_ONE"));
     // Paket hakları: başbaşa döngüsü sayılır (hak masa kurulunca zaten harcandı)
-    await this.step("Başbaşa döngü sayımı", () => closeOneOnOneCycle(this.prisma));
+    const oneOnOneLockAt = new Date();
+    await this.rightsStep("Başbaşa döngü sayımı", (tx) => closeOneOnOneCycle(tx, oneOnOneLockAt));
     this.logger.log("Cuma ONE_ON_ONE kapanışı tamamlandı");
   }
 
@@ -453,7 +492,8 @@ export class MatchingScheduler {
     const closedCycleId = cycleId;
     if (closedCycleId) {
       await this.step("Kankamla döngü takibi", () => this.updateMissedKankaCycles(closedCycleId));
-      await this.step("Kankamla hak düşümü", () => closeKankaCycle(this.prisma, closedCycleId));
+      const kankaLockAt = new Date();
+      await this.rightsStep("Kankamla hak düşümü", (tx) => closeKankaCycle(tx, closedCycleId, kankaLockAt));
     }
     this.logger.log(`Cumartesi KANKA kapanışı tamamlandı (${unmatchedCount} çift eşleşemedi)`);
   }

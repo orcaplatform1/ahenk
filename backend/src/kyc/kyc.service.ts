@@ -225,25 +225,6 @@ export class KycService {
 
   // ─── Admin: Tek başvuru ───────────────────────────────────────────────────
 
-  async adminGetOne(id: string) {
-    const kyc = await this.prisma.kycSubmission.findUnique({
-      where: { id },
-      include: {
-        user: { select: { id: true, email: true, phone: true, profile: true } },
-        reviewedBy: { select: { id: true, email: true } },
-      },
-    });
-    if (!kyc) throw new NotFoundException("KYC başvurusu bulunamadı");
-    return {
-      ...kyc,
-      fileUrls: {
-        idFront:  `/api/v1/kyc/admin/file/${id}/front`,
-        idBack:   `/api/v1/kyc/admin/file/${id}/back`,
-        liveness: `/api/v1/kyc/admin/file/${id}/liveness`,
-      },
-    };
-  }
-
   // ─── Admin: Dosya sun ─────────────────────────────────────────────────────
 
   async serveAdminFile(submissionId: string, type: string, res: Response) {

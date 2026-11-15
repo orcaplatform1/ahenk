@@ -1,5 +1,4 @@
-import { AdminAction } from "../admin/admin-action-log";
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Request } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from "@nestjs/common";
 import { MatchingService } from "./matching.service";
 import { BotDto, SetBotStatusDto } from "./dto/update-bot.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -10,12 +9,6 @@ import { UserRole } from "../generated/prisma/client";
 @Controller("matching")
 export class MatchingController {
   constructor(private matchingService: MatchingService) {}
-
-  @Get("pool-status")
-  @UseGuards(JwtAuthGuard)
-  getPoolStatus(@Request() req: any) {
-    return this.matchingService.getPoolStatus(req.user.id);
-  }
 
   @Get("admin/bots")
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -52,11 +45,4 @@ export class MatchingController {
     return this.matchingService.deleteBot(id);
   }
 
-  @AdminAction("MATCHING_SCAN", () => "Eşleştirme taramasını elle başlattı")
-  @Post("admin/run-matching")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
-  runMatching() {
-    return this.matchingService.requestScan();
-  }
 }

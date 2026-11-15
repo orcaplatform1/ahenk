@@ -93,7 +93,6 @@ function jsonHeaders(token?: string): Record<string, string> {
 
 // ── Renkler ─────────────────────────────────────────────────────────────────
 const GREEN      = '#27ae60';
-const RED        = '#c0392b';
 
 function buildOrdered(participants: DetayParticipant[]): DetayParticipant[] {
   const males   = participants.filter(p => p.gender === 'MALE');

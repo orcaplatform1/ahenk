@@ -32,6 +32,10 @@ const PENDING_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 
 
 
+// İndirim hakkı harcanamayan ödeme (web ödeme dönüşü ve mağaza doğrulaması aynı metni kullanır)
+const DISCOUNT_USED_REASON = "İndirim hakkı başka ödemede kullanılmış";
+const DISCOUNT_USED_MESSAGE = "İndirim hakkı zaten kullanılmış, ödeme iade ediliyor";
+
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
@@ -351,8 +355,8 @@ export class PaymentService {
     });
 
     if (outcome === DISCOUNT_USED) {
-      await this.refundUnfulfilled(payment.id, payment.userId, result, "İndirim hakkı başka ödemede kullanılmış");
-      return { success: false, message: "İndirim hakkı zaten kullanılmış, ödeme iade ediliyor" };
+      await this.refundUnfulfilled(payment.id, payment.userId, result, DISCOUNT_USED_REASON);
+      return { success: false, message: DISCOUNT_USED_MESSAGE };
     }
     if (outcome === "CONFLICT") {
       await this.refundUnfulfilled(payment.id, payment.userId, result, "Aynı paket için ikinci ödeme");
@@ -528,24 +532,54 @@ export class PaymentService {
     if (!v || !parsed || !plan) throw new BadRequestException("Satın alma doğrulanamadı.");
     // Kullanılan mobil indirim teklifi: tek seferlikte indirimli ürün, Prime'da teklif kimliği
     const storeDiscount = parsed.discount ?? discountOfOffer(v.offerId);
-    if ((await this.prisma.payment.count({ where: { storeTransactionId: v.transactionId } })) > 0) return { success: true };
+    const known = await this.prisma.payment.findFirst({ where: { storeTransactionId: v.transactionId }, select: { status: true, failureReason: true } });
+    if (known?.status === PaymentStatus.DUPLICATE) {
+      throw new ConflictException(known.failureReason === DISCOUNT_USED_REASON ? DISCOUNT_USED_MESSAGE : "Aktif paketiniz bu paketi kapsıyor; bu paketi şu an satın alamazsınız.");
+    }
+    if (known) return { success: true };
 
     const price = await this.pricing.current(plan);
-    await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
-      if ((await tx.payment.count({ where: { storeTransactionId: v.transactionId } })) > 0) return;
-      // Mağaza indirimli tutarı tahsil etti: indirim hakkı harcanır (varsa); tutar mobil fiyat listesinden
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      const link = plan === SubscriptionPlan.KANKAMLA ? await activeKankaLink(tx, userId) : null;
+      const lockIds = link ? [userId, link.kankaId] : [userId];
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id IN (${Prisma.join(lockIds)}) ORDER BY id FOR UPDATE`;
+      if ((await tx.payment.count({ where: { storeTransactionId: v.transactionId } })) > 0) return "DONE";
+      // Satın alma kuralları web ödeme dönüşündeki gibi kilit altında yeniden kontrol edilir (ikinci Prime, kapsanan paket):
+      // çakışmada paket verilmez; mağaza parayı çektiği için ödeme DUPLICATE olarak kaydedilir (Ödeme Sonuçlandırma)
+      if (await this.planConflict(tx, userId, plan)) {
+        await tx.payment.create({
+          data: {
+            userId, plan, amountKurus: price.mobileKurus, listKurus: price.mobileKurus, status: PaymentStatus.DUPLICATE,
+            platform, paidAt: new Date(), storeTransactionId: v.transactionId, failureReason: "Aynı paket için ikinci ödeme (mağaza)",
+          },
+        });
+        return "CONFLICT";
+      }
+      // Mağaza indirimli tutarı tahsil etti: indirim uygunluğu web ödemesindeki aynı fonksiyonlarla kontrol edilir
+      // (geri kazanım: winback.discountedKurus; davet %10: availableDiscount) ve hak consumeDiscount ile harcanır.
+      // Hakkı olmayan / hakkı başka ödemede harcanmış kullanıcıya indirimli paket verilmez: ödeme DUPLICATE kaydedilir.
       let discountType: PaymentDiscountType | null = null;
       let amountKurus = price.mobileKurus;
-      if (storeDiscount === "WINBACK") {
-        const { amountTL } = await this.winback.settings();
-        amountKurus = price.mobileKurus - amountTL * 100;
-        discountType = PaymentDiscountType.WINBACK;
-        await this.winback.consume(tx, userId);
-      } else if (storeDiscount === "REFERRAL") {
-        amountKurus = price.mobileDiscountKurus;
-        discountType = await this.availableDiscount(tx, userId);
-        if (discountType) await this.consumeDiscount(tx, userId, discountType);
+      if (storeDiscount) {
+        if (storeDiscount === "WINBACK") {
+          const winbackKurus = await this.winback.discountedKurus(userId, plan, price.mobileKurus);
+          if (winbackKurus !== null) {
+            amountKurus = winbackKurus;
+            discountType = PaymentDiscountType.WINBACK;
+          }
+        } else {
+          amountKurus = price.mobileDiscountKurus;
+          discountType = await this.availableDiscount(tx, userId);
+        }
+        if (!discountType || !(await this.consumeDiscount(tx, userId, discountType))) {
+          await tx.payment.create({
+            data: {
+              userId, plan, amountKurus, listKurus: price.mobileKurus, status: PaymentStatus.DUPLICATE,
+              platform, paidAt: new Date(), storeTransactionId: v.transactionId, failureReason: DISCOUNT_USED_REASON,
+            },
+          });
+          return "DISCOUNT_USED";
+        }
       }
       const payment = await tx.payment.create({
         data: {
@@ -560,17 +594,34 @@ export class PaymentService {
         : await tx.subscription.create({ data: { userId, plan, groupRights: GROUP_RIGHTS[plan], kankaRights: kankaRightsOf(plan) } });
       await tx.payment.update({ where: { id: payment.id }, data: { subscriptionId: sub.id } });
       await this.grantReferrerDiscount(tx, userId);
+      return "CREATED";
     });
-    await enqueueAssign(this.assignQueue, userId);
+    if (outcome === "CONFLICT") {
+      this.logger.error(`Mağaza ödemesi paketle çakıştı, paket verilmedi: user=${userId} plan=${plan} işlem=${v.transactionId}`);
+      await this.paymentAlert(userId);
+      throw new ConflictException(isPrime(plan)
+        ? "Aktif Prime aboneliğin var; ikinci bir Prime alınamaz."
+        : "Aktif paketiniz bu paketi kapsıyor; bu paketi şu an satın alamazsınız.");
+    }
+    if (outcome === "DISCOUNT_USED") {
+      this.logger.error(`Mağaza ödemesinde indirim hakkı yok, paket verilmedi: user=${userId} plan=${plan} işlem=${v.transactionId}`);
+      await this.paymentAlert(userId);
+      throw new ConflictException(DISCOUNT_USED_MESSAGE);
+    }
+    if (outcome === "CREATED") await enqueueAssign(this.assignQueue, userId);
     return { success: true };
   }
 
   // App Store Server Notifications V2: bildirimdeki işlem App Store API'sinden yeniden okunarak doğrulanır
   async handleAppleNotification(signedPayload: string) {
     if (!this.store.enabled()) return;
-    const n = this.store.decodeJws<{ notificationType: string; subtype?: string; data?: { signedTransactionInfo?: string } }>(signedPayload);
-    const tInfo = n?.data?.signedTransactionInfo ? this.store.decodeJws<{ transactionId: string }>(n.data.signedTransactionInfo) : null;
-    if (!n || !tInfo) return;
+    // İmza ve sertifika zinciri Apple kök sertifikasıyla doğrulanır; doğrulanmayan bildirim reddedilir
+    const n = this.store.verifyAppleJws<{ notificationType: string; subtype?: string; data?: { signedTransactionInfo?: string } }>(signedPayload);
+    const tInfo = n?.data?.signedTransactionInfo ? this.store.verifyAppleJws<{ transactionId: string }>(n.data.signedTransactionInfo) : null;
+    if (!n || !tInfo) {
+      this.logger.warn("App Store bildirimi reddedildi: imza / sertifika zinciri doğrulanamadı");
+      return;
+    }
     const v = await this.store.verifyApple(tInfo.transactionId);
     if (!v) return;
     const sub = await this.prisma.subscription.findFirst({ where: { storeOriginalTransactionId: v.originalTransactionId }, select: { id: true } });
@@ -596,6 +647,10 @@ export class PaymentService {
     } else if (sn.notificationType === 3) {
       await this.prime.stopAutoRenew(sub.id);
     }
+  }
+
+  verifyGooglePush(authorization: string | undefined) {
+    return this.store.verifyGooglePush(authorization);
   }
 
   async cancelPrimeRenewal(userId: string) {

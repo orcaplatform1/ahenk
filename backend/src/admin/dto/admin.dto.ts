@@ -319,19 +319,6 @@ export class CreateSanctionDto {
   expiresAt?: string;
 }
 
-// ─── Mekan fotoğrafları / adres ─────────────────────────────────────────────
-// Boş string → alan temizlenir
-
-export class UpdateVenuePhotosDto {
-  @IsOptional() @IsString() @MaxLength(300) venueAddress?: string;
-  @IsOptional() @IsString() @MaxLength(500) venuePhotoUrl?: string;
-  @IsOptional() @IsString() @MaxLength(80)  venuePhotoCaption1?: string;
-  @IsOptional() @IsString() @MaxLength(500) venuePhoto2Url?: string;
-  @IsOptional() @IsString() @MaxLength(80)  venuePhotoCaption2?: string;
-  @IsOptional() @IsString() @MaxLength(500) venuePhoto3Url?: string;
-  @IsOptional() @IsString() @MaxLength(80)  venuePhotoCaption3?: string;
-}
-
 // ─── Masaya bot yerleştir ────────────────────────────────────────────────────
 
 export class PlaceBotDto {

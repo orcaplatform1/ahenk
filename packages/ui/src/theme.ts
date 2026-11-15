@@ -8,7 +8,3 @@ export const colors = {
   text: '#f5f5f5',
   muted: '#888888',
 } as const;
-
-export const spacing = {} as const;
-
-export const typography = {} as const;

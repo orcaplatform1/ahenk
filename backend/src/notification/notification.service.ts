@@ -161,17 +161,6 @@ export class NotificationService {
     });
   }
 
-  // ─── Sadakat programı ────────────────────────────────────────────────────
-
-  async notifyReferralRegistered(referrerId: string): Promise<void> {
-    await this.send({
-      userId: referrerId,
-      title: "Arkadaşın platforma katıldı!",
-      body: "Bir davet hakkın kullanıldı. 1 indirim hakkın eklendi.",
-      data: { event: "REFERRAL_REGISTERED" },
-    });
-  }
-
   // ─── Genel kullanım için public wrapper ──────────────────────────────────
 
   async sendToUser(

@@ -28,17 +28,6 @@ function useCountUp(target: number, duration = 1600, start = false) {
   return count;
 }
 
-/* ── Shared styles ────────────────────────────────────────────── */
-const btnGrad: React.CSSProperties = {
-  background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)',
-  border: 'none',
-  borderRadius: '9999px',
-  color: '#fff',
-  fontWeight: 700,
-  cursor: 'pointer',
-  transition: 'filter 0.2s',
-};
-
 function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-60px' });

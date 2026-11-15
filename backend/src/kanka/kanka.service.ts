@@ -3,7 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
-import { KycStatus, UserStatus } from "../generated/prisma/client";
+import { KycStatus, Prisma, UserStatus } from "../generated/prisma/client";
 import { randomBytes } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
@@ -206,15 +206,18 @@ export class KankaService {
     if (!me.profile?.gender || me.profile.gender !== inviter.profile?.gender) {
       throw new BadRequestException("Kanka aynı cinsiyetten olmalı.");
     }
-    if (await activeKankaLink(this.prisma, userId)) throw new ConflictException("Zaten bir kankan var.");
-    if (await activeKankaLink(this.prisma, inviter.id)) throw new ConflictException("Davet eden kişinin artık bir kankası var.");
-
+    // İki kişinin satırı kilitlenir (sıralı): eşzamanlı kabul istekleri sırayla işlenir. Kankalık kontrolleri ve
+    // davetin PENDING → ACCEPTED geçişi kilit altında yapılır; kişi başına tek aktif kankalık korunur.
     await this.prisma.$transaction(async (tx) => {
-      await tx.kankaLink.create({ data: { userAId: inviter.id, userBId: userId } });
-      await tx.kankaInvite.update({
-        where: { id: invite.id },
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id IN (${Prisma.join([inviter.id, userId])}) ORDER BY id FOR UPDATE`;
+      if (await activeKankaLink(tx, userId)) throw new ConflictException("Zaten bir kankan var.");
+      if (await activeKankaLink(tx, inviter.id)) throw new ConflictException("Davet eden kişinin artık bir kankası var.");
+      const claimed = await tx.kankaInvite.updateMany({
+        where: { id: invite.id, status: "PENDING" },
         data: { status: "ACCEPTED", acceptedById: userId, respondedAt: new Date() },
       });
+      if (claimed.count === 0) throw new ConflictException("Bu davet artık geçerli değil.");
+      await tx.kankaLink.create({ data: { userAId: inviter.id, userBId: userId } });
       // İki kişinin de bekleyen davetleri (gönderdiği) geri çekilir
       await tx.kankaInvite.updateMany({
         where: { inviterId: { in: [inviter.id, userId] }, status: "PENDING" },

@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Param, Body, Query, Req, UseGuards } from "@nestjs/common";
 import { Request } from "express";
 import { MeetingsService } from "./meetings.service";
-import { AiReportService } from "./ai-report.service";
 import { LiveLayerService } from "./live-layer.service";
 import { LiveLayerQueryDto } from "./live-layer.dto";
 import { BlockUsersDto, ReviewMeetingDto, CancelRegistrationDto, MarkNoShowDto } from "./dto/meetings.dto";
@@ -12,7 +11,6 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 export class MeetingsController {
   constructor(
     private meetingsService: MeetingsService,
-    private aiReportService: AiReportService,
     private liveLayer: LiveLayerService,
   ) {}
 
@@ -102,13 +100,6 @@ export class MeetingsController {
   ) {
     const user = req.user as { id: string };
     return this.meetingsService.cancelRegistration(id, user.id, dto.note);
-  }
-
-  // AI masa raporu
-  @Get(":id/ai-report")
-  getAiReport(@Param("id") id: string, @Req() req: Request) {
-    const user = req.user as { id: string };
-    return this.aiReportService.getReport(id, user.id);
   }
 
   // Buluşma değerlendirmesi

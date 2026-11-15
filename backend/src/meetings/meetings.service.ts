@@ -801,9 +801,10 @@ export class MeetingsService {
     }
 
     // İptal nedeni leaveNote'a yazılır; leaveReason "kendisi iptal etti" işaretidir
+    // Eşzamanlı ikinci iptal isteği koşullu güncellemede 0 satır görür: hak ikinci kez düşmez
     await this.prisma.$transaction(async (tx) => {
-      await tx.meetingParticipant.update({
-        where: { meetingId_userId: { meetingId, userId } },
+      const claimed = await tx.meetingParticipant.updateMany({
+        where: { meetingId, userId, status: { not: ParticipantStatus.CANCELLED } },
         data: {
           status: ParticipantStatus.CANCELLED,
           leaveReason: LeaveReason.OTHER,
@@ -811,8 +812,19 @@ export class MeetingsService {
           cancelledAt: now,
         },
       });
+      if (claimed.count === 0) throw new ConflictException("Rezervasyon zaten iptal edilmiş");
       // Grup: iptal edenin paketinden 1 hak + 1 döngü düşer
       if (isGroup) await chargeGroupCancel(tx, participant.id, userId);
+      // Başbaşa masa tek kişiyle kalmaz: masa iptal, kalanın hakkı geri verilir; iptal edenin hakkı yanar, 1 döngü düşer
+      if (!isGroup) {
+        const closed = await tx.meeting.updateMany({
+          where: { id: meetingId, status: { notIn: [MeetingStatus.CANCELLED, MeetingStatus.COMPLETED] } },
+          data: { status: MeetingStatus.CANCELLED, cancelledAt: new Date() },
+        });
+        if (closed.count === 0) throw new ForbiddenException("Bu masa artık aktif değil");
+        await restoreOneOnOneRights(tx, meeting.createdAt, meeting.participants.map((p) => p.userId).filter((id) => id !== userId));
+        await chargeOneOnOneCancel(tx, userId, meeting.createdAt);
+      }
     });
 
     // Grup: anında bildirim yok, Perşembe 20:00'de toplu gider (MatchingScheduler).
@@ -826,13 +838,7 @@ export class MeetingsService {
         ),
       );
 
-      // Başbaşa masa tek kişiyle kalmaz: masa iptal, kalanın hakkı geri verilir ve tekrar taramaya girer
-      await this.prisma.$transaction(async (tx) => {
-        await tx.meeting.update({ where: { id: meetingId }, data: { status: MeetingStatus.CANCELLED, cancelledAt: new Date() } });
-        await restoreOneOnOneRights(tx, meeting.createdAt, others);
-        // İptal edenin başbaşa hakkı yanar, 1 döngü düşer
-        await chargeOneOnOneCancel(tx, userId, meeting.createdAt);
-      });
+      // Kalan kişi tekrar taramaya girer
       for (const uid of others) await enqueueAssign(this.assignQueue, uid);
     }
 
@@ -849,7 +855,13 @@ export class MeetingsService {
     const all = await this.prisma.meetingParticipant.findMany({ where: { meetingId }, select: { id: true, userId: true } });
     const otherIds = all.map((p) => p.userId).filter((id) => !pairIds.includes(id));
 
+    // Eşzamanlı ikinci iptal isteği (kişinin kendisi ya da kankası) koşullu güncellemede 0 satır görür: hak ikinci kez düşmez
     await this.prisma.$transaction(async (tx) => {
+      const closed = await tx.meeting.updateMany({
+        where: { id: meetingId, status: { notIn: [MeetingStatus.CANCELLED, MeetingStatus.COMPLETED] } },
+        data: { status: MeetingStatus.CANCELLED, cancelledAt: new Date() },
+      });
+      if (closed.count === 0) throw new ConflictException("Rezervasyon zaten iptal edilmiş");
       await tx.meetingParticipant.update({
         where: { id: participantId },
         data: { status: ParticipantStatus.CANCELLED, leaveReason: LeaveReason.OTHER, leaveNote: note, cancelledAt: now },
@@ -860,7 +872,6 @@ export class MeetingsService {
           data: { status: ParticipantStatus.CANCELLED, leaveNote: "Kankası rezervasyonu iptal etti", cancelledAt: now },
         });
       }
-      await tx.meeting.update({ where: { id: meetingId }, data: { status: MeetingStatus.CANCELLED, cancelledAt: new Date() } });
       // Rezervasyonu iptal eden çiftin paketinden 1 hak + 1 döngü düşer
       const sub = await pairKankaSub(tx, pairIds);
       if (sub) {

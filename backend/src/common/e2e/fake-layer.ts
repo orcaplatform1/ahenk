@@ -38,10 +38,6 @@ export function readFakeControl(): FakeControl {
   }
 }
 
-export function fakeOutbox(): OutboxEntry[] {
-  return memory;
-}
-
 export function recordFake(entry: Omit<OutboxEntry, "at">): void {
   const row: OutboxEntry = { at: new Date().toISOString(), ...entry };
   memory.push(row);

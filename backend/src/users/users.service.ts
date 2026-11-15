@@ -28,13 +28,6 @@ export class UsersService {
     });
   }
 
-  async findByPhone(phone: string) {
-    return this.prisma.user.findUnique({
-      where: { phone },
-      include: { profile: true },
-    });
-  }
-
   // Sadece aktif şehir seçilebilir (pasif şehirler kayıtta ve profilde listelenmez)
   private async assertActiveCity(cityId: string) {
     const city = await this.prisma.city.findUnique({ where: { id: cityId }, select: { isActive: true } });
@@ -96,15 +89,4 @@ export class UsersService {
     return { ok: true };
   }
 
-  async getProfile(userId: string) {
-    return this.prisma.profile.findUnique({
-      where: { userId },
-      select: {
-        firstName: true, lastName: true, gender: true, bio: true,
-        city: true, primaryCity: true,
-        venuePreference: true, topicPreferences: true, venueCategories: true,
-        isPioneer: true, isPublic: true, avatarUrl: true,
-      },
-    });
-  }
 }

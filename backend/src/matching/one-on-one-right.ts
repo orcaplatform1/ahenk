@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
-import { OPEN_ONE_ON_ONE_SUB, syncPackageStatus } from "../payment/package-rights";
+import { ONE_ON_ONE_PLANS, OPEN_ONE_ON_ONE_SUB, syncPackageStatus } from "../payment/package-rights";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -25,13 +25,13 @@ export async function consumeOneOnOneRights(db: Db, userIds: string[], meetingCr
   }
 }
 
-// Bu masa için harcanmış başbaşa hakkının paketi
+// Bu masa için harcanmış başbaşa hakkının paketi (tek seferlik paketler ve Prime)
 function spentSub(db: Db, userId: string, meetingCreatedAt: Date) {
   const WINDOW_MS = 5 * 60 * 1000;
   return db.subscription.findFirst({
     where: {
       userId,
-      plan: { in: [SubscriptionPlan.KARSIMDA, SubscriptionPlan.ICERDE] },
+      plan: { in: ONE_ON_ONE_PLANS },
       status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.EXPIRED] },
       usedAt: { gte: new Date(meetingCreatedAt.getTime() - WINDOW_MS), lte: new Date(meetingCreatedAt.getTime() + WINDOW_MS) },
     },

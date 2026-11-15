@@ -102,11 +102,15 @@ export class WeeklySelectionService {
       if (!available.includes(t)) throw new BadRequestException("Paketinde bu buluşma türünün hakkı yok.");
       if (now >= deadlineOf(t, now)) throw new BadRequestException("Bu buluşma türü için seçim süresi doldu.");
     }
-    const done = await this.prisma.weeklySelection.count({ where: { userId, year, weekNumber: week } });
-    if (done > 0) throw new ConflictException("Bu haftanın seçimini zaten yaptın; seçim değiştirilemez.");
-    await this.prisma.weeklySelection.createMany({
-      data: unique.map((type) => ({ userId, year, weekNumber: week, type })),
-      skipDuplicates: true,
+    // Kişinin satırı kilitlenir: eşzamanlı ikinci istek sırada bekler, ilk seçimi görür ve reddedilir
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+      const done = await tx.weeklySelection.count({ where: { userId, year, weekNumber: week } });
+      if (done > 0) throw new ConflictException("Bu haftanın seçimini zaten yaptın; seçim değiştirilemez.");
+      await tx.weeklySelection.createMany({
+        data: unique.map((type) => ({ userId, year, weekNumber: week, type })),
+        skipDuplicates: true,
+      });
     });
     // Seçilen türlerin taramasına girer
     await enqueueAssign(this.assignQueue, userId);

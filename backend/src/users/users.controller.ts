@@ -1,4 +1,6 @@
-import { Controller, Post, Patch, Get, Body, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Post, Patch, Get, Body, Req, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
+import { Request } from "express";
+import { LoginGuardService } from "../auth/login-guard.service";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { IsString, IsOptional, IsEnum, Matches, IsEmail } from "class-validator";
 import { VenuePreference } from "../generated/prisma/client";
@@ -43,6 +45,7 @@ export class UsersController {
   constructor(
     private usersService: UsersService,
     private accountDeletion: AccountDeletionService,
+    private loginGuard: LoginGuardService,
   ) {}
 
   @Get("me/deletion-request")
@@ -78,20 +81,13 @@ export class UsersController {
     return this.usersService.updateActiveCity(user.id, dto.activeCityId ?? null);
   }
 
-  @Get("profile")
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Profil bilgilerini getir" })
-  getProfile(@CurrentUser() user: any) {
-    return this.usersService.getProfile(user.id);
-  }
-
   @Post("change-phone/request")
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Telefon değiştirme OTP gönder" })
-  requestPhoneChange(@CurrentUser() user: any, @Body() dto: RequestPhoneChangeDto) {
+  async requestPhoneChange(@CurrentUser() user: any, @Req() req: Request, @Body() dto: RequestPhoneChangeDto) {
+    await this.loginGuard.hit("change-phone-request", req.ip, dto.phone);
     return this.usersService.requestPhoneChange(user.id, dto.phone);
   }
 
@@ -100,7 +96,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Telefon değiştirme OTP doğrula" })
-  verifyPhoneChange(@CurrentUser() user: any, @Body() dto: VerifyPhoneChangeDto) {
+  async verifyPhoneChange(@CurrentUser() user: any, @Req() req: Request, @Body() dto: VerifyPhoneChangeDto) {
+    await this.loginGuard.hit("change-phone-verify", req.ip, dto.phone);
     return this.usersService.verifyPhoneChange(user.id, dto.phone, dto.code);
   }
 
