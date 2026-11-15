@@ -6,11 +6,11 @@ import { api } from '@/lib/api';
 import { buildInitials } from '@/lib/masa';
 import { useAppRefresh } from '@/lib/useAppRefresh';
 import { SOS_POLL_MS, syncSosLive } from '@/lib/sosLive';
-import { PngTabIcon, ProfileTabIcon, TabBadge } from '@/components/TabIcons';
+import { PngTabIcon, ProfileCenterButton, TabBadge } from '@/components/TabIcons';
 import { ShakeReport } from '@/components/ShakeReport';
 import { WinbackHost } from '@/components/Winback';
 import { PermissionIntro } from '@/components/PermissionIntro';
-import { tabBar, tabIcon } from '@/theme/theme';
+import { tabBar, tabIcon, tabNavIcon } from '@/theme/theme';
 
 interface Me { firstName: string; lastName: string; profilePhotoUrl?: string | null; profile?: { gender?: string | null } }
 
@@ -47,8 +47,9 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: tabBar.active,
-        tabBarInactiveTintColor: tabBar.inactive,
+        // İkon renkleri: seçili #FF3B30, seçili olmayan beyaz (tabNavIcon); zemin, yükseklik ve kenar aynı
+        tabBarActiveTintColor: tabNavIcon.active,
+        tabBarInactiveTintColor: tabNavIcon.inactive,
         tabBarStyle: { backgroundColor: tabBar.bg, borderTopColor: tabBar.border, borderTopWidth: 1, height: tabIcon.barHeight + insets.bottom },
         // Sekme yazıları kaldırıldı; tüm ikonlar eşit boy (tabIcon.size), menü Instagram ölçüsünde ince (tabIcon.barHeight)
         tabBarShowLabel: false,
@@ -56,11 +57,12 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: '#0a0a0a' },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Eşleşme Paneli', tabBarIcon: ({ color }) => <PngTabIcon name="radar" color={String(color)} /> }} />
-      <Tabs.Screen name="masalarim" options={{ title: 'Masalarım', tabBarIcon: ({ color }) => <PngTabIcon name="table" color={String(color)} /> }} />
+      {/* Sıra: Ana Sayfa (Ahenk logosu) · Takvim (Masalarım) · Profil (ortada büyük) · Paketler (bilet) · Bildirimler (zil) */}
+      <Tabs.Screen name="index" options={{ title: 'Ana Sayfa', tabBarIcon: ({ color }) => <PngTabIcon name="ahenk" color={String(color)} /> }} />
+      <Tabs.Screen name="masalarim" options={{ title: 'Takvim', tabBarIcon: ({ color }) => <PngTabIcon name="calendar" color={String(color)} /> }} />
+      <Tabs.Screen name="profilim" options={{ title: 'Profilim', tabBarButton: (props) => <ProfileCenterButton props={props} initials={me ? buildInitials(me.firstName, me.lastName) : '?'} gender={me?.profile?.gender} photoUrl={me?.profilePhotoUrl} /> }} />
+      <Tabs.Screen name="paketim" options={{ title: 'Paketler', tabBarIcon: ({ color }) => <PngTabIcon name="package" color={String(color)} /> }} />
       <Tabs.Screen name="bildirimler" options={{ title: 'Bildirimler', tabBarIcon: ({ color }) => <TabBadge count={unread}><PngTabIcon name="bell" color={String(color)} /></TabBadge> }} />
-      <Tabs.Screen name="paketim" options={{ title: 'Paketim', tabBarIcon: ({ color }) => <PngTabIcon name="package" color={String(color)} /> }} />
-      <Tabs.Screen name="profilim" options={{ title: 'Profilim', tabBarIcon: ({ focused }) => <ProfileTabIcon initials={me ? buildInitials(me.firstName, me.lastName) : '?'} gender={me?.profile?.gender} photoUrl={me?.profilePhotoUrl} focused={focused} /> }} />
     </Tabs>
     </>
   );

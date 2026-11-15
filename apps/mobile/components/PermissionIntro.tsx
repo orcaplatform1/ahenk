@@ -15,6 +15,11 @@ import { ll } from '@/theme/theme';
 const KEY = 'ahenk_permission_intro_v1';
 // Aynı anda iki yerleşim (Yönetim Paneli + sekmeler) bağlıysa ekranı yalnız ilk sahiplenen gösterir
 let claimed = false;
+// Tanıtım ekranı süreci bitti mi: gösterilmeyecekse (daha önce gösterilmiş) hemen, gösterilecekse kapanınca çözülür.
+// 100 TL indirim penceresinin otomatik açılışı bunu bekler (components/Winback.tsx WinbackHost).
+let resolveDone: () => void = () => {};
+const done = new Promise<void>((r) => { resolveDone = r; });
+export function permissionIntroDone(): Promise<void> { return done; }
 
 const ITEMS: { title: string; body: string }[] = [
   { title: 'Bildirimler', body: 'Masa onayı ve buluşma hatırlatmaları için.' },
@@ -31,7 +36,10 @@ export function PermissionIntro() {
   useEffect(() => onAdminLock(setLocked), []);
   useEffect(() => {
     let alive = true;
-    AsyncStorage.getItem(KEY).then((v) => { if (alive && v !== '1' && !claimed) { claimed = true; setPending(true); } }).catch(() => {});
+    AsyncStorage.getItem(KEY).then((v) => {
+      if (v === '1') { resolveDone(); return; }
+      if (alive && !claimed) { claimed = true; setPending(true); }
+    }).catch(() => { resolveDone(); });
     return () => { alive = false; };
   }, []);
 
@@ -46,6 +54,7 @@ export function PermissionIntro() {
     } catch { /* izin isteği başarısız: ekran yine kapanır */ }
     setPending(false);
     setBusy(false);
+    resolveDone();
   }
 
   return (

@@ -10,6 +10,7 @@ import { startPurchase } from '@/lib/purchase';
 import { useReduceMotion } from '@/lib/motion';
 import { InlineLH, Btn, Serif, T } from './ui';
 import { btn, ll, tw, winbackShine } from '@/theme/theme';
+import { permissionIntroDone } from './PermissionIntro';
 
 // mobileListTL / mobileDiscountedTL: mobilde gösterilen ve tahsil edilen fiyat (mobil fiyat − geri kazanım tutarı)
 export interface WinbackPlan { plan: string; name: string; listTL: number; discountedTL: number; mobileListTL: number; mobileDiscountedTL: number; needsKanka: boolean }
@@ -42,9 +43,14 @@ export function WinbackHost({ badge = false, auto = true }: { badge?: boolean; a
   const [open, setOpen] = useState(false);
   const [merged, setMerged] = useState(false);
   const autoDone = useRef(false);
+  // Bekleme sırasında bileşen kaldırılırsa pencere açılmaz (durum değişince bekleme iptal olmaz)
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
   useEffect(() => {
     if (!auto || !state?.active || !state.autoOpen || autoDone.current) return;
-    autoDone.current = true; setOpen(true); markShown().catch(() => {});
+    autoDone.current = true;
+    // İzin tanıtım ekranı gösterilecekse kapanana kadar beklenir; gösterilmeyecekse hemen açılır (permissionIntroDone)
+    permissionIntroDone().then(() => { if (!mounted.current) return; setOpen(true); markShown().catch(() => {}); });
   }, [auto, state, markShown]);
   if (!state?.active || !live) return null;
   return (

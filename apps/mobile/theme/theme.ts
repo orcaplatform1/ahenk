@@ -189,6 +189,11 @@ export const detayAvatar = { d: 48, strokeWidth: 2.5, fontSize: 11, fontSizeLong
 // Alt menü Instagram ölçüsünde (dikeyde ince): tüm ikonlar Profilim rozetiyle eşit boy, 28
 // barHeight: alt güvenli alan hariç menü yüksekliği (varsayılan 49 → 44)
 export const tabIcon = { size: 28, line: 36, inactiveOpacity: 0.55, barHeight: 44 } as const;
+// Üye alt menüsü ikon renkleri: seçili olmayan beyaz (opaklık 1), seçili #FF3B30 (yalnız alt menü ikonları; rozet ve diğer renkler aynı)
+export const tabNavIcon = { inactive: '#FFFFFF', active: '#FF3B30' } as const;
+// Ortadaki Profil butonu: çap 64, alt menünün üst kenarından 22 yukarı taşar, çevresinde alt menü zemini renginde 4 halka + hafif gölge,
+// avatarın etrafında 2 iç çerçeve (seçili değil beyaz, seçili #FF3B30)
+export const tabCenter = { d: 64, rise: 22, ring: 4, frame: 2, frameOff: '#FFFFFF', frameOn: '#FF3B30', shadowOpacity: 0.25, shadowRadius: 6, shadowY: 2, elevation: 6 } as const;
 // Alt menü sayı rozeti (yalnız Bildirimler): parlak kırmızı → koyu kırmızı geçiş (tabBar.active → #c0392b), alt menü zemini renginde halka
 // (ikondan ayrık görünür), hafif kırmızı ışıma, kalın beyaz yazı
 export const tabBadge = { colors: [tabBar.active, '#c0392b'] as const, ring: tabBar.bg, ringWidth: 2, glow: tabBar.active, text: '#ffffff', fontSize: 10, size: 20, padH: 5, top: -6, right: -9 } as const;
