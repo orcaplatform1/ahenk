@@ -944,7 +944,7 @@ export default function AdminMatches() {
                     <span style={{ ...LABEL, color: MUTED }}>KİŞİLİK TESTİ</span>
                     <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
                       Son test: {new Date(userModal.oceanScore.completedAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}
-                      {userModal.oceanScore.adminCanReset ? ' · Kilit açık, kullanıcı testi yeniden yapabilir' : ' · 180 gün kilitli'}
+                      {userModal.oceanScore.adminCanReset ? ' · Kilit açık, kullanıcı testi yeniden yapabilir' : ' · 6 ay kilitli'}
                     </p>
                     {!userModal.oceanScore.adminCanReset && (
                       <button

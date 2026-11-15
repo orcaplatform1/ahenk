@@ -178,7 +178,7 @@ export default function AdminUsers() {
                   {m.oceanScore && (
                     <Sect>
                       <ALabel>KİŞİLİK TESTİ</ALabel>
-                      <AT style={{ fontSize: 11, color: adm.muted }}>Son test: {new Date(m.oceanScore.completedAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}{m.oceanScore.adminCanReset ? ' · Kilit açık, kullanıcı testi yeniden yapabilir' : ' · 180 gün kilitli'}</AT>
+                      <AT style={{ fontSize: 11, color: adm.muted }}>Son test: {new Date(m.oceanScore.completedAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}{m.oceanScore.adminCanReset ? ' · Kilit açık, kullanıcı testi yeniden yapabilir' : ' · 6 ay kilitli'}</AT>
                       {!m.oceanScore.adminCanReset && <Btn variant="admActBlue" disabled={!!action} label={action === 'test' ? '…' : 'Test Kilidini Sıfırla'} onPress={resetTest} />}
                     </Sect>
                   )}

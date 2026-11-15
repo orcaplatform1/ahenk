@@ -169,14 +169,14 @@ export function TabPaket({ maintenanceMode = false }: Props) {
           ← Paketler
         </button>
         <div className="ll-card flex flex-col gap-5">
-          <h3 className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.75rem', color: isPrimeCard ? '#e8c84a' : '#f5f5f5' }}>{card.name}</h3>
+          <h3 className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.75rem', color: isPrimeCard ? '#d6453a' : '#f5f5f5' }}>{card.name}</h3>
 
           {isPrimeCard && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
               {PRIME_PLANS.map((pl) => {
                 const on = primePlan === pl.key;
                 const p = priceView(pl.key);
-                // 3 aylık plan: "Tercih Edilen" etiketi, altın çerçeve ve hafif altın geçişli arka plan
+                // 3 aylık plan: "Tercih Edilen" etiketi, kırmızı (#d6453a) çerçeve ve hafif kırmızımsı geçişli arka plan
                 const pref = pl.key === 'PRIME_3M';
                 return (
                   <button
@@ -184,14 +184,14 @@ export function TabPaket({ maintenanceMode = false }: Props) {
                     onClick={() => setPrimePlan(pl.key)}
                     className="relative rounded-xl px-3 py-3 text-left transition-colors"
                     style={{
-                      // Seçili plan: Ahenk paleti kırmızısı (--ll-red); 3 aylık seçili değilken altın çerçeve
-                      border: on ? '2px solid #d6453a' : pref ? '1px solid #c9a227' : '1px solid rgba(255,255,255,0.12)',
-                      background: pref ? 'linear-gradient(135deg, rgba(201,162,39,0.22), rgba(201,162,39,0.06))' : on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)',
+                      // Seçili plan: Ahenk paleti kırmızısı (--ll-red); 3 aylık seçili değilken ince kırmızı çerçeve
+                      border: on ? '2px solid #d6453a' : pref ? '1px solid #d6453a' : '1px solid rgba(255,255,255,0.12)',
+                      background: pref ? 'linear-gradient(135deg, rgba(214,69,58,0.22), rgba(214,69,58,0.06))' : on ? 'rgba(214,69,58,0.12)' : 'rgba(255,255,255,0.03)',
                     }}
                     aria-pressed={on}
                   >
                     {pref && (
-                      <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 rounded-full font-extrabold whitespace-nowrap" style={{ fontSize: '0.62rem', letterSpacing: '0.08em', padding: '2px 8px', background: 'linear-gradient(135deg, #f5d76e, #c9a227 55%, #a8861a)', color: '#1a1406' }}>
+                      <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 rounded-full font-extrabold whitespace-nowrap" style={{ fontSize: '0.62rem', letterSpacing: '0.08em', padding: '2px 8px', background: '#d6453a', color: '#f4f1ec' }}>
                         TERCİH EDİLEN
                       </span>
                     )}
@@ -212,7 +212,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
             </ul>
           </div>
 
-          <div className="flex items-end gap-3">
+          <div className="flex items-end justify-end gap-3">
             {pv.old !== null && <span className="text-lg text-[#8f887f] line-through">{pv.old} ₺</span>}
             <span className="font-bold text-[#f5f5f5]" style={{ fontSize: '2.25rem', lineHeight: 1 }}>{pv.now ?? '—'} ₺</span>
           </div>

@@ -48,7 +48,7 @@ TEST KURALLARI:
 - Cevaplar tek seferde gönderilir (POST /test/submit — 19 cevap zorunlu)
 - OCEAN skoru: her boyut 0-100 ((ortalama-1)/4*100), ters sorularda 6-score
 - Paket satın alma öncesi test tamamlanmış olmalı (TestCompletedGuard)
-- Yeniden test: 180 gün sonra
+- Yeniden test: test tarihi + 6 takvim ayı (o gün TR saatiyle 00:01'den itibaren; backend test.service.ts retakeAvailableAt)
 - Admin test kilidini açabilir: PATCH /test/admin/:userId/reset-lock → adminCanReset: true
 - Kullanıcı testi tamamlayınca adminCanReset otomatik false'a döner
 - Test sonucu profilde kısa açıklama olarak görünür
@@ -405,7 +405,7 @@ Kullanıcı yönetimi:
   - PATCH /admin/users/:id/role — rol değiştir (sadece SUPERADMIN yapabilir)
   - POST /admin/users/:id/pioneer — Öncü rozetini aç/kapat (500 kota kontrolü)
   - POST /admin/users/:id/free-subscription — ücretsiz abonelik ver {plan, expiresAt?}
-  - PATCH /admin/users/:id/test-lock-reset — test 180 gün kilidini sıfırla
+  - PATCH /admin/users/:id/test-lock-reset — test 6 takvim ayı kilidini sıfırla
 
 Öncü kota:
   - GET /admin/pioneer/quota — {max:500, used, remaining, full}

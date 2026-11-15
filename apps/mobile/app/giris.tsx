@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { API_PREFIX } from '@/lib/config';
 import { api, storeLogin } from '@/lib/api';
 import { PasswordInput } from '@/components/AuthShell';
-import { AuthBackground, useAuthBackgroundIndex, BackArrow, LegalNote, MailIcon, PhoneIcon, PillButton, StepScreen } from '@/components/AuthFlow';
+import { AuthBackground, AuthHeading, useAuthBackgroundIndex, BackArrow, LegalNote, MailIcon, PhoneIcon, PillButton, StepScreen } from '@/components/AuthFlow';
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
 import { OtpInput } from '@/components/OtpInput';
 import { Btn, BtnGhost, BtnPrimary, ErrorText, Input, T } from '@/components/ui';
@@ -118,7 +118,8 @@ export default function Giris() {
   if (step === 'home') {
     content = (
       <View style={{ flex: 1 }}>
-        <AuthBackground index={bgIndex} />
+        <AuthBackground index={bgIndex} overlay />
+        <AuthHeading />
         {router.canGoBack() && <BackArrow onPress={() => router.back()} />}
         <View style={{ flex: 1, paddingTop: insets.top }} />
         <View style={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 16, gap: 12 }}>

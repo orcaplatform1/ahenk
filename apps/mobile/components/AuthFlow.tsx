@@ -5,6 +5,7 @@ import { Image, Pressable, useWindowDimensions, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 import { openLegal } from '@/lib/links';
 import { T } from './ui';
 import { ll, tw } from '@/theme/theme';
@@ -41,13 +42,46 @@ export function useAuthBackgroundIndex(): number | null {
   return index;
 }
 
+// Giriş ekranı (Telefon / E-posta / Kayıt Ol) katmanları: fotoğrafın üstünde, içeriğin altında; sıra karartma → üst gradyan → alt gradyan.
+// AUTH_BACKGROUNDS sırasıyla: mobilappscreen.webp FOTO-4, mobilappscreen2.webp FOTO-ÇİFT, mobilappscreen3.webp FOTO-6.
+// top / bottomFrom: ekran yüksekliğine oran; gradyanlar 3 duraklı, orta durak uç opaklığın %60'ı.
+const AUTH_OVERLAYS = [
+  { dim: 0.20, top: 0.32, topStart: 0.85, bottomFrom: 0.48, bottomEnd: 0.97 }, // FOTO-4
+  { dim: 0.10, top: 0.30, topStart: 0.90, bottomFrom: 0.55, bottomEnd: 0.95 }, // FOTO-ÇİFT
+  { dim: 0.20, top: 0.28, topStart: 0.85, bottomFrom: 0.50, bottomEnd: 0.95 }, // FOTO-6
+];
+const black = (a: number) => `rgba(0,0,0,${a})`;
+
 // Tam ekran arka plan: görseli içeren alan tam olarak ekran genişliği ve yüksekliği kadar; ekstra büyütme / ölçekleme yok,
 // "cover" modunda, ortalı, esnetilmeden (oran farkında kenarlardan kırpılır). Üç görsel de aynı şekilde yerleşir.
-export function AuthBackground({ index }: { index: number | null }) {
+// overlay: yalnız giriş ekranında; değerler gösterilen fotoğrafla birlikte değişir (fotoğraf geçişinde animasyon yok)
+export function AuthBackground({ index, overlay }: { index: number | null; overlay?: boolean }) {
   const { width, height } = useWindowDimensions();
+  const o = overlay && index !== null ? AUTH_OVERLAYS[index] : null;
   return (
     <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, width, height, overflow: 'hidden', backgroundColor: '#000000' }}>
       {index !== null && <Image source={AUTH_BACKGROUNDS[index]} resizeMode="cover" style={{ width, height }} accessibilityIgnoresInvertColors />}
+      {o && (
+        <>
+          <View style={{ position: 'absolute', top: 0, left: 0, width, height, backgroundColor: black(o.dim) }} />
+          <LinearGradient colors={[black(o.topStart), black(o.topStart * 0.6), black(0)]} locations={[0, 0.5, 1]}
+            style={{ position: 'absolute', top: 0, left: 0, width, height: height * o.top }} />
+          <LinearGradient colors={[black(0), black(o.bottomEnd * 0.6), black(o.bottomEnd)]} locations={[0, 0.5, 1]}
+            style={{ position: 'absolute', top: height * o.bottomFrom, left: 0, width, height: height * (1 - o.bottomFrom) }} />
+        </>
+      )}
+    </View>
+  );
+}
+
+// Giriş ekranı başlığı: güvenli alanın 24 px altında, ortalı "AHENK" (web header ile aynı: Inter 600, harf aralığı 0.12em);
+// 8 px altında açıklama (gövde fontu Inter 400, 15, beyaz %70). Konum üç fotoğrafta aynı.
+export function AuthHeading() {
+  const insets = useSafeAreaInsets();
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 24, left: 24, right: 24, alignItems: 'center' }}>
+      <T w={600} style={{ fontSize: 36, lineHeight: 44, letterSpacing: 36 * 0.12, color: '#FFFFFF', textAlign: 'center' }}>AHENK</T>
+      <T style={{ marginTop: 8, fontSize: 15, lineHeight: 22, color: '#FFFFFF', opacity: 0.7, textAlign: 'center' }}>Güzel bir akşamın başlangıcındasın.</T>
     </View>
   );
 }

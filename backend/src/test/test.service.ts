@@ -9,7 +9,17 @@ import { SubmitTestDto } from "./dto/submit-test.dto";
 import { OceanDimension } from "../generated/prisma/client";
 
 const TOTAL_QUESTIONS = 19;
-const RETAKE_DAYS = 180;
+// Tekrar test: test tarihi (TR) + 6 takvim ayı, o gün TR saatiyle 00:01'den itibaren (ay sonu taşarsa ayın son günü)
+const RETAKE_MONTHS = 6;
+const TR_OFFSET_MS = 3 * 60 * 60 * 1000;
+function retakeAvailableAt(completedAt: Date): Date {
+  const tr = new Date(completedAt.getTime() + TR_OFFSET_MS);
+  const total = tr.getUTCMonth() + RETAKE_MONTHS;
+  const y = tr.getUTCFullYear() + Math.floor(total / 12);
+  const m = total % 12;
+  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(y, m, Math.min(tr.getUTCDate(), lastDay), 0, 1) - TR_OFFSET_MS);
+}
 
 type DimKey = "openness" | "conscientiousness" | "extraversion" | "agreeableness" | "neuroticism";
 
@@ -64,13 +74,12 @@ export class TestService {
     // Yeniden test hakkı kontrolü
     const existing = await this.prisma.oceanScore.findUnique({ where: { userId } });
     if (existing) {
-      const daysSince =
-        (Date.now() - existing.completedAt.getTime()) / (1000 * 60 * 60 * 24);
-      const lockedByTime = daysSince < RETAKE_DAYS;
+      const retakeAt = retakeAvailableAt(existing.completedAt);
+      const lockedByTime = Date.now() < retakeAt.getTime();
 
       if (lockedByTime && !existing.adminCanReset) {
         throw new ConflictException(
-          `Testi ${Math.ceil(RETAKE_DAYS - daysSince)} gün sonra tekrar yapabilirsin`,
+          `Testi ${Math.ceil((retakeAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))} gün sonra tekrar yapabilirsin`,
         );
       }
     }
@@ -164,8 +173,8 @@ export class TestService {
     const score = await this.prisma.oceanScore.findUnique({ where: { userId } });
     if (!score) return { completed: false, message: "Henüz test yapılmadı" };
 
-    // 180 gün dolunca ya da admin kilidi açınca tekrar yapılabilir
-    const retakeAt = new Date(score.completedAt.getTime() + RETAKE_DAYS * 24 * 60 * 60 * 1000);
+    // Test tarihi + 6 takvim ayı (o gün TR 00:01) dolunca ya da admin kilidi açınca tekrar yapılabilir
+    const retakeAt = retakeAvailableAt(score.completedAt);
     const canRetakeNow = score.adminCanReset || retakeAt <= new Date();
 
     return {

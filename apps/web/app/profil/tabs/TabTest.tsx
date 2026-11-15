@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { OCEAN_DIMENSIONS } from '@ahenk/ui';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { buildTree, frameOf, layoutTree, newAnimState, restart, tick, topDimension, RENK, type Cizgi, type Elips } from '@/lib/kisilikAgaci';
 
 interface Scores {
   openness: number;
@@ -29,161 +30,126 @@ function fmtDate(val?: string | null) {
   return d.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' });
 }
 
-function getLevel(v: number) { return v < 0.4 ? 0 : v < 0.7 ? 1 : 2; }
 
 const DIMENSIONS = OCEAN_DIMENSIONS;
 
-const PALETTES = [
-  [{i:{r:30,g:10,b:80},m:{r:80,g:30,b:160},o:{r:140,g:80,b:220},a:0.34},{i:{r:20,g:5,b:60},m:{r:60,g:20,b:130},o:{r:120,g:60,b:200},a:0.27},{i:{r:40,g:15,b:90},m:{r:90,g:40,b:170},o:{r:150,g:90,b:230},a:0.20},{i:{r:15,g:5,b:50},m:{r:50,g:15,b:110},o:{r:100,g:50,b:180},a:0.17},{i:{r:25,g:8,b:70},m:{r:70,g:25,b:140},o:{r:130,g:70,b:210},a:0.13}],
-  [{i:{r:5,g:20,b:50},m:{r:10,g:70,b:100},o:{r:20,g:130,b:160},a:0.34},{i:{r:3,g:15,b:40},m:{r:8,g:55,b:85},o:{r:15,g:110,b:140},a:0.27},{i:{r:5,g:30,b:60},m:{r:10,g:80,b:110},o:{r:20,g:140,b:170},a:0.20},{i:{r:2,g:10,b:35},m:{r:6,g:45,b:75},o:{r:12,g:95,b:125},a:0.17},{i:{r:4,g:22,b:48},m:{r:9,g:62,b:92},o:{r:18,g:120,b:150},a:0.13}],
-  [{i:{r:80,g:20,b:5},m:{r:160,g:60,b:10},o:{r:220,g:120,b:30},a:0.34},{i:{r:60,g:15,b:3},m:{r:130,g:45,b:8},o:{r:190,g:95,b:20},a:0.27},{i:{r:90,g:25,b:6},m:{r:170,g:70,b:12},o:{r:230,g:135,b:35},a:0.20},{i:{r:50,g:12,b:2},m:{r:110,g:35,b:6},o:{r:170,g:80,b:15},a:0.17},{i:{r:70,g:18,b:4},m:{r:145,g:52,b:9},o:{r:205,g:108,b:25},a:0.13}],
-  [{i:{r:5,g:50,b:45},m:{r:10,g:130,b:120},o:{r:30,g:200,b:185},a:0.34},{i:{r:3,g:38,b:34},m:{r:8,g:108,b:100},o:{r:22,g:175,b:162},a:0.27},{i:{r:6,g:58,b:52},m:{r:12,g:145,b:135},o:{r:35,g:210,b:195},a:0.20},{i:{r:2,g:30,b:27},m:{r:6,g:90,b:84},o:{r:18,g:155,b:143},a:0.17},{i:{r:4,g:44,b:40},m:{r:10,g:118,b:110},o:{r:27,g:188,b:174},a:0.13}],
-  [{i:{r:8,g:20,b:70},m:{r:20,g:55,b:160},o:{r:60,g:110,b:230},a:0.34},{i:{r:5,g:15,b:55},m:{r:15,g:42,b:135},o:{r:45,g:88,b:200},a:0.27},{i:{r:9,g:24,b:80},m:{r:22,g:62,b:175},o:{r:68,g:120,b:240},a:0.20},{i:{r:4,g:12,b:48},m:{r:12,g:35,b:118},o:{r:38,g:75,b:180},a:0.17},{i:{r:6,g:18,b:62},m:{r:17,g:48,b:148},o:{r:52,g:98,b:215},a:0.13}],
-];
-
-const GLOWS = [
-  {r:124,g:58,b:237},
-  {r:8,g:145,b:178},
-  {r:249,g:115,b:22},
-  {r:45,g:212,b:191},
-  {r:96,g:165,b:250},
-];
-
-type RGB = {r:number;g:number;b:number};
-function lerp(a:RGB,b:RGB,t:number):RGB{return{r:Math.round(a.r+(b.r-a.r)*t),g:Math.round(a.g+(b.g-a.g)*t),b:Math.round(a.b+(b.b-a.b)*t)};}
-function rgb(c:RGB){return`rgb(${c.r},${c.g},${c.b})`;}
-
-/* ── Aura Canvas bileşeni ── */
-function PersonalityAura({ scores }: { scores: Scores }) {
+/* ── Kişilik Ağacı canvas bileşeni (eski blob animasyonunun yerinde; formüller lib/kisilikAgaci.ts) ── */
+// Ağaç alanı: canvas'ın sağdaki boyut listesi (148 px) dışında kalan kısmı, yükseklik 290
+const LIST_W = 148;
+function PersonalityAura({ scores, seed }: { scores: Scores; seed: string }) {
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const topRef     = useRef<HTMLDivElement>(null);
-  const activeRef  = useRef(3);
-  const turbRef    = useRef(0.15);
-  const timeRef    = useRef(0);
-  const rafRef     = useRef<number>(0);
-  const layersRef  = useRef(PALETTES[3].map(l => ({i:{...l.i},m:{...l.m},o:{...l.o},a:l.a})));
-  const glowRef    = useRef({...GLOWS[3]});
-
-  const [activeId,  setActiveId]  = useState(3);
-  const [hintGone,  setHintGone]  = useState(false);
-  const [cardShow,  setCardShow]  = useState(true);
-  const [cardTitle, setCardTitle] = useState(DIMENSIONS[3].label);
-  const [cardText,  setCardText]  = useState('');
 
   const ocean = DIMENSIONS.map(d => ({
     value: Math.min(100, Math.max(0, scores[d.key] ?? 50)) / 100,
     levels: d.levels,
   }));
+  const percents = ocean.map(o => Math.round(o.value * 100));
+  // Varsayılan seçim: en yüksek puanlı boyut (eşitlikte listedeki ilk boyut)
+  const top = topDimension(percents);
 
-  useEffect(() => {
-    setCardText(ocean[3].levels[getLevel(ocean[3].value)]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [activeId,  setActiveId]  = useState(top);
 
-  const handleSelect = (id: number) => {
-    if (!hintGone) setHintGone(true);
-    activeRef.current = id;
-    turbRef.current = 1.1;
-    setActiveId(id);
-    setCardShow(false);
-    setTimeout(() => {
-      setCardTitle(DIMENSIONS[id].label);
-      setCardText(ocean[id].levels[getLevel(ocean[id].value)]);
-      setCardShow(true);
-    }, 200);
-  };
+  const O = ocean[0].value, C = ocean[1].value, E = ocean[2].value, A = ocean[3].value, D = ocean[4].value;
+  // Ağaç yapısı yalnız değerler veya tohum değişince yeniden üretilir
+  const tree = useMemo(() => buildTree({ O, C, E, A, D }, seed), [O, C, E, A, D, seed]);
+  const anim = useRef(newAnimState());
+  const selRef = useRef(activeId);
+  selRef.current = activeId;
+
+  const handleSelect = (id: number) => { if (id !== activeId) setActiveId(id); };
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const top    = topRef.current;
-    if (!canvas || !top) return;
+    const box    = topRef.current;
+    if (!canvas || !box) return;
+    const ctx = canvas.getContext('2d')!;
+    let W = 0, H = 0, layout = layoutTree(tree, 1, 1);
 
+    // Canvas devicePixelRatio'ya göre ölçeklenir
     function resize() {
-      if (!canvas || !top) return;
-      canvas.width  = top.offsetWidth  || 380;
-      canvas.height = top.offsetHeight || 290;
+      if (!canvas || !box) return;
+      const dpr = window.devicePixelRatio || 1;
+      W = box.offsetWidth || 380; H = box.offsetHeight || 290;
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      layout = layoutTree(tree, Math.max(1, W - LIST_W), H);
     }
     resize();
     window.addEventListener('resize', resize);
+    // Yeni değerlerle ağaç baştan büyür
+    restart(anim.current);
 
-    const ctx = canvas.getContext('2d')!;
+    const line = (c: Cizgi) => {
+      ctx.globalAlpha = c.alpha; ctx.strokeStyle = c.color; ctx.lineWidth = c.w;
+      ctx.shadowBlur = c.glow; ctx.shadowColor = c.glow ? RENK.glow : 'transparent';
+      ctx.beginPath(); ctx.moveTo(c.x1, c.y1); ctx.lineTo(c.x2, c.y2); ctx.stroke();
+    };
+    const ell = (e: Elips) => {
+      if (e.ry <= 0) return;
+      ctx.globalAlpha = e.alpha; ctx.fillStyle = e.color;
+      ctx.shadowBlur = e.glow; ctx.shadowColor = e.glow ? RENK.glow : 'transparent';
+      ctx.beginPath(); ctx.ellipse(e.x, e.y, e.rx, e.ry, e.rot, 0, Math.PI * 2); ctx.fill();
+    };
 
-    function draw() {
-      if (!canvas) return;
-      const W = canvas.width, H = canvas.height;
+    let raf = 0, last = 0;
+    function draw(now: number) {
+      raf = requestAnimationFrame(draw);
+      const dt = last ? (now - last) / 1000 : 0; last = now;
+      tick(anim.current, dt);
+      const f = frameOf(tree, layout, anim.current, selRef.current);
       ctx.clearRect(0, 0, W, H);
-      timeRef.current  += 0.011;
-      turbRef.current  += (0.13 - turbRef.current) * 0.05;
-      const aid = activeRef.current;
-
-      glowRef.current = lerp(glowRef.current, GLOWS[aid], 0.04);
-      PALETTES[aid].forEach((tl, li) => {
-        layersRef.current[li].i = lerp(layersRef.current[li].i, tl.i, 0.04);
-        layersRef.current[li].m = lerp(layersRef.current[li].m, tl.m, 0.04);
-        layersRef.current[li].o = lerp(layersRef.current[li].o, tl.o, 0.04);
-      });
-
-      const cx = W * 0.25, cy = H * 0.5, baseR = 88;
-      const t = timeRef.current, turb = turbRef.current;
-      const ov = ocean.map(o => o.value);
-
-      layersRef.current.forEach((layer, li) => {
-        const spd = 0.7 + li * 0.15, shrink = li * 10;
-        const pts: {x:number;y:number}[] = [];
-        for (let i = 0; i <= 200; i++) {
-          const ang = (i / 200) * Math.PI * 2;
-          let n = Math.sin(ang*3+t*spd+li*0.8)*16*ov[0];
-          n += Math.cos(ang*5-t*0.75*spd+li*0.5)*11*ov[2];
-          n += Math.sin(ang*2+t*1.2*spd)*19*ov[3];
-          n += Math.cos(ang*7+t*0.55*spd+li)*5*ov[1];
-          n += Math.sin(ang*4-t*spd)*8*ov[4];
-          const aAng = (aid / 5) * Math.PI * 2 - Math.PI / 2;
-          const diff = Math.min(Math.abs(ang-aAng), Math.PI*2-Math.abs(ang-aAng));
-          if (diff < 1.3) n *= (1 + turb * (2.4 + li * 0.3));
-          const r = baseR - shrink + n * turb * (3.5 + li * 0.4);
-          pts.push({x: cx + Math.cos(ang)*r, y: cy + Math.sin(ang)*r});
-        }
-        ctx.shadowBlur  = li === 0 ? 30 : 0;
-        ctx.shadowColor = `rgba(${glowRef.current.r},${glowRef.current.g},${glowRef.current.b},0.55)`;
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-        for (let i = 0; i < pts.length - 1; i++) {
-          const mx = (pts[i].x + pts[i+1].x)/2, my = (pts[i].y + pts[i+1].y)/2;
-          ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
-        }
-        ctx.closePath();
-        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, (baseR-shrink)*1.5);
-        g.addColorStop(0, rgb(layer.i));
-        g.addColorStop(0.45, rgb(layer.m));
-        g.addColorStop(0.82, rgb(layer.o));
-        g.addColorStop(1, 'rgba(17,18,20,0)');
-        ctx.fillStyle = g; ctx.globalAlpha = layer.a; ctx.fill();
-      });
-
-      ctx.shadowBlur = 0;
-      const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseR * 0.32);
-      core.addColorStop(0, `rgba(${glowRef.current.r},${glowRef.current.g},${glowRef.current.b},0.3)`);
-      core.addColorStop(0.5, `rgba(${glowRef.current.r},${glowRef.current.g},${glowRef.current.b},0.1)`);
-      core.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.globalAlpha = 1; ctx.fillStyle = core;
-      ctx.beginPath(); ctx.arc(cx, cy, baseR*0.32, 0, Math.PI*2); ctx.fill();
-
-      rafRef.current = requestAnimationFrame(draw);
+      ctx.lineCap = 'round';
+      // Zemin: kökte teal yumuşak elips parıltı
+      const g = f.ground;
+      ctx.save(); ctx.translate(g.x, g.y); ctx.scale(1, g.ry / g.rx);
+      const rg = ctx.createRadialGradient(0, 0, 0, 0, 0, g.rx);
+      rg.addColorStop(0, RENK.ground); rg.addColorStop(1, 'rgba(34,168,150,0)'); // merkezde g.alpha, kenarda 0
+      ctx.globalAlpha = g.alpha; ctx.shadowBlur = 0; ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.arc(0, 0, g.rx, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      f.mirror.forEach(line);
+      if (f.axis) {
+        ctx.save(); ctx.setLineDash([3, 4]); ctx.globalAlpha = f.axis.alpha; ctx.strokeStyle = RENK.glow; ctx.lineWidth = 1;
+        ctx.shadowBlur = 0;
+        ctx.beginPath(); ctx.moveTo(f.axis.x, f.axis.y1); ctx.lineTo(f.axis.x, f.axis.y2); ctx.stroke(); ctx.restore();
+      }
+      f.segs.forEach(line);
+      f.leaves.forEach(ell);
+      f.falling.forEach(ell);
+      if (f.ring) {
+        ctx.save(); ctx.setLineDash([5, 5]); ctx.lineDashOffset = f.ring.dashOffset; ctx.globalAlpha = f.ring.alpha;
+        ctx.strokeStyle = RENK.glow; ctx.lineWidth = 1.6; ctx.shadowBlur = f.ring.glow; ctx.shadowColor = RENK.glow;
+        ctx.beginPath(); ctx.ellipse(f.ring.x, f.ring.y, f.ring.rx, f.ring.ry, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+      }
+      if (f.rootDot) {
+        ctx.globalAlpha = f.rootDot.alpha; ctx.fillStyle = RENK.coral; ctx.shadowBlur = 18; ctx.shadowColor = RENK.coral;
+        ctx.beginPath(); ctx.arc(f.rootDot.x, f.rootDot.y, f.rootDot.r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     }
-    draw();
+    // Sekme gizliyken animasyon durur
+    const start = () => { if (!raf && !document.hidden) { last = 0; raf = requestAnimationFrame(draw); } };
+    const stop = () => { if (raf) { cancelAnimationFrame(raf); raf = 0; } };
+    const onVis = () => (document.hidden ? stop() : start());
+    document.addEventListener('visibilitychange', onVis);
+    start();
 
     return () => {
       window.removeEventListener('resize', resize);
-      cancelAnimationFrame(rafRef.current);
+      document.removeEventListener('visibilitychange', onVis);
+      stop();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tree]);
 
   return (
     <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
-      {/* Canvas + sağ liste */}
+      {/* Animasyon alanının üstünde başlık: "Kişilik Boyutları" etiketiyle aynı yazı tipi, boy ve renk (büyük harfe çevrilmez) */}
+      <div style={{ padding: '10px 8px 0', fontSize: 8, color: '#e05c4c', letterSpacing: '0.09em', fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>
+        Kişilik Ağacım
+      </div>
+      {/* Canvas + sağ liste; ağaca tıklayınca baştan büyür */}
       <div ref={topRef} style={{ position: 'relative', width: '100%', height: 290 }}>
-        <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }} />
+        <canvas ref={canvasRef} onClick={() => restart(anim.current)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', cursor: 'pointer' }} />
         <div style={{
           position: 'absolute', top: 10, right: 0, width: 148,
           display: 'flex', flexDirection: 'column', gap: 4, padding: '0 8px', zIndex: 4,
@@ -217,31 +183,56 @@ function PersonalityAura({ scores }: { scores: Scores }) {
         </div>
       </div>
 
-      {/* Hint */}
-      <div style={{
-        padding: '8px 12px 3px', fontSize: 11, color: '#8a8a8a',
-        fontFamily: 'Inter, sans-serif',
-        opacity: hintGone ? 0 : 1, pointerEvents: hintGone ? 'none' : undefined,
-        transition: 'opacity .4s', height: hintGone ? 0 : undefined, overflow: 'hidden',
-      }}>
-        Kişilik frekansını keşfetmek için bir boyuta dokun.
-      </div>
+    </div>
+  );
+}
 
-      {/* Açıklama kartı */}
-      <div style={{
-        background: 'rgba(255,255,255,0.025)', borderTop: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '10px 10px 0 0', padding: '9px 12px 13px',
-        opacity: cardShow ? 1 : 0, transform: cardShow ? 'translateY(0)' : 'translateY(5px)',
-        transition: 'opacity .3s, transform .3s',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-          <div style={{ width: 2, borderRadius: 2, background: '#e05c4c', alignSelf: 'stretch', flexShrink: 0, minHeight: 22 }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 13, fontWeight: 400, color: '#e05c4c', letterSpacing: '0.01em', marginBottom: 3, fontFamily: 'var(--font-serif, "DM Serif Display", serif)' }}>{cardTitle}</p>
-            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.62)', lineHeight: 1.55, margin: 0, fontFamily: 'Inter, sans-serif' }}>{cardText}</p>
+/* ── "Ocean Big Five Kişilik Testi" bilgi kartı (mobil KisilikTab ile aynı metin ve sınırlar) ── */
+const BIG_FIVE_INFO: { title: string; texts: [string, string, string] }[] = [
+  { title: '1. Açıklık – Yaratıcılık ve Deneyim', texts: [
+    'Yeniliklere açık, meraklı, yaratıcı ve keşfetmeyi seven bir yapıya sahipsin. Farklı fikirlere, deneyimlere ve bakış açılarına kolayca ilgi duyarsın.',
+    'Yenilik ile alışkanlık arasında dengeli bir yapıya sahipsin. Yeni deneyimlere ilgi duyarken bildiğin ve güvendiğin yöntemlerden de vazgeçmezsin.',
+    'Daha geleneksel, alışkanlıklarına bağlı, somut ve alışılmış yöntemleri tercih eden bir yapıya sahip olabilirsin.'] },
+  { title: '2. Özdisiplin – Hedef ve Düzen', texts: [
+    'Planlı, sorumluluk sahibi, organize ve hedef odaklısın. Başladığın işleri tamamlama ve uzun vadeli hedeflerine bağlı kalma eğilimin yüksektir.',
+    'Plan ile esneklik arasında denge kurarsın. Gerektiğinde düzenli ve hedef odaklı, gerektiğinde anlık kararlarla hareket edebilirsin.',
+    'Daha spontane, esnek ve anlık kararlarla hareket eden bir yapıya sahip olabilirsin. Planlama ve işleri düzenli sürdürmekte zorlanabilirsin.'] },
+  { title: '3. Dışadönüklük – Sosyal Enerji', texts: [
+    'Sosyal ortamlardan enerji alan, iletişim kurmayı seven, girişken ve kendini ifade etmekten çekinmeyen bir yapıya sahipsin.',
+    'Hem sosyal ortamlardan hem de yalnız geçirdiğin zamandan keyif alabilirsin. Ortama göre girişken ya da sakin ve gözlemci olabilirsin.',
+    'Daha içe dönük, sakin ve gözlemci olabilirsin. Yalnız vakit geçirmekten hoşlanabilir, sosyal enerjini daha kontrollü kullanabilirsin.'] },
+  { title: '4. Uyumluluk – Empati ve İşbirliği', texts: [
+    'Empatik, anlayışlı, yardımsever ve işbirliğine açık bir yapıya sahipsin. İnsanların duygularını önemser, ilişkilerinde uyumu korumaya çalışırsın.',
+    'İşbirliğine açıksın ama sınırların da var. Başkalarının duygularını önemserken kendi fikirlerini savunmaktan da çekinmezsin.',
+    'Daha rekabetçi, sorgulayıcı, bağımsız ve doğrudan bir yaklaşım sergileyebilirsin. Kendi fikirlerini savunmaktan çekinmezsin.'] },
+  { title: '5. Denge – Duygusal Esneklik', texts: [
+    'Duygusal açıdan dengeli, stres karşısında dayanıklı ve zorlayıcı durumlarda sakin kalabilen bir yapıya sahipsin. Duygularını yönetme konusunda daha istikrarlı olabilirsin.',
+    'Çoğu durumda sakin kalabilirsin, ancak yoğun stres anlarında duygusal olarak etkilenebilirsin. Genel olarak duygularını dengeli yönetirsin.',
+    'Duygusal dalgalanmalara, kaygıya ve stresli durumlara karşı daha hassas olabilirsin. Olaylardan duygusal olarak daha fazla etkilenebilirsin.'] },
+];
+const BAND_LABELS = ['Skorun %55+ ise:', 'Skorun %45–55 ise:', 'Skorun %45- ise:'] as const;
+// 55 ve üzeri → %55+; 45 dahil 55 hariç → %45–55; 45 altı → %45-
+const bandOf = (p: number) => (p >= 55 ? 0 : p >= 45 ? 1 : 2);
+
+function BigFiveInfoCard({ percents }: { percents: number[] }) {
+  return (
+    <div className="ll-card flex flex-col gap-3.5">
+      <h3 className="font-serif text-xl text-[#f4f1ec]">Ocean Big Five Kişilik Testi</h3>
+      <p className="text-[13px] leading-relaxed text-[#c9c2b8]">Kişilik boyutları; bireylerin düşünme, hissetme, davranma ve diğer insanlarla etkileşim kurma eğilimlerini anlamaya yardımcı olan beş temel özelliği ifade eder.</p>
+      {BIG_FIVE_INFO.map((dim, i) => {
+        const band = bandOf(percents[i]);
+        return (
+          <div key={dim.title} className="flex flex-col gap-1.5">
+            <p className="text-sm font-bold" style={{ color: '#e05c4c' }}>{dim.title}</p>
+            {dim.texts.map((txt, b) => (
+              // Kullanıcının skoruna denk gelen metin vurgulu, diğer ikisi soluk
+              <p key={b} className="text-xs leading-normal" style={{ color: b === band ? '#f4f1ec' : '#8f887f', opacity: b === band ? 1 : 0.45 }}>
+                <span className="font-bold">{BAND_LABELS[b]}</span> {txt}
+              </p>
+            ))}
           </div>
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
 }
@@ -252,9 +243,13 @@ export function TabTest() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState('');
 
+  // Ağacın tohum değeri: kullanıcı id'si
+  const [userId, setUserId] = useState('');
+
   useEffect(() => {
-    api.get<TestResult>('/test/result')
-      .then(setResult)
+    // Ağaç kullanıcı id'si gelmeden çizilmez (tohum değişip ağaç yeniden büyümesin)
+    Promise.all([api.get<TestResult>('/test/result'), api.get<{ id?: string }>('/auth/me').catch(() => null)])
+      .then(([r, u]) => { setUserId(u?.id ?? ''); setResult(r); })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -274,11 +269,14 @@ export function TabTest() {
   }
 
   const { scores, completedAt, retakeAvailableAt, canRetakeNow } = result;
+  const percents = DIMENSIONS.map(d => Math.round(Math.min(100, Math.max(0, scores[d.key] ?? 50))));
 
   return (
     <div className="flex flex-col gap-5">
-      <PersonalityAura scores={scores} />
+      <PersonalityAura scores={scores} seed={userId} />
+      <BigFiveInfoCard percents={percents} />
 
+      <div className="flex flex-col gap-2">
       <div className="ll-card flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <span className="text-sm text-[#a39c93]">Test Tarihi</span>
@@ -289,8 +287,10 @@ export function TabTest() {
           <span className="text-sm text-[#c9c2b8]">{retakeAvailableAt ? fmtDate(retakeAvailableAt) : 'Şimdi yapabilirsin'}</span>
         </div>
       </div>
+      <p className="text-[11px] leading-normal text-[#a39c93]">Kişilik özellikleri genellikle kısa sürede köklü biçimde değişmez. Bu yüzden test 6 ayda bir tekrarlanır.</p>
+      </div>
 
-      {/* 180 gün dolana kadar pasif */}
+      {/* Sonraki test tarihine (test tarihi + 6 takvim ayı, backend) kadar pasif */}
       {canRetakeNow ? (
         <Link href="/test" className="btn-primary mx-auto">
           Tekrar Test Yap

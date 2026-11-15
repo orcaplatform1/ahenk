@@ -15,4 +15,3 @@ export const MEETING_WEEK_DAY = 6; // Cumartesi (0=Pazar)
 
 // OCEAN test
 export const OCEAN_QUESTION_COUNT = 19;
-export const OCEAN_RETAKE_DAYS = 180;

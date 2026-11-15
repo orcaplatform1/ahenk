@@ -236,7 +236,7 @@ function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:stri
           { title: 'Masa nasıl kurulur?', body: 'Her hafta belirli bir gün eşleşmeler kapanır. Algoritma o ana kadar biriken profilleri değerlendirir, en yüksek uyum skoruna sahip grupları veya iki kişiyi bir araya getirir ve masayı kurar. Sen sadece onayı beklersin.' },
           { title: 'Buluşma sonrası ne olur?', body: 'Her buluşmanın ardından Ahenk, masa hakkında kısa bir yapay zeka raporu oluşturur. Grubun genel uyum skoru, öne çıkan kişilik dinamikleri ve masa enerjisi hakkında bir özet; sadece senin için, sadece o akşam için.' },
           { title: 'Baş Başa buluşmalar farklı mı?', body: 'Grup masalarında ahenk aranır, baş başa buluşmalarda ise derinlik. İki kişilik eşleşmelerde algoritma çok daha hassas çalışır: yaş uyumu, kişilik dengesi ve beklenti örtüşmesi ön plana çıkar. Karşındaki kişi rastgele değil, seninle birebir örtüşen biri.' },
-          { title: '180 günde bir yenilenir.', body: 'Kişilik sabit, ama bağlam değişir. Bu yüzden OCEAN profilin 180 günde bir güncellenir; o dönemki sen, o dönemki ahenginle buluşur.' },
+          { title: '6 ayda bir yenilenir.', body: 'Kişilik sabit, ama bağlam değişir. Bu yüzden OCEAN profilin 6 ayda bir güncellenir; o dönemki sen, o dönemki ahenginle buluşur.' },
         ]} />
       </section>
 

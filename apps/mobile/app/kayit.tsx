@@ -167,22 +167,22 @@ export default function Kayit() {
       <Glow />
       {/* Sol üstte geri ok (giriş ekranına döner); logo ve kart yok — giriş akışındaki diğer ekranlarla aynı sade görünüm */}
       <BackArrow onPress={() => router.back()} />
+      {/* Adım göstergesi geri okunun sağında, aynı satırda (ok: top insets.top + 6, 44 pt yükseklik) */}
+      <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 6, left: 62, right: 16, height: 44, flexDirection: 'row', alignItems: 'center', zIndex: 10 }}>
+        {STEPS.map((_, i) => (
+          <React.Fragment key={i}>
+            {i < step ? (
+              <LinearGradient colors={['#c0392b', '#ff6b6b']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}><T w={600} style={{ fontSize: 13, color: '#fff' }}>✓</T></LinearGradient>
+            ) : (
+              <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: i === step ? 2 : 1, borderColor: i === step ? c.red : 'rgba(255,255,255,0.1)' }}>
+                <T w={600} style={{ fontSize: 13, color: i === step ? c.red : ll.time }}>{i + 1}</T>
+              </View>
+            )}
+            {i < STEPS.length - 1 && (i < step ? <LinearGradient colors={['#c0392b', '#ff6b6b']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ flex: 1, maxWidth: 40, height: 1 }} /> : <View style={{ flex: 1, maxWidth: 40, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />)}
+          </React.Fragment>
+        ))}
+      </View>
       <ScrollView {...kb} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + 24, paddingHorizontal: 24, maxWidth: 576, width: '100%', alignSelf: 'center' }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 40 }}>
-          {STEPS.map((_, i) => (
-            <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
-              {i < step ? (
-                <LinearGradient colors={['#c0392b', '#ff6b6b']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}><T w={600} style={{ fontSize: 13, color: '#fff' }}>✓</T></LinearGradient>
-              ) : (
-                <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: i === step ? 2 : 1, borderColor: i === step ? c.red : 'rgba(255,255,255,0.1)' }}>
-                  <T w={600} style={{ fontSize: 13, color: i === step ? c.red : ll.time }}>{i + 1}</T>
-                </View>
-              )}
-              {i < STEPS.length - 1 && (i < step ? <LinearGradient colors={['#c0392b', '#ff6b6b']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ width: 40, height: 1 }} /> : <View style={{ width: 40, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />)}
-            </View>
-          ))}
-        </View>
-
         {step === 0 && (
           <View style={{ gap: 20 }}>
             {header(1, 'Temel Bilgiler', 'Hesabını oluştur.')}

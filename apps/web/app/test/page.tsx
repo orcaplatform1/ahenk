@@ -130,7 +130,7 @@ export default function TestPage() {
             OCEAN profilin oluşturuldu. Algoritma artık seni doğru insanlarla eşleştirebilir.
           </p>
           <p className="text-xs font-mono tracking-widest text-[#555] mb-8">
-            ⏱ Sonraki test: 180 gün sonra
+            ⏱ Sonraki test: 6 ay sonra
           </p>
 
           <button onClick={() => router.push('/test/sonuc')} className="w-full btn-primary justify-center mb-3">

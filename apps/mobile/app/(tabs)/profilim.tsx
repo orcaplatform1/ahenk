@@ -1,6 +1,7 @@
-// Sekme 5 — Profilim: apps/web/app/profil/page.tsx + AccountTabBar (S-07: webdeki yerleşim; S-07b: KYC onaylıysa gizli)
+// Sekme 5 — Profilim: apps/web/app/profil/page.tsx. Üst sekme çubuğu yok; Kişilik Ağacım ve Numara Engelleme Hesap Bilgileri'ndeki butonlarla,
+// Kimlik Doğrulama KYC kartıyla (tab=kyc) açılır; "← Profilim" ve Android geri tuşu Profilim'e döner
 import React, { useCallback, useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
@@ -9,7 +10,7 @@ import { ProfilimTab, type City, type UserData } from '@/components/profil/Profi
 import { KisilikTab } from '@/components/profil/KisilikTab';
 import { RehberTab } from '@/components/profil/RehberTab';
 import { KycTab } from '@/components/profil/KycTab';
-import { accountTab, ll, tabBar, tw } from '@/theme/theme';
+import { ll, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
 import { ProfilePhotoHeader } from '@/components/ProfilePhoto';
 import { buildInitials } from '@/lib/masa';
@@ -41,27 +42,24 @@ export default function Profilim() {
   useFocusEffect(load);
 
   const kycApproved = user?.kyc?.status === 'APPROVED';
-  // KYC durumu (user) yüklenene kadar Kimlik Doğrulama sekmesi hiç gösterilmez; onaylıysa hiç görünmez
-  const tabs = TABS.filter(t => !(t.key === 'kyc' && (!user || kycApproved)));
+  const backToProfil = useCallback(() => { setTab('profil'); router.setParams({ tab: 'profil' }); }, [router]);
+  // Alt sayfadayken Android geri tuşu Profilim'e döner
+  useEffect(() => {
+    if (tab === 'profil') return undefined;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { backToProfil(); return true; });
+    return () => sub.remove();
+  }, [tab, backToProfil]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: tw.bg }}>
-      <View style={{ paddingTop: insets.top, backgroundColor: tabBar.bg, borderBottomWidth: 1, borderBottomColor: tabBar.border }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: accountTab.gap, paddingHorizontal: accountTab.barPadH, paddingVertical: accountTab.barPadV }}>
-          {tabs.map(t => {
-            const on = tab === t.key;
-            return (
-              <Btn key={t.key} variant="accountTab" selected={on} label={t.label} hitSlop={{ top: 8, bottom: 8 }} onPress={() => setTab(t.key)} />
-            );
-          })}
-        </ScrollView>
-      </View>
+    <View style={{ flex: 1, backgroundColor: ll.bg }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
           <ScreenGlow />
-          <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 32, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
+          <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 32, paddingBottom: 32, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
             <Glow />
             <View style={{ marginBottom: 16 }}><KycNoticeCard /></View>
+            {/* Alt sayfada (Kişilik Ağacım / Numara Engelleme / Kimlik Doğrulama) Profilim'e dönüş: mevcut pillRed etiket stili ("← Paketler" ile aynı) */}
+            {tab !== 'profil' && <Btn variant="pillRed" label="← Profilim" style={{ alignSelf: 'flex-start', marginBottom: 16 }} onPress={backToProfil} />}
             {/* En üstte büyük yuvarlak profil alanı (fotoğraf yoksa ad soyad kısaltması) */}
             {user && tab === 'profil' && <ProfilePhotoHeader photoUrl={user.profilePhotoUrl} initials={buildInitials(user.firstName, user.lastName)} gender={user.profile?.gender} kycApproved={kycApproved} pending={user.profilePhotoPending} />}
             {loading ? <SkeletonBlock lines={4} /> : fetchError && !user ? (
@@ -71,7 +69,7 @@ export default function Profilim() {
               </View>
             ) : user ? (
               <>
-                {tab === 'profil' && <ProfilimTab user={user} cities={cities} onLoggedOut={() => router.replace('/giris')} onAdmin={() => router.push('/admin/stats')} />}
+                {tab === 'profil' && <ProfilimTab user={user} cities={cities} onLoggedOut={() => router.replace('/giris')} onAdmin={() => router.push('/admin/stats')} onOpenTest={() => setTab('test')} onOpenRehber={() => setTab('rehber')} />}
                 {tab === 'test' && <KisilikTab />}
                 {tab === 'rehber' && <RehberTab />}
                 {tab === 'kyc' && <KycTab />}

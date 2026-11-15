@@ -426,7 +426,7 @@ export default function AdminMatches() {
                   {u.oceanScore && (
                     <View style={{ borderTopWidth: 1, borderTopColor: adm.border, paddingTop: 14, gap: 8 }}>
                       <ALabel>KİŞİLİK TESTİ</ALabel>
-                      <AT style={{ fontSize: 11, color: adm.muted }}>Son test: {new Date(u.oceanScore.completedAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}{u.oceanScore.adminCanReset ? ' · Kilit açık, kullanıcı testi yeniden yapabilir' : ' · 180 gün kilitli'}</AT>
+                      <AT style={{ fontSize: 11, color: adm.muted }}>Son test: {new Date(u.oceanScore.completedAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}{u.oceanScore.adminCanReset ? ' · Kilit açık, kullanıcı testi yeniden yapabilir' : ' · 6 ay kilitli'}</AT>
                       {!u.oceanScore.adminCanReset && <Btn variant="admActBlue" disabled={!!userAction} label={userAction === 'test' ? '…' : 'Test Kilidini Sıfırla'} onPress={userResetTestLock} />}
                     </View>
                   )}

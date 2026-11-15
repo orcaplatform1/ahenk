@@ -29,7 +29,7 @@ const PRIME_PLANS = [
 ] as const;
 
 // web components/paket/PaketKarti.tsx CARDS ile aynı: premium kart — aynı renk ailesinde koyudan ortaya geçişli arka plan.
-// Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, kırmızı (palet) çerçeve; rozet, ad ve ok şarap kırmızısı (#7A1F2B).
+// Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, kırmızı (palet) çerçeve ve ad (#d6453a); rozet ve ok şarap kırmızısı (#7A1F2B).
 // badgeBg / badgeFg: Tinder GOLD tarzı hap rozet (kartın renk tonuna uyumlu; İçerde ve Prime altın)
 const GOLD = ['#f5d76e', '#c9a227', '#a8861a'];
 const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient: [string, string]; fg: string; nameColor: string; border?: string; badgeBg: string[]; badgeFg: string; arrowColor?: string; advantages: string[] }[] = [
@@ -41,7 +41,7 @@ const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient
     advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Kankamla Masası'nda buluşma hakkı", 'Kankanı davet ederek ücretsiz çağırma', 'Bu hak masada sen buluşana kadar geçerli'] },
   { key: 'ICERDE', name: 'İçerde Paketi', badge: 'Tek Seferlik', desc: "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı", gradient: ['#3a2804', '#9c7412'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: GOLD, badgeFg: '#1a1406',
     advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı", 'Bu haklar masada sen buluşana kadar geçerli'] },
-  { key: 'PRIME', name: 'Prime Paket', badge: 'Abonelik', desc: 'Her ay 1 Grup + 1 Baş Başa + 1 Kankamla Masası', gradient: ['#000000', '#2b2d31'], fg: '#f4f1ec', nameColor: '#7A1F2B', border: ll.red, badgeBg: ['#7A1F2B'], badgeFg: '#f4f1ec', arrowColor: '#7A1F2B',
+  { key: 'PRIME', name: 'Prime Paket', badge: 'Abonelik', desc: 'Her ay 1 Grup + 1 Baş Başa + 1 Kankamla Masası', gradient: ['#000000', '#2b2d31'], fg: '#f4f1ec', nameColor: ll.red, border: ll.red, badgeBg: ['#7A1F2B'], badgeFg: '#f4f1ec', arrowColor: '#7A1F2B',
     advantages: ['Her masada öncelikli eşleşme hakkı', 'Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "Her ay 1 Grup Masası + 1 Baş Başa Masası + 1 Kankamla Masası'nda buluşma hakkı", 'Aboneliği iptal etsen dahi, bu haklar masada sen buluşana kadar geçerli', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
 ];
 const PRIME_RENEW_INFO = 'İptal etmediğin sürece aboneliğin seçtiğin süre için aynı fiyatla otomatik olarak yenilenir.';
@@ -174,7 +174,7 @@ export default function Paketim() {
           {/* "← Paketler": Paketim'deki paket listesine döner; mevcut pillRed etiket stili (yuvarlak köşeli) */}
           <Btn variant="pillRed" label="← Paketler" style={{ alignSelf: 'flex-start' }} onPress={() => { setDetail(null); setError(''); }} />
           <Card style={{ gap: 20 }}>
-            <T w={700} style={{ fontSize: 28, lineHeight: 34, color: isP ? '#e8c84a' : ll.text }}>{card.name}</T>
+            <T w={700} style={{ fontSize: 28, lineHeight: 34, color: isP ? ll.red : ll.text }}>{card.name}</T>
             {isP && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 8 }}>
                 {PRIME_PLANS.map((pl) => {
@@ -183,16 +183,16 @@ export default function Paketim() {
                   const pref = pl.key === 'PRIME_3M';
                   return (
                     <Pressable key={pl.key} onPress={() => setPrimePlan(pl.key)} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                      style={{ width: '48%', minHeight: 56, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? ll.red : 'rgba(255,255,255,0.12)', backgroundColor: on ? 'rgba(201,162,39,0.12)' : 'rgba(255,255,255,0.03)' }}>
+                      style={{ width: '48%', minHeight: 56, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? ll.red : 'rgba(255,255,255,0.12)', backgroundColor: on ? 'rgba(214,69,58,0.12)' : 'rgba(255,255,255,0.03)' }}>
                       <View style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
                         <T w={600} style={{ fontSize: 14, color: ll.text }}>{pl.label}</T>
                         <T style={{ fontSize: 12, color: ll.text2, marginTop: 2 }}>{priceView(pl.key).now ?? '—'} ₺</T>
                       </View>
                       {pref && (
                         <View pointerEvents="none" style={{ position: 'absolute', top: -10, left: 0, right: 0, alignItems: 'center' }}>
-                          <LinearGradient colors={GOLD as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
-                            <T w={800} style={{ fontSize: 9.9, letterSpacing: 0.8, color: '#1a1406' }}>TERCİH EDİLEN</T>
-                          </LinearGradient>
+                          <View style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: ll.red }}>
+                            <T w={800} style={{ fontSize: 9.9, letterSpacing: 0.8, color: '#f4f1ec' }}>TERCİH EDİLEN</T>
+                          </View>
                         </View>
                       )}
                     </Pressable>
@@ -206,7 +206,7 @@ export default function Paketim() {
                 <View key={a} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Check /><T style={{ fontSize: 14, color: ll.text2, flexShrink: 1 }}>{a}</T></View>
               ))}
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end', gap: 12 }}>
               {priceView(planKey).old !== null && <T style={{ fontSize: 18, lineHeight: 24, color: ll.time, textDecorationLine: 'line-through' }}>{priceView(planKey).old} ₺</T>}
               <T w={700} style={{ fontSize: 36, lineHeight: 40, color: ll.text }}>{priceView(planKey).now ?? '—'} ₺</T>
             </View>

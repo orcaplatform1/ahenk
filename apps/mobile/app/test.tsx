@@ -48,7 +48,7 @@ export default function Test() {
           </View>
           <Serif style={{ fontSize: 30, marginBottom: 12 }}>Test Tamamlandı</Serif>
           <T style={{ color: c.t888, fontSize: 14, lineHeight: 22.75, textAlign: 'center', marginBottom: 8 }}>OCEAN profilin oluşturuldu. Algoritma artık seni doğru insanlarla eşleştirebilir.</T>
-          <Mono style={{ fontSize: 12, letterSpacing: 1.2, color: c.t555, marginBottom: 32 }}>⏱ Sonraki test: 180 gün sonra</Mono>
+          <Mono style={{ fontSize: 12, letterSpacing: 1.2, color: c.t555, marginBottom: 32 }}>⏱ Sonraki test: 6 ay sonra</Mono>
           <BtnPrimary label="Profilimi Gör" full style={{ marginBottom: 12 }} onPress={() => router.replace('/test-sonuc')} />
           <BtnGhost label="Dashboard'a Dön" full onPress={() => router.replace('/(tabs)')} />
         </View>

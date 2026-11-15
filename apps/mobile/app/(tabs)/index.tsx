@@ -133,7 +133,7 @@ export default function EslesmePaneli() {
   const total = tabItem?.meeting.maxParticipants ?? CAPACITY[tab];
 
   return (
-    <View style={{ flex: 1, backgroundColor: ll.bg }}>
+    <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
       {/* web dashboard: position fixed, radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,.1) 0%, transparent 70%) — kaydırmayla kaymaz */}
       <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs><RadialGradient id="dashfix" cx="70%" cy="30%" rx="50%" ry="40%"><Stop offset="0" stopColor="rgb(192,57,43)" stopOpacity={0.1} /><Stop offset="0.7" stopColor="rgb(192,57,43)" stopOpacity={0} /></RadialGradient></Defs>
@@ -141,6 +141,8 @@ export default function EslesmePaneli() {
       </Svg>
       <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top }}>
+        {/* Işıma kaydırılan içeriğin ilk çocuğu: diğer sekmeler gibi durum çubuğunun arkasına kadar uzanır */}
+        <Glow />
         <View style={{ paddingHorizontal: 16 }}>
           {/* KYC kartı yalnız KYC onaysızken (kart görünürken) yer ve boşluk kaplar; kart yokken halkalar durum çubuğunun hemen altından başlar */}
           {me?.kyc?.status !== 'APPROVED' && <View style={{ marginTop: 16, marginBottom: 16 }}><KycNoticeCard /></View>}
@@ -154,8 +156,7 @@ export default function EslesmePaneli() {
           {me?.maintenanceMode && <MaintenanceNotice />}
         </View>
         <WinbackHost badge auto={false} />
-        <View style={{ overflow: 'hidden' }}>
-          <Glow />
+        <View>
           {/* Halkalar yukarıda: sütunun üst boşluğu bu ekranda yok */}
           <View style={[st.column, { paddingTop: 0 }]}>
             <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />

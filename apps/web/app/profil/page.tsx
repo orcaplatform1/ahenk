@@ -147,7 +147,8 @@ function ProfilPage() {
       {/* Eşleşme Paneli görünümü: ışıma ve Canlı Katman stilleri */}
       <div className="live-layer" style={{ minHeight: 'calc(100vh - 100px)' }}>
       <div className="ll-glow" aria-hidden="true" />
-      <div className="relative max-w-4xl mx-auto px-4 py-8">
+      {/* Masalarım: Grup / Baş Başa / Kankamla halkaları Eşleşme Paneli'ndekiyle aynı yükseklikte (üst boşluk ll-column gibi 16 px) */}
+      <div className={`relative max-w-4xl mx-auto px-4 ${activeTab === 'masalar' ? 'pt-4 pb-8' : 'py-8'}`}>
         <KycNoticeCard show={!kycApproved} />
 
         {/* Sekme içeriği */}
@@ -160,7 +161,7 @@ function ProfilPage() {
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
             {activeTab === 'profil'  && <ProfilePhotoHeader photoUrl={user.profilePhotoUrl} initials={buildInitials(user.firstName, user.lastName)} gender={user.profile?.gender} kycApproved={kycApproved} pending={user.profilePhotoPending} />}
-            {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} activePlan={user.activePlan ?? null} />}
+            {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} onGoTest={() => changeTab('test')} onGoRehber={() => changeTab('rehber')} activePlan={user.activePlan ?? null} />}
             {activeTab === 'test'    && <TabTest />}
             {activeTab === 'masalar' && <TabMasalar userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender }} kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
             {activeTab === 'paket'   && <TabPaket maintenanceMode={!!user.maintenanceMode} />}

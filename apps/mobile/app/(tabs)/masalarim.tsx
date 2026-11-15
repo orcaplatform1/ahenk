@@ -253,12 +253,16 @@ export default function Masalarim() {
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
       <ScreenGlow />
       <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 32, paddingHorizontal: 16, paddingBottom: 32, gap: 24, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 32, gap: 24, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
         <Glow />
-        <KycNoticeCard />
-        {!ready ? <SkeletonBlock lines={5} /> : (
+        {/* Grup / Baş Başa / Kankamla halkaları Eşleşme Paneli'ndekiyle aynı yükseklikte: üst boşluk yalnız durum çubuğu kadar;
+            KYC kartı görünürken Eşleşme Paneli'ndeki gibi üstte ve altta 16 boşluk */}
+        <View>
+          {me?.kyc?.status !== 'APPROVED' && <View style={{ marginTop: 16, marginBottom: 16 }}><KycNoticeCard /></View>}
+          {!ready ? <SkeletonBlock lines={5} /> : <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />}
+        </View>
+        {ready && (
           <>
-            <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
             {locked && (
               <View style={{ backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.25)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
                 <T style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 16.5 }}>Aşağıda bulunan Masa Detay bilgileri şuanda önizlemedir. Paket alarak eşleştiğinizde, gerçek zamanlı randevu bilgileri yer alacaktır.</T>

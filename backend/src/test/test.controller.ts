@@ -51,7 +51,7 @@ export class TestController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN", "SUPERADMIN")
   @ApiBearerAuth()
-  @ApiOperation({ summary: "[Admin] Kullanıcının 180 günlük test kilidini aç" })
+  @ApiOperation({ summary: "[Admin] Kullanıcının 6 aylık test kilidini aç" })
   adminResetLock(@Param("userId") userId: string) {
     return this.testService.adminResetLock(userId);
   }

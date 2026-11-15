@@ -1,6 +1,6 @@
 // apps/web/app/profil/tabs/TabProfilim.tsx karşılığı
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, ScrollView, View } from 'react-native';
 import { useReduceMotion } from '@/lib/motion';
 import { api } from '@/lib/api';
 import { LogoutChoice } from '../LogoutChoice';
@@ -13,7 +13,7 @@ import { getShakeEnabled, setShakeEnabled } from '@/lib/shakePref';
 import { OtpInput } from '../OtpInput';
 import { OtpCountdown, useOtpCountdown } from '../OtpCountdown';
 import { KankaSection } from './KankaSection';
-import { accountBtn, adminChipPulse, c, ll, sans, tw } from '@/theme/theme';
+import { accountBtn, adminChipPulse, c, ll, tw } from '@/theme/theme';
 import { openLegal } from '@/lib/links';
 import { useRememberAllowed } from '@/lib/adminLock';
 
@@ -119,12 +119,8 @@ function AdminChip({ onPress }: { onPress: () => void }) {
   );
 }
 
-export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: UserData; cities: City[]; onLoggedOut: () => void; onAdmin: () => void }) {
+export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, onOpenRehber }: { user: UserData; cities: City[]; onLoggedOut: () => void; onAdmin: () => void; onOpenTest: () => void; onOpenRehber: () => void }) {
   const [editingVenue, setEditingVenue] = useState(false);
-  const [stats, setStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
-  const [refPhone, setRefPhone] = useState('');
-  const [refSending, setRefSending] = useState(false);
-  const [refMsg, setRefMsg] = useState('');
   // Ana şehir üye tarafından değiştirilemez; yalnız admin panelinden düzeltilir
   const displayPrimary: City | null = user.profile?.primaryCity ?? null;
   const [venuePref, setVenuePref] = useState<VenuePreference>(user.profile?.venuePreference ?? 'NO_PREFERENCE');
@@ -162,7 +158,6 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
   useEffect(() => { getShakeEnabled().then(setShake); }, []);
   useEffect(() => {
     api.get<{ request: { id: string } | null }>('/users/me/deletion-request').then(r => setDeletePending(!!r?.request?.id)).catch(() => {});
-    api.get<{ totalInvites: number; availableDiscounts: number }>('/referral/my-stats').then(setStats).catch(() => {});
   }, []);
 
   const badge = KYC_BADGE[user.kyc?.status ?? 'PENDING'] ?? KYC_BADGE.PENDING;
@@ -179,12 +174,6 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
   async function confirmDelete() {
     setDeleteBusy(true); setDeleteError('');
     try { await api.post('/users/me/deletion-request', {}); setDeletePending(true); setDeleteOpen(false); } catch (e) { setDeleteError((e as Error).message); } finally { setDeleteBusy(false); }
-  }
-  async function sendReferral() {
-    if (!refPhone || refPhone.length !== 10 || !refPhone.startsWith('5')) { setRefMsg('Geçerli bir numara girin (5 ile başlayan 10 hane).'); return; }
-    setRefSending(true); setRefMsg('');
-    try { await api.post('/referral/invite', { phoneNumber: `+90${refPhone}` }); setRefMsg('Davet başarıyla gönderildi!'); setRefPhone(''); setStats(await api.get('/referral/my-stats')); }
-    catch (e) { setRefMsg((e as Error).message || 'Gönderilemedi.'); } finally { setRefSending(false); }
   }
   // Yeni kod isteme bekleme süresi backend'den gelir (ortak sayaç)
   const phoneCountdown = useOtpCountdown();
@@ -306,6 +295,11 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
           </View>
         )}
         <KankaSection />
+        {/* Kankamla notunun hemen altında: Kişilik Ağacım ve Numara Engelleme sayfaları (eski üst sekme çubuğunun yerine) */}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <BtnGhost label="Kişilik Ağacım" style={{ flex: 1 }} onPress={onOpenTest} />
+          <BtnGhost label="Numara Engelleme" style={{ flex: 1 }} onPress={onOpenRehber} />
+        </View>
       </CardP>
 
       <Sheet visible={activeConfirm} onClose={() => setActiveConfirm(false)}>
@@ -359,22 +353,6 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
             </View>
           </View>
         ) : <Row label="Tercih" value={VENUE_LABELS[displayVenue]} />}
-      </CardP>
-
-      <CardP title="Sadakat Programı">
-        <View style={{ gap: 8, marginBottom: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingHorizontal: 14 }}>
-            <T style={{ color: 'rgba(255,255,255,0.62)', fontSize: 14, marginRight: 4 }}>+90</T>
-            <TextInput keyboardType="number-pad" keyboardAppearance="dark" placeholder="5XX XXX XX XX" placeholderTextColor={tw.muted} value={refPhone} onChangeText={t => setRefPhone(t.replace(/\D/g, '').slice(0, 10))}
-              style={{ flex: 1, fontSize: 14, color: tw.text, paddingVertical: 12, fontFamily: sans(400) }} />
-          </View>
-          <BtnPrimary label={refSending ? '…' : 'Davet Gönder'} full disabled={refSending} style={refSending ? { opacity: 0.5 } : undefined} onPress={sendReferral} />
-        </View>
-        {!!refMsg && <T style={{ fontSize: 12, marginBottom: 12, color: refMsg.includes('başarı') ? c.ok : tw.accent }}>{refMsg}</T>}
-        <View style={{ flexDirection: 'row', gap: 24, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
-          <View><T style={{ fontSize: 12, color: ll.text2 }}>Davetli Arkadaş</T><T w={600} style={{ fontSize: 16 }}>{stats?.totalInvites ?? '—'} kişi</T></View>
-          <View><T style={{ fontSize: 12, color: ll.text2 }}>Toplam %10 İndirim Hakkı</T><T w={600} style={{ fontSize: 16 }}>{stats?.availableDiscounts ?? '—'} Adet</T></View>
-        </View>
       </CardP>
 
       <CardP title="Salla-Bildir">
