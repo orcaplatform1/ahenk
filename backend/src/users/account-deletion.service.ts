@@ -191,6 +191,11 @@ export class AccountDeletionService {
         if ((err as NodeJS.ErrnoException).code !== "ENOENT") this.logger.error(`KYC dosyası silinemedi: request=${id} ${err}`);
       }
     }
+    // Boşalan uploads/kyc/<userId>/ klasörü silinir; boş değilse silinmez, hata loglanır, işlem sürer
+    const kycDir = path.join(process.cwd(), "..", "uploads", "kyc", userId);
+    try { fs.rmdirSync(kycDir); } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") this.logger.error(`KYC klasörü silinemedi: request=${id} ${err}`);
+    }
     // Profil fotoğrafları (uploads/profile-photos/<userId>/) ve sorun bildirimi görselleri (uploads/problem-reports/<id>/) diskten silinir
     for (const dir of [path.join(PROFILE_PHOTO_DIR, userId), ...problemReportIds.map((rid) => path.join(PROBLEM_REPORT_DIR, rid))]) {
       try { fs.rmSync(dir, { recursive: true, force: true }); } catch (err) {

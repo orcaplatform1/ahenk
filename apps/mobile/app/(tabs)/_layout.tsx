@@ -9,6 +9,7 @@ import { SOS_POLL_MS, syncSosLive } from '@/lib/sosLive';
 import { PngTabIcon, ProfileTabIcon, TabBadge } from '@/components/TabIcons';
 import { ShakeReport } from '@/components/ShakeReport';
 import { WinbackHost } from '@/components/Winback';
+import { PermissionIntro } from '@/components/PermissionIntro';
 import { tabBar, tabIcon } from '@/theme/theme';
 
 interface Me { firstName: string; lastName: string; profilePhotoUrl?: string | null; profile?: { gender?: string | null } }
@@ -41,6 +42,8 @@ export default function TabsLayout() {
     <>
     <ShakeReport />
     <WinbackHost />
+    {/* Giriş sonrası bir kerelik izin bilgilendirme ekranı */}
+    <PermissionIntro />
     <Tabs
       screenOptions={{
         headerShown: false,

@@ -71,6 +71,7 @@ export default function AdminVenues() {
     chooseSource(async (src) => {
       const files = src === 'library' ? await pickFromLibrary(MAX_PHOTOS - photos.length - pending.length) : await pickFromCamera();
       setModalError('');
+      if (files === 'blocked') return;
       if (files === 'denied') { setModalError('Fotoğraflara erişim izni verilmedi'); return; }
       if (!files.length) return;
       if (photos.length + pending.length + files.length > MAX_PHOTOS) { setModalError(`En fazla ${MAX_PHOTOS} fotoğraf eklenebilir`); return; }

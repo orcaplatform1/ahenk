@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
+import { ensurePermission, PERM_REASON } from '@/lib/permissions';
 import Svg, { Path } from 'react-native-svg';
 import { API_PREFIX } from '@/lib/config';
 import { api, storeLogin } from '@/lib/api';
@@ -143,7 +144,7 @@ export default function Kayit() {
     try {
       if (f.contactNumbers.length > 0) await api.post('/contact-blocks/sync', { hashedPhones: f.contactNumbers });
       setSuccess(true);
-      Notifications.requestPermissionsAsync().catch(() => {});
+      ensurePermission(() => Notifications.getPermissionsAsync(), () => Notifications.requestPermissionsAsync(), PERM_REASON.notifications).catch(() => {});
       setTimeout(() => router.replace('/(tabs)'), 2000);
     } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
   }

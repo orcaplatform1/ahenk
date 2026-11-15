@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, Modal, Pressable, View } from 'react-native';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
+import { PERM_REASON, showSettingsAlert } from '@/lib/permissions';
 import { SvgUri } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +31,12 @@ export function PhotoCamera({ visible, onClose, onShot }: { visible: boolean; on
   const ref = useRef<CameraView>(null);
   const [perm, requestPerm] = useCameraPermissions();
   useEffect(() => { if (visible && perm && !perm.granted && perm.canAskAgain) requestPerm(); }, [visible, perm, requestPerm]);
+  // Kamera izni kalıcı reddedilmişse: neden gerektiği + "Ayarlara Git"
+  const blockedShown = useRef(false);
+  useEffect(() => {
+    if (!visible) { blockedShown.current = false; return; }
+    if (perm && !perm.granted && !perm.canAskAgain && !blockedShown.current) { blockedShown.current = true; showSettingsAlert(PERM_REASON.kycCamera); }
+  }, [visible, perm]);
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: '#000' }}>
@@ -73,6 +80,11 @@ function LivenessRecorder({ video, onCapture }: { video: Shot | null; onCapture:
 
   async function openCamera() {
     setCamError('');
+    // Kamera ya da mikrofon izni kalıcı reddedilmişse sistem penceresi açılamaz: neden gerektiği + "Ayarlara Git"
+    if ((camPerm && !camPerm.granted && !camPerm.canAskAgain) || (micPerm && !micPerm.granted && !micPerm.canAskAgain)) {
+      showSettingsAlert(PERM_REASON.kycCamera);
+      setCamError('Kamera izni reddedildi. Ayarlar → Ahenk bölümünden kamera ve mikrofon izni verin.'); setPhase('error'); return;
+    }
     const cp = camPerm?.granted ? camPerm : await requestCam();
     const mp = micPerm?.granted ? micPerm : await requestMic();
     if (!cp.granted || !mp.granted) { setCamError('Kamera izni reddedildi. Ayarlar → Ahenk bölümünden kamera ve mikrofon izni verin.'); setPhase('error'); return; }

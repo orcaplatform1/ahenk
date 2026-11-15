@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Modal, Platform, Pressable, View } from 'react-native';
 // SDK 58: eski fonksiyon API'si (getContactsAsync) ana 'expo-contacts' girişinden çağrılınca hata fırlatıyor ("Rehber okunamadı."); aynı API expo-contacts/legacy'de
 import * as Contacts from 'expo-contacts/legacy';
+import { ensurePermission, PERM_REASON } from '@/lib/permissions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
 import { Btn, BtnGhost, BtnPrimary, Card, Head, Input, T, Glow } from '../ui';
@@ -30,8 +31,8 @@ export function ContactPicker({ visible, onClose, existing, remaining, onPick }:
     if (!visible) return;
     setSel(new Set()); setQ(''); setError('');
     (async () => {
-      const { status } = await Contacts.requestPermissionsAsync();
-      if (status !== 'granted') { setError('Rehber izni verilmedi. Ayarlar → Ahenk → Kişiler bölümünden izin verebilirsin.'); return; }
+      const perm = await ensurePermission(() => Contacts.getPermissionsAsync(), () => Contacts.requestPermissionsAsync(), PERM_REASON.contacts);
+      if (perm !== true) { setError('Rehber izni verilmedi. Ayarlar → Ahenk → Kişiler bölümünden izin verebilirsin.'); return; }
       const { data } = await Contacts.getContactsAsync({ fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name] });
       const seen = new Set<string>();
       const list: { key: string; name: string; phone: string }[] = [];

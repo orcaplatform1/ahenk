@@ -145,7 +145,7 @@ Paket kartı tasarımı (web + mobil, landing dahil): premium; her kartta aynı 
   eşleşme hakkı". Prime detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen" etiketi. Web'de bu kart altın çerçeveli, hafif
   altın geçişli; mobilde altın çerçeve / arka plan yok, diğer süre kartlarıyla aynı düz görünüm (etiket kalır).
   Seçili plan kartının çerçevesi Ahenk paleti kırmızısı (#d6453a); 3 aylık seçiliyse çerçeve kırmızı, etiket kalır (web + mobil).
-  Paket kartı tipografisi (web + mobil, bütün paket kartları ve "Prime Abonelik" kutusu): başlık serif (DM Serif Display), normal
+  Paket kartı tipografisi (web + mobil, bütün paket kartları ve "Prime Abonelik Süreleri" kutusu): başlık serif (DM Serif Display), normal
   ağırlık, web text-2xl (24/32) / mobil Serif 24/32; açıklama sans, normal ağırlık, 14 (text-sm). Renkler ve rozetler aynı
   Grup Paketi avantajı "Masada erkek ve kadın eşit sayı"
 Paket kartı yazıları (kart kısa açıklaması; avantajlar PaketKarti.tsx CARDS ve mobil paketim.tsx CARDS'ta aynı liste):
@@ -159,8 +159,11 @@ Profilim "KANKAMLA NASIL İŞLER?" metni: "Kankamla Paketi'ni al, ardından ayn�
   "2 hak", "4 döngü" ifadeleri yoktur
 Landing "Paket Al": giriş yapmamışsa Giriş; giriş yapmışsa (KYC onaylı ya da değil) Profil → Paketim
 Web paket listeleri (landing #pricing ve Profil → Paketim): landing başlığı "Fiyatlandırma". Kartlar 2 sütunlu grid (sm ve üstü; dar
-  ekranda tek sütun): Grup + Baş Başa, Kankamla + İçerde, Prime Paket tam genişlik; landing'de 4. satır "Prime Abonelik" kutusu tam
-  genişlik (eski "Prime Üyelik"; başlık #7A1F2B, çerçeve #d6453a — altın renk yok). Prime Paket detay ekranı tam ekran (değişmedi)
+  ekranda tek sütun): Grup + Baş Başa, Kankamla + İçerde, Prime Paket tam genişlik; landing'de 4. satır "Prime Abonelik Süreleri"
+  kutusu tam genişlik (eski "Prime Üyelik"; başlık #7A1F2B, çerçeve #d6453a — altın renk yok). Prime Paket detay ekranı tam ekran (değişmedi).
+  Landing'de bütün paket kartları varsayılan açık: avantajlar ve "Paket Al" / "Abone Ol" tıklamadan görünür, aç/kapa yok; kartlar
+  tıklanamaz (PaketKarti staticCard: div, ok yok). Web Profil → Paketim'de kartlar tıklanınca tam ekran detay (değişmedi). Mobil
+  paket ekranlarında grid yoktur; mobil kart davranışı aynı
 Paket kartları (Grup, Baş Başa, Kankamla, İçerde, Prime) tek kaynaktan: apps/web/components/paket/PaketKarti.tsx — paket ekranı ve landing
   aynı kartı, açıklamayı ve avantaj listesini kullanır. Landing'de eski görselli paket kartları yoktur; Prime kuralları bölümü durur
 Platform:
@@ -263,8 +266,18 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
   - ADMIN / SUPERADMIN biyometrik kilit (mobil, lib/adminLock.ts + components/AdminLockOverlay.tsx): kalıcı oturumda uygulama sıfırdan
     açıldığında ve uygulama arka planda 5 dakikadan uzun kaldıktan sonra öne gelince tam ekran "Yönetim paneli kilitli" + Face ID /
     Touch ID / parmak izi / yüz tanıma; biyometrik tanımlı değilse cihaz şifresi (disableDeviceFallback false). Başarısızsa oturum
-    kapanmaz, "Tekrar Dene". Hiç ekran kilidi yoksa açılmaz, uyarı + "Tekrar Dene". "Tekrar hoş geldin" biyometrisinden hemen sonra
-    tekrar sorulmaz. NSFaceIDUsageDescription: "Yönetim paneli hesabınızı korumak için Face ID kullanılır." Normal üyelerde kilit yok
+    kapanmaz, "Tekrar Dene". "Tekrar hoş geldin" biyometrisinden hemen sonra tekrar sorulmaz. Normal üyelerde kilit yok.
+    Cihazda biyometrik de ekran kilidi (şifre / desen / PIN) de yoksa ADMIN / SUPERADMIN için kalıcı oturum ve "Bu cihazda beni hatırla"
+    kapalı: her uygulama açılışında oturum kapanır, normal giriş ekranından şifreyle girilir; arka plan kilidi kurulmaz; kilit açıkken
+    ekran kilidi kaldırılmışsa kilit kalkar, oturum kapanıp giriş ekranına gidilir (kilit hiçbir cihazda açılamaz hâlde kalmaz).
+    NSFaceIDUsageDescription (iOS, tek metin, üye ve yönetici): "Hesap güvenliğiniz için Face ID kullanılır."
+  - İzin bilgilendirme ekranı (components/PermissionIntro.tsx, iOS + Android): giriş sonrası ilk açılışta bir kez (bu sürümü yükleyen
+    mevcut kullanıcılar dahil) tam ekran; gösterildiği cihazda saklanır (AsyncStorage ahenk_permission_intro_v1). İçerik: Bildirimler
+    (masa onayı, buluşma hatırlatmaları), Kamera ve Galeri (profil fotoğrafı, kimlik doğrulama, sorun bildirimi; ilgili ekranda
+    istenir), Konum (yalnız Acil Yardım'da, o anda). "Devam Et" yalnız bildirim iznini ister; daha önce verilmiş / reddedilmişse istemez.
+    Sekmeler ve Yönetim Paneli yerleşimlerinde bağlı; yönetim kilidi açıkken bekler. Kamera, galeri, konum açılışta istenmez
+  - Kalıcı reddedilmiş izin (lib/permissions.ts): kamera, galeri, konum (ön plan ve "Her zaman"), bildirim ve rehber izni gerektiği anda
+    okunur; canAskAgain false ise iznin neden gerektiği + "Ayarlara Git" (Linking.openSettings) uyarısı; aksi hâlde sistem penceresi
     Unut: oturum kapanır, hatırlama bilgisi silinir.
     Hatırla: oturum kapanır, yenileme token'ı ve ad cihazda (secure-store) saklanır; açılışta "Tekrar hoş geldin, [ad]!" + "Giriş Yap"
     (aynı arka plan, altta yasal metin) → Face ID / parmak izi (expo-local-authentication) → "Cihaz Doğrulandı" (palet renginde onay
@@ -304,7 +317,8 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
 HESAP SİLME:
   - Talep durumları yalnız PENDING / APPROVED (DeletionRequestStatus); admin reddi yoktur. PATCH /admin/deletion-requests/:id yalnız
     {status:"APPROVED"} (SUPERADMIN). Panelde (web + mobil) yalnız "Onayla"; talep en geç 48 saat içinde sonuçlanır
-  - Onayda silinenler: profil, OCEAN, KYC kaydı + dosyaları, rehber / kullanıcı engelleri, sohbet mesajları, bildirimler, oturumlar,
+  - Onayda silinenler: profil, OCEAN, KYC kaydı + şifreli dosyaları (.enc) ve boşalan uploads/kyc/<userId>/ klasörü (boş değilse
+    silinmez, hata loglanır, işlem sürer), rehber / kullanıcı engelleri, sohbet mesajları, bildirimler, oturumlar,
     bekleme listesi, winback, davet telefonu, profil fotoğrafları (ProfilePhoto + uploads/profile-photos/<userId>/), sorun bildirimleri
     (ProblemReport + uploads/problem-reports/<id>/); hesap anonimleşir; masa geçmişi ve değerlendirmeler kimliksiz kayda taşınır
   - Saklanan: ödeme ve fatura kayıtları 5 yıl (VUK); acil yardım / şikâyet / yaptırıma karışan kişinin kimlik bilgisi silinmeden sonra
@@ -312,6 +326,8 @@ HESAP SİLME:
   - Herkese açık https://ahenk.co/hesap-silme (apps/web/app/hesap-silme): giriş yapmamış kullanıcı otomatik /giris?donus=/hesap-silme'ye
     gider, giriş sonrası geri döner (giriş sayfasında izinli dönüş yolu yalnız /hesap-silme) ve talep oluşturur. Silinen / saklanan
     veriler ve süre yazılıdır. Footer Yasal grubunda "Hesap Silme" linki
+  - KYC metni (KVKK, Gizlilik Politikası, /hesap-silme birebir): "Hesap silinene kadar saklanır; hesap silme talebi onaylanınca kimlik
+    görselleri, canlılık videosu ve KYC kaydı silinir"
   - Gizlilik Politikası ve KVKK: KYC Ahenk sunucusunda AES-256-GCM şifreli, hesap silinene kadar; üçüncü taraflar iyzico, Meta (WhatsApp
     Business API), Google Firebase Cloud Messaging, Anthropic (masa uyum raporu: katılımcı başı OCEAN skoru + cinsiyet, rapor masa
     kartında), OpenStreetMap Nominatim, Apple / Google mağazaları, Google Analytics / Meta Pixel (web çerezleri). Cloudflare yoktur

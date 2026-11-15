@@ -50,6 +50,7 @@ export function Avatar({ photoUrl, initials, gender, size, borderWidth = 2 }: { 
 export async function pickAndUploadProfilePhoto(kycApproved: boolean): Promise<boolean> {
   if (!kycApproved) { showAlert('Profil Fotoğrafı', KYC_PHOTO_MESSAGE); return false; }
   const picked = await pickFromLibrary(1);
+  if (picked === 'blocked') return false;
   if (picked === 'denied') { showAlert('Profil Fotoğrafı', 'Galeri izni verilmedi.'); return false; }
   if (!picked.length) return false;
   const p = picked[0];

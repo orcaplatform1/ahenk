@@ -51,6 +51,7 @@ export default function AdminBots() {
   const [usage, setUsage] = useState<BotUsage | null>(null);
   async function pickPhoto() {
     const picked = await pickFromLibrary(1);
+    if (picked === 'blocked') return;
     if (picked === 'denied') { showAlert('Profil Fotoğrafı', 'Galeri izni verilmedi.'); return; }
     if (!picked.length) return;
     setPhotoUri(picked[0].uri); setPhotoPreview(picked[0].uri);

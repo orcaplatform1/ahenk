@@ -15,6 +15,7 @@ import { PhotoViewer, pickAndUploadProfilePhoto } from './ProfilePhoto';
 import { KankaPairs, type KankaPerson } from './KankaPairs';
 import { InlineLH, Btn, BtnPrimary, Serif, T } from './ui';
 import { LocationDisclosure } from './LocationDisclosure';
+import { PERM_REASON, showSettingsAlert } from '@/lib/permissions';
 import { c, sans, tw } from '@/theme/theme';
 
 export interface DetayParticipant { initials: string; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean; photoUrl?: string | null }
@@ -361,6 +362,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
   async function askAlwaysPermission() {
     const bg = await Location.getBackgroundPermissionsAsync().catch(() => null);
     if (bg?.status === 'granted') return;
+    if (bg && !bg.canAskAgain) { showSettingsAlert(PERM_REASON.locationAlways); return; }
     if (!disclosed.current) {
       disclosed.current = true;
       if (!(await askDisclosure())) return;
@@ -376,6 +378,8 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
       const enabled = await Location.hasServicesEnabledAsync();
       if (!enabled) { setLocError('off'); return; }
       let perm = await Location.getForegroundPermissionsAsync();
+      // Kalıcı reddedilmişse sistem penceresi açılamaz: neden gerektiği + "Ayarlara Git" (açıklama ekranı akışı değişmedi)
+      if (perm.status !== 'granted' && !perm.canAskAgain) { showSettingsAlert(PERM_REASON.location); setLocError('denied'); return; }
       if (perm.status !== 'granted') {
         // Açıklama ekranı izin isteğinden önce; "Şimdi Değil" izin istemeden forma döner
         disclosed.current = true;

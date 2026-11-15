@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { setAdminIdentity } from '@/lib/adminRole';
 import { Btn, Spinner } from '@/components/ui';
 import { LogoutChoice } from '@/components/LogoutChoice';
+import { PermissionIntro } from '@/components/PermissionIntro';
 import { useRememberAllowed } from '@/lib/adminLock';
 import { ALabel, AT } from '@/components/admin/AdminUi';
 import { adm } from '@/theme/theme';
@@ -99,6 +100,8 @@ export default function AdminLayout() {
         </View>
       </View>
       <View style={{ flex: 1 }}><Slot /></View>
+      {/* Giriş sonrası bir kerelik izin bilgilendirme ekranı (yönetim hesabı da aynı) */}
+      <PermissionIntro />
 
       <Modal visible={drawer} transparent animationType="none" statusBarTranslucent onRequestClose={() => openDrawer(false)}>
         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)' }} onPress={() => openDrawer(false)} />

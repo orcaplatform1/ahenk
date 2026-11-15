@@ -38,6 +38,7 @@ export function ProblemReport({ open, onClose, screen }: { open: boolean; onClos
   async function addFiles() {
     setError('');
     const picked = await pickFromLibrary(MAX_IMAGES - files.length);
+    if (picked === 'blocked') return;
     if (picked === 'denied') { setError('Fotoğraflara erişim izni verilmedi.'); return; }
     if (picked.some((f) => !ACCEPT.includes(f.type))) { setError('Görseller JPG, PNG veya WebP olmalı.'); return; }
     if (picked.some((f) => (f.size ?? 0) > MAX_BYTES)) { setError('Her görsel en fazla 5 MB olabilir.'); return; }
