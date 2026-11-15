@@ -3,7 +3,7 @@
     "name": "Ahenk",
     "slug": "ahenk1",
     "scheme": "ahenk",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/app-icon.png",
@@ -67,7 +67,7 @@
           ]
         }
       ],
-      "versionCode": 2
+      "versionCode": 3
     },
     "plugins": [
       "expo-router",

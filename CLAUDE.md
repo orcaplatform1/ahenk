@@ -257,7 +257,7 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     "Beni hatırla" ile çıkışta doğrudan "Tekrar hoş geldin, [ad]!" ekranına gidilir (süren token yenilemesi beklenir); uygulama kapatılıp
     açılınca da bu ekran görünür
   - Mobil açılışta yerel açılış görseli (siyah zemin, Ahenk logosu) en az 3 sn görünür; 3 sn dolmadan, yazı tipleri yüklenmeden ve açılış yönlendirmesi bitmeden kapanmaz.
-  - Profilim'de çıkış butonları ile "Hesabımı Sil" arasında küçük uygulama logosu ve "Versiyon 0.1.1"; mobil sürüm 0.1.1 (Android versionCode 2)
+  - Profilim'de çıkış butonları ile "Hesabımı Sil" arasında küçük uygulama logosu ve "Versiyon 0.1.2"; mobil sürüm 0.1.2 (Android versionCode 3)
   - Android APK sadece arm64-v8a mimarisiyle, release modunda derlenir (EAS preview profili; plugins/withAndroidRelease.js: R8 kod
     küçültme + kaynak küçültme açık, reactNativeArchitectures=arm64-v8a, Hermes açık). APK https://ahenk.co/apk/ahenk-<sürüm>.apk
   - Eşleşme Paneli: KYC kartı yokken üstte boşluk kalmaz, Grup / Baş Başa / Kankamla halkaları durum çubuğunun hemen altından başlar
