@@ -294,7 +294,7 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     (PermissionIntro permissionIntroDone → Winback WinbackHost); tanıtım gösterilmeyecekse eskisi gibi hemen açılır
   - Profilim alt bölümü sırası (mobil): yasal bağlantılar kartı (Gizlilik Politikası, Kullanım Koşulları, KVKK Aydınlatma Metni,
     Hesap Silme — web sayfaları uygulama içi tarayıcıda, satırlar 44 pt) → "Çıkış Yap" → "Tüm cihazlardan çıkış yap" → küçük uygulama
-    logosu → "Versiyon 0.1.2" → "Hesabımı Sil". Mobil sürüm 0.1.2 (Android versionCode 3)
+    logosu → "Versiyon 0.1.3" → "Hesabımı Sil". Mobil sürüm 0.1.3 (Android versionCode 4)
   - Mağaza ayarları (app.json): iOS bundleIdentifier co.ahenk.app (Android package ile aynı); eas.json "production" profili (Android AAB,
     iOS mağaza), "preview" APK profili duruyor. iOS privacy manifest app.json ios.privacyManifests'te (prebuild PrivacyInfo.xcprivacy
     üretir): NSPrivacyTracking false; UserDefaults CA92.1, FileTimestamp C617.1 / 0A2A.1 / 3B52.1, SystemBootTime 35F9.1, DiskSpace
