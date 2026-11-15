@@ -42,7 +42,7 @@ export function useAuthBackgroundIndex(): number | null {
   return index;
 }
 
-// Giriş ekranı (Telefon / E-posta / Kayıt Ol) katmanları: fotoğrafın üstünde, içeriğin altında; sıra karartma → üst gradyan → alt gradyan.
+// Giriş ekranı (Telefon / E-posta / Kayıt Ol) ve "Tekrar hoş geldin" ekranı katmanları: fotoğrafın üstünde, içeriğin altında; sıra karartma → üst gradyan → alt gradyan.
 // AUTH_BACKGROUNDS sırasıyla: mobilappscreen.webp FOTO-4, mobilappscreen2.webp FOTO-ÇİFT, mobilappscreen3.webp FOTO-6.
 // top / bottomFrom: ekran yüksekliğine oran; gradyanlar 3 duraklı, orta durak uç opaklığın %60'ı.
 const AUTH_OVERLAYS = [
@@ -54,7 +54,7 @@ const black = (a: number) => `rgba(0,0,0,${a})`;
 
 // Tam ekran arka plan: görseli içeren alan tam olarak ekran genişliği ve yüksekliği kadar; ekstra büyütme / ölçekleme yok,
 // "cover" modunda, ortalı, esnetilmeden (oran farkında kenarlardan kırpılır). Üç görsel de aynı şekilde yerleşir.
-// overlay: yalnız giriş ekranında; değerler gösterilen fotoğrafla birlikte değişir (fotoğraf geçişinde animasyon yok)
+// overlay: giriş ve "Tekrar hoş geldin" ekranlarında; değerler gösterilen fotoğrafla birlikte değişir (fotoğraf geçişinde animasyon yok)
 export function AuthBackground({ index, overlay }: { index: number | null; overlay?: boolean }) {
   const { width, height } = useWindowDimensions();
   const o = overlay && index !== null ? AUTH_OVERLAYS[index] : null;

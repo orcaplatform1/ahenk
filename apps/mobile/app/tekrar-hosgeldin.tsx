@@ -71,7 +71,7 @@ export default function TekrarHosgeldin() {
 
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg }}>
-      <AuthBackground index={bgIndex} />
+      <AuthBackground index={bgIndex} overlay />
       <BackArrow onPress={() => router.replace('/giris')} />
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 24, paddingTop: insets.top, paddingBottom: 32, gap: 24 }}>
         <Serif style={{ fontSize: 25.6, lineHeight: 32, textAlign: 'center', color: ll.text }}>Tekrar hoş geldin, {name}!</Serif>
