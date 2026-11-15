@@ -1,10 +1,10 @@
 // Bir kerelik izin bilgilendirme ekranı (iOS + Android): giriş yaptıktan sonraki ilk açılışta (bu sürümü yükleyen mevcut kullanıcılar
-// dahil) tam ekran gösterilir; gösterildiği bilgisi cihazda (AsyncStorage) saklanır, bir daha gösterilmez.
+// dahil) alttan açılan yarım pencere (en fazla ekranın %60'ı, arkada rgba(0,0,0,0.6) karartma) olarak gösterilir; gösterildiği bilgisi cihazda (AsyncStorage) saklanır, bir daha gösterilmez.
 // "Devam Et" yalnız bildirim iznini sistem penceresiyle ister; bildirim izni daha önce verilmiş ya da reddedilmişse istek atlanır.
 // Kamera, galeri ve konum izinleri burada istenmez (ilgili özellik kullanılırken istenir).
-// Yönetim paneli kilidi açıkken (lib/adminLock) beklenir. HIG: güvenli alan, en az 44 pt buton, Android geri tuşu "Devam Et" gibi.
+// Yönetim paneli kilidi açıkken (lib/adminLock) beklenir. HIG: güvenli alan, en az 44 pt buton. Yalnız "Devam Et" kapatır (karartma, kaydırma, Android geri tuşu kapatmaz).
 import React, { useEffect, useState } from 'react';
-import { Modal, ScrollView, View } from 'react-native';
+import { Modal, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
@@ -29,6 +29,7 @@ const ITEMS: { title: string; body: string }[] = [
 
 export function PermissionIntro() {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const [pending, setPending] = useState(false);
   const [locked, setLocked] = useState(isAdminLocked());
   const [busy, setBusy] = useState(false);
@@ -58,18 +59,20 @@ export function PermissionIntro() {
   }
 
   return (
-    <Modal visible={pending && !locked} animationType="fade" onRequestClose={proceed} statusBarTranslucent>
-      <View style={{ flex: 1, backgroundColor: ll.bg, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16, paddingHorizontal: 24 }}>
-        <ScrollView contentContainerStyle={{ gap: 20, paddingBottom: 16 }}>
-          <Serif style={{ fontSize: 30, lineHeight: 36, color: ll.text }}>Ahenk hangi izinleri kullanır?</Serif>
-          {ITEMS.map((it) => (
-            <View key={it.title} style={{ gap: 6 }}>
-              <T w={600} style={{ fontSize: 15, color: ll.text }}>{it.title}</T>
-              <T style={{ fontSize: 14, lineHeight: 21, color: ll.text2 }}>{it.body}</T>
-            </View>
-          ))}
-        </ScrollView>
-        <BtnPrimary label="Devam Et" full disabled={busy} style={{ minHeight: 44 }} onPress={proceed} />
+    <Modal visible={pending && !locked} transparent animationType="fade" onRequestClose={() => {}} statusBarTranslucent>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
+        <View style={{ maxHeight: height * 0.6, backgroundColor: ll.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 24, paddingBottom: insets.bottom + 16, paddingHorizontal: 24 }}>
+          <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ gap: 20, paddingBottom: 16 }}>
+            <Serif style={{ fontSize: 24, lineHeight: 28.8, color: ll.text }}>Ahenk hangi izinleri kullanır?</Serif>
+            {ITEMS.map((it) => (
+              <View key={it.title} style={{ gap: 6 }}>
+                <T w={600} style={{ fontSize: 15, color: ll.text }}>{it.title}</T>
+                <T style={{ fontSize: 14, lineHeight: 21, color: ll.text2 }}>{it.body}</T>
+              </View>
+            ))}
+          </ScrollView>
+          <BtnPrimary label="Devam Et" full disabled={busy} style={{ minHeight: 44 }} onPress={proceed} />
+        </View>
       </View>
     </Modal>
   );

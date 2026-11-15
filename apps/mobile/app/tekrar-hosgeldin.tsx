@@ -73,8 +73,8 @@ export default function TekrarHosgeldin() {
     <View style={{ flex: 1, backgroundColor: ll.bg }}>
       <AuthBackground index={bgIndex} />
       <BackArrow onPress={() => router.replace('/giris')} />
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingTop: insets.top, gap: 24 }}>
-        <Serif style={{ fontSize: 32, lineHeight: 40, textAlign: 'center', color: ll.text }}>Tekrar hoş geldin, {name}!</Serif>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 24, paddingTop: insets.top, paddingBottom: 32, gap: 24 }}>
+        <Serif style={{ fontSize: 25.6, lineHeight: 32, textAlign: 'center', color: ll.text }}>Tekrar hoş geldin, {name}!</Serif>
         <PillButton label={busy ? '…' : 'Giriş Yap'} primary disabled={busy} onPress={login} />
       </View>
       <View style={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 16 }}><LegalNote /></View>

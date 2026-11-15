@@ -522,11 +522,7 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
   return (
     <div className="flex flex-col gap-6">
       <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
-      {locked && (
-        <a href="/profil?tab=paket" className="btn-primary w-full justify-center">
-          Paket Al
-        </a>
-      )}
+      <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
 
       {locked && (
         <div style={{ background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: 12, padding: '12px 14px' }}>
@@ -536,7 +532,11 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
         </div>
       )}
 
-      <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
+      {locked && (
+        <a href="/profil?tab=paket" className="btn-primary w-full justify-center">
+          Paket Al
+        </a>
+      )}
 
       <div>
         <div className="ll-head">

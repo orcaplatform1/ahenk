@@ -258,13 +258,13 @@ export default function Masalarim() {
         <KycNoticeCard />
         {!ready ? <SkeletonBlock lines={5} /> : (
           <>
-            {locked && <BtnPrimary label="Paket Al" full onPress={() => router.navigate('/(tabs)/paketim')} />}
+            <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
             {locked && (
               <View style={{ backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.25)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
                 <T style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 16.5 }}>Aşağıda bulunan Masa Detay bilgileri şuanda önizlemedir. Paket alarak eşleştiğinizde, gerçek zamanlı randevu bilgileri yer alacaktır.</T>
               </View>
             )}
-            <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
+            {locked && <BtnPrimary label="Paket Al" full onPress={() => router.navigate('/(tabs)/paketim')} />}
             <View>
               <Head title={locked ? 'Masa Detay Kartı' : CARD_TITLE[tab]} right={<BtnGhost label="Geçmiş Masalarım" onPress={() => setHistoryOpen(v => !v)} accessibilityState={{ expanded: historyOpen }} />} />
               {historyOpen && <HistoryList history={history} />}
