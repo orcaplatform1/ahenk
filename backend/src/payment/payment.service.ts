@@ -35,6 +35,8 @@ const PENDING_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 // İndirim hakkı harcanamayan ödeme (web ödeme dönüşü ve mağaza doğrulaması aynı metni kullanır)
 const DISCOUNT_USED_REASON = "İndirim hakkı başka ödemede kullanılmış";
 const DISCOUNT_USED_MESSAGE = "İndirim hakkı zaten kullanılmış, ödeme iade ediliyor";
+// Mağaza (App Store / Google Play) yolunda sunucu iade gönderemez: iade mağaza üzerinden istenir
+const STORE_DISCOUNT_USED_MESSAGE = "İndirim hakkın daha önce kullanılmış. İade için App Store veya Google Play üzerinden talepte bulunabilirsin.";
 
 @Injectable()
 export class PaymentService {
@@ -534,7 +536,7 @@ export class PaymentService {
     const storeDiscount = parsed.discount ?? discountOfOffer(v.offerId);
     const known = await this.prisma.payment.findFirst({ where: { storeTransactionId: v.transactionId }, select: { status: true, failureReason: true } });
     if (known?.status === PaymentStatus.DUPLICATE) {
-      throw new ConflictException(known.failureReason === DISCOUNT_USED_REASON ? DISCOUNT_USED_MESSAGE : "Aktif paketiniz bu paketi kapsıyor; bu paketi şu an satın alamazsınız.");
+      throw new ConflictException(known.failureReason === DISCOUNT_USED_REASON ? STORE_DISCOUNT_USED_MESSAGE : "Aktif paketiniz bu paketi kapsıyor; bu paketi şu an satın alamazsınız.");
     }
     if (known) return { success: true };
 
@@ -606,7 +608,7 @@ export class PaymentService {
     if (outcome === "DISCOUNT_USED") {
       this.logger.error(`Mağaza ödemesinde indirim hakkı yok, paket verilmedi: user=${userId} plan=${plan} işlem=${v.transactionId}`);
       await this.paymentAlert(userId);
-      throw new ConflictException(DISCOUNT_USED_MESSAGE);
+      throw new ConflictException(STORE_DISCOUNT_USED_MESSAGE);
     }
     if (outcome === "CREATED") await enqueueAssign(this.assignQueue, userId);
     return { success: true };

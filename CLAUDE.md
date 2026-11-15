@@ -526,9 +526,18 @@ SOHBET SİSTEMİ EK KURALLAR:
   - MeetingStatus.REVEALED henüz şemada yok; spec'te var ama migration bekleniyor. Şu an sohbet sadece ACTIVE masalar için açık.
 
 RATE LIMITING:
-  - ThrottlerModule backend'e eklenmiştir.
-  - 4 ayrı named throttler: short (10 req/3s), medium (30 req/10s), long (100 req/1m), auth (5 req/1m).
-  - Auth endpoint'leri (login, register, OTP) auth throttler ile korunur.
+  - ThrottlerModule backend'e eklenmiştir (app.module.ts); ThrottlerGuard bütün uçlarda global çalışır (APP_GUARD).
+  - Tek throttler vardır: "default", IP başına 300 istek / 1 dk. Uca özel sınırlar @Throttle({ default: { ttl, limit } }) ile verilir;
+    named throttler (short / medium / long / auth) yoktur. Sayaçlar süreç belleğindedir.
+  - /auth uçları: controller geneli 10 / 1 dk (register, login, logout, logout-all, refresh). Ayrı sınırı olanlar:
+    register/send-otp 5, register/verify-otp 10, forgot-password 5, reset-password 5, send-login-otp 5, verify-login-otp 10,
+    me 60, cities 300, districts 300 (hepsi 1 dk'da).
+  - /venue-panel uçları: controller geneli 60 / 1 dk. Ayrı sınırı olanlar: login 10, send-login-otp 5, verify-login-otp 10,
+    refresh 20, forgot-password 5, reset-password 5, change-password 5, deactivate 5 (hepsi 1 dk'da).
+  - /partnerships, /careers, /janti-haydar (başvuru formları): controller geneli 5 / 1 dk; verify-otp 10 / 1 dk.
+  - /kanka/invite 5 / 1 dk; /kanka/link/:token 30 / 1 dk. POST /sos/:meetingId/report 5 / 5 dk.
+  - @SkipThrottle (sınır uygulanmaz): /admin controller'ı (admin.controller.ts), /admin/janti-haydar controller'ı ve
+    GET /janti-haydar/instagram.
   - OTP: deneme sayacı atomiktir, kod başına 3 deneme. Telefon başına Türkiye takvim gününde (Europe/Istanbul) günde 10 kod;
     üye OTP'si ve mekân paneli OTP'si ortak sayaçtadır, başarısız gönderimler sayılmaz. Sınır aşılınca:
     "Bugünlük doğrulama kodu hakkın doldu. Yarın tekrar deneyebilirsin."
