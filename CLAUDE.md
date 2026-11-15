@@ -256,7 +256,7 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     dairesi) → şifresiz giriş. Başarısız ya da cihazda yoksa normal giriş ekranı. Yeni girişte hatırlama bilgisi silinir.
     "Beni hatırla" ile çıkışta doğrudan "Tekrar hoş geldin, [ad]!" ekranına gidilir (süren token yenilemesi beklenir); uygulama kapatılıp
     açılınca da bu ekran görünür
-  - Açılışta dönen logolu 3 sn'lik ekran yoktur; yerel açılış görseli görünürken yazı tipleri / oturum yüklenir, hemen hedef ekrana geçilir
+  - Mobil açılışta yerel açılış görseli (siyah zemin, Ahenk logosu) en az 3 sn görünür; 3 sn dolmadan, yazı tipleri yüklenmeden ve açılış yönlendirmesi bitmeden kapanmaz.
   - Profilim'de çıkış butonları ile "Hesabımı Sil" arasında küçük uygulama logosu ve "Versiyon 0.1.1"; mobil sürüm 0.1.1 (Android versionCode 2)
   - Android APK sadece arm64-v8a mimarisiyle, release modunda derlenir (EAS preview profili; plugins/withAndroidRelease.js: R8 kod
     küçültme + kaynak küçültme açık, reactNativeArchitectures=arm64-v8a, Hermes açık). APK https://ahenk.co/apk/ahenk-<sürüm>.apk
@@ -553,6 +553,7 @@ RATE LIMITING:
     butonu aktif olur.
   - Giriş ve şifremi unuttum akışlarında kayıtlı olmayan numaraya, kayıt ol akışında kayıtlı numaraya kod gönderilmez ve
     uyarı döner.
+  - Mekân paneli giriş ve şifremi unuttum: hesap aktif değilse VENUE_ACCOUNT_INACTIVE, numara birden fazla mekân hesabına bağlıysa VENUE_PHONE_MULTIPLE döner; iki durumda kod gönderilmez, sayaç başlamaz, uyarı butonsuzdur.
 
 API CLIENT KURALLAR (web):
   - apps/web/lib/api.ts içinde PREFIX sabiti API_PREFIX olarak export edilir.
