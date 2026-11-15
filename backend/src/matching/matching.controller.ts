@@ -10,6 +10,14 @@ import { UserRole } from "../generated/prisma/client";
 export class MatchingController {
   constructor(private matchingService: MatchingService) {}
 
+  // Bot kullanım sayacı: yalnız SUPERADMIN
+  @Get("admin/bots/usage")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPERADMIN)
+  botUsage() {
+    return this.matchingService.botUsage();
+  }
+
   @Get("admin/bots")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPERADMIN)

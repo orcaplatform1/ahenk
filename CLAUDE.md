@@ -363,6 +363,42 @@ Abonelik yönetimi:
 Sistem ayarları:
   - GET /admin/settings — AppConfig key-value
   - PATCH /admin/settings — {weeklyTableLimit, matchingEnabled}
+  - "Eşleştirme Aktif" (MATCHING_ENABLED, açıklama: "Grup, baş başa ve Kankamla masa ataması yapılsın mı. Kapalıyken hak düşümü,
+    kilit ve eşleştirme bildirimleri de durur."): kapalıyken eşleştirmeyle ilgili her zamanlanmış iş başlamadan ayarı okur ve hiçbir
+    işlem yapmadan çıkar (app-settings.ts isMatchingEnabled): grup / baş başa / Kankamla masa atamaları (saatlik ve 23:44 son tarama,
+    atama kuyruğu matching-assign: kişi ataması, havuz taraması, kapanış botları), mekân ataması ve mekânsız masa hatırlatması,
+    Perşembe / Cuma / Cumartesi 23:59 kapanışları (Cumartesi Kankamla kilidi ve bekleme listesi dahil) ve bütün hak düşümleri,
+    12 saat kala kapanış hatırlatmaları, Perşembe 20:00 grup iptal özeti, Cuma / Cumartesi / Pazar 10:00 masa bildirimleri.
+    Ayar açıkken davranış aynı. Masa kapanışı (6 saat sonra), gelmeyen işaretleme, yola çıktım, değerlendirme bildirimleri,
+    paket süre dolumu, Prime, winback ve ödeme işleri bu ayara bakmaz
+
+YÖNETİM PANELİ EK KURALLARI (web + mobil):
+  - Bot profil fotoğrafı: Bot Ekle / Botu Düzenle formunun üstünde yuvarlak önizleme (yoksa baş harfler, cinsiyet renkli çerçeve) ve
+    "Profil Fotoğrafı Yükle" / "Fotoğrafı Değiştir"; yalnız galeri / dosya. POST /matching/admin/bots/:id/profile-photo (yalnız SUPERADMIN):
+    ProfilePhoto tablosuna doğrudan APPROVED kaydedilir (onay yok), önceki fotoğraf (dosya + kayıt) silinir; GET /matching/admin/bots photoUrl döner;
+    bot silinince fotoğraf klasörü de silinir
+  - SUPERADMIN, SUPERADMIN ve ADMIN hesaplarını düzenleyebilir (kişisel bilgi, durum, yaptırım, yaptırım kaldırma, gelmedi uyarısı;
+    assertCanSanction); ADMIN bu hesaplara işlem yapamaz; kimse kendi hesabını değiştiremez
+  - Kullanıcılar listesi: satırda yalnız ad soyad, telefon ve "Detay". Detay penceresinin üstünde 72 px yuvarlak profil (onaylı fotoğraf,
+    yoksa cinsiyet renkli çerçeve + baş harfler); e-posta, durum, Şehir, Bu hafta (aktif şehir), Paket, OCEAN Ort. Detay'da
+    (GET /admin/users/:id photoUrl, primaryCityName, activeCityName)
+  - Abonelik (Paket) Fiyat Geçmişi: en yeni en üstte; kapalı kayıtta Tarih + Paket, basınca Ham, Web, Mobil, Yapan açılır;
+    sayfa başına 20 kayıt, "← Önceki", sayfa numaraları, "Sonraki →"; backend kayıt sınırı yok
+  - KYC Başvuruları: kapalı kayıtta ad soyad, tarih, durum (Bekliyor / Onaylandı / Reddedildi / Şüpheli); basınca ön yüz, arka yüz, video,
+    Onayla / Reddet ve red sebebi açılır, tekrar basınca kapanır; medya yalnız açılınca yüklenir
+  - Kariyer başvurusu fotoğrafı: /kariyer formunda CV altında zorunlu "Fotoğraf *" (tek dosya; not "Yüzünüzün net olduğu herhangi bir
+    fotoğraf yüklemelisiniz"); JPEG/PNG/WebP/HEIC/HEIF, en fazla 10 MB, WebP olarak uploads/career-photos/ (herkese açık değil;
+    CareerApplication.photoFile). GET /admin/careers/:id/photo yalnız SUPERADMIN; panelde 64 px, basınca tam ekran (basınca / Esc / geri tuşu kapanır)
+  - Menü: üst barda "AHENK YÖNETİM PANELİ" yanında logo yok; açılır menüde "Acil Yardım" emoji yok, kırmızı geçişli hap etiket (beyaz kalın
+    büyük harf, solda beyaz nokta, kırmızı parıltı); mobil çekmece güvenli alanın hemen altından başlar (statusBarTranslucent),
+    web mobil görünüm çekmecesi env(safe-area-inset-top)
+  - Bot atama bildirimi: masaya bot atandığında (otomatik grup / baş başa botu, elle bot ekleme, eşi bekleyene elle bot, elle kurulan
+    masadaki bot) her bot için Uyarılar'a BOT_ASSIGNED kaydı (AdminAlert.message: bot adı soyadı, masa türü, mekân, şehir, buluşma tarihi
+    ve saati; mekân yoksa "Atanmadı") ve yalnız SUPERADMIN hesaplarına bildirim (IN_APP + FCM, "Masaya bot atandı"). BOT_ASSIGNED ve
+    BOT_NOT_FOUND uyarılarını yalnız SUPERADMIN görür / okundu işaretler (backend getAlerts / markAlertRead)
+  - Bot kullanım sayacı: Bot Yönetimi sayfasının üstünde "Bu hafta bot kullanılan masa" büyük rakam, altında son 8 hafta (bu hafta dahil,
+    en yeni üstte; hafta Pazartesi – Pazar TR, buluşma tarihine göre; iptal edilmemiş ve en az bir aktif bot katılımcısı olan masa).
+    GET /matching/admin/bots/usage yalnız SUPERADMIN
 
 KYC inceleme → /kyc/admin/* (Modül 5'ten)
 Şema: Profile.isPioneer, City, Venue(VenueCategory: SADE/ORTA/PREMIUM), Subscription.cancelNote

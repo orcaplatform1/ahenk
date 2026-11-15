@@ -19,3 +19,9 @@ export async function isMaintenanceMode(prisma: PrismaService): Promise<boolean>
   const row = await prisma.appConfig.findUnique({ where: { key: "MAINTENANCE_MODE" } });
   return row?.value === "true";
 }
+
+// "Eşleştirme Aktif" kapalıysa masa atamaları, kilitler, hak düşümleri ve eşleştirme bildirimleri durur
+export async function isMatchingEnabled(prisma: PrismaService): Promise<boolean> {
+  const row = await prisma.appConfig.findUnique({ where: { key: "MATCHING_ENABLED" } });
+  return row?.value !== "false";
+}

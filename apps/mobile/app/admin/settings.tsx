@@ -33,7 +33,7 @@ export default function AdminSettings() {
       ) : (
         <>
           <ACard style={{ gap: 16 }}>
-            <AdminToggle label="Eşleştirme Aktif" desc="Grup ve baş başa masa ataması yapılsın mı" value={s.matchingEnabled} onChange={v => upd({ matchingEnabled: v })} />
+            <AdminToggle label="Eşleştirme Aktif" desc="Grup, baş başa ve Kankamla masa ataması yapılsın mı. Kapalıyken hak düşümü, kilit ve eşleştirme bildirimleri de durur." value={s.matchingEnabled} onChange={v => upd({ matchingEnabled: v })} />
             {s.botSystemActive !== undefined && <AdminToggle label="Bot Sistemi Aktif" desc="Eksik masalara bot ekleme" value={s.botSystemActive} onChange={v => upd({ botSystemActive: v })} />}
             <AdminToggle label="Bakım Modu" desc="Platform açık kalır; masa ataması ve paket satın alma durur, üyelere bakım uyarısı gösterilir" value={s.maintenanceMode} onChange={v => upd({ maintenanceMode: v })} />
             <View>

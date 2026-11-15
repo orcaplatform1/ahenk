@@ -18,6 +18,12 @@ import { adm } from '@/theme/theme';
 interface Ocean { openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number }
 interface Bot { id: string; status: string; botPhone?: string | null; occupationSector?: string; profile?: { firstName?: string | null; lastName?: string | null; gender?: string | null; birthDate?: string | null; primaryCity?: string | null } | null; oceanScore?: Ocean | null; photoUrl?: string | null }
 interface City { id: string; name: string; isActive: boolean }
+interface BotUsage { thisWeek: number; weeks: { start: string; end: string; count: number }[] }
+// Hafta tarih aralığı (TR): 10.11 – 16.11.2026 (web weekRange ile aynı)
+function weekRange(start: string, end: string) {
+  const f = (d: string, year: boolean) => new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', ...(year ? { year: 'numeric' } : {}) });
+  return `${f(start, false)} – ${f(end, true)}`;
+}
 const OCEAN_FIELDS: { key: keyof Ocean; label: string }[] = [{ key: 'openness', label: 'Açıklık' }, { key: 'conscientiousness', label: 'Sorumluluk' }, { key: 'extraversion', label: 'Dışadönüklük' }, { key: 'agreeableness', label: 'Uyumluluk' }, { key: 'neuroticism', label: 'Duygusal Denge' }];
 const EMPTY = { firstName: '', lastName: '', gender: '', occupationSector: '', birthDate: '', phone: '', cityId: '', openness: '50', conscientiousness: '50', extraversion: '50', agreeableness: '50', neuroticism: '50' };
 type Form = typeof EMPTY;
@@ -42,6 +48,7 @@ export default function AdminBots() {
   // Bot profil fotoğrafı: seçilen dosya kaydet anında yüklenir (onay süreci yok, doğrudan onaylı)
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [usage, setUsage] = useState<BotUsage | null>(null);
   async function pickPhoto() {
     const picked = await pickFromLibrary(1);
     if (picked === 'denied') { showAlert('Profil Fotoğrafı', 'Galeri izni verilmedi.'); return; }
@@ -49,6 +56,8 @@ export default function AdminBots() {
     setPhotoUri(picked[0].uri); setPhotoPreview(picked[0].uri);
   }
   const load = () => { api.get<Bot[]>('/matching/admin/bots').then(setBots).catch((e: Error) => setError(`Botlar yüklenemedi: ${e.message}`)).finally(() => setLoading(false)); };
+  // Bot kullanım sayacı: endpoint yalnız SUPERADMIN'e açık; diğer rollerde sayaç görünmez
+  useEffect(() => { api.get<BotUsage>('/matching/admin/bots/usage').then(setUsage).catch(() => setUsage(null)); }, []);
   useEffect(() => { load(); api.get<City[]>('/admin/cities').then(c => setCities(c.filter(x => x.isActive))).catch((e: Error) => setError(`Şehirler yüklenemedi: ${e.message}`)); }, []);
   const cityName = (id?: string | null) => cities.find(c => c.id === id)?.name ?? '—';
   function openEdit(b: Bot) {
@@ -91,6 +100,20 @@ export default function AdminBots() {
         <ATitle>Bot Yönetimi</ATitle>
         <Btn variant="admAdd" label="+ Bot Ekle" onPress={() => { setForm(EMPTY); setPhotoUri(null); setPhotoPreview(null); setModalError(''); setModal('add'); }} />
       </View>
+      {usage && (
+        <ACard style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
+          <View style={{ paddingVertical: 16, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border }}>
+            <AMono style={{ fontSize: 11, letterSpacing: 0.66 }}>BU HAFTA BOT KULLANILAN MASA</AMono>
+            <AT w={700} style={{ marginTop: 4, fontSize: 40, lineHeight: 44 }}>{usage.thisWeek}</AT>
+          </View>
+          {usage.weeks.map((w, i) => (
+            <View key={w.start} style={{ paddingVertical: 8, paddingHorizontal: 18, flexDirection: 'row', justifyContent: 'space-between', gap: 12, borderBottomWidth: i < usage.weeks.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)' }}>
+              <AMono style={{ fontSize: 12 }}>{weekRange(w.start, w.end)}</AMono>
+              <AT w={600} style={{ fontSize: 13 }}>{w.count}</AT>
+            </View>
+          ))}
+        </ACard>
+      )}
       <AError>{error}</AError>
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
         <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>

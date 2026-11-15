@@ -8,6 +8,14 @@ import { AdminDatePicker } from '@/components/AdminDatePicker';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 
+interface BotUsage { thisWeek: number; weeks: { start: string; end: string; count: number }[] }
+
+// Hafta tarih aralığı (TR): 10.11 – 16.11.2026
+function weekRange(start: string, end: string) {
+  const f = (d: string, year: boolean) => new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', ...(year ? { year: 'numeric' } : {}) });
+  return `${f(start, false)} – ${f(end, true)}`;
+}
+
 const inputStyle: React.CSSProperties = {
   width: '100%', background: BG,
   border: `1px solid ${BORDER}`, borderRadius: 8,
@@ -78,6 +86,7 @@ export default function AdminBots() {
   const [modalError, setModalError] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [usage, setUsage] = useState<BotUsage | null>(null);
 
   function load() {
     api.get<Bot[]>('/matching/admin/bots').then(setBots)
@@ -87,6 +96,8 @@ export default function AdminBots() {
 
   useEffect(() => {
     load();
+    // Bot kullanım sayacı: endpoint yalnız SUPERADMIN'e açık; diğer rollerde sayaç görünmez
+    api.get<BotUsage>('/matching/admin/bots/usage').then(setUsage).catch(() => setUsage(null));
     api.get<City[]>('/admin/cities').then(c => setCities(c.filter(x => x.isActive)))
       .catch((e: Error) => setError(`Şehirler yüklenemedi: ${e.message}`));
   }, []);
@@ -215,6 +226,23 @@ export default function AdminBots() {
           + Bot Ekle
         </button>
       </div>
+
+      {usage && (
+        <div className="ll-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
+          <div style={{ padding: '16px 18px', borderBottom: `1px solid ${BORDER}` }}>
+            <p style={{ margin: 0, fontSize: 11, color: MUTED, fontFamily: MONO, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Bu hafta bot kullanılan masa</p>
+            <p style={{ margin: '4px 0 0', fontSize: 40, fontWeight: 700, color: TEXT, lineHeight: 1.1 }}>{usage.thisWeek}</p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {usage.weeks.map((w, i) => (
+              <div key={w.start} style={{ padding: '8px 18px', display: 'flex', justifyContent: 'space-between', gap: 12, borderBottom: i < usage.weeks.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none' }}>
+                <span style={{ fontSize: 12, color: MUTED, fontFamily: MONO }}>{weekRange(w.start, w.end)}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{w.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 

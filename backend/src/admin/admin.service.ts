@@ -778,7 +778,7 @@ export class AdminService {
     if (!city) throw new BadRequestException("Şehir bulunamadı");
     const users = await this.prisma.user.findMany({
       where: { id: { in: data.participantIds }, status: "ACTIVE" },
-      select: { id: true },
+      select: { id: true, isBot: true },
     });
     if (users.length !== data.participantIds.length) {
       throw new BadRequestException("Bazı kullanıcılar bulunamadı veya aktif değil");
@@ -810,6 +810,7 @@ export class AdminService {
       return meeting;
     });
     await writeSeatScores(this.prisma, created.id).catch(() => undefined);
+    await this.matching.botAssigned(created.id, users.filter((u) => u.isBot).map((u) => u.id));
     return created;
   }
 
@@ -1475,6 +1476,7 @@ export class AdminService {
       }
     });
     await writeSeatScores(this.prisma, meetingId).catch(() => undefined);
+    await this.matching.botAssigned(meetingId, [botUserId]);
     return { placed: true, botUserId, meetingId };
   }
 
@@ -1778,9 +1780,9 @@ export class AdminService {
   // ─── Uyarılar ─────────────────────────────────────────────────────────────
 
   async getAlerts(viewerRole: UserRole) {
-    // Bot uyarıları sadece SUPERADMIN'e (bot gizliliği)
+    // Bot uyarıları (bulunamadı, atandı) sadece SUPERADMIN'e (bot gizliliği)
     const alertWhere: Prisma.AdminAlertWhereInput =
-      viewerRole === UserRole.SUPERADMIN ? {} : { alertType: { not: AdminAlertType.BOT_NOT_FOUND } };
+      viewerRole === UserRole.SUPERADMIN ? {} : { alertType: { notIn: [AdminAlertType.BOT_NOT_FOUND, AdminAlertType.BOT_ASSIGNED] } };
     const [alerts, unreadCount] = await Promise.all([
       this.prisma.adminAlert.findMany({
         where: alertWhere,
@@ -1796,7 +1798,8 @@ export class AdminService {
 
   async markAlertRead(id: string, viewerRole: UserRole) {
     const alert = await this.prisma.adminAlert.findUnique({ where: { id }, select: { alertType: true } });
-    if (!alert || (alert.alertType === AdminAlertType.BOT_NOT_FOUND && viewerRole !== UserRole.SUPERADMIN)) {
+    const superadminOnly: AdminAlertType[] = [AdminAlertType.BOT_NOT_FOUND, AdminAlertType.BOT_ASSIGNED];
+    if (!alert || (superadminOnly.includes(alert.alertType) && viewerRole !== UserRole.SUPERADMIN)) {
       throw new NotFoundException('Uyarı bulunamadı');
     }
     await this.prisma.adminAlert.update({ where: { id }, data: { isRead: true } });

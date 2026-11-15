@@ -18,7 +18,7 @@ import { cancelDeadline, groupMeetingAt, kankaMeetingAt, oneOnOneMeetingAt } fro
 import { cancellationNotice } from "../meetings/cancellation-notice";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { Gender, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "../generated/prisma/client";
-import { pickBot, alertBotNotFound, availableBots, recentlyMetBotIds } from "./bot-picker";
+import { pickBot, alertBotNotFound, availableBots, recentlyMetBotIds, notifyBotAssigned } from "./bot-picker";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right";
 import { selectedThisWeek } from "./weekly-selection";
 import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, restoreGroupRights } from "../payment/package-rights";
@@ -840,6 +840,7 @@ export class MatchingService {
       this.prisma.meeting.update({ where: { id: meetingId }, data: { maxParticipants: count + botIds.length } }),
     ]);
     await this.saveScores(meetingId);
+    await this.botAssigned(meetingId, botIds);
     this.logger.log(`Bot eklendi: meeting=${meetingId} (${count}→${count + botIds.length})`);
   }
 
@@ -904,7 +905,17 @@ export class MatchingService {
       await consumeOneOnOneRights(tx, [table.user.id], table.createdAt);
     });
     await this.saveScores(table.id);
+    await this.botAssigned(table.id, [botId]);
     this.logger.log(`ONE_ON_ONE bot eşleşmesi: user=${table.user.id} bot=${botId}`);
+  }
+
+  // Bot atama uyarısı + SUPERADMIN bildirimi; hata atamayı geri almaz, yalnız loglanır
+  async botAssigned(meetingId: string, botIds: string[]): Promise<void> {
+    try {
+      await notifyBotAssigned(this.prisma, (id, payload) => this.notifications.sendToUser(id, payload), meetingId, botIds);
+    } catch (err) {
+      this.logger.error(`Bot atama bildirimi hatası: meeting=${meetingId} ${err}`);
+    }
   }
 
   // ─── Admin: başbaşada eşi bekleyenler (Açık masalar) ──────────────────────
@@ -1188,6 +1199,29 @@ export class MatchingService {
   }
 
   // ─── Bot yönetimi ─────────────────────────────────────────────────────────
+
+  // Bot kullanım sayacı (yalnız SUPERADMIN): buluşma haftasına (Pazartesi 00:00 – Pazar 23:59 TR) göre, en az bir aktif
+  // bot katılımcısı olan ve iptal edilmemiş masa sayısı. Bu hafta + son 8 hafta (bu hafta dahil), en yeni en üstte.
+  async botUsage() {
+    const thisWeek = trWeekStart();
+    const from = new Date(thisWeek.getTime() - 7 * WEEK_MS);
+    const left = ["CANCELLED", "DECLINED", "NO_SHOW"] as const;
+    const meetings = await this.prisma.meeting.findMany({
+      where: {
+        status: { not: "CANCELLED" },
+        scheduledAt: { gte: from, lt: new Date(thisWeek.getTime() + WEEK_MS) },
+        participants: { some: { user: { isBot: true }, status: { notIn: [...left] } } },
+      },
+      select: { scheduledAt: true },
+    });
+    const weeks = Array.from({ length: 8 }, (_, i) => {
+      const start = new Date(thisWeek.getTime() - i * WEEK_MS);
+      const end = new Date(start.getTime() + WEEK_MS);
+      const count = meetings.filter((m) => m.scheduledAt >= start && m.scheduledAt < end).length;
+      return { start: start.toISOString(), end: new Date(end.getTime() - 1).toISOString(), count };
+    });
+    return { thisWeek: weeks[0].count, weeks };
+  }
 
   async listBots() {
     const bots = await this.prisma.user.findMany({

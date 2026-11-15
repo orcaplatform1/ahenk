@@ -923,6 +923,7 @@ model AdminAlert {
   userId    String
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   alertType AdminAlertType
+  message   String? // BOT_ASSIGNED: bot adı soyadı, masa türü, mekân, şehir, buluşma tarihi ve saati
   isRead    Boolean        @default(false)
   createdAt DateTime       @default(now())
 
@@ -937,6 +938,7 @@ enum AdminAlertType {
   SOS_ALERT
   BOT_NOT_FOUND
   PAYMENT_ISSUE
+  BOT_ASSIGNED
 }
 
 // ─────────────────────────────────────────────

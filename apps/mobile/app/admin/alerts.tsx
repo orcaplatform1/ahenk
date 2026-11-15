@@ -6,10 +6,10 @@ import { Btn } from '@/components/ui';
 import { ACard, AError, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
 import { adm } from '@/theme/theme';
 
-interface AlertItem { id: string; alertType: string; userId: string; user?: { profile?: { firstName?: string; lastName?: string } | null } | null; isRead: boolean; createdAt: string }
+interface AlertItem { id: string; alertType: string; userId: string; message?: string | null; user?: { profile?: { firstName?: string; lastName?: string } | null } | null; isRead: boolean; createdAt: string }
 const ALERT_LABELS: Record<string, string> = {
   MISSED_GROUP_CYCLES: 'Grup masası üst üste kurulamadı', MISSED_ONEONE_CYCLES: 'Baş Başa masası üst üste kurulamadı', MISSED_KANKA_CYCLES: 'Kankamla masası üst üste kurulamadı',
-  SOS_ALERT: 'Acil yardım talebi', BOT_NOT_FOUND: 'Uygun bot bulunamadı', PAYMENT_ISSUE: 'Ödeme elle kontrol gerektiriyor',
+  SOS_ALERT: 'Acil yardım talebi', BOT_NOT_FOUND: 'Uygun bot bulunamadı', PAYMENT_ISSUE: 'Ödeme elle kontrol gerektiriyor', BOT_ASSIGNED: 'Masaya bot atandı',
 };
 
 export default function AdminAlerts() {
@@ -47,7 +47,7 @@ export default function AdminAlerts() {
           ) : alerts.map((a, i) => (
             <View key={a.id} style={{ paddingVertical: 14, paddingHorizontal: 18, borderBottomWidth: i < alerts.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, backgroundColor: a.isRead ? 'transparent' : 'rgba(245,158,11,0.05)', opacity: a.isRead ? 0.55 : 1 }}>
               <View style={{ flex: 1 }}>
-                <AT w={600} style={{ fontSize: 13 }}>{ALERT_LABELS[a.alertType] ?? a.alertType}{a.user?.profile ? `: ${a.user.profile.firstName ?? ''} ${a.user.profile.lastName ?? ''}` : ''}</AT>
+                <AT w={600} style={{ fontSize: 13 }}>{ALERT_LABELS[a.alertType] ?? a.alertType}{a.message ? `: ${a.message}` : a.user?.profile ? `: ${a.user.profile.firstName ?? ''} ${a.user.profile.lastName ?? ''}` : ''}</AT>
                 <AMono style={{ marginTop: 2, fontSize: 10 }}>{new Date(a.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}</AMono>
               </View>
               {!a.isRead && <Btn variant="admSmall" label="Okundu" onPress={() => markRead(a.id)} />}

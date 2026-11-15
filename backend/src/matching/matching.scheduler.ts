@@ -11,6 +11,7 @@ import { reviewWindow } from "../meetings/meeting-windows";
 import { selectedThisWeek } from "./weekly-selection";
 import { closeGroupCycle, closeKankaCycle, closeOneOnOneCycle, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, PRIME_PLANS, restoreGroupRights, restoreKankaRights } from "../payment/package-rights";
 import { restoreOneOnOneRights } from "./one-on-one-right";
+import { isMatchingEnabled } from "../admin/app-settings";
 
 @Injectable()
 export class MatchingScheduler {
@@ -37,6 +38,7 @@ export class MatchingScheduler {
   // Cuma 10:00) takılmış kişileri masaya atar. Asıl atama kişi havuza girdiği an yapılır.
   @Cron("0 * * * *", { timeZone: "Europe/Istanbul" })
   async scheduleHourlyMatching(): Promise<void> {
+    if (await this.matchingOff("Saatlik tarama")) return;
     try {
       await this.matchingService.requestScan();
     } catch (err) {
@@ -47,6 +49,7 @@ export class MatchingScheduler {
   // Kilidi geçmiş, mekânı boş masalar güncel kontenjana göre ortak mekânlara atanır
   @Cron("5 * * * *", { timeZone: "Europe/Istanbul" })
   async assignVenues(): Promise<void> {
+    if (await this.matchingOff("Mekân atama")) return;
     try {
       await this.venueAssignment.assignLockedMeetings();
     } catch (err) {
@@ -57,11 +60,19 @@ export class MatchingScheduler {
   // Kart açılışından 2 saat önce (Cuma/Cmt/Pazar 08:00): hâlâ mekânsız masalar için admin'e tekrar uyarı
   @Cron("0 8 * * 5,6,0", { timeZone: "Europe/Istanbul" })
   async remindMissingVenues(): Promise<void> {
+    if (await this.matchingOff("Mekânsız masa hatırlatma")) return;
     try {
       await this.venueAssignment.remindMissingVenues();
     } catch (err) {
       this.logger.error(`Mekânsız masa hatırlatma hatası: ${err}`);
     }
+  }
+
+  // "Eşleştirme Aktif" kapalıysa eşleştirmeyle ilgili iş hiçbir işlem yapmadan çıkar
+  private async matchingOff(job: string): Promise<boolean> {
+    if (await isMatchingEnabled(this.prisma)) return false;
+    this.logger.log(`${job}: Eşleştirme Aktif kapalı, iş atlandı`);
+    return true;
   }
 
   // Kapanış adımı: hata loglanır, sonraki adımlar her durumda çalışır
@@ -263,6 +274,7 @@ export class MatchingScheduler {
   // Perşembe, Cuma ve Cumartesi 23:44 (TR): son tarama — havuzdakiler atanır, yarım grup masaları birleştirilir
   @Cron("44 23 * * 4,5,6", { timeZone: "Europe/Istanbul" })
   async scheduleFinalScan(): Promise<void> {
+    if (await this.matchingOff("Son tarama")) return;
     try {
       await this.matchingService.requestScan();
     } catch (err) {
@@ -273,6 +285,7 @@ export class MatchingScheduler {
   // Perşembe 23:45 (TR): tarama durdu → eksik grup masalarına 23:45–23:55 arası rastgele anda bot
   @Cron("45 23 * * 4", { timeZone: "Europe/Istanbul" })
   async scheduleGroupClosingBots(): Promise<void> {
+    if (await this.matchingOff("Grup kapanış botu planlama")) return;
     try {
       await this.matchingService.scheduleGroupBots();
     } catch (err) {
@@ -283,6 +296,7 @@ export class MatchingScheduler {
   // Perşembe 23:59 (TR): döngüyü kapat, 1-2 kişilik masaları iptal et, artakalanları bekliste al
   @Cron("59 23 * * 4", { timeZone: "Europe/Istanbul" })
   async scheduleThursdayClosing(): Promise<void> {
+    if (await this.matchingOff("Perşembe kapanışı")) return;
     this.logger.log("Perşembe kapanışı başlıyor...");
     await this.step("Perşembe kapanışı", () => this.matchingService.runThursdayClosing());
     await this.step("Grup döngü takibi", () => this.updateMissedCycles("GROUP"));
@@ -348,6 +362,7 @@ export class MatchingScheduler {
   // Cuma 10:00 (TR, grup buluşma günü): grup masası katılımcılarına bildirim + AI raporları
   @Cron("0 10 * * 5", { timeZone: "Europe/Istanbul" })
   async scheduleGroupRevealNotifications(): Promise<void> {
+    if (await this.matchingOff("Cuma grup bildirimleri")) return;
     this.logger.log("Cuma grup bildirimleri gönderiliyor...");
     try {
       await this.matchingService.sendGroupRevealNotifications();
@@ -387,6 +402,7 @@ export class MatchingScheduler {
   // Perşembe 11:59 (TR): GROUP döngüsü kapanışına 12 saat kala hatırlatma
   @Cron("59 11 * * 4", { timeZone: "Europe/Istanbul" })
   async notifyGroupCycleClosingSoon(): Promise<void> {
+    if (await this.matchingOff("GROUP kapanış hatırlatması")) return;
     this.logger.log("Perşembe 12 saat kala GROUP bildirimi gönderiliyor...");
     try {
       await this.sendCycleClosingSoonNotifications('GROUP');
@@ -399,6 +415,7 @@ export class MatchingScheduler {
   // Cuma 11:59 (TR): ONE_ON_ONE döngüsü kapanışına 12 saat kala hatırlatma
   @Cron("59 11 * * 5", { timeZone: "Europe/Istanbul" })
   async notifyOneOnOneCycleClosingSoon(): Promise<void> {
+    if (await this.matchingOff("ONE_ON_ONE kapanış hatırlatması")) return;
     this.logger.log("Cuma 12 saat kala ONE_ON_ONE bildirimi gönderiliyor...");
     try {
       await this.sendCycleClosingSoonNotifications('ONE_ON_ONE');
@@ -412,6 +429,7 @@ export class MatchingScheduler {
   // (başbaşada bildirim iptal anında karşı tarafa gider)
   @Cron("0 20 * * 4", { timeZone: "Europe/Istanbul" })
   async notifyGroupCancellations(): Promise<void> {
+    if (await this.matchingOff("GROUP iptal özeti")) return;
     try {
       await this.sendGroupCancellationSummaries();
     } catch (err) {
@@ -422,6 +440,7 @@ export class MatchingScheduler {
   // Cuma 23:45 (TR): eşi bulunamayan 2. hafta kişilerine 23:45–23:55 arası rastgele anda bot
   @Cron("45 23 * * 5", { timeZone: "Europe/Istanbul" })
   async scheduleOneOnOneClosingBots(): Promise<void> {
+    if (await this.matchingOff("Başbaşa kapanış botu planlama")) return;
     try {
       await this.matchingService.scheduleOneOnOneBots();
     } catch (err) {
@@ -432,6 +451,7 @@ export class MatchingScheduler {
   // Cuma 23:59 (TR): ONE_ON_ONE döngüsünü kapat
   @Cron("59 23 * * 5", { timeZone: "Europe/Istanbul" })
   async scheduleFridayOneOnOneClosing(): Promise<void> {
+    if (await this.matchingOff("Cuma ONE_ON_ONE kapanışı")) return;
     this.logger.log("Cuma ONE_ON_ONE kapanışı başlıyor...");
     await this.step("Cuma ONE_ON_ONE kapanışı", () => this.runOneOnOneClosing());
     await this.step("Başbaşa döngü takibi", () => this.updateMissedCycles("ONE_ON_ONE"));
@@ -444,6 +464,7 @@ export class MatchingScheduler {
   // Cumartesi 11:59 (TR): Kankamla döngüsü kapanışına 12 saat kala hatırlatma
   @Cron("59 11 * * 6", { timeZone: "Europe/Istanbul" })
   async notifyKankaCycleClosingSoon(): Promise<void> {
+    if (await this.matchingOff("KANKA kapanış hatırlatması")) return;
     try {
       await this.sendCycleClosingSoonNotifications('KANKA');
     } catch (err) {
@@ -455,6 +476,7 @@ export class MatchingScheduler {
   // iade sayacı, hak düşümü (kurulan masalar) ve döngü sayımı
   @Cron("59 23 * * 6", { timeZone: "Europe/Istanbul" })
   async scheduleSaturdayKankaClosing(): Promise<void> {
+    if (await this.matchingOff("Cumartesi KANKA kapanışı")) return;
     this.logger.log("Cumartesi KANKA kapanışı başlıyor...");
     let cycleId: string | null = null;
     let unmatchedCount = 0;
@@ -523,6 +545,7 @@ export class MatchingScheduler {
   // Pazar 10:00 (TR, Kankamla buluşma günü): mekanı atanmış Kankamla masalarına bildirim + AI raporları
   @Cron("0 10 * * 0", { timeZone: "Europe/Istanbul" })
   async scheduleKankaRevealNotifications(): Promise<void> {
+    if (await this.matchingOff("Pazar KANKA bildirimi")) return;
     try {
       const { week: weekNumber, year } = this.getISOWeek(new Date());
       const cycle = await this.prisma.matchingCycle.findUnique({ where: { weekNumber_year: { weekNumber, year } } });
@@ -552,6 +575,7 @@ export class MatchingScheduler {
   // Cumartesi 10:00 (TR, başbaşa buluşma günü): mekanı atanmış ONE_ON_ONE masalarına bildirim + AI raporları
   @Cron("0 10 * * 6", { timeZone: "Europe/Istanbul" })
   async scheduleOneOnOneRevealNotifications(): Promise<void> {
+    if (await this.matchingOff("Cumartesi ONE_ON_ONE bildirimleri")) return;
     this.logger.log("Cumartesi ONE_ON_ONE bildirimleri gönderiliyor...");
     try {
       await this.sendOneOnOneNotifications();

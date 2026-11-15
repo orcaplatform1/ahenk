@@ -9,6 +9,7 @@ interface AlertItem {
   id: string;
   alertType: string;
   userId: string;
+  message?: string | null;
   user?: { profile?: { firstName?: string; lastName?: string } | null } | null;
   isRead: boolean;
   createdAt: string;
@@ -21,6 +22,7 @@ const ALERT_LABELS: Record<string, string> = {
   SOS_ALERT: 'Acil yardım talebi',
   BOT_NOT_FOUND: 'Uygun bot bulunamadı',
   PAYMENT_ISSUE: 'Ödeme elle kontrol gerektiriyor',
+  BOT_ASSIGNED: 'Masaya bot atandı',
 };
 
 export default function AdminAlerts() {
@@ -103,7 +105,7 @@ export default function AdminAlerts() {
                   <div>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>
                       {ALERT_LABELS[a.alertType] ?? a.alertType}
-                      {a.user?.profile && `: ${a.user.profile.firstName ?? ''} ${a.user.profile.lastName ?? ''}`}
+                      {a.message ? `: ${a.message}` : a.user?.profile && `: ${a.user.profile.firstName ?? ''} ${a.user.profile.lastName ?? ''}`}
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
                       {new Date(a.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}
