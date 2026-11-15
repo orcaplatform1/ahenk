@@ -95,7 +95,6 @@ model AccountDeletionRequest {
 enum DeletionRequestStatus {
   PENDING
   APPROVED
-  REJECTED
 }
 
 enum UserRole {

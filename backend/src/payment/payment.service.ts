@@ -523,6 +523,10 @@ export class PaymentService {
 
   // ─── Mobil uygulama içi satın alma doğrulama (IAP_ENABLED=true olunca) ─────
   // Mağaza işlemi sunucuda App Store / Play API'sinden doğrulanır; aynı işlem ikinci kez paket vermez.
+  storeEnabled() {
+    return { enabled: this.store.enabled() };
+  }
+
   async verifyStorePurchase(userId: string, platform: PaymentPlatform, productId: string, transactionIdOrToken: string) {
     this.store.assertEnabled();
     if (platform !== PaymentPlatform.IOS && platform !== PaymentPlatform.ANDROID) throw new BadRequestException("Geçersiz platform");

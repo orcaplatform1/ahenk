@@ -6,7 +6,7 @@ import { myRole } from '@/lib/adminRole';
 import { BORDER, TEXT, MUTED, RED, GREEN, AMBER, SANS, MONO } from '@/lib/adminTheme';
 
 interface DeletionRequest {
-  id: string; userId: string; userName: string; status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  id: string; userId: string; userName: string; status: 'PENDING' | 'APPROVED';
   createdAt: string; decidedAt: string | null;
   retainedIdentity?: { firstName: string | null; lastName: string | null; email: string; phone: string | null } | null;
 }
@@ -14,7 +14,6 @@ interface DeletionRequest {
 const STATUS: Record<string, { label: string; color: string }> = {
   PENDING: { label: 'Bekliyor', color: AMBER },
   APPROVED: { label: 'Onaylandı', color: GREEN },
-  REJECTED: { label: 'Reddedildi', color: RED },
 };
 const when = (d: string) => new Date(d).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' });
 
@@ -34,11 +33,11 @@ export function AdminDeletionRequests() {
   }
   useEffect(load, []);
 
-  async function decide(id: string, status: 'APPROVED' | 'REJECTED') {
-    if (status === 'APPROVED' && !window.confirm('Hesap kalıcı olarak silinecek. Bu işlem geri alınamaz.')) return;
+  async function approve(id: string) {
+    if (!window.confirm('Hesap kalıcı olarak silinecek. Bu işlem geri alınamaz.')) return;
     setBusy(id); setError('');
     try {
-      await api.patch(`/admin/deletion-requests/${id}`, { status });
+      await api.patch(`/admin/deletion-requests/${id}`, { status: 'APPROVED' });
       load();
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(''); }
@@ -65,10 +64,7 @@ export function AdminDeletionRequests() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: STATUS[r.status].color }}>{STATUS[r.status].label}</span>
             {r.status === 'PENDING' && isSuper && (
-              <>
-                <button disabled={busy === r.id} onClick={() => decide(r.id, 'APPROVED')} style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: SANS, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: GREEN, cursor: 'pointer' }}>Onayla</button>
-                <button disabled={busy === r.id} onClick={() => decide(r.id, 'REJECTED')} style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: SANS, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: RED, cursor: 'pointer' }}>Reddet</button>
-              </>
+              <button disabled={busy === r.id} onClick={() => approve(r.id)} style={{ padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: SANS, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: GREEN, cursor: 'pointer' }}>Onayla</button>
             )}
           </div>
         </div>

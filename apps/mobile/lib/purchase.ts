@@ -4,7 +4,7 @@
 // açılmadan /payment/init "henüz aktif değil" döner ve mağaza penceresi açılmaz.
 // Ürün kimlikleri backend/src/payment/store.service.ts STORE_PRODUCT_IDS ile aynıdır (App Store Connect / Play Console).
 import { Platform } from 'react-native';
-import { deepLinkToSubscriptions, fetchProducts, finishTransaction, initConnection, purchaseErrorListener, purchaseUpdatedListener, requestPurchase, type Purchase } from 'expo-iap';
+import { deepLinkToSubscriptions, fetchProducts, finishTransaction, getAvailablePurchases, initConnection, purchaseErrorListener, purchaseUpdatedListener, requestPurchase, restorePurchases as storeRestore, type Purchase } from 'expo-iap';
 import { api } from './api';
 
 export const PLATFORM = Platform.OS === 'ios' ? 'IOS' : 'ANDROID';
@@ -64,4 +64,25 @@ export async function startPurchase(plan: string, useDiscount?: 'REFERRER' | 'IN
 // Mağaza aboneliği uygulama içinden iptal edilemez: mağazanın abonelik sayfası açılır
 export async function openStoreSubscriptions() {
   await deepLinkToSubscriptions({});
+}
+
+// "Satın Alımları Geri Yükle": mağazadaki geri yükleme (expo-iap restorePurchases) + mevcut satın almalar sunucuda doğrulanır
+// (POST /payment/store/verify; daha önce işlenmiş işlem tekrar paket vermez). IAP kapalıysa (GET /payment/store/status)
+// mağazaya hiç bağlanılmaz: 'unavailable' döner. Dönüş: geri yüklenen (sunucunun kabul ettiği) satın alma sayısı.
+export async function restoreStorePurchases(): Promise<number | 'unavailable'> {
+  const status = await api.get<{ enabled: boolean }>('/payment/store/status').catch(() => null);
+  if (!status?.enabled) return 'unavailable';
+  await initConnection();
+  await storeRestore();
+  const purchases = (await getAvailablePurchases()) as Purchase[];
+  let restored = 0;
+  for (const p of purchases) {
+    const transaction = Platform.OS === 'ios' ? p.id : (p.purchaseToken ?? '');
+    try {
+      await api.post('/payment/store/verify', { platform: PLATFORM, productId: p.productId, transaction });
+      await finishTransaction({ purchase: p, isConsumable: !p.productId.includes('.prime.') });
+      restored++;
+    } catch { /* doğrulanamayan ya da başka hesaba ait satın alma atlanır */ }
+  }
+  return restored;
 }

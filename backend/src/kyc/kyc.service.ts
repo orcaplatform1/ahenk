@@ -16,6 +16,7 @@ import { NotificationService } from "../notification/notification.service";
 import { ReviewKycDto } from "./dto/review-kyc.dto";
 import { KycStatus } from "../generated/prisma/client";
 import convertHeic = require("heic-convert");
+import { decryptKyc, encryptKyc, KYC_ENC_SUFFIX } from "./kyc-crypto";
 
 const UPLOAD_DIR = path.join(process.cwd(), "..", "uploads", "kyc");
 export const KYC_TMP_DIR = path.join(UPLOAD_DIR, ".tmp");
@@ -138,13 +139,14 @@ export class KycService {
         }
       }
 
-      frontPath    = path.join(userDir, `id-front.${frontExt}`);
-      backPath     = path.join(userDir, `id-back.${backExt}`);
-      livenessPath = path.join(userDir, `liveness.${videoKind}`);
+      // Kalıcı dosyalar AES-256-GCM ile şifreli yazılır (kyc-crypto.ts); geçici düz dosyalar finally'de silinir
+      frontPath    = path.join(userDir, `id-front.${frontExt}${KYC_ENC_SUFFIX}`);
+      backPath     = path.join(userDir, `id-back.${backExt}${KYC_ENC_SUFFIX}`);
+      livenessPath = path.join(userDir, `liveness.${videoKind}${KYC_ENC_SUFFIX}`);
 
-      fs.renameSync(tmpFront, frontPath);
-      fs.renameSync(tmpBack, backPath);
-      fs.renameSync(video.path, livenessPath);
+      fs.writeFileSync(frontPath, encryptKyc(fs.readFileSync(tmpFront)));
+      fs.writeFileSync(backPath, encryptKyc(fs.readFileSync(tmpBack)));
+      fs.writeFileSync(livenessPath, encryptKyc(fs.readFileSync(video.path)));
     } finally {
       // Taşınmayan / dönüştürülen geçici dosyalar silinir
       for (const f of [front.path, back.path, video.path, `${front.path}.jpg`, `${back.path}.jpg`]) {
@@ -241,7 +243,8 @@ export class KycService {
     if (!filePath) throw new BadRequestException("Geçersiz dosya tipi (front | back | liveness)");
     if (!fs.existsSync(filePath)) throw new NotFoundException("Dosya bulunamadı");
 
-    const ext  = path.extname(filePath).toLowerCase();
+    const encrypted = filePath.endsWith(KYC_ENC_SUFFIX);
+    const ext  = path.extname(encrypted ? filePath.slice(0, -KYC_ENC_SUFFIX.length) : filePath).toLowerCase();
     const mime = ext === ".mp4" ? "video/mp4"
                : ext === ".webm" ? "video/webm"
                : ext === ".mov"  ? "video/quicktime"
@@ -250,6 +253,11 @@ export class KycService {
                : "image/jpeg";
 
     res.set({ "Content-Type": mime, "Cache-Control": "no-store" });
+    // Şifreli dosya bellekte çözülüp gönderilir (diske yazılmaz); şifrelenememiş eski dosya olduğu gibi akar
+    if (encrypted) {
+      res.send(decryptKyc(fs.readFileSync(filePath)));
+      return;
+    }
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);
   }

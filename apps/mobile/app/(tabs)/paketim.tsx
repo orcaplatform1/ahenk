@@ -1,14 +1,16 @@
 // Sekme 4 — Paketim: apps/web/app/profil/tabs/TabPaket.tsx. Ödeme: uygulama içi satın alma (App Store / Play Store), mobil fiyat (mobileTL).
 import React, { useCallback, useState } from 'react';
-import { BackHandler, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { BackHandler, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '@/lib/api';
-import { PAY_INFO, openStoreSubscriptions, startPurchase } from '@/lib/purchase';
+import { PAY_INFO, openStoreSubscriptions, restoreStorePurchases, startPurchase } from '@/lib/purchase';
+import { openLegal } from '@/lib/links';
+import { showAlert } from '@/components/AppAlert';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
-import { Btn, BtnPrimary, Card, Head, MaintenanceNotice, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
+import { Btn, BtnGhost, BtnPrimary, Card, Head, MaintenanceNotice, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
 import { useWinback } from '@/components/Winback';
 import { c, ll, sans, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
@@ -43,6 +45,9 @@ const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient
     advantages: ['Her masada öncelikli eşleşme hakkı', 'Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "Her ay 1 Grup Masası + 1 Baş Başa Masası + 1 Kankamla Masası'nda buluşma hakkı", 'Aboneliği iptal etsen dahi, bu haklar masada sen buluşana kadar geçerli', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
 ];
 const PRIME_RENEW_INFO = 'İptal etmediğin sürece aboneliğin seçtiğin süre için aynı fiyatla otomatik olarak yenilenir.';
+// Prime satın alma ekranı abonelik bilgisi (Apple 3.1.2 / Google Play abonelik açıklaması)
+const STORE_NAME = Platform.OS === 'ios' ? 'Apple' : 'Google';
+const PRIME_STORE_INFO = `Ödeme, satın alma onayıyla ${STORE_NAME} hesabından alınır. Abonelik, dönem bitiminden en az 24 saat önce iptal edilmezse aynı süre ve fiyatla otomatik olarak yenilenir. Aboneliğini ${Platform.OS === 'ios' ? 'App Store' : 'Google Play'} hesap ayarlarından yönetebilir ve iptal edebilirsin.`;
 
 function Check() {
   return <Svg viewBox="0 0 20 20" width={16} height={16} fill={c.red}><Path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></Svg>;
@@ -67,6 +72,7 @@ export default function Paketim() {
   const [refSending, setRefSending] = useState(false);
   const [refMsg, setRefMsg] = useState('');
   const [buying, setBuying] = useState('');
+  const [restoring, setRestoring] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [detail, setDetail] = useState<CardKey | null>(null);
   const [primePlan, setPrimePlan] = useState<(typeof PRIME_PLANS)[number]['key']>('PRIME_1M');
@@ -113,6 +119,16 @@ export default function Paketim() {
       await startPurchase(plan, use);
       router.push({ pathname: '/odeme-sonuc', params: { durum: 'basarili' } });
     } catch (e) { setError((e as Error).message); } finally { setBuying(''); }
+  }
+  // "Satın Alımları Geri Yükle": IAP kapalıyken işlem yapmadan uyarı
+  async function restore() {
+    setRestoring(true);
+    try {
+      const r = await restoreStorePurchases();
+      if (r === 'unavailable') { showAlert('Şu anda kullanılamıyor'); return; }
+      await loadSubs();
+      showAlert(r > 0 ? 'Satın alımların geri yüklendi.' : 'Geri yüklenecek satın alım bulunamadı.');
+    } catch (e) { showAlert((e as Error).message || 'Geri yükleme tamamlanamadı.'); } finally { setRestoring(false); }
   }
   async function cancelPrime() {
     setCancelling(true); setError('');
@@ -200,6 +216,23 @@ export default function Paketim() {
               label={buying === planKey ? 'Yönlendiriliyor…' : st.blocked ? (st.badge ?? (isP ? 'Abone Ol' : 'Paket Al')) : isP ? 'Abone Ol' : 'Paket Al'}
               onPress={() => buy(planKey)} />
             <T style={{ fontSize: 12, lineHeight: 18, color: ll.label, textAlign: 'center' }}>{PAY_INFO}{isP ? ` ${PRIME_RENEW_INFO}` : ''}</T>
+            {isP && (
+              <View style={{ gap: 10 }}>
+                <T w={600} style={{ fontSize: 13, color: ll.text, textAlign: 'center' }}>
+                  {card.name} · {PRIME_PLANS.find((pl) => pl.key === primePlan)?.label} abonelik · {priceView(primePlan).now ?? '—'} ₺
+                </T>
+                <T style={{ fontSize: 12, lineHeight: 18, color: ll.label, textAlign: 'center' }}>{PRIME_STORE_INFO}</T>
+                <View style={{ flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 20 }}>
+                  <Pressable onPress={() => { openLegal('/kullanim-kosullari').catch(() => {}); }} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
+                    <T style={{ fontSize: 12, color: ll.text, textDecorationLine: 'underline' }}>Kullanım Koşulları (EULA)</T>
+                  </Pressable>
+                  <Pressable onPress={() => { openLegal('/gizlilik-politikasi').catch(() => {}); }} accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center' }}>
+                    <T style={{ fontSize: 12, color: ll.text, textDecorationLine: 'underline' }}>Gizlilik Politikası</T>
+                  </Pressable>
+                </View>
+                <BtnGhost full label={restoring ? 'Geri yükleniyor…' : 'Satın Alımları Geri Yükle'} disabled={restoring} style={{ minHeight: 44 }} onPress={restore} />
+              </View>
+            )}
           </Card>
         </ScrollView>
       </View>

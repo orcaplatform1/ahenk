@@ -8,6 +8,7 @@ const YASAL = [
   { label: 'KVKK',                href: '/kvkk' },
   { label: 'Çerez Politikası',    href: '/cerez-politikasi' },
   { label: 'Topluluk Kuralları',  href: '/topluluk-kurallari' },
+  { label: 'Hesap Silme',         href: '/hesap-silme' },
 ];
 
 const SIRKET = [

@@ -70,20 +70,11 @@ export class AccountDeletionService {
     }));
   }
 
-  async decide(id: string, status: "APPROVED" | "REJECTED", adminId: string) {
+  // Talep yalnız onaylanır (reddetme yok): durumlar PENDING → APPROVED
+  async decide(id: string, adminId: string) {
     const request = await this.prisma.accountDeletionRequest.findUnique({ where: { id } });
     if (!request) throw new NotFoundException("Silme talebi bulunamadı");
     if (request.status !== "PENDING") throw new BadRequestException("Bu talep zaten sonuçlandırılmış");
-
-    if (status === "REJECTED") {
-      const { count } = await this.prisma.accountDeletionRequest.updateMany({
-        where: { id, status: "PENDING" },
-        data: { status, decidedAt: new Date(), decidedBy: adminId },
-      });
-      if (count === 0) throw new BadRequestException("Bu talep zaten sonuçlandırılmış");
-      await this.log(adminId, request.userId, "ACCOUNT_DELETION_REJECT", `Hesap silme talebi reddedildi: ${id}`);
-      return { ok: true, status };
-    }
     return this.approve(request.id, request.userId, adminId);
   }
 

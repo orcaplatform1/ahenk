@@ -14,6 +14,7 @@ import { OtpInput } from '../OtpInput';
 import { OtpCountdown, useOtpCountdown } from '../OtpCountdown';
 import { KankaSection } from './KankaSection';
 import { accountBtn, adminChipPulse, c, ll, sans, tw } from '@/theme/theme';
+import { openLegal } from '@/lib/links';
 
 export interface City { id: string; name: string }
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
@@ -43,6 +44,14 @@ function sortCities(cs: City[]) {
 function SmallBtn({ label, onPress }: { label: string; onPress: () => void }) {
   return <Btn variant="rowAction" label={label} onPress={onPress} />;
 }
+
+// Profilim → yasal bağlantılar kartı (web sayfaları: /gizlilik-politikasi, /kullanim-kosullari, /kvkk, /hesap-silme)
+const LEGAL_LINKS = [
+  { label: 'Gizlilik Politikası', path: '/gizlilik-politikasi' },
+  { label: 'Kullanım Koşulları', path: '/kullanim-kosullari' },
+  { label: 'KVKK Aydınlatma Metni', path: '/kvkk' },
+  { label: 'Hesap Silme', path: '/hesap-silme' },
+];
 
 function CardP({ title, action, children }: { title: string; action?: { label: string; onPress: () => void }; children: React.ReactNode }) {
   return (
@@ -375,6 +384,16 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
       <View style={{ alignItems: 'center', gap: 12, paddingBottom: 8 }}>
         <BtnGhost label="Çıkış Yap" style={accountBtn.box} textStyle={accountBtn.text} onPress={() => setLogoutOpen(true)} />
         <BtnGhost label={logoutAllBusy ? 'Çıkış yapılıyor…' : 'Tüm cihazlardan çıkış yap'} style={accountBtn.box} textStyle={accountBtn.text} disabled={logoutAllBusy} onPress={logoutAll} />
+        {/* Yasal bağlantılar: web sitesindeki sayfalar uygulama içi tarayıcıda açılır. Satırlar en az 44 pt (HIG dokunma alanı) */}
+        <Card style={{ alignSelf: 'stretch', paddingVertical: 4 }}>
+          {LEGAL_LINKS.map((l, i) => (
+            <Pressable key={l.path} onPress={() => { openLegal(l.path).catch(() => {}); }} accessibilityRole="link" accessibilityLabel={l.label}
+              style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: i ? 1 : 0, borderTopColor: 'rgba(255,255,255,0.05)', opacity: pressed ? 0.6 : 1 })}>
+              <T style={{ fontSize: 14, color: ll.text }}>{l.label}</T>
+              <T style={{ fontSize: 18, color: ll.label }}>›</T>
+            </Pressable>
+          ))}
+        </Card>
         {/* Çıkış ile Hesabımı Sil arasında küçük uygulama logosu ve sürüm */}
         <View style={{ alignItems: 'center', gap: 6, paddingVertical: 4 }}>
           <Image source={require('@/assets/app-icon-small.png')} style={{ width: 40, height: 40, borderRadius: 10 }} accessibilityLabel="Ahenk" />

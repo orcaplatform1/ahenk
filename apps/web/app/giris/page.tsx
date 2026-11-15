@@ -248,6 +248,14 @@ function VenueLogin() {
   );
 }
 
+// Giriş sonrası dönüş: yalnız izinli yollar (açık yönlendirme yok). /hesap-silme → giriş sonrası hesap silme sayfasına döner
+const RETURN_PATHS = ['/hesap-silme'];
+function afterLoginPath(): string {
+  if (typeof window === 'undefined') return '/dashboard';
+  const p = new URLSearchParams(window.location.search).get('donus');
+  return p && RETURN_PATHS.includes(p) ? p : '/dashboard';
+}
+
 export default function GirisPage() {
   const router = useRouter();
   const [kind, setKind] = useState<'uye' | 'isletme'>('uye');
@@ -316,7 +324,7 @@ export default function GirisPage() {
       }
     } catch { /* yoksa devam */ }
     setWelcomeUser({ firstName: data.user.firstName, lastName: data.user.lastName ?? '' });
-    setTimeout(() => router.push('/dashboard'), 2000);
+    setTimeout(() => router.push(afterLoginPath()), 2000);
   }
 
   /* ── WhatsApp: Kod Doğrula ──────────────────────────────────── */
@@ -409,7 +417,7 @@ export default function GirisPage() {
                   <button onClick={async () => { await api.logout(); setSanction(null); }} className="flex-1 btn-ghost justify-center">
                     İptal
                   </button>
-                  <button onClick={() => { setSanction(null); router.push('/dashboard'); }} className="flex-1 btn-primary justify-center">
+                  <button onClick={() => { setSanction(null); router.push(afterLoginPath()); }} className="flex-1 btn-primary justify-center">
                     Devam Et
                   </button>
                 </div>

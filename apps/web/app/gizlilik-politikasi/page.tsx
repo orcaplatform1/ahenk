@@ -143,7 +143,7 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
         {[
           ['Kullanıcı hesap verileri', 'Hesap silinene kadar + 2 yıl'],
-          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', '10 yıl, yasal yükümlülük'],
+          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', 'Hesap silinene kadar; yeniden başvuruda önceki dosyalar silinir, hesap silinince dosyalar ve kayıt silinir'],
           ['OCEAN testi sonuçları', 'Hesap aktif olduğu sürece'],
           ['Ödeme kayıtları', '10 yıl, Vergi Usul Kanunu'],
           ['Rehber engelleme için eklenen telefon numaraları', 'Kullanıcı silene kadar'],
@@ -177,10 +177,31 @@ const sections = [
           : ödeme tahsilatı ve paket yönetimi amacıyla.
         </p>
 
+        <p>
+          <strong style={{ color: '#f4f1ec' }}>Kimlik belgeleri ve liveness videosu</strong>
+          : Ahenk&apos;in kendi sunucusunda AES-256-GCM ile şifreli saklanır, yalnızca yetkili yöneticiler görüntüleyebilir ve hiçbir üçüncü tarafla paylaşılmaz.
+        </p>
+
         <SubTitle style={{ marginTop: '1.25rem' }}>Yurt Dışı Aktarımlar</SubTitle>
         <p>
-          <strong style={{ color: '#f4f1ec' }}>Cloudflare Inc. (ABD)</strong>
-          : R2 private bucket'ta kimlik belgeleri ve liveness videosu şifrelenmiş olarak saklanır. Standart Sözleşme Maddeleri (SCCs) kapsamında aktarılır.
+          <strong style={{ color: '#f4f1ec' }}>Meta Platforms (WhatsApp Business API)</strong>
+          : telefon numarası, WhatsApp doğrulama kodu ve kritik bildirimlerin (kimlik doğrulama sonucu, masa onayı) iletilmesi amacıyla.
+        </p>
+        <p>
+          <strong style={{ color: '#f4f1ec' }}>Google (Firebase Cloud Messaging)</strong>
+          : anlık bildirimlerin iletilmesi amacıyla bildirim cihaz anahtarı ve bildirim içeriği.
+        </p>
+        <p>
+          <strong style={{ color: '#f4f1ec' }}>Anthropic (yapay zekâ)</strong>
+          : masa uyum raporunun oluşturulması amacıyla masadaki katılımcıların OCEAN skorları ve cinsiyeti; ad, iletişim ve kimlik bilgisi gönderilmez.
+        </p>
+        <p>
+          <strong style={{ color: '#f4f1ec' }}>OpenStreetMap (Nominatim)</strong>
+          : acil yardım talebindeki konum koordinatlarının açık adrese çevrilmesi amacıyla.
+        </p>
+        <p>
+          <strong style={{ color: '#f4f1ec' }}>Apple (App Store) ve Google (Google Play)</strong>
+          : mobil uygulama içi satın almaların ve aboneliklerin doğrulanması ve yönetilmesi amacıyla satın alma işlem bilgileri.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Google Analytics ve Meta Pixel</strong>
@@ -250,7 +271,7 @@ const sections = [
       <List
         items={[
           'SSL/TLS şifrelemesi: tüm veri iletimlerinde',
-          'Cloudflare R2 private bucket: kimlik belgeleri ve liveness videosu yalnızca imzalı URL ile yetkili admin tarafından erişilebilir',
+          'Kimlik belgeleri ve liveness videosu Ahenk sunucusunda AES-256-GCM ile şifreli saklanır; yalnızca yetkili yönetici, yetkili uç üzerinden bellekte çözülmüş hâliyle görüntüleyebilir',
           'Erişim kontrolleri ve rol tabanlı yetkilendirme',
           'Rate limiting ve DDoS koruması',
         ]}
@@ -340,7 +361,7 @@ export default function GizlilikPolitikasiPage() {
             Gizlilik Politikası
           </h1>
           <p style={{ marginTop: '0.6rem', color: '#8f887f', fontSize: 13, letterSpacing: '0.03em' }}>
-            Son güncelleme: Ekim 2026
+            Son güncelleme: Kasım 2026
           </p>
         </motion.div>
 

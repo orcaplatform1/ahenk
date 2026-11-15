@@ -14,6 +14,7 @@ import { DetayAvatar } from './DetayAvatar';
 import { PhotoViewer, pickAndUploadProfilePhoto } from './ProfilePhoto';
 import { KankaPairs, type KankaPerson } from './KankaPairs';
 import { InlineLH, Btn, BtnPrimary, Serif, T } from './ui';
+import { LocationDisclosure } from './LocationDisclosure';
 import { c, sans, tw } from '@/theme/theme';
 
 export interface DetayParticipant { initials: string; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean; photoUrl?: string | null }
@@ -349,21 +350,45 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
     api.get<{ reportId: string | null }>(`/sos/meetings/${masa.id}/my-report`).then(d => { if (d?.reportId) { setSosDone(true); startSosLive(d.reportId).catch(() => {}); } }).catch(() => {});
   }, [sosVisible, masa.id]);
 
+  // Konum izni (ön plan / arka plan) istenmeden önce tam ekran açıklama: true = "Devam Et", false = "Şimdi Değil"
+  const [disclosure, setDisclosure] = useState(false);
+  const disclosureAnswer = useRef<((ok: boolean) => void) | null>(null);
+  const disclosed = useRef(false);
+  const askDisclosure = () => new Promise<boolean>((resolve) => { disclosureAnswer.current = resolve; setDisclosure(true); });
+  const answerDisclosure = (ok: boolean) => { setDisclosure(false); disclosureAnswer.current?.(ok); disclosureAnswer.current = null; };
+
+  // "Her zaman" izni: verilmemişse ve bu talep akışında açıklama henüz gösterilmediyse önce açıklama ekranı
+  async function askAlwaysPermission() {
+    const bg = await Location.getBackgroundPermissionsAsync().catch(() => null);
+    if (bg?.status === 'granted') return;
+    if (!disclosed.current) {
+      disclosed.current = true;
+      if (!(await askDisclosure())) return;
+    }
+    await requestSosAlwaysPermission();
+  }
+
   async function handleSos() {
     if (threats.length === 0 || sosLoading) return;
     setSosLoading(true); setLocError(null); setSosError('');
+    disclosed.current = false;
     try {
       const enabled = await Location.hasServicesEnabledAsync();
       if (!enabled) { setLocError('off'); return; }
       let perm = await Location.getForegroundPermissionsAsync();
-      if (perm.status !== 'granted') perm = await Location.requestForegroundPermissionsAsync();
+      if (perm.status !== 'granted') {
+        // Açıklama ekranı izin isteğinden önce; "Şimdi Değil" izin istemeden forma döner
+        disclosed.current = true;
+        if (!(await askDisclosure())) return;
+        perm = await Location.requestForegroundPermissionsAsync();
+      }
       if (perm.status !== 'granted') { setLocError('denied'); return; }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       try {
         const r = await api.post<{ reportId: string }>(`/sos/${masa.id}/report`, { threats, lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
         setSosDone(true); setShowSos(false);
         // Talep gönderildi: gönderim Kullanırken yöntemiyle başlar, ardından "Her zaman" izni istenir (red talebi engellemez)
-        if (r?.reportId) startSosLive(r.reportId).catch(() => {}).finally(() => { requestSosAlwaysPermission().catch(() => {}); });
+        if (r?.reportId) startSosLive(r.reportId).catch(() => {}).finally(() => { askAlwaysPermission().catch(() => {}); });
       } catch (e) {
         const m = (e as Error).message;
         setSosError(m === '__rate_limit__' ? 'Çok fazla deneme yapıldı. Lütfen birkaç dakika sonra tekrar dene.' : m || 'Sunucu hatası. Lütfen tekrar dene.');
@@ -379,6 +404,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
         onEdit={viewer?.self ? () => { setViewer(null); pickAndUploadProfilePhoto(true).then((ok) => { if (ok) prefetch(['/auth/me']); }).catch(() => undefined); } : undefined} />
       {showSos && <SosModal selected={threats} onToggle={t => setThreats(p => (p.includes(t) ? p.filter(x => x !== t) : [...p, t]))} onConfirm={handleSos}
         onClose={() => { setShowSos(false); setLocError(null); setSosError(''); setThreats([]); }} loading={sosLoading} locError={locError} error={sosError} />}
+      <LocationDisclosure visible={disclosure} onContinue={() => answerDisclosure(true)} onCancel={() => answerDisclosure(false)} />
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
         <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: GREEN }} />

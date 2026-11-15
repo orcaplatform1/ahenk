@@ -410,6 +410,6 @@ export class SettlePaymentDto {
 }
 
 export class DecideDeletionDto {
-  @IsIn(["APPROVED", "REJECTED"])
-  status: "APPROVED" | "REJECTED";
+  @IsIn(["APPROVED"])
+  status: "APPROVED";
 }

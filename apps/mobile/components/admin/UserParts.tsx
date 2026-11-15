@@ -13,8 +13,8 @@ import { adm } from '@/theme/theme';
 const when = (d: string) => new Date(d).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' });
 const confirmAsk = (title: string, run: () => void) => showAlert(title, undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: run }]);
 
-interface DeletionRequest { id: string; userId: string; userName: string; status: 'PENDING' | 'APPROVED' | 'REJECTED'; createdAt: string; decidedAt: string | null; retainedIdentity?: { firstName: string | null; lastName: string | null; email: string; phone: string | null } | null }
-const DSTATUS: Record<string, { label: string; color: string }> = { PENDING: { label: 'Bekliyor', color: adm.amber }, APPROVED: { label: 'Onaylandı', color: adm.green }, REJECTED: { label: 'Reddedildi', color: adm.red } };
+interface DeletionRequest { id: string; userId: string; userName: string; status: 'PENDING' | 'APPROVED'; createdAt: string; decidedAt: string | null; retainedIdentity?: { firstName: string | null; lastName: string | null; email: string; phone: string | null } | null }
+const DSTATUS: Record<string, { label: string; color: string }> = { PENDING: { label: 'Bekliyor', color: adm.amber }, APPROVED: { label: 'Onaylandı', color: adm.green } };
 export function AdminDeletionRequests() {
   const [rows, setRows] = useState<DeletionRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,8 +23,8 @@ export function AdminDeletionRequests() {
   const isSuper = myRole() === 'SUPERADMIN';
   const load = () => { api.get<DeletionRequest[]>('/admin/deletion-requests').then(r => { setRows(r); setError(''); }).catch((e: Error) => setError(e.message)).finally(() => setLoading(false)); };
   useEffect(load, []);
-  async function run(id: string, status: 'APPROVED' | 'REJECTED') { setBusy(id); setError(''); try { await api.patch(`/admin/deletion-requests/${id}`, { status }); load(); } catch (e) { setError((e as Error).message); } finally { setBusy(''); } }
-  const decide = (id: string, status: 'APPROVED' | 'REJECTED') => (status === 'APPROVED' ? confirmAsk('Hesap kalıcı olarak silinecek. Bu işlem geri alınamaz.', () => run(id, status)) : run(id, status));
+  async function run(id: string) { setBusy(id); setError(''); try { await api.patch(`/admin/deletion-requests/${id}`, { status: 'APPROVED' }); load(); } catch (e) { setError((e as Error).message); } finally { setBusy(''); } }
+  const approve = (id: string) => confirmAsk('Hesap kalıcı olarak silinecek. Bu işlem geri alınamaz.', () => run(id));
   return (
     <ACard style={{ padding: 0, overflow: 'hidden' }}>
       {!!error && <AT style={{ paddingVertical: 12, paddingHorizontal: 18, fontSize: 13, color: adm.red }}>{error}</AT>}
@@ -40,10 +40,7 @@ export function AdminDeletionRequests() {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
               <AT w={600} style={{ fontSize: 11, color: DSTATUS[r.status].color }}>{DSTATUS[r.status].label}</AT>
               {r.status === 'PENDING' && isSuper && (
-                <>
-                  <Btn variant="admOkDec" disabled={busy === r.id} label="Onayla" onPress={() => decide(r.id, 'APPROVED')} />
-                  <Btn variant="admNoDec" disabled={busy === r.id} label="Reddet" onPress={() => decide(r.id, 'REJECTED')} />
-                </>
+                <Btn variant="admOkDec" disabled={busy === r.id} label="Onayla" onPress={() => approve(r.id)} />
               )}
             </View>
           </View>

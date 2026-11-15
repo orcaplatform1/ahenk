@@ -92,6 +92,12 @@ export class PaymentController {
     return this.paymentService.initCheckout(user.id, dto.plan, dto.platform, dto.useDiscount, req.ip ?? "", dto.identityNumber);
   }
 
+  // Mobil uygulama içi satın alma açık mı (IAP_ENABLED): "Satın Alımları Geri Yükle" kapalıyken işlem yapmaz
+  @Get("store/status")
+  storeStatus() {
+    return this.paymentService.storeEnabled();
+  }
+
   // Mobil uygulama içi satın alma doğrulama (App Store / Play Store)
   @Post("store/verify")
   @UseGuards(JwtAuthGuard, TestCompletedGuard)

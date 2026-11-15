@@ -445,7 +445,7 @@ export class AdminController {
   @Patch("deletion-requests/:id")
   @Roles(UserRole.SUPERADMIN)
   decideDeletionRequest(@Param("id") id: string, @Body() dto: DecideDeletionDto, @Req() req: Request) {
-    return this.accountDeletion.decide(id, dto.status, (req.user as { id: string }).id);
+    return this.accountDeletion.decide(id, (req.user as { id: string }).id);
   }
 
   // ─── Matches ─────────────────────────────────────────────────────────────
