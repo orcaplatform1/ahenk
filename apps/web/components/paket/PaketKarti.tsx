@@ -43,11 +43,13 @@ export function Arrow() {
 
 
 // Tinder tarzı kart: bulunduğu hücrenin tam genişliği (paket listeleri 2 sütunlu grid), koyudan ortaya geçişli arka plan, solda kalın ad + GOLD tarzı rozet, altında tek satır açıklama, sağda ok
-export function PaketKarti({ card, badge, blocked, onClick }: { card: (typeof CARDS)[number]; badge?: string | null; blocked?: boolean; onClick: () => void }) {
+// staticCard: tıklanamaz kart (landing — avantajlar her zaman açık, aç/kapa yok): button yerine div, sağdaki ok yok
+export function PaketKarti({ card, badge, blocked, onClick, staticCard }: { card: (typeof CARDS)[number]; badge?: string | null; blocked?: boolean; onClick?: () => void; staticCard?: boolean }) {
+  const Tag = staticCard ? 'div' : 'button';
   return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center justify-between gap-3 text-left transition-transform active:scale-[0.99]"
+    <Tag
+      onClick={staticCard ? undefined : onClick}
+      className={`w-full flex items-center justify-between gap-3 text-left${staticCard ? '' : ' transition-transform active:scale-[0.99]'}`}
       style={{
         background: `linear-gradient(135deg, ${card.gradient[0]} 0%, ${card.gradient[1]} 100%)`,
         border: card.border ? `1px solid ${card.border}` : '1px solid rgba(255,255,255,0.08)',
@@ -72,7 +74,7 @@ export function PaketKarti({ card, badge, blocked, onClick }: { card: (typeof CA
         </span>
         <span className="text-sm truncate" style={{ opacity: 0.9 }}>{card.desc}</span>
       </span>
-      <span style={{ color: card.arrowColor ?? card.border ?? card.fg }}><Arrow /></span>
-    </button>
+      {!staticCard && <span style={{ color: card.arrowColor ?? card.border ?? card.fg }}><Arrow /></span>}
+    </Tag>
   );
 }

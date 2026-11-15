@@ -4,7 +4,7 @@
 import React, { useEffect } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { getAccess, getRemembered } from '@/lib/session';
+import { forgetDevice, getAccess, getRemembered } from '@/lib/session';
 import { api, prefetch, refreshAtLaunch } from '@/lib/api';
 import { loadFonts, loadImages } from '@/lib/boot';
 import { lockAdminAtLaunch } from '@/lib/adminLock';
@@ -36,7 +36,16 @@ export default function Acilis() {
           const admin = me?.role === 'ADMIN' || me?.role === 'SUPERADMIN';
           dest = admin ? '/admin' : '/(tabs)';
           // Admin kalıcı oturumu: uygulama sıfırdan açılınca biyometrik doğrulama (kilit ekranı yönetim panelinin üstünde açılır)
-          if (admin && me) { setAdminIdentity({ id: (me as { id?: string }).id ?? '', role: me.role }); lockAdminAtLaunch(); }
+          if (admin && me) {
+            setAdminIdentity({ id: (me as { id?: string }).id ?? '', role: me.role });
+            // Cihazda biyometrik ve ekran kilidi yoksa admin oturumu kalıcı değildir: oturum kapanır, normal giriş
+            if ((await lockAdminAtLaunch()) === 'login') {
+              await api.logout().catch(() => undefined);
+              await forgetDevice();
+              setAdminIdentity(null);
+              dest = '/giris';
+            }
+          }
           prefetch(admin ? ADMIN_DATA : MEMBER_DATA);
         }
       }

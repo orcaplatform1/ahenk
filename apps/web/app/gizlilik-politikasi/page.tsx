@@ -143,7 +143,7 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
         {[
           ['Kullanıcı hesap verileri', 'Hesap silinene kadar + 2 yıl'],
-          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', 'Hesap silinene kadar; yeniden başvuruda önceki dosyalar silinir, hesap silinince dosyalar ve kayıt silinir'],
+          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', 'Hesap silinene kadar saklanır; hesap silme talebi onaylanınca kimlik görselleri, canlılık videosu ve KYC kaydı silinir'],
           ['OCEAN testi sonuçları', 'Hesap aktif olduğu sürece'],
           ['Ödeme kayıtları', '5 yıl, Vergi Usul Kanunu'],
           ['Rehber engelleme için eklenen telefon numaraları', 'Kullanıcı silene kadar'],

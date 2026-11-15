@@ -15,6 +15,7 @@ import { OtpCountdown, useOtpCountdown } from '../OtpCountdown';
 import { KankaSection } from './KankaSection';
 import { accountBtn, adminChipPulse, c, ll, sans, tw } from '@/theme/theme';
 import { openLegal } from '@/lib/links';
+import { useRememberAllowed } from '@/lib/adminLock';
 
 export interface City { id: string; name: string }
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
@@ -173,6 +174,8 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
   // Çıkış: "Bu cihazda beni hatırla" (oturum kapanır, cihaz hatırlanır; açılışta Tekrar hoş geldin + Face ID / parmak izi)
   // ya da "Bu cihazda beni unut" (oturum kapanır, hatırlama bilgisi silinir)
   const [logoutOpen, setLogoutOpen] = useState(false);
+  // ADMIN / SUPERADMIN: biyometrik ya da ekran kilidi olmayan cihazda "Bu cihazda beni hatırla" yok
+  const rememberAllowed = useRememberAllowed(user.role);
   async function confirmDelete() {
     setDeleteBusy(true); setDeleteError('');
     try { await api.post('/users/me/deletion-request', {}); setDeletePending(true); setDeleteOpen(false); } catch (e) { setDeleteError((e as Error).message); } finally { setDeleteBusy(false); }
@@ -405,7 +408,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
           : <BtnGhost label="Hesabımı Sil" redDot style={accountBtn.box} textStyle={[accountBtn.text, { color: tw.primaryHover }]} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
       </View>
 
-      <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} firstName={user.firstName} onLoggedOut={onLoggedOut} />
+      <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} firstName={user.firstName} onLoggedOut={onLoggedOut} remember={rememberAllowed} />
 
       <ModalBox visible={deleteOpen} onClose={() => setDeleteOpen(false)} title="Hesabımı Sil" opaque>
         <T style={{ fontSize: 14, color: ll.text2, lineHeight: 22.75 }}>

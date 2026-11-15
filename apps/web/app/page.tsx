@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { HeroCountdown } from '@/components/HeroCountdown';
 import { PlanPriceText } from '@/components/PlanPrice';
-import { CARDS, Check, PaketKarti, type CardKey } from '@/components/paket/PaketKarti';
+import { CARDS, Check, PaketKarti } from '@/components/paket/PaketKarti';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
 
 
@@ -570,7 +570,6 @@ export default function Home() {
 
   const [ownedPlans, setOwnedPlans] = useState<Set<PlanKey>>(new Set());
   const [openParts, setOpenParts] = useState<OpenParts>({ group: false, oneOnOne: false });
-  const [openCard, setOpenCard] = useState<CardKey | null>(null);
   const [authState, setAuthState] = useState<{ loggedIn: boolean; kycApproved: boolean } | null>(null);
   const [kankamla, setKankamla] = useState<KankamlaState | null>(null);
 
@@ -824,17 +823,16 @@ export default function Home() {
               Fiyatlandırma
             </h2>
           </div>
-          {/* Paket ekranıyla aynı Tinder tarzı kartlar; karta basınca avantajlar açılır.
-              2 sütunlu grid: Grup + Baş Başa, Kankamla + İçerde, Prime Paket tam genişlik, Prime Abonelik tam genişlik; dar ekranda tek sütun */}
+          {/* Paket ekranıyla aynı Tinder tarzı kartlar; avantajlar ve buton her zaman açık (aç/kapa yok).
+              2 sütunlu grid: Grup + Baş Başa, Kankamla + İçerde, Prime Paket tam genişlik, Prime Abonelik Süreleri tam genişlik; dar ekranda tek sütun */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
             {CARDS.map((card) => {
               const cs = card.key === 'PRIME' ? null : card.key === 'KANKAMLA' ? getKankamlaCardState(kankamla) : getPlanCardState(card.key, ownedPlans, openParts);
-              const open = openCard === card.key;
               return (
                 <div key={card.key} className={`flex flex-col gap-2${card.key === 'PRIME' ? ' sm:col-span-2' : ''}`}>
-                  <PaketKarti card={card} badge={cs?.badge ?? null} blocked={!!cs && !cs.showButton} onClick={() => setOpenCard(open ? null : card.key)} />
-                  {open && (
-                    <div className="ll-card flex flex-col gap-3">
+                  {/* Web'de aç/kapa yok: avantajlar ve buton her zaman açık */}
+                  <PaketKarti card={card} badge={cs?.badge ?? null} blocked={!!cs && !cs.showButton} staticCard />
+                  <div className="ll-card flex flex-col gap-3">
                       <h4 className="text-base font-semibold text-[#f5f5f5]">Avantajlar</h4>
                       <ul className="flex flex-col gap-2.5">
                         {card.advantages.map((a) => (
@@ -846,15 +844,14 @@ export default function Home() {
                           {card.key === 'PRIME' ? 'Abone Ol' : 'Paket Al'}
                         </button>
                       )}
-                    </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
 
-          {/* Prime abonelik: tam genişlik 4. satır; renkler Prime Paket kartıyla aynı (başlık #7A1F2B, çerçeve palet kırmızısı #d6453a) */}
+          {/* Prime Abonelik Süreleri: tam genişlik 4. satır; renkler Prime Paket kartıyla aynı (başlık #7A1F2B, çerçeve palet kırmızısı #d6453a) */}
           <div className="ll-card flex flex-col gap-4 sm:col-span-2" style={{ border: '1px solid #d6453a' }}>
-            <h3 className="font-serif text-2xl" style={{ color: '#7A1F2B' }}>Prime Abonelik</h3>
+            <h3 className="font-serif text-2xl" style={{ color: '#7A1F2B' }}>Prime Abonelik Süreleri</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {([['PRIME_1M', '1 Aylık'], ['PRIME_3M', '3 Aylık'], ['PRIME_6M', '6 Aylık'], ['PRIME_12M', '12 Aylık']] as const).map(([key, label]) => (
                 <div key={key} className="rounded-xl px-3 py-3" style={{ border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.03)' }}>

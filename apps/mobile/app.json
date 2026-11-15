@@ -18,7 +18,7 @@
         "NSCameraUsageDescription": "Kimlik doğrulama için kimlik fotoğrafı ve canlılık videosu çekilir.",
         "NSMicrophoneUsageDescription": "Kimlik doğrulama canlılık videosu kaydı için gereklidir.",
         "NSPhotoLibraryUsageDescription": "Profil fotoğrafını ve sorun bildirimi görsellerini galerinden seçip yüklemek için; yönetim paneli hesaplarında ayrıca bot ve mekân fotoğraflarını yüklemek için fotoğraflarına erişim gerekir.",
-        "NSFaceIDUsageDescription": "Yönetim paneli hesabınızı korumak için Face ID kullanılır.",
+        "NSFaceIDUsageDescription": "Hesap güvenliğiniz için Face ID kullanılır.",
         "NSContactsUsageDescription": "Rehberindeki numaraları engelleme listesine eklemek için kullanılır.",
         "NSLocationWhenInUseUsageDescription": "Acil yardım talebinde bulunduğunda konumun emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Acil yardım talebinde bulunduğunda, uygulama kapansa bile konumun talep çözülene kadar emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir.",
@@ -227,7 +227,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Yönetim paneli hesabınızı korumak için Face ID kullanılır."
+          "faceIDPermission": "Hesap güvenliğiniz için Face ID kullanılır."
         }
       ],
       "expo-font",

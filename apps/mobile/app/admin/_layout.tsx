@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { setAdminIdentity } from '@/lib/adminRole';
 import { Btn, Spinner } from '@/components/ui';
 import { LogoutChoice } from '@/components/LogoutChoice';
+import { useRememberAllowed } from '@/lib/adminLock';
 import { ALabel, AT } from '@/components/admin/AdminUi';
 import { adm } from '@/theme/theme';
 
@@ -42,6 +43,8 @@ export default function AdminLayout() {
   const [ready, setReady] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [firstName, setFirstName] = useState('');
+  // Biyometrik / ekran kilidi olmayan cihazda admin için "Bu cihazda beni hatırla" yok
+  const rememberAllowed = useRememberAllowed(role);
   const [unread, setUnread] = useState(0);
   const [drawer, setDrawer] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -130,7 +133,7 @@ export default function AdminLayout() {
           </ScrollView>
         </Animated.View>
       </Modal>
-      <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} firstName={firstName} onLoggedOut={loggedOut} />
+      <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} firstName={firstName} onLoggedOut={loggedOut} remember={rememberAllowed} />
     </View>
   );
 }

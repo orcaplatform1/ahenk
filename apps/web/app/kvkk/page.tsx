@@ -181,7 +181,7 @@ const sections = [
             'Ahenk\'in kendi sunucusunda AES-256-GCM ile şifreli saklanır',
             'Yalnızca yetkili admin personeli tarafından, yetkili uç üzerinden bellekte çözülmüş hâliyle görüntülenebilir',
             'Üçüncü taraflarla paylaşılmaz',
-            'Hesap silinene kadar saklanır; yeniden başvuruda önceki dosyalar, hesap silinince dosyalar ve kayıt silinir',
+            'Hesap silinene kadar saklanır; hesap silme talebi onaylanınca kimlik görselleri, canlılık videosu ve KYC kaydı silinir',
           ].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -232,7 +232,7 @@ const sections = [
       <div>
         {[
           ['Kullanıcı hesap ve profil verileri', 'Hesap silinene kadar + 2 yıl'],
-          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', 'Hesap silinene kadar; yeniden başvuruda önceki dosyalar, hesap silinince dosyalar ve kayıt silinir'],
+          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', 'Hesap silinene kadar saklanır; hesap silme talebi onaylanınca kimlik görselleri, canlılık videosu ve KYC kaydı silinir'],
           ['OCEAN test sonuçları', 'Hesap aktif olduğu sürece; hesap silindiğinde imha edilir'],
           ['Ödeme ve fatura kayıtları', '5 yıl, Vergi Usul Kanunu'],
           ['Rehber engelleme için eklenen telefon numaraları', 'Kullanıcı tarafından silinene kadar'],

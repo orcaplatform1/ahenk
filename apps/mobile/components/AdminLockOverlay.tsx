@@ -4,17 +4,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Modal, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { isAdminLocked, markAdminVerified, onAdminLock } from '@/lib/adminLock';
+import { useRouter } from 'expo-router';
+import { isAdminLocked, loadLocalAuth, markAdminVerified, onAdminLock, unlockForLogin } from '@/lib/adminLock';
+import { api } from '@/lib/api';
+import { forgetDevice } from '@/lib/session';
+import { setAdminIdentity } from '@/lib/adminRole';
 import { BtnPrimary, Serif, T } from './ui';
 import { ll } from '@/theme/theme';
 
-type LocalAuth = typeof import('expo-local-authentication');
-function loadLocalAuth(): LocalAuth | null {
-  try { return require('expo-local-authentication') as LocalAuth; } catch { return null; }
-}
-
 export function AdminLockOverlay() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [locked, setLocked] = useState(isAdminLocked());
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState('');
@@ -23,9 +23,14 @@ export function AdminLockOverlay() {
     setBusy(true); setFailed('');
     const la = loadLocalAuth();
     try {
-      if (!la) throw new Error('Bu cihazda doğrulama kullanılamıyor.');
-      if ((await la.getEnrolledLevelAsync()) === la.SecurityLevel.NONE) {
-        throw new Error('Cihazda biyometrik doğrulama ya da ekran kilidi şifresi tanımlı değil. Tanımlayıp tekrar dene.');
+      // Cihazda biyometrik de ekran kilidi de yoksa kilit açılamaz: kilit kalkar, oturum kapanıp normal giriş ekranına gidilir
+      if (!la || (await la.getEnrolledLevelAsync()) === la.SecurityLevel.NONE) {
+        await api.logout().catch(() => undefined);
+        await forgetDevice();
+        setAdminIdentity(null);
+        unlockForLogin();
+        router.replace('/giris');
+        return;
       }
       const r = await la.authenticateAsync({ promptMessage: 'Yönetim paneli doğrulaması', cancelLabel: 'Vazgeç', disableDeviceFallback: false });
       if (r.success) { markAdminVerified(); return; }
@@ -33,7 +38,7 @@ export function AdminLockOverlay() {
     } catch (e) {
       setFailed((e as Error).message || 'Doğrulama başarısız oldu.');
     } finally { setBusy(false); }
-  }, []);
+  }, [router]);
 
   useEffect(() => onAdminLock(setLocked), []);
   useEffect(() => { if (locked) verify(); }, [locked, verify]);

@@ -15,7 +15,7 @@ const DELETED = [
   'Kişilik testi (OCEAN) cevapların ve sonuçların',
   'Profil fotoğrafların (kayıtlar ve sunucudaki dosyalar)',
   'Sorun bildirimlerin (kayıtlar ve sunucudaki görseller)',
-  'Kimlik doğrulama (KYC) kaydın; kimlik ön ve arka yüz görselleri ile canlılık videosu sunucudan silinir',
+  'Kimlik doğrulama (KYC) verilerin: hesap silinene kadar saklanır; hesap silme talebi onaylanınca kimlik görselleri, canlılık videosu ve KYC kaydı silinir',
   'Rehber engelleme için eklediğin telefon numaraları ve kullanıcı engellemelerin',
   'Gönderdiğin sohbet mesajları',
   'Bildirimlerin, oturumların ve bekleme listesi kayıtların',
