@@ -49,6 +49,29 @@ export class ProfilePhotoService {
     return { pending: true };
   }
 
+  // Admin: bot profil fotoğrafı. Onay süreci yok, yüklendiği anda APPROVED; önceki fotoğraf(lar) dosya + kayıt silinir
+  async botUpload(botId: string, file?: Express.Multer.File) {
+    const bot = await this.prisma.user.findFirst({ where: { id: botId, isBot: true }, select: { id: true } });
+    if (!bot) throw new NotFoundException("Bot bulunamadı");
+    if (!file?.buffer?.length) throw new BadRequestException("Fotoğraf seçilmedi");
+    const kind = detectImageKind(file.buffer);
+    if (!kind || !PHOTO_KINDS.includes(kind)) throw new BadRequestException("Fotoğraf JPEG, PNG, WebP, HEIC veya HEIF olmalı");
+    const { large, small } = await photoSizes(await toWebp(file.buffer, kind));
+    const dir = path.join(PROFILE_PHOTO_DIR, botId);
+    fs.mkdirSync(dir, { recursive: true });
+    const fileName = `p-${Date.now()}-${randomBytes(6).toString("hex")}.webp`;
+    fs.writeFileSync(path.join(dir, fileName), large);
+    fs.writeFileSync(path.join(dir, smallPhotoName(fileName)), small);
+
+    const old = await this.prisma.profilePhoto.findMany({ where: { userId: botId } });
+    await this.prisma.$transaction([
+      this.prisma.profilePhoto.deleteMany({ where: { id: { in: old.map((p) => p.id) } } }),
+      this.prisma.profilePhoto.create({ data: { userId: botId, fileName, status: ProfilePhotoStatus.APPROVED, reviewedAt: new Date() } }),
+    ]);
+    old.forEach((p) => this.removeFile(botId, p.fileName));
+    return { photoUrl: profilePhotoUrl(botId, fileName) };
+  }
+
   // Kullanıcı: onaylı fotoğraf adresi + onay bekleyen var mı
   async mine(userId: string) {
     const rows = await this.prisma.profilePhoto.findMany({ where: { userId }, select: { fileName: true, status: true } });

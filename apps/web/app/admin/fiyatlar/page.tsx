@@ -35,6 +35,66 @@ const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Ba�
 // Paket hakları (kullanılana kadar geçerli; Prime her 30 günde yenilenir)
 const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '1 grup buluşması', KARSIMDA: '1 baş başa buluşması', ICERDE: '1 grup + 1 baş başa buluşması', KANKAMLA: '1 Kankamla buluşması (kanka ücretsiz)', PRIME_1M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla', PRIME_3M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla', PRIME_6M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla', PRIME_12M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla' };
 
+const HISTORY_PAGE_SIZE = 20;
+function PriceHistory({ history }: { history: HistoryRow[] }) {
+  const [page, setPage] = useState(1);
+  const [open, setOpen] = useState<number | null>(null);
+  const rows = [...history].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const totalPages = Math.max(1, Math.ceil(rows.length / HISTORY_PAGE_SIZE));
+  const cur = Math.min(page, totalPages);
+  const start = (cur - 1) * HISTORY_PAGE_SIZE;
+  const go = (p: number) => { setPage(p); setOpen(null); };
+  const pagerBtn = (active: boolean, disabled: boolean): React.CSSProperties => ({
+    minWidth: 32, padding: '6px 10px', borderRadius: 99, cursor: disabled ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: SANS,
+    background: active ? 'rgba(34,211,238,0.08)' : 'transparent', border: `1px solid ${active ? 'rgba(34,211,238,0.3)' : BORDER}`,
+    color: active ? TEXT : MUTED, opacity: disabled ? 0.4 : 1,
+  });
+  const detail = (label: string, value: string, mono = true) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12 }}>
+      <span style={{ color: MUTED, fontFamily: SANS }}>{label}</span>
+      <span style={{ color: TEXT, fontFamily: mono ? MONO : SANS }}>{value}</span>
+    </div>
+  );
+  return (
+    <div style={{ marginTop: 28 }}>
+      <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>FİYAT GEÇMİŞİ</p>
+      <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
+        {rows.slice(start, start + HISTORY_PAGE_SIZE).map((h, i) => {
+          const idx = start + i;
+          const isOpen = open === idx;
+          return (
+            <div key={idx} style={{ borderTop: i ? `1px solid ${BORDER}` : 'none' }}>
+              <button type="button" onClick={() => setOpen(isOpen ? null : idx)} aria-expanded={isOpen}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: SANS }}>
+                <span style={{ fontSize: 13, color: MUTED }}>{new Date(h.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' })}</span>
+                <span style={{ fontSize: 13, color: TEXT, fontWeight: 600 }}>{PLAN_NAME[h.plan]}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 11, color: MUTED, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>▾</span>
+              </button>
+              {isOpen && (
+                <div style={{ padding: '0 14px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {detail('Ham', tl(h.netKurus))}
+                  {detail('Web', tl(h.webKurus))}
+                  {detail('Mobil', tl(h.mobileKurus))}
+                  {detail('Yapan', h.createdBy?.profile ? `${h.createdBy.profile.firstName} ${h.createdBy.profile.lastName}` : 'Başlangıç', false)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12 }}>
+          <button type="button" onClick={() => go(cur - 1)} disabled={cur === 1} style={pagerBtn(false, cur === 1)}>← Önceki</button>
+          {Array.from({ length: totalPages }, (_, k) => k + 1).map(n => (
+            <button key={n} type="button" onClick={() => go(n)} aria-current={n === cur ? 'page' : undefined} style={pagerBtn(n === cur, false)}>{n}</button>
+          ))}
+          <button type="button" onClick={() => go(cur + 1)} disabled={cur === totalPages} style={pagerBtn(false, cur === totalPages)}>Sonraki →</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Geri kazanım indirimi: sabit TL + indirimin uygulanacağı paketler (AppConfig)
 function WinbackSettings() {
   const [amount, setAmount] = useState('');
@@ -243,28 +303,8 @@ export default function AdminFiyatlar() {
         </div>
       )}
 
-      {/* Geçmiş */}
-      {(data?.history.length ?? 0) > 0 && (
-        <div style={{ marginTop: 28 }}>
-          <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>FİYAT GEÇMİŞİ</p>
-          <div className="ll-card" style={{ padding: 0, overflowX: 'auto' }}>
-            <table className="adm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <tbody>
-                {data!.history.map((h, i) => (
-                  <tr key={i} style={{ borderTop: i ? `1px solid ${BORDER}` : 'none' }}>
-                    <td data-label="Tarih" style={{ ...cell, fontFamily: SANS, color: MUTED }}>{new Date(h.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' })}</td>
-                    <td data-label="Paket" style={{ ...cell, fontFamily: SANS }}>{PLAN_NAME[h.plan]}</td>
-                    <td data-label="Ham" style={cell}>ham {tl(h.netKurus)}</td>
-                    <td data-label="Web" style={cell}>web {tl(h.webKurus)}</td>
-                    <td data-label="Mobil" style={cell}>mobil {tl(h.mobileKurus)}</td>
-                    <td data-label="Yapan" style={{ ...cell, fontFamily: SANS, color: MUTED }}>{h.createdBy?.profile ? `${h.createdBy.profile.firstName} ${h.createdBy.profile.lastName}` : 'Başlangıç'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Geçmiş: en yeni en üstte; kayıt kapalıyken Tarih + Paket, tıklayınca Ham / Web / Mobil / Yapan; sayfa başına 20 */}
+      {(data?.history.length ?? 0) > 0 && <PriceHistory history={data!.history} />}
     </div>
   );
 }

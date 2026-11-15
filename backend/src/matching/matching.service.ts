@@ -23,6 +23,9 @@ import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right
 import { selectedThisWeek } from "./weekly-selection";
 import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, restoreGroupRights } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
+import { approvedPhotoMap, PROFILE_PHOTO_DIR } from "../profile-photo/profile-photo.util";
+import * as fs from "fs";
+import * as path from "path";
 import { ASSIGN_QUEUE, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT, enqueueAssign, randomBotDelayMs } from "./assign-queue";
 
 type OceanScoreData = {
@@ -1187,7 +1190,7 @@ export class MatchingService {
   // ─── Bot yönetimi ─────────────────────────────────────────────────────────
 
   async listBots() {
-    return this.prisma.user.findMany({
+    const bots = await this.prisma.user.findMany({
       where: { isBot: true },
       orderBy: { createdAt: "asc" },
       select: {
@@ -1196,6 +1199,9 @@ export class MatchingService {
         oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
       },
     });
+    // Bot profil fotoğrafı (onaysız, yüklendiği anda APPROVED)
+    const photos = await approvedPhotoMap(this.prisma, bots.map((b) => b.id));
+    return bots.map((b) => ({ ...b, photoUrl: photos.get(b.id) ?? null }));
   }
 
   // Bot şehri katılım şehridir (primaryCity = City.id); aktif şehir olmalı
@@ -1305,6 +1311,8 @@ export class MatchingService {
       return { deleted: false, deactivated: true, id: botId };
     }
     await this.prisma.user.delete({ where: { id: botId } });
+    // Profil fotoğrafı kayıtları cascade ile silinir; dosyaları da kaldırılır
+    fs.rmSync(path.join(PROFILE_PHOTO_DIR, botId), { recursive: true, force: true });
     return { deleted: true, id: botId };
   }
 

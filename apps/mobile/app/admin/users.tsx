@@ -7,17 +7,18 @@ import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATableRow, ATitle } from '@/components/admin/AdminUi';
 import { AdminSelect, AInput, APager } from '@/components/admin/AdminControls';
 import { StatusPill } from '@/components/admin/StatusPill';
+import { Avatar } from '@/components/ProfilePhoto';
 import { AdminDeletionRequests, AdminNoShowWarnings, AdminSanctionHistory, AdminUserEdit, type NoShowReportItem, type NoShowWarningInfo } from '@/components/admin/UserParts';
 import { adm, llCard } from '@/theme/theme';
 
 function canSanction(t: { id: string; role: string }) {
   const me = myId(); if (!me) return false;
-  if (me === t.id || t.role === 'SUPERADMIN') return false;
-  return t.role !== 'ADMIN' || myRole() === 'SUPERADMIN';
+  if (me === t.id) return false;
+  return (t.role !== 'ADMIN' && t.role !== 'SUPERADMIN') || myRole() === 'SUPERADMIN';
 }
 interface AdminUser { id: string; email: string; phone?: string; role: string; status: 'ACTIVE' | 'SUSPENDED' | 'DELETED'; profile?: { firstName?: string; lastName?: string; city?: string | null; isPioneer?: boolean } | null; kyc?: { status: string } | null; oceanScore?: { openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number } | null; subscriptions?: { plan: string }[]; primaryCityName?: string | null; activeCityName?: string | null }
 interface UsersResponse { data: AdminUser[]; total: number; page: number; totalPages: number }
-interface Detail { id: string; email: string; phone: string | null; role: string; status: string; profile: { firstName: string | null; lastName: string | null; city: string | null; birthDate: string | null; occupation: string | null; gender?: string | null; primaryCity?: string | null } | null; occupationSector?: string | null; kyc: { status: string } | null; subscriptions: { id: string; plan: string; status: string }[]; rights?: { group: number; oneOnOne: number; kanka: number }; kanka?: { userId: string; name: string; since: string } | null; oceanScore?: { completedAt: string; adminCanReset: boolean } | null; noShowReportsReceived?: NoShowReportItem[]; noShowWarnings?: NoShowWarningInfo }
+interface Detail { id: string; email: string; phone: string | null; role: string; status: string; profile: { firstName: string | null; lastName: string | null; city: string | null; birthDate: string | null; occupation: string | null; gender?: string | null; primaryCity?: string | null } | null; occupationSector?: string | null; kyc: { status: string } | null; subscriptions: { id: string; plan: string; status: string }[]; rights?: { group: number; oneOnOne: number; kanka: number }; kanka?: { userId: string; name: string; since: string } | null; oceanScore?: { completedAt: string; adminCanReset: boolean; openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number } | null; noShowReportsReceived?: NoShowReportItem[]; noShowWarnings?: NoShowWarningInfo; photoUrl?: string | null; primaryCityName?: string | null; activeCityName?: string | null }
 const SS: Record<string, { label: string; color: string; bg: string; border: string }> = {
   ACTIVE: { label: 'Aktif', color: adm.green, bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)' },
   SUSPENDED: { label: 'Karantina', color: adm.amber, bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.3)' },
@@ -25,7 +26,9 @@ const SS: Record<string, { label: string; color: string; bg: string; border: str
 };
 const PL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 const oceanAvg = (o: AdminUser['oceanScore']) => (o ? ((o.openness + o.conscientiousness + o.extraversion + o.agreeableness + o.neuroticism) / 5).toFixed(0) : '—');
-const planOf = (u: AdminUser) => (u.subscriptions?.length ? u.subscriptions.map(s => PL[s.plan] ?? s.plan).join(', ') : '—');
+const planOf = (subs?: { plan: string }[]) => (subs?.length ? subs.map(s => PL[s.plan] ?? s.plan).join(', ') : '—');
+// Detay penceresi profil alanı: onaylı fotoğraf; yoksa anonim profil (cinsiyet renkli çerçeve + ad soyad baş harfleri)
+const initialsOf = (p?: { firstName?: string | null; lastName?: string | null } | null) => `${(p?.firstName ?? '').trim()[0] ?? ''}${(p?.lastName ?? '').trim()[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?';
 const PLANS = [{ value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }];
 // Paket verme: tek seferlik paketler + ücretsiz Prime (1/3/6/12 ay)
 const GRANT_PLANS = [...PLANS, { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' }, { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' }];
@@ -100,16 +103,13 @@ export default function AdminUsers() {
             </View>
             {loading ? <View style={{ padding: 14, gap: 8 }}>{[0, 1, 2, 3, 4].map(i => <View key={i} style={{ height: 32, backgroundColor: adm.surface, borderRadius: 6, opacity: 0.5 }} />)}</View>
               : users.length === 0 ? <View style={{ paddingVertical: 40, alignItems: 'center' }}><AT w={600} style={{ fontSize: 13, color: adm.muted }}>Kullanıcı bulunamadı.</AT></View>
-              : users.map((u, i) => { const s = SS[u.status] ?? SS.ACTIVE; return (
+              : users.map((u, i) => (
                 <ATableRow borderColor="rgba(26,58,92,0.5)" key={u.id} last={i === users.length - 1} cells={[
-                  ['Kullanıcı', <View key="u" style={{ alignItems: 'flex-end' }}><AT w={600} numberOfLines={1} style={{ fontSize: 13 }}>{u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}</AT><AT numberOfLines={1} style={{ marginTop: 2, fontSize: 10, color: adm.muted }}>{u.email ?? u.phone ?? ''}</AT></View>],
-                  ['Şehir', <View key="c" style={{ alignItems: 'flex-end' }}><AT style={{ fontSize: 13, color: adm.muted }}>{u.primaryCityName ?? '—'}</AT><AT style={{ fontSize: 11, color: adm.muted }}>Bu hafta: {u.activeCityName ?? '—'}</AT></View>],
-                  ['Paket', <AT key="p" style={{ fontSize: 13, color: adm.muted }}>{planOf(u)}</AT>],
-                  ['OCEAN Ort.', <AMono key="o" style={{ fontSize: 13 }}>{oceanAvg(u.oceanScore)}</AMono>],
-                  ['Durum', <StatusPill key="s" text={s.label} color={s.color} bg={s.bg} border={s.border} pad={[2, 8]} />],
+                  ['Kullanıcı', <AT key="u" w={600} numberOfLines={1} style={{ fontSize: 13 }}>{u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}</AT>],
+                  ['Telefon', <AMono key="t" style={{ fontSize: 13 }}>{u.phone ?? '—'}</AMono>],
                   ['', <Btn key="d" variant="admDetailBtn" label="Detay" onPress={() => openModal(u.id)} />],
                 ]} />
-              ); })}
+              ))}
           </ACard>
           <APager page={page} totalPages={totalPages} total={total} onPage={setPage} />
         </>
@@ -122,18 +122,21 @@ export default function AdminUsers() {
               {m && st && !modalLoading && (
                 <>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                    <View style={{ flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <Avatar photoUrl={m.photoUrl} initials={initialsOf(m.profile)} gender={m.profile?.gender} size={72} borderWidth={3} />
                     <View style={{ flexShrink: 1 }}>
                       <AT w={600} style={{ fontSize: 14 }}>{m.profile ? `${m.profile.firstName} ${m.profile.lastName}` : m.email}</AT>
                       {!!m.email && <AMono style={{ marginTop: 3, fontSize: 10 }}>{m.email}</AMono>}
                       {!!m.phone && <AMono style={{ marginTop: 2, fontSize: 10 }}>{m.phone}</AMono>}
                       <AT style={{ marginTop: 2, fontSize: 10, color: adm.muted }}>{m.role}</AT>
                     </View>
+                    </View>
                     <Btn variant="admX" label="✕" accessibilityLabel="Kapat" textStyle={{ fontSize: 16 }} onPress={() => setModal(null)} />
                   </View>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                     {!!m.profile?.birthDate && <AT style={{ fontSize: 11, color: adm.muted }}>{Math.floor((Date.now() - new Date(m.profile.birthDate).getTime()) / 31557600000)} yaş</AT>}
                     {!!m.profile?.occupation && <AT style={{ fontSize: 11, color: adm.muted }}>{m.profile.occupation}</AT>}
-                    {([['Grup hakkı', m.rights?.group ?? 0], ['Baş Başa hakkı', m.rights?.oneOnOne ?? 0], ['Kankamla hakkı', m.rights?.kanka ?? 0], ['Kanka', m.kanka ? m.kanka.name : 'yok']] as const).map(([k, v]) => (
+                    {([['Şehir', m.primaryCityName ?? '—'], ['Bu hafta', m.activeCityName ?? '—'], ['Paket', planOf(m.subscriptions)], ['OCEAN Ort.', oceanAvg(m.oceanScore)], ['Grup hakkı', m.rights?.group ?? 0], ['Baş Başa hakkı', m.rights?.oneOnOne ?? 0], ['Kankamla hakkı', m.rights?.kanka ?? 0], ['Kanka', m.kanka ? m.kanka.name : 'yok']] as const).map(([k, v]) => (
                       <AT key={k} style={{ fontSize: 11, color: adm.muted }}>{k}: <AT style={{ fontSize: 11, color: '#93c5fd' }}>{String(v)}</AT></AT>
                     ))}
                   </View>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, API_PREFIX } from '@/lib/api';
 import { OCCUPATION_SECTORS } from '@/lib/occupations';
 import { AdminSelect } from '@/components/AdminSelect';
 import { AdminDatePicker } from '@/components/AdminDatePicker';
@@ -24,6 +24,7 @@ interface Bot {
   occupationSector?: string;
   profile?: { firstName?: string | null; lastName?: string | null; gender?: string | null; birthDate?: string | null; primaryCity?: string | null } | null;
   oceanScore?: Ocean | null;
+  photoUrl?: string | null;
 }
 
 interface City { id: string; name: string; isActive: boolean }
@@ -41,6 +42,19 @@ const EMPTY_FORM = {
   openness: '50', conscientiousness: '50', extraversion: '50', agreeableness: '50', neuroticism: '50',
 };
 type BotForm = typeof EMPTY_FORM;
+
+// Bot profil fotoğrafı: onay süreci yok, yüklendiği anda onaylı kaydedilir
+async function uploadBotPhoto(botId: string, file: File): Promise<void> {
+  const form = new FormData();
+  form.append('photo', file);
+  const res = await fetch(`${API_PREFIX}/matching/admin/bots/${botId}/profile-photo`, { method: 'POST', credentials: 'include', body: form });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    throw new Error((Array.isArray(body?.message) ? body?.message[0] : body?.message) ?? 'Fotoğraf yüklenemedi');
+  }
+}
+
+const genderBorder = (g?: string | null) => (g === 'FEMALE' ? '#f48fb1' : '#4fc3f7');
 
 function ageOf(birthDate?: string | null): number | null {
   if (!birthDate) return null;
@@ -62,6 +76,8 @@ export default function AdminBots() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [modalError, setModalError] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   function load() {
     api.get<Bot[]>('/matching/admin/bots').then(setBots)
@@ -77,9 +93,16 @@ export default function AdminBots() {
 
   const cityName = (id?: string | null) => cities.find(c => c.id === id)?.name ?? '—';
 
-  function openAdd() { setForm(EMPTY_FORM); setModalError(''); setModal('add'); }
+  function pickPhoto(f: File | null) {
+    setPhotoFile(f);
+    setPhotoPreview(prev => { if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev); return f ? URL.createObjectURL(f) : null; });
+  }
+
+  function openAdd() { setForm(EMPTY_FORM); pickPhoto(null); setModalError(''); setModal('add'); }
   function openEdit(b: Bot) {
     setEditing(b);
+    pickPhoto(null);
+    setPhotoPreview(b.photoUrl ?? null);
     const o = b.oceanScore;
     setForm({
       firstName: b.profile?.firstName ?? '',
@@ -135,11 +158,14 @@ export default function AdminBots() {
       neuroticism: Number(form.neuroticism),
     };
     try {
+      let botId: string | null = null;
       if (modal === 'add') {
-        await api.post('/matching/admin/bots', body);
+        botId = (await api.post<{ id: string }>('/matching/admin/bots', body)).id;
       } else if (editing) {
         await api.patch(`/matching/admin/bots/${editing.id}`, body);
+        botId = editing.id;
       }
+      if (botId && photoFile) await uploadBotPhoto(botId, photoFile);
       setModal(null);
       load();
     } catch (e) {
@@ -309,6 +335,17 @@ export default function AdminBots() {
               <button onClick={() => setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: MUTED, padding: 4 }}>✕</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', border: `2px solid ${genderBorder(form.gender)}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', flexShrink: 0 }}>
+                  {photoPreview
+                    ? <img src={photoPreview} alt="Bot profil fotoğrafı" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    : <span style={{ fontSize: 18, fontWeight: 700, color: TEXT }}>{`${form.firstName.trim()[0] ?? ''}${form.lastName.trim()[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?'}</span>}
+                </div>
+                <label style={{ padding: '6px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(34,211,238,0.1)', border: `1px solid rgba(34,211,238,0.3)`, fontSize: 12, fontWeight: 600, color: CYAN, fontFamily: SANS }}>
+                  {photoPreview ? 'Fotoğrafı Değiştir' : 'Profil Fotoğrafı Yükle'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0] ?? null; e.target.value = ''; if (f) pickPhoto(f); }} />
+                </label>
+              </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input value={form.firstName} onChange={e => set('firstName', e.target.value)} placeholder="Ad" style={inputStyle} />
                 <input value={form.lastName} onChange={e => set('lastName', e.target.value)} placeholder="Soyad" style={inputStyle} />

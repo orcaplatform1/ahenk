@@ -614,6 +614,14 @@ export class AdminController {
     return res.download(filePath, name);
   }
 
+  @Get("careers/:id/photo")
+  @Roles(UserRole.SUPERADMIN)
+  async careerPhoto(@Param("id") id: string, @Res() res: Response) {
+    const filePath = await this.adminService.careerPhotoPath(id);
+    res.set({ "Content-Type": "image/webp", "Cache-Control": "private, no-store" });
+    return res.sendFile(filePath);
+  }
+
   @Patch("careers/:id")
   @Roles(UserRole.SUPERADMIN)
   @KeepEmails()

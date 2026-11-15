@@ -79,11 +79,14 @@ export default function AdminKyc() {
   const [processing, setProcessing] = useState<Record<string, 'approve' | 'reject'>>({});
   const [rejectNote, setRejectNote] = useState<Record<string, string>>({});
   const [rejectOpen, setRejectOpen] = useState<string | null>(null);
+  // Kayıt kapalıyken ad soyad, tarih, durum; basınca altına açılır (ön yüz, arka yüz, video)
+  const [openId, setOpenId] = useState<string | null>(null);
   function loadTab(status: KycStatus) {
     setActiveTab(status);
     setLoading(true);
     setError('');
     setRejectOpen(null);
+    setOpenId(null);
     api.get<{ items: KycApplication[]; total: number }>(`/kyc/admin?status=${status}&limit=50`)
       .then(r => setItems(r.items ?? []))
       .catch((e: Error) => setError(e.message))
@@ -183,8 +186,13 @@ export default function AdminKyc() {
               key={item.id}
               className="ll-card"
             >
-              {/* Üst satır */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
+              {/* Üst satır: basınca kayıt açılır / kapanır */}
+              <button
+                type="button"
+                onClick={() => setOpenId(openId === item.id ? null : item.id)}
+                aria-expanded={openId === item.id}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: openId === item.id ? 16 : 0, padding: 0, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: SANS }}
+              >
                 <div>
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>
                     {item.user?.profile?.firstName} {item.user?.profile?.lastName}
@@ -200,8 +208,9 @@ export default function AdminKyc() {
                 }}>
                   {st.label}
                 </span>
-              </div>
+              </button>
 
+              {openId === item.id && <>
               {/* Red sebebi */}
               {item.rejectReason && (
                 <div style={{
@@ -295,6 +304,7 @@ export default function AdminKyc() {
                   </div>
                 </>
               )}
+              </>}
             </div>
           ))}
         </div>

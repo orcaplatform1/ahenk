@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { setAdminIdentity } from '@/lib/adminRole';
@@ -15,7 +14,7 @@ const NAV_TOP = [
 ];
 
 const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; superadminOnly?: boolean }[] = [
-  { href: '/admin/acil-yardim',  label: '🚨 Acil Yardım', sos: true },
+  { href: '/admin/acil-yardim',  label: 'Acil Yardım', sos: true },
   { href: '/admin/stats',        label: 'İstatistikler' },
   { href: '/admin/matches',      label: 'Masalar' },
   { href: '/admin/kyc',          label: 'KYC Bekleyenler' },
@@ -56,15 +55,26 @@ function NavLinks({ pathname, onClose, onLogout, unread, role }: {
           const active = pathname === n.href || pathname.startsWith(n.href + '/');
           const style = n.sos
             ? active
-              ? { background: 'rgba(239,68,68,0.2)', color: RED, border: `1px solid rgba(239,68,68,0.4)`, fontWeight: 700 }
-              : { color: RED, border: '1px solid transparent', fontWeight: 600 }
+              ? { background: 'rgba(239,68,68,0.12)', color: RED, border: `1px solid rgba(239,68,68,0.35)`, fontWeight: 700 }
+              : { color: RED, border: '1px solid transparent', fontWeight: 700 }
             : active
               ? { background: 'rgba(59,130,246,0.15)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.3)' }
               : { color: MUTED, border: '1px solid transparent' };
           return (
             <Link key={n.href} href={n.href} onClick={onClose}
               style={{ padding: '8px 12px', borderRadius: 10, fontSize: 13, transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'space-between', ...style }}>
-              {n.label}
+              {n.sos ? (
+                // Acil Yardım: kırmızı vurgulu, dikkat çeken premium etiket
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 7, padding: '4px 11px', borderRadius: 99,
+                  background: 'linear-gradient(135deg, #f87171 0%, #ef4444 45%, #b91c1c 100%)', color: '#fff',
+                  fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 0 0 1px rgba(239,68,68,0.55), 0 4px 14px rgba(239,68,68,0.45)',
+                }}>
+                  <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff', boxShadow: '0 0 6px rgba(255,255,255,0.9)' }} />
+                  {n.label}
+                </span>
+              ) : n.label}
               {n.alertKey && unread > 0 && (
                 <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 99, background: RED, color: '#fff', minWidth: 18, textAlign: 'center' }}>
                   {unread > 99 ? '99+' : unread}
@@ -136,7 +146,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span style={{ display: 'block', width: 18, height: 1.5, background: MUTED, borderRadius: 2 }} />
         </button>
         <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, textDecoration: 'none' }}>
-          <Image src="/logo.webp" alt="Ahenk" width={22} height={22} style={{ borderRadius: '50%' }} />
           <span style={{ ...LABEL, color: MUTED, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>AHENK YÖNETİM PANELİ</span>
         </Link>
         {unread > 0 && (
@@ -162,7 +171,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <motion.div className="md:hidden" style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(2px)' }}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }} onClick={() => setDrawerOpen(false)} />
-            <motion.div className="md:hidden" style={{ position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 210, width: 208, background: SURFACE, borderRight: `1px solid ${BORDER}`, boxShadow: '8px 0 32px rgba(0,0,0,0.7)', paddingTop: 52, display: 'flex', flexDirection: 'column' }}
+            <motion.div className="md:hidden" style={{ position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 210, width: 208, background: SURFACE, borderRight: `1px solid ${BORDER}`, boxShadow: '8px 0 32px rgba(0,0,0,0.7)', paddingTop: 'env(safe-area-inset-top)', display: 'flex', flexDirection: 'column' }}
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}>
               <NavLinks pathname={pathname} onClose={() => setDrawerOpen(false)} onLogout={handleLogout} unread={unread} role={role} />

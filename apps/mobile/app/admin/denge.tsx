@@ -1,9 +1,13 @@
 // apps/web/app/admin/denge/page.tsx karşılığı (Bot Yönetimi, yalnız SUPERADMIN)
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
+import { File as FsFile } from 'expo-file-system';
 import { showAlert } from '@/components/AppAlert';
 import { api } from '@/lib/api';
 import { OCCUPATION_SECTORS } from '@/lib/occupations';
+import { pickFromLibrary } from '@/lib/imagePick';
+import { gColor } from '@/lib/masa';
+import { absPhoto } from '@/components/ProfilePhoto';
 import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
 import { AdminDatePicker, AdminSelect, AInput } from '@/components/admin/AdminControls';
@@ -12,7 +16,7 @@ import { StatusPill } from '@/components/admin/StatusPill';
 import { adm } from '@/theme/theme';
 
 interface Ocean { openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number }
-interface Bot { id: string; status: string; botPhone?: string | null; occupationSector?: string; profile?: { firstName?: string | null; lastName?: string | null; gender?: string | null; birthDate?: string | null; primaryCity?: string | null } | null; oceanScore?: Ocean | null }
+interface Bot { id: string; status: string; botPhone?: string | null; occupationSector?: string; profile?: { firstName?: string | null; lastName?: string | null; gender?: string | null; birthDate?: string | null; primaryCity?: string | null } | null; oceanScore?: Ocean | null; photoUrl?: string | null }
 interface City { id: string; name: string; isActive: boolean }
 const OCEAN_FIELDS: { key: keyof Ocean; label: string }[] = [{ key: 'openness', label: 'Açıklık' }, { key: 'conscientiousness', label: 'Sorumluluk' }, { key: 'extraversion', label: 'Dışadönüklük' }, { key: 'agreeableness', label: 'Uyumluluk' }, { key: 'neuroticism', label: 'Duygusal Denge' }];
 const EMPTY = { firstName: '', lastName: '', gender: '', occupationSector: '', birthDate: '', phone: '', cityId: '', openness: '50', conscientiousness: '50', extraversion: '50', agreeableness: '50', neuroticism: '50' };
@@ -35,11 +39,21 @@ export default function AdminBots() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [modalError, setModalError] = useState('');
+  // Bot profil fotoğrafı: seçilen dosya kaydet anında yüklenir (onay süreci yok, doğrudan onaylı)
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  async function pickPhoto() {
+    const picked = await pickFromLibrary(1);
+    if (picked === 'denied') { showAlert('Profil Fotoğrafı', 'Galeri izni verilmedi.'); return; }
+    if (!picked.length) return;
+    setPhotoUri(picked[0].uri); setPhotoPreview(picked[0].uri);
+  }
   const load = () => { api.get<Bot[]>('/matching/admin/bots').then(setBots).catch((e: Error) => setError(`Botlar yüklenemedi: ${e.message}`)).finally(() => setLoading(false)); };
   useEffect(() => { load(); api.get<City[]>('/admin/cities').then(c => setCities(c.filter(x => x.isActive))).catch((e: Error) => setError(`Şehirler yüklenemedi: ${e.message}`)); }, []);
   const cityName = (id?: string | null) => cities.find(c => c.id === id)?.name ?? '—';
   function openEdit(b: Bot) {
     setEditing(b); const o = b.oceanScore;
+    setPhotoUri(null); setPhotoPreview(b.photoUrl ? absPhoto(b.photoUrl) : null);
     setForm({ firstName: b.profile?.firstName ?? '', lastName: b.profile?.lastName ?? '', gender: b.profile?.gender ?? '', occupationSector: b.occupationSector ?? '', birthDate: b.profile?.birthDate ? b.profile.birthDate.slice(0, 10) : '', phone: (b.botPhone ?? '').replace(/^\+90/, ''), cityId: b.profile?.primaryCity ?? '',
       openness: String(o?.openness ?? 50), conscientiousness: String(o?.conscientiousness ?? 50), extraversion: String(o?.extraversion ?? 50), agreeableness: String(o?.agreeableness ?? 50), neuroticism: String(o?.neuroticism ?? 50) });
     setModalError(''); setModal('edit');
@@ -53,7 +67,18 @@ export default function AdminBots() {
     setSaving(true); setModalError('');
     const body = { firstName: form.firstName.trim(), lastName: form.lastName.trim(), gender: form.gender, occupationSector: form.occupationSector, birthDate: form.birthDate, phone: `+90${form.phone}`, cityId: form.cityId,
       openness: Number(form.openness), conscientiousness: Number(form.conscientiousness), extraversion: Number(form.extraversion), agreeableness: Number(form.agreeableness), neuroticism: Number(form.neuroticism) };
-    try { if (modal === 'add') await api.post('/matching/admin/bots', body); else if (editing) await api.patch(`/matching/admin/bots/${editing.id}`, body); setModal(null); load(); }
+    try {
+      let botId: string | null = null;
+      if (modal === 'add') botId = (await api.post<{ id: string }>('/matching/admin/bots', body)).id;
+      else if (editing) { await api.patch(`/matching/admin/bots/${editing.id}`, body); botId = editing.id; }
+      if (botId && photoUri) {
+        const fd = new FormData();
+        // expo-file-system File nesnesi dosya içeriğini sağlar (profil fotoğrafı yüklemesiyle aynı yöntem)
+        fd.append('photo', new FsFile(photoUri) as unknown as Blob);
+        await api.form(`/matching/admin/bots/${botId}/profile-photo`, fd);
+      }
+      setModal(null); load();
+    }
     catch (e) { setModalError(`Kaydedilemedi: ${(e as Error).message}`); } finally { setSaving(false); }
   }
   async function toggleStatus(b: Bot) { setError(''); try { await api.patch(`/matching/admin/bots/${b.id}/status`, { active: b.status !== 'ACTIVE' }); } catch (e) { setError(`Güncellenemedi: ${(e as Error).message}`); } load(); }
@@ -64,7 +89,7 @@ export default function AdminBots() {
     <APage maxWidth={760}>
       <View style={{ marginBottom: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <ATitle>Bot Yönetimi</ATitle>
-        <Btn variant="admAdd" label="+ Bot Ekle" onPress={() => { setForm(EMPTY); setModalError(''); setModal('add'); }} />
+        <Btn variant="admAdd" label="+ Bot Ekle" onPress={() => { setForm(EMPTY); setPhotoUri(null); setPhotoPreview(null); setModalError(''); setModal('add'); }} />
       </View>
       <AError>{error}</AError>
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
@@ -99,6 +124,16 @@ export default function AdminBots() {
       </ACard>
       <ADialog visible={!!modal} onClose={() => setModal(null)} title={modal === 'add' ? 'Yeni Bot' : 'Botu Düzenle'} maxWidth={420} keyboardScroll>
         <View style={{ gap: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: gColor(form.gender), overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.04)' }}>
+              {photoPreview
+                ? <Image source={{ uri: photoPreview }} style={{ width: '100%', height: '100%' }} accessibilityLabel="Bot profil fotoğrafı" />
+                : <AT w={700} style={{ fontSize: 18 }}>{`${form.firstName.trim()[0] ?? ''}${form.lastName.trim()[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?'}</AT>}
+            </View>
+            <Pressable onPress={pickPhoto} accessibilityRole="button" style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 8, backgroundColor: 'rgba(34,211,238,0.1)', borderWidth: 1, borderColor: 'rgba(34,211,238,0.3)', opacity: pressed ? 0.8 : 1 })}>
+              <AT w={600} style={{ fontSize: 12, color: adm.cyan }}>{photoPreview ? 'Fotoğrafı Değiştir' : 'Profil Fotoğrafı Yükle'}</AT>
+            </Pressable>
+          </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <AInput value={form.firstName} onChangeText={v => set('firstName', v)} placeholder="Ad" style={{ flex: 1, paddingHorizontal: 12 }} />
             <AInput value={form.lastName} onChangeText={v => set('lastName', v)} placeholder="Soyad" style={{ flex: 1, paddingHorizontal: 12 }} />

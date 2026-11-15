@@ -14,8 +14,8 @@ import { AdminDeletionRequests } from '@/components/AdminDeletionRequests';
 function canSanction(target: { id: string; role: string }): boolean {
   const meId = myId();
   if (!meId) return false;
-  if (meId === target.id || target.role === 'SUPERADMIN') return false;
-  return target.role !== 'ADMIN' || myRole() === 'SUPERADMIN';
+  if (meId === target.id) return false;
+  return (target.role !== 'ADMIN' && target.role !== 'SUPERADMIN') || myRole() === 'SUPERADMIN';
 }
 
 
@@ -48,9 +48,12 @@ interface AdminUserDetail {
   subscriptions: { id: string; plan: string; status: string }[];
   rights?: { group: number; oneOnOne: number; kanka: number };
   kanka?: { userId: string; name: string; since: string } | null;
-  oceanScore?: { completedAt: string; adminCanReset: boolean } | null;
+  oceanScore?: { completedAt: string; adminCanReset: boolean; openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number } | null;
   noShowReportsReceived?: NoShowReportItem[];
   noShowWarnings?: NoShowWarningInfo;
+  photoUrl?: string | null;
+  primaryCityName?: string | null;
+  activeCityName?: string | null;
 }
 
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -69,9 +72,17 @@ function oceanAvg(o: AdminUser['oceanScore']): string {
   return ((o.openness + o.conscientiousness + o.extraversion + o.agreeableness + o.neuroticism) / 5).toFixed(0);
 }
 
-function activePlan(u: AdminUser): string {
-  if (!u.subscriptions?.length) return '—';
-  return u.subscriptions.map(s => PLAN_LABEL[s.plan] ?? s.plan).join(', ');
+// Detay penceresi profil alanı: onaylı fotoğraf; yoksa anonim profil (cinsiyet renkli çerçeve + ad soyad baş harfleri)
+function DetailAvatar({ u }: { u: AdminUserDetail }) {
+  const initials = `${(u.profile?.firstName ?? '').trim()[0] ?? ''}${(u.profile?.lastName ?? '').trim()[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?';
+  const border = u.profile?.gender === 'FEMALE' ? '#f48fb1' : '#4fc3f7';
+  return (
+    <div style={{ width: 72, height: 72, borderRadius: '50%', border: `3px solid ${border}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', flexShrink: 0 }}>
+      {u.photoUrl
+        ? <img src={u.photoUrl} alt="Profil fotoğrafı" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        : <span style={{ fontSize: 22, fontWeight: 700, color: TEXT }}>{initials}</span>}
+    </div>
+  );
 }
 
 export default function AdminUsers() {
@@ -250,10 +261,10 @@ export default function AdminUsers() {
           <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{total} kayıt</span>
         </div>
         <div style={{ overflowX: 'auto' }}>
-          <table className="adm-table" style={{ width: '100%', minWidth: 520, borderCollapse: 'collapse' }}>
+          <table className="adm-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                {['Kullanıcı', 'Şehir', 'Paket', 'OCEAN Ort.', 'Durum', ''].map(h => (
+                {['Kullanıcı', 'Telefon', ''].map(h => (
                   <th key={h} style={{ padding: '8px 14px', textAlign: 'left', ...LABEL, color: MUTED }}>{h}</th>
                 ))}
               </tr>
@@ -261,35 +272,19 @@ export default function AdminUsers() {
             <tbody>
               {loading
                 ? [0,1,2,3,4].map(i => (
-                    <tr key={i}><td colSpan={6} style={{ padding: '8px 14px' }}>
+                    <tr key={i}><td colSpan={3} style={{ padding: '8px 14px' }}>
                       <div style={{ height: 32, background: SURFACE, borderRadius: 6, opacity: 0.5 }} />
                     </td></tr>
                   ))
                 : users.map((u, i) => {
-                    const s = STATUS_STYLE[u.status] ?? STATUS_STYLE.ACTIVE;
                     return (
                       <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none' }}>
                         <td data-label="Kullanıcı" style={{ padding: '6px 10px' }}>
-                          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {u.profile?.firstName ?? ''} {u.profile?.lastName ?? ''}
                           </p>
-                          <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email ?? u.phone ?? ''}</p>
                         </td>
-                        <td data-label="Şehir" style={{ padding: '6px 10px', fontSize: 13, color: MUTED }}>
-                          <div>{u.primaryCityName ?? '—'}</div>
-                          <div style={{ fontSize: 11 }}>Bu hafta: {u.activeCityName ?? '—'}</div>
-                        </td>
-                        <td data-label="Paket" style={{ padding: '6px 10px', fontSize: 13, color: MUTED }}>{activePlan(u)}</td>
-                        <td data-label="OCEAN Ort." style={{ padding: '6px 10px', fontSize: 13, color: MUTED, fontFamily: MONO }}>{oceanAvg(u.oceanScore)}</td>
-                        <td data-label="Durum" style={{ padding: '6px 10px' }}>
-                          <span style={{
-                            ...LABEL,
-                            padding: '2px 8px', borderRadius: 99,
-                            background: s.bg, border: `1px solid ${s.border}`, color: s.color,
-                          }}>
-                            {s.label}
-                          </span>
-                        </td>
+                        <td data-label="Telefon" style={{ padding: '6px 10px', fontSize: 13, color: MUTED, fontFamily: MONO, whiteSpace: 'nowrap' }}>{u.phone ?? '—'}</td>
                         <td data-label="" style={{ padding: '6px 10px' }}>
                           <button
                             onClick={() => openUserModal(u.id)}
@@ -362,13 +357,16 @@ export default function AdminUsers() {
             {userModal && !userModalLoading && (
               <>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                  <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                  <DetailAvatar u={userModal} />
+                  <div style={{ minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: TEXT }}>
                       {userModal.profile ? `${userModal.profile.firstName} ${userModal.profile.lastName}` : userModal.email}
                     </p>
-                    {userModal.email && <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>{userModal.email}</p>}
+                    {userModal.email && <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO, overflowWrap: 'anywhere' }}>{userModal.email}</p>}
                     {userModal.phone && <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>{userModal.phone}</p>}
                     <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED }}>{userModal.role}</p>
+                  </div>
                   </div>
                   <button
                     onClick={() => setUserModal(null)}
@@ -386,6 +384,10 @@ export default function AdminUsers() {
                   {userModal.profile?.occupation && (
                     <span style={{ fontSize: 11, color: MUTED }}>{userModal.profile.occupation}</span>
                   )}
+                  <span style={{ fontSize: 11, color: MUTED }}>Şehir: <span style={{ color: '#93c5fd' }}>{userModal.primaryCityName ?? '—'}</span></span>
+                  <span style={{ fontSize: 11, color: MUTED }}>Bu hafta: <span style={{ color: '#93c5fd' }}>{userModal.activeCityName ?? '—'}</span></span>
+                  <span style={{ fontSize: 11, color: MUTED }}>Paket: <span style={{ color: '#93c5fd' }}>{userModal.subscriptions.length ? userModal.subscriptions.map(x => PLAN_LABEL[x.plan] ?? x.plan).join(', ') : '—'}</span></span>
+                  <span style={{ fontSize: 11, color: MUTED }}>OCEAN Ort.: <span style={{ color: '#93c5fd', fontFamily: MONO }}>{oceanAvg(userModal.oceanScore)}</span></span>
                   <span style={{ fontSize: 11, color: MUTED }}>Grup hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.group ?? 0}</span></span>
                   <span style={{ fontSize: 11, color: MUTED }}>Baş Başa hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.oneOnOne ?? 0}</span></span>
                   <span style={{ fontSize: 11, color: MUTED }}>Kankamla hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.kanka ?? 0}</span></span>

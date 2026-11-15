@@ -1,6 +1,7 @@
 // Yönetim Paneli yerleşimi: apps/web/app/admin/layout.tsx mobil görünümü (üst çubuk 52 px + hamburger çekmece, 208 px)
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Image, Modal, Pressable, ScrollView, View } from 'react-native';
+import { Animated, Modal, Pressable, ScrollView, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
@@ -12,7 +13,7 @@ import { adm } from '@/theme/theme';
 
 const NAV_TOP = [{ href: '/(tabs)', label: 'Anasayfa' }, { href: '/(tabs)/profilim', label: 'Profilim' }] as const;
 export const ADMIN_NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; superadminOnly?: boolean }[] = [
-  { href: '/admin/acil-yardim', label: '🚨 Acil Yardım', sos: true },
+  { href: '/admin/acil-yardim', label: 'Acil Yardım', sos: true },
   { href: '/admin/stats', label: 'İstatistikler' },
   { href: '/admin/matches', label: 'Masalar' },
   { href: '/admin/kyc', label: 'KYC Bekleyenler' },
@@ -84,7 +85,6 @@ export default function AdminLayout() {
             {[0, 1, 2].map(i => <View key={i} style={{ width: 18, height: 1.5, backgroundColor: adm.muted, borderRadius: 2 }} />)}
           </Pressable>
           <Pressable onPress={() => router.navigate('/admin/stats')} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
-            <Image source={require('@/assets/logo.png')} style={{ width: 22, height: 22, borderRadius: 11 }} />
             <ALabel style={{ flexShrink: 1 }}>AHENK YÖNETİM PANELİ</ALabel>
           </Pressable>
           {unread > 0 && (
@@ -96,9 +96,9 @@ export default function AdminLayout() {
       </View>
       <View style={{ flex: 1 }}><Slot /></View>
 
-      <Modal visible={drawer} transparent animationType="none" onRequestClose={() => openDrawer(false)}>
+      <Modal visible={drawer} transparent animationType="none" statusBarTranslucent onRequestClose={() => openDrawer(false)}>
         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)' }} onPress={() => openDrawer(false)} />
-        <Animated.View style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: adm.drawerW, backgroundColor: adm.surface, borderRightWidth: 1, borderRightColor: adm.border, paddingTop: insets.top + adm.headerH, transform: [{ translateX: x }], shadowColor: '#000', shadowOpacity: 0.7, shadowRadius: 16, shadowOffset: { width: 8, height: 0 } }}>
+        <Animated.View style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: adm.drawerW, backgroundColor: adm.surface, borderRightWidth: 1, borderRightColor: adm.border, paddingTop: insets.top, transform: [{ translateX: x }], shadowColor: '#000', shadowOpacity: 0.7, shadowRadius: 16, shadowOffset: { width: 8, height: 0 } }}>
           <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: insets.bottom + 12 }}>
             <View style={{ gap: 2, paddingBottom: 12, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: adm.border }}>
               {NAV_TOP.map(n => <Btn key={n.href} variant="admNav" label={n.label} onPress={() => go(n.href)} />)}
@@ -108,7 +108,16 @@ export default function AdminLayout() {
                 const active = pathname === n.href || pathname.startsWith(n.href + '/');
                 return (
                   <Btn key={n.href} variant={n.sos ? 'admNavSos' : 'admNav'} selected={active} accessibilityLabel={n.label} onPress={() => go(n.href)}>
-                    <AT w={n.sos ? (active ? 700 : 600) : 400} style={{ fontSize: 13, color: n.sos ? adm.red : active ? adm.navActive : adm.muted, flexShrink: 1 }}>{n.label}</AT>
+                    {n.sos ? (
+                      // Acil Yardım: kırmızı vurgulu, dikkat çeken premium etiket
+                      <View style={{ borderRadius: 99, shadowColor: adm.red, shadowOpacity: 0.55, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 6 }}>
+                        <LinearGradient colors={['#f87171', '#ef4444', '#b91c1c']} locations={[0, 0.45, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 4, paddingHorizontal: 11, borderRadius: 99, borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)' }}>
+                          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' }} />
+                          <AT w={800} style={{ fontSize: 11, color: '#fff', letterSpacing: 0.9, textTransform: 'uppercase' }}>{n.label}</AT>
+                        </LinearGradient>
+                      </View>
+                    ) : <AT w={400} style={{ fontSize: 13, color: active ? adm.navActive : adm.muted, flexShrink: 1 }}>{n.label}</AT>}
                     {n.alertKey && unread > 0 && <AT w={700} style={{ fontSize: 10, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 99, backgroundColor: adm.red, color: '#fff', minWidth: 18, textAlign: 'center', overflow: 'hidden' }}>{unread > 99 ? '99+' : unread}</AT>}
                   </Btn>
                 );

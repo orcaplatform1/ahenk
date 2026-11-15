@@ -1,6 +1,6 @@
 // apps/web/app/admin/fiyatlar/page.tsx karşılığı (yalnız SUPERADMIN)
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { api } from '@/lib/api';
 import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATableRow, ATitle } from '@/components/admin/AdminUi';
@@ -19,6 +19,61 @@ const tl = (k: number) => `${(k / 100).toLocaleString('tr-TR', { maximumFraction
 function parseNet(v: string): number | null { const n = Number(v.replace(/\./g, '').replace(',', '.')); return Number.isFinite(n) && n >= 1 ? Math.round(n * 100) : null; }
 const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 const PLAN_RIGHTS: Record<PlanKey, string> = { MASADA: '1 grup buluşması', KARSIMDA: '1 baş başa buluşması', ICERDE: '1 grup + 1 baş başa buluşması', KANKAMLA: '1 Kankamla buluşması (kanka ücretsiz)', PRIME_1M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla', PRIME_3M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla', PRIME_6M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla', PRIME_12M: 'her 30 günde 1 grup + 1 baş başa + 1 kankamla' };
+
+const HISTORY_PAGE_SIZE = 20;
+function PriceHistory({ history }: { history: HistoryRow[] }) {
+  const [page, setPage] = useState(1);
+  const [open, setOpen] = useState<number | null>(null);
+  const rows = [...history].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const totalPages = Math.max(1, Math.ceil(rows.length / HISTORY_PAGE_SIZE));
+  const cur = Math.min(page, totalPages);
+  const start = (cur - 1) * HISTORY_PAGE_SIZE;
+  const go = (p: number) => { setPage(p); setOpen(null); };
+  const detail = (label: string, value: string, isMono = true) => (
+    <View key={label} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+      <AT style={{ fontSize: 12, color: adm.muted }}>{label}</AT>
+      {isMono ? <AMono style={{ fontSize: 12, color: adm.text }}>{value}</AMono> : <AT style={{ fontSize: 12 }}>{value}</AT>}
+    </View>
+  );
+  return (
+    <View style={{ marginTop: 28 }}>
+      <ALabel style={{ marginBottom: 8 }}>FİYAT GEÇMİŞİ</ALabel>
+      <ACard style={{ padding: 0, overflow: 'hidden' }}>
+        {rows.slice(start, start + HISTORY_PAGE_SIZE).map((h, i) => {
+          const idx = start + i;
+          const isOpen = open === idx;
+          return (
+            <View key={idx} style={{ borderTopWidth: i ? 1 : 0, borderTopColor: adm.border }}>
+              <Pressable onPress={() => setOpen(isOpen ? null : idx)} accessibilityRole="button" accessibilityState={{ expanded: isOpen }}
+                style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 14, opacity: pressed ? 0.7 : 1 })}>
+                <AT style={{ fontSize: 13, color: adm.muted }}>{new Date(h.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' })}</AT>
+                <AT w={600} style={{ fontSize: 13 }}>{PLAN_NAME[h.plan]}</AT>
+                <AT style={{ marginLeft: 'auto', fontSize: 11, color: adm.muted, transform: [{ rotate: isOpen ? '180deg' : '0deg' }] }}>▾</AT>
+              </Pressable>
+              {isOpen && (
+                <View style={{ paddingHorizontal: 14, paddingBottom: 12, gap: 6 }}>
+                  {detail('Ham', tl(h.netKurus))}
+                  {detail('Web', tl(h.webKurus))}
+                  {detail('Mobil', tl(h.mobileKurus))}
+                  {detail('Yapan', h.createdBy?.profile ? `${h.createdBy.profile.firstName} ${h.createdBy.profile.lastName}` : 'Başlangıç', false)}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </ACard>
+      {totalPages > 1 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12 }}>
+          <Btn variant="admPager" label="← Önceki" disabled={cur === 1} onPress={() => go(cur - 1)} />
+          {Array.from({ length: totalPages }, (_, k) => k + 1).map(n => (
+            <Btn key={n} variant="admTabSm" selected={n === cur} label={String(n)} onPress={() => go(n)} />
+          ))}
+          <Btn variant="admPager" label="Sonraki →" disabled={cur === totalPages} onPress={() => go(cur + 1)} />
+        </View>
+      )}
+    </View>
+  );
+}
 
 function WinbackSettings() {
   const [amount, setAmount] = useState('');
@@ -125,20 +180,8 @@ export default function AdminFiyatlar() {
           <Btn variant="admGhost" disabled={saving} label="Vazgeç" onPress={() => setConfirm(false)} />
         </View>
       </ADialog>
-      {(data?.history.length ?? 0) > 0 && (
-        <View style={{ marginTop: 28 }}>
-          <ALabel style={{ marginBottom: 8 }}>FİYAT GEÇMİŞİ</ALabel>
-          <ACard style={{ padding: 0, overflow: 'hidden' }}>
-            {data!.history.map((h, i) => (
-              <ATableRow key={i} last={i === data!.history.length - 1} cells={[
-                ['Tarih', new Date(h.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' })], ['Paket', PLAN_NAME[h.plan]],
-                ['Ham', `ham ${tl(h.netKurus)}`], ['Web', `web ${tl(h.webKurus)}`], ['Mobil', `mobil ${tl(h.mobileKurus)}`],
-                ['Yapan', h.createdBy?.profile ? `${h.createdBy.profile.firstName} ${h.createdBy.profile.lastName}` : 'Başlangıç'],
-              ]} />
-            ))}
-          </ACard>
-        </View>
-      )}
+      {/* Geçmiş: en yeni en üstte; kayıt kapalıyken Tarih + Paket, basınca Ham / Web / Mobil / Yapan; sayfa başına 20 */}
+      {(data?.history.length ?? 0) > 0 && <PriceHistory history={data!.history} />}
     </APage>
   );
 }

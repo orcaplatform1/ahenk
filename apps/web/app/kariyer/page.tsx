@@ -45,6 +45,7 @@ const SALARIES = ['Belirtmek istemiyorum', '35.000 - 45.000', '45.000 - 60.000',
 const HEAR_FROM = ['Instagram', 'Google', 'Arkadaş tavsiyesi', 'Diğer'];
 const CV_ACCEPT = '.pdf,.doc,.docx,.jpg,.jpeg,.png';
 const CV_MAX_BYTES = 5 * 1024 * 1024;
+const PHOTO_MAX_BYTES = 10 * 1024 * 1024;
 const LINKEDIN_URL = /^https:\/\/([a-z]{2,3}\.)?(www\.)?linkedin\.com\//i;
 
 /* ── Page ─────────────────────────────────────────────────────── */
@@ -62,6 +63,7 @@ export default function KariyerPage() {
   const [phoneToken, setPhoneToken] = useState('');
   const [languages, setLanguages] = useState<Record<string, number>>({}); // Dil → seviye (0: seçilmedi)
   const [cv, setCv] = useState<File | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null); // Zorunlu, en fazla 1 fotoğraf
   const [cityNames, setCityNames] = useState<string[]>([]);
   const cities = useCountUp(cityNames.length, 1400, heroInView);
   const [districts, setDistricts] = useState<Record<string, string[]>>({});
@@ -90,6 +92,13 @@ export default function KariyerPage() {
     setError(''); setCv(file);
   }
 
+  function pickPhoto(file?: File) {
+    if (!file) return;
+    if (!file.type.startsWith('image/') && !/\.(heic|heif)$/i.test(file.name)) { setError('Fotoğraf bir görsel dosyası olmalı.'); return; }
+    if (file.size > PHOTO_MAX_BYTES) { setError('Fotoğraf en fazla 10 MB olabilir.'); return; }
+    setError(''); setPhoto(file);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const picked = Object.entries(languages);
@@ -100,6 +109,7 @@ export default function KariyerPage() {
     if (!form.district) { setError('İlçe seçin.'); return; }
     if (form.linkedinOrCv.trim() && !LINKEDIN_URL.test(form.linkedinOrCv.trim())) { setError('Geçerli bir LinkedIn bağlantısı girin.'); return; }
     if (!cv) { setError('Özgeçmiş (CV) yükleyin.'); return; }
+    if (!photo) { setError('Fotoğraf yükleyin.'); return; }
     setSubmitting(true); setError('');
     try {
       const body = new FormData();
@@ -112,6 +122,7 @@ export default function KariyerPage() {
       if (hearFrom) body.append('hearFrom', hearFrom);
       if (hearFrom === 'Diğer' && hearFromOther.trim()) body.append('hearFromOther', hearFromOther.trim());
       body.append('cv', cv);
+      body.append('photo', photo);
       const res = await fetch(`${API_PREFIX}/careers/apply`, { method: 'POST', body });
       if (!res.ok) throw new Error(await readError(res));
       setSuccess(true);
@@ -350,6 +361,15 @@ export default function KariyerPage() {
                       <input type="file" accept={CV_ACCEPT} onChange={(e) => { pickCv(e.target.files?.[0]); e.target.value = ''; }} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
                     </label>
                     <p style={{ margin: '6px 0 0', fontSize: 11, color: '#ff6b6b' }}>Resimsiz CV&apos;ler dikkate alınmamaktadır.</p>
+                  </div>
+
+                  <div>
+                    <FormLabel>Fotoğraf *</FormLabel>
+                    <label className="input-glass px-4 py-3 text-[13px]" style={{ position: 'relative', display: 'block', cursor: 'pointer', color: photo ? '#f4f1ec' : '#ff6b6b', textAlign: 'center' }}>
+                      {photo ? photo.name : '+ Fotoğraf seç'}
+                      <input type="file" accept="image/*,.heic,.heif" onChange={(e) => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
+                    </label>
+                    <p style={{ margin: '6px 0 0', fontSize: 11, color: '#a39c93' }}>Yüzünüzün net olduğu herhangi bir fotoğraf yüklemelisiniz</p>
                   </div>
 
                   <TextareaField label="Ben Ahenk'e şunları katabilirim: *" value={form.motivation} onChange={(v) => set('motivation', v)} maxLength={600} required rows={4} />

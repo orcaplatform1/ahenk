@@ -13,8 +13,8 @@ import { adm, llCard } from '@/theme/theme';
 
 function canSanction(t: { id: string; role: string }) {
   const me = myId(); if (!me) return false;
-  if (me === t.id || t.role === 'SUPERADMIN') return false;
-  return t.role !== 'ADMIN' || myRole() === 'SUPERADMIN';
+  if (me === t.id) return false;
+  return (t.role !== 'ADMIN' && t.role !== 'SUPERADMIN') || myRole() === 'SUPERADMIN';
 }
 
 interface MeetingRow { id: string; title: string; type: 'GROUP' | 'ONE_ON_ONE'; status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'; scheduledAt: string; locationText: string | null; venueMissing?: boolean; city?: { name: string } | null; _count: { participants: number } }

@@ -14,8 +14,8 @@ import { AdminSelect } from '@/components/AdminSelect';
 function canSanction(target: { id: string; role: string }): boolean {
   const meId = myId();
   if (!meId) return false;
-  if (meId === target.id || target.role === 'SUPERADMIN') return false;
-  return target.role !== 'ADMIN' || myRole() === 'SUPERADMIN';
+  if (meId === target.id) return false;
+  return (target.role !== 'ADMIN' && target.role !== 'SUPERADMIN') || myRole() === 'SUPERADMIN';
 }
 
 

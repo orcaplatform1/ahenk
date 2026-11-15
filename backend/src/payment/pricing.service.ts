@@ -29,9 +29,9 @@ export class PricingService {
 
   async listForAdmin() {
     const current = await this.all();
+    // Fiyat geçmişinin tamamı, en yeni en üstte (panelde sayfa başına 20 kayıt)
     const history = await this.prisma.planPrice.findMany({
       orderBy: { createdAt: "desc" },
-      take: 30,
       select: {
         plan: true, netKurus: true, webKurus: true, mobileKurus: true, createdAt: true,
         createdBy: { select: { profile: { select: { firstName: true, lastName: true } } } },

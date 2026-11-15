@@ -5,7 +5,7 @@ import { RedisService } from '../redis/redis.service';
 import { OtpService } from '../auth/otp/otp.service';
 import { isValidDistrict } from '../common/districts';
 import { ApplyCareerDto, LANGUAGES } from './careers.dto';
-import { assertCv, saveCv } from './career-cv';
+import { assertCareerPhoto, assertCv, saveCareerPhoto, saveCv } from './career-cv';
 
 const PHONE_TOKEN_TTL = 30 * 60;
 const phoneKey = (phone: string) => `careerphone:${phone}`;
@@ -44,8 +44,9 @@ export class CareersService {
     return { phoneToken };
   }
 
-  async apply(dto: ApplyCareerDto, file?: Express.Multer.File) {
+  async apply(dto: ApplyCareerDto, file?: Express.Multer.File, photo?: Express.Multer.File) {
     assertCv(file);
+    assertCareerPhoto(photo);
     const languages = parseLanguages(dto.languages);
     const city = await this.prisma.city.findFirst({ where: { name: dto.city, isActive: true }, select: { id: true } });
     if (!city) throw new BadRequestException('Geçerli bir şehir seçin');
@@ -74,6 +75,7 @@ export class CareersService {
         hearFromOther: dto.hearFrom === 'Diğer' ? dto.hearFromOther?.trim() || null : null,
         cvFile: saveCv(file),
         cvOriginalName: file.originalname.slice(0, 200),
+        photoFile: await saveCareerPhoto(photo),
       },
     });
     await this.redis.del(phoneKey(dto.phone));

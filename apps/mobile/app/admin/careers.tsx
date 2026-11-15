@@ -1,6 +1,7 @@
 // apps/web/app/admin/careers/page.tsx karşılığı (yalnız SUPERADMIN)
 import React, { useEffect, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { Image, Modal, Pressable, TextInput, useWindowDimensions, View } from 'react-native';
+import { getAccess } from '@/lib/session';
 import { openAuthedFile } from '@/lib/authFile';
 import { api } from '@/lib/api';
 import { API_PREFIX } from '@/lib/config';
@@ -12,7 +13,19 @@ import { adm, sans } from '@/theme/theme';
 const C: Record<string, string> = { PENDING: adm.amber, REVIEWED: adm.green, REJECTED: adm.red };
 const B: Record<string, string> = { PENDING: 'rgba(245,158,11,0.12)', REVIEWED: 'rgba(34,197,94,0.12)', REJECTED: 'rgba(239,68,68,0.12)' };
 const Bo: Record<string, string> = { PENDING: 'rgba(245,158,11,0.35)', REVIEWED: 'rgba(34,197,94,0.3)', REJECTED: 'rgba(239,68,68,0.3)' };
-interface Career { id: string; fullName: string; email: string; phone?: string; city?: string; linkedinOrCv?: string; motivation?: string; hearFrom?: string; hearFromOther?: string | null; education?: string | null; languages?: { name: string; level: number }[] | null; workType?: string | null; salaryExpectation?: string | null; birthDate?: string | null; district?: string | null; cvFile?: string | null; cvOriginalName?: string | null; status: string; adminNote?: string; createdAt: string }
+interface Career { id: string; fullName: string; email: string; phone?: string; city?: string; linkedinOrCv?: string; motivation?: string; hearFrom?: string; hearFromOther?: string | null; education?: string | null; languages?: { name: string; level: number }[] | null; workType?: string | null; salaryExpectation?: string | null; birthDate?: string | null; district?: string | null; cvFile?: string | null; cvOriginalName?: string | null; photoFile?: string | null; status: string; adminNote?: string; createdAt: string }
+
+// Başvuru fotoğrafı tam ekran büyük görünüm (görselin tamamı); ekrana basınca ya da geri tuşuyla kapanır
+function FullView({ uri, token, onClose }: { uri: string | null; token: string | null; onClose: () => void }) {
+  const { width, height } = useWindowDimensions();
+  return (
+    <Modal visible={!!uri} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <Pressable onPress={onClose} accessibilityLabel="Kapat" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' }}>
+        {!!uri && !!token && <Image source={{ uri, headers: { Authorization: `Bearer ${token}` } }} resizeMode="contain" style={{ width, height }} accessibilityLabel="Başvuru fotoğrafı" />}
+      </Pressable>
+    </Modal>
+  );
+}
 
 export default function AdminCareers() {
   const [items, setItems] = useState<Career[]>([]);
@@ -21,6 +34,9 @@ export default function AdminCareers() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [token, setToken] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<string | null>(null);
+  useEffect(() => { getAccess().then(setToken).catch(() => undefined); }, []);
   const load = () => { api.get<Career[]>('/admin/careers').then(setItems).catch((e: Error) => setError(`Başvurular yüklenemedi: ${e.message}`)).finally(() => setLoading(false)); };
   useEffect(load, []);
   async function update(id: string, status: string) {
@@ -57,6 +73,15 @@ export default function AdminCareers() {
               </View>
               {expanded === c.id && (
                 <View style={{ marginHorizontal: 18, marginBottom: 14, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 8, backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border, gap: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <AT w={600} style={{ fontSize: 13 }}>Fotoğraf:</AT>
+                    {c.photoFile && token
+                      ? <Pressable onPress={() => setViewer(`${API_PREFIX}/admin/careers/${c.id}/photo`)} accessibilityRole="imagebutton" accessibilityLabel="Fotoğrafı büyüt"
+                          style={{ width: 64, height: 64, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: adm.border }}>
+                          <Image source={{ uri: `${API_PREFIX}/admin/careers/${c.id}/photo`, headers: { Authorization: `Bearer ${token}` } }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
+                        </Pressable>
+                      : <AT style={{ fontSize: 13, color: adm.muted }}>—</AT>}
+                  </View>
                   {([
                     ['E-posta', c.email], ['Telefon', c.phone], ['Öğrenim durumu', c.education],
                     ['Yabancı dil', c.languages?.length ? c.languages.map(l => `${l.name} ${'★'.repeat(l.level)}`).join(', ') : null],
@@ -82,6 +107,7 @@ export default function AdminCareers() {
             </View>
           ))}
       </ACard>
+      <FullView uri={viewer} token={token} onClose={() => setViewer(null)} />
     </APage>
   );
 }

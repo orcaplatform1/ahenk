@@ -41,6 +41,18 @@ export class ProfilePhotoController {
     return res.sendFile(fp);
   }
 
+  // Bot profil fotoğrafı: onay süreci yok, yüklendiği anda onaylı (Bot Ekle / Botu Düzenle)
+  @Post("matching/admin/bots/:id/profile-photo")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("SUPERADMIN")
+  @ApiConsumes("multipart/form-data")
+  @UseInterceptors(FileInterceptor("photo", { limits: { fileSize: PROFILE_PHOTO_MAX_BYTES } }))
+  @ApiOperation({ summary: "[Admin] Bot profil fotoğrafı yükle (onaysız, doğrudan onaylı)" })
+  botUpload(@Param("id") id: string, @UploadedFile() file?: Express.Multer.File) {
+    return this.service.botUpload(id, file);
+  }
+
   @Get("admin/profile-photos")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN", "SUPERADMIN")

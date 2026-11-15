@@ -1,4 +1,4 @@
-import { approvedPhotoMap } from "../profile-photo/profile-photo.util";
+import { approvedPhotoMap, approvedPhotoUrl } from "../profile-photo/profile-photo.util";
 import { writeSeatScores } from "../matching/seat-scores";
 import {
   Injectable,
@@ -46,7 +46,7 @@ import { MatchingService, tableTitle } from "../matching/matching.service";
 import { isValidDistrict } from "../common/districts";
 import { meetingVenueFields, seatsBookedAt, VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
-import { CAREER_CV_DIR } from "../careers/career-cv";
+import { CAREER_CV_DIR, CAREER_PHOTO_DIR } from "../careers/career-cv";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
 import { OVERLAPPING_PLANS } from "../payment/plan-overlap";
@@ -287,8 +287,20 @@ export class AdminService {
     const kanka = kankaUser
       ? { userId: kankaUser.id, name: `${kankaUser.profile?.firstName ?? ''} ${kankaUser.profile?.lastName ?? ''}`.trim(), since: link!.createdAt }
       : null;
+    // Detay penceresi: onaylı profil fotoğrafı ve şehir adları (primaryCity / activeCity şehir id'si tutar, eski kayıtta ad olabilir)
+    const cityKeys = [user.profile?.primaryCity, user.activeCity].filter((c): c is string => !!c);
+    const [photoUrl, cityRows] = await Promise.all([
+      approvedPhotoUrl(this.prisma, userId),
+      cityKeys.length
+        ? this.prisma.city.findMany({ where: { OR: [{ id: { in: cityKeys } }, { name: { in: cityKeys } }] }, select: { id: true, name: true } })
+        : Promise.resolve([] as { id: string; name: string }[]),
+    ]);
+    const cityName = (key?: string | null) => (key ? cityRows.find((c) => c.id === key || c.name === key)?.name ?? key : null);
     // Bot bilgisi yalnızca SUPERADMIN'e
-    return { ...safeUser, ...(viewerRole === UserRole.SUPERADMIN ? { isBot } : {}), groupCount, oneOnOneCount, kankaCount, rights, kanka, noShowWarnings };
+    return {
+      ...safeUser, ...(viewerRole === UserRole.SUPERADMIN ? { isBot } : {}), groupCount, oneOnOneCount, kankaCount, rights, kanka, noShowWarnings,
+      photoUrl, primaryCityName: cityName(user.profile?.primaryCity), activeCityName: cityName(user.activeCity),
+    };
   }
 
   // ─── Gelmedi uyarısı ──────────────────────────────────────────────────────
@@ -355,7 +367,7 @@ export class AdminService {
 
   // ─── Yaptırım yetkisi ────────────────────────────────────────────────────
 
-  // SUPERADMIN'e kimse işlem yapamaz; ADMIN'e sadece SUPERADMIN işlem yapabilir
+  // SUPERADMIN ve ADMIN hesaplarına yalnızca SUPERADMIN işlem yapabilir (SUPERADMIN, SUPERADMIN hesaplarını düzenleyebilir)
   private async assertCanSanction(targetId: string, actorId: string) {
     if (targetId === actorId) throw new BadRequestException("Kendi hesabınızı değiştiremezsiniz");
     const [target, actor] = await Promise.all([
@@ -364,8 +376,8 @@ export class AdminService {
     ]);
     if (!target) throw new NotFoundException("Kullanıcı bulunamadı");
     if (
-      target.role === UserRole.SUPERADMIN ||
-      (target.role === UserRole.ADMIN && actor?.role !== UserRole.SUPERADMIN)
+      (target.role === UserRole.SUPERADMIN || target.role === UserRole.ADMIN) &&
+      actor?.role !== UserRole.SUPERADMIN
     ) {
       throw new ForbiddenException("Bu hesaba işlem yetkiniz yok");
     }
@@ -377,7 +389,7 @@ export class AdminService {
 
   // ─── Kişisel bilgi düzenleme ─────────────────────────────────────────────
 
-  // Yetki yaptırımla aynı: SUPERADMIN düzenlenemez, ADMIN'i yalnızca SUPERADMIN düzenler
+  // Yetki yaptırımla aynı: SUPERADMIN ve ADMIN hesaplarını yalnızca SUPERADMIN düzenler
   async adminUpdateUser(targetId: string, actorId: string, dto: AdminUpdateUserDto) {
     await this.assertCanSanction(targetId, actorId);
     const role = await this.actorRole(actorId);
@@ -1925,6 +1937,15 @@ export class AdminService {
       where: { id },
       data: { status: data.status, adminNote: data.adminNote },
     });
+  }
+
+  // Başvuru fotoğrafı yalnızca bu uçtan, SUPERADMIN'e sunulur
+  async careerPhotoPath(id: string) {
+    const c = await this.prisma.careerApplication.findUnique({ where: { id }, select: { photoFile: true } });
+    if (!c?.photoFile) throw new NotFoundException("Fotoğraf bulunamadı");
+    const filePath = path.join(CAREER_PHOTO_DIR, path.basename(c.photoFile));
+    if (!fs.existsSync(filePath)) throw new NotFoundException("Fotoğraf bulunamadı");
+    return filePath;
   }
 
   // CV yalnızca bu uçtan, SUPERADMIN'e sunulur

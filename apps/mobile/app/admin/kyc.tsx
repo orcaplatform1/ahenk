@@ -60,9 +60,11 @@ export default function AdminKyc() {
   const [rejectNote, setRejectNote] = useState<Record<string, string>>({});
   const [rejectOpen, setRejectOpen] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  // Kayıt kapalıyken ad soyad, tarih, durum; basınca altına açılır (ön yüz, arka yüz, video)
+  const [openId, setOpenId] = useState<string | null>(null);
   useEffect(() => { getAccess().then(setToken); loadTab('PENDING'); }, []);
   function loadTab(s: KycStatus) {
-    setTab(s); setLoading(true); setError(''); setRejectOpen(null);
+    setTab(s); setLoading(true); setError(''); setRejectOpen(null); setOpenId(null);
     api.get<{ items: KycApplication[]; total: number }>(`/kyc/admin?status=${s}&limit=50`).then(r => setItems(r.items ?? [])).catch((e: Error) => setError(e.message)).finally(() => setLoading(false));
   }
   const done = (id: string) => setProcessing(p => { const n = { ...p }; delete n[id]; return n; });
@@ -94,15 +96,18 @@ export default function AdminKyc() {
       {loading || items.length === 0 ? empty : (
         <View style={{ gap: 12 }}>
           {items.map(item => {
+            const isOpen = openId === item.id;
             return (
               <ACard key={item.id}>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
+                <Pressable onPress={() => setOpenId(isOpen ? null : item.id)} accessibilityRole="button" accessibilityState={{ expanded: isOpen }}
+                  style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: isOpen ? 16 : 0, opacity: pressed ? 0.7 : 1 })}>
                   <View>
                     <AT w={600} style={{ fontSize: 13 }}>{item.user?.profile?.firstName} {item.user?.profile?.lastName}</AT>
                     <AMono style={{ marginTop: 3, fontSize: 10 }}>{fmtDate(item.submittedAt)}</AMono>
                   </View>
                   <StatusPill text={st.label} color={st.color} bg={st.bg} border={st.border} pad={[2, 8]} />
-                </View>
+                </Pressable>
+                {isOpen && <>
                 {!!item.rejectReason && (
                   <View style={{ marginBottom: 16, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, backgroundColor: 'rgba(239,68,68,0.07)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)' }}>
                     <AT style={{ fontSize: 11, color: adm.red }}><AT style={{ fontSize: 11, color: adm.muted }}>Red sebebi: </AT>{item.rejectReason}</AT>
@@ -128,6 +133,7 @@ export default function AdminKyc() {
                     </View>
                   </>
                 )}
+                </>}
               </ACard>
             );
           })}

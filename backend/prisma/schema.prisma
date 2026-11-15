@@ -897,6 +897,7 @@ model CareerApplication {
   hearFromOther String?
   cvFile       String? // uploads/career-cv altındaki dosya adı (herkese açık sunulmaz)
   cvOriginalName String?
+  photoFile    String? // uploads/career-photos altındaki WebP dosya adı (zorunlu fotoğraf; herkese açık sunulmaz)
   status       CareerStatus @default(PENDING)
   adminNote    String?      @db.Text
   createdAt    DateTime     @default(now())

@@ -40,6 +40,7 @@ interface Career {
   district?: string | null;
   cvFile?: string | null;
   cvOriginalName?: string | null;
+  photoFile?: string | null;
   status: string;
   adminNote?: string;
   createdAt: string;
@@ -52,6 +53,14 @@ export default function AdminCareers() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
+  // Başvuru fotoğrafı: küçük görünür, basınca tam ekran büyük açılır (basınca / Esc ile kapanır)
+  const [viewer, setViewer] = useState<string | null>(null);
+  useEffect(() => {
+    if (!viewer) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setViewer(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [viewer]);
 
   function load() {
     api.get<Career[]>('/admin/careers').then(setItems)
@@ -174,6 +183,14 @@ export default function AdminCareers() {
                     border: `1px solid ${BORDER}`,
                     display: 'flex', flexDirection: 'column', gap: 8,
                   }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 13, color: TEXT, fontWeight: 600 }}>Fotoğraf:</span>
+                      {c.photoFile
+                        ? <button type="button" onClick={() => setViewer(`${API_PREFIX}/admin/careers/${c.id}/photo`)} aria-label="Fotoğrafı büyüt" style={{ padding: 0, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: 'hidden', cursor: 'zoom-in', background: 'transparent', width: 64, height: 64, flexShrink: 0 }}>
+                            <img src={`${API_PREFIX}/admin/careers/${c.id}/photo`} alt="Başvuru fotoğrafı" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                          </button>
+                        : <span style={{ fontSize: 13, color: MUTED }}>—</span>}
+                    </div>
                     {([
                       ['E-posta', c.email],
                       ['Telefon', c.phone],
@@ -251,6 +268,13 @@ export default function AdminCareers() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {viewer && (
+        <div onClick={() => setViewer(null)} role="dialog" aria-label="Fotoğraf"
+          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, cursor: 'zoom-out' }}>
+          <img src={viewer} alt="Başvuru fotoğrafı" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }} />
         </div>
       )}
     </div>
