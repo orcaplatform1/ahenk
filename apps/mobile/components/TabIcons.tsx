@@ -33,12 +33,12 @@ export function TabBadge({ count, children }: { count: number; children: React.R
 // Eşleşme Paneli / Masalarım / Bildirimler / Paketim: tek renk PNG ikon (kenar boşluğu kırpılmış, kare);
 // aktif/pasif sekme rengi tintColor ile (tabBar.active / tabBar.inactive)
 const TAB_PNG = {
-  ahenk: require('../assets/tabs/ahenk.png'),
-  calendar: require('../assets/tabs/takvim.png'),
-  radar: require('../assets/tabs/tarama.png'),
-  table: require('../assets/tabs/masalarim.png'),
-  bell: require('../assets/tabs/bildirimlerim.png'),
-  package: require('../assets/tabs/paketlerim.png'),
+  ahenk: require('../assets/tabs/ahenk.webp'),
+  calendar: require('../assets/tabs/takvim.webp'),
+  radar: require('../assets/tabs/tarama.webp'),
+  table: require('../assets/tabs/masalarim.webp'),
+  bell: require('../assets/tabs/bildirimlerim.webp'),
+  package: require('../assets/tabs/paketlerim.webp'),
 } as const;
 export function PngTabIcon({ name, color }: { name: keyof typeof TAB_PNG; color: string }) {
   return <Image source={TAB_PNG[name]} resizeMode="contain" style={{ width: tabIcon.size, height: tabIcon.size, tintColor: color }} />;

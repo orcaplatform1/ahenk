@@ -1,4 +1,4 @@
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, Logger } from "@nestjs/common";
 import { execFile } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
@@ -10,6 +10,10 @@ import sharp from "sharp";
 // Tür, dosya adına/uzantısına değil ilk baytlarına (imzasına) göre belirlenir.
 // HEIC/HEIF (iPhone): sharp'ın hazır paketi HEVC çözemez; sistemdeki libheif + libde265 (heif-dec, libheif-examples) ile çözülür.
 export const WEBP_QUALITY = 82;
+// Profil / bot / mekân fotoğrafları ve KYC dışındaki görsel yüklemeleri (sorun bildirimi, kariyer fotoğrafı, Janti Haydar başvurusu):
+// kalite 80, önce EXIF yönü uygulanır, EXIF verisi yazılmaz (sharp varsayılanı), boyut değişmez
+export const UPLOAD_WEBP_QUALITY = 80;
+const logger = new Logger("ImageWebp");
 const HEIF_DEC = "/usr/bin/heif-dec";
 const HEIF_TIMEOUT_MS = 30_000;
 const run = promisify(execFile);
@@ -51,17 +55,18 @@ async function decodeHeif(buf: Buffer): Promise<Buffer> {
 
 // Görseli WebP'ye çevirir. Hareketli GIF/WebP hareketli WebP olur. Boyut değişmez; yalnızca EXIF yönü uygulanır.
 // Bozuk/okunamayan dosya 400 döner (sunucu hatası değil).
-export async function toWebp(buf: Buffer, kind: ImageKind): Promise<Buffer> {
+export async function toWebp(buf: Buffer, kind: ImageKind, quality: number = WEBP_QUALITY): Promise<Buffer> {
   try {
     if (kind === "heic" || kind === "heif") {
-      return await sharp(await decodeHeif(buf)).webp({ quality: WEBP_QUALITY }).toBuffer();
+      return await sharp(await decodeHeif(buf)).webp({ quality }).toBuffer();
     }
     if (kind === "gif" || kind === "webp") {
       const meta = await sharp(buf).metadata();
-      if ((meta.pages ?? 1) > 1) return await sharp(buf, { animated: true }).webp({ quality: WEBP_QUALITY }).toBuffer();
+      if ((meta.pages ?? 1) > 1) return await sharp(buf, { animated: true }).webp({ quality }).toBuffer();
     }
-    return await sharp(buf).rotate().webp({ quality: WEBP_QUALITY }).toBuffer();
-  } catch {
+    return await sharp(buf).rotate().webp({ quality }).toBuffer();
+  } catch (err) {
+    logger.error(`Görsel WebP'ye çevrilemedi (tür: ${kind}, boyut: ${buf.length}): ${err}`);
     throw new BadRequestException("Görsel işlenemedi; dosya bozuk olabilir, başka bir görsel deneyin");
   }
 }

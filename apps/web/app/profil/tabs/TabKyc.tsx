@@ -404,7 +404,7 @@ function LivenessRecorder({ onCapture, initialDone }: { onCapture: (blob: Blob, 
           {(phase === 'idle' || phase === 'error') && (
             <>
               <img
-                src="/kyc-liveness-demo.png"
+                src="/kyc-liveness-demo.webp"
                 alt="Canlı video örneği"
                 className="w-full rounded-xl"
                 style={{ maxHeight: '180px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.10)' }}

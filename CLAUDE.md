@@ -285,6 +285,13 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     "Beni hatırla" ile çıkışta doğrudan "Tekrar hoş geldin, [ad]!" ekranına gidilir (süren token yenilemesi beklenir); uygulama kapatılıp
     açılınca da bu ekran görünür
   - Mobil açılışta yerel açılış görseli (siyah zemin, Ahenk logosu) en az 3 sn görünür; 3 sn dolmadan, yazı tipleri yüklenmeden ve açılış yönlendirmesi bitmeden kapanmaz.
+  - Üye alt menüsü (mobil, app/(tabs)/_layout.tsx): sekme sırası Ana Sayfa (Ahenk logosu, Eşleşme Paneli), Takvim (Masalarım),
+    ortada büyük Profil, Paketler (bilet), Bildirimler (zil). Seçili olmayan ikon beyaz (#FFFFFF, opaklık 1), seçili ikon #FF3B30
+    (theme.ts tabNavIcon). Orta Profil butonu ölçüleri theme.ts tabCenter değerlerinden (çap 64, 22 yukarı taşma, zemin renginde 4 halka,
+    hafif gölge, 2 iç çerçeve: seçili değil beyaz, seçili #FF3B30; avatar daireyi doldurur). Zemin, yükseklik, rozet aynı.
+    Yönetim Paneli menüsü ayrı (dokunulmaz)
+  - 100 TL indirim penceresi (Winback otomatik açılış) izin tanıtım ekranı (PermissionIntro) kapanmadan açılmaz
+    (PermissionIntro permissionIntroDone → Winback WinbackHost); tanıtım gösterilmeyecekse eskisi gibi hemen açılır
   - Profilim alt bölümü sırası (mobil): yasal bağlantılar kartı (Gizlilik Politikası, Kullanım Koşulları, KVKK Aydınlatma Metni,
     Hesap Silme — web sayfaları uygulama içi tarayıcıda, satırlar 44 pt) → "Çıkış Yap" → "Tüm cihazlardan çıkış yap" → küçük uygulama
     logosu → "Versiyon 0.1.2" → "Hesabımı Sil". Mobil sürüm 0.1.2 (Android versionCode 3)
@@ -331,6 +338,18 @@ HESAP SİLME:
   - Gizlilik Politikası ve KVKK: KYC Ahenk sunucusunda AES-256-GCM şifreli, hesap silinene kadar; üçüncü taraflar iyzico, Meta (WhatsApp
     Business API), Google Firebase Cloud Messaging, Anthropic (masa uyum raporu: katılımcı başı OCEAN skoru + cinsiyet, rapor masa
     kartında), OpenStreetMap Nominatim, Apple / Google mağazaları, Google Analytics / Meta Pixel (web çerezleri). Cloudflare yoktur
+
+WEBP KURALI:
+  - Web ve mobil projedeki görseller WebP'dir (kalite 80, şeffaflık korunur; mobil sekme ikonları assets/tabs/*.webp, tintColor çalışır).
+  - İstisnalar (PNG / JPG kalır): mobil uygulama ikonu, Android adaptive icon katmanları, splash görseli, bildirim ikonu ve app.json /
+    app.config'te tanımlı tüm görseller (assets/app-icon.png, adaptive-icon.png, start_logo.jpg, icon.png); web favicon, apple-touch-icon,
+    manifest ikonları (icon-192 / icon-512), OG ve sosyal medya paylaşım görselleri (og-image.jpg, paylaşım görselinde kullanılan
+    public/logo.png), e-posta şablonlarında kullanılan görseller; tüm SVG ve GIF dosyaları; KYC dosyaları.
+  - Yüklenen görseller backend'de WebP'ye çevrilir (common/image-webp.ts toWebp). Profil fotoğrafı, bot fotoğrafı ve mekân fotoğrafları
+    mevcut ayarla (kalite 82, profil / bot 1080 + 200 boyutları); diğer bütün görsel yüklemeleri (sorun bildirimi, kariyer fotoğrafı,
+    Janti Haydar başvurusu) UPLOAD_WEBP_QUALITY 80, önce EXIF yönü uygulanır, EXIF silinir, boyut değişmez; diske yalnız .webp yazılır,
+    veritabanına .webp yolu kaydedilir. Çevrilemeyen görselde yükleme hata verir ve hata loglanır, orijinal kaydedilmez.
+    KYC yüklemeleri orijinal formatta (AES-256-GCM şifreli)
 
 İPTAL EDİLEN KONU: Admin'in verdiği paketin hangi admin tarafından verildiğinin kaydı / gösterimi (rapor104 ve rapor105'te sorulan)
   iptal edildi; tekrar sorulmayacak.

@@ -6,6 +6,7 @@ import { ProblemReportPlatform, UserRole, UserStatus } from "../generated/prisma
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { detectImage, VENUE_PHOTO_MAX_BYTES } from "../venue-panel/venue-media";
+import { toWebp, UPLOAD_WEBP_QUALITY } from "../common/image-webp";
 import { CreateProblemReportDto } from "./problem-reports.dto";
 
 // Sorun bildirimi görselleri gizli saklanır (yalnızca admin ucu sunar): /root/ahenk/uploads/problem-reports/<id>/
@@ -39,6 +40,9 @@ export class ProblemReportsService {
     if (files.length > max) throw new BadRequestException(`En fazla ${max} görsel eklenebilir`);
     const kinds = files.map((f) => detectImage(f.buffer));
     if (kinds.some((k) => !k)) throw new BadRequestException("Görseller JPG, PNG veya WebP olmalı");
+    // Görseller kayıttan önce WebP'ye çevrilir (kalite 80, EXIF yönü uygulanır, EXIF silinir, boyut değişmez); çevrilemezse
+    // hata loglanır, bildirim oluşturulmaz, orijinal dosya kaydedilmez
+    const webps = await Promise.all(files.map((f, i) => toWebp(f.buffer, kinds[i]!, UPLOAD_WEBP_QUALITY)));
 
     const report = await this.prisma.problemReport.create({
       data: {
@@ -54,9 +58,9 @@ export class ProblemReportsService {
     if (files.length) {
       const dir = path.join(PROBLEM_REPORT_DIR, report.id);
       fs.mkdirSync(dir, { recursive: true });
-      const names = files.map((file, i) => {
-        const name = `${Date.now()}-${randomBytes(4).toString("hex")}.${kinds[i]}`;
-        fs.writeFileSync(path.join(dir, name), file.buffer);
+      const names = webps.map((buf) => {
+        const name = `${Date.now()}-${randomBytes(4).toString("hex")}.webp`;
+        fs.writeFileSync(path.join(dir, name), buf);
         return name;
       });
       await this.prisma.problemReport.update({ where: { id: report.id }, data: { images: names } });

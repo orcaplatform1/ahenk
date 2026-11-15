@@ -399,7 +399,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
         <BtnGhost label={logoutAllBusy ? 'Çıkış yapılıyor…' : 'Tüm cihazlardan çıkış yap'} style={accountBtn.box} textStyle={accountBtn.text} disabled={logoutAllBusy} onPress={logoutAll} />
         {/* Çıkış ile Hesabımı Sil arasında küçük uygulama logosu ve sürüm */}
         <View style={{ alignItems: 'center', gap: 6, paddingVertical: 4 }}>
-          <Image source={require('@/assets/app-icon-small.png')} style={{ width: 40, height: 40, borderRadius: 10 }} accessibilityLabel="Ahenk" />
+          <Image source={require('@/assets/app-icon-small.webp')} style={{ width: 40, height: 40, borderRadius: 10 }} accessibilityLabel="Ahenk" />
           <T style={{ fontSize: 12, color: ll.label }}>Versiyon {APP_VERSION}</T>
         </View>
         {/* En alttaki öğe: Hesabımı Sil (ikonsuz, uygulamanın tehlike rengi #e74c3c — Kankalıktan Çıkar / iade butonlarıyla aynı) */}

@@ -11,9 +11,9 @@ export const FONTS = {
 };
 
 const IMAGES = [
-  require('@/assets/logo.png'), require('@/assets/start_logo.jpg'), require('@/assets/lock-icon.webp'),
+  require('@/assets/logo.webp'), require('@/assets/start_logo.jpg'), require('@/assets/lock-icon.webp'),
   require('@/assets/plan-masada.webp'), require('@/assets/plan-karsimda.webp'), require('@/assets/plan-icerde.webp'),
-  require('@/assets/kyc-liveness-demo.png'),
+  require('@/assets/kyc-liveness-demo.webp'),
   require('@/assets/mobilappscreen.webp'), require('@/assets/mobilappscreen2.webp'), require('@/assets/mobilappscreen3.webp'),
 ];
 

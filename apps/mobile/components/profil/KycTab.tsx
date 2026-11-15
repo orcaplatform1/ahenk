@@ -148,7 +148,7 @@ function LivenessRecorder({ video, onCapture }: { video: Shot | null; onCapture:
       )}
       {video ? <Done label="Video Yüklendi" onRetake={() => onCapture(null)} /> : (
         <>
-          <Image source={require('@/assets/kyc-liveness-demo.png')} style={{ width: '100%', height: 180, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' }} resizeMode="cover" accessibilityLabel="Canlı video örneği" />
+          <Image source={require('@/assets/kyc-liveness-demo.webp')} style={{ width: '100%', height: 180, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' }} resizeMode="cover" accessibilityLabel="Canlı video örneği" />
           <BtnGhost label="Canlı Video Yükle" full onPress={openCamera} />
           <View style={{ borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.3)' }}>
             <T style={{ fontSize: 12, color: 'rgba(192,57,43,0.85)', lineHeight: 19.2 }}>

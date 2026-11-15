@@ -2,7 +2,7 @@ import { BadRequestException } from "@nestjs/common";
 import { randomBytes } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
-import { detectImageKind, toWebp } from "../common/image-webp";
+import { detectImageKind, toWebp, UPLOAD_WEBP_QUALITY } from "../common/image-webp";
 
 // Janti Haydar teklif formu dosyaları kişisel/ticari veridir: MediaController'dan sunulmaz, yalnızca admin ucundan
 export const JANTI_FILES_DIR = path.join(process.cwd(), "..", "uploads", "janti-haydar");
@@ -48,13 +48,13 @@ export function assertJantiFiles(files: Express.Multer.File[]): void {
   }
 }
 
-// Görseller WebP'ye çevrilip yalnızca WebP olarak saklanır (kalite 82, boyut değişmez); PDF olduğu gibi saklanır
+// Görseller WebP'ye çevrilip yalnızca WebP olarak saklanır (kalite 80, EXIF yönü uygulanır, EXIF silinir, boyut değişmez); PDF olduğu gibi saklanır
 export async function saveJantiFiles(files: Express.Multer.File[]): Promise<JantiStoredFile[]> {
   if (files.length === 0) return [];
   const prepared = await Promise.all(files.map(async (f) => {
     const kind = detectJantiFile(f.buffer) as JantiFileType;
     if (kind === "pdf") return { f, type: "pdf" as const, buf: f.buffer };
-    return { f, type: "webp" as const, buf: await toWebp(f.buffer, kind) };
+    return { f, type: "webp" as const, buf: await toWebp(f.buffer, kind, UPLOAD_WEBP_QUALITY) };
   }));
   fs.mkdirSync(JANTI_FILES_DIR, { recursive: true });
   return prepared.map(({ f, type, buf }) => {

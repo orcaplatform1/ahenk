@@ -2,7 +2,7 @@ import { BadRequestException } from "@nestjs/common";
 import { randomBytes } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
-import { detectImageKind, ImageKind, toWebp } from "../common/image-webp";
+import { detectImageKind, ImageKind, toWebp, UPLOAD_WEBP_QUALITY } from "../common/image-webp";
 
 // Özgeçmişler kişisel veridir: MediaController'dan sunulmaz, yalnızca admin ucundan indirilir
 export const CAREER_CV_DIR = path.join(process.cwd(), "..", "uploads", "career-cv");
@@ -45,7 +45,7 @@ export function assertCareerPhoto(file?: Express.Multer.File): asserts file is E
 }
 
 export async function saveCareerPhoto(file: Express.Multer.File): Promise<string> {
-  const webp = await toWebp(file.buffer, detectImageKind(file.buffer)!);
+  const webp = await toWebp(file.buffer, detectImageKind(file.buffer)!, UPLOAD_WEBP_QUALITY);
   fs.mkdirSync(CAREER_PHOTO_DIR, { recursive: true });
   const name = `ph-${Date.now()}-${randomBytes(6).toString("hex")}.webp`;
   fs.writeFileSync(path.join(CAREER_PHOTO_DIR, name), webp);
