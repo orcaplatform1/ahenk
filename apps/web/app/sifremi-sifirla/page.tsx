@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import OtpInput from '@/components/ui/OtpInput';
+import { OtpCountdown, useOtpCountdown } from '@/lib/otpCountdown';
 
 function errorText(e: unknown): string {
   const msg = (e as Error).message;
@@ -27,21 +28,21 @@ function SifremiSifirlaForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [resendIn, setResendIn] = useState(60);
   const [resending, setResending] = useState(false);
-
+  // Yeni kod isteme bekleme süresi backend'den gelir: önceki ekrandan bitiş anı (until) olarak taşınır
+  const countdown = useOtpCountdown();
+  const until = Number(searchParams.get('until') ?? 0);
+  const startCountdown = countdown.start;
   useEffect(() => {
-    if (resendIn <= 0) return;
-    const t = setTimeout(() => setResendIn(n => n - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendIn]);
+    if (until > 0) startCountdown((until - Date.now()) / 1000);
+  }, [until, startCountdown]);
 
   async function handleResend() {
     setResending(true); setError('');
     try {
-      await api.post('/auth/forgot-password', { phone });
-      setCode(''); setResendIn(60);
-    } catch (e) { setError(errorText(e)); }
+      const r = await api.post<{ resendSeconds?: number }>('/auth/forgot-password', { phone });
+      setCode(''); countdown.start(r.resendSeconds);
+    } catch (e) { countdown.startFromError(e); setError(errorText(e)); }
     finally { setResending(false); }
   }
 
@@ -91,6 +92,7 @@ function SifremiSifirlaForm() {
               {phone} numarasına WhatsApp ile gönderilen 6 haneli kodu gir.
             </p>
             <OtpInput value={code} onChange={(c) => { setCode(c); setError(''); }} error={codeError} />
+            <OtpCountdown seconds={countdown.seconds} />
             <div className="relative">
               <input
                 type={showPass ? 'text' : 'password'}
@@ -162,10 +164,10 @@ function SifremiSifirlaForm() {
             <button
               type="button"
               onClick={handleResend}
-              disabled={resendIn > 0 || resending}
-              className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed mb-2"
+              disabled={countdown.waiting || resending}
+              className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:opacity-40 disabled:hover:text-[#555] disabled:cursor-not-allowed mb-2"
             >
-              {resending ? 'Gönderiliyor…' : resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}
+              {resending ? 'Gönderiliyor…' : 'Yeni kod gönder'}
             </button>
             </div>
           </motion.div>

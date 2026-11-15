@@ -6,6 +6,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import OtpInput from '@/components/ui/OtpInput';
 import { venueApi } from '@/lib/venueApi';
+import { OtpCountdown, OtpNoticeAction, useOtpCountdown } from '@/lib/otpCountdown';
+import { otpNoticeOf, type OtpNoticeCode } from '@/lib/otpResend';
 
 export default function MekanSifremiUnuttumPage() {
   const router = useRouter();
@@ -17,13 +19,22 @@ export default function MekanSifremiUnuttumPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  async function sendCode(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true); setError('');
+  // Yeni kod isteme bekleme süresi backend'den gelir (ortak sayaç)
+  const countdown = useOtpCountdown();
+  // Numara kayıtlı değilse uyarının altında "Mekân ekle" butonu
+  const [notice, setNotice] = useState<OtpNoticeCode | null>(null);
+
+  async function sendCode(e?: React.FormEvent) {
+    e?.preventDefault();
+    setLoading(true); setError(''); setNotice(null);
     try {
-      await venueApi.post('/forgot-password', { phone: `+90${phone}` });
-      setSent(true);
-    } catch (err) { setError((err as Error).message); }
+      const r = await venueApi.post<{ resendSeconds?: number }>('/forgot-password', { phone: `+90${phone}` });
+      setSent(true); setCode(''); countdown.start(r.resendSeconds);
+    } catch (err) {
+      // Bekleme süresi dolmadan istendi: sayaç sunucunun döndüğü kalan saniyeden başlar
+      if (countdown.startFromError(err)) setSent(true);
+      setError((err as Error).message); setNotice(otpNoticeOf(err));
+    }
     finally { setLoading(false); }
   }
 
@@ -56,16 +67,19 @@ export default function MekanSifremiUnuttumPage() {
               <input className="input-glass flex-1 px-4 py-3 text-sm" type="tel" inputMode="numeric" aria-label="Telefon" placeholder="5XX XXX XX XX" value={phone} onChange={(e) => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setError(''); }} required />
             </div>
             {error && <p className="text-xs text-[#ff6b6b]">{error}</p>}
+            {error && <OtpNoticeAction code={notice} />}
             <button type="submit" disabled={loading || !(phone.length === 10 && phone.startsWith('5'))} className="btn-primary w-full justify-center disabled:opacity-70">{loading ? 'Gönderiliyor…' : 'Kod Gönder'}</button>
           </form>
         ) : (
           <form onSubmit={reset} className="flex flex-col gap-3 mt-6">
             <p className="text-[#666] text-sm text-center">Hesap varsa kayıtlı WhatsApp numarasına kod gönderildi.</p>
             <OtpInput value={code} onChange={setCode} />
+            <OtpCountdown seconds={countdown.seconds} />
             <input className="input-glass w-full px-4 py-3 text-sm" type="password" autoComplete="new-password" aria-label="Yeni şifre" placeholder="Yeni şifre (6-20 karakter)" maxLength={20} value={password} onChange={(e) => setPassword(e.target.value)} required />
             <input className="input-glass w-full px-4 py-3 text-sm" type="password" autoComplete="new-password" aria-label="Yeni şifre tekrar" placeholder="Yeni şifre tekrar" maxLength={20} value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
             {error && <p className="text-xs text-[#ff6b6b]">{error}</p>}
             <button type="submit" disabled={loading} className="btn-primary w-full justify-center disabled:opacity-70">{loading ? 'Kaydediliyor…' : 'Şifreyi Güncelle'}</button>
+            <button type="button" onClick={() => sendCode()} disabled={countdown.waiting || loading} className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:opacity-40 disabled:hover:text-[#555] disabled:cursor-not-allowed">Yeni kod gönder</button>
           </form>
         )}
         <Link href="/mekan/giris" className="btn-ghost w-full justify-center mt-3">Girişe dön</Link>

@@ -1,4 +1,5 @@
 import { API_PREFIX } from './api';
+import { withResendSeconds } from './otpResend';
 
 const BASE = `${API_PREFIX}/venue-panel`;
 
@@ -27,7 +28,10 @@ async function request<T>(path: string, init: { method?: string; body?: unknown 
     body: isForm ? (init.body as FormData) : init.body ? JSON.stringify(init.body) : undefined,
   });
   if (res.status === 401 && path !== '/login') throw new VenueAuthError('Oturum gerekli');
-  if (!res.ok) throw new Error(await readError(res));
+  if (!res.ok) {
+    const body = await res.clone().json().catch(() => null);
+    throw withResendSeconds(new Error(await readError(res)), body);
+  }
   return res.json() as Promise<T>;
 }
 

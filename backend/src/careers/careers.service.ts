@@ -2,13 +2,12 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { OTP_RESEND_SECONDS, OtpService } from '../auth/otp/otp.service';
+import { OtpService } from '../auth/otp/otp.service';
 import { isValidDistrict } from '../common/districts';
 import { ApplyCareerDto, LANGUAGES } from './careers.dto';
 import { assertCv, saveCv } from './career-cv';
 
 const PHONE_TOKEN_TTL = 30 * 60;
-const OTP_SCOPE = 'career';
 const phoneKey = (phone: string) => `careerphone:${phone}`;
 
 function parseLanguages(raw: string): { name: string; level: number }[] {
@@ -34,12 +33,12 @@ export class CareersService {
   ) {}
 
   async sendOtp(phone: string) {
-    await this.otp.send(phone, OTP_SCOPE);
-    return { message: 'Doğrulama kodu gönderildi', resendSeconds: OTP_RESEND_SECONDS };
+    const resendSeconds = await this.otp.send(phone, 'career-apply');
+    return { message: 'Doğrulama kodu gönderildi', resendSeconds };
   }
 
   async verifyOtp(phone: string, code: string) {
-    await this.otp.verify(phone, code, OTP_SCOPE);
+    await this.otp.verify(phone, code, 'career-apply');
     const phoneToken = randomUUID();
     await this.redis.set(phoneKey(phone), phoneToken, PHONE_TOKEN_TTL);
     return { phoneToken };

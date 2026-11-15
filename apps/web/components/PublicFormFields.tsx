@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import OtpInput from '@/components/ui/OtpInput';
 import { API_PREFIX } from '@/lib/api';
 import { readError } from '@/lib/venueApi';
+import { OtpCountdown, useOtpCountdown } from '@/lib/otpCountdown';
+import { withResendSeconds } from '@/lib/otpResend';
 
 // Başvuru formlarının ortak alanları (.ll-form içinde kartla aynı zemin); kayıt formuyla aynı görünüm
 
@@ -82,17 +84,13 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
   const [shake, setShake] = useState(false);
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [resendIn, setResendIn] = useState(0);
-
-  useEffect(() => {
-    if (resendIn <= 0) return;
-    const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendIn]);
+  // Yeni kod isteme bekleme süresi backend'den gelir (ortak sayaç)
+  const countdown = useOtpCountdown();
 
   function change(v: string) {
     onPhone(v); onToken('');
     setOtpSent(false); setCode(''); setError('');
+    countdown.start(0);
   }
 
   async function postJson<T>(path: string, body: unknown): Promise<T> {
@@ -101,7 +99,10 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(await readError(res));
+    if (!res.ok) {
+      const body = await res.clone().json().catch(() => null);
+      throw withResendSeconds(new Error(await readError(res)), body);
+    }
     return res.json() as Promise<T>;
   }
 
@@ -110,8 +111,12 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
     setSending(true); setError('');
     try {
       const r = await postJson<{ resendSeconds: number }>('/send-otp', { phone: `+90${phone}` });
-      setOtpSent(true); setCode(''); setResendIn(r.resendSeconds ?? 60);
-    } catch (e) { setError((e as Error).message); }
+      setOtpSent(true); setCode(''); countdown.start(r.resendSeconds);
+    } catch (e) {
+      // Bekleme süresi dolmadan istendi: sayaç sunucunun döndüğü kalan saniyeden başlar
+      if (countdown.startFromError(e)) setOtpSent(true);
+      setError((e as Error).message);
+    }
     finally { setSending(false); }
   }
 
@@ -146,11 +151,11 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
         />
         {!phoneToken && (
           <button
-            type="button" onClick={send} disabled={sending || resendIn > 0 || phone.length !== 10}
+            type="button" onClick={send} disabled={sending || countdown.waiting || phone.length !== 10}
             className="shrink-0 px-3 text-xs font-medium rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ border: '1px solid rgba(192,57,43,0.5)', color: '#e74c3c', background: 'rgba(192,57,43,0.06)' }}
           >
-            {sending ? 'Gönderiliyor…' : resendIn > 0 ? `Tekrar (${resendIn} sn)` : otpSent ? 'Tekrar gönder' : 'Kod gönder'}
+            {sending ? 'Gönderiliyor…' : otpSent ? 'Yeni kod gönder' : 'Kod gönder'}
           </button>
         )}
       </div>
@@ -163,6 +168,7 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
         <div className="flex flex-col gap-2 mt-3">
           <p className="text-xs text-[#a39c93] text-center">+90{phone} numarasına WhatsApp ile gönderilen 6 haneli kodu girin.</p>
           <OtpInput value={code} onChange={(c) => { setCode(c); setError(''); }} onComplete={verify} error={shake} autoFocus={false} />
+          <OtpCountdown seconds={countdown.seconds} className="text-xs text-[#a39c93] text-center" />
           {verifying && <p className="text-xs text-[#a39c93] text-center">Doğrulanıyor…</p>}
         </div>
       )}

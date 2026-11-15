@@ -61,6 +61,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     )) as number;
   }
 
+  // Anahtar yoksa süreyle yazar (SET NX EX, atomik): true = bu istek yazdı, false = anahtar zaten vardı
+  async setIfAbsent(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+    return (await this.client.set(key, value, "EX", ttlSeconds, "NX")) === "OK";
+  }
+
   async decr(key: string): Promise<void> {
     await this.client.decr(key);
   }

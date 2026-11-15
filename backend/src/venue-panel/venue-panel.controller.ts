@@ -6,6 +6,7 @@ import { VenueAccount } from "../generated/prisma/client";
 import { Request, Response } from "express";
 import { VENUE_COOKIE } from "../auth/auth-cookies";
 import { VenueAuthGuard } from "./venue-auth.guard";
+import { LoginGuardService } from "../auth/login-guard.service";
 import { VENUE_SESSION_DAYS, VenuePanelService } from "./venue-panel.service";
 import { VENUE_PHOTO_MAX_BYTES, VENUE_PHOTO_MAX_COUNT } from "./venue-media";
 import {
@@ -22,6 +23,7 @@ export class VenuePanelController {
   constructor(
     private service: VenuePanelService,
     private config: ConfigService,
+    private loginGuard: LoginGuardService,
   ) {}
 
   private cookieOptions() {
@@ -57,7 +59,8 @@ export class VenuePanelController {
   @Post("send-login-otp")
   @HttpCode(200)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  sendLoginOtp(@Body() dto: VenueSendLoginOtpDto) {
+  async sendLoginOtp(@Body() dto: VenueSendLoginOtpDto, @Req() req: Request) {
+    await this.loginGuard.hit("venue-send-login-otp", req.ip, dto.phone);
     return this.service.sendLoginOtp(dto.phone);
   }
 
@@ -88,7 +91,8 @@ export class VenuePanelController {
   @Post("forgot-password")
   @HttpCode(200)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  forgotPassword(@Body() dto: VenueForgotPasswordDto) {
+  async forgotPassword(@Body() dto: VenueForgotPasswordDto, @Req() req: Request) {
+    await this.loginGuard.hit("venue-forgot-password", req.ip, dto.phone);
     return this.service.forgotPassword(dto.phone);
   }
 

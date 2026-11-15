@@ -4,11 +4,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { OTP_RESEND_SECONDS, OtpService } from '../auth/otp/otp.service';
+import { OtpService } from '../auth/otp/otp.service';
 import { JantiApplyDto } from './janti-haydar.dto';
 import { assertJantiFiles, JANTI_FILES_DIR, JANTI_MIME, JantiStoredFile, removeJantiFiles, saveJantiFiles } from './janti-haydar-files';
 
-const OTP_SCOPE = 'janti';
 const PHONE_TOKEN_TTL = 30 * 60; // Üye kaydıyla aynı: doğrulama 30 dk geçerli
 const phoneKey = (phone: string) => `jantiphone:${phone}`;
 // Telefon bazlı sınır: aynı numaradan 24 saatte en fazla 3 talep
@@ -34,12 +33,12 @@ export class JantiHaydarService {
 
   async sendOtp(phone: string) {
     await this.assertPhoneQuota(phone);
-    await this.otp.send(phone, OTP_SCOPE);
-    return { message: 'Doğrulama kodu gönderildi', resendSeconds: OTP_RESEND_SECONDS };
+    const resendSeconds = await this.otp.send(phone, 'janti-apply');
+    return { message: 'Doğrulama kodu gönderildi', resendSeconds };
   }
 
   async verifyOtp(phone: string, code: string) {
-    await this.otp.verify(phone, code, OTP_SCOPE);
+    await this.otp.verify(phone, code, 'janti-apply');
     const phoneToken = randomUUID();
     await this.redis.set(phoneKey(phone), phoneToken, PHONE_TOKEN_TTL);
     return { phoneToken };

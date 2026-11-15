@@ -4,7 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import { MeetingStatus, ParticipantStatus, VenueAccount } from "../generated/prisma/client";
 import bcrypt from "bcryptjs";
 import { PrismaService } from "../prisma/prisma.service";
-import { OtpService } from "../auth/otp/otp.service";
+import { OtpPhoneNoticeException, OtpService, OtpWaitException } from "../auth/otp/otp.service";
 import { venueJwtSecret, venueRefreshSecret } from "./venue-auth.guard";
 import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "./venue-media";
 import { CLEARED_MEETING_VENUE, meetingVenueFields, VenueAssignmentService } from "./venue-assignment.service";
@@ -105,17 +105,23 @@ export class VenuePanelService {
     return accounts.length === 1 ? accounts[0] : null;
   }
 
+  // Numarayla kayıtlı mekân hesabı yoksa kod gönderilmez, bekleme süresi başlamaz; ekranda uyarının altında "Mekân ekle" çıkar
+  private async assertPhoneRegistered(phone: string) {
+    if ((await this.prisma.venueAccount.count({ where: { phone } })) === 0) throw new OtpPhoneNoticeException("VENUE_NOT_REGISTERED");
+  }
+
   async sendLoginOtp(phone: string) {
+    await this.assertPhoneRegistered(phone);
     const account = await this.accountByPhone(phone);
-    // Yanıt tek tip: numaranın kayıtlı olup olmadığı anlaşılmaz (kayıtsız numaraya kod gitmez)
-    if (account?.status === "ACTIVE") await this.otp.send(phone);
-    return { message: "Doğrulama kodu gönderildi" };
+    // Kayıtlı ama aktif olmayan ya da numarası birden fazla hesaba bağlı mekâna kod gitmez (bekleme süresi başlamaz)
+    const resendSeconds = account?.status === "ACTIVE" ? await this.otp.send(phone, "venue-login") : 0;
+    return { message: "Doğrulama kodu gönderildi", resendSeconds };
   }
 
   async verifyLoginOtp(phone: string, code: string) {
     const account = await this.accountByPhone(phone);
     if (!account) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
-    await this.otp.verify(phone, code);
+    await this.otp.verify(phone, code, "venue-login");
     if (account.status !== "ACTIVE") throw new ForbiddenException(LOGIN_BLOCKED[account.status]);
     if (!account.venueId) throw new ForbiddenException("Mekân kaydı bulunamadı, destek ile iletişime geçin.");
     return account;
@@ -123,17 +129,25 @@ export class VenuePanelService {
 
   // Telefonla şifre sıfırlama: WhatsApp girişiyle aynı kural (numara tek hesaba bağlıysa kod gider)
   async forgotPassword(phone: string) {
+    await this.assertPhoneRegistered(phone);
     const account = await this.accountByPhone(phone);
+    // Bekleme süresi dolmadan gelen istek kalan saniyeyle reddedilir; gönderim hatası yanıtı değiştirmez (bekleme başlamaz)
+    let resendSeconds = 0;
     if (account?.status === "ACTIVE") {
-      await this.otp.send(account.phone).catch((err) => this.logger.warn(`Mekân şifre kodu gönderilemedi: ${err}`));
+      try {
+        resendSeconds = await this.otp.send(account.phone, "venue-forgot-password");
+      } catch (err) {
+        if (err instanceof OtpWaitException) throw err;
+        this.logger.warn(`Mekân şifre kodu gönderilemedi: ${err}`);
+      }
     }
-    return { message: "Hesap varsa kayıtlı WhatsApp numarasına kod gönderildi" };
+    return { message: "Hesap varsa kayıtlı WhatsApp numarasına kod gönderildi", resendSeconds };
   }
 
   async resetPassword(phone: string, code: string, newPassword: string) {
     const account = await this.accountByPhone(phone);
     if (account?.status !== "ACTIVE") throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
-    await this.otp.verify(account.phone, code);
+    await this.otp.verify(account.phone, code, "venue-forgot-password");
     await this.prisma.venueAccount.update({
       where: { id: account.id },
       data: { passwordHash: await bcrypt.hash(newPassword, 12), tokenVersion: { increment: 1 } },

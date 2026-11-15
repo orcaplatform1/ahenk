@@ -1,15 +1,43 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { Injectable, BadRequestException, HttpException, HttpStatus } from "@nestjs/common";
 import { randomInt } from "crypto";
 import { RedisService } from "../../redis/redis.service";
 import { WhatsappService } from "../whatsapp/whatsapp.service";
 
-const OTP_TTL_SECONDS = 5 * 60; // 5 dakika
-// Aynı numaraya yeni kod en erken 60 sn sonra (web'deki "Kodu tekrar gönder" sayacıyla aynı)
-export const OTP_RESEND_SECONDS = 60;
+// Kod geçerlilik süresi ve yeni kod isteme bekleme süresi her akışta birbirine eşittir (120 saniye); tek sabit
+const OTP_TTL_SECONDS = 120;
+export const OTP_RESEND_SECONDS = OTP_TTL_SECONDS;
+// Kod gönderen akışlar: kod ve bekleme süresi telefon + akış bazında Redis'te tutulur (akışların kodları birbirinin yerine geçmez)
+export type OtpFlow =
+  | "register" | "login" | "forgot-password" | "change-phone"
+  | "venue-login" | "venue-forgot-password" | "venue-apply" | "career-apply" | "janti-apply";
 const MAX_ATTEMPTS = 3;
+// Günlük sınıra sayılan akışlar: üye ve mekân paneli kodları (başvuru formları sayaç dışı)
+const DAILY_LIMIT_FLOWS: OtpFlow[] = ["register", "login", "forgot-password", "change-phone", "venue-login", "venue-forgot-password"];
 // Telefon başına günlük kod gönderim sınırı (Türkiye takvim günü): üye ve mekân paneli kodları tek sayaçta
 const DAILY_SEND_LIMIT = 10;
 const DAILY_LIMIT_MESSAGE = "Bugünlük doğrulama kodu hakkın doldu. Yarın tekrar deneyebilirsin.";
+
+// Bekleme süresi dolmadan yeni kod istendi: kod gönderilmez, yanıtta kalan saniye (resendSeconds) döner
+export class OtpWaitException extends HttpException {
+  constructor(public readonly resendSeconds: number) {
+    super({ statusCode: HttpStatus.BAD_REQUEST, error: "Bad Request", message: `Yeni kod için ${resendSeconds} saniye bekleyin.`, resendSeconds }, HttpStatus.BAD_REQUEST);
+  }
+}
+
+// Numara bu akış için uygun değil (kayıtlı değil / zaten kayıtlı): kod gönderilmez, bekleme süresi başlamaz.
+// code alanı istemcinin uyarının altında doğru butonu ("Kayıt ol" / "Mekân ekle" / "Giriş yap") göstermesi içindir.
+export type OtpPhoneNoticeCode = "PHONE_NOT_REGISTERED" | "VENUE_NOT_REGISTERED" | "PHONE_ALREADY_REGISTERED";
+const OTP_PHONE_NOTICES: Record<OtpPhoneNoticeCode, { status: HttpStatus; message: string }> = {
+  PHONE_NOT_REGISTERED: { status: HttpStatus.NOT_FOUND, message: "Bu numarayla kayıtlı hesap bulunamadı." },
+  VENUE_NOT_REGISTERED: { status: HttpStatus.NOT_FOUND, message: "Bu numarayla kayıtlı mekân hesabı bulunamadı." },
+  PHONE_ALREADY_REGISTERED: { status: HttpStatus.CONFLICT, message: "Bu numara zaten kayıtlı. Giriş yapabilirsin." },
+};
+export class OtpPhoneNoticeException extends HttpException {
+  constructor(code: OtpPhoneNoticeCode) {
+    const { status, message } = OTP_PHONE_NOTICES[code];
+    super({ statusCode: status, message, code }, status);
+  }
+}
 
 // Yanlış kod (süresi dolmuş koddan ayrı): hesap bazlı hatalı deneme sayımı için
 export class OtpMismatchException extends BadRequestException {}
@@ -28,73 +56,85 @@ export class OtpService {
     private whatsapp: WhatsappService,
   ) {}
 
-  // scope: üye kaydı (boş), mekân ve kariyer başvurusu kodları birbirine karışmaz
-  private key(phone: string, scope = "") {
-    return scope ? `otp:${scope}:${phone}` : `otp:${phone}`;
+  private key(phone: string, flow: OtpFlow) {
+    return `otp:code:${flow}:${phone}`;
   }
 
-  private async getEntry(phone: string, scope = ""): Promise<OtpEntry | null> {
-    const raw = await this.redis.get(this.key(phone, scope));
+  private async getEntry(phone: string, flow: OtpFlow): Promise<OtpEntry | null> {
+    const raw = await this.redis.get(this.key(phone, flow));
     if (!raw) return null;
     return JSON.parse(raw) as OtpEntry;
   }
 
-  private async saveEntry(phone: string, entry: OtpEntry, ttl = OTP_TTL_SECONDS, scope = "") {
-    await this.redis.set(this.key(phone, scope), JSON.stringify(entry), ttl);
-  }
-
   // Deneme sayacı ayrı anahtarda atomik artar (INCR): eşzamanlı istekler aynı değeri okuyamaz
-  private attemptsKey(phone: string, scope = "") {
-    return `${this.key(phone, scope)}:attempts`;
+  private attemptsKey(phone: string, flow: OtpFlow) {
+    return `${this.key(phone, flow)}:attempts`;
   }
 
-  async send(phone: string, scope = ""): Promise<void> {
-    const resendKey = scope ? `otp:resend:${scope}:${phone}` : `otp:resend:${phone}`;
-    const wait = await this.redis.ttl(resendKey);
-    if (wait > 0) throw new BadRequestException(`Yeni kod için ${wait} saniye bekleyin.`);
-    // Günlük sınır: sayaç atomik artar; sınır aşılırsa ya da kod gönderilemezse geri alınır
-    const dayKey = scope ? null : `otp:day:${phone}:${trDay()}`;
-    if (dayKey && (await this.redis.incrWithTtl(dayKey, 48 * 60 * 60)) > DAILY_SEND_LIMIT) {
-      await this.redis.decr(dayKey);
-      throw new BadRequestException(DAILY_LIMIT_MESSAGE);
-    }
-    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
-    await this.redis.del(this.attemptsKey(phone, scope));
-    await this.saveEntry(phone, { code }, OTP_TTL_SECONDS, scope);
+  private waitKey(phone: string, flow: OtpFlow) {
+    return `otp:wait:${flow}:${phone}`;
+  }
+
+  // Bekleme süresini atomik başlatır (SET NX): süre işliyorsa kalan saniyeyle reddeder
+  private async claimWait(phone: string, flow: OtpFlow): Promise<void> {
+    const key = this.waitKey(phone, flow);
+    if (await this.redis.setIfAbsent(key, "1", OTP_RESEND_SECONDS)) return;
+    const left = await this.redis.ttl(key);
+    throw new OtpWaitException(left > 0 ? left : 1);
+  }
+
+  // Kod gönderir; dönen değer yeni kod isteyebilmek için beklenecek saniyedir.
+  // Gönderilemeyen kod (ya da günlük sınıra takılan istek) bekleme süresini başlatmaz.
+  async send(phone: string, flow: OtpFlow): Promise<number> {
+    await this.claimWait(phone, flow);
     try {
-      await this.whatsapp.sendOtp(phone, code);
-      await this.redis.set(resendKey, "1", OTP_RESEND_SECONDS);
+      // Günlük sınır: sayaç atomik artar; sınır aşılırsa ya da kod gönderilemezse geri alınır
+      const dayKey = DAILY_LIMIT_FLOWS.includes(flow) ? `otp:day:${phone}:${trDay()}` : null;
+      if (dayKey && (await this.redis.incrWithTtl(dayKey, 48 * 60 * 60)) > DAILY_SEND_LIMIT) {
+        await this.redis.decr(dayKey);
+        throw new BadRequestException(DAILY_LIMIT_MESSAGE);
+      }
+      const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+      await this.redis.del(this.attemptsKey(phone, flow));
+      await this.redis.set(this.key(phone, flow), JSON.stringify({ code } satisfies OtpEntry), OTP_TTL_SECONDS);
+      try {
+        await this.whatsapp.sendOtp(phone, code);
+      } catch (err) {
+        // Gönderilemeyen kod geçerli kalmasın
+        await this.redis.del(this.key(phone, flow));
+        if (dayKey) await this.redis.decr(dayKey);
+        throw err;
+      }
     } catch (err) {
-      // Gönderilemeyen kod geçerli kalmasın
-      await this.redis.del(this.key(phone, scope));
-      if (dayKey) await this.redis.decr(dayKey);
+      await this.redis.del(this.waitKey(phone, flow));
       throw err;
     }
+    return OTP_RESEND_SECONDS;
   }
 
-  async verify(phone: string, code: string, scope = ""): Promise<void> {
-    const entry = await this.getEntry(phone, scope);
+  // Kod, istendiği akışın anahtarından okunur: başka akış için gönderilen kod geçerli sayılmaz
+  async verify(phone: string, code: string, flow: OtpFlow): Promise<void> {
+    const entry = await this.getEntry(phone, flow);
     if (!entry) {
       throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
     }
 
     // Her doğrulama isteği önce sayacı atomik artırır: bir kod için en fazla MAX_ATTEMPTS karşılaştırma yapılır
-    const attempt = await this.redis.incrWithTtl(this.attemptsKey(phone, scope), OTP_TTL_SECONDS);
+    const attempt = await this.redis.incrWithTtl(this.attemptsKey(phone, flow), OTP_TTL_SECONDS);
     if (attempt > MAX_ATTEMPTS) {
-      await this.redis.del(this.key(phone, scope));
+      await this.redis.del(this.key(phone, flow));
       throw new OtpMismatchException("Çok fazla hatalı deneme, yeni kod isteyin");
     }
 
     if (entry.code !== code) {
       if (attempt >= MAX_ATTEMPTS) {
-        await this.redis.del(this.key(phone, scope));
+        await this.redis.del(this.key(phone, flow));
         throw new OtpMismatchException("Çok fazla hatalı deneme, yeni kod isteyin");
       }
       throw new OtpMismatchException(`Kod hatalı. Kalan deneme hakkı: ${MAX_ATTEMPTS - attempt}`);
     }
 
-    await this.redis.del(this.key(phone, scope));
-    await this.redis.del(this.attemptsKey(phone, scope));
+    await this.redis.del(this.key(phone, flow));
+    await this.redis.del(this.attemptsKey(phone, flow));
   }
-
 }

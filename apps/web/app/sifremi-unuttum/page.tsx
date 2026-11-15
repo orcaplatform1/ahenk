@@ -6,10 +6,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
+import { otpNoticeOf, resendSecondsOf, type OtpNoticeCode } from '@/lib/otpResend';
+import { OtpNoticeAction } from '@/lib/otpCountdown';
 
 function errorText(e: unknown): string {
   const msg = (e as Error).message;
   return msg === '__rate_limit__' ? 'Çok fazla deneme yapıldı. Lütfen bir dakika sonra tekrar dene.' : msg;
+}
+
+// Kod ekranına bekleme süresinin bitiş anı taşınır (sayaç oradan devam eder)
+function resetUrl(phone: string, resendSeconds: number | undefined): string {
+  const until = resendSeconds && resendSeconds > 0 ? `&until=${Date.now() + resendSeconds * 1000}` : '';
+  return `/sifremi-sifirla?phone=${encodeURIComponent(phone)}${until}`;
 }
 
 export default function SifremiUnuttumPage() {
@@ -17,17 +25,24 @@ export default function SifremiUnuttumPage() {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Numara kayıtlı değilse uyarının altında "Kayıt ol" butonu
+  const [notice, setNotice] = useState<OtpNoticeCode | null>(null);
 
   const phoneValid = phone.length === 10 && phone.startsWith('5');
 
   async function handleSubmit() {
     if (!phoneValid) { setError('Geçerli bir telefon numarası girin.'); return; }
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setNotice(null);
+    const full = `+90${phone}`;
     try {
-      const full = `+90${phone}`;
-      await api.post('/auth/forgot-password', { phone: full });
-      router.push(`/sifremi-sifirla?phone=${encodeURIComponent(full)}`);
-    } catch (e) { setError(errorText(e)); setLoading(false); }
+      const r = await api.post<{ resendSeconds?: number }>('/auth/forgot-password', { phone: full });
+      router.push(resetUrl(full, r.resendSeconds));
+    } catch (e) {
+      // Bekleme süresi dolmadan istendi: kod daha önce gönderildi; kod ekranı sunucunun döndüğü kalan saniyeyle açılır
+      const left = resendSecondsOf(e);
+      if (left !== null) { router.push(resetUrl(full, left)); return; }
+      setError(errorText(e)); setNotice(otpNoticeOf(e)); setLoading(false);
+    }
   }
 
   return (
@@ -75,6 +90,7 @@ export default function SifremiUnuttumPage() {
             />
           </div>
           {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+          {error && <OtpNoticeAction code={notice} />}
         </motion.div>
 
         <div className="mt-4">

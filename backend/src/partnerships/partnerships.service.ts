@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { randomBytes, randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { OTP_RESEND_SECONDS, OtpService } from '../auth/otp/otp.service';
+import { OtpService } from '../auth/otp/otp.service';
 import { ApplyPartnershipDto } from './partnerships.dto';
 import { isValidDistrict } from '../common/districts';
 import { assertVenuePhotos, removeVenuePhotoDir, saveVenuePhotos } from '../venue-panel/venue-media';
@@ -30,12 +30,12 @@ export class PartnershipsService {
 
   async sendOtp(phone: string) {
     await this.assertPhoneFree(phone);
-    await this.otp.send(phone, 'venue');
-    return { message: 'Doğrulama kodu gönderildi', resendSeconds: OTP_RESEND_SECONDS };
+    const resendSeconds = await this.otp.send(phone, 'venue-apply');
+    return { message: 'Doğrulama kodu gönderildi', resendSeconds };
   }
 
   async verifyOtp(phone: string, code: string) {
-    await this.otp.verify(phone, code, 'venue');
+    await this.otp.verify(phone, code, 'venue-apply');
     const phoneToken = randomUUID();
     await this.redis.set(phoneKey(phone), phoneToken, PHONE_TOKEN_TTL);
     return { phoneToken };

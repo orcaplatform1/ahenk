@@ -11,6 +11,7 @@ import { useMasaTabs } from '@/lib/useMasaTabs';
 import { Btn, BtnGhost, BtnPrimary, BtnTone, Card, Head, Input, ModalBox, Row, Sheet, Switch, T } from '../ui';
 import { getShakeEnabled, setShakeEnabled } from '@/lib/shakePref';
 import { OtpInput } from '../OtpInput';
+import { OtpCountdown, useOtpCountdown } from '../OtpCountdown';
 import { KankaSection } from './KankaSection';
 import { accountBtn, adminChipPulse, c, ll, sans, tw } from '@/theme/theme';
 
@@ -173,10 +174,14 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
     try { await api.post('/referral/invite', { phoneNumber: `+90${refPhone}` }); setRefMsg('Davet başarıyla gönderildi!'); setRefPhone(''); setStats(await api.get('/referral/my-stats')); }
     catch (e) { setRefMsg((e as Error).message || 'Gönderilemedi.'); } finally { setRefSending(false); }
   }
+  // Yeni kod isteme bekleme süresi backend'den gelir (ortak sayaç)
+  const phoneCountdown = useOtpCountdown();
   async function sendPhoneOtp() {
     if (!newPhone || newPhone.length !== 10 || !newPhone.startsWith('5')) { setPhoneError('Geçerli bir numara girin (5 ile başlayan 10 hane).'); return; }
     setPhoneSaving(true); setPhoneError('');
-    try { await api.post('/users/change-phone/request', { phone: `+90${newPhone}` }); setPhoneMode('otp'); } catch (e) { setPhoneError((e as Error).message); } finally { setPhoneSaving(false); }
+    try { const r = await api.post<{ resendSeconds?: number }>('/users/change-phone/request', { phone: `+90${newPhone}` }); setPhoneMode('otp'); setOtp(''); phoneCountdown.start(r?.resendSeconds); }
+    // Bekleme süresi dolmadan istendi: sayaç sunucunun döndüğü kalan saniyeden başlar
+    catch (e) { if (phoneCountdown.startFromError(e)) setPhoneMode('otp'); setPhoneError((e as Error).message); } finally { setPhoneSaving(false); }
   }
   async function verifyPhone(code = otp) {
     if (code.length !== 6) return;
@@ -269,9 +274,11 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin }: { user: User
           <View style={{ gap: 8, paddingTop: 4 }}>
             <T style={{ fontSize: 12, color: ll.label }}>+90{newPhone} numarasına WhatsApp kodu gönderildi.</T>
             <OtpInput value={otp} onChange={setOtp} onComplete={verifyPhone} />
+            <OtpCountdown seconds={phoneCountdown.seconds} fontSize={12} />
             {!!phoneError && <T style={{ color: tw.accent, fontSize: 12, textAlign: 'center' }}>{phoneError}</T>}
+            <Btn variant="textLink" disabled={phoneCountdown.waiting || phoneSaving} onPress={sendPhoneOtp} label="Yeni kod gönder" />
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <BtnGhost label="Geri" style={{ flex: 1 }} onPress={() => { setPhoneMode('enter'); setPhoneError(''); setOtp(''); }} />
+              <BtnGhost label="Geri" style={{ flex: 1 }} onPress={() => { setPhoneMode('enter'); setPhoneError(''); setOtp(''); phoneCountdown.start(0); }} />
               <BtnPrimary label={phoneSaving ? '…' : 'Doğrula'} style={{ flex: 1 }} disabled={phoneSaving || otp.length !== 6} onPress={() => verifyPhone()} />
             </View>
           </View>

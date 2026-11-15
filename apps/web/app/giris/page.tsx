@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api, API_PREFIX } from '@/lib/api';
 import { venueApi } from '@/lib/venueApi';
 import OtpInput from '@/components/ui/OtpInput';
+import { OtpCountdown, OtpNoticeAction, useOtpCountdown } from '@/lib/otpCountdown';
+import { otpNoticeOf, withResendSeconds, type OtpNoticeCode } from '@/lib/otpResend';
 
 const API_BASE = API_PREFIX;
 
@@ -41,7 +43,7 @@ async function authPost<T>(path: string, body: unknown): Promise<T> {
       throw e;
     }
     const msg = Array.isArray(err.message) ? err.message[0] : (err.message ?? 'Bir hata oluştu');
-    throw new Error(msg);
+    throw withResendSeconds(new Error(msg), data);
   }
   return data as T;
 }
@@ -53,12 +55,9 @@ function VenueLogin() {
   const [phone, setPhone] = useState('');
   const [otpStep, setOtpStep] = useState(false);
   const [otp, setOtp] = useState('');
-  const [resendIn, setResendIn] = useState(0);
-  useEffect(() => {
-    if (resendIn <= 0) return;
-    const t = setTimeout(() => setResendIn(n => n - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendIn]);
+  const countdown = useOtpCountdown();
+  // Numara kayıtlı değilse uyarının altında "Mekân ekle" butonu
+  const [notice, setNotice] = useState<OtpNoticeCode | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -68,8 +67,15 @@ function VenueLogin() {
 
   function done() { router.push('/mekan/panel/bilgiler'); }
   async function sendOtp() {
-    setLoading(true); setError('');
-    try { await venueApi.post('/send-login-otp', { phone: `+90${phone}` }); setOtpStep(true); setOtp(''); setResendIn(60); } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
+    setLoading(true); setError(''); setNotice(null);
+    try {
+      const r = await venueApi.post<{ resendSeconds?: number }>('/send-login-otp', { phone: `+90${phone}` });
+      setOtpStep(true); setOtp(''); countdown.start(r.resendSeconds);
+    } catch (e) {
+      // Bekleme süresi dolmadan istendi: sayaç sunucunun döndüğü kalan saniyeden başlar
+      if (countdown.startFromError(e)) setOtpStep(true);
+      setError((e as Error).message); setNotice(otpNoticeOf(e));
+    } finally { setLoading(false); }
   }
   async function verify() {
     setLoading(true); setError('');
@@ -123,6 +129,7 @@ function VenueLogin() {
               />
             </div>
             {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+            {error && <OtpNoticeAction code={notice} />}
           </div>
         )}
 
@@ -132,6 +139,7 @@ function VenueLogin() {
               +90{phone} numarasına gönderilen 6 haneli kodu gir.
             </p>
             <OtpInput value={otp} onChange={(code) => { setOtp(code); setError(''); }} />
+            <OtpCountdown seconds={countdown.seconds} />
             {error && <p className="text-[#ff6b6b] text-sm text-center">{error}</p>}
           </div>
         )}
@@ -202,10 +210,10 @@ function VenueLogin() {
             <button
               type="button"
               onClick={sendOtp}
-              disabled={resendIn > 0 || loading}
-              className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed"
+              disabled={countdown.waiting || loading}
+              className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:opacity-40 disabled:hover:text-[#555] disabled:cursor-not-allowed"
             >
-              {resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}
+              Yeni kod gönder
             </button>
             <button
               type="button"
@@ -250,13 +258,10 @@ export default function GirisPage() {
   const [otpStep,  setOtpStep]  = useState(false);
   const [otp,      setOtp]      = useState(['', '', '', '', '', '']);
   const [otpShake, setOtpShake] = useState(false);
-  // Kodu tekrar gönder: backend ile aynı 60 sn bekleme
-  const [resendIn, setResendIn] = useState(0);
-  useEffect(() => {
-    if (resendIn <= 0) return;
-    const t = setTimeout(() => setResendIn(n => n - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendIn]);
+  // Yeni kod gönder: bekleme süresi backend'den gelir (ortak sayaç)
+  const countdown = useOtpCountdown();
+  // Numara kayıtlı değilse uyarının altında "Kayıt ol" butonu
+  const [notice, setNotice] = useState<OtpNoticeCode | null>(null);
 
   /* E-posta akışı */
   const [email,       setEmail]       = useState('');
@@ -277,16 +282,20 @@ export default function GirisPage() {
 
   /* ── WhatsApp: Kod Gönder ───────────────────────────────────── */
   async function handleSendOtp() {
-    setLoading(true); setError(''); setSanction(null);
+    setLoading(true); setError(''); setSanction(null); setNotice(null);
     try {
-      await authPost('/auth/send-login-otp', { phone: `+90${phoneDigits}` });
+      const r = await authPost<{ resendSeconds?: number }>('/auth/send-login-otp', { phone: `+90${phoneDigits}` });
       setOtpStep(true);
       setOtp(['', '', '', '', '', '']);
-      setResendIn(60);
+      countdown.start(r.resendSeconds);
     } catch (e) {
       const err = e as Error & { sanction?: SanctionPayload };
       if (err.sanction) { setSanction(err.sanction); }
-      else { setError(err.message); }
+      else {
+        // Bekleme süresi dolmadan istendi: sayaç sunucunun döndüğü kalan saniyeden başlar
+        if (countdown.startFromError(e)) setOtpStep(true);
+        setError(err.message); setNotice(otpNoticeOf(e));
+      }
     }
     finally { setLoading(false); }
   }
@@ -539,6 +548,7 @@ export default function GirisPage() {
                   />
                 </div>
                 {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
+                {error && <OtpNoticeAction code={notice} />}
               </div>
             )}
 
@@ -553,6 +563,7 @@ export default function GirisPage() {
                   onChange={(code) => { setOtp(Array.from({ length: 6 }, (_, i) => code[i] ?? '')); setError(''); }}
                   error={otpShake}
                 />
+                <OtpCountdown seconds={countdown.seconds} />
                 {error && <p className="text-[#ff6b6b] text-sm text-center">{error}</p>}
               </div>
             )}
@@ -627,10 +638,10 @@ export default function GirisPage() {
                 <button
                   type="button"
                   onClick={handleSendOtp}
-                  disabled={resendIn > 0 || loading}
-                  className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:hover:text-[#555] disabled:cursor-not-allowed"
+                  disabled={countdown.waiting || loading}
+                  className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:opacity-40 disabled:hover:text-[#555] disabled:cursor-not-allowed"
                 >
-                  {resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'}
+                  Yeni kod gönder
                 </button>
                 <button
                   type="button"

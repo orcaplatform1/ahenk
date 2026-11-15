@@ -22,7 +22,7 @@ import { groupPartOpen, kankaPartOpen, oneOnOnePartOpen, OPEN_KANKA_SUB, RIGHTS_
 import { activeKankaLink } from "../kanka/kanka-links";
 import { UsersService } from "../users/users.service";
 import { hashPhone } from "../users/account-deletion.service";
-import { OtpService, OtpMismatchException, OTP_RESEND_SECONDS } from "./otp/otp.service";
+import { OtpFlow, OtpService, OtpMismatchException, OtpPhoneNoticeException } from "./otp/otp.service";
 import { LoginGuardService } from "./login-guard.service";
 import { RedisService } from "../redis/redis.service";
 import { RegisterDto } from "./dto/register.dto";
@@ -45,10 +45,10 @@ export class AuthService {
   ) {}
 
   // Giriş / şifre sıfırlama kodu: yanlış kod hesabın hatalı deneme sayacına yazılır (5 denemede 15 dk kilit)
-  private async verifyOtpForAccount(userId: string, phone: string, code: string) {
+  private async verifyOtpForAccount(userId: string, phone: string, code: string, flow: OtpFlow) {
     await this.loginGuard.assertNotLocked(userId);
     try {
-      await this.otpService.verify(phone, code);
+      await this.otpService.verify(phone, code, flow);
     } catch (err) {
       if (err instanceof OtpMismatchException) await this.loginGuard.fail(userId);
       throw err;
@@ -60,10 +60,11 @@ export class AuthService {
 
   async registerSendOtp(phone: string) {
     const used = await this.prisma.user.findUnique({ where: { phone }, select: { id: true } });
-    if (used) throw new ConflictException("Bu telefon numarası zaten kullanılıyor");
+    // Numara zaten kayıtlı: kod gönderilmez, bekleme süresi başlamaz; ekranda uyarının altında "Giriş yap" çıkar
+    if (used) throw new OtpPhoneNoticeException("PHONE_ALREADY_REGISTERED");
     await this.assertPhoneNotBanned(phone);
-    await this.otpService.send(phone);
-    return { message: "Doğrulama kodu gönderildi", resendSeconds: OTP_RESEND_SECONDS };
+    const resendSeconds = await this.otpService.send(phone, "register");
+    return { message: "Doğrulama kodu gönderildi", resendSeconds };
   }
 
   // Banlıyken silinen hesabın numarası sadece phoneHash olarak kalır: bu numarayla yeniden kayıt olunamaz
@@ -74,7 +75,7 @@ export class AuthService {
 
   // Doğru kod → 30 dk geçerli telefon anahtarı; kayıt bu anahtar olmadan yapılamaz
   async registerVerifyOtp(phone: string, code: string) {
-    await this.otpService.verify(phone, code);
+    await this.otpService.verify(phone, code, "register");
     const phoneToken = randomUUID();
     await this.redis.set(`regphone:${phone}`, phoneToken, 30 * 60);
     return { phoneToken };
@@ -362,8 +363,10 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { phone } });
     // Yanıt tek tip: numaranın kayıtlı olup olmadığı anlaşılmaz (kayıtsız numaraya kod gitmez)
     // Yaptırım kontrolü kod doğrulandıktan sonra yapılır (verifyLoginOtp)
-    if (user) await this.otpService.send(phone);
-    return { message: "Doğrulama kodu gönderildi" };
+    // Numara kayıtlı değil: kod gönderilmez, bekleme süresi başlamaz; ekranda uyarının altında "Kayıt ol" çıkar
+    if (!user) throw new OtpPhoneNoticeException("PHONE_NOT_REGISTERED");
+    const resendSeconds = await this.otpService.send(phone, "login");
+    return { message: "Doğrulama kodu gönderildi", resendSeconds };
   }
 
   // ─── Şifre sıfırlama (WhatsApp kodu) ──────────────────────────────────────
@@ -371,8 +374,10 @@ export class AuthService {
   async forgotPassword(phone: string) {
     const user = await this.prisma.user.findUnique({ where: { phone }, select: { id: true, isBot: true } });
     // Yanıt tek tip: numaranın kayıtlı olup olmadığı anlaşılmaz
-    if (user && !user.isBot) await this.otpService.send(phone);
-    return { message: "Doğrulama kodu gönderildi" };
+    // Numara kayıtlı değil: kod gönderilmez, bekleme süresi başlamaz; ekranda uyarının altında "Kayıt ol" çıkar
+    if (!user || user.isBot) throw new OtpPhoneNoticeException("PHONE_NOT_REGISTERED");
+    const resendSeconds = await this.otpService.send(phone, "forgot-password");
+    return { message: "Doğrulama kodu gönderildi", resendSeconds };
   }
 
   async resetPassword(phone: string, code: string, newPassword: string) {
@@ -380,7 +385,7 @@ export class AuthService {
     // Kayıtsız numarada süresi dolmuş kod yanıtıyla aynı (bu numara için kod hiç üretilmedi)
     if (!user || user.isBot) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
 
-    await this.verifyOtpForAccount(user.id, phone, code);
+    await this.verifyOtpForAccount(user.id, phone, code, "forgot-password");
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
@@ -399,7 +404,7 @@ export class AuthService {
     });
     if (!user) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
 
-    await this.verifyOtpForAccount(user.id, phone, code);
+    await this.verifyOtpForAccount(user.id, phone, code, "login");
     // Yaptırım bilgisi sadece kod doğruysa gösterilir
     await this.checkSanction(user.id, user.status);
 

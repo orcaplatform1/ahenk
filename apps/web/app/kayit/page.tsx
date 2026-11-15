@@ -8,6 +8,8 @@ import { OCCUPATION_SECTORS } from '@/lib/occupations';
 import { api } from '@/lib/api';
 import { trackOceanTestComplete, trackSignUp } from '@/lib/analytics';
 import OtpInput from '@/components/ui/OtpInput';
+import { OtpCountdown, OtpNoticeAction, useOtpCountdown } from '@/lib/otpCountdown';
+import { otpNoticeOf, type OtpNoticeCode } from '@/lib/otpResend';
 import SiteSelect from '@/components/SiteSelect';
 import { gColor } from '@ahenk/ui';
 import { DateField } from '@/components/BirthDateField';
@@ -101,28 +103,29 @@ function KayitPageInner() {
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [phoneToken, setPhoneToken] = useState('');
-  const [resendIn, setResendIn] = useState(0);
-
-  useEffect(() => {
-    if (resendIn <= 0) return;
-    const t = setTimeout(() => setResendIn(n => n - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendIn]);
+  // Yeni kod isteme bekleme süresi backend'den gelir (ortak sayaç)
+  const countdown = useOtpCountdown();
+  // Numara zaten kayıtlıysa uyarının altında "Giriş yap" butonu
+  const [notice, setNotice] = useState<OtpNoticeCode | null>(null);
 
   function changePhone(v: string) {
     set('phoneNumber', v);
     // Numara değişirse doğrulama baştan yapılır
     setOtpSent(false); setOtpCode(''); setOtpError(''); setPhoneToken('');
+    countdown.start(0);
   }
 
   async function sendPhoneOtp() {
     const digits = form.phoneNumber.replace(/\D/g, '');
     if (digits.length !== 10 || !digits.startsWith('5')) { setOtpError('WhatsApp numaranızı girin (5 ile başlayan 10 hane).'); return; }
-    setOtpSending(true); setOtpError('');
+    setOtpSending(true); setOtpError(''); setNotice(null);
     try {
       const r = await api.post<{ resendSeconds: number }>('/auth/register/send-otp', { phone: `+90${digits}` });
-      setOtpSent(true); setOtpCode(''); setResendIn(r.resendSeconds ?? 60);
+      setOtpSent(true); setOtpCode(''); countdown.start(r.resendSeconds);
     } catch (e) {
+      // Bekleme süresi dolmadan istendi: sayaç sunucunun döndüğü kalan saniyeden başlar
+      if (countdown.startFromError(e)) setOtpSent(true);
+      setNotice(otpNoticeOf(e));
       const msg = (e as Error).message;
       setOtpError(msg === '__rate_limit__' ? 'Çok fazla deneme yapıldı. Lütfen bir dakika sonra tekrar dene.' : msg);
     } finally { setOtpSending(false); }
@@ -421,11 +424,11 @@ function KayitPageInner() {
                   <button
                     type="button"
                     onClick={sendPhoneOtp}
-                    disabled={otpSending || resendIn > 0 || form.phoneNumber.length !== 10}
+                    disabled={otpSending || countdown.waiting || form.phoneNumber.length !== 10}
                     className="shrink-0 px-3 text-xs font-medium rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{ border: '1px solid rgba(192,57,43,0.5)', color: '#e74c3c', background: 'rgba(192,57,43,0.06)' }}
                   >
-                    {otpSending ? 'Gönderiliyor…' : resendIn > 0 ? `Tekrar (${resendIn} sn)` : otpSent ? 'Tekrar gönder' : 'Kod gönder'}
+                    {otpSending ? 'Gönderiliyor…' : otpSent ? 'Yeni kod gönder' : 'Kod gönder'}
                   </button>
                 )}
               </div>
@@ -443,10 +446,12 @@ function KayitPageInner() {
                     onComplete={verifyPhoneOtp}
                     error={otpShake}
                   />
+                  <OtpCountdown seconds={countdown.seconds} className="text-xs text-[#a39c93] text-center" />
                   {otpVerifying && <p className="text-xs text-[#a39c93] text-center">Doğrulanıyor…</p>}
                 </div>
               )}
               {otpError && <p className="text-xs text-[#ff6b6b] mt-2">{otpError}</p>}
+              {otpError && notice && <div className="mt-2"><OtpNoticeAction code={notice} /></div>}
             </div>
             <PasswordField label="Şifre" value={form.password} onChange={(v) => { set('password', v); setPwError(''); }} error={pwError} />
             <PasswordField label="Şifre Tekrar" value={form.confirmPassword} onChange={(v) => { set('confirmPassword', v); setPwConfirmError(''); }} shakeKey={confirmShake} error={pwConfirmError} />

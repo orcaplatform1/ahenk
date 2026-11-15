@@ -1,3 +1,5 @@
+import { withResendSeconds } from './otpResend';
+
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
 const PREFIX = `${BASE}/api/v1`;
 
@@ -125,9 +127,9 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: 'Bir hata oluştu' }));
-    throw new Error((err as { message?: string | string[] }).message instanceof Array
+    throw withResendSeconds(new Error((err as { message?: string | string[] }).message instanceof Array
       ? ((err as { message: string[] }).message[0])
-      : ((err as { message?: string }).message ?? 'Bir hata oluştu'));
+      : ((err as { message?: string }).message ?? 'Bir hata oluştu')), err);
   }
 
   return res.json() as Promise<T>;

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '@/lib/api';
+import { OtpNoticeAction, otpNoticeOf, resendSecondsOf, type OtpNoticeCode } from '@/components/OtpCountdown';
 import { PillButton, StepScreen } from '@/components/AuthFlow';
 import { ErrorText, Input, T } from '@/components/ui';
 import { ll } from '@/theme/theme';
@@ -13,13 +14,22 @@ export default function SifremiUnuttum() {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Numara kayıtlı değilse uyarının altında "Kayıt ol" butonu
+  const [notice, setNotice] = useState<OtpNoticeCode | null>(null);
   const valid = phone.length === 10 && phone.startsWith('5');
   async function submit() {
     if (!valid) return;
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setNotice(null);
     const full = `+90${phone}`;
-    try { await api.post('/auth/forgot-password', { phone: full }); router.push({ pathname: '/sifremi-sifirla', params: { phone: full } }); }
-    catch (e) { setError((e as Error).message); } finally { setLoading(false); }
+    // Kod ekranına bekleme süresinin bitiş anı taşınır (sayaç oradan devam eder)
+    const open = (resendSeconds: number | null | undefined) =>
+      router.push({ pathname: '/sifremi-sifirla', params: { phone: full, until: resendSeconds && resendSeconds > 0 ? String(Date.now() + resendSeconds * 1000) : '' } });
+    try { const r = await api.post<{ resendSeconds?: number }>('/auth/forgot-password', { phone: full }); open(r?.resendSeconds); }
+    catch (e) {
+      // Bekleme süresi dolmadan istendi: kod daha önce gönderildi; kod ekranı sunucunun döndüğü kalan saniyeyle açılır
+      const left = resendSecondsOf(e);
+      if (left !== null) open(left); else { setError((e as Error).message); setNotice(otpNoticeOf(e)); }
+    } finally { setLoading(false); }
   }
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: ll.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -33,6 +43,7 @@ export default function SifremiUnuttum() {
             onChangeText={(t) => { setPhone(t.replace(/\D/g, '').slice(0, 10)); setError(''); }} placeholder="5XX XXX XX XX" onSubmitEditing={submit} returnKeyType="send" />
         </View>
         <View style={{ marginTop: 12 }}><ErrorText>{error}</ErrorText></View>
+        {!!error && !!notice && <View style={{ marginTop: 12 }}><OtpNoticeAction code={notice} /></View>}
       </StepScreen>
     </KeyboardAvoidingView>
   );

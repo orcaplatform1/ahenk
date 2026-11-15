@@ -57,15 +57,15 @@ export class UsersService {
     const existing = await this.prisma.user.findUnique({ where: { phone: newPhone } });
     if (existing && existing.id === userId) throw new BadRequestException("Bu numara zaten hesabınızda kayıtlı.");
     if (existing) throw new ConflictException("Bu telefon numarası kullanılmaktadır.");
-    await this.otpService.send(newPhone);
-    return { ok: true };
+    const resendSeconds = await this.otpService.send(newPhone, "change-phone");
+    return { ok: true, resendSeconds };
   }
 
   async verifyPhoneChange(userId: string, newPhone: string, code: string) {
     // Kod gönderildikten sonra numara başka hesaba geçmiş olabilir → kod harcanmadan kontrol
     const existing = await this.prisma.user.findUnique({ where: { phone: newPhone } });
     if (existing && existing.id !== userId) throw new ConflictException("Bu telefon numarası kullanılmaktadır.");
-    await this.otpService.verify(newPhone, code);
+    await this.otpService.verify(newPhone, code, "change-phone");
     try {
       await this.prisma.user.update({ where: { id: userId }, data: { phone: newPhone } });
     } catch (e) {

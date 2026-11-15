@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { Modal } from '@/components/ui/Modal';
 import { ProblemReportModal } from '@/components/ProblemReportModal';
+import { OtpCountdown, useOtpCountdown } from '@/lib/otpCountdown';
 
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
 
@@ -157,13 +158,20 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
     finally { setReferralSending(false); }
   }
 
+  // Yeni kod isteme bekleme süresi backend'den gelir (ortak sayaç)
+  const phoneCountdown = useOtpCountdown();
+
   async function sendPhoneOtp() {
     if (!newPhone || newPhone.length !== 10 || !newPhone.startsWith('5')) { setPhoneError('Geçerli bir numara girin (5 ile başlayan 10 hane).'); return; }
     setPhoneSaving(true); setPhoneError('');
     try {
-      await api.post('/users/change-phone/request', { phone: `+90${newPhone}` });
-      setPhoneMode('otp');
-    } catch (e) { setPhoneError((e as Error).message); }
+      const r = await api.post<{ resendSeconds?: number }>('/users/change-phone/request', { phone: `+90${newPhone}` });
+      setPhoneMode('otp'); setPhoneOtp(['', '', '', '', '', '']); phoneCountdown.start(r.resendSeconds);
+    } catch (e) {
+      // Bekleme süresi dolmadan istendi: sayaç sunucunun döndüğü kalan saniyeden başlar
+      if (phoneCountdown.startFromError(e)) setPhoneMode('otp');
+      setPhoneError((e as Error).message);
+    }
     finally { setPhoneSaving(false); }
   }
 
@@ -312,9 +320,11 @@ export function TabProfilim({ user, onGoKyc, cities, activePlan }: Props) {
                 />
               ))}
             </div>
+            <OtpCountdown seconds={phoneCountdown.seconds} className="text-xs text-[#a39c93] text-center" />
             {phoneError && <p className="text-[#ff6b6b] text-xs text-center">{phoneError}</p>}
+            <button type="button" onClick={sendPhoneOtp} disabled={phoneCountdown.waiting || phoneSaving} className="text-xs text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:opacity-40 disabled:cursor-not-allowed">Yeni kod gönder</button>
             <div className="flex gap-2">
-              <button onClick={() => { setPhoneMode('enter'); setPhoneError(''); setPhoneOtp(['', '', '', '', '', '']); }} className="flex-1 btn-ghost justify-center">Geri</button>
+              <button onClick={() => { setPhoneMode('enter'); setPhoneError(''); setPhoneOtp(['', '', '', '', '', '']); phoneCountdown.start(0); }} className="flex-1 btn-ghost justify-center">Geri</button>
               <button onClick={verifyPhoneOtp} disabled={phoneSaving || phoneOtp.join('').length !== 6} className="flex-1 btn-primary disabled:opacity-40">{phoneSaving ? '…' : 'Doğrula'}</button>
             </div>
           </div>

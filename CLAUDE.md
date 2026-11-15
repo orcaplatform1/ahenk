@@ -545,6 +545,14 @@ RATE LIMITING:
     (IP + telefon; e-posta + şifre girişinde IP + e-posta).
   - Hesap kilidi: yanlış şifre ve yanlış OTP denemeleri hesap başına birlikte sayılır; 5 başarısız denemeden sonra hesap
     15 dakika kilitlenir. Mesaj: "Çok fazla hatalı deneme yapıldı. Hesabın 15 dakika boyunca kilitlendi."
+  - Tüm WhatsApp OTP akışlarında kod geçerlilik süresi ve yeni kod bekleme süresi 120 saniyedir, tek sabitten okunur
+    (backend/src/auth/otp/otp.service.ts OTP_TTL_SECONDS).
+  - Bekleme süresi telefon + akış bazlı Redis'te tutulur. Süre dolmadan istenirse kalan saniye döner.
+  - OTP kodu telefon + akış bazlı anahtarda tutulur.
+  - Web ve mobil OTP ekranlarında sunucudan gelen saniyeyle geri sayım sayacı gösterilir, sayaç bitince "Yeni kod gönder"
+    butonu aktif olur.
+  - Giriş ve şifremi unuttum akışlarında kayıtlı olmayan numaraya, kayıt ol akışında kayıtlı numaraya kod gönderilmez ve
+    uyarı döner.
 
 API CLIENT KURALLAR (web):
   - apps/web/lib/api.ts içinde PREFIX sabiti API_PREFIX olarak export edilir.

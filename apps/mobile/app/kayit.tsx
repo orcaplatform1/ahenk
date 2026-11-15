@@ -19,6 +19,7 @@ import { DateField, FieldLabel, ListPicker } from '@/components/Pickers';
 import { TestFlow, type Question } from '@/components/TestFlow';
 import { ContactPicker, normalizeTrPhone } from '@/components/profil/RehberTab';
 import { Btn, BtnGhost, ErrorText, Eyebrow, Input, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
+import { OtpCountdown, OtpNoticeAction, otpNoticeOf, useOtpCountdown, type OtpNoticeCode } from '@/components/OtpCountdown';
 import { c, ll, tw, tw4 } from '@/theme/theme';
 
 interface City { id: string; name: string }
@@ -54,7 +55,10 @@ export default function Kayit() {
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [phoneToken, setPhoneToken] = useState('');
-  const [resendIn, setResendIn] = useState(0);
+  // Yeni kod isteme bekleme süresi backend'den gelir (ortak sayaç)
+  const countdown = useOtpCountdown();
+  // Numara zaten kayıtlıysa uyarının altında "Giriş yap" butonu
+  const [notice, setNotice] = useState<OtpNoticeCode | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [tCurrent, setTCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -62,7 +66,6 @@ export default function Kayit() {
   const [success, setSuccess] = useState(false);
   const [picker, setPicker] = useState(false);
 
-  useEffect(() => { if (resendIn <= 0) return; const t = setTimeout(() => setResendIn(n => n - 1), 1000); return () => clearTimeout(t); }, [resendIn]);
   useEffect(() => {
     api.get<City[]>('/auth/cities').then((list) => setCities(list.filter((c) => CITY_ORDER.includes(c.name)))).catch(() => setError('Şehir listesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'));
     api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => setError('İlçe listesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'));
@@ -71,13 +74,14 @@ export default function Kayit() {
   const districtOptions = districts[cities.find(x => x.id === f.primaryCityId)?.name ?? ''] ?? [];
   const sortedCities = [...cities].sort((a, b) => { const ia = CITY_ORDER.indexOf(a.name), ib = CITY_ORDER.indexOf(b.name); if (ia === -1 && ib === -1) return a.name.localeCompare(b.name, 'tr'); if (ia === -1) return 1; if (ib === -1) return -1; return ia - ib; });
 
-  function changePhone(v: string) { set('phoneNumber', v); setOtpSent(false); setOtpCode(''); setOtpError(''); setPhoneToken(''); }
+  function changePhone(v: string) { set('phoneNumber', v); setOtpSent(false); setOtpCode(''); setOtpError(''); setPhoneToken(''); countdown.start(0); }
   async function sendPhoneOtp() {
     const d = f.phoneNumber;
     if (d.length !== 10 || !d.startsWith('5')) { setOtpError('WhatsApp numaranızı girin (5 ile başlayan 10 hane).'); return; }
-    setOtpSending(true); setOtpError('');
-    try { const r = await api.post<{ resendSeconds: number }>('/auth/register/send-otp', { phone: `+90${d}` }); setOtpSent(true); setResendIn(r?.resendSeconds ?? 60); }
-    catch (e) { setOtpError((e as Error).message); } finally { setOtpSending(false); }
+    setOtpSending(true); setOtpError(''); setNotice(null);
+    try { const r = await api.post<{ resendSeconds: number }>('/auth/register/send-otp', { phone: `+90${d}` }); setOtpSent(true); countdown.start(r?.resendSeconds); }
+    // Bekleme süresi dolmadan istendi: sayaç sunucunun döndüğü kalan saniyeden başlar
+    catch (e) { if (countdown.startFromError(e)) setOtpSent(true); setNotice(otpNoticeOf(e)); setOtpError((e as Error).message); } finally { setOtpSending(false); }
   }
   async function verifyPhoneOtp(code: string) {
     setOtpVerifying(true); setOtpError('');
@@ -193,7 +197,7 @@ export default function Kayit() {
                 <View style={{ justifyContent: 'center', paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12 }}><T style={{ color: ll.label, fontSize: 13 }}>+90</T></View>
                 <Input form editable={!phoneToken} keyboardType="number-pad" textContentType="telephoneNumber" value={f.phoneNumber} onChangeText={t => changePhone(t.replace(/\D/g, '').slice(0, 10))} placeholder="5XX XXX XX XX" style={{ flex: 1, minWidth: 0, fontSize: 13, opacity: phoneToken ? 0.6 : 1 }} />
                 {!phoneToken && (
-                  <Btn variant="otpSend" onPress={sendPhoneOtp} disabled={otpSending || resendIn > 0 || f.phoneNumber.length !== 10} label={otpSending ? 'Gönderiliyor…' : resendIn > 0 ? `Tekrar (${resendIn} sn)` : otpSent ? 'Tekrar gönder' : 'Kod gönder'} />
+                  <Btn variant="otpSend" onPress={sendPhoneOtp} disabled={otpSending || countdown.waiting || f.phoneNumber.length !== 10} label={otpSending ? 'Gönderiliyor…' : otpSent ? 'Yeni kod gönder' : 'Kod gönder'} />
                 )}
               </View>
               {phoneToken ? (
@@ -205,10 +209,12 @@ export default function Kayit() {
                 <View style={{ marginTop: 12, gap: 8 }}>
                   <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>+90{f.phoneNumber} numarasına WhatsApp ile gönderilen 6 haneli kodu gir.</T>
                   <OtpInput value={otpCode} onChange={v => { setOtpCode(v); setOtpError(''); }} onComplete={verifyPhoneOtp} error={otpShake} />
+                  <OtpCountdown seconds={countdown.seconds} fontSize={12} />
                   {otpVerifying && <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>Doğrulanıyor…</T>}
                 </View>
               )}
               {!!otpError && <T style={{ fontSize: 12, color: tw.accent, marginTop: 8 }}>{otpError}</T>}
+              {!!otpError && !!notice && <View style={{ marginTop: 8 }}><OtpNoticeAction code={notice} /></View>}
             </View>
             <View><FieldLabel>Şifre</FieldLabel><PasswordInput value={f.password} onChangeText={v => { set('password', v); setPwError(''); }} placeholder="" />{!!pwError && <T style={{ fontSize: 12, color: tw.accent, marginTop: 4 }}>{pwError}</T>}</View>
             <View><FieldLabel>Şifre Tekrar</FieldLabel><PasswordInput value={f.confirmPassword} onChangeText={v => { set('confirmPassword', v); setPwConfirmError(''); }} placeholder="" />{!!pwConfirmError && <T style={{ fontSize: 12, color: tw.accent, marginTop: 4 }}>{pwConfirmError}</T>}</View>

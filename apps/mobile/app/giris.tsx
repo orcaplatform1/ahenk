@@ -1,7 +1,7 @@
 // Mobil giriş ekranı (yalnız üye; mekân girişi mobil uygulamada yok). Tam ekran arka plan görseli (logo yok);
 // altta yasal metin ve tam genişlikte üç buton: Telefon Numarası ile devam et → "Numaranı alabilir miyiz?" → WhatsApp kodu,
 // E-posta ile devam et → "E-postan nedir?" → "Şifreni gir", Kayıt Ol → kayıt akışı. Tüm adımlarda sol üstte geri ok.
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { KeyboardAvoidingView, Linking, Modal, Platform, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { AuthBackground, useAuthBackgroundIndex, BackArrow, LegalNote, MailIcon,
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
 import { OtpInput } from '@/components/OtpInput';
 import { Btn, BtnGhost, BtnPrimary, ErrorText, Input, T } from '@/components/ui';
+import { OtpCountdown, OtpNoticeAction, otpNoticeOf, useOtpCountdown, type OtpNoticeCode } from '@/components/OtpCountdown';
 import { c, ll, tw } from '@/theme/theme';
 
 interface Sanction { type: 'WARNING' | 'SUSPENSION' | 'BAN'; reason: string; expiresAt: string | null; message: string }
@@ -28,15 +29,10 @@ async function authPost<T>(path: string, body: unknown): Promise<T> {
       const e = new Error((err.message as string) ?? 'Erişim engellendi') as Error & { sanction?: Sanction };
       e.sanction = err as Sanction; throw e;
     }
-    throw new Error(Array.isArray(err.message) ? err.message[0] : (err.message ?? 'Bir hata oluştu'));
+    // Bekleme süresi dolmadan kod istendiyse yanıttaki kalan saniye hataya eklenir (ortak sayaç okur)
+    throw Object.assign(new Error(Array.isArray(err.message) ? err.message[0] : (err.message ?? 'Bir hata oluştu')), { resendSeconds: (data as { resendSeconds?: number }).resendSeconds, code: (data as { code?: string }).code });
   }
   return data as T;
-}
-
-function useResend() {
-  const [left, setLeft] = useState(0);
-  useEffect(() => { if (left <= 0) return; const t = setTimeout(() => setLeft(n => n - 1), 1000); return () => clearTimeout(t); }, [left]);
-  return [left, setLeft] as const;
 }
 
 export default function Giris() {
@@ -48,7 +44,10 @@ export default function Giris() {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [otpShake, setOtpShake] = useState(false);
-  const [resendIn, setResendIn] = useResend();
+  // Yeni kod isteme bekleme süresi backend'den gelir (ortak sayaç)
+  const countdown = useOtpCountdown();
+  // Numara kayıtlı değilse uyarının altında "Kayıt ol" butonu
+  const [notice, setNotice] = useState<OtpNoticeCode | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -67,8 +66,10 @@ export default function Giris() {
   };
 
   async function sendOtp() {
-    setLoading(true); setError(''); setSanction(null);
-    try { await authPost('/auth/send-login-otp', { phone: `+90${phone}` }); setStep('otp'); setOtp(''); setResendIn(60); } catch (e) { fail(e); } finally { setLoading(false); }
+    setLoading(true); setError(''); setSanction(null); setNotice(null);
+    try { const r = await authPost<{ resendSeconds?: number }>('/auth/send-login-otp', { phone: `+90${phone}` }); setStep('otp'); setOtp(''); countdown.start(r?.resendSeconds); }
+    // Bekleme süresi dolmadan istendi: sayaç sunucunun döndüğü kalan saniyeden başlar
+    catch (e) { if (countdown.startFromError(e)) setStep('otp'); setNotice(otpNoticeOf(e)); fail(e); } finally { setLoading(false); }
   }
   async function afterLogin(data: LoginResponse) {
     await storeLogin(data);
@@ -140,6 +141,7 @@ export default function Giris() {
             onChangeText={(t) => { setPhone(t.replace(/\D/g, '').slice(0, 10)); setError(''); }} placeholder="5XX XXX XX XX" onSubmitEditing={() => phoneValid && sendOtp()} returnKeyType="next" />
         </View>
         <View style={{ marginTop: 12 }}><ErrorText>{error}</ErrorText></View>
+        {!!error && !!notice && <View style={{ marginTop: 12 }}><OtpNoticeAction code={notice} /></View>}
       </StepScreen>
     );
   } else if (step === 'otp') {
@@ -147,9 +149,10 @@ export default function Giris() {
       <StepScreen title="Kodu gir" subtitle={`+90${phone} numarasına WhatsApp ile gönderilen 6 haneli kodu gir.`} onBack={() => { setOtp(''); go('phone'); }}
         footer={<>
           <PillButton label={loading ? 'Doğrulanıyor…' : 'Giriş Yap'} primary disabled={loading || otp.length !== 6} onPress={() => verifyOtp()} />
-          <Btn variant="textLink" disabled={resendIn > 0 || loading} style={{ opacity: 1 }} onPress={sendOtp} label={resendIn > 0 ? `Kodu tekrar gönder (${resendIn} sn)` : 'Kodu tekrar gönder'} />
+          <Btn variant="textLink" disabled={countdown.waiting || loading} onPress={sendOtp} label="Yeni kod gönder" />
         </>}>
         <OtpInput value={otp} onChange={(v) => { setOtp(v); setError(''); }} error={otpShake} />
+        <View style={{ marginTop: 12 }}><OtpCountdown seconds={countdown.seconds} /></View>
         <View style={{ marginTop: 12 }}><ErrorText center>{error}</ErrorText></View>
       </StepScreen>
     );
