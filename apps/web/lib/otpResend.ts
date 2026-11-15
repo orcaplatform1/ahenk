@@ -16,8 +16,10 @@ export function withResendSeconds(error: Error, body: unknown): Error {
 }
 
 // Numara bu akış için uygun değilse sunucunun döndüğü uyarı kodu (uyarının altındaki buton için)
-export type OtpNoticeCode = 'PHONE_NOT_REGISTERED' | 'VENUE_NOT_REGISTERED' | 'PHONE_ALREADY_REGISTERED';
+export type OtpNoticeCode =
+  | 'PHONE_NOT_REGISTERED' | 'VENUE_NOT_REGISTERED' | 'PHONE_ALREADY_REGISTERED' | 'VENUE_ACCOUNT_INACTIVE' | 'VENUE_PHONE_MULTIPLE';
+const NOTICE_CODES: readonly string[] = ['PHONE_NOT_REGISTERED', 'VENUE_NOT_REGISTERED', 'PHONE_ALREADY_REGISTERED', 'VENUE_ACCOUNT_INACTIVE', 'VENUE_PHONE_MULTIPLE'];
 export function otpNoticeOf(e: unknown): OtpNoticeCode | null {
   const code = (e as { code?: unknown } | null)?.code;
-  return code === 'PHONE_NOT_REGISTERED' || code === 'VENUE_NOT_REGISTERED' || code === 'PHONE_ALREADY_REGISTERED' ? code : null;
+  return typeof code === 'string' && NOTICE_CODES.includes(code) ? (code as OtpNoticeCode) : null;
 }

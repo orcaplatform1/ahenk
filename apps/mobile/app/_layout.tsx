@@ -13,14 +13,25 @@ import { AppAlertHost } from '@/components/AppAlert';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
+// Yerel açılış görseli (siyah zemin + logo) açılışta en az bu kadar ekranda kalır; uygulama bu sırada arkada yüklenir
+const SPLASH_MIN_MS = 3000;
+const BOOT_AT = Date.now();
+
 export default function RootLayout() {
   const router = useRouter();
   const path = usePathname();
   const [loaded, setLoaded] = useState(false);
   useEffect(() => { loadFonts().catch(() => undefined).finally(() => setLoaded(true)); }, []);
   const splash = path === '/';
-  // Yerel açılış görseli, açılış yönlendirmesi (/) gidilecek ekrana geçince kapanır (dönen logolu açılış ekranı yok)
-  useEffect(() => { if (loaded && !splash) SplashScreen.hideAsync().catch(() => {}); }, [loaded, splash]);
+  // En az süre: açılıştan itibaren 3 sn dolunca işaretlenir (yükleme bu sırada beklemez, arkada sürer)
+  const [minShown, setMinShown] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMinShown(true), Math.max(0, SPLASH_MIN_MS - (Date.now() - BOOT_AT)));
+    return () => clearTimeout(t);
+  }, []);
+  // Yerel açılış görseli yalnız 3 sn dolduğunda VE yükleme bitip açılış yönlendirmesi (/) gidilecek ekrana geçtiğinde kapanır;
+  // yükleme 3 sn'den uzun sürerse yükleme bitene kadar açık kalır
+  useEffect(() => { if (loaded && !splash && minShown) SplashScreen.hideAsync().catch(() => {}); }, [loaded, splash, minShown]);
   useEffect(() => onAuthLost(() => router.replace('/giris')), [router]);
 
   if (!loaded && !splash) return null;

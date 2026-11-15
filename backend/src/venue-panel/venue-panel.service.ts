@@ -105,16 +105,19 @@ export class VenuePanelService {
     return accounts.length === 1 ? accounts[0] : null;
   }
 
-  // Numarayla kayıtlı mekân hesabı yoksa kod gönderilmez, bekleme süresi başlamaz; ekranda uyarının altında "Mekân ekle" çıkar
-  private async assertPhoneRegistered(phone: string) {
-    if ((await this.prisma.venueAccount.count({ where: { phone } })) === 0) throw new OtpPhoneNoticeException("VENUE_NOT_REGISTERED");
+  // Kod gönderilecek mekân hesabı: numara kayıtlı değilse, birden fazla hesaba bağlıysa ya da hesap aktif değilse kod gönderilmez,
+  // bekleme süresi başlamaz ve ayrı uyarı kodu döner (kayıtlı değilse ekranda uyarının altında "Mekân ekle" çıkar)
+  private async otpAccount(phone: string) {
+    const accounts = await this.prisma.venueAccount.findMany({ where: { phone }, take: 2 });
+    if (accounts.length === 0) throw new OtpPhoneNoticeException("VENUE_NOT_REGISTERED");
+    if (accounts.length > 1) throw new OtpPhoneNoticeException("VENUE_PHONE_MULTIPLE");
+    if (accounts[0].status !== "ACTIVE") throw new OtpPhoneNoticeException("VENUE_ACCOUNT_INACTIVE");
+    return accounts[0];
   }
 
   async sendLoginOtp(phone: string) {
-    await this.assertPhoneRegistered(phone);
-    const account = await this.accountByPhone(phone);
-    // Kayıtlı ama aktif olmayan ya da numarası birden fazla hesaba bağlı mekâna kod gitmez (bekleme süresi başlamaz)
-    const resendSeconds = account?.status === "ACTIVE" ? await this.otp.send(phone, "venue-login") : 0;
+    await this.otpAccount(phone);
+    const resendSeconds = await this.otp.send(phone, "venue-login");
     return { message: "Doğrulama kodu gönderildi", resendSeconds };
   }
 
@@ -129,17 +132,14 @@ export class VenuePanelService {
 
   // Telefonla şifre sıfırlama: WhatsApp girişiyle aynı kural (numara tek hesaba bağlıysa kod gider)
   async forgotPassword(phone: string) {
-    await this.assertPhoneRegistered(phone);
-    const account = await this.accountByPhone(phone);
+    const account = await this.otpAccount(phone);
     // Bekleme süresi dolmadan gelen istek kalan saniyeyle reddedilir; gönderim hatası yanıtı değiştirmez (bekleme başlamaz)
     let resendSeconds = 0;
-    if (account?.status === "ACTIVE") {
-      try {
-        resendSeconds = await this.otp.send(account.phone, "venue-forgot-password");
-      } catch (err) {
-        if (err instanceof OtpWaitException) throw err;
-        this.logger.warn(`Mekân şifre kodu gönderilemedi: ${err}`);
-      }
+    try {
+      resendSeconds = await this.otp.send(account.phone, "venue-forgot-password");
+    } catch (err) {
+      if (err instanceof OtpWaitException) throw err;
+      this.logger.warn(`Mekân şifre kodu gönderilemedi: ${err}`);
     }
     return { message: "Hesap varsa kayıtlı WhatsApp numarasına kod gönderildi", resendSeconds };
   }

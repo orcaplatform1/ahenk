@@ -26,11 +26,14 @@ export class OtpWaitException extends HttpException {
 
 // Numara bu akış için uygun değil (kayıtlı değil / zaten kayıtlı): kod gönderilmez, bekleme süresi başlamaz.
 // code alanı istemcinin uyarının altında doğru butonu ("Kayıt ol" / "Mekân ekle" / "Giriş yap") göstermesi içindir.
-export type OtpPhoneNoticeCode = "PHONE_NOT_REGISTERED" | "VENUE_NOT_REGISTERED" | "PHONE_ALREADY_REGISTERED";
+export type OtpPhoneNoticeCode =
+  | "PHONE_NOT_REGISTERED" | "VENUE_NOT_REGISTERED" | "PHONE_ALREADY_REGISTERED" | "VENUE_ACCOUNT_INACTIVE" | "VENUE_PHONE_MULTIPLE";
 const OTP_PHONE_NOTICES: Record<OtpPhoneNoticeCode, { status: HttpStatus; message: string }> = {
   PHONE_NOT_REGISTERED: { status: HttpStatus.NOT_FOUND, message: "Bu numarayla kayıtlı hesap bulunamadı." },
   VENUE_NOT_REGISTERED: { status: HttpStatus.NOT_FOUND, message: "Bu numarayla kayıtlı mekân hesabı bulunamadı." },
   PHONE_ALREADY_REGISTERED: { status: HttpStatus.CONFLICT, message: "Bu numara zaten kayıtlı. Giriş yapabilirsin." },
+  VENUE_ACCOUNT_INACTIVE: { status: HttpStatus.FORBIDDEN, message: "Bu mekân hesabı aktif değil. Destek ile iletişime geçin." },
+  VENUE_PHONE_MULTIPLE: { status: HttpStatus.CONFLICT, message: "Bu numara birden fazla mekân hesabına bağlı. Destek ile iletişime geçin." },
 };
 export class OtpPhoneNoticeException extends HttpException {
   constructor(code: OtpPhoneNoticeCode) {

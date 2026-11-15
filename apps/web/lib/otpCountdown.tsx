@@ -49,15 +49,17 @@ export function OtpCountdown({ seconds, className }: { seconds: number; classNam
   );
 }
 
-// Numara uyarısının altındaki buton: kayıtlı olmayan numarada "Kayıt ol" / "Mekân ekle", kayıtlı numarada "Giriş yap"
-const NOTICE_ACTIONS: Record<OtpNoticeCode, { label: string; href: string }> = {
+// Numara uyarısının altındaki buton: kayıtlı olmayan numarada "Kayıt ol" / "Mekân ekle", kayıtlı numarada "Giriş yap".
+// Mekân hesabı aktif değil / numara birden fazla mekân hesabına bağlı uyarılarında buton yoktur (yalnız uyarı metni).
+const NOTICE_ACTIONS: Partial<Record<OtpNoticeCode, { label: string; href: string }>> = {
   PHONE_NOT_REGISTERED: { label: 'Kayıt ol', href: '/kayit' },
   VENUE_NOT_REGISTERED: { label: 'Mekân ekle', href: '/is-ortakligi' },
   PHONE_ALREADY_REGISTERED: { label: 'Giriş yap', href: '/giris' },
 };
 
 export function OtpNoticeAction({ code, className }: { code: OtpNoticeCode | null; className?: string }) {
-  if (!code) return null;
-  const { label, href } = NOTICE_ACTIONS[code];
+  const action = code ? NOTICE_ACTIONS[code] : undefined;
+  if (!action) return null;
+  const { label, href } = action;
   return <Link href={href} className={className ?? 'btn-ghost w-full justify-center'}>{label}</Link>;
 }
