@@ -18,6 +18,7 @@ import { TabKyc } from './tabs/TabKyc';
 import { TabRehber } from './tabs/TabRehber';
 import { AccountTabBar } from '@/components/AccountTabBar';
 import { WinbackHost } from '@/components/winback/WinbackHost';
+import Onboarding from '@/components/Onboarding';
 
 interface City { id: string; name: string; }
 
@@ -61,6 +62,7 @@ function ProfilPage() {
   const searchParams = useSearchParams();
   const [user, setUser] = useState<UserData | null>(null);
   const [cities, setCities] = useState<City[]>([]);
+  const [howOpen, setHowOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
 
@@ -164,6 +166,12 @@ function ProfilPage() {
             exit={{ opacity: 0, y: 6 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
+            {/* Profil fotoğrafının hemen üstünde, sağa hizalı: tanıtımı 1. adımdan açar (onboardingSeenAt değişmez) */}
+            {activeTab === 'profil'  && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                <button type="button" onClick={() => setHowOpen(true)} className="btn-ghost" style={{ minHeight: 44 }}>{t('onb.howItWorks')}</button>
+              </div>
+            )}
             {activeTab === 'profil'  && <ProfilePhotoHeader photoUrl={user.profilePhotoUrl} initials={buildInitials(user.firstName, user.lastName)} gender={user.profile?.gender} kycApproved={kycApproved} pending={user.profilePhotoPending} />}
             {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} onGoTest={() => changeTab('test')} onGoRehber={() => changeTab('rehber')} activePlan={user.activePlan ?? null} />}
             {activeTab === 'test'    && <TabTest />}
@@ -175,6 +183,7 @@ function ProfilPage() {
         </AnimatePresence>
       </div>
       </div>
+      <Onboarding open={howOpen} onClose={() => setHowOpen(false)} />
     </main>
   );
 }

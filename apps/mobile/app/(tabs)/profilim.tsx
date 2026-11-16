@@ -14,6 +14,7 @@ import { KycTab } from '@/components/profil/KycTab';
 import { ll, llTitle, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
 import { ProfilePhotoHeader } from '@/components/ProfilePhoto';
+import { Onboarding } from '@/components/Onboarding';
 import { buildInitials } from '@/lib/masa';
 
 import { useTranslation } from 'react-i18next';
@@ -33,6 +34,7 @@ export default function Profilim() {
   const [tab, setTab] = useState<TabKey>('profil');
   const [user, setUser] = useState<UserData | null>(null);
   const [cities, setCities] = useState<City[]>([]);
+  const [howOpen, setHowOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
 
@@ -70,6 +72,12 @@ export default function Profilim() {
               </View>
             ) : tab !== 'profil' && <Btn variant="pillRed" label={t('prof.backArrow')} style={{ alignSelf: 'flex-start', marginBottom: 16 }} onPress={backToProfil} />}
             {/* En üstte büyük yuvarlak profil alanı (fotoğraf yoksa ad soyad kısaltması) */}
+            {/* Profil fotoğrafının hemen üstünde, sağa hizalı: tanıtımı 1. adımdan açar (onboardingSeenAt değişmez) */}
+            {user && tab === 'profil' && (
+              <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
+                <BtnGhost label={t('onb.howItWorks')} onPress={() => setHowOpen(true)} />
+              </View>
+            )}
             {user && tab === 'profil' && <ProfilePhotoHeader photoUrl={user.profilePhotoUrl} initials={buildInitials(user.firstName, user.lastName)} gender={user.profile?.gender} kycApproved={kycApproved} pending={user.profilePhotoPending} />}
             {loading ? <SkeletonBlock lines={4} /> : fetchError && !user ? (
               <View style={{ alignItems: 'center', paddingHorizontal: 24 }}>
@@ -87,6 +95,7 @@ export default function Profilim() {
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
+      <Onboarding visible={howOpen} onClose={() => setHowOpen(false)} />
     </View>
   );
 }

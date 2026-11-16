@@ -22,6 +22,7 @@ model User {
   speaksEnglish Boolean    @default(false) // Dil bazlı eşleşme
   speaksTurkish Boolean    @default(true)
   nativeLanguage String    @default("tr") // Ana dil = kayıt olunan arayüz dili (tr | en); değiştirilemez, ana dilin speaks alanı hep true
+  onboardingSeenAt DateTime? // Tanıtım ("Nasıl Çalışır") son adımda Başla ya da Atla ile kapatıldı; doluysa otomatik açılmaz
   lastNotificationsSeenAt DateTime? // Bildirimler sayfasının son açılışı (alt menü rozeti: sonrasında gelen okunmamışlar sayı, diğerleri nokta)
   role          UserRole   @default(USER)
   status        UserStatus @default(ACTIVE)

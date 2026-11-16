@@ -185,6 +185,13 @@ export const llTab = { minHeight: 44, padV: 8, padH: 2, gap: 6, labelSize: 11, l
 // ── DetayAvatar (packages/ui/src/components/tables/DetayAvatar.tsx) ───────
 export const detayAvatar = { d: 48, strokeWidth: 2.5, fontSize: 11, fontSizeLong: 10, textColor: '#f0f0f0', letterSpacing: 0.02 } as const;
 
+// ── Tanıtım akışı ("Nasıl Çalışır", components/Onboarding.tsx; web components/Onboarding.tsx ile aynı değerler) ──
+export const onb = {
+  bg: '#121212', card: '#1c1c1c', border: '#2e2e2e', primary: '#c0392b', accent: '#ff6b6b', muted: '#b3b3b3', rest: '#333333', text: '#f5f5f5',
+  primeTagBg: '#7A1F2B', primeTagText: '#f4f1ec', ring: '#27ae60', ringTrack: 'rgba(255,255,255,0.08)',
+  radius: 14, pill: 9999, barH: 4, padH: 20,
+} as const;
+
 // ── Masa detay kartı yerleşimi (packages/ui MasaDetayKarti: kapak, tür rozeti, bilgi şeridi, Genel Uyum halkası, kendi dairesi) ──
 export const masaKart = {
   coverH: 210, coverGap: 2, cameraBg: 'rgba(255,255,255,0.08)', cameraStroke: 'rgba(255,255,255,0.18)',

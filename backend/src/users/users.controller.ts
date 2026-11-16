@@ -81,6 +81,15 @@ export class UsersController {
     return this.accountDeletion.request(user.id);
   }
 
+  // Tanıtım ("Nasıl Çalışır") son adımda Başla ya da herhangi bir adımda Atla: User.onboardingSeenAt (yalnız ilk kez doldurulur)
+  @Post("me/onboarding-seen")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Tanıtım akışı görüldü" })
+  markOnboardingSeen(@CurrentUser() user: any) {
+    return this.usersService.markOnboardingSeen(user.id);
+  }
+
   @Patch("me/language")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

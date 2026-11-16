@@ -1,6 +1,6 @@
 // Alt menü (S-26): 5 sekme, AccountTabBar renkleri, ince çizgi ikonlar, Profilim'de baş harf rozeti, yalnız Bildirimler'de sayı / nokta rozeti,
 // seçili sekmede (Profil hariç) ikon arkasında hap zemin
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
@@ -11,10 +11,11 @@ import { PngTabIcon, ProfileCenterButton, TabBadge, TabPill } from '@/components
 import { ShakeReport } from '@/components/ShakeReport';
 import { WinbackHost } from '@/components/Winback';
 import { PermissionIntro } from '@/components/PermissionIntro';
+import { Onboarding } from '@/components/Onboarding';
 import { tabBar, tabIcon, tabNavIcon } from '@/theme/theme';
 
 import { useTranslation } from 'react-i18next';
-interface Me { firstName: string; lastName: string; profilePhotoUrl?: string | null; profile?: { gender?: string | null } }
+interface Me { firstName: string; lastName: string; profilePhotoUrl?: string | null; profile?: { gender?: string | null }; onboardingSeenAt?: string | null }
 
 export const unreadBus = { listeners: new Set<() => void>(), emit() { this.listeners.forEach((l) => l()); } };
 
@@ -37,6 +38,13 @@ export default function TabsLayout() {
     return () => { clearInterval(id); unreadBus.listeners.delete(loadUnread); };
   }, [loadUnread]);
   useAppRefresh(loadUnread);
+  const [onbOpen, setOnbOpen] = useState(false);
+  const onbChecked = useRef(false);
+  useEffect(() => { if (me && !onbChecked.current) { onbChecked.current = true; if (me.onboardingSeenAt === null) setOnbOpen(true); } }, [me]);
+  const closeOnboarding = useCallback((completed: boolean) => {
+    setOnbOpen(false);
+    if (completed) api.post('/users/me/onboarding-seen', {}).catch(() => {});
+  }, []);
   // Açık acil yardım talebi: talep edenin canlı konumu (web SosOpenReport); açık talep varken 30 sn'de bir denetlenir
   const [sosOpen, setSosOpen] = useState(false);
   const syncSos = useCallback(() => { syncSosLive().then((id) => setSosOpen(!!id)); }, []);
@@ -50,6 +58,8 @@ export default function TabsLayout() {
     <WinbackHost />
     {/* Giriş sonrası bir kerelik izin bilgilendirme ekranı */}
     <PermissionIntro />
+    {/* Kayıttan sonra bir kez tanıtım ("Nasıl Çalışır"): User.onboardingSeenAt boşken; Başla / Atla ile doldurulur */}
+    <Onboarding visible={onbOpen} onClose={closeOnboarding} />
     <Tabs
       screenOptions={{
         headerShown: false,

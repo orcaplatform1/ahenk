@@ -53,6 +53,11 @@ export class UsersService {
     return { ok: true };
   }
 
+  async markOnboardingSeen(userId: string) {
+    await this.prisma.user.updateMany({ where: { id: userId, onboardingSeenAt: null }, data: { onboardingSeenAt: new Date() } });
+    return { ok: true };
+  }
+
   async updateLanguage(userId: string, language: string) {
     await this.prisma.user.update({ where: { id: userId }, data: { language: language === "en" ? "en" : "tr" } });
     return { ok: true };
