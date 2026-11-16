@@ -1,9 +1,10 @@
 // packages/ui AhenkSonar + apps/web/components/live/LiveSonar.tsx karşılığı
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient as SvgGrad, Path, Stop, Text as SvgText, G } from 'react-native-svg';
+import Animated, { Easing, cancelAnimation, useAnimatedProps, useAnimatedStyle, useSharedValue, withRepeat, withTiming, type SharedValue } from 'react-native-reanimated';
 import { LEVELS, ll, sans } from '@/theme/theme';
-import { useReduceMotion } from '@/lib/motion';
+import { useAnimActive, useReduceMotion } from '@/lib/motion';
 import type { LivePulse, SonarDensity, SonarState } from '@/lib/liveTypes';
 import { Head, T } from './ui';
 import { useTranslation } from 'react-i18next';
@@ -49,34 +50,47 @@ function placeLabels(bubbles: ReturnType<typeof placeBubbles>) {
   });
 }
 
-// Canlı tarama: semt noktası yanıp söner (opaklık seviye opaklığı ↔ %30'u) ve 2,5 sn'de %85 ↔ %115 nefes alır, noktalar kaydırmalı
+// Canlı tarama: semt noktası yanıp söner (opaklık seviye opaklığı ↔ %30'u) ve 2,5 sn'de %85 ↔ %115 nefes alır, noktalar kaydırmalı.
+// Bütün noktalar tek paylaşılan saati (0 → 1, 2,5 sn, doğrusal, tekrar) okur; her nokta kendi kaydırmasıyla UI thread'de hesaplanır
+// (reanimated worklet). Nokta başına ayrı animasyon döngüsü, setState ya da JS thread animasyonu yok.
+const BREATHE_MS = 2500;
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-function BreathingCircle({ cx, cy, r, fill, opacity, index }: { cx: number; cy: number; r: number; fill: string; opacity: number; index: number }) {
-  const reduce = useReduceMotion();
-  const v = useRef(new Animated.Value(0)).current;
+function useBreathClock(active: boolean) {
+  const clock = useSharedValue(0);
   useEffect(() => {
-    if (reduce) return;
-    const half = { duration: 1250, easing: Easing.inOut(Easing.ease), useNativeDriver: false };
-    const loop = Animated.loop(Animated.sequence([Animated.timing(v, { toValue: 1, ...half }), Animated.timing(v, { toValue: 0, ...half })]));
-    const t = setTimeout(() => loop.start(), (index * 370) % 2500);
-    return () => { clearTimeout(t); loop.stop(); };
-  }, [reduce, v, index]);
-  if (reduce) return <Circle cx={cx} cy={cy} r={r} fill={fill} opacity={opacity} />;
-  return <AnimatedCircle cx={cx} cy={cy} r={v.interpolate({ inputRange: [0, 1], outputRange: [r * 0.85, r * 1.15] })} fill={fill}
-    opacity={v.interpolate({ inputRange: [0, 1], outputRange: [opacity, opacity * 0.3] })} />;
+    if (!active) { cancelAnimation(clock); return undefined; }
+    const from = clock.value % 1;
+    clock.value = from;
+    clock.value = withRepeat(withTiming(from + 1, { duration: BREATHE_MS, easing: Easing.linear }), -1, false);
+    return () => cancelAnimation(clock);
+  }, [active, clock]);
+  return clock;
+}
+function BreathingCircle({ cx, cy, r, fill, opacity, index, clock }: { cx: number; cy: number; r: number; fill: string; opacity: number; index: number; clock: SharedValue<number> }) {
+  const offset = ((index * 370) % BREATHE_MS) / BREATHE_MS;
+  const animatedProps = useAnimatedProps(() => {
+    // 0 → 1 → 0 yumuşak geçiş (eski ease-in-out sıra animasyonunun karşılığı)
+    const v = 0.5 - 0.5 * Math.cos(2 * Math.PI * (clock.value - offset));
+    return { r: r * (0.85 + 0.3 * v), opacity: opacity * (1 - 0.7 * v) };
+  });
+  return <AnimatedCircle cx={cx} cy={cy} fill={fill} animatedProps={animatedProps} />;
 }
 
 // idle: tek PASSIVE / LIVE durumu — PASSIVE'de ışın bulunduğu açıda durur, LIVE'da sürekli döner
 export function AhenkSonar({ width = SIZE, children, sweep = true, idle = false }: { width?: number; children?: React.ReactNode; sweep?: boolean; idle?: boolean }) {
   const reduce = useReduceMotion();
-  const spin = useRef(new Animated.Value(0)).current;
+  // Işın dönüşü UI thread'de (reanimated); ekran odakta değilken / uygulama arka plandayken durur, dönünce kaldığı açıdan sürer
+  const active = useAnimActive();
+  const deg = useSharedValue(0);
+  const spinning = sweep && !idle && !reduce && active;
   useEffect(() => {
-    if (!sweep || idle || reduce) return;
-    const loop = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 6000, easing: Easing.linear, useNativeDriver: true }));
-    loop.start();
-    return () => loop.stop();
-  }, [sweep, idle, reduce, spin]);
-  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+    if (!spinning) { cancelAnimation(deg); return undefined; }
+    const from = deg.value % 360;
+    deg.value = from;
+    deg.value = withRepeat(withTiming(from + 360, { duration: 6000, easing: Easing.linear }), -1, false);
+    return () => cancelAnimation(deg);
+  }, [spinning, deg]);
+  const sweepStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${deg.value}deg` }] }));
   return (
     <View style={{ width, height: width }}>
       <Svg viewBox={`0 0 ${SIZE} ${SIZE}`} width={width} height={width} style={{ position: 'absolute' }}>
@@ -85,7 +99,7 @@ export function AhenkSonar({ width = SIZE, children, sweep = true, idle = false 
         <Line x1={C} y1={C - 140} x2={C} y2={C + 140} stroke="rgba(255,255,255,0.05)" />
       </Svg>
       {sweep && (
-        <Animated.View style={{ position: 'absolute', width, height: width, transform: [{ rotate }] }}>
+        <Animated.View style={[{ position: 'absolute', width, height: width }, sweepStyle]}>
           <Svg viewBox={`0 0 ${SIZE} ${SIZE}`} width={width} height={width}>
             <Defs>
               <SvgGrad id="sw" x1="0" y1="1" x2="1" y2="0">
@@ -113,6 +127,10 @@ const WAIT_DOT = { color: LEVELS[4].color, r: LEVELS[4].r, opacity: LEVELS[4].op
 // (theme LEVELS: Çok yoğun kırmızı, Yoğun turuncu, Orta sarı, Düşük gri — lejant renkleri), noktalar yanıp söner.
 export function LiveSonar({ sonar, idle = false }: { sonar: LivePulse['sonar'] | null; idle?: boolean }) {
   const { t } = useTranslation();
+  const reduce = useReduceMotion();
+  const active = useAnimActive();
+  const live = !idle && !reduce;
+  const clock = useBreathClock(live && active);
   const dots = sonar?.dots ?? [];
   const density = sonar?.density ?? null;
   const legend: [string, string][] = density ? (Object.entries(LEVELS) as unknown as [keyof typeof LEVEL_KEY, (typeof LEVELS)[1]][]).map(([k, l]) => [t(LEVEL_KEY[k]), l.color]) : [[t('live.legendNew'), '#ff6b5e'], [t('live.legendActive'), '#e8a27a'], [t('live.legendPool'), '#c9c2b8']];
@@ -130,7 +148,8 @@ export function LiveSonar({ sonar, idle = false }: { sonar: LivePulse['sonar'] |
             <G key={b.name}>
               {idle
                 ? <Circle cx={b.x} cy={b.y} r={WAIT_DOT.r} fill={WAIT_DOT.color} opacity={WAIT_DOT.opacity} />
-                : <BreathingCircle index={i} cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} />}
+                : live ? <BreathingCircle index={i} cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} clock={clock} />
+                  : <Circle cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} />}
               <SvgText x={b.labelX} y={b.labelY} fontSize={10.5} fontWeight={b.level <= 2 ? '700' : '400'} fill={idle ? ll.text2 : b.color} fontFamily={sans(b.level <= 2 ? 700 : 400)}>{b.name}</SvgText>
             </G>
           )) : (

@@ -1,10 +1,10 @@
 // Kişilik Ağacı (mobil): formüller lib/kisilikAgaci.ts (web ile aynı dosya); çizim Skia.
 // Ağaç ekran açılınca bir kez hesaplanır ve sabit bir resim (SkPicture) olarak çizilir; yaprak / dal animasyonu, büyüme ve düşen
 // yaprak yoktur. Seçili boyut değişince resim bir kez yeniden kaydedilir. Tek animasyon: bütün ağaç kökü etrafında tek parça hafifçe
-// salınır (Reanimated frame callback, UI thread, en fazla 30 kare/sn); ekran odakta değilken durur.
+// salınır (Reanimated frame callback, UI thread, en fazla 30 kare/sn); ekran odakta değilken ve uygulama arka plandayken durur.
 import React, { useEffect, useMemo } from 'react';
 import { View } from 'react-native';
-import { useIsFocused } from 'expo-router';
+import { useAnimActive } from '@/lib/motion';
 import { useDerivedValue, useFrameCallback, useSharedValue, type FrameInfo } from 'react-native-reanimated';
 import { BlurStyle, Canvas, Group, PaintStyle, Picture, Skia, StrokeCap, TileMode, type SkCanvas, type SkPaint, type SkPicture } from '@shopify/react-native-skia';
 import { buildTree, frameOf, layoutTree, newAnimState, RENK, INTRO_MS, type AgacDegerleri, type Cizgi, type Elips, type Kare } from '@/lib/kisilikAgaci';
@@ -116,9 +116,9 @@ export function KisilikAgaci({ values, seed, selected, width, height }: { values
   const ox = layout.ox, oy = layout.oy;
   const transform = useDerivedValue(() => [{ translateX: ox }, { translateY: oy }, { rotate: angle.value }, { translateX: -ox }, { translateY: -oy }]);
 
-  // Ekran odaktayken çalışır, değilken durur
-  const focused = useIsFocused();
-  useEffect(() => { frame.setActive(focused); return () => frame.setActive(false); }, [focused, frame]);
+  // Ekran odaktayken ve uygulama ön plandayken çalışır; aksi hâlde frame callback tamamen durur
+  const active = useAnimActive();
+  useEffect(() => { frame.setActive(active); return () => frame.setActive(false); }, [active, frame]);
 
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={t('prof.tree')} style={{ width, height, alignSelf: 'center' }}>
