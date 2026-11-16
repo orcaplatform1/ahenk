@@ -6,9 +6,11 @@ allowBuilds:
   # Kurulum betikleri çalıştırılmaz (sunucuda da şimdiye kadar çalışmıyordu); EAS Build'de kurulum hatası vermemesi için açıkça false
   '@firebase/util': false
   '@nestjs/core': false
+  '@parcel/watcher': false
   '@prisma/client': false
   '@prisma/engines': false
   '@scarf/scarf': false
+  '@swc/core': false
   msgpackr-extract: false
   prisma: false
   protobufjs: false

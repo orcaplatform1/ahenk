@@ -5,7 +5,7 @@ import { useReduceMotion } from '@/lib/motion';
 import { api } from '@/lib/api';
 import { LogoutChoice } from '../LogoutChoice';
 
-const APP_VERSION = '0.1.3';
+const APP_VERSION = '0.1.4';
 import { gColor } from '@/lib/masa';
 import { useMasaTabs } from '@/lib/useMasaTabs';
 import { Btn, BtnGhost, BtnPrimary, BtnTone, Card, Head, Input, ModalBox, Row, Sheet, Switch, T } from '../ui';
