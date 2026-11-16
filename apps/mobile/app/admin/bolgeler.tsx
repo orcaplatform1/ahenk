@@ -10,14 +10,14 @@ import { ACheck, AdminSelect, AInput } from '@/components/admin/AdminControls';
 import { adm } from '@/theme/theme';
 import { formatDateTime } from '@ahenk/shared';
 
-type IdType = 'TC' | 'YKN' | 'PASSPORT';
+type IdType = 'ID_CARD' | 'DRIVER_LICENSE' | 'PASSPORT' | 'RESIDENCE_PERMIT';
 interface Region {
   id: string; name: string; isActive: boolean; countryCode: string; timezone: string; currency: string;
   defaultLanguage: string; phoneCountryCode: string; idTypes: IdType[]; sortOrder: number; waitlistCount: number;
 }
 interface WaitRow { id: string; createdAt: string; userId: string; email: string; phone: string | null; name: string }
 
-const ID_LABEL: Record<IdType, string> = { TC: 'TC Kimlik Kartı', YKN: 'Yabancı Kimlik Kartı (YKN)', PASSPORT: 'Pasaport' };
+const ID_LABEL: Record<IdType, string> = { ID_CARD: 'Kimlik Kartı', DRIVER_LICENSE: 'Ehliyet', PASSPORT: 'Pasaport', RESIDENCE_PERMIT: 'Oturma İzni' };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <View style={{ gap: 4 }}><ALabel style={{ color: adm.muted }}>{label}</ALabel>{children}</View>;
@@ -42,9 +42,9 @@ function RegionEditor({ r, onSaved }: { r: Region; onSaved: () => void }) {
       <Field label="Varsayılan dil"><AdminSelect value={f.defaultLanguage} onChange={(v) => set('defaultLanguage', v)} options={[{ value: 'tr', label: 'Türkçe' }, { value: 'en', label: 'English' }]} placeholder="Varsayılan dil" /></Field>
       <Field label="Telefon kodu"><AInput value={f.phoneCountryCode} onChangeText={(v) => set('phoneCountryCode', v)} style={{ paddingHorizontal: 12 }} /></Field>
       <Field label="Sıra"><AInput value={f.sortOrder} keyboardType="number-pad" onChangeText={(v) => set('sortOrder', v.replace(/[^\d-]/g, ''))} style={{ paddingHorizontal: 12 }} /></Field>
-      <Field label="Kimlik türleri">
+      <Field label="Belge türleri">
         <View style={{ gap: 4 }}>
-          {(['TC', 'YKN', 'PASSPORT'] as IdType[]).map((it) => (
+          {(['ID_CARD', 'DRIVER_LICENSE', 'PASSPORT', 'RESIDENCE_PERMIT'] as IdType[]).map((it) => (
             <ACheck key={it} label={ID_LABEL[it]} checked={f.idTypes.includes(it)} onChange={() => set('idTypes', f.idTypes.includes(it) ? f.idTypes.filter((x) => x !== it) : [...f.idTypes, it])} />
           ))}
         </View>

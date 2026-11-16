@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { ID_TYPES, type IdType } from '@ahenk/shared';
+import { KYC_DOC_TYPES as ID_TYPES, type KycDocType as IdType } from '@ahenk/shared';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -453,18 +453,26 @@ function LivenessRecorder({ onCapture, initialDone, fullName }: { onCapture: (bl
 
 export function TabKyc() {
   const t = useTranslations();
-  // Bölgede izin verilen kimlik türleri (Türkiye bölgelerinde üçü) ve video metni için ad soyad
+  // Önce belge türü sorulur (bölgede izin verilen türler: Türkiye'de dördü, diğer bölgelerde Pasaport / Oturma İzni / Ehliyet),
+  // sonra çekim: Pasaport'ta fotoğraflı sayfa, diğerlerinde önce ön yüz, ardından arka yüz. Video metni için ad soyad
   const [idTypes, setIdTypes] = useState<IdType[]>(ID_TYPES);
-  const [idType, setIdType] = useState<IdType>('TC');
+  const [idType, setIdType] = useState<IdType>('ID_CARD');
+  const [typeChosen, setTypeChosen] = useState(false);
   const [fullName, setFullName] = useState('');
   useEffect(() => {
     api.get<{ firstName?: string; lastName?: string; profile?: { primaryCity?: { idTypes?: IdType[] } } }>('/auth/me').then((u) => {
       setFullName(`${u?.firstName ?? ''} ${u?.lastName ?? ''}`.trim());
       const allowed = u?.profile?.primaryCity?.idTypes;
-      if (allowed?.length) { setIdTypes(allowed); if (!allowed.includes('TC')) setIdType(allowed[0]); }
+      const selectable = allowed?.filter((a) => ID_TYPES.includes(a));
+      if (selectable?.length) { setIdTypes(selectable); if (!selectable.includes('ID_CARD')) setIdType(selectable[0]); }
     }).catch(() => {});
   }, []);
   const needsBack = idType !== 'PASSPORT';
+  // Belge türü değişince yüklenen ön / arka yüz silinir (canlılık videosu kalır)
+  function resetDocs() {
+    setFiles(p => ({ ...p, idFront: undefined, idBack: undefined }));
+    kycDbDel('idFront'); kycDbDel('idBack');
+  }
   const [kycStatus, setKycStatus] = useState<KycStatus | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState('');
@@ -593,7 +601,8 @@ export function TabKyc() {
         <>
           <h3 className="ll-title">{t('kycf.title')}</h3>
 
-          {/* Kimlik türü: TC Kimlik Kartı / Yabancı Kimlik Kartı (YKN) / Pasaport (bölge ayarından) */}
+          {/* 1. adım — belge türü (bölge ayarından) */}
+          {!typeChosen ? (
           <div>
             <p className="text-[13px] text-[#c9c2b8] mb-2">{t('kycf.idType')}</p>
             <div className="flex flex-col gap-2" role="radiogroup" aria-label={t('kycf.idType')}>
@@ -604,6 +613,14 @@ export function TabKyc() {
                 </button>
               ))}
             </div>
+            <button type="button" onClick={() => setTypeChosen(true)} className="w-full btn-primary justify-center mt-4">{t('common.continue')}</button>
+          </div>
+          ) : (
+          <>
+          {/* Seçilen belge türü; değiştirilirse yüklenen belge fotoğrafları sıfırlanır */}
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[13px] text-[#c9c2b8]">{t('kycf.idType')}: <span className="font-semibold text-[#f4f1ec]">{t(`kycf.type${idType}`)}</span></p>
+            <button type="button" onClick={() => { resetDocs(); setTypeChosen(false); }} className="btn-ghost">{t('prof.change')}</button>
           </div>
 
           <ImageUploader
@@ -618,7 +635,8 @@ export function TabKyc() {
             }}
           />
 
-          {needsBack && <ImageUploader
+          {/* Ön yüz yüklenince arka yüz */}
+          {needsBack && !!files.idFront && <ImageUploader
             svgSrc="/kyc_demo_identity_card_back.svg"
             svgAlt={t('kycf.backAlt')}
             uploadLabel={t('kycf.uploadBack')}
@@ -646,6 +664,8 @@ export function TabKyc() {
             <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>
               <div className="h-full transition-all" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#1a5c2a,#27ae60)' }} />
             </div>
+          )}
+          </>
           )}
         </>
       )}

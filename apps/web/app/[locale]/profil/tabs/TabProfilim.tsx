@@ -5,7 +5,7 @@ import { KankaSection } from '@/components/KankaSection';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import { useState, useRef, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ENGLISH_ENABLED, occupationLabel, splitE164, toE164, type Lang } from '@ahenk/shared';
+import { ENGLISH_ENABLED, LANGS, occupationLabel, splitE164, toE164, type Lang } from '@ahenk/shared';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { usePathname, useRouter } from '@/i18n/navigation';
 import { storeLocale } from '@/lib/locale';
@@ -55,6 +55,7 @@ interface UserData {
   };
   kyc?: { status: string };
   language?: string;
+  nativeLanguage?: string;
   speaksEnglish?: boolean;
   speaksTurkish?: boolean;
   noShowWarning?: { count: number; remaining: number } | null;
@@ -80,13 +81,15 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
   const locale = useLocale() as Lang;
   const pathname = usePathname();
   const router = useRouter();
-  // Dil bazlı eşleşme: İngilizce / Türkçe biliyorum (hesaba kaydedilir)
-  const [speaksEnglish, setSpeaksEnglish] = useState(!!user.speaksEnglish);
-  const [speaksTurkish, setSpeaksTurkish] = useState(user.speaksTurkish !== false);
-  async function saveSpoken(patch: { speaksEnglish?: boolean; speaksTurkish?: boolean }) {
-    if (patch.speaksEnglish !== undefined) setSpeaksEnglish(patch.speaksEnglish);
-    if (patch.speaksTurkish !== undefined) setSpeaksTurkish(patch.speaksTurkish);
-    try { await api.patch('/users/me/spoken-languages', patch); } catch (e) { setSaveError((e as Error).message); }
+  // Dil bazlı eşleşme (mobil ProfilimTab ile aynı): kayıt dili ana dildir (kilitli, alanı hep true); "Başka konuştuğun diller"
+  // satırlarından diğer diller işaretlenir (birden fazla seçilebilir) → speaksEnglish / speaksTurkish
+  const nativeLang: Lang = user.nativeLanguage === 'en' ? 'en' : 'tr';
+  const [spoken, setSpoken] = useState<Record<Lang, boolean>>({ tr: user.speaksTurkish !== false, en: !!user.speaksEnglish });
+  async function toggleSpoken(l: Lang) {
+    if (l === nativeLang) return;
+    const v = !spoken[l];
+    setSpoken((p) => ({ ...p, [l]: v }));
+    try { await api.patch('/users/me/spoken-languages', l === 'en' ? { speaksEnglish: v } : { speaksTurkish: v }); } catch (e) { setSaveError((e as Error).message); }
   }
   function chooseLanguage(lang: Lang) {
     if (lang === locale) return;
@@ -374,9 +377,25 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
             </div>
           </div>
         )}
-        {/* Dil bazlı eşleşme: İngilizce / Türkçe biliyorum */}
-        <ToggleRow label={t('prof.speaksEnglish')} on={speaksEnglish} onChange={(v) => saveSpoken({ speaksEnglish: v })} />
-        <ToggleRow label={t('prof.speaksTurkish')} on={speaksTurkish} onChange={(v) => saveSpoken({ speaksTurkish: v })} />
+        {/* Ana dil (kayıt dili): kilitli, değiştirilemez */}
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[13px] text-[#c9c2b8]">{t('prof.nativeLanguage')}</span>
+          <span className="flex items-center gap-1.5 text-[13px] text-[#f4f1ec]">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a39c93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+            {nativeLang === 'tr' ? t('common.turkish') : t('common.english')}
+          </span>
+        </div>
+        {/* Başka konuştuğun diller: seçilebilir satırlar, birden fazla dil işaretlenebilir */}
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-[#a39c93]">{t('prof.otherLanguages')}</span>
+          {LANGS.filter((l) => l !== nativeLang).map((l) => (
+            <button key={l} type="button" role="checkbox" aria-checked={spoken[l]} onClick={() => toggleSpoken(l)}
+              className="flex items-center justify-between rounded-lg px-3 text-left text-sm" style={{ minHeight: 44, border: 'none', cursor: 'pointer', background: spoken[l] ? 'rgba(192,57,43,0.18)' : 'transparent', color: spoken[l] ? '#f4f1ec' : '#c9c2b8' }}>
+              <span>{l === 'tr' ? t('common.turkish') : t('common.english')}</span>
+              {spoken[l] && <span style={{ color: '#d6453a' }}>✓</span>}
+            </button>
+          ))}
+        </div>
         {/* Kankamla: Aktif Kankanız (davet et / davet var / kankan) + kısa açıklama */}
         <KankaSection />
         {/* Kankamla notunun hemen altında: Kişilik Ağacım ve Numara Engelleme sayfaları (mobille aynı) */}
@@ -578,18 +597,6 @@ function Card({ title, children, action }: { title: string; children: React.Reac
 }
 
 // Açık / kapalı anahtar satırı
-function ToggleRow({ label, on, onChange }: { label: string; on: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-[13px] text-[#c9c2b8]">{label}</span>
-      <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)}
-        style={{ width: 44, height: 26, borderRadius: 999, border: 'none', background: on ? '#c0392b' : 'rgba(255,255,255,0.12)', position: 'relative', cursor: 'pointer', flexShrink: 0 }}>
-        <span style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
-      </button>
-    </div>
-  );
-}
-
 function Row({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex items-center justify-between">

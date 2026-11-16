@@ -1,5 +1,6 @@
 // Dünya ikonu (dil seçici): solunda seçili dilin kısaltması (TR / EN; 13 pt, #FFFFFF, opaklık 0.7, 6 pt boşluk), görünen ikon 24×24,
-// dokunma alanı 44×44. Basınca altında koyu kart (#181818, köşe 12): Türkçe / English, seçilide ✓. ENGLISH_ENABLED = false iken görünmez.
+// dokunma alanı 44×44. Basınca altında kart (köşe 12): Türkçe / English, seçilide ✓. Kart zemini, yazı ve ✓ rengi tema paletinden
+// (ll.bg zemin + llCard çerçeve, ll.text yazı, seçili satır tabBar.activeBg, ✓ ll.red); sistem grisi yok. ENGLISH_ENABLED = false iken görünmez.
 import React, { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
@@ -7,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { ENGLISH_ENABLED, type Lang } from '@ahenk/shared';
 import { chooseLanguage, currentLang } from '@/lib/i18n';
 import { api } from '@/lib/api';
+import { ll, llCard, tabBar } from '@/theme/theme';
 
 export function GlobeIcon({ size = 24 }: { size?: number }) {
   return (
@@ -42,12 +44,12 @@ export function LanguageSwitcher({ top }: { top: number }) {
       <Modal visible={open} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setOpen(false)}>
         <Pressable style={{ flex: 1 }} onPress={() => setOpen(false)}>
           {(
-            <View style={{ position: 'absolute', top: top + 48, right: 20, backgroundColor: '#181818', borderRadius: 12, padding: 4, minWidth: 140 }}>
+            <View style={{ position: 'absolute', top: top + 48, right: 20, backgroundColor: ll.bg, borderWidth: llCard.borderWidth, borderColor: llCard.borderColor, borderRadius: 12, padding: 4, minWidth: 140 }}>
               {([['tr', 'Türkçe'], ['en', 'English']] as const).map(([l, label]) => (
                 <Pressable key={l} onPress={() => choose(l)} accessibilityRole="button" accessibilityState={{ selected: lang === l }}
-                  style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 12, borderRadius: 8 }}>
-                  <Text style={{ color: '#FFFFFF', fontSize: 14 }}>{label}</Text>
-                  {lang === l && <Text style={{ color: '#FFFFFF', fontSize: 14 }}>✓</Text>}
+                  style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 12, borderRadius: 8, backgroundColor: lang === l ? tabBar.activeBg : 'transparent' }}>
+                  <Text style={{ color: ll.text, fontSize: 14 }}>{label}</Text>
+                  {lang === l && <Text style={{ color: ll.red, fontSize: 14 }}>✓</Text>}
                 </Pressable>
               ))}
             </View>

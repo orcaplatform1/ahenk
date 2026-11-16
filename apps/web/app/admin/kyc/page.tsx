@@ -43,7 +43,7 @@ function MediaPreview({ url, label, isVideo }: { url: string | null; label: stri
 type KycStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPICIOUS';
 
 // Kimlik türü (numara saklanmaz)
-const ID_TYPE_LABEL: Record<string, string> = { TC: 'TC Kimlik Kartı', YKN: 'Yabancı Kimlik Kartı (YKN)', PASSPORT: 'Pasaport' };
+const ID_TYPE_LABEL: Record<string, string> = { ID_CARD: 'Kimlik Kartı', DRIVER_LICENSE: 'Ehliyet', PASSPORT: 'Pasaport', RESIDENCE_PERMIT: 'Oturma İzni', TC: 'TC Kimlik Kartı', YKN: 'Yabancı Kimlik Kartı (YKN)' };
 
 interface KycApplication {
   id: string;
@@ -204,7 +204,7 @@ export default function AdminKyc() {
                   <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
                     {fmtDate(item.submittedAt)}
                   </p>
-                  <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED }}>Kimlik türü: {ID_TYPE_LABEL[item.idType ?? 'TC'] ?? item.idType}</p>
+                  <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED }}>Belge türü: {ID_TYPE_LABEL[item.idType ?? 'TC'] ?? item.idType}</p>
                 </div>
                 <span style={{
                   ...LABEL, flexShrink: 0,

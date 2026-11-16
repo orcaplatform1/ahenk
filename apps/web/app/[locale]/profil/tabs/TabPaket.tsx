@@ -11,6 +11,8 @@ import { SkeletonBlock } from '@/components/ui/Skeleton';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
 import TcknModal from '@/components/paket/TcknModal';
 import { APP_STORE_URL, PLAY_STORE_URL, devicePlatform, openAppOrStore } from '@/lib/appLinks';
+import { DEFAULT_PHONE_COUNTRY, toE164 } from '@ahenk/shared';
+import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { CARDS, Check, PRIME_PLANS, PaketKarti, type CardKey } from '@/components/paket/PaketKarti';
 
 // Aktif paket / abonelik (yalnız kullanıcının kendi aldıkları)
@@ -51,6 +53,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
   const [primePlan, setPrimePlan] = useState<(typeof PRIME_PLANS)[number]['key']>('PRIME_1M');
   const [discountInfo, setDiscountInfo] = useState<DiscountInfo | null>(null);
   const [referralPhone, setReferralPhone] = useState('');
+  const [referralCountry, setReferralCountry] = useState(DEFAULT_PHONE_COUNTRY);
   const [referralSending, setReferralSending] = useState(false);
   const [referralMsg, setReferralMsg] = useState('');
   const [referralStats, setReferralStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
@@ -76,13 +79,14 @@ export function TabPaket({ maintenanceMode = false }: Props) {
   }, []);
 
   async function sendReferralInvite() {
-    if (!referralPhone || referralPhone.length !== 10 || !referralPhone.startsWith('5')) {
-      setReferralMsg(t('loyalty.invalidPhone'));
+    const referralE164 = toE164(referralCountry, referralPhone);
+    if (!referralE164) {
+      setReferralMsg(t('phone.invalid'));
       return;
     }
     setReferralSending(true); setReferralMsg('');
     try {
-      await api.post('/referral/invite', { phoneNumber: `+90${referralPhone}` });
+      await api.post('/referral/invite', { phoneNumber: referralE164 });
       setReferralMsg(t('loyalty.sentOk'));
       setReferralPhone('');
       const d = await api.get<{ totalInvites: number; availableDiscounts: number }>('/referral/my-stats');
@@ -192,7 +196,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
                     aria-pressed={on}
                   >
                     {pref && (
-                      <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 rounded-full font-extrabold whitespace-nowrap" style={{ fontSize: '0.62rem', letterSpacing: '0.08em', padding: '2px 8px', background: '#d6453a', color: '#f4f1ec' }}>
+                      <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 rounded-full font-extrabold whitespace-nowrap" style={{ fontSize: '0.62rem', letterSpacing: '0.08em', padding: '2px 8px', background: '#000000', color: '#f4f1ec' }}>
                         {t('pkg.preferred')}
                       </span>
                     )}
@@ -244,16 +248,18 @@ export function TabPaket({ maintenanceMode = false }: Props) {
       <div className="ll-card flex flex-col gap-3">
         <div className="ll-head"><h3 className="ll-title">{t('loyalty.title')}</h3></div>
         <div className="flex flex-col gap-2">
-          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
-            <span style={{ color: '#555', fontSize: 14, marginRight: 4 }}>+90</span>
-            <input
-              type="tel"
-              inputMode="numeric"
-              placeholder="5XX XXX XX XX"
-              value={referralPhone}
-              onChange={e => setReferralPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: '#f5f5f5', padding: '11px 0' }}
-            />
+          <div className="flex gap-2">
+            <CountryCodeButton country={referralCountry} onChange={(c) => { setReferralCountry(c); setReferralMsg(''); }} />
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
+              <input
+                type="tel"
+                inputMode="numeric"
+                placeholder={referralCountry === 'TR' ? '5XX XXX XX XX' : ''}
+                value={referralPhone}
+                onChange={e => setReferralPhone(e.target.value.replace(/\D/g, '').slice(0, 15))}
+                style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: '#f5f5f5', padding: '11px 0' }}
+              />
+            </div>
           </div>
           <button
             onClick={sendReferralInvite}

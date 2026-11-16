@@ -1,4 +1,5 @@
-// apps/web/app/profil/tabs/TabKyc.tsx karşılığı. Kimlik fotoğrafı yalnız kamerayla (S-12), canlılık videosu ön kamera
+// apps/web/app/profil/tabs/TabKyc.tsx karşılığı. Önce belge türü sorulur (Kimlik Kartı / Ehliyet / Pasaport / Oturma İzni; bölge
+// ayarından), sonra çekim: Pasaport'ta yalnız fotoğraflı sayfa, diğerlerinde önce ön yüz, ardından arka yüz. Belge fotoğrafı yalnız kamerayla (S-12), canlılık videosu ön kamera
 // (3 sn geri sayım + 5 sn kayıt). Kayıt sırasında pencere kapatılamaz (S-25). Yükleme: POST /kyc/upload (multipart).
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, Modal, Pressable, View } from 'react-native';
@@ -15,8 +16,9 @@ import { c, ll, tw, tw4 } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import i18n, { currentLang } from '@/lib/i18n';
 
-export type IdType = 'TC' | 'YKN' | 'PASSPORT';
-const ID_TYPES: IdType[] = ['TC', 'YKN', 'PASSPORT'];
+import { KYC_DOC_TYPES, type KycDocType } from '@ahenk/shared';
+export type IdType = KycDocType;
+const ID_TYPES: IdType[] = KYC_DOC_TYPES;
 
 interface KycStatus { status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPICIOUS' | null; rejectReason?: string | null }
 interface Shot { uri: string }
@@ -219,7 +221,9 @@ function KycBalls() {
 export function KycTab({ onApproved }: { onApproved?: () => void }) {
   const { t } = useTranslation();
   const [idTypes, setIdTypes] = useState<IdType[]>(ID_TYPES);
-  const [idType, setIdType] = useState<IdType>('TC');
+  const [idType, setIdType] = useState<IdType>('ID_CARD');
+  // Adım: önce belge türü, sonra çekim
+  const [typeChosen, setTypeChosen] = useState(false);
   const [fullName, setFullName] = useState('');
   const [status, setStatus] = useState<KycStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -235,7 +239,8 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
     api.get<{ firstName?: string; lastName?: string; profile?: { primaryCity?: { idTypes?: IdType[] } } }>('/auth/me').then((u) => {
       setFullName(`${u?.firstName ?? ''} ${u?.lastName ?? ''}`.trim());
       const allowed = u?.profile?.primaryCity?.idTypes;
-      if (allowed?.length) { setIdTypes(allowed); if (!allowed.includes('TC')) setIdType(allowed[0]); }
+      const selectable = allowed?.filter((a) => ID_TYPES.includes(a));
+      if (selectable?.length) { setIdTypes(selectable); if (!selectable.includes('ID_CARD')) setIdType(selectable[0]); }
     }).catch(() => undefined);
   }, []);
   const needsBack = idType !== 'PASSPORT';
@@ -285,23 +290,35 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
         </View>
       )}
       <Title>{t('kycf.title')}</Title>
-      {/* Kimlik türü: TC Kimlik Kartı / Yabancı Kimlik Kartı (YKN) / Pasaport (bölge ayarından); web TabKyc ile aynı */}
-      <View style={{ gap: 8 }}>
-        <T style={{ fontSize: 13, color: '#c9c2b8' }}>{t('kycf.idType')}</T>
-        <View accessibilityRole="radiogroup" accessibilityLabel={t('kycf.idType')} style={{ gap: 8 }}>
-          {idTypes.map((it) => (
-            <Pressable key={it} accessibilityRole="radio" accessibilityState={{ checked: idType === it }} onPress={() => setIdType(it)}
-              style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: idType === it ? 'rgba(192,57,43,0.6)' : 'rgba(255,255,255,0.08)', backgroundColor: idType === it ? 'rgba(192,57,43,0.10)' : 'rgba(255,255,255,0.025)' }}>
-              <T style={{ fontSize: 14, color: idType === it ? '#ff6b6b' : '#c9c2b8' }}>{t(`kycf.type${it}`)}</T>
-            </Pressable>
-          ))}
+      {/* 1. adım — belge türü (bölge ayarından); web TabKyc ile aynı */}
+      {!typeChosen ? (
+        <View style={{ gap: 8 }}>
+          <T style={{ fontSize: 13, color: '#c9c2b8' }}>{t('kycf.idType')}</T>
+          <View accessibilityRole="radiogroup" accessibilityLabel={t('kycf.idType')} style={{ gap: 8 }}>
+            {idTypes.map((it) => (
+              <Pressable key={it} accessibilityRole="radio" accessibilityState={{ checked: idType === it }} onPress={() => setIdType(it)}
+                style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: idType === it ? 'rgba(192,57,43,0.6)' : 'rgba(255,255,255,0.08)', backgroundColor: idType === it ? 'rgba(192,57,43,0.10)' : 'rgba(255,255,255,0.025)' }}>
+                <T style={{ fontSize: 14, color: idType === it ? '#ff6b6b' : '#c9c2b8' }}>{t(`kycf.type${it}`)}</T>
+              </Pressable>
+            ))}
+          </View>
+          <BtnPrimary label={t('common.continue')} full style={{ marginTop: 8 }} onPress={() => setTypeChosen(true)} />
         </View>
-      </View>
-      <ImageUploader svg="/kyc_demo_identity_card.svg" alt={t('kycf.frontAlt')} label={idType === 'PASSPORT' ? t('kycf.uploadPassport') : t('kycf.uploadFront')} shot={front} onChange={setFront} />
-      {needsBack && <ImageUploader svg="/kyc_demo_identity_card_back.svg" alt={t('kycf.backAlt')} label={t('kycf.uploadBack')} shot={back} onChange={setBack} />}
-      <LivenessRecorder video={video} onCapture={setVideo} fullName={fullName} />
+      ) : (
+        <>
+          {/* Seçilen belge türü; değiştirilirse çekilen fotoğraflar sıfırlanır */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <T style={{ fontSize: 13, color: '#c9c2b8' }}>{t('kycf.idType')}: <T w={600} style={{ fontSize: 13, color: ll.text }}>{t(`kycf.type${idType}`)}</T></T>
+            <BtnGhost label={t('prof.change')} onPress={() => { setTypeChosen(false); setFront(null); setBack(null); }} />
+          </View>
+          {/* 2. adım — önce ön yüz (pasaportta fotoğraflı sayfa), ön yüz çekilince arka yüz */}
+          <ImageUploader svg="/kyc_demo_identity_card.svg" alt={t('kycf.frontAlt')} label={idType === 'PASSPORT' ? t('kycf.uploadPassport') : t('kycf.uploadFront')} shot={front} onChange={setFront} />
+          {needsBack && !!front && <ImageUploader svg="/kyc_demo_identity_card_back.svg" alt={t('kycf.backAlt')} label={t('kycf.uploadBack')} shot={back} onChange={setBack} />}
+          <LivenessRecorder video={video} onCapture={setVideo} fullName={fullName} />
+        </>
+      )}
       {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}
-      <BtnPrimary label={submitting ? t('kycf.uploading') : t('kycf.submit')} full disabled={submitting || !front || (needsBack && !back) || !video} style={(submitting || !front || (needsBack && !back) || !video) ? { opacity: 0.5 } : undefined} onPress={submit} />
+      {typeChosen && <BtnPrimary label={submitting ? t('kycf.uploading') : t('kycf.submit')} full disabled={submitting || !front || (needsBack && !back) || !video} style={(submitting || !front || (needsBack && !back) || !video) ? { opacity: 0.5 } : undefined} onPress={submit} />}
       {submitting && progress > 0 && (
         <View style={{ height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.10)' }}>
           <LinearGradient colors={['#1a5c2a', '#27ae60']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: '100%', width: `${progress}%` }} />

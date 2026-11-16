@@ -18,19 +18,13 @@ interface TestResult { completed: boolean; completedAt?: string; retakeAvailable
 const fmtDate = (v?: string | null) => formatDate(v ?? null);
 const ACCENT = '#e05c4c';
 
-// Kişilik Ağacım: eski animasyonla aynı alan (ortada, genişlik ekran − 32, yükseklik genişlik × 1,05); tam üstünde başlık
-// ("KİŞİLİK BOYUTLARI" etiketiyle aynı yazı tipi, boy ve renk; büyük harfe çevrilmez)
+// Kişilik Ağacım: eski animasyonla aynı alan (ortada, genişlik ekran − 32, yükseklik genişlik × 1,05). Sayfa başlığı
+// ("Kişilik Ağacım") profilim.tsx'te "← Profilim" ile aynı satırda; üstteki küçük etiket yok
 function PersonalityTree({ scores, seed, active }: { scores: Scores; seed: string; active: number }) {
-  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const W = Math.min(width, 896) - 32, H = Math.round(W * 1.05);
   const v = OCEAN_DIMENSIONS.map(d => Math.min(100, Math.max(0, scores[d.key] ?? 50)) / 100);
-  return (
-    <View style={{ gap: 4 }}>
-      <T w={600} style={{ fontSize: 8, color: ACCENT, letterSpacing: 0.72 }}>{t('prof.tree')}</T>
-      <KisilikAgaci values={{ O: v[0], C: v[1], E: v[2], A: v[3], D: v[4] }} seed={seed} selected={active} width={W} height={H} />
-    </View>
-  );
+  return <KisilikAgaci values={{ O: v[0], C: v[1], E: v[2], A: v[3], D: v[4] }} seed={seed} selected={active} width={W} height={H} />;
 }
 
 // Boyut skorları listesi (animasyonun altında, tam genişlik; eski sağ liste stili)

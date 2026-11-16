@@ -93,8 +93,9 @@ export class KycService {
     const video = files?.liveness?.[0];
     const cleanup = () => { for (const f of [front, back, video]) { if (f?.path) { try { fs.unlinkSync(f.path); } catch {} } } };
 
-    // Kimlik türü: kullanıcının bölgesinde izin verilen türlerden biri olmalı (Türkiye bölgelerinde TC / YKN / Pasaport)
-    const idType = (idTypeRaw ?? "TC") as KycIdType;
+    // Belge türü: kullanıcının bölgesinde izin verilen türlerden biri olmalı (Türkiye bölgelerinde Kimlik Kartı / Ehliyet / Pasaport /
+    // Oturma İzni; diğer bölgelerde Pasaport / Oturma İzni / Ehliyet). Pasaport dışındaki türlerde ön + arka yüz zorunlu
+    const idType = (idTypeRaw ?? KycIdType.ID_CARD) as KycIdType;
     if (!Object.values(KycIdType).includes(idType)) { cleanup(); throw new BadRequestException("Geçersiz kimlik türü"); }
     const allowed = await this.allowedIdTypes(userId);
     if (!allowed.includes(idType)) { cleanup(); throw new BadRequestException("Bu kimlik türü bölgende kabul edilmiyor"); }
@@ -192,11 +193,11 @@ export class KycService {
     });
   }
 
-  // Kullanıcının bölgesinde (ana şehir) izin verilen kimlik türleri; şehir yoksa Türkiye varsayılanı (üçü de açık)
+  // Kullanıcının bölgesinde (ana şehir) izin verilen belge türleri; şehir yoksa Türkiye varsayılanı (dört tür)
   async allowedIdTypes(userId: string): Promise<KycIdType[]> {
     const profile = await this.prisma.profile.findUnique({ where: { userId }, select: { primaryCity: true } });
     const city = profile?.primaryCity ? await this.prisma.city.findUnique({ where: { id: profile.primaryCity }, select: { idTypes: true } }) : null;
-    return city?.idTypes?.length ? city.idTypes : [KycIdType.TC, KycIdType.YKN, KycIdType.PASSPORT];
+    return city?.idTypes?.length ? city.idTypes : [KycIdType.ID_CARD, KycIdType.DRIVER_LICENSE, KycIdType.PASSPORT, KycIdType.RESIDENCE_PERMIT];
   }
 
   // ─── Kendi KYC durumu ─────────────────────────────────────────────────────

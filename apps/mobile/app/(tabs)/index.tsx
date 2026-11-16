@@ -117,7 +117,7 @@ export default function EslesmePaneli() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, scanning, selfParticipant, tabAdminCancelled, selection, submitSelection, scanWaiting } = useMasaTabs();
+  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, scanning, selfParticipant, selection, submitSelection } = useMasaTabs();
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
   const tabItem = rawTabItem && Date.now() < Date.parse(rawTabItem.meeting.scheduledAt) + MEETING_GRACE_MS ? rawTabItem : undefined;
@@ -130,9 +130,9 @@ export default function EslesmePaneli() {
   const waitingScan = tabPastClosing && !hasTabTable;
   const meetingTarget = hasTabTable && meetingAt ? Date.parse(meetingAt) : null;
   const seats = overview?.groupSeatsLeft ?? null;
-  // BEKLEME: geri sayım kartında "Yeni tarama başlamasına" gösterilirken (aynı durum değişkenleri); AKTİF: tarama başlamış
+  // PASİF: tarama başlamadı (geri sayım kartında "Yeni tarama başlamasına"); CANLI: tarama başlamış. Rozet, radar ve yoğunluk
+  // kartları yalnız bu tek durumdan okunur
   const scanIdle = meetingTarget === null && waitingScan;
-  const scanOff = tabAdminCancelled || statuses[tab] === 'KYC' || statuses[tab] === 'KANKA';
 
   const seated = [...(tabItem?.meeting.participants ?? [])].sort((a, b) => (a.joinedAt ?? '').localeCompare(b.joinedAt ?? ''));
   const waiting = tab === 'KANKA' && scanning && selfParticipant && kanka ? [selfParticipant, kanka] : [];
@@ -181,7 +181,7 @@ export default function EslesmePaneli() {
             </View>
 
 
-            <LiveSonar sonar={pulse?.sonar ?? null} scanOff={scanOff} waiting={scanWaiting} idle={scanIdle} />
+            <LiveSonar sonar={pulse?.sonar ?? null} idle={scanIdle} />
 
             {/* Katılım */}
             {tab === 'GROUP' ? (
@@ -235,19 +235,19 @@ export default function EslesmePaneli() {
               {overview?.density ? (
                 <View style={st.heat}>
                   {overview.density.districts.map((d) => (
-                    // Bekleme durumunda bütün kartlar "Düşük" grisinde, yoğunluk yazısı yok
-                    <View key={d.name} style={[st.heatCell, { backgroundColor: scanWaiting ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }]}>
+                    // Tarama başlamadan bütün kartlar "Düşük" grisinde, yoğunluk yazısı yok; canlıyken semtin seviye renginde (radar ile aynı)
+                    <View key={d.name} style={[st.heatCell, { backgroundColor: scanIdle ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }]}>
                       <T w={700} numberOfLines={1} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
-                      {!scanWaiting && <Mono style={{ fontSize: d.percent === null ? 11 : 15, color: tw.text }}>{d.percent === null ? t(LEVEL_KEY[d.level]) : `%${d.percent}`}</Mono>}
+                      {!scanIdle && <Mono style={{ fontSize: d.percent === null ? 11 : 15, color: tw.text }}>{d.percent === null ? t(LEVEL_KEY[d.level]) : `%${d.percent}`}</Mono>}
                     </View>
                   ))}
                 </View>
               ) : overview?.heatmap.length ? (
                 <View style={st.heat}>
                   {overview.heatmap.map((d, i) => (
-                    <View key={d.name} style={[st.heatCell, { backgroundColor: scanWaiting ? WAIT_CELL : heatColor(i, overview.heatmap.length) }]}>
+                    <View key={d.name} style={[st.heatCell, { backgroundColor: scanIdle ? WAIT_CELL : heatColor(i, overview.heatmap.length) }]}>
                       <T w={700} numberOfLines={1} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
-                      {!scanWaiting && <Mono style={{ fontSize: 15, color: tw.text }}>{`%${d.percent}`}</Mono>}
+                      {!scanIdle && <Mono style={{ fontSize: 15, color: tw.text }}>{`%${d.percent}`}</Mono>}
                     </View>
                   ))}
                 </View>

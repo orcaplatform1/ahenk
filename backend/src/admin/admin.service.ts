@@ -1190,7 +1190,7 @@ export class AdminService {
     return rows.map(({ _count, ...c }) => ({ ...c, waitlistCount: _count.regionWaitlist }));
   }
 
-  async updateRegion(cityId: string, dto: { name?: string; countryCode?: string; timezone?: string; currency?: string; defaultLanguage?: string; phoneCountryCode?: string; idTypes?: ("TC" | "YKN" | "PASSPORT")[]; isActive?: boolean; sortOrder?: number }) {
+  async updateRegion(cityId: string, dto: { name?: string; countryCode?: string; timezone?: string; currency?: string; defaultLanguage?: string; phoneCountryCode?: string; idTypes?: ("ID_CARD" | "DRIVER_LICENSE" | "PASSPORT" | "RESIDENCE_PERMIT")[]; isActive?: boolean; sortOrder?: number }) {
     const city = await this.prisma.city.findUnique({ where: { id: cityId } });
     if (!city) throw new NotFoundException("Bölge bulunamadı");
     if (dto.timezone) {

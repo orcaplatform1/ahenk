@@ -190,9 +190,10 @@ export class AuthService {
           phone: dto.phoneNumber,
           phoneVerified: true,
           role: UserRole.USER,
-          // Dil: kayıt olunan arayüz dili; Türkçe arayüzle kayıt olan Türkçe biliyor sayılır
+          // Dil: kayıt olunan arayüz dili = ana dil (nativeLanguage, değiştirilemez); ana dilin speaks alanı hep true
           language: dto.language === "en" ? "en" : "tr",
-          speaksEnglish: dto.speaksEnglish ?? false,
+          nativeLanguage: dto.language === "en" ? "en" : "tr",
+          speaksEnglish: dto.language === "en" ? true : (dto.speaksEnglish ?? false),
           speaksTurkish: dto.language === "en" ? (dto.speaksTurkish ?? false) : true,
           occupationSector: dto.occupationSector,
           profile: {

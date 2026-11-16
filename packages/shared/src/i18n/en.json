@@ -619,7 +619,6 @@
     "leave": "End Kanka Link",
     "leaveInfo": "If you end your Kanka link, you can't join Kankamla tables together. You can always link up again later.",
     "ok": "OK",
-    "phoneInvalid": "Enter a 10-digit number starting with 5.",
     "rightsLeft": "Kankamla: {count} table credits left",
     "rules": "Your Kanka must be the same gender as you and have a verified identity. Invites are valid for 48 hours.",
     "sendInvite": "Send Invite",
@@ -658,7 +657,7 @@
     "frontAlt": "ID front example",
     "httpsNeeded": "The camera needs a secure (HTTPS) connection.",
     "httpsShort": "An HTTPS connection is required.",
-    "idType": "ID type",
+    "idType": "Document type",
     "inReview": "Your verification is under review",
     "noCam": "No camera found.",
     "photoUploaded": "Photo Uploaded",
@@ -676,8 +675,6 @@
     "submit": "Verify My Identity",
     "title": "Identity Verification",
     "typePASSPORT": "Passport",
-    "typeTC": "Turkish ID Card",
-    "typeYKN": "Foreigner ID Card (YKN)",
     "uploadBack": "Upload Back",
     "uploadFront": "Upload Front",
     "uploadPassport": "Upload Photo Page",
@@ -693,7 +690,10 @@
     "cancel": "Cancel",
     "errorStatus": "Error ({status})",
     "uploadFailedStatus": "Upload failed ({status})",
-    "networkError": "Network error"
+    "networkError": "Network error",
+    "typeID_CARD": "ID Card",
+    "typeDRIVER_LICENSE": "Driver's License",
+    "typeRESIDENCE_PERMIT": "Residence Permit"
   },
   "landing": {
     "aDesc": "Do you build bridges with people, or keep your distance?",
@@ -880,7 +880,6 @@
     "emailTitleM": "What’s your email?",
     "forgot": "Forgot Password",
     "forgotM": "Forgot password",
-    "headingSub": "You’re at the start of a great evening.",
     "legal1": "By continuing, you accept the ",
     "legal2": ". To learn how we process your data, see the ",
     "legal3": " and ",
@@ -914,7 +913,6 @@
   "loyalty": {
     "discounts": "10% Discounts Available",
     "info": "When a friend you invited buys any package or subscribes, you get a 10% discount. Each discount is valid for one package purchase only, can't be combined and can't be transferred.",
-    "invalidPhone": "Enter a valid number (10 digits starting with 5).",
     "invited": "Friends Invited",
     "people": "{count} people",
     "pieces": "{count}",
@@ -1325,10 +1323,7 @@
     "resend": "Send new code",
     "save": "Save",
     "sendCode": "Send Code",
-    "speaksEnglish": "I speak English",
-    "speaksTurkish": "I speak Turkish",
     "tree": "My Personality Tree",
-    "treeRegrow": "Regrows the tree from the start",
     "untilCancel": "You'll be matched with tables in this city until you cancel.",
     "unverified": "Not verified",
     "venueTitle": "Venue Preference",
@@ -1341,7 +1336,10 @@
     "version": "Version {version}",
     "select": "Select",
     "kvkkNotice": "KVKK Privacy Notice",
-    "emailPh": "new@email.com"
+    "emailPh": "new@email.com",
+    "nativeLanguage": "Your native language",
+    "otherLanguages": "Other languages you speak",
+    "privacySecurity": "Privacy & Security"
   },
   "radar": {
     "d": "D",

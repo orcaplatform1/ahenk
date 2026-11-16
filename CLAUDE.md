@@ -145,6 +145,9 @@ Paket kartı tasarımı (web + mobil, landing dahil): premium; her kartta aynı 
   eşleşme hakkı". Prime detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen" etiketi. Web'de bu kart altın çerçeveli, hafif
   altın geçişli; mobilde altın çerçeve / arka plan yok, diğer süre kartlarıyla aynı düz görünüm (etiket kalır).
   Seçili plan kartının çerçevesi Ahenk paleti kırmızısı (#d6453a); 3 aylık seçiliyse çerçeve kırmızı, etiket kalır (web + mobil).
+  "TERCİH EDİLEN" etiketinin arka planı siyah (#000000), yazı rengi #f4f1ec (web + mobil).
+  Mobil Paketler listesinde paket adları web'deki adlarla aynı (plans.* çeviri anahtarından: Grup Paketi, Baş Başa Paketi, Kankamla Paketi,
+  İçerde Paketi, Prime Paket).
   Paket kartı tipografisi (web + mobil, bütün paket kartları ve "Prime Abonelik Süreleri" kutusu): başlık serif (DM Serif Display), normal
   ağırlık, web text-2xl (24/32) / mobil Serif 24/32; açıklama sans, normal ağırlık, 14 (text-sm). Renkler ve rozetler aynı
   Grup Paketi avantajı "Masada erkek ve kadın eşit sayı"
@@ -194,7 +197,7 @@ HAFTALIK BULUŞMA SEÇİMİ:
   - Son saatler: Grup Perşembe 18:00, Baş Başa Cuma 18:00, Kankamla Cumartesi 18:00
   - Süresinde seçim yapmayan o türün taramasına girmez, hakkı düşmez
   - Eşleşme alanı: paketi olan kullanıcıda bu hafta seçilmeyen tür "Eşleşme Pasif"; hiç paketi olmayanda "Abonelik Yok"
-  - Eşleşme taraması bekleme durumu (web + mobil, useMasaTabs isScanWaiting): bu hafta seçilen türlerden en az birinin buluşma saati
+  - Eşleşme taraması bekleme durumu (yalnız web, useMasaTabs isScanWaiting; mobil aşağıdaki tek PASİF / CANLI durumunu kullanır): bu hafta seçilen türlerden en az birinin buluşma saati
     (Grup Cuma, Baş Başa Cumartesi, Kankamla Pazar 20:00) geçmemişse tarama aktif; değilse (paket yok, seçim yok ya da saatler geçmiş)
     bekleme: radar ışığı durur, bütün semt noktaları "Düşük" grisinde / aynı boy / hareketsiz, "Semt Masa Yoğunluğu" kartları gri.
     Yeni hafta (Pazar 23:59) seçimin haftasından yeniden hesaplanır
@@ -204,6 +207,11 @@ HAFTALIK BULUŞMA SEÇİMİ:
     kenarlık #ff3b30); "Semt Masa Yoğunluğu" başlığının sağında aynı satırda dikey ortalı "Tarama bekleniyor" / "Waiting for scan"
     (gövde fontu, 13, #FFFFFF, opaklık 0.6). AKTİF'te dilim döner, rozet "CANLI" / "LIVE" (nokta, yazı, kenarlık yeşil #22c55e), başlık
     yanındaki yazı yok. Semt kartlarının altında "Tarama bekleniyor" yazısı yoktur. Rozet boyut / konum / font aynı
+  - Mobil Eşleşme Paneli: rozet, radar ve "Semt Masa Yoğunluğu" kartları yalnız bu tek durumdan okunur (scanIdle). PASİF'te radar durur,
+    semt noktaları "Düşük" grisinde, aynı boy, hareketsiz; kartlar gri. CANLI'da ışın sürekli döner; her semtin noktası ve adı yoğunluk
+    seviyesinin renginde (Çok yoğun #ff3b30, Yoğun #ff8c42, Orta #f2c14e, Düşük #8a8178 — theme LEVELS, lejant renkleri), noktalar
+    yanıp söner; kartlar aynı seviye renginde. Seviyeler backend live-layer.service.ts density (LIVE_DISTRICT_SOURCE: static → admin
+    ilçe listesindeki seviye, real → talep; talebi olmayan ilçe 4. seviye / gri)
   - GET /weekly-selection, POST /weekly-selection {types[]} (JWT)
   - Pencere tasarımı (web + mobil): başlık "Bu hafta hangi masaya katılmak için eşleşme taramasına girmek istiyorsunuz?";
     her tür için kart: solda eşleşme alanındaki halka ikonu, sağda kalın başlık + küçük alt metin
@@ -250,6 +258,7 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     logo yok (giriş ve "Tekrar hoş geldin" ekranında); görseli içeren alan tam ekran genişliği ve yüksekliği kadar, ekstra büyütme yok;
     arka plan dönüşümlü: mobilappscreen.webp → mobilappscreen2.webp → mobilappscreen3.webp → baştan; giriş ya da "Tekrar hoş geldin"
     ekranı her açıldığında sıradaki görsel (açılış, beni hatırla / beni unut çıkışı dahil), son sıra cihazda saklanır (AuthFlow.tsx);
+    başlık olarak yalnız "AHENK" (altında açıklama yazısı yok, iki dilde);
     altta yasal metin "Devam ederek Kullanım Koşulları'nı kabul edersin. Verilerini nasıl işlediğimizi öğrenmek
     için Gizlilik Politikası ve Çerez Politikası'nı inceleyebilirsin." (/kullanim-kosullari, /gizlilik-politikasi, /cerez-politikasi);
     altında tam genişlikte yuvarlak üç buton: "Telefon Numarası ile devam et" (telefon ikonu), "E-posta ile devam et" (zarf ikonu), "Kayıt Ol"
@@ -305,9 +314,17 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     Yönetim Paneli menüsü ayrı (dokunulmaz)
   - 100 TL indirim penceresi (Winback otomatik açılış) izin tanıtım ekranı (PermissionIntro) kapanmadan açılmaz
     (PermissionIntro permissionIntroDone → Winback WinbackHost); tanıtım gösterilmeyecekse eskisi gibi hemen açılır
-  - Profilim alt bölümü sırası (mobil): yasal bağlantılar kartı (Gizlilik Politikası, Kullanım Koşulları, KVKK Aydınlatma Metni,
-    Hesap Silme — web sayfaları uygulama içi tarayıcıda, satırlar 44 pt) → "Çıkış Yap" → "Tüm cihazlardan çıkış yap" → küçük uygulama
-    logosu → "Versiyon 0.1.3" → "Hesabımı Sil". Mobil sürüm 0.1.3 (Android versionCode 4)
+  - Profilim yerleşimi (mobil): profil fotoğrafının hemen altında küçük "Kişilik Ağacım" kartı (basınca Kişilik Ağacım ekranı); Hesap
+    Bilgileri'nde Kişilik Ağacım ve Numara Engelleme butonları yok. Yasal kartın hemen üstünde "Gizlilik ve Güvenlik" kartı, içinde
+    Numara Engelleme. Hesap Bilgileri'nde "Dil / Language" seçili tarafı kayan segment kontrol (renkler theme.ts: iz inputGlass form zemini,
+    kayan zemin tabBar.activeBg / activeBorder, seçili yazı tw.accent)
+  - Kişilik Ağacım ekranı (mobil): "Kişilik Ağacım" büyük başlık (Serif) "← Profilim" ile aynı satırda, sağa yaslı; üstteki küçük etiket
+    yok. Ağaç ekran açılınca bir kez hesaplanır, sabit resim (SkPicture) olarak çizilir; büyüme, yaprak / dal animasyonu, düşen yaprak ve
+    dokununca yeniden büyüme yok. Tek animasyon: bütün ağaç kökü etrafında tek parça hafif salınır (Reanimated frame callback, UI
+    thread, en fazla 30 kare/sn), ekran odakta değilken durur. Görünüm (şekil, renk, yaprak yoğunluğu, boyut) aynı (KisilikAgaci.tsx)
+  - Profilim alt bölümü sırası (mobil): "Gizlilik ve Güvenlik" kartı → yasal bağlantılar kartı (Gizlilik Politikası, Kullanım Koşulları,
+    KVKK Aydınlatma Metni, Hesap Silme — web sayfaları uygulama içi tarayıcıda, satırlar 44 pt) → "Çıkış Yap" → "Tüm cihazlardan çıkış
+    yap" → küçük uygulama logosu → "Versiyon 0.1.4" → "Hesabımı Sil". Mobil sürüm 0.1.4 (Android versionCode 5)
   - Mağaza ayarları (app.json): iOS bundleIdentifier co.ahenk.app (Android package ile aynı); eas.json "production" profili (Android AAB,
     iOS mağaza), "preview" APK profili duruyor. iOS privacy manifest app.json ios.privacyManifests'te (prebuild PrivacyInfo.xcprivacy
     üretir): NSPrivacyTracking false; UserDefaults CA92.1, FileTimestamp C617.1 / 0A2A.1 / 3B52.1, SystemBootTime 35F9.1, DiskSpace
@@ -718,27 +735,41 @@ API CLIENT KURALLAR (web):
     (PATCH /users/me/language). Profilim > Hesap Bilgileri'nde "Dil / Language" satırı (Türkçe / English, seçilide ✓).
   - Web adresleri: Türkçe mevcut adreslerde, İngilizce /en önekiyle (next-intl localePrefix "as-needed", app/[locale]/).
   - Dünya ikonu (dil seçici): mobilde giriş, kayıt ve "Tekrar hoş geldin" ekranlarında sağ üst (sağdan 20 pt; 24×24 görünür, 44×44 dokunma;
-    solunda "TR" / "EN" 13, #FFFFFF, opaklık 0.7, 6 pt ara; kart #181818, köşe 12, Türkçe / English, seçilide ✓); webde header'ın sağ ucu.
-  - Telefon: kayıt / giriş / şifremi unuttum / kanka davet alanlarında ülke seçici (bayrak + kod, varsayılan 🇹🇷 +90, ülke adı ve koduyla
-    aranabilir liste, ülke adları arayüz dilinde); doğrulama libphonenumber-js ile seçilen ülkeye göre; numaralar veritabanında E.164
+    solunda "TR" / "EN" 13, #FFFFFF, opaklık 0.7, 6 pt ara; açılır kart köşe 12, Türkçe / English, seçilide ✓; renkler tema paletinden:
+    kart zemini ll.bg + llCard çerçeve, yazı ll.text, seçili satır tabBar.activeBg, ✓ ll.red — sistem grisi yok); webde header'ın sağ ucu.
+  - Telefon: telefon numarası girilen bütün ekranlarda (giriş, kayıt, şifre sıfırlama, kanka davet, sadakat daveti, Profilim telefon
+    değiştirme, Numara Engelleme; web + mobil) tek ortak ülke listesi (packages/shared/src/i18n/countries.ts): yalnız 42 ülke, şu sırayla,
+    grup başlığı yok: Türkiye, Birleşik Arap Emirlikleri, Katar, Bahreyn, Kuveyt, ABD, Rusya, Almanya, Birleşik Krallık, Polonya, Bulgaristan,
+    Hollanda, Fransa, İtalya, Ukrayna, Romanya, İspanya, Belçika, Avusturya, İsveç, İsviçre, Yunanistan, Danimarka, Çekya, Macaristan,
+    Finlandiya, İrlanda, Litvanya, Portekiz, Slovakya, Hırvatistan, Slovenya, Letonya, Estonya, Lüksemburg, Malta, Güney Kore, Japonya, Çin,
+    Endonezya, Tayland, İran. Varsayılan 🇹🇷 +90; listede olmayan ülke +90 Türkiye sayılır (splitE164). Ad ve kodla aranabilir, ülke adları
+    arayüz dilinde. Mobilde liste yalnız seçici açılınca oluşturulur, FlatList ile sanallaştırılır. Backend telefon doğrulaması aynı; doğrulama libphonenumber-js ile seçilen ülkeye göre; numaralar veritabanında E.164
     (+905…, +44…) saklanır; OTP ve giriş E.164 numarayla çalışır. Profilim telefon değiştirme ve Numara Engelleme'de de ülke kodu seçici
     (varsayılan ülke kayıtlı telefonun ülkesi, E.164 gönderim).
   - Dil soruları: kayıtta tek ekran, herkese "İngilizce biliyor musunuz?" / "Do you speak English?", yalnız İngilizce arayüzle kayıtta
-    ayrıca "Do you speak Turkish?"; Türkçe arayüzle kayıtta speaksTurkish = true. User.speaksEnglish / speaksTurkish; Profilim'de
-    "İngilizce biliyorum" / "Türkçe biliyorum" anahtarları (PATCH /users/me/spoken-languages).
+    ayrıca "Do you speak Turkish?"; Türkçe arayüzle kayıtta speaksTurkish = true. User.speaksEnglish / speaksTurkish.
+    Ana dil: User.nativeLanguage (tr | en) = kayıt olunan arayüz dili (migration 20261116200000: mevcut kullanıcılarda o anki User.language);
+    değiştirilemez, ana dilin speaks alanı hep true (kayıt ve PATCH /users/me/spoken-languages zorlar). Profilim'de (web + mobil)
+    "Ana dilin: Türkçe" kilitli satır, altında "Başka konuştuğun diller" başlığıyla diğer dillerin seçilebilir satırları (birden fazla
+    işaretlenebilir, ✓); "İngilizce biliyorum" / "Türkçe biliyorum" anahtarları yok.
   - Dil bazlı eşleşme (grup, baş başa, Kankamla; backend/src/matching/matching.service.ts noTurkish / englishFiller / languageCompatible),
     mevcut kurallardan önce zorunlu: a) speaksTurkish = false olan kullanıcı yalnız masadaki herkesin speaksEnglish = true olduğu masaya
     yerleşir; b) speaksTurkish = false olanlar önce birbirleriyle eşleşir; c) masa dolmuyorsa boş yerler telefon kodu +90 olan ve
     speaksEnglish = true olan kullanıcılarla doldurulur; d) dil kuralından sonra cinsiyet dengesi; e) grup masasındaki bot kuralı aynen.
-  - KYC kimlik türleri (KycSubmission.idType: TC | YKN | PASSPORT): "TC Kimlik Kartı", "Yabancı Kimlik Kartı (YKN)", "Pasaport". Kimlik numarası
-    alanı yok, numara istenmez ve saklanmaz. TC ve YKN'de ön + arka yüz, Pasaport'ta yalnız fotoğraflı sayfa; şifreleme / saklama kuralları
-    aynen. Seçilebilir türler bölgenin idTypes alanından. İngilizce arayüzde video metni "My name is [ad soyad]" (ad soyad otomatik).
-    Admin KYC ekranında kimlik türü görünür.
+  - KYC belge türleri (KycSubmission.idType: ID_CARD | DRIVER_LICENSE | PASSPORT | RESIDENCE_PERMIT; TC / YKN eski kayıtlar için enum'da
+    durur, seçilemez, mevcut kayda dokunulmadı): "Kimlik Kartı", "Ehliyet", "Pasaport", "Oturma İzni". Kimlik doğrulama başlarken önce
+    belge türü sorulur (web + mobil), sonra çekim: Kimlik Kartı / Ehliyet / Oturma İzni'nde önce ön yüz, ön yüz çekilince arka yüz;
+    Pasaport'ta yalnız fotoğraflı sayfa; ardından mevcut adımlar (canlılık videosu, gönder) aynen. Mobilde çekim yalnız kamerayla.
+    Kimlik numarası alanı yok, numara istenmez ve saklanmaz. Arka yüz de AES-256-GCM şifreli (id-back.<uzantı>.enc), hesap silinince diğer
+    KYC dosyalarıyla silinir. Seçilebilir türler bölgenin idTypes alanından: Türkiye bölgeleri dört tür, diğer bölgeler Pasaport, Oturma
+    İzni, Ehliyet. İngilizce arayüzde video metni "My name is [ad soyad]" (ad soyad otomatik). Admin KYC ekranında (web + mobil) belge
+    türü ve bütün yüzler (ön, arka, video) görünür.
   - iyzico satın alma kimlik alanı: önce TC / YKN / Pasaport seçimi, sonra numara (TC mevcut doğrulama; YKN 11 hane rakam, "99" ile başlar;
     Pasaport 6–9 harf / rakam). Numara veritabanına kaydedilmez, yalnız iyzico'ya iletilir.
   - Bölge alanları (mevcut City modeli): countryCode, timezone, currency, defaultLanguage, phoneCountryCode, idTypes, isActive, sortOrder.
-    İstanbul, Ankara, İzmir, Antalya: TR, Europe/Istanbul, TRY, tr, +90, TC/YKN/Pasaport. Dubai Marina, Jumeirah Lake Towers (JLT),
-    Downtown Dubai: AE, Asia/Dubai, USD, en, +971, yalnız Pasaport, pasif. Admin "Bölgeler" sayfası (web + mobil; GET /admin/regions,
+    İstanbul, Ankara, İzmir, Antalya: TR, Europe/Istanbul, TRY, tr, +90, Kimlik Kartı / Ehliyet / Pasaport / Oturma İzni. Dubai Marina,
+    Jumeirah Lake Towers (JLT), Downtown Dubai: AE, Asia/Dubai, USD, en, +971, Pasaport / Oturma İzni / Ehliyet, pasif (migration
+    20261116200100). Admin "Bölgeler" sayfası (web + mobil; GET /admin/regions,
     PATCH /admin/regions/:id, GET /admin/regions/:id/waitlist): liste, alan düzenleme, tek tuşla aktif / pasif, bekleme listesi sayısı ve listesi.
   - Para birimi: Türkiye bölgelerinde TRY (₺), Türkiye dışındaki bütün bölgelerde USD. Dubai'de şimdilik yalnız para birimi alanı var, fiyat yok.
   - Şehir listeleri (mobil + web, kayıt ve şehir seçimi dahil): aktif şehirler (seçilebilir) → ince ayırıcı ortasında "Yakında" / "Coming soon"

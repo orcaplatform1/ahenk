@@ -115,17 +115,24 @@ export function toE164(countryCode: string, national: string): string | null {
 export function splitE164(e164: string | null | undefined): { country: string; national: string } {
   const parsed = e164 ? parsePhoneNumberFromString(e164) : undefined;
   if (!parsed?.country) return { country: DEFAULT_PHONE_COUNTRY, national: (e164 ?? "").replace(/^\+90/, "") };
+  // Ortak listede olmayan ülke → varsayılan +90 Türkiye
+  if (!COUNTRIES.some((c) => c.code === parsed.country)) return { country: DEFAULT_PHONE_COUNTRY, national: parsed.nationalNumber };
   return { country: parsed.country, national: parsed.nationalNumber };
 }
 
-// Ülke listesini ada / koda göre ara (seçili dilde ad)
+// Ülke listesini ada / koda göre ara (seçili dilde ad); sıra COUNTRIES sırasıdır (alfabetik sıralama yok)
 export function searchCountries(query: string, lang: Lang): Country[] {
   const q = query.trim().toLocaleLowerCase(lang === "en" ? "en" : "tr");
-  const list = [...COUNTRIES].sort((a, b) => countryName(a, lang).localeCompare(countryName(b, lang), lang === "en" ? "en" : "tr"));
+  const list = COUNTRIES;
   if (!q) return list;
   const qd = q.replace(/^\+/, "");
   return list.filter((c) => countryName(c, lang).toLocaleLowerCase(lang === "en" ? "en" : "tr").includes(q) || c.code.toLowerCase() === q || c.dial.slice(1).startsWith(qd));
 }
+
+// ─── KYC belge türleri (kimlik doğrulama; iyzico kimlik türünden ayrı) ─────────
+// Seçilebilenler bu sırayla; bölge ayarı (City.idTypes) filtreler. Pasaport'ta yalnız fotoğraflı sayfa, diğerlerinde ön + arka yüz
+export type KycDocType = "ID_CARD" | "DRIVER_LICENSE" | "PASSPORT" | "RESIDENCE_PERMIT";
+export const KYC_DOC_TYPES: KycDocType[] = ["ID_CARD", "DRIVER_LICENSE", "PASSPORT", "RESIDENCE_PERMIT"];
 
 // ─── Kimlik türleri ──────────────────────────────────────────────────────────
 export type IdType = "TC" | "YKN" | "PASSPORT";

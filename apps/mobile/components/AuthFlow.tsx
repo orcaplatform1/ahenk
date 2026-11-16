@@ -76,14 +76,12 @@ export function AuthBackground({ index, overlay }: { index: number | null; overl
 }
 
 // Giriş ekranı başlığı: güvenli alanın 24 px altında, ortalı "AHENK" (web header ile aynı: Inter 600, harf aralığı 0.12em);
-// 8 px altında açıklama (gövde fontu Inter 400, 15, beyaz %70). Konum üç fotoğrafta aynı.
+// başlık olarak yalnız AHENK (alt açıklama yok). Konum üç fotoğrafta aynı.
 export function AuthHeading() {
-  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
     <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 24, left: 24, right: 24, alignItems: 'center' }}>
       <T w={600} style={{ fontSize: 36, lineHeight: 44, letterSpacing: 36 * 0.12, color: '#FFFFFF', textAlign: 'center' }}>AHENK</T>
-      <T style={{ marginTop: 8, fontSize: 15, lineHeight: 22, color: '#FFFFFF', opacity: 0.7, textAlign: 'center' }}>{t('login.headingSub')}</T>
     </View>
   );
 }

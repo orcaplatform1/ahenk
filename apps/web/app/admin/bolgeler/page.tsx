@@ -6,14 +6,14 @@ import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, CYAN, SANS, MONO, LABEL }
 
 // Bölgeler: şehir = bölge ayarları (ülke, saat dilimi, para birimi, varsayılan dil, telefon kodu, kimlik türleri, aktiflik, sıra)
 // ve pasif bölgelerin "Haber ver" bekleme listesi. Aktif yapılan bölge kullanıcı şehir listelerinde üst gruba geçer.
-type IdType = 'TC' | 'YKN' | 'PASSPORT';
+type IdType = 'ID_CARD' | 'DRIVER_LICENSE' | 'PASSPORT' | 'RESIDENCE_PERMIT';
 interface Region {
   id: string; name: string; isActive: boolean; countryCode: string; timezone: string; currency: string;
   defaultLanguage: string; phoneCountryCode: string; idTypes: IdType[]; sortOrder: number; waitlistCount: number;
 }
 interface WaitRow { id: string; createdAt: string; userId: string; email: string; phone: string | null; name: string }
 
-const ID_LABEL: Record<IdType, string> = { TC: 'TC Kimlik Kartı', YKN: 'Yabancı Kimlik Kartı (YKN)', PASSPORT: 'Pasaport' };
+const ID_LABEL: Record<IdType, string> = { ID_CARD: 'Kimlik Kartı', DRIVER_LICENSE: 'Ehliyet', PASSPORT: 'Pasaport', RESIDENCE_PERMIT: 'Oturma İzni' };
 const inputStyle: React.CSSProperties = { width: '100%', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 12px', fontSize: 13, color: TEXT, outline: 'none', fontFamily: SANS, boxSizing: 'border-box' };
 const btn = (color: string): React.CSSProperties => ({ padding: '6px 12px', minHeight: 36, borderRadius: 8, cursor: 'pointer', background: 'transparent', border: `1px solid ${color}`, fontSize: 12, color, fontFamily: SANS });
 const fmt = (iso: string) => new Date(iso).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -40,9 +40,9 @@ function RegionEditor({ r, onSaved }: { r: Region; onSaved: () => void }) {
       {field('Varsayılan dil', <select style={inputStyle} value={f.defaultLanguage} onChange={(e) => set('defaultLanguage', e.target.value)}><option value="tr">Türkçe</option><option value="en">English</option></select>)}
       {field('Telefon kodu', <input style={inputStyle} value={f.phoneCountryCode} onChange={(e) => set('phoneCountryCode', e.target.value)} />)}
       {field('Sıra', <input style={inputStyle} type="number" value={f.sortOrder} onChange={(e) => set('sortOrder', Number(e.target.value))} />)}
-      {field('Kimlik türleri', (
+      {field('Belge türleri', (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {(['TC', 'YKN', 'PASSPORT'] as IdType[]).map((it) => (
+          {(['ID_CARD', 'DRIVER_LICENSE', 'PASSPORT', 'RESIDENCE_PERMIT'] as IdType[]).map((it) => (
             <label key={it} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: TEXT }}>
               <input type="checkbox" checked={f.idTypes.includes(it)} onChange={(e) => set('idTypes', e.target.checked ? [...f.idTypes, it] : f.idTypes.filter((x) => x !== it))} />
               {ID_LABEL[it]}

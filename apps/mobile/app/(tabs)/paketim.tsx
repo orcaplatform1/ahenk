@@ -17,6 +17,8 @@ import { KycNoticeCard } from '@/components/KycNoticeCard';
 
 import { upper } from '@/lib/i18n';
 import { useTranslation } from 'react-i18next';
+import { DEFAULT_PHONE_COUNTRY, toE164 } from '@ahenk/shared';
+import { CountryCodeButton } from '@/components/PhoneCountry';
 interface Subscription { id: string; plan: string; name: string; isPrime: boolean; autoRenew: boolean; renewCancelledAt: string | null; storePlatform: string | null }
 interface Rights { group: number; oneOnOne: number; kanka: number }
 type PlanKeyName = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA' | 'PRIME_1M' | 'PRIME_3M' | 'PRIME_6M' | 'PRIME_12M';
@@ -71,6 +73,7 @@ export default function Paketim() {
   const [maintenance, setMaintenance] = useState(false);
   const [stats, setStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
   const [refPhone, setRefPhone] = useState('');
+  const [refCountry, setRefCountry] = useState(DEFAULT_PHONE_COUNTRY);
   const [refSending, setRefSending] = useState(false);
   const [refMsg, setRefMsg] = useState('');
   const [refOk, setRefOk] = useState(false);
@@ -107,10 +110,11 @@ export default function Paketim() {
   }, [detail]));
 
   async function sendReferral() {
-    if (!refPhone || refPhone.length !== 10 || !refPhone.startsWith('5')) { setRefMsg(t('loyalty.invalidPhone')); setRefOk(false); return; }
+    const refE164 = toE164(refCountry, refPhone);
+    if (!refE164) { setRefMsg(t('phone.invalid')); setRefOk(false); return; }
     setRefSending(true); setRefMsg('');
     try {
-      await api.post('/referral/invite', { phoneNumber: `+90${refPhone}` });
+      await api.post('/referral/invite', { phoneNumber: refE164 });
       setRefMsg(t('loyalty.sentOk')); setRefOk(true); setRefPhone('');
       setStats(await api.get('/referral/my-stats'));
     } catch (e) { setRefMsg((e as Error).message || t('loyalty.sendFailed')); setRefOk(false); } finally { setRefSending(false); }
@@ -193,7 +197,7 @@ export default function Paketim() {
                       </View>
                       {pref && (
                         <View pointerEvents="none" style={{ position: 'absolute', top: -10, left: 0, right: 0, alignItems: 'center' }}>
-                          <View style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: ll.red }}>
+                          <View style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: c.black }}>
                             <T w={800} style={{ fontSize: 9.9, letterSpacing: 0.8, color: '#f4f1ec' }}>{upper(t('pkg.preferred'))}</T>
                           </View>
                         </View>
@@ -253,10 +257,12 @@ export default function Paketim() {
             <Card style={{ gap: 12 }}>
               <Head title={t('loyalty.title')} style={{ marginBottom: 0 }} />
               <View style={{ gap: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingHorizontal: 14 }}>
-                  <T style={{ color: c.t555, fontSize: 14, marginRight: 4 }}>+90</T>
-                  <TextInput keyboardType="number-pad" textContentType="telephoneNumber" keyboardAppearance="dark" placeholder="5XX XXX XX XX" placeholderTextColor={tw.muted} value={refPhone}
-                    onChangeText={(v) => setRefPhone(v.replace(/\D/g, '').slice(0, 10))} style={{ flex: 1, fontSize: 14, color: tw.text, paddingVertical: 11, fontFamily: sans(400) }} />
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <CountryCodeButton country={refCountry} onChange={(code) => { setRefCountry(code); setRefMsg(''); }} />
+                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingHorizontal: 14 }}>
+                    <TextInput keyboardType="number-pad" textContentType="telephoneNumber" keyboardAppearance="dark" placeholder={refCountry === 'TR' ? '5XX XXX XX XX' : ''} placeholderTextColor={tw.muted} value={refPhone}
+                      onChangeText={(v) => setRefPhone(v.replace(/\D/g, '').slice(0, 15))} style={{ flex: 1, fontSize: 14, color: tw.text, paddingVertical: 11, fontFamily: sans(400) }} />
+                  </View>
                 </View>
                 <BtnPrimary label={refSending ? '…' : t('kanka.sendInvite')} full disabled={refSending} style={refSending ? { opacity: 0.5 } : undefined} onPress={sendReferral} />
                 <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
@@ -305,7 +311,7 @@ export default function Paketim() {
                       <View style={{ flex: 1, gap: 4 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           {/* Tipografi: web PaketKarti / landing "Prime Abonelik" başlığıyla aynı (serif, normal ağırlık, 24/32); açıklama 14 sans */}
-                          <Serif style={{ fontSize: 24, lineHeight: 32, color: card.nameColor }}>{card.name}</Serif>
+                          <Serif style={{ fontSize: 24, lineHeight: 32, color: card.nameColor }}>{t(card.name)}</Serif>
                           <LinearGradient colors={(card.badgeBg.length > 1 ? card.badgeBg : [card.badgeBg[0], card.badgeBg[0]]) as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                             style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
                             <T w={800} style={{ fontSize: 9.9, letterSpacing: 0.8, color: card.badgeFg }}>{upper(t(st.badge ?? card.badge))}</T>

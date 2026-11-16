@@ -21,6 +21,7 @@ model User {
   language      String     @default("tr") // Arayüz dili: tr | en (bildirim / e-posta / WhatsApp şablon dili de buna göre)
   speaksEnglish Boolean    @default(false) // Dil bazlı eşleşme
   speaksTurkish Boolean    @default(true)
+  nativeLanguage String    @default("tr") // Ana dil = kayıt olunan arayüz dili (tr | en); değiştirilemez, ana dilin speaks alanı hep true
   lastNotificationsSeenAt DateTime? // Bildirimler sayfasının son açılışı (alt menü rozeti: sonrasında gelen okunmamışlar sayı, diğerleri nokta)
   role          UserRole   @default(USER)
   status        UserStatus @default(ACTIVE)
@@ -500,9 +501,9 @@ model KycSubmission {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Cloudflare R2 nesne anahtarları
-  idType      KycIdType @default(TC) // Kimlik türü (numara istenmez, saklanmaz)
-  idFrontKey  String // kimlik ön yüz (pasaportta fotoğraflı sayfa)
-  idBackKey   String? // kimlik arka yüz (pasaportta yok)
+  idType      KycIdType @default(TC) // Belge türü (numara istenmez, saklanmaz)
+  idFrontKey  String // belge ön yüzü (pasaportta fotoğraflı sayfa)
+  idBackKey   String? // belge arka yüzü (Kimlik Kartı / Ehliyet / Oturma İzni; pasaportta yok) — AES-256-GCM şifreli
   livenessKey String // canlılık videosu (6-7 sn)
 
   status KycStatus @default(PENDING)
@@ -520,10 +521,15 @@ model KycSubmission {
   @@index([status])
 }
 
+// Belge türü. Seçilebilenler: ID_CARD (Kimlik Kartı), DRIVER_LICENSE (Ehliyet), PASSPORT (Pasaport), RESIDENCE_PERMIT (Oturma İzni).
+// TC / YKN eski kayıtlar için durur (seçilemez)
 enum KycIdType {
-  TC // TC Kimlik Kartı
-  YKN // Yabancı Kimlik Kartı
+  TC // TC Kimlik Kartı (eski)
+  YKN // Yabancı Kimlik Kartı (eski)
   PASSPORT // Pasaport
+  ID_CARD // Kimlik Kartı
+  DRIVER_LICENSE // Ehliyet
+  RESIDENCE_PERMIT // Oturma İzni
 }
 
 enum KycStatus {
@@ -678,7 +684,7 @@ model City {
   currency         String      @default("TRY") // Türkiye: TRY, diğer ülkeler: USD
   defaultLanguage  String      @default("tr") // tr | en
   phoneCountryCode String      @default("+90")
-  idTypes          KycIdType[] @default([TC, YKN, PASSPORT])
+  idTypes          KycIdType[] @default([ID_CARD, DRIVER_LICENSE, PASSPORT, RESIDENCE_PERMIT]) // Türkiye: dört tür; diğer bölgeler: PASSPORT, RESIDENCE_PERMIT, DRIVER_LICENSE
   sortOrder        Int         @default(0)
   regionWaitlist   RegionWaitlist[]
   venues    Venue[]

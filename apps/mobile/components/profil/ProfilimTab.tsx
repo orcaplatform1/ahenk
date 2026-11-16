@@ -13,11 +13,12 @@ import { getShakeEnabled, setShakeEnabled } from '@/lib/shakePref';
 import { OtpInput } from '../OtpInput';
 import { OtpCountdown, useOtpCountdown } from '../OtpCountdown';
 import { KankaSection } from './KankaSection';
-import { accountBtn, adminChipPulse, c, ll, tw } from '@/theme/theme';
+import { accountBtn, adminChipPulse, c, inputGlass, ll, llCard, tabBar, tw } from '@/theme/theme';
+import Svg, { Path, Rect } from 'react-native-svg';
 import { openLegal } from '@/lib/links';
 import { useRememberAllowed } from '@/lib/adminLock';
 import { useTranslation } from 'react-i18next';
-import { ENGLISH_ENABLED, occupationLabel, splitE164, toE164, type Lang } from '@ahenk/shared';
+import { ENGLISH_ENABLED, LANGS, occupationLabel, splitE164, toE164, type Lang } from '@ahenk/shared';
 import { CountryCodeButton } from '../PhoneCountry';
 import { chooseLanguage, currentLang } from '@/lib/i18n';
 
@@ -27,7 +28,7 @@ export interface UserData {
   id: string; firstName: string; lastName: string; email: string; phone?: string; role?: string; activeCity?: string | null; occupationSector?: string;
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null; maintenanceMode?: boolean;
   profile?: { gender?: string; birthDate?: string; primaryCity?: City; venuePreference?: VenuePreference };
-  language?: string; speaksEnglish?: boolean; speaksTurkish?: boolean;
+  language?: string; nativeLanguage?: string; speaksEnglish?: boolean; speaksTurkish?: boolean;
   kyc?: { status: string }; profilePhotoUrl?: string | null; profilePhotoPending?: boolean; noShowWarning?: { count: number; remaining: number } | null;
 }
 
@@ -123,6 +124,43 @@ function CitySelect({ label, value, onChange, cities, optional, placeholder, tit
   );
 }
 
+// Dil / Language: seçili tarafı kayan segment kontrol (iki eşit parça; kayan zemin tabBar.activeBg + activeBorder, iz inputGlass form
+// zemini; seçili yazı tw.accent, diğeri ll.text2). Hareketi Azalt açıkken kayma animasyonsuz
+function LangSegment({ value, onChange, labels }: { value: Lang; onChange: (l: Lang) => void; labels: Record<Lang, string> }) {
+  const reduce = useReduceMotion();
+  const [w, setW] = useState(0);
+  const x = useRef(new Animated.Value(value === 'en' ? 1 : 0)).current;
+  useEffect(() => {
+    const to = value === 'en' ? 1 : 0;
+    if (reduce) { x.setValue(to); return; }
+    Animated.timing(x, { toValue: to, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [value, reduce, x]);
+  const seg = w > 0 ? (w - 4) / 2 : 0;
+  return (
+    <View accessibilityRole="tablist" onLayout={(e) => setW(e.nativeEvent.layout.width)}
+      style={{ flexDirection: 'row', minWidth: 196, padding: 2, borderRadius: 12, borderWidth: 1, borderColor: inputGlass.formBorder, backgroundColor: inputGlass.formBg }}>
+      {seg > 0 && (
+        <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 2, bottom: 2, left: 2, width: seg, borderRadius: 10, borderWidth: 1, borderColor: tabBar.activeBorder, backgroundColor: tabBar.activeBg,
+          transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [0, seg] }) }] }} />
+      )}
+      {LANGS.map((l) => (
+        <Pressable key={l} onPress={() => onChange(l)} accessibilityRole="tab" accessibilityState={{ selected: value === l }}
+          style={{ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 }}>
+          <T w={value === l ? 600 : 400} style={{ fontSize: 13, color: value === l ? tw.accent : ll.text2 }}>{labels[l]}</T>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function LockIcon() {
+  return (
+    <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={ll.label} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={5} y={11} width={14} height={10} rx={2} /><Path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </Svg>
+  );
+}
+
 // Web Navbar "Yönetim Paneli" rozeti: adminChip + navAdminPulse/navAdminDot nabzı (Hareketi Azalt açıkken durağan)
 function AdminChip({ onPress }: { onPress: () => void }) {
   const { t } = useTranslation();
@@ -155,13 +193,15 @@ function AdminChip({ onPress }: { onPress: () => void }) {
 export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, onOpenRehber }: { user: UserData; cities: City[]; onLoggedOut: () => void; onAdmin: () => void; onOpenTest: () => void; onOpenRehber: () => void }) {
   const { t } = useTranslation();
   const [editingVenue, setEditingVenue] = useState(false);
-  // Dil bazlı eşleşme: İngilizce / Türkçe biliyorum (web TabProfilim ile aynı)
-  const [speaksEnglish, setSpeaksEnglish] = useState(!!user.speaksEnglish);
-  const [speaksTurkish, setSpeaksTurkish] = useState(user.speaksTurkish !== false);
-  async function saveSpoken(patch: { speaksEnglish?: boolean; speaksTurkish?: boolean }) {
-    if (patch.speaksEnglish !== undefined) setSpeaksEnglish(patch.speaksEnglish);
-    if (patch.speaksTurkish !== undefined) setSpeaksTurkish(patch.speaksTurkish);
-    try { await api.patch('/users/me/spoken-languages', patch); } catch (e) { setSaveError((e as Error).message); }
+  // Dil bazlı eşleşme (web TabProfilim ile aynı): kayıt dili ana dildir (kilitli, alanı hep true); "Başka konuştuğun diller"
+  // satırlarından diğer diller işaretlenir (birden fazla seçilebilir) → speaksEnglish / speaksTurkish
+  const nativeLang: Lang = user.nativeLanguage === 'en' ? 'en' : 'tr';
+  const [spoken, setSpoken] = useState<Record<Lang, boolean>>({ tr: user.speaksTurkish !== false, en: !!user.speaksEnglish });
+  async function toggleSpoken(l: Lang) {
+    if (l === nativeLang) return;
+    const v = !spoken[l];
+    setSpoken((p) => ({ ...p, [l]: v }));
+    try { await api.patch('/users/me/spoken-languages', l === 'en' ? { speaksEnglish: v } : { speaksTurkish: v }); } catch (e) { setSaveError((e as Error).message); }
   }
   // Dil / Language: cihazda saklanır ve hesaba kaydedilir
   const lang = currentLang();
@@ -263,6 +303,12 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
 
   return (
     <View style={{ gap: 24 }}>
+      {/* Profil fotoğrafının hemen altında: Kişilik Ağacım ekranını açan küçük kart */}
+      <Pressable onPress={onOpenTest} accessibilityRole="button" accessibilityLabel={t('prof.tree')}
+        style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: llCard.padding, borderRadius: llCard.radius, borderWidth: llCard.borderWidth, borderColor: llCard.borderColor, backgroundColor: llCard.bg, opacity: pressed ? 0.7 : 1 })}>
+        <T w={600} style={{ fontSize: 14, color: ll.text }}>{t('prof.tree')}</T>
+        <T style={{ fontSize: 18, color: ll.label }}>›</T>
+      </Pressable>
       <CardP title={t('prof.accountInfo')}>
         {/* Yönetim Paneli butonu: Hesap Bilgileri başlığının hemen altında */}
         {(user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
@@ -346,35 +392,33 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
             </View>
           </View>
         )}
-        {/* Dil / Language (ENGLISH_ENABLED = false iken gizli) */}
+        {/* Dil / Language (ENGLISH_ENABLED = false iken gizli): seçili tarafı kayan segment kontrol */}
         {ENGLISH_ENABLED && (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <T style={{ fontSize: 13, color: ll.text2 }}>{t('common.language')}</T>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {(['tr', 'en'] as const).map((l) => (
-                <Pressable key={l} onPress={() => pickLanguage(l)} accessibilityRole="button" accessibilityState={{ selected: lang === l }}
-                  style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: lang === l ? 'rgba(192,57,43,0.5)' : 'rgba(255,255,255,0.08)' }}>
-                  <T style={{ fontSize: 12, color: lang === l ? '#ff6b6b' : ll.text2 }}>{l === 'tr' ? t('common.turkish') : t('common.english')}{lang === l ? ' ✓' : ''}</T>
-                </Pressable>
-              ))}
-            </View>
+            <LangSegment value={lang} onChange={pickLanguage} labels={{ tr: t('common.turkish'), en: t('common.english') }} />
           </View>
         )}
-        {/* Dil bazlı eşleşme: İngilizce / Türkçe biliyorum */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <T style={{ flex: 1, fontSize: 13, color: ll.text2 }}>{t('prof.speaksEnglish')}</T>
-          <Switch value={speaksEnglish} onChange={(v) => saveSpoken({ speaksEnglish: v })} accessibilityLabel={t('prof.speaksEnglish')} />
+        {/* Ana dil (kayıt dili): kilitli, değiştirilemez */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }} accessible accessibilityLabel={`${t('prof.nativeLanguage')}: ${nativeLang === 'tr' ? t('common.turkish') : t('common.english')}`}>
+          <T style={{ fontSize: 13, color: ll.text2 }}>{t('prof.nativeLanguage')}</T>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <LockIcon />
+            <T style={{ fontSize: 13, color: ll.text }}>{nativeLang === 'tr' ? t('common.turkish') : t('common.english')}</T>
+          </View>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <T style={{ flex: 1, fontSize: 13, color: ll.text2 }}>{t('prof.speaksTurkish')}</T>
-          <Switch value={speaksTurkish} onChange={(v) => saveSpoken({ speaksTurkish: v })} accessibilityLabel={t('prof.speaksTurkish')} />
+        {/* Başka konuştuğun diller: seçilebilir satırlar, birden fazla dil işaretlenebilir */}
+        <View style={{ gap: 4 }}>
+          <T style={{ fontSize: 12, color: ll.label }}>{t('prof.otherLanguages')}</T>
+          {LANGS.filter((l) => l !== nativeLang).map((l) => (
+            <Pressable key={l} onPress={() => toggleSpoken(l)} accessibilityRole="checkbox" accessibilityState={{ checked: spoken[l] }}
+              style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, borderRadius: 8, backgroundColor: spoken[l] ? tabBar.activeBg : 'transparent', opacity: pressed ? 0.7 : 1 })}>
+              <T style={{ fontSize: 14, color: spoken[l] ? ll.text : ll.text2 }}>{l === 'tr' ? t('common.turkish') : t('common.english')}</T>
+              {spoken[l] && <T style={{ fontSize: 14, color: ll.red }}>✓</T>}
+            </Pressable>
+          ))}
         </View>
         <KankaSection />
-        {/* Kankamla notunun hemen altında: Kişilik Ağacım ve Numara Engelleme sayfaları (eski üst sekme çubuğunun yerine) */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <BtnGhost label={t('prof.tree')} style={{ flex: 1 }} onPress={onOpenTest} />
-          <BtnGhost label={t('prof.blocking')} style={{ flex: 1 }} onPress={onOpenRehber} />
-        </View>
       </CardP>
 
       <Sheet visible={activeConfirm} onClose={() => setActiveConfirm(false)}>
@@ -436,6 +480,16 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
           <Switch value={shake} onChange={(v) => { setShake(v); setShakeEnabled(v); }} accessibilityLabel={t('prof.shakeTitle')} />
         </View>
       </CardP>
+
+      {/* Yasal kartın hemen üstünde: Gizlilik ve Güvenlik (Numara Engelleme) */}
+      <Card style={{ paddingVertical: 4 }}>
+        <Head title={t('prof.privacySecurity')} style={{ marginTop: 12, marginBottom: 4 }} />
+        <Pressable onPress={onOpenRehber} accessibilityRole="button" accessibilityLabel={t('prof.blocking')}
+          style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', opacity: pressed ? 0.6 : 1 })}>
+          <T style={{ fontSize: 14, color: ll.text }}>{t('prof.blocking')}</T>
+          <T style={{ fontSize: 18, color: ll.label }}>›</T>
+        </Pressable>
+      </Card>
 
       <View style={{ alignItems: 'center', gap: 12, paddingBottom: 8 }}>
         {/* Yasal bağlantılar: web sitesindeki sayfalar uygulama içi tarayıcıda açılır. Satırlar en az 44 pt (HIG dokunma alanı) */}

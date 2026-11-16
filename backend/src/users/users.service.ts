@@ -58,10 +58,15 @@ export class UsersService {
     return { ok: true };
   }
 
+  // Başka konuşulan diller; ana dilin (nativeLanguage) alanı her zaman true kalır, kapatılamaz
   async updateSpokenLanguages(userId: string, dto: { speaksEnglish?: boolean; speaksTurkish?: boolean }) {
+    const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { nativeLanguage: true } });
+    const native = me?.nativeLanguage === "en" ? "en" : "tr";
     const data: { speaksEnglish?: boolean; speaksTurkish?: boolean } = {};
     if (typeof dto.speaksEnglish === "boolean") data.speaksEnglish = dto.speaksEnglish;
     if (typeof dto.speaksTurkish === "boolean") data.speaksTurkish = dto.speaksTurkish;
+    if (native === "en") data.speaksEnglish = true;
+    else data.speaksTurkish = true;
     const u = await this.prisma.user.update({ where: { id: userId }, data, select: { speaksEnglish: true, speaksTurkish: true } });
     return u;
   }

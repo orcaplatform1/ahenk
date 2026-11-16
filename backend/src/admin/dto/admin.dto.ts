@@ -264,7 +264,7 @@ export class UpdateRegionDto {
   @IsOptional() @IsIn(["TRY", "USD"]) currency?: string;
   @IsOptional() @IsIn(["tr", "en"]) defaultLanguage?: string;
   @IsOptional() @IsString() @Matches(/^\+[1-9]\d{0,3}$/, { message: "Telefon kodu +90 biçiminde olmalı" }) phoneCountryCode?: string;
-  @IsOptional() @IsArray() @IsIn(["TC", "YKN", "PASSPORT"], { each: true }) idTypes?: ("TC" | "YKN" | "PASSPORT")[];
+  @IsOptional() @IsArray() @IsIn(["ID_CARD", "DRIVER_LICENSE", "PASSPORT", "RESIDENCE_PERMIT"], { each: true }) idTypes?: ("ID_CARD" | "DRIVER_LICENSE" | "PASSPORT" | "RESIDENCE_PERMIT")[];
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100000) sortOrder?: number;
 }

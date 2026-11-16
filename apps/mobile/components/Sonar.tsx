@@ -49,7 +49,7 @@ function placeLabels(bubbles: ReturnType<typeof placeBubbles>) {
   });
 }
 
-// Web .ll-bubble-breathe karşılığı: 2,5 sn'de %85 ↔ %115, noktalar kaydırmalı
+// Canlı tarama: semt noktası yanıp söner (opaklık seviye opaklığı ↔ %30'u) ve 2,5 sn'de %85 ↔ %115 nefes alır, noktalar kaydırmalı
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 function BreathingCircle({ cx, cy, r, fill, opacity, index }: { cx: number; cy: number; r: number; fill: string; opacity: number; index: number }) {
   const reduce = useReduceMotion();
@@ -62,7 +62,8 @@ function BreathingCircle({ cx, cy, r, fill, opacity, index }: { cx: number; cy: 
     return () => { clearTimeout(t); loop.stop(); };
   }, [reduce, v, index]);
   if (reduce) return <Circle cx={cx} cy={cy} r={r} fill={fill} opacity={opacity} />;
-  return <AnimatedCircle cx={cx} cy={cy} r={v.interpolate({ inputRange: [0, 1], outputRange: [r * 0.85, r * 1.15] })} fill={fill} opacity={opacity} />;
+  return <AnimatedCircle cx={cx} cy={cy} r={v.interpolate({ inputRange: [0, 1], outputRange: [r * 0.85, r * 1.15] })} fill={fill}
+    opacity={v.interpolate({ inputRange: [0, 1], outputRange: [opacity, opacity * 0.3] })} />;
 }
 
 export function AhenkSonar({ width = SIZE, children, sweep = true, scanOff = false }: { width?: number; children?: React.ReactNode; sweep?: boolean; scanOff?: boolean }) {
@@ -103,11 +104,13 @@ export function AhenkSonar({ width = SIZE, children, sweep = true, scanOff = fal
   );
 }
 
-// Bekleme durumu (waiting): dönen ışık durur; bütün semt noktaları "Düşük" grisinde, aynı büyüklükte ve hareketsiz
+// Tarama başlamadan (idle): dönen ışık bulunduğu açıda durur; bütün semt noktaları "Düşük" grisinde, aynı büyüklükte ve hareketsiz
 const WAIT_DOT = { color: LEVELS[4].color, r: LEVELS[4].r, opacity: LEVELS[4].opacity };
 
-// idle: BEKLEME (Eşleşme Paneli "Yeni tarama başlamasına" geri sayımı gösterilirken) — tarama dilimi bulunduğu açıda durur, rozet "PASİF"
-export function LiveSonar({ sonar, scanOff, waiting = false, idle = false }: { sonar: LivePulse['sonar'] | null; scanOff?: boolean; waiting?: boolean; idle?: boolean }) {
+// idle: tarama başlamadı (Eşleşme Paneli "Yeni tarama başlamasına" geri sayımı gösterilirken) — rozet "PASİF", radar durur.
+// Aksi hâlde tarama canlı: rozet "CANLI", ışın sürekli döner; her semtin noktası ve adı yoğunluk seviyesinin renginde
+// (theme LEVELS: Çok yoğun kırmızı, Yoğun turuncu, Orta sarı, Düşük gri — lejant renkleri), noktalar yanıp söner.
+export function LiveSonar({ sonar, idle = false }: { sonar: LivePulse['sonar'] | null; idle?: boolean }) {
   const { t } = useTranslation();
   const dots = sonar?.dots ?? [];
   const density = sonar?.density ?? null;
@@ -121,17 +124,17 @@ export function LiveSonar({ sonar, scanOff, waiting = false, idle = false }: { s
         </View>
       } />
       <View style={{ alignItems: 'center' }}>
-        <AhenkSonar scanOff={scanOff || waiting || idle}>
+        <AhenkSonar scanOff={idle}>
           {density ? placeLabels(placeBubbles(density)).map((b, i) => (
             <G key={b.name}>
-              {waiting
+              {idle
                 ? <Circle cx={b.x} cy={b.y} r={WAIT_DOT.r} fill={WAIT_DOT.color} opacity={WAIT_DOT.opacity} />
                 : <BreathingCircle index={i} cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} />}
-              <SvgText x={b.labelX} y={b.labelY} fontSize={10.5} fontWeight={b.level <= 2 ? '700' : '400'} fill={b.level <= 2 ? ll.text : ll.text2} fontFamily={sans(b.level <= 2 ? 700 : 400)}>{b.name}</SvgText>
+              <SvgText x={b.labelX} y={b.labelY} fontSize={10.5} fontWeight={b.level <= 2 ? '700' : '400'} fill={idle ? ll.text2 : b.color} fontFamily={sans(b.level <= 2 ? 700 : 400)}>{b.name}</SvgText>
             </G>
           )) : (
             <>
-              {dots.map((d) => { const p = point(dotAngle(d.key, d.district), RING_RADIUS[d.state]); const st = waiting ? WAIT_DOT : DOT[d.state]; return <Circle key={d.key} cx={p.x} cy={p.y} r={st.r} fill={st.color} />; })}
+              {dots.map((d) => { const p = point(dotAngle(d.key, d.district), RING_RADIUS[d.state]); const st = idle ? WAIT_DOT : DOT[d.state]; return <Circle key={d.key} cx={p.x} cy={p.y} r={st.r} fill={st.color} />; })}
               {(sonar?.labels ?? []).map((l) => {
                 const p = point(hashAngle(l.name), 104);
                 return <SvgText key={l.name} x={p.x} y={p.y - 8} textAnchor={p.x > C + 40 ? 'end' : p.x < C - 40 ? 'start' : 'middle'} fontSize={10.5} fill={l.active ? ll.text : ll.text2} fontFamily={sans(l.active ? 700 : 400)}>{l.name}</SvgText>;

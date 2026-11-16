@@ -1,16 +1,17 @@
-// Sekme 5 — Profilim: apps/web/app/profil/page.tsx. Üst sekme çubuğu yok; Kişilik Ağacım ve Numara Engelleme Hesap Bilgileri'ndeki butonlarla,
+// Sekme 5 — Profilim: apps/web/app/profil/page.tsx. Üst sekme çubuğu yok; Kişilik Ağacım profil fotoğrafının altındaki kartla, Numara
+// Engelleme "Gizlilik ve Güvenlik" kartıyla,
 // Kimlik Doğrulama KYC kartıyla (tab=kyc) açılır; "← Profilim" ve Android geri tuşu Profilim'e döner
 import React, { useCallback, useEffect, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
-import { Btn, BtnGhost, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
+import { Btn, BtnGhost, Serif, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
 import { ProfilimTab, type City, type UserData } from '@/components/profil/ProfilimTab';
 import { KisilikTab } from '@/components/profil/KisilikTab';
 import { RehberTab } from '@/components/profil/RehberTab';
 import { KycTab } from '@/components/profil/KycTab';
-import { ll, tw } from '@/theme/theme';
+import { ll, llTitle, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
 import { ProfilePhotoHeader } from '@/components/ProfilePhoto';
 import { buildInitials } from '@/lib/masa';
@@ -61,7 +62,13 @@ export default function Profilim() {
             <Glow />
             <View style={{ marginBottom: 16 }}><KycNoticeCard /></View>
             {/* Alt sayfada (Kişilik Ağacım / Numara Engelleme / Kimlik Doğrulama) Profilim'e dönüş: mevcut pillRed etiket stili ("← Paketler" ile aynı) */}
-            {tab !== 'profil' && <Btn variant="pillRed" label={t('prof.backArrow')} style={{ alignSelf: 'flex-start', marginBottom: 16 }} onPress={backToProfil} />}
+            {/* Kişilik Ağacım'da büyük başlık "← Profilim" ile aynı satırda, sağa yaslı */}
+            {tab === 'test' ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+                <Btn variant="pillRed" label={t('prof.backArrow')} onPress={backToProfil} />
+                <Serif accessibilityRole="header" numberOfLines={1} style={{ flexShrink: 1, fontSize: llTitle.size, lineHeight: llTitle.size * llTitle.lineHeight, color: ll.text, textAlign: 'right' }}>{t('prof.tree')}</Serif>
+              </View>
+            ) : tab !== 'profil' && <Btn variant="pillRed" label={t('prof.backArrow')} style={{ alignSelf: 'flex-start', marginBottom: 16 }} onPress={backToProfil} />}
             {/* En üstte büyük yuvarlak profil alanı (fotoğraf yoksa ad soyad kısaltması) */}
             {user && tab === 'profil' && <ProfilePhotoHeader photoUrl={user.profilePhotoUrl} initials={buildInitials(user.firstName, user.lastName)} gender={user.profile?.gender} kycApproved={kycApproved} pending={user.profilePhotoPending} />}
             {loading ? <SkeletonBlock lines={4} /> : fetchError && !user ? (

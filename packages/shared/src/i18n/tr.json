@@ -619,7 +619,6 @@
     "leave": "Kankalıktan Çıkar",
     "leaveInfo": "Kankalıktan çıkarsan Kankamla masalarına birlikte katılamazsınız. İstersen daha sonra tekrar kanka olabilirsiniz.",
     "ok": "Tamam",
-    "phoneInvalid": "5 ile başlayan 10 haneli numara girin.",
     "rightsLeft": "Kankamla: {count} masa hakkı kaldı",
     "rules": "Kankan aynı cinsiyetten olmalı ve kimliğini doğrulamış olmalı. Davet 48 saat geçerlidir.",
     "sendInvite": "Davet Gönder",
@@ -658,7 +657,7 @@
     "frontAlt": "Kimlik ön yüz örneği",
     "httpsNeeded": "Kamera için HTTPS bağlantısı gereklidir. Güvenli bağlantıyla erişin.",
     "httpsShort": "HTTPS bağlantısı gereklidir.",
-    "idType": "Kimlik türü",
+    "idType": "Belge türü",
     "inReview": "Doğrulama incelemeye alındı",
     "noCam": "Kamera bulunamadı.",
     "photoUploaded": "Fotoğraf Yüklendi",
@@ -676,8 +675,6 @@
     "submit": "Kimliğimi Doğrula",
     "title": "Kimlik Doğrulama",
     "typePASSPORT": "Pasaport",
-    "typeTC": "TC Kimlik Kartı",
-    "typeYKN": "Yabancı Kimlik Kartı (YKN)",
     "uploadBack": "Arka Yüzü Yükle",
     "uploadFront": "Ön Yüzü Yükle",
     "uploadPassport": "Fotoğraflı Sayfayı Yükle",
@@ -693,7 +690,10 @@
     "cancel": "Vazgeç",
     "errorStatus": "Hata ({status})",
     "uploadFailedStatus": "Yükleme başarısız ({status})",
-    "networkError": "Ağ hatası"
+    "networkError": "Ağ hatası",
+    "typeID_CARD": "Kimlik Kartı",
+    "typeDRIVER_LICENSE": "Ehliyet",
+    "typeRESIDENCE_PERMIT": "Oturma İzni"
   },
   "landing": {
     "aDesc": "İnsanlarla köprü mü kurarsın, yoksa mesafe mi?",
@@ -880,7 +880,6 @@
     "emailTitleM": "E-postan nedir?",
     "forgot": "Şifremi Unuttum",
     "forgotM": "Şifremi unuttum",
-    "headingSub": "Güzel bir akşamın başlangıcındasın.",
     "legal1": "Devam ederek ",
     "legal2": "'nı kabul edersin. Verilerini nasıl işlediğimizi öğrenmek için ",
     "legal3": " ve ",
@@ -914,7 +913,6 @@
   "loyalty": {
     "discounts": "Toplam %10 İndirim Hakkı",
     "info": "Davet ettiğin arkadaşın herhangi bir paket aldığında veya abone olduğunda sana %10 indirim hakkı tanımlanır. Her indirim hakkı yalnızca bir paket satın alımında geçerlidir, toplu kullanılamaz ve devredilemez.",
-    "invalidPhone": "Geçerli bir numara girin (5 ile başlayan 10 hane).",
     "invited": "Davetli Arkadaş",
     "people": "{count} kişi",
     "pieces": "{count} Adet",
@@ -1325,10 +1323,7 @@
     "resend": "Yeni kod gönder",
     "save": "Kaydet",
     "sendCode": "Kod Gönder",
-    "speaksEnglish": "İngilizce biliyorum",
-    "speaksTurkish": "Türkçe biliyorum",
     "tree": "Kişilik Ağacım",
-    "treeRegrow": "Ağacı baştan büyütür",
     "untilCancel": "Siz iptal edene kadar bu şehirdeki masalarla eşleşirsiniz.",
     "unverified": "Doğrulanmamış",
     "venueTitle": "Mekan Tercihi",
@@ -1341,7 +1336,10 @@
     "version": "Versiyon {version}",
     "select": "Seç",
     "kvkkNotice": "KVKK Aydınlatma Metni",
-    "emailPh": "yeni@eposta.com"
+    "emailPh": "yeni@eposta.com",
+    "nativeLanguage": "Ana dilin",
+    "otherLanguages": "Başka konuştuğun diller",
+    "privacySecurity": "Gizlilik ve Güvenlik"
   },
   "radar": {
     "d": "GÜN",

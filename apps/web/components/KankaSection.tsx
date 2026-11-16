@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { formatNamed, type Lang } from '@ahenk/shared';
+import { DEFAULT_PHONE_COUNTRY, formatNamed, toE164, type Lang } from '@ahenk/shared';
+import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { api } from '@/lib/api';
 
 // Profilim → t('kanka.activeKanka') (Kankamla). Davet telefonla yapılır; davet linki her zaman kopyalanabilir gösterilir
@@ -79,6 +80,7 @@ export function KankaSection() {
   const [state, setState] = useState<KankaState | null>(null);
   const [sheet, setSheet] = useState<'invite' | 'incoming' | 'kanka' | null>(null);
   const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState(DEFAULT_PHONE_COUNTRY);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [sentLink, setSentLink] = useState<string | null>(null);
@@ -99,10 +101,11 @@ export function KankaSection() {
   const incoming = state.incomingInvites[0];
 
   async function sendInvite() {
-    if (phone.length !== 10 || !phone.startsWith('5')) { setMsg(t('kanka.phoneInvalid')); return; }
+    const phoneE164 = toE164(country, phone);
+    if (!phoneE164) { setMsg(t('phone.invalid')); return; }
     setBusy(true); setMsg('');
     try {
-      const r = await api.post<{ link: string }>('/kanka/invite', { phone: `+90${phone}` });
+      const r = await api.post<{ link: string }>('/kanka/invite', { phone: phoneE164 });
       setSentLink(r.link); setPhone(''); load();
     } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
   }
@@ -194,11 +197,13 @@ export function KankaSection() {
           ) : (
             <div className="flex flex-col gap-3">
               <p style={{ fontSize: 12, color: '#888', lineHeight: 1.5 }}>{t('kanka.rules')}</p>
-              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
-                <span style={{ color: '#555', fontSize: 14, marginRight: 4 }}>+90</span>
-                <input type="tel" inputMode="numeric" placeholder="5XX XXX XX XX" value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: '#f5f5f5', padding: '11px 0' }} />
+              <div className="flex gap-2">
+                <CountryCodeButton country={country} onChange={(c) => { setCountry(c); setMsg(''); }} />
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
+                  <input type="tel" inputMode="numeric" placeholder={country === 'TR' ? '5XX XXX XX XX' : ''} value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 15))}
+                    style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: '#f5f5f5', padding: '11px 0' }} />
+                </div>
               </div>
               {msg && <p style={{ fontSize: 12, color: '#ff6b6b' }}>{msg}</p>}
               <div className="flex gap-2">
