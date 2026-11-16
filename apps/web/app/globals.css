@@ -339,7 +339,6 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .ll-tab-dot.is-scanning { animation: ll-blink 1.4s ease-in-out infinite; }
 .ll-tab-dot.is-kyc { background: #f5a623; }
 .ll-tab-dot.is-pending, .ll-tab-dot.is-kanka { background: #ffd60a; }
-.ll-scan-off .ll-sweep { animation: none; }
 /* BEKLEME: tarama dilimi bulunduğu açıda durur (gizlenmez) */
 .ll-scan-idle .ll-sweep { animation-play-state: paused; }
 .ll-ring-pulse { transform-box: view-box; transform-origin: 150px 150px; animation: ll-ring-pulse 3.2s ease-in-out infinite; }
@@ -347,6 +346,9 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .ll-cta { width: 100%; min-height: 56px; border: none; border-radius: 16px; cursor: pointer; color: #fff; font: 700 16px var(--font-sans), system-ui, sans-serif; background: linear-gradient(90deg, #c7342a, #d9603f 55%, #e8a27a); box-shadow: 0 10px 30px rgba(214,69,58,0.35); }
 .ll-bubble-pulse { transform-box: fill-box; transform-origin: center; animation: ll-pulse 2.2s ease-out infinite; }
 .ll-bubble-breathe { transform-box: fill-box; transform-origin: center; animation: ll-breathe 2.5s ease-in-out infinite; }
+/* Canlı tarama semt noktası: nefes (%85 ↔ %115) + yanıp sönme (opaklık seviye opaklığı ↔ %30'u), mobil Sonar.tsx ile aynı */
+.ll-bubble-blink { transform-box: fill-box; transform-origin: center; animation: ll-breathe-blink 2.5s ease-in-out infinite; opacity: var(--ll-o, 1); }
+@keyframes ll-breathe-blink { 0%, 100% { transform: scale(0.85); opacity: var(--ll-o, 1); } 50% { transform: scale(1.15); opacity: calc(var(--ll-o, 1) * 0.3); } }
 @keyframes ll-breathe { 0%, 100% { transform: scale(0.85); } 50% { transform: scale(1.15); } }
 .ll-flash { transform-box: fill-box; transform-origin: center; animation: ll-flash 1.4s ease-out forwards; }
 @keyframes ll-flash { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(3.2); opacity: 0; } }
@@ -399,6 +401,6 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   .adm-table td[data-label]::before { content: attr(data-label); font-family: var(--font-mono), monospace; font-size: 11px; color: #64748b; flex-shrink: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ll-live-dot::after, .ll-blink, .ll-sweep, .ll-ring-pulse, .ll-dot-new, .ll-bubble-pulse, .ll-bubble-breathe, .ll-feed-track, .ll-fade, .ll-tab-dot.is-scanning, .ll-tab.is-on .ll-tab-spin, .ll-tab.is-on .ll-ring-drift { animation: none; }
+  .ll-live-dot::after, .ll-blink, .ll-sweep, .ll-ring-pulse, .ll-dot-new, .ll-bubble-pulse, .ll-bubble-breathe, .ll-bubble-blink, .ll-feed-track, .ll-fade, .ll-tab-dot.is-scanning, .ll-tab.is-on .ll-tab-spin, .ll-tab.is-on .ll-ring-drift { animation: none; }
   .ll-flash { animation: none; opacity: 0; }
 }

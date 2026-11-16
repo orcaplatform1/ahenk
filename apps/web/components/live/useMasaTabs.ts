@@ -15,20 +15,6 @@ const MASA_TURLERI: MasaTuru[] = ['GROUP', 'ONE_ON_ONE', 'KANKA'];
 export const CLOSING_DAY: Record<MasaTuru, number> = { GROUP: 4, ONE_ON_ONE: 5, KANKA: 6 };
 export const SCAN_START_DAY = 0;
 
-// Eşleşme taraması bekleme durumu: kullanıcının bu hafta seçtiği türlerden en az birinin buluşma saati henüz geçmemişse tarama aktif;
-// değilse (paketi yok, bu hafta tür seçmemiş ya da seçtiği türlerin buluşma saati geçmiş) bekleme. Buluşma saatleri (TR):
-// Grup Cuma 20:00, Baş Başa Cumartesi 20:00, Kankamla Pazar 20:00 — her biri o türün seçim son saatinden (Perşembe / Cuma / Cumartesi
-// 18:00) 26 saat sonra; son saat seçimin ait olduğu haftadan geldiği için yeni haftada (Pazar 23:59 sonrası) yeniden hesaplanır.
-const MEETING_AFTER_DEADLINE_MS = 26 * 3_600_000;
-export function isScanWaiting(selection: WeeklySelection | null | undefined, now = Date.now()): boolean {
-  if (!selection) return true;
-  return !selection.selected.some((t) => {
-    const opt = selection.options.find((o) => o.type === t);
-    return !!opt && now < Date.parse(opt.deadline) + MEETING_AFTER_DEADLINE_MS;
-  });
-}
-
-// Türün bu haftaki kapanışı geçti mi: bir sonraki tarama başlangıcı bir sonraki kapanıştan önce geliyorsa
 export function isPastClosing(tab: MasaTuru) {
   return getNextTarget(SCAN_START_DAY).getTime() < getNextTarget(CLOSING_DAY[tab]).getTime();
 }
@@ -151,15 +137,6 @@ export function useMasaTabs() {
   }, [reload, refreshPlan]);
 
   // Tarama başlayınca/kapanınca sekme ve kart sayfa yenilenmeden değişsin
-  // Tarama bekleme durumu: seçim değişince ve dakikada bir (buluşma saati geçince) yeniden hesaplanır
-  const [scanWaiting, setScanWaiting] = useState(true);
-  useEffect(() => {
-    const upd = () => setScanWaiting(isScanWaiting(selection));
-    upd();
-    const id = setInterval(upd, 30_000);
-    return () => clearInterval(id);
-  }, [selection]);
-
   useEffect(() => {
     const id = setInterval(() => setPastClosed(pastList()), 1000);
     return () => clearInterval(id);
@@ -223,6 +200,6 @@ export function useMasaTabs() {
 
   return {
     ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, selection, submitSelection,
-    tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled, scanWaiting,
+    tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled,
   };
 }

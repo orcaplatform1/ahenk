@@ -99,12 +99,10 @@ function heatColor(index: number, count: number) {
   return `rgba(255,255,255,${mix(0.08, 0.045)})`;
 }
 
-export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, scanOff, scanWaiting = false, tab, statuses, tabPastClosing, onTab, notice, participation }: {
+export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, tab, statuses, tabPastClosing, onTab, notice, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
   tabSeatsLeft: number | null; // Kullanıcının masasındaki boş sandalye; masası yoksa null
-  scanOff?: boolean; // Kurulmuş masası admin tarafından iptal edildi: tarama animasyonu başlamaz
-  scanWaiting?: boolean; // Tarama bekleme durumu (useMasaTabs isScanWaiting): ışık durur, noktalar ve yoğunluk kartları gri
   meetingAt: string | null; // Kurulmuş aktif masanın buluşma anı (buluşmadan 3 saat sonrasına kadar); yoksa null
   tab: MasaTuru;
   statuses: Record<MasaTuru, TabStatus>;
@@ -123,7 +121,8 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
   const waitingScan = tabPastClosing && !hasTabTable;
   // Kurulmuş aktif masa: sayaç buluşmaya sayar, yeni haftaya geçmez
   const meetingTarget = hasTabTable && meetingAt ? Date.parse(meetingAt) : null;
-  // BEKLEME: geri sayım kartında "Yeni tarama başlamasına" gösterilirken (aynı durum değişkenleri); AKTİF: tarama başlamış
+  // PASİF: tarama başlamadı (geri sayım kartında "Yeni tarama başlamasına"); CANLI: tarama başlamış. Rozet, radar, semt noktaları ve
+  // yoğunluk kartları yalnız bu tek durumdan okunur (mobil ile aynı)
   const scanIdle = meetingTarget === null && waitingScan;
 
   const seats = overview?.groupSeatsLeft ?? null;
@@ -159,9 +158,9 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
           </p>
         </section>
 
-        {/* BEKLEME: tarama dilimi bulunduğu açıda durur (ll-scan-idle, gizlenmez); diğer durumlarda mevcut davranış */}
-        <div className={scanIdle ? 'll-scan-idle' : scanOff || scanWaiting || statuses[tab] === 'KYC' || statuses[tab] === 'KANKA' ? 'll-scan-off' : undefined}>
-          <LiveSonar sonar={pulse?.sonar ?? null} waiting={scanWaiting} idle={scanIdle} />
+        {/* PASİF: tarama dilimi bulunduğu açıda durur (ll-scan-idle, gizlenmez); CANLI: sürekli döner */}
+        <div className={scanIdle ? 'll-scan-idle' : undefined}>
+          <LiveSonar sonar={pulse?.sonar ?? null} idle={scanIdle} />
         </div>
         <div key={tab} className="ll-fade">{participation}</div>
         <LiveFeed feed={pulse?.feed ?? null} tz={overview?.timezone} />
@@ -175,18 +174,18 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
           {overview?.density ? (
             <div className="ll-heat">
               {overview.density.districts.map((d) => (
-                <div key={d.name} className="ll-heat-cell" style={{ background: scanWaiting ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }}>
+                <div key={d.name} className="ll-heat-cell" style={{ background: scanIdle ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }}>
                   <span style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-                  {!scanWaiting && <span className="ll-mono" style={{ fontSize: d.percent === null ? 11 : 15 }}>{d.percent === null ? t(LEVELS[d.level].label) : `%${d.percent}`}</span>}
+                  {!scanIdle && <span className="ll-mono" style={{ fontSize: d.percent === null ? 11 : 15 }}>{d.percent === null ? t(LEVELS[d.level].label) : `%${d.percent}`}</span>}
                 </div>
               ))}
             </div>
           ) : overview?.heatmap.length ? (
             <div className="ll-heat">
               {overview.heatmap.map((d, i) => (
-                <div key={d.name} className="ll-heat-cell" style={{ background: scanWaiting ? WAIT_CELL : heatColor(i, overview.heatmap.length) }}>
+                <div key={d.name} className="ll-heat-cell" style={{ background: scanIdle ? WAIT_CELL : heatColor(i, overview.heatmap.length) }}>
                   <span style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-                  {!scanWaiting && <span className="ll-mono" style={{ fontSize: 15 }}>{`%${d.percent}`}</span>}
+                  {!scanIdle && <span className="ll-mono" style={{ fontSize: 15 }}>{`%${d.percent}`}</span>}
                 </div>
               ))}
             </div>

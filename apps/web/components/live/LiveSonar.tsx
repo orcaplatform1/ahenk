@@ -84,13 +84,14 @@ function placeLabels(bubbles: ReturnType<typeof placeBubbles>) {
   });
 }
 
-// Bekleme durumu (waiting): bütün semt noktaları "Düşük" grisinde, aynı büyüklükte ve hareketsiz (parlama / nefes / nabız yok)
+// Tarama başlamadan (idle): bütün semt noktaları "Düşük" grisinde, aynı büyüklükte ve hareketsiz (parlama / nefes / nabız yok).
+// Canlıyken her semtin noktası ve adı yoğunluk seviyesinin renginde (LEVELS — mobil theme LEVELS ile aynı), noktalar yanıp söner
 const WAIT_DOT = { color: LEVELS[4].color, r: LEVELS[4].r, opacity: LEVELS[4].opacity };
 
-function DensityLayer({ density, flashes, waiting }: { density: SonarDensity; flashes: Record<string, number>; waiting: boolean }) {
+function DensityLayer({ density, flashes, idle }: { density: SonarDensity; flashes: Record<string, number>; idle: boolean }) {
   return (
     <>
-      {placeLabels(placeBubbles(density)).map((b, i) => waiting ? (
+      {placeLabels(placeBubbles(density)).map((b, i) => idle ? (
         <g key={b.name}>
           <circle cx={b.x} cy={b.y} r={WAIT_DOT.r} fill={WAIT_DOT.color} opacity={WAIT_DOT.opacity} />
           <text x={b.labelX} y={b.labelY} fontSize="10.5" fontWeight={b.level <= 2 ? 700 : 400} fill={b.level <= 2 ? '#f4f1ec' : '#c9c2b8'}
@@ -100,13 +101,13 @@ function DensityLayer({ density, flashes, waiting }: { density: SonarDensity; fl
         <g key={b.name}>
           {b.level === 1 && <circle className="ll-bubble-pulse" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
           {flashes[b.name] > 0 && <circle key={flashes[b.name]} className="ll-flash" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
-          <circle className="ll-bubble-breathe" style={{ animationDelay: `${-(i * 0.37) % 2.5}s` }} cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} />
+          <circle className="ll-bubble-blink" style={{ animationDelay: `${-(i * 0.37) % 2.5}s`, ['--ll-o' as string]: b.opacity }} cx={b.x} cy={b.y} r={b.r} fill={b.color} />
           <text
             x={b.labelX}
             y={b.labelY}
             fontSize="10.5"
             fontWeight={b.level <= 2 ? 700 : 400}
-            fill={b.level <= 2 ? '#f4f1ec' : '#c9c2b8'}
+            fill={b.color}
             style={{ fontFamily: 'var(--font-sans), system-ui, sans-serif' }}
           >
             {b.name}
@@ -117,15 +118,15 @@ function DensityLayer({ density, flashes, waiting }: { density: SonarDensity; fl
   );
 }
 
-function DotLayer({ sonar, waiting }: { sonar: LivePulse['sonar'] | null; waiting: boolean }) {
+function DotLayer({ sonar, idle }: { sonar: LivePulse['sonar'] | null; idle: boolean }) {
   return (
     <>
       {(sonar?.dots ?? []).map((d) => {
         const p = point(dotAngle(d.key, d.district), RING_RADIUS[d.state]);
-        const style = waiting ? WAIT_DOT : DOT[d.state];
+        const style = idle ? WAIT_DOT : DOT[d.state];
         return (
           <g key={d.key}>
-            {!waiting && d.state === 'new' && <circle className="ll-dot-new" cx={p.x} cy={p.y} r={style.r} fill={style.color} />}
+            {!idle && d.state === 'new' && <circle className="ll-dot-new" cx={p.x} cy={p.y} r={style.r} fill={style.color} />}
             <circle cx={p.x} cy={p.y} r={style.r} fill={style.color} />
           </g>
         );
@@ -151,8 +152,9 @@ function DotLayer({ sonar, waiting }: { sonar: LivePulse['sonar'] | null; waitin
   );
 }
 
-// idle: BEKLEME ("Yeni tarama başlamasına" geri sayımı gösterilirken) — rozet "PASİF" (kırmızı); AKTİF'te "CANLI" (yeşil)
-export default function LiveSonar({ sonar, waiting = false, idle = false }: { sonar: LivePulse['sonar'] | null; waiting?: boolean; idle?: boolean }) {
+// idle: tarama başlamadı ("Yeni tarama başlamasına" geri sayımı gösterilirken) — rozet "PASİF" (kırmızı), radar durur, her şey gri;
+// aksi hâlde CANLI (yeşil), ışın sürekli döner. Rozet, radar ve noktalar yalnız bu tek durumdan okunur (mobil Sonar.tsx ile aynı)
+export default function LiveSonar({ sonar, idle = false }: { sonar: LivePulse['sonar'] | null; idle?: boolean }) {
   const t = useTranslations();
   const dots = sonar?.dots ?? [];
   const density = sonar?.density ?? null;
@@ -197,7 +199,7 @@ export default function LiveSonar({ sonar, waiting = false, idle = false }: { so
             ? t('live.sonarDensityAria', { count: density.districts.length })
             : t('live.sonarDotsAria', { count: dots.length, fresh: counts.new, active: counts.active })}
         >
-          {density ? <DensityLayer density={density} flashes={flashes} waiting={waiting} /> : <DotLayer sonar={sonar} waiting={waiting} />}
+          {density ? <DensityLayer density={density} flashes={flashes} idle={idle} /> : <DotLayer sonar={sonar} idle={idle} />}
         </AhenkSonar>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '6px 16px', marginTop: 10 }}>
