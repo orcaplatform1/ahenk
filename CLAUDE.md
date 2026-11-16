@@ -327,7 +327,7 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     thread, en fazla 30 kare/sn), ekran odakta değilken durur. Görünüm (şekil, renk, yaprak yoğunluğu, boyut) aynı (KisilikAgaci.tsx)
   - Profilim alt bölümü sırası (mobil): "Gizlilik ve Güvenlik" kartı → yasal bağlantılar kartı (Gizlilik Politikası, Kullanım Koşulları,
     KVKK Aydınlatma Metni, Hesap Silme — web sayfaları uygulama içi tarayıcıda, satırlar 44 pt) → "Çıkış Yap" → "Tüm cihazlardan çıkış
-    yap" → küçük uygulama logosu → "Versiyon 0.1.4" → "Hesabımı Sil". Mobil sürüm 0.1.4 (Android versionCode 5)
+    yap" → küçük uygulama logosu → "Versiyon 0.1.5" → "Hesabımı Sil". Mobil sürüm 0.1.5 (Android versionCode 6)
   - Mağaza ayarları (app.json): iOS bundleIdentifier co.ahenk.app (Android package ile aynı); eas.json "production" profili (Android AAB,
     iOS mağaza), "preview" APK profili duruyor. iOS privacy manifest app.json ios.privacyManifests'te (prebuild PrivacyInfo.xcprivacy
     üretir): NSPrivacyTracking false; UserDefaults CA92.1, FileTimestamp C617.1 / 0A2A.1 / 3B52.1, SystemBootTime 35F9.1, DiskSpace
