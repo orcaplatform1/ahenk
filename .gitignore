@@ -38,3 +38,10 @@ backups/
 
 # Prisma istemcisi (prisma generate)
 backend/src/generated/
+
+# Yerel / git dışı dosyalar
+apps/mobile/.expo/
+/*.png
+/*.jpg
+.claude/commands
+.claude/skills
