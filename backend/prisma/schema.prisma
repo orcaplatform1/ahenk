@@ -16,8 +16,12 @@ model User {
   tokenVersion              Int                   @default(0) // Çıkışta artar: eldeki erişim token'ları hemen düşer
   id            String     @id @default(cuid())
   email         String     @unique
-  phone         String?    @unique
+  phone         String?    @unique // E.164 (+905…, +44…)
   passwordHash  String
+  language      String     @default("tr") // Arayüz dili: tr | en (bildirim / e-posta / WhatsApp şablon dili de buna göre)
+  speaksEnglish Boolean    @default(false) // Dil bazlı eşleşme
+  speaksTurkish Boolean    @default(true)
+  lastNotificationsSeenAt DateTime? // Bildirimler sayfasının son açılışı (alt menü rozeti: sonrasında gelen okunmamışlar sayı, diğerleri nokta)
   role          UserRole   @default(USER)
   status        UserStatus @default(ACTIVE)
   emailVerified Boolean    @default(false)
@@ -28,6 +32,7 @@ model User {
   updatedAt     DateTime   @updatedAt
 
   profile                   Profile?
+  regionWaitlist            RegionWaitlist[]
   oceanScore                OceanScore?
   oceanAnswers              OceanAnswer[]
   participations            MeetingParticipant[]
@@ -171,11 +176,13 @@ model OceanScore {
 model OceanQuestion {
   id           String         @id @default(cuid())
   text         String
+  textEn       String         @default("") // İngilizce metin (anlam korunur; kimlik ve puanlama aynı)
   dimension    OceanDimension
   reversed     Boolean        @default(false)
   orderNum     Int // Global sıra (1-19)
   section      Int // Bölüm numarası (1-6)
   sectionTitle String // Bölüm başlığı
+  sectionTitleEn String       @default("") // İngilizce bölüm başlığı
   active       Boolean        @default(true)
 
   answers OceanAnswer[]
@@ -493,8 +500,9 @@ model KycSubmission {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Cloudflare R2 nesne anahtarları
-  idFrontKey  String // kimlik ön yüz
-  idBackKey   String // kimlik arka yüz
+  idType      KycIdType @default(TC) // Kimlik türü (numara istenmez, saklanmaz)
+  idFrontKey  String // kimlik ön yüz (pasaportta fotoğraflı sayfa)
+  idBackKey   String? // kimlik arka yüz (pasaportta yok)
   livenessKey String // canlılık videosu (6-7 sn)
 
   status KycStatus @default(PENDING)
@@ -510,6 +518,12 @@ model KycSubmission {
   updatedAt   DateTime @updatedAt
 
   @@index([status])
+}
+
+enum KycIdType {
+  TC // TC Kimlik Kartı
+  YKN // Yabancı Kimlik Kartı
+  PASSPORT // Pasaport
 }
 
 enum KycStatus {
@@ -653,15 +667,38 @@ model AppConfig {
 // ŞEHİR & MEKAN
 // ─────────────────────────────────────────────
 
+// Şehir = bölge (Dubai Marina, JLT, Downtown Dubai ayrı bölgeler). Bölge ayarları: ülke, saat dilimi, para birimi,
+// varsayılan dil, telefon kodu, izin verilen kimlik türleri, aktiflik, sıra
 model City {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  isActive  Boolean   @default(true)
+  id               String      @id @default(cuid())
+  name             String      @unique
+  isActive         Boolean     @default(true)
+  countryCode      String      @default("TR") // ISO 3166-1 alpha-2
+  timezone         String      @default("Europe/Istanbul") // IANA saat dilimi
+  currency         String      @default("TRY") // Türkiye: TRY, diğer ülkeler: USD
+  defaultLanguage  String      @default("tr") // tr | en
+  phoneCountryCode String      @default("+90")
+  idTypes          KycIdType[] @default([TC, YKN, PASSPORT])
+  sortOrder        Int         @default(0)
+  regionWaitlist   RegionWaitlist[]
   venues    Venue[]
   meetings  Meeting[]
   districts CityDistrict[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+// Pasif bölge bekleme listesi ("Haber ver"): kullanıcı aynı bölgeye bir kez
+model RegionWaitlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cityId    String
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, cityId])
+  @@index([cityId])
 }
 
 // Admin Şehirler penceresinden girilen ilçeler: statik moddaki şehir yoğunluğu / tarama listesi

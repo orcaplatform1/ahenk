@@ -14,6 +14,7 @@ import {
   btnGhost, btnPrimary, btnTone, c, fonts, glassCard, inputGlass, ll, llCard, llCta, llEyebrow, llHead, llNote, llTitle, mono, sans, sheet, tw, webLineHeight, liveGlow,
 } from '@/theme/theme';
 
+import { upper } from '@/lib/i18n';
 // Web satır yüksekliği: stilde lineHeight yoksa üye tarafında Tailwind boyutları için sınıf değeri, diğer boyutlarda 1.5×;
 // admin tarafında (yalnız satır içi stil) her boyutta 1.5×. Açıkça verilmiş lineHeight korunur.
 // Web karşılığı yalnız satır içi stil kullanan bileşenler (Tailwind yazı sınıfı yok) InlineLH ile sarılır: orada her boyut 1.5×
@@ -76,7 +77,7 @@ export function BtnPrimary({ label, style, full, disabled, textStyle, noUpper, .
     <Pressable hitSlop={HIT} disabled={disabled} accessibilityRole="button" {...rest}
       style={({ pressed }) => [s.btn, s.btnPrimary, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: btnPrimary.disabledOpacity }, style]}>
       <View style={[s.dot, { backgroundColor: btnPrimary.dotColor }]} />
-      <Text style={withWebLH([s.btnText, { fontFamily: sans(600), color: c.white }, textStyle])}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
+      <Text style={withWebLH([s.btnText, { fontFamily: sans(600), color: c.white }, textStyle])}>{noUpper ? label : upper(label)}</Text>
     </Pressable>
   );
 }
@@ -87,7 +88,7 @@ export function BtnGhost({ label, style, full, disabled, redDot, textStyle, noUp
     <Pressable hitSlop={HIT} disabled={disabled} accessibilityRole="button" {...rest}
       style={({ pressed }) => [s.btn, s.btnGhost, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: btnGhost.disabledOpacity }, style]}>
       <View style={[s.dot, { backgroundColor: redDot ? c.ghostRedDot : btnGhost.dotColor }]} />
-      <Text style={withWebLH([s.btnText, { fontFamily: sans(500), color: btnGhost.color }, textStyle])}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
+      <Text style={withWebLH([s.btnText, { fontFamily: sans(500), color: btnGhost.color }, textStyle])}>{noUpper ? label : upper(label)}</Text>
     </Pressable>
   );
 }
@@ -100,7 +101,7 @@ export function BtnTone({ tone, label, style, full, disabled, textStyle, noUpper
       style={({ pressed }) => [{ borderRadius: btnPrimary.radius, alignSelf: 'flex-start', shadowColor: t.glow, shadowOpacity: 0.55, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 }, full && s.full, pressed && !disabled && { opacity: 0.85 }, disabled && { opacity: btnPrimary.disabledOpacity }, style]}>
       <LinearGradient colors={[...t.colors]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={[s.btn, { alignSelf: 'stretch', borderColor: t.border }]}>
         <View style={[s.dot, { backgroundColor: t.dot }]} />
-        <Text style={withWebLH([s.btnText, { fontFamily: sans(600), color: c.white }, textStyle])}>{noUpper ? label : label.toLocaleUpperCase('tr-TR')}</Text>
+        <Text style={withWebLH([s.btnText, { fontFamily: sans(600), color: c.white }, textStyle])}>{noUpper ? label : upper(label)}</Text>
       </LinearGradient>
     </Pressable>
   );
@@ -118,7 +119,7 @@ export function Btn({ variant, label, children, selected, disabled, onPress, sty
   const w = onText?.weight ?? weight;
   const content = children ?? (
     <Text style={withWebLH([{ fontFamily: sans(w) }, textBase as TextStyle, selected && spec.on ? spec.on.text as TextStyle : null, textStyle], inline || String(variant).startsWith('adm'))}>
-      {label !== undefined && spec.upper ? label.toLocaleUpperCase('tr-TR') : label}
+      {label !== undefined && spec.upper ? upper(label) : label}
     </Text>
   );
   const boxStyle = [spec.box as ViewStyle, selected && spec.on ? spec.on.box as ViewStyle : null, disabled && { opacity: spec.disabledOpacity ?? 0.4 }, style];

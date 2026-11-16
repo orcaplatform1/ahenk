@@ -9,7 +9,9 @@ import { api, settleRefresh } from '@/lib/api';
 import { forgetDevice, rememberDevice } from '@/lib/session';
 import { BtnGhost, BtnPrimary, Sheet, T } from './ui';
 
+import { useTranslation } from 'react-i18next';
 export function LogoutChoice({ visible, onClose, firstName = '', onLoggedOut, remember: allowRemember = true }: { visible: boolean; onClose: () => void; firstName?: string; onLoggedOut: () => void; remember?: boolean }) {
+  const { t } = useTranslation();
   const router = useRouter();
   // Hatırla: süren token yenilemesi beklenir, yenileme token'ı ve ad saklanır, doğrudan "Tekrar hoş geldin, [ad]!" ekranına gidilir
   // (önceden normal giriş ekranına gidiliyordu; orada yeniden giriş yapılınca hatırlama bilgisi siliniyordu)
@@ -22,11 +24,11 @@ export function LogoutChoice({ visible, onClose, firstName = '', onLoggedOut, re
   async function forget() { onClose(); await api.logout(); await forgetDevice(); onLoggedOut(); }
   return (
     <Sheet visible={visible} onClose={onClose}>
-      <T w={700} style={{ fontSize: 16, marginBottom: 16, textAlign: 'center' }}>Çıkış Yap</T>
+      <T w={700} style={{ fontSize: 16, marginBottom: 16, textAlign: 'center' }}>{t('nav.logout')}</T>
       <View style={{ gap: 12 }}>
-        {allowRemember && <BtnPrimary label="Bu cihazda beni hatırla" full onPress={remember} />}
-        <BtnGhost label="Bu cihazda beni unut" full onPress={forget} />
-        <BtnGhost label="Vazgeç" full onPress={onClose} />
+        {allowRemember && <BtnPrimary label={t('prof.rememberDevice')} full onPress={remember} />}
+        <BtnGhost label={t('prof.forgetDevice')} full onPress={forget} />
+        <BtnGhost label={t('masa.dismiss')} full onPress={onClose} />
       </View>
     </Sheet>
   );

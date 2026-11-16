@@ -4,6 +4,7 @@ import { showAlert } from '@/components/AppAlert';
 import * as ImagePicker from 'expo-image-picker';
 import { ensurePermission, PERM_REASON } from './permissions';
 
+import i18n from './i18n';
 export interface PickedImage { uri: string; name: string; type: string; size?: number }
 
 const toPicked = (a: ImagePicker.ImagePickerAsset, i: number): PickedImage => ({
@@ -32,11 +33,11 @@ export async function pickFromCamera(): Promise<PickedImage[] | 'denied' | 'bloc
 
 // Galeriden seç / Kamerayla çek seçimi
 export function chooseSource(onPick: (src: 'library' | 'camera') => void) {
-  const options = ['Galeriden Seç', 'Kamerayla Çek', 'Vazgeç'];
+  const options = [i18n.t('photo.fromGallery'), i18n.t('photo.fromCamera'), i18n.t('masa.dismiss')];
   if (Platform.OS === 'ios') {
     ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: 2 }, (i) => { if (i === 0) onPick('library'); else if (i === 1) onPick('camera'); });
   } else {
-    showAlert('Fotoğraf ekle', undefined, [
+    showAlert(i18n.t('photo.addPhoto'), undefined, [
       { text: options[0], onPress: () => onPick('library') },
       { text: options[1], onPress: () => onPick('camera') },
       { text: options[2], style: 'cancel' },

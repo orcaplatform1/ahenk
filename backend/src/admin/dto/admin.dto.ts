@@ -256,6 +256,19 @@ export class UpdateCityDto {
   isActive?: boolean;
 }
 
+// Bölge (şehir) ayarları — admin "Bölgeler" sayfası
+export class UpdateRegionDto {
+  @IsOptional() @IsString() @MinLength(2) @MaxLength(60) name?: string;
+  @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (TR, AE)" }) countryCode?: string;
+  @IsOptional() @IsString() @MinLength(3) @MaxLength(60) timezone?: string;
+  @IsOptional() @IsIn(["TRY", "USD"]) currency?: string;
+  @IsOptional() @IsIn(["tr", "en"]) defaultLanguage?: string;
+  @IsOptional() @IsString() @Matches(/^\+[1-9]\d{0,3}$/, { message: "Telefon kodu +90 biçiminde olmalı" }) phoneCountryCode?: string;
+  @IsOptional() @IsArray() @IsIn(["TC", "YKN", "PASSPORT"], { each: true }) idTypes?: ("TC" | "YKN" | "PASSPORT")[];
+  @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100000) sortOrder?: number;
+}
+
 // İlçe seviyesi: 1 Çok yoğun, 2 Yoğun, 3 Orta, 4 Düşük
 export class CreateCityDistrictDto {
   @IsString()

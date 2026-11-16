@@ -1,19 +1,20 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { Link, usePathname } from '@/i18n/navigation';
 
 const TABS = [
-  { key: 'dashboard', label: 'Eşleşme Paneli', href: '/dashboard' },
-  { key: 'masalar',   label: 'Masalarım',        href: '/profil?tab=masalar' },
-  { key: 'profil',    label: 'Profilim',        href: '/profil?tab=profil' },
-  { key: 'test',      label: 'Kişilik Testim',  href: '/profil?tab=test' },
-  { key: 'paket',     label: 'Paketim',          href: '/profil?tab=paket' },
-  { key: 'rehber',    label: 'Numara Engelleme', href: '/profil?tab=rehber' },
-  { key: 'kyc',       label: 'Kimlik Doğrulama', href: '/profil?tab=kyc' },
+  { key: 'dashboard', href: '/dashboard' },
+  { key: 'masalar',   href: '/profil?tab=masalar' },
+  { key: 'profil',    href: '/profil?tab=profil' },
+  { key: 'test',      href: '/profil?tab=test' },
+  { key: 'paket',     href: '/profil?tab=paket' },
+  { key: 'rehber',    href: '/profil?tab=rehber' },
+  { key: 'kyc',       href: '/profil?tab=kyc' },
 ];
 
 export function AccountTabBar({ activeKey, kycApproved }: { activeKey?: string; kycApproved?: boolean }) {
+  const t = useTranslations();
   const pathname = usePathname();
   const tabs = TABS.filter(t => !(t.key === 'kyc' && kycApproved));
 
@@ -37,18 +38,18 @@ export function AccountTabBar({ activeKey, kycApproved }: { activeKey?: string; 
       }}
     >
       <div className="flex gap-1 px-3 py-2" style={{ minWidth: 'max-content' }}>
-        {tabs.map(t => {
+        {tabs.map(tab => {
           return (
             <Link
-              key={t.key}
-              href={t.href}
+              key={tab.key}
+              href={tab.href}
               className="text-xs font-medium whitespace-nowrap px-3 py-1.5 rounded-lg shrink-0 transition-all"
-              style={isActive(t.key)
+              style={isActive(tab.key)
                 ? { background: 'rgba(192,57,43,0.18)', color: '#ff6b6b', border: '1px solid rgba(192,57,43,0.35)', textDecoration: 'none' }
                 : { background: 'transparent', color: '#666', border: '1px solid transparent', textDecoration: 'none' }
               }
             >
-              {t.label}
+              {t(`tabs.${tab.key}`)}
             </Link>
           );
         })}

@@ -7,6 +7,7 @@ import { useFrameCallback, useSharedValue, type FrameInfo } from 'react-native-r
 import { BlurStyle, Canvas, PaintStyle, Picture, Skia, StrokeCap, TileMode, type SkCanvas, type SkPaint, type SkPicture } from '@shopify/react-native-skia';
 import { buildTree, frameOf, layoutTree, newAnimState, restart, tick, RENK, type AgacDegerleri, type Cizgi, type Elips } from '@/lib/kisilikAgaci';
 
+import { useTranslation } from 'react-i18next';
 function emptyPicture(W: number, H: number): SkPicture {
   const rec = Skia.PictureRecorder();
   rec.beginRecording(Skia.XYWHRect(0, 0, W, H));
@@ -14,6 +15,7 @@ function emptyPicture(W: number, H: number): SkPicture {
 }
 
 export function KisilikAgaci({ values, seed, selected, width, height }: { values: AgacDegerleri; seed: string; selected: number; width: number; height: number }) {
+  const { t } = useTranslation();
   const { O, C, E, A, D } = values;
   // Ağaç yapısı yalnız değerler veya tohum değişince yeniden üretilir
   const tree = useMemo(() => buildTree({ O, C, E, A, D }, seed), [O, C, E, A, D, seed]);
@@ -121,7 +123,7 @@ export function KisilikAgaci({ values, seed, selected, width, height }: { values
   useEffect(() => { frame.setActive(focused); return () => frame.setActive(false); }, [focused, frame]);
 
   return (
-    <Pressable onPress={() => { restartReq.value = restartReq.value + 1; }} accessibilityRole="button" accessibilityLabel="Kişilik Ağacım" accessibilityHint="Ağacı baştan büyütür" style={{ width, height, alignSelf: 'center' }}>
+    <Pressable onPress={() => { restartReq.value = restartReq.value + 1; }} accessibilityRole="button" accessibilityLabel={t('prof.tree')} accessibilityHint={t('prof.treeRegrow')} style={{ width, height, alignSelf: 'center' }}>
       <Canvas style={{ width, height }}>
         <Picture picture={picture} />
       </Canvas>

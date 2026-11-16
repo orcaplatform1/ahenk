@@ -11,7 +11,11 @@ import { LIKERT, type Question } from '@/components/TestFlow';
 import { Btn, BtnGhost, BtnPrimary, Mono, PageGlow, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { c, glassCard, tw, ll } from '@/theme/theme';
 
+import { useTranslation } from 'react-i18next';
+import { currentLang, upper } from '@/lib/i18n';
 export default function Test() {
+  const { t } = useTranslation();
+  const en = currentLang() === 'en';
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -27,9 +31,9 @@ export default function Test() {
 
   const [allowLeave, setAllowLeave] = useState(false);
   usePreventRemove(!allowLeave && !done && Object.keys(answers).length > 0, ({ repeat }) => {
-    showAlert('Testten çıkılsın mı?', 'Verdiğin cevaplar kaydedilmeyecek.', [
-      { text: 'Vazgeç', style: 'cancel' },
-      { text: 'Çık', style: 'destructive', onPress: () => { setAllowLeave(true); setTimeout(repeat, 0); } },
+    showAlert(t('test.leaveTitle'), t('test.leaveBody'), [
+      { text: t('masa.dismiss'), style: 'cancel' },
+      { text: t('test.leave'), style: 'destructive', onPress: () => { setAllowLeave(true); setTimeout(repeat, 0); } },
     ]);
   });
 
@@ -46,11 +50,11 @@ export default function Test() {
           <View style={{ width: 96, height: 96, borderRadius: 48, marginBottom: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(192,57,43,0.1)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.3)' }}>
             <Svg viewBox="0 0 24 24" width={40} height={40} fill="none"><Path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} stroke={c.red} d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></Svg>
           </View>
-          <Serif style={{ fontSize: 30, marginBottom: 12 }}>Test Tamamlandı</Serif>
-          <T style={{ color: c.t888, fontSize: 14, lineHeight: 22.75, textAlign: 'center', marginBottom: 8 }}>OCEAN profilin oluşturuldu. Algoritma artık seni doğru insanlarla eşleştirebilir.</T>
-          <Mono style={{ fontSize: 12, letterSpacing: 1.2, color: c.t555, marginBottom: 32 }}>⏱ Sonraki test: 6 ay sonra</Mono>
-          <BtnPrimary label="Profilimi Gör" full style={{ marginBottom: 12 }} onPress={() => router.replace('/test-sonuc')} />
-          <BtnGhost label="Dashboard'a Dön" full onPress={() => router.replace('/(tabs)')} />
+          <Serif style={{ fontSize: 30, marginBottom: 12 }}>{t('test.done')}</Serif>
+          <T style={{ color: c.t888, fontSize: 14, lineHeight: 22.75, textAlign: 'center', marginBottom: 8 }}>{t('test.doneBody')}</T>
+          <Mono style={{ fontSize: 12, letterSpacing: 1.2, color: c.t555, marginBottom: 32 }}>{t('test.nextIn6')}</Mono>
+          <BtnPrimary label={t('test.seeProfile')} full style={{ marginBottom: 12 }} onPress={() => router.replace('/test-sonuc')} />
+          <BtnGhost label={t('test.backDash')} full onPress={() => router.replace('/(tabs)')} />
         </View>
       </View>
     );
@@ -76,7 +80,7 @@ export default function Test() {
     <PageGlow bottom={0.1} left={-0.05} w={0.35} h={0.35} color="rgb(192,57,43)" opacity={0.07} stop={0.65} />
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ maxWidth: 576, width: '100%', alignSelf: 'center', paddingHorizontal: 20, paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 8 }}>
-        <T w={600} style={{ flex: 1, fontSize: 12, letterSpacing: 2.16, color: c.t888 }}>BÖLÜM {String(q.section ?? 1).padStart(2, '0')}: {(q.sectionTitle ?? '').toLocaleUpperCase('tr-TR')}</T>
+        <T w={600} style={{ flex: 1, fontSize: 12, letterSpacing: 2.16, color: c.t888 }}>{t('test.section', { n: String(q.section ?? 1).padStart(2, '0') })}: {upper((en && q.sectionTitleEn) || q.sectionTitle || '')}</T>
         <Mono style={{ fontSize: 12, color: c.t888 }}>{current + 1} / {total}</Mono>
       </View>
       <View style={{ height: 4, borderRadius: 2, marginBottom: 24, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.12)' }}>
@@ -84,21 +88,21 @@ export default function Test() {
       </View>
       <View style={{ gap: 16 }}>
         <View style={{ backgroundColor: glassCard.bg, borderWidth: 1, borderColor: glassCard.border, borderRadius: glassCard.radius, padding: 24 }}>
-          <Mono style={{ fontSize: 12, color: c.t555, marginBottom: 12 }}>Soru {current + 1}</Mono>
-          <Serif style={{ fontSize: 24, lineHeight: 33 }}>{q.text}</Serif>
+          <Mono style={{ fontSize: 12, color: c.t555, marginBottom: 12 }}>{t('test.questionCap', { n: current + 1 })}</Mono>
+          <Serif style={{ fontSize: 24, lineHeight: 33 }}>{(en && q.textEn) || q.text}</Serif>
         </View>
         <View style={{ gap: 8 }}>
           {LIKERT.map(({ v, label }) => {
             const sel = answers[q.id] === v;
             return (
-              <Btn key={v} variant="likertTest" selected={sel} label={label} onPress={() => setAnswers(p => ({ ...p, [q.id]: v }))} />
+              <Btn key={v} variant="likertTest" selected={sel} label={t(label)} onPress={() => setAnswers(p => ({ ...p, [q.id]: v }))} />
             );
           })}
         </View>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, gap: 12 }}>
-        <BtnGhost label="← Geri" disabled={current === 0} style={current === 0 ? { opacity: 0.3 } : undefined} onPress={() => setCurrent(x => Math.max(0, x - 1))} />
-        <BtnPrimary label={submitting ? '…' : current === total - 1 ? 'Testi Bitir' : 'İleri →'} style={[{ flex: 1 }, (!has || submitting) && { opacity: 0.3 }]} disabled={!has || submitting}
+        <BtnGhost label={t('reg.backArrow')} disabled={current === 0} style={current === 0 ? { opacity: 0.3 } : undefined} onPress={() => setCurrent(x => Math.max(0, x - 1))} />
+        <BtnPrimary label={submitting ? '…' : current === total - 1 ? t('test.finish') : t('test.next')} style={[{ flex: 1 }, (!has || submitting) && { opacity: 0.3 }]} disabled={!has || submitting}
           onPress={() => { if (!has) return; if (current === total - 1) submit(); else setCurrent(x => x + 1); }} />
       </View>
       {!!error && <T style={{ color: tw.accent, fontSize: 12, textAlign: 'center', marginTop: 16 }}>{error}</T>}

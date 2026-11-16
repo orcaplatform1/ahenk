@@ -207,6 +207,7 @@ export class AccountDeletionService {
         title: "Kankalık sona erdi",
         body: "Kankanın hesabı kapatıldığı için kankalığınız sona erdi. Profilim'den yeni bir kanka davet edebilirsin.",
         data: { type: "KANKA_ENDED" },
+        en: { title: "Your Kanka link has ended", body: "Your Kanka's account was closed, so your link has ended. You can invite a new Kanka from My Profile." },
       }).catch(() => undefined);
     }
     return { ok: true, status: "APPROVED" as const };

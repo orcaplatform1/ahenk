@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname } from '@/i18n/navigation';
 
 // Navbar'lı sayfalarda başlıklar navbarın bir satır altından başlar; landing tam ekran hero ile açılır
 export default function PageOffset({ children }: { children: React.ReactNode }) {

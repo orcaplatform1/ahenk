@@ -2,6 +2,8 @@
 // apps/web/components/HeroCountdown.tsx, packages/ui/src/components/tables/RezervasyonIptal.tsx
 import { gender as G } from '@/theme/theme';
 
+import { formatNamed, weekdayName } from '@ahenk/shared';
+import i18n, { currentLang } from './i18n';
 export type MasaTuru = 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
 
 export interface Participant {
@@ -78,22 +80,22 @@ export function cancelDeadline(scheduledAt: string): Date {
   return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() - 1, 20 - 3, 0, 0, 0));
 }
 
+// Gün adı arayüz dilinde, saat 24 saat (bölgenin saat dilimi)
 export function formatMeetingTime(isoStr: string): string {
   try {
     const trDate = new Date(new Date(isoStr).getTime() + 3 * 3600 * 1000);
     const h = trDate.getUTCHours().toString().padStart(2, '0');
     const m = trDate.getUTCMinutes().toString().padStart(2, '0');
-    const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
-    return `${days[trDate.getUTCDay()]} · ${h}:${m}`;
+    return `${weekdayName(trDate.getUTCDay(), currentLang())} · ${h}:${m}`;
   } catch { return ''; }
 }
 
 export function tableTitleOf(type?: MasaTuru): string {
-  return type === 'ONE_ON_ONE' ? 'BAŞ BAŞA MASA' : type === 'KANKA' ? 'KANKAMLA MASASI' : 'GRUP MASASI';
+  return i18n.t(type === 'ONE_ON_ONE' ? 'radar.titleOne' : type === 'KANKA' ? 'radar.titleKanka' : 'radar.titleGroup');
 }
 
 export function formatMasaDate(iso: string): string {
-  try { return new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' }); } catch { return iso; }
+  try { return formatNamed(iso, currentLang(), { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long', hour: '2-digit', minute: '2-digit' }); } catch { return iso; }
 }
 
 export function initialsLabel(raw0?: string | null): string {
@@ -106,4 +108,4 @@ export function initialsLabel(raw0?: string | null): string {
 
 export const pad = (n: number) => String(n).padStart(2, '0');
 export const num = (n: number) => n.toLocaleString('tr-TR');
-export const fmtDate = (val?: string | null) => val ? new Date(val).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+export const fmtDate = (val?: string | null) => val ? formatNamed(val, currentLang(), { day: 'numeric', month: 'long', year: 'numeric' }) : '—';

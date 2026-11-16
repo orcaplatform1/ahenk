@@ -1,28 +1,31 @@
 'use client';
 
+import { useLocale, useTranslations } from 'next-intl';
+
 // Paket kartları: paket ekranı (profil/tabs/TabPaket) ve landing aynı veriyi ve aynı kart görünümünü kullanır
 export type CardKey = 'MASADA' | 'KARSIMDA' | 'KANKAMLA' | 'ICERDE' | 'PRIME';
 export const PRIME_PLANS = [
-  { key: 'PRIME_1M', label: '1 Aylık' },
-  { key: 'PRIME_3M', label: '3 Aylık' },
-  { key: 'PRIME_6M', label: '6 Aylık' },
-  { key: 'PRIME_12M', label: '12 Aylık' },
+  { key: 'PRIME_1M', label: 'card.month1' },
+  { key: 'PRIME_3M', label: 'card.month3' },
+  { key: 'PRIME_6M', label: 'card.month6' },
+  { key: 'PRIME_12M', label: 'card.month12' },
 ] as const;
 
 // Paket kartları: tam genişlik, premium görünüm — aynı renk ailesinde koyudan ortaya geçişli (gradient) arka plan; açık / soluk ton yok.
 // Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, kırmızı (palet) çerçeve ve ad (#d6453a); rozet ve ok şarap kırmızısı (#7A1F2B).
+// name, badge, desc, advantages, PRIME_PLANS.label: çeviri anahtarı (ekranda t(...))
 // badgeBg / badgeFg: Tinder GOLD tarzı hap rozet (kartın renk tonuna uyumlu; İçerde ve Prime altın)
 export const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient: [string, string]; fg: string; nameColor: string; border?: string; badgeBg: string; badgeFg: string; arrowColor?: string; advantages: string[] }[] = [
-  { key: 'MASADA', name: 'Grup Paketi', badge: 'Tek Seferlik', desc: "1 Grup Masası'nda buluşma hakkı", gradient: ['#06301c', '#1c7a49'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: '#2e9e62', badgeFg: '#ffffff',
-    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', "1 Grup Masası'nda buluşma hakkı", 'Masada erkek ve kadın eşit sayı', 'Bu hak masada sen buluşana kadar geçerli'] },
-  { key: 'KARSIMDA', name: 'Baş Başa Paketi', badge: 'Tek Seferlik', desc: "1 Baş Başa Masası'nda buluşma hakkı", gradient: ['#3d0907', '#a3231b'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: '#d6453a', badgeFg: '#ffffff',
-    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Baş Başa Masası'nda buluşma hakkı", 'Bu hak masada sen buluşana kadar geçerli'] },
-  { key: 'KANKAMLA', name: 'Kankamla Paketi', badge: 'Tek Seferlik', desc: "1 Kankamla Masası'nda buluşma hakkı", gradient: ['#071a3a', '#1d4f9c'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: '#3b7dd8', badgeFg: '#ffffff',
-    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Kankamla Masası'nda buluşma hakkı", 'Kankanı davet ederek ücretsiz çağırma', 'Bu hak masada sen buluşana kadar geçerli'] },
-  { key: 'ICERDE', name: 'İçerde Paketi', badge: 'Tek Seferlik', desc: "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı", gradient: ['#3a2804', '#9c7412'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: 'linear-gradient(135deg, #f5d76e, #c9a227 55%, #a8861a)', badgeFg: '#1a1406',
-    advantages: ['Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı", 'Bu haklar masada sen buluşana kadar geçerli'] },
-  { key: 'PRIME', name: 'Prime Paket', badge: 'Abonelik', desc: 'Her ay 1 Grup + 1 Baş Başa + 1 Kankamla Masası', gradient: ['#000000', '#2b2d31'], fg: '#f4f1ec', nameColor: '#d6453a', border: '#d6453a', badgeBg: '#7A1F2B', badgeFg: '#f4f1ec', arrowColor: '#7A1F2B',
-    advantages: ['Her masada öncelikli eşleşme hakkı', 'Kişilik testi ile sana uyumlu insanlarla eşleşme', 'Daha derin çalışan algoritma ile yaş uyumu', "Her ay 1 Grup Masası + 1 Baş Başa Masası + 1 Kankamla Masası'nda buluşma hakkı", 'Aboneliği iptal etsen dahi, bu haklar masada sen buluşana kadar geçerli', 'Otomatik yenilenir, istediğin zaman iptal edebilirsin'] },
+  { key: 'MASADA', name: 'plans.MASADA', badge: 'card.oneTime', desc: 'card.descMASADA', gradient: ['#06301c', '#1c7a49'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: '#2e9e62', badgeFg: '#ffffff',
+    advantages: ['card.advMatch', 'card.descMASADA', 'card.advEqual', 'card.advValid'] },
+  { key: 'KARSIMDA', name: 'plans.KARSIMDA', badge: 'card.oneTime', desc: 'card.descKARSIMDA', gradient: ['#3d0907', '#a3231b'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: '#d6453a', badgeFg: '#ffffff',
+    advantages: ['card.advMatch', 'card.advAge', 'card.descKARSIMDA', 'card.advValid'] },
+  { key: 'KANKAMLA', name: 'plans.KANKAMLA', badge: 'card.oneTime', desc: 'card.descKANKAMLA', gradient: ['#071a3a', '#1d4f9c'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: '#3b7dd8', badgeFg: '#ffffff',
+    advantages: ['card.advMatch', 'card.advAge', 'card.descKANKAMLA', 'card.advKankaFree', 'card.advValid'] },
+  { key: 'ICERDE', name: 'plans.ICERDE', badge: 'card.oneTime', desc: 'card.descICERDE', gradient: ['#3a2804', '#9c7412'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: 'linear-gradient(135deg, #f5d76e, #c9a227 55%, #a8861a)', badgeFg: '#1a1406',
+    advantages: ['card.advMatch', 'card.advAge', 'card.descICERDE', 'card.advValidPlural'] },
+  { key: 'PRIME', name: 'plans.PRIME', badge: 'card.subscription', desc: 'card.descPRIME', gradient: ['#000000', '#2b2d31'], fg: '#f4f1ec', nameColor: '#d6453a', border: '#d6453a', badgeBg: '#7A1F2B', badgeFg: '#f4f1ec', arrowColor: '#7A1F2B',
+    advantages: ['card.advPriority', 'card.advMatch', 'card.advAge', 'card.advPrimeMonthly', 'card.advPrimeKeep', 'card.advPrimeRenew'] },
 ];
 
 export function Check() {
@@ -45,6 +48,8 @@ export function Arrow() {
 // Tinder tarzı kart: bulunduğu hücrenin tam genişliği (paket listeleri 2 sütunlu grid), koyudan ortaya geçişli arka plan, solda kalın ad + GOLD tarzı rozet, altında tek satır açıklama, sağda ok
 // staticCard: tıklanamaz kart (landing — avantajlar her zaman açık, aç/kapa yok): button yerine div, sağdaki ok yok
 export function PaketKarti({ card, badge, blocked, onClick, staticCard }: { card: (typeof CARDS)[number]; badge?: string | null; blocked?: boolean; onClick?: () => void; staticCard?: boolean }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const Tag = staticCard ? 'div' : 'button';
   return (
     <Tag
@@ -64,15 +69,15 @@ export function PaketKarti({ card, badge, blocked, onClick, staticCard }: { card
       <span className="flex flex-col gap-1 min-w-0">
         <span className="flex items-center gap-2 flex-wrap">
           {/* Tipografi: landing "Prime Abonelik" kartı başlığıyla aynı (font-serif, normal ağırlık, text-2xl); açıklama text-sm sans */}
-          <span className="font-serif text-2xl" style={{ color: card.nameColor }}>{card.name}</span>
+          <span className="font-serif text-2xl" style={{ color: card.nameColor }}>{t(card.name)}</span>
           <span
             className="rounded-full font-extrabold"
             style={{ fontSize: '0.62rem', letterSpacing: '0.08em', padding: '2px 8px', background: card.badgeBg, color: card.badgeFg, boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }}
           >
-            {(badge ?? card.badge).toLocaleUpperCase('tr-TR')}
+            {t(badge ?? card.badge).toLocaleUpperCase(locale === 'en' ? 'en' : 'tr-TR')}
           </span>
         </span>
-        <span className="text-sm truncate" style={{ opacity: 0.9 }}>{card.desc}</span>
+        <span className="text-sm truncate" style={{ opacity: 0.9 }}>{t(card.desc)}</span>
       </span>
       {!staticCard && <span style={{ color: card.arrowColor ?? card.border ?? card.fg }}><Arrow /></span>}
     </Tag>

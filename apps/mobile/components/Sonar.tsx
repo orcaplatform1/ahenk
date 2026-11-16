@@ -6,6 +6,10 @@ import { LEVELS, ll, sans } from '@/theme/theme';
 import { useReduceMotion } from '@/lib/motion';
 import type { LivePulse, SonarDensity, SonarState } from '@/lib/liveTypes';
 import { Head, T } from './ui';
+import { useTranslation } from 'react-i18next';
+
+// Yoğunluk seviyesi adları (theme LEVELS sırası 1–4)
+export const LEVEL_KEY = { 1: 'common.levelVeryBusy', 2: 'common.levelBusy', 3: 'common.levelMedium', 4: 'common.levelLow' } as const;
 
 const SIZE = 300; const C = SIZE / 2; const RINGS = [140, 104, 68, 32];
 const RING_RADIUS: Record<SonarState, number> = { new: 50, active: 86, pool: 122 };
@@ -102,20 +106,22 @@ export function AhenkSonar({ width = SIZE, children, sweep = true, scanOff = fal
 // Bekleme durumu (waiting): dönen ışık durur; bütün semt noktaları "Düşük" grisinde, aynı büyüklükte ve hareketsiz
 const WAIT_DOT = { color: LEVELS[4].color, r: LEVELS[4].r, opacity: LEVELS[4].opacity };
 
-export function LiveSonar({ sonar, scanOff, waiting = false }: { sonar: LivePulse['sonar'] | null; scanOff?: boolean; waiting?: boolean }) {
+// idle: BEKLEME (Eşleşme Paneli "Yeni tarama başlamasına" geri sayımı gösterilirken) — tarama dilimi bulunduğu açıda durur, rozet "PASİF"
+export function LiveSonar({ sonar, scanOff, waiting = false, idle = false }: { sonar: LivePulse['sonar'] | null; scanOff?: boolean; waiting?: boolean; idle?: boolean }) {
+  const { t } = useTranslation();
   const dots = sonar?.dots ?? [];
   const density = sonar?.density ?? null;
-  const legend: [string, string][] = density ? Object.values(LEVELS).map((l) => [l.label, l.color]) : [['yeni giriş', '#ff6b5e'], ['aktif', '#e8a27a'], ['havuzda', '#c9c2b8']];
+  const legend: [string, string][] = density ? (Object.entries(LEVELS) as unknown as [keyof typeof LEVEL_KEY, (typeof LEVELS)[1]][]).map(([k, l]) => [t(LEVEL_KEY[k]), l.color]) : [[t('live.legendNew'), '#ff6b5e'], [t('live.legendActive'), '#e8a27a'], [t('live.legendPool'), '#c9c2b8']];
   return (
     <View>
-      <Head title="Eşleşme Taraması" right={
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 9999, borderWidth: 1, borderColor: 'rgba(255,107,94,0.35)' }}>
-          <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#22c55e' }} />
-          <T w={600} style={{ fontSize: 11, color: '#22c55e' }}>CANLI</T>
+      <Head title={t('live.scanTitle')} right={
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 9999, borderWidth: 1, borderColor: idle ? '#ff3b30' : '#22c55e' }}>
+          <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: idle ? '#ff3b30' : '#22c55e' }} />
+          <T w={600} style={{ fontSize: 11, color: idle ? '#ff3b30' : '#22c55e' }}>{idle ? t('live.badgeInactive') : t('live.liveBadge')}</T>
         </View>
       } />
       <View style={{ alignItems: 'center' }}>
-        <AhenkSonar scanOff={scanOff || waiting}>
+        <AhenkSonar scanOff={scanOff || waiting || idle}>
           {density ? placeLabels(placeBubbles(density)).map((b, i) => (
             <G key={b.name}>
               {waiting

@@ -268,7 +268,8 @@
       "expo-notifications",
       "expo-iap",
       "./plugins/withAutofillHighlight",
-      "./plugins/withAndroidRelease"
+      "./plugins/withAndroidRelease",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": false

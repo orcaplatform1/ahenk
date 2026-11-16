@@ -23,6 +23,7 @@ export type OceanKey = 'openness' | 'conscientiousness' | 'extraversion' | 'agre
 
 export interface LiveOverview {
   city: { id: string; name: string };
+  timezone?: string; // bölgenin saat dilimi
   metrics: { pool: number; tables: number; fillPercent: number };
   groupSeatsLeft: number | null;
   fill: { group: LiveFill; oneOnOne: LiveFill; kanka: LiveFill };

@@ -46,6 +46,13 @@ export class NotificationController {
     return this.notificationService.markRead(user.id, id);
   }
 
+  // Bildirimler sayfası açıldı (User.lastNotificationsSeenAt)
+  @Patch("seen")
+  markSeen(@Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.notificationService.markSeen(user.id);
+  }
+
   // Tümünü okundu işaretle
   @Patch("read-all")
   markAllRead(@Req() req: Request) {

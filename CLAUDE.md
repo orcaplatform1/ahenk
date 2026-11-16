@@ -196,8 +196,14 @@ HAFTALIK BULUŞMA SEÇİMİ:
   - Eşleşme alanı: paketi olan kullanıcıda bu hafta seçilmeyen tür "Eşleşme Pasif"; hiç paketi olmayanda "Abonelik Yok"
   - Eşleşme taraması bekleme durumu (web + mobil, useMasaTabs isScanWaiting): bu hafta seçilen türlerden en az birinin buluşma saati
     (Grup Cuma, Baş Başa Cumartesi, Kankamla Pazar 20:00) geçmemişse tarama aktif; değilse (paket yok, seçim yok ya da saatler geçmiş)
-    bekleme: radar ışığı durur, bütün semt noktaları "Düşük" grisinde / aynı boy / hareketsiz, "Semt Masa Yoğunluğu" kartları gri ve
-    "Tarama bekleniyor". Yeni hafta (Pazar 23:59) seçimin haftasından yeniden hesaplanır
+    bekleme: radar ışığı durur, bütün semt noktaları "Düşük" grisinde / aynı boy / hareketsiz, "Semt Masa Yoğunluğu" kartları gri.
+    Yeni hafta (Pazar 23:59) seçimin haftasından yeniden hesaplanır
+  - Tarama durumu gösterimi (web + mobil Eşleşme Paneli): BEKLEME = geri sayım kartında "Yeni tarama başlamasına" gösterilen durum
+    (mevcut durum değişkenleri: meetingTarget === null && waitingScan; ayrı zaman hesabı yok), AKTİF = tarama başlamış.
+    BEKLEME'de kırmızı tarama dilimi bulunduğu açıda durur (gizlenmez); başlığın sağındaki rozet "PASİF" / "INACTIVE" (nokta, yazı,
+    kenarlık #ff3b30); "Semt Masa Yoğunluğu" başlığının sağında aynı satırda dikey ortalı "Tarama bekleniyor" / "Waiting for scan"
+    (gövde fontu, 13, #FFFFFF, opaklık 0.6). AKTİF'te dilim döner, rozet "CANLI" / "LIVE" (nokta, yazı, kenarlık yeşil #22c55e), başlık
+    yanındaki yazı yok. Semt kartlarının altında "Tarama bekleniyor" yazısı yoktur. Rozet boyut / konum / font aynı
   - GET /weekly-selection, POST /weekly-selection {types[]} (JWT)
   - Pencere tasarımı (web + mobil): başlık "Bu hafta hangi masaya katılmak için eşleşme taramasına girmek istiyorsunuz?";
     her tür için kart: solda eşleşme alanındaki halka ikonu, sağda kalın başlık + küçük alt metin
@@ -288,7 +294,14 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
   - Üye alt menüsü (mobil, app/(tabs)/_layout.tsx): sekme sırası Ana Sayfa (Ahenk logosu, Eşleşme Paneli), Takvim (Masalarım),
     ortada büyük Profil, Paketler (bilet), Bildirimler (zil). Seçili olmayan ikon beyaz (#FFFFFF, opaklık 1), seçili ikon #FF3B30
     (theme.ts tabNavIcon). Orta Profil butonu ölçüleri theme.ts tabCenter değerlerinden (çap 64, 22 yukarı taşma, zemin renginde 4 halka,
-    hafif gölge, 2 iç çerçeve: seçili değil beyaz, seçili #FF3B30; avatar daireyi doldurur). Zemin, yükseklik, rozet aynı.
+    hafif gölge, 2 iç çerçeve: seçili değil beyaz, seçili #FF3B30; avatar daireyi doldurur). Zemin, yükseklik aynı.
+    Seçili sekmede (Profil hariç) ikonun arkasında hap zemin: 64×36, köşe 18, #c0392b opaklık 0.20, ikonla ortalı, 150 ms'de belirir
+    (theme.ts tabPill, TabIcons.tsx TabPill). Profil butonunun görünümü değişmez.
+    Bildirim rozeti (Bildirimler ikonu sağ üst, theme.ts tabBadge): #ff3b30 daire, beyaz kalın sayı (11), tek hanede çap 18, çok hanede
+    içeriğe göre genişler, 2 px koyu kenarlık (alt menü zemini), 99'dan büyükse "99+". Sayı = son Bildirimler sayfası açılışından sonra
+    gelen okunmamış bildirim sayısı (User.lastNotificationsSeenAt; GET /notifications newUnreadCount, hasUnread). Bildirimler sayfası açılınca
+    PATCH /notifications/seen → sayı kaybolur, okunmamış bildirim varken 8×8 #ff3b30 nokta kalır; "Tümünü okundu işaretle" ile nokta kaybolur.
+    Paketim sekmesindeki kalan masa hakkı rozeti aynen.
     Yönetim Paneli menüsü ayrı (dokunulmaz)
   - 100 TL indirim penceresi (Winback otomatik açılış) izin tanıtım ekranı (PermissionIntro) kapanmadan açılmaz
     (PermissionIntro permissionIntroDone → Winback WinbackHost); tanıtım gösterilmeyecekse eskisi gibi hemen açılır
@@ -514,9 +527,10 @@ PLATFORM KOMİSYON KURALLARI:
 - Admin net gelir hesabı: PLATFORM_FEE_WEB=0, PLATFORM_FEE_GOOGLE=0.15, PLATFORM_FEE_APPLE=0.15
 - Mobil ödeme uygulama içi satın almadır (App Store / Play Store); lansmana kadar pasif (IAP_ENABLED)
 
-AKTİF ŞEHİRLER (7 şehir):
-İstanbul, Ankara, İzmir, Antalya, Balıkesir, Muğla, Aydın
-(Mersin, Adana, Bursa, Konya platformda aktif değil)
+AKTİF ŞEHİRLER (4 şehir):
+İstanbul, Ankara, İzmir, Antalya
+Pasif bölgeler: Dubai Marina, Jumeirah Lake Towers (JLT), Downtown Dubai — City tablosunda aktif = false, şehir listelerinde "Yakında" grubunda.
+Bölgeler admin panelindeki "Bölgeler" sayfasından (web + mobil) aktif / pasif yapılır.
 
 ŞEHİR SEÇİMİ KURALLARI:
 - Kullanıcı kayıtta yaşadığı şehri değil, katılmak istediği şehri seçer
@@ -530,10 +544,14 @@ AKTİF ŞEHİRLER (7 şehir):
 REHBER ENGELLEME (Contact Block):
 - Kullanıcı kayıt akışında opsiyonel adım olarak rehberinden numara yükleyebilir; sonradan profil ayarlarından da yapılabilir
 - Mobil (React Native): native Contacts API ile rehber senkronizasyonu
-- Web: manuel numara girişi (alan kodu + numara)
-- Numaralar ContactBlock.hashedPhone alanında (adı eski) açık "+90XXXXXXXXXX" formatında saklanır; hash kullanılmaz
+- Web: manuel numara girişi (ülke kodu seçici + numara)
+- Numaralar ContactBlock.hashedPhone alanında (adı eski) açık E.164 formatında (+905…, +44…) saklanır; hash kullanılmaz. Elle eklemede
+  (web + mobil) ülke kodu seçici, varsayılan ülke kullanıcının kayıtlı telefonunun ülkesi; doğrulama libphonenumber-js. Rehberden Seç (mobil):
+  başında + varsa olduğu gibi, yoksa kayıtlı telefonun ülkesi varsayılarak E.164'e çevrilir; çevrilemeyen numara eklenmez, satırında
+  "Geçersiz numara" / "Invalid number". Backend E.164 olmayan numarayı kaydetmez (migration 20261116062126_contact_blocks_e164 eski
+  kayıtları +90 varsayarak dönüştürür)
 - Maksimum 50 numara per kullanıcı
-- Eşleştirme algoritmasında: engel listesi User.phone ile aynı formatta karşılaştırılır, eşleşme varsa ikisi de birbirinin havuzuna dahil edilmez (UserBlock ile aynı mantık)
+- Eşleştirme algoritmasında: engel listesi User.phone ile aynı formatta (E.164) karşılaştırılır, eşleşme varsa ikisi de birbirinin havuzuna dahil edilmez (UserBlock ile aynı mantık)
 - Prisma modeli: ContactBlock { id, userId, hashedPhone String, createdAt } — userId üzerinden User'a relation
 Endpoint'ler:
   - POST /contact-blocks/sync — numara dizisi alır, upsert (JWT zorunlu)
@@ -680,6 +698,61 @@ API CLIENT KURALLAR (web):
   - apps/web/lib/api.ts içinde PREFIX sabiti API_PREFIX olarak export edilir.
   - Özel fetch ihtiyacı olan sayfalarda (örn. giris/page.tsx) API_PREFIX import edilir; çift tanım yapılmaz.
   - api.ts'den setToken/clearToken/getToken da export edilir; localStorage token yönetimi buradan yapılır.
+
+ÇOK DİL (TR / EN), BÖLGE, TELEFON, KİMLİK TÜRÜ:
+  - İngilizce seçeneği packages/shared/src/i18n/index.ts ENGLISH_ENABLED bayrağıyla açılır / gizlenir; false iken her durumda Türkçe,
+    dil satırı ve dünya ikonu gizli.
+  - Çeviri anahtarı zorunluluğu: kullanıcıya görünen bütün mobil ve web metinleri yalnız packages/shared/src/i18n/tr.json ve en.json'daki
+    anahtarlardan gelir (web next-intl, mobil i18next + react-i18next); ekranlarda sabit Türkçe metin yazılmaz, yeni metinde iki dosyaya
+    da anahtar eklenir. İngilizce doğal, samimi, "you" hitaplı; Ahenk ve Prime çevrilmez; "Kişilik Ağacım" → "My Personality Tree".
+  - Admin paneli ve mekân paneli Türkçe kalır, çevrilmez (mobil yönetim ekranları dahil).
+  - Backend mesaj dili: kullanıcıya dönen hata ve bilgi mesajları tr.json / en.json "errors.*" anahtarlarında; kod Türkçe metinle yazılır,
+    backend/src/common/api-messages.ts (global filtre + dönüştürücü) metni anahtar üzerinden seçilen dile çevirir. Yeni kullanıcı mesajında
+    iki dosyaya da errors.* anahtarı eklenir. Dil sırası: 1) giriş yapmış kullanıcının language alanı, 2) Accept-Language başlığı ("en" ile
+    başlıyorsa English), 3) Türkçe. Hata yanıtlarının alan yapısı ve HTTP kodları değişmez, yalnız message metni. /admin/ ve /venue-panel/
+    uçlarında mesajlar Türkçe kalır.
+  - Accept-Language: web ve mobil her API isteğinde o anki arayüz dilini (tr / en) gönderir (web lib/api.ts langHeaders — <html lang>;
+    mobil lib/api.ts langHeaders — i18n dili; elle fetch / XMLHttpRequest yapan yerler ve packages/ui istekleri dahil).
+  - Dil belirleme sırası (resolveLanguage): 1) giriş yapmış kullanıcının hesabındaki dil (User.language: tr | en, varsayılan tr),
+    2) cihazda / tarayıcıda kayıtlı seçim, 3) cihaz / tarayıcı dili Türkçe ise Türkçe, değilse English. Dil değişince hesaba kaydedilir
+    (PATCH /users/me/language). Profilim > Hesap Bilgileri'nde "Dil / Language" satırı (Türkçe / English, seçilide ✓).
+  - Web adresleri: Türkçe mevcut adreslerde, İngilizce /en önekiyle (next-intl localePrefix "as-needed", app/[locale]/).
+  - Dünya ikonu (dil seçici): mobilde giriş, kayıt ve "Tekrar hoş geldin" ekranlarında sağ üst (sağdan 20 pt; 24×24 görünür, 44×44 dokunma;
+    solunda "TR" / "EN" 13, #FFFFFF, opaklık 0.7, 6 pt ara; kart #181818, köşe 12, Türkçe / English, seçilide ✓); webde header'ın sağ ucu.
+  - Telefon: kayıt / giriş / şifremi unuttum / kanka davet alanlarında ülke seçici (bayrak + kod, varsayılan 🇹🇷 +90, ülke adı ve koduyla
+    aranabilir liste, ülke adları arayüz dilinde); doğrulama libphonenumber-js ile seçilen ülkeye göre; numaralar veritabanında E.164
+    (+905…, +44…) saklanır; OTP ve giriş E.164 numarayla çalışır. Profilim telefon değiştirme ve Numara Engelleme'de de ülke kodu seçici
+    (varsayılan ülke kayıtlı telefonun ülkesi, E.164 gönderim).
+  - Dil soruları: kayıtta tek ekran, herkese "İngilizce biliyor musunuz?" / "Do you speak English?", yalnız İngilizce arayüzle kayıtta
+    ayrıca "Do you speak Turkish?"; Türkçe arayüzle kayıtta speaksTurkish = true. User.speaksEnglish / speaksTurkish; Profilim'de
+    "İngilizce biliyorum" / "Türkçe biliyorum" anahtarları (PATCH /users/me/spoken-languages).
+  - Dil bazlı eşleşme (grup, baş başa, Kankamla; backend/src/matching/matching.service.ts noTurkish / englishFiller / languageCompatible),
+    mevcut kurallardan önce zorunlu: a) speaksTurkish = false olan kullanıcı yalnız masadaki herkesin speaksEnglish = true olduğu masaya
+    yerleşir; b) speaksTurkish = false olanlar önce birbirleriyle eşleşir; c) masa dolmuyorsa boş yerler telefon kodu +90 olan ve
+    speaksEnglish = true olan kullanıcılarla doldurulur; d) dil kuralından sonra cinsiyet dengesi; e) grup masasındaki bot kuralı aynen.
+  - KYC kimlik türleri (KycSubmission.idType: TC | YKN | PASSPORT): "TC Kimlik Kartı", "Yabancı Kimlik Kartı (YKN)", "Pasaport". Kimlik numarası
+    alanı yok, numara istenmez ve saklanmaz. TC ve YKN'de ön + arka yüz, Pasaport'ta yalnız fotoğraflı sayfa; şifreleme / saklama kuralları
+    aynen. Seçilebilir türler bölgenin idTypes alanından. İngilizce arayüzde video metni "My name is [ad soyad]" (ad soyad otomatik).
+    Admin KYC ekranında kimlik türü görünür.
+  - iyzico satın alma kimlik alanı: önce TC / YKN / Pasaport seçimi, sonra numara (TC mevcut doğrulama; YKN 11 hane rakam, "99" ile başlar;
+    Pasaport 6–9 harf / rakam). Numara veritabanına kaydedilmez, yalnız iyzico'ya iletilir.
+  - Bölge alanları (mevcut City modeli): countryCode, timezone, currency, defaultLanguage, phoneCountryCode, idTypes, isActive, sortOrder.
+    İstanbul, Ankara, İzmir, Antalya: TR, Europe/Istanbul, TRY, tr, +90, TC/YKN/Pasaport. Dubai Marina, Jumeirah Lake Towers (JLT),
+    Downtown Dubai: AE, Asia/Dubai, USD, en, +971, yalnız Pasaport, pasif. Admin "Bölgeler" sayfası (web + mobil; GET /admin/regions,
+    PATCH /admin/regions/:id, GET /admin/regions/:id/waitlist): liste, alan düzenleme, tek tuşla aktif / pasif, bekleme listesi sayısı ve listesi.
+  - Para birimi: Türkiye bölgelerinde TRY (₺), Türkiye dışındaki bütün bölgelerde USD. Dubai'de şimdilik yalnız para birimi alanı var, fiyat yok.
+  - Şehir listeleri (mobil + web, kayıt ve şehir seçimi dahil): aktif şehirler (seçilebilir) → ince ayırıcı ortasında "Yakında" / "Coming soon"
+    → pasif bölgeler (Dubai Marina, Jumeirah Lake Towers (JLT), Downtown Dubai sırasıyla; soluk, seçilemez, sağında "Haber ver" / "Notify me":
+    RegionWaitlist, kullanıcı başına bölgeye bir kez). Aktif yapılan bölge otomatik üst gruba geçer.
+  - Tarih / saat: buluşmanın yapıldığı bölgenin saat diliminde; her iki dilde sayısal gg.aa.yyyy ve 24 saat SS:dd; ay ve gün adları arayüz dilinde.
+  - Bildirimler: push / IN_APP metinleri alıcının language alanına göre TR ya da EN; WhatsApp şablon dil kodu da language alanına göre
+    (İngilizce şablonlar lansmanda Meta'da hazırlanacak).
+  - Yasal sayfalar: İngilizce çevirileri /en altında, en üstte "This is a translation for convenience. In case of any conflict, the Turkish
+    version prevails." Uygulamada ve webde seçili dil hangisiyse yasal bağlantılar (giriş ekranı yasal metni, kayıt onayları, Tekrar hoş geldin,
+    Profilim yasal kartı, web footer ve diğerleri) o dildeki sayfayı açar.
+  - Kişilik testi: OceanQuestion.textEn / sectionTitleEn; soru kimlikleri ve puanlama aynı; sonuç (profileEn), boyut ve Kişilik Ağacı metinleri çevrili.
+  - Zamanlanmış işler (eşleştirme, kapanışlar, hak düşümleri, bildirim cron'ları) şimdilik TR saatinde (Europe/Istanbul) çalışır; bölge bazlı
+    saat dilimine geçiş Dubai aktifleşmeden önce yapılacak.
 
 # CLAUDE.md
 

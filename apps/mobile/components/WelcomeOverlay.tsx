@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, Modal, View } from 'react-native';
 import { Serif } from './ui';
 
+import { useTranslation } from 'react-i18next';
 function Step({ delay, duration, dy = 0, scale = false, children, style }: { delay: number; duration: number; dy?: number; scale?: boolean; children: React.ReactNode; style?: object }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => { Animated.timing(v, { toValue: 1, delay, duration, easing: Easing.bezier(0, 0, 0.58, 1), useNativeDriver: true }).start(); }, [v, delay, duration]);
@@ -12,6 +13,7 @@ function Step({ delay, duration, dy = 0, scale = false, children, style }: { del
 }
 
 export function WelcomeOverlay({ visible, name }: { visible: boolean; name: string }) {
+  const { t } = useTranslation();
   return (
     <Modal visible={visible} animationType="fade" statusBarTranslucent navigationBarTranslucent>
       <View style={{ flex: 1, backgroundColor: '#000000', alignItems: 'center', paddingTop: '18%' }}>
@@ -20,7 +22,7 @@ export function WelcomeOverlay({ visible, name }: { visible: boolean; name: stri
             <Step delay={100} duration={400} scale style={{ alignItems: 'center', marginBottom: 56 }}>
               <Image source={require('@/assets/start_logo.jpg')} style={{ width: 120, height: 120, borderRadius: 60 }} />
             </Step>
-            <Step delay={400} duration={400} dy={12} style={{ marginBottom: 4 }}><Serif style={{ fontSize: 36 }}>Hoş geldin,</Serif></Step>
+            <Step delay={400} duration={400} dy={12} style={{ marginBottom: 4 }}><Serif style={{ fontSize: 36 }}>{t('login.welcome')}</Serif></Step>
             <Step delay={550} duration={350} dy={6}><Serif style={{ fontSize: 36, textAlign: 'center' }}>{name}</Serif></Step>
           </>
         )}

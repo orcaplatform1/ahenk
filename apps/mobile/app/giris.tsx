@@ -6,7 +6,7 @@ import { KeyboardAvoidingView, Linking, Modal, Platform, View } from 'react-nati
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { API_PREFIX } from '@/lib/config';
-import { api, storeLogin } from '@/lib/api';
+import { api, langHeaders, storeLogin } from '@/lib/api';
 import { PasswordInput } from '@/components/AuthShell';
 import { AuthBackground, AuthHeading, useAuthBackgroundIndex, BackArrow, LegalNote, MailIcon, PhoneIcon, PillButton, StepScreen } from '@/components/AuthFlow';
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
@@ -14,6 +14,11 @@ import { OtpInput } from '@/components/OtpInput';
 import { Btn, BtnGhost, BtnPrimary, ErrorText, Input, T } from '@/components/ui';
 import { OtpCountdown, OtpNoticeAction, otpNoticeOf, useOtpCountdown, type OtpNoticeCode } from '@/components/OtpCountdown';
 import { c, ll, tw } from '@/theme/theme';
+import { useTranslation } from 'react-i18next';
+import { DEFAULT_PHONE_COUNTRY, formatDateTime, toE164 } from '@ahenk/shared';
+import i18n from '@/lib/i18n';
+import { CountryCodeButton } from '@/components/PhoneCountry';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface Sanction { type: 'WARNING' | 'SUSPENSION' | 'BAN'; reason: string; expiresAt: string | null; message: string }
 interface LoginResponse { user: { firstName: string; lastName?: string }; accessToken?: string; refreshToken?: string }
@@ -21,27 +26,31 @@ type Step = 'home' | 'phone' | 'otp' | 'email' | 'password';
 
 // Origin başlığı gönderilmez: backend Origin'siz istemciye token'ı gövdede döndürür
 async function authPost<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API_PREFIX}${path}`, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const res = await fetch(`${API_PREFIX}${path}`, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json', ...langHeaders() }, body: JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = data as Partial<Sanction> & { message?: string | string[] };
     if (res.status === 403 && (err.type === 'SUSPENSION' || err.type === 'BAN' || err.type === 'WARNING')) {
-      const e = new Error((err.message as string) ?? 'Erişim engellendi') as Error & { sanction?: Sanction };
+      const e = new Error((err.message as string) ?? i18n.t('login.accessBlocked')) as Error & { sanction?: Sanction };
       e.sanction = err as Sanction; throw e;
     }
     // Bekleme süresi dolmadan kod istendiyse yanıttaki kalan saniye hataya eklenir (ortak sayaç okur)
-    throw Object.assign(new Error(Array.isArray(err.message) ? err.message[0] : (err.message ?? 'Bir hata oluştu')), { resendSeconds: (data as { resendSeconds?: number }).resendSeconds, code: (data as { code?: string }).code });
+    throw Object.assign(new Error(Array.isArray(err.message) ? err.message[0] : (err.message ?? i18n.t('common.genericError'))), { resendSeconds: (data as { resendSeconds?: number }).resendSeconds, code: (data as { code?: string }).code });
   }
   return data as T;
 }
 
 export default function Giris() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState<Step>('home');
   // Dönüşümlü arka plan: ekran her açıldığında sıradaki görsel (adımlar arasında geçişte değişmez)
   const bgIndex = useAuthBackgroundIndex();
   const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState(DEFAULT_PHONE_COUNTRY);
+  // E.164 (libphonenumber-js, seçilen ülkeye göre)
+  const phoneE164 = toE164(country, phone);
   const [otp, setOtp] = useState('');
   const [otpShake, setOtpShake] = useState(false);
   // Yeni kod isteme bekleme süresi backend'den gelir (ortak sayaç)
@@ -55,7 +64,7 @@ export default function Giris() {
   const [sanction, setSanction] = useState<Sanction | null>(null);
   const [welcome, setWelcome] = useState<{ firstName: string; lastName: string } | null>(null);
 
-  const phoneValid = phone.length === 10 && phone.startsWith('5');
+  const phoneValid = !!phoneE164;
   const emailValid = email.includes('@') && email.includes('.');
   const passwordValid = password.length >= 6 && password.length <= 20;
   const go = (s: Step) => { setError(''); setStep(s); };
@@ -67,7 +76,7 @@ export default function Giris() {
 
   async function sendOtp() {
     setLoading(true); setError(''); setSanction(null); setNotice(null);
-    try { const r = await authPost<{ resendSeconds?: number }>('/auth/send-login-otp', { phone: `+90${phone}` }); setStep('otp'); setOtp(''); countdown.start(r?.resendSeconds); }
+    try { const r = await authPost<{ resendSeconds?: number }>('/auth/send-login-otp', { phone: phoneE164 }); setStep('otp'); setOtp(''); countdown.start(r?.resendSeconds); }
     // Bekleme süresi dolmadan istendi: sayaç sunucunun döndüğü kalan saniyeden başlar
     catch (e) { if (countdown.startFromError(e)) setStep('otp'); setNotice(otpNoticeOf(e)); fail(e); } finally { setLoading(false); }
   }
@@ -82,7 +91,7 @@ export default function Giris() {
   }
   async function verifyOtp(code = otp) {
     setLoading(true); setError(''); setSanction(null);
-    try { await afterLogin(await authPost<LoginResponse>('/auth/verify-login-otp', { phone: `+90${phone}`, code })); } catch (e) { fail(e, true); } finally { setLoading(false); }
+    try { await afterLogin(await authPost<LoginResponse>('/auth/verify-login-otp', { phone: phoneE164, code })); } catch (e) { fail(e, true); } finally { setLoading(false); }
   }
   async function emailLogin() {
     setLoading(true); setError(''); setSanction(null);
@@ -95,19 +104,19 @@ export default function Giris() {
         {sanction && (
           <View style={{ width: '100%', maxWidth: 384, borderRadius: 16, padding: 24, gap: 16, backgroundColor: '#1a0505', borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)' }}>
             <View style={{ gap: 4 }}>
-              <T w={600} style={{ fontSize: 18, color: tw.accent }}>{sanction.type === 'WARNING' ? 'Uyarı' : sanction.type === 'SUSPENSION' ? 'Hesap Askıya Alındı' : 'Hesap Engellendi'}</T>
-              {!!sanction.expiresAt && <T style={{ fontSize: 12, color: ll.text2 }}>Bitiş: {new Date(sanction.expiresAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}</T>}
+              <T w={600} style={{ fontSize: 18, color: tw.accent }}>{sanction.type === 'WARNING' ? t('login.warning') : sanction.type === 'SUSPENSION' ? t('login.suspended') : t('login.banned')}</T>
+              {!!sanction.expiresAt && <T style={{ fontSize: 12, color: ll.text2 }}>{t('login.sanctionEnds', { date: formatDateTime(sanction.expiresAt) })}</T>}
             </View>
             <T style={{ fontSize: 14, color: c.tCcc, lineHeight: 22 }}>{sanction.reason}</T>
             <T style={{ fontSize: 12, color: ll.label }}>
-              Hatalı olduğunu düşünüyorsan <T style={{ fontSize: 12, color: c.red, textDecorationLine: 'underline' }} onPress={() => Linking.openURL('mailto:bilgi@ahenk.co')}>bilgi@ahenk.co</T> adresiyle iletişime geç.
+              {t('login.contactPre')} <T style={{ fontSize: 12, color: c.red, textDecorationLine: 'underline' }} onPress={() => Linking.openURL('mailto:bilgi@ahenk.co')}>bilgi@ahenk.co</T> {t('login.contactPost')}
             </T>
             {sanction.type === 'WARNING' ? (
               <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
-                <BtnGhost label="İptal" style={{ flex: 1 }} onPress={async () => { await api.logout(); setSanction(null); }} />
-                <BtnPrimary label="Devam Et" style={{ flex: 1 }} onPress={() => { setSanction(null); router.replace('/(tabs)'); }} />
+                <BtnGhost label={t('common.cancel')} style={{ flex: 1 }} onPress={async () => { await api.logout(); setSanction(null); }} />
+                <BtnPrimary label={t('common.continue')} style={{ flex: 1 }} onPress={() => { setSanction(null); router.replace('/(tabs)'); }} />
               </View>
-            ) : <BtnGhost label="Kapat" full style={{ marginTop: 4 }} onPress={() => setSanction(null)} />}
+            ) : <BtnGhost label={t('common.close')} full style={{ marginTop: 4 }} onPress={() => setSanction(null)} />}
           </View>
         )}
       </View>
@@ -120,26 +129,26 @@ export default function Giris() {
       <View style={{ flex: 1 }}>
         <AuthBackground index={bgIndex} overlay />
         <AuthHeading />
+        {/* Dil seçici: sağdan 20 pt, AHENK başlığının dikey ortasında (başlık güvenli alanın 24 pt altında, satır yüksekliği 44) */}
+        <LanguageSwitcher top={insets.top + 24} />
         {router.canGoBack() && <BackArrow onPress={() => router.back()} />}
         <View style={{ flex: 1, paddingTop: insets.top }} />
         <View style={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 16, gap: 12 }}>
           <View style={{ marginBottom: 4 }}><LegalNote /></View>
-          <PillButton label="Telefon Numarası ile devam et" icon={(col) => <PhoneIcon color={col} />} onPress={() => go('phone')} />
-          <PillButton label="E-posta ile devam et" icon={(col) => <MailIcon color={col} />} onPress={() => go('email')} />
-          <PillButton label="Kayıt Ol" primary onPress={() => router.push('/kayit')} />
+          <PillButton label={t('login.withPhoneM')} icon={(col) => <PhoneIcon color={col} />} onPress={() => go('phone')} />
+          <PillButton label={t('login.withEmailM')} icon={(col) => <MailIcon color={col} />} onPress={() => go('email')} />
+          <PillButton label={t('kankaInv.register')} primary onPress={() => router.push('/kayit')} />
         </View>
       </View>
     );
   } else if (step === 'phone') {
     content = (
-      <StepScreen title="Numaranı alabilir miyiz?" onBack={() => go('home')}
-        footer={<PillButton label={loading ? 'Gönderiliyor…' : 'İlerle'} primary disabled={loading || !phoneValid} onPress={sendOtp} />}>
+      <StepScreen title={t('login.phoneTitleM')} onBack={() => go('home')}
+        footer={<PillButton label={loading ? t('login.sending') : t('login.next')} primary disabled={loading || !phoneValid} onPress={sendOtp} />}>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <View style={{ justifyContent: 'center', paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12 }}>
-            <T style={{ color: ll.text, fontSize: 14 }}>TR +90</T>
-          </View>
+          <CountryCodeButton country={country} onChange={(code) => { setCountry(code); setError(''); }} />
           <Input form style={{ flex: 1, paddingVertical: 14 }} keyboardType="number-pad" textContentType="telephoneNumber" autoComplete="tel" autoFocus value={phone}
-            onChangeText={(t) => { setPhone(t.replace(/\D/g, '').slice(0, 10)); setError(''); }} placeholder="5XX XXX XX XX" onSubmitEditing={() => phoneValid && sendOtp()} returnKeyType="next" />
+            onChangeText={(v) => { setPhone(v.replace(/\D/g, '').slice(0, 15)); setError(''); }} placeholder={country === 'TR' ? '5XX XXX XX XX' : ''} onSubmitEditing={() => phoneValid && sendOtp()} returnKeyType="next" />
         </View>
         <View style={{ marginTop: 12 }}><ErrorText>{error}</ErrorText></View>
         {!!error && !!notice && <View style={{ marginTop: 12 }}><OtpNoticeAction code={notice} /></View>}
@@ -147,10 +156,10 @@ export default function Giris() {
     );
   } else if (step === 'otp') {
     content = (
-      <StepScreen title="Kodu gir" subtitle={`+90${phone} numarasına WhatsApp ile gönderilen 6 haneli kodu gir.`} onBack={() => { setOtp(''); go('phone'); }}
+      <StepScreen title={t('login.codeTitleM')} subtitle={t('otp.codeSentToM', { phone: phoneE164 ?? phone })} onBack={() => { setOtp(''); go('phone'); }}
         footer={<>
-          <PillButton label={loading ? 'Doğrulanıyor…' : 'Giriş Yap'} primary disabled={loading || otp.length !== 6} onPress={() => verifyOtp()} />
-          <Btn variant="textLink" disabled={countdown.waiting || loading} onPress={sendOtp} label="Yeni kod gönder" />
+          <PillButton label={loading ? t('login.verifying') : t('login.submit')} primary disabled={loading || otp.length !== 6} onPress={() => verifyOtp()} />
+          <Btn variant="textLink" disabled={countdown.waiting || loading} onPress={sendOtp} label={t('login.resend')} />
         </>}>
         <OtpInput value={otp} onChange={(v) => { setOtp(v); setError(''); }} error={otpShake} />
         <View style={{ marginTop: 12 }}><OtpCountdown seconds={countdown.seconds} /></View>
@@ -159,21 +168,21 @@ export default function Giris() {
     );
   } else if (step === 'email') {
     content = (
-      <StepScreen title="E-postan nedir?" onBack={() => go('home')}
-        footer={<PillButton label="İlerle" primary disabled={!emailValid} onPress={() => go('password')} />}>
+      <StepScreen title={t('login.emailTitleM')} onBack={() => go('home')}
+        footer={<PillButton label={t('login.next')} primary disabled={!emailValid} onPress={() => go('password')} />}>
         <Input form style={{ paddingVertical: 14 }} keyboardType="email-address" autoCapitalize="none" textContentType="emailAddress" autoComplete="email" autoFocus value={email}
-          onChangeText={(t) => { setEmail(t); setError(''); }} placeholder="E-posta adresin" onSubmitEditing={() => emailValid && go('password')} returnKeyType="next" />
+          onChangeText={(v) => { setEmail(v); setError(''); }} placeholder={t('login.emailPlaceholder')} onSubmitEditing={() => emailValid && go('password')} returnKeyType="next" />
       </StepScreen>
     );
   } else {
     content = (
-      <StepScreen title="Şifreni gir" onBack={() => { setPassword(''); go('email'); }}
+      <StepScreen title={t('login.passwordTitleM')} onBack={() => { setPassword(''); go('email'); }}
         footer={<>
-          <PillButton label={loading ? 'Giriş yapılıyor…' : 'Giriş Yap'} primary disabled={loading || !passwordValid} onPress={emailLogin} />
-          {/* "Şifremi unuttum": mevcut PillButton (normal, primary olmayan) stilinde buton */}
-          <PillButton label="Şifremi unuttum" onPress={() => router.push('/sifremi-unuttum')} />
+          <PillButton label={loading ? t('login.loggingIn') : t('login.submit')} primary disabled={loading || !passwordValid} onPress={emailLogin} />
+          {/* t('login.forgotM'): mevcut PillButton (normal, primary olmayan) stilinde buton */}
+          <PillButton label={t('login.forgotM')} onPress={() => router.push('/sifremi-unuttum')} />
         </>}>
-        <PasswordInput value={password} onChangeText={(t) => { setPassword(t); setError(''); }} placeholder="Şifren" onSubmitEditing={() => passwordValid && emailLogin()} />
+        <PasswordInput value={password} onChangeText={(v) => { setPassword(v); setError(''); }} placeholder={t('login.passwordPlaceholder')} onSubmitEditing={() => passwordValid && emailLogin()} />
         <View style={{ marginTop: 12 }}><ErrorText>{error}</ErrorText></View>
       </StepScreen>
     );

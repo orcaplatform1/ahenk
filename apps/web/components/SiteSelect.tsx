@@ -1,11 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 
 // Sitenin koyu paletinde seçim kutusu: telefonun kendi seçicisi yerine sayfa içinde açılır.
 // Liste body'ye taşınır; böylece kart/animasyon kapsayıcıları içinde kesilmez.
-export interface SiteSelectOption { value: string; label: string }
+// disabled: soluk, seçilemez satır; separator: satırın üstünde ortasında yazı olan ince ayırıcı ("Yakında");
+// action: satırın sağındaki küçük buton (ör. "Haber ver")
+export interface SiteSelectOption { value: string; label: string; disabled?: boolean; separator?: string; action?: React.ReactNode }
 
 interface Props {
   value: string;
@@ -21,7 +24,10 @@ interface Props {
 
 const LIST_MAX_HEIGHT = 280;
 
-export default function SiteSelect({ value, onChange, options, placeholder = 'Seçin...', required, ariaLabel, live, searchable, searchPlaceholder = 'Ara...' }: Props) {
+export default function SiteSelect({ value, onChange, options, placeholder, required, ariaLabel, live, searchable, searchPlaceholder }: Props) {
+  const t = useTranslations();
+  placeholder ??= t('select.placeholder');
+  searchPlaceholder ??= t('select.search');
   const allItems: SiteSelectOption[] = options.map((o) => (typeof o === 'string' ? { value: o, label: o } : o));
   const [search, setSearch] = useState('');
   const needle = search.trim().toLocaleLowerCase('tr-TR');
@@ -58,6 +64,7 @@ export default function SiteSelect({ value, onChange, options, placeholder = 'Se
   }
 
   function choose(i: number) {
+    if (items[i]?.disabled) return;
     onChange(items[i].value);
     setOpen(false);
     buttonRef.current?.focus();
@@ -80,7 +87,7 @@ export default function SiteSelect({ value, onChange, options, placeholder = 'Se
   }, [open, place]);
 
   useEffect(() => {
-    if (open) listRef.current?.children[active]?.scrollIntoView({ block: 'nearest' });
+    if (open) document.getElementById(`${id}-${active}`)?.scrollIntoView({ block: 'nearest' });
   }, [open, active]);
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -176,26 +183,35 @@ export default function SiteSelect({ value, onChange, options, placeholder = 'Se
           {items.map((o, i) => {
             const isSelected = o.value === value;
             return (
+              <Fragment key={`${o.value || '__empty'}-wrap`}>
+              {o.separator && (
+                <li role="separator" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 4px', color: '#8f887f', fontSize: 11 }}>
+                  <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />{o.separator}<span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />
+                </li>
+              )}
               <li
                 key={o.value || '__empty'}
                 id={`${id}-${i}`}
                 role="option"
                 aria-selected={isSelected}
+                aria-disabled={o.disabled || undefined}
                 onPointerEnter={() => setActive(i)}
                 onClick={() => choose(i)}
                 style={{
                   minHeight: 44, display: 'flex', alignItems: 'center', padding: '0.5rem 0.75rem', borderRadius: 8,
-                  cursor: 'pointer', fontSize: '0.9rem', boxSizing: 'border-box',
-                  color: isSelected ? '#ff6b6b' : '#f5f5f5',
+                  cursor: o.disabled ? 'default' : 'pointer', fontSize: '0.9rem', boxSizing: 'border-box', justifyContent: 'space-between', gap: 8,
+                  color: o.disabled ? 'rgba(245,245,245,0.38)' : isSelected ? '#ff6b6b' : '#f5f5f5',
                   background: i === active ? 'rgba(192,57,43,0.18)' : 'transparent',
                 }}
               >
-                {o.label}
+                <span>{o.label}</span>
+                {o.action && <span onClick={(e) => e.stopPropagation()}>{o.action}</span>}
               </li>
+              </Fragment>
             );
           })}
         </ul>
-          {items.length === 0 && <p style={{ margin: 0, padding: '0.75rem', fontSize: '0.85rem', color: '#888' }}>Sonuç yok</p>}
+          {items.length === 0 && <p style={{ margin: 0, padding: '0.75rem', fontSize: '0.85rem', color: '#888' }}>{t('select.noResults')}</p>}
         </div>,
         document.body,
       )}

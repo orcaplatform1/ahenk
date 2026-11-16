@@ -996,6 +996,7 @@ export class AdminService {
           title: "Masanız iptal edildi",
           body: "Masanız iptal edildi. Masa hakkınız hesabınıza iade edildi.",
           data: { type: "MEETING_CANCELLED_BY_ADMIN", meetingId },
+          en: { title: "Your table was cancelled", body: "Your table was cancelled. Your table credit has been returned to your account." },
         }).catch(() => undefined);
       }
     }
@@ -1176,6 +1177,37 @@ export class AdminService {
     if (!row) throw new NotFoundException("İlçe bulunamadı");
     await this.prisma.cityDistrict.delete({ where: { id: districtId } });
     return { deleted: true, name: row.name, cityName: row.city.name };
+  }
+
+  // ─── Bölgeler ─────────────────────────────────────────────────────────────
+  // Liste: Türkiye'nin 4 ana şehri + aktif bölgeler + Türkiye dışı bölgeler (pasif Türkiye illeri Şehirler sayfasında kalır)
+  async listRegions() {
+    const rows = await this.prisma.city.findMany({
+      where: { OR: [{ isActive: true }, { countryCode: { not: "TR" } }, { name: { in: ["İstanbul", "Ankara", "İzmir", "Antalya"] } }] },
+      include: { _count: { select: { regionWaitlist: true } } },
+      orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
+    });
+    return rows.map(({ _count, ...c }) => ({ ...c, waitlistCount: _count.regionWaitlist }));
+  }
+
+  async updateRegion(cityId: string, dto: { name?: string; countryCode?: string; timezone?: string; currency?: string; defaultLanguage?: string; phoneCountryCode?: string; idTypes?: ("TC" | "YKN" | "PASSPORT")[]; isActive?: boolean; sortOrder?: number }) {
+    const city = await this.prisma.city.findUnique({ where: { id: cityId } });
+    if (!city) throw new NotFoundException("Bölge bulunamadı");
+    if (dto.timezone) {
+      try { new Intl.DateTimeFormat("en", { timeZone: dto.timezone }); } catch { throw new BadRequestException("Geçersiz saat dilimi (IANA, ör. Europe/Istanbul)"); }
+    }
+    if (dto.idTypes && dto.idTypes.length === 0) throw new BadRequestException("En az bir kimlik türü seçin");
+    if (dto.name && dto.name !== city.name && (await this.prisma.city.findUnique({ where: { name: dto.name } }))) throw new ConflictException("Bu ad başka bir bölgede kayıtlı");
+    return this.prisma.city.update({ where: { id: cityId }, data: dto });
+  }
+
+  async regionWaitlist(cityId: string) {
+    const rows = await this.prisma.regionWaitlist.findMany({
+      where: { cityId },
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } } },
+    });
+    return rows.map((r) => ({ id: r.id, createdAt: r.createdAt, userId: r.user.id, email: r.user.email, phone: r.user.phone, name: `${r.user.profile?.firstName ?? ""} ${r.user.profile?.lastName ?? ""}`.trim() }));
   }
 
   async createCity(name: string) {
@@ -2022,6 +2054,7 @@ export class AdminService {
             title: "Kankalık sona erdi",
             body: "Kankanın hesabı kapatıldığı için kankalığınız sona erdi. Profilim'den yeni bir kanka davet edebilirsin.",
             data: { type: "KANKA_ENDED" },
+            en: { title: "Your Kanka link has ended", body: "Your Kanka's account was closed, so your link has ended. You can invite a new Kanka from My Profile." },
           }).catch(() => undefined);
         }
       }

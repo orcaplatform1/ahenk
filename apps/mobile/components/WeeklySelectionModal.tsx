@@ -8,29 +8,31 @@ import type { WeeklySelection } from '@/lib/useMasaTabs';
 import { BtnGhost, BtnPrimary, ModalBox, T } from './ui';
 import { Rings } from './LiveTabs';
 import { ll } from '@/theme/theme';
+import { useTranslation } from 'react-i18next';
 
 // Kart: solda eşleşme alanındaki tür ikonu (halkalar), sağda kalın başlık ve küçük alt metin
 const CARD: Record<MasaTuru, { title: string; text: string }> = {
-  GROUP: { title: 'Grup Masası', text: '4-6 kişilik erkek ve kadınların eşit atandığı masa türüdür. Buluşma her cuma 20:00\'da gerçekleşir.' },
-  ONE_ON_ONE: { title: 'Baş Başa Masası', text: 'Karşı cinsinizin atandığı masa türüdür. Buluşma her cumartesi 20:00\'da gerçekleşir.' },
-  KANKA: { title: 'Kankamla Masası', text: 'Kankanız ile katılım sağlayıp, karşı cins kankaların atandığı masa türüdür. Buluşma her pazar 20:00\'da gerçekleşir.' },
+  GROUP: { title: 'live.wsGroupTitle', text: 'live.wsGroupText' },
+  ONE_ON_ONE: { title: 'live.wsOneTitle', text: 'live.wsOneText' },
+  KANKA: { title: 'live.wsKankaTitle', text: 'live.wsKankaText' },
 };
 
 export function WeeklySelectionModal({ selection, onSubmit }: { selection: WeeklySelection | null; onSubmit: (types: MasaTuru[]) => Promise<void> }) {
+  const { t } = useTranslation();
   const [picked, setPicked] = useState<MasaTuru[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [closed, setClosed] = useState(false);
   const visible = !!selection?.showModal && !closed;
 
-  const toggle = (t: MasaTuru) => setPicked((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
+  const toggle = (m: MasaTuru) => setPicked((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m]));
   async function submit() {
     setSending(true); setError('');
     try { await onSubmit(picked); } catch (e) { setError((e as Error).message); } finally { setSending(false); }
   }
 
   return (
-    <ModalBox visible={visible} onClose={() => setClosed(true)} title="Bu hafta hangi masaya katılmak için eşleşme taramasına girmek istiyorsunuz?" opaque>
+    <ModalBox visible={visible} onClose={() => setClosed(true)} title={t('live.wsTitle')} opaque>
       <View style={{ gap: 8 }}>
         {(selection?.options ?? []).map((o) => {
           const on = picked.includes(o.type);
@@ -49,18 +51,18 @@ export function WeeklySelectionModal({ selection, onSubmit }: { selection: Weekl
             >
               <Rings type={o.type} on still />
               <View style={{ flex: 1, gap: 4 }}>
-                <T w={700} style={{ fontSize: 14, color: ll.text }}>{CARD[o.type].title}</T>
-                <T style={{ fontSize: 12, lineHeight: 17.4, color: ll.label }}>{CARD[o.type].text}</T>
+                <T w={700} style={{ fontSize: 14, color: ll.text }}>{t(CARD[o.type].title)}</T>
+                <T style={{ fontSize: 12, lineHeight: 17.4, color: ll.label }}>{t(CARD[o.type].text)}</T>
               </View>
             </Pressable>
           );
         })}
       </View>
-      <T style={{ fontSize: 12, color: ll.label, marginTop: 12, lineHeight: 18 }}>Seçimini sonradan değiştiremezsin. Seçmediğin türün taramasına girmezsin, hakkın düşmez.</T>
+      <T style={{ fontSize: 12, color: ll.label, marginTop: 12, lineHeight: 18 }}>{t('live.wsNote')}</T>
       {!!error && <T style={{ fontSize: 12, color: ll.red2, marginTop: 8 }}>{error}</T>}
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
-        <BtnGhost label="Sonra" style={{ flex: 1, minHeight: 44 }} onPress={() => setClosed(true)} />
-        <BtnPrimary label={sending ? '…' : 'Seçimi Onayla'} disabled={picked.length === 0 || sending} style={[{ flex: 1, minHeight: 44 }, (picked.length === 0 || sending) && { opacity: 0.5 }]} onPress={submit} />
+        <BtnGhost label={t('live.wsLater')} style={{ flex: 1, minHeight: 44 }} onPress={() => setClosed(true)} />
+        <BtnPrimary label={sending ? '…' : t('live.wsConfirm')} disabled={picked.length === 0 || sending} style={[{ flex: 1, minHeight: 44 }, (picked.length === 0 || sending) && { opacity: 0.5 }]} onPress={submit} />
       </View>
     </ModalBox>
   );

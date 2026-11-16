@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { startCheckout } from '@/lib/checkout';
 import TcknModal from '@/components/paket/TcknModal';
 import { clockHMS, type WinbackState } from './useWinback';
@@ -15,6 +16,8 @@ interface Props {
 
 // Geri kazanım indirimi: tam ekran teklif
 export function WinbackScreen({ state, remaining, merged, onMerge, onClose }: Props) {
+  const t = useTranslations();
+  const locale = useLocale();
   const [selected, setSelected] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -29,22 +32,22 @@ export function WinbackScreen({ state, remaining, merged, onMerge, onClose }: Pr
 
   async function apply() {
     if (!selected || busy) return;
-    if (!state.kycApproved) { window.location.href = '/profil?tab=kyc'; return; }
+    if (!state.kycApproved) { window.location.href = `${locale === 'en' ? '/en' : ''}/profil?tab=kyc`; return; }
     const plan = plans.find((p) => p.plan === selected);
     if (!plan) return;
     // Kankamla kanka seçmeden alınamaz
-    if (plan.needsKanka) { window.location.href = '/profil?tab=profil'; return; }
+    if (plan.needsKanka) { window.location.href = `${locale === 'en' ? '/en' : ''}/profil?tab=profil`; return; }
     // Web ödemesinde T.C. No istenir (yalnız iyzico'ya gider)
     setError('');
     setTcOpen(true);
   }
 
-  async function pay(identityNumber: string) {
+  async function pay(identityNumber: string, identityType: string) {
     const plan = plans.find((p) => p.plan === selected);
     if (!plan) return;
     setBusy(true); setError('');
     try {
-      await startCheckout(plan.plan, plan.name, identityNumber);
+      await startCheckout(plan.plan, plan.name, identityNumber, undefined, identityType);
       setTcOpen(false);
       onClose();
     } catch (e) {
@@ -98,34 +101,34 @@ export function WinbackScreen({ state, remaining, merged, onMerge, onClose }: Pr
       `}</style>
       <div className="wb-in">
         <div className="wb-top">
-          <span className="wb-pill">SANA ÖZEL İNDİRİM</span>
-          <button type="button" className="wb-x" aria-label="Kapat" onClick={onClose}>×</button>
+          <span className="wb-pill">{t('winback.pill')}</span>
+          <button type="button" className="wb-x" aria-label={t('common.close')} onClick={onClose}>×</button>
         </div>
-        <h1 className="wb-title">{state.lapsed ? 'Birkaç masa daha?' : 'Uyumlu bir masa?'}</h1>
+        <h1 className="wb-title">{state.lapsed ? t('winback.titleLapsed') : t('winback.title')}</h1>
         <div className="wb-strip">
-          <span>TEKLİFİN BİTMESİNE</span>
+          <span>{t('winback.endsIn')}</span>
           <span className="wb-clock">{clockHMS(remaining)}</span>
         </div>
-        <p className="wb-sub">{merged ? 'İndirimin tanımlandı, şimdi eşleşme zamanı.' : 'Halkalara dokun, indirimini ortaya çıkar.'}</p>
+        <p className="wb-sub">{merged ? t('winback.merged') : t('winback.tapRings')}</p>
 
-        <button type="button" className={`wb-rings${merged ? ' m' : ''}`} disabled={merged} onClick={onMerge} aria-label="Halkalar">
+        <button type="button" className={`wb-rings${merged ? ' m' : ''}`} disabled={merged} onClick={onMerge} aria-label={t('winback.rings')}>
           <span className="wb-ring a" />
           <span className="wb-ring b" />
-          <span className="wb-amt"><b>{state.amountTL}₺</b><i>İNDİRİM</i></span>
+          <span className="wb-amt"><b>{state.amountTL}₺</b><i>{t('winback.discount')}</i></span>
         </button>
 
         {merged && (
           <div className="wb-pick">
-            <h3>PAKETİNİ SEÇ</h3>
+            <h3>{t('winback.pick')}</h3>
             {plans.map((p) => (
               <button key={p.plan} type="button" className={`wb-card${selected === p.plan ? ' on' : ''}`} onClick={() => setSelected(p.plan)}>
-                <span className="n">{p.name}</span>
+                <span className="n">{t.has(`plans.${p.plan}`) ? t(`plans.${p.plan}`) : p.name}</span>
                 <span><span className="old">{p.listTL}₺</span><span className="new">{p.discountedTL}₺</span></span>
               </button>
             ))}
-            <p className="wb-note">Referans indirimi bu indirimle birleşmez.</p>
-            <button type="button" className="wb-cta" disabled={!selected || busy} onClick={apply}>İndirimi Uygula</button>
-            {!selected && <p className="wb-hint">Önce paketini seç</p>}
+            <p className="wb-note">{t('winback.noCombine')}</p>
+            <button type="button" className="wb-cta" disabled={!selected || busy} onClick={apply}>{t('winback.apply')}</button>
+            {!selected && <p className="wb-hint">{t('winback.pickFirst')}</p>}
             {error && <p className="wb-err">{error}</p>}
           </div>
         )}

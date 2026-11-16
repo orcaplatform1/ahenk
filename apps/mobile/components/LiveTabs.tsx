@@ -7,17 +7,16 @@ import { llTab, rings, tabDot } from '@/theme/theme';
 import type { MasaTuru } from '@/lib/masa';
 import type { TabStatus } from '@/lib/useMasaTabs';
 import { useReduceMotion } from '@/lib/motion';
+import { useTranslation } from 'react-i18next';
 
 const TABS: { type: MasaTuru; label: string }[] = [
-  { type: 'GROUP', label: 'GRUP' },
-  { type: 'ONE_ON_ONE', label: 'BAŞ BAŞA' },
-  { type: 'KANKA', label: 'KANKAMLA' },
+  { type: 'GROUP', label: 'live.tabGROUP' },
+  { type: 'ONE_ON_ONE', label: 'live.tabONE_ON_ONE' },
+  { type: 'KANKA', label: 'live.tabKANKA' },
 ];
 
-export const STATUS_TEXT: Record<TabStatus, string> = {
-  TABLE: 'Masa Kuruldu', FORMING: 'Masa Oluşturuluyor', CANCELLED: 'Rez. İptal', SCANNING: 'Taramada', KYC: 'Kimlik Bekleniyor',
-  KANKA: 'Kanka Bekleniyor', PENDING: 'Beklemede', FAILED: 'Başarısız', PASSIVE: 'Eşleşme Pasif', NONE: 'Abonelik Yok',
-};
+// Durum metni anahtarı: live.st<DURUM>
+export const statusKey = (st: TabStatus) => `live.st${st}`;
 
 const SMALL_RINGS: Partial<Record<MasaTuru, { r: number; stroke: number; rings: [number, number][] }>> = {
   GROUP: { r: 9.189, stroke: 1.622, rings: [[-14.5, -8.5], [-2.9, -8.5], [8.7, -8.5], [14.5, 8.5], [2.9, 8.5], [-8.7, 8.5]] },
@@ -58,21 +57,23 @@ export function Rings({ type, on, still }: { type: MasaTuru; on: boolean; still?
 }
 
 export function LiveTabs({ tab, statuses, onTab }: { tab: MasaTuru; statuses: Record<MasaTuru, TabStatus>; onTab: (t: MasaTuru) => void }) {
+  const { t } = useTranslation();
   return (
     <View style={s.tabs}>
-      {TABS.map(({ type, label }) => {
+      {TABS.map(({ type, label: labelKey }) => {
+        const label = t(labelKey);
         const status = statuses[type];
         const off = status === 'NONE';
         const on = !off && type === tab;
         return (
           <Pressable key={type} disabled={off} onPress={() => onTab(type)} accessibilityRole="button"
-            accessibilityState={{ selected: on, disabled: off }} accessibilityLabel={`${label}: ${STATUS_TEXT[status]}`}
+            accessibilityState={{ selected: on, disabled: off }} accessibilityLabel={`${label}: ${t(statusKey(status))}`}
             style={[s.tab, on && { transform: [{ translateY: llTab.liftY }] }, off && { opacity: 0.55 }]}>
             <Rings type={type} on={on} />
             <Mono w={600} style={[s.label, { color: on ? '#fff' : '#8f887f' }]}>{label}</Mono>
             <View style={s.statusRow}>
               <View style={[s.dot, { backgroundColor: tabDot[status.toLowerCase() as keyof typeof tabDot] ?? tabDot.default }]} />
-              <T numberOfLines={1} style={s.status}>{STATUS_TEXT[status]}</T>
+              <T numberOfLines={1} style={s.status}>{t(statusKey(status))}</T>
             </View>
           </Pressable>
         );

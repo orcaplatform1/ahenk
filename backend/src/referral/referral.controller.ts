@@ -1,3 +1,4 @@
+import { IsE164Phone } from "../common/phone";
 import { Controller, Get, Post, Body, UseGuards, Req } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { Matches } from "class-validator";
@@ -5,7 +6,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { ReferralService } from "./referral.service";
 
 class InviteDto {
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  @IsE164Phone()
   phoneNumber: string;
 }
 

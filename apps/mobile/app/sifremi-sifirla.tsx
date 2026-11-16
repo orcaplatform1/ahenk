@@ -11,7 +11,9 @@ import { Btn, ErrorText } from '@/components/ui';
 import { OtpCountdown, useOtpCountdown } from '@/components/OtpCountdown';
 import { ll } from '@/theme/theme';
 
+import { useTranslation } from 'react-i18next';
 export default function SifremiSifirla() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { phone = '', until = '' } = useLocalSearchParams<{ phone?: string; until?: string }>();
   const valid = /^\+905[0-9]{9}$/.test(phone);
@@ -34,10 +36,10 @@ export default function SifremiSifirla() {
     catch (e) { countdown.startFromError(e); setError((e as Error).message); } finally { setResending(false); }
   }
   async function submit() {
-    if (code.length !== 6) { setError('6 haneli kodu girin.'); return; }
-    if (!password || !confirm) { setError('Tüm alanları doldurun.'); return; }
-    if (password.length < 6 || password.length > 20) { setError('Şifre 6-20 karakter arasında olmalı.'); return; }
-    if (password !== confirm) { setError('Şifreler eşleşmiyor.'); return; }
+    if (code.length !== 6) { setError(t('resetPw.enterCode')); return; }
+    if (!password || !confirm) { setError(t('reg.fillAll')); return; }
+    if (password.length < 6 || password.length > 20) { setError(t('reg.pwLength')); return; }
+    if (password !== confirm) { setError(t('reg.pwMismatch')); return; }
     setLoading(true); setError('');
     try { await api.post('/auth/reset-password', { phone, code, newPassword: password }); setSuccess(true); setTimeout(() => router.replace('/giris'), 2000); }
     catch (e) { setError((e as Error).message); setCodeError(true); setTimeout(() => setCodeError(false), 500); } finally { setLoading(false); }
@@ -46,29 +48,29 @@ export default function SifremiSifirla() {
   let content: React.ReactNode;
   if (!valid) {
     content = (
-      <StepScreen title="Şifreni sıfırla" subtitle="Bağlantı geçersiz. Lütfen kodu yeniden iste." onBack={() => router.back()}
-        footer={<PillButton label="Kod İste" primary onPress={() => router.replace('/sifremi-unuttum')} />}>
+      <StepScreen title={t('forgot.titleM')} subtitle={t('resetPw.invalidLink')} onBack={() => router.back()}
+        footer={<PillButton label={t('resetPw.requestCode')} primary onPress={() => router.replace('/sifremi-unuttum')} />}>
         <View />
       </StepScreen>
     );
   } else if (success) {
     content = (
-      <StepScreen title="Şifren güncellendi" subtitle="Giriş sayfasına yönlendiriliyorsun…" onBack={() => router.replace('/giris')} footer={null}>
+      <StepScreen title={t('resetPw.updated')} subtitle={t('resetPw.redirecting')} onBack={() => router.replace('/giris')} footer={null}>
         <View />
       </StepScreen>
     );
   } else {
     content = (
-      <StepScreen title="Yeni şifre" subtitle={`${phone} numarasına WhatsApp ile gönderilen 6 haneli kodu gir ve yeni şifreni belirle.`} onBack={() => router.back()}
+      <StepScreen title={t('resetPw.newPw')} subtitle={t('resetPw.codeInfoM', { phone })} onBack={() => router.back()}
         footer={<>
-          <PillButton label={loading ? 'Kaydediliyor…' : 'Şifremi Sıfırla'} primary disabled={loading || code.length !== 6} onPress={submit} />
-          <Btn variant="textLink" disabled={countdown.waiting || resending} onPress={resend} label={resending ? 'Gönderiliyor…' : 'Yeni kod gönder'} />
+          <PillButton label={loading ? t('reg.saving') : t('resetPw.reset')} primary disabled={loading || code.length !== 6} onPress={submit} />
+          <Btn variant="textLink" disabled={countdown.waiting || resending} onPress={resend} label={resending ? t('forgot.sending') : t('login.resend')} />
         </>}>
         <View style={{ gap: 12 }}>
           <OtpInput value={code} onChange={(v) => { setCode(v); setError(''); }} error={codeError} />
           <OtpCountdown seconds={countdown.seconds} />
-          <PasswordInput value={password} onChangeText={(t) => { setPassword(t); setError(''); }} placeholder="Yeni şifre" />
-          <PasswordInput value={confirm} onChangeText={(t) => { setConfirm(t); setError(''); }} placeholder="Şifre tekrar" onSubmitEditing={submit} />
+          <PasswordInput value={password} onChangeText={(t) => { setPassword(t); setError(''); }} placeholder={t('resetPw.newPw')} />
+          <PasswordInput value={confirm} onChangeText={(t) => { setConfirm(t); setError(''); }} placeholder={t('resetPw.pwRepeat')} onSubmitEditing={submit} />
           <ErrorText>{error}</ErrorText>
         </View>
       </StepScreen>

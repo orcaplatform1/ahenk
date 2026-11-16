@@ -1,13 +1,29 @@
-import { Controller, Post, Patch, Get, Body, Req, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
+import { IsE164Phone } from "../common/phone";
+import { Controller, Post, Patch, Get, Body, Param, Req, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
 import { Request } from "express";
 import { LoginGuardService } from "../auth/login-guard.service";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
-import { IsString, IsOptional, IsEnum, Matches, IsEmail } from "class-validator";
+import { IsString, IsOptional, IsEnum, Matches, IsEmail, IsIn, IsBoolean } from "class-validator";
 import { VenuePreference } from "../generated/prisma/client";
 import { UsersService } from "./users.service";
 import { AccountDeletionService } from "./account-deletion.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+
+class UpdateLanguageDto {
+  @IsIn(["tr", "en"])
+  language: string;
+}
+
+class UpdateSpokenLanguagesDto {
+  @IsOptional()
+  @IsBoolean()
+  speaksEnglish?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  speaksTurkish?: boolean;
+}
 
 class UpdateVenuePreferenceDto {
   @IsEnum(VenuePreference)
@@ -21,12 +37,12 @@ class UpdateActiveCityDto {
 }
 
 class RequestPhoneChangeDto {
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  @IsE164Phone()
   phone: string;
 }
 
 class VerifyPhoneChangeDto {
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  @IsE164Phone()
   phone: string;
   @Matches(/^[0-9]{6}$/, { message: "6 haneli kod girin" })
   code: string;
@@ -63,6 +79,39 @@ export class UsersController {
   @ApiOperation({ summary: "Hesap silme talebi oluştur" })
   requestDeletion(@CurrentUser() user: any) {
     return this.accountDeletion.request(user.id);
+  }
+
+  @Patch("me/language")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Arayüz dilini hesaba kaydet (tr | en)" })
+  updateLanguage(@CurrentUser() user: any, @Body() dto: UpdateLanguageDto) {
+    return this.usersService.updateLanguage(user.id, dto.language);
+  }
+
+  @Patch("me/spoken-languages")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "İngilizce / Türkçe biliyorum (dil bazlı eşleşme)" })
+  updateSpokenLanguages(@CurrentUser() user: any, @Body() dto: UpdateSpokenLanguagesDto) {
+    return this.usersService.updateSpokenLanguages(user.id, dto);
+  }
+
+  @Post("me/region-waitlist/:cityId")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Pasif bölge için \"Haber ver\" (bekleme listesi; aynı bölgeye bir kez)" })
+  joinRegionWaitlist(@CurrentUser() user: any, @Param("cityId") cityId: string) {
+    return this.usersService.joinRegionWaitlist(user.id, cityId);
+  }
+
+  @Get("me/region-waitlist")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Kullanıcının \"Haber ver\" dediği bölgeler" })
+  myRegionWaitlist(@CurrentUser() user: any) {
+    return this.usersService.myRegionWaitlist(user.id);
   }
 
   @Patch("venue-preference")

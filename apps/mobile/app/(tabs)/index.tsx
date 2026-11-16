@@ -14,25 +14,28 @@ import { isForeground, useAppRefresh } from '@/lib/useAppRefresh';
 import type { LiveOverview, LivePulse, OceanKey } from '@/lib/liveTypes';
 import { BtnPrimary, Card, Cta, Glow, Eyebrow, Head, MaintenanceNotice, Mono, Note, Serif, Spinner, T, Title } from '@/components/ui';
 import { LiveTabs } from '@/components/LiveTabs';
-import { LiveSonar } from '@/components/Sonar';
+import { LiveSonar, LEVEL_KEY } from '@/components/Sonar';
 import { WinbackHost } from '@/components/Winback';
 import { LEVELS, ll, llColumn, heat, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
 
+import { formatTime } from '@ahenk/shared';
+import { useTranslation } from 'react-i18next';
 const PULSE_MS = 15_000;
 const OVERVIEW_MS = 60_000;
 const MEETING_GRACE_MS = 3 * 60 * 60 * 1000;
 const CAPACITY: Record<MasaTuru, number> = { GROUP: 6, ONE_ON_ONE: 2, KANKA: 4 };
+// Çeviri anahtarları (ekranda t())
 const TABLE_TEXT: Record<MasaTuru, { title: string; note: string }> = {
-  GROUP: { title: 'Grup masası kurulmasına', note: "Perşembe 23:59'da masa kapanır." },
-  ONE_ON_ONE: { title: 'Baş Başa masası kurulmasına', note: "Cuma 23:59'da masa kapanır." },
-  KANKA: { title: 'Kankamla masası kurulmasına', note: "Cumartesi 23:59'da masa kapanır." },
+  GROUP: { title: 'live.untilGROUP', note: 'live.closesGROUP' },
+  ONE_ON_ONE: { title: 'live.untilONE_ON_ONE', note: 'live.closesONE_ON_ONE' },
+  KANKA: { title: 'live.untilKANKA', note: 'live.closesKANKA' },
 };
-const OCEAN_LABEL: Record<OceanKey, string> = { openness: 'Açıklık', conscientiousness: 'Sorumluluk', extraversion: 'Dışadönüklük', agreeableness: 'Uyumluluk', neuroticism: 'Duygusal Denge' };
+const OCEAN_LABEL: Record<OceanKey, string> = { openness: 'live.oceanOpenness', conscientiousness: 'live.oceanConscientiousness', extraversion: 'live.oceanExtraversion', agreeableness: 'live.oceanAgreeableness', neuroticism: 'live.oceanNeuroticism' };
 const LEVEL_ALPHA = { 1: 'd9', 2: 'a6', 3: '73', 4: '4d' } as const;
 // Tarama bekleme durumu: yoğunluk kartları "Düşük" kartının grisinde, yazı "Tarama bekleniyor"
 const WAIT_CELL = `${LEVELS[4].color}${LEVEL_ALPHA[4]}`;
-const WAIT_TEXT = 'Tarama bekleniyor';
+const WAIT_TEXT = 'live.waitScan';
 
 function heatColor(index: number, count: number) {
   const band = count <= 1 ? 0 : Math.min(2, Math.floor((index / count) * 3));
@@ -70,16 +73,17 @@ function Blink({ children }: { children: React.ReactNode }) {
 }
 
 function Countdown({ day, targetAt }: { day: number; targetAt?: number | null }) {
+  const { t } = useTranslation();
   const [left, setLeft] = useState(0);
   useEffect(() => {
     const tick = () => setLeft(Math.max(0, (targetAt ?? getNextTarget(day).getTime()) - Date.now()));
     tick(); const id = setInterval(tick, 1000); return () => clearInterval(id);
   }, [day, targetAt]);
   const units = [
-    { label: 'GÜN', value: Math.floor(left / 86_400_000) },
-    { label: 'SAAT', value: Math.floor((left % 86_400_000) / 3_600_000) },
-    { label: 'DAKİKA', value: Math.floor((left % 3_600_000) / 60_000) },
-    { label: 'SANİYE', value: Math.floor((left % 60_000) / 1000) },
+    { label: 'live.days', value: Math.floor(left / 86_400_000) },
+    { label: 'live.hours', value: Math.floor((left % 86_400_000) / 3_600_000) },
+    { label: 'live.minutes', value: Math.floor((left % 3_600_000) / 60_000) },
+    { label: 'live.seconds', value: Math.floor((left % 60_000) / 1000) },
   ];
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', gap: 8, marginVertical: 14 }}>
@@ -87,8 +91,8 @@ function Countdown({ day, targetAt }: { day: number; targetAt?: number | null })
         <View key={u.label} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
           {i > 0 && <Serif style={{ fontSize: 40, lineHeight: 40, color: '#6e6860' }}>:</Serif>}
           <View style={{ alignItems: 'center', minWidth: 52 }}>
-            {u.label === 'SANİYE' ? <Blink><Serif style={{ fontSize: 40, lineHeight: 40, color: ll.red3 }}>{pad(u.value)}</Serif></Blink> : <Serif style={{ fontSize: 40, lineHeight: 40, color: ll.text }}>{pad(u.value)}</Serif>}
-            <T style={{ fontSize: 10, color: ll.label, marginTop: 6 }}>{u.label}</T>
+            {u.label === 'live.seconds' ? <Blink><Serif style={{ fontSize: 40, lineHeight: 40, color: ll.red3 }}>{pad(u.value)}</Serif></Blink> : <Serif style={{ fontSize: 40, lineHeight: 40, color: ll.text }}>{pad(u.value)}</Serif>}
+            <T style={{ fontSize: 10, color: ll.label, marginTop: 6 }}>{t(u.label)}</T>
           </View>
         </View>
       ))}
@@ -110,6 +114,7 @@ function label(initials: string) {
 }
 
 export default function EslesmePaneli() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, scanning, selfParticipant, tabAdminCancelled, selection, submitSelection, scanWaiting } = useMasaTabs();
@@ -125,6 +130,8 @@ export default function EslesmePaneli() {
   const waitingScan = tabPastClosing && !hasTabTable;
   const meetingTarget = hasTabTable && meetingAt ? Date.parse(meetingAt) : null;
   const seats = overview?.groupSeatsLeft ?? null;
+  // BEKLEME: geri sayım kartında "Yeni tarama başlamasına" gösterilirken (aynı durum değişkenleri); AKTİF: tarama başlamış
+  const scanIdle = meetingTarget === null && waitingScan;
   const scanOff = tabAdminCancelled || statuses[tab] === 'KYC' || statuses[tab] === 'KANKA';
 
   const seated = [...(tabItem?.meeting.participants ?? [])].sort((a, b) => (a.joinedAt ?? '').localeCompare(b.joinedAt ?? ''));
@@ -148,9 +155,9 @@ export default function EslesmePaneli() {
           {me?.kyc?.status !== 'APPROVED' && <View style={{ marginTop: 16, marginBottom: 16 }}><KycNoticeCard /></View>}
           {me?.kyc?.status === 'REJECTED' && (
             <View style={{ marginBottom: 16, borderRadius: 16, padding: 16, backgroundColor: 'rgba(192,57,43,0.12)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.35)' }}>
-              <T w={600} style={{ fontSize: 14, color: tw.accent, marginBottom: 4 }}>Kimlik doğrulamanız reddedildi</T>
-              {!!me.kyc.rejectReason && <T style={{ fontSize: 14, color: '#ccc' }}>Red nedeni: {me.kyc.rejectReason}</T>}
-              <T style={{ fontSize: 12, color: '#888', marginTop: 8 }}>Profilim → Kimlik Doğrulama sekmesinden yeniden başvurabilirsiniz.</T>
+              <T w={600} style={{ fontSize: 14, color: tw.accent, marginBottom: 4 }}>{t('kyc.rejectedTitle')}</T>
+              {!!me.kyc.rejectReason && <T style={{ fontSize: 14, color: '#ccc' }}>{t('kyc.rejectReason', { reason: me.kyc.rejectReason })}</T>}
+              <T style={{ fontSize: 12, color: '#888', marginTop: 8 }}>{t('kyc.reapply')}</T>
             </View>
           )}
           {me?.maintenanceMode && <MaintenanceNotice />}
@@ -164,23 +171,23 @@ export default function EslesmePaneli() {
             {/* Geri sayım */}
             <View style={[st.card, { borderColor: 'rgba(232,162,122,0.22)', overflow: 'hidden' }]}>
               <LinearGradient colors={['rgba(214,69,58,0.14)', 'rgba(255,255,255,0.02)']} locations={[0, 0.6]} start={{ x: 0.33, y: 0.03 }} end={{ x: 0.67, y: 0.97 }} style={StyleSheet.absoluteFill} />
-              <Eyebrow>{meetingTarget !== null ? 'Buluşmanıza kalan süre' : waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</Eyebrow>
+              <Eyebrow>{meetingTarget !== null ? t('live.untilMeeting') : waitingScan ? t('live.untilScan') : t(TABLE_TEXT[tab].title)}</Eyebrow>
               <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} targetAt={meetingTarget} />
               <T style={{ fontSize: 13, color: ll.text2, lineHeight: 19.5 }}>
-                {waitingScan ? "Pazar 23:59'da yeni tarama başlar." : TABLE_TEXT[tab].note}
+                {waitingScan ? t('live.scanStarts') : t(TABLE_TEXT[tab].note)}
                 {!waitingScan && tabSeatsLeft !== null && !(meetingTarget !== null && tabSeatsLeft === 0)
-                  ? `\n${tabSeatsLeft > 0 ? `Masanızda ${num(tabSeatsLeft)} boş koltuk kaldı.` : 'Masanızda kontenjan doldu.'}` : ''}
+                  ? `\n${tabSeatsLeft > 0 ? t('live.seatsLeft', { count: num(tabSeatsLeft) }) : t('live.tableFull')}` : ''}
               </T>
             </View>
 
 
-            <LiveSonar sonar={pulse?.sonar ?? null} scanOff={scanOff} waiting={scanWaiting} />
+            <LiveSonar sonar={pulse?.sonar ?? null} scanOff={scanOff} waiting={scanWaiting} idle={scanIdle} />
 
             {/* Katılım */}
             {tab === 'GROUP' ? (
               // Grup: başlık tek başına, isimler bir alt satırda; her kısaltma cinsiyet renkli çerçeveli yuvarlak dairede
               <Card>
-                <Title>{people.length > 0 ? `Katılım ${people.length}/${total}:` : 'Katılım:'}</Title>
+                <Title>{people.length > 0 ? t('live.participationCount', { count: people.length, total }) : t('live.participation')}</Title>
                 {people.length > 0 && (
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
                     {people.map((p, i) => (
@@ -193,7 +200,7 @@ export default function EslesmePaneli() {
               </Card>
             ) : (
               <Card style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 6 }}>
-                <Title>{people.length > 0 ? `Katılım ${people.length}/${total}:` : 'Katılım:'}</Title>
+                <Title>{people.length > 0 ? t('live.participationCount', { count: people.length, total }) : t('live.participation')}</Title>
                 {people.map((p, i) => (
                   <T key={`${p.initials}-${i}`} w={700} style={{ fontSize: 14, lineHeight: 21, letterSpacing: 0.28, color: gColor(p.gender) }}>{label(p.initials)}</T>
                 ))}
@@ -202,14 +209,14 @@ export default function EslesmePaneli() {
 
             {/* Canlı Akış */}
             <Card>
-              <Head title="Canlı Akış" right={<Note>Son 20 olay</Note>} />
+              <Head title={t('live.feedTitle')} right={<Note>{t('live.feedNote')}</Note>} />
               {/* Son 20 olay tutulur; aynı anda en fazla 15 olay görünür, kalanı kart içinde kaydırılır */}
               <ScrollView style={{ maxHeight: FEED_VISIBLE_HEIGHT }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
               {(pulse?.feed.events ?? []).length === 0 ? (
-                <T style={{ fontSize: 13, color: ll.label }}>Henüz olay yok.</T>
+                <T style={{ fontSize: 13, color: ll.label }}>{t('live.feedEmpty')}</T>
               ) : (pulse?.feed.events ?? []).slice(0, 20).map((e) => (
                 <View key={e.key} style={st.feedRow}>
-                  <Mono style={{ fontSize: 10, color: ll.time, width: 38 }}>{new Date(e.at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })}</Mono>
+                  <Mono style={{ fontSize: 10, color: ll.time, width: 38 }}>{formatTime(e.at)}</Mono>
                   <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
                     {e.segments.map((sg, i) => sg.t === 'person' ? (
                       <View key={i} style={{ paddingHorizontal: 5, borderRadius: 99, borderWidth: 1, borderColor: gColor(sg.g) }}>
@@ -224,14 +231,14 @@ export default function EslesmePaneli() {
 
             {/* Isı haritası */}
             <View>
-              <Head title="Semt Masa Yoğunluğu" />
+              <Head title={t('live.heatTitle')} style={{ alignItems: 'center' }} right={scanIdle ? <T style={{ fontSize: 13, color: '#FFFFFF', opacity: 0.6 }}>{t(WAIT_TEXT)}</T> : undefined} />
               {overview?.density ? (
                 <View style={st.heat}>
                   {overview.density.districts.map((d) => (
-                    // Bekleme durumunda bütün kartlar "Düşük" grisinde, yoğunluk yerine "Tarama bekleniyor"
+                    // Bekleme durumunda bütün kartlar "Düşük" grisinde, yoğunluk yazısı yok
                     <View key={d.name} style={[st.heatCell, { backgroundColor: scanWaiting ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }]}>
                       <T w={700} numberOfLines={1} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
-                      <Mono style={{ fontSize: scanWaiting || d.percent === null ? 11 : 15, color: tw.text }}>{scanWaiting ? WAIT_TEXT : d.percent === null ? LEVELS[d.level].label : `%${d.percent}`}</Mono>
+                      {!scanWaiting && <Mono style={{ fontSize: d.percent === null ? 11 : 15, color: tw.text }}>{d.percent === null ? t(LEVEL_KEY[d.level]) : `%${d.percent}`}</Mono>}
                     </View>
                   ))}
                 </View>
@@ -240,24 +247,24 @@ export default function EslesmePaneli() {
                   {overview.heatmap.map((d, i) => (
                     <View key={d.name} style={[st.heatCell, { backgroundColor: scanWaiting ? WAIT_CELL : heatColor(i, overview.heatmap.length) }]}>
                       <T w={700} numberOfLines={1} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
-                      <Mono style={{ fontSize: scanWaiting ? 11 : 15, color: tw.text }}>{scanWaiting ? WAIT_TEXT : `%${d.percent}`}</Mono>
+                      {!scanWaiting && <Mono style={{ fontSize: 15, color: tw.text }}>{`%${d.percent}`}</Mono>}
                     </View>
                   ))}
                 </View>
-              ) : <T style={{ fontSize: 13, color: ll.label }}>Bu hafta için ilçe verisi henüz yok.</T>}
+              ) : <T style={{ fontSize: 13, color: ll.label }}>{t('live.heatEmpty')}</T>}
             </View>
 
             {/* Uyum sinyali */}
             {overview && (
               <Card>
-                <Eyebrow>UYUM SİNYALİ</Eyebrow>
+                <Eyebrow>{t('live.signal')}</Eyebrow>
                 <Serif style={{ fontSize: 26, lineHeight: 32.5, marginTop: 10, marginBottom: 16, color: ll.text }}>
-                  Profiline yakın <Serif style={{ color: ll.red3 }}>{num(overview.signal.closeCount)} kişi</Serif> bu hafta havuzda.
+                  {t('live.signalPre')} <Serif style={{ color: ll.red3 }}>{t('live.signalPeople', { count: num(overview.signal.closeCount) })}</Serif> {t('live.signalPost')}
                 </Serif>
                 <View style={{ gap: 10 }}>
                   {overview.signal.top.map((d) => (
                     <View key={d.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                      <T style={{ width: 104, fontSize: 12, lineHeight: 18, color: ll.text2 }}>{OCEAN_LABEL[d.key]}</T>
+                      <T style={{ width: 104, fontSize: 12, lineHeight: 18, color: ll.text2 }}>{t(OCEAN_LABEL[d.key])}</T>
                       <View style={{ flex: 1 }}><Bar ratio={d.score / 100} colors={['#d6453a', '#e8a27a']} height={6} /></View>
                       <Mono style={{ width: 28, fontSize: 11, textAlign: 'right' }}>{d.score}</Mono>
                     </View>
@@ -265,14 +272,14 @@ export default function EslesmePaneli() {
                 </View>
                 {overview.signal.commonDimension && (
                   <T style={{ marginTop: 14, fontSize: 13, color: ll.text2 }}>
-                    Masandaki kişilerle en güçlü ortak noktan: <T w={700} style={{ color: ll.text }}>{OCEAN_LABEL[overview.signal.commonDimension]}</T>
+                    {t('live.commonDim')} <T w={700} style={{ color: ll.text }}>{t(OCEAN_LABEL[overview.signal.commonDimension])}</T>
                   </T>
                 )}
               </Card>
             )}
 
             <Cta
-              label={overview?.hasTable ? 'Masanı Gör' : seats !== null ? `Masanı Ayır · ${num(seats)} koltuk kaldı` : 'Masanı Ayır'}
+              label={overview?.hasTable ? t('live.seeTable') : seats !== null ? t('live.reserveSeats', { count: num(seats) }) : t('live.reserve')}
               onPress={() => router.push(overview?.hasTable || me?.activePlan ? '/(tabs)/masalarim' : '/(tabs)/paketim')}
             />
           </View>

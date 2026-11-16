@@ -53,11 +53,39 @@ export class UsersService {
     return { ok: true };
   }
 
+  async updateLanguage(userId: string, language: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { language: language === "en" ? "en" : "tr" } });
+    return { ok: true };
+  }
+
+  async updateSpokenLanguages(userId: string, dto: { speaksEnglish?: boolean; speaksTurkish?: boolean }) {
+    const data: { speaksEnglish?: boolean; speaksTurkish?: boolean } = {};
+    if (typeof dto.speaksEnglish === "boolean") data.speaksEnglish = dto.speaksEnglish;
+    if (typeof dto.speaksTurkish === "boolean") data.speaksTurkish = dto.speaksTurkish;
+    const u = await this.prisma.user.update({ where: { id: userId }, data, select: { speaksEnglish: true, speaksTurkish: true } });
+    return u;
+  }
+
+  // Yalnız pasif bölgeye kayıt olunur; aynı kullanıcı aynı bölgeye bir kez (tekrar istek hata vermez)
+  async joinRegionWaitlist(userId: string, cityId: string) {
+    const city = await this.prisma.city.findUnique({ where: { id: cityId }, select: { isActive: true } });
+    if (!city) throw new BadRequestException("Bölge bulunamadı");
+    if (city.isActive) throw new BadRequestException("Bu bölge zaten açık");
+    await this.prisma.regionWaitlist.upsert({ where: { userId_cityId: { userId, cityId } }, create: { userId, cityId }, update: {} });
+    return { ok: true };
+  }
+
+  async myRegionWaitlist(userId: string) {
+    const rows = await this.prisma.regionWaitlist.findMany({ where: { userId }, select: { cityId: true } });
+    return rows.map((r) => r.cityId);
+  }
+
   async requestPhoneChange(userId: string, newPhone: string) {
     const existing = await this.prisma.user.findUnique({ where: { phone: newPhone } });
     if (existing && existing.id === userId) throw new BadRequestException("Bu numara zaten hesabınızda kayıtlı.");
     if (existing) throw new ConflictException("Bu telefon numarası kullanılmaktadır.");
-    const resendSeconds = await this.otpService.send(newPhone, "change-phone");
+    const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { language: true } });
+    const resendSeconds = await this.otpService.send(newPhone, "change-phone", me?.language ?? "tr");
     return { ok: true, resendSeconds };
   }
 

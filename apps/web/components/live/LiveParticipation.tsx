@@ -1,6 +1,7 @@
 'use client';
 
 import { gColor, type DashboardItem, type MasaTuru } from '@ahenk/ui';
+import { useTranslations } from 'next-intl';
 
 const CAPACITY: Record<MasaTuru, number> = { GROUP: 6, ONE_ON_ONE: 2, KANKA: 4 };
 
@@ -20,6 +21,7 @@ export default function LiveParticipation({ tab, item, self, kanka, scanning }: 
   kanka?: Person | null;
   scanning: boolean;
 }) {
+  const t = useTranslations();
   const seated = [...(item?.meeting.participants ?? [])].sort((a, b) => (a.joinedAt ?? '').localeCompare(b.joinedAt ?? ''));
   const waiting = tab === 'KANKA' && scanning && self && kanka ? [self, kanka] : [];
   const people: Person[] = item ? seated : waiting;
@@ -29,7 +31,7 @@ export default function LiveParticipation({ tab, item, self, kanka, scanning }: 
   if (tab === 'GROUP') {
     return (
       <section className="ll-card" aria-live="polite">
-        <h2 className="ll-title">{people.length > 0 ? `Katılım ${people.length}/${total}:` : 'Katılım:'}</h2>
+        <h2 className="ll-title">{people.length > 0 ? t('live.participationCount', { count: people.length, total }) : t('live.participation')}</h2>
         {people.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
             {people.map((p, i) => (
@@ -45,7 +47,7 @@ export default function LiveParticipation({ tab, item, self, kanka, scanning }: 
 
   return (
     <section className="ll-card" aria-live="polite" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 6 }}>
-      <h2 className="ll-title">{people.length > 0 ? `Katılım ${people.length}/${total}:` : 'Katılım:'}</h2>
+      <h2 className="ll-title">{people.length > 0 ? t('live.participationCount', { count: people.length, total }) : t('live.participation')}</h2>
       {people.map((p, i) => (
         <span key={`${p.initials}-${i}`} style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.02em', fontFamily: 'Inter, sans-serif', color: gColor(p.gender) }}>
           {label(p.initials)}

@@ -9,6 +9,7 @@ import { DetayAvatar } from './DetayAvatar';
 import { InlineLH, Btn, Serif, T } from './ui';
 import { c, ll, sans, tw } from '@/theme/theme';
 
+import { upper } from '@/lib/i18n';
 const RADAR = 340; const C = RADAR / 2; const ORBIT_R = 142; const AV_D = 52;
 function orbitPts(n: number, r = ORBIT_R) {
   const step = (2 * Math.PI) / n;
@@ -71,7 +72,7 @@ function ConfirmedRadarViewInner({ participants, maxParticipants, type, schedule
         <Serif style={{ fontSize: 22, letterSpacing: 2.2, marginBottom: 8 }}>{tableTitleOf(type)}</Serif>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: c.green }} />
-          <T w={600} style={{ fontSize: 11, letterSpacing: 1.32, color: c.green }}>{statusText.toLocaleUpperCase('tr-TR')}</T>
+          <T w={600} style={{ fontSize: 11, letterSpacing: 1.32, color: c.green }}>{upper(statusText)}</T>
         </View>
       </View>
       <View style={{ alignItems: 'center' }}>

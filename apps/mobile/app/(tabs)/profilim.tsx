@@ -15,15 +15,17 @@ import { KycNoticeCard } from '@/components/KycNoticeCard';
 import { ProfilePhotoHeader } from '@/components/ProfilePhoto';
 import { buildInitials } from '@/lib/masa';
 
+import { useTranslation } from 'react-i18next';
 const TABS = [
-  { key: 'profil', label: 'Profilim' },
-  { key: 'test', label: 'Kişilik Testim' },
-  { key: 'rehber', label: 'Numara Engelleme' },
-  { key: 'kyc', label: 'Kimlik Doğrulama' },
+  { key: 'profil', label: 'tabs.profil' },
+  { key: 'test', label: 'tabs.test' },
+  { key: 'rehber', label: 'tabs.rehber' },
+  { key: 'kyc', label: 'tabs.kyc' },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
 
 export default function Profilim() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ tab?: string }>();
@@ -59,13 +61,13 @@ export default function Profilim() {
             <Glow />
             <View style={{ marginBottom: 16 }}><KycNoticeCard /></View>
             {/* Alt sayfada (Kişilik Ağacım / Numara Engelleme / Kimlik Doğrulama) Profilim'e dönüş: mevcut pillRed etiket stili ("← Paketler" ile aynı) */}
-            {tab !== 'profil' && <Btn variant="pillRed" label="← Profilim" style={{ alignSelf: 'flex-start', marginBottom: 16 }} onPress={backToProfil} />}
+            {tab !== 'profil' && <Btn variant="pillRed" label={t('prof.backArrow')} style={{ alignSelf: 'flex-start', marginBottom: 16 }} onPress={backToProfil} />}
             {/* En üstte büyük yuvarlak profil alanı (fotoğraf yoksa ad soyad kısaltması) */}
             {user && tab === 'profil' && <ProfilePhotoHeader photoUrl={user.profilePhotoUrl} initials={buildInitials(user.firstName, user.lastName)} gender={user.profile?.gender} kycApproved={kycApproved} pending={user.profilePhotoPending} />}
             {loading ? <SkeletonBlock lines={4} /> : fetchError && !user ? (
               <View style={{ alignItems: 'center', paddingHorizontal: 24 }}>
-                <T style={{ color: tw.muted, fontSize: 14, marginBottom: 16 }}>Profil yüklenemedi. Lütfen tekrar deneyin.</T>
-                <BtnGhost label="Yeniden Dene" onPress={() => { setLoading(true); load(); }} />
+                <T style={{ color: tw.muted, fontSize: 14, marginBottom: 16 }}>{t('prof.loadFailed')}</T>
+                <BtnGhost label={t('common.tryAgain')} onPress={() => { setLoading(true); load(); }} />
               </View>
             ) : user ? (
               <>

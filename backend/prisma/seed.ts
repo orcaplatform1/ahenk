@@ -194,11 +194,38 @@ const oceanQuestions = [
   },
 ];
 
+// İngilizce metinler (orderNum → metin; bölüm → başlık). Anlam korunur; kimlik, sıra ve puanlama aynı
+const OCEAN_TEXT_EN: Record<number, string> = {
+  1: "I'm drawn to new ideas and different points of view.",
+  2: "Art, music or literature moves me deeply.",
+  3: "I trust my imagination and like thinking outside the box.",
+  4: "I enjoy discussing abstract ideas and philosophical questions.",
+  5: "I get things done on time and see them through.",
+  6: "I stick to my plans and routines.",
+  7: "I pay attention to detail and double-check my work.",
+  8: "I can give up instant pleasures for long-term goals.",
+  9: "Social settings lift my energy; I love spending time with people.",
+  10: "I don't mind speaking up or being the center of attention in a group.",
+  11: "Meeting new people excites me.",
+  12: "Quiet, calm settings make me restless.",
+  13: "I put other people's needs ahead of my own.",
+  14: "I avoid conflict and prefer finding common ground.",
+  15: "I can easily sense how others feel.",
+  16: "Trusting people comes naturally to me.",
+  17: "I can stay calm and keep my cool in stressful situations.",
+  18: "Even small things can bother me for a long time.",
+  19: "Feeling anxious or tense isn't unusual for me.",
+};
+const OCEAN_SECTION_EN: Record<number, string> = {
+  1: "Curiosity & Openness", 2: "Order & Responsibility", 3: "Sociability & Energy", 4: "Empathy & Harmony", 5: "Emotional Balance",
+};
+
 async function main() {
   console.log("Seed başlıyor...");
 
   // Soruları orderNum ile güncelle/ekle (silme yok — mevcut cevaplar soruya bağlı)
-  for (const q of oceanQuestions) {
+  for (const base of oceanQuestions) {
+    const q = { ...base, textEn: OCEAN_TEXT_EN[base.orderNum] ?? "", sectionTitleEn: OCEAN_SECTION_EN[base.section] ?? "" };
     const existing = await prisma.oceanQuestion.findFirst({ where: { orderNum: q.orderNum } });
     if (existing) {
       await prisma.oceanQuestion.update({ where: { id: existing.id }, data: q });

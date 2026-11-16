@@ -4,11 +4,13 @@ import { Pressable, TextInput, View, type TextInputInstance } from 'react-native
 import { T } from './ui';
 import { inputGlass, sans, tw } from '@/theme/theme';
 
+import { useTranslation } from 'react-i18next';
 export function OtpInput({ value, onChange, onComplete, error }: { value: string; onChange: (v: string) => void; onComplete?: (v: string) => void; error?: boolean }) {
+  const { t } = useTranslation();
   const ref = useRef<TextInputInstance>(null);
   const digits = value.padEnd(6, ' ').slice(0, 6).split('');
   return (
-    <Pressable onPress={() => ref.current?.focus()} accessibilityLabel="Doğrulama kodu">
+    <Pressable onPress={() => ref.current?.focus()} accessibilityLabel={t('otp.codeLabel')}>
       <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
         {digits.map((d, i) => (
           <View key={i} style={{ width: 48, height: 60, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center',

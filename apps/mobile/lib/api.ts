@@ -1,9 +1,13 @@
 import { API_PREFIX } from './config';
+import i18n, { currentLang } from './i18n';
 import { clearTokens, forgetDevice, getAccess, getRefresh, setTokens } from './session';
 
 // Web lib/api.ts davranışının mobil karşılığı: aynı uçlar, aynı hata mesajları.
 // Oturum: HttpOnly çerez yerine Bearer token (Origin'siz istemciye backend token'ı gövdede döndürür).
 // Çerezler kullanılmaz (credentials: 'omit'); CSRF kontrolü Bearer isteklerinde uygulanmaz.
+
+// Her API isteğinde o anki arayüz dili (backend mesaj dili: hesap dili → Accept-Language → Türkçe)
+export const langHeaders = (): Record<string, string> => ({ 'Accept-Language': currentLang() });
 
 type Listener = () => void;
 const authListeners = new Set<Listener>();
@@ -23,7 +27,7 @@ async function refreshSessionResult(): Promise<RefreshResult> {
       const res = await fetch(`${API_PREFIX}/auth/refresh`, {
         method: 'POST',
         credentials: 'omit',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...langHeaders() },
         body: JSON.stringify({ refreshToken }),
       });
       if (res.status === 401 || res.status === 403) { await clearTokens(); return 'expired'; }
@@ -49,7 +53,7 @@ export async function settleRefresh() { if (refreshing) await refreshing.catch((
 async function readMessage(res: Response): Promise<string> {
   const body = await res.json().catch(() => null) as { message?: string | string[] } | null;
   const msg = Array.isArray(body?.message) ? body?.message[0] : body?.message;
-  return msg ?? 'Bir hata oluştu. Lütfen tekrar deneyin.';
+  return msg ?? i18n.t('career.error');
 }
 
 export class ApiError extends Error {
@@ -60,7 +64,7 @@ export class ApiError extends Error {
 
 async function apiFetch<T>(path: string, init: { method?: string; body?: unknown; form?: FormData } = {}, retry = true): Promise<T> {
   const token = await getAccess();
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = langHeaders();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (init.body !== undefined && !init.form) headers['Content-Type'] = 'application/json';
   const res = await fetch(`${API_PREFIX}${path}`, {
@@ -72,8 +76,8 @@ async function apiFetch<T>(path: string, init: { method?: string; body?: unknown
   if (res.status === 401 && retry && token) {
     const r = await refreshSessionResult();
     if (r === 'ok') return apiFetch<T>(path, init, false);
-    if (r === 'expired') { authListeners.forEach((l) => l()); throw new ApiError('Oturum süresi doldu', 401, null); }
-    throw new ApiError('Bağlantı hatası, tekrar dene.', 0, null);
+    if (r === 'expired') { authListeners.forEach((l) => l()); throw new ApiError(i18n.t('common.sessionExpired'), 401, null); }
+    throw new ApiError(i18n.t('masa.connError'), 0, null);
   }
   if (res.status === 429) throw new ApiError('__rate_limit__', 429, null);
   if (!res.ok) {
@@ -131,7 +135,7 @@ export const api = {
     const refreshToken = await getRefresh();
     try {
       await fetch(`${API_PREFIX}/auth/logout`, {
-        method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json', ...langHeaders() },
         body: JSON.stringify({ refreshToken }),
       });
     } catch { /* yerel çıkış yine yapılır */ }

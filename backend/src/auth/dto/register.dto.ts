@@ -1,3 +1,4 @@
+import { IsE164Phone } from "../../common/phone";
 import {
   IsEmail,
   IsString,
@@ -41,7 +42,7 @@ export class RegisterDto {
   // Zorunlu ve WhatsApp OTP ile doğrulanmış olmalı (POST /auth/register/verify-otp → phoneToken)
   @ApiProperty({ example: "+905551234567" })
   @IsString()
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  @IsE164Phone()
   phoneNumber: string;
 
   @ApiProperty({ description: "Telefon doğrulama anahtarı (register/verify-otp yanıtı)" })
@@ -77,4 +78,20 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   referralCode?: string;
+
+  // Kayıt olunan arayüz dili (tr | en); Türkçe arayüzle kayıtta speaksTurkish = true
+  @ApiPropertyOptional({ enum: ["tr", "en"] })
+  @IsOptional()
+  @IsIn(["tr", "en"])
+  language?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  speaksEnglish?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  speaksTurkish?: boolean;
 }

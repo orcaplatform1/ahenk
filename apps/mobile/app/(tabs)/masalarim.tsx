@@ -19,6 +19,9 @@ import { InlineLH, Btn, BtnGhost, BtnPrimary, Card, Head, Mono, Serif, SkeletonB
 import { c, ll, llColumn, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
 
+import { weekdayName } from '@ahenk/shared';
+import { currentLang } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 interface HistoryMeeting {
   id: string; date: string; type?: MasaTuru; venueName: string | null; cityName?: string | null; maxParticipants?: number;
   venueAddress?: string | null; venueMapsUrl?: string | null; venuePhotos?: VenuePhoto[];
@@ -29,9 +32,10 @@ interface HistoryMeeting {
 }
 interface UserInfo { firstName: string; lastName: string; gender?: string | null }
 
-const CARD_TITLE: Record<MasaTuru, string> = { GROUP: 'Grup Masa Kartı', ONE_ON_ONE: 'Baş Başa Masa Kartı', KANKA: 'Kankamla Masa Kartı' };
+// Çeviri anahtarları (ekranda t())
+const CARD_TITLE: Record<MasaTuru, string> = { GROUP: 'tm.cardGroup', ONE_ON_ONE: 'tm.cardOne', KANKA: 'tm.cardKanka' };
 const CARD_TYPE: Record<MasaTuru, 'group' | 'basbasa' | 'kanka'> = { GROUP: 'group', ONE_ON_ONE: 'basbasa', KANKA: 'kanka' };
-const HISTORY_TYPE: Record<MasaTuru, string> = { GROUP: 'Grup Masası', ONE_ON_ONE: 'Baş Başa Masası', KANKA: 'Kankamla Masası' };
+const HISTORY_TYPE: Record<MasaTuru, string> = { GROUP: 'hero.group', ONE_ON_ONE: 'live.wsOneTitle', KANKA: 'hero.kanka' };
 
 // framer-motion giriş animasyonları (web EmptyMasaCard): opaklık 0 → 1, y → 0; varsayılan eğri "ease"
 const EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
@@ -78,6 +82,7 @@ function LockShake() {
 }
 
 function EmptyMasaCardInner({ locked, cardType, userInfo, kanka }: { locked: boolean; cardType: 'group' | 'basbasa' | 'kanka'; userInfo?: UserInfo; kanka?: { initials: string; gender: string | null } | null }) {
+  const { t } = useTranslation();
   const initials = userInfo ? buildInitials(userInfo.firstName, userInfo.lastName) : '?';
   const ug = userInfo?.gender ?? null;
   const og = ug === 'FEMALE' ? 'MALE' : 'FEMALE';
@@ -91,9 +96,9 @@ function EmptyMasaCardInner({ locked, cardType, userInfo, kanka }: { locked: boo
       <Shimmer />
       <FadeUp delay={100} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
         <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: c.green }} />
-        <T w={700} style={{ fontSize: 10, color: c.green, letterSpacing: 1.8 }}>MASA DETAYI</T>
+        <T w={700} style={{ fontSize: 10, color: c.green, letterSpacing: 1.8 }}>{t('masa.detailTitle')}</T>
       </FadeUp>
-      <FadeUp delay={150} style={{ marginBottom: 4 }}><Serif style={{ fontSize: 26, lineHeight: 31.2, letterSpacing: 0.26 }}>Mekan Adı</Serif></FadeUp>
+      <FadeUp delay={150} style={{ marginBottom: 4 }}><Serif style={{ fontSize: 26, lineHeight: 31.2, letterSpacing: 0.26 }}>{t('tm.venueName')}</Serif></FadeUp>
       <FadeUp delay={200} dy={0}><T style={{ marginBottom: 16, fontSize: 13, color: c.t666, lineHeight: 18.2 }}>İstanbul</T></FadeUp>
       <FadeUp delay={250} dy={8} duration={450} style={{ flexDirection: 'row', gap: 6, marginBottom: 18 }}>
         {[0, 1, 2].map(i => (
@@ -104,17 +109,17 @@ function EmptyMasaCardInner({ locked, cardType, userInfo, kanka }: { locked: boo
           </View>
         ))}
       </FadeUp>
-      <FadeUp delay={300} style={{ marginBottom: 18 }}><BtnPrimary label="HARİTADA GÖR" full disabled /></FadeUp>
+      <FadeUp delay={300} style={{ marginBottom: 18 }}><BtnPrimary label={t('masa.seeOnMap')} full disabled /></FadeUp>
       <GrowLine />
       <FadeUp delay={400} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
           <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: c.green }} />
-          <T style={{ fontSize: 13, color: c.t888 }}>Buluşma</T>
+          <T style={{ fontSize: 13, color: c.t888 }}>{t('masa.meetup')}</T>
         </View>
-        <T w={700} style={{ fontSize: 15, letterSpacing: 0.15 }}>{cardType === 'basbasa' ? 'Cumartesi · 20:00' : cardType === 'kanka' ? 'Pazar · 20:00' : 'Cuma · 20:00'}</T>
+        <T w={700} style={{ fontSize: 15, letterSpacing: 0.15 }}>{`${weekdayName(cardType === 'basbasa' ? 6 : cardType === 'kanka' ? 0 : 5, currentLang())} · 20:00`}</T>
       </FadeUp>
       <FadeUp delay={480} style={{ marginBottom: 20 }}>
-        <T w={700} style={{ marginBottom: 12, fontSize: 9, color: c.t555, letterSpacing: 1.26 }}>{cardType === 'basbasa' ? 'BAŞ BAŞA' : 'KATILIMCILAR'}</T>
+        <T w={700} style={{ marginBottom: 12, fontSize: 9, color: c.t555, letterSpacing: 1.26 }}>{cardType === 'basbasa' ? t('masa.oneOnOne') : t('masa.participants')}</T>
         {cardType === 'kanka' ? (
           <KankaPairs mine={[{ initials, gender: ug, isSelf: true }, ...(kanka ? [kanka] : [])]} other={[]} />
         ) : (
@@ -126,30 +131,30 @@ function EmptyMasaCardInner({ locked, cardType, userInfo, kanka }: { locked: boo
       <FadeUp delay={600} style={{ backgroundColor: c.aiBg, borderWidth: 1, borderColor: c.aiBorder, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
           <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: c.aiIconBg, borderWidth: 1, borderColor: c.aiIconBorder, alignItems: 'center', justifyContent: 'center' }}><T style={{ fontSize: 16, lineHeight: 16 }}>✦</T></View>
-          <T w={700} style={{ fontSize: 10, letterSpacing: 1.6, color: c.aiTitle }}>YAPAY ZEKA MASA RAPORU</T>
+          <T w={700} style={{ fontSize: 10, letterSpacing: 1.6, color: c.aiTitle }}>{t('masa.aiTitle')}</T>
         </View>
         <View style={{ height: 1, backgroundColor: c.aiDivider, marginBottom: 12 }} />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-          <T w={600} style={{ fontSize: 10, letterSpacing: 1.2, color: 'rgba(255,255,255,0.88)' }}>UYUM SKORU</T>
+          <T w={600} style={{ fontSize: 10, letterSpacing: 1.2, color: 'rgba(255,255,255,0.88)' }}>{t('masa.aiScore')}</T>
           <T w={700} style={{ fontSize: 14, color: c.tF0 }}>%—</T>
         </View>
         <View style={{ height: 5, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.12)', marginBottom: 12 }} />
-        <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', lineHeight: 21.45 }}>Masa kurulduktan sonra yapay zeka uyum raporu burada görünecek.</T>
+        <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', lineHeight: 21.45 }}>{t('tm.meetupNote')}</T>
       </FadeUp>
       <FadeUp delay={720} style={{ backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 16 }}>
-        <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.62)', lineHeight: 19.2 }}>Rezervasyonunuz tamamlandı. Girişte görevliye isminizi söylediğinizde masanıza yönlendirileceksiniz. İyi eğlenceler.</T>
+        <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.62)', lineHeight: 19.2 }}>{t('masa.reservationDone')}</T>
       </FadeUp>
-      <FadeUp delay={780} style={{ marginBottom: 10 }}><BtnPrimary label="Yola Çıktım" full disabled /></FadeUp>
+      <FadeUp delay={780} style={{ marginBottom: 10 }}><BtnPrimary label={t('masa.onMyWay')} full disabled /></FadeUp>
       <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.12)', marginBottom: 20 }} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
         <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: c.t555 }} />
-        <T w={700} style={{ fontSize: 10, letterSpacing: 1.4, color: c.t555 }}>{cardType === 'basbasa' ? 'BAŞ BAŞA SOHBETİ' : cardType === 'kanka' ? 'KANKAMLA SOHBETİ' : 'GRUP SOHBETİ'}</T>
+        <T w={700} style={{ fontSize: 10, letterSpacing: 1.4, color: c.t555 }}>{cardType === 'basbasa' ? t('tm.chatOne') : cardType === 'kanka' ? t('tm.chatKanka') : t('masa.groupChat')}</T>
       </View>
       <View style={{ backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden' }}>
-        <View style={{ paddingVertical: 16, paddingHorizontal: 12, alignItems: 'center' }}><T style={{ fontSize: 12, lineHeight: 18, textAlign: 'center' }}>Henüz mesaj yok. İlk mesajı sen gönder.</T></View>
+        <View style={{ paddingVertical: 16, paddingHorizontal: 12, alignItems: 'center' }}><T style={{ fontSize: 12, lineHeight: 18, textAlign: 'center' }}>{t('masa.noMessages')}</T></View>
         <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 8, paddingHorizontal: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.10)' }}>
           <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8 }} />
-          <BtnPrimary label="Gönder" disabled />
+          <BtnPrimary label={t('masa.send')} disabled />
         </View>
       </View>
       </FadeUp>
@@ -160,6 +165,7 @@ function EmptyMasaCardInner({ locked, cardType, userInfo, kanka }: { locked: boo
 function MasaBlock({ item, locked, cardType, userInfo, kanka, onCancelled, width }: {
   item?: DashboardItem; locked: boolean; cardType: 'group' | 'basbasa' | 'kanka'; userInfo?: UserInfo; kanka?: { initials: string; gender: string | null } | null; onCancelled: () => void; width: number;
 }) {
+  const { t } = useTranslation();
   const m = item?.meeting;
   if (locked || !m) return <EmptyMasaCard locked={locked} cardType={cardType} userInfo={userInfo} kanka={kanka} />;
   if (item.phase === 'REVEALED' && m.venueName) {
@@ -171,7 +177,7 @@ function MasaBlock({ item, locked, cardType, userInfo, kanka, onCancelled, width
     return (
       <Card>
         <ConfirmedRadarView width={width - 36} participants={m.participants} maxParticipants={m.maxParticipants} type={m.type} scheduledAt={m.scheduledAt}
-          infoText="Buluşma günü saat 10:00'da masa detayları burada görünecektir. Ayrıca size bildirim göndereceğiz." />
+          infoText={t('tm.infoText')} />
         {m.type === 'KANKA' && (
           <View style={{ marginTop: 16 }}>
             <KankaPairs mine={m.participants.filter(p => p.pair === 'MINE' && !p.cancelled)} other={m.participants.filter(p => p.pair === 'OTHER' && !p.cancelled)} />
@@ -185,32 +191,33 @@ function MasaBlock({ item, locked, cardType, userInfo, kanka, onCancelled, width
 }
 
 function HistoryListInner({ history }: { history: HistoryMeeting[] }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
-  if (history.length === 0) return <Card style={{ marginBottom: 16 }}><T style={{ fontSize: 13, color: ll.label }}>Henüz geçmiş masan yok.</T></Card>;
+  if (history.length === 0) return <Card style={{ marginBottom: 16 }}><T style={{ fontSize: 13, color: ll.label }}>{t('tm.noHistory')}</T></Card>;
   return (
     <Card style={{ marginBottom: 16, paddingVertical: 6, paddingHorizontal: 18 }}>
       {history.map((m, i) => {
         const open = openId === m.id;
-        const masa: MasaDetayData = { id: m.id, type: m.type, maxParticipants: m.maxParticipants, scheduledAt: m.date, sosEndsAt: m.date, venueName: m.venueName ?? 'Mekân bilgisi yok',
+        const masa: MasaDetayData = { id: m.id, type: m.type, maxParticipants: m.maxParticipants, scheduledAt: m.date, sosEndsAt: m.date, venueName: m.venueName ?? t('masa.noVenue'),
           venueAddress: m.venueAddress, venueMapsUrl: m.venueMapsUrl, venuePhotos: m.venuePhotos, participants: m.participants ?? [], occupations: m.occupations, aiReport: m.aiReport };
         return (
           <View key={m.id} style={{ borderBottomWidth: i < history.length - 1 ? 1 : 0, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44, paddingVertical: 6 }}>
-              <T style={{ flex: 1, fontSize: 13, color: ll.text }}>{[fmtDate(m.date), HISTORY_TYPE[m.type ?? 'GROUP'], m.venueName, m.cityName].filter(Boolean).join(' - ')}</T>
-              <Btn variant="chevron" accessibilityLabel={open ? 'Masa kartını kapat' : 'Masa kartını aç'} style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }} label="▾" onPress={() => setOpenId(open ? null : m.id)} />
+              <T style={{ flex: 1, fontSize: 13, color: ll.text }}>{[fmtDate(m.date), t(HISTORY_TYPE[m.type ?? 'GROUP']), m.venueName, m.cityName].filter(Boolean).join(' - ')}</T>
+              <Btn variant="chevron" accessibilityLabel={open ? t('tm.closeCard') : t('tm.openCard')} style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }} label="▾" onPress={() => setOpenId(open ? null : m.id)} />
             </View>
             {open && (
               <View style={{ paddingBottom: 12 }}>
                 {!m.isReviewed && (
-                  <Btn variant="monoTag" label="Değerlendir" onPress={() => router.push(`/degerlendirme/${m.id}`)} />
+                  <Btn variant="monoTag" label={t('tm.review')} onPress={() => router.push(`/degerlendirme/${m.id}`)} />
                 )}
                 {/* Değerlendirme: masa detay kartının en üstünde, Canlı Akış kartı (Card + ll.text) stilinde; puan kadar dolu yıldız · not */}
                 {m.review && (
                   <Card style={{ marginBottom: 12 }}>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6, rowGap: 4 }}>
-                      <T w={600} style={{ fontSize: 13, color: ll.text }}>Değerlendirme:</T>
-                      <View style={{ flexDirection: 'row', gap: 2 }} accessibilityLabel={`${m.review.rating} yıldız`}>
+                      <T w={600} style={{ fontSize: 13, color: ll.text }}>{t('tm.reviewLabel')}</T>
+                      <View style={{ flexDirection: 'row', gap: 2 }} accessibilityLabel={t('review.stars', { n: m.review.rating })}>
                         {Array.from({ length: m.review.rating }).map((_, k) => <Star key={k} filled size={16} />)}
                       </View>
                       {!!m.review.comment && <T style={{ fontSize: 13, color: ll.text }}>· {m.review.comment}</T>}
@@ -220,7 +227,7 @@ function HistoryListInner({ history }: { history: HistoryMeeting[] }) {
                 <MasaDetayKarti masa={masa} archive />
                 {!!m.blocked?.length && (
                   <View style={{ marginTop: 12 }}>
-                    <Mono style={{ marginBottom: 4, fontSize: 11, color: ll.label }}>ENGELLEDİKLERİN</Mono>
+                    <Mono style={{ marginBottom: 4, fontSize: 11, color: ll.label }}>{t('tm.blocked')}</Mono>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                       {m.blocked.map((b, j) => <Mono key={`${b.initials}-${j}`} w={600} style={{ fontSize: 14, color: gColor(b.gender) }}>{b.initials}</Mono>)}
                     </View>
@@ -236,6 +243,7 @@ function HistoryListInner({ history }: { history: HistoryMeeting[] }) {
 }
 
 export default function Masalarim() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -265,20 +273,20 @@ export default function Masalarim() {
           <>
             {locked && (
               <View style={{ backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.25)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
-                <T style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 16.5 }}>Aşağıda bulunan Masa Detay bilgileri şuanda önizlemedir. Paket alarak eşleştiğinizde, gerçek zamanlı randevu bilgileri yer alacaktır.</T>
+                <T style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 16.5 }}>{t('tm.preview')}</T>
               </View>
             )}
-            {locked && <BtnPrimary label="Paket Al" full onPress={() => router.navigate('/(tabs)/paketim')} />}
+            {locked && <BtnPrimary label={t('pkg.buy')} full onPress={() => router.navigate('/(tabs)/paketim')} />}
             <View>
-              <Head title={locked ? 'Masa Detay Kartı' : CARD_TITLE[tab]} right={<BtnGhost label="Geçmiş Masalarım" onPress={() => setHistoryOpen(v => !v)} accessibilityState={{ expanded: historyOpen }} />} />
+              <Head title={locked ? t('tm.cardDetail') : t(CARD_TITLE[tab])} right={<BtnGhost label={t('tm.history')} onPress={() => setHistoryOpen(v => !v)} accessibilityState={{ expanded: historyOpen }} />} />
               {historyOpen && <HistoryList history={history} />}
               {tab === 'KANKA' && !tabItem && statuses.KANKA === 'SCANNING' && (
                 <T style={{ marginBottom: 12, fontSize: 13, color: ll.text2, lineHeight: 20.8 }}>
-                  Kankanla birlikte eşleşme taraması devam ediyor. Karşı cinsten bir kanka çiftiyle eşleştiğinizde masanız burada görünecek; detaylar Pazar 10:00&apos;da açıklanır. Tarama Cumartesi 23:59&apos;da kapanır.
+                  {t('tm.kankaScanning')}
                 </T>
               )}
               {tabAdminCancelled ? (
-                <Card><T style={{ fontSize: 14, lineHeight: 22.4, textAlign: 'center', color: tw.text }}>Masanız iptal edildi. Masa hakkınız hesabınıza iade edildi.</T></Card>
+                <Card><T style={{ fontSize: 14, lineHeight: 22.4, textAlign: 'center', color: tw.text }}>{t('tm.cancelled')}</T></Card>
               ) : (
                 <MasaBlock key={tab} item={tabItem} locked={locked} cardType={CARD_TYPE[tab]} userInfo={userInfo} kanka={kanka} width={colW} onCancelled={() => setTimeout(reload, 2000)} />
               )}

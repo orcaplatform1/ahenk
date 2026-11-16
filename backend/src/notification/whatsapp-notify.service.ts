@@ -11,7 +11,8 @@ export class WhatsappNotifyService {
 
   constructor(private config: ConfigService) {}
 
-  async send(phone: string, templateName: string, bodyParams: string[]): Promise<void> {
+  // language: alıcının dili; şablon dil kodu buna göre seçilir (İngilizce şablonlar Meta'da lansmanda hazırlanır)
+  async send(phone: string, templateName: string, bodyParams: string[], language: string = "tr"): Promise<void> {
     if (isE2eFakeMode()) {
       if (readFakeControl().whatsappFailPhones?.includes(phone)) {
         const err = new Error("The operation was aborted due to timeout");
@@ -49,7 +50,7 @@ export class WhatsappNotifyService {
         type: "template",
         template: {
           name: templateName,
-          language: { code: "tr" },
+          language: { code: language === "en" ? "en" : "tr" },
           components: [
             {
               type: "body",

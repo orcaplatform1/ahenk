@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { OCEAN_RADAR_AXES } from './oceanData';
 
 export interface OceanScores {
@@ -25,6 +26,7 @@ function polarToXY(angleDeg: number, r: number, cx: number, cy: number) {
 }
 
 export function OceanRadar({ scores, size = 200 }: Props) {
+  const t = useTranslations();
   const [hovered, setHovered] = useState<(typeof AXES)[number] | null>(null);
 
   const cx = size / 2;
@@ -108,7 +110,7 @@ export function OceanRadar({ scores, size = 200 }: Props) {
               <text x={lp.x} y={lp.y - size * 0.028} textAnchor="middle" dominantBaseline="middle"
                 fontSize={size * 0.048} fill="#e87070" fontFamily="Inter, sans-serif"
                 fontWeight="700" style={{ letterSpacing: '0.09em' }}>
-                {ax.label.toUpperCase()}
+                {t(`ocean.${ax.key}_axisLabel`).toUpperCase()}
               </text>
               <text x={lp.x} y={lp.y + size * 0.042} textAnchor="middle" dominantBaseline="middle"
                 fontSize={size * 0.072} fill="#c0392b" fontFamily="Inter, sans-serif" fontWeight="800">
@@ -137,8 +139,8 @@ export function OceanRadar({ scores, size = 200 }: Props) {
             className="absolute left-1/2 -translate-x-1/2 bottom-0 w-full px-2"
           >
             <div className="bg-surface border border-border rounded-xl px-3 py-2 text-center">
-              <p className="text-sm font-medium text-text">{hovered.label}: <span className="text-primary">{Math.round(scores[hovered.key])}</span></p>
-              <p className="text-xs text-muted mt-0.5">{hovered.desc}</p>
+              <p className="text-sm font-medium text-text">{t(`ocean.${hovered.key}_axisLabel`)}: <span className="text-primary">{Math.round(scores[hovered.key])}</span></p>
+              <p className="text-xs text-muted mt-0.5">{t(`ocean.${hovered.key}_axisDesc`)}</p>
             </div>
           </motion.div>
         )}

@@ -1,3 +1,4 @@
+import { documentLang } from '@ahenk/shared';
 import { API_PREFIX } from './api';
 import { withResendSeconds } from './otpResend';
 
@@ -24,7 +25,7 @@ async function request<T>(path: string, init: { method?: string; body?: unknown 
   const res = await fetch(`${BASE}${path}`, {
     method: init.method ?? 'GET',
     credentials: 'include',
-    headers: init.body && !isForm ? { 'Content-Type': 'application/json' } : undefined,
+    headers: init.body && !isForm ? { 'Content-Type': 'application/json', 'Accept-Language': documentLang() } : { 'Accept-Language': documentLang() },
     body: isForm ? (init.body as FormData) : init.body ? JSON.stringify(init.body) : undefined,
   });
   if (res.status === 401 && path !== '/login') throw new VenueAuthError('Oturum gerekli');

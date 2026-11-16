@@ -20,7 +20,8 @@ export class ContactBlocksService {
   async sync(userId: string, hashedPhones: string[]) {
     const existing = await this.prisma.contactBlock.count({ where: { userId } });
 
-    const unique = [...new Set(hashedPhones.map(normalizePhone))];
+    // Numaralar E.164 saklanır ("+" yoksa Türkiye varsayılır); E.164'e çevrilemeyen numara kaydedilmez
+    const unique = [...new Set(hashedPhones.map(normalizePhone))].filter((p) => /^\+[1-9]\d{6,14}$/.test(p));
     // Sınıra yalnız listede olmayan numaralar sayılır
     const already = await this.prisma.contactBlock.count({ where: { userId, hashedPhone: { in: unique } } });
     const newCount = unique.length - already;

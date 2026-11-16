@@ -14,7 +14,9 @@ import { adm, sans } from '@/theme/theme';
 
 const ORANGE = '#fb923c';
 type KycStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPICIOUS';
-interface KycApplication { id: string; submittedAt: string; status: KycStatus; rejectReason: string | null; idFrontUrl: string | null; idBackUrl: string | null; livenessUrl: string | null; user: { email: string; phone: string | null; profile: { firstName: string; lastName: string } | null } }
+// Kimlik türü (numara saklanmaz)
+const ID_TYPE_LABEL: Record<string, string> = { TC: 'TC Kimlik Kartı', YKN: 'Yabancı Kimlik Kartı (YKN)', PASSPORT: 'Pasaport' };
+interface KycApplication { id: string; idType?: string; submittedAt: string; status: KycStatus; rejectReason: string | null; idFrontUrl: string | null; idBackUrl: string | null; livenessUrl: string | null; user: { email: string; phone: string | null; profile: { firstName: string; lastName: string } | null } }
 const TABS: { key: KycStatus; label: string }[] = [{ key: 'PENDING', label: 'Bekleyenler' }, { key: 'APPROVED', label: 'Onaylananlar' }, { key: 'REJECTED', label: 'Reddedilenler' }, { key: 'SUSPICIOUS', label: 'Şüpheli' }];
 const ST: Record<KycStatus, { bg: string; border: string; color: string; label: string }> = {
   PENDING: { bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.35)', color: adm.amber, label: 'Bekliyor' },
@@ -104,6 +106,7 @@ export default function AdminKyc() {
                   <View>
                     <AT w={600} style={{ fontSize: 13 }}>{item.user?.profile?.firstName} {item.user?.profile?.lastName}</AT>
                     <AMono style={{ marginTop: 3, fontSize: 10 }}>{fmtDate(item.submittedAt)}</AMono>
+                    <AT style={{ marginTop: 3, fontSize: 11, color: adm.muted }}>Kimlik türü: {ID_TYPE_LABEL[item.idType ?? 'TC'] ?? item.idType}</AT>
                   </View>
                   <StatusPill text={st.label} color={st.color} bg={st.bg} border={st.border} pad={[2, 8]} />
                 </Pressable>
@@ -115,7 +118,7 @@ export default function AdminKyc() {
                 )}
                 <AGrid gap={10} style={{ marginBottom: 16 }}>
                   <MediaPreview url={item.idFrontUrl} label="Ön Yüz" token={token} />
-                  <MediaPreview url={item.idBackUrl} label="Arka Yüz" token={token} />
+                  {!!item.idBackUrl && <MediaPreview url={item.idBackUrl} label="Arka Yüz" token={token} />}
                   <MediaPreview url={item.livenessUrl} label="Video" isVideo token={token} />
                 </AGrid>
                 {tab === 'PENDING' && (

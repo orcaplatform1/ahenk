@@ -42,6 +42,7 @@
     "heic-convert": "^2.1.0",
     "ioredis": "^6.0.0",
     "iyzipay": "^2.0.71",
+    "libphonenumber-js": "1.13.16",
     "multer": "^2.5.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

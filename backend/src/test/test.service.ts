@@ -44,19 +44,21 @@ export class TestService {
       select: {
         id: true,
         text: true,
+        textEn: true,
         orderNum: true,
         section: true,
         sectionTitle: true,
+        sectionTitleEn: true,
         // dimension ve reversed kasıtlı gizlendi (kullanıcıya skoru etkilememesi için)
       },
     });
 
     // Bölümlere grupla
     const sections = questions.reduce<
-      Record<number, { section: number; title: string; questions: typeof questions }>
+      Record<number, { section: number; title: string; titleEn: string; questions: typeof questions }>
     >((acc, q) => {
       if (!acc[q.section]) {
-        acc[q.section] = { section: q.section, title: q.sectionTitle, questions: [] };
+        acc[q.section] = { section: q.section, title: q.sectionTitle, titleEn: q.sectionTitleEn, questions: [] };
       }
       acc[q.section].questions.push(q);
       return acc;
@@ -164,6 +166,7 @@ export class TestService {
       message: "Test tamamlandı",
       scores: oceanScore,
       profile: this.describeProfile(oceanScore),
+      profileEn: this.describeProfileEn(oceanScore),
     };
   }
 
@@ -188,6 +191,7 @@ export class TestService {
         neuroticism: score.neuroticism,
       },
       profile: this.describeProfile(score as any),
+      profileEn: this.describeProfileEn(score as any),
       canRetakeNow,
       retakeAvailableAt: canRetakeNow ? null : retakeAt,
     };
@@ -227,5 +231,21 @@ export class TestService {
     else if (s.neuroticism <= 35) traits.push("sakin ve dengeli");
 
     return traits.length > 0 ? traits.join(", ") : "dengeli ve çok yönlü";
+  }
+
+  // İngilizce karşılığı (aynı eşikler)
+  private describeProfileEn(s: Record<DimKey, number>): string {
+    const traits: string[] = [];
+    if (s.openness >= 65) traits.push("curious and creative");
+    else if (s.openness <= 35) traits.push("practical and traditional");
+    if (s.conscientiousness >= 65) traits.push("organized and determined");
+    else if (s.conscientiousness <= 35) traits.push("flexible and spontaneous");
+    if (s.extraversion >= 65) traits.push("energetic and social");
+    else if (s.extraversion <= 35) traits.push("calm and thoughtful");
+    if (s.agreeableness >= 65) traits.push("warm and empathetic");
+    else if (s.agreeableness <= 35) traits.push("independent and direct");
+    if (s.neuroticism >= 65) traits.push("sensitive and deeply feeling");
+    else if (s.neuroticism <= 35) traits.push("calm and balanced");
+    return traits.length > 0 ? traits.join(", ") : "balanced and well-rounded";
   }
 }

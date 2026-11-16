@@ -1,18 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 
 export default function ErrorPage({ error }: { error: Error & { digest?: string } }) {
+  const t = useTranslations();
   const router = useRouter();
   const [count, setCount] = useState(5);
 
   useEffect(() => {
-    const t = setInterval(() => setCount(c => c - 1), 1000);
+    const tm = setInterval(() => setCount(c => c - 1), 1000);
     const r = setTimeout(() => router.push('/'), 5000);
-    return () => { clearInterval(t); clearTimeout(r); };
+    return () => { clearInterval(tm); clearTimeout(r); };
   }, [router]);
 
   const is404 = error?.message?.includes('404') || error?.digest?.includes('404');
@@ -40,12 +42,12 @@ export default function ErrorPage({ error }: { error: Error & { digest?: string 
             {is404 ? '404' : '500'}
           </p>
           <p className="font-serif text-xl text-[#f5f5f5]">
-            {is404 ? 'Sayfa Bulunamadı' : 'Bir Sorun Oluştu'}
+            {is404 ? t('errors.notFound') : t('errors.problem')}
           </p>
           <p className="text-sm text-[#555] leading-relaxed">
-            {is404 ? 'Aradığın sayfa taşınmış veya silinmiş olabilir.' : 'Beklenmedik bir hata meydana geldi. Ekibimiz bilgilendirildi.'}
+            {is404 ? t('errors.notFoundBody') : t('errors.problemBody')}
           </p>
-          <p className="text-xs text-[#444] mt-2">{count} saniye içinde ana sayfaya yönlendirileceksiniz.</p>
+          <p className="text-xs text-[#444] mt-2">{t('errors.redirect', { count })}</p>
         </div>
       </motion.div>
     </div>

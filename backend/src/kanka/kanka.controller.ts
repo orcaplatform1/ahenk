@@ -1,3 +1,4 @@
+import { IsE164Phone } from "../common/phone";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
@@ -7,7 +8,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { KankaService } from "./kanka.service";
 
 class KankaInviteDto {
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir telefon numarası girin (+905XXXXXXXXX)" })
+  @IsE164Phone()
   phone: string;
 }
 

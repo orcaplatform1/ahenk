@@ -14,7 +14,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { NotificationService } from "../notification/notification.service";
 import { ReviewKycDto } from "./dto/review-kyc.dto";
-import { KycStatus } from "../generated/prisma/client";
+import { KycIdType, KycStatus } from "../generated/prisma/client";
 import convertHeic = require("heic-convert");
 import { decryptKyc, encryptKyc, KYC_ENC_SUFFIX } from "./kyc-crypto";
 
@@ -86,31 +86,40 @@ export class KycService {
       idBack?: Express.Multer.File[];
       liveness?: Express.Multer.File[];
     },
+    idTypeRaw?: string,
   ) {
     const front = files?.idFront?.[0];
     const back = files?.idBack?.[0];
     const video = files?.liveness?.[0];
+    const cleanup = () => { for (const f of [front, back, video]) { if (f?.path) { try { fs.unlinkSync(f.path); } catch {} } } };
 
-    if (!front || !back || !video) {
+    // Kimlik türü: kullanıcının bölgesinde izin verilen türlerden biri olmalı (Türkiye bölgelerinde TC / YKN / Pasaport)
+    const idType = (idTypeRaw ?? "TC") as KycIdType;
+    if (!Object.values(KycIdType).includes(idType)) { cleanup(); throw new BadRequestException("Geçersiz kimlik türü"); }
+    const allowed = await this.allowedIdTypes(userId);
+    if (!allowed.includes(idType)) { cleanup(); throw new BadRequestException("Bu kimlik türü bölgende kabul edilmiyor"); }
+    const needsBack = idType !== KycIdType.PASSPORT;
+
+    if (!front || (needsBack && !back) || !video) {
       // Eksik yüklemede gelen kimlik görselleri geçici klasörde kalmaz
-      for (const f of [front, back, video]) {
-        if (f?.path) { try { fs.unlinkSync(f.path); } catch {} }
-      }
-      throw new BadRequestException("idFront, idBack ve liveness dosyaları zorunlu");
+      cleanup();
+      throw new BadRequestException(needsBack ? "idFront, idBack ve liveness dosyaları zorunlu" : "idFront ve liveness dosyaları zorunlu");
     }
+    // Pasaportta arka yüz istenmez; yanlışlıkla gelirse saklanmaz
+    if (!needsBack && back?.path) { try { fs.unlinkSync(back.path); } catch {} }
 
-    let existing: Awaited<ReturnType<typeof this.prisma.kycSubmission.findUnique>>;
-    let frontPath: string, backPath: string, livenessPath: string;
+    let existing: { idFrontKey: string; idBackKey: string | null; livenessKey: string; status: KycStatus } | null;
+    let frontPath: string, backPath: string | null = null, livenessPath: string;
 
     try {
       const frontKind = detectKind(front.path);
-      const backKind  = detectKind(back.path);
+      const backKind  = needsBack && back ? detectKind(back.path) : null;
       const videoKind = detectKind(video.path);
       if (!frontKind || !IMAGE_KINDS.includes(frontKind)) throw new BadRequestException("Kimlik ön yüzü için JPEG, PNG, WebP veya HEIC gerekli");
-      if (!backKind  || !IMAGE_KINDS.includes(backKind))  throw new BadRequestException("Kimlik arka yüzü için JPEG, PNG, WebP veya HEIC gerekli");
+      if (needsBack && (!backKind || !IMAGE_KINDS.includes(backKind))) throw new BadRequestException("Kimlik arka yüzü için JPEG, PNG, WebP veya HEIC gerekli");
       if (!videoKind || !VIDEO_KINDS.includes(videoKind)) throw new BadRequestException("Liveness için MP4, MOV veya WebM gerekli");
       if (front.size > MAX_IMAGE) throw new BadRequestException("Fotoğraf en fazla 50 MB olabilir");
-      if (back.size  > MAX_IMAGE) throw new BadRequestException("Fotoğraf en fazla 50 MB olabilir");
+      if (needsBack && back && back.size > MAX_IMAGE) throw new BadRequestException("Fotoğraf en fazla 50 MB olabilir");
       if (video.size > MAX_VIDEO) throw new BadRequestException("Video en fazla 100 MB olabilir");
 
       existing = await this.prisma.kycSubmission.findUnique({ where: { userId } });
@@ -124,9 +133,9 @@ export class KycService {
 
       // HEIC → JPEG (admin panelinde tarayıcı HEIC gösteremez)
       const frontExt = frontKind === "heic" ? "jpg" : frontKind;
-      const backExt  = backKind  === "heic" ? "jpg" : backKind;
+      const backExt  = backKind === "heic" ? "jpg" : backKind;
       const tmpFront = frontKind === "heic" ? await this.heicToJpeg(front.path) : front.path;
-      const tmpBack  = backKind  === "heic" ? await this.heicToJpeg(back.path)  : back.path;
+      const tmpBack  = needsBack && back ? (backKind === "heic" ? await this.heicToJpeg(back.path) : back.path) : null;
 
       // Kullanıcı dizini
       const userDir = path.join(UPLOAD_DIR, userId);
@@ -135,22 +144,22 @@ export class KycService {
       // Eski dosyaları temizle
       if (existing) {
         for (const f of [existing.idFrontKey, existing.idBackKey, existing.livenessKey]) {
-          try { fs.unlinkSync(f); } catch {}
+          if (f) { try { fs.unlinkSync(f); } catch {} }
         }
       }
 
       // Kalıcı dosyalar AES-256-GCM ile şifreli yazılır (kyc-crypto.ts); geçici düz dosyalar finally'de silinir
       frontPath    = path.join(userDir, `id-front.${frontExt}${KYC_ENC_SUFFIX}`);
-      backPath     = path.join(userDir, `id-back.${backExt}${KYC_ENC_SUFFIX}`);
+      backPath     = tmpBack ? path.join(userDir, `id-back.${backExt}${KYC_ENC_SUFFIX}`) : null;
       livenessPath = path.join(userDir, `liveness.${videoKind}${KYC_ENC_SUFFIX}`);
 
       fs.writeFileSync(frontPath, encryptKyc(fs.readFileSync(tmpFront)));
-      fs.writeFileSync(backPath, encryptKyc(fs.readFileSync(tmpBack)));
+      if (backPath && tmpBack) fs.writeFileSync(backPath, encryptKyc(fs.readFileSync(tmpBack)));
       fs.writeFileSync(livenessPath, encryptKyc(fs.readFileSync(video.path)));
     } finally {
       // Taşınmayan / dönüştürülen geçici dosyalar silinir
-      for (const f of [front.path, back.path, video.path, `${front.path}.jpg`, `${back.path}.jpg`]) {
-        try { fs.unlinkSync(f); } catch {}
+      for (const f of [front.path, back?.path, video.path, `${front.path}.jpg`, back ? `${back.path}.jpg` : undefined]) {
+        if (f) { try { fs.unlinkSync(f); } catch {} }
       }
     }
 
@@ -158,6 +167,7 @@ export class KycService {
       return this.prisma.kycSubmission.update({
         where: { userId },
         data: {
+          idType,
           idFrontKey: frontPath,
           idBackKey:  backPath,
           livenessKey: livenessPath,
@@ -174,11 +184,19 @@ export class KycService {
     return this.prisma.kycSubmission.create({
       data: {
         userId,
+        idType,
         idFrontKey:  frontPath,
         idBackKey:   backPath,
         livenessKey: livenessPath,
       },
     });
+  }
+
+  // Kullanıcının bölgesinde (ana şehir) izin verilen kimlik türleri; şehir yoksa Türkiye varsayılanı (üçü de açık)
+  async allowedIdTypes(userId: string): Promise<KycIdType[]> {
+    const profile = await this.prisma.profile.findUnique({ where: { userId }, select: { primaryCity: true } });
+    const city = profile?.primaryCity ? await this.prisma.city.findUnique({ where: { id: profile.primaryCity }, select: { idTypes: true } }) : null;
+    return city?.idTypes?.length ? city.idTypes : [KycIdType.TC, KycIdType.YKN, KycIdType.PASSPORT];
   }
 
   // ─── Kendi KYC durumu ─────────────────────────────────────────────────────
@@ -218,7 +236,8 @@ export class KycService {
     const itemsWithUrls = items.map((item) => ({
       ...item,
       idFrontUrl:   `/api/v1/kyc/admin/file/${item.id}/front`,
-      idBackUrl:    `/api/v1/kyc/admin/file/${item.id}/back`,
+      // Pasaportta arka yüz yok
+      idBackUrl:    item.idBackKey ? `/api/v1/kyc/admin/file/${item.id}/back` : null,
       livenessUrl:  `/api/v1/kyc/admin/file/${item.id}/liveness`,
     }));
 
@@ -233,13 +252,13 @@ export class KycService {
     const kyc = await this.prisma.kycSubmission.findUnique({ where: { id: submissionId } });
     if (!kyc) throw new NotFoundException("KYC başvurusu bulunamadı");
 
-    const fileMap: Record<string, string> = {
+    const fileMap: Record<string, string | null> = {
       front:    kyc.idFrontKey,
       back:     kyc.idBackKey,
       liveness: kyc.livenessKey,
     };
 
-    const filePath = fileMap[type];
+    const filePath = fileMap[type] as string | null | undefined;
     if (!filePath) throw new BadRequestException("Geçersiz dosya tipi (front | back | liveness)");
     if (!fs.existsSync(filePath)) throw new NotFoundException("Dosya bulunamadı");
 

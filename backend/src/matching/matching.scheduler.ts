@@ -193,6 +193,7 @@ export class MatchingScheduler {
             title: "Masana gelmeyen oldu mu?",
             body: "Gelmeyen katılımcı varsa masa kartından işaretleyebilirsin.",
             data: { type: "NO_SHOW_MARK", meetingId: m.id },
+            en: { title: "Did anyone not show up?", body: "If someone didn't make it, you can mark it on the table card." },
           });
         }
       }
@@ -224,6 +225,7 @@ export class MatchingScheduler {
             title: "Yola Çıktım",
             body: "Buluşmana 1 saat kaldı. Yola çıktığında bildirmeyi unutma.",
             data: { type: "ON_MY_WAY_OPEN", meetingId: m.id },
+            en: { title: "On my way", body: "Your meetup is in 1 hour. Don't forget to let everyone know when you head out." },
           });
         }
       }
@@ -262,6 +264,7 @@ export class MatchingScheduler {
             title: "Masanı değerlendir",
             body: "Dünkü buluşman nasıl geçti? Değerlendirmeni masa kartından yapabilirsin.",
             data: { type: "REVIEW_OPEN", meetingId: m.id },
+            en: { title: "Rate your table", body: "How was yesterday's meetup? You can leave your review on the table card." },
           });
         }
       }

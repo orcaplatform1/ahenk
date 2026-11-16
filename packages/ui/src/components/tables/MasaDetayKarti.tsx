@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { KankaPairs, type KankaPerson } from './KankaPairs';
 import { DetayAvatar } from './DetayAvatar';
 import { PhotoViewer } from './PhotoViewer';
 import { gColor } from './MasaRadar';
+import { documentLang } from '../../lib/lang';
 
 type KankaParticipant = KankaPerson & { pair?: 'MINE' | 'OTHER' };
 
@@ -56,7 +58,7 @@ interface ChatMsg {
 
 // Mesaj saati: SS:DD (Europe/Istanbul)
 function msgTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Istanbul' });
 }
 
 // Masa kartındaki baş harf rozetinin küçük hali
@@ -87,8 +89,8 @@ interface Props {
 
 function jsonHeaders(token?: string): Record<string, string> {
   return token
-    ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-    : { 'Content-Type': 'application/json' };
+    ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'Accept-Language': documentLang() }
+    : { 'Content-Type': 'application/json', 'Accept-Language': documentLang() };
 }
 
 // ── Renkler ─────────────────────────────────────────────────────────────────
@@ -107,15 +109,14 @@ function buildOrdered(participants: DetayParticipant[]): DetayParticipant[] {
   return [...ordered, ...others];
 }
 
-function formatMeetingTime(isoStr: string): string {
+// Gün adı arayüz dilinde, saat 24 saat (bölge saat dilimi)
+function formatMeetingTime(isoStr: string, locale = 'tr'): string {
   try {
     const d = new Date(isoStr);
-    const trMs   = d.getTime() + 3 * 3600 * 1000;
-    const trDate = new Date(trMs);
-    const h = trDate.getUTCHours().toString().padStart(2, '0');
-    const m = trDate.getUTCMinutes().toString().padStart(2, '0');
-    const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
-    return `${days[trDate.getUTCDay()]} · ${h}:${m}`;
+    const tz = 'Europe/Istanbul';
+    const day = d.toLocaleDateString(locale === 'en' ? 'en-GB' : 'tr-TR', { weekday: 'long', timeZone: tz });
+    const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz });
+    return `${day.charAt(0).toLocaleUpperCase(locale === 'en' ? 'en' : 'tr-TR')}${day.slice(1)} · ${time}`;
   } catch { return ''; }
 }
 
@@ -127,6 +128,8 @@ function mapsUrl(url?: string | null, address?: string | null): string | null {
 
 // ── Lightbox ──────────────────────────────────────────────────────────────
 function Lightbox({ photos, startIdx, onClose }: { photos: VenuePhoto[]; startIdx: number; onClose: () => void }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const [idx, setIdx] = useState(startIdx);
   // Telefon genişliğinde (responsive) alttaki noktalar gösterilmez; masaüstünde kalır
   const [narrow, setNarrow] = useState(false);
@@ -211,10 +214,10 @@ function Lightbox({ photos, startIdx, onClose }: { photos: VenuePhoto[]; startId
 
 // ── SOS Modal ─────────────────────────────────────────────────────────────
 const SOS_THREATS = [
-  { value: 'LIFE_DANGER',       label: 'Hayatım tehlikede' },
-  { value: 'PHYSICAL_VIOLENCE', label: 'Fiziksel şiddet gördüm' },
-  { value: 'ABDUCTION',         label: 'Zorla alıkoyuluyorum' },
-  { value: 'HARASSMENT',        label: 'Taciz veya istismara uğradım' },
+  { value: 'LIFE_DANGER',       label: 'masa.threatLife' },
+  { value: 'PHYSICAL_VIOLENCE', label: 'masa.threatViolence' },
+  { value: 'ABDUCTION',         label: 'masa.threatAbduction' },
+  { value: 'HARASSMENT',        label: 'masa.threatHarassment' },
 ] as const;
 
 function SosModal({
@@ -234,6 +237,8 @@ function SosModal({
   locError: 'off' | 'denied' | null;
   error: string;
 }) {
+  const t = useTranslations();
+  const locale = useLocale();
   // Sahte ihbar beyanı işaretlenmeden ve en az bir tehdit türü seçilmeden talep gönderilemez
   const [accepted, setAccepted] = useState(false);
   const canSubmit = selectedThreats.length > 0 && accepted && !loading;
@@ -261,22 +266,22 @@ function SosModal({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
           <span style={{ fontSize: 16, fontWeight: 800, color: '#ff6b6b', fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em' }}>
-            ACİL YARDIM TALEP FORMU
+            {t('masa.sosFormTitle')}
           </span>
         </div>
         <div style={{ height: 1, background: 'rgba(192,57,43,0.3)', margin: '10px 0 16px' }} />
 
         <p style={{ margin: '0 0 12px', fontSize: 12, color: 'rgba(255,107,107,0.7)', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
-          Yaşadığın durumu seç:
+          {t('masa.sosPick')}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-          {SOS_THREATS.map(t => {
-            const selected = selectedThreats.includes(t.value);
+          {SOS_THREATS.map(th => {
+            const selected = selectedThreats.includes(th.value);
             return (
               <button
-                key={t.value}
-                onClick={() => onToggle(t.value)}
+                key={th.value}
+                onClick={() => onToggle(th.value)}
                 style={{
                   textAlign: 'left', padding: '11px 14px', borderRadius: 9, cursor: 'pointer',
                   fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: selected ? 600 : 400,
@@ -295,37 +300,37 @@ function SosModal({
                 }}>
                   {selected ? '✓' : ''}
                 </span>
-                {t.label}
+                {t(th.label)}
               </button>
             );
           })}
         </div>
 
         <p style={{ margin: '0 0 16px', fontSize: 11, color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif', fontStyle: 'italic', lineHeight: 1.5 }}>
-          Yukarıdaki eylemlerin ihtimali olsa dahi lütfen işaretleyin (birden fazla seçeneği işaretleyebilirsin)
+          {t('masa.sosMaybe')}
         </p>
         <p style={{ margin: '0 0 16px', fontSize: 11, color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif', fontStyle: 'italic', lineHeight: 1.5 }}>
-          İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar, uygulama kapansa bile ekibimiz tarafından takip edilir.
+          {t('masa.sosShared')}
         </p>
 
         {locError === 'denied' && (
           <div style={{ padding: '10px 12px', background: 'rgba(255,165,0,0.08)', border: '1px solid rgba(255,165,0,0.3)', borderRadius: 8, marginBottom: 12 }}>
             <p style={{ margin: 0, fontSize: 11.5, color: '#ffb347', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
-              ⚠ Konuma erişim engellendi. Tarayıcı adres çubuğundaki kilit simgesine tıklayarak konum iznini ver, ardından tekrar dene.
+              {t('masa.sosDenied')}
             </p>
           </div>
         )}
         {locError === 'off' && (
           <div style={{ padding: '10px 12px', background: 'rgba(255,165,0,0.08)', border: '1px solid rgba(255,165,0,0.3)', borderRadius: 8, marginBottom: 12 }}>
             <p style={{ margin: 0, fontSize: 11.5, color: '#ffb347', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
-              ⚠ Cihaz konumu kapalı. Konum servisini açtıktan sonra tekrar dene.
+              {t('masa.sosOff')}
             </p>
           </div>
         )}
         {error && (
           <div style={{ padding: '10px 12px', background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.5)', borderRadius: 8, marginBottom: 12 }}>
             <p style={{ margin: 0, fontSize: 11.5, color: '#ff6b6b', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
-              ⚠ Talep gönderilemedi: {error}
+              {t('masa.sosFailed', { error })}
             </p>
           </div>
         )}
@@ -338,7 +343,7 @@ function SosModal({
             style={{ marginTop: 2, accentColor: '#c0392b', flexShrink: 0 }}
           />
           <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
-            Acil yardım talebimin sahte olmadığını ve ihbardan kaynaklı doğacak tüm yasal sorumluluğu kabul ediyorum.
+            {t('masa.sosConsent')}
           </span>
         </label>
 
@@ -356,7 +361,7 @@ function SosModal({
             boxShadow: canSubmit ? '0 0 16px rgba(192,57,43,0.5)' : 'none',
           }}
         >
-          {loading ? 'Konum alınıyor…' : error ? 'Tekrar dene' : 'İhbarda Bulun'}
+          {loading ? t('masa.locating') : error ? t('masa.tryAgain') : t('masa.report')}
         </button>
       </motion.div>
     </motion.div>
@@ -365,6 +370,8 @@ function SosModal({
 
 // ── Sohbet Bölümü ─────────────────────────────────────────────────────────
 function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase: string; token?: string }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isClosed, setIsClosed] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
@@ -380,7 +387,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
   const fetchMessages = useCallback(async () => {
     try {
       const res = await fetch(`${apiBase}/chat/${meetingId}/messages`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: token ? { Authorization: `Bearer ${token}`, 'Accept-Language': documentLang() } : { 'Accept-Language': documentLang() },
         credentials: 'include',
       });
       // Başarısız yenilemede (arka plandan dönüş, bağlantı kopması) ekrandaki mesajlar ve bölüm olduğu gibi kalır
@@ -444,10 +451,10 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
         setInput('');
       } else {
         const err = await res.json().catch(() => null) as { message?: string } | null;
-        setSendError(err?.message ?? 'Mesaj gönderilemedi');
+        setSendError(err?.message ?? t('masa.sendFailedMsg'));
       }
     } catch {
-      setSendError('Mesaj gönderilemedi');
+      setSendError(t('masa.sendFailedMsg'));
     } finally { setSending(false); }
   }
 
@@ -466,7 +473,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
         <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: isClosed ? '#555' : GREEN }} />
         <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', color: isClosed ? '#555' : GREEN }}>
-          {isClosed ? 'SOHBET KAPANDI' : 'GRUP SOHBETİ'}
+          {isClosed ? t('masa.chatClosed') : t('masa.groupChat')}
         </span>
       </div>
 
@@ -478,8 +485,8 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
           {messages.length === 0 && (
             <p style={{ margin: 0, fontSize: 12, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
               {!isOpen && openAt
-                ? `Sohbet ${formatMeetingTime(openAt)} itibarıyla açılacak.`
-                : isClosed ? 'Sohbet sona erdi.' : 'Henüz mesaj yok. İlk mesajı sen gönder.'}
+                ? t('masa.chatOpensAt', { time: formatMeetingTime(openAt, locale) })
+                : isClosed ? t('masa.chatEnded') : t('masa.noMessages')}
             </p>
           )}
           {messages.map((msg, i) => {
@@ -515,7 +522,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
                       padding: '2px 0', marginTop: 2,
                     }}
                   >
-                    {msg.reportedByMe ? '✓ Şikayet edildi' : 'Şikayet et'}
+                    {msg.reportedByMe ? t('masa.reported') : t('masa.reportMsg')}
                   </button>
                 )}
               </div>
@@ -545,7 +552,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
               className="btn-primary"
               style={{ fontSize: 10, paddingLeft: 10, paddingRight: 10, gap: 5, flexShrink: 0, minWidth: 0 }}
             >
-              Gönder
+              {t('masa.send')}
             </button>
           </div>
         )}
@@ -568,6 +575,8 @@ interface NoShowMarking {
 }
 
 function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBase: string; token?: string }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const [data, setData] = useState<NoShowMarking | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
@@ -606,22 +615,22 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
       });
       if (!res.ok) {
         const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
-        setError((Array.isArray(err?.message) ? err?.message[0] : err?.message) ?? 'Gönderilemedi, tekrar dene.');
+        setError((Array.isArray(err?.message) ? err?.message[0] : err?.message) ?? t('masa.sendFailedRetry'));
         return;
       }
       setSelected(new Set());
       await load();
-    } catch { setError('Bağlantı hatası, tekrar dene.'); }
+    } catch { setError(t('masa.connError')); }
     finally { setSending(false); }
   }
 
   return (
     <div style={{ marginTop: 24, padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
       <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>
-        Masana gelmeyen oldu mu?
+        {t('masa.noShowQ')}
       </p>
       <p style={{ margin: '0 0 12px', fontSize: 11.5, color: '#888', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
-        Gelmeyen kişileri işaretleyip gönder. Gönderilen bildirim geri alınamaz.
+        {t('masa.noShowInfo')}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {data.participants.map(p => {
@@ -649,7 +658,7 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
               <span style={{ display: 'inline-block', padding: '0 5px', borderRadius: 99, border: `1px solid ${gColor(p.gender)}`, fontSize: 10.5, fontWeight: 600, lineHeight: 1.45, color: '#f4f1ec' }}>
                 {p.initials.replace(/\.(?=[⁰¹²³⁴⁵⁶⁷⁸⁹]*$)/, '')}
               </span>
-              {locked && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#c0392b' }}>Bildirildi</span>}
+              {locked && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#c0392b' }}>{t('masa.notified')}</span>}
             </label>
           );
         })}
@@ -661,7 +670,7 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
           background: 'rgba(192,57,43,0.15)', border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b',
           fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', opacity: sending ? 0.6 : 1,
         }}>
-          {sending ? 'Gönderiliyor…' : 'Gelmedi olarak bildir'}
+          {sending ? t('masa.sending') : t('masa.markNoShow')}
         </button>
       )}
     </div>
@@ -669,6 +678,8 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
 }
 
 export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOwnPhoto }: Props) {
+  const t = useTranslations();
+  const locale = useLocale();
   const [lightboxIdx,   setLightboxIdx]   = useState<number | null>(null);
   // Katılımcı profil fotoğrafı tam ekran; kendi fotoğrafında düzenleme butonu
   const [viewer, setViewer] = useState<{ url: string; self: boolean } | null>(null);
@@ -687,7 +698,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
 
   const isOneOnOne = masa.type === 'ONE_ON_ONE';
   const photos     = masa.venuePhotos ?? [];
-  const meetTime   = formatMeetingTime(masa.scheduledAt);
+  const meetTime   = formatMeetingTime(masa.scheduledAt, locale);
   const mapLink    = mapsUrl(masa.venueMapsUrl, masa.venueAddress);
   const ordered    = buildOrdered(masa.participants);
 
@@ -696,7 +707,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
   async function handleOnMyWay() {
     if (!authHeaders || onMyWayDone || onMyWayLoading) return;
     if (!onMyWayOpen) {
-      setOnMyWayWarn('Yola çıkış bildirimi, buluşma saatinden 1 saat önce kullanıma açılır.');
+      setOnMyWayWarn(t('masa.onMyWayLater'));
       setTimeout(() => setOnMyWayWarn(''), 4000);
       return;
     }
@@ -752,12 +763,12 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
           window.dispatchEvent(new Event('ahenk-sos-opened'));
           return;
         }
-        if (res.status === 429) { setSosError('Çok fazla deneme yapıldı. Lütfen birkaç dakika sonra tekrar dene.'); return; }
+        if (res.status === 429) { setSosError(t('masa.tooMany')); return; }
         const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
         const msg = Array.isArray(err?.message) ? err?.message[0] : err?.message;
-        setSosError(msg ?? 'Sunucu hatası. Lütfen tekrar dene.');
+        setSosError(msg ?? t('masa.serverError'));
       } catch {
-        setSosError('Bağlantı hatası. İnternet bağlantını kontrol edip tekrar dene.');
+        setSosError(t('masa.netError'));
       } finally { setSosLoading(false); }
     };
 
@@ -844,7 +855,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
         >
           <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: GREEN, flexShrink: 0 }} />
           <span style={{ fontSize: 10, fontWeight: 700, color: GREEN, letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-            MASA DETAYI
+            {t('masa.detailTitle')}
           </span>
         </motion.div>
 
@@ -898,7 +909,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
                 >
                   <img
                     src={photo.url}
-                    alt={photo.caption ?? `Fotoğraf ${i + 1}`}
+                    alt={photo.caption ?? t('masa.photoAlt', { n: i + 1 })}
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.3s, filter 0.3s' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.05)'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'; }}
@@ -923,7 +934,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
               className="btn-primary"
               style={{ width: '100%', justifyContent: 'center' }}
             >
-              HARİTADA GÖR
+              {t('masa.seeOnMap')}
             </a>
           </motion.div>
         )}
@@ -942,7 +953,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: GREEN, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif' }}>Buluşma</span>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif' }}>{t('masa.meetup')}</span>
           </div>
           <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>
             {meetTime}
@@ -956,7 +967,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
           style={{ marginBottom: 20 }}
         >
           <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#f5f5f5', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-            {isOneOnOne ? 'BAŞ BAŞA' : 'KATILIMCILAR'}
+            {isOneOnOne ? t('masa.oneOnOne') : t('masa.participants')}
           </p>
           {masa.type === 'KANKA' ? (
             <KankaPairs
@@ -967,7 +978,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
           ) : (
           <div style={isOneOnOne ? { display: 'flex', gap: 10, flexWrap: 'wrap' } : { display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gap: 10 }}>
             {ordered.map((p, i) => p.photoUrl ? (
-              <button key={`${p.initials}-${i}`} type="button" onClick={() => openPhoto(p)} aria-label="Profil fotoğrafını büyüt" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+              <button key={`${p.initials}-${i}`} type="button" onClick={() => openPhoto(p)} aria-label={t('masa.enlargePhoto')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
                 <DetayAvatar participant={p} delay={0.52 + i * 0.1} />
               </button>
             ) : (
@@ -980,7 +991,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
         {/* Meslekler: her satırda bir meslek, yalnız yazı; sıra sunucuda her istekte karışık, kime ait olduğu gösterilmez */}
         {!!masa.occupations?.length && (
           <div style={{ marginBottom: 20 }}>
-            <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>Meslekler:</p>
+            <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{t('masa.occupations')}</p>
             {masa.occupations.map((o, i) => (
               <p key={i} style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: 'rgba(255,255,255,0.72)', fontFamily: 'Inter, sans-serif' }}>{o}</p>
             ))}
@@ -1010,14 +1021,14 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
                 fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase',
                 fontFamily: 'Inter, sans-serif', color: 'rgba(180,200,255,0.75)',
               }}>
-                YAPAY ZEKA MASA RAPORU
+                {t('masa.aiTitle')}
               </span>
             </div>
             <div style={{ height: 1, background: 'rgba(100,130,200,0.12)', marginBottom: 12 }} />
             <div style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.88)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>
-                  UYUM SKORU
+                  {t('masa.aiScore')}
                 </span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0', fontFamily: 'Inter, sans-serif' }}>
                   %—
@@ -1051,14 +1062,14 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
                 fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase',
                 fontFamily: 'Inter, sans-serif', color: 'rgba(180,200,255,0.75)',
               }}>
-                YAPAY ZEKA MASA RAPORU
+                {t('masa.aiTitle')}
               </span>
             </div>
             <div style={{ height: 1, background: 'rgba(100,130,200,0.12)', marginBottom: 12 }} />
             <div style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>
-                  UYUM SKORU
+                  {t('masa.aiScore')}
                 </span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0', fontFamily: 'Inter, sans-serif' }}>
                   %{masa.aiReport.uyumSkoru}
@@ -1097,7 +1108,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
           }}
         >
           <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
-            Rezervasyonunuz tamamlandı. Girişte görevliye isminizi söylediğinizde masanıza yönlendirileceksiniz. İyi eğlenceler.
+            {t('masa.reservationDone')}
           </p>
         </motion.div>
 
@@ -1124,7 +1135,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
                 fontFamily: 'Inter, sans-serif', cursor: 'default',
               } : { width: '100%', justifyContent: 'center' }}
             >
-              {onMyWayDone ? '✓ Yola çıktığını bildirdin' : onMyWayLoading ? 'Bildiriliyor…' : 'Yola Çıktım'}
+              {onMyWayDone ? t('masa.onMyWayDone') : onMyWayLoading ? t('masa.onMyWayLoading') : t('masa.onMyWay')}
             </button>
             {onMyWayWarn && (
               <div role="alert" style={{
@@ -1166,10 +1177,10 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
                 textAlign: 'center',
               }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#ff6b6b', fontFamily: 'Inter, sans-serif' }}>
-                  ACİL YARDIM TALEBİNİZ ALINDI
+                  {t('masa.sosReceived')}
                 </p>
                 <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,107,107,0.7)', fontFamily: 'Inter, sans-serif' }}>
-                  Sakin olun ve güvende kalmaya çalışın.
+                  {t('masa.stayCalm')}
                 </p>
               </div>
             ) : (
@@ -1186,7 +1197,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
                     boxShadow: '0 0 20px rgba(192,57,43,0.45)',
                   }}
                 >
-                  Acil Yardım
+                  {t('masa.sosButton')}
                 </button>
                 <div style={{
                   marginTop: 10, padding: '10px 12px',
@@ -1197,7 +1208,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
                     margin: 0, fontSize: 10.5, lineHeight: 1.55,
                     color: 'rgba(255,107,107,0.65)', fontFamily: 'Inter, sans-serif',
                   }}>
-                    Masada veya masadan sonrasında, masadaki birisi tarafından fiziksel şiddet, alıkoyulma, taciz veya istismar eylemiyle karşı karşıya kalırsan ya da kalma ihtimali yaşarsan hemen butona bas ve eylemin türünü seçerek onayla. İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar, uygulama kapansa bile ekibimiz tarafından takip edilir. Masadaki kişilerin kimlik bilgileri de emniyet birimleriyle anında paylaşılır. <strong style={{ color: 'rgba(255,107,107,0.85)' }}>Güvenliğin bizim için çok önemli.</strong>
+                    {t('masa.sosInfo')} <strong style={{ color: 'rgba(255,107,107,0.85)' }}>{t('masa.safetyImportant')}</strong>
                   </p>
                 </div>
               </>

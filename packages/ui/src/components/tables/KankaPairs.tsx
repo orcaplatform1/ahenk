@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { DetayAvatar } from './DetayAvatar';
 
 export interface KankaPerson { initials: string; gender?: string | null; isSelf?: boolean; photoUrl?: string | null }
@@ -9,10 +10,11 @@ const OPPOSITE = (g?: string | null) => (g === 'FEMALE' ? 'MALE' : g === 'MALE' 
 // Baş Başa avatarının aynısı; boş yuvada "?"
 // onPhoto verilirse (masa detay kartı) onaylı profil fotoğrafı gösterilir ve basınca tam ekran açılır; diğer yerlerde fotoğraf gösterilmez
 function Slot({ person, emptyGender, delay, onPhoto }: { person?: KankaPerson; emptyGender?: string | null; delay: number; onPhoto?: (p: KankaPerson) => void }) {
+  const t = useTranslations();
   const p = person ? { ...person, photoUrl: onPhoto ? person.photoUrl : null } : { initials: '?', gender: emptyGender };
   const av = <DetayAvatar participant={p} delay={delay} />;
   return person?.photoUrl && onPhoto
-    ? <button type="button" onClick={() => onPhoto(person)} aria-label="Profil fotoğrafını büyüt" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>{av}</button>
+    ? <button type="button" onClick={() => onPhoto(person)} aria-label={t('masa.enlargePhoto')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>{av}</button>
     : av;
 }
 

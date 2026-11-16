@@ -41,6 +41,8 @@ type EligibleUser = {
   isBot: boolean;
   status: UserStatus;
   phone: string | null;
+  speaksEnglish: boolean;
+  speaksTurkish: boolean;
   activeCity: string | null;
   occupationSector: string | null;
   profile: {
@@ -86,6 +88,8 @@ const ELIGIBLE_SELECT = {
   isBot: true,
   status: true,
   phone: true,
+  speaksEnglish: true,
+  speaksTurkish: true,
   activeCity: true,
   occupationSector: true,
   profile: { select: { firstName: true, lastName: true, gender: true, city: true, district: true, primaryCity: true, venueCategories: true, venuePreference: true, birthDate: true } },
@@ -112,6 +116,23 @@ function trClock(date: Date): { day: number; minutes: number } {
 }
 
 // Kullanıcının eşleştirme şehri: aktif şehir seçtiyse o, yoksa ana şehir. Şehri olmayan eşleştirmeye alınmaz.
+// ─── DİL KURALI (zorunlu; bütün masa türlerinde diğer kurallardan önce) ────────────────────────────
+// a) Türkçe bilmeyen (speaksTurkish = false) kişi yalnız herkesin İngilizce bildiği masaya oturur.
+// b) Türkçe bilmeyenler önce birbirleriyle eşleşir (masa seçiminde Türkçe bilmeyen olan masa öne alınır).
+// c) Böyle bir masanın boş yerleri yalnız telefon kodu +90 olan ve İngilizce bilen kişilerle dolar.
+// d) Dil kuralından sonra cinsiyet dengesi ve diğer kurallar aynen uygulanır.
+// e) Botlar dil kuralına girmez (grup masasındaki bot kuralı aynen).
+const noTurkish = (u: EligibleUser) => !u.isBot && u.speaksTurkish === false;
+const englishFiller = (u: EligibleUser) => !u.isBot && u.speaksTurkish !== false && u.speaksEnglish === true && (u.phone ?? "").startsWith("+90");
+// Kişiler aynı masada oturabilir mi: masada Türkçe bilmeyen yoksa serbest; varsa herkes ya Türkçe bilmeyen ya da +90 İngilizce bilen
+export function languageCompatible(people: EligibleUser[]): boolean {
+  const humans = people.filter((u) => !u.isBot);
+  if (!humans.some(noTurkish)) return true;
+  return humans.every((u) => noTurkish(u) || englishFiller(u));
+}
+// Masadaki Türkçe bilmeyen sayısı (b: Türkçe bilmeyen kişi bu sayısı yüksek masayı önce seçer)
+const noTurkishCount = (people: EligibleUser[]) => people.filter(noTurkish).length;
+
 function matchCity(user: EligibleUser): string | null {
   return user.activeCity ?? user.profile?.primaryCity ?? null;
 }
@@ -281,6 +302,7 @@ export class MatchingService {
     const blocked = await this.blockedIds(user, tables.flatMap((t) => t.members));
 
     const fits = tables.filter(({ members }) =>
+      languageCompatible([user, ...members]) &&
       members.length < TABLE_SIZE_LARGE &&
       members.filter((u) => u.profile?.gender === gender).length < TABLE_SIZE_LARGE / 2 &&
       members.every((u) => !blocked.has(u.id) && (!ctx.groupVenue || !this.areVenueIncompatible(user, u))),
@@ -288,7 +310,9 @@ export class MatchingService {
     // Masa doldurarak gidilir: en dolu masa önce; eşitlikte (Perşembe 12:00'ye kadar) OCEAN uyumu yüksek olan
     const avgScore = (members: EligibleUser[]) =>
       members.reduce((sum, u) => sum + this.scoreTwo(user, u), 0) / Math.max(1, members.length);
+    const preferNoTurkish = noTurkish(user);
     fits.sort((a, b) =>
+      (preferNoTurkish ? noTurkishCount(b.members) - noTurkishCount(a.members) : 0) ||
       b.members.length - a.members.length || (ctx.groupOcean ? avgScore(b.members) - avgScore(a.members) : 0),
     );
 
@@ -332,6 +356,7 @@ export class MatchingService {
       (t) =>
         t.id !== seat?.id &&
         t.user.id !== user.id &&
+        languageCompatible([user, t.user]) &&
         t.cityId === cityId &&
         !!t.user.profile?.gender &&
         t.user.profile.gender !== gender &&
@@ -366,6 +391,7 @@ export class MatchingService {
       return myAge === null || age === null ? Number.MAX_SAFE_INTEGER : Math.abs(myAge - age);
     };
     candidates.sort((a, b) =>
+      (noTurkish(user) ? noTurkishCount([b.user]) - noTurkishCount([a.user]) : 0) ||
       ageDiff(a.user) - ageDiff(b.user) || (ctx.oneOnOneSoft ? this.scoreTwo(user, b.user) - this.scoreTwo(user, a.user) : 0),
     );
     const target = candidates[0];
@@ -444,6 +470,7 @@ export class MatchingService {
     const others = (pool ?? (await this.fetchKankaPairs(ctx.cycleId))).filter(
       (o) =>
         o.subId !== pair.subId &&
+        languageCompatible([pair.buyer, pair.kanka, o.buyer, o.kanka]) &&
         ![o.buyer.id, o.kanka.id].some((id) => id === pair.buyer.id || id === pair.kanka.id) &&
         matchCity(o.buyer) === cityId &&
         !!o.buyer.profile?.gender &&
@@ -465,7 +492,9 @@ export class MatchingService {
       const age = ageYears(o.buyer.profile?.birthDate);
       return myAge === null || age === null ? Number.MAX_SAFE_INTEGER : Math.abs(myAge - age);
     };
+    const pairNoTurkish = noTurkishCount([pair.buyer, pair.kanka]) > 0;
     candidates.sort((a, b) =>
+      (pairNoTurkish ? noTurkishCount([b.buyer, b.kanka]) - noTurkishCount([a.buyer, a.kanka]) : 0) ||
       ageDiff(a) - ageDiff(b) || (ctx.kankaSoft ? this.scoreTwo(pair.buyer, b.buyer) - this.scoreTwo(pair.buyer, a.buyer) : 0),
     );
     const other = candidates[0];
@@ -585,6 +614,7 @@ export class MatchingService {
           title: "Karşı çift masadan ayrıldı",
           body: "Kankamla masanızdaki karşı çift ayrıldı. Sizin için yeniden eşleşme aranıyor.",
           data: { type: "KANKA_PAIR_LEFT", meetingId: part.meetingId },
+          en: { title: "The other pair left the table", body: "The other pair at your Kankamla table left. We're looking for a new match for you." },
         }).catch(() => undefined);
         await enqueueAssign(this.assignQueue, id);
       }
@@ -690,6 +720,7 @@ export class MatchingService {
           const gender = user.profile?.gender;
           const target = targets
             .filter((t) =>
+              languageCompatible([user, ...t.users]) &&
               t.users.length < TABLE_SIZE_LARGE &&
               t.users.filter((u) => u.profile?.gender === gender).length < TABLE_SIZE_LARGE / 2 &&
               t.users.every((u) => !blocked.has(u.id) && (!ctx.groupVenue || !this.areVenueIncompatible(user, u))),

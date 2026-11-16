@@ -5,6 +5,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
 import { csrfOriginCheck } from "./auth/csrf-origin.middleware";
+import { ApiMessageExceptionFilter, ApiMessageInterceptor } from "./common/api-messages";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: true });
@@ -23,6 +24,10 @@ async function bootstrap() {
   app.use(cookieParser());
   app.use(csrfOriginCheck(allowedOrigins));
   app.setGlobalPrefix("api/v1");
+
+  // Hata / bilgi mesajları kullanıcının diline göre (common/api-messages.ts)
+  app.useGlobalFilters(new ApiMessageExceptionFilter(app.getHttpAdapter()));
+  app.useGlobalInterceptors(new ApiMessageInterceptor());
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -56,8 +56,10 @@ export class KycController {
       idBack?:   Express.Multer.File[];
       liveness?: Express.Multer.File[];
     },
+    // Kimlik türü (TC | YKN | PASSPORT); numara istenmez, saklanmaz. Pasaportta yalnız fotoğraflı sayfa (idFront)
+    @Body("idType") idType?: string,
   ) {
-    return this.kycService.uploadAndSubmit(userId, files);
+    return this.kycService.uploadAndSubmit(userId, files, idType);
   }
 
   // ─── Kullanıcı: Durum ─────────────────────────────────────────────────────

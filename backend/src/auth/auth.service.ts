@@ -58,12 +58,12 @@ export class AuthService {
 
   // ─── Kayıt: telefon doğrulama (hesap oluşmadan önce WhatsApp OTP) ────────
 
-  async registerSendOtp(phone: string) {
+  async registerSendOtp(phone: string, language: string = "tr") {
     const used = await this.prisma.user.findUnique({ where: { phone }, select: { id: true } });
     // Numara zaten kayıtlı: kod gönderilmez, bekleme süresi başlamaz; ekranda uyarının altında "Giriş yap" çıkar
     if (used) throw new OtpPhoneNoticeException("PHONE_ALREADY_REGISTERED");
     await this.assertPhoneNotBanned(phone);
-    const resendSeconds = await this.otpService.send(phone, "register");
+    const resendSeconds = await this.otpService.send(phone, "register", language === "en" ? "en" : "tr");
     return { message: "Doğrulama kodu gönderildi", resendSeconds };
   }
 
@@ -190,6 +190,10 @@ export class AuthService {
           phone: dto.phoneNumber,
           phoneVerified: true,
           role: UserRole.USER,
+          // Dil: kayıt olunan arayüz dili; Türkçe arayüzle kayıt olan Türkçe biliyor sayılır
+          language: dto.language === "en" ? "en" : "tr",
+          speaksEnglish: dto.speaksEnglish ?? false,
+          speaksTurkish: dto.language === "en" ? (dto.speaksTurkish ?? false) : true,
           occupationSector: dto.occupationSector,
           profile: {
             create: {
@@ -237,17 +241,18 @@ export class AuthService {
         // Davet eden kullanıcıya FCM bildirimi
         const referrer = await this.prisma.user.findUnique({
           where: { id: updated.referrerId },
-          select: { fcmToken: true },
+          select: { fcmToken: true, language: true },
         });
         if (referrer?.fcmToken) {
+          const en = referrer.language === "en";
           const { FcmService } = await import("../notification/fcm/fcm.service");
           // Notification servisini enjekte etmek yerine doğrudan prisma üzerinden yaz
           await this.prisma.notification.create({
             data: {
               userId: updated.referrerId,
               type: "IN_APP",
-              title: "Arkadaşın platforma katıldı!",
-              body: "Bir davet hakkın kullanıldı. 1 indirim hakkın eklendi.",
+              title: en ? "Your friend joined Ahenk!" : "Arkadaşın platforma katıldı!",
+              body: en ? "One of your invites was used. You've got 1 new discount." : "Bir davet hakkın kullanıldı. 1 indirim hakkın eklendi.",
               data: { event: "REFERRAL_REGISTERED" },
               sentAt: new Date(),
             },
@@ -365,18 +370,18 @@ export class AuthService {
     // Yaptırım kontrolü kod doğrulandıktan sonra yapılır (verifyLoginOtp)
     // Numara kayıtlı değil: kod gönderilmez, bekleme süresi başlamaz; ekranda uyarının altında "Kayıt ol" çıkar
     if (!user) throw new OtpPhoneNoticeException("PHONE_NOT_REGISTERED");
-    const resendSeconds = await this.otpService.send(phone, "login");
+    const resendSeconds = await this.otpService.send(phone, "login", user.language);
     return { message: "Doğrulama kodu gönderildi", resendSeconds };
   }
 
   // ─── Şifre sıfırlama (WhatsApp kodu) ──────────────────────────────────────
 
   async forgotPassword(phone: string) {
-    const user = await this.prisma.user.findUnique({ where: { phone }, select: { id: true, isBot: true } });
+    const user = await this.prisma.user.findUnique({ where: { phone }, select: { id: true, isBot: true, language: true } });
     // Yanıt tek tip: numaranın kayıtlı olup olmadığı anlaşılmaz
     // Numara kayıtlı değil: kod gönderilmez, bekleme süresi başlamaz; ekranda uyarının altında "Kayıt ol" çıkar
     if (!user || user.isBot) throw new OtpPhoneNoticeException("PHONE_NOT_REGISTERED");
-    const resendSeconds = await this.otpService.send(phone, "forgot-password");
+    const resendSeconds = await this.otpService.send(phone, "forgot-password", user.language);
     return { message: "Doğrulama kodu gönderildi", resendSeconds };
   }
 
@@ -501,7 +506,7 @@ export class AuthService {
     // Bütün sorgular paralel (önceden gelmedi sayacı, Kankamla durumu ve fotoğraf sorguları sırayla bekleniyordu)
     const [primaryCity, activeSubs, activeSanction, maintenanceMode, noShowCount, kankamla, profilePhotoUrl, pendingPhotos] = await Promise.all([
       user.profile?.primaryCity
-        ? this.prisma.city.findUnique({ where: { id: user.profile.primaryCity }, select: { id: true, name: true } })
+        ? this.prisma.city.findUnique({ where: { id: user.profile.primaryCity }, select: { id: true, name: true, countryCode: true, timezone: true, currency: true, phoneCountryCode: true, idTypes: true } })
         : Promise.resolve(null),
       this.prisma.subscription.findMany({
         where: { userId: user.id, status: SubscriptionStatus.ACTIVE },
@@ -558,11 +563,13 @@ export class AuthService {
     return DISTRICTS;
   }
 
+  // Şehir listeleri: önce aktif bölgeler (seçilebilir, sıra alanına göre), sonra "Yakında" grubu: Türkiye dışındaki pasif bölgeler
+  // (Dubai Marina, JLT, Downtown Dubai). Bir bölge aktif yapılınca otomatik üst gruba geçer. isActive istemcide gruplamak içindir.
   getActiveCities() {
     return this.prisma.city.findMany({
-      where: { isActive: true },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
+      where: { OR: [{ isActive: true }, { isActive: false, countryCode: { not: "TR" } }] },
+      select: { id: true, name: true, isActive: true, countryCode: true, timezone: true, currency: true, defaultLanguage: true, phoneCountryCode: true, idTypes: true },
+      orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
     });
   }
 }

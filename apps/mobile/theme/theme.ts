@@ -194,9 +194,11 @@ export const tabNavIcon = { inactive: '#FFFFFF', active: '#FF3B30' } as const;
 // Ortadaki Profil butonu: çap 64, alt menünün üst kenarından 22 yukarı taşar, çevresinde alt menü zemini renginde 4 halka + hafif gölge,
 // avatarın etrafında 2 iç çerçeve (seçili değil beyaz, seçili #FF3B30)
 export const tabCenter = { d: 64, rise: 22, ring: 4, frame: 2, frameOff: '#FFFFFF', frameOn: '#FF3B30', shadowOpacity: 0.25, shadowRadius: 6, shadowY: 2, elevation: 6 } as const;
-// Alt menü sayı rozeti (yalnız Bildirimler): parlak kırmızı → koyu kırmızı geçiş (tabBar.active → #c0392b), alt menü zemini renginde halka
-// (ikondan ayrık görünür), hafif kırmızı ışıma, kalın beyaz yazı
-export const tabBadge = { colors: [tabBar.active, '#c0392b'] as const, ring: tabBar.bg, ringWidth: 2, glow: tabBar.active, text: '#ffffff', fontSize: 10, size: 20, padH: 5, top: -6, right: -9 } as const;
+// Alt menü bildirim rozeti (yalnız Bildirimler): #ff3b30 daire, beyaz kalın sayı (11), tek hanede çap 18, çok hanede içeriğe göre genişler,
+// çevresinde alt menü zemini renginde 2 px koyu kenarlık. Sayı yokken okunmamış varsa 8×8 #ff3b30 nokta
+export const tabBadge = { bg: '#ff3b30', ring: tabBar.bg, ringWidth: 2, text: '#ffffff', fontSize: 11, size: 18, padH: 4, dot: 8, top: -6, right: -9 } as const;
+// Seçili sekme hap zemini (Profil hariç): 64×36, köşe 18, #c0392b opaklık 0.20, ikonla ortalı, 150 ms'de belirir
+export const tabPill = { w: 64, h: 36, r: 18, bg: 'rgba(192,57,43,0.20)', fadeMs: 150 } as const;
 // Not: soluk görünüm opaklığı webde seçili olmayan .ll-tab.is-off opaklığıdır (0.55).
 
 // ── Animasyon süreleri (globals.css) ──────────────────────────────────────

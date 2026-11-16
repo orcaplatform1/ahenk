@@ -6,12 +6,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { BtnGhost, BtnPrimary, PageGlow, Serif, T, ScreenGlow } from '@/components/ui';
 import { tw } from '@/theme/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function OdemeSonuc() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { durum } = useLocalSearchParams<{ durum?: string }>();
   const ok = durum === 'basarili';
-  useEffect(() => { if (!ok) return; const t = setTimeout(() => router.replace('/(tabs)'), 3000); return () => clearTimeout(t); }, [ok, router]);
+  useEffect(() => { if (!ok) return; const tm = setTimeout(() => router.replace('/(tabs)'), 3000); return () => clearTimeout(tm); }, [ok, router]);
   return (
     <View style={{ flex: 1, backgroundColor: tw.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, gap: 24 }}>
       <ScreenGlow />
@@ -26,11 +28,11 @@ export default function OdemeSonuc() {
           <Svg width={44} height={44} viewBox="0 0 44 44" fill="none"><Path d="M14 14 L30 30 M30 14 L14 30" stroke="#ff6b6b" strokeWidth={3.5} strokeLinecap="round" /></Svg>
         </View>
       )}
-      <Serif style={{ fontSize: 36, textAlign: 'center' }}>{ok ? 'Paketini aldın!' : 'Ödeme tamamlanamadı.'}</Serif>
-      <T style={{ color: '#777', fontSize: 14 }}>{ok ? 'Artık masalara katılabilirsin.' : 'Tekrar denemek için pakete dön.'}</T>
+      <Serif style={{ fontSize: 36, textAlign: 'center' }}>{ok ? t('paySuccess.title') : t('payFail.title')}</Serif>
+      <T style={{ color: '#777', fontSize: 14 }}>{ok ? t('paySuccess.body') : t('payFail.body')}</T>
       {ok ? <BtnPrimary label="Dashboard'a Git" style={{ alignSelf: 'center', marginTop: 8 }} onPress={() => router.replace('/(tabs)')} />
-        : <BtnGhost label="Paketime Dön" style={{ alignSelf: 'center', marginTop: 8 }} onPress={() => router.replace('/(tabs)/paketim')} />}
-      {ok && <T style={{ color: '#444', fontSize: 12 }}>3 saniye içinde otomatik yönlendirileceksin…</T>}
+        : <BtnGhost label={t('payFail.back')} style={{ alignSelf: 'center', marginTop: 8 }} onPress={() => router.replace('/(tabs)/paketim')} />}
+      {ok && <T style={{ color: '#444', fontSize: 12 }}>{t('paySuccess.redirect')}</T>}
     </View>
   );
 }

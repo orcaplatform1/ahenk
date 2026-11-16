@@ -42,8 +42,12 @@ function MediaPreview({ url, label, isVideo }: { url: string | null; label: stri
 
 type KycStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPICIOUS';
 
+// Kimlik türü (numara saklanmaz)
+const ID_TYPE_LABEL: Record<string, string> = { TC: 'TC Kimlik Kartı', YKN: 'Yabancı Kimlik Kartı (YKN)', PASSPORT: 'Pasaport' };
+
 interface KycApplication {
   id: string;
+  idType?: string;
   submittedAt: string;
   status: KycStatus;
   rejectReason: string | null;
@@ -200,6 +204,7 @@ export default function AdminKyc() {
                   <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
                     {fmtDate(item.submittedAt)}
                   </p>
+                  <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED }}>Kimlik türü: {ID_TYPE_LABEL[item.idType ?? 'TC'] ?? item.idType}</p>
                 </div>
                 <span style={{
                   ...LABEL, flexShrink: 0,
@@ -225,7 +230,7 @@ export default function AdminKyc() {
               {/* Medya önizleme */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
                 <MediaPreview url={item.idFrontUrl} label="Ön Yüz" />
-                <MediaPreview url={item.idBackUrl} label="Arka Yüz" />
+                {item.idBackUrl && <MediaPreview url={item.idBackUrl} label="Arka Yüz" />}
                 <MediaPreview url={item.livenessUrl} label="Video" isVideo />
               </div>
 

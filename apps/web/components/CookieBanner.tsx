@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import { applyConsent } from '@/lib/analytics';
 
 type Prefs = { analitik: boolean; pazarlama: boolean };
@@ -41,6 +42,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
 }
 
 export default function CookieBanner() {
+  const t = useTranslations();
   const [visible, setVisible] = useState(false);
   const [managing, setManaging] = useState(false);
   const [prefs, setPrefs] = useState<Prefs>({ analitik: false, pazarlama: false });
@@ -102,24 +104,24 @@ export default function CookieBanner() {
                   transition={{ duration: 0.18 }}
                 >
                   <p style={{ color: '#ccc', fontSize: '0.875rem', lineHeight: 1.6, margin: '0 0 0.5rem' }}>
-                    Oturum güvenliğinizi sağlamak, algoritmik eşleştirme deneyiminizi iyileştirmek ve tercihlerinizi hatırlamak için yasal düzenlemelere uygun çerezler kullanıyoruz.
+                    {t('cookie.intro')}
                   </p>
                   <p style={{ color: '#666', fontSize: '0.78rem', lineHeight: 1.55, margin: '0 0 1.2rem' }}>
-                    Tercihlerinizi dilediğiniz zaman yönetebilir, onayınızı geri çekebilirsiniz. Detaylı bilgi için{' '}
-                    <Link href="/cerez-politikasi" style={{ color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: '3px' }}>Çerez Politikası</Link>
-                    {' '}ve{' '}
-                    <Link href="/gizlilik-politikasi" style={{ color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: '3px' }}>Gizlilik Politikası</Link>
-                    {' '}sayfalarımızı inceleyebilirsiniz.
+                    {t('cookie.manageInfo1')}{' '}
+                    <Link href="/cerez-politikasi" style={{ color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: '3px' }}>{t('footer.cookies')}</Link>
+                    {' '}{t('cookie.and')}{' '}
+                    <Link href="/gizlilik-politikasi" style={{ color: '#c0392b', textDecoration: 'underline', textUnderlineOffset: '3px' }}>{t('footer.privacy')}</Link>
+                    {' '}{t('cookie.manageInfo2')}
                   </p>
                   <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <button onClick={() => setManaging(true)} className={BTN_OUTLINE}>
-                      Tercihleri Yönet
+                      {t('cookie.manage')}
                     </button>
                     <button onClick={reject} className={BTN_OUTLINE}>
-                      Reddet
+                      {t('cookie.reject')}
                     </button>
                     <button onClick={acceptAll} className={BTN_PRIMARY}>
-                      Tümünü Kabul Et
+                      {t('cookie.acceptAll')}
                     </button>
                   </div>
                 </motion.div>
@@ -139,7 +141,7 @@ export default function CookieBanner() {
                       ←
                     </button>
                     <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#f5f5f5' }}>
-                      Çerez Tercihleri
+                      {t('cookie.prefsTitle')}
                     </h3>
                   </div>
 
@@ -147,17 +149,17 @@ export default function CookieBanner() {
                     {/* Zorunlu — her zaman açık */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
                       <div>
-                        <p style={{ margin: 0, fontSize: '0.83rem', fontWeight: 500, color: '#e0e0e0' }}>Zorunlu Çerezler</p>
-                        <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#555', lineHeight: 1.4 }}>Oturum ve güvenlik işlemleri için zorunludur.</p>
+                        <p style={{ margin: 0, fontSize: '0.83rem', fontWeight: 500, color: '#e0e0e0' }}>{t('cookie.essential')}</p>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#555', lineHeight: 1.4 }}>{t('cookie.essentialDesc')}</p>
                       </div>
-                      <span style={{ fontSize: '0.72rem', color: '#c0392b', fontWeight: 600, flexShrink: 0 }}>Her zaman açık</span>
+                      <span style={{ fontSize: '0.72rem', color: '#c0392b', fontWeight: 600, flexShrink: 0 }}>{t('cookie.alwaysOn')}</span>
                     </div>
 
                     {/* Analitik */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
                       <div>
-                        <p style={{ margin: 0, fontSize: '0.83rem', fontWeight: 500, color: '#e0e0e0' }}>Analitik Çerezler</p>
-                        <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#555', lineHeight: 1.4 }}>Platform kullanımını anlamamıza ve iyileştirmemize yardımcı olur.</p>
+                        <p style={{ margin: 0, fontSize: '0.83rem', fontWeight: 500, color: '#e0e0e0' }}>{t('cookie.analytics')}</p>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#555', lineHeight: 1.4 }}>{t('cookie.analyticsDesc')}</p>
                       </div>
                       <Toggle on={prefs.analitik} onChange={(v) => setPrefs(p => ({ ...p, analitik: v }))} />
                     </div>
@@ -165,8 +167,8 @@ export default function CookieBanner() {
                     {/* Pazarlama */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
                       <div>
-                        <p style={{ margin: 0, fontSize: '0.83rem', fontWeight: 500, color: '#e0e0e0' }}>Pazarlama Çerezleri</p>
-                        <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#555', lineHeight: 1.4 }}>Size uygun içerik ve kampanya önerileri sunmak için kullanılır.</p>
+                        <p style={{ margin: 0, fontSize: '0.83rem', fontWeight: 500, color: '#e0e0e0' }}>{t('cookie.marketing')}</p>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#555', lineHeight: 1.4 }}>{t('cookie.marketingDesc')}</p>
                       </div>
                       <Toggle on={prefs.pazarlama} onChange={(v) => setPrefs(p => ({ ...p, pazarlama: v }))} />
                     </div>
@@ -174,10 +176,10 @@ export default function CookieBanner() {
 
                   <div style={{ display: 'flex', gap: '0.55rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                     <button onClick={reject} className={BTN_OUTLINE}>
-                      Tümünü Reddet
+                      {t('cookie.rejectAll')}
                     </button>
                     <button onClick={savePrefs} className={BTN_PRIMARY}>
-                      Tercihleri Kaydet
+                      {t('cookie.savePrefs')}
                     </button>
                   </div>
                 </motion.div>

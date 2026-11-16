@@ -1,9 +1,11 @@
 'use client';
 
-import Link from 'next/link';
+import NextLink from 'next/link';
 import Image from 'next/image';
+import { useLocale, useTranslations } from 'next-intl';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import LanguageSwitcher from './LanguageSwitcher';
 import { useEffect, useRef, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 
@@ -47,16 +49,19 @@ function NavAvatar({ user }: { user: NavUser }) {
   );
 }
 
+// label: çeviri anahtarı
 const navLinks = [
-  { label: 'Nasıl Çalışır?', href: '#how-it-works' },
-  { label: 'Buluşmalar',     href: '#cities' },
-  { label: 'Test',           href: '/kayit' },
-  { label: 'Hikayemiz',      href: '/hikayemiz' },
+  { label: 'nav.howItWorks', href: '#how-it-works' },
+  { label: 'nav.meetups',    href: '#cities' },
+  { label: 'nav.test',       href: '/kayit' },
+  { label: 'nav.ourStory',   href: '/hikayemiz' },
 ];
 
 
 /* ── Navbar ──────────────────────────────────────────────────────────── */
 export default function Navbar() {
+  const t = useTranslations();
+  const locale = useLocale();
   const pathname = usePathname();
   const router   = useRouter();
   const [navUser,  setNavUser]  = useState<NavUser | null>(null);
@@ -127,7 +132,7 @@ export default function Navbar() {
                     50% { opacity: 0.35; }
                   }
                 `}</style>
-                <Link href="/admin" style={{ textDecoration: 'none' }}>
+                <NextLink href="/admin" style={{ textDecoration: 'none' }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5,
                     padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700,
@@ -140,9 +145,9 @@ export default function Navbar() {
                       width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', flexShrink: 0,
                       animation: 'navAdminDot 2.5s ease-in-out infinite',
                     }} />
-                    Yönetim Paneli
+                    {t('nav.adminPanel')}
                   </span>
-                </Link>
+                </NextLink>
               </>
             )}
             {checked && navUser && (
@@ -154,7 +159,7 @@ export default function Navbar() {
             <button
               className="flex flex-col justify-center items-center gap-[5px] p-1.5"
               onClick={() => setMenuOpen(v => !v)}
-              aria-label="Menü"
+              aria-label={t('nav.menu')}
               style={{ background: 'none', border: 'none', cursor: 'pointer' }}
             >
               <motion.span animate={menuOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }} transition={{ duration: 0.22 }}
@@ -164,6 +169,8 @@ export default function Navbar() {
               <motion.span animate={menuOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }} transition={{ duration: 0.22 }}
                 style={{ display: 'block', width: 20, height: 1.5, background: '#ccc', borderRadius: 2, transformOrigin: 'center' }} />
             </button>
+            {/* Dil seçici: header'ın sağ ucu (ENGLISH_ENABLED = false iken görünmez) */}
+            <LanguageSwitcher />
           </div>
 
         </div>
@@ -196,7 +203,7 @@ export default function Navbar() {
               <div className="flex flex-col px-4 pt-4 gap-1">
                 {navLinks.map((item, i) => (
                   <motion.a
-                    key={item.label} href={item.href} onClick={() => setMenuOpen(false)}
+                    key={item.label} href={item.href.startsWith('/') && locale === 'en' ? `/en${item.href}` : item.href} onClick={() => setMenuOpen(false)}
                     className="text-sm py-3 px-2 rounded-lg transition-colors"
                     style={{ color: '#aaa', borderBottom: '1px solid rgba(255,255,255,0.10)' }}
                     initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
@@ -204,7 +211,7 @@ export default function Navbar() {
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f5f5f5'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#aaa'; }}
                   >
-                    {item.label}
+                    {t(item.label)}
                   </motion.a>
                 ))}
               </div>
@@ -214,18 +221,18 @@ export default function Navbar() {
                 <div className="flex flex-col px-4 pt-5 pb-6 gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)', marginTop: 8 }}>
                   {navUser ? (
                     <button onClick={handleLogout} className="w-full btn-ghost justify-center">
-                      Çıkış Yap
+                      {t('nav.logout')}
                     </button>
                   ) : (
                     <>
                       {showGiris && (
                         <Link href="/giris" onClick={() => setMenuOpen(false)} className="w-full btn-ghost justify-center">
-                          Giriş Yap
+                          {t('nav.login')}
                         </Link>
                       )}
                       {showKayit && (
                         <Link href="/kayit" onClick={() => setMenuOpen(false)} className="w-full btn-primary justify-center">
-                          Kayıt Ol
+                          {t('nav.register')}
                         </Link>
                       )}
                     </>

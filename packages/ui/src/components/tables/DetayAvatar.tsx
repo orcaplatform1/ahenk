@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { gColor } from './MasaRadar';
 
@@ -15,6 +16,7 @@ const AV_BR = AV_R - 2.5;
 const CIRCUMF = 2 * Math.PI * AV_BR;
 
 export function DetayAvatar({ participant, delay }: { participant: { initials?: string | null; gender?: string | null; photoUrl?: string | null }; delay: number }) {
+  const t = useTranslations();
   const color = gColor(participant.gender);
   const bg    = gBg(participant.gender);
 
@@ -55,7 +57,7 @@ export function DetayAvatar({ participant, delay }: { participant: { initials?: 
       </svg>
       {participant.photoUrl && (
         // Onaylı profil fotoğrafı: kısaltma yerine, cinsiyet renkli çerçevenin içinde
-        <img src={participant.photoUrl} alt="Profil fotoğrafı" style={{ position: 'absolute', inset: 4, width: AV_D - 8, height: AV_D - 8, borderRadius: '50%', objectFit: 'cover', pointerEvents: 'none' }} />
+        <img src={participant.photoUrl} alt={t('photo.alt')} style={{ position: 'absolute', inset: 4, width: AV_D - 8, height: AV_D - 8, borderRadius: '50%', objectFit: 'cover', pointerEvents: 'none' }} />
       )}
       {!participant.photoUrl && <div style={{
         position: 'absolute', inset: 0,

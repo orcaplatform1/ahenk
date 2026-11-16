@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
+import { formatNamed, type Lang } from '@ahenk/shared';
 import { api } from '@/lib/api';
 
-// Profilim → "Aktif Kankanız" (Kankamla). Davet telefonla yapılır; davet linki her zaman kopyalanabilir gösterilir
+// Profilim → t('kanka.activeKanka') (Kankamla). Davet telefonla yapılır; davet linki her zaman kopyalanabilir gösterilir
 // (WhatsApp ulaşmazsa davet eden kendisi iletebilir). Pencereler sayfanın üst katmanında açılır.
 
 const MALE_CLR = '#4fc3f7';
@@ -44,6 +46,7 @@ function Sheet({ onClose, children }: { onClose: () => void; children: React.Rea
 }
 
 function CopyLink({ link }: { link: string }) {
+  const t = useTranslations();
   const [copied, setCopied] = useState(false);
   async function copy() {
     try { await navigator.clipboard.writeText(link); } catch {
@@ -55,8 +58,8 @@ function CopyLink({ link }: { link: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 12px' }}>
       <span style={{ flex: 1, fontSize: 12, color: '#bbb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{link}</span>
-      <button onClick={copy} aria-label="Linki kopyala" style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#4ade80' : '#f5f5f5', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: 2 }}>
-        {copied ? 'Kopyalandı ✓' : (
+      <button onClick={copy} aria-label={t('kanka.copyLink')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#4ade80' : '#f5f5f5', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: 2 }}>
+        {copied ? t('kanka.copied') : (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
           </svg>
@@ -71,6 +74,8 @@ function hoursLeft(iso: string) {
 }
 
 export function KankaSection() {
+  const t = useTranslations();
+  const locale = useLocale() as Lang;
   const [state, setState] = useState<KankaState | null>(null);
   const [sheet, setSheet] = useState<'invite' | 'incoming' | 'kanka' | null>(null);
   const [phone, setPhone] = useState('');
@@ -82,7 +87,7 @@ export function KankaSection() {
     api.get<KankaState>('/kanka/me').then(setState).catch(() => {});
   }, []);
   useEffect(() => { load(); }, [load]);
-  // Bekleyen davetin 48 saati dolunca buton kendiliğinden "Davet Et" olur (süre bitiminde durum yeniden yüklenir)
+  // Bekleyen davetin 48 saati dolunca buton kendiliğinden t('kanka.invite') olur (süre bitiminde durum yeniden yüklenir)
   const pendingUntil = state?.outgoingInvite && !state.outgoingInvite.expired ? state.outgoingInvite.expiresAt : null;
   useEffect(() => {
     if (!pendingUntil) return;
@@ -94,7 +99,7 @@ export function KankaSection() {
   const incoming = state.incomingInvites[0];
 
   async function sendInvite() {
-    if (phone.length !== 10 || !phone.startsWith('5')) { setMsg('5 ile başlayan 10 haneli numara girin.'); return; }
+    if (phone.length !== 10 || !phone.startsWith('5')) { setMsg(t('kanka.phoneInvalid')); return; }
     setBusy(true); setMsg('');
     try {
       const r = await api.post<{ link: string }>('/kanka/invite', { phone: `+90${phone}` });
@@ -125,22 +130,22 @@ export function KankaSection() {
   return (
     <>
       <div className="flex items-center justify-between">
-        <span className="text-sm text-[#f5f5f5]">Aktif Kankanız</span>
+        <span className="text-sm text-[#f5f5f5]">{t('kanka.activeKanka')}</span>
         {state.kanka ? (
           <button onClick={() => open('kanka')} aria-label="Kanka" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
             <Bubble initials={state.kanka.initials} gender={state.kanka.gender} />
           </button>
         ) : incoming ? (
           <button onClick={() => open('incoming')} className={pillBtn} style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.45)', color: '#4ade80' }}>
-            Davet Var
+            {t('kanka.hasInvite')}
           </button>
         ) : pendingUntil ? (
           <button onClick={cancelInvite} disabled={busy} className={`${pillBtn} disabled:opacity-50`} style={{ background: 'rgba(192,57,43,0.18)', border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b' }}>
-            İptal Et
+            {t('kanka.cancelInvite')}
           </button>
         ) : (
           <button onClick={() => open('invite')} className={pillBtn} style={{ background: 'rgba(192,57,43,0.18)', border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b' }}>
-            Davet Et
+            {t('kanka.invite')}
           </button>
         )}
       </div>
@@ -149,8 +154,8 @@ export function KankaSection() {
         <div className="flex flex-col gap-2">
           <p className="text-xs text-[#888]">
             {state.outgoingInvite.expired
-              ? 'Gönderdiğin davetin süresi doldu. "Davet Et" ile tekrar gönderebilirsin.'
-              : `Davetin gönderildi · ${hoursLeft(state.outgoingInvite.expiresAt)} saat geçerli. WhatsApp bildirim yollamamışsa bağlantıyı kendin ilet:`}
+              ? t('kanka.inviteExpired')
+              : t('kanka.inviteSent', { hours: hoursLeft(state.outgoingInvite.expiresAt) })}
           </p>
           {!state.outgoingInvite.expired && <CopyLink link={state.outgoingInvite.link} />}
         </div>
@@ -158,37 +163,37 @@ export function KankaSection() {
 
       {state.kankamla && (
         <p className="text-xs text-[#888]">
-          Kankamla: {state.kankamla.rightsLeft} masa hakkı kaldı · {state.kankamla.cycles}/{state.kankamla.packageCycles} döngü
-          {state.kankamla.role === 'KANKA' ? ' (paket kankanda, sen ücretsiz katılıyorsun)' : ''}
+          {t('kanka.rightsLeft', { count: state.kankamla.rightsLeft })}
+          {state.kankamla.role === 'KANKA' ? ` ${t('kanka.freeRider')}` : ''}
         </p>
       )}
 
       {/* Sistemi anlatan kart */}
       <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 14px' }}>
-        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#c0392b', margin: '0 0 6px' }}>KANKAMLA NASIL İŞLER?</p>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#c0392b', margin: '0 0 6px' }}>{t('kanka.howTitle')}</p>
         <p style={{ fontSize: 12, color: '#aaa', lineHeight: 1.6, margin: 0 }}>
-          Kankamla Paketi'ni al, ardından aynı cinsiyetten bir arkadaşını kanka olarak davet et. Kankan ücretsiz katılır; davet linkinden geldiğinde kimlik doğrulaması yapması zorunludur. İkiniz, karşı cinsten bir kanka çiftiyle Pazar akşamı 4 kişilik masada buluşursunuz. Davet 48 saat geçerlidir; kanka seçildiği hafta değiştirilemez.
+          {t('kanka.howBody')}
         </p>
       </div>
 
       {sheet === 'invite' && (
         <Sheet onClose={() => setSheet(null)}>
-          <p style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5', marginBottom: 8 }}>Kanka Davet Et</p>
+          <p style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5', marginBottom: 8 }}>{t('kanka.inviteTitle')}</p>
           {!state.kycApproved ? (
             <div className="flex flex-col gap-3">
-              <p style={{ fontSize: 13, color: '#aaa', lineHeight: 1.5 }}>Kanka davet etmek için önce kimliğini doğrula.</p>
-              <Link href="/profil?tab=kyc" onClick={() => setSheet(null)} className="btn-primary justify-center" style={{ minHeight: 44 }}>Kimliğimi Doğrula</Link>
+              <p style={{ fontSize: 13, color: '#aaa', lineHeight: 1.5 }}>{t('kanka.verifyFirst')}</p>
+              <Link href="/profil?tab=kyc" onClick={() => setSheet(null)} className="btn-primary justify-center" style={{ minHeight: 44 }}>{t('kanka.verifyMe')}</Link>
             </div>
           ) : sentLink ? (
             <div className="flex flex-col gap-3">
-              <p style={{ fontSize: 13, color: '#4ade80' }}>Davet gönderildi. 48 saat geçerli.</p>
-              <p style={{ fontSize: 12, color: '#888', lineHeight: 1.5 }}>Davet WhatsApp ile iletildi. Ulaşmazsa bu linki kopyalayıp kankana kendin gönder:</p>
+              <p style={{ fontSize: 13, color: '#4ade80' }}>{t('kanka.sentOk')}</p>
+              <p style={{ fontSize: 12, color: '#888', lineHeight: 1.5 }}>{t('kanka.sentShare')}</p>
               <CopyLink link={sentLink} />
-              <button onClick={() => setSheet(null)} className="btn-ghost justify-center">Tamam</button>
+              <button onClick={() => setSheet(null)} className="btn-ghost justify-center">{t('kanka.ok')}</button>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              <p style={{ fontSize: 12, color: '#888', lineHeight: 1.5 }}>Kankan aynı cinsiyetten olmalı ve kimliğini doğrulamış olmalı. Davet 48 saat geçerlidir.</p>
+              <p style={{ fontSize: 12, color: '#888', lineHeight: 1.5 }}>{t('kanka.rules')}</p>
               <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
                 <span style={{ color: '#555', fontSize: 14, marginRight: 4 }}>+90</span>
                 <input type="tel" inputMode="numeric" placeholder="5XX XXX XX XX" value={phone}
@@ -197,8 +202,8 @@ export function KankaSection() {
               </div>
               {msg && <p style={{ fontSize: 12, color: '#ff6b6b' }}>{msg}</p>}
               <div className="flex gap-2">
-                <button onClick={() => setSheet(null)} className="flex-1 btn-ghost justify-center">Vazgeç</button>
-                <button onClick={sendInvite} disabled={busy} className="flex-1 btn-primary justify-center disabled:opacity-50">{busy ? '…' : 'Davet Gönder'}</button>
+                <button onClick={() => setSheet(null)} className="flex-1 btn-ghost justify-center">{t('kanka.cancel')}</button>
+                <button onClick={sendInvite} disabled={busy} className="flex-1 btn-primary justify-center disabled:opacity-50">{busy ? '…' : t('kanka.sendInvite')}</button>
               </div>
             </div>
           )}
@@ -207,17 +212,17 @@ export function KankaSection() {
 
       {sheet === 'incoming' && incoming && (
         <Sheet onClose={() => setSheet(null)}>
-          <p style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5', marginBottom: 14 }}>{state.incomingInvites.length} aktif davetiniz var.</p>
+          <p style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5', marginBottom: 14 }}>{t('kanka.activeInvites', { count: state.incomingInvites.length })}</p>
           <div className="flex items-center gap-3" style={{ marginBottom: 16 }}>
             <Bubble initials={incoming.inviterInitials} gender={incoming.inviterGender} size={48} />
             <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.5 }}>
-              <strong style={{ color: '#f5f5f5' }}>{incoming.inviterInitials}</strong> sizi kanka olmak için davet etti.
+              {t('kanka.invitedYouPre')} <strong style={{ color: '#f5f5f5' }}>{incoming.inviterInitials}</strong> {t('kanka.invitedYouPost')}
             </p>
           </div>
           {msg && <p style={{ fontSize: 12, color: '#ff6b6b', marginBottom: 10 }}>{msg}</p>}
           <div className="flex flex-col gap-2">
-            <button onClick={() => respond('accept')} disabled={busy} className="btn-primary justify-center disabled:opacity-50">{busy ? '…' : 'Kabul Et'}</button>
-            <button onClick={() => respond('decline')} disabled={busy} className="btn-ghost justify-center">Vazgeç</button>
+            <button onClick={() => respond('accept')} disabled={busy} className="btn-primary justify-center disabled:opacity-50">{busy ? '…' : t('kanka.accept')}</button>
+            <button onClick={() => respond('decline')} disabled={busy} className="btn-ghost justify-center">{t('kanka.cancel')}</button>
           </div>
         </Sheet>
       )}
@@ -227,23 +232,23 @@ export function KankaSection() {
           <div className="flex items-center gap-3" style={{ marginBottom: 14 }}>
             <Bubble initials={state.kanka.initials} gender={state.kanka.gender} size={48} />
             <div>
-              <p style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5' }}>Kankan</p>
-              <p style={{ fontSize: 12, color: '#888' }}>{new Date(state.kanka.since).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric' })} tarihinden beri</p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5' }}>{t('kanka.yourKanka')}</p>
+              <p style={{ fontSize: 12, color: '#888' }}>{t('kanka.since', { date: formatNamed(state.kanka.since, locale, { day: 'numeric', month: 'long', year: 'numeric' }) })}</p>
             </div>
           </div>
           {state.kanka.locked ? (
             <p style={{ fontSize: 12, color: '#f59e0b', marginBottom: 12, lineHeight: 1.5 }}>{state.kanka.lockReason}</p>
           ) : (
-            <p style={{ fontSize: 12, color: '#888', marginBottom: 12, lineHeight: 1.5 }}>Kankalıktan çıkarsan Kankamla masalarına birlikte katılamazsınız. İstersen daha sonra tekrar kanka olabilirsiniz.</p>
+            <p style={{ fontSize: 12, color: '#888', marginBottom: 12, lineHeight: 1.5 }}>{t('kanka.leaveInfo')}</p>
           )}
           {msg && <p style={{ fontSize: 12, color: '#ff6b6b', marginBottom: 10 }}>{msg}</p>}
           <div className="flex gap-2">
-            <button onClick={() => setSheet(null)} className="flex-1 btn-ghost justify-center">Kapat</button>
+            <button onClick={() => setSheet(null)} className="flex-1 btn-ghost justify-center">{t('kanka.close')}</button>
             {!state.kanka.locked && (
               <button onClick={unlink} disabled={busy}
                 className="flex-1 py-2 rounded-full text-sm font-semibold disabled:opacity-50"
                 style={{ border: '1px solid rgba(192,57,43,0.6)', color: '#e74c3c', background: 'rgba(192,57,43,0.06)' }}>
-                {busy ? '…' : 'Kankalıktan Çıkar'}
+                {busy ? '…' : t('kanka.leave')}
               </button>
             )}
           </div>

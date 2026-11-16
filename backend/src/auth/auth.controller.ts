@@ -45,7 +45,7 @@ export class AuthController {
   @ApiOperation({ summary: "Kayıt — telefon doğrulama kodu gönder (public)" })
   async registerSendOtp(@Body() dto: RegisterSendOtpDto, @Req() req: Request) {
     await this.loginGuard.hit("register-send-otp", req.ip, dto.phone);
-    return this.authService.registerSendOtp(dto.phone);
+    return this.authService.registerSendOtp(dto.phone, dto.language);
   }
 
   @Post("register/verify-otp")

@@ -142,6 +142,7 @@ export class ProfilePhotoService {
       title: "Profil fotoğrafı",
       body: PHOTO_REJECTED_MESSAGE,
       data: { event: "PROFILE_PHOTO_REJECTED" },
+      en: { title: "Profile photo", body: "The photo you uploaded doesn't match the photo on your ID." },
     });
     return { rejected: true, userId: row.userId };
   }

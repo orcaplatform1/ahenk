@@ -12,7 +12,11 @@ type SendPayload = {
   data?: Record<string, string>;
   whatsappTemplate?: string;
   whatsappParams?: string[];
+  // İngilizce metin: alıcının language alanı "en" ise push / uygulama içi bildirim ve WhatsApp parametreleri bundan gider
+  en?: { title: string; body: string; whatsappParams?: string[] };
 };
+
+export type NotificationEn = { title: string; body: string };
 
 @Injectable()
 export class NotificationService {
@@ -32,10 +36,15 @@ export class NotificationService {
     try {
       const user = await this.prisma.user.findUnique({
         where: { id: payload.userId },
-        select: { fcmToken: true, phone: true, isBot: true },
+        select: { fcmToken: true, phone: true, isBot: true, language: true },
       });
       // Botlara hiçbir kanaldan bildirim gönderilmez
       if (!user || user.isBot) return;
+      // Alıcının diline göre metin (İngilizce yoksa Türkçe); WhatsApp şablon dil kodu da alıcının dili
+      const lang = user.language === "en" ? "en" : "tr";
+      if (lang === "en" && payload.en) {
+        payload = { ...payload, title: payload.en.title, body: payload.en.body, whatsappParams: payload.en.whatsappParams ?? payload.whatsappParams };
+      }
 
       // 1) IN_APP kaydı her zaman oluştur; kullanıcıda son 25 bildirim kalır
       await this.saveRecord(payload, NotificationType.IN_APP);
@@ -59,7 +68,7 @@ export class NotificationService {
       // 3) WhatsApp (kritik bildirimler + telefon varsa)
       if (payload.whatsappTemplate && user.phone) {
         try {
-          await this.whatsappNotify.send(user.phone, payload.whatsappTemplate, payload.whatsappParams ?? []);
+          await this.whatsappNotify.send(user.phone, payload.whatsappTemplate, payload.whatsappParams ?? [], lang);
           await this.saveRecord(payload, NotificationType.WHATSAPP);
         } catch (err) {
           this.logger.error(`WhatsApp bildirimi gönderilemedi: user=${payload.userId} şablon=${payload.whatsappTemplate} ${err}`);
@@ -94,6 +103,7 @@ export class NotificationService {
         data: { event: "KYC_APPROVED" },
         whatsappTemplate: "ahenk_kyc_approved",
         whatsappParams: [],
+        en: { title: "Your identity is verified ✓", body: "Your profile now shows the 'Verified' badge. You can buy packages now." },
       });
     } else if (status === KycStatus.REJECTED) {
       await this.send({
@@ -103,6 +113,7 @@ export class NotificationService {
         data: { event: "KYC_REJECTED" },
         whatsappTemplate: "ahenk_kyc_rejected",
         whatsappParams: [rejectReason ?? "Bilgi eksik veya uyumsuz"],
+        en: { title: "Your identity verification was declined", body: rejectReason ?? "Your application was declined. You can apply again.", whatsappParams: [rejectReason ?? "Missing or mismatched information"] },
       });
     } else if (status === KycStatus.SUSPICIOUS) {
       await this.send({
@@ -110,6 +121,7 @@ export class NotificationService {
         title: "Kimlik doğrulamanız inceleme altında",
         body: "Başvurunuz ek inceleme gerektiriyor. En kısa sürede bilgilendirileceğiz.",
         data: { event: "KYC_SUSPICIOUS" },
+        en: { title: "Your identity verification is under review", body: "Your application needs a closer look. We'll let you know soon." },
       });
     }
   }
@@ -117,14 +129,21 @@ export class NotificationService {
   // ─── Masa onayı ──────────────────────────────────────────────────────────
 
   async notifyMeetingConfirmed(userId: string, meetingId: string, scheduledAt: Date): Promise<void> {
-    const dateStr = scheduledAt.toLocaleDateString("tr-TR", {
+    // Saat dilimi: masanın bölgesinin (şehir) saat dilimi
+    const m = await this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { city: { select: { timezone: true } } } }).catch(() => null);
+    const timeZone = m?.city?.timezone ?? "Europe/Istanbul";
+    // Buluşmanın yapıldığı bölgenin saat dilimi; gün / ay adı alıcının dilinde, saat 24 saat
+    const fmt = (locale: string) => scheduledAt.toLocaleDateString(locale, {
       weekday: "long",
       day: "numeric",
       month: "long",
       hour: "2-digit",
       minute: "2-digit",
-      timeZone: "Europe/Istanbul",
+      hourCycle: "h23",
+      timeZone,
     });
+    const dateStr = fmt("tr-TR");
+    const dateEn = fmt("en-GB");
 
     await this.send({
       userId,
@@ -133,6 +152,7 @@ export class NotificationService {
       data: { event: "MEETING_CONFIRMED", meetingId },
       whatsappTemplate: "ahenk_meeting_confirmed",
       whatsappParams: [dateStr],
+      en: { title: "Your table details are ready", body: `The details of your table on ${dateEn} are ready. Check them under My Tables.`, whatsappParams: [dateEn] },
     });
   }
 
@@ -146,6 +166,7 @@ export class NotificationService {
       data: { event: "MEETING_NOT_FORMED" },
       whatsappTemplate: "ahenk_meeting_not_formed",
       whatsappParams: [],
+      en: { title: "Your table couldn't be set up", body: "We're really sorry — there weren't enough matches to set up your table." },
     });
   }
 
@@ -158,6 +179,10 @@ export class NotificationService {
       title: `${meetingType === 'GROUP' ? 'Grup' : label} döngüsü kapanıyor`,
       body: `${label} döngüsü 12 saat içinde kapanıyor. Hâlâ eşleşme havuzundasın.`,
       data: { event: 'CYCLE_CLOSING_SOON', meetingType },
+      en: (() => {
+        const l = meetingType === 'GROUP' ? 'Group table' : meetingType === 'KANKA' ? 'Kankamla' : 'One-on-One';
+        return { title: `${l} cycle is closing`, body: `The ${l} cycle closes within 12 hours. You're still in the matching pool.` };
+      })(),
     });
   }
 
@@ -165,7 +190,7 @@ export class NotificationService {
 
   async sendToUser(
     userId: string,
-    payload: { title: string; body: string; data?: Record<string, string> },
+    payload: { title: string; body: string; data?: Record<string, string>; en?: NotificationEn },
   ): Promise<void> {
     await this.send({ userId, ...payload });
   }
@@ -184,7 +209,8 @@ export class NotificationService {
   async getNotifications(userId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
 
-    const [items, total, unreadCount] = await Promise.all([
+    const seen = await this.prisma.user.findUnique({ where: { id: userId }, select: { lastNotificationsSeenAt: true } });
+    const [items, total, unreadCount, newUnreadCount] = await Promise.all([
       this.prisma.notification.findMany({
         where: { userId, type: NotificationType.IN_APP },
         orderBy: { createdAt: "desc" },
@@ -195,9 +221,14 @@ export class NotificationService {
       this.prisma.notification.count({ where: { userId, type: NotificationType.IN_APP } }),
       // Okunmamış toplamı (mobil Bildirimler rozeti)
       this.prisma.notification.count({ where: { userId, type: NotificationType.IN_APP, read: false } }),
+      // Alt menü rozeti: Bildirimler sayfasının son açılışından sonra gelen okunmamışlar (hiç açılmadıysa bütün okunmamışlar)
+      this.prisma.notification.count({
+        where: { userId, type: NotificationType.IN_APP, read: false, ...(seen?.lastNotificationsSeenAt ? { createdAt: { gt: seen.lastNotificationsSeenAt } } : {}) },
+      }),
     ]);
 
-    return { items, total, page, totalPages: Math.ceil(total / limit), unreadCount };
+    // newUnreadCount > 0 → sayı; değilse unreadCount > 0 (hasUnread) → nokta
+    return { items, total, page, totalPages: Math.ceil(total / limit), unreadCount, newUnreadCount, hasUnread: unreadCount > 0 };
   }
 
   async markRead(userId: string, notificationId: string): Promise<void> {
@@ -205,6 +236,11 @@ export class NotificationService {
       where: { id: notificationId, userId },
       data: { read: true },
     });
+  }
+
+  // Bildirimler sayfası açıldı: rozet sayısı sıfırlanır (okunmamış varsa nokta kalır)
+  async markSeen(userId: string): Promise<void> {
+    await this.prisma.user.update({ where: { id: userId }, data: { lastNotificationsSeenAt: new Date() } });
   }
 
   async markAllRead(userId: string): Promise<void> {

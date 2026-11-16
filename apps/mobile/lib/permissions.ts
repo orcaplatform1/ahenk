@@ -3,13 +3,14 @@
 // cihaz ayarlarını açan "Ayarlara Git" butonu gösterilir. İzin hiç sorulmamışsa sistem penceresi açılır.
 import { Linking } from 'react-native';
 import { showAlert } from '@/components/AppAlert';
+import i18n from './i18n';
 
 interface PermResult { granted: boolean; canAskAgain: boolean }
 
 export function showSettingsAlert(reason: string) {
-  showAlert('İzin gerekli', reason, [
-    { text: 'Vazgeç', style: 'cancel' },
-    { text: 'Ayarlara Git', onPress: () => { Linking.openSettings().catch(() => {}); } },
+  showAlert(i18n.t('perm.required'), reason, [
+    { text: i18n.t('masa.dismiss'), style: 'cancel' },
+    { text: i18n.t('perm.goSettings'), onPress: () => { Linking.openSettings().catch(() => {}); } },
   ]);
 }
 
@@ -33,12 +34,13 @@ export async function blockedWithAlert(get: () => Promise<PermResult>, reason: s
   return false;
 }
 
+// Metinler arayüz dilinde (okunduğu anda çevrilir)
 export const PERM_REASON = {
-  library: 'Fotoğraf seçip yükleyebilmek için galeri erişimine izin vermen gerekiyor.',
-  camera: 'Fotoğraf çekebilmek için kamera erişimine izin vermen gerekiyor.',
-  kycCamera: 'Kimlik doğrulaması için kamera ve mikrofon erişimine izin vermen gerekiyor.',
-  location: 'Acil Yardım talebinde konumunun iletilebilmesi için konum erişimine izin vermen gerekiyor.',
-  locationAlways: 'Acil Yardım talebin sürerken uygulama kapalıyken de konumunun iletilebilmesi için konum iznini "Her zaman" yapman gerekiyor.',
-  notifications: 'Masa onayı ve buluşma hatırlatmalarını alabilmek için bildirim iznine ihtiyaç var.',
-  contacts: 'Rehberindeki numaraları engelleme listesine ekleyebilmek için kişiler erişimine izin vermen gerekiyor.',
-} as const;
+  get library() { return i18n.t('perm.library'); },
+  get camera() { return i18n.t('perm.camera'); },
+  get kycCamera() { return i18n.t('perm.kycCamera'); },
+  get location() { return i18n.t('perm.location'); },
+  get locationAlways() { return i18n.t('perm.locationAlways'); },
+  get notifications() { return i18n.t('perm.notifications'); },
+  get contacts() { return i18n.t('perm.contacts'); },
+};

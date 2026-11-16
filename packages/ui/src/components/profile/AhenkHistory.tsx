@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { OceanRadar, OceanScores } from '../ocean/OceanRadar';
+import { documentLang } from '../../lib/lang';
 
 export interface HistoryEntry {
   id: string;
@@ -61,6 +63,7 @@ function TiltCard({ children }: { children: React.ReactNode }) {
 }
 
 function RingBadge({ score }: { score: number }) {
+  const t = useTranslations();
   const r = 22;
   const circ = 2 * Math.PI * r;
   const dash = (score / 100) * circ;
@@ -89,6 +92,7 @@ function RingBadge({ score }: { score: number }) {
 }
 
 export function AhenkHistory({ entries, apiBase, token }: Props) {
+  const t = useTranslations();
   const [data, setData] = useState<HistoryEntry[]>(entries ?? []);
   const [loading, setLoading] = useState(!entries && !!apiBase);
 
@@ -97,7 +101,7 @@ export function AhenkHistory({ entries, apiBase, token }: Props) {
 
     setLoading(true);
     fetch(`${apiBase}/meetings/my-history`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token ? { Authorization: `Bearer ${token}`, 'Accept-Language': documentLang() } : { 'Accept-Language': documentLang() },
       credentials: 'include',
     })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
@@ -106,7 +110,7 @@ export function AhenkHistory({ entries, apiBase, token }: Props) {
           items.map((item) => ({
             id: item.id,
             date: item.date,
-            locationName: item.venueName ?? (item.city ? `${item.city} Buluşması` : 'Bilinmeyen Mekan'),
+            locationName: item.venueName ?? (item.city ? t('history.cityMeetup', { city: item.city }) : t('history.unknownVenue')),
             locationPhotoUrl: item.venuePhotoUrl ?? undefined,
             compatScore: item.overallCompatibility ?? 0,
           })),
@@ -127,7 +131,7 @@ export function AhenkHistory({ entries, apiBase, token }: Props) {
   }
 
   if (data.length === 0) {
-    return <p className="text-muted text-sm">Henüz geçmiş masa yok.</p>;
+    return <p className="text-muted text-sm">{t('history.empty')}</p>;
   }
 
   return (
@@ -171,7 +175,7 @@ export function AhenkHistory({ entries, apiBase, token }: Props) {
                 {/* Sağ — uyum skoru + rozet */}
                 <div className="p-4 flex flex-col items-center justify-center gap-2 border-l border-border">
                   <RingBadge score={entry.compatScore} />
-                  <p className="text-xs text-muted text-center">Uyum</p>
+                  <p className="text-xs text-muted text-center">{t('history.compat')}</p>
                 </div>
               </div>
             </div>

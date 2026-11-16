@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { loadFonts } from '@/lib/boot';
 import { onAuthLost } from '@/lib/api';
 import '@/lib/sosLive';
+import '@/lib/i18n';
 import { AppAlertHost } from '@/components/AppAlert';
 import { AdminLockOverlay } from '@/components/AdminLockOverlay';
 

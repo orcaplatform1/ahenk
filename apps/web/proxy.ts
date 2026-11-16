@@ -1,5 +1,12 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import createMiddleware from 'next-intl/middleware';
+import { ENGLISH_ENABLED } from '@ahenk/shared';
+import { routing } from './i18n/routing';
+
+const intlMiddleware = createMiddleware(routing);
+// Admin ve mekân paneli Türkçe kalır: dil yönlendirmesi yapılmaz
+// Dosyalar (public/, robots.txt, sitemap.xml) ve paylaşım görselleri de dil yönlendirmesine girmez
+const NON_LOCALIZED = /^\/(admin|mekan|api|opengraph-image|twitter-image)(\/|$)|\.[a-zA-Z0-9]+$/;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://167.86.103.185:4000';
 
@@ -33,15 +40,35 @@ export function proxy(request: NextRequest) {
   // Oturum işareti (gizli değer taşımaz); token'lar HttpOnly çerezde. ahenk_token: eski sürümden kalan oturum
   const hasSession = !!(request.cookies.get('ahenk_session')?.value || request.cookies.get('ahenk_token')?.value);
 
-  const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/profil') || pathname.startsWith('/admin');
-  const isAuth = pathname === '/giris' || pathname === '/kayit';
+  // Dil: Türkçe önek yok, İngilizce /en. bare = dilsiz yol
+  const localized = !NON_LOCALIZED.test(pathname);
+  const isEn = pathname === '/en' || pathname.startsWith('/en/');
+  const bare = isEn ? pathname.slice(3) || '/' : pathname;
+  const prefix = isEn ? '/en' : '';
+  const toUrl = (path: string) => { const u = request.nextUrl.clone(); u.pathname = path; return u; };
+
+  if (localized) {
+    // İngilizce kapalıyken /en adresleri Türkçe adrese döner
+    if (!ENGLISH_ENABLED && isEn) return NextResponse.redirect(toUrl(bare));
+    // Dil belirleme (önek yokken): kayıtlı seçim (çerez) → tarayıcı dili Türkçe değilse English.
+    // Hesaptaki dil, giriş yapınca istemcide (LocaleSync) uygulanır. Arama motorları (dil başlığı yok) Türkçe kalır.
+    if (ENGLISH_ENABLED && !isEn && request.method === 'GET') {
+      const stored = request.cookies.get('NEXT_LOCALE')?.value;
+      const accept = (request.headers.get('accept-language') ?? '').trim().toLowerCase();
+      const wantsEn = stored === 'en' || (!stored && accept !== '' && !accept.startsWith('tr'));
+      if (wantsEn) return NextResponse.redirect(toUrl(bare === '/' ? '/en' : `/en${bare}`));
+    }
+  }
+
+  const isProtected = bare.startsWith('/dashboard') || bare.startsWith('/profil') || pathname.startsWith('/admin');
+  const isAuth = bare === '/giris' || bare === '/kayit';
 
   if (isProtected && !hasSession) {
-    return NextResponse.redirect(new URL('/giris', request.url));
+    return NextResponse.redirect(toUrl(pathname.startsWith('/admin') ? '/giris' : `${prefix}/giris`));
   }
 
   if (isAuth && hasSession) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(toUrl(`${prefix}/dashboard`));
   }
 
   const nonce = btoa(crypto.randomUUID());
@@ -52,7 +79,10 @@ export function proxy(request: NextRequest) {
   requestHeaders.set('x-nonce', nonce);
   requestHeaders.set('Content-Security-Policy', csp);
 
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  // Kullanıcı sayfaları next-intl'den geçer (önek yoksa Türkçe); başlıklar (nonce) yeniden yazılan isteğe aktarılır
+  const response = localized
+    ? intlMiddleware(new NextRequest(request, { headers: requestHeaders }))
+    : NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('Content-Security-Policy', csp);
   return response;
 }

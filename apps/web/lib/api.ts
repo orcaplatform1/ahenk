@@ -1,7 +1,14 @@
+import { documentLang } from '@ahenk/shared';
 import { withResendSeconds } from './otpResend';
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
 const PREFIX = `${BASE}/api/v1`;
+
+// Her API isteğinde o anki arayüz dili (backend mesaj dili: hesap dili → Accept-Language → Türkçe)
+export const langHeaders = (): Record<string, string> => ({ 'Accept-Language': documentLang() });
+
+// Sunucu mesajı yoksa gösterilen genel hata (seçili dilde)
+const genericError = () => (typeof window !== 'undefined' && (window.location.pathname === '/en' || window.location.pathname.startsWith('/en/')) ? 'Something went wrong' : 'Bir hata oluştu');
 
 // Oturum token'ları HttpOnly çerezlerde (JS okuyamaz). JS sadece gizli değer taşımayan
 // "ahenk_session" işaretine bakar; istekler credentials: 'include' ile çerezi taşır.
@@ -36,7 +43,7 @@ function onLogin() {
 // Sunucuda refresh token iptal edilir ve çerezler silinir; istek başarısız olsa da yerel çıkış yapılır
 async function logout(): Promise<void> {
   try {
-    await fetch(`${PREFIX}/auth/logout`, { method: 'POST', credentials: 'include' });
+    await fetch(`${PREFIX}/auth/logout`, { method: 'POST', credentials: 'include', headers: langHeaders() });
   } catch { /* yerel çıkış yine yapılır */ }
   clearSession();
 }
@@ -73,6 +80,7 @@ async function refreshSession(): Promise<boolean> {
       const res = await fetch(`${PREFIX}/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
+        headers: langHeaders(),
       });
       if (!res.ok) { clearSession(); return false; }
       clearLegacyToken();
@@ -92,6 +100,7 @@ type FetchOptions = Omit<RequestInit, 'body'> & { body?: unknown };
 async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...langHeaders(),
     ...(options.headers as Record<string, string>),
   };
 
@@ -105,8 +114,10 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
   if (res.status === 401) {
     const refreshed = await refreshSession();
     if (!refreshed) {
-      if (typeof window !== 'undefined') window.location.href = '/giris';
-      throw new Error('Oturum süresi doldu');
+      // Oturum düştü: seçili dildeki giriş sayfasına (admin / mekân paneli Türkçe giriş)
+      const en = typeof window !== 'undefined' && (window.location.pathname === '/en' || window.location.pathname.startsWith('/en/'));
+      if (typeof window !== 'undefined') window.location.href = en ? '/en/giris' : '/giris';
+      throw new Error(en ? 'Your session has expired' : 'Oturum süresi doldu');
     }
     const retry = await fetch(`${PREFIX}${path}`, {
       ...options,
@@ -115,8 +126,8 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
     });
     if (!retry.ok) {
-      const err = await retry.json().catch(() => ({ message: 'Bir hata oluştu' }));
-      throw new Error((err as { message?: string }).message ?? 'Bir hata oluştu');
+      const err = await retry.json().catch(() => ({ message: genericError() }));
+      throw new Error((err as { message?: string }).message ?? genericError());
     }
     return retry.json() as Promise<T>;
   }
@@ -126,10 +137,10 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
   }
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: 'Bir hata oluştu' }));
+    const err = await res.json().catch(() => ({ message: genericError() }));
     throw withResendSeconds(new Error((err as { message?: string | string[] }).message instanceof Array
       ? ((err as { message: string[] }).message[0])
-      : ((err as { message?: string }).message ?? 'Bir hata oluştu')), err);
+      : ((err as { message?: string }).message ?? genericError())), err);
   }
 
   return res.json() as Promise<T>;
@@ -139,7 +150,7 @@ async function silentFetch<T>(path: string): Promise<T | null> {
   if (!hasSession()) return null;
   try {
     const res = await fetch(`${PREFIX}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...langHeaders() },
       credentials: 'include',
     });
     if (!res.ok) return null;

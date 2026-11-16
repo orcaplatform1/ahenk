@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { currentYearTR } from '@/lib/tr-date';
 
 // Kayıt formundaki doğum tarihi seçici (gün / ay / yıl); kariyer formu da bunu kullanır
 
-const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+// Ay adları arayüz dilinde
+const monthNames = (locale: string) => Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(2024, i, 15)).toLocaleDateString(locale === 'en' ? 'en-GB' : 'tr-TR', { month: 'long', timeZone: 'UTC' }));
 
 function PickerColumn({ title, options, selected, onSelect }: {
   title: string;
@@ -62,6 +64,8 @@ function DatePickerModal({ value, onChange, onClose }: {
   onChange: (v: string) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const maxYear = currentYearTR() - 18;
   const minYear = 1965; // en eski doğum tarihi 01.01.1965
 
@@ -72,7 +76,7 @@ function DatePickerModal({ value, onChange, onClose }: {
 
   const daysInMonth = new Date(tmpYear, tmpMonth, 0).getDate();
   const dayOpts   = Array.from({ length: daysInMonth }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
-  const monthOpts = MONTHS_TR.map((m, i) => ({ value: i + 1, label: m }));
+  const monthOpts = monthNames(locale).map((m, i) => ({ value: i + 1, label: m }));
   const yearOpts  = Array.from({ length: maxYear - minYear + 1 }, (_, i) => ({ value: maxYear - i, label: String(maxYear - i) }));
 
   // Ay değişince gün sınırını koru
@@ -110,7 +114,7 @@ function DatePickerModal({ value, onChange, onClose }: {
       >
         {/* Başlık */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <p style={{ fontSize: 13, color: '#a39c93' }}>Doğum tarihi seç</p>
+          <p style={{ fontSize: 13, color: '#a39c93' }}>{t('date.pickBirth')}</p>
           <button
             onClick={onClose}
             style={{ color: '#a39c93', fontSize: 20, lineHeight: 1, background: 'none', outline: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
@@ -119,9 +123,9 @@ function DatePickerModal({ value, onChange, onClose }: {
 
         {/* Üç kolon */}
         <div style={{ display: 'flex', gap: 8, height: 220 }}>
-          <PickerColumn title="Gün"   options={dayOpts}   selected={tmpDay}   onSelect={setTmpDay}   />
-          <PickerColumn title="Ay"    options={monthOpts} selected={tmpMonth} onSelect={setTmpMonth} />
-          <PickerColumn title="Yıl"   options={yearOpts}  selected={tmpYear}  onSelect={setTmpYear}  />
+          <PickerColumn title={t('date.day')}   options={dayOpts}   selected={tmpDay}   onSelect={setTmpDay}   />
+          <PickerColumn title={t('date.month')}    options={monthOpts} selected={tmpMonth} onSelect={setTmpMonth} />
+          <PickerColumn title={t('date.year')}   options={yearOpts}  selected={tmpYear}  onSelect={setTmpYear}  />
         </div>
 
         {/* Onayla */}
@@ -130,7 +134,7 @@ function DatePickerModal({ value, onChange, onClose }: {
           className="btn-primary w-full justify-center"
           style={{ marginTop: 20 }}
         >
-          Seç
+          {t('date.select')}
         </button>
       </div>
     </div>
@@ -142,12 +146,14 @@ function DatePickerModal({ value, onChange, onClose }: {
 export function DateField({ label, value, onChange }: {
   label: string; value: string; onChange: (v: string) => void;
 }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
 
-  let display = 'Doğum tarihi seç';
+  let display = t('date.pickBirth');
   if (value) {
     const [y, m, d] = value.split('-').map(Number);
-    display = `${d} ${MONTHS_TR[m - 1]} ${y}`;
+    display = `${d} ${monthNames(locale)[m - 1]} ${y}`;
   }
 
   return (

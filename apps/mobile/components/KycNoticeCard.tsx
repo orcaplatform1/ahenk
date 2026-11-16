@@ -7,8 +7,10 @@ import Svg, { Path } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { T } from './ui';
 import { ll } from '@/theme/theme';
+import { useTranslation } from 'react-i18next';
 
 export function KycNoticeCard() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [show, setShow] = useState(false);
   useFocusEffect(useCallback(() => {
@@ -22,7 +24,7 @@ export function KycNoticeCard() {
       style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(214,69,58,0.45)', backgroundColor: 'rgba(214,69,58,0.08)', paddingVertical: 14, paddingHorizontal: 16 }}
     >
       <View style={{ flex: 1 }}>
-        <T style={{ fontSize: 14, lineHeight: 21, color: ll.text }}>Kullanıcı güvenliği sebebiyle masaya katılım için lütfen kimliğinizi doğrulayın.</T>
+        <T style={{ fontSize: 14, lineHeight: 21, color: ll.text }}>{t('common.kycNotice')}</T>
       </View>
       <Svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke={ll.red3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M9 6l6 6-6 6" /></Svg>
     </Pressable>

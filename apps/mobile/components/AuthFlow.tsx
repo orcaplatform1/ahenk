@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { openLegal } from '@/lib/links';
 import { T } from './ui';
 import { ll, tw } from '@/theme/theme';
+import { useTranslation } from 'react-i18next';
 
 // Dönüşümlü giriş arka planları: giriş ve "Tekrar hoş geldin" ekranı her açıldığında sıradaki görsel
 // (1 → 2 → 3 → 1 …). En son gösterilen sıra cihazda (AsyncStorage) saklanır; uygulama kapatılıp açılınca kaldığı yerden sürer.
@@ -77,19 +78,21 @@ export function AuthBackground({ index, overlay }: { index: number | null; overl
 // Giriş ekranı başlığı: güvenli alanın 24 px altında, ortalı "AHENK" (web header ile aynı: Inter 600, harf aralığı 0.12em);
 // 8 px altında açıklama (gövde fontu Inter 400, 15, beyaz %70). Konum üç fotoğrafta aynı.
 export function AuthHeading() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
     <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 24, left: 24, right: 24, alignItems: 'center' }}>
       <T w={600} style={{ fontSize: 36, lineHeight: 44, letterSpacing: 36 * 0.12, color: '#FFFFFF', textAlign: 'center' }}>AHENK</T>
-      <T style={{ marginTop: 8, fontSize: 15, lineHeight: 22, color: '#FFFFFF', opacity: 0.7, textAlign: 'center' }}>Güzel bir akşamın başlangıcındasın.</T>
+      <T style={{ marginTop: 8, fontSize: 15, lineHeight: 22, color: '#FFFFFF', opacity: 0.7, textAlign: 'center' }}>{t('login.headingSub')}</T>
     </View>
   );
 }
 
 export function BackArrow({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel="Geri" hitSlop={8}
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={t('common.back')} hitSlop={8}
       style={{ position: 'absolute', top: insets.top + 6, left: 10, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
       <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <Path d="M15 18l-6-6 6-6" />
@@ -100,12 +103,13 @@ export function BackArrow({ onPress }: { onPress: () => void }) {
 
 // "Devam ederek Kullanım Koşulları'nı kabul edersin. ..." — sayfa adları mevcut yasal sayfalara bağlı (uygulama içi tarayıcı)
 export function LegalNote() {
+  const { t } = useTranslation();
   const link = (label: string, path: string) => (
     <T style={{ fontSize: 12, lineHeight: 18, color: ll.text, textDecorationLine: 'underline' }} onPress={() => openLegal(path)} accessibilityRole="link">{label}</T>
   );
   return (
     <T style={{ fontSize: 12, lineHeight: 18, color: ll.text2, textAlign: 'center' }}>
-      Devam ederek {link('Kullanım Koşulları', '/kullanim-kosullari')}'nı kabul edersin. Verilerini nasıl işlediğimizi öğrenmek için {link('Gizlilik Politikası', '/gizlilik-politikasi')} ve {link('Çerez Politikası', '/cerez-politikasi')}'nı inceleyebilirsin.
+      {t('login.legal1')}{link(t('login.legalTerms'), '/kullanim-kosullari')}{t('login.legal2')}{link(t('login.legalPrivacy'), '/gizlilik-politikasi')}{t('login.legal3')}{link(t('login.legalCookies'), '/cerez-politikasi')}{t('login.legal4')}
     </T>
   );
 }

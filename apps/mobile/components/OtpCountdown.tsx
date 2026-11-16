@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { BtnGhost, T } from './ui';
 import { ll } from '@/theme/theme';
 
+import { useTranslation } from 'react-i18next';
 // Hata yanıtındaki kalan saniye (bekleme süresi dolmadan yeni kod istenince backend döner)
 export function resendSecondsOf(e: unknown): number | null {
   const err = e as { resendSeconds?: unknown; data?: { resendSeconds?: unknown } | null } | null;
@@ -61,9 +62,10 @@ export function otpNoticeOf(e: unknown): OtpNoticeCode | null {
 
 // Uyarının altındaki buton: kayıtlı olmayan numarada "Kayıt ol", kayıtlı numarada "Giriş yap"
 export function OtpNoticeAction({ code }: { code: OtpNoticeCode | null }) {
+  const { t } = useTranslation();
   const router = useRouter();
   if (!code) return null;
   return code === 'PHONE_NOT_REGISTERED'
-    ? <BtnGhost full label="Kayıt ol" onPress={() => router.push('/kayit')} />
-    : <BtnGhost full label="Giriş yap" onPress={() => router.replace('/giris')} />;
+    ? <BtnGhost full label={t('otp.register')} onPress={() => router.push('/kayit')} />
+    : <BtnGhost full label={t('otp.login')} onPress={() => router.replace('/giris')} />;
 }

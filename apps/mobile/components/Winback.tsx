@@ -11,6 +11,8 @@ import { useReduceMotion } from '@/lib/motion';
 import { InlineLH, Btn, Serif, T } from './ui';
 import { btn, ll, tw, winbackShine } from '@/theme/theme';
 import { permissionIntroDone } from './PermissionIntro';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 
 // mobileListTL / mobileDiscountedTL: mobilde gösterilen ve tahsil edilen fiyat (mobil fiyat − geri kazanım tutarı)
 export interface WinbackPlan { plan: string; name: string; listTL: number; discountedTL: number; mobileListTL: number; mobileDiscountedTL: number; needsKanka: boolean }
@@ -39,6 +41,7 @@ export function useWinback() {
 
 // auto: ekranı hakkı olan kullanıcıya ilk açılışta gösterir (uygulamada tek yerde, sekme yerleşiminde). badge: canlı sayaçlı rozet (Eşleşme Paneli)
 export function WinbackHost({ badge = false, auto = true }: { badge?: boolean; auto?: boolean }) {
+  const { t } = useTranslation();
   const { state, live, remaining, markShown } = useWinback();
   const [open, setOpen] = useState(false);
   const [merged, setMerged] = useState(false);
@@ -57,7 +60,7 @@ export function WinbackHost({ badge = false, auto = true }: { badge?: boolean; a
     <>
       {badge && (
         <View style={{ alignItems: 'center', paddingHorizontal: 16, marginBottom: 12 }}>
-          <Btn variant="winbackBadge" onPress={() => setOpen(true)} label={`${state.amountTL}₺ indirimin · ${clockMS(remaining)}`} textStyle={{ fontVariant: ['tabular-nums'] }} />
+          <Btn variant="winbackBadge" onPress={() => setOpen(true)} label={`${t('winback.badge', { amount: state.amountTL })} · ${clockMS(remaining)}`} textStyle={{ fontVariant: ['tabular-nums'] }} />
         </View>
       )}
       {open && <WinbackScreen state={state} remaining={remaining} merged={merged} onMerge={() => setMerged(true)} onClose={() => setOpen(false)} />}
@@ -65,7 +68,11 @@ export function WinbackHost({ badge = false, auto = true }: { badge?: boolean; a
   );
 }
 
+// Plan adı arayüz dilinde (anahtar yoksa sunucudaki ad)
+const planName = (p: WinbackPlan) => (i18n.exists(`plans.${p.plan}`) ? i18n.t(`plans.${p.plan}`) : p.name);
+
 function WinbackScreenInner({ state, remaining, merged, onMerge, onClose }: { state: WinbackState; remaining: number; merged: boolean; onMerge: () => void; onClose: () => void }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduce = useReduceMotion();
@@ -105,39 +112,39 @@ function WinbackScreenInner({ state, remaining, merged, onMerge, onClose }: { st
         </Svg>
         <ScrollView contentContainerStyle={{ maxWidth: 440, width: '100%', alignSelf: 'center', paddingTop: 22 + insets.top, paddingHorizontal: 20, paddingBottom: 32 + insets.bottom, alignItems: 'center' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 22 }}>
-            <T w={700} style={st.pill}>SANA ÖZEL İNDİRİM</T>
-            <Btn variant="winbackClose" accessibilityLabel="Kapat" label="×" onPress={onClose} />
+            <T w={700} style={st.pill}>{t('winback.pill')}</T>
+            <Btn variant="winbackClose" accessibilityLabel={t('common.close')} label="×" onPress={onClose} />
           </View>
-          <Serif style={{ fontSize: 34, lineHeight: 39, textAlign: 'center', marginBottom: 16 }}>{state.lapsed ? 'Birkaç masa daha?' : 'Uyumlu bir masa?'}</Serif>
+          <Serif style={{ fontSize: 34, lineHeight: 39, textAlign: 'center', marginBottom: 16 }}>{state.lapsed ? t('winback.titleLapsed') : t('winback.title')}</Serif>
           <View style={st.strip}>
-            <T w={700} style={{ fontSize: 11, letterSpacing: 1.3, color: '#ff8a7e' }}>TEKLİFİN BİTMESİNE</T>
+            <T w={700} style={{ fontSize: 11, letterSpacing: 1.3, color: '#ff8a7e' }}>{t('winback.endsIn')}</T>
             <T w={700} style={{ fontSize: 19, letterSpacing: 0.76, fontVariant: ['tabular-nums'] }}>{clockHMS(remaining)}</T>
           </View>
-          <T style={{ marginTop: 18, marginBottom: 6, fontSize: 14, color: ll.text2, textAlign: 'center' }}>{merged ? 'İndirimin tanımlandı, şimdi eşleşme zamanı.' : 'Halkalara dokun, indirimini ortaya çıkar.'}</T>
-          <Pressable disabled={merged} onPress={onMerge} accessibilityLabel="Halkalar" style={{ width: 250, height: 190, marginVertical: 4, alignItems: 'center', justifyContent: 'center' }}>
+          <T style={{ marginTop: 18, marginBottom: 6, fontSize: 14, color: ll.text2, textAlign: 'center' }}>{merged ? t('winback.merged') : t('winback.tapRings')}</T>
+          <Pressable disabled={merged} onPress={onMerge} accessibilityLabel={t('winback.rings')} style={{ width: 250, height: 190, marginVertical: 4, alignItems: 'center', justifyContent: 'center' }}>
             <Animated.View style={[st.ring, { borderColor: ringColor, transform: [{ translateX: ax }] }, merged && st.ringMerged]} />
             <Animated.View style={[st.ring, { borderColor: ringColor, transform: [{ translateX: bx }] }, merged && st.ringMerged]} />
             <Animated.View style={{ position: 'absolute', alignItems: 'center', opacity: amt }}>
               <Serif style={{ fontSize: 36, lineHeight: 36 }}>{state.amountTL}₺</Serif>
-              <T w={700} style={{ fontSize: 11, letterSpacing: 1.76, color: '#e8a27a', marginTop: 5 }}>İNDİRİM</T>
+              <T w={700} style={{ fontSize: 11, letterSpacing: 1.76, color: '#e8a27a', marginTop: 5 }}>{t('winback.discount')}</T>
             </Animated.View>
           </Pressable>
           {merged && (
             <View style={{ width: '100%' }}>
-              <T w={700} style={{ fontSize: 12, letterSpacing: 1.68, color: ll.label, marginTop: 12, marginBottom: 10, textAlign: 'center' }}>PAKETİNİ SEÇ</T>
+              <T w={700} style={{ fontSize: 12, letterSpacing: 1.68, color: ll.label, marginTop: 12, marginBottom: 10, textAlign: 'center' }}>{t('winback.pick')}</T>
               {plans.map((p) => (
-                <Btn key={p.plan} variant="winbackPlan" selected={selected === p.plan} accessibilityLabel={p.name} onPress={() => setSelected(p.plan)}>
-                  <Serif style={{ fontSize: 18 }}>{p.name}</Serif>
+                <Btn key={p.plan} variant="winbackPlan" selected={selected === p.plan} accessibilityLabel={planName(p)} onPress={() => setSelected(p.plan)}>
+                  <Serif style={{ fontSize: 18 }}>{planName(p)}</Serif>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                     <T style={{ fontSize: 12, color: '#8f887f', textDecorationLine: 'line-through', marginRight: 8 }}>{p.mobileListTL}₺</T>
                     <T w={700} style={{ fontSize: 20 }}>{p.mobileDiscountedTL}₺</T>
                   </View>
                 </Btn>
               ))}
-              <T numberOfLines={1} style={{ fontSize: 11, color: '#8f887f', textAlign: 'center', marginTop: 2, marginBottom: 14 }}>Referans indirimi bu indirimle birleşmez.</T>
+              <T numberOfLines={1} style={{ fontSize: 11, color: '#8f887f', textAlign: 'center', marginTop: 2, marginBottom: 14 }}>{t('winback.noCombine')}</T>
               <WinbackCta disabled={!selected || busy} reduce={reduce} onPress={apply} />
-              {!selected && <T style={st.hint}>Önce paketini seç</T>}
-              {!state.kycApproved && <T style={st.hint}>Kimlik doğrulamanız onaylanana kadar indiriminizi koruyoruz.</T>}
+              {!selected && <T style={st.hint}>{t('winback.pickFirst')}</T>}
+              {!state.kycApproved && <T style={st.hint}>{t('winback.kycKeep')}</T>}
               {!!error && <T style={{ fontSize: 13, color: tw.accent, textAlign: 'center', marginTop: 10 }}>{error}</T>}
             </View>
           )}
@@ -149,6 +156,7 @@ function WinbackScreenInner({ state, remaining, merged, onMerge, onClose }: { st
 
 // .wb-cta + ::after parlama: yazı stili tema winbackCta'dan, parlama tema winbackShine'dan. w: buton tam genişliği (içerik + iki yan dolgu)
 function WinbackCta({ disabled, reduce, onPress }: { disabled: boolean; reduce: boolean; onPress: () => void }) {
+  const { t } = useTranslation();
   const [w, setW] = useState(0);
   const x = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -163,9 +171,9 @@ function WinbackCta({ disabled, reduce, onPress }: { disabled: boolean; reduce: 
   }, [reduce, w, x]);
   const { weight, ...text } = btn.winbackCta.text;
   return (
-    <Btn variant="winbackCta" disabled={disabled} accessibilityLabel="İndirimi Uygula" onPress={onPress}>
+    <Btn variant="winbackCta" disabled={disabled} accessibilityLabel={t('winback.apply')} onPress={onPress}>
       <View onLayout={(e) => setW(e.nativeEvent.layout.width + 2 * (btn.winbackCta.box.padding as number))} style={{ alignSelf: 'stretch', alignItems: 'center' }}>
-        <T w={weight} style={text}>İndirimi Uygula</T>
+        <T w={weight} style={text}>{t('winback.apply')}</T>
       </View>
       {!reduce && w > 0 && (
         <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: w * winbackShine.widthRatio,

@@ -1,6 +1,8 @@
 'use client';
 
 import { gColor } from '@ahenk/ui';
+import { useTranslations } from 'next-intl';
+import { formatTime } from '@ahenk/shared';
 import type { LivePulse } from './types';
 
 type Event = LivePulse['feed']['events'][number];
@@ -10,11 +12,11 @@ const MAX_ROWS = 20;
 // 15 tek satırlık olay: satır 6+6 px dolgu + 17,25 px satır (11,5 × 1,5) + 1 px çizgi
 const VISIBLE_ROWS_HEIGHT = 15 * (12 + 17.25 + 1);
 
-function Row({ event }: { event: Event }) {
+function Row({ event, tz }: { event: Event; tz?: string }) {
   return (
     <div className="ll-feed-row">
       <span className="ll-mono" style={{ fontSize: 10, color: '#8f887f' }}>
-        {new Date(event.at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })}
+        {formatTime(event.at, tz)}
       </span>
       <span style={{ fontSize: 11.5, lineHeight: 1.5, color: '#f4f1ec', minWidth: 0, overflowWrap: 'anywhere' }}>
         {event.segments.map((s, i) => s.t === 'person' ? (
@@ -29,20 +31,21 @@ function Row({ event }: { event: Event }) {
   );
 }
 
-export default function LiveFeed({ feed }: { feed: LivePulse['feed'] | null }) {
+export default function LiveFeed({ feed, tz }: { feed: LivePulse['feed'] | null; tz?: string }) {
+  const t = useTranslations();
   const events = (feed?.events ?? []).slice(0, MAX_ROWS);
 
   return (
     <section className="ll-card">
       <div className="ll-head">
-        <h2 className="ll-title">Canlı Akış</h2>
-        <span className="ll-note">Son 20 olay</span>
+        <h2 className="ll-title">{t('live.feedTitle')}</h2>
+        <span className="ll-note">{t('live.feedNote')}</span>
       </div>
       <div style={{ maxHeight: VISIBLE_ROWS_HEIGHT, overflowY: 'auto' }}>
         {events.length === 0 ? (
-          <p style={{ margin: 0, fontSize: 13, color: '#a39c93' }}>Henüz olay yok.</p>
+          <p style={{ margin: 0, fontSize: 13, color: '#a39c93' }}>{t('live.feedEmpty')}</p>
         ) : (
-          events.map((e) => <Row key={e.key} event={e} />)
+          events.map((e) => <Row key={e.key} event={e} tz={tz} />)
         )}
       </div>
     </section>

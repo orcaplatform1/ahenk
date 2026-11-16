@@ -88,7 +88,8 @@ export class OtpService {
 
   // Kod gönderir; dönen değer yeni kod isteyebilmek için beklenecek saniyedir.
   // Gönderilemeyen kod (ya da günlük sınıra takılan istek) bekleme süresini başlatmaz.
-  async send(phone: string, flow: OtpFlow): Promise<number> {
+  // language: alıcının dili (WhatsApp OTP şablon dil kodu)
+  async send(phone: string, flow: OtpFlow, language: string = "tr"): Promise<number> {
     await this.claimWait(phone, flow);
     try {
       // Günlük sınır: sayaç atomik artar; sınır aşılırsa ya da kod gönderilemezse geri alınır
@@ -101,7 +102,7 @@ export class OtpService {
       await this.redis.del(this.attemptsKey(phone, flow));
       await this.redis.set(this.key(phone, flow), JSON.stringify({ code } satisfies OtpEntry), OTP_TTL_SECONDS);
       try {
-        await this.whatsapp.sendOtp(phone, code);
+        await this.whatsapp.sendOtp(phone, code, language);
       } catch (err) {
         // Gönderilemeyen kod geçerli kalmasın
         await this.redis.del(this.key(phone, flow));

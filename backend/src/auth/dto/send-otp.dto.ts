@@ -1,17 +1,18 @@
-import { IsString, Matches, MinLength, MaxLength } from "class-validator";
+import { IsE164Phone } from "../../common/phone";
+import { IsIn, IsOptional, IsString, Matches, MinLength, MaxLength } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class SendLoginOtpDto {
   @ApiProperty({ example: "+905551234567" })
   @IsString()
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  @IsE164Phone()
   phone: string;
 }
 
 export class VerifyLoginOtpDto {
   @ApiProperty({ example: "+905551234567" })
   @IsString()
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  @IsE164Phone()
   phone: string;
 
   @ApiProperty({ example: "123456" })
@@ -23,14 +24,14 @@ export class VerifyLoginOtpDto {
 export class ForgotPasswordDto {
   @ApiProperty({ example: "+905551234567" })
   @IsString()
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  @IsE164Phone()
   phone: string;
 }
 
 export class ResetPasswordDto {
   @ApiProperty({ example: "+905551234567" })
   @IsString()
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  @IsE164Phone()
   phone: string;
 
   @ApiProperty({ example: "123456" })
@@ -49,14 +50,19 @@ export class ResetPasswordDto {
 export class RegisterSendOtpDto {
   @ApiProperty({ example: "+905551234567" })
   @IsString()
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  @IsE164Phone()
   phone: string;
+
+  // Arayüz dili: OTP WhatsApp şablonunun dil kodu
+  @IsOptional()
+  @IsIn(["tr", "en"])
+  language?: string;
 }
 
 export class RegisterVerifyOtpDto {
   @ApiProperty({ example: "+905551234567" })
   @IsString()
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  @IsE164Phone()
   phone: string;
 
   @ApiProperty({ example: "123456" })

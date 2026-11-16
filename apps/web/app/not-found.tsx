@@ -1,18 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 
 export default function NotFound() {
+  const t = useTranslations();
   const router = useRouter();
   const [count, setCount] = useState(5);
 
   useEffect(() => {
-    const t = setInterval(() => setCount(c => c - 1), 1000);
+    const tm = setInterval(() => setCount(c => c - 1), 1000);
     const r = setTimeout(() => router.push('/'), 5000);
-    return () => { clearInterval(t); clearTimeout(r); };
+    return () => { clearInterval(tm); clearTimeout(r); };
   }, [router]);
 
   return (
@@ -37,9 +39,9 @@ export default function NotFound() {
           style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           <p className="font-serif text-7xl font-bold" style={{ color: '#c0392b' }}>404</p>
-          <p className="font-serif text-xl text-[#f5f5f5]">Sayfa Bulunamadı</p>
-          <p className="text-sm text-[#555] leading-relaxed">Aradığın sayfa taşınmış veya silinmiş olabilir.</p>
-          <p className="text-xs text-[#444] mt-2">{count} saniye içinde ana sayfaya yönlendirileceksiniz.</p>
+          <p className="font-serif text-xl text-[#f5f5f5]">{t('errors.notFound')}</p>
+          <p className="text-sm text-[#555] leading-relaxed">{t('errors.notFoundBody')}</p>
+          <p className="text-xs text-[#444] mt-2">{t('errors.redirect', { count })}</p>
         </div>
       </motion.div>
     </div>

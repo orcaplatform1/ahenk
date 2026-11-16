@@ -15,6 +15,7 @@ import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from './api';
 
+import i18n from './i18n';
 export const SOS_LIVE_TASK = 'ahenk-sos-live';
 const KEY = 'ahenk_sos_report';
 export const SOS_POLL_MS = 30_000;
@@ -47,7 +48,7 @@ export async function startSosLive(reportId: string) {
     distanceInterval: 0,
     showsBackgroundLocationIndicator: true,
     pausesUpdatesAutomatically: false,
-    foregroundService: { notificationTitle: 'Ahenk', notificationBody: 'Acil yardım: konumun emniyet birimleriyle paylaşılıyor, ekibimiz takip ediyor.', killServiceOnDestroy: false },
+    foregroundService: { notificationTitle: 'Ahenk', notificationBody: i18n.t('sos.liveNotice'), killServiceOnDestroy: false },
   }).catch(() => {});
 }
 

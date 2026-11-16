@@ -13,7 +13,8 @@ export class WhatsappService {
 
   constructor(private config: ConfigService) {}
 
-  async sendOtp(phone: string, code: string): Promise<void> {
+  // language: alıcının dili; OTP şablonunun dil kodu buna göre seçilir
+  async sendOtp(phone: string, code: string, language: string = "tr"): Promise<void> {
     if (isE2eFakeMode()) {
       if (readFakeControl().whatsappOtpFail) throw new InternalServerErrorException("OTP gönderilemedi, lütfen tekrar deneyin");
       recordFake({ channel: "whatsapp-otp", template: "otp", to: last4(phone), params: { phone, code } });
@@ -28,7 +29,7 @@ export class WhatsappService {
     const accessToken = this.config.getOrThrow<string>("WHATSAPP_ACCESS_TOKEN");
     const templateName = this.config.get<string>("WHATSAPP_OTP_TEMPLATE") ?? "ahenk_otp";
 
-    // +90 önekini kaldır — Meta API numarayı ülke kodu dahil ama + olmadan ister
+    // E.164 numaradaki "+" kaldırılır — Meta API numarayı ülke kodu dahil ama + olmadan ister
     const normalizedPhone = phone.replace("+", "");
 
     const body = {
@@ -37,7 +38,7 @@ export class WhatsappService {
       type: "template",
       template: {
         name: templateName,
-        language: { code: "tr" },
+        language: { code: language === "en" ? "en" : "tr" },
         components: [
           {
             type: "body",

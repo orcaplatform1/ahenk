@@ -2,6 +2,7 @@
 // butonlar mevcut stiller: tek buton "Tamam" (BtnPrimary), vazgeç (BtnGhost), onay (BtnPrimary), silme / ban gibi geri alınamaz işlem
 // (BtnTone danger). HIG: kısa başlık, iptal seçeneği, en az 44 pt dokunma alanı; geri tuşu / dışarı dokunma vazgeç sayılır.
 // Kullanım: showAlert(başlık, mesaj?, butonlar?) — Alert.alert ile aynı imza; pencere kök yerleşimdeki <AppAlertHost /> ile çizilir.
+import i18n from '@/lib/i18n';
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 import { BtnGhost, BtnPrimary, BtnTone, T } from './ui';
@@ -14,7 +15,7 @@ let push: ((a: AlertState) => void) | null = null;
 const queue: AlertState[] = [];
 
 export function showAlert(title: string, message?: string, buttons?: AlertButton[]) {
-  const a: AlertState = { title, message, buttons: buttons?.length ? buttons : [{ text: 'Tamam' }] };
+  const a: AlertState = { title, message, buttons: buttons?.length ? buttons : [{ text: i18n.t('kanka.ok') }] };
   if (push) push(a); else queue.push(a);
 }
 

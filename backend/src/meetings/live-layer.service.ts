@@ -34,6 +34,12 @@ function tableLabel(type: MeetingType, title: string): string {
   const no = tableNo(title);
   return `${TYPE_NAME[type]} Masa${no !== null ? ` ${no}` : ""}`;
 }
+// İngilizce (kullanıcının dili "en" ise canlı akış metinleri)
+const TYPE_NAME_EN: Record<string, string> = { GROUP: "Group", ONE_ON_ONE: "One-on-One", KANKA: "Kankamla" };
+function tableLabelEn(type: MeetingType, title: string): string {
+  const no = tableNo(title);
+  return `${TYPE_NAME_EN[type] ?? type} Table${no !== null ? ` ${no}` : ""}`;
+}
 
 // Sayının okunuşundaki son kelimeye göre Türkçe ek: 16'ya / 16'da, 5'e / 5'te
 const NUM_WORD_END: Record<number, { front: boolean; vowel: boolean; hard: boolean }> = {
@@ -141,13 +147,16 @@ export class LiveLayerService {
   private async resolveCity(userId: string, cityId?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { activeCity: true, profile: { select: { primaryCity: true } } },
+      select: { activeCity: true, language: true, profile: { select: { primaryCity: true } } },
     });
     const wanted = cityId ?? user?.activeCity ?? user?.profile?.primaryCity ?? undefined;
+    // timezone: bölgenin saat dilimi (istemci saatleri bununla gösterir); en: kullanıcının dili
+    const select = { id: true, name: true, timezone: true } as const;
     const city = wanted
-      ? await this.prisma.city.findFirst({ where: { OR: [{ id: wanted }, { name: wanted }] }, select: { id: true, name: true } })
+      ? await this.prisma.city.findFirst({ where: { OR: [{ id: wanted }, { name: wanted }] }, select })
       : null;
-    return city ?? this.prisma.city.findFirst({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } });
+    const found = city ?? (await this.prisma.city.findFirst({ where: { isActive: true }, orderBy: { name: "asc" }, select }));
+    return found ? { ...found, en: user?.language === "en" } : null;
   }
 
   // Bu hafta havuzdakiler: eşleşmeye uygun, paketi aktif, gerçek kullanıcılar (bot yok)
@@ -239,7 +248,8 @@ export class LiveLayerService {
   // Zaman penceresiyle silme yok: olay yalnız daha yeni FEED_MAX olay geldiğinde (21. olay) listeden düşer.
   // Bu yüzden alt tarih sınırı yok; en yakın tarihli FEED_SOURCE_MEETINGS masa taranır (her masa en az 1 olay üretir).
   // Mekân adı, semt ve buluşma günü/saati akışa yazılmaz; kişiler yalnızca baş harfle görünür.
-  private async feed(city: { id: string; name: string }) {
+  private async feed(city: { id: string; name: string; en?: boolean }) {
+    const en = !!city.en;
     const { start, end } = this.week();
     const prevStart = new Date(start.getTime() - WEEK_MS);
     const now = Date.now();
@@ -268,7 +278,7 @@ export class LiveLayerService {
     const head = `${city.name} · `;
 
     for (const m of meetings) {
-      const label = tableLabel(m.type, m.title);
+      const label = en ? tableLabelEn(m.type, m.title) : tableLabel(m.type, m.title);
       const no = tableNo(m.title);
       // Masa kartı ve sohbetle aynı rozet (tek kaynak); akışta sondaki nokta yazılmaz: "A.C", "A.C²"
       const badges = tableInitials(m.participants.map((p) => ({ userId: p.userId, createdAt: p.createdAt, profile: p.user.profile })));
@@ -293,28 +303,28 @@ export class LiveLayerService {
         if (!st.join) {
           const idx = seated.indexOf(st.p);
           if (idx >= 0) seated.splice(idx, 1);
-          push(`${k}:cancel`, st.at, [{ t: "text", v: `${head}${label}${no !== null ? `'${locativeSuffix(no)}` : ""} 1 koltuk açıldı` }]);
+          push(`${k}:cancel`, st.at, [{ t: "text", v: en ? `${head}${label} · 1 seat opened up` : `${head}${label}${no !== null ? `'${locativeSuffix(no)}` : ""} 1 koltuk açıldı` }]);
           return;
         }
         seated.push(st.p);
         if (m.type === MeetingType.ONE_ON_ONE && seated.length === 2) {
-          push(`${k}:match`, st.at, [{ t: "text", v: `${head}${label} · ` }, person(seated[0]), { t: "text", v: " " }, person(seated[1]), { t: "text", v: " eşleşti" }]);
+          push(`${k}:match`, st.at, [{ t: "text", v: `${head}${label} · ` }, person(seated[0]), { t: "text", v: " " }, person(seated[1]), { t: "text", v: en ? " matched" : " eşleşti" }]);
           return;
         }
-        push(`${k}:join`, st.at, [{ t: "text", v: `${head}${label}${no !== null ? `'${dativeSuffix(no)}` : ""} ` }, person(st.p), { t: "text", v: " katıldı" }]);
+        push(`${k}:join`, st.at, [{ t: "text", v: en ? `${head}${label} · ` : `${head}${label}${no !== null ? `'${dativeSuffix(no)}` : ""} ` }, person(st.p), { t: "text", v: en ? " joined" : " katıldı" }]);
         if (m.type === MeetingType.ONE_ON_ONE) return;
         const left = m.maxParticipants - seated.length;
-        if (left > 0) push(`${k}:left`, st.at + 1, [{ t: "text", v: `${head}${label}${no !== null ? `'${locativeSuffix(no)}` : ""} ${left} koltuk kaldı` }]);
-        else push(`${k}:full`, st.at + 1, [{ t: "text", v: `${head}${label} tamamlandı (${seated.length}/${m.maxParticipants})` }]);
+        if (left > 0) push(`${k}:left`, st.at + 1, [{ t: "text", v: en ? `${head}${label} · ${left} ${left === 1 ? "seat" : "seats"} left` : `${head}${label}${no !== null ? `'${locativeSuffix(no)}` : ""} ${left} koltuk kaldı` }]);
+        else push(`${k}:full`, st.at + 1, [{ t: "text", v: en ? `${head}${label} is full (${seated.length}/${m.maxParticipants})` : `${head}${label} tamamlandı (${seated.length}/${m.maxParticipants})` }]);
       });
 
       if (m.participants.some((p) => !LEFT_STATUSES.includes(p.status))) {
-        push(`${m.id}:locked`, meetingLockAt(m.scheduledAt), [{ t: "text", v: `${head}${label} kuruldu` }]);
-        push(`${m.id}:reveal`, revealAt(m.scheduledAt), [{ t: "text", v: `${head}${label} masa detayları açıldı` }]);
-        push(`${m.id}:met`, m.scheduledAt.getTime(), [{ t: "text", v: `${head}${label} buluştu` }]);
+        push(`${m.id}:locked`, meetingLockAt(m.scheduledAt), [{ t: "text", v: en ? `${head}${label} is set` : `${head}${label} kuruldu` }]);
+        push(`${m.id}:reveal`, revealAt(m.scheduledAt), [{ t: "text", v: en ? `${head}${label} details revealed` : `${head}${label} masa detayları açıldı` }]);
+        push(`${m.id}:met`, m.scheduledAt.getTime(), [{ t: "text", v: en ? `${head}${label} met up` : `${head}${label} buluştu` }]);
       }
     }
-    push(`${city.id}:weekly`, start.getTime(), [{ t: "text", v: `${head}Geçen hafta ${lastWeekCount} masa kuruldu` }]);
+    push(`${city.id}:weekly`, start.getTime(), [{ t: "text", v: en ? `${head}${lastWeekCount} tables were set up last week` : `${head}Geçen hafta ${lastWeekCount} masa kuruldu` }]);
 
     events.sort((a, b) => b.at.getTime() - a.at.getTime());
     return { events: events.slice(0, FEED_MAX) };
@@ -373,7 +383,8 @@ export class LiveLayerService {
     const others = myParticipation?.meeting.participants.flatMap((p) => (p.user.oceanScore ? [p.user.oceanScore] : [])) ?? [];
 
     return {
-      city,
+      city: { id: city.id, name: city.name },
+      timezone: city.timezone,
       metrics: { pool: pool.length, tables: meetings.length, fillPercent: total ? Math.round((filled / total) * 100) : 0 },
       groupSeatsLeft: group.total ? Math.max(0, group.total - group.filled) : null,
       fill: { group, oneOnOne, kanka },

@@ -1,3 +1,4 @@
+import { validIdentityNumber } from "./dto/init-checkout.dto";
 import {
   Injectable,
   Logger,
@@ -172,6 +173,7 @@ export class PaymentService {
     useDiscount: 'REFERRER' | 'INVITEE' | undefined,
     clientIp: string,
     identityNumber?: string,
+    identityType?: string,
   ) {
     if (await isMaintenanceMode(this.prisma)) {
       throw new ServiceUnavailableException("Kısa bir bakım çalışması yapıyoruz. Paket satın alma geçici olarak durduruldu.");
@@ -192,9 +194,9 @@ export class PaymentService {
       throw new ServiceUnavailableException("Prime abonelik henüz aktif değil.");
     }
 
-    // T.C. no her web ödemesinde kullanıcıdan alınır, yalnız iyzico'ya gider (saklanmaz)
-    if (!identityNumber || !/^\d{11}$/.test(identityNumber)) {
-      throw new BadRequestException("T.C. kimlik numarası 11 haneli rakam olmalı");
+    // Kimlik numarası (TC / YKN / Pasaport) her web ödemesinde kullanıcıdan alınır, yalnız iyzico'ya gider (saklanmaz)
+    if (!identityNumber || !validIdentityNumber(identityType, identityNumber)) {
+      throw new BadRequestException("Kimlik numarası geçersiz");
     }
 
     const planCfg = PLAN_CONFIG[plan];

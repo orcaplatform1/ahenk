@@ -12,7 +12,10 @@ import { isAdminRole, markAdminVerified } from '@/lib/adminLock';
 import { AuthBackground, useAuthBackgroundIndex, BackArrow, LegalNote, PillButton } from '@/components/AuthFlow';
 import { Serif, T } from '@/components/ui';
 import { ll, tw } from '@/theme/theme';
+import i18n from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
+import { useTranslation } from 'react-i18next';
 const VERIFIED_MS = 1500;
 
 type LocalAuth = typeof import('expo-local-authentication');
@@ -26,12 +29,13 @@ async function biometricOk(): Promise<boolean> {
   if (!la) return false;
   try {
     if (!(await la.hasHardwareAsync()) || !(await la.isEnrolledAsync())) return false;
-    const r = await la.authenticateAsync({ promptMessage: 'Ahenk girişi', cancelLabel: 'Vazgeç', disableDeviceFallback: true });
+    const r = await la.authenticateAsync({ promptMessage: i18n.t('login.bioPrompt'), cancelLabel: i18n.t('masa.dismiss'), disableDeviceFallback: true });
     return r.success;
   } catch { return false; }
 }
 
 export default function TekrarHosgeldin() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
@@ -64,7 +68,7 @@ export default function TekrarHosgeldin() {
         <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: tw.primary, alignItems: 'center', justifyContent: 'center' }}>
           <Svg width={48} height={48} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><Path d="M5 12.5l4.5 4.5L19 7.5" /></Svg>
         </View>
-        <T w={700} style={{ fontSize: 18, color: ll.text }}>Cihaz Doğrulandı</T>
+        <T w={700} style={{ fontSize: 18, color: ll.text }}>{t('login.deviceVerified')}</T>
       </View>
     );
   }
@@ -73,9 +77,11 @@ export default function TekrarHosgeldin() {
     <View style={{ flex: 1, backgroundColor: ll.bg }}>
       <AuthBackground index={bgIndex} overlay />
       <BackArrow onPress={() => router.replace('/giris')} />
+      {/* Dil seçici: sağdan 20 pt, görünen ikon (24×24) güvenli alanın 24 pt altında (top: 44 pt dokunma alanının üst kenarı) */}
+      <LanguageSwitcher top={insets.top + 24 - (44 - 24) / 2} />
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 24, paddingTop: insets.top, paddingBottom: 32, gap: 24 }}>
-        <Serif style={{ fontSize: 25.6, lineHeight: 32, textAlign: 'center', color: ll.text }}>Tekrar hoş geldin, {name}!</Serif>
-        <PillButton label={busy ? '…' : 'Giriş Yap'} primary disabled={busy} onPress={login} />
+        <Serif style={{ fontSize: 25.6, lineHeight: 32, textAlign: 'center', color: ll.text }}>{t('login.welcomeBack', { name })}</Serif>
+        <PillButton label={busy ? '…' : t('login.submit')} primary disabled={busy} onPress={login} />
       </View>
       <View style={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 16 }}><LegalNote /></View>
     </View>

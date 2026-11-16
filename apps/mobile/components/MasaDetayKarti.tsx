@@ -17,6 +17,8 @@ import { InlineLH, Btn, BtnPrimary, Serif, T } from './ui';
 import { LocationDisclosure } from './LocationDisclosure';
 import { PERM_REASON, showSettingsAlert } from '@/lib/permissions';
 import { c, sans, tw } from '@/theme/theme';
+import { useTranslation } from 'react-i18next';
+import { occupationLabel } from '@ahenk/shared';
 
 export interface DetayParticipant { initials: string; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean; photoUrl?: string | null }
 export interface VenuePhoto { url: string; caption?: string }
@@ -56,6 +58,7 @@ function SectionDot({ color, label }: { color: string; label: string }) {
 }
 
 function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isClosed, setIsClosed] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
@@ -89,14 +92,14 @@ function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }
     if (!trimmed || sending || isClosed || !isOpen) return;
     setSending(true); setSendError('');
     try { const msg = await api.post<ChatMsg>(`/chat/${meetingId}/messages`, { content: trimmed }); setMessages(p => [...p, msg]); setInput(''); }
-    catch (e) { setSendError((e as Error).message || 'Mesaj gönderilemedi'); }
+    catch (e) { setSendError((e as Error).message || t('masa.sendFailedMsg')); }
     finally { setSending(false); }
   }
   async function report(id: string) {
     await api.post(`/chat/messages/${id}/report`).catch(() => {});
     setMessages(p => p.map(m => (m.id === id ? { ...m, reportedByMe: true } : m)));
   }
-  const title = isClosed ? 'SOHBET KAPANDI' : type === 'ONE_ON_ONE' ? 'BAŞ BAŞA SOHBETİ' : type === 'KANKA' ? 'KANKAMLA SOHBETİ' : 'GRUP SOHBETİ';
+  const title = isClosed ? t('masa.chatClosed') : type === 'ONE_ON_ONE' ? t('tm.chatOne') : type === 'KANKA' ? t('tm.chatKanka') : t('masa.groupChat');
 
   return (
     <View>
@@ -106,7 +109,7 @@ function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }
         <ScrollView ref={scroll} nestedScrollEnabled style={{ maxHeight: 260 }} contentContainerStyle={{ padding: 12, paddingBottom: 8, gap: 8 }} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
           {messages.length === 0 && (
             <T style={{ fontSize: 12, textAlign: 'center' }}>
-              {!isOpen && openAt ? `Sohbet ${formatMeetingTime(openAt)} itibarıyla açılacak.` : isClosed ? 'Sohbet sona erdi.' : 'Henüz mesaj yok. İlk mesajı sen gönder.'}
+              {!isOpen && openAt ? t('masa.chatOpensAt', { time: formatMeetingTime(openAt) }) : isClosed ? t('masa.chatEnded') : t('masa.noMessages')}
             </T>
           )}
           {messages.map((m, i) => {
@@ -122,7 +125,7 @@ function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }
                   </View>
                   <T style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{msgTime(m.createdAt)}</T>
                   {!m.isOwn && !isClosed && (
-                    <Btn variant="reportLink" selected={m.reportedByMe} onPress={() => !m.reportedByMe && report(m.id)} label={m.reportedByMe ? '✓ Şikayet edildi' : 'Şikayet et'} />
+                    <Btn variant="reportLink" selected={m.reportedByMe} onPress={() => !m.reportedByMe && report(m.id)} label={m.reportedByMe ? t('masa.reported') : t('masa.reportMsg')} />
                   )}
                 </View>
               </View>
@@ -133,7 +136,7 @@ function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }
           <View style={{ flexDirection: 'row', gap: 6, paddingVertical: 8, paddingHorizontal: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
             <TextInput value={input} onChangeText={(t) => setInput(t.slice(0, 1000))} onSubmitEditing={send} returnKeyType="send" keyboardAppearance="dark"
               style={{ flex: 1, minWidth: 0, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, color: tw.text, fontFamily: sans(400) }} />
-            <BtnPrimary label="Gönder" onPress={send} disabled={!input.trim() || sending} style={{ paddingHorizontal: 10, gap: 5 }} textStyle={{ fontSize: 10 }} />
+            <BtnPrimary label={t('masa.send')} onPress={send} disabled={!input.trim() || sending} style={{ paddingHorizontal: 10, gap: 5 }} textStyle={{ fontSize: 10 }} />
           </View>
         )}
         {!!sendError && isOpen && !isClosed && <T style={{ paddingHorizontal: 10, paddingBottom: 8, fontSize: 12, color: tw.accent }}>{sendError}</T>}
@@ -145,6 +148,7 @@ function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }
 interface NoShowMarking { open: boolean; participants: { userId: string; initials: string; gender: string | null }[]; markedIds: string[] }
 
 function NoShowSection({ meetingId }: { meetingId: string }) {
+  const { t } = useTranslation();
   const [data, setData] = useState<NoShowMarking | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
@@ -158,13 +162,13 @@ function NoShowSection({ meetingId }: { meetingId: string }) {
     if (selected.size === 0 || sending) return;
     setSending(true); setError('');
     try { await api.post(`/meetings/${meetingId}/no-show`, { userIds: [...selected] }); setSelected(new Set()); load(); }
-    catch (e) { setError((e as Error).message || 'Gönderilemedi, tekrar dene.'); }
+    catch (e) { setError((e as Error).message || t('masa.sendFailedRetry')); }
     finally { setSending(false); }
   }
   return (
     <View style={{ marginTop: 24, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-      <T w={600} style={{ fontSize: 13, marginBottom: 4 }}>Masana gelmeyen oldu mu?</T>
-      <T style={{ fontSize: 11.5, color: c.t888, lineHeight: 17.25, marginBottom: 12 }}>Gelmeyen kişileri işaretleyip gönder. Gönderilen bildirim geri alınamaz.</T>
+      <T w={600} style={{ fontSize: 13, marginBottom: 4 }}>{t('masa.noShowQ')}</T>
+      <T style={{ fontSize: 11.5, color: c.t888, lineHeight: 17.25, marginBottom: 12 }}>{t('masa.noShowInfo')}</T>
       <View style={{ gap: 8 }}>
         {data.participants.map(p => {
           const locked = marked.has(p.userId);
@@ -179,29 +183,30 @@ function NoShowSection({ meetingId }: { meetingId: string }) {
               <View style={{ paddingHorizontal: 5, borderRadius: 99, borderWidth: 1, borderColor: gColor(p.gender) }}>
                 <T w={600} style={{ fontSize: 10.5, lineHeight: 15.225, color: '#f4f1ec' }}>{p.initials.replace(/\.(?=[⁰¹²³⁴⁵⁶⁷⁸⁹]*$)/, '')}</T>
               </View>
-              {locked && <T style={{ marginLeft: 'auto', fontSize: 11, color: c.red }}>Bildirildi</T>}
+              {locked && <T style={{ marginLeft: 'auto', fontSize: 11, color: c.red }}>{t('masa.notified')}</T>}
             </Pressable>
           );
         })}
       </View>
       {!!error && <T style={{ marginTop: 10, fontSize: 12, color: tw.accent }}>{error}</T>}
       {selected.size > 0 && (
-        <Btn variant="noShowSend" onPress={send} disabled={sending} label={sending ? 'Gönderiliyor…' : 'Gelmedi olarak bildir'} />
+        <Btn variant="noShowSend" onPress={send} disabled={sending} label={sending ? t('masa.sending') : t('masa.markNoShow')} />
       )}
     </View>
   );
 }
 
 const SOS_THREATS = [
-  { value: 'LIFE_DANGER', label: 'Hayatım tehlikede' },
-  { value: 'PHYSICAL_VIOLENCE', label: 'Fiziksel şiddet gördüm' },
-  { value: 'ABDUCTION', label: 'Zorla alıkoyuluyorum' },
-  { value: 'HARASSMENT', label: 'Taciz veya istismara uğradım' },
+  { value: 'LIFE_DANGER', label: 'masa.threatLife' },
+  { value: 'PHYSICAL_VIOLENCE', label: 'masa.threatViolence' },
+  { value: 'ABDUCTION', label: 'masa.threatAbduction' },
+  { value: 'HARASSMENT', label: 'masa.threatHarassment' },
 ] as const;
 
 function SosModal({ selected, onToggle, onConfirm, onClose, loading, locError, error }: {
   selected: string[]; onToggle: (t: string) => void; onConfirm: () => void; onClose: () => void; loading: boolean; locError: 'off' | 'denied' | null; error: string;
 }) {
+  const { t } = useTranslation();
   const [accepted, setAccepted] = useState(false);
   const can = selected.length > 0 && accepted && !loading;
   const warn = (text: string) => (
@@ -213,38 +218,38 @@ function SosModal({ selected, onToggle, onConfirm, onClose, loading, locError, e
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(10,0,0,0.92)', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <Pressable onPress={() => undefined} style={{ width: '100%', maxWidth: 380, backgroundColor: '#0f0808', borderWidth: 1.5, borderColor: 'rgba(192,57,43,0.7)', borderRadius: 16, paddingTop: 24, paddingHorizontal: 20, paddingBottom: 20 }}>
-          <T w={800} style={{ fontSize: 16, color: tw.accent, letterSpacing: 0.32, marginBottom: 6 }}>ACİL YARDIM TALEP FORMU</T>
+          <T w={800} style={{ fontSize: 16, color: tw.accent, letterSpacing: 0.32, marginBottom: 6 }}>{t('masa.sosFormTitle')}</T>
           <View style={{ height: 1, backgroundColor: 'rgba(192,57,43,0.3)', marginTop: 10, marginBottom: 16 }} />
-          <T style={{ fontSize: 12, color: 'rgba(255,107,107,0.7)', lineHeight: 18, marginBottom: 12 }}>Yaşadığın durumu seç:</T>
+          <T style={{ fontSize: 12, color: 'rgba(255,107,107,0.7)', lineHeight: 18, marginBottom: 12 }}>{t('masa.sosPick')}</T>
           <View style={{ gap: 8, marginBottom: 12 }}>
-            {SOS_THREATS.map(t => {
-              const on = selected.includes(t.value);
+            {SOS_THREATS.map(th => {
+              const on = selected.includes(th.value);
               return (
-                <Btn key={t.value} variant="sosThreat" selected={on} onPress={() => onToggle(t.value)} accessibilityLabel={t.label}>
+                <Btn key={th.value} variant="sosThreat" selected={on} onPress={() => onToggle(th.value)} accessibilityLabel={t(th.label)}>
                   <View style={{ width: 16, height: 16, borderRadius: 4, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: on ? tw.accent : 'rgba(255,255,255,0.2)', backgroundColor: on ? 'rgba(192,57,43,0.3)' : 'transparent' }}>
                     <T style={{ fontSize: 10 }}>{on ? '✓' : ''}</T>
                   </View>
-                  <T w={on ? 600 : 400} style={{ fontSize: 13, color: on ? tw.accent : c.tCcc }}>{t.label}</T>
+                  <T w={on ? 600 : 400} style={{ fontSize: 13, color: on ? tw.accent : c.tCcc }}>{t(th.label)}</T>
                 </Btn>
               );
             })}
           </View>
-          <T style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', lineHeight: 16.5, marginBottom: 16 }}>Yukarıdaki eylemlerin ihtimali olsa dahi lütfen işaretleyin (birden fazla seçeneği işaretleyebilirsin)</T>
-          <T style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', lineHeight: 16.5, marginBottom: 16 }}>İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar, uygulama kapansa bile ekibimiz tarafından takip edilir.</T>
-          {locError === 'denied' && warn('⚠ Konuma erişim engellendi. Ayarlar → Ahenk → Konum bölümünden konum iznini ver, ardından tekrar dene.')}
-          {locError === 'off' && warn('⚠ Cihaz konumu kapalı. Konum servisini açtıktan sonra tekrar dene.')}
+          <T style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', lineHeight: 16.5, marginBottom: 16 }}>{t('masa.sosMaybe')}</T>
+          <T style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', lineHeight: 16.5, marginBottom: 16 }}>{t('masa.sosShared')}</T>
+          {locError === 'denied' && warn(t('masa.sosDeniedApp'))}
+          {locError === 'off' && warn(t('masa.sosOff'))}
           {!!error && (
             <View style={{ padding: 10, paddingHorizontal: 12, backgroundColor: 'rgba(192,57,43,0.12)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', borderRadius: 8, marginBottom: 12 }}>
-              <T style={{ fontSize: 11.5, color: tw.accent, lineHeight: 17.25 }}>⚠ Talep gönderilemedi: {error}</T>
+              <T style={{ fontSize: 11.5, color: tw.accent, lineHeight: 17.25 }}>{t('masa.sosFailed', { error })}</T>
             </View>
           )}
           <Pressable onPress={() => setAccepted(a => !a)} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 14 }}>
             <View style={{ marginTop: 2, width: 16, height: 16, borderRadius: 3, borderWidth: 1.5, borderColor: accepted ? c.red : 'rgba(255,255,255,0.4)', backgroundColor: accepted ? c.red : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
               {accepted && <T w={700} style={{ fontSize: 10, color: '#fff' }}>✓</T>}
             </View>
-            <T style={{ flex: 1, fontSize: 11.5, color: 'rgba(255,255,255,0.75)', lineHeight: 17.25 }}>Acil yardım talebimin sahte olmadığını ve ihbardan kaynaklı doğacak tüm yasal sorumluluğu kabul ediyorum.</T>
+            <T style={{ flex: 1, fontSize: 11.5, color: 'rgba(255,255,255,0.75)', lineHeight: 17.25 }}>{t('masa.sosConsent')}</T>
           </Pressable>
-          <Btn variant="sosSubmit" onPress={onConfirm} disabled={!can} label={loading ? 'Konum alınıyor…' : error ? 'Tekrar dene' : 'İhbarda Bulun'} />
+          <Btn variant="sosSubmit" onPress={onConfirm} disabled={!can} label={loading ? t('masa.locating') : error ? t('masa.tryAgain') : t('masa.report')} />
         </Pressable>
       </Pressable>
     </Modal>
@@ -252,6 +257,7 @@ function SosModal({ selected, onToggle, onConfirm, onClose, loading, locError, e
 }
 
 function Lightbox({ photos, start, onClose }: { photos: VenuePhoto[]; start: number; onClose: () => void }) {
+  const { t } = useTranslation();
   const [idx, setIdx] = useState(start);
   const [w, setW] = useState(0);
   const touchX = useRef<number | null>(null);
@@ -282,23 +288,24 @@ function Lightbox({ photos, start, onClose }: { photos: VenuePhoto[]; start: num
           <Image source={{ uri: mediaUrl(photos[idx].url) }} style={{ width: '100%', height: '100%', borderRadius: 12 }} resizeMode="contain" />
         </Pressable>
         {!!photos[idx].caption && <T style={{ color: c.tAaa, fontSize: 13, marginTop: 12 }}>{photos[idx].caption}</T>}
-        <Btn variant="lightboxClose" onPress={onClose} hitSlop={4} accessibilityLabel="Kapat" label="×" />
+        <Btn variant="lightboxClose" onPress={onClose} hitSlop={4} accessibilityLabel={t('masa.close')} label="×" />
       </Pressable>
     </Modal>
   );
 }
 
 function AiReport({ report }: { report?: MasaDetayData['aiReport'] }) {
+  const { t } = useTranslation();
   return (
     <View style={{ backgroundColor: c.aiBg, borderWidth: 1, borderColor: c.aiBorder, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: c.aiIconBg, borderWidth: 1, borderColor: c.aiIconBorder, alignItems: 'center', justifyContent: 'center' }}><T style={{ fontSize: 16, lineHeight: 16 }}>✦</T></View>
-        <T w={700} style={{ fontSize: 10, letterSpacing: 1.6, color: c.aiTitle }}>YAPAY ZEKA MASA RAPORU</T>
+        <T w={700} style={{ fontSize: 10, letterSpacing: 1.6, color: c.aiTitle }}>{t('masa.aiTitle')}</T>
       </View>
       <View style={{ height: 1, backgroundColor: c.aiDivider, marginBottom: 12 }} />
       <View style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-          <T w={600} style={{ fontSize: 10, letterSpacing: 1.2, color: report ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.88)' }}>UYUM SKORU</T>
+          <T w={600} style={{ fontSize: 10, letterSpacing: 1.2, color: report ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.88)' }}>{t('masa.aiScore')}</T>
           <T w={700} style={{ fontSize: 14, color: c.tF0 }}>%{report ? report.uyumSkoru : '—'}</T>
         </View>
         <View style={{ height: 5, borderRadius: 99, backgroundColor: report ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.12)', overflow: 'hidden' }}>
@@ -311,6 +318,7 @@ function AiReport({ report }: { report?: MasaDetayData['aiReport'] }) {
 }
 
 function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; archive?: boolean }) {
+  const { t } = useTranslation();
   const live = !archive;
   const [lightbox, setLightbox] = useState<number | null>(null);
   // Katılımcı profil fotoğrafı tam ekran; kendi fotoğrafında düzenleme butonu
@@ -330,7 +338,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
 
   async function onMyWay() {
     if (!live || onMyWayDone || onMyWayLoading) return;
-    if (!onMyWayOpen) { setOnMyWayWarn('Yola çıkış bildirimi, buluşma saatinden 1 saat önce kullanıma açılır.'); setTimeout(() => setOnMyWayWarn(''), 4000); return; }
+    if (!onMyWayOpen) { setOnMyWayWarn(t('masa.onMyWayLater')); setTimeout(() => setOnMyWayWarn(''), 4000); return; }
     setOnMyWayLoading(true);
     try { await api.post(`/meetings/${masa.id}/on-my-way`); setOnMyWayDone(true); }
     catch (e) { const m = (e as Error).message; if (m) { setOnMyWayWarn(m); setTimeout(() => setOnMyWayWarn(''), 4000); } }
@@ -395,7 +403,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
         if (r?.reportId) startSosLive(r.reportId).catch(() => {}).finally(() => { askAlwaysPermission().catch(() => {}); });
       } catch (e) {
         const m = (e as Error).message;
-        setSosError(m === '__rate_limit__' ? 'Çok fazla deneme yapıldı. Lütfen birkaç dakika sonra tekrar dene.' : m || 'Sunucu hatası. Lütfen tekrar dene.');
+        setSosError(m === '__rate_limit__' ? t('masa.tooMany') : m || t('masa.serverError'));
       }
     } catch { setLocError('off'); }
     finally { setSosLoading(false); }
@@ -412,7 +420,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
         <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: GREEN }} />
-        <T w={700} style={{ fontSize: 10, color: GREEN, letterSpacing: 1.8 }}>MASA DETAYI</T>
+        <T w={700} style={{ fontSize: 10, color: GREEN, letterSpacing: 1.8 }}>{t('masa.detailTitle')}</T>
       </View>
       <Serif style={{ fontSize: 26, lineHeight: 31.2, color: tw.text, letterSpacing: 0.26, marginBottom: masa.venueAddress ? 4 : 16 }}>{masa.venueName}</Serif>
       {!!masa.venueAddress && <T style={{ marginBottom: 16, fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 18.2 }}>{masa.venueAddress}</T>}
@@ -422,7 +430,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
           {photos.slice(0, 3).map((p, i) => (
             <Pressable key={i} onPress={() => setLightbox(i)} style={{ flex: 1, aspectRatio: 4 / 3, borderRadius: 8, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', maxWidth: photos.length === 1 ? '100%' : undefined }}>
               {/* Backend göreli adres döner (/api/v1/media/venues/...); mobilde tam adrese çevrilir */}
-              <Image source={{ uri: mediaUrl(p.url) }} style={{ width: '100%', height: '100%' }} accessibilityLabel={p.caption ?? `Fotoğraf ${i + 1}`} />
+              <Image source={{ uri: mediaUrl(p.url) }} style={{ width: '100%', height: '100%' }} accessibilityLabel={p.caption ?? t('masa.photoAlt', { n: i + 1 })} />
             </Pressable>
           ))}
         </View>
@@ -430,7 +438,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
 
       {hasMap && (
         <View style={{ marginBottom: 18 }}>
-          <BtnPrimary label="HARİTADA GÖR" full onPress={() => openMaps(masa.venueMapsUrl, masa.venueAddress, masa.venueName)} />
+          <BtnPrimary label={t('masa.seeOnMap')} full onPress={() => openMaps(masa.venueMapsUrl, masa.venueAddress, masa.venueName)} />
         </View>
       )}
 
@@ -438,19 +446,19 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
           <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: GREEN }} />
-          <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>Buluşma</T>
+          <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>{t('masa.meetup')}</T>
         </View>
         <T w={700} style={{ fontSize: 15, letterSpacing: 0.15 }}>{formatMeetingTime(masa.scheduledAt)}</T>
       </View>
 
       <View style={{ marginBottom: 20 }}>
-        <T w={700} style={{ marginBottom: 12, fontSize: 9, letterSpacing: 1.26 }}>{isOneOnOne ? 'BAŞ BAŞA' : 'KATILIMCILAR'}</T>
+        <T w={700} style={{ marginBottom: 12, fontSize: 9, letterSpacing: 1.26 }}>{isOneOnOne ? t('masa.oneOnOne') : t('masa.participants')}</T>
         {masa.type === 'KANKA' ? (
           <KankaPairs mine={masa.participants.filter(p => p.pair === 'MINE') as KankaPerson[]} other={masa.participants.filter(p => p.pair === 'OTHER') as KankaPerson[]} onPhoto={openPhoto} />
         ) : (
           <View style={isOneOnOne ? { flexDirection: 'row', gap: 10, flexWrap: 'wrap' } : { flexDirection: 'row', flexWrap: 'wrap', gap: 10, width: 48 * 4 + 30 }}>
             {ordered.map((p, i) => p.photoUrl
-              ? <Pressable key={`${p.initials}-${i}`} onPress={() => openPhoto(p)} accessibilityRole="imagebutton" accessibilityLabel="Profil fotoğrafını büyüt" hitSlop={4}><DetayAvatar participant={p} delay={0.52 + i * 0.1} /></Pressable>
+              ? <Pressable key={`${p.initials}-${i}`} onPress={() => openPhoto(p)} accessibilityRole="imagebutton" accessibilityLabel={t('masa.enlargePhoto')} hitSlop={4}><DetayAvatar participant={p} delay={0.52 + i * 0.1} /></Pressable>
               : <DetayAvatar key={`${p.initials}-${i}`} participant={p} delay={0.52 + i * 0.1} />)}
           </View>
         )}
@@ -459,22 +467,22 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
       {/* Meslekler: her satırda bir meslek, yalnız yazı; sıra sunucuda her istekte karışık, kime ait olduğu gösterilmez */}
       {!!masa.occupations?.length && (
         <View style={{ marginBottom: 20 }}>
-          <T w={700} style={{ marginBottom: 8, fontSize: 13 }}>Meslekler:</T>
-          {masa.occupations.map((o, i) => <T key={i} style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 20 }}>{o}</T>)}
+          <T w={700} style={{ marginBottom: 8, fontSize: 13 }}>{t('masa.occupations')}</T>
+          {masa.occupations.map((o, i) => <T key={i} style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 20 }}>{occupationLabel(o, t)}</T>)}
         </View>
       )}
 
       <AiReport report={masa.aiReport} />
 
       <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 16 }}>
-        <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 19.2 }}>Rezervasyonunuz tamamlandı. Girişte görevliye isminizi söylediğinizde masanıza yönlendirileceksiniz. İyi eğlenceler.</T>
+        <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 19.2 }}>{t('masa.reservationDone')}</T>
       </View>
 
       <View style={{ marginBottom: 10 }}>
         {onMyWayDone ? (
-          <Btn variant="doneGreen" disabled style={{ opacity: 1 }} label="✓ Yola çıktığını bildirdin" />
+          <Btn variant="doneGreen" disabled style={{ opacity: 1 }} label={t('masa.onMyWayDone')} />
         ) : (
-          <BtnPrimary label={onMyWayLoading ? 'Bildiriliyor…' : 'Yola Çıktım'} full disabled={archive || onMyWayLoading} onPress={onMyWay} />
+          <BtnPrimary label={onMyWayLoading ? t('masa.onMyWayLoading') : t('masa.onMyWay')} full disabled={archive || onMyWayLoading} onPress={onMyWay} />
         )}
         {!!onMyWayWarn && (
           <View accessibilityRole="alert" style={{ marginTop: 8, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14 }}>
@@ -490,15 +498,15 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
         <View style={{ marginTop: 24 }}>
           {sosDone ? (
             <View style={{ paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(192,57,43,0.12)', borderWidth: 1.5, borderColor: 'rgba(192,57,43,0.5)', alignItems: 'center' }}>
-              <T w={700} style={{ fontSize: 13, color: tw.accent }}>ACİL YARDIM TALEBİNİZ ALINDI</T>
-              <T style={{ marginTop: 4, fontSize: 12, color: 'rgba(255,107,107,0.7)' }}>Sakin olun ve güvende kalmaya çalışın.</T>
+              <T w={700} style={{ fontSize: 13, color: tw.accent }}>{t('masa.sosReceived')}</T>
+              <T style={{ marginTop: 4, fontSize: 12, color: 'rgba(255,107,107,0.7)' }}>{t('masa.stayCalm')}</T>
             </View>
           ) : (
             <>
-              <Btn variant="sos" onPress={() => setShowSos(true)} label="Acil Yardım" />
+              <Btn variant="sos" onPress={() => setShowSos(true)} label={t('masa.sosButton')} />
               <View style={{ marginTop: 10, padding: 10, paddingHorizontal: 12, backgroundColor: 'rgba(192,57,43,0.07)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.22)', borderRadius: 8 }}>
                 <T style={{ fontSize: 10.5, lineHeight: 16.275, color: 'rgba(255,107,107,0.65)' }}>
-                  Masada veya masadan sonrasında, masadaki birisi tarafından fiziksel şiddet, alıkoyulma, taciz veya istismar eylemiyle karşı karşıya kalırsan ya da kalma ihtimali yaşarsan hemen butona bas ve eylemin türünü seçerek onayla. İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar, uygulama kapansa bile ekibimiz tarafından takip edilir. Masadaki kişilerin kimlik bilgileri de emniyet birimleriyle anında paylaşılır. <T w={700} style={{ fontSize: 10.5, color: 'rgba(255,107,107,0.85)' }}>Güvenliğin bizim için çok önemli.</T>
+                  {t('masa.sosInfo')} <T w={700} style={{ fontSize: 10.5, color: 'rgba(255,107,107,0.85)' }}>{t('masa.safetyImportant')}</T>
                 </T>
               </View>
             </>

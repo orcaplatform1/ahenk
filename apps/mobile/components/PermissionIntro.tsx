@@ -11,6 +11,7 @@ import * as Notifications from 'expo-notifications';
 import { isAdminLocked, onAdminLock } from '@/lib/adminLock';
 import { BtnPrimary, Serif, T } from './ui';
 import { ll } from '@/theme/theme';
+import { useTranslation } from 'react-i18next';
 
 const KEY = 'ahenk_permission_intro_v1';
 // Aynı anda iki yerleşim (Yönetim Paneli + sekmeler) bağlıysa ekranı yalnız ilk sahiplenen gösterir
@@ -22,12 +23,13 @@ const done = new Promise<void>((r) => { resolveDone = r; });
 export function permissionIntroDone(): Promise<void> { return done; }
 
 const ITEMS: { title: string; body: string }[] = [
-  { title: 'Bildirimler', body: 'Masa onayı ve buluşma hatırlatmaları için.' },
-  { title: 'Kamera ve Galeri', body: 'Profil fotoğrafı, kimlik doğrulama ve sorun bildirimi için. İlgili ekranda istenir.' },
-  { title: 'Konum', body: 'Yalnızca Acil Yardım kullanıldığında, o anda istenir.' },
+  { title: 'permIntro.notifT', body: 'permIntro.notifB' },
+  { title: 'permIntro.camT', body: 'permIntro.camB' },
+  { title: 'permIntro.locT', body: 'permIntro.locB' },
 ];
 
 export function PermissionIntro() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [pending, setPending] = useState(false);
@@ -63,15 +65,15 @@ export function PermissionIntro() {
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
         <View style={{ maxHeight: height * 0.6, backgroundColor: ll.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 24, paddingBottom: insets.bottom + 16, paddingHorizontal: 24 }}>
           <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ gap: 20, paddingBottom: 16 }}>
-            <Serif style={{ fontSize: 24, lineHeight: 28.8, color: ll.text }}>Ahenk hangi izinleri kullanır?</Serif>
+            <Serif style={{ fontSize: 24, lineHeight: 28.8, color: ll.text }}>{t('permIntro.title')}</Serif>
             {ITEMS.map((it) => (
               <View key={it.title} style={{ gap: 6 }}>
-                <T w={600} style={{ fontSize: 15, color: ll.text }}>{it.title}</T>
-                <T style={{ fontSize: 14, lineHeight: 21, color: ll.text2 }}>{it.body}</T>
+                <T w={600} style={{ fontSize: 15, color: ll.text }}>{t(it.title)}</T>
+                <T style={{ fontSize: 14, lineHeight: 21, color: ll.text2 }}>{t(it.body)}</T>
               </View>
             ))}
           </ScrollView>
-          <BtnPrimary label="Devam Et" full disabled={busy} style={{ minHeight: 44 }} onPress={proceed} />
+          <BtnPrimary label={t('common.continue')} full disabled={busy} style={{ minHeight: 44 }} onPress={proceed} />
         </View>
       </View>
     </Modal>

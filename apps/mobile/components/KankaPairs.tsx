@@ -3,6 +3,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { DetayAvatar } from './DetayAvatar';
+import i18n from '@/lib/i18n';
 
 export interface KankaPerson { initials: string; gender?: string | null; isSelf?: boolean; photoUrl?: string | null }
 const OPPOSITE = (g?: string | null) => (g === 'FEMALE' ? 'MALE' : g === 'MALE' ? 'FEMALE' : null);
@@ -12,7 +13,7 @@ function Slot({ person, emptyGender, delay, onPhoto }: { person?: KankaPerson; e
   const p = person ? { ...person, photoUrl: onPhoto ? person.photoUrl : null } : { initials: '?', gender: emptyGender };
   const av = <DetayAvatar participant={p} delay={delay} />;
   return person?.photoUrl && onPhoto
-    ? <Pressable onPress={() => onPhoto(person)} accessibilityRole="imagebutton" accessibilityLabel="Profil fotoğrafını büyüt" hitSlop={4}>{av}</Pressable>
+    ? <Pressable onPress={() => onPhoto(person)} accessibilityRole="imagebutton" accessibilityLabel={i18n.t('masa.enlargePhoto')} hitSlop={4}>{av}</Pressable>
     : av;
 }
 

@@ -8,37 +8,33 @@ import { Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BtnGhost, BtnPrimary, Serif, T } from './ui';
 import { ll } from '@/theme/theme';
+import { useTranslation } from 'react-i18next';
 
 const SECTIONS: { title: string; body: string }[] = [
-  { title: 'Hangi özellik için?', body: 'Konumun yalnızca Acil Yardım özelliği için kullanılır.' },
-  {
-    title: 'Ne zaman toplanır?',
-    body: 'Yalnızca bir masada Acil Yardım talebi gönderdiğinde, talep anında alınır. Talep gönderildikten sonra konumun, talep çözülene kadar yaklaşık 10 saniyede bir toplanmaya devam eder. "Her zaman" iznini verirsen konumun arka planda, uygulama kapalıyken veya kullanılmıyorken de toplanır; Android\'de telefon yeniden başlatılırsa açık talep için konum gönderimi uygulamayı açman gerekmeden yeniden başlar. Talep çözülünce konum toplama durur. Diğer katılımcıların konumu alınmaz.',
-  },
-  {
-    title: 'Kiminle paylaşılır?',
-    body: 'Konumun Ahenk acil yardım ekibine iletilir, ekibimiz tarafından takip edilir ve emniyet birimleriyle paylaşılır. Konumun açık adresini bulmak için koordinatlar OpenStreetMap (Nominatim) adres hizmetine gönderilir.',
-  },
+  { title: 'locd.s1t', body: 'locd.s1b' },
+  { title: 'locd.s2t', body: 'locd.s2b' },
+  { title: 'locd.s3t', body: 'locd.s3b' },
 ];
 
 export function LocationDisclosure({ visible, onContinue, onCancel }: { visible: boolean; onContinue: () => void; onCancel: () => void }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onCancel} statusBarTranslucent>
       <View style={{ flex: 1, backgroundColor: ll.bg, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16, paddingHorizontal: 24 }}>
         <ScrollView contentContainerStyle={{ gap: 20, paddingBottom: 16 }}>
           <T w={700} style={{ fontSize: 13, color: ll.red, letterSpacing: 1.2 }}>AHENK</T>
-          <Serif style={{ fontSize: 30, lineHeight: 36, color: ll.text }}>Acil Yardım için konumun kullanılır</Serif>
+          <Serif style={{ fontSize: 30, lineHeight: 36, color: ll.text }}>{t('locd.title')}</Serif>
           {SECTIONS.map(s => (
             <View key={s.title} style={{ gap: 6 }}>
-              <T w={600} style={{ fontSize: 15, color: ll.text }}>{s.title}</T>
-              <T style={{ fontSize: 14, lineHeight: 21, color: ll.text2 }}>{s.body}</T>
+              <T w={600} style={{ fontSize: 15, color: ll.text }}>{t(s.title)}</T>
+              <T style={{ fontSize: 14, lineHeight: 21, color: ll.text2 }}>{t(s.body)}</T>
             </View>
           ))}
         </ScrollView>
         <View style={{ gap: 12 }}>
-          <BtnPrimary label="Devam Et" full style={{ minHeight: 44 }} onPress={onContinue} />
-          <BtnGhost label="Şimdi Değil" full style={{ minHeight: 44 }} onPress={onCancel} />
+          <BtnPrimary label={t('common.continue')} full style={{ minHeight: 44 }} onPress={onContinue} />
+          <BtnGhost label={t('locd.notNow')} full style={{ minHeight: 44 }} onPress={onCancel} />
         </View>
       </View>
     </Modal>

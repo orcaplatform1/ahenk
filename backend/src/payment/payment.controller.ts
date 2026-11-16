@@ -89,7 +89,7 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, TestCompletedGuard)
   initCheckout(@Req() req: Request, @Body() dto: InitCheckoutDto) {
     const user = req.user as { id: string };
-    return this.paymentService.initCheckout(user.id, dto.plan, dto.platform, dto.useDiscount, req.ip ?? "", dto.identityNumber);
+    return this.paymentService.initCheckout(user.id, dto.plan, dto.platform, dto.useDiscount, req.ip ?? "", dto.identityNumber, dto.identityType);
   }
 
   // Mobil uygulama içi satın alma açık mı (IAP_ENABLED): "Satın Alımları Geri Yükle" kapalıyken işlem yapmaz

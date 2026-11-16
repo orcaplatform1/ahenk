@@ -22,6 +22,12 @@ const MONDAY_TEXTS = [
   "Bu hafta masanda kimler var, merak etmiyor musun?",
   "Yeni haftanın masaları kuruluyor.",
 ];
+const MONDAY_TEXTS_EN = [
+  "Table matching has started — where are you?",
+  "We've got your weekend plans covered.",
+  "Aren't you curious who's at your table this week?",
+  "This week's tables are being set up.",
+];
 
 @Injectable()
 export class WinbackService {
@@ -158,6 +164,7 @@ export class WinbackService {
       select: { id: true, winbackOffer: { select: { expiresAt: true } } },
     });
     const body = MONDAY_TEXTS[(trIsoWeek() - 1) % MONDAY_TEXTS.length];
+    const bodyEn = MONDAY_TEXTS_EN[(trIsoWeek() - 1) % MONDAY_TEXTS_EN.length];
     const now = new Date();
     for (const t of targets) {
       try {
@@ -166,7 +173,7 @@ export class WinbackService {
         // Bekleyen ya da süresi işleyen hak korunur; süresi dolmuş hak sıfırlanır
         if (!t.winbackOffer) await this.prisma.winbackOffer.create({ data: { userId: t.id, grantedAt: now } });
         else if (expired) await this.prisma.winbackOffer.update({ where: { userId: t.id }, data: fresh });
-        await this.notifications.sendToUser(t.id, { title: "Ahenk", body, data: { event: "WEEKLY_MASA" } });
+        await this.notifications.sendToUser(t.id, { title: "Ahenk", body, data: { event: "WEEKLY_MASA" }, en: { title: "Ahenk", body: bodyEn } });
       } catch (err) {
         this.logger.error(`Pazartesi push hatası: user=${t.id} ${err}`);
       }
@@ -199,6 +206,7 @@ export class WinbackService {
           title: "İndirimin bitmek üzere",
           body: "Sana özel indiriminin bitmesine 15 dakika kaldı.",
           data: { event: "WINBACK_REMINDER" },
+          en: { title: "Your discount is about to expire", body: "Only 15 minutes left on your exclusive discount." },
         });
       } catch (err) {
         this.logger.error(`İndirim hatırlatma hatası: user=${o.userId} ${err}`);

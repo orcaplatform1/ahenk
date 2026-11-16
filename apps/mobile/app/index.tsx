@@ -9,6 +9,7 @@ import { api, prefetch, refreshAtLaunch } from '@/lib/api';
 import { loadFonts, loadImages } from '@/lib/boot';
 import { lockAdminAtLaunch } from '@/lib/adminLock';
 import { setAdminIdentity } from '@/lib/adminRole';
+import { applyAccountLanguage } from '@/lib/i18n';
 
 // Gidilecek ekranın ilk açılışta istediği GET uçları (ekranlar aynı yolları api.get ile çağırır, ön yüklenen yanıt kullanılır)
 const ADMIN_DATA = ['/admin/alerts', '/admin/stats/overview', '/admin/stats/cities', '/admin/dashboard'];
@@ -32,7 +33,8 @@ export default function Acilis() {
           await prefetch(['/auth/me']);
           // /auth/me ön yüklemeye alınır: rol kontrolü ve açılan ekranlardaki /auth/me çağrıları aynı yanıtı kullanır (tekrar istek yok)
           prefetch(['/auth/me']);
-          const me = await api.get<{ role: string }>('/auth/me').catch(() => null);
+          const me = await api.get<{ role: string; language?: string }>('/auth/me').catch(() => null);
+          applyAccountLanguage(me?.language);
           const admin = me?.role === 'ADMIN' || me?.role === 'SUPERADMIN';
           dest = admin ? '/admin' : '/(tabs)';
           // Admin kalıcı oturumu: uygulama sıfırdan açılınca biyometrik doğrulama (kilit ekranı yönetim panelinin üstünde açılır)

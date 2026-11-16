@@ -10,6 +10,8 @@ import { OCEAN_TRAITS } from '@/lib/oceanData';
 import { Btn, BtnGhost, BtnPrimary, Mono, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { c, glassCard, sans, tw, ll } from '@/theme/theme';
 
+import { useTranslation } from 'react-i18next';
+import { currentLang } from '@/lib/i18n';
 type Score = Record<'openness' | 'conscientiousness' | 'extraversion' | 'agreeableness' | 'neuroticism', number>;
 
 function Radar({ scores }: { scores: Score }) {
@@ -59,6 +61,7 @@ function TraitCard({ label, score, style }: { label: string; score: number; styl
 }
 
 export default function TestSonuc() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [score, setScore] = useState<Score | null>(null);
@@ -66,15 +69,15 @@ export default function TestSonuc() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   useEffect(() => {
-    api.get<{ completed: boolean; scores?: Score; profile?: string }>('/test/result')
-      .then(r => { if (!r.completed || !r.scores) { router.replace('/test'); return; } setScore(r.scores); setProfile(r.profile ?? ''); })
+    api.get<{ completed: boolean; scores?: Score; profile?: string; profileEn?: string }>('/test/result')
+      .then(r => { if (!r.completed || !r.scores) { router.replace('/test'); return; } setScore(r.scores); setProfile((currentLang() === 'en' ? r.profileEn : r.profile) ?? ''); })
       .catch((e: Error) => setError(e.message)).finally(() => setLoading(false));
   }, [router]);
   if (loading) return <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}><Glow /><Spinner /></View>;
   if (error || !score) return (
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}><Glow />
-      <T style={{ color: tw.accent, marginBottom: 16 }}>{error || 'Sonuç bulunamadı.'}</T>
-      <Btn variant="textLink" textStyle={{ fontSize: 14, color: c.t888 }} label="← Profile Dön" onPress={() => router.back()} />
+      <T style={{ color: tw.accent, marginBottom: 16 }}>{error || t('result.notFound')}</T>
+      <Btn variant="textLink" textStyle={{ fontSize: 14, color: c.t888 }} label={t('result.backProfileArrow')} onPress={() => router.back()} />
     </View>
   );
   return (
@@ -82,8 +85,8 @@ export default function TestSonuc() {
       <ScreenGlow />
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ maxWidth: 576, width: '100%', alignSelf: 'center', paddingHorizontal: 20, paddingTop: insets.top + 48, paddingBottom: insets.bottom + 48 }}>
       <View style={{ alignItems: 'center', marginBottom: 40 }}>
-        <Serif style={{ fontSize: 30, marginBottom: 8 }}>Kişilik Profilin</Serif>
-        <T w={600} style={{ fontSize: 12, letterSpacing: 2.4, color: c.t888 }}>OCEAN · BIG FIVE MODELİ</T>
+        <Serif style={{ fontSize: 30, marginBottom: 8 }}>{t('result.title')}</Serif>
+        <T w={600} style={{ fontSize: 12, letterSpacing: 2.4, color: c.t888 }}>{t('result.modelUpper')}</T>
         {!!profile && <T style={{ fontSize: 14, color: c.t888, marginTop: 12, lineHeight: 22.75, textAlign: 'center' }}>{profile}</T>}
       </View>
       <View style={{ alignItems: 'center', marginBottom: 40 }}><Radar scores={score} /></View>
@@ -92,8 +95,8 @@ export default function TestSonuc() {
       </View>
       <TraitCard label={OCEAN_TRAITS[4].label} score={Math.round(score[OCEAN_TRAITS[4].key])} />
       <View style={{ marginTop: 32, gap: 12 }}>
-        <BtnPrimary label="Dashboard'a Git →" full onPress={() => router.replace('/(tabs)')} />
-        <BtnGhost label="Profile Dön" full onPress={() => router.back()} />
+        <BtnPrimary label={t('result.goDash')} full onPress={() => router.replace('/(tabs)')} />
+        <BtnGhost label={t('result.backProfile')} full onPress={() => router.back()} />
       </View>
     </ScrollView>
     </View>

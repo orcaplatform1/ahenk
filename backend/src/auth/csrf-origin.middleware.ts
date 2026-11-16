@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ACCESS_COOKIE, REFRESH_COOKIE, VENUE_COOKIE } from "./auth-cookies";
+import { requestLang } from "../common/api-messages";
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -24,6 +25,6 @@ export function csrfOriginCheck(allowedOrigins: string[]) {
     }
     if (source && allowedOrigins.includes(source)) return next();
 
-    res.status(403).json({ statusCode: 403, message: "Geçersiz istek kaynağı" });
+    res.status(403).json({ statusCode: 403, message: requestLang(req) === "en" ? "Invalid request origin" : "Geçersiz istek kaynağı" });
   };
 }

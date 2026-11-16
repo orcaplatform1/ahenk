@@ -1,8 +1,12 @@
 // İptal bildirimi: ayrılanın kimliği verilmez (anonim); masayı dağıtmamak için taramanın sürdüğünü vurgular
-export function cancellationNotice(): { title: string; body: string } {
+export function cancellationNotice(): { title: string; body: string; en: { title: string; body: string } } {
   return {
     title: "Masa Güncellendi",
     body: "Masanızdan bir katılımcı rezervasyonunu iptal etti, endişelenmeyin yapay zeka katmanı masanızı öncelikli eşleşme moduna yükseltti ve acele tarama modu devrede.",
+    en: {
+      title: "Table updated",
+      body: "Someone at your table cancelled their booking. Don't worry — our AI layer has moved your table to priority matching and fast scanning is on.",
+    },
   };
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
 
@@ -13,6 +14,7 @@ const SOS_CLOSED_EVENT = 'ahenk-sos-closed';
 // Açık acil yardım talebi masa kartından bağımsızdır: kart kalksa da sayfa yenilense de ekranda kalır, canlı konum
 // gönderilir. Admin sonuçlandırınca (reportId null ya da active:false) konum durur ve ekran kapanır.
 export default function SosOpenReport() {
+  const t = useTranslations();
   const pathname = usePathname();
   const [reportId, setReportId] = useState<string | null>(null);
   const [noticeVisible, setNoticeVisible] = useState(false);
@@ -68,9 +70,9 @@ export default function SosOpenReport() {
         background: '#2a0a0a', border: '1.5px solid rgba(192,57,43,0.5)',
       }}
     >
-      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#ff6b6b' }}>ACİL YARDIM TALEBİ ETKİN</p>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#ff6b6b' }}>{t('sos.activeTitle')}</p>
       <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,107,107,0.7)' }}>
-        Konumunuz emniyet birimleriyle paylaşılıyor ve talebiniz çözülene kadar ekibimiz tarafından aralıksız takip ediliyor, konumunuzu kapatmayın. İhbarınız, sizin ve masanızdakilerin kimlik bilgileri de emniyet birimleriyle paylaşılıyor.
+        {t('sos.activeBody')}
       </p>
     </div>
   );

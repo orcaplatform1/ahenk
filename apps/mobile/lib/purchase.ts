@@ -6,11 +6,12 @@
 import { Platform } from 'react-native';
 import { deepLinkToSubscriptions, fetchProducts, finishTransaction, getAvailablePurchases, initConnection, purchaseErrorListener, purchaseUpdatedListener, requestPurchase, restorePurchases as storeRestore, type Purchase } from 'expo-iap';
 import { api } from './api';
+import i18n from './i18n';
 
 export const PLATFORM = Platform.OS === 'ios' ? 'IOS' : 'ANDROID';
 
 // Butonun altındaki ödeme bilgisi
-export const PAY_INFO = Platform.OS === 'ios' ? 'Ödemen App Store hesabından tahsil edilir.' : 'Ödemen Play Store hesabından tahsil edilir.';
+export const payInfo = () => i18n.t(Platform.OS === 'ios' ? 'pkg.payInfoIos' : 'pkg.payInfoAndroid');
 
 // Mobil indirim teklifleri (backend store.service.ts): tek seferlikte indirimli ayrı ürün kimliği gelir; Prime'da
 // iOS promosyon teklifi (sunucu imzalı) / Google Play abonelik teklifi (offerId). Davet %10 ve 100 TL birlikte kullanılmaz.
@@ -20,7 +21,7 @@ interface InitResponse { stub?: boolean; message?: string; iap?: boolean; produc
 // Mağaza penceresi açılır; satın alma sunucuda doğrulanınca çözülür
 export async function startPurchase(plan: string, useDiscount?: 'REFERRER' | 'INVITEE'): Promise<'purchased'> {
   const init = await api.post<InitResponse>('/payment/init', { plan, platform: PLATFORM, ...(useDiscount ? { useDiscount } : {}) });
-  if (init?.stub || !init?.iap || !init.productId) throw new Error(init?.message ?? 'Uygulama içi satın alma henüz aktif değil.');
+  if (init?.stub || !init?.iap || !init.productId) throw new Error(init?.message ?? i18n.t('pkg.iapInactive'));
   const sku = init.productId;
   const isSub = init.type === 'subs';
   await initConnection();
@@ -39,7 +40,7 @@ export async function startPurchase(plan: string, useDiscount?: 'REFERRER' | 'IN
         ok.remove(); err.remove();
       }
     });
-    const err = purchaseErrorListener((e) => { ok.remove(); err.remove(); reject(new Error(e.message || 'Satın alma tamamlanamadı.')); });
+    const err = purchaseErrorListener((e) => { ok.remove(); err.remove(); reject(new Error(e.message || i18n.t('pkg.purchaseFailed'))); });
   });
 
   const offer = init.offer ?? null;

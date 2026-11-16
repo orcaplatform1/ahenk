@@ -160,6 +160,7 @@ export class KankaService {
         title: "Kanka davetin var",
         body: `${initialsOf(me.profile)} seni Kankamla için kanka olmaya davet etti. Profilim'den yanıtlayabilirsin.`,
         data: { type: "KANKA_INVITE" },
+        en: { title: "You have a Kanka invite", body: `${initialsOf(me.profile)} invited you to be their Kanka for Kankamla. You can reply from My Profile.` },
       }).catch(() => undefined);
     }
 
@@ -229,6 +230,7 @@ export class KankaService {
       title: "Kanka davetin kabul edildi",
       body: `${initialsOf(me.profile)} artık kankan. Kankamla paketiyle birlikte masaya oturabilirsiniz.`,
       data: { type: "KANKA_ACCEPTED" },
+      en: { title: "Your Kanka invite was accepted", body: `${initialsOf(me.profile)} is now your Kanka. You can join a table together with the Kankamla package.` },
     }).catch(() => undefined);
     // Çiftte açık Kankamla paketi varsa hemen taramaya girer
     await enqueueAssign(this.assignQueue, inviter.id).catch(() => undefined);
@@ -255,6 +257,7 @@ export class KankaService {
       title: "Kankalık sona erdi",
       body: `${initialsOf(me.profile)} kankalıktan çıktı. Profilim'den yeni bir kanka davet edebilirsin.`,
       data: { type: "KANKA_ENDED" },
+      en: { title: "Your Kanka link has ended", body: `${initialsOf(me.profile)} ended your Kanka link. You can invite a new Kanka from My Profile.` },
     }).catch(() => undefined);
     return { ok: true };
   }

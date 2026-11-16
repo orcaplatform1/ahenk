@@ -1,8 +1,10 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import { useState } from 'react';
 import OtpInput from '@/components/ui/OtpInput';
-import { API_PREFIX } from '@/lib/api';
+import { API_PREFIX, langHeaders } from '@/lib/api';
 import { readError } from '@/lib/venueApi';
 import { OtpCountdown, useOtpCountdown } from '@/lib/otpCountdown';
 import { withResendSeconds } from '@/lib/otpResend';
@@ -45,6 +47,7 @@ export function TextareaField({ label, value, onChange, maxLength, required, row
 export function PasswordInput({ label, value, onChange, required }: {
   label: string; value: string; onChange: (v: string) => void; required?: boolean;
 }) {
+  const t = useTranslations();
   const [show, setShow] = useState(false);
   return (
     <label className="block">
@@ -55,7 +58,7 @@ export function PasswordInput({ label, value, onChange, required }: {
           required={required} maxLength={20} className="input-glass px-4 py-3 text-[13px] pr-12"
         />
         <button
-          type="button" onClick={() => setShow((s) => !s)} tabIndex={-1} aria-label={show ? 'Şifreyi gizle' : 'Şifreyi göster'}
+          type="button" onClick={() => setShow((s) => !s)} tabIndex={-1} aria-label={show ? t('phone.hidePw') : t('phone.showPw')}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a39c93] hover:text-[#c0392b] transition-colors"
         >
           {show ? (
@@ -78,6 +81,7 @@ export function PasswordInput({ label, value, onChange, required }: {
 export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }: {
   base: string; phone: string; onPhone: (v: string) => void; phoneToken: string; onToken: (v: string) => void;
 }) {
+  const t = useTranslations();
   const [otpSent, setOtpSent] = useState(false);
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -96,7 +100,7 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
   async function postJson<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(`${API_PREFIX}${base}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...langHeaders() },
       body: JSON.stringify(body),
     });
     if (!res.ok) {
@@ -107,7 +111,7 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
   }
 
   async function send() {
-    if (phone.length !== 10 || !phone.startsWith('5')) { setError('WhatsApp numaranızı girin (5 ile başlayan 10 hane).'); return; }
+    if (phone.length !== 10 || !phone.startsWith('5')) { setError(t('phone.enterWhatsapp')); return; }
     setSending(true); setError('');
     try {
       const r = await postJson<{ resendSeconds: number }>('/send-otp', { phone: `+90${phone}` });
@@ -134,8 +138,8 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
 
   return (
     <div>
-      <label className="block ll-mono text-[11px] text-[#a39c93] mb-1.5">Telefon Numarası *</label>
-      <p className="text-xs text-[#a39c93] mb-2">WhatsApp&apos;a kayıtlı numaranızı yazın</p>
+      <label className="block ll-mono text-[11px] text-[#a39c93] mb-1.5">{t('phone.label')}</label>
+      <p className="text-xs text-[#a39c93] mb-2">{t('phone.hint')}</p>
       <div className="flex gap-2">
         <div
           className="flex items-center px-4 text-[#a39c93] text-[13px] select-none shrink-0"
@@ -144,7 +148,7 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
           +90
         </div>
         <input
-          type="tel" inputMode="numeric" aria-label="Telefon Numarası" value={phone}
+          type="tel" inputMode="numeric" aria-label={t('phone.labelPlain')} value={phone}
           onChange={(e) => change(e.target.value.replace(/\D/g, '').slice(0, 10))}
           placeholder="5XX XXX XX XX" disabled={!!phoneToken} required
           className="input-glass flex-1 min-w-0 px-4 py-3 text-[13px] disabled:opacity-60"
@@ -155,21 +159,21 @@ export function VerifiedPhoneField({ base, phone, onPhone, phoneToken, onToken }
             className="shrink-0 px-3 text-xs font-medium rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ border: '1px solid rgba(192,57,43,0.5)', color: '#e74c3c', background: 'rgba(192,57,43,0.06)' }}
           >
-            {sending ? 'Gönderiliyor…' : otpSent ? 'Yeni kod gönder' : 'Kod gönder'}
+            {sending ? t('phone.sending') : otpSent ? t('phone.resend') : t('phone.send')}
           </button>
         )}
       </div>
       {phoneToken ? (
         <div className="flex items-center justify-between mt-2">
-          <p className="text-xs text-green-400">✓ Telefon numaranız doğrulandı</p>
-          <button type="button" onClick={() => change(phone)} className="text-xs text-[#a39c93] hover:text-[#c9c2b8]">Numarayı değiştir</button>
+          <p className="text-xs text-green-400">{t('phone.verified')}</p>
+          <button type="button" onClick={() => change(phone)} className="text-xs text-[#a39c93] hover:text-[#c9c2b8]">{t('phone.change')}</button>
         </div>
       ) : otpSent && (
         <div className="flex flex-col gap-2 mt-3">
-          <p className="text-xs text-[#a39c93] text-center">+90{phone} numarasına WhatsApp ile gönderilen 6 haneli kodu girin.</p>
+          <p className="text-xs text-[#a39c93] text-center">{t('phone.codeSentTo', { phone: `+90${phone}` })}</p>
           <OtpInput value={code} onChange={(c) => { setCode(c); setError(''); }} onComplete={verify} error={shake} autoFocus={false} />
           <OtpCountdown seconds={countdown.seconds} className="text-xs text-[#a39c93] text-center" />
-          {verifying && <p className="text-xs text-[#a39c93] text-center">Doğrulanıyor…</p>}
+          {verifying && <p className="text-xs text-[#a39c93] text-center">{t('phone.verifying')}</p>}
         </div>
       )}
       {error && <p className="text-xs text-[#ff6b6b] mt-2">{error}</p>}

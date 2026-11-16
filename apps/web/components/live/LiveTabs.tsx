@@ -1,28 +1,13 @@
 'use client';
 
 import type { CSSProperties } from 'react';
+import { useTranslations } from 'next-intl';
 import type { MasaTuru } from '@ahenk/ui';
 
 export type TabStatus = 'TABLE' | 'FORMING' | 'CANCELLED' | 'SCANNING' | 'KYC' | 'KANKA' | 'PENDING' | 'FAILED' | 'PASSIVE' | 'NONE';
 
-const TABS: { type: MasaTuru; label: string }[] = [
-  { type: 'GROUP', label: 'GRUP' },
-  { type: 'ONE_ON_ONE', label: 'BAŞ BAŞA' },
-  { type: 'KANKA', label: 'KANKAMLA' },
-];
-
-const STATUS_TEXT: Record<TabStatus, string> = {
-  TABLE: 'Masa Kuruldu',
-  FORMING: 'Masa Oluşturuluyor',
-  CANCELLED: 'Rez. İptal',
-  SCANNING: 'Taramada',
-  KYC: 'Kimlik Bekleniyor',
-  KANKA: 'Kanka Bekleniyor',
-  PENDING: 'Beklemede',
-  FAILED: 'Başarısız',
-  PASSIVE: 'Eşleşme Pasif',
-  NONE: 'Abonelik Yok',
-};
+// Etiket ve durum metinleri çeviri anahtarı: live.tab<TÜR>, live.st<DURUM>
+const TABS: { type: MasaTuru }[] = [{ type: 'GROUP' }, { type: 'ONE_ON_ONE' }, { type: 'KANKA' }];
 
 // Olimpiyat düzeni: alt sıra yarım halka kaydırılmış, halkalar yalnızca komşusuyla kesişir. Durağan alan Baş Başa ile aynı
 // (x 4.5–53.5, y 10.5–47.5), kalınlık/çap oranı aynı. Sıra çevresinde verilir, renk ve evre komşudan komşuya değişir.
@@ -73,9 +58,12 @@ export default function LiveTabs({ tab, statuses, onTab }: {
   statuses: Record<MasaTuru, TabStatus>;
   onTab: (tab: MasaTuru) => void;
 }) {
+  const t = useTranslations();
   return (
     <div className="ll-tabs">
-      {TABS.map(({ type, label }) => {
+      {TABS.map(({ type }) => {
+        const label = t(`live.tab${type}`);
+        const statusText = t(`live.st${statuses[type]}`);
         const status = statuses[type];
         const off = status === 'NONE';
         const on = !off && type === tab;
@@ -87,14 +75,14 @@ export default function LiveTabs({ tab, statuses, onTab }: {
             disabled={off}
             aria-disabled={off}
             aria-pressed={on}
-            aria-label={`${label}: ${STATUS_TEXT[status]}`}
+            aria-label={`${label}: ${statusText}`}
             onClick={() => onTab(type)}
           >
             <Rings type={type} />
             <span className="ll-tab-label">{label}</span>
             <span className="ll-tab-status">
               <span className={`ll-tab-dot is-${status.toLowerCase()}`} />
-              {STATUS_TEXT[status]}
+              {statusText}
             </span>
           </button>
         );

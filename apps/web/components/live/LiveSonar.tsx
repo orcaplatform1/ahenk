@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { AhenkSonar, SONAR_CENTER as C } from '@ahenk/ui';
 import { LEVELS } from './levels';
 import type { LivePulse, SonarDensity, SonarState } from './types';
@@ -150,7 +151,9 @@ function DotLayer({ sonar, waiting }: { sonar: LivePulse['sonar'] | null; waitin
   );
 }
 
-export default function LiveSonar({ sonar, waiting = false }: { sonar: LivePulse['sonar'] | null; waiting?: boolean }) {
+// idle: BEKLEME ("Yeni tarama başlamasına" geri sayımı gösterilirken) — rozet "PASİF" (kırmızı); AKTİF'te "CANLI" (yeşil)
+export default function LiveSonar({ sonar, waiting = false, idle = false }: { sonar: LivePulse['sonar'] | null; waiting?: boolean; idle?: boolean }) {
+  const t = useTranslations();
   const dots = sonar?.dots ?? [];
   const density = sonar?.density ?? null;
   const counts = { new: 0, active: 0, pool: 0 };
@@ -178,21 +181,21 @@ export default function LiveSonar({ sonar, waiting = false }: { sonar: LivePulse
   }, [sonar, density]);
 
   const legend: [string, string][] = density
-    ? Object.values(LEVELS).map((l) => [l.label, l.color])
-    : [['yeni giriş', '#ff6b5e'], ['aktif', '#e8a27a'], ['havuzda', '#c9c2b8']];
+    ? Object.values(LEVELS).map((l) => [t(l.label), l.color])
+    : [[t('live.legendNew'), '#ff6b5e'], [t('live.legendActive'), '#e8a27a'], [t('live.legendPool'), '#c9c2b8']];
 
   return (
     <section>
       <div className="ll-head">
-        <h2 className="ll-title">Eşleşme Taraması</h2>
-        <span className="ll-live is-green"><span className="ll-live-dot" />CANLI</span>
+        <h2 className="ll-title">{t('live.scanTitle')}</h2>
+        <span className={idle ? 'll-live is-idle' : 'll-live is-green'}><span className="ll-live-dot" />{idle ? t('live.badgeInactive') : t('live.liveBadge')}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <AhenkSonar
           centerPulse={centerPulse}
           ariaLabel={density
-            ? `Eşleşme taraması: ilçe yoğunluğu, ${density.districts.length} ilçe. Kişisel bilgi gösterilmez.`
-            : `Eşleşme taraması: bu hafta havuzda ${dots.length} kişi görünüyor, ${counts.new} yeni giriş, ${counts.active} aktif. Kişisel bilgi gösterilmez.`}
+            ? t('live.sonarDensityAria', { count: density.districts.length })
+            : t('live.sonarDotsAria', { count: dots.length, fresh: counts.new, active: counts.active })}
         >
           {density ? <DensityLayer density={density} flashes={flashes} waiting={waiting} /> : <DotLayer sonar={sonar} waiting={waiting} />}
         </AhenkSonar>

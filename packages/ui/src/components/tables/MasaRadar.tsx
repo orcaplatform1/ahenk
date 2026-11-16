@@ -2,6 +2,7 @@
 
 // Masa radarı ve masa yardımcıları (Masalarım "Masa Kuruldu" radarı, baş harf, cinsiyet rengi, masa kilidi).
 // MasalarDashboard bileşeni kullanılmadığı için silindi; ortak parçalar bu dosyada kaldı.
+import { useLocale, useTranslations } from 'next-intl';
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AhenkSonar } from '../sonar/AhenkSonar';
@@ -54,8 +55,9 @@ export function buildInitials(firstName?: string | null, lastName?: string | nul
 
 // Masa türü başlığı
 
+// Çeviri anahtarı
 function tableTitleOf(type?: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'): string {
-  return type === 'ONE_ON_ONE' ? 'BAŞ BAŞA MASA' : type === 'KANKA' ? 'KANKAMLA MASASI' : 'GRUP MASASI';
+  return type === 'ONE_ON_ONE' ? 'radar.titleOne' : type === 'KANKA' ? 'radar.titleKanka' : 'radar.titleGroup';
 }
 
 export function isTableLocked(scheduledAt: string): boolean {
@@ -63,11 +65,11 @@ export function isTableLocked(scheduledAt: string): boolean {
   return Date.now() >= Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() - 1, 23 - 3, 59, 0, 0);
 }
 
-function formatMasaDate(isoStr: string): string {
+function formatMasaDate(isoStr: string, locale = 'tr'): string {
   try {
-    return new Date(isoStr).toLocaleDateString('tr-TR', {
+    return new Date(isoStr).toLocaleDateString(locale === 'en' ? 'en-GB' : 'tr-TR', {
       day: 'numeric', month: 'long', year: 'numeric',
-      weekday: 'long', hour: '2-digit', minute: '2-digit',
+      weekday: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
       timeZone: 'Europe/Istanbul',
     });
   } catch {
@@ -204,6 +206,7 @@ function revealAt(scheduledAt: string): number {
 }
 
 function RevealCountdown({ scheduledAt }: { scheduledAt: string }) {
+  const t = useTranslations();
   const target = revealAt(scheduledAt);
   const [msLeft, setMsLeft] = useState(() => Math.max(0, target - Date.now()));
   useEffect(() => {
@@ -213,16 +216,16 @@ function RevealCountdown({ scheduledAt }: { scheduledAt: string }) {
   const total = Math.floor(msLeft / 1000);
   const pad = (n: number) => String(n).padStart(2, '0');
   const units = [
-    { val: pad(Math.floor(total / 86400)), lbl: 'GÜN' },
-    { val: pad(Math.floor((total % 86400) / 3600)), lbl: 'SA' },
-    { val: pad(Math.floor((total % 3600) / 60)), lbl: 'DK' },
-    { val: pad(total % 60), lbl: 'SN' },
+    { val: pad(Math.floor(total / 86400)), lbl: t('radar.d') },
+    { val: pad(Math.floor((total % 86400) / 3600)), lbl: t('radar.h') },
+    { val: pad(Math.floor((total % 3600) / 60)), lbl: t('radar.m') },
+    { val: pad(total % 60), lbl: t('radar.s') },
   ];
   return (
     <div style={{ display: 'flex', justifyContent: 'center', gap: 10, margin: '6px 0 10px' }}>
       {units.map(u => (
         <div key={u.lbl} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 30 }}>
-          <span className={`ll-serif${u.lbl === 'SN' ? ' ll-blink' : ''}`} style={{ fontSize: 40, lineHeight: 1 }}>{u.val}</span>
+          <span className={`ll-serif${u.lbl === t('radar.s') ? ' ll-blink' : ''}`} style={{ fontSize: 40, lineHeight: 1 }}>{u.val}</span>
           <span style={{ fontSize: 10, color: '#a39c93', marginTop: 6 }}>{u.lbl}</span>
         </div>
       ))}
@@ -241,8 +244,10 @@ interface ConfirmedRadarProps {
 }
 
 export function ConfirmedRadarView({ participants, maxParticipants, type, scheduledAt, infoText, isDesktop }: ConfirmedRadarProps & { isDesktop?: boolean }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const isOneOnOne = type === 'ONE_ON_ONE';
-  const title      = tableTitleOf(type);
+  const title      = t(tableTitleOf(type));
   const maxP       = maxParticipants ?? (isOneOnOne ? 2 : 6);
   const { wrapRef: radarWrapRef, scale: radarScale } = useRadarScale(isDesktop ? 1.5 : 1);
 
@@ -265,7 +270,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
   const settled = full || locked;
   const positions = orbitPts(maxP, settled ? ORBIT_R * 0.62 : ORBIT_R);
   const emptySeats = settled ? [] : orbitPts(maxP).slice(ordered.length);
-  const statusText = locked ? 'Masa Kuruldu' : 'Masa Oluşturuluyor';
+  const statusText = locked ? t('radar.locked') : t('radar.forming');
 
   return (
     <div>
@@ -316,7 +321,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
 
       <div style={{ textAlign: 'center', marginTop: 18 }}>
         <span style={{ fontSize: 14, color: '#666', fontFamily: 'Inter, sans-serif' }}>
-          Katılımcı: <span style={{ fontWeight: 700, color: '#27ae60' }}>{ordered.length}</span>
+          {t('radar.participant')} <span style={{ fontWeight: 700, color: '#27ae60' }}>{ordered.length}</span>
           <span style={{ color: '#444', margin: '0 4px' }}>/</span>
           <span style={{ fontWeight: 700, color: '#27ae60' }}>{maxP}</span>
         </span>
@@ -324,11 +329,11 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
 
       <div style={{ textAlign: 'center', marginTop: 20, padding: '0 4px' }}>
         <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-serif, "DM Serif Display", serif)', fontSize: 18, fontWeight: 400, color: '#27ae60' }}>
-          {locked ? 'Mekan bilgileri masa detayında gözükecektir.' : full ? 'Masanız tamamlandı.' : 'Masanız Oluşturuluyor!'}
+          {locked ? t('radar.venueLater') : full ? t('radar.full') : t('radar.formingBang')}
         </p>
         {locked && <RevealCountdown scheduledAt={scheduledAt} />}
         <p style={{ margin: '0 0 8px', fontSize: 12, color: '#888', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>
-          Masa buluşma tarihi: {formatMasaDate(scheduledAt)}
+          {t('radar.meetDate', { date: formatMasaDate(scheduledAt, locale) })}
         </p>
         <p style={{ margin: 0, fontSize: 12, color: '#555', fontFamily: 'Inter, sans-serif', lineHeight: 1.55 }}>
           {infoText}

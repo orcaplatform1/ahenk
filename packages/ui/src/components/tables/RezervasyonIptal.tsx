@@ -1,7 +1,9 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { documentLang } from '../../lib/lang';
 
 // Rezervasyon iptali — bekleme ekranında (masa kuruldu, detay henüz açıklanmadı) gösterilir.
 // Son an: masa gününden 1 gün önce (kilit günü) 20:00 TR; masa kartı buluşma günü 10:00'da açıldığı için kartta iptal yoktur.
@@ -18,6 +20,7 @@ function CancelModal({
   loading: boolean;
   error: string;
 }) {
+  const t = useTranslations();
   const [note, setNote] = useState('');
   const canSubmit = note.trim().length > 0;
 
@@ -47,10 +50,10 @@ function CancelModal({
           fontSize: 15, lineHeight: 1.6, fontWeight: 500,
           color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center',
         }}>
-          Rezervasyon iptali diğer kullanıcıları da doğrudan etkilediğinden, kurulma aşamasındaki bir masada tekrar iptal hakkın bulunmayacaktır ve sonraki kurulan masaya da katılmama durumunda 1. uyarı verilir, toplamda 3 uyarı alırsan hesabın 30 gün askıya alınır.
+          {t('cancel.warning')}
         </p>
         <p style={{ margin: '0 0 10px', fontSize: 13, color: 'rgba(245,245,245,0.6)', fontFamily: 'Inter, sans-serif' }}>
-          İptal nedenini belirtin:
+          {t('cancel.reasonLabel')}
         </p>
         <textarea
           value={note}
@@ -77,7 +80,7 @@ function CancelModal({
               opacity: (loading || !canSubmit) ? 0.45 : 1,
             }}
           >
-            {loading ? '…' : 'İptali Onayla'}
+            {loading ? '…' : t('cancel.confirm')}
           </button>
           <button
             onClick={onClose}
@@ -87,7 +90,7 @@ function CancelModal({
               color: '#b0b0b0', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif',
             }}
           >
-            Vazgeç
+            {t('cancel.keep')}
           </button>
         </div>
         {error && (
@@ -122,6 +125,7 @@ export function RezervasyonIptal({ meetingId, scheduledAt, cancelRightUsed, apiB
   onCancelled?: () => void;
   modalPortal?: ModalPortal;
 }) {
+  const t = useTranslations();
   const [showCancel, setShowCancel] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cancelled, setCancelled] = useState(false);
@@ -136,17 +140,17 @@ export function RezervasyonIptal({ meetingId, scheduledAt, cancelRightUsed, apiB
       const res = await fetch(`${apiBase}/meetings/${meetingId}/cancel-registration`, {
         method: 'POST',
         headers: token
-          ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-          : { 'Content-Type': 'application/json' },
+          ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'Accept-Language': documentLang() }
+          : { 'Content-Type': 'application/json', 'Accept-Language': documentLang() },
         credentials: 'include',
         body: JSON.stringify({ note }),
       });
       if (res.ok) { setCancelled(true); setShowCancel(false); onCancelled?.(); return; }
       const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
       const msg = Array.isArray(err?.message) ? err?.message[0] : err?.message;
-      setError(msg ?? 'İptal edilemedi, lütfen tekrar deneyin.');
+      setError(msg ?? t('cancel.failed'));
     } catch {
-      setError('İptal edilemedi, lütfen tekrar deneyin.');
+      setError(t('cancel.failed'));
     } finally { setLoading(false); }
   }
 
@@ -167,7 +171,7 @@ export function RezervasyonIptal({ meetingId, scheduledAt, cancelRightUsed, apiB
     return (
       <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 14px' }}>
         <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-          Bu paket için iptal hakkınızı kullandınız.
+          {t('cancel.used')}
         </p>
       </div>
     );
@@ -200,7 +204,7 @@ export function RezervasyonIptal({ meetingId, scheduledAt, cancelRightUsed, apiB
         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(192,57,43,0.3)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(192,57,43,0.2)')}
       >
-        Rezervasyon İptal
+        {t('cancel.button')}
       </button>
     </>
   );

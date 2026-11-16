@@ -37,6 +37,7 @@ import {
   UpdateVenueDto,
   CreateCityDto,
   UpdateCityDto,
+  UpdateRegionDto,
   CreateCityDistrictDto,
   UpdateCityDistrictDto,
   CancelSubscriptionDto,
@@ -320,6 +321,22 @@ export class AdminController {
   @Patch("cities/:id")
   updateCity(@Param("id") id: string, @Body() dto: UpdateCityDto) {
     return this.adminService.updateCity(id, dto);
+  }
+
+  // ─── Bölgeler (şehir = bölge ayarları + "Haber ver" bekleme listesi) ─────────
+  @Get("regions")
+  listRegions() {
+    return this.adminService.listRegions();
+  }
+
+  @Patch("regions/:id")
+  updateRegion(@Param("id") id: string, @Body() dto: UpdateRegionDto) {
+    return this.adminService.updateRegion(id, dto);
+  }
+
+  @Get("regions/:id/waitlist")
+  regionWaitlist(@Param("id") id: string) {
+    return this.adminService.regionWaitlist(id);
   }
 
   // Şehir silme ve ilçe işlemleri ADMIN + SUPERADMIN; ADMIN işlemleri İşlem Kayıtları'nda görünür

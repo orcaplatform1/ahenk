@@ -1,31 +1,48 @@
 // Alt menü ikonları. Profilim: ortadaki büyük yuvarlak buton (ProfileCenterButton).
 // Diğer sekmeler: ince çizgi ikonlar (S-26), web ikon çizgi kalınlığı 1.5 (Navbar ikonları).
-import React from 'react';
-import { Image, Pressable, Text, View, type GestureResponderEvent, type StyleProp, type ViewStyle } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Image, Pressable, Text, View, type GestureResponderEvent, type StyleProp, type ViewStyle } from 'react-native';
 
 // Sekme butonuna alt menünün verdiği özellikler (yalnız kullanılanlar)
 type TabButtonProps = { onPress?: ((e: GestureResponderEvent) => void) | null; onLongPress?: ((e: GestureResponderEvent) => void) | null; accessibilityState?: { selected?: boolean }; style?: StyleProp<ViewStyle> };
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { sans, tabBadge, tabBar, tabCenter, tabIcon } from '@/theme/theme';
+import { sans, tabBadge, tabBar, tabCenter, tabIcon, tabPill } from '@/theme/theme';
 import { smallPhotoUrl } from '@/lib/photo';
 import { gBg, initialsLabel } from '@/lib/masa';
+import i18n from '@/lib/i18n';
 
-// Bildirimler ikonunun sağ üstünde sayı rozeti; sayı 0 iken görünmez
-export function TabBadge({ count, children }: { count: number; children: React.ReactNode }) {
+// Bildirimler ikonunun sağ üstünde rozet: count > 0 → sayı (99'dan büyükse "99+"); count 0 ve dot → 8×8 nokta; ikisi de yoksa görünmez
+export function TabBadge({ count, dot, children }: { count: number; dot?: boolean; children: React.ReactNode }) {
   const b = tabBadge;
+  const label = count > 99 ? '99+' : String(count);
   return (
     <View>
       {children}
-      {count > 0 && (
-        <View accessibilityLabel={`${count}`} style={{ position: 'absolute', top: b.top, right: b.right, borderRadius: b.size / 2 + b.ringWidth, padding: b.ringWidth, backgroundColor: b.ring,
-          shadowColor: b.glow, shadowOpacity: 0.7, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 6 }}>
-          <LinearGradient colors={[...b.colors]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-            style={{ minWidth: b.size, height: b.size, borderRadius: b.size / 2, paddingHorizontal: b.padH, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontFamily: sans(700), fontSize: b.fontSize, color: b.text, includeFontPadding: false, textAlignVertical: 'center' }}>{count > 99 ? '99+' : count}</Text>
-          </LinearGradient>
+      {count > 0 ? (
+        <View accessibilityLabel={label} style={{ position: 'absolute', top: b.top, right: b.right, minWidth: b.size + b.ringWidth * 2, height: b.size + b.ringWidth * 2,
+          borderRadius: b.size / 2 + b.ringWidth, borderWidth: b.ringWidth, borderColor: b.ring, backgroundColor: b.bg, paddingHorizontal: label.length > 1 ? b.padH : 0,
+          alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontFamily: sans(700), fontSize: b.fontSize, color: b.text, includeFontPadding: false, textAlignVertical: 'center' }}>{label}</Text>
         </View>
-      )}
+      ) : dot ? (
+        <View style={{ position: 'absolute', top: b.top + (b.size - b.dot) / 2, right: b.right + (b.size - b.dot) / 2, width: b.dot, height: b.dot, borderRadius: b.dot / 2, backgroundColor: b.bg }} />
+      ) : null}
+    </View>
+  );
+}
+
+// Seçili sekmede ikonun arkasında hap zemin (Profil sekmesi hariç); seçilince 150 ms'de belirir
+export function TabPill({ focused, children }: { focused: boolean; children: React.ReactNode }) {
+  const p = tabPill;
+  const op = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  useEffect(() => {
+    if (focused) Animated.timing(op, { toValue: 1, duration: p.fadeMs, useNativeDriver: true }).start();
+    else { op.stopAnimation(); op.setValue(0); }
+  }, [focused, op, p.fadeMs]);
+  return (
+    <View style={{ width: tabIcon.size, height: tabIcon.size, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View pointerEvents="none" style={{ position: 'absolute', left: (tabIcon.size - p.w) / 2, top: (tabIcon.size - p.h) / 2, width: p.w, height: p.h, borderRadius: p.r, backgroundColor: p.bg, opacity: op }} />
+      {children}
     </View>
   );
 }
@@ -90,7 +107,7 @@ export function ProfileCenterButton({ props, initials, gender, photoUrl }: { pro
           shadowColor: '#000', shadowOpacity: c.shadowOpacity, shadowRadius: c.shadowRadius, shadowOffset: { width: 0, height: c.shadowY }, elevation: c.elevation }}>
         <View style={{ width: inner, height: inner, borderRadius: inner / 2, borderWidth: c.frame, borderColor: selected ? c.frameOn : c.frameOff, overflow: 'hidden', backgroundColor: gBg(gender), alignItems: 'center', justifyContent: 'center' }}>
           {photoUrl
-            ? <Image source={{ uri: smallPhotoUrl(photoUrl) }} accessibilityLabel="Profil fotoğrafı" style={{ width: photo, height: photo, borderRadius: photo / 2 }} />
+            ? <Image source={{ uri: smallPhotoUrl(photoUrl) }} accessibilityLabel={i18n.t('photo.alt')} style={{ width: photo, height: photo, borderRadius: photo / 2 }} />
             : <Text numberOfLines={1} style={{ fontFamily: sans(700), fontSize: 15, color: '#FFFFFF' }}>{initialsLabel(initials)}</Text>}
         </View>
       </Pressable>

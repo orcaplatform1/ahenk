@@ -677,6 +677,7 @@ export class MeetingsService {
     const lastName = participant.user.profile?.lastName ?? '';
     const initials = `${firstName[0] ?? '?'}.${lastName[0] ?? '?'}.`;
     const notifBody = `${initials} yola çıktığını bildirdi.`;
+    const notifEn = { title: 'On the way', body: `${initials} is on the way.` };
 
     const otherUserIds = participant.meeting.participants
       .map((p) => p.userId)
@@ -688,6 +689,7 @@ export class MeetingsService {
           title: 'Yola Çıktı',
           body: notifBody,
           data: { type: 'ON_MY_WAY', meetingId },
+          en: notifEn,
         }),
       ),
     );
@@ -886,6 +888,7 @@ export class MeetingsService {
         title: "Kankamla rezervasyonu iptal edildi",
         body: `Kankan ${initialsOf(me?.profile)} bu haftaki Kankamla rezervasyonunuzu iptal etti.`,
         data: { type: "KANKA_CANCELLED", meetingId },
+        en: { title: "Kankamla booking cancelled", body: `Your Kanka ${initialsOf(me?.profile)} cancelled this week's Kankamla booking.` },
       }).catch(() => undefined);
     }
     for (const id of otherIds) {
@@ -893,6 +896,7 @@ export class MeetingsService {
         title: "Karşı çift masadan ayrıldı",
         body: "Kankamla masanızdaki karşı çift ayrıldı. Sizin için yeniden eşleşme aranıyor.",
         data: { type: "KANKA_PAIR_LEFT", meetingId },
+        en: { title: "The other pair left the table", body: "The other pair at your Kankamla table left. We're looking for a new match for you." },
       }).catch(() => undefined);
       await enqueueAssign(this.assignQueue, id);
     }

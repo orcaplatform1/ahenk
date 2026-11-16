@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import Image from 'next/image';
 import { api } from '@/lib/api';
 import { getNextTarget } from '@/components/HeroCountdown';
@@ -16,22 +17,11 @@ import type { LiveOverview, LivePulse, OceanKey } from './types';
 const PULSE_MS = 15_000;
 const OVERVIEW_MS = 60_000;
 // Masa türüne göre kart metinleri
-const TABLE_TEXT: Record<MasaTuru, { title: string; note: string }> = {
-  GROUP: { title: 'Grup masası kurulmasına', note: "Perşembe 23:59'da masa kapanır." },
-  ONE_ON_ONE: { title: 'Baş Başa masası kurulmasına', note: "Cuma 23:59'da masa kapanır." },
-  KANKA: { title: 'Kankamla masası kurulmasına', note: "Cumartesi 23:59'da masa kapanır." },
-};
-
-const OCEAN_LABEL: Record<OceanKey, string> = {
-  openness: 'Açıklık',
-  conscientiousness: 'Sorumluluk',
-  extraversion: 'Dışadönüklük',
-  agreeableness: 'Uyumluluk',
-  neuroticism: 'Duygusal Denge',
-};
+// Metinler çeviri anahtarı: live.until<TÜR>, live.closes<TÜR>, live.ocean<Boyut>
+const oceanKey = (k: OceanKey) => `live.ocean${k[0].toUpperCase()}${k.slice(1)}`;
 
 const pad = (n: number) => String(n).padStart(2, '0');
-const num = (n: number) => n.toLocaleString('tr-TR');
+const num = (n: number, locale = 'tr') => n.toLocaleString(locale === 'en' ? 'en-GB' : 'tr-TR');
 
 function useLivePoll<T>(path: string | null, intervalMs: number) {
   const [data, setData] = useState<T | null>(null);
@@ -61,6 +51,7 @@ function useLivePoll<T>(path: string | null, intervalMs: number) {
 
 // targetAt verilirse o ana (buluşma), verilmezse günün bir sonraki 23:59'una sayar
 function Countdown({ day, targetAt }: { day: number; targetAt?: number | null }) {
+  const t = useTranslations();
   const [left, setLeft] = useState<number | null>(null);
   useEffect(() => {
     const tick = () => setLeft(Math.max(0, (targetAt ?? getNextTarget(day).getTime()) - Date.now()));
@@ -71,19 +62,19 @@ function Countdown({ day, targetAt }: { day: number; targetAt?: number | null })
 
   const ms = left ?? 0;
   const units = [
-    { label: 'GÜN', value: Math.floor(ms / 86_400_000) },
-    { label: 'SAAT', value: Math.floor((ms % 86_400_000) / 3_600_000) },
-    { label: 'DAKİKA', value: Math.floor((ms % 3_600_000) / 60_000) },
-    { label: 'SANİYE', value: Math.floor((ms % 60_000) / 1000) },
+    { key: 'days', value: Math.floor(ms / 86_400_000) },
+    { key: 'hours', value: Math.floor((ms % 86_400_000) / 3_600_000) },
+    { key: 'minutes', value: Math.floor((ms % 3_600_000) / 60_000) },
+    { key: 'seconds', value: Math.floor((ms % 60_000) / 1000) },
   ];
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 8, margin: '14px 0' }}>
       {units.map((u, i) => (
-        <div key={u.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        <div key={u.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
           {i > 0 && <span className="ll-serif" style={{ fontSize: 40, lineHeight: 1, color: '#6e6860' }}>:</span>}
           <div style={{ textAlign: 'center', minWidth: 52 }}>
-            <div className={`ll-serif${u.label === 'SANİYE' ? ' ll-blink' : ''}`} style={{ fontSize: 40, lineHeight: 1 }}>{pad(u.value)}</div>
-            <div style={{ fontSize: 10, color: '#a39c93', marginTop: 6 }}>{u.label}</div>
+            <div className={`ll-serif${u.key === 'seconds' ? ' ll-blink' : ''}`} style={{ fontSize: 40, lineHeight: 1 }}>{pad(u.value)}</div>
+            <div style={{ fontSize: 10, color: '#a39c93', marginTop: 6 }}>{t(`live.${u.key}`)}</div>
           </div>
         </div>
       ))}
@@ -95,7 +86,6 @@ function Countdown({ day, targetAt }: { day: number; targetAt?: number | null })
 const LEVEL_ALPHA = { 1: 'd9', 2: 'a6', 3: '73', 4: '4d' } as const;
 // Tarama bekleme durumu: yoğunluk kartları "Düşük" kartının grisinde, yazı "Tarama bekleniyor"
 const WAIT_CELL = `${LEVELS[4].color}${LEVEL_ALPHA[4]}`;
-const WAIT_TEXT = 'Tarama bekleniyor';
 
 // Yoğunluk sırasına göre üç bant; bant içinde sıra ilerledikçe renk solar
 function heatColor(index: number, count: number) {
@@ -124,12 +114,17 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
   participation: React.ReactNode;
 }) {
   const router = useRouter();
+  const t = useTranslations();
+  const locale = useLocale();
+  const WAIT_TEXT = t('live.waitScan');
   // Şehir backend'de activeCity → primaryCity sırasıyla çözülür
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
   const waitingScan = tabPastClosing && !hasTabTable;
   // Kurulmuş aktif masa: sayaç buluşmaya sayar, yeni haftaya geçmez
   const meetingTarget = hasTabTable && meetingAt ? Date.parse(meetingAt) : null;
+  // BEKLEME: geri sayım kartında "Yeni tarama başlamasına" gösterilirken (aynı durum değişkenleri); AKTİF: tarama başlamış
+  const scanIdle = meetingTarget === null && waitingScan;
 
   const seats = overview?.groupSeatsLeft ?? null;
 
@@ -152,35 +147,37 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
           {!hasTabTable && (
             <Image src="/maskot/jantihaydar_stop.webp" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[80px] md:w-[100px]" />
           )}
-          <p key={tab} className="ll-eyebrow ll-fade">{meetingTarget !== null ? 'Buluşmanıza kalan süre' : waitingScan ? 'Yeni tarama başlamasına' : TABLE_TEXT[tab].title}</p>
+          <p key={tab} className="ll-eyebrow ll-fade">{meetingTarget !== null ? t('live.untilMeeting') : waitingScan ? t('live.untilScan') : t(`live.until${tab}`)}</p>
           <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} targetAt={meetingTarget} />
           <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>
-            {waitingScan ? "Pazar 23:59'da yeni tarama başlar." : TABLE_TEXT[tab].note}
+            {waitingScan ? t('live.scanStarts') : t(`live.closes${tab}`)}
             {!waitingScan && tabSeatsLeft !== null && !(meetingTarget !== null && tabSeatsLeft === 0) && (
               <span style={{ display: 'block' }}>
-                {tabSeatsLeft > 0 ? `Masanızda ${num(tabSeatsLeft)} boş koltuk kaldı.` : 'Masanızda kontenjan doldu.'}
+                {tabSeatsLeft > 0 ? t('live.seatsLeft', { count: num(tabSeatsLeft, locale) }) : t('live.tableFull')}
               </span>
             )}
           </p>
         </section>
 
-        <div className={scanOff || scanWaiting || statuses[tab] === 'KYC' || statuses[tab] === 'KANKA' ? 'll-scan-off' : undefined}>
-          <LiveSonar sonar={pulse?.sonar ?? null} waiting={scanWaiting} />
+        {/* BEKLEME: tarama dilimi bulunduğu açıda durur (ll-scan-idle, gizlenmez); diğer durumlarda mevcut davranış */}
+        <div className={scanIdle ? 'll-scan-idle' : scanOff || scanWaiting || statuses[tab] === 'KYC' || statuses[tab] === 'KANKA' ? 'll-scan-off' : undefined}>
+          <LiveSonar sonar={pulse?.sonar ?? null} waiting={scanWaiting} idle={scanIdle} />
         </div>
         <div key={tab} className="ll-fade">{participation}</div>
-        <LiveFeed feed={pulse?.feed ?? null} />
+        <LiveFeed feed={pulse?.feed ?? null} tz={overview?.timezone} />
 
         {/* Isı haritası */}
         <section>
-          <div className="ll-head">
-            <h2 className="ll-title">Semt Masa Yoğunluğu</h2>
+          <div className="ll-head" style={{ alignItems: 'center' }}>
+            <h2 className="ll-title">{t('live.heatTitle')}</h2>
+            {scanIdle && <span style={{ fontSize: 13, color: '#FFFFFF', opacity: 0.6 }}>{WAIT_TEXT}</span>}
           </div>
           {overview?.density ? (
             <div className="ll-heat">
               {overview.density.districts.map((d) => (
                 <div key={d.name} className="ll-heat-cell" style={{ background: scanWaiting ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }}>
                   <span style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-                  <span className="ll-mono" style={{ fontSize: scanWaiting || d.percent === null ? 11 : 15 }}>{scanWaiting ? WAIT_TEXT : d.percent === null ? LEVELS[d.level].label : `%${d.percent}`}</span>
+                  {!scanWaiting && <span className="ll-mono" style={{ fontSize: d.percent === null ? 11 : 15 }}>{d.percent === null ? t(LEVELS[d.level].label) : `%${d.percent}`}</span>}
                 </div>
               ))}
             </div>
@@ -189,26 +186,26 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
               {overview.heatmap.map((d, i) => (
                 <div key={d.name} className="ll-heat-cell" style={{ background: scanWaiting ? WAIT_CELL : heatColor(i, overview.heatmap.length) }}>
                   <span style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-                  <span className="ll-mono" style={{ fontSize: scanWaiting ? 11 : 15 }}>{scanWaiting ? WAIT_TEXT : `%${d.percent}`}</span>
+                  {!scanWaiting && <span className="ll-mono" style={{ fontSize: 15 }}>{`%${d.percent}`}</span>}
                 </div>
               ))}
             </div>
           ) : (
-            <p style={{ margin: 0, fontSize: 13, color: '#a39c93' }}>Bu hafta için ilçe verisi henüz yok.</p>
+            <p style={{ margin: 0, fontSize: 13, color: '#a39c93' }}>{t('live.heatEmpty')}</p>
           )}
         </section>
 
         {/* Uyum sinyali */}
         {overview && (
           <section className="ll-card">
-            <p className="ll-eyebrow">UYUM SİNYALİ</p>
+            <p className="ll-eyebrow">{t('live.signal')}</p>
             <p className="ll-serif" style={{ fontSize: 26, lineHeight: 1.25, margin: '10px 0 16px' }}>
-              Profiline yakın <span style={{ color: '#ff8a7e' }}>{num(overview.signal.closeCount)} kişi</span> bu hafta havuzda.
+              {t('live.signalPre')} <span style={{ color: '#ff8a7e' }}>{t('live.signalPeople', { count: num(overview.signal.closeCount, locale) })}</span> {t('live.signalPost')}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {overview.signal.top.map((d) => (
                 <div key={d.key} style={{ display: 'grid', gridTemplateColumns: '104px 1fr 28px', gap: 10, alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, color: '#c9c2b8' }}>{OCEAN_LABEL[d.key]}</span>
+                  <span style={{ fontSize: 12, color: '#c9c2b8' }}>{t(oceanKey(d.key))}</span>
                   <div className="ll-bar" style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.07)' }}>
                     <span style={{ background: 'linear-gradient(90deg, #d6453a, #e8a27a)', transform: `scaleX(${d.score / 100})` }} />
                   </div>
@@ -218,14 +215,14 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
             </div>
             {overview.signal.commonDimension && (
               <p style={{ margin: '14px 0 0', fontSize: 13, color: '#c9c2b8' }}>
-                Masandaki kişilerle en güçlü ortak noktan: <strong style={{ color: '#f4f1ec' }}>{OCEAN_LABEL[overview.signal.commonDimension]}</strong>
+                {t('live.commonDim')} <strong style={{ color: '#f4f1ec' }}>{t(oceanKey(overview.signal.commonDimension))}</strong>
               </p>
             )}
           </section>
         )}
 
         <button type="button" className="ll-cta" onClick={primaryAction}>
-          {overview?.hasTable ? 'Masanı Gör' : seats !== null ? `Masanı Ayır · ${num(seats)} koltuk kaldı` : 'Masanı Ayır'}
+          {overview?.hasTable ? t('live.seeTable') : seats !== null ? t('live.reserveSeats', { count: num(seats, locale) }) : t('live.reserve')}
         </button>
       </div>
     </div>

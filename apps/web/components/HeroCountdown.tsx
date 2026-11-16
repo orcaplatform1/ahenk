@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface TimeLeft {
   days: number;
@@ -39,9 +40,11 @@ function pad(n: number) {
   return String(n).padStart(2, '0');
 }
 
-const UNITS = ['GÜN', 'SAAT', 'DAKİKA', 'SANİYE'] as const;
+// Birimler çeviri anahtarı
+const UNITS = ['live.days', 'live.hours', 'live.minutes', 'live.seconds'] as const;
 
 function CountdownRow({ label, targetDay }: { label: string; targetDay: number }) {
+  const t = useTranslations();
   const [time, setTime] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
@@ -56,7 +59,7 @@ function CountdownRow({ label, targetDay }: { label: string; targetDay: number }
   return (
     <div style={{ padding: '14px 16px' }}>
       <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.88)', marginBottom: 10 }}>
-        {label} kurulmasına
+        {t('hero.untilLabel', { label })}
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
         {values.map((val, i) => (
@@ -66,7 +69,7 @@ function CountdownRow({ label, targetDay }: { label: string; targetDay: number }
                 {pad(val)}
               </span>
               <span style={{ fontSize: 7, fontWeight: 500, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.62)', marginTop: 4, textTransform: 'uppercase' }}>
-                {UNITS[i]}
+                {t(UNITS[i])}
               </span>
             </div>
             {i < values.length - 1 && (
@@ -75,7 +78,7 @@ function CountdownRow({ label, targetDay }: { label: string; targetDay: number }
           </div>
         ))}
         <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.62)', marginLeft: 10, letterSpacing: '0.06em' }}>
-          kaldı
+          {t('hero.left')}
         </span>
       </div>
     </div>
@@ -83,6 +86,7 @@ function CountdownRow({ label, targetDay }: { label: string; targetDay: number }
 }
 
 export function HeroCountdown() {
+  const t = useTranslations();
   return (
     <div className="hero-countdown-box" style={{
       border: '1px solid rgba(192,57,43,0.25)',
@@ -95,19 +99,19 @@ export function HeroCountdown() {
       background: 'rgba(26,26,26,0.55)',
     }}>
       <p style={{ fontSize: 11, fontStyle: 'italic', color: 'rgba(255,255,255,0.62)', padding: '12px 16px 0', lineHeight: 1.4, margin: 0 }}>
-        Kaliteli bir çevre şans değil, seçimdir.
+        {t('hero.q1')}
       </p>
-      <CountdownRow label="Grup Masası" targetDay={4} />
+      <CountdownRow label={t('hero.group')} targetDay={4} />
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', margin: '0 16px' }} />
       <p style={{ fontSize: 11, fontStyle: 'italic', color: 'rgba(255,255,255,0.62)', padding: '12px 16px 0', lineHeight: 1.4, margin: 0 }}>
-        Bazı akşamlar takvimde kalır, bazıları hafızanda.
+        {t('hero.q2')}
       </p>
-      <CountdownRow label="Baş Başa Masa" targetDay={5} />
+      <CountdownRow label={t('hero.one')} targetDay={5} />
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', margin: '0 16px' }} />
       <p style={{ fontSize: 11, fontStyle: 'italic', color: 'rgba(255,255,255,0.62)', padding: '12px 16px 0', lineHeight: 1.4, margin: 0 }}>
-        Yanında yakın arkadaşın, karşında iki yakın arkadaş daha.
+        {t('hero.q3')}
       </p>
-      <CountdownRow label="Kankamla Masası" targetDay={6} />
+      <CountdownRow label={t('hero.kanka')} targetDay={6} />
     </div>
   );
 }
