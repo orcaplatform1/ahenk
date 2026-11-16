@@ -197,21 +197,22 @@ HAFTALIK BULUŞMA SEÇİMİ:
   - Son saatler: Grup Perşembe 18:00, Baş Başa Cuma 18:00, Kankamla Cumartesi 18:00
   - Süresinde seçim yapmayan o türün taramasına girmez, hakkı düşmez
   - Eşleşme alanı: paketi olan kullanıcıda bu hafta seçilmeyen tür "Eşleşme Pasif"; hiç paketi olmayanda "Abonelik Yok"
-  - Eşleşme taraması bekleme durumu (yalnız web, useMasaTabs isScanWaiting; mobil aşağıdaki tek PASİF / CANLI durumunu kullanır): bu hafta seçilen türlerden en az birinin buluşma saati
-    (Grup Cuma, Baş Başa Cumartesi, Kankamla Pazar 20:00) geçmemişse tarama aktif; değilse (paket yok, seçim yok ya da saatler geçmiş)
-    bekleme: radar ışığı durur, bütün semt noktaları "Düşük" grisinde / aynı boy / hareketsiz, "Semt Masa Yoğunluğu" kartları gri.
-    Yeni hafta (Pazar 23:59) seçimin haftasından yeniden hesaplanır
+  - Tarama göstergesi web ve mobilde yalnızca tek PASSIVE / LIVE state'ten okur: PASSIVE'de radar durur ve her şey gridir; LIVE'da radar
+    sürekli döner, her semt kendi yoğunluk renginde görünür ve noktası yanıp söner
   - Tarama durumu gösterimi (web + mobil Eşleşme Paneli): BEKLEME = geri sayım kartında "Yeni tarama başlamasına" gösterilen durum
     (mevcut durum değişkenleri: meetingTarget === null && waitingScan; ayrı zaman hesabı yok), AKTİF = tarama başlamış.
     BEKLEME'de kırmızı tarama dilimi bulunduğu açıda durur (gizlenmez); başlığın sağındaki rozet "PASİF" / "INACTIVE" (nokta, yazı,
     kenarlık #ff3b30); "Semt Masa Yoğunluğu" başlığının sağında aynı satırda dikey ortalı "Tarama bekleniyor" / "Waiting for scan"
     (gövde fontu, 13, #FFFFFF, opaklık 0.6). AKTİF'te dilim döner, rozet "CANLI" / "LIVE" (nokta, yazı, kenarlık yeşil #22c55e), başlık
     yanındaki yazı yok. Semt kartlarının altında "Tarama bekleniyor" yazısı yoktur. Rozet boyut / konum / font aynı
-  - Mobil Eşleşme Paneli: rozet, radar ve "Semt Masa Yoğunluğu" kartları yalnız bu tek durumdan okunur (scanIdle). PASİF'te radar durur,
-    semt noktaları "Düşük" grisinde, aynı boy, hareketsiz; kartlar gri. CANLI'da ışın sürekli döner; her semtin noktası ve adı yoğunluk
-    seviyesinin renginde (Çok yoğun #ff3b30, Yoğun #ff8c42, Orta #f2c14e, Düşük #8a8178 — theme LEVELS, lejant renkleri), noktalar
-    yanıp söner; kartlar aynı seviye renginde. Seviyeler backend live-layer.service.ts density (LIVE_DISTRICT_SOURCE: static → admin
-    ilçe listesindeki seviye, real → talep; talebi olmayan ilçe 4. seviye / gri)
+  - Eşleşme Paneli (web + mobil): rozet, radar ve "Semt Masa Yoğunluğu" kartları yalnız bu tek durumdan okunur (scanIdle). PASİF'te radar
+    durur, semt noktaları "Düşük" grisinde, aynı boy, hareketsiz; kartlar gri. CANLI'da ışın sürekli döner; her semtin noktası ve adı
+    yoğunluk seviyesinin renginde, noktalar yanıp söner; kartlar aynı seviye renginde. Yoğunluk renkleri iki platformda ortak (web
+    components/live/levels.ts, mobil theme LEVELS; lejant renkleri): Çok yoğun #ff3b30, Yoğun #ff8c42, Orta #f2c14e, Düşük #8a8178.
+    Seviyeler backend live-layer.service.ts density (LIVE_DISTRICT_SOURCE: static → admin ilçe listesindeki seviye, real → talep;
+    talebi olmayan ilçe 4. seviye / gri)
+  - LIVE_DISTRICT_SOURCE ayarı AppConfig tablosunda kayıtlı değildir, varsayılan "static" kullanılır; semt yoğunlukları admin Şehirler
+    ayarındaki 1–4 seviyesinden gelir, gerçek talepten gelmez
   - GET /weekly-selection, POST /weekly-selection {types[]} (JWT)
   - Pencere tasarımı (web + mobil): başlık "Bu hafta hangi masaya katılmak için eşleşme taramasına girmek istiyorsunuz?";
     her tür için kart: solda eşleşme alanındaki halka ikonu, sağda kalın başlık + küçük alt metin
