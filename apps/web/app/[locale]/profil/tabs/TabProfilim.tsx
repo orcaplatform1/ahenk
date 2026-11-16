@@ -7,8 +7,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ENGLISH_ENABLED, LANGS, occupationLabel, splitE164, toE164, type Lang } from '@ahenk/shared';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
-import { usePathname, useRouter } from '@/i18n/navigation';
-import { storeLocale } from '@/lib/locale';
+import { usePathname } from '@/i18n/navigation';
+import { switchLocale } from '@/lib/locale';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { Modal } from '@/components/ui/Modal';
@@ -80,7 +80,6 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
   const t = useTranslations();
   const locale = useLocale() as Lang;
   const pathname = usePathname();
-  const router = useRouter();
   // Dil bazlı eşleşme (mobil ProfilimTab ile aynı): kayıt dili ana dildir (kilitli, alanı hep true); "Başka konuştuğun diller"
   // satırlarından diğer diller işaretlenir (birden fazla seçilebilir) → speaksEnglish / speaksTurkish
   const nativeLang: Lang = user.nativeLanguage === 'en' ? 'en' : 'tr';
@@ -93,8 +92,7 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
   }
   function chooseLanguage(lang: Lang) {
     if (lang === locale) return;
-    storeLocale(lang);
-    router.replace(`${pathname}${typeof window !== 'undefined' ? window.location.search : ''}`, { locale: lang });
+    switchLocale(lang, pathname);
   }
   // Pasif bölgeler için "Haber ver" (aynı bölgeye bir kez)
   const [notified, setNotified] = useState<string[]>([]);
@@ -283,7 +281,7 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <span className="text-[13px] text-[#c9c2b8]">E-posta</span>
+            <span className="text-[13px] text-[#c9c2b8]">{t('login.email')}</span>
             <div className="flex items-center gap-2">
               <span className="text-[13px] text-[#f4f1ec]">{currentEmail}</span>
               <button onClick={() => setEmailMode(true)} className="text-xs text-[#a39c93] hover:text-[#f5f5f5] transition-colors px-2 py-0.5" style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}>{t('prof.change')}</button>
@@ -418,13 +416,13 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
                 onClick={() => { setActiveCityConfirm(false); confirmAction.current?.(); confirmAction.current = null; }}
                 className="btn-primary w-full justify-center"
               >
-                Kabul Ediyorum
+                {t('prof.accept')}
               </button>
               <button
                 onClick={() => setActiveCityConfirm(false)}
                 className="btn-ghost w-full justify-center"
               >
-                Kabul Etmiyorum
+                {t('prof.decline')}
               </button>
             </div>
           </div>
@@ -530,7 +528,7 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
       {/* Oturum ve hesap */}
       <div className="flex flex-col items-center gap-3 pb-2">
         <button onClick={() => setReportOpen(true)} className="mx-auto block btn-ghost" style={ACCOUNT_BTN}>
-          Sorun Bildir
+          {t('report.title')}
         </button>
         <button onClick={logoutAll} disabled={logoutAllBusy} className="mx-auto block btn-ghost disabled:opacity-40" style={ACCOUNT_BTN}>
           {logoutAllBusy ? t('prof.loggingOut') : t('prof.logoutAll')}
@@ -662,7 +660,7 @@ function CityPickerModalP({ cities, value, onChange, onClose, optional, title, n
                 const done = notified?.includes(c.id);
                 return (
                   <div key={c.id} aria-disabled="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 14px', fontSize: 15, color: 'rgba(204,204,204,0.4)' }}>
-                    <span>{c.name}</span>
+                    <span>{c.name}<span style={{ marginLeft: 8, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(143,136,127,0.4)', fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</span></span>
                     {onNotify && (
                       <button type="button" disabled={done} onClick={() => onNotify(c.id)}
                         style={{ minHeight: 32, padding: '0 10px', fontSize: 11, borderRadius: 999, border: '1px solid rgba(192,57,43,0.5)', background: done ? 'transparent' : 'rgba(192,57,43,0.10)', color: done ? '#8f887f' : '#ff6b6b', cursor: done ? 'default' : 'pointer' }}>

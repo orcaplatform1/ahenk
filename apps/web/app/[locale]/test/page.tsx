@@ -243,7 +243,7 @@ export default function TestPage() {
         {/* Alt butonlar */}
         <div className="flex items-center justify-between mt-6 gap-3">
           <button onClick={goPrev} disabled={current === 0} className="btn-ghost disabled:opacity-30">
-            Geri
+            {t('common.back')}
           </button>
 
           <button onClick={goNext} disabled={!hasAnswer || submitting} className="flex-1 btn-primary justify-center disabled:opacity-30">

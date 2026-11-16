@@ -564,12 +564,12 @@ export class AuthService {
     return DISTRICTS;
   }
 
-  // Şehir listeleri: önce aktif bölgeler (seçilebilir, sıra alanına göre), sonra "Yakında" grubu: Türkiye dışındaki pasif bölgeler
-  // (Dubai Marina, JLT, Downtown Dubai). Bir bölge aktif yapılınca otomatik üst gruba geçer. isActive istemcide gruplamak içindir.
+  // Şehir listeleri: önce aktif şehirler (seçilebilir, sıra alanına göre), sonra "Yakında" grubu: durumu Yakında olan şehirler
+  // (isComingSoon; seçilemez). Pasif şehirler listede yok. Bir şehir aktif yapılınca otomatik üst gruba geçer. isActive istemcide gruplamak içindir.
   getActiveCities() {
     return this.prisma.city.findMany({
-      where: { OR: [{ isActive: true }, { isActive: false, countryCode: { not: "TR" } }] },
-      select: { id: true, name: true, isActive: true, countryCode: true, timezone: true, currency: true, defaultLanguage: true, phoneCountryCode: true, idTypes: true },
+      where: { OR: [{ isActive: true }, { isActive: false, isComingSoon: true }] },
+      select: { id: true, name: true, isActive: true, isComingSoon: true, countryCode: true, timezone: true, currency: true, defaultLanguage: true, phoneCountryCode: true, idTypes: true },
       orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
     });
   }

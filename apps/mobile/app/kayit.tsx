@@ -28,7 +28,7 @@ import i18n, { currentLang } from '@/lib/i18n';
 import { CountryCodeButton } from '@/components/PhoneCountry';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
-interface City { id: string; name: string; isActive?: boolean; countryCode?: string }
+interface City { id: string; name: string; isActive?: boolean; isComingSoon?: boolean; countryCode?: string }
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE' | '';
 const STEPS = ['reg.stepBasic', 'reg.stepLang', 'reg.stepCity', 'reg.stepTest', 'reg.stepVenue', 'reg.stepBlock'];
 const OCCUPATIONS = ['Teknoloji & Yazılım', 'Finans & Bankacılık', 'Sağlık & Tıp', 'Hukuk', 'Eğitim & Akademi', 'Mühendislik', 'Pazarlama & Reklam', 'Medya & İletişim', 'Sanat & Tasarım', 'Girişimcilik & İş Dünyası', 'Kamu & Devlet', 'Turizm & Hizmet', 'Öğrenci', 'Diğer'];
@@ -103,7 +103,7 @@ export default function Kayit() {
   const [picker, setPicker] = useState(false);
 
   useEffect(() => {
-    api.get<City[]>('/auth/cities').then((list) => setCities(list.filter((c) => (c.isActive !== false && CITY_ORDER.includes(c.name)) || (c.isActive === false && c.countryCode !== 'TR')))).catch(() => setError(i18n.t('reg.citiesFailed')));
+    api.get<City[]>('/auth/cities').then((list) => setCities(list.filter((c) => (c.isActive !== false && CITY_ORDER.includes(c.name)) || (c.isActive === false && c.isComingSoon === true)))).catch(() => setError(i18n.t('reg.citiesFailed')));
     api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => setError(i18n.t('reg.districtsFailed')));
   }, []);
 

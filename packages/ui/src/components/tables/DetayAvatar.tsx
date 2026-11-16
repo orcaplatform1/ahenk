@@ -10,12 +10,12 @@ function gBg(g?: string | null) {
 }
 
 // ── Avatar ─────────────────────────────────────────────────────────────────
-const AV_D = 48;
-const AV_R = AV_D / 2;
-const AV_BR = AV_R - 2.5;
-const CIRCUMF = 2 * Math.PI * AV_BR;
-
-export function DetayAvatar({ participant, delay }: { participant: { initials?: string | null; gender?: string | null; photoUrl?: string | null }; delay: number }) {
+// size: çap (varsayılan 48); highlight: kullanıcının kendi dairesi (masa detay kartı) — dışta palet kırmızısı halka
+export function DetayAvatar({ participant, delay, size = 48, highlight = false }: { participant: { initials?: string | null; gender?: string | null; photoUrl?: string | null }; delay: number; size?: number; highlight?: boolean }) {
+  const AV_D = size;
+  const AV_R = AV_D / 2;
+  const AV_BR = AV_R - 2.5;
+  const CIRCUMF = 2 * Math.PI * AV_BR;
   const t = useTranslations();
   const color = gColor(participant.gender);
   const bg    = gBg(participant.gender);
@@ -33,7 +33,7 @@ export function DetayAvatar({ participant, delay }: { participant: { initials?: 
       initial={{ scale: 0.5, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ delay, duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
-      style={{ position: 'relative', width: AV_D, height: AV_D, flexShrink: 0 }}
+      style={{ position: 'relative', width: AV_D, height: AV_D, flexShrink: 0, borderRadius: '50%', ...(highlight && { boxShadow: '0 0 0 2px #121212, 0 0 0 4px #ff6b6b' }) }}
     >
       <svg width={AV_D} height={AV_D} viewBox={`0 0 ${AV_D} ${AV_D}`} style={{ position: 'absolute', inset: 0 }}>
         <circle cx={AV_R} cy={AV_R} r={AV_R - 1} fill={bg} />

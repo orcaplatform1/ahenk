@@ -485,7 +485,17 @@
     "weeklyAlreadySelected": "Bu haftanın seçimini zaten yaptın; seçim değiştirilemez.",
     "weeklyDeadlinePassed": "Bu buluşma türü için seçim süresi doldu.",
     "weeklyNoRight": "Paketinde bu buluşma türünün hakkı yok.",
-    "workTypeSelect": "Çalışma türünü seçin"
+    "workTypeSelect": "Çalışma türünü seçin",
+    "venueSessionMissing": "Oturum bulunamadı",
+    "venueSessionExpired": "Oturum süresi doldu",
+    "venuePhotoFormat": "Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı",
+    "venuePhotoKeepOne": "En az 1 fotoğraf kalmalı",
+    "venuePhotoMax": "En fazla {n} fotoğraf eklenebilir",
+    "venuePhotoPick": "Fotoğraf seçin",
+    "venueNotFound": "Mekân bulunamadı",
+    "venueRecordMissing": "Mekân kaydı bulunamadı, destek ile iletişime geçin.",
+    "venueWrongPassword": "Şifre hatalı",
+    "phoneInvalidTr": "Geçerli bir Türk telefon numarası girin"
   },
   "footer": {
     "brandPrefix": "Ahenk bir",
@@ -627,7 +637,8 @@
     "since": "{date} tarihinden beri",
     "verifyFirst": "Kanka davet etmek için önce kimliğini doğrula.",
     "verifyMe": "Kimliğimi Doğrula",
-    "yourKanka": "Kankan"
+    "yourKanka": "Kankan",
+    "ariaKanka": "Kanka"
   },
   "kankaInv": {
     "goProfile": "Profilim'e Git",
@@ -980,7 +991,16 @@
     "noShowQ": "Masana gelmeyen oldu mu?",
     "occupations": "Meslekler:",
     "sosDeniedApp": "⚠ Konuma erişim engellendi. Ayarlar → Ahenk → Konum bölümünden konum iznini ver, ardından tekrar dene.",
-    "close": "Kapat"
+    "close": "Kapat",
+    "typeGroup": "Grup Masası",
+    "typeOne": "Baş Başa",
+    "typeKanka": "Kankamla",
+    "tableParticipants": "Masa Katılımcıları",
+    "chatJump": "Masa Sohbeti",
+    "aiOverall": "Genel Uyum",
+    "peopleCount": "{n} Kişi",
+    "genderCount": "{f} Kadın · {m} Erkek",
+    "cancelledDone": "Rezervasyonunuz iptal edildi."
   },
   "nav": {
     "adminPanel": "Yönetim Paneli",
@@ -1156,7 +1176,10 @@
     "w4d": "Grup masası 4-6 kişi, Baş Başa 2 kişi, Kankamla 4 kişi. Önceden bilirsiniz, hazırlıklı olursunuz.",
     "w4t": "Özel Masa Düzeni",
     "website": "Website veya Instagram linki (opsiyonel)",
-    "why": "Neden Ahenk Ortağı?"
+    "why": "Neden Ahenk Ortağı?",
+    "heroTag": "Her hafta, garantili.",
+    "whoTitle": "Kimler Ortak Olabilir?",
+    "checkLink": "Kontrol Et"
   },
   "pay": {
     "cancel": "Vazgeç",
@@ -1186,7 +1209,8 @@
   "paySuccess": {
     "body": "Artık masalara katılabilirsin.",
     "redirect": "3 saniye içinde otomatik yönlendirileceksin…",
-    "title": "Paketini aldın!"
+    "title": "Paketini aldın!",
+    "goDashboard": "Dashboard'a Git"
   },
   "perm": {
     "camera": "Fotoğraf çekebilmek için kamera erişimine izin vermen gerekiyor.",
@@ -1339,7 +1363,9 @@
     "emailPh": "yeni@eposta.com",
     "nativeLanguage": "Ana dilin",
     "otherLanguages": "Başka konuştuğun diller",
-    "privacySecurity": "Gizlilik ve Güvenlik"
+    "privacySecurity": "Gizlilik ve Güvenlik",
+    "accept": "Kabul Ediyorum",
+    "decline": "Kabul Etmiyorum"
   },
   "radar": {
     "d": "GÜN",
@@ -1622,7 +1648,8 @@
     "review": "Değerlendir",
     "reviewLabel": "Değerlendirme:",
     "venueName": "Mekan Adı",
-    "yourReview": "DEĞERLENDİRMEN"
+    "yourReview": "DEĞERLENDİRMEN",
+    "locked": "Kilitli"
   },
   "tt": {
     "canNow": "Şimdi yapabilirsin",
@@ -1677,5 +1704,88 @@
     "camB": "Profil fotoğrafı, kimlik doğrulama ve sorun bildirimi için. İlgili ekranda istenir.",
     "locT": "Konum",
     "locB": "Yalnızca Acil Yardım kullanıldığında, o anda istenir."
+  },
+  "vp": {
+    "panelTitle": "Mekân Paneli",
+    "navInfo": "Mekân Bilgileri",
+    "navTables": "Masalar",
+    "navSubscription": "Abonelik",
+    "navAccount": "Hesap",
+    "logout": "Çıkış",
+    "navAria": "Mekân paneli",
+    "loading": "Yükleniyor…",
+    "outsidePanel": "Mekân paneli dışında kullanıldı",
+    "loginTitle": "Mekân Girişi",
+    "loginSub": "Ahenk ortak mekân paneli",
+    "email": "E-posta",
+    "password": "Şifre",
+    "loggingIn": "Giriş yapılıyor…",
+    "loginBtn": "Giriş Yap",
+    "forgot": "Şifremi unuttum",
+    "registerVenue": "Mekânınızı kaydedin",
+    "resetTitle": "Şifre Sıfırla",
+    "resetIntro": "M. telefon numaranızı girin, WhatsApp numaranıza 6 haneli kod gönderelim.",
+    "phone": "Telefon",
+    "sending": "Gönderiliyor…",
+    "sendCode": "Kod Gönder",
+    "codeSent": "Hesap varsa kayıtlı WhatsApp numarasına kod gönderildi.",
+    "newPassword": "Yeni şifre",
+    "newPasswordHint": "Yeni şifre (6-20 karakter)",
+    "newPasswordRepeat": "Yeni şifre tekrar",
+    "saving": "Kaydediliyor…",
+    "updatePassword": "Şifreyi Güncelle",
+    "resend": "Yeni kod gönder",
+    "backToLogin": "Girişe dön",
+    "enterCode": "6 haneli kodu girin.",
+    "pwLength": "Şifre 6-20 karakter arasında olmalı.",
+    "pwMismatch": "Şifreler eşleşmiyor.",
+    "plan": "Plan",
+    "freePeriod": "Ücretsiz dönem",
+    "registeredAt": "Kayıt tarihi",
+    "typeGROUP": "Grup masası",
+    "typeONE_ON_ONE": "Baş Başa masa",
+    "typeKANKA": "Kankamla masası",
+    "seats": "{n} kişi",
+    "upcoming": "Yaklaşan",
+    "past": "Geçmiş",
+    "noUpcoming": "Yaklaşan masa yok.",
+    "noPast": "Geçmiş masa yok.",
+    "alcoholic": "Alkollü",
+    "nonAlcoholic": "Alkolsüz",
+    "saved": "Bilgiler kaydedildi.",
+    "photoTooBig": "Her fotoğraf en fazla 5 MB olabilir.",
+    "photoMax": "En fazla {n} fotoğraf eklenebilir.",
+    "photoFormat": "Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı.",
+    "venueKind": "Mekân Türü",
+    "description": "Tanıtım (en fazla 500 karakter)",
+    "descriptionAria": "Tanıtım",
+    "address": "Açık Adres",
+    "addressAria": "Açık adres",
+    "district": "İlçe",
+    "pickDistrict": "İlçe seçin",
+    "searchDistrict": "İlçe ara",
+    "mapsLink": "Google Maps Konum Linki",
+    "mapsAria": "Konum linki",
+    "website": "Website veya Instagram",
+    "alcohol": "Alkol Durumu",
+    "alcoholAria": "Alkol durumu",
+    "save": "Kaydet",
+    "photosTitle": "Fotoğraflar (en az 1, en fazla {n}; her biri en fazla 5 MB)",
+    "photoAlt": "Mekân fotoğrafı {n}",
+    "photoDelete": "Fotoğraf {n} sil",
+    "addPhoto": "+ Fotoğraf ekle",
+    "pwUpdated": "Şifreniz güncellendi.",
+    "changePassword": "Şifre Değiştir",
+    "currentPassword": "Mevcut şifre",
+    "deleteAccount": "Hesabı Sil",
+    "deleteInfo": "Hesabınız kapatılır, mekânınız masa atamalarından çıkar ve panele tekrar giriş yapamazsınız.",
+    "confirmPwAria": "Onay için şifre",
+    "confirmPw": "Onaylamak için şifreniz",
+    "cancel": "Vazgeç",
+    "closeAccount": "Hesabı Kapat",
+    "errTooMany": "Çok fazla deneme yapıldı. Lütfen bir dakika sonra tekrar deneyin.",
+    "errPhotoSize": "Fotoğraf en fazla 5 MB olabilir.",
+    "errGeneric": "Bir hata oluştu. Lütfen tekrar deneyin.",
+    "sessionRequired": "Oturum gerekli"
   }
 }

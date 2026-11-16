@@ -679,6 +679,8 @@ model City {
   id               String      @id @default(cuid())
   name             String      @unique
   isActive         Boolean     @default(true)
+  // Durum: Aktif = isActive; Yakında = !isActive && isComingSoon (listelerde "Yakında", seçilemez); Pasif = ikisi de false (listelerde yok)
+  isComingSoon     Boolean     @default(false)
   countryCode      String      @default("TR") // ISO 3166-1 alpha-2
   timezone         String      @default("Europe/Istanbul") // IANA saat dilimi
   currency         String      @default("TRY") // Türkiye: TRY, diğer ülkeler: USD

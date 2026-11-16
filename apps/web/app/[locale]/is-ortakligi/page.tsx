@@ -178,7 +178,7 @@ export default function IsOrtakligiPage() {
             {t('partner.hero')}
             <br />
             <span style={{ background: 'linear-gradient(135deg, #c0392b 0%, #ff6b6b 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              Her hafta, garantili.
+              {t('partner.heroTag')}
             </span>
           </motion.h1>
 
@@ -286,7 +286,7 @@ export default function IsOrtakligiPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
               <div className="ll-card">
                 <h2 className="ll-title" style={{ marginBottom: '1.25rem' }}>
-                  Kimler Ortak Olabilir?
+                  {t('partner.whoTitle')}
                 </h2>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                   {[
@@ -424,7 +424,7 @@ export default function IsOrtakligiPage() {
                     className="btn-ghost"
                     style={{ alignSelf: 'flex-start', opacity: form.locationUrl.trim() ? 1 : 0.4, pointerEvents: form.locationUrl.trim() ? 'auto' : 'none' }}
                   >
-                    Kontrol Et
+                    {t('partner.checkLink')}
                   </a>
 
                   {/* Mekân fotoğrafları */}

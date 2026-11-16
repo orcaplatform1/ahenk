@@ -35,7 +35,7 @@ function tableLabel(type: MeetingType, title: string): string {
   return `${TYPE_NAME[type]} Masa${no !== null ? ` ${no}` : ""}`;
 }
 // İngilizce (kullanıcının dili "en" ise canlı akış metinleri)
-const TYPE_NAME_EN: Record<string, string> = { GROUP: "Group", ONE_ON_ONE: "One-on-One", KANKA: "Kankamla" };
+const TYPE_NAME_EN: Record<string, string> = { GROUP: "Group", ONE_ON_ONE: "Duo", KANKA: "Bring a Buddy" };
 function tableLabelEn(type: MeetingType, title: string): string {
   const no = tableNo(title);
   return `${TYPE_NAME_EN[type] ?? type} Table${no !== null ? ` ${no}` : ""}`;

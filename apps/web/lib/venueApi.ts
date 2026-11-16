@@ -1,4 +1,4 @@
-import { documentLang } from '@ahenk/shared';
+import { documentLang, messagesEn, messagesTr } from '@ahenk/shared';
 import { API_PREFIX } from './api';
 import { withResendSeconds } from './otpResend';
 
@@ -11,12 +11,15 @@ export function mediaUrl(path: string): string {
 
 export class VenueAuthError extends Error {}
 
+// Mekân paneli metinleri seçili dilde (Türkçe + İngilizce)
+const vp = () => (documentLang() === 'en' ? messagesEn : messagesTr).vp;
+
 export async function readError(res: Response): Promise<string> {
-  if (res.status === 429) return 'Çok fazla deneme yapıldı. Lütfen bir dakika sonra tekrar deneyin.';
-  if (res.status === 413) return 'Fotoğraf en fazla 5 MB olabilir.';
+  if (res.status === 429) return vp().errTooMany;
+  if (res.status === 413) return vp().errPhotoSize;
   const body = await res.json().catch(() => null) as { message?: string | string[] } | null;
   const message = Array.isArray(body?.message) ? body?.message[0] : body?.message;
-  return message ?? 'Bir hata oluştu. Lütfen tekrar deneyin.';
+  return message ?? vp().errGeneric;
 }
 
 // Mekân paneli istekleri üye oturumundan bağımsızdır (ayrı çerez, token yenileme yok)
@@ -28,7 +31,7 @@ async function request<T>(path: string, init: { method?: string; body?: unknown 
     headers: init.body && !isForm ? { 'Content-Type': 'application/json', 'Accept-Language': documentLang() } : { 'Accept-Language': documentLang() },
     body: isForm ? (init.body as FormData) : init.body ? JSON.stringify(init.body) : undefined,
   });
-  if (res.status === 401 && path !== '/login') throw new VenueAuthError('Oturum gerekli');
+  if (res.status === 401 && path !== '/login') throw new VenueAuthError(vp().sessionRequired);
   if (!res.ok) {
     const body = await res.clone().json().catch(() => null);
     throw withResendSeconds(new Error(await readError(res)), body);

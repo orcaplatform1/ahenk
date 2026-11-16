@@ -725,12 +725,13 @@ API CLIENT KURALLAR (web):
   - Çeviri anahtarı zorunluluğu: kullanıcıya görünen bütün mobil ve web metinleri yalnız packages/shared/src/i18n/tr.json ve en.json'daki
     anahtarlardan gelir (web next-intl, mobil i18next + react-i18next); ekranlarda sabit Türkçe metin yazılmaz, yeni metinde iki dosyaya
     da anahtar eklenir. İngilizce doğal, samimi, "you" hitaplı; Ahenk ve Prime çevrilmez; "Kişilik Ağacım" → "My Personality Tree".
-  - Admin paneli ve mekân paneli Türkçe kalır, çevrilmez (mobil yönetim ekranları dahil).
+  - Admin paneli yalnızca Türkçe. Mekân paneli Türkçe + İngilizce (web app/[locale]/mekan, /en/mekan…; metinler vp.* anahtarlarında).
+    /en/admin… Türkçe /admin… adresine yönlenir. Mobil yönetim ekranları Türkçe; mobil uygulamada mekân paneli yoktur.
   - Backend mesaj dili: kullanıcıya dönen hata ve bilgi mesajları tr.json / en.json "errors.*" anahtarlarında; kod Türkçe metinle yazılır,
     backend/src/common/api-messages.ts (global filtre + dönüştürücü) metni anahtar üzerinden seçilen dile çevirir. Yeni kullanıcı mesajında
     iki dosyaya da errors.* anahtarı eklenir. Dil sırası: 1) giriş yapmış kullanıcının language alanı, 2) Accept-Language başlığı ("en" ile
-    başlıyorsa English), 3) Türkçe. Hata yanıtlarının alan yapısı ve HTTP kodları değişmez, yalnız message metni. /admin/ ve /venue-panel/
-    uçlarında mesajlar Türkçe kalır.
+    başlıyorsa English), 3) Türkçe. Hata yanıtlarının alan yapısı ve HTTP kodları değişmez, yalnız message metni. /admin/ uçlarında
+    mesajlar Türkçe kalır; /venue-panel/ uçları Accept-Language'a göre Türkçe / İngilizce.
   - Accept-Language: web ve mobil her API isteğinde o anki arayüz dilini (tr / en) gönderir (web lib/api.ts langHeaders — <html lang>;
     mobil lib/api.ts langHeaders — i18n dili; elle fetch / XMLHttpRequest yapan yerler ve packages/ui istekleri dahil).
   - Dil belirleme sırası (resolveLanguage): 1) giriş yapmış kullanıcının hesabındaki dil (User.language: tr | en, varsayılan tr),
@@ -787,6 +788,24 @@ API CLIENT KURALLAR (web):
   - Kişilik testi: OceanQuestion.textEn / sectionTitleEn; soru kimlikleri ve puanlama aynı; sonuç (profileEn), boyut ve Kişilik Ağacı metinleri çevrili.
   - Zamanlanmış işler (eşleştirme, kapanışlar, hak düşümleri, bildirim cron'ları) şimdilik TR saatinde (Europe/Istanbul) çalışır; bölge bazlı
     saat dilimine geçiş Dubai aktifleşmeden önce yapılacak.
+
+ŞEHİR DURUM MODELİ (Aktif / Pasif / Yakında):
+  - Aktif = isActive true. Yakında = isActive false + isComingSoon true. Pasif = ikisi de false (City.isComingSoon,
+    migration 20261116210000_city_coming_soon; Dubai Marina, JLT, Downtown Dubai Yakında).
+  - Pasif şehirler kayıt ve haftalık şehir seçiminde görünmez.
+  - Yakında şehirler listenin sonunda "Yakında" ayırıcısı altında, her birinin yanında "Yakında" etiketiyle görünür, seçilemez,
+    eşleştirmeye ve taramaya girmez ("Haber ver" bekleme listesi aynen, yalnız Yakında şehirde).
+  - Şehir adı düzenlenebilir (admin İlçe Ekle penceresi: ad alanı + "Adı Kaydet", web + mobil), id değişmez; ilçe, mekân ve kullanıcı
+    bağları korunur. Yeni şehir varsayılan Pasif; admin Şehirler ve Bölgeler sayfalarında (web + mobil) üç durum seçilir.
+
+MASA DETAY VE ÖN İZLEME KARTI DÜZENİ (web packages/ui MasaDetayKarti + TabMasalar EmptyMasaCard; mobil MasaDetayKarti + masalarim EmptyMasaCard):
+  - Fotoğraf sayısına göre kapak: 3 → yan yana, 2 → eşit genişlikte tam satır, 1 → tek büyük kapak, 0 → boş kamera kutuları.
+  - Kapakta sol üstte masa türü rozeti (Grup Masası / Baş Başa / Kankamla); durum rozeti ("Atandı" / "Taramada") yok.
+    Mekân adı + yalnızca ilçe adı (Venue.district, venueDistrict), mesafe (km) yok. "Haritada Gör" butonu.
+  - Bilgi şeridi: gün/saat + kişi sayısı (iptaller hariç, botlar dahil) ve kadın/erkek sayısı.
+  - Katılımcı daireleri: masa detay kartında fotoğraf, yoksa baş harf, cinsiyet renkli çerçeve; taramada fotoğraf gösterilmez.
+  - Yapay Zeka Masa Raporu: mevcut rapor metni + uyumSkoru yeşil (#27ae60) halka "Genel Uyum", alt skor yok.
+  - Rezervasyon metni, "Yola Çıktım" ve sohbet altta ayrı kartta; "Masa Sohbeti" butonu tüm masa türlerinde alttaki sohbet kartına kaydırır.
 
 # CLAUDE.md
 

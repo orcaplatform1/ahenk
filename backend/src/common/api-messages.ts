@@ -1,6 +1,6 @@
 // Kullanıcıya dönen hata / bilgi mesajlarının dili. Kod Türkçe metinle yazılır; metinler packages/shared/src/i18n/tr.json ve
 // en.json "errors.*" anahtarlarında. Dil sırası: 1) giriş yapmış kullanıcının language alanı, 2) Accept-Language (en ile başlıyorsa
-// English), 3) Türkçe. Yalnız "message" metni değişir; yanıtın alan yapısı ve HTTP kodu aynı kalır. Admin ve mekân paneli uçları Türkçe.
+// English), 3) Türkçe. Yalnız "message" metni değişir; yanıtın alan yapısı ve HTTP kodu aynı kalır. Admin paneli uçları Türkçe; mekân paneli Türkçe + İngilizce.
 import * as fs from "fs";
 import * as path from "path";
 import { ArgumentsHost, CallHandler, Catch, ExecutionContext, HttpException, Injectable, NestInterceptor } from "@nestjs/common";
@@ -47,10 +47,10 @@ function toEnglish(text: string): string {
   return text;
 }
 
-// Admin ve mekân paneli uçları (…/admin/…, /venue-panel/…) Türkçe kalır
+// Admin paneli uçları (…/admin/…) Türkçe kalır; mekân paneli (/venue-panel/) Türkçe + İngilizce (Accept-Language)
 function isPanelPath(url: string): boolean {
   const p = url.split("?")[0];
-  return /\/admin(\/|$)/.test(p) || /\/venue-panel(\/|$)/.test(p);
+  return /\/admin(\/|$)/.test(p);
 }
 
 export function requestLang(req: Request): Lang {

@@ -8,7 +8,7 @@ import { AInput } from '@/components/admin/AdminControls';
 import { ADialog } from '@/components/admin/ADialog';
 import { adm } from '@/theme/theme';
 
-interface City { id: string; name: string; isActive: boolean; _count?: { venues: number; districts?: number } }
+interface City { id: string; name: string; isActive: boolean; isComingSoon?: boolean; _count?: { venues: number; districts?: number } }
 
 // İlçe seviyeleri (statik moddaki şehir yoğunluğu / tarama listesi) — web admin/cities ile aynı
 interface District { id: string; name: string; level: number }
@@ -18,7 +18,17 @@ const TONE = {
   red: { color: adm.red, bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)' },
   muted: { color: adm.muted, bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.25)' },
   off: { color: adm.muted, bg: 'transparent', border: 'rgba(100,116,139,0.25)' },
+  green: { color: adm.green, bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)' },
+  amber: { color: adm.amber, bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' },
 } as const;
+
+// Şehir durumu: Aktif / Pasif / Yakında — web admin/cities ile aynı
+type CityStatus = 'ACTIVE' | 'PASSIVE' | 'COMING_SOON';
+const statusOf = (c: City): CityStatus => (c.isActive ? 'ACTIVE' : c.isComingSoon ? 'COMING_SOON' : 'PASSIVE');
+const STATUS_LABELS: Record<CityStatus, string> = { ACTIVE: 'Aktif', PASSIVE: 'Pasif', COMING_SOON: 'Yakında' };
+const STATUS_ACTIONS: Record<CityStatus, string> = { ACTIVE: 'Aktifleştir', PASSIVE: 'Pasifleştir', COMING_SOON: 'Yakında yap' };
+const STATUS_ORDER: CityStatus[] = ['ACTIVE', 'PASSIVE', 'COMING_SOON'];
+const STATUS_TONE: Record<CityStatus, keyof typeof TONE> = { ACTIVE: 'green', PASSIVE: 'muted', COMING_SOON: 'amber' };
 
 function SmallBtn({ label, tone, onPress, disabled }: { label: string; tone: keyof typeof TONE; onPress: () => void; disabled?: boolean }) {
   const t = TONE[tone];
@@ -47,6 +57,8 @@ function DistrictDialog({ city, onClose, onChanged }: { city: City; onClose: () 
   const [level, setLevel] = useState(1);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [cityName, setCityName] = useState(city.name);
+  const [savedName, setSavedName] = useState(city.name);
   const load = () => { api.get<District[]>(`/admin/cities/${city.id}/districts`).then(setRows).catch((e: Error) => setError(e.message)).finally(() => setLoading(false)); };
   useEffect(load, [city.id]);
   async function run(key: string, fn: () => Promise<unknown>, after?: () => void) {
@@ -56,12 +68,23 @@ function DistrictDialog({ city, onClose, onChanged }: { city: City; onClose: () 
   const add = () => run('add', () => api.post(`/admin/cities/${city.id}/districts`, { name: name.trim(), level }), () => setName(''));
   const setRowLevel = (d: District, l: number) => { if (l !== d.level) run(d.id, () => api.patch(`/admin/cities/districts/${d.id}`, { level: l })); };
   const delRow = (d: District) => run(d.id, () => api.delete(`/admin/cities/districts/${d.id}`));
+  // Şehir adı: yalnız ad değişir, id aynı kalır (ilçe, mekân, kullanıcı bağları korunur)
+  async function saveName() {
+    const n = cityName.trim();
+    setBusy('name'); setError('');
+    try { await api.patch(`/admin/cities/${city.id}`, { name: n }); setSavedName(n); setCityName(n); onChanged(); } catch (e) { setError((e as Error).message); } finally { setBusy(null); }
+  }
+  const nameDirty = cityName.trim() !== savedName && cityName.trim().length >= 2;
   async function delCity() {
     setBusy('city'); setError('');
     try { await api.delete(`/admin/cities/${city.id}`); onChanged(); onClose(); } catch (e) { setError((e as Error).message); setBusy(null); setConfirmDel(null); }
   }
   return (
-    <ADialog visible onClose={onClose} title={`${city.name} · İlçe Ekle`} maxWidth={520}>
+    <ADialog visible onClose={onClose} title={`${savedName} · İlçe Ekle`} maxWidth={520} keyboardScroll>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+        <AInput value={cityName} onChangeText={setCityName} placeholder="Şehir adı" maxLength={60} style={{ flex: 1, paddingHorizontal: 12 }} />
+        <SmallBtn label={busy === 'name' ? 'Kaydediliyor…' : 'Adı Kaydet'} tone="cyan" disabled={busy === 'name' || !nameDirty} onPress={saveName} />
+      </View>
       <View style={{ gap: 8, marginBottom: 16 }}>
         <AInput value={name} onChangeText={setName} placeholder="İlçe adı" maxLength={60} style={{ paddingHorizontal: 12 }} />
         <LevelPicker value={level} onChange={setLevel} />
@@ -90,7 +113,7 @@ function DistrictDialog({ city, onClose, onChanged }: { city: City; onClose: () 
       <View style={{ borderTopWidth: 1, borderTopColor: adm.border, marginTop: 14, paddingTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
         {confirmDel === 'city' ? (
           <>
-            <AT style={{ flex: 1, fontSize: 12, color: adm.red }}>{city.name} şehri silinsin mi?</AT>
+            <AT style={{ flex: 1, fontSize: 12, color: adm.red }}>{savedName} şehri silinsin mi?</AT>
             <SmallBtn label={busy === 'city' ? '…' : 'Evet, sil'} tone="red" disabled={busy === 'city'} onPress={delCity} />
             <SmallBtn label="Vazgeç" tone="muted" onPress={() => setConfirmDel(null)} />
           </>
@@ -106,6 +129,7 @@ export default function AdminCities() {
   const [error, setError] = useState('');
   const [modal, setModal] = useState(false);
   const [name, setName] = useState('');
+  const [status, setStatus] = useState<CityStatus>('PASSIVE');
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [districtCity, setDistrictCity] = useState<City | null>(null);
@@ -113,18 +137,23 @@ export default function AdminCities() {
   useEffect(load, []);
   async function save() {
     setSaving(true); setError('');
-    try { await api.post('/admin/cities', { name: name.trim() }); setModal(false); load(); } catch (e) { setError((e as Error).message); } finally { setSaving(false); }
+    try { await api.post('/admin/cities', { name: name.trim(), status }); setModal(false); load(); } catch (e) { setError((e as Error).message); } finally { setSaving(false); }
   }
-  async function toggle(c: City) {
+  async function changeStatus(c: City, st: CityStatus) {
     setToggling(c.id); setError('');
-    try { await api.patch(`/admin/cities/${c.id}`, { isActive: !c.isActive }); setCities(p => p.map(x => (x.id === c.id ? { ...x, isActive: !c.isActive } : x))); } catch (e) { setError((e as Error).message); } finally { setToggling(null); }
+    try { await api.patch(`/admin/cities/${c.id}`, { status: st }); setCities(p => p.map(x => (x.id === c.id ? { ...x, isActive: st === 'ACTIVE', isComingSoon: st === 'COMING_SOON' } : x))); } catch (e) { setError((e as Error).message); } finally { setToggling(null); }
   }
-  const pill = (on: boolean) => ({ paddingVertical: 1, paddingHorizontal: 6, borderRadius: 99, overflow: 'hidden' as const, borderWidth: 1, backgroundColor: on ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)', borderColor: on ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.25)', color: on ? adm.green : adm.muted });
+  const PILL: Record<CityStatus, { bg: string; border: string; color: string; label: string }> = {
+    ACTIVE: { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)', color: adm.green, label: 'AKTİF' },
+    PASSIVE: { bg: 'rgba(100,116,139,0.12)', border: 'rgba(100,116,139,0.25)', color: adm.muted, label: 'PASİF' },
+    COMING_SOON: { bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)', color: adm.amber, label: 'YAKINDA' },
+  };
+  const pill = (st: CityStatus) => ({ paddingVertical: 1, paddingHorizontal: 6, borderRadius: 99, overflow: 'hidden' as const, borderWidth: 1, backgroundColor: PILL[st].bg, borderColor: PILL[st].border, color: PILL[st].color });
   return (
     <APage maxWidth={760}>
       <View style={{ marginBottom: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <ATitle>Şehirler</ATitle>
-        <Btn variant="admAdd" label="+ Şehir Ekle" onPress={() => { setName(''); setError(''); setModal(true); }} />
+        <Btn variant="admAdd" label="+ Şehir Ekle" onPress={() => { setName(''); setStatus('PASSIVE'); setError(''); setModal(true); }} />
       </View>
       {!modal && <AError>{error}</AError>}
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
@@ -139,11 +168,15 @@ export default function AdminCities() {
               <Pressable onPress={() => setDistrictCity(c)} accessibilityRole="button" style={{ flex: 1, minHeight: 44, justifyContent: 'center' }}>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                   <AT w={600} style={{ fontSize: 13 }}>{c.name}</AT>
-                  <ALabel style={pill(c.isActive)}>{c.isActive ? 'AKTİF' : 'PASİF'}</ALabel>
+                  <ALabel style={pill(statusOf(c))}>{PILL[statusOf(c)].label}</ALabel>
                 </View>
                 <AT style={{ fontSize: 10, color: adm.muted }}>{c._count ? `${c._count.venues} mekan · ${c._count.districts ?? 0} ilçe` : ''}</AT>
               </Pressable>
-              <Btn variant="admActivate" selected={c.isActive} disabled={toggling === c.id} label={toggling === c.id ? '…' : c.isActive ? 'Pasifleştir' : 'Aktifleştir'} onPress={() => toggle(c)} />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {STATUS_ORDER.filter(st => st !== statusOf(c)).map(st => (
+                  <SmallBtn key={st} label={toggling === c.id ? '…' : STATUS_ACTIONS[st]} tone={STATUS_TONE[st]} disabled={toggling === c.id} onPress={() => changeStatus(c, st)} />
+                ))}
+              </View>
             </View>
           ))}
       </ACard>
@@ -151,6 +184,13 @@ export default function AdminCities() {
       <ADialog visible={modal} onClose={() => setModal(false)} title="Yeni Şehir">
         <View style={{ gap: 10 }}>
           <AInput value={name} onChangeText={setName} placeholder="Şehir adı" style={{ paddingHorizontal: 12 }} />
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            {STATUS_ORDER.map(st => (
+              <View key={st} style={{ flex: 1 }}>
+                <SmallBtn label={STATUS_LABELS[st]} tone={status === st ? 'cyan' : 'off'} onPress={() => setStatus(st)} />
+              </View>
+            ))}
+          </View>
           {!!error && <AT style={{ fontSize: 11, color: adm.red }}>{error}</AT>}
           <Btn variant="admCyanFull" disabled={saving || name.trim().length < 2} label={saving ? 'Kaydediliyor…' : 'Kaydet'} onPress={save} />
         </View>

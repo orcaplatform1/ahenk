@@ -1,13 +1,14 @@
 'use client';
 
 import { createContext, useContext } from 'react';
+import { documentLang, messagesEn, messagesTr } from '@ahenk/shared';
 import type { VenueMe } from '@/lib/venueApi';
 
 export const VenuePanelContext = createContext<{ me: VenueMe; setMe: (m: VenueMe) => void; onAuthLost: () => void } | null>(null);
 
 export function useVenuePanel() {
   const ctx = useContext(VenuePanelContext);
-  if (!ctx) throw new Error('Mekân paneli dışında kullanıldı');
+  if (!ctx) throw new Error((documentLang() === 'en' ? messagesEn : messagesTr).vp.outsidePanel);
   return ctx;
 }
 

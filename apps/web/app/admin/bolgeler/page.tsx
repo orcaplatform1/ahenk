@@ -5,14 +5,19 @@ import { api } from '@/lib/api';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 // Bölgeler: şehir = bölge ayarları (ülke, saat dilimi, para birimi, varsayılan dil, telefon kodu, kimlik türleri, aktiflik, sıra)
-// ve pasif bölgelerin "Haber ver" bekleme listesi. Aktif yapılan bölge kullanıcı şehir listelerinde üst gruba geçer.
+// ve Yakında bölgelerin "Haber ver" bekleme listesi. Aktif yapılan bölge kullanıcı şehir listelerinde üst gruba geçer.
 type IdType = 'ID_CARD' | 'DRIVER_LICENSE' | 'PASSPORT' | 'RESIDENCE_PERMIT';
 interface Region {
-  id: string; name: string; isActive: boolean; countryCode: string; timezone: string; currency: string;
+  id: string; name: string; isActive: boolean; isComingSoon?: boolean; countryCode: string; timezone: string; currency: string;
   defaultLanguage: string; phoneCountryCode: string; idTypes: IdType[]; sortOrder: number; waitlistCount: number;
 }
 interface WaitRow { id: string; createdAt: string; userId: string; email: string; phone: string | null; name: string }
 
+// Durum: Aktif / Pasif / Yakında
+type RegionStatus = 'ACTIVE' | 'PASSIVE' | 'COMING_SOON';
+const statusOf = (r: Region): RegionStatus => (r.isActive ? 'ACTIVE' : r.isComingSoon ? 'COMING_SOON' : 'PASSIVE');
+const STATUS_LABELS: Record<RegionStatus, string> = { ACTIVE: 'Aktif', PASSIVE: 'Pasif', COMING_SOON: 'Yakında' };
+const AMBER = '#f59e0b';
 const ID_LABEL: Record<IdType, string> = { ID_CARD: 'Kimlik Kartı', DRIVER_LICENSE: 'Ehliyet', PASSPORT: 'Pasaport', RESIDENCE_PERMIT: 'Oturma İzni' };
 const inputStyle: React.CSSProperties = { width: '100%', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 12px', fontSize: 13, color: TEXT, outline: 'none', fontFamily: SANS, boxSizing: 'border-box' };
 const btn = (color: string): React.CSSProperties => ({ padding: '6px 12px', minHeight: 36, borderRadius: 8, cursor: 'pointer', background: 'transparent', border: `1px solid ${color}`, fontSize: 12, color, fontFamily: SANS });
@@ -67,8 +72,9 @@ export default function BolgelerPage() {
   const load = () => api.get<Region[]>('/admin/regions').then(setRows).catch((e: Error) => setError(e.message));
   useEffect(() => { load(); }, []);
 
-  async function toggle(r: Region) {
-    try { await api.patch(`/admin/regions/${r.id}`, { isActive: !r.isActive }); load(); } catch (e) { setError((e as Error).message); }
+  async function setStatus(r: Region, status: RegionStatus) {
+    if (statusOf(r) === status) return;
+    try { await api.patch(`/admin/regions/${r.id}`, { status }); load(); } catch (e) { setError((e as Error).message); }
   }
   async function showWait(id: string) {
     if (waitFor === id) { setWaitFor(null); return; }
@@ -79,7 +85,7 @@ export default function BolgelerPage() {
   return (
     <div style={{ padding: 24, color: TEXT, fontFamily: SANS, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <h1 style={{ margin: 0, fontSize: 20 }}>Bölgeler</h1>
-      <p style={{ margin: 0, fontSize: 12, color: MUTED }}>Aktif bölgeler kullanıcı şehir listelerinde seçilebilir; Türkiye dışındaki pasif bölgeler &quot;Yakında&quot; grubunda görünür.</p>
+      <p style={{ margin: 0, fontSize: 12, color: MUTED }}>Aktif bölgeler kullanıcı şehir listelerinde seçilebilir; Yakında bölgeler &quot;Yakında&quot; grubunda seçilemez görünür; pasif bölgeler listelerde görünmez.</p>
       {error && <p style={{ margin: 0, fontSize: 13, color: RED }}>{error}</p>}
       {rows.map((r) => (
         <div key={r.id} style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 14 }}>
@@ -89,7 +95,16 @@ export default function BolgelerPage() {
               <p style={{ margin: '3px 0 0', fontSize: 11, color: MUTED, fontFamily: MONO }}>{r.countryCode} · {r.timezone} · {r.currency} · {r.defaultLanguage} · {r.phoneCountryCode} · sıra {r.sortOrder}</p>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <button type="button" onClick={() => toggle(r)} style={btn(r.isActive ? GREEN : MUTED)}>{r.isActive ? 'Aktif' : 'Pasif'}</button>
+              {(['ACTIVE', 'PASSIVE', 'COMING_SOON'] as RegionStatus[]).map((st) => {
+                const on = statusOf(r) === st;
+                const c = st === 'ACTIVE' ? GREEN : st === 'COMING_SOON' ? AMBER : MUTED;
+                return (
+                  <button key={st} type="button" onClick={() => setStatus(r, st)}
+                    style={{ ...btn(on ? c : BORDER), color: on ? c : MUTED, fontWeight: on ? 700 : 400 }}>
+                    {STATUS_LABELS[st]}
+                  </button>
+                );
+              })}
               <button type="button" onClick={() => showWait(r.id)} style={btn(CYAN)}>Bekleme listesi ({r.waitlistCount})</button>
               <button type="button" onClick={() => setOpen(open === r.id ? null : r.id)} style={btn(TEXT)}>{open === r.id ? 'Kapat' : 'Düzenle'}</button>
             </div>

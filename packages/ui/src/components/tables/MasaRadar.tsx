@@ -105,6 +105,7 @@ export interface DashboardItem {
     sosEndsAt: string; // Acil yardımın bittiği an (backend tek kaynak)
     venueName?: string;
     venueAddress?: string;
+    venueDistrict?: string | null;
     venueMapsUrl?: string;
     venuePhotos?: Array<{ url: string; caption?: string }>;
     occupations?: string[];

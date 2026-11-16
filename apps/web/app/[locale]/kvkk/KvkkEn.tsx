@@ -140,7 +140,7 @@ const sections = [
           },
           {
             basis: 'Establishment or Performance of a Contract: Article 5/2-c',
-            desc: 'First name, last name, email, city, package and payment data. For Kankamla, the phone number entered in a Kanka invite (to deliver the invite and match it with a verified account) and the Kanka link.',
+            desc: 'First name, last name, email, city, package and payment data. For Bring a Buddy, the phone number entered in a Kanka invite (to deliver the invite and match it with a verified account) and the Kanka link.',
           },
           {
             basis: 'Legitimate Interest of the Data Controller: Article 5/2-f',

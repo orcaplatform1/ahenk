@@ -2,6 +2,7 @@
 // katılımcılar, yapay zeka raporu, bilgi kutusu, Yola Çıktım, sohbet, gelmeyen işaretleme, Acil Yardım.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { api, prefetch } from '@/lib/api';
@@ -13,18 +14,18 @@ import { useAppRefresh } from '@/lib/useAppRefresh';
 import { DetayAvatar } from './DetayAvatar';
 import { PhotoViewer, pickAndUploadProfilePhoto } from './ProfilePhoto';
 import { KankaPairs, type KankaPerson } from './KankaPairs';
-import { InlineLH, Btn, BtnPrimary, Serif, T } from './ui';
+import { InlineLH, Btn, BtnPrimary, Card, Serif, T } from './ui';
 import { LocationDisclosure } from './LocationDisclosure';
 import { PERM_REASON, showSettingsAlert } from '@/lib/permissions';
-import { c, sans, tw } from '@/theme/theme';
+import { c, masaKart, sans, tw } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { occupationLabel } from '@ahenk/shared';
 
-export interface DetayParticipant { initials: string; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean; photoUrl?: string | null }
+export interface DetayParticipant { initials: string; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean; photoUrl?: string | null; cancelled?: boolean }
 export interface VenuePhoto { url: string; caption?: string }
 export interface MasaDetayData {
   id: string; type?: MasaTuru; maxParticipants?: number; scheduledAt: string; sosEndsAt: string; venueName: string;
-  venueAddress?: string | null; venueMapsUrl?: string | null; venuePhotos?: VenuePhoto[]; participants: DetayParticipant[]; occupations?: string[];
+  venueAddress?: string | null; venueDistrict?: string | null; venueMapsUrl?: string | null; venuePhotos?: VenuePhoto[]; participants: DetayParticipant[]; occupations?: string[];
   aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
 }
 interface ChatMsg { id: string; content: string; createdAt: string; isOwn: boolean; senderInitials: string; senderGender?: string | null; seatNo?: number | null; reportedByMe: boolean }
@@ -294,30 +295,52 @@ function Lightbox({ photos, start, onClose }: { photos: VenuePhoto[]; start: num
   );
 }
 
+// Yapay Zeka Masa Raporu: kayıtlı uyumSkoru yeşil halkada ("Genel Uyum"); rapor yoksa mevcut bilgi metni (tm.meetupNote)
+function ScoreRing({ score }: { score: number }) {
+  const { d: D, stroke: SW } = masaKart.ring;
+  const R = (D - SW) / 2, C = 2 * Math.PI * R;
+  const pct = Math.max(0, Math.min(100, score));
+  return (
+    <View style={{ width: D, height: D }}>
+      <Svg width={D} height={D} viewBox={`0 0 ${D} ${D}`} style={{ transform: [{ rotate: '-90deg' }] }}>
+        <Circle cx={D / 2} cy={D / 2} r={R} fill="none" stroke={masaKart.ring.track} strokeWidth={SW} />
+        <Circle cx={D / 2} cy={D / 2} r={R} fill="none" stroke={masaKart.ring.color} strokeWidth={SW} strokeLinecap="round" strokeDasharray={`${C}`} strokeDashoffset={C * (1 - pct / 100)} />
+      </Svg>
+      <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+        <T w={700} style={{ fontSize: 15 }}>%{pct}</T>
+      </View>
+    </View>
+  );
+}
+
 function AiReport({ report }: { report?: MasaDetayData['aiReport'] }) {
   const { t } = useTranslation();
   return (
-    <View style={{ backgroundColor: c.aiBg, borderWidth: 1, borderColor: c.aiBorder, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 14 }}>
+    <View style={{ backgroundColor: c.aiBg, borderWidth: 1, borderColor: c.aiBorder, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <View style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: c.aiIconBg, borderWidth: 1, borderColor: c.aiIconBorder, alignItems: 'center', justifyContent: 'center' }}><T style={{ fontSize: 16, lineHeight: 16 }}>✦</T></View>
         <T w={700} style={{ fontSize: 10, letterSpacing: 1.6, color: c.aiTitle }}>{t('masa.aiTitle')}</T>
       </View>
       <View style={{ height: 1, backgroundColor: c.aiDivider, marginBottom: 12 }} />
-      <View style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-          <T w={600} style={{ fontSize: 10, letterSpacing: 1.2, color: report ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.88)' }}>{t('masa.aiScore')}</T>
-          <T w={700} style={{ fontSize: 14, color: c.tF0 }}>%{report ? report.uyumSkoru : '—'}</T>
-        </View>
-        <View style={{ height: 5, borderRadius: 99, backgroundColor: report ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.12)', overflow: 'hidden' }}>
-          {report && <LinearGradient colors={['#4fc3f7', '#f48fb1']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: '100%', width: `${report.uyumSkoru}%`, borderRadius: 99 }} />}
-        </View>
-      </View>
-      {report && <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 21.45 }}>{report.content}</T>}
+      {report ? (
+        <>
+          {typeof report.uyumSkoru === 'number' && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+              <ScoreRing score={report.uyumSkoru} />
+              <T w={700} style={{ fontSize: 13 }}>{t('masa.aiOverall')}</T>
+            </View>
+          )}
+          <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 21.45 }}>{report.content}</T>
+        </>
+      ) : (
+        <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', lineHeight: 21.45 }}>{t('tm.meetupNote')}</T>
+      )}
     </View>
   );
 }
 
-function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; archive?: boolean }) {
+// scrollRef: kartın içinde bulunduğu ekran ScrollView'u ("Masa Sohbeti" alttaki sohbet kartına kaydırır)
+function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaDetayData; archive?: boolean; scrollRef?: React.RefObject<ScrollViewInstance | null> }) {
   const { t } = useTranslation();
   const live = !archive;
   const [lightbox, setLightbox] = useState<number | null>(null);
@@ -331,7 +354,6 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
   const [onMyWayOpen, setOnMyWayOpen] = useState(() => Date.now() >= opensAt);
   useEffect(() => { if (onMyWayOpen) return; const id = setInterval(() => { if (Date.now() >= opensAt) setOnMyWayOpen(true); }, 15000); return () => clearInterval(id); }, [onMyWayOpen, opensAt]);
 
-  const isOneOnOne = masa.type === 'ONE_ON_ONE';
   const photos = masa.venuePhotos ?? [];
   const ordered = buildOrdered(masa.participants);
   const hasMap = !!(masa.venueMapsUrl || masa.venueAddress);
@@ -409,6 +431,25 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
     finally { setSosLoading(false); }
   }
 
+  // Kapak, bilgi şeridi ve katılımcılar (web MasaDetayKarti ile aynı yerleşim)
+  const chatRef = useRef<React.ComponentRef<typeof View>>(null);
+  const coverPhotos = photos.slice(0, 3);
+  const present = masa.participants.filter(p => !p.cancelled);
+  const femaleCount = present.filter(p => p.gender === 'FEMALE').length;
+  const maleCount = present.filter(p => p.gender === 'MALE').length;
+  const typeLabel = masa.type === 'ONE_ON_ONE' ? t('masa.typeOne') : masa.type === 'KANKA' ? t('masa.typeKanka') : t('masa.typeGroup');
+  // "Masa Sohbeti": alttaki sohbet kartına kaydırır
+  function scrollToChat() {
+    const sv = scrollRef?.current;
+    const inner = sv?.getInnerViewRef?.();
+    if (!sv || !inner || !chatRef.current) return;
+    chatRef.current.measureLayout(inner, (_x: number, y: number) => sv.scrollTo({ y: Math.max(0, y - 16), animated: true }), () => undefined);
+  }
+  const pill = (bg: string, border: string) => ({
+    flexDirection: 'row' as const, alignItems: 'center' as const, gap: masaKart.pill.gap, paddingVertical: masaKart.pill.padV, paddingHorizontal: masaKart.pill.padH,
+    borderRadius: masaKart.pill.radius, backgroundColor: bg, borderWidth: 1, borderColor: border,
+  });
+
   return (
     <View>
       {lightbox !== null && <Lightbox photos={photos} start={lightbox} onClose={() => setLightbox(null)} />}
@@ -418,101 +459,168 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
         onClose={() => { setShowSos(false); setLocError(null); setSosError(''); setThreats([]); }} loading={sosLoading} locError={locError} error={sosError} />}
       <LocationDisclosure visible={disclosure} onContinue={() => answerDisclosure(true)} onCancel={() => answerDisclosure(false)} />
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: GREEN }} />
-        <T w={700} style={{ fontSize: 10, color: GREEN, letterSpacing: 1.8 }}>{t('masa.detailTitle')}</T>
-      </View>
-      <Serif style={{ fontSize: 26, lineHeight: 31.2, color: tw.text, letterSpacing: 0.26, marginBottom: masa.venueAddress ? 4 : 16 }}>{masa.venueName}</Serif>
-      {!!masa.venueAddress && <T style={{ marginBottom: 16, fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 18.2 }}>{masa.venueAddress}</T>}
-
-      {photos.length > 0 && (
-        <View style={{ flexDirection: 'row', gap: 6, marginBottom: 18 }}>
-          {photos.slice(0, 3).map((p, i) => (
-            <Pressable key={i} onPress={() => setLightbox(i)} style={{ flex: 1, aspectRatio: 4 / 3, borderRadius: 8, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', maxWidth: photos.length === 1 ? '100%' : undefined }}>
-              {/* Backend göreli adres döner (/api/v1/media/venues/...); mobilde tam adrese çevrilir */}
-              <Image source={{ uri: mediaUrl(p.url) }} style={{ width: '100%', height: '100%' }} accessibilityLabel={p.caption ?? t('masa.photoAlt', { n: i + 1 })} />
-            </Pressable>
-          ))}
-        </View>
-      )}
-
-      {hasMap && (
-        <View style={{ marginBottom: 18 }}>
-          <BtnPrimary label={t('masa.seeOnMap')} full onPress={() => openMaps(masa.venueMapsUrl, masa.venueAddress, masa.venueName)} />
-        </View>
-      )}
-
-      <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginBottom: 16 }} />
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-          <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: GREEN }} />
-          <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>{t('masa.meetup')}</T>
-        </View>
-        <T w={700} style={{ fontSize: 15, letterSpacing: 0.15 }}>{formatMeetingTime(masa.scheduledAt)}</T>
-      </View>
-
-      <View style={{ marginBottom: 20 }}>
-        <T w={700} style={{ marginBottom: 12, fontSize: 9, letterSpacing: 1.26 }}>{isOneOnOne ? t('masa.oneOnOne') : t('masa.participants')}</T>
-        {masa.type === 'KANKA' ? (
-          <KankaPairs mine={masa.participants.filter(p => p.pair === 'MINE') as KankaPerson[]} other={masa.participants.filter(p => p.pair === 'OTHER') as KankaPerson[]} onPhoto={openPhoto} />
-        ) : (
-          <View style={isOneOnOne ? { flexDirection: 'row', gap: 10, flexWrap: 'wrap' } : { flexDirection: 'row', flexWrap: 'wrap', gap: 10, width: 48 * 4 + 30 }}>
-            {ordered.map((p, i) => p.photoUrl
-              ? <Pressable key={`${p.initials}-${i}`} onPress={() => openPhoto(p)} accessibilityRole="imagebutton" accessibilityLabel={t('masa.enlargePhoto')} hitSlop={4}><DetayAvatar participant={p} delay={0.52 + i * 0.1} /></Pressable>
-              : <DetayAvatar key={`${p.initials}-${i}`} participant={p} delay={0.52 + i * 0.1} />)}
+      {/* ── Ana kart ── */}
+      <Card style={{ padding: 0, overflow: 'hidden', backgroundColor: tw.bg }}>
+        {/* Kapak: mekân fotoğrafları (3 → yan yana, 2 → eşit iki, 1 → tek büyük, yok → boş kamera kutuları) */}
+        <View style={{ height: masaKart.coverH }}>
+          <View style={{ flex: 1, flexDirection: 'row', gap: masaKart.coverGap }}>
+            {coverPhotos.length === 0
+              ? [0, 1, 2].map(i => (
+                <View key={i} style={{ flex: 1, backgroundColor: masaKart.cameraBg, alignItems: 'center', justifyContent: 'center' }}>
+                  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                    <Rect x={1} y={5} width={22} height={15} rx={2} stroke={masaKart.cameraStroke} strokeWidth={1.5} />
+                    <Circle cx={12} cy={12} r={4} stroke={masaKart.cameraStroke} strokeWidth={1.5} />
+                    <Path d="M8 5l1.5-3h5L16 5" stroke={masaKart.cameraStroke} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                  </Svg>
+                </View>
+              ))
+              : coverPhotos.map((p, i) => (
+                <Pressable key={i} onPress={() => setLightbox(i)} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.04)' }} accessibilityRole="imagebutton">
+                  {/* Backend göreli adres döner (/api/v1/media/venues/...); mobilde tam adrese çevrilir */}
+                  <Image source={{ uri: mediaUrl(p.url) }} style={{ width: '100%', height: '100%' }} accessibilityLabel={p.caption ?? t('masa.photoAlt', { n: i + 1 })} />
+                </Pressable>
+              ))}
           </View>
-        )}
-      </View>
+          <LinearGradient pointerEvents="none" colors={masaKart.coverFade} locations={masaKart.coverFadeStops} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
 
-      {/* Meslekler: her satırda bir meslek, yalnız yazı; sıra sunucuda her istekte karışık, kime ait olduğu gösterilmez */}
-      {!!masa.occupations?.length && (
-        <View style={{ marginBottom: 20 }}>
-          <T w={700} style={{ marginBottom: 8, fontSize: 13 }}>{t('masa.occupations')}</T>
-          {masa.occupations.map((o, i) => <T key={i} style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 20 }}>{occupationLabel(o, t)}</T>)}
-        </View>
-      )}
-
-      <AiReport report={masa.aiReport} />
-
-      <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 16 }}>
-        <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 19.2 }}>{t('masa.reservationDone')}</T>
-      </View>
-
-      <View style={{ marginBottom: 10 }}>
-        {onMyWayDone ? (
-          <Btn variant="doneGreen" disabled style={{ opacity: 1 }} label={t('masa.onMyWayDone')} />
-        ) : (
-          <BtnPrimary label={onMyWayLoading ? t('masa.onMyWayLoading') : t('masa.onMyWay')} full disabled={archive || onMyWayLoading} onPress={onMyWay} />
-        )}
-        {!!onMyWayWarn && (
-          <View accessibilityRole="alert" style={{ marginTop: 8, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14 }}>
-            <T style={{ fontSize: 12, color: c.warnOrange, lineHeight: 19.2 }}>{onMyWayWarn}</T>
+          {/* Sol üst masa türü */}
+          <View style={[pill(masaKart.typePill.bg, masaKart.typePill.border), { position: 'absolute', top: 12, left: 12 }]}>
+            <T w={700} style={{ fontSize: masaKart.pill.fontSize, color: masaKart.typePill.text, letterSpacing: 0.44 }}>{typeLabel}</T>
           </View>
-        )}
-      </View>
 
-      {live && <ChatSection meetingId={masa.id} type={masa.type} />}
-      {live && <NoShowSection meetingId={masa.id} />}
-
-      {sosVisible && (
-        <View style={{ marginTop: 24 }}>
-          {sosDone ? (
-            <View style={{ paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(192,57,43,0.12)', borderWidth: 1.5, borderColor: 'rgba(192,57,43,0.5)', alignItems: 'center' }}>
-              <T w={700} style={{ fontSize: 13, color: tw.accent }}>{t('masa.sosReceived')}</T>
-              <T style={{ marginTop: 4, fontSize: 12, color: 'rgba(255,107,107,0.7)' }}>{t('masa.stayCalm')}</T>
+          {/* Alt: mekân adı + ilçe, sağda Haritada Gör */}
+          <View style={{ position: 'absolute', left: 14, right: 14, bottom: 12, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Serif style={{ fontSize: 24, lineHeight: 28.8, color: tw.text, letterSpacing: 0.24 }}>{masa.venueName}</Serif>
+              {!!masa.venueDistrict && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={tw.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <Path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" /><Circle cx={12} cy={10} r={2.5} />
+                  </Svg>
+                  <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>{masa.venueDistrict}</T>
+                </View>
+              )}
             </View>
-          ) : (
-            <>
-              <Btn variant="sos" onPress={() => setShowSos(true)} label={t('masa.sosButton')} />
-              <View style={{ marginTop: 10, padding: 10, paddingHorizontal: 12, backgroundColor: 'rgba(192,57,43,0.07)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.22)', borderRadius: 8 }}>
-                <T style={{ fontSize: 10.5, lineHeight: 16.275, color: 'rgba(255,107,107,0.65)' }}>
-                  {t('masa.sosInfo')} <T w={700} style={{ fontSize: 10.5, color: 'rgba(255,107,107,0.85)' }}>{t('masa.safetyImportant')}</T>
-                </T>
+            {hasMap && (
+              <Pressable onPress={() => openMaps(masa.venueMapsUrl, masa.venueAddress, masa.venueName)} accessibilityRole="link" hitSlop={4}
+                style={{ minHeight: Math.max(masaKart.mapBtn.minH, 44), justifyContent: 'center' }}>
+                <View style={{ minHeight: masaKart.mapBtn.minH, justifyContent: 'center', paddingHorizontal: masaKart.mapBtn.padH, borderRadius: masaKart.mapBtn.radius, backgroundColor: masaKart.mapBtn.bg }}>
+                  <T w={700} style={{ fontSize: masaKart.mapBtn.fontSize, color: masaKart.mapBtn.text, letterSpacing: 0.66 }}>{t('masa.seeOnMap')}</T>
+                </View>
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        <View style={{ padding: 18 }}>
+          {/* Bilgi şeridi: gün/saat · kişi sayısı + kadın/erkek */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: masaKart.strip.padV, paddingHorizontal: masaKart.strip.padH,
+            borderRadius: masaKart.strip.radius, backgroundColor: masaKart.strip.bg, borderWidth: 1, borderColor: masaKart.strip.border, marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={masaKart.strip.icon} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <Rect x={3} y={5} width={18} height={16} rx={2} /><Path d="M16 3v4M8 3v4M3 10h18" />
+              </Svg>
+              <T w={700} style={{ fontSize: 15 }}>{formatMeetingTime(masa.scheduledAt).replace(' · ', ', ')}</T>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={masaKart.strip.icon} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <Circle cx={9} cy={8} r={3.5} /><Path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><Path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.2c2.1.7 3.5 2.8 3.5 5.8" />
+              </Svg>
+              <View style={{ alignItems: 'flex-end' }}>
+                <T w={700} style={{ fontSize: 14, lineHeight: 16.8 }}>{t('masa.peopleCount', { n: present.length })}</T>
+                <T style={{ fontSize: 11, lineHeight: 14.3, color: 'rgba(255,255,255,0.6)' }}>{t('masa.genderCount', { f: femaleCount, m: maleCount })}</T>
               </View>
-            </>
+            </View>
+          </View>
+
+          {/* Masa Katılımcıları + Masa Sohbeti */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+            <T w={700} style={{ fontSize: 15, flexShrink: 1 }}>{t('masa.tableParticipants')}</T>
+            {live && (
+              <Pressable onPress={scrollToChat} accessibilityRole="button" hitSlop={6}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: masaKart.chatBtn.minH, paddingHorizontal: masaKart.chatBtn.padH, borderRadius: masaKart.chatBtn.radius,
+                  backgroundColor: masaKart.chatBtn.bg, borderWidth: 1, borderColor: masaKart.chatBtn.border }}>
+                <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={masaKart.chatBtn.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
+                </Svg>
+                <T w={600} style={{ fontSize: masaKart.chatBtn.fontSize, color: masaKart.chatBtn.text }}>{t('masa.chatJump')}</T>
+              </Pressable>
+            )}
+          </View>
+          <View style={{ marginBottom: 20 }}>
+            {masa.type === 'KANKA' ? (
+              <KankaPairs mine={masa.participants.filter(p => p.pair === 'MINE') as KankaPerson[]} other={masa.participants.filter(p => p.pair === 'OTHER') as KankaPerson[]} onPhoto={openPhoto} />
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: masaKart.avatarGap - 8 }}>
+                {ordered.map((p, i) => {
+                  const av = (
+                    <View style={{ padding: 2, borderRadius: 999, borderWidth: 2, borderColor: p.isSelf ? masaKart.selfRing : 'transparent', backgroundColor: p.isSelf ? masaKart.selfRingGap : 'transparent' }}>
+                      <DetayAvatar participant={p} delay={0.52 + i * 0.1} size={masaKart.avatar} />
+                    </View>
+                  );
+                  return p.photoUrl
+                    ? <Pressable key={`${p.initials}-${i}`} onPress={() => openPhoto(p)} accessibilityRole="imagebutton" accessibilityLabel={t('masa.enlargePhoto')} hitSlop={4}>{av}</Pressable>
+                    : <View key={`${p.initials}-${i}`}>{av}</View>;
+                })}
+              </ScrollView>
+            )}
+          </View>
+
+          {/* Meslekler: her satırda bir meslek, yalnız yazı; sıra sunucuda her istekte karışık, kime ait olduğu gösterilmez */}
+          {!!masa.occupations?.length && (
+            <View style={{ marginBottom: 20 }}>
+              <T w={700} style={{ marginBottom: 8, fontSize: 13 }}>{t('masa.occupations')}</T>
+              {masa.occupations.map((o, i) => <T key={i} style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 20 }}>{occupationLabel(o, t)}</T>)}
+            </View>
+          )}
+
+          <AiReport report={masa.aiReport} />
+        </View>
+      </Card>
+
+      {/* ── Alt kart: rezervasyon bilgisi, Yola Çıktım, sohbet (ardından gelmeyen işaretleme ve acil yardım) ── */}
+      <Card style={{ marginTop: masaKart.cardGap }}>
+        <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 16 }}>
+          <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 19.2 }}>{t('masa.reservationDone')}</T>
+        </View>
+
+        <View style={{ marginBottom: 10 }}>
+          {onMyWayDone ? (
+            <Btn variant="doneGreen" disabled style={{ opacity: 1 }} label={t('masa.onMyWayDone')} />
+          ) : (
+            <BtnPrimary label={onMyWayLoading ? t('masa.onMyWayLoading') : t('masa.onMyWay')} full disabled={archive || onMyWayLoading} onPress={onMyWay} />
+          )}
+          {!!onMyWayWarn && (
+            <View accessibilityRole="alert" style={{ marginTop: 8, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14 }}>
+              <T style={{ fontSize: 12, color: c.warnOrange, lineHeight: 19.2 }}>{onMyWayWarn}</T>
+            </View>
           )}
         </View>
-      )}
+
+        {/* Sohbet ("Masa Sohbeti" butonu buraya kaydırır) */}
+        {live && <View ref={chatRef} collapsable={false}><ChatSection meetingId={masa.id} type={masa.type} /></View>}
+        {live && <NoShowSection meetingId={masa.id} />}
+
+        {sosVisible && (
+          <View style={{ marginTop: 24 }}>
+            {sosDone ? (
+              <View style={{ paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(192,57,43,0.12)', borderWidth: 1.5, borderColor: 'rgba(192,57,43,0.5)', alignItems: 'center' }}>
+                <T w={700} style={{ fontSize: 13, color: tw.accent }}>{t('masa.sosReceived')}</T>
+                <T style={{ marginTop: 4, fontSize: 12, color: 'rgba(255,107,107,0.7)' }}>{t('masa.stayCalm')}</T>
+              </View>
+            ) : (
+              <>
+                <Btn variant="sos" onPress={() => setShowSos(true)} label={t('masa.sosButton')} />
+                <View style={{ marginTop: 10, padding: 10, paddingHorizontal: 12, backgroundColor: 'rgba(192,57,43,0.07)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.22)', borderRadius: 8 }}>
+                  <T style={{ fontSize: 10.5, lineHeight: 16.275, color: 'rgba(255,107,107,0.65)' }}>
+                    {t('masa.sosInfo')} <T w={700} style={{ fontSize: 10.5, color: 'rgba(255,107,107,0.85)' }}>{t('masa.safetyImportant')}</T>
+                  </T>
+                </View>
+              </>
+            )}
+          </View>
+        )}
+      </Card>
     </View>
   );
 }

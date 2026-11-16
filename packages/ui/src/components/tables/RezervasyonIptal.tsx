@@ -161,7 +161,7 @@ export function RezervasyonIptal({ meetingId, scheduledAt, cancelRightUsed, apiB
         background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.2)',
       }}>
         <p style={{ margin: 0, fontSize: 13, color: '#c0392b', fontFamily: 'Inter, sans-serif' }}>
-          Rezervasyonunuz iptal edildi.
+          {t('masa.cancelledDone')}
         </p>
       </div>
     );

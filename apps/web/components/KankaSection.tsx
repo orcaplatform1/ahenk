@@ -135,7 +135,7 @@ export function KankaSection() {
       <div className="flex items-center justify-between">
         <span className="text-sm text-[#f5f5f5]">{t('kanka.activeKanka')}</span>
         {state.kanka ? (
-          <button onClick={() => open('kanka')} aria-label="Kanka" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+          <button onClick={() => open('kanka')} aria-label={t('kanka.ariaKanka')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
             <Bubble initials={state.kanka.initials} gender={state.kanka.gender} />
           </button>
         ) : incoming ? (

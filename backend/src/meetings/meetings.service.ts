@@ -51,6 +51,7 @@ export class MeetingsService {
     const meetingSelect = {
       id: true, type: true, status: true, scheduledAt: true, maxParticipants: true,
       locationText: true, locationUrl: true, venueAddress: true,
+      venue: { select: { district: true } }, // Masa detay kartında yalnız ilçe adı
       venuePhotoUrl: true, venuePhoto2Url: true, venuePhoto3Url: true,
       venuePhotoCaption1: true, venuePhotoCaption2: true, venuePhotoCaption3: true,
       participants: {
@@ -199,6 +200,7 @@ export class MeetingsService {
             ...(isRevealed && {
               venueName: m.locationText,
               venueAddress: m.venueAddress,
+              venueDistrict: m.venue?.district ?? null,
               venueMapsUrl: m.locationUrl ?? googleMapsUrl(m.locationText, m.venueAddress),
               venuePhotos,
               occupations,
@@ -234,6 +236,7 @@ export class MeetingsService {
             locationText: true,
             locationUrl: true,
             venueAddress: true,
+            venue: { select: { district: true } },
             venuePhotoUrl: true,
             venuePhoto2Url: true,
             venuePhoto3Url: true,
@@ -324,6 +327,7 @@ export class MeetingsService {
         cityName: m.city?.name ?? null,
         maxParticipants: m.maxParticipants,
         venueAddress: m.venueAddress ?? null,
+        venueDistrict: m.venue?.district ?? null,
         venueMapsUrl: m.locationUrl ?? (m.locationText ? googleMapsUrl(m.locationText, m.venueAddress) : null),
         venuePhotos: [
           { url: m.venuePhotoUrl, caption: m.venuePhotoCaption1 ?? 'Alan 1' },
@@ -888,7 +892,7 @@ export class MeetingsService {
         title: "Kankamla rezervasyonu iptal edildi",
         body: `Kankan ${initialsOf(me?.profile)} bu haftaki Kankamla rezervasyonunuzu iptal etti.`,
         data: { type: "KANKA_CANCELLED", meetingId },
-        en: { title: "Kankamla booking cancelled", body: `Your Kanka ${initialsOf(me?.profile)} cancelled this week's Kankamla booking.` },
+        en: { title: "Bring a Buddy booking cancelled", body: `Your Kanka ${initialsOf(me?.profile)} cancelled this week's Bring a Buddy booking.` },
       }).catch(() => undefined);
     }
     for (const id of otherIds) {
@@ -896,7 +900,7 @@ export class MeetingsService {
         title: "Karşı çift masadan ayrıldı",
         body: "Kankamla masanızdaki karşı çift ayrıldı. Sizin için yeniden eşleşme aranıyor.",
         data: { type: "KANKA_PAIR_LEFT", meetingId },
-        en: { title: "The other pair left the table", body: "The other pair at your Kankamla table left. We're looking for a new match for you." },
+        en: { title: "The other pair left the table", body: "The other pair at your Bring a Buddy table left. We're looking for a new match for you." },
       }).catch(() => undefined);
       await enqueueAssign(this.assignQueue, id);
     }

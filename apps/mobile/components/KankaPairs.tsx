@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { DetayAvatar } from './DetayAvatar';
 import i18n from '@/lib/i18n';
+import { masaKart } from '@/theme/theme';
 
 export interface KankaPerson { initials: string; gender?: string | null; isSelf?: boolean; photoUrl?: string | null }
 const OPPOSITE = (g?: string | null) => (g === 'FEMALE' ? 'MALE' : g === 'MALE' ? 'FEMALE' : null);
@@ -11,7 +12,13 @@ const OPPOSITE = (g?: string | null) => (g === 'FEMALE' ? 'MALE' : g === 'MALE' 
 // onPhoto verilirse (masa detay kartı) onaylı profil fotoğrafı gösterilir ve basınca tam ekran açılır; diğer yerlerde fotoğraf gösterilmez
 function Slot({ person, emptyGender, delay, onPhoto }: { person?: KankaPerson; emptyGender?: string | null; delay: number; onPhoto?: (p: KankaPerson) => void }) {
   const p = person ? { ...person, photoUrl: onPhoto ? person.photoUrl : null } : { initials: '?', gender: emptyGender };
-  const av = <DetayAvatar participant={p} delay={delay} />;
+  // Masa detay kartında (onPhoto verilen yer) kullanıcının kendi dairesi vurgulu (web DetayAvatar highlight)
+  const ring = !!onPhoto && !!person?.isSelf;
+  const av = onPhoto ? (
+    <View style={{ padding: 2, borderRadius: 999, backgroundColor: ring ? masaKart.selfRingGap : 'transparent', borderWidth: 2, borderColor: ring ? masaKart.selfRing : 'transparent' }}>
+      <DetayAvatar participant={p} delay={delay} />
+    </View>
+  ) : <DetayAvatar participant={p} delay={delay} />;
   return person?.photoUrl && onPhoto
     ? <Pressable onPress={() => onPhoto(person)} accessibilityRole="imagebutton" accessibilityLabel={i18n.t('masa.enlargePhoto')} hitSlop={4}>{av}</Pressable>
     : av;

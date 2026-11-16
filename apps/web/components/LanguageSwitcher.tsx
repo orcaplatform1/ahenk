@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from 'next-intl';
 import { ENGLISH_ENABLED, type Lang } from '@ahenk/shared';
-import { usePathname, useRouter } from '@/i18n/navigation';
-import { storeLocale } from '@/lib/locale';
+import { usePathname } from '@/i18n/navigation';
+import { switchLocale } from '@/lib/locale';
 
 // Dünya ikonu (dil seçici): solunda seçili dilin kısaltması (TR / EN), basınca altında koyu kart (Türkçe / English, seçilide ✓).
 // Seçim /en öneki ile Türkçe adres arasında geçiş yapar. ENGLISH_ENABLED = false iken görünmez.
@@ -19,7 +19,6 @@ export function GlobeIcon({ size = 24 }: { size?: number }) {
 export default function LanguageSwitcher() {
   const locale = useLocale() as Lang;
   const pathname = usePathname();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -37,8 +36,7 @@ export default function LanguageSwitcher() {
   function choose(lang: Lang) {
     setOpen(false);
     if (lang === locale) return;
-    storeLocale(lang);
-    router.replace(pathname, { locale: lang });
+    switchLocale(lang, pathname);
   }
 
   return (

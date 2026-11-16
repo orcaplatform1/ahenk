@@ -50,7 +50,7 @@ function SifremiSifirlaForm() {
   }
 
   async function handleSubmit() {
-    if (code.length !== 6) { setError('6 haneli kodu girin.'); return; }
+    if (code.length !== 6) { setError(t('resetPw.enterCode')); return; }
     if (!password || !confirm) { setError(t('reg.fillAll')); return; }
     if (password.length < 6 || password.length > 20) { setError(t('reg.pwLength')); return; }
     if (password !== confirm) { setError(t('reg.pwMismatch')); return; }

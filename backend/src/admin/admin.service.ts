@@ -35,7 +35,7 @@ import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { NotificationService } from "../notification/notification.service";
 import { meetingLockAt } from "../meetings/meeting-windows";
 import { DELETED_PLACEHOLDER_PREFIX } from "../users/account-deletion.service";
-import type { AdminUpdateUserDto } from "./dto/admin.dto";
+import type { AdminUpdateUserDto, CityStatus } from "./dto/admin.dto";
 import { KycService } from "../kyc/kyc.service";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
@@ -1183,14 +1183,16 @@ export class AdminService {
   // Liste: Türkiye'nin 4 ana şehri + aktif bölgeler + Türkiye dışı bölgeler (pasif Türkiye illeri Şehirler sayfasında kalır)
   async listRegions() {
     const rows = await this.prisma.city.findMany({
-      where: { OR: [{ isActive: true }, { countryCode: { not: "TR" } }, { name: { in: ["İstanbul", "Ankara", "İzmir", "Antalya"] } }] },
+      where: { OR: [{ isActive: true }, { isComingSoon: true }, { countryCode: { not: "TR" } }, { name: { in: ["İstanbul", "Ankara", "İzmir", "Antalya"] } }] },
       include: { _count: { select: { regionWaitlist: true } } },
       orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
     });
     return rows.map(({ _count, ...c }) => ({ ...c, waitlistCount: _count.regionWaitlist }));
   }
 
-  async updateRegion(cityId: string, dto: { name?: string; countryCode?: string; timezone?: string; currency?: string; defaultLanguage?: string; phoneCountryCode?: string; idTypes?: ("ID_CARD" | "DRIVER_LICENSE" | "PASSPORT" | "RESIDENCE_PERMIT")[]; isActive?: boolean; sortOrder?: number }) {
+  async updateRegion(cityId: string, input: { name?: string; countryCode?: string; timezone?: string; currency?: string; defaultLanguage?: string; phoneCountryCode?: string; idTypes?: ("ID_CARD" | "DRIVER_LICENSE" | "PASSPORT" | "RESIDENCE_PERMIT")[]; isActive?: boolean; status?: CityStatus; sortOrder?: number }) {
+    const { status, ...rest } = input;
+    const dto = { ...rest, ...cityStatusData(status, rest.isActive) };
     const city = await this.prisma.city.findUnique({ where: { id: cityId } });
     if (!city) throw new NotFoundException("Bölge bulunamadı");
     if (dto.timezone) {
@@ -1210,15 +1212,24 @@ export class AdminService {
     return rows.map((r) => ({ id: r.id, createdAt: r.createdAt, userId: r.user.id, email: r.user.email, phone: r.user.phone, name: `${r.user.profile?.firstName ?? ""} ${r.user.profile?.lastName ?? ""}`.trim() }));
   }
 
-  async createCity(name: string) {
+  // Yeni şehir varsayılan Pasif
+  async createCity(name: string, status: CityStatus = "PASSIVE") {
     const exists = await this.prisma.city.findUnique({ where: { name } });
     if (exists) throw new ConflictException("Bu şehir zaten kayıtlı");
-    return this.prisma.city.create({ data: { name } });
+    return this.prisma.city.create({ data: { name, ...cityStatusData(status) } });
   }
 
-  async updateCity(cityId: string, data: { isActive?: boolean }) {
+  // Ad değişikliği yalnız City.name'i günceller; id aynı kalır, ilçe / mekân / kullanıcı bağları korunur
+  async updateCity(cityId: string, dto: { isActive?: boolean; status?: CityStatus; name?: string }) {
     const city = await this.prisma.city.findUnique({ where: { id: cityId } });
     if (!city) throw new NotFoundException("Şehir bulunamadı");
+    const data: { name?: string; isActive?: boolean; isComingSoon?: boolean } = { ...cityStatusData(dto.status, dto.isActive) };
+    if (dto.name !== undefined) {
+      const name = dto.name.trim();
+      if (name.length < 2) throw new BadRequestException("Şehir adı en az 2 karakter olmalı");
+      if (name !== city.name && (await this.prisma.city.findUnique({ where: { name } }))) throw new ConflictException("Bu şehir zaten kayıtlı");
+      data.name = name;
+    }
     return this.prisma.city.update({ where: { id: cityId }, data });
   }
 
@@ -2162,4 +2173,15 @@ export class AdminService {
     return { items, total, page, totalPages: Math.ceil(total / limit), admins };
   }
 
+}
+
+// Durum → alanlar: Aktif = isActive; Yakında = !isActive && isComingSoon; Pasif = ikisi de false
+// status yoksa yalnız isActive verildiyse eski davranış (aktif yapılınca Yakında bayrağı kalkar)
+function cityStatusData(status?: CityStatus, isActive?: boolean): { isActive?: boolean; isComingSoon?: boolean } {
+  if (status === "ACTIVE") return { isActive: true, isComingSoon: false };
+  if (status === "COMING_SOON") return { isActive: false, isComingSoon: true };
+  if (status === "PASSIVE") return { isActive: false, isComingSoon: false };
+  if (isActive === true) return { isActive: true, isComingSoon: false };
+  if (isActive === false) return { isActive: false };
+  return {};
 }

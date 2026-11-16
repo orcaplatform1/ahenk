@@ -315,7 +315,7 @@ export class AdminController {
 
   @Post("cities")
   createCity(@Body() dto: CreateCityDto) {
-    return this.adminService.createCity(dto.name);
+    return this.adminService.createCity(dto.name, dto.status);
   }
 
   @Patch("cities/:id")

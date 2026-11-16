@@ -53,12 +53,12 @@ const sections = [
               ],
             },
             {
-              name: 'One-on-One Package',
+              name: 'Duo Package',
               price: <PlanPriceText plan="KARSIMDA" suffix="₺" />,
               items: [
-                '1 one-on-one meetup credit with algorithmic matching based on the OCEAN Big Five model',
+                '1 Duo meetup credit with algorithmic matching based on the OCEAN Big Five model',
                 'Valid until used',
-                'One-on-One for 2 people',
+                'Duo for 2 people',
                 'Venue selection and booking are handled by Ahenk',
               ],
             },
@@ -66,15 +66,15 @@ const sections = [
               name: 'All-In Package',
               price: <PlanPriceText plan="ICERDE" suffix="₺" />,
               items: [
-                '1 group + 1 one-on-one meetup credit',
+                '1 group + 1 Duo meetup credit',
                 'Valid until used',
               ],
             },
             {
-              name: 'Kankamla Package',
+              name: 'Bring a Buddy Package',
               price: <PlanPriceText plan="KANKAMLA" suffix="₺" />,
               items: [
-                '1 Kankamla meetup credit: the Buyer and their same-gender Kanka meet a pair of friends of the opposite gender at a table for 4',
+                '1 Bring a Buddy meetup credit: the Buyer and their same-gender Kanka meet a pair of friends of the opposite gender at a table for 4',
                 'Only the Buyer purchases the package; their Kanka joins for free. The package cannot be purchased before a Kanka is chosen',
                 'Valid until used',
                 'Venue selection and booking are handled by Ahenk',
@@ -85,7 +85,7 @@ const sections = [
               price: null,
               items: [
                 '1-, 3-, 6- and 12-month plans',
-                '1 group, 1 one-on-one and 1 Kankamla meetup credit every 30 days',
+                '1 group, 1 Duo and 1 Bring a Buddy meetup credit every 30 days',
               ],
             },
           ].map((pkg) => (
@@ -167,7 +167,7 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1.25rem' }}>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
           {[
-            'Prime membership is offered in 1-, 3-, 6- and 12-month plans; 1 Group, 1 One-on-One and 1 Kankamla meetup credit is granted every 30 days.',
+            'Prime membership is offered in 1-, 3-, 6- and 12-month plans; 1 Group, 1 Duo and 1 Bring a Buddy meetup credit is granted every 30 days.',
             'Unused Prime credits do not carry over to the next 30 days.',
             'Prime subscriptions renew automatically for the same period at the end of each term.',
             'When a Prime subscription is cancelled, automatic renewal stops; credits remaining at the moment of cancellation stay valid with no time limit until used; no refunds are given.',

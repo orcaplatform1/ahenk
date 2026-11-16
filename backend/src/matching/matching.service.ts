@@ -287,6 +287,7 @@ export class MatchingService {
     const cityId = matchCity(user);
     const gender = user.profile?.gender;
     if (!cityId || !gender) return;
+    if (await this.isComingSoonCity(cityId)) return; // Yakında şehir eşleştirmeye girmez
 
     const meetings = await this.prisma.meeting.findMany({
       where: { cycleId: ctx.cycleId, cityId, type: MeetingType.GROUP, status: "PENDING" },
@@ -351,6 +352,7 @@ export class MatchingService {
     const cityId = matchCity(user);
     const gender = user.profile?.gender;
     if (!cityId || !gender) return null;
+    if (await this.isComingSoonCity(cityId)) return null; // Yakında şehir eşleştirmeye girmez
 
     const tables = (await this.loneOneOnOneTables(ctx.cycleId)).filter(
       (t) =>
@@ -466,6 +468,7 @@ export class MatchingService {
     const cityId = matchCity(pair.buyer);
     const gender = pair.buyer.profile?.gender;
     if (!cityId || !gender) return null;
+    if (await this.isComingSoonCity(cityId)) return null; // Yakında şehir eşleştirmeye girmez
 
     const others = (pool ?? (await this.fetchKankaPairs(ctx.cycleId))).filter(
       (o) =>
@@ -614,7 +617,7 @@ export class MatchingService {
           title: "Karşı çift masadan ayrıldı",
           body: "Kankamla masanızdaki karşı çift ayrıldı. Sizin için yeniden eşleşme aranıyor.",
           data: { type: "KANKA_PAIR_LEFT", meetingId: part.meetingId },
-          en: { title: "The other pair left the table", body: "The other pair at your Kankamla table left. We're looking for a new match for you." },
+          en: { title: "The other pair left the table", body: "The other pair at your Bring a Buddy table left. We're looking for a new match for you." },
         }).catch(() => undefined);
         await enqueueAssign(this.assignQueue, id);
       }
@@ -1267,6 +1270,12 @@ export class MatchingService {
     // Bot profil fotoğrafı (onaysız, yüklendiği anda APPROVED)
     const photos = await approvedPhotoMap(this.prisma, bots.map((b) => b.id));
     return bots.map((b) => ({ ...b, photoUrl: photos.get(b.id) ?? null }));
+  }
+
+  // Durumu Yakında olan şehir (isComingSoon) eşleştirmeye / taramaya girmez
+  private async isComingSoonCity(cityId: string): Promise<boolean> {
+    const city = await this.prisma.city.findFirst({ where: { OR: [{ id: cityId }, { name: cityId }] }, select: { isActive: true, isComingSoon: true } });
+    return !!city && !city.isActive && city.isComingSoon;
   }
 
   // Bot şehri katılım şehridir (primaryCity = City.id); aktif şehir olmalı

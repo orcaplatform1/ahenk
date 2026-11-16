@@ -35,7 +35,7 @@ const jetBrainsMono = JetBrains_Mono({
 const SITE_DESCRIPTION =
   'Ahenk, OCEAN kişilik testine dayalı eşleştirmeyle seni her hafta sana uygun insanlarla buluşturur. Grup masası, Baş Başa ve Kankamla seçeneklerini keşfet.';
 const SITE_DESCRIPTION_EN =
-  'Ahenk matches you every week with people who suit you, using OCEAN personality test–based matching. Explore Group tables, One-on-One and Kankamla.';
+  'Ahenk matches you every week with people who suit you, using OCEAN personality test–based matching. Explore Group tables, Duo and Bring a Buddy.';
 const SITE_TITLE_EN = 'Ahenk | Meet People Who Suit You';
 const TITLE_TEMPLATE = '%s | Ahenk';
 

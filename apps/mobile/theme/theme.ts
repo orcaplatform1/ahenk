@@ -185,6 +185,20 @@ export const llTab = { minHeight: 44, padV: 8, padH: 2, gap: 6, labelSize: 11, l
 // ── DetayAvatar (packages/ui/src/components/tables/DetayAvatar.tsx) ───────
 export const detayAvatar = { d: 48, strokeWidth: 2.5, fontSize: 11, fontSizeLong: 10, textColor: '#f0f0f0', letterSpacing: 0.02 } as const;
 
+// ── Masa detay kartı yerleşimi (packages/ui MasaDetayKarti: kapak, tür rozeti, bilgi şeridi, Genel Uyum halkası, kendi dairesi) ──
+export const masaKart = {
+  coverH: 210, coverGap: 2, cameraBg: 'rgba(255,255,255,0.08)', cameraStroke: 'rgba(255,255,255,0.18)',
+  coverFade: ['rgba(18,18,18,0.35)', 'rgba(18,18,18,0)', 'rgba(18,18,18,0)', 'rgba(18,18,18,0.92)'] as const, coverFadeStops: [0, 0.3, 0.45, 1] as const,
+  pill: { padV: 4, padH: 10, radius: 9999, fontSize: 11, gap: 6 },
+  typePill: { bg: 'rgba(192,57,43,0.85)', border: 'rgba(255,107,107,0.5)', text: '#ffffff' },
+  mapBtn: { minH: 36, padH: 14, radius: 9999, bg: '#c0392b', text: '#ffffff', fontSize: 11 },
+  strip: { padV: 12, padH: 14, radius: 12, bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)', icon: '#ff6b6b' },
+  chatBtn: { minH: 32, padH: 12, radius: 9999, bg: 'rgba(192,57,43,0.12)', border: 'rgba(192,57,43,0.5)', text: '#ff6b6b', fontSize: 12 },
+  avatar: 44, avatarGap: 8, selfRing: '#ff6b6b', selfRingGap: '#121212',
+  ring: { d: 64, stroke: 6, track: 'rgba(255,255,255,0.08)', color: '#27ae60' },
+  cardGap: 12,
+} as const;
+
 // ── Sekme ikonu (S-09: 28 pt, oranlar DetayAvatar'dan) ────────────────────
 // Alt menü Instagram ölçüsünde (dikeyde ince): tüm ikonlar Profilim rozetiyle eşit boy, 28
 // barHeight: alt güvenli alan hariç menü yüksekliği (varsayılan 49 → 44)

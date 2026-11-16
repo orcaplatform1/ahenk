@@ -15,8 +15,17 @@ interface City {
   id: string;
   name: string;
   isActive: boolean;
+  isComingSoon?: boolean;
   _count?: { venues: number; districts?: number };
 }
+
+// Şehir durumu: Aktif / Pasif / Yakında
+type CityStatus = 'ACTIVE' | 'PASSIVE' | 'COMING_SOON';
+const statusOf = (c: City): CityStatus => (c.isActive ? 'ACTIVE' : c.isComingSoon ? 'COMING_SOON' : 'PASSIVE');
+const STATUS_LABELS: Record<CityStatus, string> = { ACTIVE: 'Aktif', PASSIVE: 'Pasif', COMING_SOON: 'Yakında' };
+const STATUS_ACTIONS: Record<CityStatus, string> = { ACTIVE: 'Aktifleştir', PASSIVE: 'Pasifleştir', COMING_SOON: 'Yakında yap' };
+const STATUS_ORDER: CityStatus[] = ['ACTIVE', 'PASSIVE', 'COMING_SOON'];
+const AMBER = '#f59e0b';
 
 // İlçe seviyeleri (statik moddaki şehir yoğunluğu / tarama listesi)
 interface District { id: string; name: string; level: number }
@@ -49,6 +58,8 @@ function LevelPicker({ value, onChange, disabled }: { value: number; onChange: (
 // Şehre basınca açılan İlçe Ekle penceresi: mevcut ilçeler, seviye değiştirme, ilçe silme, ilçe ekleme, şehir silme
 function DistrictModal({ city, onClose, onChanged }: { city: City; onClose: () => void; onChanged: (deleted?: boolean) => void }) {
   const [rows, setRows] = useState<District[]>([]);
+  const [cityName, setCityName] = useState(city.name);
+  const [savedName, setSavedName] = useState(city.name);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [name, setName] = useState('');
@@ -75,6 +86,16 @@ function DistrictModal({ city, onClose, onChanged }: { city: City; onClose: () =
   const setRowLevel = (d: District, l: number) => { if (l !== d.level) run(d.id, () => api.patch(`/admin/cities/districts/${d.id}`, { level: l })); };
   const delRow = (d: District) => run(d.id, () => api.delete(`/admin/cities/districts/${d.id}`));
 
+  // Şehir adı: yalnız ad değişir, id aynı kalır (ilçe, mekân, kullanıcı bağları korunur)
+  async function saveName() {
+    const n = cityName.trim();
+    setBusy('name'); setError('');
+    try { await api.patch(`/admin/cities/${city.id}`, { name: n }); setSavedName(n); setCityName(n); onChanged(); }
+    catch (e) { setError((e as Error).message); }
+    finally { setBusy(null); }
+  }
+  const nameDirty = cityName.trim() !== savedName && cityName.trim().length >= 2;
+
   async function delCity() {
     setBusy('city'); setError('');
     try { await api.delete(`/admin/cities/${city.id}`); onChanged(true); onClose(); }
@@ -85,8 +106,16 @@ function DistrictModal({ city, onClose, onChanged }: { city: City; onClose: () =
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
       <div className="ll-card" style={{ width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h2 className="ll-title">{city.name} · İlçe Ekle</h2>
+          <h2 className="ll-title">{savedName} · İlçe Ekle</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: MUTED, padding: 4 }}>✕</button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <input value={cityName} onChange={e => setCityName(e.target.value)} placeholder="Şehir adı" maxLength={60} style={{ ...inputStyle, flex: 1 }} />
+          <button onClick={saveName} disabled={busy === 'name' || !nameDirty}
+            style={{ ...smallBtn(CYAN, CYAN_BG, CYAN_BORDER), fontSize: 12, fontWeight: 700, padding: '6px 12px', opacity: busy === 'name' || !nameDirty ? 0.5 : 1 }}>
+            {busy === 'name' ? 'Kaydediliyor…' : 'Adı Kaydet'}
+          </button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
@@ -128,7 +157,7 @@ function DistrictModal({ city, onClose, onChanged }: { city: City; onClose: () =
         <div style={{ borderTop: `1px solid ${BORDER}`, marginTop: 14, paddingTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
           {confirmDel === 'city' ? (
             <>
-              <span style={{ flex: 1, fontSize: 12, color: RED }}>{city.name} şehri silinsin mi?</span>
+              <span style={{ flex: 1, fontSize: 12, color: RED }}>{savedName} şehri silinsin mi?</span>
               <button onClick={delCity} disabled={busy === 'city'} style={smallBtn(RED, RED_BG, RED_BORDER)}>{busy === 'city' ? '…' : 'Evet, sil'}</button>
               <button onClick={() => setConfirmDel(null)} style={smallBtn(MUTED, MUTED_BG, MUTED_BORDER)}>Vazgeç</button>
             </>
@@ -147,6 +176,7 @@ export default function AdminCities() {
   const [error, setError] = useState('');
   const [modal, setModal] = useState<'add' | null>(null);
   const [nameInput, setNameInput] = useState('');
+  const [statusInput, setStatusInput] = useState<CityStatus>('PASSIVE');
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [districtCity, setDistrictCity] = useState<City | null>(null);
@@ -160,23 +190,23 @@ export default function AdminCities() {
 
   useEffect(() => { load(); }, []);
 
-  function openAdd() { setNameInput(''); setError(''); setModal('add'); }
+  function openAdd() { setNameInput(''); setStatusInput('PASSIVE'); setError(''); setModal('add'); }
 
   async function save() {
     setSaving(true); setError('');
     try {
-      await api.post('/admin/cities', { name: nameInput.trim() });
+      await api.post('/admin/cities', { name: nameInput.trim(), status: statusInput });
       setModal(null);
       load();
     } catch (e) { setError((e as Error).message); }
     finally { setSaving(false); }
   }
 
-  async function toggleActive(c: City) {
+  async function setStatus(c: City, status: CityStatus) {
     setToggling(c.id); setError('');
     try {
-      await api.patch(`/admin/cities/${c.id}`, { isActive: !c.isActive });
-      setCities(prev => prev.map(x => x.id === c.id ? { ...x, isActive: !c.isActive } : x));
+      await api.patch(`/admin/cities/${c.id}`, { status });
+      setCities(prev => prev.map(x => x.id === c.id ? { ...x, isActive: status === 'ACTIVE', isComingSoon: status === 'COMING_SOON' } : x));
     } catch (e) { setError((e as Error).message); }
     finally { setToggling(null); }
   }
@@ -236,6 +266,12 @@ export default function AdminCities() {
                         padding: '1px 6px', borderRadius: 99,
                         background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', color: GREEN,
                       }}>AKTİF</span>
+                    ) : c.isComingSoon ? (
+                      <span style={{
+                        ...LABEL,
+                        padding: '1px 6px', borderRadius: 99,
+                        background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', color: AMBER,
+                      }}>YAKINDA</span>
                     ) : (
                       <span style={{
                         ...LABEL,
@@ -249,19 +285,25 @@ export default function AdminCities() {
                   </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                  <button
-                    onClick={() => toggleActive(c)}
-                    disabled={toggling === c.id}
-                    style={{
-                      padding: '4px 10px', borderRadius: 6, cursor: toggling === c.id ? 'not-allowed' : 'pointer',
-                      background: c.isActive ? 'rgba(100,116,139,0.1)' : 'rgba(34,197,94,0.1)',
-                      border: `1px solid ${c.isActive ? 'rgba(100,116,139,0.25)' : 'rgba(34,197,94,0.3)'}`,
-                      fontSize: 10, color: c.isActive ? MUTED : GREEN, fontFamily: SANS,
-                      opacity: toggling === c.id ? 0.5 : 1,
-                    }}
-                  >
-                    {toggling === c.id ? '…' : c.isActive ? 'Pasifleştir' : 'Aktifleştir'}
-                  </button>
+                  {STATUS_ORDER.filter(st => st !== statusOf(c)).map(st => {
+                    const color = st === 'ACTIVE' ? GREEN : st === 'COMING_SOON' ? AMBER : MUTED;
+                    const rgb = st === 'ACTIVE' ? '34,197,94' : st === 'COMING_SOON' ? '245,158,11' : '100,116,139';
+                    return (
+                      <button
+                        key={st}
+                        onClick={() => setStatus(c, st)}
+                        disabled={toggling === c.id}
+                        style={{
+                          padding: '4px 10px', borderRadius: 6, cursor: toggling === c.id ? 'not-allowed' : 'pointer',
+                          background: `rgba(${rgb},0.1)`, border: `1px solid rgba(${rgb},${st === 'PASSIVE' ? 0.25 : 0.3})`,
+                          fontSize: 10, color, fontFamily: SANS,
+                          opacity: toggling === c.id ? 0.5 : 1,
+                        }}
+                      >
+                        {toggling === c.id ? '…' : STATUS_ACTIONS[st]}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -284,6 +326,17 @@ export default function AdminCities() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="Şehir adı" style={inputStyle} />
+              <div style={{ display: 'flex', gap: 6 }}>
+                {STATUS_ORDER.map(st => {
+                  const on = statusInput === st;
+                  return (
+                    <button key={st} type="button" onClick={() => setStatusInput(st)}
+                      style={{ ...smallBtn(on ? CYAN : MUTED, on ? CYAN_BG : 'transparent', on ? CYAN_BORDER : MUTED_BORDER), flex: 1, fontSize: 12, padding: '6px 10px' }}>
+                      {STATUS_LABELS[st]}
+                    </button>
+                  );
+                })}
+              </div>
               {error && <p style={{ margin: 0, fontSize: 11, color: RED }}>{error}</p>}
               <button
                 onClick={save}

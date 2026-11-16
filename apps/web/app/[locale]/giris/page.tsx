@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
-import NextLink from 'next/link';
-import { useRouter as useNextRouter } from 'next/navigation';
 import { DEFAULT_PHONE_COUNTRY, formatDateTime, toE164 } from '@ahenk/shared';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
 import Image from 'next/image';
@@ -56,7 +54,7 @@ async function authPost<T>(path: string, body: unknown): Promise<T> {
 function VenueLogin() {
   const t = useTranslations();
   // Mekân paneli dil öneki almaz (Türkçe)
-  const router = useNextRouter();
+  const router = useRouter(); // Mekân paneli de seçili dilde (/en/mekan…)
   const [method, setMethod] = useState<Method>('whatsapp');
   const [phone, setPhone] = useState('');
   const [otpStep, setOtpStep] = useState(false);
@@ -245,9 +243,9 @@ function VenueLogin() {
 
       {method === 'email' && (
         <div className="mt-4 flex justify-center">
-          <NextLink href="/mekan/sifremi-unuttum" className="mx-auto block btn-ghost" style={{ width: '72%' }}>
+          <Link href="/mekan/sifremi-unuttum" className="mx-auto block btn-ghost" style={{ width: '72%' }}>
             {t('login.forgot')}
-          </NextLink>
+          </Link>
         </div>
       )}
     </>

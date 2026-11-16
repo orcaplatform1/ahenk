@@ -5,6 +5,8 @@ import Navbar from './Navbar';
 
 export default function NavbarWrapper() {
   const path = usePathname();
-  if (path.startsWith('/admin') || path.startsWith('/mekan/panel')) return null;
+  // Mekân paneli İngilizcede /en/mekan/panel
+  const bare = path.replace(/^\/en(?=\/|$)/, '') || '/';
+  if (bare.startsWith('/admin') || bare.startsWith('/mekan/panel')) return null;
   return <Navbar />;
 }

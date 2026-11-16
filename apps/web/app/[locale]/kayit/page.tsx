@@ -18,7 +18,7 @@ import SiteSelect from '@/components/SiteSelect';
 import { gColor } from '@ahenk/ui';
 import { DateField } from '@/components/BirthDateField';
 
-interface City { id: string; name: string; isActive?: boolean; countryCode?: string; }
+interface City { id: string; name: string; isActive?: boolean; isComingSoon?: boolean; countryCode?: string; }
 
 // Token'lar HttpOnly çerezle gelir; yanıt gövdesinde sadece kullanıcı
 interface RegisterResponse {
@@ -172,7 +172,7 @@ function KayitPageInner() {
 
   useEffect(() => {
     // Aktif bölgeler (kayıtta 4 şehir) + "Yakında" grubu (Türkiye dışı pasif bölgeler)
-    api.get<City[]>('/auth/cities').then((list) => setCities(list.filter((c) => (c.isActive !== false && CITY_ORDER.includes(c.name)) || (c.isActive === false && c.countryCode !== 'TR')))).catch(() => setError(t('reg.citiesFailed')));
+    api.get<City[]>('/auth/cities').then((list) => setCities(list.filter((c) => (c.isActive !== false && CITY_ORDER.includes(c.name)) || (c.isActive === false && c.isComingSoon === true)))).catch(() => setError(t('reg.citiesFailed')));
     api.get<Record<string, string[]>>('/auth/districts').then(setDistricts).catch(() => setError(t('reg.districtsFailed')));
   }, []);
 
@@ -416,7 +416,7 @@ function KayitPageInner() {
           <div className="ll-card flex flex-col gap-5">
             <div>
               <p className="ll-eyebrow" style={{ marginBottom: 4 }}>{t('reg.stepN', { n: 1 })}</p>
-              <h1 className="ll-title" style={{ marginBottom: 4 }}>Temel Bilgiler</h1>
+              <h1 className="ll-title" style={{ marginBottom: 4 }}>{t('reg.stepBasic')}</h1>
               <p className="text-[#a39c93] text-[13px]">{t('reg.createAccount')}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -765,7 +765,7 @@ function KayitPageInner() {
           <div className="ll-card flex flex-col gap-5">
             <div>
               <p className="ll-eyebrow" style={{ marginBottom: 4 }}>{t('reg.stepN', { n: 6 })}</p>
-              <h1 className="ll-title" style={{ marginBottom: 4 }}>Numara Engelleme</h1>
+              <h1 className="ll-title" style={{ marginBottom: 4 }}>{t('reg.stepBlock')}</h1>
               <p className="text-[#a39c93] text-[13px]">{t('reg.blockHint')}</p>
             </div>
             <div className="flex gap-2">
@@ -1078,7 +1078,7 @@ function CityPickerModal({ cities, value, onChange, onClose, optional, title, no
                 const done = notified?.includes(c.id);
                 return (
                   <div key={c.id} aria-disabled="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 14px', fontSize: 15, color: 'rgba(201,194,184,0.4)' }}>
-                    <span>{c.name}</span>
+                    <span>{c.name}<span style={{ marginLeft: 8, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(143,136,127,0.4)', fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</span></span>
                     {onNotify && (
                       <button type="button" disabled={done} onClick={() => onNotify(c.id)}
                         style={{ minHeight: 32, padding: '0 10px', fontSize: 11, borderRadius: 999, border: '1px solid rgba(192,57,43,0.5)', background: done ? 'transparent' : 'rgba(192,57,43,0.10)', color: done ? '#8f887f' : '#ff6b6b', cursor: done ? 'default' : 'pointer' }}>

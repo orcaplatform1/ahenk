@@ -71,10 +71,10 @@ export class UsersService {
     return u;
   }
 
-  // Yalnız pasif bölgeye kayıt olunur; aynı kullanıcı aynı bölgeye bir kez (tekrar istek hata vermez)
+  // Yalnız Yakında durumundaki bölgeye kayıt olunur; aynı kullanıcı aynı bölgeye bir kez (tekrar istek hata vermez)
   async joinRegionWaitlist(userId: string, cityId: string) {
-    const city = await this.prisma.city.findUnique({ where: { id: cityId }, select: { isActive: true } });
-    if (!city) throw new BadRequestException("Bölge bulunamadı");
+    const city = await this.prisma.city.findUnique({ where: { id: cityId }, select: { isActive: true, isComingSoon: true } });
+    if (!city || (!city.isActive && !city.isComingSoon)) throw new BadRequestException("Bölge bulunamadı");
     if (city.isActive) throw new BadRequestException("Bu bölge zaten açık");
     await this.prisma.regionWaitlist.upsert({ where: { userId_cityId: { userId, cityId } }, create: { userId, cityId }, update: {} });
     return { ok: true };

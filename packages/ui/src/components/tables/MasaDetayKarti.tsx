@@ -17,6 +17,7 @@ export interface DetayParticipant {
   gender: 'MALE' | 'FEMALE' | string | null;
   isSelf?: boolean;
   photoUrl?: string | null;
+  cancelled?: boolean;
 }
 
 export interface VenuePhoto {
@@ -38,6 +39,7 @@ export interface MasaDetayData {
   sosEndsAt: string; // Acil yardımın bittiği an (backend tek kaynak)
   venueName: string;
   venueAddress?: string | null;
+  venueDistrict?: string | null; // Kapakta yalnız ilçe adı
   venueMapsUrl?: string | null;
   venuePhotos?: VenuePhoto[];
   participants: DetayParticipant[];
@@ -118,6 +120,53 @@ function formatMeetingTime(isoStr: string, locale = 'tr'): string {
     const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz });
     return `${day.charAt(0).toLocaleUpperCase(locale === 'en' ? 'en' : 'tr-TR')}${day.slice(1)} · ${time}`;
   } catch { return ''; }
+}
+
+// Bilgi şeridi: "Cuma, 20:00" (gün adı arayüz dilinde, 24 saat)
+function formatStripTime(isoStr: string, locale = 'tr'): string {
+  return formatMeetingTime(isoStr, locale).replace(' · ', ', ');
+}
+
+// Kapak üstü hap rozet
+const pillStyle = (bg: string, color: string, border: string): React.CSSProperties => ({
+  display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 9999,
+  background: bg, border: `1px solid ${border}`, color, fontSize: 11, fontWeight: 700,
+  letterSpacing: '0.04em', fontFamily: 'Inter, sans-serif', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+});
+
+// Fotoğraf yokken mevcut boş kamera kutusu
+function CameraBox() {
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <rect x="1" y="5" width="22" height="15" rx="2" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
+        <circle cx="12" cy="12" r="4" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
+        <path d="M8 5l1.5-3h5L16 5" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+// Genel Uyum halkası (kayıtlı uyumSkoru, 0–100)
+function ScoreRing({ score }: { score: number }) {
+  const D = 64, SW = 6, R = (D - SW) / 2, C = 2 * Math.PI * R;
+  const pct = Math.max(0, Math.min(100, score));
+  return (
+    <div style={{ position: 'relative', width: D, height: D, flexShrink: 0 }}>
+      <svg width={D} height={D} viewBox={`0 0 ${D} ${D}`} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={D / 2} cy={D / 2} r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={SW} />
+        <motion.circle
+          cx={D / 2} cy={D / 2} r={R} fill="none" stroke={GREEN} strokeWidth={SW} strokeLinecap="round"
+          strokeDasharray={C}
+          initial={{ strokeDashoffset: C }} animate={{ strokeDashoffset: C * (1 - pct / 100) }}
+          transition={{ delay: 0.85, duration: 0.9, ease: 'easeOut' }}
+        />
+      </svg>
+      <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>
+        %{pct}
+      </span>
+    </div>
+  );
 }
 
 function mapsUrl(url?: string | null, address?: string | null): string | null {
@@ -696,9 +745,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
     return () => clearInterval(id);
   }, [onMyWayOpen, onMyWayOpensAt]);
 
-  const isOneOnOne = masa.type === 'ONE_ON_ONE';
   const photos     = masa.venuePhotos ?? [];
-  const meetTime   = formatMeetingTime(masa.scheduledAt, locale);
   const mapLink    = mapsUrl(masa.venueMapsUrl, masa.venueAddress);
   const ordered    = buildOrdered(masa.participants);
 
@@ -810,6 +857,16 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
   }, [sosVisible, apiBase, masa.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
+  // Kapak, bilgi şeridi ve katılımcılar
+  const chatRef = useRef<HTMLDivElement>(null);
+  const coverPhotos = photos.slice(0, 3);
+  const present = masa.participants.filter(p => !p.cancelled);
+  const femaleCount = present.filter(p => p.gender === 'FEMALE').length;
+  const maleCount = present.filter(p => p.gender === 'MALE').length;
+  const typeLabel = masa.type === 'ONE_ON_ONE' ? t('masa.typeOne') : masa.type === 'KANKA' ? t('masa.typeKanka') : t('masa.typeGroup');
+  const scrollToChat = () => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const COVER_H = 210;
+
   return (
     <>
       <AnimatePresence>
@@ -831,11 +888,13 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
       <PhotoViewer url={viewer?.url ?? null} onClose={() => setViewer(null)}
         onEdit={viewer?.self && onEditOwnPhoto ? () => { setViewer(null); onEditOwnPhoto(); } : undefined} />
 
+      {/* ── Ana kart ── */}
       <motion.div
+        className="ll-card"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        style={{ position: 'relative', overflow: 'hidden' }}
+        style={{ position: 'relative', overflow: 'hidden', padding: 0, background: '#121212' }}
       >
         <motion.div
           initial={{ opacity: 0.6, x: '-100%' }}
@@ -847,158 +906,147 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
           }}
         />
 
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}
-        >
-          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: GREEN, flexShrink: 0 }} />
-          <span style={{ fontSize: 10, fontWeight: 700, color: GREEN, letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-            {t('masa.detailTitle')}
-          </span>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.4 }}
-          style={{ marginBottom: masa.venueAddress ? 4 : 16 }}
-        >
-          <h2 style={{
-            margin: 0,
-            fontFamily: 'var(--font-serif, "DM Serif Display", Georgia, serif)',
-            fontSize: 26, fontWeight: 400, color: '#f5f5f5',
-            letterSpacing: '0.01em', lineHeight: 1.2,
+        {/* Kapak: mekân fotoğrafları (3 → yan yana, 2 → eşit iki, 1 → tek büyük, yok → boş kamera kutuları) */}
+        <div style={{ position: 'relative', height: COVER_H }}>
+          <div style={{
+            display: 'grid', height: '100%', gap: 2,
+            gridTemplateColumns: coverPhotos.length === 0 ? '1fr 1fr 1fr' : `repeat(${coverPhotos.length}, 1fr)`,
           }}>
-            {masa.venueName}
-          </h2>
-        </motion.div>
-
-        {masa.venueAddress && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            style={{ margin: '0 0 16px', fontSize: 13, color: 'rgba(255,255,255,0.72)', fontFamily: 'Inter, sans-serif', lineHeight: 1.4 }}
-          >
-            {masa.venueAddress}
-          </motion.p>
-        )}
-
-        {photos.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.45 }}
-            style={{ marginBottom: 18 }}
-          >
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: photos.length === 1 ? '1fr' : '1fr 1fr 1fr',
-              gap: 6,
-            }}>
-              {photos.slice(0, 3).map((photo, i) => (
-                <div
-                  key={i}
-                  onClick={() => setLightboxIdx(i)}
-                  style={{
-                    cursor: 'pointer', borderRadius: 8, overflow: 'hidden',
-                    aspectRatio: '4/3', background: 'rgba(255,255,255,0.04)', position: 'relative',
-                  }}
-                >
+            {coverPhotos.length === 0
+              ? [0, 1, 2].map(i => <CameraBox key={i} />)
+              : coverPhotos.map((photo, i) => (
+                <div key={i} onClick={() => setLightboxIdx(i)} style={{ cursor: 'pointer', overflow: 'hidden', background: 'rgba(255,255,255,0.04)' }}>
                   <img
                     src={photo.url}
                     alt={photo.caption ?? t('masa.photoAlt', { n: i + 1 })}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.3s, filter 0.3s' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.3s' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.05)'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'; }}
                   />
                 </div>
               ))}
-            </div>
-          </motion.div>
-        )}
-
-        {mapLink && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            style={{ marginBottom: 18 }}
-          >
-            <a
-              href={mapLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary"
-              style={{ width: '100%', justifyContent: 'center' }}
-            >
-              {t('masa.seeOnMap')}
-            </a>
-          </motion.div>
-        )}
-
-        <motion.div
-          initial={{ scaleX: 0 }} animate={{ scaleX: 1 }}
-          transition={{ delay: 0.35, duration: 0.45, ease: 'easeOut' }}
-          style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '0 0 16px', transformOrigin: 'left' }}
-        />
-
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.4 }}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: GREEN, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif' }}>{t('masa.meetup')}</span>
           </div>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>
-            {meetTime}
+
+          {/* Yazıların okunması için alt geçiş */}
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,18,18,0.35) 0%, rgba(18,18,18,0) 30%, rgba(18,18,18,0) 45%, rgba(18,18,18,0.92) 100%)' }} />
+
+          {/* Sol üst masa türü */}
+          <span style={{ position: 'absolute', top: 12, left: 12, ...pillStyle('rgba(192,57,43,0.85)', '#fff', 'rgba(255,107,107,0.5)') }}>
+            {typeLabel}
           </span>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.48, duration: 0.4 }}
-          style={{ marginBottom: 20 }}
-        >
-          <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#f5f5f5', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-            {isOneOnOne ? t('masa.oneOnOne') : t('masa.participants')}
-          </p>
-          {masa.type === 'KANKA' ? (
-            <KankaPairs
-              mine={(masa.participants as KankaParticipant[]).filter(p => p.pair === 'MINE')}
-              other={(masa.participants as KankaParticipant[]).filter(p => p.pair === 'OTHER')}
-              onPhoto={openPhoto}
-            />
-          ) : (
-          <div style={isOneOnOne ? { display: 'flex', gap: 10, flexWrap: 'wrap' } : { display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gap: 10 }}>
-            {ordered.map((p, i) => p.photoUrl ? (
-              <button key={`${p.initials}-${i}`} type="button" onClick={() => openPhoto(p)} aria-label={t('masa.enlargePhoto')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                <DetayAvatar participant={p} delay={0.52 + i * 0.1} />
+          {/* Alt: mekân adı + ilçe, sağda Haritada Gör */}
+          <div style={{ position: 'absolute', left: 14, right: 14, bottom: 12, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, pointerEvents: 'none' }}>
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{
+                margin: 0,
+                fontFamily: 'var(--font-serif, "DM Serif Display", Georgia, serif)',
+                fontSize: 24, fontWeight: 400, color: '#f5f5f5',
+                letterSpacing: '0.01em', lineHeight: 1.2,
+                textShadow: '0 1px 8px rgba(0,0,0,0.6)',
+              }}>
+                {masa.venueName}
+              </h2>
+              {masa.venueDistrict && (
+                <p style={{ margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter, sans-serif' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" /><circle cx="12" cy="10" r="2.5" />
+                  </svg>
+                  {masa.venueDistrict}
+                </p>
+              )}
+            </div>
+            {mapLink && (
+              <a
+                href={mapLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  pointerEvents: 'auto', flexShrink: 0, display: 'inline-flex', alignItems: 'center', minHeight: 36,
+                  padding: '0 14px', borderRadius: 9999, background: '#c0392b', color: '#fff',
+                  fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif', textDecoration: 'none',
+                  boxShadow: '0 4px 14px rgba(192,57,43,0.4)',
+                }}
+              >
+                {t('masa.seeOnMap')}
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div style={{ padding: 18 }}>
+          {/* Bilgi şeridi: gün/saat · kişi sayısı + kadın/erkek */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            padding: '12px 14px', borderRadius: 12, marginBottom: 20,
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" />
+              </svg>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{formatStripTime(masa.scheduledAt, locale)}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.2c2.1.7 3.5 2.8 3.5 5.8" />
+              </svg>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', lineHeight: 1.2 }}>{t('masa.peopleCount', { n: present.length })}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter, sans-serif', lineHeight: 1.3 }}>{t('masa.genderCount', { f: femaleCount, m: maleCount })}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Masa Katılımcıları + Masa Sohbeti */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>
+              {t('masa.tableParticipants')}
+            </p>
+            {hasChat && (
+              <button type="button" onClick={scrollToChat} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 32, padding: '0 12px', borderRadius: 9999, cursor: 'pointer',
+                background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b',
+                fontSize: 12, fontWeight: 600, fontFamily: 'Inter, sans-serif',
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
+                </svg>
+                {t('masa.chatJump')}
               </button>
-            ) : (
-              <DetayAvatar key={`${p.initials}-${i}`} participant={p} delay={0.52 + i * 0.1} />
-            ))}
+            )}
           </div>
-          )}
-        </motion.div>
-
-        {/* Meslekler: her satırda bir meslek, yalnız yazı; sıra sunucuda her istekte karışık, kime ait olduğu gösterilmez */}
-        {!!masa.occupations?.length && (
           <div style={{ marginBottom: 20 }}>
-            <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{t('masa.occupations')}</p>
-            {masa.occupations.map((o, i) => (
-              <p key={i} style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: 'rgba(255,255,255,0.72)', fontFamily: 'Inter, sans-serif' }}>{o}</p>
-            ))}
+            {masa.type === 'KANKA' ? (
+              <KankaPairs
+                mine={(masa.participants as KankaParticipant[]).filter(p => p.pair === 'MINE')}
+                other={(masa.participants as KankaParticipant[]).filter(p => p.pair === 'OTHER')}
+                onPhoto={openPhoto}
+              />
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, overflowX: 'auto', padding: 4, margin: -4 }}>
+                {ordered.map((p, i) => p.photoUrl ? (
+                  <button key={`${p.initials}-${i}`} type="button" onClick={() => openPhoto(p)} aria-label={t('masa.enlargePhoto')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}>
+                    <DetayAvatar participant={p} delay={0.52 + i * 0.1} size={44} highlight={!!p.isSelf} />
+                  </button>
+                ) : (
+                  <DetayAvatar key={`${p.initials}-${i}`} participant={p} delay={0.52 + i * 0.1} size={44} highlight={!!p.isSelf} />
+                ))}
+              </div>
+            )}
           </div>
-        )}
 
-        {!masa.aiReport && (
+          {/* Meslekler: her satırda bir meslek, yalnız yazı; sıra sunucuda her istekte karışık, kime ait olduğu gösterilmez */}
+          {!!masa.occupations?.length && (
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{t('masa.occupations')}</p>
+              {masa.occupations.map((o, i) => (
+                <p key={i} style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: 'rgba(255,255,255,0.72)', fontFamily: 'Inter, sans-serif' }}>{o}</p>
+              ))}
+            </div>
+          )}
+
+          {/* Yapay Zeka Masa Raporu: kayıtlı uyumSkoru yeşil halkada; rapor yoksa mevcut bilgi metni */}
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1006,7 +1054,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
             style={{
               background: 'rgba(8,18,44,0.75)',
               border: '1px solid rgba(100,130,200,0.18)',
-              borderRadius: 12, padding: '14px 16px', marginBottom: 14,
+              borderRadius: 12, padding: '14px 16px',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -1025,101 +1073,49 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
               </span>
             </div>
             <div style={{ height: 1, background: 'rgba(100,130,200,0.12)', marginBottom: 12 }} />
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.88)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>
-                  {t('masa.aiScore')}
-                </span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0', fontFamily: 'Inter, sans-serif' }}>
-                  %—
-                </span>
-              </div>
-              <div style={{ height: 5, borderRadius: 99, background: 'rgba(255,255,255,0.12)' }} />
-            </div>
+            {masa.aiReport ? (
+              <>
+                {typeof masa.aiReport.uyumSkoru === 'number' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+                    <ScoreRing score={masa.aiReport.uyumSkoru} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{t('masa.aiOverall')}</span>
+                  </div>
+                )}
+                <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.65)', fontFamily: 'Inter, sans-serif', lineHeight: 1.65 }}>
+                  {masa.aiReport.content}
+                </p>
+              </>
+            ) : (
+              <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', lineHeight: 1.65 }}>
+                {t('tm.meetupNote')}
+              </p>
+            )}
           </motion.div>
-        )}
+        </div>
+      </motion.div>
 
-        {masa.aiReport && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.4 }}
-            style={{
-              background: 'rgba(8, 18, 44, 0.75)',
-              border: '1px solid rgba(100,130,200,0.18)',
-              borderRadius: 12, padding: '14px 16px', marginBottom: 14,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 8,
-                background: 'rgba(100,130,200,0.14)', border: '1px solid rgba(100,130,200,0.22)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>
-                <span style={{ fontSize: 16, lineHeight: 1 }}>✦</span>
-              </div>
-              <span style={{
-                fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase',
-                fontFamily: 'Inter, sans-serif', color: 'rgba(180,200,255,0.75)',
-              }}>
-                {t('masa.aiTitle')}
-              </span>
-            </div>
-            <div style={{ height: 1, background: 'rgba(100,130,200,0.12)', marginBottom: 12 }} />
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>
-                  {t('masa.aiScore')}
-                </span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0', fontFamily: 'Inter, sans-serif' }}>
-                  %{masa.aiReport.uyumSkoru}
-                </span>
-              </div>
-              <div style={{ height: 5, borderRadius: 99, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-                <motion.div
-                  initial={{ scaleX: 0 }} animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.85, duration: 0.9, ease: 'easeOut' }}
-                  style={{
-                    height: '100%', width: `${masa.aiReport.uyumSkoru}%`,
-                    background: 'linear-gradient(90deg, #4fc3f7 0%, #f48fb1 100%)',
-                    borderRadius: 99, transformOrigin: 'left',
-                  }}
-                />
-              </div>
-            </div>
-            <p style={{
-              margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.65)',
-              fontFamily: 'Inter, sans-serif', lineHeight: 1.65,
-            }}>
-              {masa.aiReport.content}
-            </p>
-          </motion.div>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: masa.aiReport ? 0.72 : 0.62, duration: 0.4 }}
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 10, padding: '12px 14px',
-            marginBottom: 16,
-          }}
-        >
+      {/* ── Alt kart: rezervasyon bilgisi, Yola Çıktım, sohbet (ardından gelmeyen işaretleme ve acil yardım) ── */}
+      <motion.div
+        className="ll-card"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.5, ease: 'easeOut' }}
+        style={{ marginTop: 12 }}
+      >
+        <div style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 10, padding: '12px 14px',
+          marginBottom: (authHeaders || archive) ? 16 : 0,
+        }}>
           <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
             {t('masa.reservationDone')}
           </p>
-        </motion.div>
+        </div>
 
         {/* Yola Çıktım butonu */}
         {(authHeaders || archive) && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: masa.aiReport ? 0.78 : 0.68, duration: 0.4 }}
-            style={{ marginBottom: 10 }}
-          >
+          <div style={{ marginBottom: 10 }}>
             <button
               onClick={handleOnMyWay}
               disabled={archive || onMyWayDone || onMyWayLoading}
@@ -1149,12 +1145,14 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
                 </p>
               </div>
             )}
-          </motion.div>
+          </div>
         )}
 
-        {/* Sohbet bölümü */}
+        {/* Sohbet bölümü ("Masa Sohbeti" butonu buraya kaydırır) */}
         {hasChat && (
-          <ChatSection meetingId={masa.id} apiBase={apiBase!} token={token} />
+          <div ref={chatRef} style={{ scrollMarginTop: 80 }}>
+            <ChatSection meetingId={masa.id} apiBase={apiBase!} token={token} />
+          </div>
         )}
 
         {/* Masaya gelmeyen işaretleme */}

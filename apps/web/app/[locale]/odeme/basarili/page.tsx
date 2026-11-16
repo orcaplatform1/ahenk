@@ -99,7 +99,7 @@ export default function OdemeBasariliPage() {
           onClick={() => router.push('/dashboard')}
           className="btn-primary mt-2"
         >
-          Dashboard&apos;a Git
+          {t('paySuccess.goDashboard')}
         </motion.button>
 
         <motion.p

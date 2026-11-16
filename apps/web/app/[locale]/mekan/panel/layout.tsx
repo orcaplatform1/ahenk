@@ -1,19 +1,20 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { VenueAuthError, VenueMe, venueApi } from '@/lib/venueApi';
 import { VenuePanelContext } from './context';
 
 const NAV = [
-  { href: '/mekan/panel/bilgiler', label: 'Mekân Bilgileri' },
-  { href: '/mekan/panel/masalar', label: 'Masalar' },
-  { href: '/mekan/panel/abonelik', label: 'Abonelik' },
-  { href: '/mekan/panel/hesap', label: 'Hesap' },
+  { href: '/mekan/panel/bilgiler', label: 'vp.navInfo' },
+  { href: '/mekan/panel/masalar', label: 'vp.navTables' },
+  { href: '/mekan/panel/abonelik', label: 'vp.navSubscription' },
+  { href: '/mekan/panel/hesap', label: 'vp.navAccount' },
 ];
 
 export default function MekanPanelLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations();
   const router = useRouter();
   const path = usePathname();
   const [me, setMe] = useState<VenueMe | null>(null);
@@ -39,17 +40,17 @@ export default function MekanPanelLayout({ children }: { children: React.ReactNo
         <div style={{ maxWidth: 820, margin: '0 auto', padding: '0.9rem 1rem 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ minWidth: 0 }}>
-              <p className="font-serif" style={{ fontSize: '1.25rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{me?.venue.name ?? 'Mekân Paneli'}</p>
+              <p className="font-serif" style={{ fontSize: '1.25rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{me?.venue.name ?? t('vp.panelTitle')}</p>
               {me && <p style={{ margin: 0, fontSize: '0.75rem', color: '#666' }}>{me.venue.city}</p>}
             </div>
-            <button type="button" onClick={logout} style={{ flexShrink: 0, minHeight: 44, padding: '0 0.5rem', background: 'none', border: 'none', color: '#888', fontSize: '0.8rem', cursor: 'pointer' }}>Çıkış</button>
+            <button type="button" onClick={logout} style={{ flexShrink: 0, minHeight: 44, padding: '0 0.5rem', background: 'none', border: 'none', color: '#888', fontSize: '0.8rem', cursor: 'pointer' }}>{t('vp.logout')}</button>
           </div>
-          <nav aria-label="Mekân paneli" style={{ display: 'flex', gap: 4, overflowX: 'auto', marginTop: 6 }}>
+          <nav aria-label={t('vp.navAria')} style={{ display: 'flex', gap: 4, overflowX: 'auto', marginTop: 6 }}>
             {NAV.map((n) => {
               const active = path === n.href;
               return (
                 <Link key={n.href} href={n.href} aria-current={active ? 'page' : undefined} style={{ flexShrink: 0, padding: '0.7rem 0.75rem', fontSize: '0.85rem', textDecoration: 'none', color: active ? '#ff6b6b' : '#888', borderBottom: `2px solid ${active ? '#c0392b' : 'transparent'}` }}>
-                  {n.label}
+                  {t(n.label)}
                 </Link>
               );
             })}
@@ -58,7 +59,7 @@ export default function MekanPanelLayout({ children }: { children: React.ReactNo
       </header>
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.25rem 1rem 3rem' }}>
         {error && <p style={{ color: '#ff6b6b', fontSize: '0.85rem' }}>{error}</p>}
-        {me ? <VenuePanelContext.Provider value={{ me, setMe, onAuthLost }}>{children}</VenuePanelContext.Provider> : !error && <p style={{ color: '#666', fontSize: '0.85rem' }}>Yükleniyor…</p>}
+        {me ? <VenuePanelContext.Provider value={{ me, setMe, onAuthLost }}>{children}</VenuePanelContext.Provider> : !error && <p style={{ color: '#666', fontSize: '0.85rem' }}>{t('vp.loading')}</p>}
       </div>
     </main>
   );

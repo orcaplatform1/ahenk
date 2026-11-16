@@ -243,17 +243,35 @@ export class UpdateVenueDto {
 
 // ─── Şehir ─────────────────────────────────────────────────────────────────────
 
+// Şehir durumu: ACTIVE (Aktif) / PASSIVE (Pasif) / COMING_SOON (Yakında)
+export const CITY_STATUSES = ["ACTIVE", "PASSIVE", "COMING_SOON"] as const;
+export type CityStatus = (typeof CITY_STATUSES)[number];
+
 export class CreateCityDto {
   @IsString()
   @MinLength(2)
   @MaxLength(60)
   name: string;
+
+  @IsOptional()
+  @IsIn(CITY_STATUSES)
+  status?: CityStatus;
 }
 
 export class UpdateCityDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsIn(CITY_STATUSES)
+  status?: CityStatus;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(60)
+  name?: string;
 }
 
 // Bölge (şehir) ayarları — admin "Bölgeler" sayfası
@@ -266,6 +284,7 @@ export class UpdateRegionDto {
   @IsOptional() @IsString() @Matches(/^\+[1-9]\d{0,3}$/, { message: "Telefon kodu +90 biçiminde olmalı" }) phoneCountryCode?: string;
   @IsOptional() @IsArray() @IsIn(["ID_CARD", "DRIVER_LICENSE", "PASSPORT", "RESIDENCE_PERMIT"], { each: true }) idTypes?: ("ID_CARD" | "DRIVER_LICENSE" | "PASSPORT" | "RESIDENCE_PERMIT")[];
   @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsIn(CITY_STATUSES) status?: CityStatus;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100000) sortOrder?: number;
 }
 

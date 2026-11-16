@@ -4,9 +4,9 @@ import { ENGLISH_ENABLED } from '@ahenk/shared';
 import { routing } from './i18n/routing';
 
 const intlMiddleware = createMiddleware(routing);
-// Admin ve mekân paneli Türkçe kalır: dil yönlendirmesi yapılmaz
+// Admin paneli Türkçe kalır: dil yönlendirmesi yapılmaz (mekân paneli Türkçe + İngilizce, [locale] altında)
 // Dosyalar (public/, robots.txt, sitemap.xml) ve paylaşım görselleri de dil yönlendirmesine girmez
-const NON_LOCALIZED = /^\/(admin|mekan|api|opengraph-image|twitter-image)(\/|$)|\.[a-zA-Z0-9]+$/;
+const NON_LOCALIZED = /^\/(admin|api|opengraph-image|twitter-image)(\/|$)|\.[a-zA-Z0-9]+$/;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://167.86.103.185:4000';
 
@@ -46,6 +46,9 @@ export function proxy(request: NextRequest) {
   const bare = isEn ? pathname.slice(3) || '/' : pathname;
   const prefix = isEn ? '/en' : '';
   const toUrl = (path: string) => { const u = request.nextUrl.clone(); u.pathname = path; return u; };
+
+  // Admin paneli Türkçe kalır: /en/admin… 404 yerine Türkçe adrese döner
+  if (isEn && /^\/admin(\/|$)/.test(bare)) return NextResponse.redirect(toUrl(bare));
 
   if (localized) {
     // İngilizce kapalıyken /en adresleri Türkçe adrese döner

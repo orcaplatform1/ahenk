@@ -53,7 +53,7 @@ export function ListPicker({ label, value, onChange, options, placeholder, title
                 const done = !!notified?.includes(o.value);
                 return (
                   <View key={o.value} accessibilityState={{ disabled: true }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingVertical: 6, paddingHorizontal: 14, minHeight: 44 }}>
-                    <T style={{ fontSize: 15, color: 'rgba(201,194,184,0.4)' }}>{o.label}</T>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}><T style={{ fontSize: 15, color: 'rgba(201,194,184,0.4)' }}>{o.label}</T><View style={{ paddingVertical: 1, paddingHorizontal: 7, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(143,136,127,0.4)' }}><T style={{ fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</T></View></View>
                     {onNotify && (
                       <Pressable disabled={done} onPress={() => onNotify(o.value)} accessibilityRole="button" hitSlop={6}
                         style={{ minHeight: 32, justifyContent: 'center', paddingHorizontal: 10, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', backgroundColor: done ? 'transparent' : 'rgba(192,57,43,0.10)' }}>

@@ -108,7 +108,7 @@ function CitySelect({ label, value, onChange, cities, optional, placeholder, tit
                 const done = notified.includes(x.id);
                 return (
                   <View key={x.id} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12 }}>
-                    <T style={{ fontSize: 14, color: c.t888, opacity: 0.6 }}>{x.name}</T>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}><T style={{ fontSize: 14, color: c.t888, opacity: 0.6 }}>{x.name}</T><View style={{ paddingVertical: 1, paddingHorizontal: 7, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(143,136,127,0.4)' }}><T style={{ fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</T></View></View>
                     <Pressable disabled={done} onPress={() => notify(x.id)} accessibilityRole="button" hitSlop={8} style={{ minHeight: 44, justifyContent: 'center' }}>
                       <T style={{ fontSize: 11, color: done ? '#8f887f' : '#ff6b6b' }}>{done ? t('common.notified') : t('common.notifyMe')}</T>
                     </Pressable>

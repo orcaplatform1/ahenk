@@ -1,6 +1,6 @@
 // apps/web/app/admin/bolgeler/page.tsx karşılığı (ADMIN + SUPERADMIN). Türkçe kalır (yönetim paneli).
-// Bölge = şehir ayarları (ülke, saat dilimi, para birimi, varsayılan dil, telefon kodu, kimlik türleri, sıra), tek tuşla aktif / pasif
-// ve pasif bölgelerin "Haber ver" bekleme listesi (sayı + liste). Aktif yapılan bölge kullanıcı şehir listelerinde üst gruba geçer.
+// Bölge = şehir ayarları (ülke, saat dilimi, para birimi, varsayılan dil, telefon kodu, kimlik türleri, sıra), tek tuşla Aktif / Pasif / Yakında
+// ve Yakında bölgelerin "Haber ver" bekleme listesi (sayı + liste). Aktif yapılan bölge kullanıcı şehir listelerinde üst gruba geçer.
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '@/lib/api';
@@ -12,11 +12,15 @@ import { formatDateTime } from '@ahenk/shared';
 
 type IdType = 'ID_CARD' | 'DRIVER_LICENSE' | 'PASSPORT' | 'RESIDENCE_PERMIT';
 interface Region {
-  id: string; name: string; isActive: boolean; countryCode: string; timezone: string; currency: string;
+  id: string; name: string; isActive: boolean; isComingSoon?: boolean; countryCode: string; timezone: string; currency: string;
   defaultLanguage: string; phoneCountryCode: string; idTypes: IdType[]; sortOrder: number; waitlistCount: number;
 }
 interface WaitRow { id: string; createdAt: string; userId: string; email: string; phone: string | null; name: string }
 
+// Durum: Aktif / Pasif / Yakında — web admin/bolgeler ile aynı
+type RegionStatus = 'ACTIVE' | 'PASSIVE' | 'COMING_SOON';
+const statusOf = (r: Region): RegionStatus => (r.isActive ? 'ACTIVE' : r.isComingSoon ? 'COMING_SOON' : 'PASSIVE');
+const STATUS_LABELS: Record<RegionStatus, string> = { ACTIVE: 'Aktif', PASSIVE: 'Pasif', COMING_SOON: 'Yakında' };
 const ID_LABEL: Record<IdType, string> = { ID_CARD: 'Kimlik Kartı', DRIVER_LICENSE: 'Ehliyet', PASSPORT: 'Pasaport', RESIDENCE_PERMIT: 'Oturma İzni' };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -66,9 +70,10 @@ export default function AdminBolgeler() {
   const load = () => { api.get<Region[]>('/admin/regions').then(setRows).catch((e: Error) => setError(e.message)).finally(() => setLoading(false)); };
   useEffect(load, []);
 
-  async function toggle(r: Region) {
+  async function setStatus(r: Region, status: RegionStatus) {
+    if (statusOf(r) === status) return;
     setToggling(r.id); setError('');
-    try { await api.patch(`/admin/regions/${r.id}`, { isActive: !r.isActive }); load(); } catch (e) { setError((e as Error).message); } finally { setToggling(null); }
+    try { await api.patch(`/admin/regions/${r.id}`, { status }); load(); } catch (e) { setError((e as Error).message); } finally { setToggling(null); }
   }
   async function showWait(id: string) {
     if (waitFor === id) { setWaitFor(null); return; }
@@ -79,7 +84,7 @@ export default function AdminBolgeler() {
   return (
     <APage maxWidth={760}>
       <View style={{ marginBottom: 8 }}><ATitle>Bölgeler</ATitle></View>
-      <AT style={{ fontSize: 12, color: adm.muted, marginBottom: 16 }}>Aktif bölgeler kullanıcı şehir listelerinde seçilebilir; Türkiye dışındaki pasif bölgeler &quot;Yakında&quot; grubunda görünür.</AT>
+      <AT style={{ fontSize: 12, color: adm.muted, marginBottom: 16 }}>Aktif bölgeler kullanıcı şehir listelerinde seçilebilir; Yakında bölgeler &quot;Yakında&quot; grubunda seçilemez görünür; pasif bölgeler listelerde görünmez.</AT>
       <AError>{error}</AError>
       {loading ? <View style={{ gap: 6 }}>{[0, 1, 2].map(i => <View key={i} style={{ height: 64, backgroundColor: adm.surface, borderRadius: 8, opacity: 0.5 }} />)}</View>
         : rows.map((r) => (
@@ -87,7 +92,9 @@ export default function AdminBolgeler() {
             <AT w={600} style={{ fontSize: 14 }}>{r.name}</AT>
             <AMono style={{ fontSize: 11, color: adm.muted, marginTop: 3 }}>{r.countryCode} · {r.timezone} · {r.currency} · {r.defaultLanguage} · {r.phoneCountryCode} · sıra {r.sortOrder}</AMono>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-              <Btn variant="admActivate" selected={r.isActive} disabled={toggling === r.id} label={toggling === r.id ? '…' : r.isActive ? 'Aktif' : 'Pasif'} onPress={() => toggle(r)} />
+              {(['ACTIVE', 'PASSIVE', 'COMING_SOON'] as RegionStatus[]).map((st) => (
+                <Btn key={st} variant="admActivate" selected={statusOf(r) === st} disabled={toggling === r.id} label={toggling === r.id ? '…' : STATUS_LABELS[st]} onPress={() => setStatus(r, st)} />
+              ))}
               <Btn variant="admActivate" selected={waitFor === r.id} label={`Bekleme listesi (${r.waitlistCount})`} onPress={() => showWait(r.id)} />
               <Btn variant="admActivate" selected={open === r.id} label={open === r.id ? 'Kapat' : 'Düzenle'} onPress={() => setOpen(open === r.id ? null : r.id)} />
             </View>
