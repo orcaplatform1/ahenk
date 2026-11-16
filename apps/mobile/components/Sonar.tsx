@@ -66,15 +66,16 @@ function BreathingCircle({ cx, cy, r, fill, opacity, index }: { cx: number; cy: 
     opacity={v.interpolate({ inputRange: [0, 1], outputRange: [opacity, opacity * 0.3] })} />;
 }
 
-export function AhenkSonar({ width = SIZE, children, sweep = true, scanOff = false }: { width?: number; children?: React.ReactNode; sweep?: boolean; scanOff?: boolean }) {
+// idle: tek PASSIVE / LIVE durumu — PASSIVE'de ışın bulunduğu açıda durur, LIVE'da sürekli döner
+export function AhenkSonar({ width = SIZE, children, sweep = true, idle = false }: { width?: number; children?: React.ReactNode; sweep?: boolean; idle?: boolean }) {
   const reduce = useReduceMotion();
   const spin = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    if (!sweep || scanOff || reduce) return;
+    if (!sweep || idle || reduce) return;
     const loop = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 6000, easing: Easing.linear, useNativeDriver: true }));
     loop.start();
     return () => loop.stop();
-  }, [sweep, scanOff, reduce, spin]);
+  }, [sweep, idle, reduce, spin]);
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   return (
     <View style={{ width, height: width }}>
@@ -124,7 +125,7 @@ export function LiveSonar({ sonar, idle = false }: { sonar: LivePulse['sonar'] |
         </View>
       } />
       <View style={{ alignItems: 'center' }}>
-        <AhenkSonar scanOff={idle}>
+        <AhenkSonar idle={idle}>
           {density ? placeLabels(placeBubbles(density)).map((b, i) => (
             <G key={b.name}>
               {idle

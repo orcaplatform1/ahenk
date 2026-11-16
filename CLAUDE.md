@@ -199,12 +199,13 @@ HAFTALIK BULUŞMA SEÇİMİ:
   - Eşleşme alanı: paketi olan kullanıcıda bu hafta seçilmeyen tür "Eşleşme Pasif"; hiç paketi olmayanda "Abonelik Yok"
   - Tarama göstergesi web ve mobilde yalnızca tek PASSIVE / LIVE state'ten okur: PASSIVE'de radar durur ve her şey gridir; LIVE'da radar
     sürekli döner, her semt kendi yoğunluk renginde görünür ve noktası yanıp söner
-  - Tarama durumu gösterimi (web + mobil Eşleşme Paneli): BEKLEME = geri sayım kartında "Yeni tarama başlamasına" gösterilen durum
-    (mevcut durum değişkenleri: meetingTarget === null && waitingScan; ayrı zaman hesabı yok), AKTİF = tarama başlamış.
-    BEKLEME'de kırmızı tarama dilimi bulunduğu açıda durur (gizlenmez); başlığın sağındaki rozet "PASİF" / "INACTIVE" (nokta, yazı,
-    kenarlık #ff3b30); "Semt Masa Yoğunluğu" başlığının sağında aynı satırda dikey ortalı "Tarama bekleniyor" / "Waiting for scan"
-    (gövde fontu, 13, #FFFFFF, opaklık 0.6). AKTİF'te dilim döner, rozet "CANLI" / "LIVE" (nokta, yazı, kenarlık yeşil #22c55e), başlık
-    yanındaki yazı yok. Semt kartlarının altında "Tarama bekleniyor" yazısı yoktur. Rozet boyut / konum / font aynı
+  - Tarama durumu gösterimi (web + mobil Eşleşme Paneli): PASSIVE = geri sayım kartında "Yeni tarama başlamasına" gösterilen durum
+    (scanIdle = meetingTarget === null && waitingScan; ayrı zaman hesabı yok), LIVE = tarama başlamış. "Eşleşme Taraması" başlığının
+    sağındaki rozet: PASSIVE'de "PASİF" / "INACTIVE" (live.badgeInactive), nokta, yazı ve 1 px kenarlık #ff3b30; LIVE'da "CANLI" / "LIVE"
+    (live.liveBadge), nokta, yazı ve kenarlık #22c55e. Rozet ölçüleri: hap (köşe 9999), dolgu 5 / 10, nokta ile yazı arası 7, nokta 7×7,
+    yazı 11 / kalınlık 600 (web .ll-live mono font, nokta nabızlı ll-pulse 1,8 sn; mobil Sonar.tsx gövde fontu, nokta sabit).
+    PASSIVE'de "Semt Masa Yoğunluğu" başlığının sağında aynı satırda dikey ortalı "Tarama bekleniyor" / "Waiting for scan"
+    (live.waitScan; 13, #FFFFFF, opaklık 0.6); LIVE'da bu yazı yok. Semt kartlarının altında "Tarama bekleniyor" yazısı yoktur
   - Eşleşme Paneli (web + mobil): rozet, radar ve "Semt Masa Yoğunluğu" kartları yalnız bu tek durumdan okunur (scanIdle). PASİF'te radar
     durur, semt noktaları "Düşük" grisinde, aynı boy, hareketsiz; kartlar gri. CANLI'da ışın sürekli döner; her semtin noktası ve adı
     yoğunluk seviyesinin renginde, noktalar yanıp söner; kartlar aynı seviye renginde. Yoğunluk renkleri iki platformda ortak (web
@@ -212,7 +213,8 @@ HAFTALIK BULUŞMA SEÇİMİ:
     Seviyeler backend live-layer.service.ts density (LIVE_DISTRICT_SOURCE: static → admin ilçe listesindeki seviye, real → talep;
     talebi olmayan ilçe 4. seviye / gri)
   - LIVE_DISTRICT_SOURCE ayarı AppConfig tablosunda kayıtlı değildir, varsayılan "static" kullanılır; semt yoğunlukları admin Şehirler
-    ayarındaki 1–4 seviyesinden gelir, gerçek talepten gelmez
+    ayarındaki 1–4 seviyesinden gelir, gerçek talepten gelmez. Şu an bilinçli olarak static kullanılıyor; gerçek talebe geçiş ileride ayrı
+    kararla yapılacak.
   - GET /weekly-selection, POST /weekly-selection {types[]} (JWT)
   - Pencere tasarımı (web + mobil): başlık "Bu hafta hangi masaya katılmak için eşleşme taramasına girmek istiyorsunuz?";
     her tür için kart: solda eşleşme alanındaki halka ikonu, sağda kalın başlık + küçük alt metin
