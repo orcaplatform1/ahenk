@@ -53,7 +53,6 @@ export default function DashboardPage() {
         )}
         {me?.maintenanceMode && <MaintenanceNotice />}
       </div>
-      <SelectionCard selection={selection} onOpen={() => setSelectOpen(true)} onChange={changeSelection} onCancel={cancelSelection} />
       <LiveLayer
         activePlan={me?.activePlan ?? null}
         hasTabTable={!!tabItem}
@@ -63,6 +62,7 @@ export default function DashboardPage() {
         statuses={statuses}
         tabPastClosing={tabPastClosing}
         onTab={selectTab}
+        afterTabs={<SelectionCard selection={selection} onOpen={() => setSelectOpen(true)} onChange={changeSelection} onCancel={cancelSelection} />}
         participation={<LiveParticipation tab={tab} item={tabItem} self={selfParticipant} kanka={kanka} scanning={scanning} />}
       />
     </div>

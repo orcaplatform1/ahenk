@@ -8,14 +8,15 @@ export type MatchOcean = {
   neuroticism: number;
 };
 
-export type MatchPerson = { oceanScore: MatchOcean | null; occupationSector: string | null };
+export type MatchPerson = { oceanScore: MatchOcean | null };
 
-// Eşleşme puanı (0-100): OCEAN benzerliği + meslek alanı. Eşleşme ve canlı katman bunu kullanır.
+// Eşleşme puanı (0-100): yalnız OCEAN benzerliği (meslek kullanılmaz). Eşleşme ve canlı katman bunu kullanır.
 export function matchScore(a: MatchPerson, b: MatchPerson): number {
-  return calcOcean(a.oceanScore, b.oceanScore) + calcOccupation(a.occupationSector, b.occupationSector);
+  return calcOcean(a.oceanScore, b.oceanScore);
 }
 
-// Yarın Buluşma sıralama puanı (0-100): yaş yakınlığı 50 + mekân kategori tercihi (SADE / ORTA / PREMIUM) 50.
+// Yaş + mekân sıralama puanı (0-100): yaş yakınlığı 50 + mekân kategori tercihi (SADE / ORTA / PREMIUM) 50.
+// Yarın Buluşma'da her zaman, Planlı'da o masa türünün OCEAN anahtarı kapalıyken kullanılır.
 // Yalnız sıralama içindir, kimseyi masadan dışlamaz. OCEAN ve meslek kullanılmaz.
 // Yaş: fark 0 → 50, fark TOMORROW_AGE_SPAN_YEARS ve üstü → 0 (doğrusal). Mekân: ortak kategori / toplam kategori (Jaccard);
 // iki kişiden birinde tercih yoksa (ya da yaş bilinmiyorsa) o kısım yarım puan.
@@ -42,12 +43,6 @@ function calcVenue(a: string[], b: string[]): number {
   const union = new Set([...a, ...b]);
   const common = a.filter((c) => b.includes(c)).length;
   return (common / union.size) * TOMORROW_HALF;
-}
-
-function calcOccupation(a: string | null, b: string | null): number {
-  if (!a || !b) return 0;
-  if (a === 'Öğrenci' || a === 'Diğer' || b === 'Öğrenci' || b === 'Diğer') return 0;
-  return a === b ? WEIGHTS.OCCUPATION : 0;
 }
 
 function calcOcean(a: MatchOcean | null, b: MatchOcean | null): number {

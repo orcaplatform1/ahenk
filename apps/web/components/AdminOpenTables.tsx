@@ -17,7 +17,7 @@ interface OpenTable {
   missing: { male: number; female: number };
   participants: OpenParticipant[];
 }
-interface WaitingUser { userId: string; initials: string; gender: string | null; age: number | null; city: string | null; cycleNo: number; photoUrl?: string | null; }
+interface WaitingUser { userId: string; initials: string; gender: string | null; age: number | null; city: string | null; photoUrl?: string | null; }
 interface OpenResponse { group: OpenTable[]; oneOnOne: OpenTable[]; kanka?: OpenTable[]; waiting: WaitingUser[]; }
 interface BotOption { id: string; name: string; gender: string | null; age: number | null; }
 
@@ -129,7 +129,6 @@ function WaitingRow({ w, isSuperadmin, onUserClick, onChanged, onError }: {
   w: WaitingUser; isSuperadmin: boolean; onUserClick: (id: string) => void; onChanged: () => void; onError: (m: string) => void;
 }) {
   const [botOpen, setBotOpen] = useState(false);
-  const first = w.cycleNo === 1;
   return (
     <div className="ll-card">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -140,9 +139,6 @@ function WaitingRow({ w, isSuperadmin, onUserClick, onChanged, onError }: {
           {w.photoUrl ? <PhotoDot url={w.photoUrl} /> : w.initials} {genderShort(w.gender)}{w.age !== null ? ` ${w.age}` : ''}
         </button>
         <span style={{ fontSize: 11, color: MUTED }}>{w.city ?? 'Şehir yok'}</span>
-        <span style={{ fontSize: 11, fontWeight: 600, color: first ? AMBER : TEXT }}>
-          {w.cycleNo}. döngü{first ? ', ilk döngüde bot eklenmez' : ''}
-        </span>
         {isSuperadmin && (
           <button onClick={() => setBotOpen(o => !o)} style={{ ...btnStyle(false), marginLeft: 'auto' }}>{botOpen ? 'Kapat' : 'Bot ile masa kur'}</button>
         )}

@@ -55,9 +55,12 @@ TEST KURALLARI:
 
 EŞLEŞTİRME ALGORİTMASI (Modül 7):
 - Tetikleme: Her Perşembe 23:59, Bull queue ile
-- Eşleştirme puanı: OCEAN 65 + aynı meslek sektörü 35, başka faktör yok
-- OCEAN benzerliği: Öklid mesafesi, normalize 0-65
-- Meslek: iki kişi aynı meslek sektöründeyse +35, değilse 0
+- Meslek puanı YOKTUR: hiçbir masa türünde ve iki modda algoritmada kullanılmaz (kayıttaki / profildeki meslek alanı ve kolonu durur)
+- Sıralama puanı (yalnız sıralama, kimseyi dışlamaz): Planlı'da masa türünün OCEAN anahtarı AÇIKSA OCEAN %100 (Öklid mesafesi,
+  normalize 0-100); KAPALIYSA ve Yarın'da her zaman yaş yakınlığı %50 + mekân kategori %50 (match-score.ts tomorrowScore)
+- Admin Sistem Ayarları → "Eşleştirme Kriterleri" sekmesi (web + mobil): "OCEAN – Grup" (varsayılan AÇIK), "OCEAN – Baş Başa"
+  (KAPALI), "OCEAN – Kankamla" (KAPALI); AppConfig OCEAN_GROUP / OCEAN_ONE_ON_ONE / OCEAN_KANKA, her atamada okunur (restart yok;
+  app-settings.ts oceanCriteria). Yalnız Planlı'yı etkiler. Şehir, cinsiyet dengesi, engeller, alkol kuralı, yaş sınırları aynen
 - Cinsiyet dengesi: 6 kişi → 3E+3K, 4 kişi → 2E+2K
 - Cinsiyet değerleri: yalnızca MALE ve FEMALE
 - Grup bot kuralı (Planlı ve Yarın aynı): 3 kişilik masa 1 botla 4'e, 5 kişilik masa 1 botla 6'ya tamamlanır; masaya en fazla 1 bot.
@@ -220,11 +223,13 @@ YARIN BULUŞMA (iki takvim modeli; ayrı sistem değil, mevcut paket hakları ay
   - Yarın eşleştirme: OCEAN ve meslek puanı kullanılmaz; sıralama puanı yaş yakınlığı %50 + mekân kategori tercihi (venueCategories)
     %50 (match-score.ts tomorrowScore; yaş 30 yılda doğrusal, kategori ortak / toplam), kimseyi dışlamaz. ALCOHOLIC / NON_ALCOHOLIC
     zorunlu filtre; şehir, cinsiyet dengesi, engeller, dil kuralı aynen. Kullanıcıya OCEAN kullanılmadığı hiçbir metinde söylenmez.
-    Planlı'da OCEAN 65 + meslek 35 aynen (Yarın'dan aktarılanlar dahil)
-  - Yaş kuralı (iki mod): Grup yok; Baş Başa en fazla 8 yaş; Kankamla bir ikilideki her kişi ile karşı ikilideki her kişi arasında en
-    fazla 8 yaş (kişinin kendi kankasıyla kural yok)
-  - Bot: Yarın'da bot yalnız grup masasına (otomatik 23:59 kilidinde ve admin istediği zaman); Baş Başa ve Kankamla'ya bot yok.
-    Grup masasına en fazla 1 bot (Planlı + Yarın, admin elle ekleme dahil)
+    Planlı'da sıralama Eşleştirme Kriterleri anahtarlarına göre (Yarın'dan aktarılanlar dahil); meslek puanı yok
+  - Yaş kuralı (iki mod): Grup yok; Baş Başa en fazla 8 yaş; Kankamla yalnız iki paket sahibi (davet eden alıcılar) arasında en fazla
+    8 yaş; davet edilen kankaların yaşı hiçbir eşleştirme kontrolünde kullanılmaz
+  - Bot (Planlı + Yarın): sistem otomatik botu yalnız grup masasına ekler (3 → 1 botla 4, 5 → 1 botla 6; sistem masaya en fazla 1 bot).
+    Sistem Baş Başa ve Kankamla'ya ASLA otomatik bot eklemez (Planlı baş başa "ikinci hafta otomatik botu" silindi, döngüsel bot
+    mantığı yok). Admin elle eklemede sayı sınırı yok: Grup, Baş Başa ve Kankamla masasına istediği sayıda bot ekleyebilir, masayı
+    tamamen botla doldurabilir (cinsiyet dengesi, kapasite, aynı saatte başka masa ve 4 hafta kuralı aynen)
   - Admin İstatistikler (web + mobil): "Yarın Buluşma" ve "Planlı Buluşma" bölümleri, Bu Hafta ve Tüm Zamanlar: kurulan masa (Grup, Baş
     Başa, Kankamla, Toplam), talep, Yarın'da Planlı'ya aktarılan kayıt (GET /admin/stats/overview meetingModes)
   - Uçlar: GET /weekly-selection, POST /weekly-selection {mode, types[]}, POST /weekly-selection/change {type, mode},
@@ -649,7 +654,7 @@ REZERVASYON İPTALİ KURALLARI (güncelleme):
   - İptal sonrası son 1 saate kadar sistem yeni kişi arar
   - 1 saat içinde bulunamazsa: eksik cinsiyete göre bot eklenir
   - Grup dengesi zorunlu: 3E + 3K; bot da bu dengeyi koruyarak girer (kız eksikse kız bot, erkek eksikse erkek bot)
-  - Baş başa iptalinde de aynı mantık: yeni eşleşme arar, bulamazsa bot
+  - (eski) Baş başa iptalinde de aynı mantık: yeni eşleşme arar, bulamazsa bot — sistem baş başaya otomatik bot eklemez
 
 KULLANICI UYARI / ASKIYA ALMA / BANLAMA SİSTEMİ:
 Admin işlemleri (masa detayında veya kullanıcı profilinde):
@@ -698,7 +703,7 @@ Endpoint'ler:
   - GET /sos/admin/reports — tüm raporlar listesi (ADMIN guard)
   - GET /sos/admin/reports/:id — rapor detayı + konum geçmişi (ADMIN guard)
 
-BOT DOLDURMA DETAYLARI:
+BOT DOLDURMA DETAYLARI (eski; bot-fill kuyruğu kodda yoktur — geçerli bot kuralları YARIN BULUŞMA bölümünde):
 Bot doldurma kuyruğu: BOT_FILL_QUEUE ("bot-fill"), JOB_FILL_SPOT ("fill-spot")
 İptal anında 1 saat gecikmeli Bull job eklenir.
 İş çalışınca:

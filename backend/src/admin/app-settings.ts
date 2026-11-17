@@ -20,6 +20,14 @@ export async function isMaintenanceMode(prisma: PrismaService): Promise<boolean>
   return row?.value === "true";
 }
 
+// "Eşleştirme Kriterleri": Planlı Buluşma'da masa türüne göre OCEAN sıralaması (her atamada okunur, restart gerekmez).
+// Varsayılan: Grup AÇIK, Baş Başa KAPALI, Kankamla KAPALI. Kapalıyken sıralama yaş %50 + mekân kategori %50. Yarın'da OCEAN hep kapalı.
+export async function oceanCriteria(prisma: PrismaService): Promise<{ GROUP: boolean; ONE_ON_ONE: boolean; KANKA: boolean }> {
+  const rows = await prisma.appConfig.findMany({ where: { key: { in: ["OCEAN_GROUP", "OCEAN_ONE_ON_ONE", "OCEAN_KANKA"] } } });
+  const v = (key: string) => rows.find((r) => r.key === key)?.value;
+  return { GROUP: v("OCEAN_GROUP") !== "false", ONE_ON_ONE: v("OCEAN_ONE_ON_ONE") === "true", KANKA: v("OCEAN_KANKA") === "true" };
+}
+
 // "Eşleştirme Aktif" kapalıysa masa atamaları, kilitler, hak düşümleri ve eşleştirme bildirimleri durur
 export async function isMatchingEnabled(prisma: PrismaService): Promise<boolean> {
   const row = await prisma.appConfig.findUnique({ where: { key: "MATCHING_ENABLED" } });

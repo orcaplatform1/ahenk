@@ -45,15 +45,6 @@
     "tenDigits": "Enter a 10-digit number.",
     "title": "Blocked numbers"
   },
-  "cancel": {
-    "button": "Cancel Booking",
-    "confirm": "Confirm Cancellation",
-    "failed": "Couldn't cancel. Please try again.",
-    "keep": "Keep My Booking",
-    "reasonLabel": "Tell us why you're cancelling:",
-    "used": "You've already used your cancellation for this package.",
-    "warning": "Because cancelling affects other people too, you won't be able to cancel again at a table that's being set up, and not joining your next table earns a first warning. With 3 warnings in total, your account is suspended for 30 days."
-  },
   "card": {
     "advAge": "Age matching with a deeper algorithm",
     "advEqual": "An equal number of men and women at the table",
@@ -1010,8 +1001,7 @@
     "chatJump": "Table Chat",
     "aiOverall": "Overall Match",
     "peopleCount": "{n} people",
-    "genderCount": "{f} women · {m} men",
-    "cancelledDone": "Your booking has been cancelled."
+    "genderCount": "{f} women · {m} men"
   },
   "nav": {
     "adminPanel": "Admin Panel",

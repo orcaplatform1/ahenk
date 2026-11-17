@@ -1,7 +1,6 @@
-// Ağırlıklar (toplam 100)
+// Ağırlık: OCEAN %100 (meslek puanı algoritmada kullanılmaz)
 export const WEIGHTS = {
-  OCEAN: 65,
-  OCCUPATION: 35,
+  OCEAN: 100,
 } as const;
 
 // OCEAN maksimum Öklid mesafesi: sqrt(5 × 100²)

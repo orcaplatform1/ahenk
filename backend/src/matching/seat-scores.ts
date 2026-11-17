@@ -14,7 +14,6 @@ export async function writeSeatScores(db: Db, meetingId: string): Promise<void> 
       id: true,
       user: {
         select: {
-          occupationSector: true,
           oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
         },
       },

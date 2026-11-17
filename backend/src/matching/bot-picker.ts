@@ -34,26 +34,18 @@ export async function availableBots(
  * - Sadece istenen cinsiyetteki ve masanın şehrindeki aktif botlar (yanlış cinsiyet ASLA eklenmez)
  * - Aynı buluşma saatinde başka bir aktif masada aktif katılımcı olan bot seçilmez
  * - excludeIds: aynı masaya bu işlemde zaten seçilmiş botlar
- * - targetBirthDate verilirse yaşı en yakın bot; verilmezse rastgele
+ * - uygun botlardan rastgele biri
  * Uygun bot yoksa null döner.
  */
 export async function pickBot(
   db: Db,
-  opts: { gender: Gender; scheduledAt: Date; cityId?: string | null; targetBirthDate?: Date | null; excludeIds?: string[] },
+  opts: { gender: Gender; scheduledAt: Date; cityId?: string | null; excludeIds?: string[] },
 ): Promise<{ id: string; birthDate: Date | null } | null> {
   const bots = await availableBots(db, opts);
   if (bots.length === 0) return null;
 
-  const target = opts.targetBirthDate?.getTime();
-  if (target === undefined) {
-    const bot = bots[Math.floor(Math.random() * bots.length)];
-    return { id: bot.id, birthDate: bot.profile?.birthDate ?? null };
-  }
-
-  const dist = (b: (typeof bots)[number]) =>
-    b.profile?.birthDate ? Math.abs(b.profile.birthDate.getTime() - target) : Number.MAX_SAFE_INTEGER;
-  bots.sort((a, b) => dist(a) - dist(b));
-  return { id: bots[0].id, birthDate: bots[0].profile?.birthDate ?? null };
+  const bot = bots[Math.floor(Math.random() * bots.length)];
+  return { id: bot.id, birthDate: bot.profile?.birthDate ?? null };
 }
 
 /** Uygun bot bulunamadı uyarısı — sadece SUPERADMIN görür (bot gizliliği) */

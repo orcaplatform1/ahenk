@@ -10,7 +10,15 @@ interface Settings {
   botSystemActive?: boolean; // yalnızca SUPERADMIN'e gelir
   maintenanceMode: boolean;
   liveDistrictSource?: 'static' | 'real';
+  // Eşleştirme Kriterleri: Planlı Buluşma'da masa türüne göre OCEAN sıralaması
+  oceanGroup?: boolean;
+  oceanOneOnOne?: boolean;
+  oceanKanka?: boolean;
 }
+
+type Tab = 'general' | 'criteria';
+const TABS: [Tab, string][] = [['general', 'Genel'], ['criteria', 'Eşleştirme Kriterleri']];
+const OCEAN_DESC = "Yalnız Planlı Buluşma. Açık: sıralama OCEAN %100. Kapalı: yaş yakınlığı %50 + mekân kategori %50. Yarın Buluşma'da OCEAN her zaman kapalı."
 
 function Toggle({ label, desc, value, onChange }: {
   label: string; desc?: string; value: boolean; onChange: (v: boolean) => void;
@@ -45,6 +53,7 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [tab, setTab] = useState<Tab>('general');
 
   useEffect(() => {
     api.get<Settings>('/admin/settings')
@@ -61,6 +70,9 @@ export default function AdminSettings() {
       botSystemActive: settings.botSystemActive,
       maintenanceMode: settings.maintenanceMode,
       liveDistrictSource: settings.liveDistrictSource,
+      oceanGroup: settings.oceanGroup,
+      oceanOneOnOne: settings.oceanOneOnOne,
+      oceanKanka: settings.oceanKanka,
     };
     setError('');
     try {
@@ -91,6 +103,31 @@ export default function AdminSettings() {
         </div>
       ) : (
         <>
+          <div role="tablist" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            {TABS.map(([value, label]) => {
+              const on = tab === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setTab(value)}
+                  style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontFamily: SANS, fontSize: 13, fontWeight: 600, background: on ? 'rgba(34,211,238,0.1)' : 'transparent', border: `1px solid ${on ? 'rgba(34,211,238,0.3)' : BORDER}`, color: on ? '#22d3ee' : MUTED }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          {tab === 'criteria' ? (
+            <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <Toggle label="OCEAN – Grup" desc={OCEAN_DESC} value={settings.oceanGroup ?? true} onChange={v => setSettings(s => s ? { ...s, oceanGroup: v } : s)} />
+              <Toggle label="OCEAN – Baş Başa" desc={OCEAN_DESC} value={settings.oceanOneOnOne ?? false} onChange={v => setSettings(s => s ? { ...s, oceanOneOnOne: v } : s)} />
+              <Toggle label="OCEAN – Kankamla" desc={OCEAN_DESC} value={settings.oceanKanka ?? false} onChange={v => setSettings(s => s ? { ...s, oceanKanka: v } : s)} />
+            </div>
+          ) : (
           <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Toggle'lar */}
@@ -137,6 +174,7 @@ export default function AdminSettings() {
               </div>
             </div>
           </div>
+          )}
 
           <button
             onClick={save} disabled={saving}

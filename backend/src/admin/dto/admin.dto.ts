@@ -335,6 +335,19 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsIn(["static", "real"])
   liveDistrictSource?: "static" | "real";
+
+  // Eşleştirme Kriterleri: Planlı Buluşma'da masa türüne göre OCEAN sıralaması
+  @IsOptional()
+  @IsBoolean()
+  oceanGroup?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  oceanOneOnOne?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  oceanKanka?: boolean;
 }
 
 

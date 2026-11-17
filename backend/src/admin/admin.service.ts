@@ -1343,10 +1343,14 @@ export class AdminService {
       ...(viewerRole === UserRole.SUPERADMIN ? { botSystemActive: map['BOT_SYSTEM_ACTIVE'] !== 'false' } : {}),
       maintenanceMode: map['MAINTENANCE_MODE'] === 'true',
       liveDistrictSource: map['LIVE_DISTRICT_SOURCE'] === 'real' ? 'real' : 'static',
+      // Eşleştirme Kriterleri (app-settings.ts oceanCriteria ile aynı varsayılanlar)
+      oceanGroup: map['OCEAN_GROUP'] !== 'false',
+      oceanOneOnOne: map['OCEAN_ONE_ON_ONE'] === 'true',
+      oceanKanka: map['OCEAN_KANKA'] === 'true',
     };
   }
 
-  async updateSettings(data: { matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean; liveDistrictSource?: "static" | "real" }, viewerRole: UserRole) {
+  async updateSettings(data: { matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean; liveDistrictSource?: "static" | "real"; oceanGroup?: boolean; oceanOneOnOne?: boolean; oceanKanka?: boolean }, viewerRole: UserRole) {
     if (data.botSystemActive !== undefined && viewerRole !== UserRole.SUPERADMIN) {
       throw new ForbiddenException("Bu ayarı değiştirme yetkiniz yok");
     }
@@ -1355,6 +1359,9 @@ export class AdminService {
     if (data.botSystemActive !== undefined) updates.push({ key: "BOT_SYSTEM_ACTIVE", value: String(data.botSystemActive) });
     if (data.maintenanceMode !== undefined) updates.push({ key: "MAINTENANCE_MODE", value: String(data.maintenanceMode) });
     if (data.liveDistrictSource !== undefined) updates.push({ key: "LIVE_DISTRICT_SOURCE", value: data.liveDistrictSource });
+    if (data.oceanGroup !== undefined) updates.push({ key: "OCEAN_GROUP", value: String(data.oceanGroup) });
+    if (data.oceanOneOnOne !== undefined) updates.push({ key: "OCEAN_ONE_ON_ONE", value: String(data.oceanOneOnOne) });
+    if (data.oceanKanka !== undefined) updates.push({ key: "OCEAN_KANKA", value: String(data.oceanKanka) });
     for (const u of updates) {
       await this.prisma.appConfig.upsert({
         where: { key: u.key },
@@ -1443,7 +1450,7 @@ export class AdminService {
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },
       select: {
-        status: true, type: true, mode: true, scheduledAt: true, maxParticipants: true, cityId: true,
+        status: true, type: true, scheduledAt: true, maxParticipants: true, cityId: true,
         participants: {
           where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
           select: { userId: true, user: { select: { isBot: true, profile: { select: { gender: true } } } } },
@@ -1451,11 +1458,7 @@ export class AdminService {
       },
     });
     if (!meeting) throw new NotFoundException('Masa bulunamadı');
-    // Kankamla masasına asla bot eklenmez; Yarın Buluşma'da bot yalnız grup masasına
-    if (meeting.type === MeetingType.KANKA) return [];
-    if (meeting.mode === MeetingMode.TOMORROW && meeting.type !== MeetingType.GROUP) return [];
-    // Grup masasına en fazla 1 bot
-    if (meeting.type === MeetingType.GROUP && meeting.participants.some((p) => p.user.isBot)) return [];
+    // Admin elle eklemede sayı sınırı yok: Grup, Baş Başa ve Kankamla masası botla doldurulabilir (cinsiyet dengesi ve kapasite aynen)
     if (meeting.status !== MeetingStatus.PENDING && meeting.status !== MeetingStatus.ACTIVE) return [];
     if (meeting.participants.length >= meeting.maxParticipants) return [];
     const males = meeting.participants.filter((p) => p.user.profile?.gender === Gender.MALE).length;
@@ -1498,7 +1501,7 @@ export class AdminService {
       const meeting = await tx.meeting.findUnique({
         where: { id: meetingId },
         select: {
-          type: true, createdAt: true, maxParticipants: true,
+          type: true, mode: true, createdAt: true, maxParticipants: true,
           participants: {
             where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
             select: { userId: true, user: { select: { profile: { select: { gender: true } } } } },
@@ -1517,8 +1520,8 @@ export class AdminService {
       await tx.meetingParticipant.create({
         data: { meetingId, userId: botUserId, status: 'INVITED' },
       });
-      // Başbaşa hakkı iki kişi oturduğu anda harcanır
-      if (meeting.type === MeetingType.ONE_ON_ONE) {
+      // Planlı başbaşa hakkı iki kişi oturduğu anda harcanır (Yarın'da 23:59 kilidinde)
+      if (meeting.type === MeetingType.ONE_ON_ONE && meeting.mode === MeetingMode.PLANNED) {
         await consumeOneOnOneRights(tx, meeting.participants.map((p) => p.userId), meeting.createdAt);
       }
     });

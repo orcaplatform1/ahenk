@@ -30,50 +30,51 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
     try { await fn(); } catch (e) { setError((e as Error).message); } finally { setBusy(null); }
   }
 
+  // Görünüm mobil components/SelectionCard.tsx ile aynı: kart (llCard), başlık, satırlar (ikon + başlık + alt metin, altında
+  // eşit genişlikte iki buton), en altta tam genişlikte "Seçim Yap"
   return (
-    <div className="max-w-5xl mx-auto px-4 mb-4 relative z-10">
-      <div className="ll-card flex flex-col gap-3">
-        <h3 className="ll-title">{tr('live.selCardTitle')}</h3>
-        {rows.map((o) => {
-          const sel = o.selection;
-          const note = o.locked ? 'live.selLocked' : sel?.kankaWaiting ? 'live.selKankaWaiting' : sel?.nextWeek ? 'live.selNextWeek' : null;
-          return (
-            <div key={o.type} className="flex items-center gap-3 rounded-xl px-3 py-3" style={{ border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.03)' }}>
+    <div className="ll-card flex flex-col" style={{ gap: 12 }}>
+      <h3 className="ll-title">{tr('live.selCardTitle')}</h3>
+      {rows.map((o) => {
+        const sel = o.selection;
+        const note = o.locked ? 'live.selLocked' : sel?.kankaWaiting ? 'live.selKankaWaiting' : sel?.nextWeek ? 'live.selNextWeek' : null;
+        const sub = [sel ? tr(MODE_LABEL[sel.mode]) : null, note ? tr(note) : null].filter(Boolean).join(' · ');
+        return (
+          <div key={o.type} className="flex flex-col" style={{ gap: 10, borderRadius: 12, padding: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.03)' }}>
+            <div className="flex items-center" style={{ gap: 12 }}>
               <span className="ll-ws-icon" style={{ flexShrink: 0, display: 'flex' }}><Rings type={o.type} /></span>
-              <span className="flex flex-col gap-1 min-w-0 flex-1">
-                <span className="text-sm font-bold text-[#f4f1ec]">{tr(TITLE[o.type])}</span>
-                <span className="text-xs text-[#a39c93]">
-                  {[sel ? tr(MODE_LABEL[sel.mode]) : null, note ? tr(note) : null].filter(Boolean).join(' · ')}
-                </span>
+              <span className="flex flex-col min-w-0 flex-1" style={{ gap: 4 }}>
+                <span className="font-bold text-[#f4f1ec]" style={{ fontSize: 14 }}>{tr(TITLE[o.type])}</span>
+                {sub && <span className="text-[#a39c93]" style={{ fontSize: 12 }}>{sub}</span>}
               </span>
-              {sel && !o.locked && (
-                <span className="flex gap-2 shrink-0">
-                  <button
-                    onClick={() => run(o.type, () => onChange(o.type, sel.mode === 'TOMORROW' ? 'PLANNED' : 'TOMORROW'))}
-                    disabled={busy !== null}
-                    className="btn-ghost justify-center disabled:opacity-50 text-xs"
-                    style={{ minHeight: 44 }}
-                  >
-                    {tr('live.selChange')}
-                  </button>
-                  <button
-                    onClick={() => run(o.type, () => onCancel(o.type))}
-                    disabled={busy !== null}
-                    className="btn-ghost justify-center disabled:opacity-50 text-xs"
-                    style={{ minHeight: 44 }}
-                  >
-                    {tr('live.selCancel')}
-                  </button>
-                </span>
-              )}
             </div>
-          );
-        })}
-        {error && <p className="text-xs text-[#ff6b6b]">{error}</p>}
-        {canPick && (
-          <button onClick={onOpen} className="btn-primary justify-center" style={{ minHeight: 44 }}>{tr('live.selOpen')}</button>
-        )}
-      </div>
+            {sel && !o.locked && (
+              <div className="flex" style={{ gap: 8 }}>
+                <button
+                  onClick={() => run(o.type, () => onChange(o.type, sel.mode === 'TOMORROW' ? 'PLANNED' : 'TOMORROW'))}
+                  disabled={busy !== null}
+                  className="btn-ghost flex-1 justify-center disabled:opacity-50"
+                  style={{ minHeight: 44 }}
+                >
+                  {tr('live.selChange')}
+                </button>
+                <button
+                  onClick={() => run(o.type, () => onCancel(o.type))}
+                  disabled={busy !== null}
+                  className="btn-ghost flex-1 justify-center disabled:opacity-50"
+                  style={{ minHeight: 44 }}
+                >
+                  {tr('live.selCancel')}
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {error && <p className="text-[#ff6b6b]" style={{ fontSize: 12, margin: 0 }}>{error}</p>}
+      {canPick && (
+        <button onClick={onOpen} className="btn-primary w-full justify-center" style={{ minHeight: 44 }}>{tr('live.selOpen')}</button>
+      )}
     </div>
   );
 }

@@ -99,7 +99,7 @@ function heatColor(index: number, count: number) {
   return `rgba(255,255,255,${mix(0.08, 0.045)})`;
 }
 
-export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, tab, statuses, tabPastClosing, onTab, notice, participation }: {
+export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, tab, statuses, tabPastClosing, onTab, notice, afterTabs, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
   tabSeatsLeft: number | null; // Kullanıcının masasındaki boş sandalye; masası yoksa null
@@ -109,6 +109,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
   tabPastClosing: boolean; // Seçili türün bu haftaki kapanışı geçti mi
   onTab: (tab: MasaTuru) => void;
   notice?: React.ReactNode; // Sekmelerin hemen üstü
+  afterTabs?: React.ReactNode; // Sekmelerin (halkaların) hemen altı: seçim kartı (mobil ile aynı yer)
   participation: React.ReactNode;
 }) {
   const router = useRouter();
@@ -137,6 +138,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
       <div className="ll-column">
         {notice}
         <LiveTabs tab={tab} statuses={statuses} onTab={onTab} />
+        {afterTabs}
 
         {/* Geri sayım */}
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>

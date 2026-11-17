@@ -45,15 +45,6 @@
     "tenDigits": "10 haneli numara girin.",
     "title": "Engellenen numaralar"
   },
-  "cancel": {
-    "button": "Rezervasyon İptal",
-    "confirm": "İptali Onayla",
-    "failed": "İptal edilemedi, lütfen tekrar deneyin.",
-    "keep": "Vazgeç",
-    "reasonLabel": "İptal nedenini belirtin:",
-    "used": "Bu paket için iptal hakkınızı kullandınız.",
-    "warning": "Rezervasyon iptali diğer kullanıcıları da doğrudan etkilediğinden, kurulma aşamasındaki bir masada tekrar iptal hakkın bulunmayacaktır ve sonraki kurulan masaya da katılmama durumunda 1. uyarı verilir, toplamda 3 uyarı alırsan hesabın 30 gün askıya alınır."
-  },
   "card": {
     "advAge": "Daha derin çalışan algoritma ile yaş uyumu",
     "advEqual": "Masada erkek ve kadın eşit sayı",
@@ -1010,8 +1001,7 @@
     "chatJump": "Masa Sohbeti",
     "aiOverall": "Genel Uyum",
     "peopleCount": "{n} Kişi",
-    "genderCount": "{f} Kadın · {m} Erkek",
-    "cancelledDone": "Rezervasyonunuz iptal edildi."
+    "genderCount": "{f} Kadın · {m} Erkek"
   },
   "nav": {
     "adminPanel": "Yönetim Paneli",

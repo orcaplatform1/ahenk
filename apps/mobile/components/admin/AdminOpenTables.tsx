@@ -19,7 +19,7 @@ interface OpenTable {
   missing: { male: number; female: number };
   participants: OpenParticipant[];
 }
-interface WaitingUser { userId: string; initials: string; gender: string | null; age: number | null; city: string | null; cycleNo: number; photoUrl?: string | null }
+interface WaitingUser { userId: string; initials: string; gender: string | null; age: number | null; city: string | null; photoUrl?: string | null }
 interface OpenResponse { group: OpenTable[]; oneOnOne: OpenTable[]; kanka?: OpenTable[]; waiting: WaitingUser[] }
 interface BotOption { id: string; name: string; gender: string | null; age: number | null }
 
@@ -103,7 +103,6 @@ function TableCard({ t, isSuperadmin, onUserClick, onChanged, onError }: { t: Op
 
 function WaitingRow({ w, isSuperadmin, onUserClick, onChanged, onError }: { w: WaitingUser } & Common) {
   const [botOpen, setBotOpen] = useState(false);
-  const first = w.cycleNo === 1;
   return (
     <ACard>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -112,7 +111,6 @@ function WaitingRow({ w, isSuperadmin, onUserClick, onChanged, onError }: { w: W
           : <Btn variant="admInitials" style={{ borderColor: genderColor(w.gender) }} onPress={() => onUserClick(w.userId)}
               label={`${w.initials} ${genderShort(w.gender)}${w.age !== null ? ` ${w.age}` : ''}`} />}
         <AT style={{ fontSize: 11, color: adm.muted }}>{w.city ?? 'Şehir yok'}</AT>
-        <AT w={600} style={{ fontSize: 11, color: first ? adm.amber : adm.text }}>{w.cycleNo}. döngü{first ? ', ilk döngüde bot eklenmez' : ''}</AT>
         {isSuperadmin && <Btn variant="admOpenBtn" style={{ marginLeft: 'auto' }} label={botOpen ? 'Kapat' : 'Bot ile masa kur'} onPress={() => setBotOpen(o => !o)} />}
       </View>
       {botOpen && (

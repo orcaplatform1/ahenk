@@ -463,17 +463,6 @@ export class MatchingScheduler {
     }
   }
 
-  // Cuma 23:45 (TR): eşi bulunamayan 2. hafta kişilerine 23:45–23:55 arası rastgele anda bot
-  @Cron("45 23 * * 5", { timeZone: "Europe/Istanbul" })
-  async scheduleOneOnOneClosingBots(): Promise<void> {
-    if (await this.matchingOff("Başbaşa kapanış botu planlama")) return;
-    try {
-      await this.matchingService.scheduleOneOnOneBots();
-    } catch (err) {
-      this.logger.error(`Başbaşa kapanış botu planlama hatası: ${err}`);
-    }
-  }
-
   // Cuma 23:59 (TR): ONE_ON_ONE döngüsünü kapat
   @Cron("59 23 * * 5", { timeZone: "Europe/Istanbul" })
   async scheduleFridayOneOnOneClosing(): Promise<void> {
@@ -760,7 +749,7 @@ export class MatchingScheduler {
 
     const unmatched = eligible.filter((u) => !matchedIds.has(u.id));
 
-    // Botlar 23:45–23:55 arasında eklendi (2. hafta); eşi bulunamayanlar bekleme listesine + bildirim
+    // Baş başaya otomatik bot eklenmez; eşi bulunamayanlar bekleme listesine + bildirim
     for (const user of unmatched) {
       const { week: nw, year: ny } = this.getISOWeek(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
       const nextCycle = await this.prisma.matchingCycle.upsert({

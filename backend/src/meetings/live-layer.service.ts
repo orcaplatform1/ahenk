@@ -91,7 +91,7 @@ type Dimension = (typeof DIMENSIONS)[number];
 
 const OCEAN_SELECT = { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } as const;
 
-const matchRatio = (a: MatchPerson, b: MatchPerson) => matchScore(a, b) / (WEIGHTS.OCEAN + WEIGHTS.OCCUPATION);
+const matchRatio = (a: MatchPerson, b: MatchPerson) => matchScore(a, b) / WEIGHTS.OCEAN;
 
 // Tarayıcıya kullanıcı/masa kimliği gitmez: haftalık tuzlu özet
 const opaque = (id: string, weekStart: Date) =>
@@ -339,13 +339,13 @@ export class LiveLayerService {
     const [pool, meetings, me, myParticipation] = await Promise.all([
       this.prisma.user.findMany({
         where: this.poolWhere(city),
-        select: { id: true, occupationSector: true, oceanScore: { select: OCEAN_SELECT }, profile: { select: { district: true } } },
+        select: { id: true, oceanScore: { select: OCEAN_SELECT }, profile: { select: { district: true } } },
       }),
       this.prisma.meeting.findMany({
         where: { cityId: city.id, status: { in: ["PENDING", "ACTIVE"] }, scheduledAt: { gte: start, lt: end } },
         select: { type: true, maxParticipants: true, participants: { where: { status: { notIn: LEFT_STATUSES } }, select: { id: true } } },
       }),
-      this.prisma.user.findUnique({ where: { id: userId }, select: { occupationSector: true, oceanScore: { select: OCEAN_SELECT } } }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { oceanScore: { select: OCEAN_SELECT } } }),
       this.prisma.meetingParticipant.findFirst({
         where: { userId, status: { notIn: LEFT_STATUSES }, meeting: { status: { in: ["PENDING", "ACTIVE"] }, scheduledAt: { gte: start, lt: end } } },
         orderBy: { meeting: { scheduledAt: "asc" } },

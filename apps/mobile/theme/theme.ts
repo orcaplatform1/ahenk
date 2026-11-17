@@ -241,10 +241,6 @@ export const btn = {
   // KankaSection "Davet Et" / "Davet Var" küçük hap butonları
   pillRed: { box: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 999, borderWidth: 1, backgroundColor: 'rgba(192,57,43,0.18)', borderColor: 'rgba(192,57,43,0.5)' }, text: { weight: 600, fontSize: 12, color: '#ff6b6b' } },
   pillGreen: { box: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 999, borderWidth: 1, backgroundColor: 'rgba(74,222,128,0.12)', borderColor: 'rgba(74,222,128,0.45)' }, text: { weight: 600, fontSize: 12, color: '#4ade80' } },
-  // RezervasyonIptal ana buton ve pencere butonları
-  resCancel: { box: { paddingVertical: 13, marginTop: 16, backgroundColor: 'rgba(192,57,43,0.2)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', borderRadius: 9999, alignItems: 'center' }, text: { weight: 700, fontSize: 12, letterSpacing: 1.2, color: '#ff6b6b' }, upper: true },
-  resConfirm: { box: { flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: 'rgba(192,57,43,0.25)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.55)' }, text: { weight: 700, fontSize: 14, color: '#ff6b6b' }, disabledOpacity: 0.45 },
-  resBack: { box: { flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }, text: { weight: 700, fontSize: 14, color: '#b0b0b0' } },
   // MasaDetayKarti "Gelmedi olarak bildir"
   noShowSend: { box: { marginTop: 12, paddingVertical: 11, borderRadius: 10, alignItems: 'center', backgroundColor: 'rgba(192,57,43,0.15)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)' }, text: { weight: 600, fontSize: 13, color: '#ff6b6b' }, disabledOpacity: 0.6 },
   // MasaDetayKarti "Acil Yardım" ve SOS formu "İhbarda Bulun"

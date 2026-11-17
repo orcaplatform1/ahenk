@@ -6,11 +6,9 @@ import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import type { BotDto } from "./dto/update-bot.dto";
 import { PrismaService } from "../prisma/prisma.service";
-import { isBotSystemActive, isMaintenanceMode } from "../admin/app-settings";
+import { isBotSystemActive, isMaintenanceMode, oceanCriteria } from "../admin/app-settings";
 import { NotificationService } from "../notification/notification.service";
 import {
-  WEIGHTS,
-  OCEAN_MAX_DISTANCE,
   TABLE_SIZE_LARGE,
   TABLE_SIZE_SMALL,
 } from "./matching.constants";
@@ -26,7 +24,7 @@ import { activeKankaLink } from "../kanka/kanka-links";
 import { approvedPhotoMap, PROFILE_PHOTO_DIR } from "../profile-photo/profile-photo.util";
 import * as fs from "fs";
 import * as path from "path";
-import { ASSIGN_QUEUE, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT, JOB_TOMORROW_LOCK, enqueueAssign, randomBotDelayMs } from "./assign-queue";
+import { ASSIGN_QUEUE, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_TOMORROW_LOCK, enqueueAssign, randomBotDelayMs } from "./assign-queue";
 
 type OceanScoreData = {
   openness: number;
@@ -69,11 +67,12 @@ type AssignContext = {
   weekNumber: number;
   groupOpen: boolean;
   oneOnOneOpen: boolean;
-  groupOcean: boolean;   // Perşembe 12:00'ye kadar OCEAN uyumu
+  // Eşleştirme Kriterleri: masa türüne göre OCEAN sıralaması (yalnız Planlı; Yarın'da hep kapalı)
+  ocean: Record<MeetingType, boolean>;
   groupVenue: boolean;   // Perşembe 18:00'e kadar mekan uyumu
-  oneOnOneSoft: boolean; // Cuma 10:00'a kadar OCEAN + mekan uyumu
+  oneOnOneSoft: boolean; // Cuma 10:00'a kadar mekan uyumu
   kankaOpen: boolean;    // Kankamla Pazartesi – Cumartesi 23:44
-  kankaSoft: boolean;    // Cumartesi 12:00'ye kadar OCEAN + mekan uyumu (iki alıcı arasında)
+  kankaSoft: boolean;    // Cumartesi 12:00'ye kadar mekan uyumu (iki alıcı arasında)
 };
 
 // Tek kişilik başbaşa masası: oturan kişi eş bekliyor
@@ -191,19 +190,6 @@ function groupBotNeed(males: number, females: number): { male: number; female: n
   return null;
 }
 
-// Kankamla yaş kuralı (Planlı ve Yarın aynı): bir ikilideki her kişi ile karşı ikilideki her kişi arasında en fazla 8 yaş;
-// kişinin kendi kankasıyla arasındaki farka kural uygulanmaz
-function kankaAgeOk(a: KankaPair, b: KankaPair): boolean {
-  for (const x of [a.buyer, a.kanka]) {
-    for (const y of [b.buyer, b.kanka]) {
-      const ax = ageYears(x.profile?.birthDate);
-      const ay = ageYears(y.profile?.birthDate);
-      if (ax !== null && ay !== null && Math.abs(ax - ay) > MAX_AGE_GAP_YEARS) return false;
-    }
-  }
-  return true;
-}
-
 @Injectable()
 export class MatchingService {
   private readonly logger = new Logger(MatchingService.name);
@@ -298,7 +284,7 @@ export class MatchingService {
     return {
       mode: MeetingMode.TOMORROW, cycleId: null, meetingAt, weekNumber: getISOWeekNumber(meetingAt).week,
       groupOpen: true, oneOnOneOpen: true, kankaOpen: true,
-      groupOcean: true, groupVenue: true, oneOnOneSoft: true, kankaSoft: true,
+      ocean: { GROUP: false, ONE_ON_ONE: false, KANKA: false }, groupVenue: true, oneOnOneSoft: true, kankaSoft: true,
     };
   }
 
@@ -321,9 +307,10 @@ export class MatchingService {
     return type === MeetingType.GROUP ? groupMeetingAt() : type === MeetingType.KANKA ? kankaMeetingAt() : oneOnOneMeetingAt();
   }
 
-  // Sıralama puanı: Planlı OCEAN 65 + meslek 35; Yarın yaş yakınlığı %50 + mekân kategori tercihi %50 (kimseyi dışlamaz)
-  private pairScore(ctx: AssignContext, a: EligibleUser, b: EligibleUser): number {
-    return ctx.mode === MeetingMode.TOMORROW ? tomorrowScore(a, b) : this.scoreTwo(a, b);
+  // Sıralama puanı (kimseyi dışlamaz): masa türünün OCEAN anahtarı açıksa (yalnız Planlı) OCEAN %100; kapalıysa ve Yarın'da
+  // yaş yakınlığı %50 + mekân kategori tercihi %50. Meslek kullanılmaz.
+  private pairScore(ctx: AssignContext, type: MeetingType, a: EligibleUser, b: EligibleUser): number {
+    return ctx.ocean[type] ? this.scoreTwo(a, b) : tomorrowScore(a, b);
   }
 
   // Planlı: atama açık mı + saate göre hangi filtreler geçerli (TR saati)
@@ -350,7 +337,7 @@ export class MatchingService {
       weekNumber,
       groupOpen,
       oneOnOneOpen,
-      groupOcean: !(day === 4 && minutes >= 12 * 60),
+      ocean: await oceanCriteria(this.prisma),
       groupVenue: !(day === 4 && minutes >= 18 * 60),
       oneOnOneSoft: !(day === 5 && minutes >= 10 * 60),
       kankaOpen,
@@ -360,7 +347,7 @@ export class MatchingService {
 
   // GRUP: masa ilk kişiyle (6 hedefli) açılır; yeni gelen aynı şehirde kendi cinsiyeti eksik (en fazla 3E/3K)
   // en dolu masaya oturur. Eksik masa kalmadıysa yeni masa açılır.
-  // Cinsiyet + şehir + engel hiç kalkmaz; mekan uyumu Perşembe 18:00'e, OCEAN Perşembe 12:00'ye kadar.
+  // Cinsiyet + şehir + engel hiç kalkmaz; mekan uyumu Perşembe 18:00'e kadar.
   private async assignGroup(ctx: AssignContext, user: EligibleUser): Promise<void> {
     const cityId = matchCity(user);
     const gender = user.profile?.gender;
@@ -386,13 +373,13 @@ export class MatchingService {
       members.filter((u) => u.profile?.gender === gender).length < TABLE_SIZE_LARGE / 2 &&
       members.every((u) => !blocked.has(u.id) && (!ctx.groupVenue || !this.areVenueIncompatible(user, u))),
     );
-    // Masa doldurarak gidilir: en dolu masa önce; eşitlikte (Perşembe 12:00'ye kadar) OCEAN uyumu yüksek olan
+    // Masa doldurarak gidilir: en dolu masa önce; eşitlikte sıralama puanı (pairScore) yüksek olan
     const avgScore = (members: EligibleUser[]) =>
-      members.reduce((sum, u) => sum + this.pairScore(ctx, user, u), 0) / Math.max(1, members.length);
+      members.reduce((sum, u) => sum + this.pairScore(ctx, MeetingType.GROUP, user, u), 0) / Math.max(1, members.length);
     const preferNoTurkish = noTurkish(user);
     fits.sort((a, b) =>
       (preferNoTurkish ? noTurkishCount(b.members) - noTurkishCount(a.members) : 0) ||
-      b.members.length - a.members.length || (ctx.groupOcean ? avgScore(b.members) - avgScore(a.members) : 0),
+      b.members.length - a.members.length || avgScore(b.members) - avgScore(a.members),
     );
 
     const target = fits[0];
@@ -428,7 +415,7 @@ export class MatchingService {
 
   // BAŞBAŞA: masa grup gibi ilk kişiyle açılır, hak ikinci kişi oturunca harcanır. Yeni gelen şehrindeki uygun tek kişilik
   // masaya oturur; yoksa kendi masasını açar. Karşı cins + şehir + en fazla 8 yaş farkı + engel hiç kalkmaz;
-  // OCEAN ve mekan uyumu Cuma 10:00'a kadar. Birden fazla aday → yaşı en yakın olan.
+  // mekan uyumu Cuma 10:00'a kadar. Birden fazla aday → sıralama puanı (pairScore) en yüksek olan.
   // seat: kişi zaten tek başına oturuyor (saatlik tarama); eş bulunursa masası iptal edilip eşin masasına geçer.
   // Dolan masanın id'sini döner.
   private async assignOneOnOne(ctx: AssignContext, user: EligibleUser, seat?: LoneTable): Promise<string | null> {
@@ -471,16 +458,9 @@ export class MatchingService {
       return null;
     }
 
-    const myAge = ageYears(user.profile?.birthDate);
-    const ageDiff = (u: EligibleUser) => {
-      const age = ageYears(u.profile?.birthDate);
-      return myAge === null || age === null ? Number.MAX_SAFE_INTEGER : Math.abs(myAge - age);
-    };
     candidates.sort((a, b) =>
       (noTurkish(user) ? noTurkishCount([b.user]) - noTurkishCount([a.user]) : 0) ||
-      (ctx.mode === MeetingMode.TOMORROW
-        ? this.pairScore(ctx, user, b.user) - this.pairScore(ctx, user, a.user)
-        : ageDiff(a.user) - ageDiff(b.user) || (ctx.oneOnOneSoft ? this.scoreTwo(user, b.user) - this.scoreTwo(user, a.user) : 0)),
+      this.pairScore(ctx, MeetingType.ONE_ON_ONE, user, b.user) - this.pairScore(ctx, MeetingType.ONE_ON_ONE, user, a.user),
     );
     const target = candidates[0];
 
@@ -547,7 +527,7 @@ export class MatchingService {
   }
 
   // KANKAMLA: iki alıcı (1 erkek + 1 kadın) eşleşince kankaları da masaya oturur → 4 kişi (2E + 2K), bot yok.
-  // İki alıcı: şehir + en fazla 8 yaş farkı hiç kalkmaz; OCEAN ve mekan uyumu Cumartesi 12:00'ye kadar.
+  // İki alıcı: şehir + en fazla 8 yaş farkı hiç kalkmaz; mekan uyumu Cumartesi 12:00'ye kadar. Sıralama pairScore (iki alıcı).
   // Kankalara uyum filtresi yok; engel (engelleme + rehber) dört kişi arasında çapraz kontrol edilir.
   // Kurulan masanın karşı çiftinin paket id'sini döner.
   private async assignKanka(ctx: AssignContext, pair: KankaPair, pool?: KankaPair[]): Promise<string | null> {
@@ -564,7 +544,8 @@ export class MatchingService {
         matchCity(o.buyer) === cityId &&
         !!o.buyer.profile?.gender &&
         o.buyer.profile.gender !== gender &&
-        kankaAgeOk(pair, o) &&
+        // Yaş kuralı yalnız iki paket sahibi arasında (en fazla 8 yaş); kankaların yaşı kullanılmaz
+        !this.areAgeGapTooLarge(pair.buyer, o.buyer) &&
         (!ctx.kankaSoft || !this.areVenueIncompatible(pair.buyer, o.buyer)),
     );
     const candidates: KankaPair[] = [];
@@ -576,17 +557,10 @@ export class MatchingService {
     }
     if (candidates.length === 0) return null;
 
-    const myAge = ageYears(pair.buyer.profile?.birthDate);
-    const ageDiff = (o: KankaPair) => {
-      const age = ageYears(o.buyer.profile?.birthDate);
-      return myAge === null || age === null ? Number.MAX_SAFE_INTEGER : Math.abs(myAge - age);
-    };
     const pairNoTurkish = noTurkishCount([pair.buyer, pair.kanka]) > 0;
     candidates.sort((a, b) =>
       (pairNoTurkish ? noTurkishCount([b.buyer, b.kanka]) - noTurkishCount([a.buyer, a.kanka]) : 0) ||
-      (ctx.mode === MeetingMode.TOMORROW
-        ? this.pairScore(ctx, pair.buyer, b.buyer) - this.pairScore(ctx, pair.buyer, a.buyer)
-        : ageDiff(a) - ageDiff(b) || (ctx.kankaSoft ? this.scoreTwo(pair.buyer, b.buyer) - this.scoreTwo(pair.buyer, a.buyer) : 0)),
+      this.pairScore(ctx, MeetingType.KANKA, pair.buyer, b.buyer) - this.pairScore(ctx, MeetingType.KANKA, pair.buyer, a.buyer),
     );
     const other = candidates[0];
 
@@ -976,60 +950,6 @@ export class MatchingService {
     return botIds.length;
   }
 
-  // Cuma 23:45: masasında eşi bulunamayan ve 2. başbaşa haftasında olan (önceki başbaşa döngüsünde masası kurulamamış) kişiler
-  async scheduleOneOnOneBots(): Promise<void> {
-    if (!(await isBotSystemActive(this.prisma))) return;
-    const cycle = await this.currentCycle();
-    if (!cycle) return;
-    const userIds = await this.loneOneOnOneUserIds(cycle.id);
-    if (userIds.length === 0) return;
-
-    const subs = await this.prisma.subscription.findMany({
-      where: {
-        userId: { in: userIds },
-        ...OPEN_ONE_ON_ONE_SUB,
-        missedOneonOneCycles: { gte: 1 },
-      },
-      select: { userId: true },
-    });
-    for (const userId of new Set(subs.map((s) => s.userId))) {
-      await this.assignQueue.add(
-        JOB_ONE_ON_ONE_BOT,
-        { userId },
-        { delay: randomBotDelayMs(), removeOnComplete: true, removeOnFail: 100 },
-      );
-    }
-  }
-
-  // Karşı cinsten, yaşı en yakın bot (yaş farkı en fazla 8); yoksa SUPERADMIN'e uyarı, kişi kapanışta bekleme listesine
-  async addOneOnOneBot(userId: string): Promise<void> {
-    if (!(await isBotSystemActive(this.prisma))) return;
-    const cycle = await this.currentCycle();
-    if (!cycle) return;
-    // Bu arada eşleşmiş ya da hakkı kalmamışsa listede çıkmaz
-    const table = (await this.loneOneOnOneTables(this.plannedScope(cycle.id).meeting)).find((t) => t.user.id === userId);
-    if (!table) return;
-    const { user } = table;
-    const gender = user.profile?.gender;
-    if (!gender) return;
-
-    const bot = await pickBot(this.prisma, {
-      gender: gender === Gender.MALE ? Gender.FEMALE : Gender.MALE,
-      scheduledAt: oneOnOneMeetingAt(),
-      cityId: table.cityId,
-      targetBirthDate: user.profile?.birthDate ? new Date(user.profile.birthDate) : null,
-    });
-    const myAge = ageYears(user.profile?.birthDate);
-    const botAge = ageYears(bot?.birthDate);
-    if (!bot || (myAge !== null && botAge !== null && Math.abs(myAge - botAge) > MAX_AGE_GAP_YEARS)) {
-      await alertBotNotFound(this.prisma, user.id);
-      this.logger.warn(`Uygun bot bulunamadı: ONE_ON_ONE user=${user.id}`);
-      return;
-    }
-
-    await this.seatOneOnOneBot(table, bot.id);
-  }
-
   private async seatOneOnOneBot(table: LoneTable, botId: string): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       await tx.meetingParticipant.create({ data: { meetingId: table.id, userId: botId, status: "INVITED" } });
@@ -1052,23 +972,15 @@ export class MatchingService {
 
   // ─── Admin: başbaşada eşi bekleyenler (Açık masalar) ──────────────────────
 
-  // Kaçıncı başbaşa döngüsünde olduğu: önceki döngülerde masası kurulamadıysa artar (1. döngüde bot eklenmez)
+  // Planlı baş başada eşi bekleyenler (admin elle bot ekleyebilir; sistem baş başaya otomatik bot eklemez)
   async getOneOnOneWaiting() {
     const cycle = await this.currentCycle();
-    // Yarın Buluşma'da baş başa masasına bot yok: yalnız Planlı eş bekleyenler
+    // Yarın Buluşma eş bekleyenleri listelenmez
     const pool = (await this.loneOneOnOneTables(this.plannedScope(cycle.id).meeting)).map((t) => t.user);
     if (pool.length === 0) return [];
-    const ids = pool.map((u) => u.id);
     const cityIds = [...new Set(pool.map(matchCity).filter((c): c is string => !!c))];
-    const [subs, cities] = await Promise.all([
-      this.prisma.subscription.findMany({
-        where: { userId: { in: ids }, ...OPEN_ONE_ON_ONE_SUB },
-        select: { userId: true, missedOneonOneCycles: true },
-      }),
-      this.prisma.city.findMany({ where: { id: { in: cityIds } }, select: { id: true, name: true } }),
-    ]);
+    const cities = await this.prisma.city.findMany({ where: { id: { in: cityIds } }, select: { id: true, name: true } });
     return pool.map((u) => {
-      const missed = Math.max(0, ...subs.filter((s) => s.userId === u.id).map((s) => s.missedOneonOneCycles));
       const cityId = matchCity(u);
       return {
         userId: u.id,
@@ -1076,7 +988,6 @@ export class MatchingService {
         gender: u.profile?.gender ?? null,
         age: ageYears(u.profile?.birthDate),
         city: cities.find((c) => c.id === cityId)?.name ?? null,
-        cycleNo: missed + 1,
       };
     });
   }

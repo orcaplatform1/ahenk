@@ -7,7 +7,11 @@ import { ACard, APage, AT, ATitle } from '@/components/admin/AdminUi';
 import { AdminToggle } from '@/components/admin/AdminControls';
 import { adm } from '@/theme/theme';
 
-interface Settings { matchingEnabled: boolean; botSystemActive?: boolean; maintenanceMode: boolean; liveDistrictSource?: 'static' | 'real' }
+// oceanGroup / oceanOneOnOne / oceanKanka: Eşleştirme Kriterleri (Planlı Buluşma'da masa türüne göre OCEAN sıralaması)
+interface Settings { matchingEnabled: boolean; botSystemActive?: boolean; maintenanceMode: boolean; liveDistrictSource?: 'static' | 'real'; oceanGroup?: boolean; oceanOneOnOne?: boolean; oceanKanka?: boolean }
+type Tab = 'general' | 'criteria';
+const TABS: [Tab, string][] = [['general', 'Genel'], ['criteria', 'Eşleştirme Kriterleri']];
+const OCEAN_DESC = "Yalnız Planlı Buluşma. Açık: sıralama OCEAN %100. Kapalı: yaş yakınlığı %50 + mekân kategori %50. Yarın Buluşma'da OCEAN her zaman kapalı."
 
 export default function AdminSettings() {
   const [s, setS] = useState<Settings | null>(null);
@@ -15,11 +19,12 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [tab, setTab] = useState<Tab>('general');
   useEffect(() => { api.get<Settings>('/admin/settings').then(setS).catch((e: Error) => setError(e.message)).finally(() => setLoading(false)); }, []);
   async function save() {
     if (!s) return;
     setSaving(true); setError('');
-    try { await api.patch('/admin/settings', { matchingEnabled: s.matchingEnabled, botSystemActive: s.botSystemActive, maintenanceMode: s.maintenanceMode, liveDistrictSource: s.liveDistrictSource }); setSaved(true); setTimeout(() => setSaved(false), 2000); }
+    try { await api.patch('/admin/settings', { matchingEnabled: s.matchingEnabled, botSystemActive: s.botSystemActive, maintenanceMode: s.maintenanceMode, liveDistrictSource: s.liveDistrictSource, oceanGroup: s.oceanGroup, oceanOneOnOne: s.oceanOneOnOne, oceanKanka: s.oceanKanka }); setSaved(true); setTimeout(() => setSaved(false), 2000); }
     catch (e) { setError(`Kaydedilemedi: ${(e as Error).message}`); } finally { setSaving(false); }
   }
   const upd = (p: Partial<Settings>) => setS(x => (x ? { ...x, ...p } : x));
@@ -32,6 +37,16 @@ export default function AdminSettings() {
         <ACard style={{ alignItems: 'center' }}><AT style={{ fontSize: 13, color: adm.muted }}>Ayarlar yüklenemedi.{error ? ` ${error}` : ''}</AT></ACard>
       ) : (
         <>
+          <View accessibilityRole="tablist" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            {TABS.map(([v, l]) => <Btn key={v} variant="admSegment" selected={tab === v} label={l} onPress={() => setTab(v)} />)}
+          </View>
+          {tab === 'criteria' ? (
+            <ACard style={{ gap: 16 }}>
+              <AdminToggle label="OCEAN – Grup" desc={OCEAN_DESC} value={s.oceanGroup ?? true} onChange={v => upd({ oceanGroup: v })} />
+              <AdminToggle label="OCEAN – Baş Başa" desc={OCEAN_DESC} value={s.oceanOneOnOne ?? false} onChange={v => upd({ oceanOneOnOne: v })} />
+              <AdminToggle label="OCEAN – Kankamla" desc={OCEAN_DESC} value={s.oceanKanka ?? false} onChange={v => upd({ oceanKanka: v })} />
+            </ACard>
+          ) : (
           <ACard style={{ gap: 16 }}>
             <AdminToggle label="Eşleştirme Aktif" desc="Grup, baş başa ve Kankamla masa ataması yapılsın mı. Kapalıyken hak düşümü, kilit ve eşleştirme bildirimleri de durur." value={s.matchingEnabled} onChange={v => upd({ matchingEnabled: v })} />
             {s.botSystemActive !== undefined && <AdminToggle label="Bot Sistemi Aktif" desc="Eksik masalara bot ekleme" value={s.botSystemActive} onChange={v => upd({ botSystemActive: v })} />}
@@ -44,6 +59,7 @@ export default function AdminSettings() {
               </View>
             </View>
           </ACard>
+          )}
           <Btn variant="admSave" selected={saved} disabled={saving} label={saving ? 'Kaydediliyor…' : saved ? 'Kaydedildi ✓' : 'Kaydet'} onPress={save} />
           {!!error && <AT style={{ marginTop: 8, fontSize: 13, color: adm.red }}>{error}</AT>}
         </>
