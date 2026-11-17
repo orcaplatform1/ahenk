@@ -96,16 +96,12 @@ function EmptyMasaCardInner({ locked, cardType, userInfo, kanka, scrollRef }: { 
       <Card style={{ padding: 0, overflow: 'hidden', backgroundColor: tw.bg }}>
         <FadeUp dy={10} duration={500} style={{ overflow: 'hidden' }}>
           <Shimmer />
-          {/* Kapak: fotoğraf yok → 3 boş kamera kutusu */}
-          <View style={{ height: masaKart.coverH }}>
-            <View style={{ flex: 1, flexDirection: 'row', gap: masaKart.coverGap }}>
-              {[0, 1, 2].map(i => (
-                <View key={i} style={{ flex: 1, backgroundColor: masaKart.cameraBg, alignItems: 'center', justifyContent: 'center' }}>
-                  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={masaKart.cameraStroke} strokeWidth={1.5}>
-                    <Rect x={1} y={5} width={22} height={15} rx={2} /><Circle cx={12} cy={12} r={4} /><Path d="M8 5l1.5-3h5L16 5" strokeLinecap="round" strokeLinejoin="round" />
-                  </Svg>
-                </View>
-              ))}
+          {/* Kapak: tek fotoğraf alanı, tam genişlikte 16:9 (ön izlemede fotoğraf yok → tek boş kamera kutusu) */}
+          <View style={{ aspectRatio: masaKart.coverAspect }}>
+            <View style={{ flex: 1, backgroundColor: masaKart.cameraBg, alignItems: 'center', justifyContent: 'center' }}>
+              <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={masaKart.cameraStroke} strokeWidth={1.5}>
+                <Rect x={1} y={5} width={22} height={15} rx={2} /><Circle cx={12} cy={12} r={4} /><Path d="M8 5l1.5-3h5L16 5" strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
             </View>
             <LinearGradient pointerEvents="none" colors={masaKart.coverFade} locations={masaKart.coverFadeStops} style={StyleSheet.absoluteFill} />
             {/* Sol üst masa türü */}
@@ -332,11 +328,13 @@ export default function Masalarim() {
   const colW = Math.min(width, llColumn.maxWidth) - 32;
   const userInfo = me ? { firstName: me.firstName, lastName: me.lastName, gender: me.profile?.gender } : undefined;
   const locked = Object.values(statuses).every(s => s === 'NONE');
+  // Aktif kaydı (taramada ya da masası kuruluyor) olan kullanıcıya Masalarım'da seçim penceresi açılmaz
+  const hasActiveSelection = !!selection?.options.some(o => o.selection || (o.seated && !o.locked));
 
   return (
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
       <ScreenGlow />
-      <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
+      {!hasActiveSelection && <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />}
       <ScrollView ref={scrollRef} contentContainerStyle={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 32, gap: 24, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
         <Glow />
         {/* Grup / Baş Başa / Kankamla halkaları Eşleşme Paneli'ndekiyle aynı yükseklikte: üst boşluk yalnız durum çubuğu kadar;

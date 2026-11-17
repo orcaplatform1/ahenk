@@ -16,7 +16,7 @@ import { cancelDeadline, groupMeetingAt, kankaMeetingAt, nextDayMeetingAt, oneOn
 import { cancellationNotice } from "../meetings/cancellation-notice";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { Gender, MeetingMode, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "../generated/prisma/client";
-import { pickBot, alertBotNotFound, availableBots, recentlyMetBotIds, notifyBotAssigned } from "./bot-picker";
+import { pickBot, alertBotNotFound, recentlyMetBotIds, notifyBotAssigned } from "./bot-picker";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right";
 import { plannedTargetWeek, selectedThisWeek, selectedTomorrow } from "./selection-cancel";
 import { chargeKankaRight, GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, pairKankaSub, syncPackageStatus } from "../payment/package-rights";
@@ -950,17 +950,6 @@ export class MatchingService {
     return botIds.length;
   }
 
-  private async seatOneOnOneBot(table: LoneTable, botId: string): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.meetingParticipant.create({ data: { meetingId: table.id, userId: botId, status: "INVITED" } });
-      // Başbaşa hakkı iki kişi oturduğu anda harcanır
-      await consumeOneOnOneRights(tx, [table.user.id], table.createdAt);
-    });
-    await this.saveScores(table.id);
-    await this.botAssigned(table.id, [botId]);
-    this.logger.log(`ONE_ON_ONE bot eşleşmesi: user=${table.user.id} bot=${botId}`);
-  }
-
   // Bot atama uyarısı + SUPERADMIN bildirimi; hata atamayı geri almaz, yalnız loglanır
   async botAssigned(meetingId: string, botIds: string[]): Promise<void> {
     try {
@@ -968,61 +957,6 @@ export class MatchingService {
     } catch (err) {
       this.logger.error(`Bot atama bildirimi hatası: meeting=${meetingId} ${err}`);
     }
-  }
-
-  // ─── Admin: başbaşada eşi bekleyenler (Açık masalar) ──────────────────────
-
-  // Planlı baş başada eşi bekleyenler (admin elle bot ekleyebilir; sistem baş başaya otomatik bot eklemez)
-  async getOneOnOneWaiting() {
-    const cycle = await this.currentCycle();
-    // Yarın Buluşma eş bekleyenleri listelenmez
-    const pool = (await this.loneOneOnOneTables(this.plannedScope(cycle.id).meeting)).map((t) => t.user);
-    if (pool.length === 0) return [];
-    const cityIds = [...new Set(pool.map(matchCity).filter((c): c is string => !!c))];
-    const cities = await this.prisma.city.findMany({ where: { id: { in: cityIds } }, select: { id: true, name: true } });
-    return pool.map((u) => {
-      const cityId = matchCity(u);
-      return {
-        userId: u.id,
-        initials: `${u.profile?.firstName?.[0] ?? "?"}.${u.profile?.lastName?.[0] ?? "?"}.`,
-        gender: u.profile?.gender ?? null,
-        age: ageYears(u.profile?.birthDate),
-        city: cities.find((c) => c.id === cityId)?.name ?? null,
-      };
-    });
-  }
-
-  private async waitingUser(userId: string) {
-    const cycle = await this.currentCycle();
-    const table = (await this.loneOneOnOneTables(this.plannedScope(cycle.id).meeting)).find((t) => t.user.id === userId);
-    const gender = table?.user.profile?.gender;
-    if (!table || !gender) throw new BadRequestException("Kişi eşi bekleyenler listesinde değil");
-    return { table, user: table.user, gender };
-  }
-
-  // Elle bot listesi: karşı cins, en fazla 8 yaş fark, Pazar buluşma saatinde boşta
-  async botsForWaiting(userId: string) {
-    const { table, user, gender } = await this.waitingUser(userId);
-    const bots = await availableBots(this.prisma, {
-      gender: gender === Gender.MALE ? Gender.FEMALE : Gender.MALE,
-      scheduledAt: oneOnOneMeetingAt(),
-      cityId: table.cityId,
-    });
-    const myAge = ageYears(user.profile?.birthDate);
-    return bots
-      .map((b) => ({ id: b.id, name: `${b.profile?.firstName ?? ""} ${b.profile?.lastName ?? ""}`.trim(), gender: b.profile?.gender ?? null, age: ageYears(b.profile?.birthDate) }))
-      .filter((b) => myAge === null || b.age === null || Math.abs(myAge - b.age) <= MAX_AGE_GAP_YEARS)
-      .sort((a, b) => (myAge === null || a.age === null || b.age === null ? 0 : Math.abs(myAge - a.age) - Math.abs(myAge - b.age)));
-  }
-
-  async addOneOnOneBotManual(userId: string, botId: string) {
-    const { table } = await this.waitingUser(userId);
-    const allowed = await this.botsForWaiting(userId);
-    if (!allowed.some((b) => b.id === botId)) {
-      throw new BadRequestException("Bu bot eklenemez (cinsiyet, yaş farkı ya da aynı saatte başka masada)");
-    }
-    await this.seatOneOnOneBot(table, botId);
-    return { created: true };
   }
 
   // ─── Perşembe kapanışı ────────────────────────────────────────────────────

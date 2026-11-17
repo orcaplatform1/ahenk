@@ -8,6 +8,7 @@ import { OCCUPATION_SECTORS } from '@/lib/occupations';
 import { pickFromLibrary } from '@/lib/imagePick';
 import { gColor } from '@/lib/masa';
 import { absPhoto } from '@/components/ProfilePhoto';
+import { smallPhotoUrl } from '@/lib/photo';
 import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
 import { AdminDatePicker, AdminSelect, AInput } from '@/components/admin/AdminControls';
@@ -27,13 +28,6 @@ function weekRange(start: string, end: string) {
 const OCEAN_FIELDS: { key: keyof Ocean; label: string }[] = [{ key: 'openness', label: 'Açıklık' }, { key: 'conscientiousness', label: 'Sorumluluk' }, { key: 'extraversion', label: 'Dışadönüklük' }, { key: 'agreeableness', label: 'Uyumluluk' }, { key: 'neuroticism', label: 'Duygusal Denge' }];
 const EMPTY = { firstName: '', lastName: '', gender: '', occupationSector: '', birthDate: '', phone: '', cityId: '', openness: '50', conscientiousness: '50', extraversion: '50', agreeableness: '50', neuroticism: '50' };
 type Form = typeof EMPTY;
-function ageOf(b?: string | null) {
-  if (!b) return null;
-  const d = new Date(b); const now = new Date(Date.now() + 3 * 3600 * 1000);
-  let a = now.getUTCFullYear() - d.getUTCFullYear();
-  if (now.getUTCMonth() < d.getUTCMonth() || (now.getUTCMonth() === d.getUTCMonth() && now.getUTCDate() < d.getUTCDate())) a--;
-  return a;
-}
 
 export default function AdminBots() {
   const [bots, setBots] = useState<Bot[]>([]);
@@ -60,7 +54,6 @@ export default function AdminBots() {
   // Bot kullanım sayacı: endpoint yalnız SUPERADMIN'e açık; diğer rollerde sayaç görünmez
   useEffect(() => { api.get<BotUsage>('/matching/admin/bots/usage').then(setUsage).catch(() => setUsage(null)); }, []);
   useEffect(() => { load(); api.get<City[]>('/admin/cities').then(c => setCities(c.filter(x => x.isActive))).catch((e: Error) => setError(`Şehirler yüklenemedi: ${e.message}`)); }, []);
-  const cityName = (id?: string | null) => cities.find(c => c.id === id)?.name ?? '—';
   function openEdit(b: Bot) {
     setEditing(b); const o = b.oceanScore;
     setPhotoUri(null); setPhotoPreview(b.photoUrl ? absPhoto(b.photoUrl) : null);
@@ -126,21 +119,20 @@ export default function AdminBots() {
           : bots.map((b, i) => {
             const active = b.status === 'ACTIVE';
             return (
-              <View key={b.id} style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: i < bots.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)', flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-                    <AT w={600} style={{ fontSize: 13 }}>{b.profile?.firstName ?? ''} {b.profile?.lastName ?? ''}</AT>
-                    <StatusPill text={active ? 'AKTİF' : 'PASİF'} color={active ? adm.green : adm.muted} bg={active ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)'} border={active ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.25)'} />
-                  </View>
-                  <AT style={{ marginTop: 3, fontSize: 10, color: adm.muted }}>
-                    {b.profile?.gender === 'MALE' ? 'Erkek' : b.profile?.gender === 'FEMALE' ? 'Kadın' : '—'} · {ageOf(b.profile?.birthDate) ?? '—'} yaş · {cityName(b.profile?.primaryCity)} · {b.occupationSector || '—'}{b.botPhone ? ` · ${b.botPhone}` : ''}
-                  </AT>
-                  {b.oceanScore && <AMono style={{ marginTop: 2, fontSize: 10 }}>{OCEAN_FIELDS.map(({ key, label }) => `${label[0]}${Math.round(b.oceanScore![key])}`).join(' · ')}</AMono>}
+              <View key={b.id} style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: i < bots.length - 1 ? 1 : 0, borderBottomColor: 'rgba(26,58,92,0.5)', flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: gColor(b.profile?.gender ?? ''), overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                  {b.photoUrl
+                    ? <Image source={{ uri: smallPhotoUrl(b.photoUrl) }} style={{ width: '100%', height: '100%' }} accessibilityLabel={`${b.profile?.firstName ?? ''} ${b.profile?.lastName ?? ''}`} />
+                    : <AT w={700} style={{ fontSize: 13 }}>{`${(b.profile?.firstName ?? '').trim()[0] ?? ''}${(b.profile?.lastName ?? '').trim()[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?'}</AT>}
                 </View>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+                <View style={{ flex: 1, minWidth: 0, alignItems: 'flex-start', gap: 6 }}>
+                  <AT w={600} style={{ fontSize: 13 }}>{b.profile?.firstName ?? ''} {b.profile?.lastName ?? ''}</AT>
+                  <StatusPill text={active ? 'AKTİF' : 'PASİF'} color={active ? adm.green : adm.muted} bg={active ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)'} border={active ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.25)'} />
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
                   <Btn variant="admActivate" selected={active} label={active ? 'Pasifleştir' : 'Aktifleştir'} onPress={() => toggleStatus(b)} />
                   <Btn variant="admEditSm" label="Düzenle" onPress={() => openEdit(b)} />
                   <Btn variant="admDelSm" label="Sil" onPress={() => deleteBot(b.id)} />
+                  </View>
                 </View>
               </View>
             );

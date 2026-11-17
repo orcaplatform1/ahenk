@@ -426,7 +426,8 @@ function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaD
 
   // Kapak, bilgi şeridi ve katılımcılar (web MasaDetayKarti ile aynı yerleşim)
   const chatRef = useRef<React.ComponentRef<typeof View>>(null);
-  const coverPhotos = photos.slice(0, 3);
+  // Mekânın yalnız ilk fotoğrafı gösterilir (tek fotoğraf; eski kayıtlardaki diğerleri gösterilmez)
+  const cover = photos[0] ?? null;
   const present = masa.participants.filter(p => !p.cancelled);
   const femaleCount = present.filter(p => p.gender === 'FEMALE').length;
   const maleCount = present.filter(p => p.gender === 'MALE').length;
@@ -445,7 +446,7 @@ function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaD
 
   return (
     <View>
-      {lightbox !== null && <Lightbox photos={photos} start={lightbox} onClose={() => setLightbox(null)} />}
+      {lightbox !== null && cover && <Lightbox photos={[cover]} start={lightbox} onClose={() => setLightbox(null)} />}
       <PhotoViewer url={viewer?.url ?? null} visible={!!viewer} onClose={() => setViewer(null)}
         onEdit={viewer?.self ? () => { setViewer(null); pickAndUploadProfilePhoto(true).then((ok) => { if (ok) prefetch(['/auth/me']); }).catch(() => undefined); } : undefined} />
       {showSos && <SosModal selected={threats} onToggle={t => setThreats(p => (p.includes(t) ? p.filter(x => x !== t) : [...p, t]))} onConfirm={handleSos}
@@ -454,35 +455,25 @@ function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaD
 
       {/* ── Ana kart ── */}
       <Card style={{ padding: 0, overflow: 'hidden', backgroundColor: tw.bg }}>
-        {/* Kapak: mekân fotoğrafları (3 → yan yana, 2 → eşit iki, 1 → tek büyük, yok → boş kamera kutuları) */}
-        <View style={{ height: masaKart.coverH }}>
-          <View style={{ flex: 1, flexDirection: 'row', gap: masaKart.coverGap }}>
-            {coverPhotos.length === 0
-              ? [0, 1, 2].map(i => (
-                <View key={i} style={{ flex: 1, backgroundColor: masaKart.cameraBg, alignItems: 'center', justifyContent: 'center' }}>
-                  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                    <Rect x={1} y={5} width={22} height={15} rx={2} stroke={masaKart.cameraStroke} strokeWidth={1.5} />
-                    <Circle cx={12} cy={12} r={4} stroke={masaKart.cameraStroke} strokeWidth={1.5} />
-                    <Path d="M8 5l1.5-3h5L16 5" stroke={masaKart.cameraStroke} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-                  </Svg>
-                </View>
-              ))
-              : coverPhotos.map((p, i) => (
-                <Pressable key={i} onPress={() => setLightbox(i)} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.04)' }} accessibilityRole="imagebutton">
-                  {/* Backend göreli adres döner (/api/v1/media/venues/...); mobilde tam adrese çevrilir */}
-                  <Image source={{ uri: mediaUrl(p.url) }} style={{ width: '100%', height: '100%' }} accessibilityLabel={p.caption ?? t('masa.photoAlt', { n: i + 1 })} />
-                </Pressable>
-              ))}
-          </View>
-          <LinearGradient pointerEvents="none" colors={masaKart.coverFade} locations={masaKart.coverFadeStops} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
+        {/* Kapak: mekânın tek fotoğrafı tam genişlikte 16:9 (cover); fotoğraf yoksa fotoğraf alanı yok, masa türü ve mekân adı normal akışta */}
+        <View style={cover ? { aspectRatio: masaKart.coverAspect } : { gap: 12, paddingTop: 12, paddingHorizontal: 14 }}>
+          {cover && (
+            <>
+              <Pressable onPress={() => setLightbox(0)} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.04)' }} accessibilityRole="imagebutton">
+                {/* Backend göreli adres döner (/api/v1/media/venues/...); mobilde tam adrese çevrilir */}
+                <Image source={{ uri: mediaUrl(cover.url) }} resizeMode="cover" style={{ width: '100%', height: '100%' }} accessibilityLabel={cover.caption ?? t('masa.photoAlt', { n: 1 })} />
+              </Pressable>
+              <LinearGradient pointerEvents="none" colors={masaKart.coverFade} locations={masaKart.coverFadeStops} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
+            </>
+          )}
 
           {/* Sol üst masa türü */}
-          <View style={[pill(masaKart.typePill.bg, masaKart.typePill.border), { position: 'absolute', top: 12, left: 12 }]}>
+          <View style={[pill(masaKart.typePill.bg, masaKart.typePill.border), cover ? { position: 'absolute', top: 12, left: 12 } : { alignSelf: 'flex-start' }]}>
             <T w={700} style={{ fontSize: masaKart.pill.fontSize, color: masaKart.typePill.text, letterSpacing: 0.44 }}>{typeLabel}</T>
           </View>
 
           {/* Alt: mekân adı + ilçe, sağda Haritada Gör */}
-          <View style={{ position: 'absolute', left: 14, right: 14, bottom: 12, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
+          <View style={[cover ? { position: 'absolute', left: 14, right: 14, bottom: 12 } : null, { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }]}>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Serif style={{ fontSize: 24, lineHeight: 28.8, color: tw.text, letterSpacing: 0.24 }}>{masa.venueName}</Serif>
               {!!masa.venueDistrict && (

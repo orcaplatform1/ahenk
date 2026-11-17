@@ -37,7 +37,6 @@ const ALCOHOL_OPTIONS = [
 ];
 // Seçenek değerleri Türkçe gönderilir; ekranda çeviri anahtarı
 const OPT_KEYS: Record<string, string> = {"Restoran": "partner.opt0", "Kafe": "partner.opt1", "Bistro": "partner.opt2", "Bar": "partner.opt3", "Diğer": "partner.opt4", "Alkollü": "partner.opt5", "Alkolsüz": "partner.opt6"};
-const MAX_PHOTOS = 3;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const MAPS_URL = /^https:\/\/((www\.)?google\.(com|com\.tr)\/maps|maps\.google\.(com|com\.tr)|maps\.app\.goo\.gl|goo\.gl\/maps|share\.google)(\/|\?|$)/i;
 
@@ -108,17 +107,14 @@ export default function IsOrtakligiPage() {
     return () => { alive = false; urls.forEach((u) => URL.revokeObjectURL(u)); };
   }, [photos]);
 
-  async function addPhotos(list: FileList | null) {
-    if (!list) return;
-    const picked = Array.from(list);
-    if (picked.some((f) => f.size > MAX_PHOTO_BYTES)) { setError(t('partner.photoTooBig')); return; }
+  // Tek fotoğraf (en az 1, en fazla 1): yeni seçim öncekinin yerine geçer
+  async function pickPhoto(f: File | undefined) {
+    if (!f) return;
+    if (f.size > MAX_PHOTO_BYTES) { setError(t('partner.photoTooBig')); return; }
     // Tür içerikten kontrol edilir (uzantı değil); HEIC/HEIF kabul edilir, sunucuda WebP'ye çevrilir
-    for (const f of picked) {
-      if (!(await isVenuePhoto(f))) { setError(t('partner.photoType')); return; }
-    }
-    if (photos.length + picked.length > MAX_PHOTOS) { setError(t('partner.maxPhotos', { max: MAX_PHOTOS })); return; }
+    if (!(await isVenuePhoto(f))) { setError(t('partner.photoType')); return; }
     setError('');
-    setPhotos((p) => [...p, ...picked]);
+    setPhotos([f]);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -427,9 +423,9 @@ export default function IsOrtakligiPage() {
                     {t('partner.checkLink')}
                   </a>
 
-                  {/* Mekân fotoğrafları */}
+                  {/* Mekân fotoğrafı (tek) */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <FormLabel>{t('partner.photosLabel', { max: MAX_PHOTOS })}</FormLabel>
+                    <FormLabel>{t('vp.photoLabel')}</FormLabel>
                     {previews.length > 0 && (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: '0.5rem' }}>
                         {previews.map((src, i) => (
@@ -445,12 +441,14 @@ export default function IsOrtakligiPage() {
                         ))}
                       </div>
                     )}
-                    {photos.length < MAX_PHOTOS && (
-                      <label style={{ ...fieldStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, cursor: 'pointer', color: '#ff6b6b', borderStyle: 'dashed' }}>
-                        {t('partner.addPhoto')}
-                        <input type="file" accept={VENUE_PHOTO_ACCEPT} multiple onChange={(e) => { void addPhotos(e.target.files); e.target.value = ''; }} style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+                    {/* Mekân formundaki gibi "Fotoğraf Seç" butonu; dosya adı ya da "Dosya seçilmedi" sağında 16px boşlukla */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
+                      <label className="btn-primary justify-center" style={{ minHeight: 44, flexShrink: 0, cursor: 'pointer' }}>
+                        {t('vp.photoPick')}
+                        <input type="file" accept={VENUE_PHOTO_ACCEPT} onChange={(e) => { void pickPhoto(e.target.files?.[0]); e.target.value = ''; }} style={{ display: 'none' }} />
                       </label>
-                    )}
+                      <span style={{ fontSize: '0.78rem', color: '#888', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{photos[0]?.name || t('vp.photoNone')}</span>
+                    </div>
                   </div>
 
                   <TextareaField label={t('partner.describe')} value={form.description} onChange={(v) => setForm(f => ({ ...f, description: v }))} maxLength={500} />
@@ -503,7 +501,6 @@ export default function IsOrtakligiPage() {
 }
 
 /* ── Form field bileşenleri ───────────────────────────────────── */
-const fieldStyle: React.CSSProperties = { position: 'relative', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '0.7rem 1rem', color: '#f4f1ec', fontSize: 13, width: '100%', boxSizing: 'border-box' };
 
 function SelectField({ label, value, options, onChange, required }: {
   label: string; value: string; options: (string | { value: string; label: string })[]; onChange: (v: string) => void; required?: boolean;

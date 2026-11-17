@@ -8,6 +8,7 @@ import type { MasaTuru } from '@/lib/masa';
 import type { MeetingMode, WeeklySelection } from '@/lib/useMasaTabs';
 import { BtnGhost, BtnPrimary, Card, T, Title } from './ui';
 import { Rings } from './LiveTabs';
+import { showAlert } from './AppAlert';
 import { ll } from '@/theme/theme';
 
 const TITLE: Record<MasaTuru, string> = { GROUP: 'live.wsGroupTitle', ONE_ON_ONE: 'live.wsOneTitle', KANKA: 'live.wsKankaTitle' };
@@ -54,13 +55,19 @@ export function SelectionCard({ selection, onOpen, onChange, onCancel }: {
                   label={t('live.selChange')}
                   disabled={busy !== null}
                   style={{ flex: 1, minHeight: 44 }}
-                  onPress={() => run(o.type, () => onChange(o.type, sel.mode === 'TOMORROW' ? 'PLANNED' : 'TOMORROW'))}
+                  onPress={() => showAlert(t('live.selChangeConfirm'), undefined, [
+                    { text: t('live.selConfirmNo'), style: 'cancel' },
+                    { text: t('live.selConfirmChangeYes'), onPress: () => { void run(o.type, () => onChange(o.type, sel.mode === 'TOMORROW' ? 'PLANNED' : 'TOMORROW')); } },
+                  ])}
                 />
                 <BtnGhost
                   label={t('live.selCancel')}
                   disabled={busy !== null}
                   style={{ flex: 1, minHeight: 44 }}
-                  onPress={() => run(o.type, () => onCancel(o.type))}
+                  onPress={() => showAlert(t('live.selCancelConfirm'), undefined, [
+                    { text: t('live.selConfirmNo'), style: 'cancel' },
+                    { text: t('live.selConfirmCancelYes'), onPress: () => { void run(o.type, () => onCancel(o.type)); } },
+                  ])}
                 />
               </View>
             )}

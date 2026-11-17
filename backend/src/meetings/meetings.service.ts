@@ -50,9 +50,9 @@ export class MeetingsService {
     const meetingSelect = {
       id: true, type: true, status: true, scheduledAt: true, maxParticipants: true,
       locationText: true, locationUrl: true, venueAddress: true,
-      venue: { select: { district: true } }, // Masa detay kartında yalnız ilçe adı
-      venuePhotoUrl: true, venuePhoto2Url: true, venuePhoto3Url: true,
-      venuePhotoCaption1: true, venuePhotoCaption2: true, venuePhotoCaption3: true,
+      // Masa detay kartında yalnız ilçe adı; fotoğraf mekânın güncel ilk fotoğrafı (masaya kopyalanan eski adres kullanılmaz)
+      venue: { select: { district: true, photos: true } },
+      venuePhotoCaption1: true,
       participants: {
         select: {
           status: true,
@@ -173,11 +173,8 @@ export class MeetingsService {
           .map((p) => p.user.occupationSector)
           .filter((o): o is string => !!o));
 
-        const venuePhotos = [
-          { url: m.venuePhotoUrl,  caption: m.venuePhotoCaption1 ?? 'Alan 1' },
-          { url: m.venuePhoto2Url, caption: m.venuePhotoCaption2 ?? 'Alan 2' },
-          { url: m.venuePhoto3Url, caption: m.venuePhotoCaption3 ?? 'Alan 3' },
-        ].filter((p) => !!p.url);
+        // Mekânın kayıtlı güncel ilk fotoğrafı; mekânın fotoğrafı yoksa boş (kartta fotoğraf alanı gösterilmez)
+        const venuePhotos = m.venue?.photos[0] ? [{ url: m.venue.photos[0], caption: m.venuePhotoCaption1 ?? 'Alan 1' }] : [];
 
         let aiReport = null;
         if (isRevealed) {
@@ -239,13 +236,8 @@ export class MeetingsService {
             locationText: true,
             locationUrl: true,
             venueAddress: true,
-            venue: { select: { district: true } },
-            venuePhotoUrl: true,
-            venuePhoto2Url: true,
-            venuePhoto3Url: true,
+            venue: { select: { district: true, photos: true } }, // Fotoğraf mekânın güncel ilk fotoğrafı
             venuePhotoCaption1: true,
-            venuePhotoCaption2: true,
-            venuePhotoCaption3: true,
             city: { select: { name: true } },
             cycle: { select: { weekNumber: true, year: true } },
             aiReport: { select: { content: true, uyumSkoru: true, generatedAt: true } },
@@ -324,7 +316,7 @@ export class MeetingsService {
         weekNumber: m.cycle?.weekNumber ?? null,
         date: m.scheduledAt,
         venueName: m.locationText ?? null,
-        venuePhotoUrl: m.venuePhotoUrl ?? null,
+        venuePhotoUrl: m.venue?.photos[0] ?? null,
         city: me?.user?.profile?.primaryCity ?? null,
         overallCompatibility,
         isReviewed: !!review,
@@ -335,11 +327,8 @@ export class MeetingsService {
         venueAddress: m.venueAddress ?? null,
         venueDistrict: m.venue?.district ?? null,
         venueMapsUrl: m.locationUrl ?? (m.locationText ? googleMapsUrl(m.locationText, m.venueAddress) : null),
-        venuePhotos: [
-          { url: m.venuePhotoUrl, caption: m.venuePhotoCaption1 ?? 'Alan 1' },
-          { url: m.venuePhoto2Url, caption: m.venuePhotoCaption2 ?? 'Alan 2' },
-          { url: m.venuePhoto3Url, caption: m.venuePhotoCaption3 ?? 'Alan 3' },
-        ].filter((x) => !!x.url),
+        // Mekânın kayıtlı güncel ilk fotoğrafı; yoksa boş
+        venuePhotos: m.venue?.photos[0] ? [{ url: m.venue.photos[0], caption: m.venuePhotoCaption1 ?? 'Alan 1' }] : [],
         aiReport: m.aiReport ?? null,
         // Meslekler: her istekte karışık sıra, kişiyle eşleşme bilgisi yok
         occupations: shuffled(m.participants.map((x) => x.user.occupationSector).filter((o): o is string => !!o)),

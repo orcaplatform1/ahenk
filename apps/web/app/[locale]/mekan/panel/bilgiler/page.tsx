@@ -8,7 +8,7 @@ import { VenueAuthError, VenueMe, mediaUrl, venueApi } from '@/lib/venueApi';
 import { isVenuePhoto, VENUE_PHOTO_ACCEPT } from '@/lib/imageType';
 import { panelCard, useVenuePanel } from '../context';
 
-const MAX_PHOTOS = 3;
+// Tek fotoğraf (en az 1, en fazla 1); yeni seçim ilk fotoğrafın yerine geçer
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
@@ -41,6 +41,7 @@ export default function BilgilerPage() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [pickedName, setPickedName] = useState('');
 
   function fail(e: unknown) {
     if (e instanceof VenueAuthError) onAuthLost();
@@ -56,27 +57,17 @@ export default function BilgilerPage() {
     } catch (err) { fail(err); } finally { setSaving(false); }
   }
 
-  async function addPhotos(list: FileList | null) {
-    if (!list?.length) return;
-    const picked = Array.from(list);
+  async function pickPhoto(f: File | undefined) {
+    if (!f) return;
     setError(''); setMessage('');
-    if (picked.some((f) => f.size > MAX_PHOTO_BYTES)) { setError(t('vp.photoTooBig')); return; }
-    if (me.venue.photos.length + picked.length > MAX_PHOTOS) { setError(t('vp.photoMax', { n: MAX_PHOTOS })); return; }
+    if (f.size > MAX_PHOTO_BYTES) { setError(t('vp.photoTooBig')); return; }
     // Tür içerikten kontrol edilir (uzantı değil); HEIC/HEIF kabul edilir, sunucuda WebP'ye çevrilir
-    for (const f of picked) {
-      if (!(await isVenuePhoto(f))) { setError(t('vp.photoFormat')); return; }
-    }
+    if (!(await isVenuePhoto(f))) { setError(t('vp.photoFormat')); return; }
     const body = new FormData();
-    picked.forEach((f) => body.append('photos', f));
+    body.append('photos', f);
     setUploading(true);
-    try { setMe(await venueApi.post<VenueMe>('/photos', body)); }
+    try { setMe(await venueApi.post<VenueMe>('/photos', body)); setPickedName(f.name); }
     catch (err) { fail(err); } finally { setUploading(false); }
-  }
-
-  async function removePhoto(url: string) {
-    setError(''); setMessage('');
-    try { setMe(await venueApi.delete<VenueMe>('/photos', { url })); }
-    catch (err) { fail(err); }
   }
 
   return (
@@ -113,24 +104,21 @@ export default function BilgilerPage() {
       </form>
 
       <section style={{ ...panelCard, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('vp.photosTitle', { n: MAX_PHOTOS })}</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 8 }}>
-          {me.venue.photos.map((url, i) => (
-            <div key={url} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={mediaUrl(url)} alt={t('vp.photoAlt', { n: i + 1 })} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              {me.venue.photos.length > 1 && (
-                <button type="button" aria-label={t('vp.photoDelete', { n: i + 1 })} onClick={() => removePhoto(url)} style={{ position: 'absolute', top: 4, right: 4, width: 32, height: 32, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#fff', cursor: 'pointer' }}>✕</button>
-              )}
-            </div>
-          ))}
-        </div>
-        {me.venue.photos.length < MAX_PHOTOS && (
-          <label style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, border: '1px dashed rgba(255,255,255,0.2)', borderRadius: 10, color: '#ff6b6b', fontSize: '0.9rem', cursor: 'pointer' }}>
-            {uploading ? t('vp.loading') : t('vp.addPhoto')}
-            <input type="file" accept={VENUE_PHOTO_ACCEPT} multiple disabled={uploading} onChange={(e) => { addPhotos(e.target.files); e.target.value = ''; }} style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
-          </label>
+        <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{t('vp.photoLabel')}</h2>
+        {/* Yalnız ilk fotoğraf gösterilir; eski kayıtlardaki diğer fotoğraflar veritabanında durur */}
+        {me.venue.photos[0] && (
+          <div style={{ width: '100%', aspectRatio: '16 / 9', borderRadius: 10, overflow: 'hidden' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={mediaUrl(me.venue.photos[0])} alt={t('vp.photoAlt', { n: 1 })} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
         )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
+          <label className={`btn-primary justify-center${uploading ? ' opacity-70' : ''}`} style={{ minHeight: 44, flexShrink: 0, cursor: uploading ? 'not-allowed' : 'pointer' }}>
+            {uploading ? t('vp.loading') : t('vp.photoPick')}
+            <input type="file" accept={VENUE_PHOTO_ACCEPT} disabled={uploading} onChange={(e) => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }} style={{ display: 'none' }} />
+          </label>
+          <span style={{ fontSize: '0.78rem', color: '#888', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pickedName || t('vp.photoNone')}</span>
+        </div>
       </section>
 
       {message && <p style={{ color: '#4ade80', fontSize: '0.85rem', margin: 0 }}>{message}</p>}

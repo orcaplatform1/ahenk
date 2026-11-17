@@ -20,7 +20,7 @@ import {
 } from "@nestjs/common";
 import { HideEmailForAdminInterceptor, KeepEmails } from "./hide-email.interceptor";
 import { FilesInterceptor } from "@nestjs/platform-express";
-import { VENUE_PHOTO_MAX_BYTES, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
+import { VENUE_FORM_PHOTO_MAX_COUNT, VENUE_PHOTO_MAX_BYTES } from "../venue-panel/venue-media";
 import { IsEnum, IsOptional, IsString } from "class-validator";
 import { Request, Response } from "express";
 import { AdminService } from "./admin.service";
@@ -219,8 +219,11 @@ export class AdminController {
     @Query("week", new DefaultValuePipe(0), ParseIntPipe) week?: number,
     @Query("page", new DefaultValuePipe(1), ParseIntPipe) page?: number,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit?: number,
+    @Query("type") type?: string,
+    @Query("cityId") cityId?: string,
+    @Query("order") order?: string,
   ) {
-    return this.adminService.listMeetings({ status, city, week: week || undefined, page, limit });
+    return this.adminService.listMeetings({ status, city, week: week || undefined, page, limit, type, cityId, order });
   }
 
   @Get("meetings/without-venue")
@@ -289,7 +292,7 @@ export class AdminController {
 
   @Post("venues/:id/photos")
   @Roles(UserRole.SUPERADMIN)
-  @UseInterceptors(FilesInterceptor("photos", VENUE_PHOTO_MAX_COUNT, { limits: { fileSize: VENUE_PHOTO_MAX_BYTES } }))
+  @UseInterceptors(FilesInterceptor("photos", VENUE_FORM_PHOTO_MAX_COUNT, { limits: { fileSize: VENUE_PHOTO_MAX_BYTES } }))
   addVenuePhotos(@Param("id") id: string, @UploadedFiles() files: Express.Multer.File[], @Req() req: Request) {
     return this.adminService.addVenuePhotos(id, (req.user as { id: string }).id, files);
   }
@@ -469,23 +472,6 @@ export class AdminController {
   }
 
   // ─── Matches ─────────────────────────────────────────────────────────────
-
-  @Get("matches/open")
-  getOpenTables(@Req() req: Request) {
-    return this.adminService.getOpenTables((req.user as { role: UserRole }).role);
-  }
-
-  @Get("matches/waiting/:userId/bots")
-  @Roles(UserRole.SUPERADMIN)
-  getBotsForWaiting(@Param("userId") userId: string) {
-    return this.adminService.getBotsForWaiting(userId);
-  }
-
-  @Post("matches/waiting/:userId/bot")
-  @Roles(UserRole.SUPERADMIN)
-  placeOneOnOneBot(@Param("userId") userId: string, @Body() dto: PlaceBotDto) {
-    return this.adminService.placeOneOnOneBot(userId, dto.botUserId);
-  }
 
   @Get("matches/:id/bots")
   @Roles(UserRole.SUPERADMIN)

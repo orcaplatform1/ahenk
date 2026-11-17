@@ -6,7 +6,6 @@ import { myRole, myId } from '@/lib/adminRole';
 import { AdminUserEdit } from '@/components/AdminUserEdit';
 import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
 import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } from '@/components/AdminNoShowWarnings';
-import { AdminOpenTables } from '@/components/AdminOpenTables';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 import { AdminSelect } from '@/components/AdminSelect';
 
@@ -18,17 +17,10 @@ function canSanction(target: { id: string; role: string }): boolean {
   return (target.role !== 'ADMIN' && target.role !== 'SUPERADMIN') || myRole() === 'SUPERADMIN';
 }
 
-
-const inputStyle: React.CSSProperties = {
-  background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-  padding: '7px 12px', fontSize: 13, color: TEXT,
-  outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
-};
-
 interface MeetingRow {
   id: string;
   title: string;
-  type: 'GROUP' | 'ONE_ON_ONE';
+  type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
   status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
   scheduledAt: string;
   locationText: string | null;
@@ -110,7 +102,28 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
 };
 
 const VENUE_PACKAGES = ['SADE', 'ORTA', 'PREMIUM'];
-const TYPE_LABEL: Record<string, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Baş Başa' };
+const TYPE_LABEL: Record<string, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Baş Başa', KANKA: 'Kankamla' };
+
+// Sekmeler masa durum alanından: PENDING → Bekleyen, ACTIVE → Aktif, COMPLETED → Geçmiş, CANCELLED → İptal
+type StatusTab = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+const STATUS_TABS: [StatusTab, string][] = [['PENDING', 'Bekleyen'], ['ACTIVE', 'Aktif'], ['COMPLETED', 'Geçmiş'], ['CANCELLED', 'İptal']];
+const TYPE_FILTERS = [{ value: '', label: 'Tümü' }, { value: 'GROUP', label: 'Grup' }, { value: 'ONE_ON_ONE', label: 'Baş Başa' }, { value: 'KANKA', label: 'Kankamla' }];
+
+// Gün başlığı "18 Kas 2026" ve saat "20:00" (TR saati)
+const dayLabel = (d: string) => new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', year: 'numeric' });
+const timeLabel = (d: string) => new Date(d).toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' });
+
+// Liste tarihe göre gruplanır; gün içi saat artan. Sunucu sırası günlerin sırasını belirler (Bekleyen/Aktif en yakın, Geçmiş/İptal en yeni üstte)
+function groupByDay(rows: MeetingRow[]) {
+  const groups: { day: string; rows: MeetingRow[] }[] = [];
+  for (const m of rows) {
+    const day = dayLabel(m.scheduledAt);
+    const g = groups.find(x => x.day === day);
+    if (g) g.rows.push(m); else groups.push({ day, rows: [m] });
+  }
+  for (const g of groups) g.rows.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
+  return groups;
+}
 const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 
 function fmtDate(d: string) {
@@ -123,13 +136,14 @@ function oceanAvg(o: OceanScore | null) {
 }
 
 export default function AdminMatches() {
-  const [tab, setTab] = useState<'all' | 'open'>('all');
   const [items, setItems] = useState<MeetingRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusTab, setStatusTab] = useState<StatusTab>('PENDING');
+  const [typeFilter, setTypeFilter] = useState('');
   const [cityFilter, setCityFilter] = useState('');
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
   const [page, setPage] = useState(1);
 
   const [selected, setSelected] = useState<MeetingDetail | null>(null);
@@ -161,18 +175,21 @@ export default function AdminMatches() {
   const [sanctionReason, setSanctionReason] = useState('');
   const [grantPlan, setGrantPlan] = useState('');
 
-  const load = useCallback(() => {
-    setLoading(true);
-    const params = new URLSearchParams({ page: String(page), limit: '25' });
-    if (statusFilter) params.set('status', statusFilter);
-    if (cityFilter) params.set('city', cityFilter);
+  // silent: yükleme iskeleti göstermeden yeniler (detay penceresindeki değişiklikten sonra)
+  const load = useCallback((silent?: boolean) => {
+    if (!silent) setLoading(true);
+    const params = new URLSearchParams({ page: String(page), limit: '25', status: statusTab });
+    if (statusTab === 'PENDING' || statusTab === 'ACTIVE') params.set('order', 'asc');
+    if (typeFilter) params.set('type', typeFilter);
+    if (cityFilter) params.set('cityId', cityFilter);
     api.get<ListResponse>(`/admin/meetings?${params}`)
       .then(r => { setItems(r.items ?? []); setTotal(r.total ?? 0); })
       .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [statusFilter, cityFilter, page]);
+      .finally(() => { if (!silent) setLoading(false); });
+  }, [statusTab, typeFilter, cityFilter, page]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { api.get<{ id: string; name: string }[]>('/admin/cities').then(c => setCities(Array.isArray(c) ? c : [])).catch(() => {}); }, []);
   const [withoutVenue, setWithoutVenue] = useState(0);
   useEffect(() => { api.get<{ count: number }>('/admin/meetings/without-venue').then(r => setWithoutVenue(r.count)).catch(() => {}); }, [items]);
   useEffect(() => { api.get<string[]>('/admin/sanction-reasons').then(setSanctionReasons).catch(() => {}); }, []);
@@ -184,7 +201,6 @@ export default function AdminMatches() {
   };
 
   async function openDetail(row: MeetingRow) {
-    if (selected?.id === row.id) { setSelected(null); return; }
     setDetailLoading(true);
     setSelected(null);
     try {
@@ -211,7 +227,7 @@ export default function AdminMatches() {
     try {
       await api.patch(`/admin/matches/${selected.id}/approve`, {});
       setSelected(s => s ? { ...s, status: 'ACTIVE' } : null);
-      setItems(prev => prev.map(m => m.id === selected.id ? { ...m, status: 'ACTIVE' } : m));
+      load(true);
     } catch (e) { setError(`Onaylama başarısız: ${(e as Error).message}`); }
     finally { setApproving(false); }
   }
@@ -228,7 +244,7 @@ export default function AdminMatches() {
     try {
       const r = await api.patch<{ locationText: string }>(`/admin/meetings/${selected.id}/assign-venue`, { venueId: venueChoice });
       setSelected(s => s ? { ...s, locationText: r.locationText } : null);
-      setItems(prev => prev.map(m => m.id === selected.id ? { ...m, locationText: r.locationText, venueMissing: false } : m));
+      load(true);
       loadVenueOptions(selected.id);
     } catch (e) { setVenueError((e as Error).message); }
     finally { setVenueSaving(false); }
@@ -243,6 +259,7 @@ export default function AdminMatches() {
       setSelected(d);
       setBotToPlace('');
       loadBots(selected.id);
+      load(true);
     } catch (e) { setError((e as Error).message); }
     finally { setPlacingBot(false); }
   }
@@ -253,6 +270,7 @@ export default function AdminMatches() {
     try {
       await api.delete(`/admin/meetings/${selected.id}/participants/${userId}`);
       setSelected(s => s ? { ...s, participants: s.participants.filter(p => p.userId !== userId) } : null);
+      load(true);
     } catch (e) { setError(`Katılımcı çıkarılamadı: ${(e as Error).message}`); }
     finally { setRemoving(null); }
   }
@@ -263,7 +281,7 @@ export default function AdminMatches() {
     try {
       await api.delete(`/admin/meetings/${selected.id}`);
       setSelected(s => s ? { ...s, status: 'CANCELLED' } : null);
-      setItems(prev => prev.map(m => m.id === selected.id ? { ...m, status: 'CANCELLED' } : m));
+      load(true);
       setCancelConfirm(false);
     } catch (e) { setError(`İptal başarısız: ${(e as Error).message}`); }
     finally { setCancelling(false); }
@@ -343,115 +361,84 @@ export default function AdminMatches() {
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {([['all', 'Tüm masalar'], ['open', 'Açık masalar']] as const).map(([key, label]) => (
+      {/* Durum sekmeleri */}
+      <div role="tablist" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+        {STATUS_TABS.map(([key, label]) => (
           <button
             key={key}
-            onClick={() => setTab(key)}
+            role="tab"
+            aria-selected={statusTab === key}
+            onClick={() => { setStatusTab(key); setPage(1); }}
             style={{
               padding: '7px 16px', borderRadius: 99, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: SANS,
-              background: tab === key ? 'rgba(59,130,246,0.15)' : 'transparent',
-              border: `1px solid ${tab === key ? 'rgba(59,130,246,0.45)' : BORDER}`,
-              color: tab === key ? '#93c5fd' : MUTED,
+              background: statusTab === key ? 'rgba(59,130,246,0.15)' : 'transparent',
+              border: `1px solid ${statusTab === key ? 'rgba(59,130,246,0.45)' : BORDER}`,
+              color: statusTab === key ? '#93c5fd' : MUTED,
             }}
           >{label}</button>
         ))}
       </div>
 
-      {tab === 'open' && <AdminOpenTables isSuperadmin={isSuperadmin} onUserClick={openUser} />}
-
-      {tab === 'all' && (<>
-      {/* Filtreler */}
+      {/* Filtreler: Tip ve Şehir */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
         <div style={{ width: 160 }}>
           <AdminSelect
-            value={statusFilter}
-            onChange={v => { setStatusFilter(v); setPage(1); }}
-            placeholder="Tüm durumlar"
-            options={[
-              { value: '', label: 'Tüm durumlar' }, { value: 'PENDING', label: 'Bekliyor' }, { value: 'ACTIVE', label: 'Aktif' },
-              { value: 'COMPLETED', label: 'Tamamlandı' }, { value: 'CANCELLED', label: 'İptal' },
-            ]}
+            value={typeFilter}
+            onChange={v => { setTypeFilter(v); setPage(1); }}
+            placeholder="Tip: Tümü"
+            title="Tip"
+            options={TYPE_FILTERS}
           />
         </div>
-        <input
-          type="text"
-          value={cityFilter}
-          onChange={e => { setCityFilter(e.target.value); setPage(1); }}
-          placeholder="Şehir..."
-          style={{ ...inputStyle, width: 140 }}
-        />
+        <div style={{ width: 180 }}>
+          <AdminSelect
+            value={cityFilter}
+            onChange={v => { setCityFilter(v); setPage(1); }}
+            placeholder="Şehir: Tümü"
+            title="Şehir"
+            options={[{ value: '', label: 'Tümü' }, ...cities.map(c => ({ value: c.id, label: c.name }))]}
+          />
+        </div>
       </div>
 
-      {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
+      {error && !selected && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 
-      {/* Tablo */}
-      <div className="ll-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
-        <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h2 className="ll-title">Masalar</h2>
-          <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, marginLeft: 'auto' }}>{total} kayıt</span>
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table className="adm-table" style={{ width: '100%', minWidth: 420, borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                {['Masa', 'Tarih', 'Tip', 'Şehir', 'Kişi', 'Mekan', 'Durum', ''].map(h => (
-                  <th key={h} style={{ padding: '8px 14px', textAlign: 'left', ...LABEL, color: MUTED }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading
-                ? [0,1,2,3,4].map(i => (
-                    <tr key={i}>
-                      <td colSpan={8} style={{ padding: '8px 14px' }}>
-                        <div style={{ height: 36, background: SURFACE, borderRadius: 6, opacity: 0.5 }} />
-                      </td>
-                    </tr>
-                  ))
-                : items.map((m, i) => {
-                    const s = STATUS_CFG[m.status] ?? STATUS_CFG.PENDING;
-                    const isActive = selected?.id === m.id;
+      {/* Liste: güne göre gruplu, her masa tek satır */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
+        {loading
+          ? [0, 1, 2, 3].map(i => <div key={i} style={{ height: 44, background: SURFACE, borderRadius: 8, opacity: 0.5 }} />)
+          : items.length === 0
+            ? (
+              <div className="ll-card" style={{ padding: '40px 20px', textAlign: 'center' }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: MUTED }}>Masa yok</p>
+              </div>
+            )
+            : groupByDay(items).map(g => (
+              <div key={g.day}>
+                <p style={{ margin: '0 0 8px', ...LABEL, color: MUTED }}>{g.day}</p>
+                <div className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
+                  {g.rows.map((m, i) => {
+                    const st = STATUS_CFG[m.status] ?? STATUS_CFG.PENDING;
                     return (
-                      <tr
+                      <button
                         key={m.id}
                         onClick={() => openDetail(m)}
                         style={{
-                          borderBottom: i < items.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none',
-                          background: isActive ? 'rgba(59,130,246,0.07)' : 'transparent',
-                          cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 44, padding: '10px 16px',
+                          background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: SANS,
+                          borderBottom: i < g.rows.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none',
                         }}
                       >
-                        <td data-label="Masa" style={{ padding: '10px 14px', fontSize: 11, color: TEXT, fontWeight: 600 }}>{masaName(m)}</td>
-                        <td data-label="Tarih" style={{ padding: '10px 14px', fontSize: 11, color: TEXT, whiteSpace: 'nowrap' }}>{fmtDate(m.scheduledAt)}</td>
-                        <td data-label="Tip" style={{ padding: '10px 14px', fontSize: 11, color: MUTED }}>{TYPE_LABEL[m.type] ?? m.type}</td>
-                        <td data-label="Şehir" style={{ padding: '10px 14px', fontSize: 11, color: MUTED, whiteSpace: 'nowrap' }}>{m.city?.name ?? '—'}</td>
-                        <td data-label="Kişi" style={{ padding: '10px 14px', fontSize: 11, color: MUTED, textAlign: 'center' }}>{m._count.participants}</td>
-                        <td data-label="Mekan" style={{ padding: '10px 14px', fontSize: 11, color: MUTED, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.venueMissing ? <span style={{ color: '#f59e0b', fontWeight: 700 }}>⚠ Mekânsız</span> : m.locationText ?? '—'}</td>
-                        <td data-label="Durum" style={{ padding: '10px 14px' }}>
-                          <span style={{
-                            ...LABEL,
-                            padding: '2px 7px', borderRadius: 99,
-                            background: s.bg, border: `1px solid ${s.border}`, color: s.color,
-                          }}>{s.label}</span>
-                        </td>
-                        <td data-label="" style={{ padding: '10px 14px', fontSize: 11, color: MUTED }}>{isActive ? '▲' : '▼'}</td>
-                      </tr>
+                        <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</span>
+                        <span style={{ fontSize: 12, color: MUTED, fontFamily: MONO, flexShrink: 0 }}>{timeLabel(m.scheduledAt)}</span>
+                        <span style={{ fontSize: 12, color: MUTED, flexShrink: 0 }}>{m._count.participants} kişi</span>
+                        <span style={{ ...LABEL, padding: '2px 7px', borderRadius: 99, background: st.bg, border: `1px solid ${st.border}`, color: st.color, flexShrink: 0 }}>{st.label}</span>
+                      </button>
                     );
-                  })
-              }
-            </tbody>
-          </table>
-        </div>
-
-        {!loading && items.length === 0 && (
-          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: MUTED }}>Henüz masa yok</p>
-          </div>
-        )}
+                  })}
+                </div>
+              </div>
+            ))}
       </div>
 
       {/* Sayfalama */}
@@ -471,15 +458,22 @@ export default function AdminMatches() {
         </div>
       )}
 
-      {/* Detay */}
-      {detailLoading && (
-        <div className="ll-card" style={{ marginBottom: 16 }}>
-          {[0,1,2].map(i => <div key={i} style={{ height: 36, background: SURFACE, borderRadius: 6, opacity: 0.5, marginBottom: 10 }} />)}
-        </div>
-      )}
-
-      {selected && !detailLoading && (
-        <div className="ll-card" style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Detay: ortada modal */}
+      {(detailLoading || selected) && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setSelected(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="ll-card"
+            style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 20 }}
+            onClick={e => e.stopPropagation()}
+          >
+          {detailLoading && [0, 1, 2].map(i => <div key={i} style={{ height: 36, background: SURFACE, borderRadius: 6, opacity: 0.5 }} />)}
+          {selected && !detailLoading && (<>
+          {error && <p style={{ margin: 0, fontSize: 13, color: RED }}>{error}</p>}
 
           {/* Header */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, minWidth: 0 }}>
@@ -500,7 +494,7 @@ export default function AdminMatches() {
               }}>
                 {STATUS_CFG[selected.status]?.label}
               </span>
-              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: MUTED, padding: 4 }}>✕</button>
+              <button onClick={() => setSelected(null)} aria-label="Kapat" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: MUTED, padding: 4, minWidth: 44, minHeight: 44 }}>✕</button>
             </div>
           </div>
 
@@ -771,10 +765,10 @@ export default function AdminMatches() {
               Masayı İptal Et
             </button>
           )}
+          </>)}
+          </div>
         </div>
       )}
-
-      </>)}
 
       {/* İptal onay modalı */}
       {cancelConfirm && (

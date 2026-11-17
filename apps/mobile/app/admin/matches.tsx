@@ -1,13 +1,14 @@
-// apps/web/app/admin/matches/page.tsx karşılığı (Masalar: Tüm masalar + Açık masalar, masa detayı, kullanıcı penceresi)
+// apps/web/app/admin/matches/page.tsx karşılığı (Masalar: Bekleyen / Aktif / Geçmiş / İptal,
+// masa detayı alttan açılan panelde, kullanıcı penceresi)
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, useWindowDimensions, View, type ScrollViewInstance } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
 import { myId, myRole } from '@/lib/adminRole';
 import { Btn } from '@/components/ui';
-import { ACard, AError, ALabel, AMono, APage, AT, ATableRow, ATitle } from '@/components/admin/AdminUi';
-import { AdminSelect, AInput, APager } from '@/components/admin/AdminControls';
+import { ACard, AError, ALabel, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
+import { AdminSelect, APager } from '@/components/admin/AdminControls';
 import { StatusPill } from '@/components/admin/StatusPill';
-import { AdminOpenTables } from '@/components/admin/AdminOpenTables';
 import { AdminNoShowWarnings, AdminSanctionHistory, AdminUserEdit, type NoShowReportItem, type NoShowWarningInfo } from '@/components/admin/UserParts';
 import { adm, llCard } from '@/theme/theme';
 
@@ -17,7 +18,7 @@ function canSanction(t: { id: string; role: string }) {
   return (t.role !== 'ADMIN' && t.role !== 'SUPERADMIN') || myRole() === 'SUPERADMIN';
 }
 
-interface MeetingRow { id: string; title: string; type: 'GROUP' | 'ONE_ON_ONE'; status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'; scheduledAt: string; locationText: string | null; venueMissing?: boolean; city?: { name: string } | null; _count: { participants: number } }
+interface MeetingRow { id: string; title: string; type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'; status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'; scheduledAt: string; locationText: string | null; venueMissing?: boolean; city?: { name: string } | null; _count: { participants: number } }
 interface OceanScore { openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number }
 interface Participant { userId: string; status: string; user: { id: string; email: string; isBot?: boolean; profile: { firstName: string; lastName: string; city: string | null } | null; oceanScore: OceanScore | null; subscriptions: { plan: string }[] } }
 interface MeetingDetail extends MeetingRow {
@@ -44,7 +45,26 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
   CANCELLED: { label: 'İptal', color: adm.red, bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)' },
 };
 const VENUE_PACKAGES = ['SADE', 'ORTA', 'PREMIUM'];
-const TYPE_LABEL: Record<string, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Baş Başa' };
+const TYPE_LABEL: Record<string, string> = { GROUP: 'Grup', ONE_ON_ONE: 'Baş Başa', KANKA: 'Kankamla' };
+
+// Sekmeler masa durum alanından: PENDING → Bekleyen, ACTIVE → Aktif, COMPLETED → Geçmiş, CANCELLED → İptal
+type StatusTab = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+const STATUS_TABS: [StatusTab, string][] = [['PENDING', 'Bekleyen'], ['ACTIVE', 'Aktif'], ['COMPLETED', 'Geçmiş'], ['CANCELLED', 'İptal']];
+const TYPE_FILTERS = [{ value: '', label: 'Tümü' }, { value: 'GROUP', label: 'Grup' }, { value: 'ONE_ON_ONE', label: 'Baş Başa' }, { value: 'KANKA', label: 'Kankamla' }];
+// Gün başlığı "18 Kas 2026" ve saat "20:00" (TR saati)
+const dayLabel = (d: string) => new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', year: 'numeric' });
+const timeLabel = (d: string) => new Date(d).toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' });
+// Tarihe göre gruplu; gün içi saat artan. Günlerin sırası sunucudan (Bekleyen/Aktif en yakın, Geçmiş/İptal en yeni üstte)
+function groupByDay(rows: MeetingRow[]) {
+  const groups: { day: string; rows: MeetingRow[] }[] = [];
+  for (const m of rows) {
+    const day = dayLabel(m.scheduledAt);
+    const g = groups.find(x => x.day === day);
+    if (g) g.rows.push(m); else groups.push({ day, rows: [m] });
+  }
+  for (const g of groups) g.rows.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
+  return groups;
+}
 const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
 const INACTIVE = ['CANCELLED', 'DECLINED', 'NO_SHOW'];
 const ROW_BORDER = 'rgba(26,58,92,0.5)';
@@ -58,13 +78,15 @@ const Badge = ({ text, color }: { text: string; color: string }) => <AT w={800} 
 
 export default function AdminMatches() {
   const { height } = useWindowDimensions();
-  const [tab, setTab] = useState<'all' | 'open'>('all');
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<MeetingRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusTab, setStatusTab] = useState<StatusTab>('PENDING');
+  const [typeFilter, setTypeFilter] = useState('');
   const [cityFilter, setCityFilter] = useState('');
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
   const [page, setPage] = useState(1);
 
   const [selected, setSelected] = useState<MeetingDetail | null>(null);
@@ -91,17 +113,20 @@ export default function AdminMatches() {
   const [sanctionReason, setSanctionReason] = useState('');
   const [grantPlan, setGrantPlan] = useState('');
 
-  const load = useCallback(() => {
-    setLoading(true);
-    const params = new URLSearchParams({ page: String(page), limit: '25' });
-    if (statusFilter) params.set('status', statusFilter);
-    if (cityFilter) params.set('city', cityFilter);
+  // silent: yükleme iskeleti göstermeden yeniler (detay panelindeki değişiklikten sonra)
+  const load = useCallback((silent?: boolean) => {
+    if (!silent) setLoading(true);
+    const params = new URLSearchParams({ page: String(page), limit: '25', status: statusTab });
+    if (statusTab === 'PENDING' || statusTab === 'ACTIVE') params.set('order', 'asc');
+    if (typeFilter) params.set('type', typeFilter);
+    if (cityFilter) params.set('cityId', cityFilter);
     api.get<ListResponse>(`/admin/meetings?${params}`)
       .then(r => { setItems(r.items ?? []); setTotal(r.total ?? 0); })
       .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [statusFilter, cityFilter, page]);
+      .finally(() => { if (!silent) setLoading(false); });
+  }, [statusTab, typeFilter, cityFilter, page]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { api.get<{ id: string; name: string }[]>('/admin/cities').then(c => setCities(Array.isArray(c) ? c : [])).catch(() => {}); }, []);
   const [withoutVenue, setWithoutVenue] = useState(0);
   useEffect(() => { api.get<{ count: number }>('/admin/meetings/without-venue').then(r => setWithoutVenue(r.count)).catch(() => {}); }, [items]);
   useEffect(() => { api.get<string[]>('/admin/sanction-reasons').then(setSanctionReasons).catch(() => {}); }, []);
@@ -114,7 +139,6 @@ export default function AdminMatches() {
       .catch((e: Error) => setError(`Mekanlar yüklenemedi: ${e.message}`));
   }
   async function openDetail(row: MeetingRow) {
-    if (selected?.id === row.id) { setSelected(null); return; }
     setDetailLoading(true); setSelected(null);
     try {
       const [d, messages] = await Promise.all([
@@ -127,7 +151,7 @@ export default function AdminMatches() {
   }
   async function approve() {
     if (!selected) return; setApproving(true);
-    try { await api.patch(`/admin/matches/${selected.id}/approve`, {}); setSelected(s => (s ? { ...s, status: 'ACTIVE' } : null)); setItems(p => p.map(m => (m.id === selected.id ? { ...m, status: 'ACTIVE' } : m))); }
+    try { await api.patch(`/admin/matches/${selected.id}/approve`, {}); setSelected(s => (s ? { ...s, status: 'ACTIVE' } : null)); load(true); }
     catch (e) { setError(`Onaylama başarısız: ${(e as Error).message}`); } finally { setApproving(false); }
   }
   async function assignVenue() {
@@ -135,23 +159,23 @@ export default function AdminMatches() {
     try {
       const r = await api.patch<{ locationText: string }>(`/admin/meetings/${selected.id}/assign-venue`, { venueId: venueChoice });
       setSelected(s => (s ? { ...s, locationText: r.locationText } : null));
-      setItems(p => p.map(m => (m.id === selected.id ? { ...m, locationText: r.locationText, venueMissing: false } : m)));
+      load(true);
       loadVenueOptions(selected.id);
     } catch (e) { setVenueError((e as Error).message); } finally { setVenueSaving(false); }
   }
   async function placeBot() {
     if (!selected || !botToPlace) return; setPlacingBot(true); setError('');
-    try { await api.post(`/admin/matches/${selected.id}/bot`, { botUserId: botToPlace }); setSelected(await api.get<MeetingDetail>(`/admin/meetings/${selected.id}`)); setBotToPlace(''); loadBots(selected.id); }
+    try { await api.post(`/admin/matches/${selected.id}/bot`, { botUserId: botToPlace }); setSelected(await api.get<MeetingDetail>(`/admin/meetings/${selected.id}`)); setBotToPlace(''); loadBots(selected.id); load(true); }
     catch (e) { setError((e as Error).message); } finally { setPlacingBot(false); }
   }
   async function removeParticipant(userId: string) {
     if (!selected) return; setRemoving(userId);
-    try { await api.delete(`/admin/meetings/${selected.id}/participants/${userId}`); setSelected(s => (s ? { ...s, participants: s.participants.filter(p => p.userId !== userId) } : null)); }
+    try { await api.delete(`/admin/meetings/${selected.id}/participants/${userId}`); setSelected(s => (s ? { ...s, participants: s.participants.filter(p => p.userId !== userId) } : null)); load(true); }
     catch (e) { setError(`Katılımcı çıkarılamadı: ${(e as Error).message}`); } finally { setRemoving(null); }
   }
   async function cancelMeeting() {
     if (!selected) return; setCancelling(true);
-    try { await api.delete(`/admin/meetings/${selected.id}`); setSelected(s => (s ? { ...s, status: 'CANCELLED' } : null)); setItems(p => p.map(m => (m.id === selected.id ? { ...m, status: 'CANCELLED' } : m))); setCancelConfirm(false); }
+    try { await api.delete(`/admin/meetings/${selected.id}`); setSelected(s => (s ? { ...s, status: 'CANCELLED' } : null)); load(true); setCancelConfirm(false); }
     catch (e) { setError(`İptal başarısız: ${(e as Error).message}`); } finally { setCancelling(false); }
   }
   function refreshUser(userId: string) { api.get<AdminUserDetail>(`/admin/users/${userId}`).then(setUserModal).catch((e: Error) => setError(`Kullanıcı yüklenemedi: ${e.message}`)); }
@@ -193,50 +217,43 @@ export default function AdminMatches() {
           <AT w={600} style={{ marginTop: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, fontSize: 13, color: adm.amber, backgroundColor: 'rgba(245,158,11,0.12)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.35)', overflow: 'hidden' }}>⚠ Mekânsız masa: {withoutVenue}</AT>
         )}
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-        {([['all', 'Tüm masalar'], ['open', 'Açık masalar']] as const).map(([key, label]) => <Btn key={key} variant="admMatchTab" selected={tab === key} label={label} onPress={() => setTab(key)} />)}
-      </View>
-
-      {tab === 'open' && <AdminOpenTables isSuperadmin={isSuperadmin} onUserClick={openUser} />}
-
-      {tab === 'all' && (
-        <>
+      <>
+          <View accessibilityRole="tablist" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            {STATUS_TABS.map(([key, label]) => <Btn key={key} variant="admMatchTab" selected={statusTab === key} label={label} onPress={() => { setStatusTab(key); setPage(1); }} />)}
+          </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
             <View style={{ width: 160 }}>
-              <AdminSelect value={statusFilter} onChange={v => { setStatusFilter(v); setPage(1); }} placeholder="Tüm durumlar"
-                options={[{ value: '', label: 'Tüm durumlar' }, { value: 'PENDING', label: 'Bekliyor' }, { value: 'ACTIVE', label: 'Aktif' }, { value: 'COMPLETED', label: 'Tamamlandı' }, { value: 'CANCELLED', label: 'İptal' }]} />
+              <AdminSelect value={typeFilter} onChange={v => { setTypeFilter(v); setPage(1); }} placeholder="Tip: Tümü" title="Tip" options={TYPE_FILTERS} />
             </View>
-            <AInput value={cityFilter} onChangeText={t => { setCityFilter(t); setPage(1); }} placeholder="Şehir..." style={{ width: 140, paddingHorizontal: 12 }} />
+            <View style={{ width: 180 }}>
+              <AdminSelect value={cityFilter} onChange={v => { setCityFilter(v); setPage(1); }} placeholder="Şehir: Tümü" title="Şehir" options={[{ value: '', label: 'Tümü' }, ...cities.map(c => ({ value: c.id, label: c.name }))]} />
+            </View>
           </View>
-          <AError>{error}</AError>
+          {!sel && <AError>{error}</AError>}
 
-          <ACard style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
-            <View style={{ paddingVertical: 12, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              <ATitle>Masalar</ATitle>
-              <AMono style={{ fontSize: 10, marginLeft: 'auto' }}>{total} kayıt</AMono>
-            </View>
-            {loading ? (
-              <View>{[0, 1, 2, 3, 4].map(i => <View key={i} style={{ paddingVertical: 8, paddingHorizontal: 14 }}><View style={{ height: 36, backgroundColor: adm.surface, borderRadius: 6, opacity: 0.5 }} /></View>)}</View>
-            ) : items.map((m, i) => {
-              const s = STATUS_CFG[m.status] ?? STATUS_CFG.PENDING;
-              const active = sel?.id === m.id;
-              return (
-                <View key={m.id} style={{ backgroundColor: active ? 'rgba(59,130,246,0.07)' : 'transparent', borderBottomWidth: i < items.length - 1 ? 1 : 0, borderBottomColor: ROW_BORDER }}>
-                  <ATableRow last onPress={() => openDetail(m)} cells={[
-                    ['Masa', <AT key="n" w={600} style={{ fontSize: 11, textAlign: 'right' }}>{masaName(m)}</AT>],
-                    ['Tarih', <AT key="t" style={{ fontSize: 11 }}>{fmtDate(m.scheduledAt)}</AT>],
-                    ['Tip', <AT key="y" style={{ fontSize: 11, color: adm.muted }}>{TYPE_LABEL[m.type] ?? m.type}</AT>],
-                    ['Şehir', <AT key="c" style={{ fontSize: 11, color: adm.muted }}>{m.city?.name ?? '—'}</AT>],
-                    ['Kişi', <AT key="k" style={{ fontSize: 11, color: adm.muted }}>{m._count.participants}</AT>],
-                    ['Mekan', m.venueMissing ? <AT key="v" w={700} style={{ fontSize: 11, color: adm.amber }}>⚠ Mekânsız</AT> : <AT key="v" numberOfLines={1} style={{ fontSize: 11, color: adm.muted }}>{m.locationText ?? '—'}</AT>],
-                    ['Durum', <StatusPill key="s" text={s.label} color={s.color} bg={s.bg} border={s.border} />],
-                    ['', <AT key="a" style={{ fontSize: 11, color: adm.muted }}>{active ? '▲' : '▼'}</AT>],
-                  ]} />
+          <View style={{ gap: 16, marginBottom: 16 }}>
+            {loading ? [0, 1, 2, 3].map(i => <View key={i} style={{ height: 44, backgroundColor: adm.surface, borderRadius: 8, opacity: 0.5 }} />)
+              : items.length === 0 ? <ACard style={{ paddingVertical: 40, paddingHorizontal: 20, alignItems: 'center' }}><AT w={600} style={{ fontSize: 13, color: adm.muted }}>Masa yok</AT></ACard>
+              : groupByDay(items).map(g => (
+                <View key={g.day}>
+                  <ALabel style={{ marginBottom: 8 }}>{g.day}</ALabel>
+                  <ACard style={{ padding: 0, overflow: 'hidden' }}>
+                    {g.rows.map((m, i) => {
+                      const st = STATUS_CFG[m.status] ?? STATUS_CFG.PENDING;
+                      return (
+                        <Pressable key={m.id} onPress={() => openDetail(m)} accessibilityRole="button"
+                          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, paddingVertical: 10, paddingHorizontal: 16, opacity: pressed ? 0.7 : 1, borderBottomWidth: i < g.rows.length - 1 ? 1 : 0, borderBottomColor: ROW_BORDER })}>
+                          <AT w={600} numberOfLines={1} style={{ flex: 1, fontSize: 13 }}>{m.title}</AT>
+                          <AMono style={{ fontSize: 12 }}>{timeLabel(m.scheduledAt)}</AMono>
+                          <AT style={{ fontSize: 12, color: adm.muted }}>{m._count.participants} kişi</AT>
+                          <StatusPill text={st.label} color={st.color} bg={st.bg} border={st.border} />
+                        </Pressable>
+                      );
+                    })}
+                  </ACard>
                 </View>
-              );
-            })}
-            {!loading && items.length === 0 && <View style={{ paddingVertical: 40, paddingHorizontal: 20, alignItems: 'center' }}><AT w={600} style={{ fontSize: 13, color: adm.muted }}>Henüz masa yok</AT></View>}
-          </ACard>
+              ))}
+          </View>
 
           {totalPages > 1 && (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 20 }}>
@@ -245,11 +262,17 @@ export default function AdminMatches() {
               <Btn variant="admPager" label="Sonraki →" disabled={page === totalPages} onPress={() => setPage(p => Math.min(totalPages, p + 1))} />
             </View>
           )}
+      </>
 
-          {detailLoading && <ACard style={{ marginBottom: 16 }}>{[0, 1, 2].map(i => <View key={i} style={{ height: 36, backgroundColor: adm.surface, borderRadius: 6, opacity: 0.5, marginBottom: 10 }} />)}</ACard>}
-
-          {sel && !detailLoading && (
-            <ACard style={{ marginBottom: 16, gap: 20 }}>
+      {/* Masa detayı: alttan açılan panel */}
+      <Modal visible={detailLoading || !!sel} transparent animationType="slide" onRequestClose={() => setSelected(null)} statusBarTranslucent>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <Pressable style={{ flex: 1 }} onPress={() => setSelected(null)} accessibilityLabel="Kapat" />
+          <View style={{ maxHeight: '90%', borderTopLeftRadius: llCard.radius, borderTopRightRadius: llCard.radius, borderWidth: 1, borderBottomWidth: 0, borderColor: adm.border, backgroundColor: adm.card }}>
+            <ScrollView contentContainerStyle={{ padding: llCard.padding, paddingBottom: llCard.padding + insets.bottom, gap: 20 }} keyboardShouldPersistTaps="handled">
+              {detailLoading && [0, 1, 2].map(i => <View key={i} style={{ height: 36, backgroundColor: adm.surface, borderRadius: 6, opacity: 0.5 }} />)}
+              {sel && !detailLoading && (<>
+              <AError>{error}</AError>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                 <View style={{ flexGrow: 1, flexBasis: 160, minWidth: 0 }}>
                   <AT w={600} style={{ fontSize: 13 }}>{masaName(sel)}</AT>
@@ -363,10 +386,11 @@ export default function AdminMatches() {
               )}
 
               {sel.status !== 'CANCELLED' && sel.status !== 'COMPLETED' && <Btn variant="admRed9" label="Masayı İptal Et" onPress={() => setCancelConfirm(true)} />}
-            </ACard>
-          )}
-        </>
-      )}
+              </>)}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* İptal onay penceresi */}
       <Modal visible={cancelConfirm} transparent animationType="fade" onRequestClose={() => setCancelConfirm(false)}>

@@ -120,19 +120,6 @@ const pillStyle = (bg: string, color: string, border: string): React.CSSProperti
   letterSpacing: '0.04em', fontFamily: 'Inter, sans-serif', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
 });
 
-// Fotoğraf yokken mevcut boş kamera kutusu
-function CameraBox() {
-  return (
-    <div style={{ background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <rect x="1" y="5" width="22" height="15" rx="2" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
-        <circle cx="12" cy="12" r="4" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
-        <path d="M8 5l1.5-3h5L16 5" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
-}
-
 // Genel Uyum halkası (kayıtlı uyumSkoru, 0–100)
 function ScoreRing({ score }: { score: number }) {
   const D = 64, SW = 6, R = (D - SW) / 2, C = 2 * Math.PI * R;
@@ -843,19 +830,19 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
 
   // Kapak, bilgi şeridi ve katılımcılar
   const chatRef = useRef<HTMLDivElement>(null);
-  const coverPhotos = photos.slice(0, 3);
+  // Mekânın yalnız ilk fotoğrafı gösterilir (tek fotoğraf; eski kayıtlardaki diğerleri gösterilmez)
+  const cover = photos[0] ?? null;
   const present = masa.participants.filter(p => !p.cancelled);
   const femaleCount = present.filter(p => p.gender === 'FEMALE').length;
   const maleCount = present.filter(p => p.gender === 'MALE').length;
   const typeLabel = masa.type === 'ONE_ON_ONE' ? t('masa.typeOne') : masa.type === 'KANKA' ? t('masa.typeKanka') : t('masa.typeGroup');
   const scrollToChat = () => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const COVER_H = 210;
 
   return (
     <>
       <AnimatePresence>
         {lightboxIdx !== null && (
-          <Lightbox photos={photos} startIdx={lightboxIdx} onClose={() => setLightboxIdx(null)} />
+          <Lightbox photos={cover ? [cover] : []} startIdx={lightboxIdx} onClose={() => setLightboxIdx(null)} />
         )}
         {showSos && (
           <SosModal
@@ -890,37 +877,32 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
           }}
         />
 
-        {/* Kapak: mekân fotoğrafları (3 → yan yana, 2 → eşit iki, 1 → tek büyük, yok → boş kamera kutuları) */}
-        <div style={{ position: 'relative', height: COVER_H }}>
-          <div style={{
-            display: 'grid', height: '100%', gap: 2,
-            gridTemplateColumns: coverPhotos.length === 0 ? '1fr 1fr 1fr' : `repeat(${coverPhotos.length}, 1fr)`,
-          }}>
-            {coverPhotos.length === 0
-              ? [0, 1, 2].map(i => <CameraBox key={i} />)
-              : coverPhotos.map((photo, i) => (
-                <div key={i} onClick={() => setLightboxIdx(i)} style={{ cursor: 'pointer', overflow: 'hidden', background: 'rgba(255,255,255,0.04)' }}>
-                  <img
-                    src={photo.url}
-                    alt={photo.caption ?? t('masa.photoAlt', { n: i + 1 })}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.3s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.05)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'; }}
-                  />
-                </div>
-              ))}
-          </div>
-
-          {/* Yazıların okunması için alt geçiş */}
-          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,18,18,0.35) 0%, rgba(18,18,18,0) 30%, rgba(18,18,18,0) 45%, rgba(18,18,18,0.92) 100%)' }} />
+        {/* Kapak: mekânın tek fotoğrafı tam genişlikte 16:9 (object-fit: cover); fotoğraf yoksa fotoğraf alanı yok,
+            masa türü ve mekân adı normal akışta */}
+        <div style={cover ? { position: 'relative', aspectRatio: '16 / 9' } : { position: 'relative', display: 'flex', flexDirection: 'column', gap: 12, padding: '12px 14px 0' }}>
+          {cover && (
+            <>
+              <div onClick={() => setLightboxIdx(0)} style={{ position: 'absolute', inset: 0, cursor: 'pointer', overflow: 'hidden', background: 'rgba(255,255,255,0.04)' }}>
+                <img
+                  src={cover.url}
+                  alt={cover.caption ?? t('masa.photoAlt', { n: 1 })}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.3s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.05)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)'; }}
+                />
+              </div>
+              {/* Yazıların okunması için alt geçiş */}
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,18,18,0.35) 0%, rgba(18,18,18,0) 30%, rgba(18,18,18,0) 45%, rgba(18,18,18,0.92) 100%)' }} />
+            </>
+          )}
 
           {/* Sol üst masa türü */}
-          <span style={{ position: 'absolute', top: 12, left: 12, ...pillStyle('rgba(192,57,43,0.85)', '#fff', 'rgba(255,107,107,0.5)') }}>
+          <span style={{ ...(cover ? { position: 'absolute', top: 12, left: 12 } : { alignSelf: 'flex-start' }), ...pillStyle('rgba(192,57,43,0.85)', '#fff', 'rgba(255,107,107,0.5)') }}>
             {typeLabel}
           </span>
 
           {/* Alt: mekân adı + ilçe, sağda Haritada Gör */}
-          <div style={{ position: 'absolute', left: 14, right: 14, bottom: 12, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, pointerEvents: 'none' }}>
+          <div style={{ ...(cover ? { position: 'absolute', left: 14, right: 14, bottom: 12 } : {}), display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, pointerEvents: 'none' }}>
             <div style={{ minWidth: 0 }}>
               <h2 style={{
                 margin: 0,

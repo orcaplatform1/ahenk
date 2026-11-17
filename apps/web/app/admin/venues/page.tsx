@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, API_PREFIX } from '@/lib/api';
 import { isVenuePhoto, VENUE_PHOTO_ACCEPT } from '@/lib/imageType';
 import { mediaUrl } from '@/lib/venueApi';
@@ -23,10 +23,6 @@ function sortCities(list: City[]): City[] {
 }
 
 const labelStyle: React.CSSProperties = { ...LABEL, color: MUTED, margin: '0 0 4px' };
-const photoRemove: React.CSSProperties = {
-  position: 'absolute', top: 3, right: 3, width: 20, height: 20, padding: 0, borderRadius: '50%', cursor: 'pointer',
-  background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', fontSize: 11, lineHeight: 1,
-};
 interface Venue {
   id: string; name: string; category: string; venueType?: string;
   address?: string | null; district?: string | null; description?: string | null; isActive: boolean;
@@ -40,7 +36,8 @@ const EMPTY_FORM = {
   name: '', category: 'SADE', venueType: 'NON_ALCOHOLIC', cityId: '', address: '', district: '', description: '',
   locationUrl: '', websiteOrSocial: '', seatCapacity: '', latitude: '', longitude: '', venueKind: '',
 };
-const MAX_PHOTOS = 3;
+// Tek fotoğraf (en az 1, en fazla 1); yeni seçim ilk fotoğrafın yerine geçer
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 const orNull = (v: string) => v.trim() || null;
 const numOrNull = (v: string) => (v.trim() ? Number(v.replace(',', '.')) : null);
@@ -57,7 +54,12 @@ export default function AdminVenues() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [photos, setPhotos] = useState<string[]>([]);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [pickedName, setPickedName] = useState('');
   const [photoBusy, setPhotoBusy] = useState(false);
+  // Yeni mekânda seçilen (henüz yüklenmemiş) fotoğrafın önizlemesi
+  const pendingPreview = useMemo(() => (pendingFiles[0] ? URL.createObjectURL(pendingFiles[0]) : ''), [pendingFiles]);
+  useEffect(() => () => { if (pendingPreview) URL.revokeObjectURL(pendingPreview); }, [pendingPreview]);
+  const previewSrc = pendingPreview || (photos[0] ? mediaUrl(photos[0]) : '');
   const [districts, setDistricts] = useState<Record<string, string[]>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -81,6 +83,7 @@ export default function AdminVenues() {
     setForm({ ...EMPTY_FORM, cityId: cities[0]?.id ?? '' });
     setPhotos([]);
     setPendingFiles([]);
+    setPickedName('');
     setModalError('');
     setModal('add');
   }
@@ -97,6 +100,7 @@ export default function AdminVenues() {
     });
     setPhotos(v.photos ?? []);
     setPendingFiles([]);
+    setPickedName('');
     setModalError('');
     setModal('edit');
   }
@@ -134,37 +138,20 @@ export default function AdminVenues() {
     return json.photos ?? [];
   }
 
-  // Düzenlemede fotoğraf anında kaydedilir; yeni mekânda kayıtla birlikte yüklenir
-  async function addPhotos(list: FileList | null) {
-    const files = Array.from(list ?? []);
-    if (!files.length) return;
+  // Düzenlemede fotoğraf anında kaydedilir (eskisinin yerine geçer); yeni mekânda kayıtla birlikte yüklenir
+  async function pickPhoto(f: File | undefined) {
+    if (!f) return;
     setModalError('');
-    if (photos.length + pendingFiles.length + files.length > MAX_PHOTOS) { setModalError(`En fazla ${MAX_PHOTOS} fotoğraf eklenebilir`); return; }
     // Tür içerikten kontrol edilir (uzantı değil); HEIC/HEIF kabul edilir, sunucuda WebP'ye çevrilir
-    for (const f of files) {
-      if (!(await isVenuePhoto(f))) { setModalError('Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı'); return; }
-    }
-    if (!editing) { setPendingFiles(p => [...p, ...files]); return; }
+    if (!(await isVenuePhoto(f))) { setModalError('Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı'); return; }
+    if (f.size > MAX_PHOTO_BYTES) { setModalError('Fotoğraf en fazla 5 MB olabilir'); return; }
+    setPickedName(f.name);
+    if (!editing) { setPendingFiles([f]); return; }
     setPhotoBusy(true);
     try {
-      setPhotos(await uploadPhotos(editing.id, files));
+      setPhotos(await uploadPhotos(editing.id, [f]));
       loadVenues(selectedCity || undefined);
-    } catch (e) { setModalError((e as Error).message); }
-    finally { setPhotoBusy(false); }
-  }
-
-  async function removePhoto(url: string) {
-    if (!editing || !confirm('Fotoğraf silinsin mi?')) return;
-    setPhotoBusy(true); setModalError('');
-    try {
-      const res = await fetch(`${API_PREFIX}/admin/venues/${editing.id}/photos`, {
-        method: 'DELETE', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }),
-      });
-      const json = await res.json().catch(() => ({})) as { photos?: string[]; message?: string };
-      if (!res.ok) throw new Error(json.message ?? 'Fotoğraf silinemedi');
-      setPhotos(json.photos ?? []);
-      loadVenues(selectedCity || undefined);
-    } catch (e) { setModalError((e as Error).message); }
+    } catch (e) { setModalError((e as Error).message); setPickedName(''); }
     finally { setPhotoBusy(false); }
   }
 
@@ -427,36 +414,39 @@ export default function AdminVenues() {
                 </div>
               )}
               <div>
-                <p style={labelStyle}>FOTOĞRAFLAR ({photos.length + pendingFiles.length}/{MAX_PHOTOS}): EN AZ 1, EN FAZLA 3; HER BİRİ EN FAZLA 5 MB</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 6, marginBottom: 8 }}>
-                  {photos.map(url => (
-                    <div key={url} style={{ position: 'relative' }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={mediaUrl(url)} alt="Mekân fotoğrafı" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, display: 'block' }} />
-                      <button type="button" onClick={() => removePhoto(url)} disabled={photoBusy} aria-label="Fotoğrafı sil" style={photoRemove}>✕</button>
-                    </div>
-                  ))}
-                  {pendingFiles.map((f, i) => (
-                    <div key={`${f.name}-${i}`} style={{ position: 'relative', aspectRatio: '1', borderRadius: 6, background: SURFACE, padding: 6, fontSize: 11, color: MUTED, overflow: 'hidden' }}>
-                      {f.name}
-                      <button type="button" onClick={() => setPendingFiles(p => p.filter((_, k) => k !== i))} aria-label="Fotoğrafı çıkar" style={photoRemove}>✕</button>
-                    </div>
-                  ))}
+                <p style={labelStyle}>FOTOĞRAF: 1 ADET, EN FAZLA 5 MB</p>
+                {/* Yalnız ilk fotoğraf gösterilir; eski kayıtlardaki diğer fotoğraflar veritabanında durur */}
+                {previewSrc && (
+                  <div style={{ width: '100%', marginBottom: 8 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={previewSrc} alt="Mekân fotoğrafı" style={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', borderRadius: 6, display: 'block' }} />
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
+                  <label style={{
+                    padding: '6px 12px', borderRadius: 8, cursor: photoBusy ? 'not-allowed' : 'pointer', flexShrink: 0,
+                    background: 'rgba(34,211,238,0.1)', border: `1px solid rgba(34,211,238,0.3)`,
+                    fontSize: 12, fontWeight: 600, color: CYAN, fontFamily: SANS, opacity: photoBusy ? 0.5 : 1,
+                  }}>
+                    Fotoğraf Seç
+                    <input
+                      type="file" accept={VENUE_PHOTO_ACCEPT} disabled={photoBusy} style={{ display: 'none' }}
+                      onChange={e => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }}
+                    />
+                  </label>
+                  <span style={{ fontSize: 11, color: MUTED, opacity: 0.8, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {pickedName || 'Dosya seçilmedi'}
+                  </span>
                 </div>
-                <input
-                  type="file" accept={VENUE_PHOTO_ACCEPT} multiple disabled={photoBusy}
-                  onChange={e => { addPhotos(e.target.files); e.target.value = ''; }}
-                  style={{ fontSize: 13, color: MUTED, fontFamily: SANS, maxWidth: '100%' }}
-                />
               </div>
               <button
                 onClick={save}
-                disabled={saving || !form.name || !form.cityId}
+                disabled={saving || !form.name || !form.cityId || (modal === 'add' && pendingFiles.length === 0)}
                 style={{
                   width: '100%', padding: '9px', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer',
                   background: 'rgba(34,211,238,0.1)', border: `1px solid rgba(34,211,238,0.3)`,
                   fontSize: 13, fontWeight: 700, color: CYAN, fontFamily: SANS,
-                  opacity: saving || !form.name || !form.cityId ? 0.5 : 1,
+                  opacity: saving || !form.name || !form.cityId || (modal === 'add' && pendingFiles.length === 0) ? 0.5 : 1,
                 }}
               >
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}

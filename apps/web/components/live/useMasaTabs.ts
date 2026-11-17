@@ -8,7 +8,6 @@ import type { TabStatus } from './LiveTabs';
 
 const DASHBOARD_POLL_MS = 15_000;
 const WEEK_MS = 7 * 86_400_000;
-const TAB_STORAGE_KEY = 'ahenk_masa_tab';
 const MASA_TURLERI: MasaTuru[] = ['GROUP', 'ONE_ON_ONE', 'KANKA'];
 
 // Masa türüne göre kapanış günü (0=Pazar … 6=Cumartesi, 23:59); yeni tarama her Pazar 23:59'da başlar
@@ -69,13 +68,6 @@ export interface MeData {
   maintenanceMode?: boolean;
 }
 
-function readTab(): MasaTuru | null {
-  try {
-    const v = localStorage.getItem(TAB_STORAGE_KEY) as MasaTuru | null;
-    return v && MASA_TURLERI.includes(v) ? v : null;
-  } catch { return null; }
-}
-
 // Eşleşme Paneli ve Masalarım'ın ortak sekme kaynağı: aynı veri, aynı durum hesabı, aynı seçili tür
 export function useMasaTabs() {
   const [me, setMe] = useState<MeData | null>(null);
@@ -102,7 +94,6 @@ export function useMasaTabs() {
   ]), []);
 
   useEffect(() => {
-    setChosenTab(readTab());
     // apiFetch 401 alınca refresh token deniyor (oturum HttpOnly çerezde)
     Promise.all([
       refreshPlan(),
@@ -163,8 +154,8 @@ export function useMasaTabs() {
   }, []);
 
   const selectTab = useCallback((t: MasaTuru) => {
+    // Elle seçim kalıcı değil: sayfa her açıldığında kayıtlı seçime göre başlar
     setChosenTab(t);
-    try { localStorage.setItem(TAB_STORAGE_KEY, t); } catch { /* seçim yalnızca bu sayfada kalır */ }
     refreshPlan();
   }, [refreshPlan]);
 
@@ -179,14 +170,16 @@ export function useMasaTabs() {
   };
   const tables: Record<MasaTuru, boolean> = { GROUP: hasTable('GROUP'), ONE_ON_ONE: hasTable('ONE_ON_ONE'), KANKA: hasTable('KANKA') };
   const owned = MASA_TURLERI.filter(t => rights[t] || tables[t] || cancelledTypes.includes(t));
-  const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : owned[0] ?? 'GROUP';
+  // Açık kaydı olan türler: yalnız onların taramasına girilir
+  const selOf = (t: MasaTuru) => selection?.options.find(o => o.type === t)?.selection ?? null;
+  // Varsayılan: kayıtlı seçimdeki ilk tür (Grup → Baş Başa → Kankamla); kayıt yoksa hakkı/masası olan ilk tür
+  const savedTab = MASA_TURLERI.find(t => !!selOf(t));
+  const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : savedTab ?? owned[0] ?? 'GROUP';
   const tabItem = items.find(i => i.meeting.type === tab);
   // Kurulmuş masası admin tarafından iptal edilen tür (bu hafta)
   const tabAdminCancelled = !tabItem && adminCancelledTypes.includes(tab);
   const kycApproved = me?.kyc?.status === 'APPROVED';
   const tabPastClosing = pastClosed.split(',').includes(tab);
-  // Açık kaydı olan türler: yalnız onların taramasına girilir
-  const selOf = (t: MasaTuru) => selection?.options.find(o => o.type === t)?.selection ?? null;
   const hasPackage = subs.length > 0;
   const tabSel = selOf(tab);
   const scanning = owned.includes(tab) && kycApproved && !!tabSel && !tabSel.kankaWaiting

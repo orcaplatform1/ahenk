@@ -64,16 +64,6 @@ async function uploadBotPhoto(botId: string, file: File): Promise<void> {
 
 const genderBorder = (g?: string | null) => (g === 'FEMALE' ? '#f48fb1' : '#4fc3f7');
 
-function ageOf(birthDate?: string | null): number | null {
-  if (!birthDate) return null;
-  // Doğum tarihi gün olarak saklanır (UTC 00:00); bugün TR saatine göre
-  const b = new Date(birthDate);
-  const now = new Date(Date.now() + 3 * 60 * 60 * 1000);
-  let age = now.getUTCFullYear() - b.getUTCFullYear();
-  if (now.getUTCMonth() < b.getUTCMonth() || (now.getUTCMonth() === b.getUTCMonth() && now.getUTCDate() < b.getUTCDate())) age--;
-  return age;
-}
-
 export default function AdminBots() {
   const [bots, setBots] = useState<Bot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,8 +91,6 @@ export default function AdminBots() {
     api.get<City[]>('/admin/cities').then(c => setCities(c.filter(x => x.isActive)))
       .catch((e: Error) => setError(`Şehirler yüklenemedi: ${e.message}`));
   }, []);
-
-  const cityName = (id?: string | null) => cities.find(c => c.id === id)?.name ?? '—';
 
   function pickPhoto(f: File | null) {
     setPhotoFile(f);
@@ -283,36 +271,26 @@ export default function AdminBots() {
                     style={{
                       padding: '12px 18px',
                       borderBottom: i < bots.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none',
-                      display: 'flex', alignItems: 'center', gap: 12,
+                      display: 'flex', alignItems: 'flex-start', gap: 12,
                     }}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{firstName} {lastName}</span>
-                        <span style={{
-                          ...LABEL,
-                          padding: '2px 7px', borderRadius: 99,
-                          background: active ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)',
-                          border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.25)'}`,
-                          color: active ? GREEN : MUTED,
-                        }}>
-                          {active ? 'AKTİF' : 'PASİF'}
-                        </span>
-                      </div>
-                      <p style={{ margin: '3px 0 0', fontSize: 10, color: MUTED }}>
-                        {b.profile?.gender === 'MALE' ? 'Erkek' : b.profile?.gender === 'FEMALE' ? 'Kadın' : '—'}
-                        {' · '}{ageOf(b.profile?.birthDate) ?? '—'} yaş
-                        {' · '}{cityName(b.profile?.primaryCity)}
-                        {' · '}{b.occupationSector || '—'}
-                        {b.botPhone ? ` · ${b.botPhone}` : ''}
-                      </p>
-                      {b.oceanScore && (
-                        <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED, fontFamily: MONO }}>
-                          {OCEAN_FIELDS.map(({ key, label }) => `${label[0]}${Math.round(b.oceanScore![key])}`).join(' · ')}
-                        </p>
-                      )}
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${genderBorder(b.profile?.gender)}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', flexShrink: 0 }}>
+                      {b.photoUrl
+                        ? <img src={b.photoUrl} alt={`${firstName} ${lastName}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        : <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{`${firstName.trim()[0] ?? ''}${lastName.trim()[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?'}</span>}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{firstName} {lastName}</span>
+                      <span style={{
+                        ...LABEL,
+                        padding: '2px 7px', borderRadius: 99,
+                        background: active ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)',
+                        border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.25)'}`,
+                        color: active ? GREEN : MUTED,
+                      }}>
+                        {active ? 'AKTİF' : 'PASİF'}
+                      </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <button
                         onClick={() => toggleStatus(b)}
                         style={{
@@ -344,6 +322,7 @@ export default function AdminBots() {
                       >
                         Sil
                       </button>
+                    </div>
                     </div>
                   </div>
                 );

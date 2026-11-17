@@ -8,7 +8,7 @@ import { VENUE_COOKIE } from "../auth/auth-cookies";
 import { VenueAuthGuard } from "./venue-auth.guard";
 import { LoginGuardService } from "../auth/login-guard.service";
 import { VENUE_SESSION_DAYS, VenuePanelService } from "./venue-panel.service";
-import { VENUE_PHOTO_MAX_BYTES, VENUE_PHOTO_MAX_COUNT } from "./venue-media";
+import { VENUE_FORM_PHOTO_MAX_COUNT, VENUE_PHOTO_MAX_BYTES } from "./venue-media";
 import {
   VenueChangePasswordDto, VenueDeactivateDto, VenueForgotPasswordDto,
   VenueInfoDto, VenueLoginDto, VenuePhotoDeleteDto, VenueResetPasswordDto,
@@ -117,7 +117,7 @@ export class VenuePanelController {
 
   @Post("photos")
   @UseGuards(VenueAuthGuard)
-  @UseInterceptors(FilesInterceptor("photos", VENUE_PHOTO_MAX_COUNT, { limits: { fileSize: VENUE_PHOTO_MAX_BYTES } }))
+  @UseInterceptors(FilesInterceptor("photos", VENUE_FORM_PHOTO_MAX_COUNT, { limits: { fileSize: VENUE_PHOTO_MAX_BYTES } }))
   addPhotos(@Req() req: VenueRequest, @UploadedFiles() files: Express.Multer.File[]) {
     return this.service.addPhotos(req.venueAccount, files);
   }

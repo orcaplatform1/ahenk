@@ -183,18 +183,14 @@ function EmptyMasaCard({
             }}
           />
 
-          {/* Kapak: fotoğraf yok → 3 boş kamera kutusu */}
-          <div style={{ position: 'relative', height: 210 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2, height: '100%' }}>
-              {[0, 1, 2].map(i => (
-                <div key={i} style={{ background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <rect x="1" y="5" width="22" height="15" rx="2" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
-                    <circle cx="12" cy="12" r="4" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
-                    <path d="M8 5l1.5-3h5L16 5" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              ))}
+          {/* Kapak: tek fotoğraf alanı, tam genişlikte 16:9 (ön izlemede fotoğraf yok → tek boş kamera kutusu) */}
+          <div style={{ position: 'relative', aspectRatio: '16 / 9' }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <rect x="1" y="5" width="22" height="15" rx="2" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
+                <circle cx="12" cy="12" r="4" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
+                <path d="M8 5l1.5-3h5L16 5" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
             <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,18,18,0.35) 0%, rgba(18,18,18,0) 30%, rgba(18,18,18,0) 45%, rgba(18,18,18,0.92) 100%)' }} />
 
@@ -529,10 +525,12 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
 
   // Hiç hakkı ve masası yoksa kartlar önizlemedir
   const locked = Object.values(statuses).every(s => s === 'NONE');
+  // Aktif kaydı (taramada ya da masası kuruluyor) olan kullanıcıya Masalarım'da seçim penceresi açılmaz
+  const hasActiveSelection = !!selection?.options.some(o => o.selection || (o.seated && !o.locked));
 
   return (
     <div className="flex flex-col gap-6">
-      <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
+      {!hasActiveSelection && <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />}
       <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
 
       {locked && (

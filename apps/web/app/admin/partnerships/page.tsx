@@ -251,21 +251,17 @@ export default function AdminPartnerships() {
                     <p style={{ margin: 0, fontSize: 13, color: MUTED }}>
                       <span style={{ color: TEXT, fontWeight: 600 }}>Admin notu:</span> {p.adminNote ? `${p.adminNote}${p.adminNoteByName ? ` (${p.adminNoteByName})` : ''}` : '—'}
                     </p>
-                    {!!p.photos?.length && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 6 }}>
-                        {p.photos.map((src, k) => (
-                          <button
-                            key={src}
-                            type="button"
-                            onClick={() => setLightbox(mediaUrl(src))}
-                            aria-label={`Mekân fotoğrafı ${k + 1} büyüt`}
-                            style={{ padding: 0, background: 'none', border: 'none', cursor: 'zoom-in' }}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={mediaUrl(src)} alt={`Mekân fotoğrafı ${k + 1}`} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, display: 'block' }} />
-                          </button>
-                        ))}
-                      </div>
+                    {/* Yalnız ilk fotoğraf; eski başvurulardaki diğer fotoğraflar veritabanında durur */}
+                    {p.photos?.[0] && (
+                      <button
+                        type="button"
+                        onClick={() => setLightbox(mediaUrl(p.photos![0]))}
+                        aria-label="Mekân fotoğrafını büyüt"
+                        style={{ width: '100%', padding: 0, background: 'none', border: 'none', cursor: 'zoom-in' }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={mediaUrl(p.photos[0])} alt="Mekân fotoğrafı" style={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', borderRadius: 6, display: 'block' }} />
+                      </button>
                     )}
 
                     {p.status === 'PENDING' && (

@@ -16,7 +16,8 @@ import { adm, sans } from '@/theme/theme';
 interface City { id: string; name: string; isActive?: boolean }
 interface Venue { id: string; name: string; category: string; venueType?: string; address?: string | null; district?: string | null; description?: string | null; isActive: boolean; locationUrl?: string | null; websiteOrSocial?: string | null; seatCapacity?: number | null; latitude?: number | null; longitude?: number | null; photos: string[]; venueKind?: string | null; city: City; account?: { email: string; phone: string; status: string; application?: { contactName: string } | null } | null }
 const EMPTY = { name: '', category: 'SADE', venueType: 'NON_ALCOHOLIC', cityId: '', address: '', district: '', description: '', locationUrl: '', websiteOrSocial: '', seatCapacity: '', latitude: '', longitude: '', venueKind: '' };
-const MAX_PHOTOS = 3;
+// Tek fotoğraf (en az 1, en fazla 1); yeni seçim ilk fotoğrafın yerine geçer
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const orNull = (v: string) => v.trim() || null;
 const numOrNull = (v: string) => (v.trim() ? Number(v.replace(',', '.')) : null);
 const sortCities = (l: City[]) => [...l].sort((a, b) => Number(!!b.isActive) - Number(!!a.isActive) || a.name.localeCompare(b.name, 'tr'));
@@ -33,6 +34,7 @@ export default function AdminVenues() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [pending, setPending] = useState<PickedImage[]>([]);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [pickedName, setPickedName] = useState('');
   const [districts, setDistricts] = useState<Record<string, string[]>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -44,12 +46,12 @@ export default function AdminVenues() {
     loadVenues();
   }, []);
   const set = (k: keyof typeof EMPTY) => (v: string) => setForm(f => ({ ...f, [k]: v }));
-  function openAdd() { setEditing(null); setForm({ ...EMPTY, cityId: cities[0]?.id ?? '' }); setPhotos([]); setPending([]); setModalError(''); setModal('add'); }
+  function openAdd() { setEditing(null); setForm({ ...EMPTY, cityId: cities[0]?.id ?? '' }); setPhotos([]); setPending([]); setPickedName(''); setModalError(''); setModal('add'); }
   function openEdit(v: Venue) {
     setEditing(v);
     setForm({ name: v.name, category: v.category, venueType: v.venueType ?? 'NON_ALCOHOLIC', cityId: v.city.id, address: v.address ?? '', district: v.district ?? '', description: v.description ?? '', locationUrl: v.locationUrl ?? '', websiteOrSocial: v.websiteOrSocial ?? '',
       seatCapacity: v.seatCapacity != null ? String(v.seatCapacity) : '', latitude: v.latitude != null ? String(v.latitude) : '', longitude: v.longitude != null ? String(v.longitude) : '', venueKind: v.venueKind ?? '' });
-    setPhotos(v.photos ?? []); setPending([]); setModalError(''); setModal('edit');
+    setPhotos(v.photos ?? []); setPending([]); setPickedName(''); setModalError(''); setModal('edit');
   }
   async function uploadPhotos(venueId: string, files: PickedImage[]) {
     const fd = new FormData();
@@ -67,33 +69,22 @@ export default function AdminVenues() {
       setModal(null); loadVenues(selectedCity || undefined);
     } catch (e) { setModalError(`Kaydedilemedi: ${(e as Error).message}`); } finally { setSaving(false); }
   }
-  function addPhotos() {
+  // Düzenlemede fotoğraf anında kaydedilir (eskisinin yerine geçer); yeni mekânda kayıtla birlikte yüklenir
+  function pickPhoto() {
     chooseSource(async (src) => {
-      const files = src === 'library' ? await pickFromLibrary(MAX_PHOTOS - photos.length - pending.length) : await pickFromCamera();
+      const files = src === 'library' ? await pickFromLibrary(1) : await pickFromCamera();
       setModalError('');
       if (files === 'blocked') return;
       if (files === 'denied') { setModalError('Fotoğraflara erişim izni verilmedi'); return; }
-      if (!files.length) return;
-      if (photos.length + pending.length + files.length > MAX_PHOTOS) { setModalError(`En fazla ${MAX_PHOTOS} fotoğraf eklenebilir`); return; }
-      if (files.some(f => !/^image\/(jpeg|png|webp|heic|heif)$/.test(f.type))) { setModalError('Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı'); return; }
-      if (!editing) { setPending(p => [...p, ...files]); return; }
+      const f = files[0];
+      if (!f) return;
+      if (!/^image\/(jpeg|png|webp|heic|heif)$/.test(f.type)) { setModalError('Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı'); return; }
+      if (f.size != null && f.size > MAX_PHOTO_BYTES) { setModalError('Fotoğraf en fazla 5 MB olabilir'); return; }
+      setPickedName(f.name);
+      if (!editing) { setPending([f]); return; }
       setPhotoBusy(true);
-      try { setPhotos(await uploadPhotos(editing.id, files)); loadVenues(selectedCity || undefined); } catch (e) { setModalError((e as Error).message); } finally { setPhotoBusy(false); }
+      try { setPhotos(await uploadPhotos(editing.id, [f])); loadVenues(selectedCity || undefined); } catch (e) { setModalError((e as Error).message); setPickedName(''); } finally { setPhotoBusy(false); }
     });
-  }
-  function removePhoto(url: string) {
-    if (!editing) return;
-    showAlert('Fotoğraf silinsin mi?', undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: async () => {
-      setPhotoBusy(true); setModalError('');
-      try {
-        const r2 = await fetchDelete(editing.id, url);
-        setPhotos(r2); loadVenues(selectedCity || undefined);
-      } catch (e) { setModalError((e as Error).message); } finally { setPhotoBusy(false); }
-    } }]);
-  }
-  async function fetchDelete(venueId: string, url: string) {
-    const r = await api.deleteBody<{ photos?: string[] }>(`/admin/venues/${venueId}/photos`, { url });
-    return r.photos ?? [];
   }
   function deleteVenue(v: Venue) {
     showAlert(`${v.name} silinsin mi? Bu işlem geri alınamaz. Masaların mekân adı ve adresi korunur.${v.account ? ' Panel hesabı kapatılır.' : ''}`, undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Tamam', style: 'destructive', onPress: async () => {
@@ -162,24 +153,19 @@ export default function AdminVenues() {
             <View style={{ flex: 1 }}><Field label="BOYLAM (OPSİYONEL)"><AInput keyboardType="decimal-pad" value={form.longitude} onChangeText={set('longitude')} style={{ paddingHorizontal: 12 }} /></Field></View>
           </View>
           {editing?.account && <Field label="PANEL HESABI İLETİŞİM"><AT style={{ fontSize: 13, color: adm.muted }}>{[editing.account.application?.contactName, editing.account.email, editing.account.phone].filter(Boolean).join(' · ')}</AT></Field>}
-          <Field label={`FOTOĞRAFLAR (${photos.length + pending.length}/${MAX_PHOTOS}): EN AZ 1, EN FAZLA 3; HER BİRİ EN FAZLA 5 MB`}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-              {photos.map(url => (
-                <View key={url} style={{ width: 84, aspectRatio: 1 }}>
-                  <Image source={{ uri: mediaUrl(url) }} style={{ width: '100%', height: '100%', borderRadius: 6 }} accessibilityLabel="Mekân fotoğrafı" />
-                  <Btn variant="admPhotoX" label="✕" accessibilityLabel="Fotoğrafı sil" disabled={photoBusy} onPress={() => removePhoto(url)} />
-                </View>
-              ))}
-              {pending.map((f, i) => (
-                <View key={`${f.uri}-${i}`} style={{ width: 84, aspectRatio: 1 }}>
-                  <Image source={{ uri: f.uri }} style={{ width: '100%', height: '100%', borderRadius: 6 }} />
-                  <Btn variant="admPhotoX" label="✕" accessibilityLabel="Fotoğrafı çıkar" onPress={() => setPending(p => p.filter((_, k) => k !== i))} />
-                </View>
-              ))}
+          <Field label="FOTOĞRAF: 1 ADET, EN FAZLA 5 MB">
+            {/* Yalnız ilk fotoğraf gösterilir; eski kayıtlardaki diğer fotoğraflar veritabanında durur */}
+            {(pending[0] || photos[0]) && (
+              <View style={{ width: '100%', aspectRatio: 16 / 9, marginBottom: 8 }}>
+                <Image source={{ uri: pending[0] ? pending[0].uri : mediaUrl(photos[0]) }} resizeMode="cover" style={{ width: '100%', height: '100%', borderRadius: 6 }} accessibilityLabel="Mekân fotoğrafı" />
+              </View>
+            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+              <Btn variant="admOutline" disabled={photoBusy} label="Fotoğraf Seç" onPress={pickPhoto} />
+              <AT numberOfLines={1} style={{ flexShrink: 1, fontSize: 11, color: adm.muted }}>{pickedName || 'Dosya seçilmedi'}</AT>
             </View>
-            {photos.length + pending.length < MAX_PHOTOS && <Btn variant="admOutline" disabled={photoBusy} label="Fotoğraf seç" onPress={addPhotos} />}
           </Field>
-          <Btn variant="admCyanFull" disabled={saving || !form.name || !form.cityId} label={saving ? 'Kaydediliyor…' : 'Kaydet'} onPress={save} />
+          <Btn variant="admCyanFull" disabled={saving || !form.name || !form.cityId || (modal === 'add' && pending.length === 0)} label={saving ? 'Kaydediliyor…' : 'Kaydet'} onPress={save} />
           {!!modalError && <AT style={{ marginTop: 8, fontSize: 13, color: adm.red }}>{modalError}</AT>}
         </View>
       </ADialog>

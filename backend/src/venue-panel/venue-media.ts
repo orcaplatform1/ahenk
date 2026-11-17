@@ -8,7 +8,10 @@ import { detectImageKind, ImageKind, toWebp } from "../common/image-webp";
 export const VENUE_GALLERY_DIR = path.join(process.cwd(), "..", "uploads", "venue-gallery");
 export const VENUE_GALLERY_PREFIX = "/api/v1/media/venue-gallery";
 export const VENUE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
-export const VENUE_PHOTO_MAX_COUNT = 3;
+// Mekân başvuru formu (partnerships) sınırı: tek fotoğraf (en az 1, en fazla 1)
+export const VENUE_PHOTO_MAX_COUNT = 1;
+// Yönetim paneli ve mekân paneli mekân formu: tek fotoğraf (en az 1, en fazla 1); yeni yükleme ilk fotoğrafın yerine geçer
+export const VENUE_FORM_PHOTO_MAX_COUNT = 1;
 
 // Başvuru herkese açık olduğundan tür, dosyanın beyan edilen MIME'ına değil ilk baytlarına göre belirlenir
 export function detectImage(buf: Buffer): "jpg" | "png" | "webp" | null {
@@ -42,6 +45,14 @@ export async function saveVenuePhotos(key: string, files: Express.Multer.File[])
     fs.writeFileSync(path.join(dir, name), buf);
     return `${VENUE_GALLERY_PREFIX}/${key}/${name}`;
   });
+}
+
+// Yerine yeni fotoğraf yüklenen eski fotoğrafın dosyasını siler; yalnız venue-gallery altındaki adresler
+export function deleteVenuePhotoFile(url: string): void {
+  if (!url.startsWith(`${VENUE_GALLERY_PREFIX}/`)) return;
+  const file = path.resolve(VENUE_GALLERY_DIR, url.slice(VENUE_GALLERY_PREFIX.length + 1));
+  if (!file.startsWith(VENUE_GALLERY_DIR + path.sep)) return;
+  fs.rmSync(file, { force: true });
 }
 
 export function removeVenuePhotoDir(key: string): void {

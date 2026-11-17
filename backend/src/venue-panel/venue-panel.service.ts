@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { PrismaService } from "../prisma/prisma.service";
 import { OtpPhoneNoticeException, OtpService, OtpWaitException } from "../auth/otp/otp.service";
 import { venueJwtSecret, venueRefreshSecret } from "./venue-auth.guard";
-import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "./venue-media";
+import { assertVenuePhotos, deleteVenuePhotoFile, saveVenuePhotos, VENUE_FORM_PHOTO_MAX_COUNT } from "./venue-media";
 import { CLEARED_MEETING_VENUE, meetingVenueFields, VenueAssignmentService } from "./venue-assignment.service";
 import { isValidDistrict } from "../common/districts";
 import { VenueInfoDto } from "./venue-panel.dto";
@@ -226,12 +226,23 @@ export class VenuePanelService {
   async addPhotos(account: VenueAccount, files: Express.Multer.File[]) {
     if (!files?.length) throw new BadRequestException("Fotoğraf seçin");
     assertVenuePhotos(files);
-    const venue = await this.venueOf(account);
-    if (venue.photos.length + files.length > VENUE_PHOTO_MAX_COUNT) {
-      throw new BadRequestException(`En fazla ${VENUE_PHOTO_MAX_COUNT} fotoğraf eklenebilir`);
+    if (files.length > VENUE_FORM_PHOTO_MAX_COUNT) {
+      throw new BadRequestException(`En fazla ${VENUE_FORM_PHOTO_MAX_COUNT} fotoğraf eklenebilir`);
     }
-    const urls = await saveVenuePhotos(venue.id, files);
-    await this.prisma.venue.update({ where: { id: venue.id }, data: { photos: [...venue.photos, ...urls] } });
+    const venue = await this.venueOf(account);
+    // Tek fotoğraf: yeni fotoğraf ilk fotoğrafın yerine geçer (eski kayıtlardaki diğer fotoğraflara dokunulmaz).
+    // Eski dosya yalnız yükleme ve kayıt başarılı olduktan sonra silinir.
+    const [url] = await saveVenuePhotos(venue.id, files);
+    const old = venue.photos[0];
+    try {
+      await this.prisma.venue.update({ where: { id: venue.id }, data: { photos: [url, ...venue.photos.slice(1)] } });
+    } catch (e) {
+      deleteVenuePhotoFile(url);
+      throw e;
+    }
+    if (old) {
+      try { deleteVenuePhotoFile(old); } catch (e) { this.logger.error(`Eski mekân fotoğrafı silinemedi: ${old} — ${(e as Error).message}`); }
+    }
     await this.syncUpcomingMeetings(venue.id);
     await this.markEdited(account);
     return this.me(account);

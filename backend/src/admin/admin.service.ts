@@ -1,4 +1,4 @@
-import { approvedPhotoMap, approvedPhotoUrl } from "../profile-photo/profile-photo.util";
+import { approvedPhotoUrl } from "../profile-photo/profile-photo.util";
 import { writeSeatScores } from "../matching/seat-scores";
 import {
   Injectable,
@@ -46,7 +46,7 @@ import { availableBots, recentlyMetBotIds } from "../matching/bot-picker";
 import { MatchingService, tableTitle } from "../matching/matching.service";
 import { isValidDistrict } from "../common/districts";
 import { meetingVenueFields, seatsBookedAt, VENUE_LOCK_LEAD_MS, VenueAssignmentService } from "../venue-panel/venue-assignment.service";
-import { assertVenuePhotos, saveVenuePhotos, VENUE_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
+import { assertVenuePhotos, deleteVenuePhotoFile, saveVenuePhotos, VENUE_FORM_PHOTO_MAX_COUNT } from "../venue-panel/venue-media";
 import { CAREER_CV_DIR, CAREER_PHOTO_DIR } from "../careers/career-cv";
 import { DEFAULT_SANCTION_REASON, NO_SHOW_WARNING_LIMIT, suspensionEndDate } from "./sanction-reasons";
 import { activeNoShowWarningsWhere } from "./no-show-warnings";
@@ -648,7 +648,7 @@ export class AdminService {
 
   // ─── Masa listesi ─────────────────────────────────────────────────────────
 
-  async listMeetings(params: { status?: string; city?: string; week?: number; page?: number; limit?: number }) {
+  async listMeetings(params: { status?: string; city?: string; week?: number; page?: number; limit?: number; type?: string; cityId?: string; order?: string }) {
     const page = params.page ?? 1;
     const limit = Math.min(params.limit ?? 20, 100);
     const skip = (page - 1) * limit;
@@ -661,8 +661,18 @@ export class AdminService {
       where.status = params.status;
     }
 
-    // Şehir filtresi
-    if (params.city?.trim()) {
+    // Masa türü filtresi (admin Masalar: Tip)
+    if (params.type) {
+      if (!Object.values(MeetingType).includes(params.type as MeetingType)) {
+        throw new BadRequestException("Geçersiz masa türü");
+      }
+      where.type = params.type;
+    }
+
+    // Şehir filtresi: cityId (admin Masalar: Şehir) ya da ada göre arama
+    if (params.cityId) {
+      where.cityId = params.cityId;
+    } else if (params.city?.trim()) {
       where.city = { name: { contains: params.city.trim(), mode: "insensitive" } };
     }
 
@@ -679,7 +689,8 @@ export class AdminService {
         where,
         skip,
         take: limit,
-        orderBy: { scheduledAt: "desc" },
+        // Bekleyen / Aktif sekmeleri en yakın tarihi üstte ister (asc); varsayılan en yeni üstte
+        orderBy: { scheduledAt: params.order === "asc" ? "asc" : "desc" },
         select: {
           id: true,
           title: true,
@@ -1081,11 +1092,23 @@ export class AdminService {
     assertVenuePhotos(files);
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) throw new NotFoundException("Mekan bulunamadı");
-    if (venue.photos.length + files.length > VENUE_PHOTO_MAX_COUNT) {
-      throw new BadRequestException(`En fazla ${VENUE_PHOTO_MAX_COUNT} fotoğraf eklenebilir`);
+    if (files.length > VENUE_FORM_PHOTO_MAX_COUNT) {
+      throw new BadRequestException(`En fazla ${VENUE_FORM_PHOTO_MAX_COUNT} fotoğraf eklenebilir`);
     }
-    const urls = await saveVenuePhotos(venue.id, files);
-    const updated = await this.prisma.venue.update({ where: { id: venueId }, data: { photos: [...venue.photos, ...urls] } });
+    // Tek fotoğraf: yeni fotoğraf ilk fotoğrafın yerine geçer (eski kayıtlardaki diğer fotoğraflara dokunulmaz).
+    // Eski dosya yalnız yükleme ve kayıt başarılı olduktan sonra silinir.
+    const [url] = await saveVenuePhotos(venue.id, files);
+    const old = venue.photos[0];
+    let updated;
+    try {
+      updated = await this.prisma.venue.update({ where: { id: venueId }, data: { photos: [url, ...venue.photos.slice(1)] } });
+    } catch (e) {
+      deleteVenuePhotoFile(url);
+      throw e;
+    }
+    if (old) {
+      try { deleteVenuePhotoFile(old); } catch (e) { console.error(`Eski mekân fotoğrafı silinemedi: ${old} — ${(e as Error).message}`); }
+    }
     await this.syncVenueMeetings(updated);
     await this.markVenueEdited(venueId, adminId);
     return { photos: updated.photos };
@@ -1096,6 +1119,7 @@ export class AdminService {
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) throw new NotFoundException("Mekan bulunamadı");
     if (!venue.photos.includes(url)) throw new NotFoundException("Fotoğraf bulunamadı");
+    if (venue.photos.length === 1) throw new BadRequestException("En az 1 fotoğraf kalmalı");
     const updated = await this.prisma.venue.update({ where: { id: venueId }, data: { photos: venue.photos.filter((p) => p !== url) } });
     await this.syncVenueMeetings(updated);
     await this.markVenueEdited(venueId, adminId);
@@ -1390,61 +1414,6 @@ export class AdminService {
     });
   }
 
-  // ─── Açık masalar (bu haftanın kapanmamış masaları) ──────────────────────
-  // Bot bilgisi (isBot) ve eşi bekleyenlerdeki bot işlemleri sadece SUPERADMIN
-
-  async getOpenTables(viewerRole: UserRole) {
-    const meetings = await this.prisma.meeting.findMany({
-      where: { status: MeetingStatus.PENDING, scheduledAt: { gte: new Date() } },
-      orderBy: [{ scheduledAt: 'asc' }, { createdAt: 'asc' }],
-      select: {
-        id: true, type: true, scheduledAt: true, maxParticipants: true,
-        city: { select: { name: true } },
-        participants: {
-          where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
-          orderBy: { createdAt: 'asc' },
-          select: { user: { select: { id: true, isBot: true, profile: { select: { firstName: true, lastName: true, gender: true, birthDate: true } } } } },
-        },
-      },
-    });
-    const isSuperadmin = viewerRole === UserRole.SUPERADMIN;
-    const waiting = await this.matching.getOneOnOneWaiting();
-    // Onaylı profil fotoğrafı olan kullanıcıda kısaltma yerine fotoğraf
-    const photos = await approvedPhotoMap(this.prisma, [...meetings.flatMap((m) => m.participants.map((p) => p.user.id)), ...waiting.map((w) => w.userId)]);
-    const tables = meetings.map((m) => {
-      const males = m.participants.filter((p) => p.user.profile?.gender === Gender.MALE).length;
-      const females = m.participants.length - males;
-      const half = m.type === MeetingType.ONE_ON_ONE ? 1 : m.maxParticipants / 2;
-      return {
-        id: m.id,
-        type: m.type,
-        scheduledAt: m.scheduledAt,
-        city: m.city?.name ?? null,
-        maxParticipants: m.maxParticipants,
-        males,
-        females,
-        emptySeats: Math.max(0, m.maxParticipants - m.participants.length),
-        missing: { male: Math.max(0, half - males), female: Math.max(0, half - females) },
-        participants: m.participants.map((p) => ({
-          userId: p.user.id,
-          initials: `${p.user.profile?.firstName?.[0] ?? '?'}.${p.user.profile?.lastName?.[0] ?? '?'}.`,
-          gender: p.user.profile?.gender ?? null,
-          photoUrl: photos.get(p.user.id) ?? null,
-          age: p.user.profile?.birthDate
-            ? Math.floor((Date.now() - p.user.profile.birthDate.getTime()) / (365.25 * 24 * 3600 * 1000))
-            : null,
-          ...(isSuperadmin ? { isBot: p.user.isBot } : {}),
-        })),
-      };
-    });
-    return {
-      group: tables.filter((t) => t.type === MeetingType.GROUP),
-      oneOnOne: tables.filter((t) => t.type === MeetingType.ONE_ON_ONE),
-      kanka: tables.filter((t) => t.type === MeetingType.KANKA),
-      waiting: waiting.map((w) => ({ ...w, photoUrl: photos.get(w.userId) ?? null })),
-    };
-  }
-
   // Masaya eklenebilecek botlar: sadece eksik cinsiyet, o buluşma saatinde başka masada olmayan aktif botlar
   async getBotsForMeeting(meetingId: string) {
     const meeting = await this.prisma.meeting.findUnique({
@@ -1528,14 +1497,6 @@ export class AdminService {
     await writeSeatScores(this.prisma, meetingId).catch(() => undefined);
     await this.matching.botAssigned(meetingId, [botUserId]);
     return { placed: true, botUserId, meetingId };
-  }
-
-  getBotsForWaiting(userId: string) {
-    return this.matching.botsForWaiting(userId);
-  }
-
-  placeOneOnOneBot(userId: string, botUserId: string) {
-    return this.matching.addOneOnOneBotManual(userId, botUserId);
   }
 
   // ─── Yarın / Planlı Buluşma istatistiği ──────────────────────────────────
@@ -1898,10 +1859,18 @@ export class AdminService {
     return { ok: true };
   }
 
+  // Onaylanıp mekân kaydı oluşmuş başvuruda fotoğraf, başvuruya kopyalanan eski adresten değil mekânın kayıtlı güncel ilk
+  // fotoğrafından gelir (mekânın fotoğrafı yoksa boş). Mekânı olmayan başvuruda başvurunun kendi fotoğrafları (ekranda yalnız ilki).
   async listPartnerships() {
-    return this.prisma.partnershipApplication.findMany({
+    const rows = await this.prisma.partnershipApplication.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { account: { select: { status: true, registeredAt: true, approvedAt: true, deactivatedAt: true } } },
+      include: { account: { select: { status: true, registeredAt: true, approvedAt: true, deactivatedAt: true, venueId: true, venue: { select: { photos: true } } } } },
+    });
+    return rows.map(({ account, ...app }) => {
+      if (!account) return { ...app, account };
+      const { venueId, venue, ...acc } = account;
+      const photos = venueId ? (venue?.photos[0] ? [venue.photos[0]] : []) : app.photos;
+      return { ...app, photos, account: acc };
     });
   }
 

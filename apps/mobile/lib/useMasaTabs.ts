@@ -1,6 +1,5 @@
-// apps/web/components/live/useMasaTabs.ts ile aynı hesap (S-05). localStorage → AsyncStorage.
+// apps/web/components/live/useMasaTabs.ts ile aynı hesap (S-05).
 import { useCallback, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from 'expo-router';
 import { api } from './api';
 import { buildInitials, getNextTarget, isTableLocked, type DashboardItem, type MasaTuru } from './masa';
@@ -10,7 +9,6 @@ export type TabStatus = 'TABLE' | 'FORMING' | 'CANCELLED' | 'SCANNING' | 'KYC' |
 
 const DASHBOARD_POLL_MS = 15_000;
 const WEEK_MS = 7 * 86_400_000;
-const TAB_STORAGE_KEY = 'ahenk_masa_tab';
 const MASA_TURLERI: MasaTuru[] = ['GROUP', 'ONE_ON_ONE', 'KANKA'];
 
 export const CLOSING_DAY: Record<MasaTuru, number> = { GROUP: 4, ONE_ON_ONE: 5, KANKA: 6 };
@@ -87,7 +85,6 @@ export function useMasaTabs() {
   ]), []);
 
   useEffect(() => {
-    AsyncStorage.getItem(TAB_STORAGE_KEY).then(v => { if (v && MASA_TURLERI.includes(v as MasaTuru)) setChosenTab(v as MasaTuru); }).catch(() => {});
     Promise.all([
       refreshPlan(),
       api.get<{ reviewedAt?: string | null }>('/kyc/status').then(r => setKycAt(r.reviewedAt ?? null)).catch(() => {}),
@@ -126,6 +123,8 @@ export function useMasaTabs() {
   // Bu kanca üç sekmede (Eşleşme Paneli, Masalarım, Profilim) aynı anda bağlı kalır; 15 sn'lik yenileme yalnız odaktaki
   // sekmede çalışır (önceden üç sekme aynı istekleri ayrı ayrı tekrarlıyordu). Sekmeye dönülünce hemen yenilenir.
   const focused = useIsFocused();
+  // Elle seçilen sekme kalıcı değil: sekme her açıldığında kayıtlı seçime göre başlar
+  useEffect(() => { if (focused) setChosenTab(null); }, [focused]);
   useEffect(() => {
     if (!focused) return undefined;
     reload();
@@ -142,7 +141,6 @@ export function useMasaTabs() {
 
   const selectTab = useCallback((t: MasaTuru) => {
     setChosenTab(t);
-    AsyncStorage.setItem(TAB_STORAGE_KEY, t).catch(() => {});
     refreshPlan();
   }, [refreshPlan]);
 
@@ -155,13 +153,15 @@ export function useMasaTabs() {
   };
   const tables: Record<MasaTuru, boolean> = { GROUP: hasTable('GROUP'), ONE_ON_ONE: hasTable('ONE_ON_ONE'), KANKA: hasTable('KANKA') };
   const owned = MASA_TURLERI.filter(t => rights[t] || tables[t] || cancelledTypes.includes(t));
-  const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : owned[0] ?? 'GROUP';
+  // Açık kaydı olan türler: yalnız onların taramasına girilir
+  const selOf = (t: MasaTuru) => selection?.options.find(o => o.type === t)?.selection ?? null;
+  // Varsayılan: kayıtlı seçimdeki ilk tür (Grup → Baş Başa → Kankamla); kayıt yoksa hakkı/masası olan ilk tür
+  const savedTab = MASA_TURLERI.find(t => !!selOf(t));
+  const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : savedTab ?? owned[0] ?? 'GROUP';
   const tabItem = items.find(i => i.meeting.type === tab);
   const tabAdminCancelled = !tabItem && adminCancelledTypes.includes(tab);
   const kycApproved = me?.kyc?.status === 'APPROVED';
   const tabPastClosing = pastClosed.split(',').includes(tab);
-  // Açık kaydı olan türler: yalnız onların taramasına girilir
-  const selOf = (t: MasaTuru) => selection?.options.find(o => o.type === t)?.selection ?? null;
   const hasPackage = subs.length > 0;
   const tabSel = selOf(tab);
   const scanning = owned.includes(tab) && kycApproved && !!tabSel && !tabSel.kankaWaiting

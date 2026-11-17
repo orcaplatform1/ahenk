@@ -76,14 +76,11 @@ export default function AdminPartnerships() {
                   <KV k="Maps linki">{p.locationUrl ? <AT style={{ fontSize: 13, color: adm.cyan }} onPress={() => WebBrowser.openBrowserAsync(p.locationUrl!)}>{p.locationUrl}</AT> : '—'}</KV>
                   <KV k="Açıklama">{p.description || '—'}</KV>
                   <KV k="Admin notu">{p.adminNote ? `${p.adminNote}${p.adminNoteByName ? ` (${p.adminNoteByName})` : ''}` : '—'}</KV>
-                  {!!p.photos?.length && (
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                      {p.photos.map((src, k) => (
-                        <Pressable key={src} onPress={() => setLightbox(mediaUrl(src))} accessibilityLabel={`Mekân fotoğrafı ${k + 1} büyüt`} style={{ width: 96, aspectRatio: 1 }}>
-                          <Image source={{ uri: mediaUrl(src) }} style={{ width: '100%', height: '100%', borderRadius: 6 }} />
-                        </Pressable>
-                      ))}
-                    </View>
+                  {/* Yalnız ilk fotoğraf; eski başvurulardaki diğer fotoğraflar veritabanında durur */}
+                  {!!p.photos?.[0] && (
+                    <Pressable onPress={() => setLightbox(mediaUrl(p.photos![0]))} accessibilityLabel="Mekân fotoğrafını büyüt" style={{ width: '100%', aspectRatio: 16 / 9 }}>
+                      <Image source={{ uri: mediaUrl(p.photos[0]) }} resizeMode="cover" style={{ width: '100%', height: '100%', borderRadius: 6 }} />
+                    </Pressable>
                   )}
                   {p.status === 'PENDING' && (
                     <>
