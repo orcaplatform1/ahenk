@@ -46,3 +46,25 @@ export function seatNumbers(people: { userId: string; createdAt: Date }[]): Map<
   const ordered = [...people].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   return new Map(ordered.map((p, i) => [p.userId, i + 1]));
 }
+
+// Masa detay kartı ve sohbette görünen ad: adın tamamı + soyadın ilk harfi büyük harf + nokta ("Ahmet Y."); botlarda da aynı.
+// Aynı masada görünen adı birebir aynı olanlar baş harf rozetiyle aynı sırayla (masaya katılım) numaralanır: "Ahmet Y.", "Ahmet Y.²".
+// Yalnız masa detay kartı açıldıktan sonra (mevcut açılış mantığı) dönen yanıtlarda kullanılır.
+export function baseDisplayName(profile?: { firstName?: string | null; lastName?: string | null } | null): string {
+  const first = (profile?.firstName ?? "").trim();
+  const l = (profile?.lastName ?? "").trim()[0];
+  return [first, l ? `${l.toLocaleUpperCase("tr-TR")}.` : ""].filter(Boolean).join(" ") || "?";
+}
+
+export function tableDisplayNames(people: InitialsPerson[]): Map<string, string> {
+  const ordered = [...people].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const seen = new Map<string, number>();
+  const out = new Map<string, string>();
+  for (const p of ordered) {
+    const base = baseDisplayName(p.profile);
+    const count = (seen.get(base) ?? 0) + 1;
+    seen.set(base, count);
+    out.set(p.userId, count > 1 ? `${base}${superscript(count)}` : base);
+  }
+  return out;
+}

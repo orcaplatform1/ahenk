@@ -23,7 +23,7 @@ export function LocationDisclosure({ visible, onContinue, onCancel }: { visible:
     <Modal visible={visible} animationType="slide" onRequestClose={onCancel} statusBarTranslucent>
       <View style={{ flex: 1, backgroundColor: ll.bg, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 16, paddingHorizontal: 24 }}>
         <ScrollView contentContainerStyle={{ gap: 20, paddingBottom: 16 }}>
-          <T w={700} style={{ fontSize: 13, color: ll.red, letterSpacing: 1.2 }}>AHENK</T>
+          <T w={700} style={{ fontSize: 13, color: ll.red, letterSpacing: 1.2 }}>Ahenk</T>
           <Serif style={{ fontSize: 30, lineHeight: 36, color: ll.text }}>{t('locd.title')}</Serif>
           {SECTIONS.map(s => (
             <View key={s.title} style={{ gap: 6 }}>

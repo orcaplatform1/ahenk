@@ -3,10 +3,11 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { DetayAvatar } from './DetayAvatar';
+import { T } from './ui';
 import i18n from '@/lib/i18n';
 import { masaKart } from '@/theme/theme';
 
-export interface KankaPerson { initials: string; gender?: string | null; isSelf?: boolean; photoUrl?: string | null }
+export interface KankaPerson { initials: string; gender?: string | null; isSelf?: boolean; photoUrl?: string | null; displayName?: string | null }
 const OPPOSITE = (g?: string | null) => (g === 'FEMALE' ? 'MALE' : g === 'MALE' ? 'FEMALE' : null);
 
 // onPhoto verilirse (masa detay kartı) onaylı profil fotoğrafı gösterilir ve basınca tam ekran açılır; diğer yerlerde fotoğraf gösterilmez
@@ -19,9 +20,17 @@ function Slot({ person, emptyGender, delay, onPhoto }: { person?: KankaPerson; e
       <DetayAvatar participant={p} delay={delay} />
     </View>
   ) : <DetayAvatar participant={p} delay={delay} />;
-  return person?.photoUrl && onPhoto
+  const slot = person?.photoUrl && onPhoto
     ? <Pressable onPress={() => onPhoto(person)} accessibilityRole="imagebutton" accessibilityLabel={i18n.t('masa.enlargePhoto')} hitSlop={4}>{av}</Pressable>
     : av;
+  // Masa detay kartında görünen ad ("Ahmet Y."): çift yerleşimi yan yana olduğu için dairenin altında (web ile aynı)
+  if (!onPhoto || !person?.displayName) return slot;
+  return (
+    <View style={{ alignItems: 'center', gap: 4, minWidth: 0 }}>
+      {slot}
+      <T w={600} numberOfLines={1} style={{ fontSize: 11, color: '#f4f1ec', maxWidth: 72 }}>{person.displayName}</T>
+    </View>
+  );
 }
 
 export function KankaPairs({ mine, other, onPhoto }: { mine: KankaPerson[]; other: KankaPerson[]; onPhoto?: (p: KankaPerson) => void }) {

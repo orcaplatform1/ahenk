@@ -89,6 +89,7 @@ export interface Participant {
   cancelled?: boolean; // İptal etti ama iptal son anına kadar listede dönüyor (Katılım alanında görünür)
   isSelf?: boolean;
   photoUrl?: string | null; // Onaylı profil fotoğrafı (yalnız masa detay kartında gösterilir)
+  displayName?: string | null; // Görünen ad ("Ahmet Y."); yalnız masa detay kartı açıldıktan sonra sunucudan gelir
 }
 
 export type MasaTuru = 'GROUP' | 'ONE_ON_ONE' | 'KANKA';

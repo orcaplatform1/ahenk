@@ -75,13 +75,13 @@ export function AuthBackground({ index, overlay }: { index: number | null; overl
   );
 }
 
-// Giriş ekranı başlığı: güvenli alanın 24 px altında, ortalı "AHENK" (web header ile aynı: Inter 600, harf aralığı 0.12em);
-// başlık olarak yalnız AHENK (alt açıklama yok). Konum üç fotoğrafta aynı.
+// Giriş ekranı başlığı: güvenli alanın 24 px altında, ortalı "Ahenk" (web header ile aynı: Inter 600, harf aralığı 0.12em);
+// başlık olarak yalnız Ahenk (alt açıklama yok). Konum üç fotoğrafta aynı.
 export function AuthHeading() {
   const insets = useSafeAreaInsets();
   return (
     <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 24, left: 24, right: 24, alignItems: 'center' }}>
-      <T w={600} style={{ fontSize: 36, lineHeight: 44, letterSpacing: 36 * 0.12, color: '#FFFFFF', textAlign: 'center' }}>AHENK</T>
+      <T w={600} style={{ fontSize: 36, lineHeight: 44, letterSpacing: 36 * 0.12, color: '#FFFFFF', textAlign: 'center' }}>Ahenk</T>
     </View>
   );
 }

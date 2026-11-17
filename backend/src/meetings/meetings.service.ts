@@ -11,7 +11,7 @@ import { Queue } from "bull";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { initialsOf } from "./cancellation-notice";
-import { tableInitials } from "./table-initials";
+import { tableDisplayNames, tableInitials } from "./table-initials";
 import { cancelDeadline, meetingLockAt, meetingCardEnd, noShowCardWindow, sosWindowEnd, reviewWindow } from "./meeting-windows";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { ASSIGN_QUEUE } from "../matching/assign-queue";
@@ -146,12 +146,16 @@ export class MeetingsService {
         // Kankamla: kişinin kendi çifti (kendisi + kankası) "MINE", karşı çift "OTHER" — kartta kim kimin kankası
         const myKankaId = m.participants.find((p) => p.userId === userId)?.kankaPartnerId ?? null;
         // Masa içi rozet: aynı baş harfte katılım sırasına göre üst simge numara (tek kaynak)
-        const badges = tableInitials(m.participants.map((p) => ({ userId: p.userId, createdAt: p.createdAt, profile: p.user.profile })));
+        const people = m.participants.map((p) => ({ userId: p.userId, createdAt: p.createdAt, profile: p.user.profile }));
+        const badges = tableInitials(people);
+        // Görünen ad ("Ahmet Y.") yalnız masa detay kartı açıldıktan sonra (isRevealed); tarama / masa kuruldu yanıtında yok
+        const names = isRevealed ? tableDisplayNames(people) : null;
         const participants = m.participants
           .filter((p) => !(p.status === ParticipantStatus.CANCELLED && hideCancelled))
           .map((p) => {
             return {
               initials: badges.get(p.userId)?.label ?? '?.?.',
+              ...(names && { displayName: names.get(p.userId) ?? null }),
               gender: p.user.profile?.gender ?? null,
               photoUrl: photos.get(p.userId) ?? null,
               joinedAt: p.createdAt, // Katılım listesi giriş sırası
@@ -287,8 +291,9 @@ export class MeetingsService {
       where: { meetingId: { in: participations.map((p) => p.meeting.id) } },
       select: { meetingId: true, userId: true, createdAt: true, user: { select: { profile: { select: { firstName: true, lastName: true } } } } },
     });
-    const badgesOf = (meetingId: string) =>
-      tableInitials(allParts.filter((a) => a.meetingId === meetingId).map((a) => ({ userId: a.userId, createdAt: a.createdAt, profile: a.user.profile })));
+    const peopleOf = (meetingId: string) =>
+      allParts.filter((a) => a.meetingId === meetingId).map((a) => ({ userId: a.userId, createdAt: a.createdAt, profile: a.user.profile }));
+    const badgesOf = (meetingId: string) => tableInitials(peopleOf(meetingId));
 
     return participations.map((p) => {
       const me = p.meeting.participants.find((x) => x.userId === userId);
@@ -304,10 +309,12 @@ export class MeetingsService {
           )
         : null;
       const m = p.meeting;
-      // Diğer katılımcılardan yalnızca baş harf + cinsiyet döner
+      // Diğer katılımcılardan baş harf + cinsiyet; tamamlanmış masa (kart açılmış) olduğu için görünen ad da döner
       const badges = badgesOf(m.id);
+      const names = tableDisplayNames(peopleOf(m.id));
       const person = (x: (typeof m.participants)[number]) => ({
         initials: badges.get(x.userId)?.label ?? '?.?.',
+        displayName: names.get(x.userId) ?? null,
         gender: x.user.profile?.gender ?? null,
       });
       const review = reviewOf.get(m.id);

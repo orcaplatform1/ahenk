@@ -65,6 +65,7 @@ EŞLEŞTİRME ALGORİTMASI (Modül 7):
 - Cinsiyet değerleri: yalnızca MALE ve FEMALE
 - Grup bot kuralı (Planlı ve Yarın aynı): 3 kişilik masa 1 botla 4'e, 5 kişilik masa 1 botla 6'ya tamamlanır; masaya en fazla 1 bot.
   "5 kişi kalırsa 4'e düşür" kuralı kaldırıldı
+- Aynı bot aynı kullanıcıya 4 hafta içinde tekrar atanmaz (recentlyMetBotIds; addGroupBots, admin bot listesi ve placeBot 400 mesajı bu kurala uyar).
 - Bot sistemi: seed'de isBot:true olan User kayıtları, admin panelinden aktif/pasif ve isim düzenleme
 - Bot OceanScore: seed'de manuel atanır (50/50/50/50/50 varsayılan), test doldurmaları gerekmez
 - Bot isimleri admin panelinden güncellenebilir (ad/soyad); diğer alanlar admin yetkisi dışında
@@ -300,7 +301,7 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     logo yok (giriş ve "Tekrar hoş geldin" ekranında); görseli içeren alan tam ekran genişliği ve yüksekliği kadar, ekstra büyütme yok;
     arka plan dönüşümlü: mobilappscreen.webp → mobilappscreen2.webp → mobilappscreen3.webp → baştan; giriş ya da "Tekrar hoş geldin"
     ekranı her açıldığında sıradaki görsel (açılış, beni hatırla / beni unut çıkışı dahil), son sıra cihazda saklanır (AuthFlow.tsx);
-    başlık olarak yalnız "AHENK" (altında açıklama yazısı yok, iki dilde);
+    başlık olarak yalnız "Ahenk" (altında açıklama yazısı yok, iki dilde);
     altta yasal metin "Devam ederek Kullanım Koşulları'nı kabul edersin. Verilerini nasıl işlediğimizi öğrenmek
     için Gizlilik Politikası ve Çerez Politikası'nı inceleyebilirsin." (/kullanim-kosullari, /gizlilik-politikasi, /cerez-politikasi);
     altında tam genişlikte yuvarlak üç buton: "Telefon Numarası ile devam et" (telefon ikonu), "E-posta ile devam et" (zarf ikonu), "Kayıt Ol"

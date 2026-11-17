@@ -15,6 +15,7 @@ export interface Participant {
   cancelled?: boolean;
   isSelf?: boolean;
   photoUrl?: string | null;
+  displayName?: string | null; // Görünen ad ("Ahmet Y."); yalnız masa detay kartı açıldıktan sonra sunucudan gelir
 }
 
 export interface DashboardItem {

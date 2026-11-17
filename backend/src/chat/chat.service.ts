@@ -1,4 +1,4 @@
-import { seatNumbers, tableInitials } from "../meetings/table-initials";
+import { seatNumbers, tableDisplayNames } from "../meetings/table-initials";
 import {
   Injectable,
   NotFoundException,
@@ -55,14 +55,15 @@ export class ChatService {
     return p;
   }
 
-  // Masa içi rozet ve sandalye no: masanın tüm katılımcıları (iptal edenler dahil), katılım sırasına göre
+  // Masa içi görünen ad ("Ahmet Y.", çakışmada "Ahmet Y.²") ve sandalye no: masanın tüm katılımcıları (iptal edenler dahil),
+  // katılım sırasına göre. Sohbet masa detay kartıyla aynı anda (buluşma günü 10:00) açıldığı için görünen ad gönderilir.
   private async tableBadges(meetingId: string) {
     const rows = await this.prisma.meetingParticipant.findMany({
       where: { meetingId },
       select: { userId: true, createdAt: true, user: { select: { profile: { select: { firstName: true, lastName: true } } } } },
     });
     const people = rows.map((r) => ({ userId: r.userId, createdAt: r.createdAt, profile: r.user.profile }));
-    return { badges: tableInitials(people), seats: seatNumbers(people) };
+    return { names: tableDisplayNames(people), seats: seatNumbers(people) };
   }
 
   async getMessages(meetingId: string, userId: string) {
@@ -101,7 +102,7 @@ export class ChatService {
       },
     });
 
-    const { badges, seats } = await this.tableBadges(meetingId);
+    const { names, seats } = await this.tableBadges(meetingId);
     return {
       isOpen: true,
       isClosed,
@@ -112,7 +113,7 @@ export class ChatService {
         content: m.content,
         createdAt: m.createdAt,
         isOwn: m.senderId === userId,
-        senderInitials: badges.get(m.senderId)?.label ?? `${m.sender.profile?.firstName?.[0] ?? '?'}.${m.sender.profile?.lastName?.[0] ?? '?'}.`,
+        senderName: names.get(m.senderId) ?? '?',
         seatNo: seats.get(m.senderId) ?? null, // Masaya özel anonim sandalye no (gerçek kimlik gönderilmez)
         senderGender: m.sender.profile?.gender ?? null,
         reportedByMe: m.reports.some((r) => r.reporterId === userId),
@@ -159,13 +160,13 @@ export class ChatService {
       },
     });
 
-    const { badges, seats } = await this.tableBadges(meetingId);
+    const { names, seats } = await this.tableBadges(meetingId);
     return {
       id: message.id,
       content: message.content,
       createdAt: message.createdAt,
       isOwn: true,
-      senderInitials: badges.get(userId)?.label ?? `${message.sender.profile?.firstName?.[0] ?? '?'}.${message.sender.profile?.lastName?.[0] ?? '?'}.`,
+      senderName: names.get(userId) ?? '?',
       seatNo: seats.get(userId) ?? null,
       senderGender: message.sender.profile?.gender ?? null,
       reportedByMe: false,

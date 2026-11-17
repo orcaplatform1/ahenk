@@ -21,14 +21,14 @@ import { c, masaKart, sans, tw } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { occupationLabel } from '@ahenk/shared';
 
-export interface DetayParticipant { initials: string; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean; photoUrl?: string | null; cancelled?: boolean }
+export interface DetayParticipant { initials: string; displayName?: string | null; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean; photoUrl?: string | null; cancelled?: boolean }
 export interface VenuePhoto { url: string; caption?: string }
 export interface MasaDetayData {
   id: string; type?: MasaTuru; maxParticipants?: number; scheduledAt: string; sosEndsAt: string; venueName: string;
   venueAddress?: string | null; venueDistrict?: string | null; venueMapsUrl?: string | null; venuePhotos?: VenuePhoto[]; participants: DetayParticipant[]; occupations?: string[];
   aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
 }
-interface ChatMsg { id: string; content: string; createdAt: string; isOwn: boolean; senderInitials: string; senderGender?: string | null; seatNo?: number | null; reportedByMe: boolean }
+interface ChatMsg { id: string; content: string; createdAt: string; isOwn: boolean; senderName: string; senderGender?: string | null; seatNo?: number | null; reportedByMe: boolean }
 
 const GREEN = c.green;
 const msgTime = (iso: string) => new Date(iso).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
@@ -40,14 +40,6 @@ function buildOrdered(ps: DetayParticipant[]) {
   return [...out, ...o];
 }
 
-function ChatBadge({ initials, gender }: { initials: string; gender?: string | null }) {
-  return (
-    <View style={{ width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-      backgroundColor: gender === 'FEMALE' ? 'rgba(244,143,177,0.12)' : 'rgba(79,195,247,0.12)', borderWidth: 1.5, borderColor: gColor(gender) }}>
-      <T w={700} numberOfLines={1} style={{ fontSize: initials.length > 4 ? 7.5 : 8.5, color: c.tF0, letterSpacing: 0.17 }}>{initials.toUpperCase()}</T>
-    </View>
-  );
-}
 
 function SectionDot({ color, label }: { color: string; label: string }) {
   return (
@@ -118,8 +110,9 @@ function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }
             const first = !prev || prev.isOwn !== m.isOwn || prev.seatNo !== m.seatNo;
             return (
               <View key={m.id} style={{ flexDirection: 'row', justifyContent: m.isOwn ? 'flex-end' : 'flex-start', gap: 6, alignItems: 'flex-start' }}>
-                {!m.isOwn && (first ? <ChatBadge initials={m.senderInitials} gender={m.senderGender} /> : <View style={{ width: 28 }} />)}
                 <View style={{ maxWidth: '72%', alignItems: m.isOwn ? 'flex-end' : 'flex-start' }}>
+                  {/* Gönderen görünen adı ("Ahmet Y.") serinin ilk mesajında */}
+                  {!m.isOwn && first && <T w={600} style={{ fontSize: 11, color: gColor(m.senderGender), marginBottom: 3 }}>{m.senderName}</T>}
                   <View style={{ paddingVertical: 8, paddingHorizontal: 11, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: gColor(m.senderGender),
                     borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomLeftRadius: m.isOwn ? 12 : 2, borderBottomRightRadius: m.isOwn ? 2 : 12 }}>
                     <T style={{ fontSize: 13, color: c.tF0, lineHeight: 18.85 }}>{m.content}</T>
@@ -551,18 +544,25 @@ function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaD
             {masa.type === 'KANKA' ? (
               <KankaPairs mine={masa.participants.filter(p => p.pair === 'MINE') as KankaPerson[]} other={masa.participants.filter(p => p.pair === 'OTHER') as KankaPerson[]} onPhoto={openPhoto} />
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: masaKart.avatarGap - 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: masaKart.avatarGap - 8 }}>
                 {ordered.map((p, i) => {
                   const av = (
                     <View style={{ padding: 2, borderRadius: 999, borderWidth: 2, borderColor: p.isSelf ? masaKart.selfRing : 'transparent', backgroundColor: p.isSelf ? masaKart.selfRingGap : 'transparent' }}>
                       <DetayAvatar participant={p} delay={0.52 + i * 0.1} size={masaKart.avatar} />
                     </View>
                   );
-                  return p.photoUrl
-                    ? <Pressable key={`${p.initials}-${i}`} onPress={() => openPhoto(p)} accessibilityRole="imagebutton" accessibilityLabel={t('masa.enlargePhoto')} hitSlop={4}>{av}</Pressable>
-                    : <View key={`${p.initials}-${i}`}>{av}</View>;
+                  const slot = p.photoUrl
+                    ? <Pressable onPress={() => openPhoto(p)} accessibilityRole="imagebutton" accessibilityLabel={t('masa.enlargePhoto')} hitSlop={4}>{av}</Pressable>
+                    : av;
+                  // Görünen ad ("Ahmet Y.") avatarın yanında; fotoğrafsızda avatarın içindeki baş harf aynen kalır
+                  return (
+                    <View key={`${p.initials}-${i}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: p.displayName ? 4 : 0 }}>
+                      {slot}
+                      {!!p.displayName && <T w={600} numberOfLines={1} style={{ fontSize: 12, color: '#f4f1ec' }}>{p.displayName}</T>}
+                    </View>
+                  );
                 })}
-              </ScrollView>
+              </View>
             )}
           </View>
 

@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { DetayAvatar } from './DetayAvatar';
 
-export interface KankaPerson { initials: string; gender?: string | null; isSelf?: boolean; photoUrl?: string | null }
+export interface KankaPerson { initials: string; gender?: string | null; isSelf?: boolean; photoUrl?: string | null; displayName?: string | null }
 
 const OPPOSITE = (g?: string | null) => (g === 'FEMALE' ? 'MALE' : g === 'MALE' ? 'FEMALE' : null);
 
@@ -14,9 +14,17 @@ function Slot({ person, emptyGender, delay, onPhoto }: { person?: KankaPerson; e
   const p = person ? { ...person, photoUrl: onPhoto ? person.photoUrl : null } : { initials: '?', gender: emptyGender };
   // Masa detay kartında (onPhoto verilen yer) kullanıcının kendi dairesi vurgulu
   const av = <DetayAvatar participant={p} delay={delay} highlight={!!onPhoto && !!person?.isSelf} />;
-  return person?.photoUrl && onPhoto
+  const slot = person?.photoUrl && onPhoto
     ? <button type="button" onClick={() => onPhoto(person)} aria-label={t('masa.enlargePhoto')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>{av}</button>
     : av;
+  // Masa detay kartında görünen ad ("Ahmet Y."): çift yerleşimi yan yana olduğu için dairenin altında
+  if (!onPhoto || !person?.displayName) return slot;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 0 }}>
+      {slot}
+      <span style={{ fontSize: 11, fontWeight: 600, color: '#f4f1ec', fontFamily: 'Inter, sans-serif', maxWidth: 72, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{person.displayName}</span>
+    </div>
+  );
 }
 
 // Kankamla katılımcıları: solda kullanıcı ve kankası, ortada görsel ayırıcı, sağda karşı çift.

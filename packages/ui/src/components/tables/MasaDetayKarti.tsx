@@ -18,6 +18,7 @@ export interface DetayParticipant {
   isSelf?: boolean;
   photoUrl?: string | null;
   cancelled?: boolean;
+  displayName?: string | null; // Görünen ad ("Ahmet Y."), kart açıldıktan sonra sunucudan gelir
 }
 
 export interface VenuePhoto {
@@ -52,7 +53,7 @@ interface ChatMsg {
   content: string;
   createdAt: string;
   isOwn: boolean;
-  senderInitials: string;
+  senderName: string; // Görünen ad ("Ahmet Y.")
   senderGender?: string | null;
   seatNo?: number | null; // Masaya özel anonim sandalye no (art arda mesaj serisi)
   reportedByMe: boolean;
@@ -64,21 +65,6 @@ function msgTime(iso: string): string {
 }
 
 // Masa kartındaki baş harf rozetinin küçük hali
-function ChatBadge({ initials, gender }: { initials: string; gender?: string | null }) {
-  return (
-    <span style={{
-      width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      background: gender === 'FEMALE' ? 'rgba(244,143,177,0.12)' : 'rgba(79,195,247,0.12)',
-      border: `1.5px solid ${gColor(gender)}`,
-      // Rozet boyutu sabit; üst simge numaralı (uzun) metinde yazı küçülür, rozet dışına taşmaz
-      fontSize: initials.length > 4 ? 7.5 : 8.5, fontWeight: 700, color: '#f0f0f0', fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em',
-      overflow: 'hidden', whiteSpace: 'nowrap',
-    }}>
-      {initials.toUpperCase()}
-    </span>
-  );
-}
 
 interface Props {
   masa: MasaDetayData;
@@ -540,16 +526,14 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
           )}
           {messages.map((msg, i) => {
             const prev = messages[i - 1];
-            // Aynı kişinin art arda mesajlarında rozet yalnızca serinin ilk mesajında
+            // Aynı kişinin art arda mesajlarında gönderen adı yalnızca serinin ilk mesajında
             const firstOfSeries = !prev || prev.isOwn !== msg.isOwn || prev.seatNo !== msg.seatNo;
             return (
             <div key={msg.id} style={{ display: 'flex', flexDirection: 'row', justifyContent: msg.isOwn ? 'flex-end' : 'flex-start', gap: 6, alignItems: 'flex-start' }}>
-              {!msg.isOwn && (
-                firstOfSeries
-                  ? <ChatBadge initials={msg.senderInitials} gender={msg.senderGender} />
-                  : <span style={{ width: 28, flexShrink: 0 }} aria-hidden />
-              )}
               <div style={{ maxWidth: '72%', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: msg.isOwn ? 'flex-end' : 'flex-start' }}>
+                {!msg.isOwn && firstOfSeries && (
+                  <span style={{ fontSize: 11, fontWeight: 600, color: gColor(msg.senderGender), fontFamily: 'Inter, sans-serif', marginBottom: 3 }}>{msg.senderName}</span>
+                )}
                 <div style={{
                   padding: '8px 11px', borderRadius: msg.isOwn ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
                   background: 'rgba(255,255,255,0.04)',
@@ -1024,14 +1008,23 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
                 onPhoto={openPhoto}
               />
             ) : (
-              <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, overflowX: 'auto', padding: 4, margin: -4 }}>
-                {ordered.map((p, i) => p.photoUrl ? (
-                  <button key={`${p.initials}-${i}`} type="button" onClick={() => openPhoto(p)} aria-label={t('masa.enlargePhoto')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 4, margin: -4 }}>
+                {ordered.map((p, i) => {
+                  const av = p.photoUrl ? (
+                    <button type="button" onClick={() => openPhoto(p)} aria-label={t('masa.enlargePhoto')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}>
+                      <DetayAvatar participant={p} delay={0.52 + i * 0.1} size={44} highlight={!!p.isSelf} />
+                    </button>
+                  ) : (
                     <DetayAvatar participant={p} delay={0.52 + i * 0.1} size={44} highlight={!!p.isSelf} />
-                  </button>
-                ) : (
-                  <DetayAvatar key={`${p.initials}-${i}`} participant={p} delay={0.52 + i * 0.1} size={44} highlight={!!p.isSelf} />
-                ))}
+                  );
+                  // Görünen ad ("Ahmet Y.") avatarın yanında; fotoğrafsızda avatarın içindeki baş harf aynen kalır
+                  return (
+                    <div key={`${p.initials}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, paddingRight: p.displayName ? 4 : 0 }}>
+                      {av}
+                      {p.displayName && <span style={{ fontSize: 12, fontWeight: 600, color: '#f4f1ec', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}>{p.displayName}</span>}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
