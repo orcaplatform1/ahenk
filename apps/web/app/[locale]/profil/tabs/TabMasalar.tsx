@@ -1,6 +1,5 @@
 'use client';
 
-import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { formatNamed, occupationLabel, weekdayName, type Lang } from '@ahenk/shared';
@@ -8,7 +7,7 @@ import { motion } from 'framer-motion';
 import { api, API_PREFIX } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { useProfilePhotoPicker } from '@/components/ProfilePhoto';
-import { ConfirmedRadarView, KankaPairs, MasaDetayKarti, RezervasyonIptal, gColor, type DashboardItem, type MasaDetayData, type MasaTuru, type VenuePhoto } from '@ahenk/ui';
+import { ConfirmedRadarView, KankaPairs, MasaDetayKarti, gColor, type DashboardItem, type MasaDetayData, type MasaTuru, type VenuePhoto } from '@ahenk/ui';
 import LiveTabs from '@/components/live/LiveTabs';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import WeeklySelectionModal from '@/components/live/WeeklySelectionModal';
@@ -432,14 +431,12 @@ function MasaBlock({
   cardType,
   userInfo,
   kanka,
-  onCancelled,
 }: {
   item?: DashboardItem;
   locked: boolean;
   cardType: 'group' | 'basbasa' | 'kanka';
   userInfo?: UserInfo;
   kanka?: { initials: string; gender: string | null } | null;
-  onCancelled?: () => void;
 }) {
   const t = useTranslations();
   const locale = useLocale() as Lang;
@@ -498,16 +495,7 @@ function MasaBlock({
             />
           </div>
         )}
-        {/* Rezervasyon iptali: kilit günü 20:00'ye kadar (masa kartı açıldığında iptal yok) */}
-        <RezervasyonIptal
-          meetingId={meeting.id}
-          type={meeting.type ?? (cardType === 'basbasa' ? 'ONE_ON_ONE' : cardType === 'kanka' ? 'KANKA' : 'GROUP')}
-          scheduledAt={meeting.scheduledAt}
-          cancelRightUsed={meeting.cancelRightUsed}
-          apiBase={API_PREFIX}
-          onCancelled={onCancelled}
-          modalPortal={(node) => createPortal(node, document.body)}
-        />
+        {/* Seçim iptali ve buluşma türü değişikliği yalnız Eşleşme Paneli'ndeki seçim kartından yapılır */}
       </div>
     );
   } else {
@@ -529,16 +517,13 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
 }) {
   const t = useTranslations();
   const locale = useLocale() as Lang;
-  const { ready, kanka, tab, tabItem, selectTab, statuses, reload, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
+  const { ready, kanka, tab, tabItem, selectTab, statuses, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     api.get<HistoryMeeting[]>('/meetings/my-history').then(h => setHistory(Array.isArray(h) ? h : [])).catch(() => {});
   }, []);
-
-  // Bekleme ekranında iptal sonrası (iptal mesajı görünsün diye 2 sn sonra)
-  const afterCancel = () => { setTimeout(reload, 2000); };
 
   if (!ready) return <SkeletonBlock lines={5} />;
 
@@ -591,7 +576,6 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
           cardType={CARD_TYPE[tab]}
           userInfo={userInfo}
           kanka={kanka}
-          onCancelled={afterCancel}
         />
         )}
       </div>

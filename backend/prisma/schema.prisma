@@ -246,6 +246,7 @@ model Meeting {
   cityId               String? // Masanın şehri (eşleştirmede yazılır)
   city                 City?          @relation(fields: [cityId], references: [id])
   type                 MeetingType
+  mode                 MeetingMode    @default(PLANNED)
   title                String
   description          String?        @db.Text
   scheduledAt          DateTime
@@ -279,6 +280,7 @@ model Meeting {
 
   @@index([cityId])
   @@index([venueId, scheduledAt])
+  @@index([mode, scheduledAt])
 }
 
 model MeetingAiReport {
@@ -324,6 +326,12 @@ enum MeetingType {
   GROUP
   ONE_ON_ONE
   KANKA // Kankamla: 4 kişi (2E + 2K) — iki alıcı + kankaları
+}
+
+// Buluşma türü: PLANNED = Planlı (haftalık Cuma / Cumartesi / Pazar), TOMORROW = Yarın Buluşma (ertesi gün 20:00)
+enum MeetingMode {
+  PLANNED
+  TOMORROW
 }
 
 enum MeetingStatus {
@@ -1209,20 +1217,25 @@ model JantiHaydarRequest {
   @@index([phone])
 }
 
-// Haftalık buluşma seçimi: Pazar 23:59'dan sonra (ISO hafta, TR saati) paketi olan kullanıcı bu hafta hangi türlerin
-// taramasına gireceğini seçer. Seçilmeyen türün taramasına girilmez, hakkı düşmez. Seçim değiştirilemez.
-// Son saatler: Grup Perşembe 18:00, Başbaşa Cuma 18:00, Kankamla Cumartesi 18:00
+// Katılım kaydı (seçim ekranı): her kayıt bir masa türü + buluşma türü (Planlı / Yarın). Sistem hakları otomatik taramaya almaz.
+// Kilitten önce iptal / değiştirme serbest, hak yanmaz. Planlı son saatler: Grup Perşembe 18:00, Baş Başa Cuma 18:00, Kankamla Cumartesi 18:00
 model WeeklySelection {
   id         String      @id @default(cuid())
   userId     String
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  year       Int
-  weekNumber Int
-  type       MeetingType
-  createdAt  DateTime    @default(now())
+  // PLANNED: buluşma haftası (year + weekNumber); TOMORROW: buluşma günü (meetingDate, TR 20:00) ve o günün haftası
+  year          Int
+  weekNumber    Int
+  type          MeetingType
+  mode          MeetingMode @default(PLANNED)
+  meetingDate   DateTime?
+  // Yarın kaydı 23:59 kilidinde kurulamayıp Planlı'ya aktarıldıysa aktarım anı
+  transferredAt DateTime?
+  createdAt     DateTime    @default(now())
 
-  @@unique([userId, year, weekNumber, type])
   @@index([year, weekNumber, type])
+  @@index([userId, type])
+  @@index([mode, meetingDate, type])
 }
 
 // ─────────────────────────────────────────────

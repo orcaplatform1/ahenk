@@ -29,7 +29,16 @@ interface StatsOverview {
   algorithmSuccessRate: number;
   packageDistribution: PackageDist;
   activePrime: number;
+  meetingModes?: { tomorrow: ModeStats; planned: ModeStats };
 }
+
+// Yarın / Planlı Buluşma: kurulan masa (tür + toplam), talep; Yarın'da Planlı'ya aktarılan kayıt
+interface ModePeriod {
+  requests: number;
+  tables: { group: number; oneOnOne: number; kanka: number; total: number };
+  transferred?: number;
+}
+interface ModeStats { thisWeek: ModePeriod; allTime: ModePeriod }
 
 interface CityRow {
   city: string;
@@ -84,6 +93,33 @@ function StatCard({ label, value, sub, prefix = '', fmtFn, accent }: {
         {prefix}{fmtFn ? fmtFn(v) : v.toLocaleString('tr-TR')}
       </p>
       {sub && <p style={{ margin: '4px 0 0', fontSize: 11, color: MUTED }}>{sub}</p>}
+    </div>
+  );
+}
+
+function ModeSection({ title, stats }: { title: string; stats: ModeStats }) {
+  const cell = { background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 16px' } as const;
+  const num = { margin: 0, fontSize: 20, fontWeight: 600, color: TEXT, fontFamily: MONO } as const;
+  const lbl = { margin: '0 0 4px', fontSize: 10, color: MUTED } as const;
+  const periods: [string, ModePeriod][] = [['Bu Hafta', stats.thisWeek], ['Tüm Zamanlar', stats.allTime]];
+  return (
+    <div className="ll-card" style={{ marginBottom: 12 }}>
+      <h2 className="ll-title" style={{ marginBottom: 12 }}>{title}</h2>
+      {periods.map(([label, p]) => (
+        <div key={label} style={{ marginBottom: 14 }}>
+          <p style={{ ...LABEL, color: MUTED, margin: '0 0 8px' }}>{label.toUpperCase()}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
+            <div style={cell}><p style={lbl}>Grup</p><p style={num}>{p.tables.group.toLocaleString('tr-TR')}</p></div>
+            <div style={cell}><p style={lbl}>Baş Başa</p><p style={num}>{p.tables.oneOnOne.toLocaleString('tr-TR')}</p></div>
+            <div style={cell}><p style={lbl}>Kankamla</p><p style={num}>{p.tables.kanka.toLocaleString('tr-TR')}</p></div>
+            <div style={cell}><p style={lbl}>Toplam Masa</p><p style={num}>{p.tables.total.toLocaleString('tr-TR')}</p></div>
+            <div style={cell}><p style={lbl}>Talep</p><p style={num}>{p.requests.toLocaleString('tr-TR')}</p></div>
+            {p.transferred !== undefined && (
+              <div style={cell}><p style={lbl}>Planlı&apos;ya Aktarılan</p><p style={num}>{p.transferred.toLocaleString('tr-TR')}</p></div>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -233,6 +269,14 @@ export default function AdminStats() {
               </div>
             </div>
           </div>
+
+          {/* Yarın / Planlı Buluşma */}
+          {data.meetingModes && (
+            <>
+              <ModeSection title="Yarın Buluşma" stats={data.meetingModes.tomorrow} />
+              <ModeSection title="Planlı Buluşma" stats={data.meetingModes.planned} />
+            </>
+          )}
 
           {/* Algoritma */}
           <div className="ll-card" style={{ marginBottom: 12 }}>

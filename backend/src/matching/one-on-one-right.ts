@@ -41,26 +41,6 @@ function spentSub(db: Db, userId: string, meetingCreatedAt: Date) {
 }
 
 /**
- * Rezervasyon iptali (başbaşa): iptal edenin hakkı kullanılmış sayılır, 1 döngü düşer.
- * Masada tek başınaysa hak henüz harcanmamıştır, burada harcanır.
- */
-export async function chargeOneOnOneCancel(db: Db, userId: string, meetingCreatedAt: Date): Promise<void> {
-  const spent = await spentSub(db, userId, meetingCreatedAt);
-  const open = spent ? [] : await db.subscription.findMany({
-    where: { userId, ...OPEN_ONE_ON_ONE_SUB },
-    orderBy: { createdAt: "asc" },
-    select: { id: true, plan: true },
-  });
-  const subId = spent?.id ?? (open.find((s) => s.plan === SubscriptionPlan.KARSIMDA) ?? open[0])?.id;
-  if (!subId) return;
-  await db.subscription.update({
-    where: { id: subId },
-    data: { oneOnOneCycles: { increment: 1 }, ...(spent ? {} : { usedAt: new Date() }) },
-  });
-  await syncPackageStatus(db, subId);
-}
-
-/**
  * Admin başbaşa masasını iptal ederse / katılımcıyı çıkarırsa harcanan hak geri verilir.
  * Hak masa oluşturulduğu işlemde harcandığı için usedAt, masanın createdAt anına denk gelir.
  * - usedAt temizlenir; başbaşa kısmı yeniden açıldığı için paket ACTIVE olur (4 döngü dolmadıysa)

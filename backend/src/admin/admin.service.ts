@@ -17,6 +17,7 @@ import {
   SubscriptionStatus,
   MeetingStatus,
   MeetingType,
+  MeetingMode,
   Gender,
   VenueCategory,
   VenueType,
@@ -1442,7 +1443,7 @@ export class AdminService {
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },
       select: {
-        status: true, type: true, scheduledAt: true, maxParticipants: true, cityId: true,
+        status: true, type: true, mode: true, scheduledAt: true, maxParticipants: true, cityId: true,
         participants: {
           where: { status: { notIn: ['CANCELLED', 'DECLINED', 'NO_SHOW'] } },
           select: { userId: true, user: { select: { isBot: true, profile: { select: { gender: true } } } } },
@@ -1450,8 +1451,11 @@ export class AdminService {
       },
     });
     if (!meeting) throw new NotFoundException('Masa bulunamadı');
-    // Kankamla masasına asla bot eklenmez
+    // Kankamla masasına asla bot eklenmez; Yarın Buluşma'da bot yalnız grup masasına
     if (meeting.type === MeetingType.KANKA) return [];
+    if (meeting.mode === MeetingMode.TOMORROW && meeting.type !== MeetingType.GROUP) return [];
+    // Grup masasına en fazla 1 bot
+    if (meeting.type === MeetingType.GROUP && meeting.participants.some((p) => p.user.isBot)) return [];
     if (meeting.status !== MeetingStatus.PENDING && meeting.status !== MeetingStatus.ACTIVE) return [];
     if (meeting.participants.length >= meeting.maxParticipants) return [];
     const males = meeting.participants.filter((p) => p.user.profile?.gender === Gender.MALE).length;
@@ -1529,6 +1533,47 @@ export class AdminService {
 
   placeOneOnOneBot(userId: string, botUserId: string) {
     return this.matching.addOneOnOneBotManual(userId, botUserId);
+  }
+
+  // ─── Yarın / Planlı Buluşma istatistiği ──────────────────────────────────
+  // Kurulan masa: iptal edilmemiş ve kilidi geçmiş (buluşmadan önceki gün 23:59) masa; Bu Hafta = buluşması bu hafta
+  // (Pazartesi 00:00 – Pazar 23:59 TR). Talep: katılım kaydı (iptal edilen kayıt silinir, sayılmaz); Yarın talebi Planlı'ya
+  // aktarılsa da Yarın talebi sayılır. Aktarılan: 23:59 kilidinde kurulamayıp Planlı'ya aktarılan Yarın kaydı.
+  private async meetingModeStats() {
+    const weekStart = trWeekStart();
+    const weekEnd = new Date(weekStart.getTime() + WEEK_MS);
+    const lockedBefore = new Date(Date.now() + 20 * 60 * 60 * 1000 + 60 * 1000);
+    const tables = async (mode: MeetingMode, week: boolean) => {
+      const where = (type: MeetingType): Prisma.MeetingWhereInput => ({
+        mode, type, status: { not: MeetingStatus.CANCELLED },
+        scheduledAt: week ? { gte: weekStart, lt: weekEnd, lte: lockedBefore } : { lte: lockedBefore },
+      });
+      const [group, oneOnOne, kanka] = await Promise.all([
+        this.prisma.meeting.count({ where: where(MeetingType.GROUP) }),
+        this.prisma.meeting.count({ where: where(MeetingType.ONE_ON_ONE) }),
+        this.prisma.meeting.count({ where: where(MeetingType.KANKA) }),
+      ]);
+      return { group, oneOnOne, kanka, total: group + oneOnOne + kanka };
+    };
+    const created = (week: boolean) => (week ? { createdAt: { gte: weekStart, lt: weekEnd } } : {});
+    const period = async (week: boolean) => {
+      const [tomorrowTables, plannedTables, tomorrowRequests, plannedRequests, transferred] = await Promise.all([
+        tables(MeetingMode.TOMORROW, week),
+        tables(MeetingMode.PLANNED, week),
+        this.prisma.weeklySelection.count({ where: { ...created(week), OR: [{ mode: MeetingMode.TOMORROW }, { transferredAt: { not: null } }] } }),
+        this.prisma.weeklySelection.count({ where: { ...created(week), mode: MeetingMode.PLANNED, transferredAt: null } }),
+        this.prisma.weeklySelection.count({ where: { transferredAt: week ? { gte: weekStart, lt: weekEnd } : { not: null } } }),
+      ]);
+      return {
+        tomorrow: { requests: tomorrowRequests, tables: tomorrowTables, transferred },
+        planned: { requests: plannedRequests, tables: plannedTables },
+      };
+    };
+    const [thisWeek, allTime] = await Promise.all([period(true), period(false)]);
+    return {
+      tomorrow: { thisWeek: thisWeek.tomorrow, allTime: allTime.tomorrow },
+      planned: { thisWeek: thisWeek.planned, allTime: allTime.planned },
+    };
   }
 
   // ─── Stats overview ───────────────────────────────────────────────────────
@@ -1638,6 +1683,7 @@ export class AdminService {
       kankaMeetings,
       algorithmSuccessRate,
       packageDistribution,
+      meetingModes: await this.meetingModeStats(),
       activePrime,
     };
   }

@@ -10,15 +10,14 @@ import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
-import { cancellationNotice, initialsOf } from "./cancellation-notice";
+import { initialsOf } from "./cancellation-notice";
 import { tableInitials } from "./table-initials";
-import { chargeOneOnOneCancel, restoreOneOnOneRights } from "../matching/one-on-one-right";
 import { cancelDeadline, meetingLockAt, meetingCardEnd, noShowCardWindow, sosWindowEnd, reviewWindow } from "./meeting-windows";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
-import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
-import { chargeGroupCancel, chargeKankaCancel, pairKankaSub } from "../payment/package-rights";
+import { ASSIGN_QUEUE } from "../matching/assign-queue";
+import { cancelSelection } from "../matching/selection-cancel";
 import { activeKankaLink } from "../kanka/kanka-links";
-import { MeetingStatus, MeetingType, LeaveReason, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
+import { MeetingStatus, MeetingType, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
 
 // Yola Çıktım: buluşmadan 1 saat önce açılır
 export const ON_MY_WAY_OPEN_MS = 60 * 60 * 1000;
@@ -779,131 +778,10 @@ export class MeetingsService {
       throw new ForbiddenException("Bu masa artık aktif değil");
     }
 
-    const isGroup = meeting.type === MeetingType.GROUP;
-    const isKanka = meeting.type === MeetingType.KANKA;
-
-    // İptal süresi masa tarihinden hesaplanır: masa gününden 1 gün önce 20:00 (TR)
-    // Grup (Cuma) → Perşembe 20:00, Başbaşa (Cumartesi) → Cuma 20:00
-    const now = new Date();
-    const pastDeadline = now >= cancelDeadline(meeting.scheduledAt);
-
-    if (pastDeadline) {
-      throw new ForbiddenException(
-        isGroup
-          ? "Grup masası iptal süresi doldu (Perşembe 20:00)"
-          : isKanka
-            ? "Kankamla masası iptal süresi doldu (Cumartesi 20:00)"
-            : "Baş başa masası iptal süresi doldu (Cuma 20:00)",
-      );
-    }
-
-    // Grup / Kankamla: paket başına tek iptal hakkı
-    if (isGroup && await this.groupCancelRightUsed(userId)) {
-      throw new ForbiddenException("Bu paket için iptal hakkınızı kullandınız");
-    }
-    if (isKanka) {
-      if (await this.kankaCancelRightUsed(userId)) throw new ForbiddenException("Bu paket için iptal hakkınızı kullandınız");
-      return this.cancelKankaRegistration(meetingId, userId, participant.id, participant.kankaPartnerId, note, now);
-    }
-
-    // İptal nedeni leaveNote'a yazılır; leaveReason "kendisi iptal etti" işaretidir
-    // Eşzamanlı ikinci iptal isteği koşullu güncellemede 0 satır görür: hak ikinci kez düşmez
-    await this.prisma.$transaction(async (tx) => {
-      const claimed = await tx.meetingParticipant.updateMany({
-        where: { meetingId, userId, status: { not: ParticipantStatus.CANCELLED } },
-        data: {
-          status: ParticipantStatus.CANCELLED,
-          leaveReason: LeaveReason.OTHER,
-          leaveNote: note,
-          cancelledAt: now,
-        },
-      });
-      if (claimed.count === 0) throw new ConflictException("Rezervasyon zaten iptal edilmiş");
-      // Grup: iptal edenin paketinden 1 hak + 1 döngü düşer
-      if (isGroup) await chargeGroupCancel(tx, participant.id, userId);
-      // Başbaşa masa tek kişiyle kalmaz: masa iptal, kalanın hakkı geri verilir; iptal edenin hakkı yanar, 1 döngü düşer
-      if (!isGroup) {
-        const closed = await tx.meeting.updateMany({
-          where: { id: meetingId, status: { notIn: [MeetingStatus.CANCELLED, MeetingStatus.COMPLETED] } },
-          data: { status: MeetingStatus.CANCELLED, cancelledAt: new Date() },
-        });
-        if (closed.count === 0) throw new ForbiddenException("Bu masa artık aktif değil");
-        await restoreOneOnOneRights(tx, meeting.createdAt, meeting.participants.map((p) => p.userId).filter((id) => id !== userId));
-        await chargeOneOnOneCancel(tx, userId, meeting.createdAt);
-      }
-    });
-
-    // Grup: anında bildirim yok, Perşembe 20:00'de toplu gider (MatchingScheduler).
-    // Başbaşa: karşı tarafa hemen gider.
-    if (!isGroup) {
-      const notice = cancellationNotice();
-      const others = meeting.participants.map((p) => p.userId).filter((id) => id !== userId);
-      await Promise.all(
-        others.map((uid) =>
-          this.notifications.sendToUser(uid, { ...notice, data: { type: 'PARTICIPANT_LEFT', meetingId } }),
-        ),
-      );
-
-      // Kalan kişi tekrar taramaya girer
-      for (const uid of others) await enqueueAssign(this.assignQueue, uid);
-    }
-
+    // Seçim iptaliyle aynı: masa kilitlenmeden önce; kullanım hakkı yanmaz, kişi yalnız bu seçime ait tarama kaydını ve
+    // masadaki eşleşmesini kaybeder (matching/selection-cancel.ts)
+    await cancelSelection({ prisma: this.prisma, notifications: this.notifications, assignQueue: this.assignQueue }, userId, meeting.type, note);
     return { success: true };
   }
 
-  // Kankamla iptali: iptal eden kankasıyla birlikte düşer, masa iptal olur, çiftin paketinden 1 hak + 1 döngü düşer.
-  // Karşı çift yeniden taramaya girer (hakları korunur).
-  private async cancelKankaRegistration(
-    meetingId: string, userId: string, participantId: string, kankaId: string | null,
-    note: string, now: Date,
-  ) {
-    const pairIds = [userId, ...(kankaId ? [kankaId] : [])];
-    const all = await this.prisma.meetingParticipant.findMany({ where: { meetingId }, select: { id: true, userId: true } });
-    const otherIds = all.map((p) => p.userId).filter((id) => !pairIds.includes(id));
-
-    // Eşzamanlı ikinci iptal isteği (kişinin kendisi ya da kankası) koşullu güncellemede 0 satır görür: hak ikinci kez düşmez
-    await this.prisma.$transaction(async (tx) => {
-      const closed = await tx.meeting.updateMany({
-        where: { id: meetingId, status: { notIn: [MeetingStatus.CANCELLED, MeetingStatus.COMPLETED] } },
-        data: { status: MeetingStatus.CANCELLED, cancelledAt: new Date() },
-      });
-      if (closed.count === 0) throw new ConflictException("Rezervasyon zaten iptal edilmiş");
-      await tx.meetingParticipant.update({
-        where: { id: participantId },
-        data: { status: ParticipantStatus.CANCELLED, leaveReason: LeaveReason.OTHER, leaveNote: note, cancelledAt: now },
-      });
-      if (kankaId) {
-        await tx.meetingParticipant.updateMany({
-          where: { meetingId, userId: kankaId },
-          data: { status: ParticipantStatus.CANCELLED, leaveNote: "Kankası rezervasyonu iptal etti", cancelledAt: now },
-        });
-      }
-      // Rezervasyonu iptal eden çiftin paketinden 1 hak + 1 döngü düşer
-      const sub = await pairKankaSub(tx, pairIds);
-      if (sub) {
-        const buyer = all.find((p) => p.userId === sub.userId) ?? all.find((p) => p.id === participantId)!;
-        await chargeKankaCancel(tx, buyer.id, sub.id);
-      }
-    });
-
-    const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { profile: { select: { firstName: true, lastName: true } } } });
-    if (kankaId) {
-      await this.notifications.sendToUser(kankaId, {
-        title: "Kankamla rezervasyonu iptal edildi",
-        body: `Kankan ${initialsOf(me?.profile)} bu haftaki Kankamla rezervasyonunuzu iptal etti.`,
-        data: { type: "KANKA_CANCELLED", meetingId },
-        en: { title: "Bring a Buddy booking cancelled", body: `Your Kanka ${initialsOf(me?.profile)} cancelled this week's Bring a Buddy booking.` },
-      }).catch(() => undefined);
-    }
-    for (const id of otherIds) {
-      await this.notifications.sendToUser(id, {
-        title: "Karşı çift masadan ayrıldı",
-        body: "Kankamla masanızdaki karşı çift ayrıldı. Sizin için yeniden eşleşme aranıyor.",
-        data: { type: "KANKA_PAIR_LEFT", meetingId },
-        en: { title: "The other pair left the table", body: "The other pair at your Bring a Buddy table left. We're looking for a new match for you." },
-      }).catch(() => undefined);
-      await enqueueAssign(this.assignQueue, id);
-    }
-    return { success: true };
-  }
 }

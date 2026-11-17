@@ -6,7 +6,10 @@ import { ACard, AError, AGrid, ALabel, AMono, APage, AT, ATableRow, ATitle } fro
 import { adm } from '@/theme/theme';
 
 interface PackageDist { masadaPct: number; karsimdaPct: number; icerdePct: number; kankamlaPct: number; masadaCount: number; karsimdaCount: number; icerdeCount: number; kankamlaCount: number; prime1mPct: number; prime3mPct: number; prime6mPct: number; prime12mPct: number; prime1mCount: number; prime3mCount: number; prime6mCount: number; prime12mCount: number }
-interface StatsOverview { totalRevenue: number; netRevenue: number; vatAmount: number; netCommission: number; activeUsers: number; kycPending: number; matchRateThisWeek: number; referralRegisteredCount: number; referralTotalDiscountTL: number; totalMeetings: number; groupMeetings: number; oneOnOneMeetings: number; kankaMeetings: number; algorithmSuccessRate: number; packageDistribution: PackageDist; activePrime: number }
+interface StatsOverview { totalRevenue: number; netRevenue: number; vatAmount: number; netCommission: number; activeUsers: number; kycPending: number; matchRateThisWeek: number; referralRegisteredCount: number; referralTotalDiscountTL: number; totalMeetings: number; groupMeetings: number; oneOnOneMeetings: number; kankaMeetings: number; algorithmSuccessRate: number; packageDistribution: PackageDist; activePrime: number; meetingModes?: { tomorrow: ModeStats; planned: ModeStats } }
+// Yarın / Planlı Buluşma: kurulan masa (tür + toplam), talep; Yarın'da Planlı'ya aktarılan kayıt
+interface ModePeriod { requests: number; tables: { group: number; oneOnOne: number; kanka: number; total: number }; transferred?: number }
+interface ModeStats { thisWeek: ModePeriod; allTime: ModePeriod }
 interface CityRow { city: string; totalTables: number; kankaTables: number; activeMembers: number; revenue: number; discount: number; net: number; vat: number; trend: string }
 interface DashboardSummary { totalUsers: number; kycPending: number; activeMeetingsThisWeek: number; groupMeetingsThisWeek: number; oneOnOneMeetingsThisWeek: number; kankaMeetingsThisWeek: number; pioneer: { count: number; remaining: number } }
 
@@ -51,6 +54,31 @@ function PackageBar({ label, pct, count, color }: { label: string; pct: number; 
       </View>
       <View style={{ height: 6, borderRadius: 99, backgroundColor: adm.surface, overflow: 'hidden' }}><View style={{ height: '100%', borderRadius: 99, backgroundColor: color, width: `${pct}%` }} /></View>
     </View>
+  );
+}
+function ModeSection({ title, stats }: { title: string; stats: ModeStats }) {
+  const periods: [string, ModePeriod][] = [['Bu Hafta', stats.thisWeek], ['Tüm Zamanlar', stats.allTime]];
+  return (
+    <ACard style={{ marginBottom: 12 }}>
+      <ATitle style={{ marginBottom: 12 }}>{title}</ATitle>
+      {periods.map(([label, p]) => {
+        const cells: [string, number][] = [['Grup', p.tables.group], ['Baş Başa', p.tables.oneOnOne], ['Kankamla', p.tables.kanka], ['Toplam Masa', p.tables.total], ['Talep', p.requests]];
+        if (p.transferred !== undefined) cells.push(["Planlı'ya Aktarılan", p.transferred]);
+        return (
+          <View key={label} style={{ marginBottom: 14 }}>
+            <ALabel style={{ color: adm.muted, marginBottom: 8 }}>{label.toLocaleUpperCase('tr-TR')}</ALabel>
+            <AGrid gap={10}>
+              {cells.map(([l, v]) => (
+                <View key={l} style={{ backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 16 }}>
+                  <AT style={{ marginBottom: 4, fontSize: 10, color: adm.muted }}>{l}</AT>
+                  <AMono w={600} style={{ fontSize: 20, color: adm.text }}>{v.toLocaleString('tr-TR')}</AMono>
+                </View>
+              ))}
+            </AGrid>
+          </View>
+        );
+      })}
+    </ACard>
   );
 }
 // web: grid repeat(2, 1fr), gap 12 — tek kalan kart yarım genişlikte
@@ -107,6 +135,12 @@ export default function AdminStats() {
               ))}
             </AGrid>
           </ACard>
+          {data.meetingModes && (
+            <>
+              <ModeSection title="Yarın Buluşma" stats={data.meetingModes.tomorrow} />
+              <ModeSection title="Planlı Buluşma" stats={data.meetingModes.planned} />
+            </>
+          )}
           <ACard style={{ marginBottom: 12 }}>
             <ATitle style={{ marginBottom: 8 }}>Algoritma Başarısı</ATitle>
             <AMono w={600} style={{ marginBottom: 4, fontSize: 20, color: adm.text }}>%{algo}</AMono>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { AccountTabBar } from '@/components/AccountTabBar';
@@ -10,12 +11,14 @@ import LiveParticipation from '@/components/live/LiveParticipation';
 import { WinbackHost } from '@/components/winback/WinbackHost';
 import KycNoticeCard from '@/components/KycNoticeCard';
 import WeeklySelectionModal from '@/components/live/WeeklySelectionModal';
+import SelectionCard from '@/components/live/SelectionCard';
 
 const MEETING_GRACE_MS = 3 * 60 * 60 * 1000;
 
 export default function DashboardPage() {
   const t = useTranslations();
-  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, selection, submitSelection } = useMasaTabs();
+  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, selection, submitSelection, changeSelection, cancelSelection } = useMasaTabs();
+  const [selectOpen, setSelectOpen] = useState(false);
   // Buluşma saatinden 3 saat sonra masa panelden düşer: sayaç yeni haftaya geçer, Katılım ve kontenjan sıfırlanır
   // (dashboard 15 sn'de bir yenilendiği için sayfa yenilenmeden geçer)
   const tabItem = rawTabItem && Date.now() < Date.parse(rawTabItem.meeting.scheduledAt) + MEETING_GRACE_MS ? rawTabItem : undefined;
@@ -32,7 +35,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] pt-[52px]">
       <AccountTabBar kycApproved={kycApproved} />
       <WinbackHost badge />
-      <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
+      <WeeklySelectionModal selection={selection} onSubmit={submitSelection} open={selectOpen} onClose={() => setSelectOpen(false)} />
       <div
         className="fixed inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 50% 40% at 70% 30%, rgba(192,57,43,0.1) 0%, transparent 70%)' }}
@@ -50,6 +53,7 @@ export default function DashboardPage() {
         )}
         {me?.maintenanceMode && <MaintenanceNotice />}
       </div>
+      <SelectionCard selection={selection} onOpen={() => setSelectOpen(true)} onChange={changeSelection} onCancel={cancelSelection} />
       <LiveLayer
         activePlan={me?.activePlan ?? null}
         hasTabTable={!!tabItem}

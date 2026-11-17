@@ -40,11 +40,21 @@ const SUB_OPEN: Record<MasaTuru, (s: OwnSub) => boolean> = {
   KANKA: s => (s.plan === 'KANKAMLA' || isPrimePlan(s.plan)) && s.kankaRights > 0,
 };
 
-// Haftalık buluşma seçimi (GET /weekly-selection)
+// Buluşma türü: PLANNED = Hafta Sonu (Planlı), TOMORROW = Yarın Buluşma
+export type MeetingMode = 'PLANNED' | 'TOMORROW';
+
+// Katılım kayıtları (GET /weekly-selection): her masa türü için hak, açık kayıt (buluşma türüyle) ve masa durumu
 export interface WeeklySelection {
-  submitted: boolean;
   selected: MasaTuru[];
-  options: { type: MasaTuru; deadline: string; open: boolean }[];
+  options: {
+    type: MasaTuru;
+    hasRight: boolean;
+    seated: boolean;
+    locked: boolean;
+    plannedDeadline: string;
+    selection: { mode: MeetingMode; meetingDate: string | null; kankaWaiting: boolean; nextWeek: boolean } | null;
+  }[];
+  tomorrowDate: string;
   showModal: boolean;
 }
 
@@ -113,9 +123,19 @@ export function useMasaTabs() {
       .finally(() => setDashLoaded(true));
   }, []);
 
-  // Haftalık seçim tek seferdir; gönderilince seçilen türlerin taramasına girilir
-  const submitSelection = useCallback(async (types: MasaTuru[]) => {
-    const r = await api.post<WeeklySelection>('/weekly-selection', { types });
+  // Seçim gönderilince seçilen türlerin taramasına girilir; kilitten önce değiştirme / iptal serbest (hak yanmaz)
+  const submitSelection = useCallback(async (mode: MeetingMode, types: MasaTuru[]) => {
+    const r = await api.post<WeeklySelection>('/weekly-selection', { mode, types });
+    setSelection(r);
+    void reload();
+  }, [reload]);
+  const changeSelection = useCallback(async (type: MasaTuru, mode: MeetingMode) => {
+    const r = await api.post<WeeklySelection>('/weekly-selection/change', { type, mode });
+    setSelection(r);
+    void reload();
+  }, [reload]);
+  const cancelSelection = useCallback(async (type: MasaTuru) => {
+    const r = await api.post<WeeklySelection>('/weekly-selection/cancel', { type });
     setSelection(r);
     void reload();
   }, [reload]);
@@ -165,10 +185,12 @@ export function useMasaTabs() {
   const tabAdminCancelled = !tabItem && adminCancelledTypes.includes(tab);
   const kycApproved = me?.kyc?.status === 'APPROVED';
   const tabPastClosing = pastClosed.split(',').includes(tab);
-  // Bu hafta seçilen türler: yalnız onların taramasına girilir
-  const selectedTypes = selection?.selected ?? [];
+  // Açık kaydı olan türler: yalnız onların taramasına girilir
+  const selOf = (t: MasaTuru) => selection?.options.find(o => o.type === t)?.selection ?? null;
   const hasPackage = subs.length > 0;
-  const scanning = owned.includes(tab) && kycApproved && !tabPastClosing && !cancelledTypes.includes(tab) && selectedTypes.includes(tab);
+  const tabSel = selOf(tab);
+  const scanning = owned.includes(tab) && kycApproved && !!tabSel && !tabSel.kankaWaiting
+    && (tabSel.mode === 'TOMORROW' || (!tabSel.nextWeek && !tabPastClosing));
 
   // Havuza giriş: paket ve KYC onayının ikisi de tamamlandığı an; biri bilinmiyorsa null
   const poolEntry = (t: MasaTuru) => {
@@ -180,13 +202,17 @@ export function useMasaTabs() {
       const table = items.find(i => i.meeting.type === t);
       return table && !isTableLocked(table.meeting.scheduledAt) ? 'FORMING' : 'TABLE';
     }
-    if (cancelledTypes.includes(t)) return 'CANCELLED';
-    // Paketi olan kullanıcı bu hafta seçmediği türde pasif; hiç paketi olmayanda "Abonelik Yok"
+    const sel = selOf(t);
+    if (!sel && cancelledTypes.includes(t)) return 'CANCELLED';
+    // Paketi olan kullanıcı kaydı olmayan türde pasif; hiç paketi olmayanda "Abonelik Yok"
     if (!hasPackage) return 'NONE';
-    if (!selectedTypes.includes(t)) return 'PASSIVE';
+    if (!sel) return 'PASSIVE';
     if (!rights[t]) return 'NONE';
     if (!kycApproved) return 'KYC';
-    if (t === 'KANKA' && kankaWaiting) return 'KANKA';
+    if (t === 'KANKA' && (sel.kankaWaiting || kankaWaiting)) return 'KANKA';
+    // Yarın Buluşma her gün tarar; Planlı kaydı gelecek haftadaysa yeni taramayı bekler
+    if (sel.mode === 'TOMORROW') return 'SCANNING';
+    if (sel.nextWeek) return 'PENDING';
     if (!pastClosed.split(',').includes(t)) return 'SCANNING';
     // Başarısız yalnızca kapanıştan önce havuzda olana; kapanıştan sonra gelen yeni taramayı bekler
     const since = poolEntry(t);
@@ -200,6 +226,7 @@ export function useMasaTabs() {
 
   return {
     ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, selection, submitSelection,
+    changeSelection, cancelSelection,
     tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled,
   };
 }

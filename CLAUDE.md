@@ -60,12 +60,12 @@ EŞLEŞTİRME ALGORİTMASI (Modül 7):
 - Meslek: iki kişi aynı meslek sektöründeyse +35, değilse 0
 - Cinsiyet dengesi: 6 kişi → 3E+3K, 4 kişi → 2E+2K
 - Cinsiyet değerleri: yalnızca MALE ve FEMALE
-- Masa 5 kişi kalırsa: bot ile 6'ya tamamla; bot yoksa 4'e düşür, 5. kişi sonraki haftaya
+- Grup bot kuralı (Planlı ve Yarın aynı): 3 kişilik masa 1 botla 4'e, 5 kişilik masa 1 botla 6'ya tamamlanır; masaya en fazla 1 bot.
+  "5 kişi kalırsa 4'e düşür" kuralı kaldırıldı
 - Bot sistemi: seed'de isBot:true olan User kayıtları, admin panelinden aktif/pasif ve isim düzenleme
 - Bot OceanScore: seed'de manuel atanır (50/50/50/50/50 varsayılan), test doldurmaları gerekmez
 - Bot isimleri admin panelinden güncellenebilir (ad/soyad); diğer alanlar admin yetkisi dışında
-- Kayıt kapanış saati: Cumartesi 10:00 — 4 kişi yoksa 12 saat uzatılır (22:00'ye)
-- 4. kişi kabul edince uzatma iptal, masa kesinleşir
+- "4 kişi yoksa 12 saat uzat" kuralı kaldırıldı (Yarın Buluşma'da da yok)
 - 5. kişi sıradaki haftaya: MatchingWaitlist tablosunda saklanır, sonraki koşuda öncelikli
 
 KYC KURALLARI:
@@ -190,13 +190,49 @@ Akış:
   "2 grup hakkı" ve "4 döngü" ifadeleri yoktur.
   (Para çekilip paket verilemeyen mükerrer ödemenin otomatik iyzico iadesi ve "Ödeme Sonuçlandırma" ekranı duruyor.)
 
-HAFTALIK BULUŞMA SEÇİMİ:
-  - Her Pazar 23:59'dan sonra paketi olan kullanıcıya Eşleşme Paneli / Masalarım'da pencere açılır
-  - Paketinde kalan türlerden bu hafta hangilerine gireceğini seçer (1, 2 ya da 3 tür); seçim değiştirilemez
-  - Sistem kimseyi otomatik taramaya sokmaz; yalnız seçilen türlerin taramasına girilir (WeeklySelection tablosu)
-  - Son saatler: Grup Perşembe 18:00, Baş Başa Cuma 18:00, Kankamla Cumartesi 18:00
-  - Süresinde seçim yapmayan o türün taramasına girmez, hakkı düşmez
-  - Eşleşme alanı: paketi olan kullanıcıda bu hafta seçilmeyen tür "Eşleşme Pasif"; hiç paketi olmayanda "Abonelik Yok"
+YARIN BULUŞMA (iki takvim modeli; ayrı sistem değil, mevcut paket hakları aynen kullanılır):
+  - Kodda enum MeetingMode { PLANNED, TOMORROW } ("Hızlı / Quick" adı yok). Meeting.mode ve WeeklySelection.mode (+ meetingDate,
+    transferredAt); migration 20261117100000_meeting_mode, mevcut masa ve kayıtlar PLANNED. Kullanıcıya görünen adlar: "Yarın Buluşma" /
+    "Hafta Sonu Buluşma" (EN "Tomorrow Meetup" / "Weekend Meetup"; live.modeTomorrow / live.modeWeekend). Admin: "Yarın Buluşma" / "Planlı Buluşma"
+  - Mod kullanıcıya bağlı değildir; her katılım kaydına (masa türü seçimine) aittir. Profilim'de mod ayarı yoktur. Sistem hakları
+    otomatik taramaya almaz; her hak kullanıcı seçince taramaya girer. Masa türü başına tek açık kayıt
+  - Tek seçim ekranı (web components/live/WeeklySelectionModal.tsx, mobil components/WeeklySelectionModal.tsx): "Buluşma Türü" (Yarın
+    Buluşma / Hafta Sonu Buluşma, tek seçim) + "Masa Türü" (Grup / Baş Başa / Kankamla, çoklu; yalnız kullanılmamış hakkı olan ve kaydı /
+    masası olmayan tür seçilebilir, diğerleri pasif). Ekran paket alınınca ve girişte, taramada ya da masada olmayan kullanılmamış hak
+    varsa açılır (GET /weekly-selection showModal); ayrı haftalık pencere yoktur. Farklı türler için farklı buluşma türü seçilebilir
+  - Eşleşme Paneli'nde seçim kartı (web components/live/SelectionCard.tsx, mobil components/SelectionCard.tsx; mobilde halkaların
+    altında): ekranı açar ("Seçim Yap"), kayıtları gösterir, "Değiştir" (diğer buluşma türüne geçer) ve "İptal Et". Seçim değiştirme ve
+    iptal yalnız bu karttan; masa kartlarındaki eski "Rezervasyon İptal" butonu kaldırıldı
+  - Kilitten önce iptal / buluşma türü değişikliği serbest, kullanım hakkı YANMAZ (Yarın + Planlı); kişi yalnız o kayda ait tarama
+    kaydını ve masa eşleşmesini kaybeder (backend matching/selection-cancel.ts). Kilitlenmiş masada iptal ve değiştirme yok.
+    Eski "seçim değiştirilemez" kuralı ve paket başına tek iptal hakkı kaldırıldı
+  - Hafta Sonu (Planlı) son saatler aynen: Grup Perşembe 18:00, Baş Başa Cuma 18:00, Kankamla Cumartesi 18:00; geçtiyse kayıt bir
+    sonraki haftanın taramasına yazılır
+  - Kankamla kanka seçilmeden de seçilir; kayıt "Kanka bekleniyor" durumunda kalır, taramaya girmez; kanka daveti kabul edince tarama
+    başlar (Yarın'da kilit o günün 23:59'u). Kanka (ücretsiz) kendi seçim ekranı / buluşma türü olmadan davet edenin kaydını izler
+  - Yarın akışı: her gün açık (Cuma / Cumartesi / Pazar dahil); talep ve iptal son saati her gece 23:59 (sonrası bir sonraki günün
+    buluşmasına yazılır); masa 23:59'da kilitlenir (matching.service runTomorrowLock, atama kuyruğunda). Ertesi gün 10:00 kart açılır +
+    bildirim + AI raporu, 20:00 buluşma, sohbet buluşma günü 22:00'de kapanır. Saat başı tarama ve :05 mekân ataması Yarın'da da çalışır;
+    mekânsız masa hatırlatması her gün 08:00. Yarın masasında "Yarın" etiketi / rozeti yok
+  - Yarın hak düşümü 23:59 kilidinde masa kurulunca (Grup: 6 kişi 3E+3K ya da botla 4'e tamamlanan 2E+2K; Baş Başa 2; Kankamla 4).
+    Kurulamayan kayıt en yakın Planlı gününe aktarılır (Grup → Cuma, Baş Başa → Cumartesi, Kankamla → Pazar; o haftanın Planlı son
+    saati geçtiyse bir sonraki hafta); kaydın modu PLANNED olur, transferredAt yazılır. İade yok, hak Planlı kuralına göre düşer
+  - Yarın eşleştirme: OCEAN ve meslek puanı kullanılmaz; sıralama puanı yaş yakınlığı %50 + mekân kategori tercihi (venueCategories)
+    %50 (match-score.ts tomorrowScore; yaş 30 yılda doğrusal, kategori ortak / toplam), kimseyi dışlamaz. ALCOHOLIC / NON_ALCOHOLIC
+    zorunlu filtre; şehir, cinsiyet dengesi, engeller, dil kuralı aynen. Kullanıcıya OCEAN kullanılmadığı hiçbir metinde söylenmez.
+    Planlı'da OCEAN 65 + meslek 35 aynen (Yarın'dan aktarılanlar dahil)
+  - Yaş kuralı (iki mod): Grup yok; Baş Başa en fazla 8 yaş; Kankamla bir ikilideki her kişi ile karşı ikilideki her kişi arasında en
+    fazla 8 yaş (kişinin kendi kankasıyla kural yok)
+  - Bot: Yarın'da bot yalnız grup masasına (otomatik 23:59 kilidinde ve admin istediği zaman); Baş Başa ve Kankamla'ya bot yok.
+    Grup masasına en fazla 1 bot (Planlı + Yarın, admin elle ekleme dahil)
+  - Admin İstatistikler (web + mobil): "Yarın Buluşma" ve "Planlı Buluşma" bölümleri, Bu Hafta ve Tüm Zamanlar: kurulan masa (Grup, Baş
+    Başa, Kankamla, Toplam), talep, Yarın'da Planlı'ya aktarılan kayıt (GET /admin/stats/overview meetingModes)
+  - Uçlar: GET /weekly-selection, POST /weekly-selection {mode, types[]}, POST /weekly-selection/change {type, mode},
+    POST /weekly-selection/cancel {type} (JWT)
+
+HAFTALIK BULUŞMA SEÇİMİ (Planlı):
+  - Seçimi süresinde yapmayan o türün taramasına girmez, hakkı düşmez
+  - Eşleşme alanı: paketi olan kullanıcıda kaydı olmayan tür "Eşleşme Pasif"; hiç paketi olmayanda "Abonelik Yok"
   - Tarama göstergesi web ve mobilde yalnızca tek PASSIVE / LIVE state'ten okur: PASSIVE'de radar durur ve her şey gridir; LIVE'da radar
     sürekli döner, her semt kendi yoğunluk renginde görünür ve noktası yanıp söner
   - Tarama durumu gösterimi (web + mobil Eşleşme Paneli): PASSIVE = geri sayım kartında "Yeni tarama başlamasına" gösterilen durum
@@ -215,11 +251,9 @@ HAFTALIK BULUŞMA SEÇİMİ:
   - LIVE_DISTRICT_SOURCE ayarı AppConfig tablosunda kayıtlı değildir, varsayılan "static" kullanılır; semt yoğunlukları admin Şehirler
     ayarındaki 1–4 seviyesinden gelir, gerçek talepten gelmez. Şu an bilinçli olarak static kullanılıyor; gerçek talebe geçiş ileride ayrı
     kararla yapılacak.
-  - GET /weekly-selection, POST /weekly-selection {types[]} (JWT)
-  - Pencere tasarımı (web + mobil): başlık "Bu hafta hangi masaya katılmak için eşleşme taramasına girmek istiyorsunuz?";
-    her tür için kart: solda eşleşme alanındaki halka ikonu, sağda kalın başlık + küçük alt metin
-    (Grup Masası / Baş Başa Masası / Kankamla Masası metinleri; buluşma Cuma / Cumartesi / Pazar 20:00). Yalnız paketinde hakkı
-    olan türlerin kartı görünür. "Sonra" ve "Seçimi Onayla" butonları, son saatler ve seçimin değiştirilemezliği aynen
+  - Seçim ekranı kartları (web + mobil): solda eşleşme alanındaki halka ikonu, sağda kalın başlık + küçük alt metin (Hafta Sonu'nda
+    Grup / Baş Başa / Kankamla metinleri, buluşma Cuma / Cumartesi / Pazar 20:00; Yarın'da "Buluşma yarın 20:00'de gerçekleşir.").
+    "Sonra" ve "Seçimi Onayla" butonları
   - Eşleşme taraması Katılım satırı: Grupta "Katılım x/6:" tek başına, isimler bir alt satırda; her kısaltma cinsiyet renkli
     çerçeveli yuvarlak dairede (web + mobil). Baş Başa ve Kankamla satırı eskisi gibi
 
@@ -414,7 +448,7 @@ MASA BİLDİRİM AKIŞI:
   Örnek: "Bugün saat 20:00, Petra Kahve (Bağdat Cad. No:12) — M.A. (E), A.K. (K), S.T. (E) ile buluşuyorsun"
   MEETING_VENUE_SET eventi KALDIRILDI — mekan bildirimi ayrı gitmez, onay anında tek seferde gider
 
-MASADAN AYRILMA / İPTAL AKIŞI:
+MASADAN AYRILMA / İPTAL AKIŞI (eski; iptal artık Eşleşme Paneli seçim kartından, sebep sorulmadan ve hak yakmadan yapılır — YARIN BULUŞMA):
   Kullanıcı masadan ayrılırken sebep seçmek zorunda:
     - Mekan uygun değil
     - Zaman değişti
@@ -486,7 +520,8 @@ Sistem ayarları:
     işlem yapmadan çıkar (app-settings.ts isMatchingEnabled): grup / baş başa / Kankamla masa atamaları (saatlik ve 23:44 son tarama,
     atama kuyruğu matching-assign: kişi ataması, havuz taraması, kapanış botları), mekân ataması ve mekânsız masa hatırlatması,
     Perşembe / Cuma / Cumartesi 23:59 kapanışları (Cumartesi Kankamla kilidi ve bekleme listesi dahil) ve bütün hak düşümleri,
-    12 saat kala kapanış hatırlatmaları, Perşembe 20:00 grup iptal özeti, Cuma / Cumartesi / Pazar 10:00 masa bildirimleri.
+    12 saat kala kapanış hatırlatmaları, Perşembe 20:00 grup iptal özeti, Cuma / Cumartesi / Pazar 10:00 masa bildirimleri;
+    Yarın Buluşma'nın ataması, 23:59 kilidi, Planlı'ya aktarımı, hak düşümü ve her gün 10:00 masa bildirimi.
     Ayar açıkken davranış aynı. Masa kapanışı (6 saat sonra), gelmeyen işaretleme, yola çıktım, değerlendirme bildirimleri,
     paket süre dolumu, Prime, winback ve ödeme işleri bu ayara bakmaz
 
@@ -605,8 +640,11 @@ Endpoint'ler:
   - GET /admin/chat/reports — tüm şikayetler listesi (ADMIN guard)
 
 REZERVASYON İPTALİ KURALLARI (güncelleme):
-  - Grup masası: Perşembe 20:00'a kadar iptal butonu aktif
-  - Baş başa: Cuma 20:00'a kadar iptal butonu aktif (CLAUDE.md Modül 3'teki mevcut kurala ek)
+  - İptal masa kilidine kadar (buluşmadan önceki gün 23:59) seçim kartından yapılır, hak yanmaz (YARIN BULUŞMA); aşağıdaki
+    "Perşembe / Cuma 20:00" son anları ve iptalde hak düşümü kaldırıldı. Planlı grup iptal bildirimi Perşembe 20:00 özetiyle,
+    Yarın grup masasında kalanlara hemen
+  - (eski) Grup masası: Perşembe 20:00'a kadar iptal butonu aktif
+  - (eski) Baş başa: Cuma 20:00'a kadar iptal butonu aktif
   - İptal anında admin masa detayına log düşer: "K.A. — 18:34'te rezervasyonu iptal etti"
   - İptal sonrası son 1 saate kadar sistem yeni kişi arar
   - 1 saat içinde bulunamazsa: eksik cinsiyete göre bot eklenir

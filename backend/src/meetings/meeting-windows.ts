@@ -15,6 +15,26 @@ export const oneOnOneMeetingAt = (now = new Date()) => nextWeekdayAt(6, now);
 // Kankamla buluşma: Pazar 20:00 (kilit Cumartesi 23:59)
 export const kankaMeetingAt = (now = new Date()) => nextWeekdayAt(0, now);
 
+// Yarın Buluşma: talep ve iptal son saati her gece 23:59 (TR). Bu ana kadar verilen talep ertesi gün 20:00 buluşmasına,
+// 23:59'dan sonra verilen talep bir sonraki günün buluşmasına yazılır.
+export const TOMORROW_LOCK_MIN = 23 * 60 + 59;
+export function tomorrowMeetingAt(now = new Date()): Date {
+  const tr = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  const minutes = tr.getUTCHours() * 60 + tr.getUTCMinutes();
+  const days = minutes >= TOMORROW_LOCK_MIN ? 2 : 1;
+  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + days, MEETING_HOUR_UTC, 0, 0, 0));
+}
+// 23:59 kilidinin kilitlediği buluşma: TR takvim gününün ertesi günü 20:00 (kilit anında kayma yok)
+export function nextDayMeetingAt(now = new Date()): Date {
+  const tr = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 1, MEETING_HOUR_UTC, 0, 0, 0));
+}
+// Bugün (TR) 20:00 buluşması
+export function todayMeetingAt(now = new Date()): Date {
+  const tr = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate(), MEETING_HOUR_UTC, 0, 0, 0));
+}
+
 // Masa kilidi: masa gününden 1 gün önce (kilit günü) 23:59 TR
 export function meetingLockAt(scheduledAt: Date): number {
   const tr = new Date(scheduledAt.getTime() + 3 * 60 * 60 * 1000);

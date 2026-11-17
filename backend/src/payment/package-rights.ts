@@ -97,25 +97,9 @@ export async function syncPackageStatus(db: Db, subscriptionId: string): Promise
   if (next !== s.status) await db.subscription.update({ where: { id: subscriptionId }, data: { status: next } });
 }
 
-// Rezervasyon iptali (grup): en eski açık paketten 1 hak + 1 döngü anında düşer; kilit bu paketi tekrar saymaz
-export async function chargeGroupCancel(db: Db, participantId: string, userId: string): Promise<void> {
-  const sub = await db.subscription.findFirst({
-    where: { userId, ...OPEN_GROUP_SUB },
-    orderBy: { createdAt: "asc" },
-    select: { id: true },
-  });
-  if (!sub) return;
-  await db.subscription.update({
-    where: { id: sub.id },
-    data: { groupRights: { decrement: 1 }, groupCycles: { increment: 1 } },
-  });
-  await db.meetingParticipant.update({ where: { id: participantId }, data: { groupRightSubId: sub.id } });
-  await syncPackageStatus(db, sub.id);
-}
-
 // Grup kilidi (Perşembe 23:59): grup kısmı açık paketlerin döngüsü 1 artar; bu döngüde kurulmuş (iptal edilmemiş)
 // grup masasında yeri olan kişinin 1 grup hakkı düşer. Kendisi iptal etmiş olsa da masa kurulmuş sayılır.
-// Rezervasyon iptalinde hak ve döngüsü düşülmüş paket bu kilitte sayılmaz.
+// (Eski kayıtlar: rezervasyon iptalinde hak ve döngüsü düşülmüş paket bu kilitte sayılmaz; iptal artık hak yakmaz.)
 export async function closeGroupCycle(db: Db, cycleId: string | null, now = new Date()): Promise<void> {
   const subs = await db.subscription.findMany({
     where: { ...OPEN_GROUP_SUB, createdAt: { lte: new Date(now.getTime() - CYCLE_COUNT_CUTOFF_MS) } },
@@ -199,12 +183,6 @@ export async function chargeKankaRight(db: Db, participantId: string, subscripti
   await db.subscription.update({ where: { id: subscriptionId }, data: { kankaRights: { decrement: 1 } } });
   await db.meetingParticipant.update({ where: { id: participantId }, data: { kankaRightSubId: subscriptionId } });
   await syncPackageStatus(db, subscriptionId);
-}
-
-// Rezervasyon iptali (Kankamla): çiftin paketinden 1 hak + 1 döngü anında düşer; kilit bu paketi tekrar saymaz
-export async function chargeKankaCancel(db: Db, participantId: string, subscriptionId: string): Promise<void> {
-  await db.subscription.update({ where: { id: subscriptionId }, data: { kankaCycles: { increment: 1 } } });
-  await chargeKankaRight(db, participantId, subscriptionId);
 }
 
 // Kankamla kilidi (Cumartesi 23:59): bu döngüde kurulmuş (iptal edilmemiş) masadaki her çiftin paketinden 1 hak

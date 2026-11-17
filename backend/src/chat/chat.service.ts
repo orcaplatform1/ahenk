@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { MeetingStatus, MeetingType, ParticipantStatus } from "../generated/prisma/client";
+import { MeetingMode, MeetingStatus, MeetingType, ParticipantStatus } from "../generated/prisma/client";
 import { trWeekStart } from "../admin/tr-week";
 
 // Sohbet kapanış günü (masanın TR haftası içinde, Pzt=0): grup Cuma, baş başa Cumartesi, kankamla Pazar — saat 22:00 TR
@@ -17,12 +17,15 @@ const CHAT_CLOSE_DAY: Record<MeetingType, number> = {
 };
 
 // Sohbet penceresi: açılış masanın buluşma günü 10:00 TR; kapanış masa türüne göre 22:00 TR (UTC+3 sabit offset)
-function chatWindow(scheduledAt: Date, type: MeetingType): { openAt: Date; closeAt: Date } {
+// Yarın Buluşma: sohbet buluşma günü 22:00 TR'de kapanır
+function chatWindow(scheduledAt: Date, type: MeetingType, mode: MeetingMode): { openAt: Date; closeAt: Date } {
   const TR = 3 * 3600_000;
   const dayTR = new Date(scheduledAt.getTime() + TR);
   dayTR.setUTCHours(10, 0, 0, 0);
   const openAt = new Date(dayTR.getTime() - TR);
-  const closeAt = new Date(trWeekStart(scheduledAt).getTime() + CHAT_CLOSE_DAY[type] * 86_400_000 + 22 * 3600_000);
+  const closeAt = mode === MeetingMode.TOMORROW
+    ? new Date(openAt.getTime() + 12 * 3600_000)
+    : new Date(trWeekStart(scheduledAt).getTime() + CHAT_CLOSE_DAY[type] * 86_400_000 + 22 * 3600_000);
   return { openAt, closeAt };
 }
 
@@ -67,14 +70,14 @@ export class ChatService {
 
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },
-      select: { status: true, type: true, scheduledAt: true },
+      select: { status: true, type: true, mode: true, scheduledAt: true },
     });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
     if (!CHAT_STATUSES.includes(meeting.status)) {
       throw new ForbiddenException("Sohbet sadece aktif masalarda açıktır");
     }
 
-    const { openAt, closeAt } = chatWindow(meeting.scheduledAt, meeting.type);
+    const { openAt, closeAt } = chatWindow(meeting.scheduledAt, meeting.type, meeting.mode);
     const now = new Date();
     const isClosed = now >= closeAt;
     if (now < openAt) {
@@ -122,14 +125,14 @@ export class ChatService {
 
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },
-      select: { status: true, type: true, scheduledAt: true },
+      select: { status: true, type: true, mode: true, scheduledAt: true },
     });
     if (!meeting) throw new NotFoundException("Masa bulunamadı");
     if (!CHAT_STATUSES.includes(meeting.status)) {
       throw new ForbiddenException("Sohbet sadece aktif masalarda açıktır");
     }
 
-    const { openAt, closeAt } = chatWindow(meeting.scheduledAt, meeting.type);
+    const { openAt, closeAt } = chatWindow(meeting.scheduledAt, meeting.type, meeting.mode);
     const now = new Date();
     if (now < openAt) {
       throw new ForbiddenException("Sohbet henüz açılmadı");

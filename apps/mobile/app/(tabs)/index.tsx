@@ -10,6 +10,7 @@ import { api } from '@/lib/api';
 import { gColor, getNextTarget, num, pad, type MasaTuru } from '@/lib/masa';
 import { CLOSING_DAY, SCAN_START_DAY, useMasaTabs } from '@/lib/useMasaTabs';
 import { WeeklySelectionModal } from '@/components/WeeklySelectionModal';
+import { SelectionCard } from '@/components/SelectionCard';
 import { isForeground, useAppRefresh } from '@/lib/useAppRefresh';
 import type { LiveOverview, LivePulse, OceanKey } from '@/lib/liveTypes';
 import { BtnPrimary, Card, Cta, Glow, Eyebrow, Head, MaintenanceNotice, Mono, Note, Serif, Spinner, T, Title } from '@/components/ui';
@@ -117,7 +118,8 @@ export default function EslesmePaneli() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, scanning, selfParticipant, selection, submitSelection } = useMasaTabs();
+  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, scanning, selfParticipant, selection, submitSelection, changeSelection, cancelSelection } = useMasaTabs();
+  const [selectOpen, setSelectOpen] = useState(false);
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
   const tabItem = rawTabItem && Date.now() < Date.parse(rawTabItem.meeting.scheduledAt) + MEETING_GRACE_MS ? rawTabItem : undefined;
@@ -146,7 +148,7 @@ export default function EslesmePaneli() {
         <Defs><RadialGradient id="dashfix" cx="70%" cy="30%" rx="50%" ry="40%"><Stop offset="0" stopColor="rgb(192,57,43)" stopOpacity={0.1} /><Stop offset="0.7" stopColor="rgb(192,57,43)" stopOpacity={0} /></RadialGradient></Defs>
         <Rect width="100%" height="100%" fill="url(#dashfix)" />
       </Svg>
-      <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />
+      <WeeklySelectionModal selection={selection} onSubmit={submitSelection} open={selectOpen} onClose={() => setSelectOpen(false)} />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top }}>
         {/* Işıma kaydırılan içeriğin ilk çocuğu: diğer sekmeler gibi durum çubuğunun arkasına kadar uzanır */}
         <Glow />
@@ -167,6 +169,8 @@ export default function EslesmePaneli() {
           {/* Halkalar yukarıda: sütunun üst boşluğu bu ekranda yok */}
           <View style={[st.column, { paddingTop: 0 }]}>
             <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
+            {/* Seçim kartı halkaların altında: KYC kartı yokken halkalar durum çubuğunun hemen altından başlar */}
+            <SelectionCard selection={selection} onOpen={() => setSelectOpen(true)} onChange={changeSelection} onCancel={cancelSelection} />
 
             {/* Geri sayım */}
             <View style={[st.card, { borderColor: 'rgba(232,162,122,0.22)', overflow: 'hidden' }]}>

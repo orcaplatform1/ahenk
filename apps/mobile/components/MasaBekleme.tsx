@@ -1,13 +1,12 @@
-// packages/ui ConfirmedRadarView + RezervasyonIptal karşılıkları
+// packages/ui ConfirmedRadarView karşılığı
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Modal, Pressable, TextInput, View } from 'react-native';
+import { Animated, Easing, View } from 'react-native';
 import { useReduceMotion } from '@/lib/motion';
-import { api } from '@/lib/api';
-import { cancelDeadline, formatMasaDate, isTableLocked, pad, tableTitleOf, type MasaTuru, type Participant } from '@/lib/masa';
+import { formatMasaDate, isTableLocked, pad, tableTitleOf, type MasaTuru, type Participant } from '@/lib/masa';
 import { AhenkSonar } from './Sonar';
 import { DetayAvatar } from './DetayAvatar';
-import { InlineLH, Btn, Serif, T } from './ui';
-import { c, ll, sans, tw } from '@/theme/theme';
+import { InlineLH, Serif, T } from './ui';
+import { c, ll } from '@/theme/theme';
 
 import { upper } from '@/lib/i18n';
 const RADAR = 340; const C = RADAR / 2; const ORBIT_R = 142; const AV_D = 52;
@@ -103,57 +102,6 @@ function ConfirmedRadarViewInner({ participants, maxParticipants, type, schedule
   );
 }
 
-function RezervasyonIptalInner({ meetingId, scheduledAt, cancelRightUsed, onCancelled }: { meetingId: string; scheduledAt: string; cancelRightUsed?: boolean; onCancelled?: () => void }) {
-  const [show, setShow] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [cancelled, setCancelled] = useState(false);
-  const [error, setError] = useState('');
-  const [note, setNote] = useState('');
-  if (new Date() >= cancelDeadline(scheduledAt)) return null;
-  async function handle() {
-    if (!note.trim()) return;
-    setLoading(true); setError('');
-    try { await api.post(`/meetings/${meetingId}/cancel-registration`, { note: note.trim() }); setCancelled(true); setShow(false); onCancelled?.(); }
-    catch (e) { setError((e as Error).message || 'İptal edilemedi, lütfen tekrar deneyin.'); }
-    finally { setLoading(false); }
-  }
-  if (cancelled) return (
-    <View style={{ padding: 12, paddingHorizontal: 14, borderRadius: 10, marginTop: 16, alignItems: 'center', backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.2)' }}>
-      <T style={{ fontSize: 13, color: c.red }}>Rezervasyonunuz iptal edildi.</T>
-    </View>
-  );
-  if (cancelRightUsed) return (
-    <View style={{ marginTop: 16, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
-      <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.62)', textAlign: 'center' }}>Bu paket için iptal hakkınızı kullandınız.</T>
-    </View>
-  );
-  const can = note.trim().length > 0;
-  return (
-    <>
-      <Modal visible={show} transparent animationType="fade" onRequestClose={() => setShow(false)}>
-        <Pressable onPress={() => { setShow(false); setError(''); }} style={{ flex: 1, backgroundColor: 'rgba(20,4,4,0.88)', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <Pressable onPress={() => undefined} style={{ width: '100%', maxWidth: 380, backgroundColor: 'rgba(30,8,8,0.97)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.35)', borderRadius: 16, paddingTop: 28, paddingHorizontal: 22, paddingBottom: 22 }}>
-            <T w={500} style={{ marginBottom: 18, fontSize: 15, lineHeight: 24, textAlign: 'center' }}>
-              Rezervasyon iptali diğer kullanıcıları da doğrudan etkilediğinden, kurulma aşamasındaki bir masada tekrar iptal hakkın bulunmayacaktır ve sonraki kurulan masaya da katılmama durumunda 1. uyarı verilir, toplamda 3 uyarı alırsan hesabın 30 gün askıya alınır.
-            </T>
-            <T style={{ marginBottom: 10, fontSize: 13, color: 'rgba(245,245,245,0.6)' }}>İptal nedenini belirtin:</T>
-            <TextInput value={note} onChangeText={setNote} maxLength={300} multiline numberOfLines={4} keyboardAppearance="dark"
-              style={{ minHeight: 88, padding: 10, paddingHorizontal: 12, borderRadius: 10, marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', color: tw.text, fontSize: 13, fontFamily: sans(400), textAlignVertical: 'top' }} />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Btn variant="resConfirm" onPress={handle} disabled={loading || !can} label={loading ? '…' : 'İptali Onayla'} />
-              <Btn variant="resBack" onPress={() => { setShow(false); setError(''); }} label="Vazgeç" />
-            </View>
-            {!!error && <T style={{ marginTop: 12, fontSize: 13, color: tw.accent, textAlign: 'center' }}>{error}</T>}
-          </Pressable>
-        </Pressable>
-      </Modal>
-      <Btn variant="resCancel" onPress={() => setShow(true)} label="Rezervasyon İptal" />
-    </>
-  );
-}
-
 // Web karşılığı yalnız satır içi stil: satır yüksekliği her boyutta 1.5×
 export function ConfirmedRadarView(props: React.ComponentProps<typeof ConfirmedRadarViewInner>) { return <InlineLH><ConfirmedRadarViewInner {...props} /></InlineLH>; }
 
-// Web karşılığı yalnız satır içi stil: satır yüksekliği her boyutta 1.5×
-export function RezervasyonIptal(props: React.ComponentProps<typeof RezervasyonIptalInner>) { return <InlineLH><RezervasyonIptalInner {...props} /></InlineLH>; }

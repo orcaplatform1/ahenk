@@ -7,6 +7,8 @@ export const JOB_ASSIGN_USER = "assign-user";
 export const JOB_SCAN_POOL = "scan-pool";
 export const JOB_GROUP_BOTS = "group-bots";
 export const JOB_ONE_ON_ONE_BOT = "one-on-one-bot";
+// Yarın Buluşma 23:59 kilidi: atamalarla aynı kuyrukta sırayla çalışır (kilit sırasında atama olmaz)
+export const JOB_TOMORROW_LOCK = "tomorrow-lock";
 
 // Kişi havuza girdiği an çağrılır (ödeme, admin paketi, KYC onayı, başbaşa iptali)
 export function enqueueAssign(queue: Queue, userId: string): Promise<unknown> {

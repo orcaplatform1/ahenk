@@ -482,8 +482,6 @@
     "verifyPhone": "Verify your phone number",
     "verifyPhoneWhatsapp": "Verify your phone number with the WhatsApp code",
     "videoMax100": "Videos can be up to 100 MB",
-    "weeklyAlreadySelected": "You've already made this week's selection; it can't be changed.",
-    "weeklyDeadlinePassed": "The selection period for this meetup type has ended.",
     "weeklyNoRight": "Your package has no credit for this meetup type.",
     "workTypeSelect": "Select the work type",
     "venueSessionMissing": "Session not found",
@@ -495,7 +493,10 @@
     "venueNotFound": "Venue not found",
     "venueRecordMissing": "Venue record not found, please contact support.",
     "venueWrongPassword": "Incorrect password",
-    "phoneInvalidTr": "Enter a valid Turkish phone number"
+    "phoneInvalidTr": "Enter a valid Turkish phone number",
+    "selectionExists": "You already have a booking for this table type.",
+    "selectionMissing": "You don't have a booking for this table type.",
+    "selectionLocked": "The table is locked; it can't be cancelled or changed."
   },
   "footer": {
     "brandPrefix": "Ahenk is a",
@@ -867,11 +868,21 @@
     "wsKankaText": "Join with your Kanka and meet a pair of friends of the opposite gender. Meetups are every Sunday at 20:00.",
     "wsKankaTitle": "Bring a Buddy Table",
     "wsLater": "Later",
-    "wsNote": "You can't change your choice later. You won't be matched for types you don't pick, and you won't lose those credits.",
     "wsOneText": "A table for two, matched with someone of the opposite gender. Meetups are every Saturday at 20:00.",
     "wsOneTitle": "Duo Table",
-    "wsTitle": "Which tables would you like to be matched for this week?",
-    "badgeInactive": "INACTIVE"
+    "badgeInactive": "INACTIVE",
+    "selModeLabel": "Meetup Type",
+    "selTypeLabel": "Table Type",
+    "modeTomorrow": "Tomorrow Meetup",
+    "modeWeekend": "Weekend Meetup",
+    "selTomorrowText": "The meetup is tomorrow at 20:00.",
+    "selCardTitle": "Meetup Selection",
+    "selOpen": "Choose",
+    "selChange": "Change",
+    "selCancel": "Cancel",
+    "selKankaWaiting": "Waiting for your Kanka",
+    "selLocked": "Table locked",
+    "selNextWeek": "Next week"
   },
   "login": {
     "accessBlocked": "Access blocked",

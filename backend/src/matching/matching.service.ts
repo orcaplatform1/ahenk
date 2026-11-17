@@ -1,4 +1,4 @@
-import { matchScore } from "./match-score";
+import { matchScore, tomorrowScore } from "./match-score";
 import { writeSeatScores } from "./seat-scores";
 import { normalizePhone } from "../common/phone";
 import { Injectable, Logger, NotFoundException, BadRequestException } from "@nestjs/common";
@@ -14,19 +14,19 @@ import {
   TABLE_SIZE_LARGE,
   TABLE_SIZE_SMALL,
 } from "./matching.constants";
-import { cancelDeadline, groupMeetingAt, kankaMeetingAt, oneOnOneMeetingAt } from "../meetings/meeting-windows";
+import { cancelDeadline, groupMeetingAt, kankaMeetingAt, nextDayMeetingAt, oneOnOneMeetingAt, todayMeetingAt, tomorrowMeetingAt } from "../meetings/meeting-windows";
 import { cancellationNotice } from "../meetings/cancellation-notice";
 import { trWeekStart, WEEK_MS } from "../admin/tr-week";
-import { Gender, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "../generated/prisma/client";
+import { Gender, MeetingMode, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "../generated/prisma/client";
 import { pickBot, alertBotNotFound, availableBots, recentlyMetBotIds, notifyBotAssigned } from "./bot-picker";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right";
-import { selectedThisWeek } from "./weekly-selection";
-import { GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, restoreGroupRights } from "../payment/package-rights";
+import { plannedTargetWeek, selectedThisWeek, selectedTomorrow } from "./selection-cancel";
+import { chargeKankaRight, GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, pairKankaSub, syncPackageStatus } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { approvedPhotoMap, PROFILE_PHOTO_DIR } from "../profile-photo/profile-photo.util";
 import * as fs from "fs";
 import * as path from "path";
-import { ASSIGN_QUEUE, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT, enqueueAssign, randomBotDelayMs } from "./assign-queue";
+import { ASSIGN_QUEUE, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT, JOB_TOMORROW_LOCK, enqueueAssign, randomBotDelayMs } from "./assign-queue";
 
 type OceanScoreData = {
   openness: number;
@@ -60,8 +60,12 @@ type EligibleUser = {
   contactBlocks: { hashedPhone: string }[];
 };
 
+// mode PLANNED: haftalık döngü (cycleId); TOMORROW: Yarın Buluşma (meetingAt = buluşma günü 20:00, cycleId boş).
+// Yarın'da saat filtreleri hep açık: ALCOHOLIC / NON_ALCOHOLIC zorunlu, sıralama puanı yaş %50 + mekân kategorisi %50.
 type AssignContext = {
-  cycleId: string;
+  mode: MeetingMode;
+  cycleId: string | null;
+  meetingAt: Date | null;
   weekNumber: number;
   groupOpen: boolean;
   oneOnOneOpen: boolean;
@@ -77,6 +81,13 @@ type LoneTable = { id: string; cityId: string | null; createdAt: Date; participa
 
 // Kankamla çifti: paketi olan alıcı + aynı cinsiyetteki kankası (ücretsiz)
 type KankaPair = { buyer: EligibleUser; kanka: EligibleUser; subId: string };
+
+// Havuz kapsamı: masaların ait olduğu döngü / gün ve kişinin bu türdeki kaydı
+type PoolScope = { meeting: Prisma.MeetingWhereInput; selected: (type: MeetingType) => Prisma.UserWhereInput };
+
+// Kendisi iptal etmemiş (admin çıkarması, askı / ban, kankasının düşmesi) katılım: o hafta / gün aynı türün havuzuna girmez.
+// Kişinin kendi seçim iptali (leaveReason dolu) yeniden kayıt olmasını engellemez.
+const notSelfCancelled = { status: "CANCELLED" as const, leaveReason: null };
 
 // Atama son anı 23:44 (TR); 23:45'ten itibaren sadece kapanış botları
 const ASSIGN_CUTOFF_MIN = 23 * 60 + 45;
@@ -168,14 +179,29 @@ export async function tableTitle(
   return `${city?.name ?? ""} ${label} ${maxNo + 1}`.trim();
 }
 
-// Grup kapanışında dengeyi tamamlayan bot sayısı: önce 2E+2K, sığmazsa 3E+3K hedeflenir
-// (2E+1K → 1 K, 3E+2K → 1 K, 3E+1K → 2 K, 3E+0K → 3 K)
+// Grup bot kuralı (Planlı ve Yarın aynı): masaya en fazla 1 bot. 3 kişilik masa 1 botla 4'e (2E+1K → 1 K),
+// 5 kişilik masa 1 botla 6'ya (3E+2K → 1 K) tamamlanır. Dengeli 4 / 6 masa bot istemez ({0,0}); diğer durumlar bot almaz (null).
 function groupBotNeed(males: number, females: number): { male: number; female: number } | null {
-  for (const size of [TABLE_SIZE_SMALL, TABLE_SIZE_LARGE]) {
-    const half = size / 2;
+  const count = males + females;
+  if (count === TABLE_SIZE_SMALL || count === TABLE_SIZE_LARGE) return males === females ? { male: 0, female: 0 } : null;
+  if (count === TABLE_SIZE_SMALL - 1 || count === TABLE_SIZE_LARGE - 1) {
+    const half = (count + 1) / 2;
     if (males <= half && females <= half) return { male: half - males, female: half - females };
   }
   return null;
+}
+
+// Kankamla yaş kuralı (Planlı ve Yarın aynı): bir ikilideki her kişi ile karşı ikilideki her kişi arasında en fazla 8 yaş;
+// kişinin kendi kankasıyla arasındaki farka kural uygulanmaz
+function kankaAgeOk(a: KankaPair, b: KankaPair): boolean {
+  for (const x of [a.buyer, a.kanka]) {
+    for (const y of [b.buyer, b.kanka]) {
+      const ax = ageYears(x.profile?.birthDate);
+      const ay = ageYears(y.profile?.birthDate);
+      if (ax !== null && ay !== null && Math.abs(ax - ay) > MAX_AGE_GAP_YEARS) return false;
+    }
+  }
+  return true;
 }
 
 @Injectable()
@@ -197,61 +223,111 @@ export class MatchingService {
     return { queued: true };
   }
 
+  // Yarın Buluşma 23:59 kilidi kuyruğa eklenir (atamalarla sırayla çalışır)
+  async requestTomorrowLock(): Promise<void> {
+    await this.assignQueue.add(JOB_TOMORROW_LOCK, {}, { removeOnComplete: true, removeOnFail: 100 });
+  }
+
   async assignUser(userId: string): Promise<void> {
-    const ctx = await this.assignContext();
-    if (!ctx) return;
-    if (ctx.groupOpen) {
-      const [user] = await this.fetchEligible(ctx.cycleId, GROUP_PLANS, false, [userId]);
-      if (user) await this.assignGroup(ctx, user);
-    }
-    if (ctx.oneOnOneOpen) {
-      const [user] = await this.fetchEligible(ctx.cycleId, ONE_ON_ONE_PLANS, true, [userId]);
-      if (user) await this.assignOneOnOne(ctx, user);
-    }
-    if (ctx.kankaOpen) {
-      const [pair] = await this.fetchKankaPairs(ctx.cycleId, [userId]);
-      if (pair) await this.assignKanka(ctx, pair);
+    for (const ctx of await this.contexts()) {
+      const scope = this.poolScope(ctx);
+      if (ctx.groupOpen) {
+        const [user] = await this.eligible(scope, GROUP_PLANS, false, [userId]);
+        if (user) await this.assignGroup(ctx, user);
+      }
+      if (ctx.oneOnOneOpen) {
+        const [user] = await this.eligible(scope, ONE_ON_ONE_PLANS, true, [userId]);
+        if (user) await this.assignOneOnOne(ctx, user);
+      }
+      if (ctx.kankaOpen) {
+        const [pair] = await this.kankaPairs(scope, [userId]);
+        if (pair) await this.assignKanka(ctx, pair);
+      }
     }
   }
 
   async scanPool(): Promise<void> {
-    const ctx = await this.assignContext();
-    if (!ctx) return;
-    if (ctx.groupOpen) {
-      for (const user of await this.fetchEligible(ctx.cycleId, GROUP_PLANS, false)) {
-        await this.assignGroup(ctx, user);
+    for (const ctx of await this.contexts()) {
+      const scope = this.poolScope(ctx);
+      if (ctx.groupOpen) {
+        for (const user of await this.eligible(scope, GROUP_PLANS, false)) {
+          await this.assignGroup(ctx, user);
+        }
+        await this.mergeGroupTables(ctx);
       }
-      await this.mergeGroupTables(ctx);
-    }
-    if (ctx.oneOnOneOpen) {
-      for (const user of await this.fetchEligible(ctx.cycleId, ONE_ON_ONE_PLANS, true)) {
-        await this.assignOneOnOne(ctx, user);
+      if (ctx.oneOnOneOpen) {
+        for (const user of await this.eligible(scope, ONE_ON_ONE_PLANS, true)) {
+          await this.assignOneOnOne(ctx, user);
+        }
+        // Saatle gevşeyen filtreler: tek başına oturanlar birbirinin masasına geçebilir
+        const filled = new Set<string>();
+        for (const table of await this.loneOneOnOneTables(scope.meeting)) {
+          if (filled.has(table.id)) continue;
+          const target = await this.assignOneOnOne(ctx, table.user, table);
+          if (target) filled.add(target);
+        }
       }
-      // Saatle gevşeyen filtreler: tek başına oturanlar birbirinin masasına geçebilir
-      const filled = new Set<string>();
-      for (const table of await this.loneOneOnOneTables(ctx.cycleId)) {
-        if (filled.has(table.id)) continue;
-        const target = await this.assignOneOnOne(ctx, table.user, table);
-        if (target) filled.add(target);
-      }
-    }
-    if (ctx.kankaOpen) {
-      let pairs = await this.fetchKankaPairs(ctx.cycleId);
-      for (const pair of [...pairs]) {
-        if (!pairs.some((p) => p.subId === pair.subId)) continue;
-        const otherSubId = await this.assignKanka(ctx, pair, pairs);
-        if (otherSubId) pairs = pairs.filter((p) => p.subId !== pair.subId && p.subId !== otherSubId);
+      if (ctx.kankaOpen) {
+        let pairs = await this.kankaPairs(scope);
+        for (const pair of [...pairs]) {
+          if (!pairs.some((p) => p.subId === pair.subId)) continue;
+          const otherSubId = await this.assignKanka(ctx, pair, pairs);
+          if (otherSubId) pairs = pairs.filter((p) => p.subId !== pair.subId && p.subId !== otherSubId);
+        }
       }
     }
   }
 
-  // Atama açık mı + saate göre hangi filtreler geçerli (TR saati)
-  private async assignContext(): Promise<AssignContext | null> {
-    const matchingEnabled = await this.prisma.appConfig.findUnique({ where: { key: "MATCHING_ENABLED" } });
-    if (matchingEnabled?.value === "false") return null;
-    // Bakım modunda atama yapılmaz
-    if (await isMaintenanceMode(this.prisma)) return null;
+  // Açık atama bağlamları: Planlı (saat penceresi açıksa) ve Yarın Buluşma (her gün)
+  private async contexts(): Promise<AssignContext[]> {
+    if (!(await this.matchingAllowed())) return [];
+    const planned = await this.assignContext();
+    return [...(planned ? [planned] : []), this.tomorrowContext()];
+  }
 
+  // "Eşleştirme Aktif" kapalıysa ya da bakım modunda atama yapılmaz
+  private async matchingAllowed(): Promise<boolean> {
+    const matchingEnabled = await this.prisma.appConfig.findUnique({ where: { key: "MATCHING_ENABLED" } });
+    if (matchingEnabled?.value === "false") return false;
+    return !(await isMaintenanceMode(this.prisma));
+  }
+
+  // Yarın Buluşma: ertesi gün 20:00 masaları (23:59'dan sonra bir sonraki günün masaları); bütün filtreler açık
+  private tomorrowContext(): AssignContext {
+    const meetingAt = tomorrowMeetingAt();
+    return {
+      mode: MeetingMode.TOMORROW, cycleId: null, meetingAt, weekNumber: getISOWeekNumber(meetingAt).week,
+      groupOpen: true, oneOnOneOpen: true, kankaOpen: true,
+      groupOcean: true, groupVenue: true, oneOnOneSoft: true, kankaSoft: true,
+    };
+  }
+
+  private poolScope(ctx: AssignContext): PoolScope {
+    if (ctx.mode === MeetingMode.TOMORROW) {
+      const meetingAt = ctx.meetingAt!;
+      return { meeting: { mode: MeetingMode.TOMORROW, scheduledAt: meetingAt }, selected: (t) => selectedTomorrow(t, meetingAt) };
+    }
+    return { meeting: { cycleId: ctx.cycleId!, mode: MeetingMode.PLANNED }, selected: (t) => selectedThisWeek(t) };
+  }
+
+  // Planlı havuz kapsamı (kapanış ve hatırlatma işleri)
+  private plannedScope(cycleId: string): PoolScope {
+    return { meeting: { cycleId, mode: MeetingMode.PLANNED }, selected: (t) => selectedThisWeek(t) };
+  }
+
+  // Yeni masanın buluşma anı
+  private meetingAtFor(ctx: AssignContext, type: MeetingType): Date {
+    if (ctx.mode === MeetingMode.TOMORROW) return ctx.meetingAt!;
+    return type === MeetingType.GROUP ? groupMeetingAt() : type === MeetingType.KANKA ? kankaMeetingAt() : oneOnOneMeetingAt();
+  }
+
+  // Sıralama puanı: Planlı OCEAN 65 + meslek 35; Yarın yaş yakınlığı %50 + mekân kategori tercihi %50 (kimseyi dışlamaz)
+  private pairScore(ctx: AssignContext, a: EligibleUser, b: EligibleUser): number {
+    return ctx.mode === MeetingMode.TOMORROW ? tomorrowScore(a, b) : this.scoreTwo(a, b);
+  }
+
+  // Planlı: atama açık mı + saate göre hangi filtreler geçerli (TR saati)
+  private async assignContext(): Promise<AssignContext | null> {
     const now = new Date();
     const { day, minutes } = trClock(now);
     // Grup Pazartesi – Perşembe 23:44, Başbaşa Pazartesi – Cuma 23:44
@@ -268,7 +344,9 @@ export class MatchingService {
     });
 
     return {
+      mode: MeetingMode.PLANNED,
       cycleId: cycle.id,
+      meetingAt: null,
       weekNumber,
       groupOpen,
       oneOnOneOpen,
@@ -290,7 +368,7 @@ export class MatchingService {
     if (await this.isComingSoonCity(cityId)) return; // Yakında şehir eşleştirmeye girmez
 
     const meetings = await this.prisma.meeting.findMany({
-      where: { cycleId: ctx.cycleId, cityId, type: MeetingType.GROUP, status: "PENDING" },
+      where: { ...this.poolScope(ctx).meeting, cityId, type: MeetingType.GROUP, status: "PENDING" },
       select: {
         id: true,
         participants: {
@@ -310,7 +388,7 @@ export class MatchingService {
     );
     // Masa doldurarak gidilir: en dolu masa önce; eşitlikte (Perşembe 12:00'ye kadar) OCEAN uyumu yüksek olan
     const avgScore = (members: EligibleUser[]) =>
-      members.reduce((sum, u) => sum + this.scoreTwo(user, u), 0) / Math.max(1, members.length);
+      members.reduce((sum, u) => sum + this.pairScore(ctx, user, u), 0) / Math.max(1, members.length);
     const preferNoTurkish = noTurkish(user);
     fits.sort((a, b) =>
       (preferNoTurkish ? noTurkishCount(b.members) - noTurkishCount(a.members) : 0) ||
@@ -319,8 +397,12 @@ export class MatchingService {
 
     const target = fits[0];
     if (target) {
-      await this.prisma.meetingParticipant.create({
-        data: { meetingId: target.id, userId: user.id, status: "INVITED" },
+      // Seçimini iptal edip yeniden kaydolan kişi aynı masaya düşebilir: eski (iptal) satırı yeniden açılır
+      const seat = { status: "INVITED" as const, leaveReason: null, leaveNote: null, cancelledAt: null, groupRightSubId: null };
+      await this.prisma.meetingParticipant.upsert({
+        where: { meetingId_userId: { meetingId: target.id, userId: user.id } },
+        update: seat,
+        create: { meetingId: target.id, userId: user.id, status: "INVITED" },
       });
       await this.saveScores(target.id);
       this.logger.log(`Grup ataması: user=${user.id} → meeting=${target.id} (${target.members.length + 1}/${TABLE_SIZE_LARGE})`);
@@ -330,10 +412,11 @@ export class MatchingService {
     const meeting = await this.prisma.meeting.create({
       data: {
         cycleId: ctx.cycleId,
+        mode: ctx.mode,
         cityId,
         type: MeetingType.GROUP,
         ...(await (async () => {
-          const scheduledAt = groupMeetingAt();
+          const scheduledAt = this.meetingAtFor(ctx, MeetingType.GROUP);
           return { scheduledAt, title: await tableTitle(this.prisma, cityId, MeetingType.GROUP, scheduledAt) };
         })()),
         maxParticipants: TABLE_SIZE_LARGE,
@@ -354,7 +437,7 @@ export class MatchingService {
     if (!cityId || !gender) return null;
     if (await this.isComingSoonCity(cityId)) return null; // Yakında şehir eşleştirmeye girmez
 
-    const tables = (await this.loneOneOnOneTables(ctx.cycleId)).filter(
+    const tables = (await this.loneOneOnOneTables(this.poolScope(ctx).meeting)).filter(
       (t) =>
         t.id !== seat?.id &&
         t.user.id !== user.id &&
@@ -373,10 +456,11 @@ export class MatchingService {
       const opened = await this.prisma.meeting.create({
         data: {
           cycleId: ctx.cycleId,
+          mode: ctx.mode,
           cityId,
           type: MeetingType.ONE_ON_ONE,
           ...(await (async () => {
-            const scheduledAt = oneOnOneMeetingAt();
+            const scheduledAt = this.meetingAtFor(ctx, MeetingType.ONE_ON_ONE);
             return { scheduledAt, title: await tableTitle(this.prisma, cityId, MeetingType.ONE_ON_ONE, scheduledAt) };
           })()),
           maxParticipants: 2,
@@ -394,7 +478,9 @@ export class MatchingService {
     };
     candidates.sort((a, b) =>
       (noTurkish(user) ? noTurkishCount([b.user]) - noTurkishCount([a.user]) : 0) ||
-      ageDiff(a.user) - ageDiff(b.user) || (ctx.oneOnOneSoft ? this.scoreTwo(user, b.user) - this.scoreTwo(user, a.user) : 0),
+      (ctx.mode === MeetingMode.TOMORROW
+        ? this.pairScore(ctx, user, b.user) - this.pairScore(ctx, user, a.user)
+        : ageDiff(a.user) - ageDiff(b.user) || (ctx.oneOnOneSoft ? this.scoreTwo(user, b.user) - this.scoreTwo(user, a.user) : 0)),
     );
     const target = candidates[0];
 
@@ -405,18 +491,18 @@ export class MatchingService {
       } else {
         await tx.meetingParticipant.create({ data: { meetingId: target.id, userId: user.id, status: "INVITED" } });
       }
-      // Başbaşa hakkı iki kişi oturduğu anda harcanır
-      await consumeOneOnOneRights(tx, [user.id, target.user.id], target.createdAt);
+      // Planlı: baş başa hakkı iki kişi oturduğu anda harcanır; Yarın: 23:59 kilidinde masa kurulunca (runTomorrowLock)
+      if (ctx.mode === MeetingMode.PLANNED) await consumeOneOnOneRights(tx, [user.id, target.user.id], target.createdAt);
     });
     await this.saveScores(target.id);
     this.logger.log(`Başbaşa masası: ${user.id} + ${target.user.id}`);
     return target.id;
   }
 
-  // Bu döngüde eş bekleyen tek kişilik başbaşa masaları (kişinin başbaşa hakkı açık)
-  private async loneOneOnOneTables(cycleId: string): Promise<LoneTable[]> {
+  // Bu döngüde (Planlı) / bu günde (Yarın) eş bekleyen tek kişilik başbaşa masaları (kişinin başbaşa hakkı açık)
+  private async loneOneOnOneTables(scope: Prisma.MeetingWhereInput): Promise<LoneTable[]> {
     const meetings = await this.prisma.meeting.findMany({
-      where: { cycleId, type: MeetingType.ONE_ON_ONE, status: "PENDING", maxParticipants: 2 },
+      where: { ...scope, type: MeetingType.ONE_ON_ONE, status: "PENDING", maxParticipants: 2 },
       orderBy: { createdAt: "asc" },
       select: {
         id: true,
@@ -439,13 +525,13 @@ export class MatchingService {
   }
 
   async loneOneOnOneUserIds(cycleId: string): Promise<string[]> {
-    return (await this.loneOneOnOneTables(cycleId)).map((t) => t.user.id);
+    return (await this.loneOneOnOneTables(this.plannedScope(cycleId).meeting)).map((t) => t.user.id);
   }
 
   // Cuma kapanışı: eşi bulunamayan tek kişilik başbaşa masaları iptal olur (kişi bekleme listesine geçer)
   async cancelLoneOneOnOneTables(cycleId: string): Promise<void> {
     const meetings = await this.prisma.meeting.findMany({
-      where: { cycleId, type: MeetingType.ONE_ON_ONE, status: "PENDING" },
+      where: { cycleId, mode: MeetingMode.PLANNED, type: MeetingType.ONE_ON_ONE, status: "PENDING" },
       select: {
         id: true,
         createdAt: true,
@@ -470,7 +556,7 @@ export class MatchingService {
     if (!cityId || !gender) return null;
     if (await this.isComingSoonCity(cityId)) return null; // Yakında şehir eşleştirmeye girmez
 
-    const others = (pool ?? (await this.fetchKankaPairs(ctx.cycleId))).filter(
+    const others = (pool ?? (await this.kankaPairs(this.poolScope(ctx)))).filter(
       (o) =>
         o.subId !== pair.subId &&
         languageCompatible([pair.buyer, pair.kanka, o.buyer, o.kanka]) &&
@@ -478,7 +564,7 @@ export class MatchingService {
         matchCity(o.buyer) === cityId &&
         !!o.buyer.profile?.gender &&
         o.buyer.profile.gender !== gender &&
-        !this.areAgeGapTooLarge(pair.buyer, o.buyer) &&
+        kankaAgeOk(pair, o) &&
         (!ctx.kankaSoft || !this.areVenueIncompatible(pair.buyer, o.buyer)),
     );
     const candidates: KankaPair[] = [];
@@ -498,7 +584,9 @@ export class MatchingService {
     const pairNoTurkish = noTurkishCount([pair.buyer, pair.kanka]) > 0;
     candidates.sort((a, b) =>
       (pairNoTurkish ? noTurkishCount([b.buyer, b.kanka]) - noTurkishCount([a.buyer, a.kanka]) : 0) ||
-      ageDiff(a) - ageDiff(b) || (ctx.kankaSoft ? this.scoreTwo(pair.buyer, b.buyer) - this.scoreTwo(pair.buyer, a.buyer) : 0),
+      (ctx.mode === MeetingMode.TOMORROW
+        ? this.pairScore(ctx, pair.buyer, b.buyer) - this.pairScore(ctx, pair.buyer, a.buyer)
+        : ageDiff(a) - ageDiff(b) || (ctx.kankaSoft ? this.scoreTwo(pair.buyer, b.buyer) - this.scoreTwo(pair.buyer, a.buyer) : 0)),
     );
     const other = candidates[0];
 
@@ -506,10 +594,11 @@ export class MatchingService {
       const seated = await tx.meeting.create({
         data: {
           cycleId: ctx.cycleId,
+          mode: ctx.mode,
           cityId,
           type: MeetingType.KANKA,
           ...(await (async () => {
-            const scheduledAt = kankaMeetingAt();
+            const scheduledAt = this.meetingAtFor(ctx, MeetingType.KANKA);
             return { scheduledAt, title: await tableTitle(tx, cityId, MeetingType.KANKA, scheduledAt) };
           })()),
           maxParticipants: 4,
@@ -536,6 +625,10 @@ export class MatchingService {
   // aynı cinsiyet; bu hafta Kankamla masası olan / Kankamla rezervasyonunu iptal eden çift havuza girmez.
   // Çiftte iki kişide de paket varsa en eski paket kullanılır. userIds verilirse sadece o kişilerin çifti.
   async fetchKankaPairs(cycleId: string, userIds?: string[]): Promise<KankaPair[]> {
+    return this.kankaPairs(this.plannedScope(cycleId), userIds);
+  }
+
+  private async kankaPairs(scope: PoolScope, userIds?: string[]): Promise<KankaPair[]> {
     let ownerIds: string[] | undefined;
     if (userIds) {
       const links = await this.prisma.kankaLink.findMany({
@@ -563,16 +656,16 @@ export class MatchingService {
         participations: {
           none: {
             OR: [
-              { meeting: { cycleId, type: MeetingType.KANKA, status: { in: ["PENDING", "ACTIVE"] } } },
-              { status: "CANCELLED", meeting: { cycleId, type: MeetingType.KANKA } },
+              { meeting: { ...scope.meeting, type: MeetingType.KANKA, status: { in: ["PENDING", "ACTIVE"] } } },
+              { ...notSelfCancelled, meeting: { ...scope.meeting, type: MeetingType.KANKA } },
             ],
           },
         },
       };
       const [buyer, kanka] = await Promise.all([
         this.prisma.user.findFirst({
-          // Paketin sahibi bu hafta Kankamla'yı seçmiş olmalı (weekly-selection.ts)
-          where: { id: sub.userId, status: "ACTIVE", isBot: false, oceanScore: { isNot: null }, kyc: { status: KycStatus.APPROVED }, ...notThisWeek, ...selectedThisWeek(MeetingType.KANKA) },
+          // Paketin sahibi Kankamla'yı bu kapsamda (Planlı hafta / Yarın günü) seçmiş olmalı (weekly-selection.ts)
+          where: { id: sub.userId, status: "ACTIVE", isBot: false, oceanScore: { isNot: null }, kyc: { status: KycStatus.APPROVED }, ...notThisWeek, ...scope.selected(MeetingType.KANKA) },
           select: ELIGIBLE_SELECT,
         }),
         this.prisma.user.findFirst({
@@ -694,7 +787,7 @@ export class MatchingService {
     for (let changed = true; changed; ) {
       changed = false;
       const meetings = await this.prisma.meeting.findMany({
-        where: { cycleId: ctx.cycleId, type: MeetingType.GROUP, status: "PENDING" },
+        where: { ...this.poolScope(ctx).meeting, type: MeetingType.GROUP, status: "PENDING" },
         select: {
           id: true,
           cityId: true,
@@ -801,7 +894,7 @@ export class MatchingService {
         id: true,
         participants: {
           where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
-          select: { user: { select: { profile: { select: { gender: true } } } } },
+          select: { user: { select: { isBot: true, profile: { select: { gender: true } } } } },
         },
       },
     });
@@ -810,6 +903,8 @@ export class MatchingService {
       const count = meeting.participants.length;
       // 1-2 kişi: bot yok, kapanışta (23:59) masa iptal
       if (count < TABLE_SIZE_SMALL - 1) continue;
+      // Masaya en fazla 1 bot
+      if (meeting.participants.some((p) => p.user.isBot)) continue;
       const males = meeting.participants.filter((p) => p.user.profile?.gender === Gender.MALE).length;
       const need = groupBotNeed(males, count - males);
       if (!need) continue;
@@ -826,10 +921,10 @@ export class MatchingService {
     }
   }
 
-  // Eksik cinsiyette bot: 3 → 4, 5 → 6, dengesiz 4 (3E+1K) → 6. Yanlış cinsiyet ASLA eklenmez;
-  // gereken botların hepsi bulunamazsa hiçbiri eklenmez, SUPERADMIN'e uyarı düşer.
-  async addGroupBots(meetingId: string): Promise<void> {
-    if (!(await isBotSystemActive(this.prisma))) return;
+  // Eksik cinsiyette tek bot: 3 → 4, 5 → 6 (masaya en fazla 1 bot). Yanlış cinsiyet ASLA eklenmez;
+  // bot bulunamazsa eklenmez, SUPERADMIN'e uyarı düşer. Eklenen bot sayısını döner.
+  async addGroupBots(meetingId: string): Promise<number> {
+    if (!(await isBotSystemActive(this.prisma))) return 0;
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },
       select: {
@@ -843,13 +938,15 @@ export class MatchingService {
         },
       },
     });
-    if (!meeting || meeting.status !== "PENDING") return;
+    if (!meeting || meeting.status !== "PENDING") return 0;
     const count = meeting.participants.length;
-    if (count < TABLE_SIZE_SMALL - 1) return;
+    if (count < TABLE_SIZE_SMALL - 1) return 0;
+    // Masaya en fazla 1 bot
+    if (meeting.participants.some((p) => p.user.isBot)) return 0;
     const males = meeting.participants.filter((p) => p.user.profile?.gender === Gender.MALE).length;
     const females = count - males;
     const need = groupBotNeed(males, females);
-    if (!need || need.male + need.female === 0) return;
+    if (!need || need.male + need.female === 0) return 0;
 
     const botIds: string[] = [];
     // Masadaki gerçek kullanıcılardan biriyle son 28 günde aynı masada bulunmuş bot seçilmez
@@ -861,7 +958,7 @@ export class MatchingService {
         if (!bot) {
           await alertBotNotFound(this.prisma, meeting.participants[0].userId);
           this.logger.warn(`Uygun bot bulunamadı: meeting=${meeting.id} (${males}E+${females}K)`);
-          return;
+          return 0;
         }
         botIds.push(bot.id);
       }
@@ -876,6 +973,7 @@ export class MatchingService {
     await this.saveScores(meetingId);
     await this.botAssigned(meetingId, botIds);
     this.logger.log(`Bot eklendi: meeting=${meetingId} (${count}→${count + botIds.length})`);
+    return botIds.length;
   }
 
   // Cuma 23:45: masasında eşi bulunamayan ve 2. başbaşa haftasında olan (önceki başbaşa döngüsünde masası kurulamamış) kişiler
@@ -909,7 +1007,7 @@ export class MatchingService {
     const cycle = await this.currentCycle();
     if (!cycle) return;
     // Bu arada eşleşmiş ya da hakkı kalmamışsa listede çıkmaz
-    const table = (await this.loneOneOnOneTables(cycle.id)).find((t) => t.user.id === userId);
+    const table = (await this.loneOneOnOneTables(this.plannedScope(cycle.id).meeting)).find((t) => t.user.id === userId);
     if (!table) return;
     const { user } = table;
     const gender = user.profile?.gender;
@@ -957,7 +1055,8 @@ export class MatchingService {
   // Kaçıncı başbaşa döngüsünde olduğu: önceki döngülerde masası kurulamadıysa artar (1. döngüde bot eklenmez)
   async getOneOnOneWaiting() {
     const cycle = await this.currentCycle();
-    const pool = (await this.loneOneOnOneTables(cycle.id)).map((t) => t.user);
+    // Yarın Buluşma'da baş başa masasına bot yok: yalnız Planlı eş bekleyenler
+    const pool = (await this.loneOneOnOneTables(this.plannedScope(cycle.id).meeting)).map((t) => t.user);
     if (pool.length === 0) return [];
     const ids = pool.map((u) => u.id);
     const cityIds = [...new Set(pool.map(matchCity).filter((c): c is string => !!c))];
@@ -984,7 +1083,7 @@ export class MatchingService {
 
   private async waitingUser(userId: string) {
     const cycle = await this.currentCycle();
-    const table = (await this.loneOneOnOneTables(cycle.id)).find((t) => t.user.id === userId);
+    const table = (await this.loneOneOnOneTables(this.plannedScope(cycle.id).meeting)).find((t) => t.user.id === userId);
     const gender = table?.user.profile?.gender;
     if (!table || !gender) throw new BadRequestException("Kişi eşi bekleyenler listesinde değil");
     return { table, user: table.user, gender };
@@ -1056,37 +1155,8 @@ export class MatchingService {
           });
         }
         this.logger.log(`Masa iptal (yetersiz katılım): meeting=${meeting.id}`);
-      } else if (count === TABLE_SIZE_SMALL + 1) {
-        // Bot eklenemedi, 5 kişi kaldı: çoğunluk cinsiyetten en son eklenen çıkarılır, masa dengeli 4 olur.
-        // Çıkarılana bildirim gitmez; grup hakkı iade edilir, sonraki döngünün bekleme listesine öncelikli girer.
-        const males = meeting.participants.filter((p) => p.user.profile?.gender === Gender.MALE);
-        const females = meeting.participants.filter((p) => p.user.profile?.gender === Gender.FEMALE);
-        const majority = males.length === 3 && females.length === 2 ? males
-          : females.length === 3 && males.length === 2 ? females
-          : null;
-        if (!majority) {
-          this.logger.warn(`5 kişilik masa 2E+2K'ya indirilemiyor (cinsiyet dağılımı uygun değil): meeting=${meeting.id}`);
-          continue;
-        }
-        const removed = [...majority].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
-        const { week: nw, year: ny } = getISOWeekNumber(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
-        await this.prisma.$transaction(async (tx) => {
-          await restoreGroupRights(tx, meeting.id, [removed.userId]);
-          await tx.meetingParticipant.delete({ where: { meetingId_userId: { meetingId: meeting.id, userId: removed.userId } } });
-          await tx.meeting.update({ where: { id: meeting.id }, data: { maxParticipants: TABLE_SIZE_SMALL } });
-          const nextCycle = await tx.matchingCycle.upsert({
-            where: { weekNumber_year: { weekNumber: nw, year: ny } },
-            update: {},
-            create: { weekNumber: nw, year: ny, status: "RUNNING" },
-          });
-          await tx.matchingWaitlist.upsert({
-            where: { userId_cycleId: { userId: removed.userId, cycleId: nextCycle.id } },
-            update: {},
-            create: { userId: removed.userId, cycleId: nextCycle.id, reason: "GENDER_IMBALANCE" },
-          });
-        });
-        this.logger.log(`5 kişilik masa 4'e indirildi: meeting=${meeting.id}, çıkarılan=${removed.userId}`);
       }
+      // "5 kişi kalırsa 4'e düşür" kuralı kaldırıldı
     }
 
     // Eşleşmemiş kullanıcıları bir sonraki haftaya taşı
@@ -1120,6 +1190,124 @@ export class MatchingService {
 
     await this.prisma.matchingCycle.update({ where: { id: cycle.id }, data: { status: "COMPLETED" } });
     this.logger.log(`Perşembe kapanışı: ${unmatched.length} kullanıcı bekliste`);
+  }
+
+  // ─── Yarın Buluşma kilidi (her gece 23:59 TR, atama kuyruğunda) ───────────
+  // Ertesi gün 20:00 Yarın masaları kilitlenir:
+  // - Grup: 3 / 5 kişilik masaya 1 bot (masaya en fazla 1 bot); dolu sayılan masa (6 kişi 3E+3K ya da botla 4'e tamamlanan
+  //   2E+2K) kurulur ve her katılımcının 1 grup hakkı düşer; kurulamayan masa iptal olur.
+  // - Baş Başa: 2 kişilik masa kurulur, iki kişinin baş başa hakkı düşer; tek kişilik masa iptal olur (Yarın'da bot yok).
+  // - Kankamla: kurulan (4 kişilik) masada çiftin paketinden 1 hak düşer.
+  // Masası kurulamayan Yarın kaydı en yakın Planlı gününe aktarılır (Grup → Cuma, Baş Başa → Cumartesi, Kankamla → Pazar;
+  // o haftanın Planlı son saati geçtiyse bir sonraki hafta). İade yok; hak Planlı masada mevcut kurala göre düşer.
+  async runTomorrowLock(): Promise<void> {
+    const now = new Date();
+    const meetingAt = nextDayMeetingAt(now);
+    const LEFT_STATUSES: ParticipantStatus[] = ["CANCELLED", "DECLINED", "NO_SHOW"];
+    const meetings = await this.prisma.meeting.findMany({
+      where: { mode: MeetingMode.TOMORROW, scheduledAt: meetingAt, status: "PENDING" },
+      select: { id: true, type: true, createdAt: true },
+    });
+    const activeOf = (meetingId: string) => this.prisma.meetingParticipant.findMany({
+      where: { meetingId, status: { notIn: LEFT_STATUSES } },
+      select: { id: true, userId: true, kankaPartnerId: true, kankaRightSubId: true, user: { select: { isBot: true, profile: { select: { gender: true } } } } },
+    });
+
+    let formed = 0;
+    let cancelled = 0;
+    for (const meeting of meetings) {
+      if (meeting.type === MeetingType.GROUP) {
+        await this.addGroupBots(meeting.id);
+        const people = await activeOf(meeting.id);
+        const males = people.filter((p) => p.user.profile?.gender === Gender.MALE).length;
+        const females = people.length - males;
+        const full = (people.length === TABLE_SIZE_LARGE || people.length === TABLE_SIZE_SMALL) && males === females;
+        if (!full) {
+          await this.prisma.meeting.update({ where: { id: meeting.id }, data: { status: "CANCELLED", cancelledAt: new Date() } });
+          cancelled++;
+          continue;
+        }
+        await this.prisma.$transaction(async (tx) => {
+          for (const p of people.filter((x) => !x.user.isBot)) {
+            const sub = await tx.subscription.findFirst({ where: { userId: p.userId, ...OPEN_GROUP_SUB }, orderBy: { createdAt: "asc" }, select: { id: true } });
+            if (!sub) continue;
+            await tx.subscription.update({ where: { id: sub.id }, data: { groupRights: { decrement: 1 } } });
+            await tx.meetingParticipant.update({ where: { id: p.id }, data: { groupRightSubId: sub.id } });
+            await syncPackageStatus(tx, sub.id);
+          }
+        });
+        formed++;
+      } else if (meeting.type === MeetingType.ONE_ON_ONE) {
+        const people = await activeOf(meeting.id);
+        if (people.length < 2) {
+          await this.prisma.meeting.update({ where: { id: meeting.id }, data: { status: "CANCELLED", cancelledAt: new Date() } });
+          cancelled++;
+          continue;
+        }
+        await this.prisma.$transaction((tx) => consumeOneOnOneRights(tx, people.filter((p) => !p.user.isBot).map((p) => p.userId), meeting.createdAt));
+        formed++;
+      } else {
+        const people = await activeOf(meeting.id);
+        await this.prisma.$transaction(async (tx) => {
+          const done = new Set<string>();
+          for (const p of people) {
+            if (done.has(p.userId)) continue;
+            const pairIds = [p.userId, ...(p.kankaPartnerId ? [p.kankaPartnerId] : [])];
+            pairIds.forEach((id) => done.add(id));
+            if (people.some((x) => pairIds.includes(x.userId) && x.kankaRightSubId)) continue;
+            const sub = await pairKankaSub(tx, pairIds);
+            if (!sub) continue;
+            const buyer = people.find((x) => x.userId === sub.userId) ?? p;
+            await chargeKankaRight(tx, buyer.id, sub.id);
+          }
+        });
+        formed++;
+      }
+    }
+
+    // Masası kurulamayan Yarın kayıtları Planlı'ya aktarılır
+    const selections = await this.prisma.weeklySelection.findMany({
+      where: { mode: MeetingMode.TOMORROW, meetingDate: meetingAt },
+      select: { id: true, userId: true, type: true },
+    });
+    const transferredUsers = new Set<string>();
+    for (const sel of selections) {
+      const seated = await this.prisma.meetingParticipant.count({
+        where: {
+          userId: sel.userId,
+          status: { notIn: LEFT_STATUSES },
+          meeting: { mode: MeetingMode.TOMORROW, scheduledAt: meetingAt, type: sel.type, status: { in: ["PENDING", "ACTIVE"] } },
+        },
+      });
+      if (seated > 0) continue;
+      const { week, year } = plannedTargetWeek(sel.type, now);
+      await this.prisma.weeklySelection.update({
+        where: { id: sel.id },
+        data: { mode: MeetingMode.PLANNED, meetingDate: null, year, weekNumber: week, transferredAt: now },
+      });
+      transferredUsers.add(sel.userId);
+    }
+    // Aktarılanlar Planlı taramasına girer (Planlı penceresi açıksa)
+    for (const userId of transferredUsers) await enqueueAssign(this.assignQueue, userId);
+    this.logger.log(`Yarın kilidi: ${formed} masa kuruldu, ${cancelled} masa kurulamadı, ${transferredUsers.size} kişi Planlı'ya aktarıldı`);
+  }
+
+  // Yarın Buluşma kart açılışı (buluşma günü 10:00 TR): mekânı atanmış Yarın masalarına bildirim
+  async sendTomorrowRevealNotifications(): Promise<void> {
+    const meetings = await this.prisma.meeting.findMany({
+      where: { mode: MeetingMode.TOMORROW, scheduledAt: todayMeetingAt(), status: { in: ["PENDING", "ACTIVE"] }, locationText: { not: null } },
+      select: {
+        id: true, scheduledAt: true,
+        participants: { where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } }, select: { userId: true } },
+      },
+    });
+    await this.activateRevealed(meetings.map((m) => m.id));
+    for (const meeting of meetings) {
+      for (const p of meeting.participants) {
+        await this.notifications.notifyMeetingConfirmed(p.userId, meeting.id, meeting.scheduledAt);
+      }
+    }
+    this.logger.log(`Yarın masası bildirimi: ${meetings.length} masa`);
   }
 
   // ─── Cumartesi bildirimleri ───────────────────────────────────────────────
@@ -1168,12 +1356,17 @@ export class MatchingService {
 
   // ─── Yardımcılar ──────────────────────────────────────────────────────────
 
-  private async fetchEligible(
-    cycleId: string,
+  private fetchEligible(cycleId: string, plans: SubscriptionPlan[], oneOnOne: boolean, userIds?: string[]): Promise<EligibleUser[]> {
+    return this.eligible(this.plannedScope(cycleId), plans, oneOnOne, userIds);
+  }
+
+  private async eligible(
+    scope: PoolScope,
     plans: SubscriptionPlan[],
     oneOnOne: boolean,
     userIds?: string[],
   ): Promise<EligibleUser[]> {
+    const type = oneOnOne ? MeetingType.ONE_ON_ONE : MeetingType.GROUP;
     return this.prisma.user.findMany({
       where: {
         ...(userIds ? { id: { in: userIds } } : {}),
@@ -1181,25 +1374,16 @@ export class MatchingService {
         isBot: false,
         oceanScore: { isNot: null },
         kyc: { status: KycStatus.APPROVED },
-        // Paketin o kısmı açık olmalı (hak kalmış) ve kişi bu hafta bu türü seçmiş olmalı (weekly-selection.ts)
+        // Paketin o kısmı açık olmalı (hak kalmış) ve kişi bu kapsamda bu türü seçmiş olmalı (weekly-selection.ts)
         subscriptions: { some: { ...(oneOnOne ? OPEN_ONE_ON_ONE_SUB : OPEN_GROUP_SUB), plan: { in: plans } } },
-        ...selectedThisWeek(oneOnOne ? MeetingType.ONE_ON_ONE : MeetingType.GROUP),
-        // Bu hafta aynı türde aktif masası olan ya da rezervasyonunu iptal eden havuza girmez
-        // (İçerde: grubu iptal eden yalnızca gruba, başbaşayı iptal eden yalnızca başbaşaya giremez)
+        ...scope.selected(type),
+        // Bu kapsamda (Planlı hafta / Yarın günü) aynı türde aktif masası olan ya da masadan çıkarılan havuza girmez.
+        // Kendi seçim iptali (leaveReason dolu) yeniden kayıt olmayı engellemez.
         participations: {
           none: {
             OR: [
-              {
-                meeting: {
-                  cycleId,
-                  status: { in: ["PENDING", "ACTIVE"] },
-                  type: oneOnOne ? MeetingType.ONE_ON_ONE : MeetingType.GROUP,
-                },
-              },
-              {
-                status: "CANCELLED",
-                meeting: { cycleId, type: oneOnOne ? MeetingType.ONE_ON_ONE : MeetingType.GROUP },
-              },
+              { meeting: { ...scope.meeting, status: { in: ["PENDING", "ACTIVE"] }, type } },
+              { ...notSelfCancelled, meeting: { ...scope.meeting, type } },
             ],
           },
         },

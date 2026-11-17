@@ -12,7 +12,6 @@ export * from './components/tables/MasaRadar';
 export * from './components/tables/MasaDetayKarti';
 export * from './components/tables/KankaPairs';
 export * from './components/tables/PhotoViewer';
-export * from './components/tables/RezervasyonIptal';
 
 // Profile
 export * from './components/profile/AhenkHistory';

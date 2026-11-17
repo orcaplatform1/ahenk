@@ -4,7 +4,7 @@ import { Job } from "bull";
 import { MatchingService } from "./matching.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { isMatchingEnabled } from "../admin/app-settings";
-import { ASSIGN_QUEUE, JOB_ASSIGN_USER, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT } from "./assign-queue";
+import { ASSIGN_QUEUE, JOB_ASSIGN_USER, JOB_SCAN_POOL, JOB_GROUP_BOTS, JOB_ONE_ON_ONE_BOT, JOB_TOMORROW_LOCK } from "./assign-queue";
 
 @Processor(ASSIGN_QUEUE)
 export class AssignProcessor {
@@ -27,6 +27,8 @@ export class AssignProcessor {
           return await this.matchingService.addGroupBots(job.data.meetingId);
         case JOB_ONE_ON_ONE_BOT:
           return await this.matchingService.addOneOnOneBot(job.data.userId);
+        case JOB_TOMORROW_LOCK:
+          return await this.matchingService.runTomorrowLock();
       }
     } catch (err) {
       this.logger.error(`Atama işi hatası (${job.name}): ${err}`);

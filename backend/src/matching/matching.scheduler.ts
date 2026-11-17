@@ -4,11 +4,11 @@ import { MatchingService } from "./matching.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AiReportService } from "../meetings/ai-report.service";
 import { NotificationService } from "../notification/notification.service";
-import { Prisma, SubscriptionPlan, SubscriptionStatus, KycStatus, MeetingType } from "../generated/prisma/client";
+import { Prisma, SubscriptionPlan, SubscriptionStatus, KycStatus, MeetingMode, MeetingType } from "../generated/prisma/client";
 import { cancellationNotice } from "../meetings/cancellation-notice";
 import { VenueAssignmentService } from "../venue-panel/venue-assignment.service";
 import { reviewWindow } from "../meetings/meeting-windows";
-import { selectedThisWeek } from "./weekly-selection";
+import { selectedThisWeek } from "./selection-cancel";
 import { closeGroupCycle, closeKankaCycle, closeOneOnOneCycle, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, PRIME_PLANS, restoreGroupRights, restoreKankaRights } from "../payment/package-rights";
 import { restoreOneOnOneRights } from "./one-on-one-right";
 import { isMatchingEnabled } from "../admin/app-settings";
@@ -57,14 +57,36 @@ export class MatchingScheduler {
     }
   }
 
-  // Kart açılışından 2 saat önce (Cuma/Cmt/Pazar 08:00): hâlâ mekânsız masalar için admin'e tekrar uyarı
-  @Cron("0 8 * * 5,6,0", { timeZone: "Europe/Istanbul" })
+  // Kart açılışından 2 saat önce (08:00; Yarın Buluşma masaları her gün olabildiği için her gün): hâlâ mekânsız masalar için
+  // admin'e tekrar uyarı
+  @Cron("0 8 * * *", { timeZone: "Europe/Istanbul" })
   async remindMissingVenues(): Promise<void> {
     if (await this.matchingOff("Mekânsız masa hatırlatma")) return;
     try {
       await this.venueAssignment.remindMissingVenues();
     } catch (err) {
       this.logger.error(`Mekânsız masa hatırlatma hatası: ${err}`);
+    }
+  }
+
+  // Her gece 23:59 (TR): Yarın Buluşma kilidi — masalar kurulur ve hak düşer, kurulamayan kayıtlar Planlı'ya aktarılır
+  @Cron("59 23 * * *", { timeZone: "Europe/Istanbul" })
+  async scheduleTomorrowLock(): Promise<void> {
+    if (await this.matchingOff("Yarın kilidi")) return;
+    try {
+      await this.matchingService.requestTomorrowLock();
+    } catch (err) {
+      this.logger.error(`Yarın kilidi hatası: ${err}`);
+    }
+  }
+
+  // Her gün 10:00 (TR): bugün buluşacak Yarın masalarının kartı açılır — bildirim + AI raporları
+  @Cron("0 10 * * *", { timeZone: "Europe/Istanbul" })
+  async scheduleTomorrowRevealNotifications(): Promise<void> {
+    if (await this.matchingOff("Yarın masası bildirimi")) return;
+    await this.step("Yarın masası bildirimi", () => this.matchingService.sendTomorrowRevealNotifications());
+    for (const type of ["GROUP", "ONE_ON_ONE", "KANKA"] as const) {
+      await this.step(`Yarın ${type} AI raporu`, () => this.generateAiReports(type, MeetingMode.TOMORROW));
     }
   }
 
@@ -384,11 +406,12 @@ export class MatchingScheduler {
   }
 
   // Bugün (önümüzdeki 24 saat içinde) buluşacak onaylı masaların raporu
-  private async generateAiReports(meetingType: "GROUP" | "ONE_ON_ONE" | "KANKA"): Promise<void> {
+  private async generateAiReports(meetingType: "GROUP" | "ONE_ON_ONE" | "KANKA", mode: MeetingMode = MeetingMode.PLANNED): Promise<void> {
     const now = new Date();
     const meetings = await this.prisma.meeting.findMany({
       where: {
         type: meetingType,
+        mode,
         status: "ACTIVE",
         scheduledAt: { gte: now, lte: new Date(now.getTime() + 24 * 60 * 60 * 1000) },
         aiReport: null,
@@ -605,6 +628,7 @@ export class MatchingScheduler {
     const meetings = await this.prisma.meeting.findMany({
       where: {
         type: 'GROUP',
+        mode: MeetingMode.PLANNED, // Yarın masalarında iptal bildirimi anında gider
         status: { in: ['PENDING', 'ACTIVE'] },
         // Bu haftanın Cumartesi masaları
         scheduledAt: { gt: now, lt: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) },

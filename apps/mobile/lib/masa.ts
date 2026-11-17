@@ -1,5 +1,5 @@
 // Web'den aynı mantıkla kopyalandı (S-05): packages/ui/src/components/tables/MasalarDashboard.tsx,
-// apps/web/components/HeroCountdown.tsx, packages/ui/src/components/tables/RezervasyonIptal.tsx
+// apps/web/components/HeroCountdown.tsx
 import { gender as G } from '@/theme/theme';
 
 import { formatNamed, weekdayName } from '@ahenk/shared';
@@ -73,12 +73,6 @@ export function getNextTarget(targetDay: number): Date {
   const targetUTC = new Date(targetTR.getTime() - trOffset);
   if (targetUTC.getTime() <= now.getTime()) targetUTC.setUTCDate(targetUTC.getUTCDate() + 7);
   return targetUTC;
-}
-
-// Rezervasyon iptali son anı: masa gününden 1 gün önce 20:00 TR
-export function cancelDeadline(scheduledAt: string): Date {
-  const tr = new Date(new Date(scheduledAt).getTime() + 3 * 60 * 60 * 1000);
-  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() - 1, 20 - 3, 0, 0, 0));
 }
 
 // Gün adı arayüz dilinde, saat 24 saat (bölgenin saat dilimi)

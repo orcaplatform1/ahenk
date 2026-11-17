@@ -14,7 +14,7 @@ import { KankaPairs } from '@/components/KankaPairs';
 import { DetayAvatar } from '@/components/DetayAvatar';
 import { Star } from '@/components/Star';
 import { MasaDetayKarti, type MasaDetayData, type VenuePhoto } from '@/components/MasaDetayKarti';
-import { ConfirmedRadarView, RezervasyonIptal } from '@/components/MasaBekleme';
+import { ConfirmedRadarView } from '@/components/MasaBekleme';
 import { InlineLH, Btn, BtnGhost, BtnPrimary, Card, Head, Mono, Serif, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
 import { c, ll, llColumn, masaKart, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
@@ -235,8 +235,8 @@ function EmptyMasaCardInner({ locked, cardType, userInfo, kanka, scrollRef }: { 
   );
 }
 
-function MasaBlock({ item, locked, cardType, userInfo, kanka, onCancelled, width, scrollRef }: {
-  item?: DashboardItem; locked: boolean; cardType: 'group' | 'basbasa' | 'kanka'; userInfo?: UserInfo; kanka?: { initials: string; gender: string | null } | null; onCancelled: () => void; width: number;
+function MasaBlock({ item, locked, cardType, userInfo, kanka, width, scrollRef }: {
+  item?: DashboardItem; locked: boolean; cardType: 'group' | 'basbasa' | 'kanka'; userInfo?: UserInfo; kanka?: { initials: string; gender: string | null } | null; width: number;
   scrollRef?: React.RefObject<ScrollViewInstance | null>;
 }) {
   const { t } = useTranslation();
@@ -258,7 +258,7 @@ function MasaBlock({ item, locked, cardType, userInfo, kanka, onCancelled, width
             <KankaPairs mine={m.participants.filter(p => p.pair === 'MINE' && !p.cancelled)} other={m.participants.filter(p => p.pair === 'OTHER' && !p.cancelled)} />
           </View>
         )}
-        <RezervasyonIptal meetingId={m.id} scheduledAt={m.scheduledAt} cancelRightUsed={m.cancelRightUsed} onCancelled={onCancelled} />
+        {/* Seçim iptali ve buluşma türü değişikliği yalnız Eşleşme Paneli'ndeki seçim kartından yapılır */}
       </Card>
     );
   }
@@ -322,7 +322,7 @@ export default function Masalarim() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { ready, me, items, kanka, tab, tabItem, selectTab, statuses, reload, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
+  const { ready, me, items, kanka, tab, tabItem, selectTab, statuses, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const scrollRef = useRef<ScrollViewInstance>(null);
@@ -364,7 +364,7 @@ export default function Masalarim() {
               {tabAdminCancelled ? (
                 <Card><T style={{ fontSize: 14, lineHeight: 22.4, textAlign: 'center', color: tw.text }}>{t('tm.cancelled')}</T></Card>
               ) : (
-                <MasaBlock key={tab} item={tabItem} locked={locked} cardType={CARD_TYPE[tab]} userInfo={userInfo} kanka={kanka} width={colW} scrollRef={scrollRef} onCancelled={() => setTimeout(reload, 2000)} />
+                <MasaBlock key={tab} item={tabItem} locked={locked} cardType={CARD_TYPE[tab]} userInfo={userInfo} kanka={kanka} width={colW} scrollRef={scrollRef} />
               )}
             </View>
           </>

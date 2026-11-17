@@ -482,8 +482,6 @@
     "verifyPhone": "Telefon numaranızı doğrulayın",
     "verifyPhoneWhatsapp": "Telefon numaranızı WhatsApp koduyla doğrulayın",
     "videoMax100": "Video en fazla 100 MB olabilir",
-    "weeklyAlreadySelected": "Bu haftanın seçimini zaten yaptın; seçim değiştirilemez.",
-    "weeklyDeadlinePassed": "Bu buluşma türü için seçim süresi doldu.",
     "weeklyNoRight": "Paketinde bu buluşma türünün hakkı yok.",
     "workTypeSelect": "Çalışma türünü seçin",
     "venueSessionMissing": "Oturum bulunamadı",
@@ -495,7 +493,10 @@
     "venueNotFound": "Mekân bulunamadı",
     "venueRecordMissing": "Mekân kaydı bulunamadı, destek ile iletişime geçin.",
     "venueWrongPassword": "Şifre hatalı",
-    "phoneInvalidTr": "Geçerli bir Türk telefon numarası girin"
+    "phoneInvalidTr": "Geçerli bir Türk telefon numarası girin",
+    "selectionExists": "Bu masa türü için zaten kaydın var.",
+    "selectionMissing": "Bu masa türü için kaydın yok.",
+    "selectionLocked": "Masa kilitlendi; iptal ve değiştirme yapılamaz."
   },
   "footer": {
     "brandPrefix": "Ahenk bir",
@@ -867,11 +868,21 @@
     "wsKankaText": "Kankanız ile katılım sağlayıp, karşı cins kankaların atandığı masa türüdür. Buluşma her pazar 20:00'da gerçekleşir.",
     "wsKankaTitle": "Kankamla Masası",
     "wsLater": "Sonra",
-    "wsNote": "Seçimini sonradan değiştiremezsin. Seçmediğin türün taramasına girmezsin, hakkın düşmez.",
     "wsOneText": "Karşı cinsinizin atandığı masa türüdür. Buluşma her cumartesi 20:00'da gerçekleşir.",
     "wsOneTitle": "Baş Başa Masası",
-    "wsTitle": "Bu hafta hangi masaya katılmak için eşleşme taramasına girmek istiyorsunuz?",
-    "badgeInactive": "PASİF"
+    "badgeInactive": "PASİF",
+    "selModeLabel": "Buluşma Türü",
+    "selTypeLabel": "Masa Türü",
+    "modeTomorrow": "Yarın Buluşma",
+    "modeWeekend": "Hafta Sonu Buluşma",
+    "selTomorrowText": "Buluşma yarın 20:00'de gerçekleşir.",
+    "selCardTitle": "Buluşma Seçimi",
+    "selOpen": "Seçim Yap",
+    "selChange": "Değiştir",
+    "selCancel": "İptal Et",
+    "selKankaWaiting": "Kanka bekleniyor",
+    "selLocked": "Masa kilitlendi",
+    "selNextWeek": "Gelecek hafta"
   },
   "login": {
     "accessBlocked": "Erişim engellendi",
