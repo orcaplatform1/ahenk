@@ -261,6 +261,7 @@
     "title": "Hesap Silme"
   },
   "errors": {
+    "partnerPhotoMaxOne": "Yalnızca 1 fotoğraf yükleyebilirsin.",
     "acceptTerms": "Kullanım şartlarını kabul etmelisin",
     "accountBanned": "Hesabın kalıcı olarak engellendi",
     "accountDeleted": "Bu hesap silinmiş",

@@ -261,6 +261,7 @@
     "title": "Delete Account"
   },
   "errors": {
+    "partnerPhotoMaxOne": "You can only upload 1 photo.",
     "acceptTerms": "You need to accept the Terms of Use",
     "accountBanned": "Your account has been permanently banned",
     "accountDeleted": "This account has been deleted",
