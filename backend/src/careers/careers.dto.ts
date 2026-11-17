@@ -2,7 +2,7 @@ import { Transform } from 'class-transformer';
 import { IsDateString, IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 const PHONE = /^\+90[5][0-9]{9}$/;
-const PHONE_MESSAGE = 'Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)';
+const PHONE_MESSAGE = 'Geçerli bir Türk telefon numarası gir (+905XXXXXXXXX)';
 
 export const EDUCATIONS = ['Lise', 'Önlisans', 'Lisans', 'Yüksek Lisans'];
 export const LANGUAGES = ['İngilizce', 'Almanca', 'Arapça', 'Rusça', 'Fransızca', 'İspanyolca', 'İtalyanca'];
@@ -33,7 +33,7 @@ export class ApplyCareerDto {
   @MaxLength(120)
   fullName: string;
 
-  @IsEmail({}, { message: 'Geçerli bir e-posta adresi girin' })
+  @IsEmail({}, { message: 'Geçerli bir e-posta adresi gir' })
   email: string;
 
   @IsString()
@@ -45,27 +45,27 @@ export class ApplyCareerDto {
   @MaxLength(80)
   phoneToken: string;
 
-  @IsIn(EDUCATIONS, { message: 'Öğrenim durumunu seçin' })
+  @IsIn(EDUCATIONS, { message: 'Öğrenim durumunu seç' })
   education: string;
 
   @IsString()
   @MaxLength(500)
   languages: string;
 
-  @IsIn(WORK_TYPES, { message: 'Çalışma türünü seçin' })
+  @IsIn(WORK_TYPES, { message: 'Çalışma türünü seç' })
   workType: string;
 
-  @IsIn(SALARIES, { message: 'Ücret beklentisini seçin' })
+  @IsIn(SALARIES, { message: 'Ücret beklentisini seç' })
   salaryExpectation: string;
 
-  @IsDateString({}, { message: 'Doğum tarihini seçin' })
+  @IsDateString({}, { message: 'Doğum tarihini seç' })
   birthDate: string;
 
   @IsString()
   city: string;
 
   @IsString()
-  @MinLength(2, { message: 'İlçe seçin' })
+  @MinLength(2, { message: 'İlçe seç' })
   @MaxLength(60)
   district: string;
 
@@ -73,7 +73,7 @@ export class ApplyCareerDto {
   @Transform(({ value }) => (value === '' ? undefined : value))
   @IsString()
   @MaxLength(300)
-  @Matches(/^https:\/\/([a-z]{2,3}\.)?(www\.)?linkedin\.com\//i, { message: 'Geçerli bir LinkedIn bağlantısı girin' })
+  @Matches(/^https:\/\/([a-z]{2,3}\.)?(www\.)?linkedin\.com\//i, { message: 'Geçerli bir LinkedIn bağlantısı gir' })
   linkedinOrCv?: string;
 
   @IsString()

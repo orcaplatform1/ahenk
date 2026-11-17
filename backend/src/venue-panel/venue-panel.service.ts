@@ -17,8 +17,8 @@ export const VENUE_REFRESH_DAYS = 365;
 const LEFT_STATUSES: ParticipantStatus[] = [ParticipantStatus.DECLINED, ParticipantStatus.CANCELLED];
 
 const LOGIN_BLOCKED: Record<string, string> = {
-  PENDING: "Başvurunuz henüz onaylanmadı.",
-  REJECTED: "Başvurunuz reddedildi, panele giriş yapamazsınız.",
+  PENDING: "Başvurun henüz onaylanmadı.",
+  REJECTED: "Başvurun reddedildi, panele giriş yapamazsın.",
   DEACTIVATED: "Bu mekân hesabı kapatıldı.",
 };
 
@@ -93,7 +93,7 @@ export class VenuePanelService {
       throw new UnauthorizedException("E-posta veya şifre hatalı");
     }
     if (account.status !== "ACTIVE") throw new ForbiddenException(LOGIN_BLOCKED[account.status]);
-    if (!account.venueId) throw new ForbiddenException("Mekân kaydı bulunamadı, destek ile iletişime geçin.");
+    if (!account.venueId) throw new ForbiddenException("Mekân kaydı bulunamadı, destek ile iletişime geç.");
     return account;
   }
 
@@ -123,10 +123,10 @@ export class VenuePanelService {
 
   async verifyLoginOtp(phone: string, code: string) {
     const account = await this.accountByPhone(phone);
-    if (!account) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
+    if (!account) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod iste");
     await this.otp.verify(phone, code, "venue-login");
     if (account.status !== "ACTIVE") throw new ForbiddenException(LOGIN_BLOCKED[account.status]);
-    if (!account.venueId) throw new ForbiddenException("Mekân kaydı bulunamadı, destek ile iletişime geçin.");
+    if (!account.venueId) throw new ForbiddenException("Mekân kaydı bulunamadı, destek ile iletişime geç.");
     return account;
   }
 
@@ -146,7 +146,7 @@ export class VenuePanelService {
 
   async resetPassword(phone: string, code: string, newPassword: string) {
     const account = await this.accountByPhone(phone);
-    if (account?.status !== "ACTIVE") throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
+    if (account?.status !== "ACTIVE") throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod iste");
     await this.otp.verify(account.phone, code, "venue-forgot-password");
     await this.prisma.venueAccount.update({
       where: { id: account.id },
@@ -205,7 +205,7 @@ export class VenuePanelService {
   async updateInfo(account: VenueAccount, dto: VenueInfoDto) {
     if (dto.district !== undefined) {
       const { city } = await this.venueOf(account);
-      if (!isValidDistrict(city.name, dto.district)) throw new BadRequestException("Geçerli bir ilçe seçin");
+      if (!isValidDistrict(city.name, dto.district)) throw new BadRequestException("Geçerli bir ilçe seç");
     }
     await this.prisma.venue.update({
       where: { id: account.venueId! },
@@ -224,7 +224,7 @@ export class VenuePanelService {
   }
 
   async addPhotos(account: VenueAccount, files: Express.Multer.File[]) {
-    if (!files?.length) throw new BadRequestException("Fotoğraf seçin");
+    if (!files?.length) throw new BadRequestException("Fotoğraf seç");
     assertVenuePhotos(files);
     if (files.length > VENUE_FORM_PHOTO_MAX_COUNT) {
       throw new BadRequestException(`En fazla ${VENUE_FORM_PHOTO_MAX_COUNT} fotoğraf eklenebilir`);

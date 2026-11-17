@@ -129,7 +129,7 @@ export class AdminController {
   ) {
     // Hesap silme yalnızca Silme Talepleri (AccountDeletionService.approve) akışıyla yapılır
     if (dto.status === UserStatus.DELETED) {
-      throw new BadRequestException("Hesap silme bu uçtan yapılamaz; Silme Talepleri akışını kullanın.");
+      throw new BadRequestException("Hesap silme bu uçtan yapılamaz; Silme Talepleri akışını kullan.");
     }
     const actor = req.user as { id: string };
     return this.adminService.updateUserStatus(id, actor.id, dto.status, dto.reason);

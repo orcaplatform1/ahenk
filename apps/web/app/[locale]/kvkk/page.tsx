@@ -58,7 +58,7 @@ const sections = [
             cat: 'Konum Verisi',
             items: [
               'Şehir tercihi',
-              'Acil yardım konumu: yalnız acil yardım talebinde bulunan kişiden, talep anında ve talep çözülene kadar alınır. Kişinin izin vermesi hâlinde konum, uygulama arka plandayken veya kapatılmış olsa dahi, cihazın izin verdiği ölçüde alınmaya devam eder. Diğer katılımcıların konumu alınmaz. Konum emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir. Talep çözülünce koordinatlar ve konum geçmişi silinir; son konumun açık adresi ve talep kaydı yasal yükümlülükler, olası hukuki uyuşmazlıklar ve resmi makam talepleri için saklanır.',
+              'Acil yardım konumu: yalnız acil yardım talebinde bulunan kişiden, talep anında ve talep çözülene kadar alınır. Kişinin izin vermesi hâlinde konum, uygulama arka plandayken veya kapatılmış olsa dahi, cihazın izin verdiği ölçüde alınmaya devam eder. Diğer katılımcıların konumu alınmaz. Konum emniyet birimleriyle paylaşılır ve ekibim tarafından takip edilir. Talep çözülünce koordinatlar ve konum geçmişi silinir; son konumun açık adresi ve talep kaydı yasal yükümlülükler, olası hukuki uyuşmazlıklar ve resmi makam talepleri için saklanır.',
             ],
           },
           {
@@ -210,7 +210,7 @@ const sections = [
         <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Yurt Dışı Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Google Analytics ve Meta Pixel</strong>
-          : bu araçlar aracılığıyla çerez verisi işlenir. Bu veri yurt dışındaki sunuculara aktarılabilir. Aktarım açık rızanıza dayanır ve rızanızı çerez tercihlerinden her zaman geri alabilirsiniz.
+          : bu araçlar aracılığıyla çerez verisi işlenir. Bu veri yurt dışındaki sunuculara aktarılabilir. Aktarım açık rızana dayanır ve rızanı çerez tercihlerinden her zaman geri alabilirsin.
         </p>
         <div
           style={{
@@ -221,7 +221,7 @@ const sections = [
           }}
         >
           <p style={{ color: '#f4f1ec', fontSize: 13 }}>
-            Kişisel verileriniz satılmaz. Çerez verileri yalnızca açık rızanızla Google ve Meta ile reklam ve istatistik amacıyla paylaşılır.
+            Kişisel verilerin satılmaz. Çerez verileri yalnızca açık rızanla Google ve Meta ile reklam ve istatistik amacıyla paylaşılır.
           </p>
         </div>
       </>
@@ -273,8 +273,8 @@ const sections = [
           'Yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri öğrenme',
           'Eksik veya yanlış işlenmiş verilerin düzeltilmesini isteme ve bu işlemin üçüncü kişilere bildirilmesini isteme',
           'KVKK\'nın 7. maddesi kapsamında kişisel verilerin silinmesini veya yok edilmesini isteme ve bu işlemin üçüncü kişilere bildirilmesini isteme',
-          'İşlenen verilerin münhasıran otomatik sistemler aracılığıyla analiz edilmesi nedeniyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme',
-          'Kişisel verilerin kanuna aykırı işlenmesi nedeniyle zarara uğramanız halinde zararın giderilmesini talep etme',
+          'İşlenen verilerin münhasıran otomatik sistemler aracılığıyla analiz edilmesi nedeniyle aleyhine bir sonucun ortaya çıkmasına itiraz etme',
+          'Kişisel verilerin kanuna aykırı işlenmesi nedeniyle zarara uğraman halinde zararın giderilmesini talep etme',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -289,15 +289,15 @@ const sections = [
     content: (
       <>
         <p style={{ marginBottom: '1rem' }}>
-          Haklarınızı kullanmak için{' '}
+          Haklarını kullanmak için{' '}
           <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a>
-          {' '}adresine e-posta gönderin.
+          {' '}adresine e-posta gönder.
         </p>
         <p style={{ marginBottom: '0.6rem', fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f' }}>
           Başvuruda yer alması gerekenler
         </p>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.4rem', marginBottom: '1rem' }}>
-          {['Adınız ve soyadınız', 'TC kimlik numaranız (kimlik doğrulama için)', 'Talep konusu', 'İletişim bilgileriniz'].map((item) => (
+          {['Adın ve soyadın', 'TC kimlik numaran (kimlik doğrulama için)', 'Talep konusu', 'İletişim bilgilerin'].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.6rem', color: '#c9c2b8', fontSize: 13 }}>
               <span style={{ color: '#c0392b' }}>›</span>{item}
             </li>
@@ -314,8 +314,8 @@ const sections = [
     title: 'Kişisel Verileri Koruma Kurulu\'na Şikâyet Hakkı',
     content: (
       <p>
-        Başvurunuzun reddedilmesi, verilen cevabın yetersiz bulunması veya süresinde yanıt verilmemesi halinde{' '}
-        <strong style={{ color: '#f4f1ec' }}>Kişisel Verileri Koruma Kurulu</strong>'na şikâyette bulunabilirsiniz.
+        Başvurunun reddedilmesi, verilen cevabın yetersiz bulunması veya süresinde yanıt verilmemesi halinde{' '}
+        <strong style={{ color: '#f4f1ec' }}>Kişisel Verileri Koruma Kurulu</strong>'na şikâyette bulunabilirsin.
         {' '}Kurul web sitesi:{' '}
         <a href="https://www.kvkk.gov.tr" target="_blank" rel="noopener noreferrer" style={{ color: '#c0392b' }}>kvkk.gov.tr</a>
       </p>

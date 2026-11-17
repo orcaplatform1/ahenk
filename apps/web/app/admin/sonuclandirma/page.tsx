@@ -60,7 +60,7 @@ export default function AdminSonuclandirma() {
     <div className="adm-page" style={{ maxWidth: 760, margin: '0 auto', fontFamily: SANS }}>
       <h1 className="ll-title" style={{ margin: '0 0 8px' }}>Ödeme Sonuçlandırma</h1>
       <p style={{ margin: '0 0 20px', fontSize: 13, color: AMBER, lineHeight: 1.5 }}>
-        Bu ekrandan iyzico&apos;ya istek gitmez, para gönderilmez. Önce iyzico panelinden sonucu kontrol edin, sonra işleyin.
+        Bu ekrandan iyzico&apos;ya istek gitmez, para gönderilmez. Önce iyzico panelinden sonucu kontrol et, sonra işle.
       </p>
       {error && <p style={{ margin: '0 0 16px', fontSize: 13, color: RED }}>{error}</p>}
 

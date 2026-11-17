@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return pageMetadata({
     path: '/kariyer',
     title: 'Kariyer',
-    description: 'Ahenk ekibinde Şehir Operasyon Yetkilisi olarak mekan ortaklarıyla iletişim kurun, haftalık masa buluşmalarının sorunsuz ilerlemesini sağlayın ve başvurun.',
+    description: 'Ahenk ekibinde Şehir Operasyon Yetkilisi olarak mekan ortaklarıyla iletişim kur, haftalık masa buluşmalarının sorunsuz ilerlemesini sağla ve başvur.',
     locale,
     en: { title: 'Careers', description: 'Join the Ahenk team as a City Operations Officer: keep in touch with venue partners, keep weekly table meetups running smoothly and apply.' },
   });

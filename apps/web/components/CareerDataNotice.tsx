@@ -15,7 +15,7 @@ const ROWS_EN = (transferRef: string, rightsRef: string): [string, string][] => 
 export function CareerDataNotice({ transferRef, rightsRef, en = false }: { transferRef: string; rightsRef: string; en?: boolean }) {
   const rows: [string, string][] = en ? ROWS_EN(transferRef, rightsRef) : [
     ['Veri Sorumlusu', `${COMPANY_TITLE}, ${COMPANY_ADDRESS}`],
-    ['İşlenen Veriler', 'Ad soyad, e-posta, telefon numarası, doğum tarihi, şehir ve ilçe, öğrenim durumu, yabancı dil ve seviyeleri, çalışma türü tercihi, ücret beklentisi, özgeçmiş (CV) dosyası ve içinde yer alan fotoğraf dahil bilgiler, LinkedIn bağlantısı (verilirse), başvuru açıklaması ve "bizi nereden duydun" bilgisi (verilirse).'],
+    ['İşlenen Veriler', 'Ad soyad, e-posta, telefon numarası, doğum tarihi, şehir ve ilçe, öğrenim durumu, yabancı dil ve seviyeleri, çalışma türü tercihi, ücret beklentisi, özgeçmiş (CV) dosyası ve içinde yer alan fotoğraf dahil bilgiler, LinkedIn bağlantısı (verilirse), başvuru açıklaması ve "beni nereden duydun" bilgisi (verilirse).'],
     ['Amaç', 'İşe alım sürecinin yürütülmesi, adayın değerlendirilmesi ve adayla iletişim kurulması.'],
     ['Hukuki Sebep', 'KVKK m.5/2-c (bir sözleşmenin kurulmasıyla doğrudan ilgili olması) ve m.5/2-f (veri sorumlusunun meşru menfaati).'],
     ['Erişim', 'Verilere ve CV dosyasına yalnızca yetkili yöneticiler erişir, diğer kullanıcılarla paylaşılmaz.'],

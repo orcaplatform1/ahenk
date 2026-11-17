@@ -30,7 +30,7 @@ export async function kankaLockReason(db: Db, link: { createdAt: Date; userAId: 
     select: { scheduledAt: true },
   });
   if (meetings.some((m) => meetingCardEnd(m.scheduledAt) > now)) {
-    return "Kankamla masanız sürerken kankalıktan çıkamazsın.";
+    return "Kankamla masan sürerken kankalıktan çıkamazsın.";
   }
   return null;
 }

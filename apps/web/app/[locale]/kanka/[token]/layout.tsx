@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   return pageMetadata({
     path: `/kanka/${token}`,
     title: 'Kanka Daveti',
-    description: 'Ahenk Kankamla masasına davet edildiniz. Davet edildiğiniz telefon numarasıyla kayıt olun veya giriş yapın, daveti 48 saat içinde profilinizden kabul edin.',
+    description: 'Ahenk Kankamla masasına davet edildin. Davet edildiğin telefon numarasıyla kayıt ol veya giriş yap, daveti 48 saat içinde profilinden kabul et.',
     locale,
     en: { title: 'Kanka Invite', description: 'You’ve been invited to an Ahenk Bring a Buddy table. Sign up or log in with the phone number you were invited with, then accept the invite from your profile within 48 hours.' },
   });

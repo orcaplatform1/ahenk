@@ -20,7 +20,7 @@ const DAILY_LIMIT_MESSAGE = "Bugünlük doğrulama kodu hakkın doldu. Yarın te
 // Bekleme süresi dolmadan yeni kod istendi: kod gönderilmez, yanıtta kalan saniye (resendSeconds) döner
 export class OtpWaitException extends HttpException {
   constructor(public readonly resendSeconds: number) {
-    super({ statusCode: HttpStatus.BAD_REQUEST, error: "Bad Request", message: `Yeni kod için ${resendSeconds} saniye bekleyin.`, resendSeconds }, HttpStatus.BAD_REQUEST);
+    super({ statusCode: HttpStatus.BAD_REQUEST, error: "Bad Request", message: `Yeni kod için ${resendSeconds} saniye bekle.`, resendSeconds }, HttpStatus.BAD_REQUEST);
   }
 }
 
@@ -32,8 +32,8 @@ const OTP_PHONE_NOTICES: Record<OtpPhoneNoticeCode, { status: HttpStatus; messag
   PHONE_NOT_REGISTERED: { status: HttpStatus.NOT_FOUND, message: "Bu numarayla kayıtlı hesap bulunamadı." },
   VENUE_NOT_REGISTERED: { status: HttpStatus.NOT_FOUND, message: "Bu numarayla kayıtlı mekân hesabı bulunamadı." },
   PHONE_ALREADY_REGISTERED: { status: HttpStatus.CONFLICT, message: "Bu numara zaten kayıtlı. Giriş yapabilirsin." },
-  VENUE_ACCOUNT_INACTIVE: { status: HttpStatus.FORBIDDEN, message: "Bu mekân hesabı aktif değil. Destek ile iletişime geçin." },
-  VENUE_PHONE_MULTIPLE: { status: HttpStatus.CONFLICT, message: "Bu numara birden fazla mekân hesabına bağlı. Destek ile iletişime geçin." },
+  VENUE_ACCOUNT_INACTIVE: { status: HttpStatus.FORBIDDEN, message: "Bu mekân hesabı aktif değil. Destek ile iletişime geç." },
+  VENUE_PHONE_MULTIPLE: { status: HttpStatus.CONFLICT, message: "Bu numara birden fazla mekân hesabına bağlı. Destek ile iletişime geç." },
 };
 export class OtpPhoneNoticeException extends HttpException {
   constructor(code: OtpPhoneNoticeCode) {
@@ -120,20 +120,20 @@ export class OtpService {
   async verify(phone: string, code: string, flow: OtpFlow): Promise<void> {
     const entry = await this.getEntry(phone, flow);
     if (!entry) {
-      throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
+      throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod iste");
     }
 
     // Her doğrulama isteği önce sayacı atomik artırır: bir kod için en fazla MAX_ATTEMPTS karşılaştırma yapılır
     const attempt = await this.redis.incrWithTtl(this.attemptsKey(phone, flow), OTP_TTL_SECONDS);
     if (attempt > MAX_ATTEMPTS) {
       await this.redis.del(this.key(phone, flow));
-      throw new OtpMismatchException("Çok fazla hatalı deneme, yeni kod isteyin");
+      throw new OtpMismatchException("Çok fazla hatalı deneme, yeni kod iste");
     }
 
     if (entry.code !== code) {
       if (attempt >= MAX_ATTEMPTS) {
         await this.redis.del(this.key(phone, flow));
-        throw new OtpMismatchException("Çok fazla hatalı deneme, yeni kod isteyin");
+        throw new OtpMismatchException("Çok fazla hatalı deneme, yeni kod iste");
       }
       throw new OtpMismatchException(`Kod hatalı. Kalan deneme hakkı: ${MAX_ATTEMPTS - attempt}`);
     }

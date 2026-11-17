@@ -4,7 +4,7 @@ import { VenueType } from '../generated/prisma/client';
 import { GOOGLE_MAPS_URL, GOOGLE_MAPS_URL_MESSAGE } from '../venue-panel/venue-url';
 
 const PHONE = /^\+90[5][0-9]{9}$/;
-const PHONE_MESSAGE = 'Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)';
+const PHONE_MESSAGE = 'Geçerli bir Türk telefon numarası gir (+905XXXXXXXXX)';
 
 export class PartnershipSendOtpDto {
   @IsString()
@@ -34,7 +34,7 @@ export class ApplyPartnershipDto {
   @MaxLength(120)
   contactName: string;
 
-  @IsEmail({}, { message: 'Geçerli bir e-posta adresi girin' })
+  @IsEmail({}, { message: 'Geçerli bir e-posta adresi gir' })
   email: string;
 
   @IsString()
@@ -60,7 +60,7 @@ export class ApplyPartnershipDto {
 
   @ValidateIf((o: ApplyPartnershipDto) => o.venueType === 'Diğer')
   @IsString()
-  @MinLength(2, { message: 'Mekân türünüzü yazın' })
+  @MinLength(2, { message: 'Mekân türünü yaz' })
   @MaxLength(60)
   venueTypeOther?: string;
 
@@ -81,12 +81,12 @@ export class ApplyPartnershipDto {
   websiteOrSocial?: string;
 
   @IsString()
-  @MinLength(5, { message: 'Açık adres girin' })
+  @MinLength(5, { message: 'Açık adres gir' })
   @MaxLength(300)
   address: string;
 
   @IsString()
-  @MinLength(2, { message: 'İlçe seçin' })
+  @MinLength(2, { message: 'İlçe seç' })
   @MaxLength(60)
   district: string;
 
@@ -95,7 +95,7 @@ export class ApplyPartnershipDto {
   @Matches(GOOGLE_MAPS_URL, { message: GOOGLE_MAPS_URL_MESSAGE })
   locationUrl: string;
 
-  @IsEnum(VenueType, { message: 'Alkol durumunu seçin' })
+  @IsEnum(VenueType, { message: 'Alkol durumunu seç' })
   alcoholStatus: VenueType;
 
   @IsOptional()

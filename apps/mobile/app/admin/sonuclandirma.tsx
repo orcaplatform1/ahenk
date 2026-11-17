@@ -39,7 +39,7 @@ export default function AdminSonuclandirma() {
   return (
     <APage maxWidth={760}>
       <ATitle style={{ marginBottom: 8 }}>Ödeme Sonuçlandırma</ATitle>
-      <AT style={{ marginBottom: 20, fontSize: 13, color: adm.amber, lineHeight: 19.5 }}>Bu ekrandan iyzico&apos;ya istek gitmez, para gönderilmez. Önce iyzico panelinden sonucu kontrol edin, sonra işleyin.</AT>
+      <AT style={{ marginBottom: 20, fontSize: 13, color: adm.amber, lineHeight: 19.5 }}>Bu ekrandan iyzico&apos;ya istek gitmez, para gönderilmez. Önce iyzico panelinden sonucu kontrol et, sonra işle.</AT>
       <AError>{error}</AError>
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
         <View style={{ paddingVertical: 12, paddingHorizontal: 18 }}><ATitle>İade Bekleyen Fazla Ödemeler</ATitle></View>

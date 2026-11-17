@@ -86,7 +86,7 @@ export default function AdminPartnerships() {
                     <>
                       <TextInput value={notes[p.id] ?? ''} onChangeText={t => setNotes(n => ({ ...n, [p.id]: t }))} placeholder="Admin notu (opsiyonel)" placeholderTextColor={adm.muted} multiline numberOfLines={2} keyboardAppearance="dark"
                         style={{ borderWidth: 1, borderColor: adm.border, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 10, fontSize: 11, color: adm.text, fontFamily: sans(400), minHeight: 48, textAlignVertical: 'top' }} />
-                      {p.account && !cityMatches(p.city) && <AdminSelect value={cityIds[p.id] ?? ''} onChange={v => setCityIds(c => ({ ...c, [p.id]: v }))} options={cities.map(c => ({ value: c.id, label: c.name }))} placeholder="Onay için şehir seçin" />}
+                      {p.account && !cityMatches(p.city) && <AdminSelect value={cityIds[p.id] ?? ''} onChange={v => setCityIds(c => ({ ...c, [p.id]: v }))} options={cities.map(c => ({ value: c.id, label: c.name }))} placeholder="Onay için şehir seç" />}
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         <Btn variant="admOkSm" style={{ padding: 8 }} disabled={saving === p.id} label={saving === p.id ? '…' : p.account ? 'Onayla' : 'İncelendi'} onPress={() => update(p.id, p.account ? 'APPROVED' : 'REVIEWED')} />
                         <Btn variant="admNoSm" style={{ padding: 8 }} disabled={saving === p.id} label={saving === p.id ? '…' : 'Reddet'} onPress={() => update(p.id, 'REJECTED')} />

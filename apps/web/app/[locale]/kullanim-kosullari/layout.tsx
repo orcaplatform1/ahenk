@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return pageMetadata({
     path: '/kullanim-kosullari',
     title: 'Kullanım Koşulları',
-    description: 'Ahenk platformunu kullanmadan önce okumanız gereken kullanım koşulları. Üyelik, paketler, rezervasyon ve iptal kurallarına ilişkin hükümleri inceleyin.',
+    description: 'Ahenk platformunu kullanmadan önce okuman gereken kullanım koşulları. Üyelik, paketler, rezervasyon ve iptal kurallarına ilişkin hükümleri incele.',
     locale,
     en: { title: 'Terms of Use', description: 'The terms of use to read before using Ahenk. Review the provisions on membership, packages, reservations and cancellations.' },
   });

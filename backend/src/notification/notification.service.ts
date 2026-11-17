@@ -98,8 +98,8 @@ export class NotificationService {
     if (status === KycStatus.APPROVED) {
       await this.send({
         userId,
-        title: "Kimlik doğrulamanız onaylandı ✓",
-        body: "Profilinizde 'Doğrulanmış' rozeti aktif. Artık paket satın alabilirsiniz.",
+        title: "Kimlik doğrulaman onaylandı ✓",
+        body: "Profilinde 'Doğrulanmış' rozeti aktif. Artık paket satın alabilirsin.",
         data: { event: "KYC_APPROVED" },
         whatsappTemplate: "ahenk_kyc_approved",
         whatsappParams: [],
@@ -108,8 +108,8 @@ export class NotificationService {
     } else if (status === KycStatus.REJECTED) {
       await this.send({
         userId,
-        title: "Kimlik doğrulamanız reddedildi",
-        body: rejectReason ?? "Başvurunuz reddedildi. Yeniden başvurabilirsiniz.",
+        title: "Kimlik doğrulaman reddedildi",
+        body: rejectReason ?? "Başvurun reddedildi. Yeniden başvurabilirsin.",
         data: { event: "KYC_REJECTED" },
         whatsappTemplate: "ahenk_kyc_rejected",
         whatsappParams: [rejectReason ?? "Bilgi eksik veya uyumsuz"],
@@ -118,8 +118,8 @@ export class NotificationService {
     } else if (status === KycStatus.SUSPICIOUS) {
       await this.send({
         userId,
-        title: "Kimlik doğrulamanız inceleme altında",
-        body: "Başvurunuz ek inceleme gerektiriyor. En kısa sürede bilgilendirileceğiz.",
+        title: "Kimlik doğrulaman inceleme altında",
+        body: "Başvurun ek inceleme gerektiriyor. En kısa sürede bilgilendirileceksin.",
         data: { event: "KYC_SUSPICIOUS" },
         en: { title: "Your identity verification is under review", body: "Your application needs a closer look. We'll let you know soon." },
       });
@@ -147,8 +147,8 @@ export class NotificationService {
 
     await this.send({
       userId,
-      title: "Masa detayınız belli oldu",
-      body: `${dateStr} tarihli masanızın detayları belli oldu. Masalarım alanından kontrol edebilirsiniz.`,
+      title: "Masa detayın belli oldu",
+      body: `${dateStr} tarihli masanın detayları belli oldu. Masalarım alanından kontrol edebilirsin.`,
       data: { event: "MEETING_CONFIRMED", meetingId },
       whatsappTemplate: "ahenk_meeting_confirmed",
       whatsappParams: [dateStr],
@@ -161,8 +161,8 @@ export class NotificationService {
   async notifyMeetingNotFormed(userId: string): Promise<void> {
     await this.send({
       userId,
-      title: "Masanız kurulamadı",
-      body: "Çok üzgünüz, yetersiz sayıda eşleşme nedeniyle masanız kurulamadı.",
+      title: "Masan kurulamadı",
+      body: "Çok üzgünüm, yetersiz sayıda eşleşme nedeniyle masan kurulamadı.",
       data: { event: "MEETING_NOT_FORMED" },
       whatsappTemplate: "ahenk_meeting_not_formed",
       whatsappParams: [],

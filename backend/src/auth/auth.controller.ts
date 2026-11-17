@@ -111,7 +111,7 @@ export class AuthController {
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtRefreshGuard)
-  @ApiOperation({ summary: "Access token yenile (web: httpOnly cookie; Origin'siz istemci: gövdede refreshToken)" })
+  @ApiOperation({ summary: "Access token yenile (web: httpOnly cookie; Origin'sen istemci: gövdede refreshToken)" })
   @ApiCookieAuth()
   async refresh(
     @CurrentUser() user: any,

@@ -16,7 +16,7 @@ export class WhatsappService {
   // language: alıcının dili; OTP şablonunun dil kodu buna göre seçilir
   async sendOtp(phone: string, code: string, language: string = "tr"): Promise<void> {
     if (isE2eFakeMode()) {
-      if (readFakeControl().whatsappOtpFail) throw new InternalServerErrorException("OTP gönderilemedi, lütfen tekrar deneyin");
+      if (readFakeControl().whatsappOtpFail) throw new InternalServerErrorException("OTP gönderilemedi, lütfen tekrar dene");
       recordFake({ channel: "whatsapp-otp", template: "otp", to: last4(phone), params: { phone, code } });
       return;
     }
@@ -69,7 +69,7 @@ export class WhatsappService {
       this.logger.error(
         `WhatsApp API hatası [${response.status}]: ${data.error?.message ?? "Bilinmeyen hata"}`,
       );
-      throw new InternalServerErrorException("OTP gönderilemedi, lütfen tekrar deneyin");
+      throw new InternalServerErrorException("OTP gönderilemedi, lütfen tekrar dene");
     }
 
     this.logger.log(`WhatsApp OTP gönderildi: ${normalizedPhone}`);

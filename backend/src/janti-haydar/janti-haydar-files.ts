@@ -38,7 +38,7 @@ export function detectJantiFile(buf: Buffer): JantiFileType | null {
 }
 
 export function assertJantiFiles(files: Express.Multer.File[]): void {
-  if (files.length > JANTI_MAX_FILES) throw new BadRequestException("En fazla 3 dosya yükleyebilirsiniz");
+  if (files.length > JANTI_MAX_FILES) throw new BadRequestException("En fazla 3 dosya yükleyebilirsin");
   const total = files.reduce((sum, f) => sum + f.size, 0);
   if (total > JANTI_MAX_TOTAL_BYTES) throw new BadRequestException("Dosyaların toplam boyutu en fazla 10 MB olabilir");
   for (const f of files) {

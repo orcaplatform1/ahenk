@@ -194,7 +194,7 @@ export const onb = {
 
 // ── Masa detay kartı yerleşimi (packages/ui MasaDetayKarti: kapak, tür rozeti, bilgi şeridi, Genel Uyum halkası, kendi dairesi) ──
 export const masaKart = {
-  coverAspect: 16 / 9, cameraBg: 'rgba(255,255,255,0.08)', cameraStroke: 'rgba(255,255,255,0.18)',
+  coverAspect: 16 / 9,
   coverFade: ['rgba(18,18,18,0.35)', 'rgba(18,18,18,0)', 'rgba(18,18,18,0)', 'rgba(18,18,18,0.92)'] as const, coverFadeStops: [0, 0.3, 0.45, 1] as const,
   pill: { padV: 4, padH: 10, radius: 9999, fontSize: 11, gap: 6 },
   typePill: { bg: 'rgba(192,57,43,0.85)', border: 'rgba(255,107,107,0.5)', text: '#ffffff' },

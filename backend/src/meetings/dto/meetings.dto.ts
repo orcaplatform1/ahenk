@@ -47,7 +47,7 @@ export class CancelRegistrationDto {
   // "İptal nedenini belirtin" — zorunlu; yalnızca boşluk kabul edilmez
   @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
   @IsString()
-  @MinLength(1, { message: "İptal nedenini belirtin" })
+  @MinLength(1, { message: "İptal nedenini belirt" })
   @MaxLength(300, { message: "İptal nedeni en fazla 300 karakter olabilir" })
   note: string;
 }

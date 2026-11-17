@@ -127,8 +127,8 @@ export class KycService {
       if (existing && !RESUBMITTABLE.includes(existing.status)) {
         throw new ConflictException(
           existing.status === KycStatus.PENDING
-            ? "KYC başvurunuz inceleniyor"
-            : "KYC başvurunuz onaylanmış",
+            ? "KYC başvurun inceleniyor"
+            : "KYC başvurun onaylanmış",
         );
       }
 

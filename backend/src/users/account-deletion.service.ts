@@ -88,7 +88,7 @@ export class AccountDeletionService {
   private async approve(id: string, userId: string, adminId: string) {
     // Talepten sonra masaya girmişse buluşma bitene kadar silinmez
     if (await this.activeTables(userId)) {
-      throw new BadRequestException("Kişinin kurulmuş masası var; buluşma bitince onaylayın.");
+      throw new BadRequestException("Kişinin kurulmuş masası var; buluşma bitince onayla.");
     }
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

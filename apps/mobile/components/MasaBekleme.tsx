@@ -93,7 +93,7 @@ function ConfirmedRadarViewInner({ participants, maxParticipants, type, schedule
         <T style={{ fontSize: 14, color: c.t666 }}>Katılımcı: <T w={700} style={{ color: c.green }}>{ordered.length}</T><T style={{ color: c.t444 }}> / </T><T w={700} style={{ color: c.green }}>{maxP}</T></T>
       </View>
       <View style={{ alignItems: 'center', marginTop: 20, paddingHorizontal: 4 }}>
-        <Serif style={{ marginBottom: 6, fontSize: 18, color: c.green, textAlign: 'center' }}>{locked ? 'Mekan bilgileri masa detayında gözükecektir.' : full ? 'Masanız tamamlandı.' : 'Masanız Oluşturuluyor!'}</Serif>
+        <Serif style={{ marginBottom: 6, fontSize: 18, color: c.green, textAlign: 'center' }}>{locked ? 'Mekan bilgileri masa detayında gözükecektir.' : full ? 'Masan tamamlandı.' : 'Masan Oluşturuluyor!'}</Serif>
         {locked && <RevealCountdown scheduledAt={scheduledAt} />}
         <T style={{ marginBottom: 8, fontSize: 12, color: c.t888, letterSpacing: 0.12, textAlign: 'center' }}>Masa buluşma tarihi: {formatMasaDate(scheduledAt)}</T>
         <T style={{ fontSize: 12, color: c.t555, lineHeight: 18.6, textAlign: 'center' }}>{infoText}</T>

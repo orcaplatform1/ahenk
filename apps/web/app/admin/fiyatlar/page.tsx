@@ -189,7 +189,7 @@ export default function AdminFiyatlar() {
           <h2 className="ll-title">Not</h2>
         </div>
         <p style={{ margin: 0, fontSize: 13, color: MUTED, lineHeight: 1.6 }}>
-          Ham fiyat (KDV hariç) girin. Web fiyatı = ham + %20 KDV. Mobil fiyat = ham + %20 KDV, %15 mağaza komisyonu dahil (÷ 0,85).
+          Ham fiyat (KDV hariç) gir. Web fiyatı = ham + %20 KDV. Mobil fiyat = ham + %20 KDV, %15 mağaza komisyonu dahil (÷ 0,85).
           Davet indirimi %10. Tüm fiyatlar tam TL&apos;ye yuvarlanır. Paketler tek seferlik; yeni fiyat sadece bundan sonraki satın almalarda geçerli olur.
         </p>
       </div>

@@ -155,7 +155,7 @@ async function leaveUnlockedTable(deps: SelectionDeps, userId: string, type: Mee
   for (const id of otherIds) {
     await notifications.sendToUser(id, {
       title: "Karşı çift masadan ayrıldı",
-      body: "Kankamla masanızdaki karşı çift ayrıldı. Sizin için yeniden eşleşme aranıyor.",
+      body: "Kankamla masandaki karşı çift ayrıldı. Senin için yeniden eşleşme aranıyor.",
       data: { type: "KANKA_PAIR_LEFT", meetingId },
       en: { title: "The other pair left the table", body: "The other pair at your Bring a Buddy table left. We're looking for a new match for you." },
     }).catch(() => undefined);

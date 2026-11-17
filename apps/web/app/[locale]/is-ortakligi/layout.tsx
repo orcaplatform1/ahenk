@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return pageMetadata({
     path: '/is-ortakligi',
     title: 'Mekan Ortaklığı',
-    description: 'Ahenk mekan ortaklığı ile kimliği doğrulanmış kullanıcıları mekânınızda ağırlayın. Önceden planlanmış rezervasyonlarla çalışmak için başvuru formunu doldurun.',
+    description: 'Ahenk mekan ortaklığı ile kimliği doğrulanmış kullanıcıları mekânında ağırla. Önceden planlanmış rezervasyonlarla çalışmak için başvuru formunu doldur.',
     locale,
     en: { title: 'Venue Partnership', description: 'Host verified users at your venue with an Ahenk venue partnership. Fill in the application form to work with pre-planned reservations.' },
   });

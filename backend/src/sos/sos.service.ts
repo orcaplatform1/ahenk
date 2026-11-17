@@ -83,7 +83,7 @@ export class SosService {
       where: { meetingId_userId: { meetingId, userId } },
     });
     if (!participation || INACTIVE.includes(participation.status)) {
-      throw new ForbiddenException("Bu masanın aktif katılımcısı değilsiniz");
+      throw new ForbiddenException("Bu masanın aktif katılımcısı değilsin");
     }
 
     // Masa + tüm katılımcıların tam bilgisi (snapshot)
@@ -477,11 +477,11 @@ export class SosService {
     if (!report) throw new NotFoundException();
     if (report.resolvedAt) throw new BadRequestException("Talep zaten çözülmüş");
     if (viewer.role !== UserRole.SUPERADMIN && report.claimedById !== viewer.id) {
-      throw new ForbiddenException("Önce 'İlgileniyorum' ile talebi üstlenin");
+      throw new ForbiddenException("Önce 'İlgileniyorum' ile talebi üstlen");
     }
     // Son konum açık adrese çevrilir; adres alınamazsa çözme yapılmaz, hiçbir veri silinmez
     const last = await this.lastLocation(id);
-    if (last.ok === false) throw new BadRequestException("Adres alınamadı, tekrar deneyin.");
+    if (last.ok === false) throw new BadRequestException("Adres alınamadı, tekrar dene.");
     await this.prisma.$transaction([
       this.prisma.sosReport.update({
         where: { id },

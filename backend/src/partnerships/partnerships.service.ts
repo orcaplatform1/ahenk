@@ -42,15 +42,15 @@ export class PartnershipsService {
   }
 
   async apply(dto: ApplyPartnershipDto, files: Express.Multer.File[]) {
-    if (files.length === 0) throw new BadRequestException('En az 1 mekân fotoğrafı yükleyin');
+    if (files.length === 0) throw new BadRequestException('En az 1 mekân fotoğrafı yükle');
     assertVenuePhotos(files);
     const city = await this.prisma.city.findFirst({ where: { name: dto.city, isActive: true }, select: { id: true } });
-    if (!city) throw new BadRequestException('Geçerli bir şehir seçin');
-    if (!isValidDistrict(dto.city, dto.district)) throw new BadRequestException('Geçerli bir ilçe seçin');
+    if (!city) throw new BadRequestException('Geçerli bir şehir seç');
+    if (!isValidDistrict(dto.city, dto.district)) throw new BadRequestException('Geçerli bir ilçe seç');
 
     const stored = await this.redis.get(phoneKey(dto.phone));
     if (!stored || stored !== dto.phoneToken) {
-      throw new BadRequestException('Telefon numaranızı WhatsApp koduyla doğrulayın');
+      throw new BadRequestException('Telefon numaranı WhatsApp koduyla doğrula');
     }
     await this.assertPhoneFree(dto.phone);
 

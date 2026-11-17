@@ -262,7 +262,7 @@ export class AdminService {
     });
     if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
     if (user.role === UserRole.SUPERADMIN && viewerRole !== UserRole.SUPERADMIN) {
-      throw new ForbiddenException("Bu kullanıcıyı görüntüleme yetkiniz yok");
+      throw new ForbiddenException("Bu kullanıcıyı görüntüleme yetkin yok");
     }
     // Hassas alanlar admin yanıtına konmaz
     const { passwordHash, fcmToken, phoneHash, isBot, botPhone, ...rest } = user;
@@ -356,7 +356,7 @@ export class AdminService {
       day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Istanbul",
     });
     const reason =
-      `${dateStr} tarihli masa etkinliğine masa kurulduktan sonra katılmadığınız tespit edilmiştir. ` +
+      `${dateStr} tarihli masa etkinliğine masa kurulduktan sonra katılmadığın tespit edilmiştir. ` +
       `${NO_SHOW_WARNING_LIMIT} uyarı hesabın 1 ay askıya alınmasına neden olur. Kalan uyarı hakkı: ${remaining}`;
 
     await this.prisma.userSanction.create({
@@ -370,7 +370,7 @@ export class AdminService {
 
   // SUPERADMIN ve ADMIN hesaplarına yalnızca SUPERADMIN işlem yapabilir (SUPERADMIN, SUPERADMIN hesaplarını düzenleyebilir)
   private async assertCanSanction(targetId: string, actorId: string) {
-    if (targetId === actorId) throw new BadRequestException("Kendi hesabınızı değiştiremezsiniz");
+    if (targetId === actorId) throw new BadRequestException("Kendi hesabını değiştiremezsin");
     const [target, actor] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: targetId }, select: { role: true } }),
       this.prisma.user.findUnique({ where: { id: actorId }, select: { role: true } }),
@@ -380,7 +380,7 @@ export class AdminService {
       (target.role === UserRole.SUPERADMIN || target.role === UserRole.ADMIN) &&
       actor?.role !== UserRole.SUPERADMIN
     ) {
-      throw new ForbiddenException("Bu hesaba işlem yetkiniz yok");
+      throw new ForbiddenException("Bu hesaba işlem yetkin yok");
     }
   }
 
@@ -501,7 +501,7 @@ export class AdminService {
     }
     const target = await this.prisma.user.findUnique({ where: { id: targetId } });
     if (!target) throw new NotFoundException("Kullanıcı bulunamadı");
-    if (target.id === actorId) throw new BadRequestException("Kendi rolünüzü değiştiremezsiniz");
+    if (target.id === actorId) throw new BadRequestException("Kendi rolünü değiştiremezsin");
 
     return this.prisma.user.update({
       where: { id: targetId },
@@ -1005,8 +1005,8 @@ export class AdminService {
         .map((p) => p.userId);
       for (const uid of realUsers) {
         await this.notifications.sendToUser(uid, {
-          title: "Masanız iptal edildi",
-          body: "Masanız iptal edildi. Masa hakkınız hesabınıza iade edildi.",
+          title: "Masan iptal edildi",
+          body: "Masan iptal edildi. Masa hakkın hesabına iade edildi.",
           data: { type: "MEETING_CANCELLED_BY_ADMIN", meetingId },
           en: { title: "Your table was cancelled", body: "Your table was cancelled. Your table credit has been returned to your account." },
         }).catch(() => undefined);
@@ -1045,7 +1045,7 @@ export class AdminService {
   }) {
     const city = await this.prisma.city.findUnique({ where: { id: data.cityId } });
     if (!city) throw new NotFoundException("Şehir bulunamadı");
-    if (data.district && !isValidDistrict(city.name, data.district)) throw new BadRequestException("Geçerli bir ilçe seçin");
+    if (data.district && !isValidDistrict(city.name, data.district)) throw new BadRequestException("Geçerli bir ilçe seç");
     return this.prisma.venue.create({ data, include: { city: { select: { name: true } } } });
   }
 
@@ -1071,7 +1071,7 @@ export class AdminService {
     }
     if (data.district) {
       const city = await this.prisma.city.findUniqueOrThrow({ where: { id: data.cityId ?? venue.cityId }, select: { name: true } });
-      if (!isValidDistrict(city.name, data.district)) throw new BadRequestException("Geçerli bir ilçe seçin");
+      if (!isValidDistrict(city.name, data.district)) throw new BadRequestException("Geçerli bir ilçe seç");
     }
     const updated = await this.prisma.venue.update({ where: { id: venueId }, data });
     await this.syncVenueMeetings(updated);
@@ -1088,7 +1088,7 @@ export class AdminService {
   }
 
   async addVenuePhotos(venueId: string, adminId: string, files: Express.Multer.File[]) {
-    if (!files?.length) throw new BadRequestException("Fotoğraf seçin");
+    if (!files?.length) throw new BadRequestException("Fotoğraf seç");
     assertVenuePhotos(files);
     const venue = await this.prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) throw new NotFoundException("Mekan bulunamadı");
@@ -1162,7 +1162,7 @@ export class AdminService {
       include: { _count: { select: { venues: true, meetings: true } } },
     });
     if (!city) throw new NotFoundException("Şehir bulunamadı");
-    if (city._count.venues || city._count.meetings) throw new BadRequestException("Bu şehre bağlı mekân/masa var, önce pasifleştirin");
+    if (city._count.venues || city._count.meetings) throw new BadRequestException("Bu şehre bağlı mekân/masa var, önce pasifleştir");
     await this.prisma.city.delete({ where: { id: cityId } });
     return { deleted: true, name: city.name };
   }
@@ -1183,7 +1183,7 @@ export class AdminService {
     const city = await this.prisma.city.findUnique({ where: { id: cityId }, select: { name: true } });
     if (!city) throw new NotFoundException("Şehir bulunamadı");
     const clean = name.trim();
-    if (!clean) throw new BadRequestException("İlçe adı girin");
+    if (!clean) throw new BadRequestException("İlçe adı gir");
     const exists = await this.prisma.cityDistrict.findUnique({ where: { cityId_name: { cityId, name: clean } } });
     if (exists) throw new ConflictException("Bu ilçe zaten ekli");
     const row = await this.prisma.cityDistrict.create({ data: { cityId, name: clean, level }, select: { id: true, name: true, level: true } });
@@ -1223,7 +1223,7 @@ export class AdminService {
     if (dto.timezone) {
       try { new Intl.DateTimeFormat("en", { timeZone: dto.timezone }); } catch { throw new BadRequestException("Geçersiz saat dilimi (IANA, ör. Europe/Istanbul)"); }
     }
-    if (dto.idTypes && dto.idTypes.length === 0) throw new BadRequestException("En az bir kimlik türü seçin");
+    if (dto.idTypes && dto.idTypes.length === 0) throw new BadRequestException("En az bir kimlik türü seç");
     if (dto.name && dto.name !== city.name && (await this.prisma.city.findUnique({ where: { name: dto.name } }))) throw new ConflictException("Bu ad başka bir bölgede kayıtlı");
     return this.prisma.city.update({ where: { id: cityId }, data: dto });
   }
@@ -1376,7 +1376,7 @@ export class AdminService {
 
   async updateSettings(data: { matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean; liveDistrictSource?: "static" | "real"; oceanGroup?: boolean; oceanOneOnOne?: boolean; oceanKanka?: boolean }, viewerRole: UserRole) {
     if (data.botSystemActive !== undefined && viewerRole !== UserRole.SUPERADMIN) {
-      throw new ForbiddenException("Bu ayarı değiştirme yetkiniz yok");
+      throw new ForbiddenException("Bu ayarı değiştirme yetkin yok");
     }
     const updates: Array<{ key: string; value: string }> = [];
     if (data.matchingEnabled !== undefined) updates.push({ key: "MATCHING_ENABLED", value: String(data.matchingEnabled) });
@@ -1921,7 +1921,7 @@ export class AdminService {
       where: cityId ? { id: cityId } : { name: cityName.split(" (")[0].trim() },
       select: { id: true },
     });
-    if (!city) throw new BadRequestException("Şehir bulunamadı, onay için şehir seçin");
+    if (!city) throw new BadRequestException("Şehir bulunamadı, onay için şehir seç");
     return city.id;
   }
 
@@ -2138,7 +2138,7 @@ export class AdminService {
     const target = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
     if (!target) throw new NotFoundException("Kullanıcı bulunamadı");
     if (target.role === UserRole.SUPERADMIN && viewerRole !== UserRole.SUPERADMIN) {
-      throw new ForbiddenException("Bu kullanıcıyı görüntüleme yetkiniz yok");
+      throw new ForbiddenException("Bu kullanıcıyı görüntüleme yetkin yok");
     }
     return this.prisma.userSanction.findMany({
       where: { userId },

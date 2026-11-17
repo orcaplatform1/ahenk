@@ -44,12 +44,12 @@ class RequestPhoneChangeDto {
 class VerifyPhoneChangeDto {
   @IsE164Phone()
   phone: string;
-  @Matches(/^[0-9]{6}$/, { message: "6 haneli kod girin" })
+  @Matches(/^[0-9]{6}$/, { message: "6 haneli kod gir" })
   code: string;
 }
 
 class ChangeEmailDto {
-  @IsEmail({}, { message: "Geçerli bir e-posta adresi girin" })
+  @IsEmail({}, { message: "Geçerli bir e-posta adresi gir" })
   email: string;
   @IsString()
   currentPassword: string;

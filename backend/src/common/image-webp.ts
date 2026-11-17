@@ -67,6 +67,6 @@ export async function toWebp(buf: Buffer, kind: ImageKind, quality: number = WEB
     return await sharp(buf).rotate().webp({ quality }).toBuffer();
   } catch (err) {
     logger.error(`Görsel WebP'ye çevrilemedi (tür: ${kind}, boyut: ${buf.length}): ${err}`);
-    throw new BadRequestException("Görsel işlenemedi; dosya bozuk olabilir, başka bir görsel deneyin");
+    throw new BadRequestException("Görsel işlenemedi; dosya bozuk olabilir, başka bir görsel dene");
   }
 }

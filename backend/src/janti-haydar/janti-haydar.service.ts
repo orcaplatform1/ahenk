@@ -27,7 +27,7 @@ export class JantiHaydarService {
       where: { phone, createdAt: { gte: new Date(Date.now() - PHONE_WINDOW_MS) } },
     });
     if (recent >= PHONE_LIMIT) {
-      throw new HttpException('Bu numarayla çok fazla talep gönderildi. Lütfen daha sonra tekrar deneyin.', HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException('Bu numarayla çok fazla talep gönderildi. Lütfen daha sonra tekrar dene.', HttpStatus.TOO_MANY_REQUESTS);
     }
   }
 
@@ -51,7 +51,7 @@ export class JantiHaydarService {
     assertJantiFiles(files);
     const stored = await this.redis.get(phoneKey(dto.phone));
     if (!stored || stored !== dto.phoneToken) {
-      throw new BadRequestException('Telefon numaranızı WhatsApp koduyla doğrulayın');
+      throw new BadRequestException('Telefon numaranı WhatsApp koduyla doğrula');
     }
     await this.assertPhoneQuota(dto.phone);
 

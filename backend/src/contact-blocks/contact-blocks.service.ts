@@ -48,7 +48,7 @@ export class ContactBlocksService {
   async remove(userId: string, blockId: string) {
     const block = await this.prisma.contactBlock.findUnique({ where: { id: blockId } });
     if (!block) throw new BadRequestException("Kayıt bulunamadı");
-    if (block.userId !== userId) throw new ForbiddenException("Bu kayıt size ait değil");
+    if (block.userId !== userId) throw new ForbiddenException("Bu kayıt sana ait değil");
     await this.prisma.contactBlock.delete({ where: { id: blockId } });
     return { deleted: true };
   }

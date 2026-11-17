@@ -25,7 +25,7 @@ function detectCv(buf: Buffer, originalName: string): string | null {
 }
 
 export function assertCv(file?: Express.Multer.File): asserts file is Express.Multer.File {
-  if (!file) throw new BadRequestException("Özgeçmiş (CV) yükleyin");
+  if (!file) throw new BadRequestException("Özgeçmiş (CV) yükle");
   if (file.size > CAREER_CV_MAX_BYTES) throw new BadRequestException("CV en fazla 5 MB olabilir");
   if (!detectCv(file.buffer, file.originalname)) throw new BadRequestException("CV PDF, DOC, DOCX, JPEG veya PNG olmalı");
 }
@@ -38,7 +38,7 @@ export function saveCv(file: Express.Multer.File): string {
 }
 
 export function assertCareerPhoto(file?: Express.Multer.File): asserts file is Express.Multer.File {
-  if (!file?.buffer?.length) throw new BadRequestException("Fotoğraf yükleyin");
+  if (!file?.buffer?.length) throw new BadRequestException("Fotoğraf yükle");
   if (file.size > CAREER_PHOTO_MAX_BYTES) throw new BadRequestException("Fotoğraf en fazla 10 MB olabilir");
   const kind = detectImageKind(file.buffer);
   if (!kind || !PHOTO_KINDS.includes(kind)) throw new BadRequestException("Fotoğraf JPEG, PNG, WebP, HEIC veya HEIF olmalı");

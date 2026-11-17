@@ -284,7 +284,7 @@ export default function AdminPartnerships() {
                             value={cityIds[p.id] ?? ''}
                             onChange={v => setCityIds(c => ({ ...c, [p.id]: v }))}
                             options={cities.map(c => ({ value: c.id, label: c.name }))}
-                            placeholder="Onay için şehir seçin"
+                            placeholder="Onay için şehir seç"
                           />
                         )}
                         <div style={{ display: 'flex', gap: 8 }}>

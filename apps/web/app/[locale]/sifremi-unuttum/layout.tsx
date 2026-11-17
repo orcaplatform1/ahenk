@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return pageMetadata({
     path: '/sifremi-unuttum',
     title: 'Şifremi Unuttum',
-    description: 'Ahenk hesabınızın şifresini mi unuttunuz? Telefon numaranızı girin, size gönderilecek kod ile hesabınıza yeniden erişmek için yeni bir şifre oluşturun.',
+    description: 'Ahenk hesabının şifresini mi unuttun? Telefon numaranı gir, sana gönderilecek kod ile hesabına yeniden erişmek için yeni bir şifre oluştur.',
     locale,
     en: { title: 'Forgot Password', description: 'Forgot your Ahenk password? Enter your phone number and create a new password with the code we send you to get back into your account.' },
   });

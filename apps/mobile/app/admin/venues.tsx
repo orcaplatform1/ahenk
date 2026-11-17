@@ -133,8 +133,8 @@ export default function AdminVenues() {
       <ADialog visible={!!modal} onClose={() => setModal(null)} title={modal === 'add' ? 'Yeni Mekan' : 'Mekanı Düzenle'} maxWidth={460}>
         <View style={{ gap: 10 }}>
           <Field label="MEKAN ADI"><AInput value={form.name} onChangeText={set('name')} placeholder="Mekan adı" style={{ paddingHorizontal: 12 }} /></Field>
-          <Field label="ŞEHİR"><AdminSelect value={form.cityId} onChange={v => setForm(f => ({ ...f, cityId: v, district: '' }))} placeholder="Şehir seçin" title="Şehir seç" options={cityOpts} /></Field>
-          <Field label="İLÇE (OPSİYONEL)">{districtOptions.length > 0 ? <AdminSelect value={form.district} onChange={set('district')} options={districtOptions.map(d => ({ value: d, label: d }))} placeholder="İlçe seçin" /> : <AInput value={form.district} onChangeText={set('district')} placeholder="İlçe" maxLength={60} style={{ paddingHorizontal: 12 }} />}</Field>
+          <Field label="ŞEHİR"><AdminSelect value={form.cityId} onChange={v => setForm(f => ({ ...f, cityId: v, district: '' }))} placeholder="Şehir seç" title="Şehir seç" options={cityOpts} /></Field>
+          <Field label="İLÇE (OPSİYONEL)">{districtOptions.length > 0 ? <AdminSelect value={form.district} onChange={set('district')} options={districtOptions.map(d => ({ value: d, label: d }))} placeholder="İlçe seç" /> : <AInput value={form.district} onChangeText={set('district')} placeholder="İlçe" maxLength={60} style={{ paddingHorizontal: 12 }} />}</Field>
           <Field label="KATEGORİ"><AdminSelect value={form.category} onChange={set('category')} placeholder="Kategori" options={['SADE', 'ORTA', 'PREMIUM'].map(c => ({ value: c, label: c }))} /></Field>
           <Field label="ADRES (OPSİYONEL)">
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

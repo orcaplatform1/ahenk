@@ -6,7 +6,7 @@ const PASSWORD_MIN = { message: "Şifre en az 6 karakter olmalı" };
 const PASSWORD_MAX = { message: "Şifre en fazla 20 karakter olabilir" };
 
 export class VenueLoginDto {
-  @IsEmail({}, { message: "Geçerli bir e-posta adresi girin" })
+  @IsEmail({}, { message: "Geçerli bir e-posta adresi gir" })
   email: string;
 
   @IsString()
@@ -17,13 +17,13 @@ export class VenueLoginDto {
 // WhatsApp kodu ile giriş (üye send-login-otp / verify-login-otp ile aynı doğrulama)
 export class VenueSendLoginOtpDto {
   @IsString()
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası gir (+905XXXXXXXXX)" })
   phone: string;
 }
 
 export class VenueVerifyLoginOtpDto {
   @IsString()
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası gir" })
   phone: string;
 
   @IsString()
@@ -46,13 +46,13 @@ export class VenueLogoutDto {
 
 export class VenueForgotPasswordDto {
   @IsString()
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)" })
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası gir (+905XXXXXXXXX)" })
   phone: string;
 }
 
 export class VenueResetPasswordDto {
   @IsString()
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası gir" })
   phone: string;
 
   @IsString()
@@ -86,7 +86,7 @@ export class VenueInfoDto {
   @IsOptional() @IsString() @MaxLength(500)
   description?: string;
 
-  @IsOptional() @IsString() @MinLength(5, { message: "Açık adres girin" }) @MaxLength(300)
+  @IsOptional() @IsString() @MinLength(5, { message: "Açık adres gir" }) @MaxLength(300)
   address?: string;
 
   @IsOptional() @IsString() @MinLength(2) @MaxLength(60)

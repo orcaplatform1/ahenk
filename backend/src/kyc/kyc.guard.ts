@@ -30,12 +30,12 @@ export class KycGuard implements CanActivate {
 
     const hint =
       !kyc
-        ? "Bu işlem için kimlik doğrulaması (KYC) gereklidir. Lütfen önce KYC başvurusu yapın."
+        ? "Bu işlem için kimlik doğrulaması (KYC) gereklidir. Lütfen önce KYC başvurusu yap."
         : kyc.status === KycStatus.PENDING
-          ? "KYC başvurunuz inceleniyor. Onaylanınca bu işlemi yapabilirsiniz."
+          ? "KYC başvurun inceleniyor. Onaylanınca bu işlemi yapabilirsin."
           : kyc.status === KycStatus.REJECTED
-            ? "KYC başvurunuz reddedildi. Lütfen yeniden başvurun."
-            : "KYC başvurunuz şüpheli olarak işaretlendi. Lütfen destek ile iletişime geçin.";
+            ? "KYC başvurun reddedildi. Lütfen yeniden başvur."
+            : "KYC başvurun şüpheli olarak işaretlendi. Lütfen destek ile iletişime geç.";
 
     throw new ForbiddenException(hint);
   }

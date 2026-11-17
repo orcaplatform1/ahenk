@@ -13,12 +13,12 @@ const phoneKey = (phone: string) => `careerphone:${phone}`;
 function parseLanguages(raw: string): { name: string; level: number }[] {
   let list: unknown;
   try { list = JSON.parse(raw); } catch { list = null; }
-  if (!Array.isArray(list) || list.length === 0) throw new BadRequestException('En az bir yabancı dil seçin');
+  if (!Array.isArray(list) || list.length === 0) throw new BadRequestException('En az bir yabancı dil seç');
   const seen = new Set<string>();
   return list.map((item) => {
     const { name, level } = (item ?? {}) as { name?: unknown; level?: unknown };
     if (typeof name !== 'string' || !LANGUAGES.includes(name) || seen.has(name)) throw new BadRequestException('Geçersiz yabancı dil');
-    if (level !== 1 && level !== 2 && level !== 3) throw new BadRequestException('Her dil için seviye seçin');
+    if (level !== 1 && level !== 2 && level !== 3) throw new BadRequestException('Her dil için seviye seç');
     seen.add(name);
     return { name, level };
   });
@@ -49,12 +49,12 @@ export class CareersService {
     assertCareerPhoto(photo);
     const languages = parseLanguages(dto.languages);
     const city = await this.prisma.city.findFirst({ where: { name: dto.city, isActive: true }, select: { id: true } });
-    if (!city) throw new BadRequestException('Geçerli bir şehir seçin');
-    if (!isValidDistrict(dto.city, dto.district)) throw new BadRequestException('Geçerli bir ilçe seçin');
+    if (!city) throw new BadRequestException('Geçerli bir şehir seç');
+    if (!isValidDistrict(dto.city, dto.district)) throw new BadRequestException('Geçerli bir ilçe seç');
 
     const stored = await this.redis.get(phoneKey(dto.phone));
     if (!stored || stored !== dto.phoneToken) {
-      throw new BadRequestException('Telefon numaranızı WhatsApp koduyla doğrulayın');
+      throw new BadRequestException('Telefon numaranı WhatsApp koduyla doğrula');
     }
 
     const application = await this.prisma.careerApplication.create({

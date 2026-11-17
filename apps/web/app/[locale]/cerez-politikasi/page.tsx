@@ -13,7 +13,7 @@ const sections = [
     title: 'Çerez Nedir?',
     content: (
       <p>
-        Çerezler, ziyaret ettiğiniz web sitelerinin tarayıcınıza yerleştirdiği küçük metin dosyalarıdır. Bu dosyalar sayesinde site sizi tanır, tercihlerinizi hatırlar ve daha iyi bir kullanıcı deneyimi sunar. Çerezler zararlı yazılım içermez ve kişisel verilerinize doğrudan erişemez.
+        Çerezler, ziyaret ettiğin web sitelerinin tarayıcına yerleştirdiği küçük metin dosyalarıdır. Bu dosyalar sayesinde site seni tanır, tercihlerini hatırlar ve daha iyi bir kullanıcı deneyimi sunar. Çerezler zararlı yazılım içermez ve kişisel verilerine doğrudan erişemez.
       </p>
     ),
   },
@@ -46,7 +46,7 @@ const sections = [
             ))}
           </div>
           <p style={{ marginTop: '0.75rem', color: '#8f887f', fontSize: 13, lineHeight: 1.6 }}>
-            Bu çerezler platformun çalışması için teknik olarak zorunludur. Kapatılmaları halinde giriş yapma ve platform kullanımı mümkün olmaz. Önceki sürümden kalan ahenk_token çerezi tarayıcınızda bulunuyorsa otomatik olarak silinir.
+            Bu çerezler platformun çalışması için teknik olarak zorunludur. Kapatılmaları halinde giriş yapma ve platform kullanımı mümkün olmaz. Önceki sürümden kalan ahenk_token çerezi tarayıcında bulunuyorsa otomatik olarak silinir.
           </p>
         </div>
 
@@ -59,8 +59,8 @@ const sections = [
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
             {[
-              { name: 'cookie-consent', desc: 'Çerez onayınızı tutar. Çerez değildir; tarayıcınızın yerel depolamasında, siz silene kadar saklanır.' },
-              { name: 'ahenk_masa_tab', desc: 'Masalar ekranında son seçtiğiniz sekmeyi hatırlar. Çerez değildir; tarayıcınızın yerel depolamasında saklanır.' },
+              { name: 'cookie-consent', desc: 'Çerez onayını tutar. Çerez değildir; tarayıcının yerel depolamasında, sen silene kadar saklanır.' },
+              { name: 'ahenk_masa_tab', desc: 'Masalar ekranında son seçtiğin sekmeyi hatırlar. Çerez değildir; tarayıcının yerel depolamasında saklanır.' },
             ].map((c) => (
               <div key={c.name} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
                 <span style={{ fontFamily: 'monospace', fontSize: 13, color: '#aaa', display: 'block', marginBottom: '0.2rem' }}>{c.name}</span>
@@ -106,7 +106,7 @@ const sections = [
         </div>
 
         <p style={{ color: '#8f887f', fontSize: 13 }}>
-          Onayınızı banner'daki Tercihler bölümünden her zaman değiştirebilirsiniz. Onayınızı geri çektiğinizde ilgili çerezler tarayıcınızdan silinir. Banner'ı yeniden açmak için bu sayfanın sonundaki Çerez Tercihlerimi Güncelle düğmesini kullanabilirsiniz.
+          Onayını banner'daki Tercihler bölümünden her zaman değiştirebilirsin. Onayını geri çektiğinde ilgili çerezler tarayıcından silinir. Banner'ı yeniden açmak için bu sayfanın sonundaki Çerez Tercihlerimi Güncelle düğmesini kullanabilirsin.
         </p>
       </div>
     ),
@@ -161,7 +161,7 @@ const sections = [
     title: 'Çerez Onay Banneri',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Siteye ilk girişinizde çerez tercihlerinizi belirlemenizi isteyen bir bildirim gösterilir. Çerez onayınız çerez olarak değil, tarayıcınızın yerel depolamasında (localStorage) tutulur ve bildirim bir daha gösterilmez. Tercihlerinizi istediğiniz zaman bu sayfadan güncelleyebilirsiniz.
+        Siteye ilk girişinde çerez tercihlerini belirlemeni isteyen bir bildirim gösterilir. Çerez onayın çerez olarak değil, tarayıcının yerel depolamasında (localStorage) tutulur ve bildirim bir daha gösterilmez. Tercihlerini istediğin zaman bu sayfadan güncelleyebilirsin.
       </p>
     ),
   },
@@ -188,8 +188,8 @@ const sections = [
     content: (
       <p style={{ lineHeight: 1.75 }}>
         Zorunlu çerezler <strong style={{ color: '#f4f1ec' }}>meşru menfaat</strong> hukuki dayanağıyla, analitik ve pazarlama çerezleri ise <strong style={{ color: '#f4f1ec' }}>açık rıza</strong> hukuki dayanağıyla işlenmektedir. Detaylı bilgi için{' '}
-        <Link href="/kvkk" style={{ color: '#c0392b' }}>KVKK Aydınlatma Metnimizi</Link>
-        {' '}inceleyiniz.
+        <Link href="/kvkk" style={{ color: '#c0392b' }}>KVKK Aydınlatma Metnimi</Link>
+        {' '}incele.
       </p>
     ),
   },
@@ -198,7 +198,7 @@ const sections = [
     title: 'İletişim',
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.4rem' }}>
-        <p>Çerez politikamıza ilişkin sorularınız için:</p>
+        <p>Çerez politikama ilişkin soruların için:</p>
         <p><a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a></p>
         <p style={{ color: '#a39c93', fontSize: 13 }}>{COMPANY_ADDRESS}</p>
         <TaxInfo />
@@ -287,7 +287,7 @@ function CerezPolitikasiPageTr() {
             Çerez Tercihlerimi Güncelle
           </button>
           <p style={{ marginTop: '0.6rem', color: '#444', fontSize: 11 }}>
-            Tıklandığında tercihleriniz sıfırlanır ve banner tekrar gösterilir.
+            Tıklandığında tercihlerin sıfırlanır ve banner tekrar gösterilir.
           </p>
         </motion.div>
       </div>

@@ -14,7 +14,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class RegisterDto {
   @ApiProperty({ example: "kullanici@ornek.com" })
-  @IsEmail({}, { message: "Geçerli bir e-posta adresi girin" })
+  @IsEmail({}, { message: "Geçerli bir e-posta adresi gir" })
   email: string;
 
   @ApiProperty()
@@ -36,7 +36,7 @@ export class RegisterDto {
   lastName: string;
 
   @ApiProperty({ description: "Kullanım şartları kabul edildi" })
-  @IsBoolean({ message: "Kullanım şartlarını kabul etmelisiniz" })
+  @IsBoolean({ message: "Kullanım şartlarını kabul etmelisin" })
   acceptTerms: boolean;
 
   // Zorunlu ve WhatsApp OTP ile doğrulanmış olmalı (POST /auth/register/verify-otp → phoneToken)
@@ -46,12 +46,12 @@ export class RegisterDto {
   phoneNumber: string;
 
   @ApiProperty({ description: "Telefon doğrulama anahtarı (register/verify-otp yanıtı)" })
-  @IsString({ message: "Telefon numaranızı doğrulayın" })
+  @IsString({ message: "Telefon numaranı doğrula" })
   phoneToken: string;
 
   @ApiProperty()
-  @IsString({ message: "Ana şehir seçin" })
-  @MinLength(1, { message: "Ana şehir seçin" })
+  @IsString({ message: "Ana şehir seç" })
+  @MinLength(1, { message: "Ana şehir seç" })
   primaryCityId: string;
 
   // Listesi olan şehirlerde zorunlu (auth.service doğrular)
@@ -63,15 +63,15 @@ export class RegisterDto {
 
   @ApiProperty()
   @IsString()
-  @MinLength(1, { message: "Meslek alanı seçin" })
+  @MinLength(1, { message: "Meslek alanı seç" })
   occupationSector: string;
 
   @ApiProperty()
-  @IsIn(["MALE", "FEMALE"], { message: "Cinsiyet seçin" })
+  @IsIn(["MALE", "FEMALE"], { message: "Cinsiyet seç" })
   gender: string;
 
   @ApiProperty({ example: "1995-06-15" })
-  @IsDateString({ strict: true }, { message: "Geçerli bir doğum tarihi girin" })
+  @IsDateString({ strict: true }, { message: "Geçerli bir doğum tarihi gir" })
   birthDate: string;
 
   @ApiPropertyOptional()

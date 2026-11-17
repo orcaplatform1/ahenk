@@ -211,7 +211,7 @@ const sections = [
         <Link href="/gizlilik-politikasi" style={{ color: '#c0392b' }}>Gizlilik Politikası</Link>
         {' '}ve{' '}
         <Link href="/kvkk" style={{ color: '#c0392b' }}>KVKK Aydınlatma Metni</Link>
-        {' '}sayfalarımızı inceleyiniz.
+        {' '}sayfalarımı incele.
       </p>
     ),
   },
@@ -221,13 +221,13 @@ const sections = [
     content: (
       <>
         <p style={{ marginBottom: '1rem', lineHeight: 1.75 }}>
-          Tüketici olarak yasal haklarınız saklıdır. Şikâyetleriniz için öncelikle{' '}
+          Tüketici olarak yasal hakların saklıdır. Şikâyetlerin için öncelikle{' '}
           <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a>
-          {' '}adresine başvurabilirsiniz.
+          {' '}adresine başvurabilirsin.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
           {[
-            'Her yıl Ticaret Bakanlığı\'nca belirlenen güncel parasal sınırlar dahilinde Tüketici Hakem Heyetleri\'ne başvurma hakkınız mevcuttur.',
+            'Her yıl Ticaret Bakanlığı\'nca belirlenen güncel parasal sınırlar dahilinde Tüketici Hakem Heyetleri\'ne başvurma hakkın mevcuttur.',
             JURISDICTION,
             'Tüketici, 6502 sayılı Kanun kapsamında kendi yerleşim yerindeki Tüketici Hakem Heyeti veya Tüketici Mahkemesi\'ne de başvurabilir.',
           ].map((item) => (

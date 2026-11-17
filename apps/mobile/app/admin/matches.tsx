@@ -290,7 +290,7 @@ export default function AdminMatches() {
                   <AdminSelect value={venuePackage} onChange={setVenuePackage} placeholder="Tüm paketler" title="Paket seç" options={[{ value: '', label: 'Tüm paketler' }, ...VENUE_PACKAGES.map(c => ({ value: c, label: c }))]} />
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <AdminSelect value={venueChoice} onChange={v => { setVenueChoice(v); setVenueError(''); }} placeholder={venueOptions.length ? 'Mekan seçin' : 'Uygun mekan yok'} title="Mekan seç" style={{ flex: 1, minWidth: 0 }}
+                  <AdminSelect value={venueChoice} onChange={v => { setVenueChoice(v); setVenueError(''); }} placeholder={venueOptions.length ? 'Mekan seç' : 'Uygun mekan yok'} title="Mekan seç" style={{ flex: 1, minWidth: 0 }}
                     options={venueOptions.filter(o => !venuePackage || o.category === venuePackage || o.id === venueChoice).map(o => ({
                       value: o.id,
                       label: [o.name, o.category, `Bu hafta ${o.weekCount} masa`, o.lastDaysAgo === null ? 'Hiç atanmadı' : `Son atama: ${o.lastDaysAgo} gün önce`, ...(o.capacityShort ? ['Kapasite yetersiz'] : [])].join(' · '),
@@ -330,7 +330,7 @@ export default function AdminMatches() {
                     <ALabel style={{ marginBottom: 8 }}>BOT YERLEŞTİR ({emptySeats > 0 ? `${emptySeats} boş koltuk` : 'boş koltuk yok'})</ALabel>
                     {emptySeats > 0 && (
                       <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <AdminSelect value={botToPlace} onChange={setBotToPlace} placeholder={bots.length ? 'Bot seçin (eksik cinsiyet)' : 'Uygun bot yok'} title="Bot seç" style={{ flex: 1, minWidth: 0 }}
+                        <AdminSelect value={botToPlace} onChange={setBotToPlace} placeholder={bots.length ? 'Bot seç (eksik cinsiyet)' : 'Uygun bot yok'} title="Bot seç" style={{ flex: 1, minWidth: 0 }}
                           options={bots.map(b => ({ value: b.id, label: `${b.name || b.id} (${b.gender === 'MALE' ? 'E' : 'K'}${b.age !== null ? `, ${b.age}` : ''})` }))} />
                         <Btn variant="admBlueAta" disabled={placingBot || !botToPlace} label={placingBot ? '…' : 'Yerleştir'} onPress={placeBot} />
                       </View>
@@ -445,7 +445,7 @@ export default function AdminMatches() {
                           {u.status !== 'DELETED' && <Btn variant="admAct6Red" disabled={!!userAction} label={userAction === 'DELETED' ? '…' : 'Hesabı Sil'} onPress={() => userUpdateStatus('DELETED')} />}
                         </View>
                       </>
-                    ) : <AT style={{ fontSize: 11, color: adm.muted }}>Bu hesaba işlem yetkiniz yok</AT>}
+                    ) : <AT style={{ fontSize: 11, color: adm.muted }}>Bu hesaba işlem yetkin yok</AT>}
                   </Sect>
                   {u.oceanScore && (
                     <View style={{ borderTopWidth: 1, borderTopColor: adm.border, paddingTop: 14, gap: 8 }}>

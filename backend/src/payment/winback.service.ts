@@ -18,7 +18,7 @@ const REMINDER_MS = 15 * 60 * 1000;
 // Pazartesi push metinleri: ISO hafta numarasına göre sırayla. İndirimden bahsedilmez.
 const MONDAY_TEXTS = [
   "Masa eşleşmeleri başladı, sen neredesin?",
-  "Hafta sonu planını hazırladık.",
+  "Hafta sonu planını hazırladım.",
   "Bu hafta masanda kimler var, merak etmiyor musun?",
   "Yeni haftanın masaları kuruluyor.",
 ];

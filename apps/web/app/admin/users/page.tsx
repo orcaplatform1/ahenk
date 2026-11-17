@@ -507,7 +507,7 @@ export default function AdminUsers() {
                     )}
                   </div>
                   </>) : (
-                    <p style={{ margin: 0, fontSize: 11, color: MUTED, fontFamily: SANS }}>Bu hesaba işlem yetkiniz yok</p>
+                    <p style={{ margin: 0, fontSize: 11, color: MUTED, fontFamily: SANS }}>Bu hesaba işlem yetkin yok</p>
                   )}
                 </div>
 

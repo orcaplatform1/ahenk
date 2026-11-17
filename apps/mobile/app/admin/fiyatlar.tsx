@@ -128,7 +128,7 @@ export default function AdminFiyatlar() {
       <ACard style={{ marginBottom: 20 }}>
         <ATitle style={{ marginBottom: 6 }}>Not</ATitle>
         <AT style={{ fontSize: 13, color: adm.muted, lineHeight: 20.8 }}>
-          Ham fiyat (KDV hariç) girin. Web fiyatı = ham + %20 KDV. Mobil fiyat = ham + %20 KDV, %15 mağaza komisyonu dahil (÷ 0,85). Davet indirimi %10. Tüm fiyatlar tam TL&apos;ye yuvarlanır. Paketler tek seferlik; yeni fiyat sadece bundan sonraki satın almalarda geçerli olur.
+          Ham fiyat (KDV hariç) gir. Web fiyatı = ham + %20 KDV. Mobil fiyat = ham + %20 KDV, %15 mağaza komisyonu dahil (÷ 0,85). Davet indirimi %10. Tüm fiyatlar tam TL&apos;ye yuvarlanır. Paketler tek seferlik; yeni fiyat sadece bundan sonraki satın almalarda geçerli olur.
         </AT>
       </ACard>
       <AError>{error}</AError>

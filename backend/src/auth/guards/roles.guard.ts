@@ -26,7 +26,7 @@ export class RolesGuard implements CanActivate {
     const minRequired = Math.min(...required.map((r) => ROLE_HIERARCHY[r]));
 
     if (userLevel < minRequired) {
-      throw new ForbiddenException("Bu işlem için yetkiniz yok");
+      throw new ForbiddenException("Bu işlem için yetkin yok");
     }
     return true;
   }

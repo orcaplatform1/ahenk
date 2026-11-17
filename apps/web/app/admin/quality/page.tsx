@@ -144,7 +144,7 @@ export default function AdminQuality() {
                       <AdminSelect
                         value={reason}
                         onChange={setReason}
-                        placeholder="Sebep seçin (boşsa: Yönetici kararı)"
+                        placeholder="Sebep seç (boşsa: Yönetici kararı)"
                         title="Sebep seç"
                         options={[{ value: '', label: 'Yönetici kararı' }, ...reasons.map(x => ({ value: x, label: x }))]}
                       />

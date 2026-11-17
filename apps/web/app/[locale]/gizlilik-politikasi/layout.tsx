@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return pageMetadata({
     path: '/gizlilik-politikasi',
     title: 'Gizlilik Politikası',
-    description: 'Ahenk platformunda kişisel verilerinizin nasıl toplandığını, işlendiğini ve korunduğunu açıklayan gizlilik politikamızı inceleyerek bilgi edinebilirsiniz.',
+    description: 'Ahenk platformunda kişisel verilerinin nasıl toplandığını, işlendiğini ve korunduğunu açıklayan gizlilik politikamı inceleyerek bilgi edinebilirsin.',
     locale,
     en: { title: 'Privacy Policy', description: 'Read our privacy policy to learn how Ahenk collects, processes and protects your personal data.' },
   });

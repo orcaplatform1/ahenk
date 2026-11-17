@@ -37,7 +37,7 @@ export class ReferralService {
     });
     if (!user) throw new BadRequestException("Kullanıcı bulunamadı");
 
-    if (user.phone === phoneNumber) throw new BadRequestException("Kendi numaranızı davet edemezsiniz.");
+    if (user.phone === phoneNumber) throw new BadRequestException("Kendi numaranı davet edemezsin.");
     // Sınır kontrolü ve kayıt kişi satırı kilitliyken yapılır: eşzamanlı davetler sırayla işlenir
     const referral = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
@@ -50,10 +50,10 @@ export class ReferralService {
       if (registered) throw new ConflictException("Bu numara zaten Ahenk'e kayıtlı.");
       if (invited) throw new ConflictException("Bu numara daha önce davet edildi.");
       if (totalCount >= TOTAL_INVITE_LIMIT) {
-        throw new BadRequestException(`Toplam davet hakkınız doldu (${TOTAL_INVITE_LIMIT}).`);
+        throw new BadRequestException(`Toplam davet hakkın doldu (${TOTAL_INVITE_LIMIT}).`);
       }
       if (todayCount >= DAILY_INVITE_LIMIT) {
-        throw new BadRequestException(`Günlük davet hakkınız doldu (${DAILY_INVITE_LIMIT}). Yarın tekrar deneyebilirsiniz.`);
+        throw new BadRequestException(`Günlük davet hakkın doldu (${DAILY_INVITE_LIMIT}). Yarın tekrar deneyebilirsin.`);
       }
       return tx.referral.create({
         data: { referrerId: userId, invitedPhone: phoneNumber, status: ReferralStatus.PENDING },
@@ -69,7 +69,7 @@ export class ReferralService {
     } catch {
       // Gönderilemeyen davet hakkı yemesin
       await this.prisma.referral.delete({ where: { id: referral.id } });
-      throw new ServiceUnavailableException("Davet gönderilemedi, lütfen tekrar deneyin.");
+      throw new ServiceUnavailableException("Davet gönderilemedi, lütfen tekrar dene.");
     }
 
     return { ok: true, inviteCode: referral.inviteCode };

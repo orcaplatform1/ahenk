@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { api } from '@/lib/api';
+import { mediaUrl } from '@/lib/venueApi';
 import { buildInitials, fmtDate, gColor, type DashboardItem, type MasaTuru } from '@/lib/masa';
 import { WeeklySelectionModal } from '@/components/WeeklySelectionModal';
 import { useMasaTabs } from '@/lib/useMasaTabs';
@@ -58,7 +59,7 @@ function Shimmer() {
   );
 }
 // Kilit simgesi: lockShake 0,8 sn ease-in-out sonsuz (0 → -3 → 0 → 3 → 0 px)
-function LockShake() {
+function LockShake({ inline }: { inline?: boolean }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const e = Easing.bezier(0.42, 0, 0.58, 1);
@@ -67,13 +68,14 @@ function LockShake() {
     loop.start();
     return () => loop.stop();
   }, [v]);
-  return <Animated.Image source={require('@/assets/lock-icon.webp')} style={{ position: 'absolute', top: 16, right: 16, zIndex: 2, width: 56, height: 56, opacity: 0.85, transform: [{ translateX: v }] }} />;
+  return <Animated.Image source={require('@/assets/lock-icon.webp')} style={{ ...(inline ? {} : { position: 'absolute' as const, top: 16, right: 16 }), zIndex: 2, width: 56, height: 56, opacity: 0.85, transform: [{ translateX: v }] }} />;
 }
 
 // Ön izleme kartı: MasaDetayKarti yeni düzeninin mock hali (kapak, masa türü rozeti, bilgi şeridi, katılımcılar, alt kart) — web EmptyMasaCard ile aynı
 const CARD_TYPE_LABEL: Record<'group' | 'basbasa' | 'kanka', string> = { group: 'masa.typeGroup', basbasa: 'masa.typeOne', kanka: 'masa.typeKanka' };
 
-function EmptyMasaCardInner({ locked, cardType, userInfo, kanka, scrollRef }: { locked: boolean; cardType: 'group' | 'basbasa' | 'kanka'; userInfo?: UserInfo; kanka?: { initials: string; gender: string | null } | null; scrollRef?: React.RefObject<ScrollViewInstance | null> }) {
+// photo: masaya bağlı mekânın güncel ilk fotoğrafı (sunucudan geldiyse)
+function EmptyMasaCardInner({ locked, cardType, userInfo, kanka, scrollRef, photo }: { locked: boolean; cardType: 'group' | 'basbasa' | 'kanka'; userInfo?: UserInfo; kanka?: { initials: string; gender: string | null } | null; scrollRef?: React.RefObject<ScrollViewInstance | null>; photo?: VenuePhoto | null }) {
   const { t } = useTranslation();
   const chatRef = useRef<React.ComponentRef<typeof View>>(null);
   const initials = userInfo ? buildInitials(userInfo.firstName, userInfo.lastName) : '?';
@@ -96,22 +98,26 @@ function EmptyMasaCardInner({ locked, cardType, userInfo, kanka, scrollRef }: { 
       <Card style={{ padding: 0, overflow: 'hidden', backgroundColor: tw.bg }}>
         <FadeUp dy={10} duration={500} style={{ overflow: 'hidden' }}>
           <Shimmer />
-          {/* Kapak: tek fotoğraf alanı, tam genişlikte 16:9 (ön izlemede fotoğraf yok → tek boş kamera kutusu) */}
-          <View style={{ aspectRatio: masaKart.coverAspect }}>
-            <View style={{ flex: 1, backgroundColor: masaKart.cameraBg, alignItems: 'center', justifyContent: 'center' }}>
-              <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={masaKart.cameraStroke} strokeWidth={1.5}>
-                <Rect x={1} y={5} width={22} height={15} rx={2} /><Circle cx={12} cy={12} r={4} /><Path d="M8 5l1.5-3h5L16 5" strokeLinecap="round" strokeLinejoin="round" />
-              </Svg>
+          {/* Kapak: mekânın güncel ilk fotoğrafı tam genişlikte 16:9 (cover); fotoğraf yoksa fotoğraf alanı yok, masa türü ve mekân adı
+              normal akışta (MasaDetayKarti ile aynı) */}
+          <View style={photo ? { aspectRatio: masaKart.coverAspect } : { gap: 12, paddingTop: 12, paddingHorizontal: 14 }}>
+            {photo && (
+              <>
+                <Image source={{ uri: mediaUrl(photo.url) }} resizeMode="cover" style={StyleSheet.absoluteFill} accessibilityLabel={photo.caption ?? t('masa.photoAlt', { n: 1 })} />
+                <LinearGradient pointerEvents="none" colors={masaKart.coverFade} locations={masaKart.coverFadeStops} style={StyleSheet.absoluteFill} />
+              </>
+            )}
+            {/* Üst satır: solda masa türü, sağda kilit (fotoğraf varken kapak üstünde) */}
+            <View style={photo ? null : { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+              <View style={[{ paddingVertical: masaKart.pill.padV, paddingHorizontal: masaKart.pill.padH, borderRadius: masaKart.pill.radius,
+                backgroundColor: masaKart.typePill.bg, borderWidth: 1, borderColor: masaKart.typePill.border }, photo ? { position: 'absolute', top: 12, left: 12 } : { alignSelf: 'flex-start' }]}>
+                <T w={700} style={{ fontSize: masaKart.pill.fontSize, color: masaKart.typePill.text, letterSpacing: 0.44 }}>{t(CARD_TYPE_LABEL[cardType])}</T>
+              </View>
+              {locked && !photo && <LockShake inline />}
             </View>
-            <LinearGradient pointerEvents="none" colors={masaKart.coverFade} locations={masaKart.coverFadeStops} style={StyleSheet.absoluteFill} />
-            {/* Sol üst masa türü */}
-            <View style={{ position: 'absolute', top: 12, left: 12, paddingVertical: masaKart.pill.padV, paddingHorizontal: masaKart.pill.padH, borderRadius: masaKart.pill.radius,
-              backgroundColor: masaKart.typePill.bg, borderWidth: 1, borderColor: masaKart.typePill.border }}>
-              <T w={700} style={{ fontSize: masaKart.pill.fontSize, color: masaKart.typePill.text, letterSpacing: 0.44 }}>{t(CARD_TYPE_LABEL[cardType])}</T>
-            </View>
-            {locked && <LockShake />}
+            {locked && photo && <LockShake />}
             {/* Alt: mekân adı + konum, sağda Haritada Gör (pasif) */}
-            <View style={{ position: 'absolute', left: 14, right: 14, bottom: 12, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
+            <View style={[photo ? { position: 'absolute', left: 14, right: 14, bottom: 12 } : null, { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }]}>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Serif style={{ fontSize: 24, lineHeight: 28.8, color: tw.text, letterSpacing: 0.24 }}>{t('tm.venueName')}</Serif>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
@@ -237,7 +243,7 @@ function MasaBlock({ item, locked, cardType, userInfo, kanka, width, scrollRef }
 }) {
   const { t } = useTranslation();
   const m = item?.meeting;
-  if (locked || !m) return <EmptyMasaCard locked={locked} cardType={cardType} userInfo={userInfo} kanka={kanka} scrollRef={scrollRef} />;
+  if (locked || !m) return <EmptyMasaCard locked={locked} cardType={cardType} userInfo={userInfo} kanka={kanka} scrollRef={scrollRef} photo={m?.venuePhotos?.[0]} />;
   if (item.phase === 'REVEALED' && m.venueName) {
     const d: MasaDetayData = { id: m.id, type: m.type, maxParticipants: m.maxParticipants, scheduledAt: m.scheduledAt, sosEndsAt: m.sosEndsAt, venueName: m.venueName,
       venueAddress: m.venueAddress, venueDistrict: m.venueDistrict, venueMapsUrl: m.venueMapsUrl, venuePhotos: m.venuePhotos, participants: m.participants, occupations: m.occupations, aiReport: m.aiReport };
@@ -258,7 +264,7 @@ function MasaBlock({ item, locked, cardType, userInfo, kanka, width, scrollRef }
       </Card>
     );
   }
-  return <EmptyMasaCard locked={false} cardType={cardType} userInfo={userInfo} kanka={kanka} scrollRef={scrollRef} />;
+  return <EmptyMasaCard locked={false} cardType={cardType} userInfo={userInfo} kanka={kanka} scrollRef={scrollRef} photo={m.venuePhotos?.[0]} />;
 }
 
 function HistoryListInner({ history }: { history: HistoryMeeting[] }) {

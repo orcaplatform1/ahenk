@@ -203,7 +203,7 @@ export default function AdminCareers() {
                       ['İlçe', c.district],
                       ['LinkedIn', c.linkedinOrCv],
                       ['Ben Ahenk\'e şunları katabilirim', c.motivation],
-                      ['Bizi nereden duydu', [c.hearFrom, c.hearFromOther].filter(Boolean).join(': ')],
+                      ['Beni nereden duydu', [c.hearFrom, c.hearFromOther].filter(Boolean).join(': ')],
                       ['Başvuru tarihi', new Date(c.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })],
                       ['Admin notu', c.adminNote],
                     ] as [string, string | null | undefined][]).map(([label, value]) => (

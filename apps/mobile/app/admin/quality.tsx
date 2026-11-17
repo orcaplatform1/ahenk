@@ -61,7 +61,7 @@ export default function AdminQuality() {
               {expanded === r.id && (
                 <View style={{ marginHorizontal: 18, marginBottom: 14, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, backgroundColor: adm.surface, borderWidth: 1, borderColor: adm.border, gap: 10 }}>
                   {!!r.detail && <AT style={{ fontSize: 11, color: adm.muted, fontStyle: 'italic' }}>&quot;{r.detail}&quot;</AT>}
-                  <AdminSelect value={reason} onChange={setReason} placeholder="Sebep seçin (boşsa: Yönetici kararı)" title="Sebep seç" options={[{ value: '', label: 'Yönetici kararı' }, ...reasons.map(x => ({ value: x, label: x }))]} />
+                  <AdminSelect value={reason} onChange={setReason} placeholder="Sebep seç (boşsa: Yönetici kararı)" title="Sebep seç" options={[{ value: '', label: 'Yönetici kararı' }, ...reasons.map(x => ({ value: x, label: x }))]} />
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                     <Btn variant="admAmberSm" disabled={busy !== null} label={busy === r.userId + '_q' ? '…' : 'Askıya Al (1 ay)'} onPress={() => quarantine(r.userId)} />
                     <Btn variant="admNoSm" disabled={busy !== null} label={busy === r.userId + '_b' ? '…' : 'Ban Et (süresiz)'} onPress={() => ban(r.userId)} />

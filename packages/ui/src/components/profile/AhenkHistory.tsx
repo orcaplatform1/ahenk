@@ -152,15 +152,11 @@ export function AhenkHistory({ entries, apiBase, token }: Props) {
 
           <TiltCard>
             <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-[120px_1fr_auto] gap-0">
-                {/* Sol — mekan görseli */}
-                {entry.locationPhotoUrl ? (
+              <div className={`grid ${entry.locationPhotoUrl ? 'grid-cols-[120px_1fr_auto]' : 'grid-cols-[1fr_auto]'} gap-0`}>
+                {/* Sol — mekânın güncel ilk fotoğrafı; fotoğraf yoksa fotoğraf alanı yok */}
+                {entry.locationPhotoUrl && (
                   <img src={entry.locationPhotoUrl} alt={entry.locationName}
                     className="w-full h-full object-cover" style={{ minHeight: 120 }} />
-                ) : (
-                  <div className="flex items-end p-3" style={{ minHeight: 120, background: 'linear-gradient(135deg, #c0392b 0%, #b5651d 80%, #0a0a0a 100%)' }}>
-                    <span className="font-serif text-xs text-white/70 leading-tight">{entry.locationName}</span>
-                  </div>
                 )}
 
                 {/* Orta — detay + radar */}

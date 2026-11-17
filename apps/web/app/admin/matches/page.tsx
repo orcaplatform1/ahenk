@@ -514,7 +514,7 @@ export default function AdminMatches() {
               <AdminSelect
                 value={venueChoice}
                 onChange={v => { setVenueChoice(v); setVenueError(''); }}
-                placeholder={venueOptions.length ? 'Mekan seçin' : 'Uygun mekan yok'}
+                placeholder={venueOptions.length ? 'Mekan seç' : 'Uygun mekan yok'}
                 title="Mekan seç"
                 style={{ flex: 1, width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}
                 options={venueOptions
@@ -628,7 +628,7 @@ export default function AdminMatches() {
                     <AdminSelect
                       value={botToPlace}
                       onChange={setBotToPlace}
-                      placeholder={available.length ? 'Bot seçin (eksik cinsiyet)' : 'Uygun bot yok'}
+                      placeholder={available.length ? 'Bot seç (eksik cinsiyet)' : 'Uygun bot yok'}
                       title="Bot seç"
                       style={{ flex: 1, width: 'auto', minWidth: 0 }}
                       options={available.map(b => ({ value: b.id, label: `${b.name || b.id} (${b.gender === 'MALE' ? 'E' : 'K'}${b.age !== null ? `, ${b.age}` : ''})` }))}
@@ -928,7 +928,7 @@ export default function AdminMatches() {
                     )}
                   </div>
                   </>) : (
-                    <p style={{ margin: 0, fontSize: 11, color: MUTED, fontFamily: SANS }}>Bu hesaba işlem yetkiniz yok</p>
+                    <p style={{ margin: 0, fontSize: 11, color: MUTED, fontFamily: SANS }}>Bu hesaba işlem yetkin yok</p>
                   )}
                 </div>
 

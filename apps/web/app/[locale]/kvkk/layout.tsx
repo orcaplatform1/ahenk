@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return pageMetadata({
     path: '/kvkk',
     title: 'KVKK Aydınlatma Metni',
-    description: '6698 Sayılı Kişisel Verilerin Korunması Kanunu kapsamında Ahenk aydınlatma metni. Kişisel verilerinizin işlenmesine ve haklarınıza ilişkin bilgileri inceleyin.',
+    description: '6698 Sayılı Kişisel Verilerin Korunması Kanunu kapsamında Ahenk aydınlatma metni. Kişisel verilerinin işlenmesine ve haklarına ilişkin bilgileri incele.',
     locale,
     en: { title: 'KVKK Privacy Notice', description: 'Ahenk’s privacy notice under Turkish Personal Data Protection Law No. 6698. Learn how your personal data is processed and what your rights are.' },
   });

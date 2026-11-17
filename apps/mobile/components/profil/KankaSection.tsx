@@ -163,7 +163,7 @@ export function KankaSection() {
       <Sheet visible={sheet === 'incoming' && !!incoming} onClose={() => setSheet(null)}>
         {incoming && (
           <>
-            <T w={700} style={{ fontSize: 16, marginBottom: 14 }}>{state.incomingInvites.length} aktif davetiniz var.</T>
+            <T w={700} style={{ fontSize: 16, marginBottom: 14 }}>{state.incomingInvites.length} aktif davetin var.</T>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <Bubble initials={incoming.inviterInitials} gender={incoming.inviterGender} size={48} />
               <T style={{ flex: 1, fontSize: 14, color: c.tCcc, lineHeight: 21 }}>{t('kanka.invitedYouPre')}<T w={700} style={{ fontSize: 14 }}>{incoming.inviterInitials}</T> {t('kanka.invitedYouPost')}</T>

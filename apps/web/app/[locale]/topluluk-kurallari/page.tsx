@@ -12,9 +12,9 @@ const sections = [
     title: 'Ahenk Topluluğunun Ruhu',
     content: (
       <p style={{ lineHeight: 1.8 }}>
-        Ahenk, yabancıları anlamlı buluşmalarla bir araya getiren bir platformdur. Bu deneyimin kalitesi yalnızca algoritmamıza değil, topluluğumuzdaki her bireyin tutumuna bağlıdır. Bu kurallar bir kısıtlama listesi değil, birlikte inşa ettiğimiz güvenli ve anlamlı bir ortamın temelidir.
+        Ahenk, yabancıları anlamlı buluşmalarla bir araya getiren bir platformdur. Bu deneyimin kalitesi yalnızca algoritmama değil, topluluğumdaki her bireyin tutumuna bağlıdır. Bu kurallar bir kısıtlama listesi değil, birlikte inşa ettiğim güvenli ve anlamlı bir ortamın temelidir.
         <br /><br />
-        <span style={{ color: '#a39c93', fontSize: 13 }}>Platforma katılarak bu kuralları okuduğunuzu, anladığınızı ve kabul ettiğinizi beyan etmiş olursunuz.</span>
+        <span style={{ color: '#a39c93', fontSize: 13 }}>Platforma katılarak bu kuralları okuduğunu, anladığını ve kabul ettiğini beyan etmiş olursun.</span>
       </p>
     ),
   },
@@ -24,12 +24,12 @@ const sections = [
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.7rem' }}>
         {[
-          'Gerçek kimliğinizle kayıt olun. Sahte isim, fotoğraf veya bilgi kullanmak yasaktır ve hesabınızın kalıcı olarak kapatılmasına neden olur.',
-          'OCEAN kişilik testini dürüstçe yanıtlayın. Manipüle edilmiş sonuçlar eşleştirme kalitesini düşürür ve topluluğun tamamına zarar verir.',
-          'kimlik doğrulama sürecini eksiksiz tamamlayın. Bu hem sizin hem de diğer kullanıcıların güvenliği içindir.',
-          'Buluşma daveti aldığınızda katılıp katılmayacağınıza zamanında karar verin. Son dakika iptalleri diğer katılımcıları olumsuz etkiler. Katılamayacaksanız en az 24 saat öncesinden platform üzerinden bildirin.',
-          'Buluşma lokasyonunu ve saatini önceden not alın. Ahenk sistem bildirimleri gönderir ancak takip sorumluluğu size aittir.',
-          'Buluşmaya gitmeden önce kendinize ait herhangi bir beklenti veya ön yargıyı bir kenara bırakmaya çalışın. Her insan sürpriz yapabilir.',
+          'Gerçek kimliğinle kayıt ol. Sahte isim, fotoğraf veya bilgi kullanmak yasaktır ve hesabının kalıcı olarak kapatılmasına neden olur.',
+          'OCEAN kişilik testini dürüstçe yanıtla. Manipüle edilmiş sonuçlar eşleştirme kalitesini düşürür ve topluluğun tamamına zarar verir.',
+          'kimlik doğrulama sürecini eksiksiz tamamla. Bu hem senin hem de diğer kullanıcıların güvenliği içindir.',
+          'Buluşma daveti aldığında katılıp katılmayacağına zamanında karar ver. Son dakika iptalleri diğer katılımcıları olumsuz etkiler. Katılamayacaksan en az 24 saat öncesinden platform üzerinden bildir.',
+          'Buluşma lokasyonunu ve saatini önceden not al. Ahenk sistem bildirimleri gönderir ancak takip sorumluluğu sana aittir.',
+          'Buluşmaya gitmeden önce kendine ait herhangi bir beklenti veya ön yargıyı bir kenara bırakmaya çalış. Her insan sürpriz yapabilir.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -45,14 +45,14 @@ const sections = [
       <>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.7rem', marginBottom: '1.25rem' }}>
           {[
-            'Zamanında gelin. 15 dakikadan fazla gecikeceğinizi anlarsanız platform üzerinden bildirim gönderin.',
-            'Masadaki herkese eşit ilgi ve saygı gösterin. Birini ya da bir grubu dışlamak, görmezden gelmek veya yalnızlaştırmak kabul edilemez.',
-            'Kendinizi gerçek kimliğinizle tanıtın. Masa arkadaşlarınızı yanıltacak bilgiler vermeyin.',
-            'Sohbeti tekelleştirmeyin. Herkesin konuşma fırsatı bulduğundan emin olmaya gayret edin.',
-            'Alkol tüketimi konusunda diğer katılımcılara baskı uygulamayın. Herkes kendi tercihini özgürce yapar.',
-            'Masada fotoğraf veya video çekmek için diğer katılımcıların açık onayını alın. Sosyal medyada paylaşırken kimliği açığa çıkarmayın.',
-            'Ticari ürün, hizmet veya yatırım tekliflerini buluşma ortamına taşımayın. Ahenk masaları ticari faaliyet alanı değildir.',
-            'Masa arkadaşlarınızın kişisel bilgilerini (telefon, adres, iş yeri) açıkça talep etmeyin. İletişim kurmak istiyorsanız platform üzerinden yapın.',
+            'Zamanında gel. 15 dakikadan fazla gecikeceğini anlarsan platform üzerinden bildirim gönder.',
+            'Masadaki herkese eşit ilgi ve saygı göster. Birini ya da bir grubu dışlamak, görmezden gelmek veya yalnızlaştırmak kabul edilemez.',
+            'Kendini gerçek kimliğinle tanıt. Masa arkadaşlarını yanıltacak bilgiler verme.',
+            'Sohbeti tekelleştirme. Herkesin konuşma fırsatı bulduğundan emin olmaya gayret et.',
+            'Alkol tüketimi konusunda diğer katılımcılara baskı uygulama. Herkes kendi tercihini özgürce yapar.',
+            'Masada fotoğraf veya video çekmek için diğer katılımcıların açık onayını al. Sosyal medyada paylaşırken kimliği açığa çıkarma.',
+            'Ticari ürün, hizmet veya yatırım tekliflerini buluşma ortamına taşıma. Ahenk masaları ticari faaliyet alanı değildir.',
+            'Masa arkadaşlarının kişisel bilgilerini (telefon, adres, iş yeri) açıkça talep etme. İletişim kurmak istiyorsan platform üzerinden yap.',
           ].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -84,11 +84,11 @@ const sections = [
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.7rem' }}>
         {[
-          'Değerlendirmenizi dürüstçe yapın. Puanlarınız ve yorumlarınız algoritmanın gelişmesine ve topluluğun kalitesine doğrudan katkı sunar.',
-          'Bir katılımcının davranışı sizi rahatsız ettiyse değerlendirme ekranında bildirin veya bilgi@ahenk.co adresine yazın. Her bildirim gizlilik içinde değerlendirilir.',
-          'Masa arkadaşlarınızın iletişim bilgilerini onların onayı olmadan üçüncü taraflarla paylaşmayın.',
-          'Buluşmada edindiğiniz kişisel bilgileri kötüye kullanmayın. Bu bilgiler size güven ortamında paylaşılmıştır.',
-          'Bir katılımcıyla tekrar eşleşmek istemiyorsanız Rehber Engelleme veya değerlendirme ekranındaki bloklama özelliğini kullanın. Taciz veya misilleme niteliğindeki davranışlar hesap kapatma sebebidir.',
+          'Değerlendirmeni dürüstçe yap. Puanların ve yorumların algoritmanın gelişmesine ve topluluğun kalitesine doğrudan katkı sunar.',
+          'Bir katılımcının davranışı seni rahatsız ettiyse değerlendirme ekranında bildir veya bilgi@ahenk.co adresine yaz. Her bildirim gizlilik içinde değerlendirilir.',
+          'Masa arkadaşlarının iletişim bilgilerini onların onayı olmadan üçüncü taraflarla paylaşma.',
+          'Buluşmada edindiğin kişisel bilgileri kötüye kullanma. Bu bilgiler sana güven ortamında paylaşılmıştır.',
+          'Bir katılımcıyla tekrar eşleşmek istemiyorsan Rehber Engelleme veya değerlendirme ekranındaki bloklama özelliğini kullan. Taciz veya misilleme niteliğindeki davranışlar hesap kapatma sebebidir.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -169,12 +169,12 @@ const sections = [
     content: (
       <>
         <p style={{ marginBottom: '1rem', lineHeight: 1.75 }}>
-          Bir kullanıcının bu kurallara aykırı davrandığını düşünüyorsanız:
+          Bir kullanıcının bu kurallara aykırı davrandığını düşünüyorsan:
         </p>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.55rem', marginBottom: '1rem' }}>
           {[
-            'Değerlendirme ekranından bildirebilirsiniz.',
-            <span key="email"><a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a> adresine e-posta gönderebilirsiniz.</span>,
+            'Değerlendirme ekranından bildirebilirsin.',
+            <span key="email"><a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a> adresine e-posta gönderebilirsin.</span>,
           ].map((item, i) => (
             <li key={i} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
               <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
@@ -201,7 +201,7 @@ const sections = [
     title: 'İletişim',
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.4rem' }}>
-        <p>Sorularınız için:</p>
+        <p>Soruların için:</p>
         <p><a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a></p>
         <p style={{ color: '#a39c93', fontSize: 13 }}>{COMPANY_ADDRESS}</p>
         <TaxInfo />

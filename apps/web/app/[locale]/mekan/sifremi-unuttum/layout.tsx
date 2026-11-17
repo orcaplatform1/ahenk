@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return pageMetadata({
   path: '/mekan/sifremi-unuttum',
   title: 'Mekân Şifremi Unuttum',
-  description: 'Ahenk mekân hesabınızın şifresini yenileyin. E-posta adresinizi girin, kayıtlı WhatsApp numaranıza gönderilen 6 haneli kodla yeni şifrenizi belirleyin.',
+  description: 'Ahenk mekân hesabının şifresini yenile. E-posta adresini gir, kayıtlı WhatsApp numarana gönderilen 6 haneli kodla yeni şifreni belirle.',
   locale,
   en: { title: 'Venue Forgot Password', description: 'Reset your Ahenk venue account password. Enter your phone number and set a new password with the 6-digit code sent to your registered WhatsApp number.' },
   });

@@ -22,7 +22,7 @@ export function IsE164Phone(validationOptions?: ValidationOptions): PropertyDeco
       name: "isE164Phone",
       validator: {
         validate: (value) => isE164Mobile(value),
-        defaultMessage: buildMessage(() => "Geçerli bir telefon numarası girin", validationOptions),
+        defaultMessage: buildMessage(() => "Geçerli bir telefon numarası gir", validationOptions),
       },
     },
     validationOptions,

@@ -130,11 +130,13 @@ function EmptyMasaCard({
   cardType,
   userInfo,
   kanka,
+  photo,
 }: {
   locked: boolean;
   cardType: 'group' | 'basbasa' | 'kanka';
   userInfo?: UserInfo;
   kanka?: { initials: string; gender: string | null } | null;
+  photo?: VenuePhoto | null; // Masaya bağlı mekânın güncel ilk fotoğrafı (sunucudan geldiyse)
 }) {
   const t = useTranslations();
   const locale = useLocale() as Lang;
@@ -183,20 +185,23 @@ function EmptyMasaCard({
             }}
           />
 
-          {/* Kapak: tek fotoğraf alanı, tam genişlikte 16:9 (ön izlemede fotoğraf yok → tek boş kamera kutusu) */}
-          <div style={{ position: 'relative', aspectRatio: '16 / 9' }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <rect x="1" y="5" width="22" height="15" rx="2" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
-                <circle cx="12" cy="12" r="4" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
-                <path d="M8 5l1.5-3h5L16 5" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,18,18,0.35) 0%, rgba(18,18,18,0) 30%, rgba(18,18,18,0) 45%, rgba(18,18,18,0.92) 100%)' }} />
+          {/* Kapak: mekânın güncel ilk fotoğrafı tam genişlikte 16:9 (object-fit: cover); fotoğraf yoksa fotoğraf alanı yok,
+              masa türü ve mekân adı normal akışta (MasaDetayKarti ile aynı) */}
+          <div style={photo ? { position: 'relative', aspectRatio: '16 / 9' } : { position: 'relative', display: 'flex', flexDirection: 'column', gap: 12, padding: '12px 14px 0' }}>
+            {photo && (
+              <>
+                <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: 'rgba(255,255,255,0.04)' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photo.url} alt={photo.caption ?? t('masa.photoAlt', { n: 1 })} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                </div>
+                <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,18,18,0.35) 0%, rgba(18,18,18,0) 30%, rgba(18,18,18,0) 45%, rgba(18,18,18,0.92) 100%)' }} />
+              </>
+            )}
 
-            {/* Sol üst masa türü */}
+            {/* Üst satır: solda masa türü, sağda kilit (fotoğraf varken kapak üstünde) */}
+            <div style={photo ? { display: 'contents' } : { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
             <span style={{
-              position: 'absolute', top: 12, left: 12, display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: 9999,
+              ...(photo ? { position: 'absolute', top: 12, left: 12 } : { alignSelf: 'flex-start' }), display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: 9999,
               background: 'rgba(192,57,43,0.85)', border: '1px solid rgba(255,107,107,0.5)', color: '#fff', fontSize: 11, fontWeight: 700,
               letterSpacing: '0.04em', fontFamily: 'Inter, sans-serif', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
             }}>
@@ -211,13 +216,14 @@ function EmptyMasaCard({
                   alt={t('tm.locked')}
                   width={56}
                   height={56}
-                  style={{ position: 'absolute', top: 12, right: 12, zIndex: 2, opacity: 0.85, animation: 'lockShake 0.8s ease-in-out infinite' }}
+                  style={{ ...(photo ? { position: 'absolute', top: 12, right: 12 } : {}), zIndex: 2, opacity: 0.85, animation: 'lockShake 0.8s ease-in-out infinite' }}
                 />
               </>
             )}
+            </div>
 
             {/* Alt: mekân adı + konum, sağda Haritada Gör (pasif) */}
-            <div style={{ position: 'absolute', left: 14, right: 14, bottom: 12, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ ...(photo ? { position: 'absolute', left: 14, right: 14, bottom: 12 } : {}), display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
               <div style={{ minWidth: 0 }}>
                 <h2 style={{
                   margin: 0,
@@ -443,7 +449,7 @@ function MasaBlock({
   let content: React.ReactNode;
 
   if (locked || !meeting) {
-    content = <EmptyMasaCard locked={locked} cardType={cardType} userInfo={userInfo} kanka={kanka} />;
+    content = <EmptyMasaCard locked={locked} cardType={cardType} userInfo={userInfo} kanka={kanka} photo={meeting?.venuePhotos?.[0]} />;
   } else if (item.phase === 'REVEALED' && meeting.venueName) {
     const detayData: MasaDetayData = {
       id: meeting.id,
@@ -495,7 +501,7 @@ function MasaBlock({
       </div>
     );
   } else {
-    content = <EmptyMasaCard locked={false} cardType={cardType} userInfo={userInfo} kanka={kanka} />;
+    content = <EmptyMasaCard locked={false} cardType={cardType} userInfo={userInfo} kanka={kanka} photo={meeting?.venuePhotos?.[0]} />;
   }
 
   return <div key={meeting?.id ?? cardType}>{content}</div>;

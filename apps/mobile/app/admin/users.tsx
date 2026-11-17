@@ -173,7 +173,7 @@ export default function AdminUsers() {
                           {m.status === 'SUSPENDED' && myRole() === 'SUPERADMIN' && <Btn variant="admActGreen" disabled={!!action} label={action === 'ACTIVE' ? '…' : 'Aktifleştir'} onPress={() => updStatus('ACTIVE')} />}
                         </View>
                       </>
-                    ) : <AT style={{ fontSize: 11, color: adm.muted }}>Bu hesaba işlem yetkiniz yok</AT>}
+                    ) : <AT style={{ fontSize: 11, color: adm.muted }}>Bu hesaba işlem yetkin yok</AT>}
                   </Sect>
                   {m.oceanScore && (
                     <Sect>

@@ -87,7 +87,7 @@ export default function AdminCareers() {
                     ['Yabancı dil', c.languages?.length ? c.languages.map(l => `${l.name} ${'★'.repeat(l.level)}`).join(', ') : null],
                     ['Çalışma türü', c.workType], ['Ücret beklentisi', c.salaryExpectation], ['Doğum tarihi', c.birthDate ? c.birthDate.split('-').reverse().join('.') : null],
                     ['Şehir', c.city], ['İlçe', c.district], ['LinkedIn', c.linkedinOrCv], ["Ben Ahenk'e şunları katabilirim", c.motivation],
-                    ['Bizi nereden duydu', [c.hearFrom, c.hearFromOther].filter(Boolean).join(': ')], ['Başvuru tarihi', new Date(c.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })], ['Admin notu', c.adminNote],
+                    ['Beni nereden duydu', [c.hearFrom, c.hearFromOther].filter(Boolean).join(': ')], ['Başvuru tarihi', new Date(c.createdAt).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })], ['Admin notu', c.adminNote],
                   ] as [string, string | null | undefined][]).map(([k, v]) => (
                     <AT key={k} style={{ fontSize: 13, color: adm.muted }}><AT w={600} style={{ fontSize: 13 }}>{k}:</AT> {v || '—'}</AT>
                   ))}

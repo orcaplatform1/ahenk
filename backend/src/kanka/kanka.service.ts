@@ -228,7 +228,7 @@ export class KankaService {
 
     await this.notifications.sendToUser(inviter.id, {
       title: "Kanka davetin kabul edildi",
-      body: `${initialsOf(me.profile)} artık kankan. Kankamla paketiyle birlikte masaya oturabilirsiniz.`,
+      body: `${initialsOf(me.profile)} artık kankan. Kankamla paketiyle birlikte masaya oturabilirsin.`,
       data: { type: "KANKA_ACCEPTED" },
       en: { title: "Your Kanka invite was accepted", body: `${initialsOf(me.profile)} is now your Kanka. You can join a table together with the Bring a Buddy package.` },
     }).catch(() => undefined);

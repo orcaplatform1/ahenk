@@ -92,7 +92,7 @@ export class UsersService {
 
   async requestPhoneChange(userId: string, newPhone: string) {
     const existing = await this.prisma.user.findUnique({ where: { phone: newPhone } });
-    if (existing && existing.id === userId) throw new BadRequestException("Bu numara zaten hesabınızda kayıtlı.");
+    if (existing && existing.id === userId) throw new BadRequestException("Bu numara zaten hesabında kayıtlı.");
     if (existing) throw new ConflictException("Bu telefon numarası kullanılmaktadır.");
     const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { language: true } });
     const resendSeconds = await this.otpService.send(newPhone, "change-phone", me?.language ?? "tr");
@@ -120,7 +120,7 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user?.passwordHash) throw new BadRequestException("Şifre bulunamadı.");
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!valid) throw new BadRequestException("Şifrenizi yanlış girdiniz.");
+    if (!valid) throw new BadRequestException("Şifreni yanlış girdin.");
     const existing = await this.prisma.user.findUnique({ where: { email: newEmail } });
     if (existing && existing.id !== userId) throw new ConflictException("Bu e-posta adresi kullanılmaktadır.");
     await this.prisma.user.update({ where: { id: userId }, data: { email: newEmail } });

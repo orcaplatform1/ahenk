@@ -15,7 +15,7 @@ const sections = [
     content: (
       <>
         <p>
-          Ahenk platformunun veri sorumlusu {COMPANY_TITLE}&apos;dır. Aşağıdaki iletişim bilgilerini kullanabilirsiniz:
+          Ahenk platformunun veri sorumlusu {COMPANY_TITLE}&apos;dır. Aşağıdaki iletişim bilgilerini kullanabilirsin:
         </p>
         <div
           style={{
@@ -207,7 +207,7 @@ const sections = [
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Google Analytics ve Meta Pixel</strong>
-          : bu araçlar aracılığıyla çerez verisi işlenir. Bu veri yurt dışındaki sunuculara aktarılabilir. Aktarım açık rızanıza dayanır ve rızanızı çerez tercihlerinden her zaman geri alabilirsiniz.
+          : bu araçlar aracılığıyla çerez verisi işlenir. Bu veri yurt dışındaki sunuculara aktarılabilir. Aktarım açık rızana dayanır ve rızanı çerez tercihlerinden her zaman geri alabilirsin.
         </p>
 
         <div
@@ -220,7 +220,7 @@ const sections = [
           }}
         >
           <p style={{ color: '#f4f1ec', fontSize: 13 }}>
-            Kişisel verileriniz satılmaz. Çerez verileri yalnızca açık rızanızla Google ve Meta ile reklam ve istatistik amacıyla paylaşılır.
+            Kişisel verilerin satılmaz. Çerez verileri yalnızca açık rızanla Google ve Meta ile reklam ve istatistik amacıyla paylaşılır.
           </p>
         </div>
       </>
@@ -260,9 +260,9 @@ const sections = [
     title: 'Çerezler',
     content: (
       <p>
-        Ahenk, platform işlevselliği için zorunlu çerezler kullanır. Bu çerezler oturum yönetimi ve güvenlik amacıyla kullanılır. Onay vermeniz halinde Google Analytics ve Meta Pixel çerezleri de çalışır. Detaylı bilgi için{' '}
-        <Link href="/cerez-politikasi" style={{ color: '#c0392b' }}>Çerez Politikamızı</Link>
-        {' '}inceleyiniz.
+        Ahenk, platform işlevselliği için zorunlu çerezler kullanır. Bu çerezler oturum yönetimi ve güvenlik amacıyla kullanılır. Onay vermen halinde Google Analytics ve Meta Pixel çerezleri de çalışır. Detaylı bilgi için{' '}
+        <Link href="/cerez-politikasi" style={{ color: '#c0392b' }}>Çerez Politikamı</Link>
+        {' '}incele.
       </p>
     ),
   },
@@ -285,9 +285,9 @@ const sections = [
     title: 'Politika Değişiklikleri',
     content: (
       <p>
-        Bu politika gerektiğinde güncellenebilir. Önemli değişiklikler kayıtlı e-posta adresinize bildirilir. Güncel politikaya her zaman{' '}
+        Bu politika gerektiğinde güncellenebilir. Önemli değişiklikler kayıtlı e-posta adresine bildirilir. Güncel politikaya her zaman{' '}
         <Link href="/gizlilik-politikasi" style={{ color: '#c0392b' }}>ahenk.co/gizlilik-politikasi</Link>
-        {' '}adresinden ulaşabilirsiniz.
+        {' '}adresinden ulaşabilirsin.
       </p>
     ),
   },
@@ -297,7 +297,7 @@ const sections = [
     content: (
       <>
         <p>
-          Her türlü soru, talep ve şikayetleriniz için:{' '}
+          Her türlü soru, talep ve şikayetlerin için:{' '}
           <a href="mailto:bilgi@ahenk.co" style={{ color: '#c0392b' }}>bilgi@ahenk.co</a>
         </p>
         <p style={{ marginTop: '0.75rem', color: '#a39c93', fontSize: 13 }}>

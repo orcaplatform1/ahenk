@@ -2,7 +2,7 @@ import { Transform } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 const PHONE = /^\+90[5][0-9]{9}$/;
-const PHONE_MESSAGE = 'Geçerli bir Türk telefon numarası girin (+905XXXXXXXXX)';
+const PHONE_MESSAGE = 'Geçerli bir Türk telefon numarası gir (+905XXXXXXXXX)';
 
 export const JANTI_AD_TYPES = ['Post Animasyonu', 'Story Animasyonu', 'Reels Animasyonu'] as const;
 export const JANTI_STORY_OWNERS = ['Ekibe ait', 'Bana ait', 'Ortak çalışma'] as const;
@@ -26,7 +26,7 @@ export class JantiVerifyOtpDto {
 // multipart/form-data ile gelir: reklam türleri tekrarlanan "adTypes" alanı, dosyalar "files" alanı
 export class JantiApplyDto {
   @IsString()
-  @MinLength(2, { message: 'Ad soyad girin' })
+  @MinLength(2, { message: 'Ad soyad gir' })
   @MaxLength(120)
   fullName: string;
 
@@ -41,13 +41,13 @@ export class JantiApplyDto {
 
   @Transform(({ value }) => (Array.isArray(value) ? value : value === undefined || value === '' ? [] : [value]))
   @IsArray()
-  @ArrayMinSize(1, { message: 'En az 1 reklam türü seçin' })
+  @ArrayMinSize(1, { message: 'En az 1 reklam türü seç' })
   @ArrayMaxSize(3)
   @ArrayUnique()
   @IsIn(JANTI_AD_TYPES as unknown as string[], { each: true, message: 'Geçersiz reklam türü' })
   adTypes: string[];
 
-  @IsIn(JANTI_STORY_OWNERS as unknown as string[], { message: 'Kurgu seçin' })
+  @IsIn(JANTI_STORY_OWNERS as unknown as string[], { message: 'Kurgu seç' })
   storyOwner: string;
 
   @IsOptional()
@@ -56,8 +56,8 @@ export class JantiApplyDto {
   websiteOrSocial?: string;
 
   @IsString()
-  @MinLength(20, { message: 'Mesajınız çok kısa' })
-  @MaxLength(300, { message: 'Mesajınız çok uzun' })
+  @MinLength(20, { message: 'Mesajın çok kısa' })
+  @MaxLength(300, { message: 'Mesajın çok uzun' })
   message: string;
 
   // Bal küpü: gerçek kullanıcı görmez, botlar doldurur

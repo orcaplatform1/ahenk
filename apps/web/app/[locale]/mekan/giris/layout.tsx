@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return pageMetadata({
   path: '/mekan/giris',
   title: 'Mekân Girişi',
-  description: 'Ahenk mekân ortakları için ayrılmış giriş sayfası. Kayıtlı e-posta adresiniz ve şifrenizle mekân panelinize güvenli şekilde erişerek hesabınızı yönetin.',
+  description: 'Ahenk mekân ortakları için ayrılmış giriş sayfası. Kayıtlı e-posta adresin ve şifrenle mekân paneline güvenli şekilde erişerek hesabını yönet.',
   locale,
   en: { title: 'Venue Login', description: 'The login page for Ahenk partner venues. Securely access your venue panel with your registered email address and password to manage your account.' },
   });

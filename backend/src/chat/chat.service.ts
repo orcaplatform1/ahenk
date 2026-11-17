@@ -41,7 +41,7 @@ export class ChatService {
     });
     const inactive: ParticipantStatus[] = [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED, ParticipantStatus.NO_SHOW];
     if (!p || inactive.includes(p.status)) {
-      throw new ForbiddenException("Bu masanın aktif katılımcısı değilsiniz");
+      throw new ForbiddenException("Bu masanın aktif katılımcısı değilsin");
     }
     return p;
   }
@@ -171,7 +171,7 @@ export class ChatService {
     });
     if (!message) throw new NotFoundException("Mesaj bulunamadı");
     if (message.senderId === reporterId) {
-      throw new BadRequestException("Kendi mesajınızı şikayet edemezsiniz");
+      throw new BadRequestException("Kendi mesajını şikayet edemezsin");
     }
 
     await this.assertParticipant(message.meetingId, reporterId);

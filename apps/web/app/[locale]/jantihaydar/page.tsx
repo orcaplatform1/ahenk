@@ -33,15 +33,15 @@ const FORMATS: [string, string][] = [
 ];
 
 const STORY: [string, string][] = [
-  ['Ekibe ait', 'Fikirden finale her şeyi biz üstleniriz.'],
-  ['Bana ait', "Senaryon hazırsa Haydar'ın diliyle hayata geçiririz."],
-  ['Ortak çalışma', 'Fikri birlikte şekillendiririz.'],
+  ['Ekibe ait', 'Fikirden finale her şeyi ben üstlenirim.'],
+  ['Bana ait', "Senaryon hazırsa Haydar'ın diliyle hayata geçiririm."],
+  ['Ortak çalışma', 'Fikri birlikte şekillendiririm.'],
 ];
 
-const STEPS = ['Teklif formunu doldur', "Ekibimiz WhatsApp'tan sana ulaşsın", 'Senaryo onayı', 'Üretim ve yayın.'];
+const STEPS = ['Teklif formunu doldur', "Ekibim WhatsApp'tan sana ulaşsın", 'Senaryo onayı', 'Üretim ve yayın.'];
 
 // Görünen metinler: jh.x<n> anahtarları (gönderilen değerler Türkçe kalır; backend bunları doğrular)
-const JH_KEYS: Record<string, string> = {"Reklam gibi değil, hikâye gibi": "jh.x0", "Takipçiler Haydar'ı izlemek için durur. Ürünün bir skecin içinde doğal olarak yer alır; kaydırılıp geçilen bir reklam değil, sonuna kadar izlenen bir içerik olur.": "jh.x1", "Akılda kalan bir yüz": "jh.x2", "Bir karakterle anılan marka unutulmaz. Haydar'ın tanıttığı ürün, izleyicinin zihninde onun esprisiyle birlikte kalır.": "jh.x3", "Paylaşılan içerik": "jh.x4", "Mizah paylaşılır. Videon arkadaşa gönderilir, hikâyede yeniden paylaşılır; erişimin satın aldığın kitlenin ötesine geçer.": "jh.x5", "Sana özel üretim": "jh.x6", "Her animasyon markan için sıfırdan çizilir ve kurgulanır. Hazır şablon yok, kopya içerik yok.": "jh.x7", "Her ölçeğe uygun": "jh.x8", "Mahalle kafesinden ulusal markaya, butik işletmeden bireysel girişimciye kadar herkes için ölçülü bir format.": "jh.x9", "Post Animasyonu": "jh.x10", "Profilinde kalıcı, şık ve keşfette öne çıkan tanıtım.": "jh.x11", "Story Animasyonu": "jh.x12", "Kısa, hızlı, doğrudan bağlantıya yönlendiren etki.": "jh.x13", "Reels Animasyonu": "jh.x14", "En geniş erişim; yeni kitlelere ulaşan, izlenme odaklı içerik.": "jh.x15", "Ekibe ait": "jh.x16", "Fikirden finale her şeyi biz üstleniriz.": "jh.x17", "Bana ait": "jh.x18", "Senaryon hazırsa Haydar'ın diliyle hayata geçiririz.": "jh.x19", "Ortak çalışma": "jh.x20", "Fikri birlikte şekillendiririz.": "jh.x21", "Teklif formunu doldur": "jh.x22", "Ekibimiz WhatsApp'tan sana ulaşsın": "jh.x23", "Senaryo onayı": "jh.x24", "Üretim ve yayın.": "jh.x25"};
+const JH_KEYS: Record<string, string> = {"Reklam gibi değil, hikâye gibi": "jh.x0", "Takipçiler Haydar'ı izlemek için durur. Ürünün bir skecin içinde doğal olarak yer alır; kaydırılıp geçilen bir reklam değil, sonuna kadar izlenen bir içerik olur.": "jh.x1", "Akılda kalan bir yüz": "jh.x2", "Bir karakterle anılan marka unutulmaz. Haydar'ın tanıttığı ürün, izleyicinin zihninde onun esprisiyle birlikte kalır.": "jh.x3", "Paylaşılan içerik": "jh.x4", "Mizah paylaşılır. Videon arkadaşa gönderilir, hikâyede yeniden paylaşılır; erişimin satın aldığın kitlenin ötesine geçer.": "jh.x5", "Sana özel üretim": "jh.x6", "Her animasyon markan için sıfırdan çizilir ve kurgulanır. Hazır şablon yok, kopya içerik yok.": "jh.x7", "Her ölçeğe uygun": "jh.x8", "Mahalle kafesinden ulusal markaya, butik işletmeden bireysel girişimciye kadar herkes için ölçülü bir format.": "jh.x9", "Post Animasyonu": "jh.x10", "Profilinde kalıcı, şık ve keşfette öne çıkan tanıtım.": "jh.x11", "Story Animasyonu": "jh.x12", "Kısa, hızlı, doğrudan bağlantıya yönlendiren etki.": "jh.x13", "Reels Animasyonu": "jh.x14", "En geniş erişim; yeni kitlelere ulaşan, izlenme odaklı içerik.": "jh.x15", "Ekibe ait": "jh.x16", "Fikirden finale her şeyi ben üstlenirim.": "jh.x17", "Bana ait": "jh.x18", "Senaryon hazırsa Haydar'ın diliyle hayata geçiririm.": "jh.x19", "Ortak çalışma": "jh.x20", "Fikri birlikte şekillendiririm.": "jh.x21", "Teklif formunu doldur": "jh.x22", "Ekibim WhatsApp'tan sana ulaşsın": "jh.x23", "Senaryo onayı": "jh.x24", "Üretim ve yayın.": "jh.x25"};
 const AD_TYPES = FORMATS.map(([t]) => t);
 const STORY_OWNERS = STORY.map(([t]) => t);
 
@@ -136,7 +136,7 @@ export default function JantiHaydarPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!fullName.trim()) { setError('Ad soyad girin.'); return; }
+    if (!fullName.trim()) { setError('Ad soyad gir.'); return; }
     if (!phoneToken) { setError(t('jh.verifyPhone')); return; }
     if (adTypes.length === 0) { setError(t('jh.pickAd')); return; }
     if (!storyOwner) { setError(t('jh.pickStory')); return; }

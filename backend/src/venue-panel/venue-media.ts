@@ -31,7 +31,7 @@ export function venuePhotoKind(buf: Buffer): ImageKind | null {
 
 export function assertVenuePhotos(files: Express.Multer.File[]): void {
   for (const file of files) {
-    if (!venuePhotoKind(file.buffer)) throw new BadRequestException("Fotoğraflar JPEG, PNG, WebP, HEIC veya HEIF olmalı");
+    if (!venuePhotoKind(file.buffer)) throw new BadRequestException("Fotoğraf JPEG, PNG, WebP, HEIC veya HEIF olmalı");
   }
 }
 

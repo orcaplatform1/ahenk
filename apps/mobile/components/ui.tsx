@@ -252,7 +252,7 @@ export function MaintenanceNotice() {
     <View style={{ marginBottom: 16, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: c.maintBg, borderWidth: 1, borderColor: c.maintBorder }}>
       <T w={600} style={{ fontSize: 14, color: c.maintText, marginBottom: 2 }}>Bakım çalışması</T>
       <T style={{ fontSize: 12, color: c.tCcc, lineHeight: 19 }}>
-        Kısa bir bakım çalışması yapıyoruz. Bu sürede paket satın alma ve yeni eşleşmeler geçici olarak durduruldu.
+        Kısa bir bakım çalışması yapıyorum. Bu sürede paket satın alma ve yeni eşleşmeler geçici olarak durduruldu.
       </T>
     </View>
   );

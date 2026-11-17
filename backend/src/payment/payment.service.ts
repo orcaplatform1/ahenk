@@ -118,12 +118,12 @@ export class PaymentService {
     // çiftte (iki kişiden birinde) aktif Kankamla paketi bitene kadar yenisi alınamaz
     if (plan === SubscriptionPlan.KANKAMLA) {
       if (await this.planConflict(this.prisma, userId, plan)) {
-        throw new ConflictException("Sizin ya da kankanızın aktif Kankamla paketi var; paket bitene kadar yenisi alınamaz.");
+        throw new ConflictException("Senin ya da kankanın aktif Kankamla paketi var; paket bitene kadar yenisi alınamaz.");
       }
       return;
     }
     if (await this.planConflict(this.prisma, userId, plan)) {
-      throw new ConflictException("Aktif paketiniz bu paketi kapsıyor; bu paketi şu an satın alamazsınız.");
+      throw new ConflictException("Aktif paketin bu paketi kapsıyor; bu paketi şu an satın alamazsın.");
     }
   }
 
@@ -176,7 +176,7 @@ export class PaymentService {
     identityType?: string,
   ) {
     if (await isMaintenanceMode(this.prisma)) {
-      throw new ServiceUnavailableException("Kısa bir bakım çalışması yapıyoruz. Paket satın alma geçici olarak durduruldu.");
+      throw new ServiceUnavailableException("Kısa bir bakım çalışması yapıyorum. Paket satın alma geçici olarak durduruldu.");
     }
 
     await this.assertCanBuy(userId, plan);
@@ -542,7 +542,7 @@ export class PaymentService {
     const storeDiscount = parsed.discount ?? discountOfOffer(v.offerId);
     const known = await this.prisma.payment.findFirst({ where: { storeTransactionId: v.transactionId }, select: { status: true, failureReason: true } });
     if (known?.status === PaymentStatus.DUPLICATE) {
-      throw new ConflictException(known.failureReason === DISCOUNT_USED_REASON ? STORE_DISCOUNT_USED_MESSAGE : "Aktif paketiniz bu paketi kapsıyor; bu paketi şu an satın alamazsınız.");
+      throw new ConflictException(known.failureReason === DISCOUNT_USED_REASON ? STORE_DISCOUNT_USED_MESSAGE : "Aktif paketin bu paketi kapsıyor; bu paketi şu an satın alamazsın.");
     }
     if (known) return { success: true };
 
@@ -609,7 +609,7 @@ export class PaymentService {
       await this.paymentAlert(userId);
       throw new ConflictException(isPrime(plan)
         ? "Aktif Prime aboneliğin var; ikinci bir Prime alınamaz."
-        : "Aktif paketiniz bu paketi kapsıyor; bu paketi şu an satın alamazsınız.");
+        : "Aktif paketin bu paketi kapsıyor; bu paketi şu an satın alamazsın.");
     }
     if (outcome === "DISCOUNT_USED") {
       this.logger.error(`Mağaza ödemesinde indirim hakkı yok, paket verilmedi: user=${userId} plan=${plan} işlem=${v.transactionId}`);

@@ -349,7 +349,7 @@ export class MeetingsService {
   // İptal eden, reddeden ve gelmeyen kişi masayı değerlendiremez, masadan kimseyi engelleyemez
   private assertTookPart(status: ParticipantStatus) {
     const out: ParticipantStatus[] = [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED, ParticipantStatus.NO_SHOW];
-    if (out.includes(status)) throw new ForbiddenException("Bu masanın aktif katılımcısı değilsiniz");
+    if (out.includes(status)) throw new ForbiddenException("Bu masanın aktif katılımcısı değilsin");
   }
 
   // ─── Buluşma değerlendirmesi ──────────────────────────────────────────────
@@ -367,7 +367,7 @@ export class MeetingsService {
       where: { meetingId_userId: { meetingId, userId: reviewerId } },
       select: { status: true, meeting: { select: { scheduledAt: true } } },
     });
-    if (!participation) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    if (!participation) throw new ForbiddenException("Bu masanın katılımcısı değilsin");
     this.assertTookPart(participation.status);
 
     // Değerlendirme penceresi
@@ -380,7 +380,7 @@ export class MeetingsService {
     const existing = await this.prisma.meetingReview.findUnique({
       where: { meetingId_reviewerId: { meetingId, reviewerId } },
     });
-    if (existing) throw new ConflictException("Bu masayı zaten değerlendirdiniz");
+    if (existing) throw new ConflictException("Bu masayı zaten değerlendirdin");
 
     const meetingParticipants = await this.prisma.meetingParticipant.findMany({
       where: { meetingId },
@@ -417,7 +417,7 @@ export class MeetingsService {
       where: { meetingId_userId: { meetingId, userId: requesterId } },
       select: { meeting: { select: { locationText: true, scheduledAt: true } } },
     });
-    if (!participation) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    if (!participation) throw new ForbiddenException("Bu masanın katılımcısı değilsin");
     const reviewed = await this.prisma.meetingReview.findUnique({
       where: { meetingId_reviewerId: { meetingId, reviewerId: requesterId } },
       select: { id: true },
@@ -449,7 +449,7 @@ export class MeetingsService {
       select: { status: true, meeting: { select: { scheduledAt: true, status: true } } },
     });
     if (!me || ["CANCELLED", "DECLINED", "NO_SHOW"].includes(me.status)) {
-      throw new ForbiddenException("Bu masanın aktif katılımcısı değilsiniz");
+      throw new ForbiddenException("Bu masanın aktif katılımcısı değilsin");
     }
     const { opensAt, closesAt } = noShowCardWindow(me.meeting.scheduledAt);
     const now = new Date();
@@ -534,7 +534,7 @@ export class MeetingsService {
       where: { meetingId_userId: { meetingId, userId: requesterId } },
     });
     if (!requesterParticipation) {
-      throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+      throw new ForbiddenException("Bu masanın katılımcısı değilsin");
     }
 
     const participants = await this.prisma.meetingParticipant.findMany({
@@ -571,7 +571,7 @@ export class MeetingsService {
       where: { meetingId_userId: { meetingId, userId: blockerId } },
     });
     if (!blockerParticipation) {
-      throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+      throw new ForbiddenException("Bu masanın katılımcısı değilsin");
     }
     this.assertTookPart(blockerParticipation.status);
 
@@ -613,7 +613,7 @@ export class MeetingsService {
     }
 
     const blocker = meeting.participants.find((p) => p.userId === blockerId);
-    if (!blocker) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    if (!blocker) throw new ForbiddenException("Bu masanın katılımcısı değilsin");
     this.assertTookPart(blocker.status);
 
     const otherId = meeting.participants.find((p) => p.userId !== blockerId)?.userId;
@@ -658,7 +658,7 @@ export class MeetingsService {
       },
     });
 
-    if (!participant) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    if (!participant) throw new ForbiddenException("Bu masanın katılımcısı değilsin");
     if (participant.status === ParticipantStatus.CANCELLED) {
       throw new ForbiddenException("İptal edilmiş rezervasyon");
     }
@@ -762,7 +762,7 @@ export class MeetingsService {
       },
     });
 
-    if (!participant) throw new ForbiddenException("Bu masanın katılımcısı değilsiniz");
+    if (!participant) throw new ForbiddenException("Bu masanın katılımcısı değilsin");
     if (participant.status === ParticipantStatus.CANCELLED) {
       throw new ConflictException("Rezervasyon zaten iptal edilmiş");
     }

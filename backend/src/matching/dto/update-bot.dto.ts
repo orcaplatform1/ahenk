@@ -12,21 +12,21 @@ export class BotDto {
   @MaxLength(50)
   lastName: string;
 
-  @IsIn(["MALE", "FEMALE"], { message: "Cinsiyet seçin" })
+  @IsIn(["MALE", "FEMALE"], { message: "Cinsiyet seç" })
   gender: "MALE" | "FEMALE";
 
   @IsString()
-  @MinLength(1, { message: "Meslek alanı seçin" })
+  @MinLength(1, { message: "Meslek alanı seç" })
   occupationSector: string;
 
-  @IsDateString({}, { message: "Geçerli bir doğum tarihi girin" })
+  @IsDateString({}, { message: "Geçerli bir doğum tarihi gir" })
   birthDate: string;
 
-  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası girin" })
+  @Matches(/^\+90[5][0-9]{9}$/, { message: "Geçerli bir Türk telefon numarası gir" })
   phone: string;
 
   @IsString()
-  @MinLength(1, { message: "Şehir seçin" })
+  @MinLength(1, { message: "Şehir seç" })
   cityId: string;
 
   @IsNumber() @Min(0) @Max(100) openness: number;

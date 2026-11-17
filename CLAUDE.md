@@ -286,8 +286,6 @@ PROFİL FOTOĞRAFI (web + mobil):
   - Profilim'deki profil fotoğrafına basınca tam ekran büyük görünüm (Instagram gibi); kalem butonu yükleme akışını açar. Büyük görünüm
     ekrana (fotoğraf dahil) basınca ya da geri tuşuyla kapanır (masa detay kartında da aynı)
   - Mobil alt menü profil sekmesinde onaylı fotoğraf varsa kısaltma yerine fotoğraf
-  - Admin panelinde kullanıcıların tıklanabildiği kısaltmalarda (Açık Masalar katılımcıları ve başbaşada eşi bekleyenler, web + mobil)
-    onaylı fotoğraf varsa kısaltma yerine fotoğraf
 
 MASA DETAY KARTI (web + mobil):
   - Katılımcıların onaylı profil fotoğrafları herkese görünür; fotoğrafı olmayanda kısaltma. Fotoğrafa basınca tam ekran büyük görünüm;
@@ -551,10 +549,11 @@ YÖNETİM PANELİ EK KURALLARI (web + mobil):
   - Menü: üst barda "AHENK YÖNETİM PANELİ" yanında logo yok; açılır menüde "Acil Yardım" emoji yok, kırmızı geçişli hap etiket (beyaz kalın
     büyük harf, solda beyaz nokta, kırmızı parıltı); mobil çekmece güvenli alanın hemen altından başlar (statusBarTranslucent),
     web mobil görünüm çekmecesi env(safe-area-inset-top)
-  - Bot atama bildirimi: masaya bot atandığında (otomatik grup / baş başa botu, elle bot ekleme, eşi bekleyene elle bot, elle kurulan
+  - Bot atama bildirimi: masaya bot atandığında (otomatik grup / baş başa botu, elle bot ekleme, elle kurulan
     masadaki bot) her bot için Uyarılar'a BOT_ASSIGNED kaydı (AdminAlert.message: bot adı soyadı, masa türü, mekân, şehir, buluşma tarihi
     ve saati; mekân yoksa "Atanmadı") ve yalnız SUPERADMIN hesaplarına bildirim (IN_APP + FCM, "Masaya bot atandı"). BOT_ASSIGNED ve
     BOT_NOT_FOUND uyarılarını yalnız SUPERADMIN görür / okundu işaretler (backend getAlerts / markAlertRead)
+  - Elle bot ekleme yalnızca masa detayındaki bot yerleştirme ile yapılır.
   - Bot kullanım sayacı: Bot Yönetimi sayfasının üstünde "Bu hafta bot kullanılan masa" büyük rakam, altında son 8 hafta (bu hafta dahil,
     en yeni üstte; hafta Pazartesi – Pazar TR, buluşma tarihine göre; iptal edilmemiş ve en az bir aktif bot katılımcısı olan masa).
     GET /matching/admin/bots/usage yalnız SUPERADMIN

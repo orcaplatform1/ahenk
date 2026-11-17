@@ -135,8 +135,8 @@ export class AuthService {
           expiresAt,
           message:
             type === SanctionType.BAN
-              ? 'Hesabınız kalıcı olarak engellendi'
-              : 'Hesabınız geçici olarak askıya alındı',
+              ? 'Hesabın kalıcı olarak engellendi'
+              : 'Hesabın geçici olarak askıya alındı',
         },
         403,
       );
@@ -146,17 +146,17 @@ export class AuthService {
   // 18 yaş: doğum günü Türkiye takvimine göre bugün ya da daha önce geçmiş olmalı
   private assertAdult(birthDate: string) {
     const born = new Date(birthDate).getTime();
-    if (Number.isNaN(born)) throw new BadRequestException("Geçerli bir doğum tarihi girin");
+    if (Number.isNaN(born)) throw new BadRequestException("Geçerli bir doğum tarihi gir");
     const tr = new Date(Date.now() + 3 * 60 * 60 * 1000);
     const limit = Date.UTC(tr.getUTCFullYear() - 18, tr.getUTCMonth(), tr.getUTCDate());
-    if (born > limit) throw new BadRequestException("Ahenk'e kayıt için 18 yaşını doldurmuş olmalısınız");
+    if (born > limit) throw new BadRequestException("Ahenk'e kayıt için 18 yaşını doldurmuş olmalısın");
   }
 
   // ─── Kayıt ───────────────────────────────────────────────────────────────
 
   async register(dto: RegisterDto, ip?: string, userAgent?: string) {
     if (!dto.acceptTerms) {
-      throw new BadRequestException("Kullanım şartlarını kabul etmelisiniz");
+      throw new BadRequestException("Kullanım şartlarını kabul etmelisin");
     }
     this.assertAdult(dto.birthDate);
 
@@ -169,7 +169,7 @@ export class AuthService {
       const city = await this.prisma.city.findUnique({ where: { id: dto.primaryCityId }, select: { isActive: true, name: true } });
       if (!city?.isActive) throw new BadRequestException("Seçilen şehir şu an aktif değil");
       if (districtsOf(city.name) && !isValidDistrict(city.name, dto.district ?? "")) {
-        throw new BadRequestException("İlçe seçin");
+        throw new BadRequestException("İlçe seç");
       }
     }
 
@@ -333,7 +333,7 @@ export class AuthService {
         where: { id: storedToken.id },
         data: { revoked: true },
       });
-      throw new UnauthorizedException("Refresh token süresi dolmuş, tekrar giriş yapın");
+      throw new UnauthorizedException("Refresh token süresi dolmuş, tekrar giriş yap");
     }
 
     const user = await this.usersService.findById(userId);
@@ -389,7 +389,7 @@ export class AuthService {
   async resetPassword(phone: string, code: string, newPassword: string) {
     const user = await this.prisma.user.findUnique({ where: { phone }, select: { id: true, isBot: true } });
     // Kayıtsız numarada süresi dolmuş kod yanıtıyla aynı (bu numara için kod hiç üretilmedi)
-    if (!user || user.isBot) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
+    if (!user || user.isBot) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod iste");
 
     await this.verifyOtpForAccount(user.id, phone, code, "forgot-password");
 
@@ -408,7 +408,7 @@ export class AuthService {
       where: { phone },
       include: { profile: true },
     });
-    if (!user) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod isteyin");
+    if (!user) throw new BadRequestException("Doğrulama kodunun süresi doldu, yeni kod iste");
 
     await this.verifyOtpForAccount(user.id, phone, code, "login");
     // Yaptırım bilgisi sadece kod doğruysa gösterilir

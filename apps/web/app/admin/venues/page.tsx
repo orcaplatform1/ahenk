@@ -318,7 +318,7 @@ export default function AdminVenues() {
                 <AdminSelect
                   value={form.cityId}
                   onChange={v => setForm(f => ({ ...f, cityId: v, district: '' }))}
-                  placeholder="Şehir seçin"
+                  placeholder="Şehir seç"
                   title="Şehir seç"
                   options={cities.map(c => ({ value: c.id, label: c.name, group: c.isActive ? 'Aktif şehirler' : 'Diğer şehirler' }))}
                 />
@@ -330,7 +330,7 @@ export default function AdminVenues() {
                     value={form.district}
                     onChange={v => setForm(f => ({ ...f, district: v }))}
                     options={districtOptions.map(d => ({ value: d, label: d }))}
-                    placeholder="İlçe seçin"
+                    placeholder="İlçe seç"
                   />
                 ) : (
                   <input value={form.district} onChange={e => setForm(f => ({ ...f, district: e.target.value }))} placeholder="İlçe" maxLength={60} style={inputStyle} />
