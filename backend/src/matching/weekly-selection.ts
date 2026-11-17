@@ -19,7 +19,7 @@ export { deadlineOf, selectedThisWeek, trIsoWeekOf, SELECTION_DEADLINE } from ".
 
 // Seçim ekranı (web + mobil): "Buluşma Türü" (Yarın Buluşma / Hafta Sonu Buluşma, tek seçim) + "Masa Türü" (Grup / Baş Başa /
 // Kankamla, çoklu). Mod kullanıcıya değil her katılım kaydına aittir. Sistem hakları otomatik taramaya almaz; her hak kullanıcı
-// seçince taramaya girer. Ekran: paket alınınca ve girişte, taramada ya da masada olmayan kullanılmamış hak varsa açılır.
+// seçince taramaya girer. Ekran: paket alınınca ve girişte (showModal kuralı state() içinde).
 // Kilitten önce iptal / buluşma türü değişikliği serbest, kullanım hakkı yanmaz. Kankamla kanka seçilmeden de seçilir;
 // kanka katılana kadar kayıt "Kanka bekleniyor" durumunda kalır, taramaya girmez.
 const TYPES: MeetingType[] = [MeetingType.GROUP, MeetingType.ONE_ON_ONE, MeetingType.KANKA];
@@ -78,14 +78,17 @@ export class WeeklySelectionService {
           orderBy: { createdAt: "desc" },
           select: { mode: true, meetingDate: true, year: true, weekNumber: true },
         }),
-        this.prisma.meetingParticipant.findFirst({ where: seatWhere(userId, type, now), select: { meeting: { select: { scheduledAt: true } } } }),
+        this.prisma.meetingParticipant.findFirst({ where: seatWhere(userId, type, now), select: { meeting: { select: { scheduledAt: true, locationText: true } } } }),
       ]);
       const locked = !!seat && now.getTime() >= meetingLockAt(seat.meeting.scheduledAt);
+      // Masa detay kartı gösteriliyor mu (meetings.service dashboard isRevealed ile aynı: mekân var + buluşma günü 10:00 TR)
+      const revealed = !!seat && !!seat.meeting.locationText && now.getTime() >= seat.meeting.scheduledAt.getTime() - 10 * 60 * 60 * 1000;
       return {
         type,
         hasRight: rights.includes(type),
         seated: !!seat,
         locked,
+        revealed,
         plannedDeadline: deadlineOf(type, now),
         selection: selection && {
           ...selection,
@@ -100,8 +103,12 @@ export class WeeklySelectionService {
       selected,
       options,
       tomorrowDate: tomorrowMeetingAt(now),
-      // Taramada ya da masada olmayan kullanılmamış hak varsa ekran açılır
-      showModal: options.some((o) => o.hasRight && !o.selection && !o.seated),
+      // Girişte otomatik açılış: herhangi bir türde aktif seçim / tarama sürüyorsa ("Masa Oluşturuluyor" dahil) açılmaz;
+      // masa detay kartı gösteriliyorsa açılır; hiç aktif seçim yoksa eskisi gibi kullanılmamış hak varsa açılır.
+      // Seçilmemiş masa türü açılışı tetiklemez.
+      showModal: options.some((o) => !o.revealed && (!!o.selection || o.seated))
+        ? false
+        : options.some((o) => o.revealed) || options.some((o) => o.hasRight),
     };
   }
 

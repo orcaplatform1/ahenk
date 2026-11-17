@@ -202,8 +202,10 @@ YARIN BULUŞMA (iki takvim modeli; ayrı sistem değil, mevcut paket hakları ay
     otomatik taramaya almaz; her hak kullanıcı seçince taramaya girer. Masa türü başına tek açık kayıt
   - Tek seçim ekranı (web components/live/WeeklySelectionModal.tsx, mobil components/WeeklySelectionModal.tsx): "Buluşma Türü" (Yarın
     Buluşma / Hafta Sonu Buluşma, tek seçim) + "Masa Türü" (Grup / Baş Başa / Kankamla, çoklu; yalnız kullanılmamış hakkı olan ve kaydı /
-    masası olmayan tür seçilebilir, diğerleri pasif). Ekran paket alınınca ve girişte, taramada ya da masada olmayan kullanılmamış hak
-    varsa açılır (GET /weekly-selection showModal); ayrı haftalık pencere yoktur. Farklı türler için farklı buluşma türü seçilebilir
+    masası olmayan tür seçilebilir, diğerleri pasif). Ekran paket alınınca açılır. Girişte otomatik açılış GET /weekly-selection
+    showModal (backend weekly-selection.ts state()): herhangi bir türde aktif seçim / tarama sürüyorsa ("Masa Oluşturuluyor" dahil) false;
+    masa detay kartı gösteriliyorsa (mekân var + buluşma günü 10:00) true; hiç aktif seçim yoksa eskisi gibi kullanılmamış hak varsa true.
+    Seçilmemiş masa türü açılışı tetiklemez; "Seçim Yap" ile elle açılış aynen. Ayrı haftalık pencere yoktur. Farklı türler için farklı buluşma türü seçilebilir
   - Eşleşme Paneli'nde seçim kartı (web components/live/SelectionCard.tsx, mobil components/SelectionCard.tsx; mobilde halkaların
     altında): ekranı açar ("Seçim Yap"), kayıtları gösterir, "Değiştir" (diğer buluşma türüne geçer) ve "İptal Et". Seçim değiştirme ve
     iptal yalnız bu karttan; masa kartlarındaki eski "Rezervasyon İptal" butonu kaldırıldı
