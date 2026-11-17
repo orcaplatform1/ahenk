@@ -703,18 +703,6 @@ Endpoint'ler:
   - GET /sos/admin/reports — tüm raporlar listesi (ADMIN guard)
   - GET /sos/admin/reports/:id — rapor detayı + konum geçmişi (ADMIN guard)
 
-BOT DOLDURMA DETAYLARI (eski; bot-fill kuyruğu kodda yoktur — geçerli bot kuralları YARIN BULUŞMA bölümünde):
-Bot doldurma kuyruğu: BOT_FILL_QUEUE ("bot-fill"), JOB_FILL_SPOT ("fill-spot")
-İptal anında 1 saat gecikmeli Bull job eklenir.
-İş çalışınca:
-  - Masa PENDING veya ACTIVE değilse işlem yapılmaz.
-  - Kapasite dolu ise (anlık sayım) işlem yapılmaz.
-  - Kapasite kontrolü + bot ekleme Prisma $transaction içinde atomik yapılır (race condition önlemi).
-  - Grup masası: mevcut MALE/FEMALE sayısına bakarak hedef cinsiyet belirlenir (iptal edenin cinsiyetine bakılmaz).
-  - ONE_ON_ONE: iptal edenin cinsiyeti hedef (MALE/FEMALE).
-  - Hedef cinsiyette profile'lı bot bulunamazsa herhangi aktif bot fallback olarak denenir.
-  - Aynı bot 4 hafta kuralı: masadaki gerçek katılımcılardan biriyle son 28 gün içinde aynı masada bulunmuş bot o masaya seçilmez (addGroupBots, admin bot listesi); placeBot'ta seçilirse 400 "Bu bot son 4 hafta içinde masadaki bir kullanıcıyla eşleşti."
-
 REZERVASYON İPTALİ EK KURALLAR:
   - cancelRegistration bildirim listesi: CANCELLED, DECLINED, NO_SHOW statüsündeki katılımcılar "1 kişi ayrıldı" bildiriminden çıkarılır.
   - Admin masalar/[id] sayfasında iptal eden katılımcının cancelledAt tarihi ve leaveReason metni gösterilir.
