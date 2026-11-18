@@ -147,7 +147,7 @@ function ProfilPage() {
   const kycApproved = user.kyc?.status === 'APPROVED';
 
   return (
-    <main className="min-h-screen bg-bg text-text pt-[52px]">
+    <main className="min-h-screen bg-bg text-text pt-[52px] pb-[calc(44px+env(safe-area-inset-bottom))] md:pb-0">
       <AccountTabBar activeKey={activeTab} kycApproved={kycApproved} />
       <WinbackHost />
       {/* Eşleşme Paneli görünümü: ışıma ve Canlı Katman stilleri */}

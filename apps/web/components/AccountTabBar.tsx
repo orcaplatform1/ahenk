@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
+import { BottomTabBar } from './BottomTabBar';
 
 const TABS = [
   { key: 'dashboard', href: '/dashboard' },
@@ -26,8 +27,10 @@ export function AccountTabBar({ activeKey, kycApproved }: { activeKey?: string; 
   }
 
   return (
+    <>
+    {/* Mobil genişlikte (md altı) üst sekmeler gizli, yerine alt ikon menü */}
     <div
-      className="overflow-x-auto"
+      className="hidden md:block overflow-x-auto"
       style={{
         position: 'sticky',
         top: 52,
@@ -55,5 +58,7 @@ export function AccountTabBar({ activeKey, kycApproved }: { activeKey?: string; 
         })}
       </div>
     </div>
+    <BottomTabBar activeKey={activeKey} />
+    </>
   );
 }

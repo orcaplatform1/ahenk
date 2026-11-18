@@ -242,6 +242,12 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
 
   return (
     <div className="flex flex-col gap-6">
+      {/* En üstte (mobil gibi): Kişilik Ağacım sayfasını açan küçük kart */}
+      <button type="button" onClick={onGoTest} aria-label={t('prof.tree')} className="ll-card flex items-center justify-between text-left"
+        style={{ minHeight: 44, paddingTop: 12, paddingBottom: 12, cursor: 'pointer' }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#f4f1ec' }}>{t('prof.tree')}</span>
+        <span style={{ fontSize: 18, color: '#a39c93' }}>›</span>
+      </button>
       {/* Temel bilgiler */}
       <Card title={t('prof.accountInfo')}>
         {/* Gelmedi uyarısı — en üstte, net görünsün */}
@@ -396,11 +402,6 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
         </div>
         {/* Kankamla: Aktif Kankanız (davet et / davet var / kankan) + kısa açıklama */}
         <KankaSection />
-        {/* Kankamla notunun hemen altında: Kişilik Ağacım ve Numara Engelleme sayfaları (mobille aynı) */}
-        <div className="flex gap-2">
-          <button onClick={onGoTest} className="flex-1 btn-ghost justify-center">{t('prof.tree')}</button>
-          <button onClick={onGoRehber} className="flex-1 btn-ghost justify-center">{t('prof.blocking')}</button>
-        </div>
       </Card>
 
       {/* Aktif şehir */}
@@ -523,6 +524,15 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
             value={t(VENUE_LABELS[displayVenuePreference])}
           />
         )}
+      </Card>
+
+      {/* Mobil gibi: son kartın altında Gizlilik ve Güvenlik (Numara Engelleme) */}
+      <Card title={t('prof.privacySecurity')}>
+        <button type="button" onClick={onGoRehber} aria-label={t('prof.blocking')} className="flex w-full items-center justify-between text-left"
+          style={{ minHeight: 44, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
+          <span style={{ fontSize: 14, color: '#f4f1ec' }}>{t('prof.blocking')}</span>
+          <span style={{ fontSize: 18, color: '#a39c93' }}>›</span>
+        </button>
       </Card>
 
       {/* Oturum ve hesap */}

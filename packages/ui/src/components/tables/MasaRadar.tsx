@@ -207,7 +207,7 @@ function revealAt(scheduledAt: string): number {
   return Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate(), 10 - 3, 0, 0, 0);
 }
 
-function RevealCountdown({ scheduledAt }: { scheduledAt: string }) {
+function RevealCountdown({ scheduledAt, noDays }: { scheduledAt: string; noDays?: boolean }) {
   const t = useTranslations();
   const target = revealAt(scheduledAt);
   const [msLeft, setMsLeft] = useState(() => Math.max(0, target - Date.now()));
@@ -217,7 +217,12 @@ function RevealCountdown({ scheduledAt }: { scheduledAt: string }) {
   }, [target]);
   const total = Math.floor(msLeft / 1000);
   const pad = (n: number) => String(n).padStart(2, '0');
-  const units = [
+  // Baş Başa: gün hanesi yok, saat hanesi toplam kalan saat
+  const units = noDays ? [
+    { val: pad(Math.floor(total / 3600)), lbl: t('radar.h') },
+    { val: pad(Math.floor((total % 3600) / 60)), lbl: t('radar.m') },
+    { val: pad(total % 60), lbl: t('radar.s') },
+  ] : [
     { val: pad(Math.floor(total / 86400)), lbl: t('radar.d') },
     { val: pad(Math.floor((total % 86400) / 3600)), lbl: t('radar.h') },
     { val: pad(Math.floor((total % 3600) / 60)), lbl: t('radar.m') },
@@ -333,7 +338,7 @@ export function ConfirmedRadarView({ participants, maxParticipants, type, schedu
         <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-serif, "DM Serif Display", serif)', fontSize: 18, fontWeight: 400, color: '#27ae60' }}>
           {locked ? t('radar.venueLater') : full ? t('radar.full') : t('radar.formingBang')}
         </p>
-        {locked && <RevealCountdown scheduledAt={scheduledAt} />}
+        {locked && <RevealCountdown scheduledAt={scheduledAt} noDays={isOneOnOne} />}
         <p style={{ margin: '0 0 8px', fontSize: 12, color: '#888', fontFamily: 'Inter, sans-serif', letterSpacing: '0.01em' }}>
           {t('radar.meetDate', { date: formatMasaDate(scheduledAt, locale) })}
         </p>

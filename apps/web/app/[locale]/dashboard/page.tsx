@@ -32,7 +32,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] pt-[52px]">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5] pt-[52px] pb-[calc(44px+env(safe-area-inset-bottom))] md:pb-0">
       <AccountTabBar kycApproved={kycApproved} />
       <WinbackHost badge />
       <WeeklySelectionModal selection={selection} onSubmit={submitSelection} open={selectOpen} onClose={() => setSelectOpen(false)} />
