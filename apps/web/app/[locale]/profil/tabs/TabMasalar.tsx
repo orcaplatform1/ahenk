@@ -342,7 +342,7 @@ function EmptyMasaCard({
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#555' }} />
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', color: '#555' }}>
-              {cardType === 'basbasa' ? t('tm.chatOne') : cardType === 'kanka' ? t('tm.chatKanka') : t('masa.groupChat')}
+              {t('masa.chatTitle')}
             </span>
           </div>
           <div style={{

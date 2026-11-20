@@ -129,6 +129,25 @@ const sections = [
   },
   {
     n: '06',
+    title: 'Table Chat and Profile Photo Rules',
+    content: (
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
+        {[
+          'Insults, threats, harassment, sharing phone numbers or social media, offers to change the meeting place and drug-related messages are prohibited in the table chat.',
+          'Automatic blocking: messages containing 7 or more digits or a link are not delivered. Messages containing phrases about social media or contact details are checked by AI; a message found to break the rules is not delivered and is reported to the admins.',
+          'Reporting: you can report a tablemate\'s message by pressing and holding it (right-click or the message menu on the web) and choosing a reason. You can report the same message only once, and the reported person is not notified. Reports and automatic blocks are reviewed by our team.',
+          'Profile photo: inappropriate photos that violate our community guidelines are removed by our team. The first violation is recorded as a warning; if repeated, your account is suspended for 3, 15 or 30 days.',
+          'Sanctions: a first violation results in a warning. If a warned user repeats a violation, they are removed from the table or their account is suspended for 3, 15 or 30 days. A user removed from a table forfeits their credit and no refund is given. You can\'t join new tables while suspended.',
+        ].map((item) => (
+          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
+          </li>
+        ))}
+      </ul>
+    ),
+  },
+  {
+    n: '07',
     title: 'Protecting Minors',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -137,7 +156,7 @@ const sections = [
     ),
   },
   {
-    n: '07',
+    n: '08',
     title: 'Sanctions',
     content: (
       <>
@@ -163,7 +182,7 @@ const sections = [
     ),
   },
   {
-    n: '08',
+    n: '09',
     title: 'Reporting and Complaints',
     content: (
       <>
@@ -187,7 +206,7 @@ const sections = [
     ),
   },
   {
-    n: '09',
+    n: '10',
     title: 'Updates to the Guidelines',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -196,7 +215,7 @@ const sections = [
     ),
   },
   {
-    n: '10',
+    n: '11',
     title: 'Contact',
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.4rem' }}>

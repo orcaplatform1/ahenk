@@ -1,12 +1,16 @@
 import { seatNumbers, tableDisplayNames } from "../meetings/table-initials";
+import { approvedPhotoMap } from "../profile-photo/profile-photo.util";
+import { checkMessage, haikuIsViolation } from "./chat-moderation";
 import {
   Injectable,
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { MeetingStatus, ParticipantStatus } from "../generated/prisma/client";
+import { ChatReportReason, MeetingStatus, ParticipantStatus } from "../generated/prisma/client";
 
 // Sohbet penceresi (bütün masa türleri, Planlı ve Yarın aynı): açılış masa detay kartıyla aynı an, buluşma günü 10:00 TR
 // (Grup Cuma, Baş Başa Cumartesi, Kankamla Pazar; Yarın'da masanın kurulduğu günün ertesi günü); kapanış buluşma günü 22:00 TR
@@ -20,19 +24,15 @@ function chatWindow(scheduledAt: Date): { openAt: Date; closeAt: Date } {
   return { openAt, closeAt };
 }
 
-// Sohbette e-posta, telefon numarası ve link paylaşımı yasak
-const EMAIL_RE = /[^\s@]+@[^\s@]+\.[^\s@]+/i;
-const PHONE_RE = /(?:\d[\s\-.()]*){10,}/;
-const LINK_RE = /(https?:\/\/|www\.|[a-z0-9-]+\.(com|net|org|tr|io|co|me|info|biz|app|dev|xyz|link|ly)\b)/i;
-
-function containsContactInfo(content: string): boolean {
-  return EMAIL_RE.test(content) || PHONE_RE.test(content) || LINK_RE.test(content);
-}
+// Otomatik engel uyarısı (gönderene) ve Haiku'ya ulaşılamadığında gösterilen metin (errors.chatBlocked / errors.chatSendFailed)
+const BLOCKED_MSG = "Yapay zekâ bu mesajda kural ihlali tespit etti. Telefon numarası, sosyal medya hesabı ve link paylaşımı yasaktır. Mesajın gönderilmedi ve yöneticilere bildirildi. Tekrarlanması halinde masadan çıkarılırsın ve kullanım hakkın yanar.";
+const SEND_FAILED_MSG = "Mesajın gönderilemedi, tekrar dene.";
 
 const CHAT_STATUSES: MeetingStatus[] = [MeetingStatus.PENDING, MeetingStatus.ACTIVE];
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
   constructor(private prisma: PrismaService) {}
 
   private async assertParticipant(meetingId: string, userId: string) {
@@ -77,7 +77,7 @@ export class ChatService {
     }
 
     const messages = await this.prisma.chatMessage.findMany({
-      where: { meetingId, deletedAt: null },
+      where: { meetingId, deletedAt: null, blockedAt: null },
       orderBy: { createdAt: "asc" },
       select: {
         id: true,
@@ -94,6 +94,7 @@ export class ChatService {
     });
 
     const { names, seats } = await this.tableBadges(meetingId);
+    const photos = await approvedPhotoMap(this.prisma, messages.map((m) => m.senderId));
     return {
       isOpen: true,
       isClosed,
@@ -107,6 +108,7 @@ export class ChatService {
         senderName: names.get(m.senderId) ?? '?',
         seatNo: seats.get(m.senderId) ?? null, // Masaya özel anonim sandalye no (gerçek kimlik gönderilmez)
         senderGender: m.sender.profile?.gender ?? null,
+        senderPhotoUrl: photos.get(m.senderId) ?? null, // Onaylı profil fotoğrafı; yoksa istemci baş harf gösterir
         reportedByMe: m.reports.some((r) => r.reporterId === userId),
       })),
     };
@@ -133,8 +135,25 @@ export class ChatService {
       throw new ForbiddenException("Sohbet süresi doldu");
     }
 
-    if (containsContactInfo(content)) {
-      throw new BadRequestException("Sohbette e-posta, telefon numarası ve link paylaşılamaz");
+    // Otomatik engel: 7+ rakam ya da link → anında engel; şüpheli kelime → Haiku (ulaşılamazsa iletilmez)
+    const verdict = checkMessage(content);
+    let blocked = verdict === "BLOCK";
+    if (verdict === "SUSPECT") {
+      try {
+        blocked = await haikuIsViolation(content);
+      } catch (err) {
+        this.logger.warn(`Sohbet denetimi yapılamadı (masa ${meetingId}): ${err}`);
+        throw new BadRequestException(SEND_FAILED_MSG);
+      }
+    }
+    if (blocked) {
+      // Karşı tarafa iletilmez; admin Şikâyetler'e "Otomatik engel" kaydı
+      const stored = await this.prisma.chatMessage.create({
+        data: { meetingId, senderId: userId, content, blockedAt: new Date() },
+        select: { id: true },
+      });
+      await this.prisma.chatReport.create({ data: { messageId: stored.id, auto: true, reason: ChatReportReason.CONTACT_SHARE } });
+      throw new BadRequestException(BLOCKED_MSG);
     }
 
     const message = await this.prisma.chatMessage.create({
@@ -152,6 +171,7 @@ export class ChatService {
     });
 
     const { names, seats } = await this.tableBadges(meetingId);
+    const photos = await approvedPhotoMap(this.prisma, [userId]);
     return {
       id: message.id,
       content: message.content,
@@ -160,11 +180,14 @@ export class ChatService {
       senderName: names.get(userId) ?? '?',
       seatNo: seats.get(userId) ?? null,
       senderGender: message.sender.profile?.gender ?? null,
+      senderPhotoUrl: photos.get(userId) ?? null,
       reportedByMe: false,
     };
   }
 
-  async reportMessage(messageId: string, reporterId: string) {
+  // Şikâyet: neden zorunlu ("Diğer"de açıklama zorunlu); aynı mesaj kişi başına bir kez; şikâyet edilene bildirim gitmez
+  async reportMessage(messageId: string, reporterId: string, reason: ChatReportReason, note?: string) {
+    if (reason === ChatReportReason.OTHER && !note?.trim()) throw new BadRequestException("Açıklama yazmalısın.");
     const message = await this.prisma.chatMessage.findUnique({
       where: { id: messageId },
       select: { meetingId: true, senderId: true },
@@ -176,10 +199,10 @@ export class ChatService {
 
     await this.assertParticipant(message.meetingId, reporterId);
 
-    await this.prisma.chatReport.upsert({
-      where: { messageId_reporterId: { messageId, reporterId } },
-      update: {},
-      create: { messageId, reporterId },
+    const exists = await this.prisma.chatReport.findUnique({ where: { messageId_reporterId: { messageId, reporterId } }, select: { id: true } });
+    if (exists) throw new ConflictException("Bu mesajı zaten şikâyet ettin.");
+    await this.prisma.chatReport.create({
+      data: { messageId, reporterId, reason, note: reason === ChatReportReason.OTHER ? note!.trim().slice(0, 1000) : null },
     });
 
     return { reported: true };
@@ -195,6 +218,7 @@ export class ChatService {
         content: true,
         createdAt: true,
         deletedAt: true,
+        blockedAt: true,
         senderId: true,
         sender: {
           select: {
@@ -214,11 +238,14 @@ export class ChatService {
       },
     });
 
+    const photos = await approvedPhotoMap(this.prisma, messages.map((m) => m.senderId));
     return messages.map((m) => ({
       id: m.id,
       content: m.content,
       createdAt: m.createdAt,
       deletedAt: m.deletedAt,
+      blockedAt: m.blockedAt, // Otomatik engel: kullanıcılara iletilmedi
+      senderPhotoUrl: photos.get(m.senderId) ?? null,
       senderInitials: `${m.sender.profile?.firstName?.[0] ?? '?'}.${m.sender.profile?.lastName?.[0] ?? '?'}.`,
       senderName: `${m.sender.profile?.firstName ?? ''} ${m.sender.profile?.lastName ?? ''}`.trim() || null,
       senderId: m.senderId,
@@ -226,44 +253,9 @@ export class ChatService {
       reportCount: m.reports.length,
       reports: m.reports.map((r) => ({
         reporterId: r.reporterId,
-        reporterInitials: `${r.reporter.profile?.firstName?.[0] ?? '?'}.${r.reporter.profile?.lastName?.[0] ?? '?'}.`,
+        reporterInitials: r.reporter ? `${r.reporter.profile?.firstName?.[0] ?? '?'}.${r.reporter.profile?.lastName?.[0] ?? '?'}.` : null,
         createdAt: r.createdAt,
       })),
-    }));
-  }
-
-  // Admin: tüm şikayetler
-  async adminGetReports() {
-    const reports = await this.prisma.chatReport.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 200,
-      select: {
-        id: true,
-        createdAt: true,
-        messageId: true,
-        message: {
-          select: {
-            content: true,
-            meetingId: true,
-            sender: {
-              select: { profile: { select: { firstName: true, lastName: true } } },
-            },
-          },
-        },
-        reporter: {
-          select: { profile: { select: { firstName: true, lastName: true } } },
-        },
-      },
-    });
-
-    return reports.map((r) => ({
-      id: r.id,
-      createdAt: r.createdAt,
-      messageId: r.messageId,
-      meetingId: r.message.meetingId,
-      messageContent: r.message.content,
-      senderInitials: `${r.message.sender.profile?.firstName?.[0] ?? '?'}.${r.message.sender.profile?.lastName?.[0] ?? '?'}.`,
-      reporterInitials: `${r.reporter.profile?.firstName?.[0] ?? '?'}.${r.reporter.profile?.lastName?.[0] ?? '?'}.`,
     }));
   }
 }

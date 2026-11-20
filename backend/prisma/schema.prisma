@@ -1038,6 +1038,7 @@ model ChatMessage {
   sender    User         @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
   content   String       @db.Text
   deletedAt DateTime?
+  blockedAt DateTime? // Otomatik engel: mesaj karşı tarafa iletilmedi (yalnız admin görür)
   createdAt DateTime     @default(now())
   reports   ChatReport[]
 
@@ -1046,12 +1047,19 @@ model ChatMessage {
 }
 
 model ChatReport {
-  id         String      @id @default(cuid())
-  messageId  String
-  message    ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  reporterId String
-  reporter   User        @relation("ChatReportSender", fields: [reporterId], references: [id], onDelete: Cascade)
-  createdAt  DateTime    @default(now())
+  id           String            @id @default(cuid())
+  messageId    String
+  message      ChatMessage       @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reporterId   String? // Otomatik engelde boş
+  reporter     User?             @relation("ChatReportSender", fields: [reporterId], references: [id], onDelete: Cascade)
+  reason       ChatReportReason?
+  note         String?           @db.Text // "Diğer" açıklaması
+  auto         Boolean           @default(false) // Otomatik engel kaydı
+  decision     String? // WARN | REMOVE | SUSPEND (admin kararı)
+  decisionDays Int? // Askı süresi (3 / 15 / 30)
+  decidedAt    DateTime?
+  decidedById  String?
+  createdAt    DateTime          @default(now())
 
   @@unique([messageId, reporterId])
   @@index([messageId])
@@ -1060,6 +1068,20 @@ model ChatReport {
 // ─────────────────────────────────────────────
 // KULLANICI YAPTIRIM SİSTEMİ
 // ─────────────────────────────────────────────
+
+// Masa sohbeti mesaj şikâyeti nedenleri
+enum ChatReportReason {
+  INSULT_THREAT
+  HARASSMENT_SEXUAL
+  VENUE_CHANGE
+  CONTACT_SHARE
+  DRUGS
+  FRAUD_MONEY
+  ADVERTISING
+  DISCRIMINATION
+  FAKE_PROFILE
+  OTHER
+}
 
 model UserSanction {
   id        String       @id @default(cuid())
@@ -1072,6 +1094,7 @@ model UserSanction {
   expiresAt DateTime?
   liftedAt  DateTime?
   createdAt DateTime     @default(now())
+  source    String? // CHAT (masa sohbeti ihlali) | PHOTO (uygunsuz profil fotoğrafı)
   meetingId String? // gelmedi uyarısının ait olduğu masa (aynı masaya ikinci uyarı yok)
   meeting   Meeting?     @relation(fields: [meetingId], references: [id], onDelete: SetNull)
 

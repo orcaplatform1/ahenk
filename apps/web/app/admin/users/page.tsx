@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
+import { AdminUserPhoto } from '@/components/AdminUserPhoto';
 import { myRole, myId } from '@/lib/adminRole';
 import { AdminUserEdit } from '@/components/AdminUserEdit';
 import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
@@ -72,17 +73,10 @@ function oceanAvg(o: AdminUser['oceanScore']): string {
   return ((o.openness + o.conscientiousness + o.extraversion + o.agreeableness + o.neuroticism) / 5).toFixed(0);
 }
 
-// Detay penceresi profil alanı: onaylı fotoğraf; yoksa anonim profil (cinsiyet renkli çerçeve + ad soyad baş harfleri)
-function DetailAvatar({ u }: { u: AdminUserDetail }) {
+// Detay penceresi profil alanı: onaylı fotoğraf (basınca büyük görünüm + "Sil"); yoksa anonim profil (cinsiyet renkli çerçeve + baş harfler)
+function DetailAvatar({ u, onDeleted }: { u: AdminUserDetail; onDeleted: () => void }) {
   const initials = `${(u.profile?.firstName ?? '').trim()[0] ?? ''}${(u.profile?.lastName ?? '').trim()[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?';
-  const border = u.profile?.gender === 'FEMALE' ? '#f48fb1' : '#4fc3f7';
-  return (
-    <div style={{ width: 72, height: 72, borderRadius: '50%', border: `3px solid ${border}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', flexShrink: 0 }}>
-      {u.photoUrl
-        ? <img src={u.photoUrl} alt="Profil fotoğrafı" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        : <span style={{ fontSize: 22, fontWeight: 700, color: TEXT }}>{initials}</span>}
-    </div>
-  );
+  return <AdminUserPhoto userId={u.id} photoUrl={u.photoUrl} gender={u.profile?.gender} initials={initials} onDeleted={onDeleted} />;
 }
 
 export default function AdminUsers() {
@@ -358,7 +352,7 @@ export default function AdminUsers() {
               <>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                  <DetailAvatar u={userModal} />
+                  <DetailAvatar u={userModal} onDeleted={() => setUserModal(m => (m ? { ...m, photoUrl: null } : m))} />
                   <div style={{ minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: TEXT }}>
                       {userModal.profile ? `${userModal.profile.firstName} ${userModal.profile.lastName}` : userModal.email}

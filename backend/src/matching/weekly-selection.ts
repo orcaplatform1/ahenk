@@ -152,9 +152,10 @@ export class WeeklySelectionService {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { selectionCancelledAt: true } });
     const until = cancelCooldownUntil(user?.selectionCancelledAt);
     if (until && until > now) throw new ForbiddenException("İptal ettiğin için 24 saat boyunca yeni masaya katılamazsın.");
-    // Aynı güne masası olan kullanıcı o günün taramasına giremez
+    // Aynı güne açık tarama kaydı ya da masası olan kullanıcı o güne ikinci kayıt açamaz (aynı gönderimdeki türler de birbirini sayar)
     const busy = await busyMeetingDays(this.prisma, userId, now);
-    if (unique.some((type) => busy.has(selectionDayKey(type, mode, now)))) throw new ConflictException("Bu güne zaten bir masan var.");
+    const days = unique.map((type) => selectionDayKey(type, mode, now));
+    if (days.some((d) => busy.has(d)) || new Set(days).size !== days.length) throw new ConflictException("Bu güne zaten bir masan var.");
     // Kişinin satırı kilitlenir: eşzamanlı ikinci istek aynı türü ikinci kez kaydedemez
     await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
@@ -188,8 +189,8 @@ export class WeeklySelectionService {
         ? "Yarın Buluşma seçimini yaptıktan sonra 3 saat değiştiremezsin."
         : "Seçimini yaptıktan sonra 24 saat değiştiremezsin.");
     }
-    // Yeni buluşma gününe masası olan kullanıcı o günün taramasına giremez
-    const busy = await busyMeetingDays(this.prisma, userId, now);
+    // Yeni buluşma gününe başka açık kaydı ya da masası olan kullanıcı o günün taramasına giremez (değiştirilen kayıt sayılmaz)
+    const busy = await busyMeetingDays(this.prisma, userId, now, type);
     if (busy.has(selectionDayKey(type, mode, now))) throw new ConflictException("Bu güne zaten bir masan var.");
     await cancelSelection(this.deps, userId, type, "Buluşma türü değiştirildi");
     await this.create(userId, mode, type, now);

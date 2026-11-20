@@ -73,12 +73,21 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
                 </button>
               </div>
             )}
+            {/* Pasif buton nedeni */}
+            {sel && (o.locked || Date.parse(sel.changeAvailableAt) > now) && (
+              <p className="text-[#a39c93]" style={{ fontSize: 12, margin: 0 }}>
+                {tr(o.locked ? 'live.selReasonLocked' : sel.mode === 'TOMORROW' ? 'live.selReasonChange3' : 'live.selReasonChange24')}
+              </p>
+            )}
           </div>
         );
       })}
       {error && <p className="text-[#ff6b6b]" style={{ fontSize: 12, margin: 0 }}>{error}</p>}
       {canPick && (
-        <button onClick={onOpen} disabled={cooling} className="btn-primary w-full justify-center disabled:opacity-50" style={{ minHeight: 44 }}>{tr('live.selOpen')}</button>
+        <>
+          <button onClick={onOpen} disabled={cooling} className="btn-primary w-full justify-center disabled:opacity-50" style={{ minHeight: 44 }}>{tr('live.selOpen')}</button>
+          {cooling && <p className="text-[#a39c93] text-center" style={{ fontSize: 12, margin: 0 }}>{tr('live.selReasonCooldown')}</p>}
+        </>
       )}
       {confirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.7)' }} role="dialog" aria-modal="true" aria-labelledby="sel-confirm-title" onClick={() => setConfirm(null)}>

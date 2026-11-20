@@ -2,7 +2,7 @@ import { Controller, Get, Post, Param, Body, Req, UseGuards, UseInterceptors } f
 import { HideEmailForAdminInterceptor } from "../admin/hide-email.interceptor";
 import { Request } from "express";
 import { ChatService } from "./chat.service";
-import { SendMessageDto } from "./dto/chat.dto";
+import { ReportMessageDto, SendMessageDto } from "./dto/chat.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -29,17 +29,9 @@ export class ChatController {
   }
 
   @Post("messages/:messageId/report")
-  reportMessage(@Param("messageId") messageId: string, @Req() req: Request) {
+  reportMessage(@Param("messageId") messageId: string, @Body() dto: ReportMessageDto, @Req() req: Request) {
     const user = req.user as { id: string };
-    return this.chatService.reportMessage(messageId, user.id);
-  }
-
-  @Get("admin/reports/list")
-  @UseGuards(RolesGuard)
-  @Roles("ADMIN", "SUPERADMIN")
-  @UseInterceptors(HideEmailForAdminInterceptor)
-  adminGetReports() {
-    return this.chatService.adminGetReports();
+    return this.chatService.reportMessage(messageId, user.id, dto.reason, dto.note);
   }
 
   @Get("admin/:meetingId")

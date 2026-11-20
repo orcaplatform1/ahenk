@@ -130,6 +130,25 @@ const sections = [
   },
   {
     n: '06',
+    title: 'Masa Sohbeti ve Profil Fotoğrafı Kuralları',
+    content: (
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
+        {[
+          'Masa sohbetinde hakaret, tehdit, taciz, telefon numarası veya sosyal medya paylaşımı, buluşma yerini değiştirme teklifi ve uyuşturucu içerikli mesajlar yasaktır.',
+          'Otomatik engel: 7 veya daha fazla rakam ya da link içeren mesajlar karşı tarafa iletilmez. Sosyal medya ve iletişim bilgisiyle ilgili ifadeler içeren mesajlar yapay zekâ ile kontrol edilir; kural ihlali tespit edilen mesaj iletilmez ve yöneticilere bildirilir.',
+          'Şikâyet: Masa arkadaşının mesajını basılı tutarak (webde sağ tık veya mesaj menüsü) nedenini seçip şikâyet edebilirsin. Aynı mesajı bir kez şikâyet edebilirsin; şikâyet edilen kişiye bildirim gitmez. Şikâyetler ve otomatik engeller ekibimiz tarafından incelenir.',
+          'Profil fotoğrafı: Topluluk kurallarımıza aykırı, uygunsuz fotoğraflar ekibimiz tarafından kaldırılır. İlk ihlal uyarı olarak kaydedilir; tekrarında hesabın 3, 15 ya da 30 gün askıya alınır.',
+          'Yaptırımlar: İlk ihlalde uyarı verilir. Uyarı almış kullanıcı ihlali tekrarlarsa masadan çıkarılır ya da hesabı 3, 15 veya 30 gün askıya alınır. Masadan çıkarılan kullanıcının kullanım hakkı yanar ve iade yapılmaz. Askı süresince yeni masalara katılamazsın.',
+        ].map((item) => (
+          <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.65 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
+          </li>
+        ))}
+      </ul>
+    ),
+  },
+  {
+    n: '07',
     title: 'Çocukların Korunması',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -138,7 +157,7 @@ const sections = [
     ),
   },
   {
-    n: '07',
+    n: '08',
     title: 'Yaptırımlar',
     content: (
       <>
@@ -164,7 +183,7 @@ const sections = [
     ),
   },
   {
-    n: '08',
+    n: '09',
     title: 'Bildirme ve Şikâyet',
     content: (
       <>
@@ -188,7 +207,7 @@ const sections = [
     ),
   },
   {
-    n: '09',
+    n: '10',
     title: 'Kuralların Güncellenmesi',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -197,7 +216,7 @@ const sections = [
     ),
   },
   {
-    n: '10',
+    n: '11',
     title: 'İletişim',
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.4rem' }}>

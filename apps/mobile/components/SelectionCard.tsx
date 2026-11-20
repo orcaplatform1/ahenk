@@ -74,11 +74,16 @@ export function SelectionCard({ selection, onOpen, onChange, onCancel }: {
                 />
               </View>
             )}
+            {/* Pasif buton nedeni */}
+            {sel && (o.locked || Date.parse(sel.changeAvailableAt) > now) && (
+              <T style={{ fontSize: 12, color: ll.label }}>{t(o.locked ? 'live.selReasonLocked' : sel.mode === 'TOMORROW' ? 'live.selReasonChange3' : 'live.selReasonChange24')}</T>
+            )}
           </View>
         );
       })}
       {!!error && <T style={{ fontSize: 12, color: ll.red2 }}>{error}</T>}
       {canPick && <BtnPrimary label={t('live.selOpen')} style={{ minHeight: 44 }} disabled={cooling} onPress={onOpen} />}
+      {canPick && cooling && <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>{t('live.selReasonCooldown')}</T>}
     </Card>
   );
 }

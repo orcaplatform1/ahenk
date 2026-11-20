@@ -7,7 +7,7 @@ import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATableRow, ATitle } from '@/components/admin/AdminUi';
 import { AdminSelect, AInput, APager } from '@/components/admin/AdminControls';
 import { StatusPill } from '@/components/admin/StatusPill';
-import { Avatar } from '@/components/ProfilePhoto';
+import { AdminUserPhoto } from '@/components/admin/AdminUserPhoto';
 import { AdminDeletionRequests, AdminNoShowWarnings, AdminSanctionHistory, AdminUserEdit, type NoShowReportItem, type NoShowWarningInfo } from '@/components/admin/UserParts';
 import { adm, llCard } from '@/theme/theme';
 
@@ -123,7 +123,7 @@ export default function AdminUsers() {
                 <>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                     <View style={{ flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <Avatar photoUrl={m.photoUrl} initials={initialsOf(m.profile)} gender={m.profile?.gender} size={72} borderWidth={3} />
+                    <AdminUserPhoto userId={m.id} photoUrl={m.photoUrl} initials={initialsOf(m.profile)} gender={m.profile?.gender} size={72} onDeleted={() => setModal(x => (x ? { ...x, photoUrl: null } : x))} />
                     <View style={{ flexShrink: 1 }}>
                       <AT w={600} style={{ fontSize: 14 }}>{m.profile ? `${m.profile.firstName} ${m.profile.lastName}` : m.email}</AT>
                       {!!m.email && <AMono style={{ marginTop: 3, fontSize: 10 }}>{m.email}</AMono>}

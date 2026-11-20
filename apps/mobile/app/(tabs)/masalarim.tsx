@@ -10,6 +10,7 @@ import { mediaUrl } from '@/lib/venueApi';
 import { buildInitials, fmtDate, gColor, type DashboardItem, type MasaTuru } from '@/lib/masa';
 import { WeeklySelectionModal } from '@/components/WeeklySelectionModal';
 import { useMasaTabs } from '@/lib/useMasaTabs';
+import { useKeyboardFieldScroll } from '@/lib/useKeyboardFieldScroll';
 import { LiveTabs } from '@/components/LiveTabs';
 import { KankaPairs } from '@/components/KankaPairs';
 import { DetayAvatar } from '@/components/DetayAvatar';
@@ -181,7 +182,7 @@ function EmptyMasaCardInner({ locked, cardType, userInfo, kanka, photo }: { lock
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: c.t555 }} />
-            <T w={700} style={{ fontSize: 10, letterSpacing: 1.4, color: c.t555 }}>{cardType === 'basbasa' ? t('tm.chatOne') : cardType === 'kanka' ? t('tm.chatKanka') : t('masa.groupChat')}</T>
+            <T w={700} style={{ fontSize: 10, letterSpacing: 1.4, color: c.t555 }}>{t('masa.chatTitle')}</T>
           </View>
           <View style={{ backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden' }}>
             <View style={{ paddingVertical: 16, paddingHorizontal: 12, alignItems: 'center' }}><T style={{ fontSize: 12, lineHeight: 18, textAlign: 'center' }}>{t('masa.noMessages')}</T></View>
@@ -286,7 +287,8 @@ export default function Masalarim() {
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [dateId, setDateId] = useState<string | null>(null); // Seçili tarih sekmesindeki masa
-  const scrollRef = useRef<ScrollViewInstance>(null);
+  // Klavye açılınca odaklı alan (sohbet yazı alanı) klavyenin üstünde kalır; son mesajlar sohbet listesinde en altta
+  const kb = useKeyboardFieldScroll();
 
   useEffect(() => { api.get<HistoryMeeting[]>('/meetings/my-history').then(h => setHistory(Array.isArray(h) ? h : [])).catch(() => {}); }, []);
 
@@ -305,7 +307,7 @@ export default function Masalarim() {
     <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
       <ScreenGlow />
       {!hasActiveSelection && <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />}
-      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 32, gap: 24, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
+      <ScrollView ref={kb.ref} onScroll={kb.onScroll} scrollEventThrottle={kb.scrollEventThrottle} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 32, gap: 24, maxWidth: 896, width: '100%', alignSelf: 'center' }}>
         <Glow />
         {/* Grup / Baş Başa / Kankamla halkaları Eşleşme Paneli'ndekiyle aynı yükseklikte: üst boşluk yalnız durum çubuğu kadar;
             KYC kartı görünürken Eşleşme Paneli'ndeki gibi üstte ve altta 16 boşluk */}

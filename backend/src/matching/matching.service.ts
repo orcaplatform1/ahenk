@@ -18,7 +18,7 @@ import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { Gender, MeetingMode, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "../generated/prisma/client";
 import { pickBot, alertBotNotFound, recentlyMetBotIds, notifyBotAssigned } from "./bot-picker";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right";
-import { plannedTargetWeek, selectedThisWeek, selectedTomorrow } from "./selection-cancel";
+import { noTableOnDay, plannedTargetWeek, selectedThisWeek, selectedTomorrow } from "./selection-cancel";
 import { chargeKankaRight, GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, pairKankaSub, syncPackageStatus } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { approvedPhotoMap, PROFILE_PHOTO_DIR } from "../profile-photo/profile-photo.util";
@@ -288,12 +288,13 @@ export class MatchingService {
     };
   }
 
+  // Atama havuzu: aynı güne başka masası olan kullanıcı havuza girmez (aynı kullanıcıya aynı güne ikinci masa kurulmaz)
   private poolScope(ctx: AssignContext): PoolScope {
     if (ctx.mode === MeetingMode.TOMORROW) {
       const meetingAt = ctx.meetingAt!;
-      return { meeting: { mode: MeetingMode.TOMORROW, scheduledAt: meetingAt }, selected: (t) => selectedTomorrow(t, meetingAt) };
+      return { meeting: { mode: MeetingMode.TOMORROW, scheduledAt: meetingAt }, selected: (t) => ({ AND: [selectedTomorrow(t, meetingAt), noTableOnDay(meetingAt)] }) };
     }
-    return { meeting: { cycleId: ctx.cycleId!, mode: MeetingMode.PLANNED }, selected: (t) => selectedThisWeek(t) };
+    return { meeting: { cycleId: ctx.cycleId!, mode: MeetingMode.PLANNED }, selected: (t) => ({ AND: [selectedThisWeek(t), noTableOnDay(this.meetingAtFor(ctx, t))] }) };
   }
 
   // Planlı havuz kapsamı (kapanış ve hatırlatma işleri)

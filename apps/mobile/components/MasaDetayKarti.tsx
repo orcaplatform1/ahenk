@@ -16,10 +16,11 @@ import { useAppRefresh } from '@/lib/useAppRefresh';
 import { DetayAvatar } from './DetayAvatar';
 import { PhotoViewer } from './ProfilePhoto';
 import { SosNotice } from './SosNotice';
-import { InlineLH, Btn, BtnPrimary, Card, Serif, T } from './ui';
+import { InlineLH, Btn, BtnGhost, BtnPrimary, Card, Serif, T } from './ui';
+import { showAlert } from './AppAlert';
 import { LocationDisclosure } from './LocationDisclosure';
 import { PERM_REASON, showSettingsAlert } from '@/lib/permissions';
-import { c, masaKart, sans, tw } from '@/theme/theme';
+import { c, ll, masaKart, sans, tw } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { formatCardDate, formatDayMonth, occupationLabel, reviewOpensAt } from '@ahenk/shared';
 
@@ -30,7 +31,7 @@ export interface MasaDetayData {
   venueAddress?: string | null; venueDistrict?: string | null; venueMapsUrl?: string | null; venuePhotos?: VenuePhoto[]; participants: DetayParticipant[];
   aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
 }
-interface ChatMsg { id: string; content: string; createdAt: string; isOwn: boolean; senderName: string; senderGender?: string | null; seatNo?: number | null; reportedByMe: boolean }
+interface ChatMsg { id: string; content: string; createdAt: string; isOwn: boolean; senderName: string; senderGender?: string | null; seatNo?: number | null; senderPhotoUrl?: string | null; reportedByMe: boolean; pending?: boolean }
 
 const GREEN = c.green;
 const msgTime = (iso: string) => new Date(iso).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
@@ -63,16 +64,76 @@ export function GoldPill({ label, onPress }: { label: string; onPress: () => voi
 }
 
 
-function SectionDot({ color, label }: { color: string; label: string }) {
+// Masa sohbeti (web ChatSection ile aynı): başlık "Masa Sohbeti" + katılımcı sayısı; her mesajda fotoğraf (yoksa cinsiyet renkli baş harf)
+// ve ad; saat baloncuğun içinde sağ altta; emoji seçici + gönder ikonu; başkasının mesajına basılı tutunca "Şikâyet Et"; altta Masa Kuralları
+const EMOJIS = ['😀', '😂', '😊', '😍', '🥰', '😎', '🤔', '😅', '😉', '🙏', '👍', '👏', '🙌', '💪', '🎉', '❤️', '🔥', '✨', '🍷', '🍻', '☕', '🍕', '🌙', '😮', '😢', '👋', '🤝', '😇', '🤗', '😋'];
+const REPORT_REASONS = ['INSULT_THREAT', 'HARASSMENT_SEXUAL', 'VENUE_CHANGE', 'CONTACT_SHARE', 'DRUGS', 'FRAUD_MONEY', 'ADVERTISING', 'DISCRIMINATION', 'FAKE_PROFILE', 'OTHER'] as const;
+
+function nameInitials(name: string): string {
+  const parts = name.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, '').trim().split(/\s+/);
+  const f = parts[0]?.[0] ?? '?';
+  const l = (parts[1] ?? '').replace('.', '')[0] ?? '';
+  return `${f}.${l ? `${l}.` : ''}`.toLocaleUpperCase('tr-TR');
+}
+
+function ChatAvatar({ msg }: { msg: ChatMsg }) {
+  const color = gColor(msg.senderGender);
+  return msg.senderPhotoUrl
+    ? <Image source={{ uri: mediaUrl(msg.senderPhotoUrl) }} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: color }} />
+    : (
+      <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: color, backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center' }}>
+        <T w={700} style={{ fontSize: 9.5, color: '#f4f1ec' }}>{nameInitials(msg.senderName)}</T>
+      </View>
+    );
+}
+
+function ReportSheet({ visible, onClose, onSubmit }: { visible: boolean; onClose: () => void; onSubmit: (reason: string, note: string) => Promise<string | null> }) {
+  const { t } = useTranslation();
+  const [reason, setReason] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  useEffect(() => { if (visible) { setReason(null); setNote(''); setErr(''); } }, [visible]);
+  const can = !!reason && (reason !== 'OTHER' || note.trim().length > 0) && !busy;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-      <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: color }} />
-      <T w={700} style={{ fontSize: 10, letterSpacing: 1.4, color }}>{label}</T>
-    </View>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+        <Pressable onPress={() => undefined} style={{ width: '100%', maxWidth: 400, maxHeight: '90%', backgroundColor: tw.bg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 16, padding: 20 }}>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            <T w={700} style={{ fontSize: 16, color: '#f4f1ec', marginBottom: 14 }}>{t('masa.reportTitle')}</T>
+            <View style={{ gap: 6 }}>
+              {REPORT_REASONS.map(r => {
+                const on = reason === r;
+                return (
+                  <Pressable key={r} onPress={() => setReason(r)} accessibilityRole="radio" accessibilityState={{ checked: on }}
+                    style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1,
+                      borderColor: on ? 'rgba(192,57,43,0.5)' : 'rgba(255,255,255,0.08)', backgroundColor: on ? 'rgba(192,57,43,0.12)' : 'rgba(255,255,255,0.04)' }}>
+                    <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: on ? c.red : 'rgba(255,255,255,0.4)', alignItems: 'center', justifyContent: 'center' }}>
+                      {on && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.red }} />}
+                    </View>
+                    <T style={{ flex: 1, fontSize: 13, color: '#f4f1ec' }}>{t(`masa.reason_${r}`)}</T>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {reason === 'OTHER' && (
+              <TextInput value={note} onChangeText={(v) => setNote(v.slice(0, 1000))} placeholder={t('masa.reportNote')} placeholderTextColor="rgba(255,255,255,0.4)" multiline keyboardAppearance="dark"
+                style={{ marginTop: 10, minHeight: 72, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: 10, color: tw.text, fontSize: 13, fontFamily: sans(400), textAlignVertical: 'top' }} />
+            )}
+            {!!err && <T accessibilityRole="alert" style={{ marginTop: 10, fontSize: 12, color: tw.accent }}>{err}</T>}
+            <View style={{ alignItems: 'center', gap: 8, marginTop: 16 }}>
+              <BtnPrimary label={t('masa.reportAction')} disabled={!can} style={{ width: '100%', maxWidth: 280, minHeight: 44 }}
+                onPress={async () => { if (!reason) return; setBusy(true); setErr(''); const e = await onSubmit(reason, note); setBusy(false); if (e) setErr(e); }} />
+              <BtnGhost label={t('masa.reportCancel')} style={{ width: '100%', maxWidth: 280, minHeight: 44 }} onPress={onClose} />
+            </View>
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
-function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }) {
+function ChatSection({ meetingId, count }: { meetingId: string; count?: string }) {
   const { t } = useTranslation();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isClosed, setIsClosed] = useState(false);
@@ -82,6 +143,9 @@ function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }
   const [sendError, setSendError] = useState('');
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [reportFor, setReportFor] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
   const scroll = useRef<ScrollViewInstance>(null);
 
   const fetchMessages = useCallback(async () => {
@@ -105,23 +169,46 @@ function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }
   async function send() {
     const trimmed = input.trim();
     if (!trimmed || sending || isClosed || !isOpen) return;
-    setSending(true); setSendError('');
-    try { const msg = await api.post<ChatMsg>(`/chat/${meetingId}/messages`, { content: trimmed }); setMessages(p => [...p, msg]); setInput(''); }
-    catch (e) { setSendError((e as Error).message || t('masa.sendFailedMsg')); }
+    setSending(true); setSendError(''); setEmojiOpen(false);
+    // Gönderiliyor: sunucu yanıtına (denetimde bekletme dahil) kadar baloncuk "gönderiliyor" durumunda
+    const tempId = `pending-${Date.now()}`;
+    const mine = [...messages].reverse().find(m => m.isOwn);
+    setMessages(p => [...p, { id: tempId, content: trimmed, createdAt: new Date().toISOString(), isOwn: true, senderName: mine?.senderName ?? '', senderGender: mine?.senderGender, senderPhotoUrl: mine?.senderPhotoUrl, seatNo: mine?.seatNo ?? null, reportedByMe: false, pending: true }]);
+    setInput('');
+    try { const msg = await api.post<ChatMsg>(`/chat/${meetingId}/messages`, { content: trimmed }); setMessages(p => p.map(m => (m.id === tempId ? msg : m))); }
+    catch (e) { setMessages(p => p.filter(m => m.id !== tempId)); setSendError((e as Error).message || t('masa.sendFailedMsg')); }
     finally { setSending(false); }
   }
-  async function report(id: string) {
-    await api.post(`/chat/messages/${id}/report`).catch(() => {});
-    setMessages(p => p.map(m => (m.id === id ? { ...m, reportedByMe: true } : m)));
+  async function submitReport(id: string, reason: string, note: string): Promise<string | null> {
+    try {
+      await api.post(`/chat/messages/${id}/report`, { reason, ...(reason === 'OTHER' ? { note } : {}) });
+      setMessages(p => p.map(m => (m.id === id ? { ...m, reportedByMe: true } : m)));
+      setReportFor(null);
+      setNotice(t('masa.reportDone')); setTimeout(() => setNotice(''), 3000);
+      return null;
+    } catch (e) { return (e as Error).message || t('masa.sendFailedMsg'); }
   }
-  const title = isClosed ? t('masa.chatClosed') : type === 'ONE_ON_ONE' ? t('tm.chatOne') : type === 'KANKA' ? t('tm.chatKanka') : t('masa.groupChat');
+  // Basılı tutunca mesaj menüsü: "Şikâyet Et"
+  function openMenu(m: ChatMsg) {
+    if (m.isOwn || isClosed || m.pending) return;
+    showAlert(t('masa.msgMenu'), undefined, m.reportedByMe
+      ? [{ text: t('masa.reported'), style: 'cancel' }]
+      : [{ text: t('masa.reportAction'), style: 'destructive', onPress: () => setReportFor(m.id) }, { text: t('masa.reportCancel'), style: 'cancel' }]);
+  }
 
   return (
     <View>
+      <ReportSheet visible={!!reportFor} onClose={() => setReportFor(null)} onSubmit={(r, n) => submitReport(reportFor!, r, n)} />
       <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginVertical: 20 }} />
-      <SectionDot color={isClosed ? c.t555 : GREEN} label={title} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: isClosed ? c.t555 : GREEN }} />
+          <T w={700} style={{ fontSize: 13, color: isClosed ? '#777' : '#f4f1ec' }}>{t('masa.chatTitle')}</T>
+        </View>
+        {!!count && <T w={600} style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{count}</T>}
+      </View>
       <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, overflow: 'hidden' }}>
-        <ScrollView ref={scroll} nestedScrollEnabled style={{ maxHeight: 260 }} contentContainerStyle={{ padding: 12, paddingBottom: 8, gap: 8 }} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
+        <ScrollView ref={scroll} nestedScrollEnabled style={{ maxHeight: 320 }} contentContainerStyle={{ padding: 12, paddingBottom: 8, gap: 8 }} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
           {messages.length === 0 && (
             <T style={{ fontSize: 12, textAlign: 'center' }}>
               {!isOpen && openAt ? t('masa.chatOpensAt', { time: formatMeetingTime(openAt) }) : isClosed ? t('masa.chatEnded') : t('masa.noMessages')}
@@ -131,31 +218,62 @@ function ChatSection({ meetingId, type }: { meetingId: string; type?: MasaTuru }
             const prev = messages[i - 1];
             const first = !prev || prev.isOwn !== m.isOwn || prev.seatNo !== m.seatNo;
             return (
-              <View key={m.id} style={{ flexDirection: 'row', justifyContent: m.isOwn ? 'flex-end' : 'flex-start', gap: 6, alignItems: 'flex-start' }}>
+              <View key={m.id} style={{ flexDirection: m.isOwn ? 'row-reverse' : 'row', gap: 6, alignItems: 'flex-start' }}>
+                <View style={{ width: 28 }}>{first && <ChatAvatar msg={m} />}</View>
                 <View style={{ maxWidth: '72%', alignItems: m.isOwn ? 'flex-end' : 'flex-start' }}>
-                  {/* Gönderen görünen adı ("Ahmet Y.") serinin ilk mesajında */}
-                  {!m.isOwn && first && <T w={600} style={{ fontSize: 11, color: gColor(m.senderGender), marginBottom: 3 }}>{m.senderName}</T>}
-                  <View style={{ paddingVertical: 8, paddingHorizontal: 11, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: gColor(m.senderGender),
-                    borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomLeftRadius: m.isOwn ? 12 : 2, borderBottomRightRadius: m.isOwn ? 2 : 12 }}>
+                  {/* Gönderen fotoğrafı ve görünen adı ("Ahmet Y.") serinin ilk mesajında */}
+                  {first && !!m.senderName && <T w={600} style={{ fontSize: 11, color: gColor(m.senderGender), marginBottom: 3 }}>{m.senderName}</T>}
+                  <Pressable onLongPress={() => openMenu(m)} delayLongPress={350} accessibilityHint={!m.isOwn ? t('masa.reportAction') : undefined}
+                    style={{ paddingTop: 7, paddingBottom: 5, paddingHorizontal: 10, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: gColor(m.senderGender), opacity: m.pending ? 0.7 : 1,
+                      borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottomLeftRadius: m.isOwn ? 12 : 2, borderBottomRightRadius: m.isOwn ? 2 : 12 }}>
                     <T style={{ fontSize: 13, color: c.tF0, lineHeight: 18.85 }}>{m.content}</T>
-                  </View>
-                  <T style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{msgTime(m.createdAt)}</T>
-                  {!m.isOwn && !isClosed && (
-                    <Btn variant="reportLink" selected={m.reportedByMe} onPress={() => !m.reportedByMe && report(m.id)} label={m.reportedByMe ? t('masa.reported') : t('masa.reportMsg')} />
-                  )}
+                    {/* Saat baloncuğun içinde sağ altta (WhatsApp gibi), metinden farklı renkte */}
+                    <T style={{ alignSelf: 'flex-end', marginTop: 2, fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>{m.pending ? t('masa.msgSending') : msgTime(m.createdAt)}</T>
+                  </Pressable>
+                  {!m.isOwn && m.reportedByMe && <T style={{ fontSize: 10, color: c.t555, marginTop: 2 }}>{t('masa.reported')}</T>}
                 </View>
               </View>
             );
           })}
         </ScrollView>
         {isOpen && !isClosed && (
-          <View style={{ flexDirection: 'row', gap: 6, paddingVertical: 8, paddingHorizontal: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
-            <TextInput value={input} onChangeText={(t) => setInput(t.slice(0, 1000))} onSubmitEditing={send} returnKeyType="send" keyboardAppearance="dark"
-              style={{ flex: 1, minWidth: 0, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, color: tw.text, fontFamily: sans(400) }} />
-            <BtnPrimary label={t('masa.send')} onPress={send} disabled={!input.trim() || sending} style={{ paddingHorizontal: 10, gap: 5 }} textStyle={{ fontSize: 10 }} />
-          </View>
+          <>
+            {emojiOpen && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
+                {EMOJIS.map(e => (
+                  <Pressable key={e} onPress={() => setInput(v => (v + e).slice(0, 1000))} accessibilityRole="button" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                    <T style={{ fontSize: 22 }}>{e}</T>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
+              <Pressable onPress={() => setEmojiOpen(v => !v)} accessibilityRole="button" accessibilityLabel={t('masa.emoji')} accessibilityState={{ expanded: emojiOpen }}
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                <T style={{ fontSize: 22 }}>🙂</T>
+              </Pressable>
+              <TextInput value={input} onChangeText={(v) => setInput(v.slice(0, 1000))} onSubmitEditing={send} returnKeyType="send" keyboardAppearance="dark"
+                onFocus={() => setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 300)}
+                style={{ flex: 1, minWidth: 0, minHeight: 40, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, fontSize: 14, color: tw.text, fontFamily: sans(400) }} />
+              <Pressable onPress={send} disabled={!input.trim() || sending} accessibilityRole="button" accessibilityLabel={t('masa.send')}
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: c.red, alignItems: 'center', justifyContent: 'center', opacity: input.trim() && !sending ? 1 : 0.5 }}>
+                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <Path d="M22 2 11 13" /><Path d="M22 2 15 22l-4-9-9-4 20-7z" />
+                  </Svg>
+                </View>
+              </Pressable>
+            </View>
+          </>
         )}
-        {!!sendError && isOpen && !isClosed && <T style={{ paddingHorizontal: 10, paddingBottom: 8, fontSize: 12, color: tw.accent }}>{sendError}</T>}
+        {!!sendError && isOpen && !isClosed && <T accessibilityRole="alert" style={{ paddingHorizontal: 10, paddingBottom: 8, fontSize: 12, lineHeight: 18, color: tw.accent }}>{sendError}</T>}
+        {!!notice && <T style={{ paddingHorizontal: 10, paddingBottom: 8, fontSize: 12, color: ll.label }}>{notice}</T>}
+      </View>
+      {/* Sabit Masa Kuralları kartı */}
+      <View style={{ marginTop: 10, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, backgroundColor: 'rgba(245,158,11,0.06)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)' }}>
+        <T style={{ fontSize: 11.5, lineHeight: 17.8, color: 'rgba(255,255,255,0.75)' }}>
+          <T w={700} style={{ fontSize: 11.5, color: '#f4f1ec' }}>{t('masa.chatRulesTitle')}</T> {t('masa.chatRulesText')}
+        </T>
       </View>
     </View>
   );
@@ -575,7 +693,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
           </View>
         )}
 
-        <ChatSection meetingId={masa.id} type={masa.type} />
+        <ChatSection meetingId={masa.id} count={`${masa.participants.filter(p => !p.cancelled).length}/${masa.maxParticipants ?? masa.participants.filter(p => !p.cancelled).length}`} />
         <NoShowSection meetingId={masa.id} />
 
         {/* Değerlendir: değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı */}

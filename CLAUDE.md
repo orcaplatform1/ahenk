@@ -221,8 +221,13 @@ YARIN BULUŞMA (iki takvim modeli; ayrı sistem değil, mevcut paket hakları ay
     24 saat boyunca yeni masaya katılamazsın."). Paket başına tek iptal hakkı yoktur
   - İptal / değiştir uyarı penceresi (web + mobil): büyük başlık (Serif 26), altında kural metni (live.selChangeRule / live.selCancelRule),
     butonlar ortada alt alta
-  - Aynı güne masası (kurulu, kilitli ya da oluşturuluyor) olan kullanıcı o günün başka bir taramasına giremez: seçim gönderilince /
-    değiştirilince engellenir, uyarı "Bu güne zaten bir masan var." / "You already have a table on this day." (busyMeetingDays)
+  - Aynı gün kuralı: kullanıcının aynı güne açık bir tarama kaydı ya da masası (kurulu / kilitli / oluşturuluyor) varsa o güne ikinci
+    tarama kaydı açamaz (aynı gönderimdeki türler de birbirini sayar); seçim gönderilince / değiştirilince engellenir, uyarı "Bu güne
+    zaten bir masan var." / "You already have a table on this day." (selection-cancel.ts busyMeetingDays). Eşleştirme algoritması da
+    aynı kullanıcıya aynı güne ikinci masa kurmaz (matching.service poolScope → noTableOnDay)
+  - Pasif butonun altında neden metni (web + mobil seçim kartı): Değiştir 24 saat kilidinde "Seçimini 24 saat içinde değiştiremezsin.",
+    Yarın'da 3 saat kilidinde "Seçimini 3 saat içinde değiştiremezsin.", iptal sonrası Seçim Yap kapalıyken "İptal ettiğin için 24 saat
+    yeni masaya katılamazsın.", masa kilitliyken "Masan kilitlendi." (live.selReason*)
   - Hafta Sonu (Planlı) son saatler aynen: Grup Perşembe 18:00, Baş Başa Cuma 18:00, Kankamla Cumartesi 18:00; geçtiyse kayıt bir
     sonraki haftanın taramasına yazılır
   - Kankamla kanka seçilmeden de seçilir; kayıt "Kanka bekleniyor" durumunda kalır, taramaya girmez; kanka daveti kabul edince tarama
@@ -377,7 +382,7 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     dokununca yeniden büyüme yok. Tek animasyon: bütün ağaç kökü etrafında tek parça hafif salınır (Reanimated frame callback, UI
     thread, en fazla 30 kare/sn), ekran odakta değilken durur. Görünüm (şekil, renk, yaprak yoğunluğu, boyut) aynı (KisilikAgaci.tsx)
   - Profilim alt bölümü sırası (mobil): "Gizlilik ve Güvenlik" kartı → yasal bağlantılar kartı (Gizlilik Politikası, Kullanım Koşulları,
-    KVKK Aydınlatma Metni, Hesap Silme — web sayfaları uygulama içi tarayıcıda, satırlar 44 pt) → "Çıkış Yap" → "Tüm cihazlardan çıkış
+    KVKK Aydınlatma Metni, Topluluk Kuralları, Hesap Silme — web sayfaları uygulama içi tarayıcıda, satırlar 44 pt) → "Çıkış Yap" → "Tüm cihazlardan çıkış
     yap" → küçük uygulama logosu → "Versiyon 0.1.6" → "Hesabımı Sil". Mobil sürüm 0.1.6 (Android versionCode 7)
   - Mağaza ayarları (app.json): iOS bundleIdentifier co.ahenk.app (Android package ile aynı); eas.json "production" profili (Android AAB,
     iOS mağaza), "preview" APK profili duruyor. iOS privacy manifest app.json ios.privacyManifests'te (prebuild PrivacyInfo.xcprivacy
@@ -645,19 +650,52 @@ Kapanınca:
 Admin erişimi:
   - Masa detayında sohbet geçmişi salt okunur görünür
   - Şikayet edilen mesajlar ayrıca işaretli görünür
+Görünüm (web packages/ui MasaDetayKarti ChatSection, mobil MasaDetayKarti ChatSection):
+  - Her masa türünde başlık "Masa Sohbeti" (EN "Table Chat", masa.chatTitle), sağında katılımcı sayısı (ör. 2/2)
+  - Her mesajda gönderenin onaylı profil fotoğrafı (yoksa cinsiyet renkli baş harf) ve "Ahmet Y." adı (serinin ilk mesajında);
+    saat baloncuğun içinde sağ altta, metinden farklı renkte; gönderilirken "gönderiliyor"
+  - Gönder yazısı yok, gönder (ileti) ikonu; yazı alanının solunda emoji seçici
+  - Klavye: web'de odak / visualViewport değişiminde son mesajlar ve yazı alanı görünür kalır; mobilde Masalarım ScrollView
+    automaticallyAdjustKeyboardInsets + useKeyboardFieldScroll
+  - Sohbetin altında sabit "Masa Kuralları: …" kartı (masa.chatRulesTitle / chatRulesText)
+Otomatik mesaj engeli (backend chat/chat-moderation.ts):
+  - Normalize: boşluk, nokta, tire silinir; küçük harf; 1→i, 0→o, 3→e. 7+ rakam (rakam sayımı harf dönüşümünden önce) ya da link
+    (www, http, .com / .net / .org / .tr ve benzeri alan uzantıları; uzantı noktayla aranır) → anında engel, karşı tarafa iletilmez
+  - Şüpheli kelime (instagram, insta, instgram, ig, snap, snapchat, telegram, whatsapp, wp, numaram, tel, hesabım, takip et, dm;
+    ig / wp / tel / dm yalnız ayrı sözcük) → mesaj bekletilir (gönderende "gönderiliyor"), Claude Haiku (claude-haiku-5-5, CLAUDE_API_KEY)
+    sorulur: masum → iletilir, ihlal → engellenir. Listeye girmeyen mesaj Haiku'ya gönderilmez
+  - Engelde gönderene errors.chatBlocked ("Yapay zekâ bu mesajda kural ihlali tespit etti. …"); mesaj ChatMessage.blockedAt ile saklanır
+    (yalnız admin görür) ve Şikâyetler'e "Otomatik engel" kaydı (ChatReport.auto) düşer
+  - Haiku'ya ulaşılamazsa / anahtar yoksa mesaj iletilmez, kaydedilmez: "Mesajın gönderilemedi, tekrar dene." (errors.chatSendFailed)
 Şikayet sistemi:
-  - Her mesajın yanında "Şikayet et" butonu
-  - Her şikayet anında admin paneline düşer (eşik yok)
-  - Şikayet: mesaj içeriği + şikayetçi + şikayet zamanı admin görür
+  - Başkasının mesajına basılı tutunca (web: sağ tık ya da ⋯ mesaj menüsü) "Şikâyet Et"; nedenler (ChatReportReason): Hakaret/tehdit/
+    aşağılayıcı ileti, Taciz veya cinsel içerikli ileti, Buluşma yerini değiştirme, Telefon/sosyal medya paylaşımı, Uyuşturucu içerikli
+    ileti, Dolandırıcılık/para talebi, Reklam/yönlendirme, Ayrımcı içerik, Sahte profil şüphesi, Diğer ("Diğer"de açıklama zorunlu)
+  - Bir kullanıcı aynı mesajı yalnız 1 kez şikâyet eder; şikâyet edilen kişiye hiçbir bildirim gitmez
+  - Admin Şikâyetler (web /admin/quality, mobil admin/quality): şikâyet ve otomatik engel kayıtları; detayda şikâyet edilen mesaj
+    işaretli olarak sohbetin tamamı, gönderenin fotoğrafı ve önceki uyarıları
+Admin kararları ve bildirim şablonları (backend admin/admin-moderation.ts):
+  - Uyar / Masadan çıkar / Askıya al (3 / 15 / 30 gün). Kullanıcı daha önce uyarı aldıysa (kaldırılmamış WARNING) yalnız Masadan çıkar
+    ve Askıya al aktif. Admin serbest mesaj yazamaz; kullanıcıya yalnız hazır şablon push (başlık "Ahenk") gider, sonunda ihlal türü
+    ("İhlal: …" / "Violation: …"). Uyar: WARNING yaptırımı (source CHAT). Masadan çıkar: katılım CANCELLED, masa erişimi kapanır,
+    hak iade edilmez (sohbet kilit sonrası açıldığı için hak düşülmüştür). Askıya al: mevcut SUSPENSION akışı (createSanction)
+  - Şablon metinleri talimattaki gibi: Uyar "Ahenk Ekibi: … Bu ilk uyarındır. …", Masadan çıkar "Ahenk Ekibi: … Bu masadan çıkarıldın …",
+    Askıya al "Ahenk Ekibi: Kural ihlalin nedeniyle hesabın [3 gün / 15 gün / 30 gün] boyunca askıya alındı. …" (EN karşılıkları)
+Profil fotoğrafı silme (admin, web + mobil AdminUserPhoto):
+  - Kullanıcı fotoğrafı büyütülünce "Sil" → onay. Fotoğraf (dosya + kayıt) sunucudan silinir. İlk fotoğraf ihlalinde push "Topluluk
+    kurallarımıza aykırı olan uygunsuz fotoğrafınız kaldırılmıştır." ve WARNING (source PHOTO); önceki fotoğraf ihlali varsa admin askı
+    süresini seçer (3 / 15 / 30 gün), Askıya al şablonu gider. Şu an Kullanıcılar detayı ve Şikâyetler detayında
 Prisma modeli:
-  - ChatMessage { id, meetingId, senderId, content, createdAt, deletedAt? }
-  - ChatReport { id, messageId, reporterId, createdAt }
+  - ChatMessage { id, meetingId, senderId, content, createdAt, deletedAt?, blockedAt? }
+  - ChatReport { id, messageId, reporterId?, reason?, note?, auto, decision?, decisionDays?, decidedAt?, decidedById?, createdAt }
+  - UserSanction.source (CHAT | PHOTO)
 Endpoint'ler:
-  - GET /chat/:meetingId/messages — mesaj listesi (JWT zorunlu, masa katılımcısı olmalı)
-  - POST /chat/:meetingId/messages — mesaj gönder (JWT, kapanış saati kontrolü)
-  - POST /chat/messages/:messageId/report — şikayet et (JWT)
-  - GET /admin/chat/:meetingId — admin sohbet geçmişi (ADMIN guard)
-  - GET /admin/chat/reports — tüm şikayetler listesi (ADMIN guard)
+  - GET /chat/:meetingId/messages — mesaj listesi (JWT zorunlu, masa katılımcısı olmalı; senderPhotoUrl)
+  - POST /chat/:meetingId/messages — mesaj gönder (JWT, kapanış saati kontrolü, otomatik engel)
+  - POST /chat/messages/:messageId/report — şikayet et {reason, note?} (JWT)
+  - GET /chat/admin/:meetingId — admin sohbet geçmişi (ADMIN guard)
+  - GET /admin/chat-reports, GET /admin/chat-reports/:id, POST /admin/chat-reports/:id/decision {action, days?}
+  - GET /admin/users/:id/photo-violations, POST /admin/users/:id/profile-photo/delete {suspendDays?}
 
 REZERVASYON İPTALİ KURALLARI (güncelleme):
   - İptal masa kilidine kadar (buluşmadan önceki gün 23:59) seçim kartından yapılır, hak yanmaz; iptal eden 24 saat hiçbir masaya
@@ -743,7 +781,11 @@ SOHBET SİSTEMİ EK KURALLAR:
   - chatCloseTime hesaplaması TR timezone (UTC+3 sabit offset) ile yapılır.
   - Grup masası gece yarısı güvenliği: scheduledAt >= kapanış saati ise closeTime = scheduledAt + 4 saat.
   - Bu güvenlik sadece GROUP için geçerlidir; ONE_ON_ONE için uygulanmaz (Cuma kapanışı geçtiyse sohbet zaten kapalıdır).
-  - Chat controller'da literal route (admin/reports/list) her zaman parametrik route'tan (admin/:meetingId) önce tanımlanmalıdır; aksi halde route shadow oluşur.
+  - Admin şikâyet listesi /admin/chat-reports'a taşındı (chat controller'daki admin/reports/list kaldırıldı); literal route'lar her zaman
+    parametrik route'lardan önce tanımlanır.
+  - Topluluk Kuralları (web /topluluk-kurallari TR + EN; mobil Profilim yasal kartında): "Masa Sohbeti ve Profil Fotoğrafı Kuralları"
+    bölümü — sohbet kuralları, otomatik engel, şikâyet, fotoğraf kuralları, yaptırımlar (uyarı, masadan çıkarma, 3/15/30 gün askı,
+    hak yanması, iade yok).
   - MeetingStatus.REVEALED henüz şemada yok; spec'te var ama migration bekleniyor. Şu an sohbet sadece ACTIVE masalar için açık.
 
 RATE LIMITING:

@@ -54,7 +54,9 @@ interface ChatMsg {
   senderName: string; // Görünen ad ("Ahmet Y.")
   senderGender?: string | null;
   seatNo?: number | null; // Masaya özel anonim sandalye no (art arda mesaj serisi)
+  senderPhotoUrl?: string | null; // Onaylı profil fotoğrafı; yoksa cinsiyet renkli baş harf
   reportedByMe: boolean;
+  pending?: boolean; // Gönderiliyor (sunucu yanıtı bekleniyor; denetimde bekletilen mesaj)
 }
 
 // Mesaj saati: SS:DD (Europe/Istanbul)
@@ -415,7 +417,69 @@ function SosModal({
 }
 
 // ── Sohbet Bölümü ─────────────────────────────────────────────────────────
-function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase: string; token?: string }) {
+// Başlık "Masa Sohbeti" + katılımcı sayısı; her mesajda gönderenin fotoğrafı (yoksa cinsiyet renkli baş harf) ve adı; saat
+// baloncuğun içinde sağ altta; emoji seçici + gönder ikonu; başkasının mesajında sağ tık / ⋯ menüsü → "Şikâyet Et"; altta Masa Kuralları
+const EMOJIS = ['😀', '😂', '😊', '😍', '🥰', '😎', '🤔', '😅', '😉', '🙏', '👍', '👏', '🙌', '💪', '🎉', '❤️', '🔥', '✨', '🍷', '🍻', '☕', '🍕', '🌙', '😮', '😢', '👋', '🤝', '😇', '🤗', '😋'];
+const REPORT_REASONS = ['INSULT_THREAT', 'HARASSMENT_SEXUAL', 'VENUE_CHANGE', 'CONTACT_SHARE', 'DRUGS', 'FRAUD_MONEY', 'ADVERTISING', 'DISCRIMINATION', 'FAKE_PROFILE', 'OTHER'] as const;
+
+function nameInitials(name: string): string {
+  const parts = name.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, '').trim().split(/\s+/);
+  const f = parts[0]?.[0] ?? '?';
+  const l = (parts[1] ?? '').replace('.', '')[0] ?? '';
+  return `${f}.${l ? `${l}.` : ''}`.toLocaleUpperCase('tr-TR');
+}
+
+function ChatAvatar({ msg }: { msg: ChatMsg }) {
+  const color = gColor(msg.senderGender);
+  return msg.senderPhotoUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={msg.senderPhotoUrl} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: `1.5px solid ${color}`, flexShrink: 0 }} />
+  ) : (
+    <span aria-hidden="true" style={{ width: 28, height: 28, borderRadius: '50%', border: `1.5px solid ${color}`, background: 'rgba(255,255,255,0.04)', color: '#f4f1ec', fontSize: 9.5, fontWeight: 700, fontFamily: 'Inter, sans-serif', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      {nameInitials(msg.senderName)}
+    </span>
+  );
+}
+
+function ReportModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (reason: string, note: string) => Promise<string | null> }) {
+  const t = useTranslations();
+  const [reason, setReason] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const can = !!reason && (reason !== 'OTHER' || note.trim().length > 0) && !busy;
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="report-title" onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 400, maxHeight: '90vh', overflowY: 'auto', background: '#121212', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 20 }}>
+        <p id="report-title" style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 700, color: '#f4f1ec', fontFamily: 'Inter, sans-serif' }}>{t('masa.reportTitle')}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {REPORT_REASONS.map(r => (
+            <label key={r} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 40, padding: '6px 10px', borderRadius: 10, cursor: 'pointer', fontSize: 13, color: '#f4f1ec', fontFamily: 'Inter, sans-serif',
+              background: reason === r ? 'rgba(192,57,43,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${reason === r ? 'rgba(192,57,43,0.5)' : 'rgba(255,255,255,0.08)'}` }}>
+              <input type="radio" name="report-reason" checked={reason === r} onChange={() => setReason(r)} style={{ accentColor: '#c0392b' }} />
+              {t(`masa.reason_${r}`)}
+            </label>
+          ))}
+        </div>
+        {reason === 'OTHER' && (
+          <textarea value={note} onChange={e => setNote(e.target.value.slice(0, 1000))} placeholder={t('masa.reportNote')} rows={3} required
+            style={{ marginTop: 10, width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: 10, color: '#f5f5f5', fontSize: 13, fontFamily: 'Inter, sans-serif', resize: 'vertical' }} />
+        )}
+        {err && <p role="alert" style={{ margin: '10px 0 0', fontSize: 12, color: '#ff6b6b', fontFamily: 'Inter, sans-serif' }}>{err}</p>}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 16 }}>
+          <button type="button" className="btn-primary justify-center" disabled={!can} style={{ minHeight: 44, width: '100%', maxWidth: 280, opacity: can ? 1 : 0.5 }}
+            onClick={async () => { if (!reason) return; setBusy(true); setErr(''); const e = await onSubmit(reason, note); setBusy(false); if (e) setErr(e); }}>
+            {t('masa.reportAction')}
+          </button>
+          <button type="button" className="btn-ghost justify-center" onClick={onClose} style={{ minHeight: 44, width: '100%', maxWidth: 280 }}>{t('masa.reportCancel')}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChatSection({ meetingId, apiBase, token, count }: { meetingId: string; apiBase: string; token?: string; count?: string }) {
   const t = useTranslations();
   const locale = useLocale();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -426,7 +490,12 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
   const [sendError, setSendError] = useState('');
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [menuFor, setMenuFor] = useState<string | null>(null); // Mesaj menüsü açık olan mesaj
+  const [reportFor, setReportFor] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
+  const listRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
 
   const headers = jsonHeaders(token);
 
@@ -443,7 +512,7 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
       setOpenAt(data.openAt);
       setCloseAt(data.closeAt ?? null);
       setIsClosed(data.isClosed || (!!data.closeAt && Date.now() >= new Date(data.closeAt).getTime()));
-      // Sunucudan gelenler mevcut listeyle birleştirilir; aynı mesaj iki kez gösterilmez
+      // Sunucudan gelenler mevcut listeyle birleştirilir; aynı mesaj iki kez gösterilmez (gönderiliyor durumundakiler korunur)
       setMessages(prev => {
         const byId = new Map(prev.map(m => [m.id, m]));
         for (const m of data.messages ?? []) byId.set(m.id, m);
@@ -477,15 +546,37 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
     return () => clearTimeout(t);
   }, [closeAt, isClosed]);
 
+  // Son mesaj görünür: liste kendi içinde en alta kayar (sayfa kaymaz)
+  const scrollToEnd = useCallback(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, []);
+  useEffect(() => { scrollToEnd(); }, [messages.length, scrollToEnd]);
+
+  // Klavye açılınca (mobil tarayıcı, visualViewport küçülür) son mesajlar ve yazı alanı görünür kalır
+  const keepComposerVisible = useCallback(() => {
+    scrollToEnd();
+    composerRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
+  }, [scrollToEnd]);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return;
+    const onResize = () => { if (document.activeElement?.classList.contains('ahenk-chat-input')) keepComposerVisible(); };
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, [keepComposerVisible]);
 
   async function sendMessage() {
     const trimmed = input.trim();
     if (!trimmed || sending || isClosed || !isOpen) return;
     setSending(true);
     setSendError('');
+    setEmojiOpen(false);
+    // Gönderiliyor: sunucu yanıtına (denetimde bekletme dahil) kadar baloncuk "gönderiliyor" durumunda
+    const tempId = `pending-${Date.now()}`;
+    const mine = [...messages].reverse().find(m => m.isOwn);
+    setMessages(prev => [...prev, { id: tempId, content: trimmed, createdAt: new Date().toISOString(), isOwn: true, senderName: mine?.senderName ?? '', senderGender: mine?.senderGender, senderPhotoUrl: mine?.senderPhotoUrl, seatNo: mine?.seatNo ?? null, reportedByMe: false, pending: true }]);
+    setInput('');
     try {
       const res = await fetch(`${apiBase}/chat/${meetingId}/messages`, {
         method: 'POST', headers, credentials: 'include',
@@ -493,20 +584,34 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
       });
       if (res.ok) {
         const msg = await res.json() as ChatMsg;
-        setMessages(prev => [...prev, msg]);
-        setInput('');
+        setMessages(prev => prev.map(m => (m.id === tempId ? msg : m)));
       } else {
-        const err = await res.json().catch(() => null) as { message?: string } | null;
-        setSendError(err?.message ?? t('masa.sendFailedMsg'));
+        const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+        setSendError((Array.isArray(err?.message) ? err?.message[0] : err?.message) ?? t('masa.sendFailedMsg'));
       }
     } catch {
+      setMessages(prev => prev.filter(m => m.id !== tempId));
       setSendError(t('masa.sendFailedMsg'));
     } finally { setSending(false); }
   }
 
-  async function reportMessage(messageId: string) {
-    await fetch(`${apiBase}/chat/messages/${messageId}/report`, { method: 'POST', headers, credentials: 'include' });
-    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reportedByMe: true } : m));
+  // Şikâyet: neden + ("Diğer"de zorunlu) açıklama; hata metni döner (başarılıysa null)
+  async function submitReport(messageId: string, reason: string, note: string): Promise<string | null> {
+    try {
+      const res = await fetch(`${apiBase}/chat/messages/${messageId}/report`, {
+        method: 'POST', headers, credentials: 'include', body: JSON.stringify({ reason, ...(reason === 'OTHER' ? { note } : {}) }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
+        return (Array.isArray(err?.message) ? err?.message[0] : err?.message) ?? t('masa.sendFailedMsg');
+      }
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reportedByMe: true } : m));
+      setReportFor(null);
+      setNotice(t('masa.reportDone'));
+      setTimeout(() => setNotice(''), 3000);
+      return null;
+    } catch { return t('masa.sendFailedMsg'); }
   }
 
   const dividerStyle: React.CSSProperties = {
@@ -516,18 +621,22 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
   return (
     <div>
       <div style={dividerStyle} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-        <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: isClosed ? '#555' : GREEN }} />
-        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', color: isClosed ? '#555' : GREEN }}>
-          {isClosed ? t('masa.chatClosed') : t('masa.groupChat')}
+      {reportFor && <ReportModal onClose={() => setReportFor(null)} onSubmit={(r, n) => submitReport(reportFor, r, n)} />}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: isClosed ? '#555' : GREEN }} />
+          <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif', color: isClosed ? '#777' : '#f4f1ec' }}>
+            {t('masa.chatTitle')}
+          </span>
         </span>
+        {count && <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter, sans-serif' }}>{count}</span>}
       </div>
 
       <div style={{
         background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: 10, overflow: 'hidden',
+        borderRadius: 10, overflow: 'hidden', position: 'relative',
       }}>
-        <div style={{ maxHeight: 260, overflowY: 'auto', padding: '12px 12px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div ref={listRef} onClick={() => setMenuFor(null)} style={{ maxHeight: 320, overflowY: 'auto', padding: '12px 12px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {messages.length === 0 && (
             <p style={{ margin: 0, fontSize: 12, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
               {!isOpen && openAt
@@ -537,74 +646,106 @@ function ChatSection({ meetingId, apiBase, token }: { meetingId: string; apiBase
           )}
           {messages.map((msg, i) => {
             const prev = messages[i - 1];
-            // Aynı kişinin art arda mesajlarında gönderen adı yalnızca serinin ilk mesajında
+            // Aynı kişinin art arda mesajlarında fotoğraf ve ad yalnızca serinin ilk mesajında
             const firstOfSeries = !prev || prev.isOwn !== msg.isOwn || prev.seatNo !== msg.seatNo;
+            const canReport = !msg.isOwn && !isClosed && !msg.pending;
             return (
-            <div key={msg.id} style={{ display: 'flex', flexDirection: 'row', justifyContent: msg.isOwn ? 'flex-end' : 'flex-start', gap: 6, alignItems: 'flex-start' }}>
-              <div style={{ maxWidth: '72%', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: msg.isOwn ? 'flex-end' : 'flex-start' }}>
-                {!msg.isOwn && firstOfSeries && (
+            <div key={msg.id} style={{ display: 'flex', flexDirection: msg.isOwn ? 'row-reverse' : 'row', gap: 6, alignItems: 'flex-start' }}>
+              <span style={{ width: 28, flexShrink: 0 }}>{firstOfSeries && <ChatAvatar msg={msg} />}</span>
+              <div style={{ maxWidth: '72%', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: msg.isOwn ? 'flex-end' : 'flex-start', position: 'relative' }}>
+                {firstOfSeries && msg.senderName && (
                   <span style={{ fontSize: 11, fontWeight: 600, color: gColor(msg.senderGender), fontFamily: 'Inter, sans-serif', marginBottom: 3 }}>{msg.senderName}</span>
                 )}
-                <div style={{
-                  padding: '8px 11px', borderRadius: msg.isOwn ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${gColor(msg.senderGender)}`,
-                  fontSize: 13, color: '#f0f0f0', fontFamily: 'Inter, sans-serif', lineHeight: 1.45,
-                  wordBreak: 'break-word', overflowWrap: 'anywhere',
-                }}>
+                <div
+                  onContextMenu={canReport ? e => { e.preventDefault(); setMenuFor(msg.id); } : undefined}
+                  style={{
+                    padding: '7px 10px 5px', borderRadius: msg.isOwn ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${gColor(msg.senderGender)}`,
+                    fontSize: 13, color: '#f0f0f0', fontFamily: 'Inter, sans-serif', lineHeight: 1.45,
+                    wordBreak: 'break-word', overflowWrap: 'anywhere', opacity: msg.pending ? 0.7 : 1,
+                  }}
+                >
                   {msg.content}
+                  {/* Saat baloncuğun içinde sağ altta (WhatsApp gibi), metinden farklı renkte */}
+                  <span style={{ float: 'right', margin: '6px 0 0 10px', fontSize: 10, lineHeight: 1, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}>
+                    {msg.pending ? t('masa.msgSending') : msgTime(msg.createdAt)}
+                  </span>
                 </div>
-                <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>
-                  {msgTime(msg.createdAt)}
-                </span>
-                {!msg.isOwn && !isClosed && (
-                  <button
-                    onClick={() => !msg.reportedByMe && reportMessage(msg.id)}
-                    style={{
-                      background: 'none', border: 'none', cursor: msg.reportedByMe ? 'default' : 'pointer',
-                      fontSize: 10, color: msg.reportedByMe ? '#333' : '#444', fontFamily: 'Inter, sans-serif',
-                      padding: '2px 0', marginTop: 2,
-                    }}
-                  >
-                    {msg.reportedByMe ? t('masa.reported') : t('masa.reportMsg')}
+                {canReport && (
+                  <button type="button" aria-label={t('masa.msgMenu')} onClick={e => { e.stopPropagation(); setMenuFor(menuFor === msg.id ? null : msg.id); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.45)', fontSize: 14, padding: '0 4px', lineHeight: 1.2 }}>
+                    ⋯
                   </button>
+                )}
+                {menuFor === msg.id && (
+                  <div role="menu" onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '100%', left: 0, zIndex: 5, background: '#1b1b1b', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: 4, minWidth: 140 }}>
+                    <button type="button" role="menuitem" disabled={msg.reportedByMe}
+                      onClick={() => { setMenuFor(null); setReportFor(msg.id); }}
+                      style={{ display: 'block', width: '100%', textAlign: 'left', minHeight: 36, padding: '6px 10px', background: 'none', border: 'none', borderRadius: 8, cursor: msg.reportedByMe ? 'default' : 'pointer', color: msg.reportedByMe ? '#777' : '#ff6b6b', fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
+                      {msg.reportedByMe ? t('masa.reported') : t('masa.reportAction')}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
             );
           })}
-          <div ref={bottomRef} />
         </div>
 
         {isOpen && !isClosed && (
-          <div style={{ display: 'flex', gap: 6, padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.06)', boxSizing: 'border-box', width: '100%' }}>
+          <div ref={composerRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.06)', boxSizing: 'border-box', width: '100%' }}>
+            {emojiOpen && (
+              <div role="listbox" aria-label={t('masa.emoji')} style={{ position: 'absolute', bottom: '100%', left: 8, right: 8, zIndex: 5, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(36px, 1fr))', gap: 2, padding: 8, background: '#1b1b1b', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, marginBottom: 6 }}>
+                {EMOJIS.map(e => (
+                  <button key={e} type="button" onClick={() => setInput(v => (v + e).slice(0, 1000))}
+                    style={{ minHeight: 36, background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, borderRadius: 8 }}>{e}</button>
+                ))}
+              </div>
+            )}
+            <button type="button" aria-label={t('masa.emoji')} aria-expanded={emojiOpen} onClick={() => setEmojiOpen(v => !v)}
+              style={{ flexShrink: 0, width: 36, height: 36, borderRadius: '50%', background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>
+              🙂
+            </button>
             <input
               value={input}
               onChange={e => setInput(e.target.value.slice(0, 1000))}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+              onFocus={() => setTimeout(keepComposerVisible, 300)}
               placeholder=""
               className="ahenk-chat-input"
               style={{
                 flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 8, padding: '8px 10px', fontSize: 13, color: '#f5f5f5',
+                borderRadius: 8, padding: '8px 10px', fontSize: 16, color: '#f5f5f5',
                 fontFamily: 'Inter, sans-serif', outline: 'none',
               }}
             />
             <button
+              type="button"
               onClick={sendMessage}
               disabled={!input.trim() || sending}
-              className="btn-primary"
-              style={{ fontSize: 10, paddingLeft: 10, paddingRight: 10, gap: 5, flexShrink: 0, minWidth: 0 }}
+              aria-label={t('masa.send')}
+              style={{ flexShrink: 0, width: 38, height: 38, borderRadius: '50%', border: 'none', background: '#c0392b', color: '#fff', cursor: input.trim() && !sending ? 'pointer' : 'not-allowed', opacity: input.trim() && !sending ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              {t('masa.send')}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" />
+              </svg>
             </button>
           </div>
         )}
         {sendError && isOpen && !isClosed && (
-          <p style={{ margin: 0, padding: '0 10px 8px', fontSize: 12, color: '#ff6b6b', fontFamily: 'Inter, sans-serif' }}>
+          <p role="alert" style={{ margin: 0, padding: '0 10px 8px', fontSize: 12, lineHeight: 1.5, color: '#ff6b6b', fontFamily: 'Inter, sans-serif' }}>
             {sendError}
           </p>
         )}
+        {notice && <p role="status" style={{ margin: 0, padding: '0 10px 8px', fontSize: 12, color: '#a39c93', fontFamily: 'Inter, sans-serif' }}>{notice}</p>}
+      </div>
+
+      {/* Sabit Masa Kuralları kartı */}
+      <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)' }}>
+        <p style={{ margin: 0, fontSize: 11.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter, sans-serif' }}>
+          <strong style={{ color: '#f4f1ec' }}>{t('masa.chatRulesTitle')}</strong> {t('masa.chatRulesText')}
+        </p>
       </div>
     </div>
   );
@@ -1102,7 +1243,8 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
 
         {/* Sohbet bölümü */}
         {hasChat && (
-          <ChatSection meetingId={masa.id} apiBase={apiBase!} token={token} />
+          <ChatSection meetingId={masa.id} apiBase={apiBase!} token={token}
+            count={`${masa.participants.filter(p => !p.cancelled).length}/${masa.maxParticipants ?? masa.participants.filter(p => !p.cancelled).length}`} />
         )}
 
         {/* Masaya gelmeyen işaretleme */}

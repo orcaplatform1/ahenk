@@ -116,17 +116,55 @@ export function selectionDayKey(type: MeetingType, mode: MeetingMode, now = new 
   return trDayKey(new Date(deadlineOf(type, base).getTime() + 86400000));
 }
 
-// Aynı güne kurulu, kilitli ya da oluşturuluyor durumunda masası olan kullanıcı o günün başka bir taramasına giremez
-export async function busyMeetingDays(prisma: PrismaService, userId: string, now = new Date()): Promise<Set<string>> {
-  const seats = await prisma.meetingParticipant.findMany({
-    where: {
-      userId,
-      status: { notIn: LEFT },
-      meeting: { status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] }, scheduledAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } },
+// ISO hafta (yıl, hafta) → o haftanın Pazartesi'si (UTC gece yarısı)
+function isoWeekMonday(year: number, week: number): number {
+  const jan4 = Date.UTC(year, 0, 4);
+  const dow = new Date(jan4).getUTCDay() || 7;
+  return jan4 - (dow - 1) * 86400000 + (week - 1) * 7 * 86400000;
+}
+
+// Açık tarama kaydının buluşma günü (TR): Yarın → meetingDate; Planlı → kaydın haftasının Grup Cuma / Baş Başa Cumartesi / Kankamla Pazar günü
+export function openSelectionDayKey(sel: { type: MeetingType; mode: MeetingMode; meetingDate: Date | null; year: number; weekNumber: number }): string | null {
+  if (sel.mode === MeetingMode.TOMORROW) return sel.meetingDate ? trDayKey(sel.meetingDate) : null;
+  return new Date(isoWeekMonday(sel.year, sel.weekNumber) + SELECTION_DEADLINE[sel.type].day * 86400000).toISOString().slice(0, 10);
+}
+
+// Aynı güne açık tarama kaydı ya da masası (kurulu / kilitli / oluşturuluyor) olan kullanıcı o güne ikinci tarama kaydı açamaz.
+// exceptType: buluşma türü değiştirilen kaydın kendisi sayılmaz.
+export async function busyMeetingDays(prisma: PrismaService, userId: string, now = new Date(), exceptType?: MeetingType): Promise<Set<string>> {
+  const [seats, selections] = await Promise.all([
+    prisma.meetingParticipant.findMany({
+      where: {
+        userId,
+        status: { notIn: LEFT },
+        meeting: { status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] }, scheduledAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } },
+      },
+      select: { meeting: { select: { scheduledAt: true, type: true } } },
+    }),
+    Promise.all(([MeetingType.GROUP, MeetingType.ONE_ON_ONE, MeetingType.KANKA] as MeetingType[])
+      .filter((t) => t !== exceptType)
+      .map((t) => prisma.weeklySelection.findMany({ where: { userId, ...activeSelectionWhere(t, now) }, select: { type: true, mode: true, meetingDate: true, year: true, weekNumber: true } }))),
+  ]);
+  const days = new Set(seats.filter((s) => s.meeting.type !== exceptType).map((s) => trDayKey(s.meeting.scheduledAt)));
+  for (const sel of selections.flat()) {
+    const key = openSelectionDayKey(sel);
+    if (key) days.add(key);
+  }
+  return days;
+}
+
+// Eşleştirme: verilen gün (TR) için başka masası olan kullanıcı havuza girmez (aynı kullanıcıya aynı güne ikinci masa kurulmaz)
+export function noTableOnDay(meetingAt: Date): Prisma.UserWhereInput {
+  const key = trDayKey(meetingAt);
+  const start = new Date(Date.parse(`${key}T00:00:00Z`) - TR_OFFSET_MS);
+  return {
+    participations: {
+      none: {
+        status: { notIn: LEFT },
+        meeting: { status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] }, scheduledAt: { gte: start, lt: new Date(start.getTime() + 86400000) } },
+      },
     },
-    select: { meeting: { select: { scheduledAt: true } } },
-  });
-  return new Set(seats.map((s) => trDayKey(s.meeting.scheduledAt)));
+  };
 }
 
 export type SelectionDeps = { prisma: PrismaService; notifications: NotificationService; assignQueue: Queue };
