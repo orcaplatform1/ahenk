@@ -3,13 +3,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
-import { KankaPairs, type KankaPerson } from './KankaPairs';
 import { DetayAvatar } from './DetayAvatar';
 import { PhotoViewer } from './PhotoViewer';
 import { gColor } from './MasaRadar';
 import { documentLang } from '../../lib/lang';
-
-type KankaParticipant = KankaPerson & { pair?: 'MINE' | 'OTHER' };
 
 // ── Tipler ──────────────────────────────────────────────────────────────────
 export interface DetayParticipant {
@@ -19,6 +16,8 @@ export interface DetayParticipant {
   photoUrl?: string | null;
   cancelled?: boolean;
   displayName?: string | null; // Görünen ad ("Ahmet Y."), kart açıldıktan sonra sunucudan gelir
+  occupation?: string | null; // Kişinin kendi mesleği (adının altında); mesleği olmayan botta boş
+  pair?: 'MINE' | 'OTHER'; // Kankamla: kullanıcının kendi çifti / karşı çift
 }
 
 export interface VenuePhoto {
@@ -44,7 +43,6 @@ export interface MasaDetayData {
   venueMapsUrl?: string | null;
   venuePhotos?: VenuePhoto[];
   participants: DetayParticipant[];
-  occupations?: string[]; // Her istekte karışık sıra; kime ait olduğu gösterilmez
   aiReport?: AiReport | null;
 }
 
@@ -72,7 +70,7 @@ interface Props {
   // Verilirse Bearer başlığı eklenir; web oturumu HttpOnly çerezle gider (credentials: 'include')
   token?: string;
   archive?: boolean; // Geçmiş masa: yalnızca Haritada Gör çalışır, sohbet ve acil yardım yok (apiBase verilmez)
-  onEditOwnPhoto?: () => void; // Kendi fotoğrafının tam ekran görünümündeki kalem butonu
+  reviewHref?: string; // Aktif kartta "Değerlendir": değerlendirme açılınca (ertesi gün 08:00) gidilen adres
 }
 
 function jsonHeaders(token?: string): Record<string, string> {
@@ -84,17 +82,46 @@ function jsonHeaders(token?: string): Record<string, string> {
 // ── Renkler ─────────────────────────────────────────────────────────────────
 const GREEN      = '#27ae60';
 
-function buildOrdered(participants: DetayParticipant[]): DetayParticipant[] {
+// Katılımcı satırları (satırda en fazla 2 kişi): Grup ve Baş Başa'da her satır 1 erkek + 1 kadın; Kankamla'da üst satır
+// kullanıcının kanka çifti, alt satır karşı çift
+function participantRows(participants: DetayParticipant[], type?: MasaDetayData['type']): DetayParticipant[][] {
+  const chunk = (list: DetayParticipant[]) => {
+    const rows: DetayParticipant[][] = [];
+    for (let i = 0; i < list.length; i += 2) rows.push(list.slice(i, i + 2));
+    return rows;
+  };
+  if (type === 'KANKA') {
+    const mine = participants.filter(p => p.pair === 'MINE').sort((a, b) => Number(!!b.isSelf) - Number(!!a.isSelf));
+    const other = participants.filter(p => p.pair !== 'MINE');
+    return [...chunk(mine), ...chunk(other)];
+  }
   const males   = participants.filter(p => p.gender === 'MALE');
   const females = participants.filter(p => p.gender === 'FEMALE');
   const others  = participants.filter(p => p.gender !== 'MALE' && p.gender !== 'FEMALE');
-  const ordered: DetayParticipant[] = [];
-  const len = Math.max(males.length, females.length);
-  for (let i = 0; i < len; i++) {
-    if (i < males.length)   ordered.push(males[i]);
-    if (i < females.length) ordered.push(females[i]);
+  const rows: DetayParticipant[][] = [];
+  for (let i = 0; i < Math.max(males.length, females.length); i++) {
+    rows.push([males[i], females[i]].filter((p): p is DetayParticipant => !!p));
   }
-  return [...ordered, ...others];
+  return [...rows, ...chunk(others)];
+}
+
+// Tarih satırı (gg.aa.yyyy kuralının istisnası; @ahenk/shared formatCardDate ile aynı): TR "18 Kasım, Çarşamba 20:00",
+// EN "Wednesday, 18 November 20:00"
+function formatCardDate(isoStr: string, locale = 'tr'): string {
+  const d = new Date(isoStr);
+  if (Number.isNaN(d.getTime())) return '';
+  const loc = locale === 'en' ? 'en-GB' : 'tr-TR';
+  const tz = 'Europe/Istanbul';
+  const dm = d.toLocaleDateString(loc, { day: 'numeric', month: 'long', timeZone: tz });
+  const wd = d.toLocaleDateString(loc, { weekday: 'long', timeZone: tz });
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz });
+  return locale === 'en' ? `${wd}, ${dm} ${time}` : `${dm}, ${wd} ${time}`;
+}
+
+// Değerlendirmenin açıldığı an: buluşmanın ertesi günü 08:00 TR (backend meeting-windows reviewWindow ile aynı)
+function reviewOpensAt(isoStr: string): Date {
+  const tr = new Date(new Date(isoStr).getTime() + 3 * 60 * 60 * 1000);
+  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 1, 8 - 3, 0, 0, 0));
 }
 
 // Gün adı arayüz dilinde, saat 24 saat (bölge saat dilimi)
@@ -108,17 +135,13 @@ function formatMeetingTime(isoStr: string, locale = 'tr'): string {
   } catch { return ''; }
 }
 
-// Bilgi şeridi: "Cuma, 20:00" (gün adı arayüz dilinde, 24 saat)
-function formatStripTime(isoStr: string, locale = 'tr'): string {
-  return formatMeetingTime(isoStr, locale).replace(' · ', ', ');
-}
-
-// Kapak üstü hap rozet
-const pillStyle = (bg: string, color: string, border: string): React.CSSProperties => ({
-  display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 9999,
-  background: bg, border: `1px solid ${border}`, color, fontSize: 11, fontWeight: 700,
-  letterSpacing: '0.04em', fontFamily: 'Inter, sans-serif', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-});
+// "Değerlendir": İçerde paket kartı rozetindeki altın geçişli hap (premium)
+export const GOLD_PILL: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 36, padding: '0 18px', borderRadius: 9999,
+  background: 'linear-gradient(135deg, #f5d76e, #c9a227 55%, #a8861a)', color: '#1a1406', border: 'none', cursor: 'pointer',
+  fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif',
+  textDecoration: 'none', boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
+};
 
 // Genel Uyum halkası (kayıtlı uyumSkoru, 0–100)
 function ScoreRing({ score }: { score: number }) {
@@ -211,9 +234,6 @@ function Lightbox({ photos, startIdx, onClose }: { photos: VenuePhoto[]; startId
         }}
         style={{ maxWidth: '90vw', maxHeight: '75vh', cursor: photos.length > 1 ? 'pointer' : undefined, objectFit: 'contain', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)' }}
       />
-      {photos[idx].caption && (
-        <p style={{ color: '#aaa', fontSize: 13, marginTop: 12, fontFamily: 'Inter, sans-serif' }}>{photos[idx].caption}</p>
-      )}
       {photos.length > 1 && !narrow && (
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }} onClick={e => e.stopPropagation()}>
           {photos.map((_, i) => (
@@ -385,6 +405,10 @@ function SosModal({
         >
           {loading ? t('masa.locating') : error ? t('masa.tryAgain') : t('masa.report')}
         </button>
+        {/* Tek dokunuşla 112 */}
+        <a href="tel:112" style={{ display: 'block', marginTop: 12, textAlign: 'center', fontSize: 11.5, color: 'rgba(255,107,107,0.8)', fontFamily: 'Inter, sans-serif', textDecoration: 'underline' }}>
+          {t('masa.sosCall112')}
+        </a>
       </motion.div>
     </motion.div>
   );
@@ -697,49 +721,33 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
   );
 }
 
-export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOwnPhoto }: Props) {
+export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHref }: Props) {
   const t = useTranslations();
   const locale = useLocale();
   const [lightboxIdx,   setLightboxIdx]   = useState<number | null>(null);
-  // Katılımcı profil fotoğrafı tam ekran; kendi fotoğrafında düzenleme butonu
-  const [viewer, setViewer] = useState<{ url: string; self: boolean } | null>(null);
-  const openPhoto = (p: { photoUrl?: string | null; isSelf?: boolean }) => { if (p.photoUrl) setViewer({ url: p.photoUrl, self: !!p.isSelf }); };
-  const [onMyWayDone,   setOnMyWayDone]   = useState(false);
-  const [onMyWayLoading,setOnMyWayLoading]= useState(false);
-  const [onMyWayWarn,   setOnMyWayWarn]   = useState('');
-  // Yola Çıktım: buluşmadan 1 saat önce aktif olur; o ana gelince sayfa yenilenmeden açılsın
-  const onMyWayOpensAt = new Date(masa.scheduledAt).getTime() - 60 * 60 * 1000;
-  const [onMyWayOpen, setOnMyWayOpen] = useState(() => Date.now() >= onMyWayOpensAt);
-  useEffect(() => {
-    if (onMyWayOpen) return;
-    const id = setInterval(() => { if (Date.now() >= onMyWayOpensAt) setOnMyWayOpen(true); }, 15000);
-    return () => clearInterval(id);
-  }, [onMyWayOpen, onMyWayOpensAt]);
+  // Katılımcı profil fotoğrafı tam ekran (kendi fotoğrafında da düzenleme yok; fotoğraf yalnız Profilim'den değişir)
+  const [viewer, setViewer] = useState<string | null>(null);
+  const openPhoto = (p: { photoUrl?: string | null }) => { if (p.photoUrl) setViewer(p.photoUrl); };
+  // "Değerlendir" 08:00'den önce basılırsa uyarı
+  const [reviewWarn, setReviewWarn] = useState('');
+  const reviewAt = reviewOpensAt(masa.scheduledAt);
+  function handleReview() {
+    if (Date.now() < reviewAt.getTime()) {
+      const date = reviewAt.toLocaleDateString(locale === 'en' ? 'en-GB' : 'tr-TR', { day: 'numeric', month: 'long', timeZone: 'Europe/Istanbul' });
+      setReviewWarn(t('masa.reviewNotYet', { date }));
+      setTimeout(() => setReviewWarn(''), 4000);
+      return;
+    }
+    if (reviewHref) window.location.href = reviewHref;
+  }
+  // "Nasıl çalışır?" penceresi
+  const [sosHowOpen, setSosHowOpen] = useState(false);
 
   const photos     = masa.venuePhotos ?? [];
   const mapLink    = mapsUrl(masa.venueMapsUrl, masa.venueAddress);
-  const ordered    = buildOrdered(masa.participants);
+  const rows       = participantRows(masa.participants.filter(p => !p.cancelled), masa.type);
 
   const authHeaders = apiBase ? jsonHeaders(token) : null;
-
-  async function handleOnMyWay() {
-    if (!authHeaders || onMyWayDone || onMyWayLoading) return;
-    if (!onMyWayOpen) {
-      setOnMyWayWarn(t('masa.onMyWayLater'));
-      setTimeout(() => setOnMyWayWarn(''), 4000);
-      return;
-    }
-    setOnMyWayLoading(true);
-    try {
-      const res = await fetch(`${apiBase}/meetings/${masa.id}/on-my-way`, { method: 'POST', headers: authHeaders, credentials: 'include' });
-      if (res.ok) setOnMyWayDone(true);
-      else {
-        const err = await res.json().catch(() => null) as { message?: string | string[] } | null;
-        const msg = Array.isArray(err?.message) ? err?.message[0] : err?.message;
-        if (msg) { setOnMyWayWarn(msg); setTimeout(() => setOnMyWayWarn(''), 4000); }
-      }
-    } finally { setOnMyWayLoading(false); }
-  }
 
   const hasChat = !!apiBase;
 
@@ -828,15 +836,9 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
   }, [sosVisible, apiBase, masa.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
-  // Kapak, bilgi şeridi ve katılımcılar
-  const chatRef = useRef<HTMLDivElement>(null);
+  // Kapak, tarih satırı ve katılımcılar
   // Mekânın yalnız ilk fotoğrafı gösterilir (tek fotoğraf; eski kayıtlardaki diğerleri gösterilmez)
   const cover = photos[0] ?? null;
-  const present = masa.participants.filter(p => !p.cancelled);
-  const femaleCount = present.filter(p => p.gender === 'FEMALE').length;
-  const maleCount = present.filter(p => p.gender === 'MALE').length;
-  const typeLabel = masa.type === 'ONE_ON_ONE' ? t('masa.typeOne') : masa.type === 'KANKA' ? t('masa.typeKanka') : t('masa.typeGroup');
-  const scrollToChat = () => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
     <>
@@ -856,8 +858,26 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
           />
         )}
       </AnimatePresence>
-      <PhotoViewer url={viewer?.url ?? null} onClose={() => setViewer(null)}
-        onEdit={viewer?.self && onEditOwnPhoto ? () => { setViewer(null); onEditOwnPhoto(); } : undefined} />
+      <PhotoViewer url={viewer} onClose={() => setViewer(null)} />
+      <AnimatePresence>
+        {sosHowOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setSosHowOpen(false)}
+            role="dialog" aria-modal="true" aria-labelledby="sos-how-title"
+            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          >
+            <div onClick={e => e.stopPropagation()} style={{ position: 'relative', width: '100%', maxWidth: 380, background: '#0f0808', border: '1.5px solid rgba(192,57,43,0.7)', borderRadius: 16, padding: '24px 20px 20px' }}>
+              <button type="button" onClick={() => setSosHowOpen(false)} aria-label={t('masa.close')}
+                style={{ position: 'absolute', top: 10, right: 10, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#f5f5f5', fontSize: 18, cursor: 'pointer' }}>
+                ×
+              </button>
+              <p id="sos-how-title" style={{ margin: '0 40px 12px 0', fontSize: 16, fontWeight: 800, color: '#ff6b6b', fontFamily: 'Inter, sans-serif' }}>{t('masa.sosHow')}</p>
+              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter, sans-serif' }}>{t('masa.sosHowText')}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Ana kart ── */}
       <motion.div
@@ -896,12 +916,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
             </>
           )}
 
-          {/* Sol üst masa türü */}
-          <span style={{ ...(cover ? { position: 'absolute', top: 12, left: 12 } : { alignSelf: 'flex-start' }), ...pillStyle('rgba(192,57,43,0.85)', '#fff', 'rgba(255,107,107,0.5)') }}>
-            {typeLabel}
-          </span>
-
-          {/* Alt: mekân adı + ilçe, sağda Haritada Gör */}
+          {/* Alt: mekân adı + ilçe */}
           <div style={{ ...(cover ? { position: 'absolute', left: 14, right: 14, bottom: 12 } : {}), display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, pointerEvents: 'none' }}>
             <div style={{ minWidth: 0 }}>
               <h2 style={{
@@ -922,13 +937,29 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
                 </p>
               )}
             </div>
+          </div>
+        </div>
+
+        <div style={{ padding: 18 }}>
+          {/* Tarih satırı ("18 Kasım, Çarşamba 20:00"), sağında Haritada Gör */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            padding: '12px 14px', borderRadius: 12, marginBottom: 20,
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+                <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" />
+              </svg>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{formatCardDate(masa.scheduledAt, locale)}</span>
+            </div>
             {mapLink && (
               <a
                 href={mapLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  pointerEvents: 'auto', flexShrink: 0, display: 'inline-flex', alignItems: 'center', minHeight: 36,
+                  flexShrink: 0, display: 'inline-flex', alignItems: 'center', minHeight: 36,
                   padding: '0 14px', borderRadius: 9999, background: '#c0392b', color: '#fff',
                   fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif', textDecoration: 'none',
                   boxShadow: '0 4px 14px rgba(192,57,43,0.4)',
@@ -938,88 +969,29 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
               </a>
             )}
           </div>
-        </div>
 
-        <div style={{ padding: 18 }}>
-          {/* Bilgi şeridi: gün/saat · kişi sayısı + kadın/erkek */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-            padding: '12px 14px', borderRadius: 12, marginBottom: 20,
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" />
-              </svg>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{formatStripTime(masa.scheduledAt, locale)}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.2c2.1.7 3.5 2.8 3.5 5.8" />
-              </svg>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', lineHeight: 1.2 }}>{t('masa.peopleCount', { n: present.length })}</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter, sans-serif', lineHeight: 1.3 }}>{t('masa.genderCount', { f: femaleCount, m: maleCount })}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Masa Katılımcıları + Masa Sohbeti */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>
-              {t('masa.tableParticipants')}
-            </p>
-            {hasChat && (
-              <button type="button" onClick={scrollToChat} style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 32, padding: '0 12px', borderRadius: 9999, cursor: 'pointer',
-                background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b',
-                fontSize: 12, fontWeight: 600, fontFamily: 'Inter, sans-serif',
-              }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
-                </svg>
-                {t('masa.chatJump')}
-              </button>
-            )}
-          </div>
-          <div style={{ marginBottom: 20 }}>
-            {masa.type === 'KANKA' ? (
-              <KankaPairs
-                mine={(masa.participants as KankaParticipant[]).filter(p => p.pair === 'MINE')}
-                other={(masa.participants as KankaParticipant[]).filter(p => p.pair === 'OTHER')}
-                onPhoto={openPhoto}
-              />
-            ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 4, margin: -4 }}>
-                {ordered.map((p, i) => {
-                  const av = p.photoUrl ? (
-                    <button type="button" onClick={() => openPhoto(p)} aria-label={t('masa.enlargePhoto')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}>
-                      <DetayAvatar participant={p} delay={0.52 + i * 0.1} size={44} highlight={!!p.isSelf} />
-                    </button>
-                  ) : (
-                    <DetayAvatar participant={p} delay={0.52 + i * 0.1} size={44} highlight={!!p.isSelf} />
-                  );
-                  // Görünen ad ("Ahmet Y.") avatarın yanında; fotoğrafsızda avatarın içindeki baş harf aynen kalır
+          {/* Masa Katılımcıları: satırda en fazla 2 kişi; fotoğraf, altında görünen ad ("Ahmet Y."), altında kendi mesleği */}
+          <p style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>
+            {t('masa.tableParticipants')}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>
+            {rows.map((row, r) => (
+              <div key={r} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {row.map((p, i) => {
+                  const av = <DetayAvatar participant={p} delay={0.52 + (r * 2 + i) * 0.1} size={64} />;
                   return (
-                    <div key={`${p.initials}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, paddingRight: p.displayName ? 4 : 0 }}>
-                      {av}
-                      {p.displayName && <span style={{ fontSize: 12, fontWeight: 600, color: '#f4f1ec', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}>{p.displayName}</span>}
+                    <div key={`${p.initials}-${i}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0, textAlign: 'center' }}>
+                      {p.photoUrl ? (
+                        <button type="button" onClick={() => openPhoto(p)} aria-label={t('masa.enlargePhoto')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>{av}</button>
+                      ) : av}
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#f4f1ec', fontFamily: 'Inter, sans-serif', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.displayName ?? p.initials}</span>
+                      <span style={{ minHeight: 18, fontSize: 12, lineHeight: 1.5, color: 'rgba(255,255,255,0.65)', fontFamily: 'Inter, sans-serif', maxWidth: '100%' }}>{p.occupation ?? ''}</span>
                     </div>
                   );
                 })}
               </div>
-            )}
+            ))}
           </div>
-
-          {/* Meslekler: her satırda bir meslek, yalnız yazı; sıra sunucuda her istekte karışık, kime ait olduğu gösterilmez */}
-          {!!masa.occupations?.length && (
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{t('masa.occupations')}</p>
-              {masa.occupations.map((o, i) => (
-                <p key={i} style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: 'rgba(255,255,255,0.72)', fontFamily: 'Inter, sans-serif' }}>{o}</p>
-              ))}
-            </div>
-          )}
 
           {/* Yapay Zeka Masa Raporu: kayıtlı uyumSkoru yeşil halkada; rapor yoksa mevcut bilgi metni */}
           <motion.div
@@ -1069,7 +1041,9 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
         </div>
       </motion.div>
 
-      {/* ── Alt kart: rezervasyon bilgisi, Yola Çıktım, sohbet (ardından gelmeyen işaretleme ve acil yardım) ── */}
+      {/* ── Alt kart: acil yardım (eski rezervasyon kartı ve Yola Çıktım yerinde), sohbet, gelmeyen işaretleme, Değerlendir.
+          Geçmiş masada (archive) bu kart yok ── */}
+      {!archive && authHeaders && (
       <motion.div
         className="ll-card"
         initial={{ opacity: 0, y: 10 }}
@@ -1077,71 +1051,13 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
         transition={{ delay: 0.15, duration: 0.5, ease: 'easeOut' }}
         style={{ marginTop: 12 }}
       >
-        <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 10, padding: '12px 14px',
-          marginBottom: (authHeaders || archive) ? 16 : 0,
-        }}>
-          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
-            {t('masa.reservationDone')}
-          </p>
-        </div>
-
-        {/* Yola Çıktım butonu */}
-        {(authHeaders || archive) && (
-          <div style={{ marginBottom: 10 }}>
-            <button
-              onClick={handleOnMyWay}
-              disabled={archive || onMyWayDone || onMyWayLoading}
-              aria-disabled={!onMyWayOpen || undefined}
-              className={onMyWayDone ? undefined : 'btn-primary'}
-              style={onMyWayDone ? {
-                width: '100%', padding: '13px 0',
-                background: 'rgba(39,174,96,0.12)',
-                border: '1px solid rgba(39,174,96,0.35)',
-                borderRadius: 9999,
-                color: '#27ae60', fontSize: 12, fontWeight: 700,
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-                fontFamily: 'Inter, sans-serif', cursor: 'default',
-              } : { width: '100%', justifyContent: 'center' }}
-            >
-              {onMyWayDone ? t('masa.onMyWayDone') : onMyWayLoading ? t('masa.onMyWayLoading') : t('masa.onMyWay')}
-            </button>
-            {onMyWayWarn && (
-              <div role="alert" style={{
-                marginTop: 8,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: 10, padding: '12px 14px',
-              }}>
-                <p style={{ margin: 0, fontSize: 12, color: '#ffb347', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
-                  {onMyWayWarn}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Sohbet bölümü ("Masa Sohbeti" butonu buraya kaydırır) */}
-        {hasChat && (
-          <div ref={chatRef} style={{ scrollMarginTop: 80 }}>
-            <ChatSection meetingId={masa.id} apiBase={apiBase!} token={token} />
-          </div>
-        )}
-
-        {/* Masaya gelmeyen işaretleme */}
-        {hasChat && (
-          <NoShowSection meetingId={masa.id} apiBase={apiBase!} token={token} />
-        )}
-
-        {/* SOS Acil Yardım */}
+        {/* SOS Acil Yardım: masa saatinden ertesi gün 08:00'e kadar */}
         {sosVisible && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
-            style={{ marginTop: 24 }}
+            style={{ marginBottom: 4 }}
           >
             {sosDone ? (
               <div style={{
@@ -1172,23 +1088,37 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, onEditOw
                 >
                   {t('masa.sosButton')}
                 </button>
-                <div style={{
-                  marginTop: 10, padding: '10px 12px',
-                  background: 'rgba(192,57,43,0.07)', border: '1px solid rgba(192,57,43,0.22)',
-                  borderRadius: 8,
-                }}>
-                  <p style={{
-                    margin: 0, fontSize: 10.5, lineHeight: 1.55,
-                    color: 'rgba(255,107,107,0.65)', fontFamily: 'Inter, sans-serif',
-                  }}>
-                    {t('masa.sosInfo')} <strong style={{ color: 'rgba(255,107,107,0.85)' }}>{t('masa.safetyImportant')}</strong>
-                  </p>
-                </div>
+                <p style={{ margin: '10px 0 0', fontSize: 11.5, lineHeight: 1.55, color: 'rgba(255,107,107,0.75)', fontFamily: 'Inter, sans-serif' }}>
+                  {t('masa.sosHelp')}{' · '}
+                  <button type="button" onClick={() => setSosHowOpen(true)}
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#ff6b6b', fontSize: 11.5, fontWeight: 700, textDecoration: 'underline', fontFamily: 'Inter, sans-serif' }}>
+                    {t('masa.sosHow')}
+                  </button>
+                </p>
               </>
             )}
           </motion.div>
         )}
+
+        {/* Sohbet bölümü */}
+        {hasChat && (
+          <ChatSection meetingId={masa.id} apiBase={apiBase!} token={token} />
+        )}
+
+        {/* Masaya gelmeyen işaretleme */}
+        {hasChat && (
+          <NoShowSection meetingId={masa.id} apiBase={apiBase!} token={token} />
+        )}
+
+        {/* Değerlendir: değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı */}
+        <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <button type="button" onClick={handleReview} style={GOLD_PILL}>{t('tm.review')}</button>
+          {reviewWarn && (
+            <p role="alert" style={{ margin: 0, fontSize: 12, color: '#ffb347', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>{reviewWarn}</p>
+          )}
+        </div>
       </motion.div>
+      )}
     </>
   );
 }

@@ -196,12 +196,13 @@ export const onb = {
 export const masaKart = {
   coverAspect: 16 / 9,
   coverFade: ['rgba(18,18,18,0.35)', 'rgba(18,18,18,0)', 'rgba(18,18,18,0)', 'rgba(18,18,18,0.92)'] as const, coverFadeStops: [0, 0.3, 0.45, 1] as const,
-  pill: { padV: 4, padH: 10, radius: 9999, fontSize: 11, gap: 6 },
-  typePill: { bg: 'rgba(192,57,43,0.85)', border: 'rgba(255,107,107,0.5)', text: '#ffffff' },
   mapBtn: { minH: 36, padH: 14, radius: 9999, bg: '#c0392b', text: '#ffffff', fontSize: 11 },
   strip: { padV: 12, padH: 14, radius: 12, bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)', icon: '#ff6b6b' },
-  chatBtn: { minH: 32, padH: 12, radius: 9999, bg: 'rgba(192,57,43,0.12)', border: 'rgba(192,57,43,0.5)', text: '#ff6b6b', fontSize: 12 },
-  avatar: 44, avatarGap: 8, selfRing: '#ff6b6b', selfRingGap: '#121212',
+  avatar: 44, avatarGap: 8,
+  // Katılımcı ızgarası (satırda en fazla 2 kişi): fotoğraf çapı, ad ve meslek yazısı (web MasaDetayKarti ile aynı)
+  person: { avatar: 64, rowGap: 16, colGap: 12, name: 13, nameColor: '#f4f1ec', job: 12, jobColor: 'rgba(255,255,255,0.65)' },
+  // "Değerlendir": İçerde paket kartı rozetindeki altın geçişli hap (web GOLD_PILL)
+  goldPill: { colors: ['#f5d76e', '#c9a227', '#a8861a'] as const, stops: [0, 0.55, 1] as const, text: '#1a1406', minH: 36, padH: 18, fontSize: 12 },
   ring: { d: 64, stroke: 6, track: 'rgba(255,255,255,0.08)', color: '#27ae60' },
   cardGap: 12,
 } as const;

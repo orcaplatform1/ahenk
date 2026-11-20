@@ -241,7 +241,7 @@ function Step({ n, prices }: { n: number; prices: Partial<Record<PlanKeyName, Pl
           </View>
         </View>
         <View style={{ marginTop: 14, gap: 8 }}>
-          {[1, 2, 3].map(i => (
+          {[1, 2].map(i => (
             <View key={i} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.accent, marginTop: 8 }} />
               <T style={{ flex: 1, fontSize: 14, lineHeight: 21, color: C.text }}>{t(`onb.s6b${i}`)}</T>

@@ -90,6 +90,7 @@ export interface Participant {
   isSelf?: boolean;
   photoUrl?: string | null; // Onaylı profil fotoğrafı (yalnız masa detay kartında gösterilir)
   displayName?: string | null; // Görünen ad ("Ahmet Y."); yalnız masa detay kartı açıldıktan sonra sunucudan gelir
+  occupation?: string | null; // Kişinin mesleği (kart açıldıktan sonra; adının altında)
 }
 
 export type MasaTuru = 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
@@ -109,7 +110,6 @@ export interface DashboardItem {
     venueDistrict?: string | null;
     venueMapsUrl?: string;
     venuePhotos?: Array<{ url: string; caption?: string }>;
-    occupations?: string[];
     aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
     cancelRightUsed?: boolean;
   };

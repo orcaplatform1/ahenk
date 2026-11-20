@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
 import { buildInitials } from '@/lib/masa';
 import { useAppRefresh } from '@/lib/useAppRefresh';
-import { SOS_POLL_MS, syncSosLive } from '@/lib/sosLive';
+import { SOS_LOCATION_CHECK_MS, SOS_POLL_MS, checkSosLocation, onSosLocationResumed, syncSosLive } from '@/lib/sosLive';
+import { SosNotice } from '@/components/SosNotice';
 import { PngTabIcon, ProfileCenterButton, TabBadge, TabPill } from '@/components/TabIcons';
 import { ShakeReport } from '@/components/ShakeReport';
 import { WinbackHost } from '@/components/Winback';
@@ -51,9 +52,15 @@ export default function TabsLayout() {
   useEffect(() => { syncSos(); }, [syncSos]);
   useEffect(() => { if (!sosOpen) return; const id = setInterval(syncSos, SOS_POLL_MS); return () => clearInterval(id); }, [sosOpen, syncSos]);
   useAppRefresh(syncSos);
+  // Açık talepte konum servisi kapanırsa sunucuya bildirilir (sunucu push gönderir); konum yeniden gelince 10 sn "Konumun yeniden alınıyor"
+  const [resumed, setResumed] = useState(false);
+  useEffect(() => onSosLocationResumed(() => setResumed(true)), []);
+  useEffect(() => { const id = setInterval(() => { checkSosLocation().catch(() => {}); }, SOS_LOCATION_CHECK_MS); return () => clearInterval(id); }, []);
+  const closeResumed = useCallback(() => setResumed(false), []);
 
   return (
     <>
+    <SosNotice visible={resumed} title={t('sos.resumedTitle')} lines={[t('sos.resumedLine')]} bold={t('sos.resumedBold')} durationMs={10_000} onClose={closeResumed} />
     <ShakeReport />
     <WinbackHost />
     {/* Giriş sonrası bir kerelik izin bilgilendirme ekranı */}

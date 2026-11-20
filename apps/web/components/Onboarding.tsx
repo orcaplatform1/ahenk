@@ -227,7 +227,7 @@ function Step({ n, t, wide }: { n: number; t: ReturnType<typeof useTranslations>
           </div>
         </div>
         <ul style={{ listStyle: 'none', padding: 0, margin: '14px 0 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {[1, 2, 3].map(i => (
+          {[1, 2].map(i => (
             <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: C.accent, marginTop: 8 }} />
               <span style={{ ...small, fontSize: 14, color: C.text }}>{t(`onb.s6b${i}`)}</span>

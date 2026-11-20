@@ -42,9 +42,11 @@ export interface WeeklySelection {
     seated: boolean;
     locked: boolean;
     plannedDeadline: string;
-    selection: { mode: MeetingMode; meetingDate: string | null; kankaWaiting: boolean; nextWeek: boolean } | null;
+    // changeAvailableAt: "Değiştir" bu andan sonra açılır (seçimden 24 saat, Yarın Buluşma'da 3 saat sonra)
+    selection: { mode: MeetingMode; meetingDate: string | null; kankaWaiting: boolean; nextWeek: boolean; changeAvailableAt: string } | null;
   }[];
   tomorrowDate: string;
+  cancelCooldownUntil: string | null; // İptal sonrası 24 saat: bu ana kadar hiçbir türde "Seçim Yap" yok
   showModal: boolean;
 }
 
@@ -155,17 +157,8 @@ export function useMasaTabs() {
   const owned = MASA_TURLERI.filter(t => rights[t] || tables[t] || cancelledTypes.includes(t));
   // Açık kaydı olan türler: yalnız onların taramasına girilir
   const selOf = (t: MasaTuru) => selection?.options.find(o => o.type === t)?.selection ?? null;
-  // Varsayılan: kayıtlı seçimdeki ilk tür (Grup → Baş Başa → Kankamla); kayıt yoksa hakkı/masası olan ilk tür
-  const savedTab = MASA_TURLERI.find(t => !!selOf(t));
-  const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : savedTab ?? owned[0] ?? 'GROUP';
-  const tabItem = items.find(i => i.meeting.type === tab);
-  const tabAdminCancelled = !tabItem && adminCancelledTypes.includes(tab);
   const kycApproved = me?.kyc?.status === 'APPROVED';
-  const tabPastClosing = pastClosed.split(',').includes(tab);
   const hasPackage = subs.length > 0;
-  const tabSel = selOf(tab);
-  const scanning = owned.includes(tab) && kycApproved && !!tabSel && !tabSel.kankaWaiting
-    && (tabSel.mode === 'TOMORROW' || (!tabSel.nextWeek && !tabPastClosing));
 
   const poolEntry = (t: MasaTuru) => {
     const bought = subs.filter(SUB_OPEN[t]).map(s => Date.parse(s.createdAt));
@@ -192,6 +185,23 @@ export function useMasaTabs() {
     return since !== null && since < lastClosing(t) ? 'FAILED' : 'PENDING';
   };
   const statuses: Record<MasaTuru, TabStatus> = { GROUP: statusOf('GROUP'), ONE_ON_ONE: statusOf('ONE_ON_ONE'), KANKA: statusOf('KANKA') };
+
+  // Varsayılan sekme (web useMasaTabs ile aynı): masası kurulu, kilitli ya da oluşturuluyor olan tür (birden fazlaysa en yakın
+  // tarihli masa); yoksa taramadaki / bekleyen ilk tür; "Eşleşme Pasif" hiçbir zaman varsayılan olmaz
+  const ACTIVE_STATES: TabStatus[] = ['TABLE', 'FORMING', 'SCANNING', 'KANKA', 'KYC', 'PENDING', 'FAILED', 'CANCELLED'];
+  const nearest = [...items].sort((a, b) => a.meeting.scheduledAt.localeCompare(b.meeting.scheduledAt))[0]?.meeting.type;
+  const defaultTab: MasaTuru = nearest
+    ?? MASA_TURLERI.find(t => tables[t])
+    ?? MASA_TURLERI.find(t => ACTIVE_STATES.includes(statuses[t]))
+    ?? MASA_TURLERI.find(t => statuses[t] !== 'PASSIVE' && statuses[t] !== 'NONE')
+    ?? 'GROUP';
+  const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : defaultTab;
+  const tabItem = items.find(i => i.meeting.type === tab);
+  const tabAdminCancelled = !tabItem && adminCancelledTypes.includes(tab);
+  const tabPastClosing = pastClosed.split(',').includes(tab);
+  const tabSel = selOf(tab);
+  const scanning = owned.includes(tab) && kycApproved && !!tabSel && !tabSel.kankaWaiting
+    && (tabSel.mode === 'TOMORROW' || (!tabSel.nextWeek && !tabPastClosing));
 
   const selfParticipant = me ? { initials: buildInitials(me.firstName, me.lastName), gender: me.profile?.gender ?? null } : undefined;
 

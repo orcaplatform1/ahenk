@@ -20,6 +20,31 @@ export const SOS_LIVE_TASK = 'ahenk-sos-live';
 const KEY = 'ahenk_sos_report';
 export const SOS_POLL_MS = 30_000;
 
+// Konum kesintisi bitti (sunucu konum gönderiminde resumed: true döndü): uygulama "Konumun yeniden alınıyor" uyarısını gösterir
+const resumedListeners = new Set<() => void>();
+export function onSosLocationResumed(cb: () => void): () => void {
+  resumedListeners.add(cb);
+  return () => { resumedListeners.delete(cb); };
+}
+function emitResumed() { resumedListeners.forEach((cb) => cb()); }
+
+// Açık talep sırasında konum servisi (ya da konum izni) kapandı mı: uygulama açıkken ~10 sn'de bir denetlenir. Kapandığı an sunucuya
+// bildirilir, sunucu talep edene bir kez push gönderir (kesinti başına bir kez). Uygulama kapalıyken sunucu 120 sn konum gelmezse aynı
+// bildirimi kendisi gönderir. Konum yeniden gelince kesinti biter; tekrar kapanırsa yeni kesinti sayılır.
+export const SOS_LOCATION_CHECK_MS = 10_000;
+let offReported = false;
+export async function checkSosLocation(): Promise<void> {
+  const reportId = await AsyncStorage.getItem(KEY);
+  if (!reportId) { offReported = false; return; }
+  const enabled = await Location.hasServicesEnabledAsync().catch(() => true);
+  const perm = await Location.getForegroundPermissionsAsync().catch(() => null);
+  const off = !enabled || (!!perm && perm.status !== 'granted');
+  if (!off) { offReported = false; return; }
+  if (offReported) return;
+  offReported = true;
+  await api.post(`/sos/reports/${reportId}/location-off`).catch(() => { offReported = false; });
+}
+
 TaskManager.defineTask(SOS_LIVE_TASK, async ({ data, error }) => {
   if (error) return;
   const locs = (data as { locations?: Location.LocationObject[] } | undefined)?.locations;
@@ -29,10 +54,11 @@ TaskManager.defineTask(SOS_LIVE_TASK, async ({ data, error }) => {
   if (!reportId) { await stopSosLive(); return; }
   if (!last) return;
   try {
-    const r = await api.post<{ active?: boolean }>(`/sos/reports/${reportId}/location`, {
+    const r = await api.post<{ active?: boolean; resumed?: boolean }>(`/sos/reports/${reportId}/location`, {
       lat: last.coords.latitude, lng: last.coords.longitude, accuracy: last.coords.accuracy ?? undefined,
     });
     if (r?.active === false) await stopSosLive();
+    else if (r?.resumed) emitResumed();
   } catch { /* sessiz */ }
 });
 

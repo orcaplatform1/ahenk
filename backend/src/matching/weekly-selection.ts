@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Controller, Get, Injectable, Post, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, Injectable, Post, Req, UseGuards } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { Request } from "express";
@@ -9,10 +9,11 @@ import { NotificationService } from "../notification/notification.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { groupPartOpen, kankaPartOpen, oneOnOnePartOpen, RIGHTS_SELECT } from "../payment/package-rights";
-import { meetingLockAt, tomorrowMeetingAt } from "../meetings/meeting-windows";
+import { meetingCardEnd, meetingLockAt, tomorrowMeetingAt } from "../meetings/meeting-windows";
 import { ASSIGN_QUEUE, enqueueAssign } from "./assign-queue";
 import {
-  activeSelectionWhere, cancelSelection, deadlineOf, plannedTargetWeek, seatWhere, SelectionDeps, trIsoWeekOf,
+  activeSelectionWhere, busyMeetingDays, cancelCooldownUntil, cancelSelection, changeAvailableAt, deadlineOf, plannedTargetWeek,
+  seatWhere, SelectionDeps, selectionDayKey, trIsoWeekOf,
 } from "./selection-cancel";
 
 export { deadlineOf, selectedThisWeek, trIsoWeekOf, SELECTION_DEADLINE } from "./selection-cancel";
@@ -20,8 +21,10 @@ export { deadlineOf, selectedThisWeek, trIsoWeekOf, SELECTION_DEADLINE } from ".
 // Seçim ekranı (web + mobil): "Buluşma Türü" (Yarın Buluşma / Hafta Sonu Buluşma, tek seçim) + "Masa Türü" (Grup / Baş Başa /
 // Kankamla, çoklu). Mod kullanıcıya değil her katılım kaydına aittir. Sistem hakları otomatik taramaya almaz; her hak kullanıcı
 // seçince taramaya girer. Ekran: paket alınınca ve girişte (showModal kuralı state() içinde).
-// Kilitten önce iptal / buluşma türü değişikliği serbest, kullanım hakkı yanmaz. Kankamla kanka seçilmeden de seçilir;
-// kanka katılana kadar kayıt "Kanka bekleniyor" durumunda kalır, taramaya girmez.
+// İptal masa kilitlenene kadar serbest, kullanım hakkı yanmaz; iptal eden 24 saat hiçbir türde yeni seçim yapamaz.
+// "Değiştir" seçimden sonra 24 saat (Yarın Buluşma'da 3 saat) kapalı. Aynı güne masası (kurulu / kilitli / oluşturuluyor) olan
+// kullanıcı o günün başka bir taramasına giremez. Kankamla kanka seçilmeden de seçilir; kanka katılana kadar kayıt
+// "Kanka bekleniyor" durumunda kalır, taramaya girmez.
 const TYPES: MeetingType[] = [MeetingType.GROUP, MeetingType.ONE_ON_ONE, MeetingType.KANKA];
 
 class SubmitSelectionDto {
@@ -70,28 +73,46 @@ export class WeeklySelectionService {
   async state(userId: string) {
     const now = new Date();
     const current = trIsoWeekOf(now);
-    const [rights, link] = await Promise.all([this.rightTypes(userId), activeKankaLink(this.prisma, userId)]);
+    const [rights, link, user, cardSeats] = await Promise.all([
+      this.rightTypes(userId),
+      activeKankaLink(this.prisma, userId),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { selectionCancelledAt: true } }),
+      // Masası olan (kurulu / kilitli; buluşma sonrası ertesi gün 08:00'e kadar) kullanıcıya seçim ekranı otomatik açılmaz
+      this.prisma.meetingParticipant.findMany({
+        where: {
+          userId,
+          status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] },
+          meeting: { status: { in: ["PENDING", "ACTIVE", "COMPLETED"] }, scheduledAt: { gte: new Date(now.getTime() - 48 * 60 * 60 * 1000) } },
+        },
+        select: { meeting: { select: { scheduledAt: true } } },
+      }),
+    ]);
+    const cooldownUntil = cancelCooldownUntil(user?.selectionCancelledAt);
+    const cooling = !!cooldownUntil && cooldownUntil > now;
+    const hasTable = cardSeats.some((s) => meetingCardEnd(s.meeting.scheduledAt) > now);
     const options = await Promise.all(TYPES.map(async (type) => {
       const [selection, seat] = await Promise.all([
         this.prisma.weeklySelection.findFirst({
           where: { userId, ...activeSelectionWhere(type, now) },
           orderBy: { createdAt: "desc" },
-          select: { mode: true, meetingDate: true, year: true, weekNumber: true },
+          select: { mode: true, meetingDate: true, year: true, weekNumber: true, createdAt: true },
         }),
-        this.prisma.meetingParticipant.findFirst({ where: seatWhere(userId, type, now), select: { meeting: { select: { scheduledAt: true, locationText: true } } } }),
+        this.prisma.meetingParticipant.findFirst({ where: seatWhere(userId, type, now), select: { meeting: { select: { scheduledAt: true } } } }),
       ]);
       const locked = !!seat && now.getTime() >= meetingLockAt(seat.meeting.scheduledAt);
-      // Masa detay kartı gösteriliyor mu (meetings.service dashboard isRevealed ile aynı: mekân var + buluşma günü 10:00 TR)
-      const revealed = !!seat && !!seat.meeting.locationText && now.getTime() >= seat.meeting.scheduledAt.getTime() - 10 * 60 * 60 * 1000;
       return {
         type,
         hasRight: rights.includes(type),
         seated: !!seat,
         locked,
-        revealed,
         plannedDeadline: deadlineOf(type, now),
         selection: selection && {
-          ...selection,
+          mode: selection.mode,
+          meetingDate: selection.meetingDate,
+          year: selection.year,
+          weekNumber: selection.weekNumber,
+          // "Değiştir" bu andan sonra açılır (Planlı 24 saat, Yarın 3 saat)
+          changeAvailableAt: changeAvailableAt(selection),
           kankaWaiting: type === MeetingType.KANKA && !link,
           // Planlı kayıt gelecek haftanın taramasında (bu haftanın son saati geçtiyse)
           nextWeek: selection.mode === MeetingMode.PLANNED && (selection.year !== current.year || selection.weekNumber !== current.week),
@@ -103,12 +124,12 @@ export class WeeklySelectionService {
       selected,
       options,
       tomorrowDate: tomorrowMeetingAt(now),
-      // Girişte otomatik açılış: herhangi bir türde aktif seçim / tarama sürüyorsa ("Masa Oluşturuluyor" dahil) açılmaz;
-      // masa detay kartı gösteriliyorsa açılır; hiç aktif seçim yoksa eskisi gibi kullanılmamış hak varsa açılır.
-      // Seçilmemiş masa türü açılışı tetiklemez.
-      showModal: options.some((o) => !o.revealed && (!!o.selection || o.seated))
-        ? false
-        : options.some((o) => o.revealed) || options.some((o) => o.hasRight),
+      // İptal sonrası 24 saat: bu ana kadar hiçbir türde "Seçim Yap" yok
+      cancelCooldownUntil: cooling ? cooldownUntil : null,
+      // Girişte otomatik açılış: masası kurulu / kilitli olan kullanıcıda hiçbir yerde açılmaz; buluşmadan sonraki gün 08:00'de
+      // (kart Geçmiş Masalarım'a geçip değerlendirme açılınca) yeniden açılabilir. Aktif seçim / tarama sürüyorsa ya da iptal
+      // sonrası 24 saat dolmadıysa açılmaz; aksi hâlde kullanılmamış hak varsa açılır. Elle açılış ("Seçim Yap") aynen.
+      showModal: !hasTable && !cooling && !options.some((o) => !!o.selection || o.seated) && options.some((o) => o.hasRight),
     };
   }
 
@@ -128,6 +149,12 @@ export class WeeklySelectionService {
     const now = new Date();
     const unique = [...new Set(types)];
     const rights = await this.rightTypes(userId);
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { selectionCancelledAt: true } });
+    const until = cancelCooldownUntil(user?.selectionCancelledAt);
+    if (until && until > now) throw new ForbiddenException("İptal ettiğin için 24 saat boyunca yeni masaya katılamazsın.");
+    // Aynı güne masası olan kullanıcı o günün taramasına giremez
+    const busy = await busyMeetingDays(this.prisma, userId, now);
+    if (unique.some((type) => busy.has(selectionDayKey(type, mode, now)))) throw new ConflictException("Bu güne zaten bir masan var.");
     // Kişinin satırı kilitlenir: eşzamanlı ikinci istek aynı türü ikinci kez kaydedemez
     await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
@@ -147,12 +174,23 @@ export class WeeklySelectionService {
     return this.state(userId);
   }
 
-  // Buluşma türünü değiştir: kilitten önce; mevcut tarama kaydı ve masa eşleşmesi düşer, hak yanmaz
+  // Buluşma türünü değiştir: kilitten önce ve seçimden 24 saat (Yarın 3 saat) sonra; mevcut tarama kaydı ve masa eşleşmesi düşer, hak yanmaz
   async change(userId: string, type: MeetingType, mode: MeetingMode) {
     const now = new Date();
-    if (!(await this.prisma.weeklySelection.count({ where: { userId, ...activeSelectionWhere(type, now) } }))) {
-      throw new BadRequestException("Bu masa türü için kaydın yok.");
+    const current = await this.prisma.weeklySelection.findFirst({
+      where: { userId, ...activeSelectionWhere(type, now) },
+      orderBy: { createdAt: "desc" },
+      select: { mode: true, createdAt: true },
+    });
+    if (!current) throw new BadRequestException("Bu masa türü için kaydın yok.");
+    if (changeAvailableAt(current) > now) {
+      throw new ForbiddenException(current.mode === MeetingMode.TOMORROW
+        ? "Yarın Buluşma seçimini yaptıktan sonra 3 saat değiştiremezsin."
+        : "Seçimini yaptıktan sonra 24 saat değiştiremezsin.");
     }
+    // Yeni buluşma gününe masası olan kullanıcı o günün taramasına giremez
+    const busy = await busyMeetingDays(this.prisma, userId, now);
+    if (busy.has(selectionDayKey(type, mode, now))) throw new ConflictException("Bu güne zaten bir masan var.");
     await cancelSelection(this.deps, userId, type, "Buluşma türü değiştirildi");
     await this.create(userId, mode, type, now);
     await enqueueAssign(this.assignQueue, userId);
@@ -166,6 +204,8 @@ export class WeeklySelectionService {
     const seated = await this.prisma.meetingParticipant.count({ where: seatWhere(userId, type, now) });
     if (!has && !seated) throw new BadRequestException("Bu masa türü için kaydın yok.");
     await cancelSelection(this.deps, userId, type, "Seçim iptal edildi");
+    // İptal eden 24 saat boyunca hiçbir masa türünde yeni seçim yapamaz
+    await this.prisma.user.update({ where: { id: userId }, data: { selectionCancelledAt: now } });
     return this.state(userId);
   }
 }

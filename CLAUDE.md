@@ -202,16 +202,27 @@ YARIN BULUŞMA (iki takvim modeli; ayrı sistem değil, mevcut paket hakları ay
     otomatik taramaya almaz; her hak kullanıcı seçince taramaya girer. Masa türü başına tek açık kayıt
   - Tek seçim ekranı (web components/live/WeeklySelectionModal.tsx, mobil components/WeeklySelectionModal.tsx): "Buluşma Türü" (Yarın
     Buluşma / Hafta Sonu Buluşma, tek seçim) + "Masa Türü" (Grup / Baş Başa / Kankamla, çoklu; yalnız kullanılmamış hakkı olan ve kaydı /
-    masası olmayan tür seçilebilir, diğerleri pasif). Ekran paket alınınca açılır. Girişte otomatik açılış GET /weekly-selection
-    showModal (backend weekly-selection.ts state()): herhangi bir türde aktif seçim / tarama sürüyorsa ("Masa Oluşturuluyor" dahil) false;
-    masa detay kartı gösteriliyorsa (mekân var + buluşma günü 10:00) true; hiç aktif seçim yoksa eskisi gibi kullanılmamış hak varsa true.
-    Seçilmemiş masa türü açılışı tetiklemez; "Seçim Yap" ile elle açılış aynen. Ayrı haftalık pencere yoktur. Farklı türler için farklı buluşma türü seçilebilir
+    masası olmayan tür seçilebilir, diğerleri pasif). Ekran paket alınınca açılır. Otomatik açılış yalnız GET /weekly-selection
+    showModal'dan (backend weekly-selection.ts state()): masası kurulu / kilitli olan kullanıcıda (buluşmadan sonraki gün 08:00'e kadar,
+    meetingCardEnd) hiçbir yerde otomatik açılmaz; 08:00'de kart Geçmiş Masalarım'a geçip değerlendirme açılınca yeniden açılabilir.
+    Herhangi bir türde aktif seçim / tarama sürüyorsa ya da iptal sonrası 24 saat dolmadıysa false; aksi hâlde kullanılmamış hak varsa
+    true. Seçilmemiş masa türü açılışı tetiklemez; "Seçim Yap" ile elle açılış aynen. Ayrı haftalık pencere yoktur. Farklı türler için farklı buluşma türü seçilebilir
   - Eşleşme Paneli'nde seçim kartı (web components/live/SelectionCard.tsx, mobil components/SelectionCard.tsx; mobilde halkaların
     altında): ekranı açar ("Seçim Yap"), kayıtları gösterir, "Değiştir" (diğer buluşma türüne geçer) ve "İptal Et". Seçim değiştirme ve
     iptal yalnız bu karttan; masa kartlarındaki eski "Rezervasyon İptal" butonu kaldırıldı
-  - Kilitten önce iptal / buluşma türü değişikliği serbest, kullanım hakkı YANMAZ (Yarın + Planlı); kişi yalnız o kayda ait tarama
-    kaydını ve masa eşleşmesini kaybeder (backend matching/selection-cancel.ts). Kilitlenmiş masada iptal ve değiştirme yok.
-    Eski "seçim değiştirilemez" kuralı ve paket başına tek iptal hakkı kaldırıldı
+  - Seçim Yap, Değiştir ve İptal Et yalnız masa kilitli değilken aktif; kilitli masada üçü de kapalı (web + mobil seçim kartı).
+    Kaydı olmayan masa türünde Seçim Yap aktif kalır
+  - Değiştir: seçim yapıldıktan sonra 24 saat değiştirilemez, Yarın Buluşma'da bu süre 3 saat (WeeklySelection.createdAt +
+    CHANGE_LOCK_MS; GET /weekly-selection selection.changeAvailableAt; backend 403 "Seçimini yaptıktan sonra 24 saat değiştiremezsin." /
+    "Yarın Buluşma seçimini yaptıktan sonra 3 saat değiştiremezsin.")
+  - İptal Et: masa kilitli olmadığı sürece serbest, kullanım hakkı YANMAZ (Yarın + Planlı); kişi yalnız o kayda ait tarama kaydını ve
+    masa eşleşmesini kaybeder (backend matching/selection-cancel.ts). İptal eden kullanıcı 24 saat boyunca hiçbir masa türüne katılamaz:
+    tüm türlerde Seçim Yap kapalı (User.selectionCancelledAt; GET /weekly-selection cancelCooldownUntil; backend 403 "İptal ettiğin için
+    24 saat boyunca yeni masaya katılamazsın."). Paket başına tek iptal hakkı yoktur
+  - İptal / değiştir uyarı penceresi (web + mobil): büyük başlık (Serif 26), altında kural metni (live.selChangeRule / live.selCancelRule),
+    butonlar ortada alt alta
+  - Aynı güne masası (kurulu, kilitli ya da oluşturuluyor) olan kullanıcı o günün başka bir taramasına giremez: seçim gönderilince /
+    değiştirilince engellenir, uyarı "Bu güne zaten bir masan var." / "You already have a table on this day." (busyMeetingDays)
   - Hafta Sonu (Planlı) son saatler aynen: Grup Perşembe 18:00, Baş Başa Cuma 18:00, Kankamla Cumartesi 18:00; geçtiyse kayıt bir
     sonraki haftanın taramasına yazılır
   - Kankamla kanka seçilmeden de seçilir; kayıt "Kanka bekleniyor" durumunda kalır, taramaya girmez; kanka daveti kabul edince tarama
@@ -274,7 +285,6 @@ PROFİL FOTOĞRAFI (web + mobil):
     yoksa kısaltma görünür. Yeni yükleme önceki onay bekleyen fotoğrafı (dosya + kayıt) siler
   - Yükleyince "Fotoğrafın onay sürecinde." mesajı; onay bekleyen fotoğrafı olanda Profilim'deki profil dairesinin altında küçük punto
     "Fotoğrafın onay sürecinde." (/auth/me profilePhotoPending); onay ya da retle kaybolur (web + mobil)
-  - Mobilde masa kartından fotoğraf yüklenince kullanıcı bilgisi (/auth/me) yenilenir; Profilim'deki "Fotoğrafın onay sürecinde." hemen görünür
   - Admin onayı: yeni fotoğraf geçerli, önceki onaylı fotoğraf dosya + kayıt silinir. Admin reddi: yeni fotoğraf dosya + kayıt
     silinir, önceki onaylı kalır, kullanıcıya bildirim "Yüklediğin fotoğraf kimliğindeki fotoğrafla eşleşmiyor."
   - Dosyalar uploads/profile-photos/<userId>/ altında WebP, iki boyut: p-….webp uzun kenar 1080 (tam ekran, Profilim büyük daire),
@@ -286,14 +296,15 @@ PROFİL FOTOĞRAFI (web + mobil):
     uygulama / sayfa içinde tam ekran büyük görünüm (görselin tamamı), basınca / geri tuşu / Esc ile kapanır. Profil fotoğrafı alanlarında
     Janti Haydar görseli yoktur
   - Profilim'deki profil fotoğrafına basınca tam ekran büyük görünüm (Instagram gibi); kalem butonu yükleme akışını açar. Büyük görünüm
-    ekrana (fotoğraf dahil) basınca ya da geri tuşuyla kapanır (masa detay kartında da aynı)
+    ekrana (fotoğraf dahil) basınca ya da geri tuşuyla kapanır (masa detay kartında da aynı). Fotoğraf yalnız Profilim'den değiştirilir:
+    masa detay kartında ve başka hiçbir yerde kendi fotoğrafına basınca düzenleme (kalem) ikonu çıkmaz
   - Mobil alt menü profil sekmesinde onaylı fotoğraf varsa kısaltma yerine fotoğraf
 
 MASA DETAY KARTI (web + mobil):
-  - Katılımcıların onaylı profil fotoğrafları herkese görünür; fotoğrafı olmayanda kısaltma. Fotoğrafa basınca tam ekran büyük görünüm;
-    kişi kendi fotoğrafına basarsa sağ altta palet renginde kalem butonu (yükleme akışı). Bekleme radarında fotoğraf gösterilmez
-  - "Meslekler:" başlığı ve altında katılımcıların meslekleri (User.occupationSector): her satırda bir, yalnız yazı, ikonsuz;
-    sıra her istekte sunucuda karışık, kime ait olduğu hiçbir şekilde gönderilmez
+  - Katılımcıların onaylı profil fotoğrafları herkese görünür; fotoğrafı olmayanda kısaltma. Fotoğrafa basınca tam ekran büyük görünüm
+    (kendi fotoğrafında da düzenleme ikonu yok). Bekleme radarında fotoğraf gösterilmez
+  - Her katılımcı: fotoğraf, altında "Ahmet Y." biçiminde ad, onun altında kendi mesleği (User.occupationSector; dashboard /
+    my-history participant.occupation). Ayrı "Meslekler" listesi yoktur. Mesleği olmayan botun meslek satırı boş kalır
 
 MOBİL GİRİŞ (yalnız mobil uygulama):
   - Mekân girişi ("M.Girişi") ve mekân paneli mobil uygulamada yok (web'deki mekân girişi aynen)
@@ -424,6 +435,8 @@ WEBP KURALI:
     veritabanına .webp yolu kaydedilir. Çevrilemeyen görselde yükleme hata verir ve hata loglanır, orijinal kaydedilmez.
     KYC yüklemeleri orijinal formatta (AES-256-GCM şifreli)
 
+VERİTABANI YEDEĞİ: Yeni veritabanı yedeği alınıp doğrulandığında önceki tüm veritabanı yedekleri silinir.
+
 İPTAL EDİLEN KONU: Admin'in verdiği paketin hangi admin tarafından verildiğinin kaydı / gösterimi (rapor104 ve rapor105'te sorulan)
   iptal edildi; tekrar sorulmayacak.
 
@@ -528,7 +541,7 @@ Sistem ayarları:
     Perşembe / Cuma / Cumartesi 23:59 kapanışları (Cumartesi Kankamla kilidi ve bekleme listesi dahil) ve bütün hak düşümleri,
     12 saat kala kapanış hatırlatmaları, Perşembe 20:00 grup iptal özeti, Cuma / Cumartesi / Pazar 10:00 masa bildirimleri;
     Yarın Buluşma'nın ataması, 23:59 kilidi, Planlı'ya aktarımı, hak düşümü ve her gün 10:00 masa bildirimi.
-    Ayar açıkken davranış aynı. Masa kapanışı (6 saat sonra), gelmeyen işaretleme, yola çıktım, değerlendirme bildirimleri,
+    Ayar açıkken davranış aynı. Masa kapanışı (6 saat sonra), gelmeyen işaretleme, değerlendirme bildirimleri,
     paket süre dolumu, Prime, winback ve ödeme işleri bu ayara bakmaz
 
 YÖNETİM PANELİ EK KURALLARI (web + mobil):
@@ -647,7 +660,8 @@ Endpoint'ler:
   - GET /admin/chat/reports — tüm şikayetler listesi (ADMIN guard)
 
 REZERVASYON İPTALİ KURALLARI (güncelleme):
-  - İptal masa kilidine kadar (buluşmadan önceki gün 23:59) seçim kartından yapılır, hak yanmaz (YARIN BULUŞMA); aşağıdaki
+  - İptal masa kilidine kadar (buluşmadan önceki gün 23:59) seçim kartından yapılır, hak yanmaz; iptal eden 24 saat hiçbir masaya
+    katılamaz (YARIN BULUŞMA); aşağıdaki
     "Perşembe / Cuma 20:00" son anları ve iptalde hak düşümü kaldırıldı. Planlı grup iptal bildirimi Perşembe 20:00 özetiyle,
     Yarın grup masasında kalanlara hemen
   - (eski) Grup masası: Perşembe 20:00'a kadar iptal butonu aktif
@@ -698,8 +712,23 @@ SOS raporu başına tek AdminAlert oluşur. Bildirim tüm ADMIN ve SUPERADMIN'le
 Kullanıcı konumu: masa katılımcıları SOS sırasında konum paylaşabilir (ParticipantLocation tablosu).
 Admin SOS sayfası: /acil-yardim — canlı rapor listesi, 15s otomatik yenileme.
   Nominatim (OpenStreetMap) reverse geocoding: TR dili, max 1 istek/saniye (seri kuyruk), adres cache max 200 kayıt.
+Kullanıcı tarafı (web + mobil masa detay kartı):
+  - Acil Yardım butonu alt kartın en üstünde (eski Rezervasyon kartı ve Yola Çıktım yerinde); masa saatinden buluşmadan sonraki gün
+    08:00'e kadar görünür (sosEndsAt). Altında: "Buluşma akşamından sabah 08:00'e kadar, nerede olursan ol yanındayız. Kendini tehlikede
+    hissedersen hemen bas. · Nasıl çalışır?" (masa.sosHelp + masa.sosHow); "Nasıl çalışır?" penceresi masa.sosHowText
+  - Talep Formu metni "ekibimiz tarafından takip edilir" (masa.sosShared); formun altında "Arayabilecek durumdaysan 112" (tel:112)
+  - Talep gönderilince 30 sn uyarı: "ACİL YARDIM TALEBİN ALINDI / Ekibimiz seni şu an takip ediyor. / Konumun ve masa bilgileri
+    gerektiğinde emniyet birimleriyle paylaşılır. / Konumunu kapatma." (son satır kalın), 30 sn geri sayım çubuğu + X
+    (web components/SosOpenReport.tsx, mobil components/SosNotice.tsx)
+  - Konum kesintisi (açık talep): (b) mobil ~10 sn'de bir konum servisi / iznini denetler, kapanınca POST /sos/reports/:reportId/location-off
+    (web: watchPosition hata verince aynı uç); (a) yedek: sunucu 30 sn'de bir bakar, 120 sn konum gelmeyen talepte bildirir.
+    Talep edene push: başlık yalnız "Ahenk", metin "Konum servisin kapalı görünüyor. Uygulamanın düzgün çalışması için konumunu aç."
+    ("acil yardım" ifadesi yok, IN_APP kaydı yok). Kesinti başına bir kez (SosReport.locationOffNotifiedAt); konum yeniden gelince alan
+    boşalır, konum yanıtı resumed: true döner ve uygulama 10 sn "KONUMUN YENİDEN ALINIYOR / Ekibimiz takipte. Konumunu açık tut."
+    (son cümle kalın, X ile kapanır) gösterir; tekrar kesilirse yeni kesinti sayılır
 Endpoint'ler:
   - POST /sos/:meetingId/report — SOS raporu oluştur {threats[], lat?, lng?, accuracy?} (JWT)
+  - POST /sos/reports/:reportId/location-off — açık talepte konum kesintisi (JWT, talep sahibi)
   - POST /sos/:reportId/location — canlı konum güncelle {lat, lng, accuracy?} (JWT)
   - POST /sos/:meetingId/participant-location — tüm katılımcı konumu gönder (JWT)
   - GET /sos/admin/reports — tüm raporlar listesi (ADMIN guard)
@@ -813,6 +842,8 @@ API CLIENT KURALLAR (web):
     → pasif bölgeler (Dubai Marina, Jumeirah Lake Towers (JLT), Downtown Dubai sırasıyla; soluk, seçilemez, sağında "Haber ver" / "Notify me":
     RegionWaitlist, kullanıcı başına bölgeye bir kez). Aktif yapılan bölge otomatik üst gruba geçer.
   - Tarih / saat: buluşmanın yapıldığı bölgenin saat diliminde; her iki dilde sayısal gg.aa.yyyy ve 24 saat SS:dd; ay ve gün adları arayüz dilinde.
+    İstisnalar: masa detay kartı tarih satırı TR "18 Kasım, Çarşamba 20:00", EN "Wednesday, 18 November 20:00" (shared formatCardDate);
+    Masalarım tarih sekmesi TR "18 Kasım Çarşamba", EN "Wednesday, 18 November" (formatDayTab).
   - Bildirimler: push / IN_APP metinleri alıcının language alanına göre TR ya da EN; WhatsApp şablon dil kodu da language alanına göre
     (İngilizce şablonlar lansmanda Meta'da hazırlanacak).
   - Yasal sayfalar: İngilizce çevirileri /en altında, en üstte "This is a translation for convenience. In case of any conflict, the Turkish
@@ -832,13 +863,27 @@ API CLIENT KURALLAR (web):
     bağları korunur. Yeni şehir varsayılan Pasif; admin Şehirler ve Bölgeler sayfalarında (web + mobil) üç durum seçilir.
 
 MASA DETAY VE ÖN İZLEME KARTI DÜZENİ (web packages/ui MasaDetayKarti + TabMasalar EmptyMasaCard; mobil MasaDetayKarti + masalarim EmptyMasaCard):
-  - Fotoğraf sayısına göre kapak: 3 → yan yana, 2 → eşit genişlikte tam satır, 1 → tek büyük kapak, 0 → boş kamera kutuları.
-  - Kapakta sol üstte masa türü rozeti (Grup Masası / Baş Başa / Kankamla); durum rozeti ("Atandı" / "Taramada") yok.
-    Mekân adı + yalnızca ilçe adı (Venue.district, venueDistrict), mesafe (km) yok. "Haritada Gör" butonu.
-  - Bilgi şeridi: gün/saat + kişi sayısı (iptaller hariç, botlar dahil) ve kadın/erkek sayısı.
-  - Katılımcı daireleri: masa detay kartında fotoğraf, yoksa baş harf, cinsiyet renkli çerçeve; taramada fotoğraf gösterilmez.
+  - Masalarım'da (web + mobil) üstteki 3 masa türü ikonu (halkalar) yok: sekmeler yalnız ad + durum (LiveTabs noRings). En üstte ortalı
+    türe göre başlık: "Grup Masa Kartı" / "Baş Başa Masa Kartı" / "Kankamla Masa Kartı" (tm.cardGroup / cardOne / cardKanka)
+  - Farklı günlerde birden fazla aktif masa varsa en üstte tarih sekmeleri (formatDayTab); masa türü sekmeleri tarih sekmelerinin altında
+  - Varsayılan sekme: masası kurulu, kilitli ya da oluşturuluyor olan tür (birden fazlaysa en yakın tarihli masa); yoksa taramadaki /
+    bekleyen ilk tür. "Eşleşme Pasif" hiçbir zaman varsayılan değildir (web + mobil useMasaTabs)
+  - Geçmiş Masalarım bölümü masa kartı ve Masa Sohbeti'nin altında (ortalı "Geçmiş Masalarım" butonu + liste)
+  - Kapak: mekânın tek fotoğrafı; kapakta masa türü etiketi ve "Haritada Gör" yok; fotoğraf önizlemesinde (lightbox) "Alan 1" / açıklama
+    yazısı yok. Mekân adı + yalnızca ilçe adı (Venue.district, venueDistrict), mesafe (km) yok.
+  - Tarih satırı: "18 Kasım, Çarşamba 20:00" (EN "Wednesday, 18 November 20:00"), sağında "Haritada Gör". Kişi / kadın-erkek sayısı satırı yok
+  - Katılımcılar: satırda en fazla 2 kişi; fotoğraf (yoksa baş harf, cinsiyet renkli çerçeve), altında "Ahmet Y.", altında meslek.
+    Grup'ta her satır 1 erkek + 1 kadın; Kankamla'da üst satır kullanıcının kanka çifti, alt satır karşı çift; Baş Başa'da 1 erkek 1 kadın
+    yan yana. Kullanıcının kendi avatarında ek kırmızı çerçeve yok. Taramada fotoğraf gösterilmez
   - Yapay Zeka Masa Raporu: mevcut rapor metni + uyumSkoru yeşil (#27ae60) halka "Genel Uyum", alt skor yok.
-  - Rezervasyon metni, "Yola Çıktım" ve sohbet altta ayrı kartta; "Masa Sohbeti" butonu tüm masa türlerinde alttaki sohbet kartına kaydırır.
+  - Alt kart: Acil Yardım (bkz. ACİL YARDIM), sohbet, gelmeyen işaretleme, "Değerlendir". "Masa Sohbeti" butonu yok. Geçmiş masada alt kart yok
+  - "Rezervasyonun tamamlandı" kartı ve "Yola Çıktım" sistemden tamamen kaldırıldı: buton, POST /meetings/:id/on-my-way, dakikalık
+    hatırlatma işi, ON_MY_WAY / ON_MY_WAY_OPEN bildirimleri, MeetingParticipant.onMyWayAt (migration 20261120100000) ve metinler
+  - 08:00 kuralı: masa detay kartı buluşmadan sonraki gün 08:00'e kadar Masalarım'da aktif kalır (meetingCardEnd; gece masa kapanışında
+    COMPLETED olsa da Geçmiş'e düşmez; GET /meetings/my-history yalnız 08:00'i geçenler). Acil Yardım da 08:00'e kadar görünür
+  - Değerlendirme buluşmadan sonraki gün 08:00'de, kart Geçmiş Masalarım'a geçtiği an açılır (reviewWindow; bildirim cron'u 08:00;
+    gelmeyen işaretleme kartta 08:00'e kadar). "Değerlendir" İçerde paket kartı rozetindeki altın geçişli hap (web GOLD_PILL, mobil
+    GoldPill); 08:00'den önce basılırsa "[gün ay] 08:00'de değerlendirebilirsin" (masa.reviewNotYet; tarih değerlendirmenin açıldığı gün)
 
 # CLAUDE.md
 

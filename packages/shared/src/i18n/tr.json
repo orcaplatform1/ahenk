@@ -369,7 +369,6 @@
     "notFoundBody": "Aradığın sayfa taşınmış veya silinmiş olabilir.",
     "notParticipant": "Bu masanın katılımcısı değilsin",
     "notificationNotVerified": "Bildirim doğrulanamadı",
-    "onMyWayTooEarly": "Yola çıkış bildirimi, buluşma saatinden 1 saat önce kullanıma açılır.",
     "oneOnOneOnly": "Bu endpoint sadece baş başa buluşmalar için geçerlidir",
     "otp6Digits": "OTP 6 haneli bir sayı olmalı",
     "otpAlreadyRegistered": "Bu numara zaten kayıtlı. Giriş yapabilirsin.",
@@ -488,7 +487,11 @@
     "phoneInvalidTr": "Geçerli bir Türk telefon numarası gir",
     "selectionExists": "Bu masa türü için zaten kaydın var.",
     "selectionMissing": "Bu masa türü için kaydın yok.",
-    "selectionLocked": "Masa kilitlendi; iptal ve değiştirme yapılamaz."
+    "selectionLocked": "Masa kilitlendi; iptal ve değiştirme yapılamaz.",
+    "cancelCooldown": "İptal ettiğin için 24 saat boyunca yeni masaya katılamazsın.",
+    "sameDayTable": "Bu güne zaten bir masan var.",
+    "changeLock": "Seçimini yaptıktan sonra 24 saat değiştiremezsin.",
+    "changeLockTomorrow": "Yarın Buluşma seçimini yaptıktan sonra 3 saat değiştiremezsin."
   },
   "footer": {
     "brandPrefix": "Ahenk bir",
@@ -879,7 +882,9 @@
     "selConfirmCancelYes": "Evet, İptal Et",
     "selKankaWaiting": "Kanka bekleniyor",
     "selLocked": "Masa kilitlendi",
-    "selNextWeek": "Gelecek hafta"
+    "selNextWeek": "Gelecek hafta",
+    "selChangeRule": "Seçim yapıldıktan sonra 24 saat değiştirilemez; Yarın Buluşma'da bu süre 3 saattir.",
+    "selCancelRule": "İptal edersen 24 saat boyunca hiçbir masaya katılamazsın."
   },
   "login": {
     "accessBlocked": "Erişim engellendi",
@@ -960,18 +965,12 @@
     "noShowInfo": "Gelmeyen kişileri işaretleyip gönder. Gönderilen bildirim geri alınamaz.",
     "noVenue": "Mekân bilgisi yok",
     "notified": "Bildirildi",
-    "onMyWay": "Yola Çıktım",
-    "onMyWayDone": "✓ Yola çıktığını bildirdin",
-    "onMyWayLater": "Yola çıkış bildirimi, buluşma saatinden 1 saat önce kullanıma açılır.",
-    "onMyWayLoading": "Bildiriliyor…",
     "oneOnOne": "BAŞ BAŞA",
     "participants": "KATILIMCILAR",
     "photoAlt": "Fotoğraf {n}",
     "report": "İhbarda Bulun",
     "reportMsg": "Şikayet et",
     "reported": "✓ Şikayet edildi",
-    "reservationDone": "Rezervasyonun tamamlandı. Girişte görevliye ismini söylediğinde masana yönlendirileceksin. İyi eğlenceler.",
-    "safetyImportant": "Güvenliğin benim için çok önemli.",
     "seeOnMap": "HARİTADA GÖR",
     "send": "Gönder",
     "sendFailedMsg": "Mesaj gönderilemedi",
@@ -983,12 +982,11 @@
     "sosDenied": "⚠ Konuma erişim engellendi. Tarayıcı adres çubuğundaki kilit simgesine tıklayarak konum iznini ver, ardından tekrar dene.",
     "sosFailed": "⚠ Talep gönderilemedi: {error}",
     "sosFormTitle": "ACİL YARDIM TALEP FORMU",
-    "sosInfo": "Masada veya masadan sonrasında, masadaki birisi tarafından fiziksel şiddet, alıkoyulma, taciz veya istismar eylemiyle karşı karşıya kalırsan ya da kalma ihtimali yaşarsan hemen butona bas ve eylemin türünü seçerek onayla. İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar, uygulama kapansa bile ekibim tarafından takip edilir. Masadaki kişilerin kimlik bilgileri de emniyet birimleriyle anında paylaşılır.",
     "sosMaybe": "Yukarıdaki eylemlerin ihtimali olsa dahi lütfen işaretle (birden fazla seçeneği işaretleyebilirsin)",
     "sosOff": "⚠ Cihaz konumu kapalı. Konum servisini açtıktan sonra tekrar dene.",
     "sosPick": "Yaşadığın durumu seç:",
     "sosReceived": "ACİL YARDIM TALEBİN ALINDI",
-    "sosShared": "İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar, uygulama kapansa bile ekibim tarafından takip edilir.",
+    "sosShared": "İhbarda bulunduğunda konumun emniyet birimleriyle paylaşılır ve talebin çözülene kadar, uygulama kapansa bile ekibimiz tarafından takip edilir.",
     "stayCalm": "Sakin ol ve güvende kalmaya çalış.",
     "threatAbduction": "Zorla alıkoyuluyorum",
     "threatHarassment": "Taciz veya istismara uğradım",
@@ -997,17 +995,15 @@
     "tooMany": "Çok fazla deneme yapıldı. Lütfen birkaç dakika sonra tekrar dene.",
     "tryAgain": "Tekrar dene",
     "noShowQ": "Masana gelmeyen oldu mu?",
-    "occupations": "Meslekler:",
     "sosDeniedApp": "⚠ Konuma erişim engellendi. Ayarlar → Ahenk → Konum bölümünden konum iznini ver, ardından tekrar dene.",
     "close": "Kapat",
-    "typeGroup": "Grup Masası",
-    "typeOne": "Baş Başa",
-    "typeKanka": "Kankamla",
     "tableParticipants": "Masa Katılımcıları",
-    "chatJump": "Masa Sohbeti",
     "aiOverall": "Genel Uyum",
-    "peopleCount": "{n} Kişi",
-    "genderCount": "{f} Kadın · {m} Erkek"
+    "sosHelp": "Buluşma akşamından sabah 08:00'e kadar, nerede olursan ol yanındayız. Kendini tehlikede hissedersen hemen bas.",
+    "sosHow": "Nasıl çalışır?",
+    "sosHowText": "Buluşma akşamından sabah 08:00'e kadar, masada ya da sonrasında nereye gidersen git, masadaki biri tarafından fiziksel şiddet, alıkoyulma, taciz veya istismarla karşılaşırsan ya da bu ihtimali hissedersen hemen butona bas, eylemin türünü seç ve onayla. Konumun ve masadaki kişilerin kimlik bilgileri anında ekibimize ulaşır ve emniyet birimleriyle paylaşılır. Talebin çözülene kadar, uygulama kapalı olsa bile ekibimiz tarafından takip edilirsin. Güvenliğin bizim için çok önemli.",
+    "sosCall112": "Arayabilecek durumdaysan 112",
+    "reviewNotYet": "{date} 08:00'de değerlendirebilirsin"
   },
   "nav": {
     "adminPanel": "Yönetim Paneli",
@@ -1574,9 +1570,14 @@
     "title": "Site Haritası"
   },
   "sos": {
-    "activeBody": "Konumun emniyet birimleriyle paylaşılıyor ve talebin çözülene kadar ekibim tarafından aralıksız takip ediliyor, konumunu kapatma. İhbarın, senin ve masandakilerin kimlik bilgileri de emniyet birimleriyle paylaşılıyor.",
-    "activeTitle": "ACİL YARDIM TALEBİ ETKİN",
-    "liveNotice": "Acil yardım: konumun emniyet birimleriyle paylaşılıyor, ekibim takip ediyor."
+    "liveNotice": "Acil yardım: konumun emniyet birimleriyle paylaşılıyor, ekibim takip ediyor.",
+    "sentTitle": "ACİL YARDIM TALEBİN ALINDI",
+    "sentLine1": "Ekibimiz seni şu an takip ediyor.",
+    "sentLine2": "Konumun ve masa bilgileri gerektiğinde emniyet birimleriyle paylaşılır.",
+    "sentBold": "Konumunu kapatma.",
+    "resumedTitle": "KONUMUN YENİDEN ALINIYOR",
+    "resumedLine": "Ekibimiz takipte.",
+    "resumedBold": "Konumunu açık tut."
   },
   "story": {
     "b1": "İstanbul'da 15 milyon insan yaşıyor. Ankara'da 5 milyon. İzmir'de 4 milyon. Bu şehirlerde her gün milyonlarca hikaye kesişiyor ama çoğu zaman hiç tanışmıyoruz bile. Sosyal hayatımız daraldı. İş arkadaşları, eski okul arkadaşları, ailenin tanıdıkları. Hep aynı yüzler, hep aynı sohbetler. Yeni biriyle tanışmak için ya bir uygulamaya sığınıyoruz ya da tesadüfe güveniyoruz. İkisi de hayal kırıklığıyla bitiyor. Ben bunu değiştirmek için yola çıktım.",
@@ -1880,7 +1881,6 @@
     "s6AiSub": "Genel uyum ve masanın nasıl geçeceği",
     "s6b1": "Masadakilerin fotoğraflarını ilk kez burada görürsün.",
     "s6b2": "Masa sohbeti açılır, buluşma günü 22:00'de kapanır.",
-    "s6b3": "Yola çıkınca \"Yola Çıktım\" ile masana haber ver.",
     "s7Title": "Her an yanındayım",
     "s7Sub": "Ahenk, herkesin rahat ve keyifli vakit geçirdiği masalar için var.",
     "s7c1t": "Doğrulanmış kullanıcılar",

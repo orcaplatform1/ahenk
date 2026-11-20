@@ -49,7 +49,7 @@ export class MeetingsController {
     return this.meetingsService.getMeetingInfo(id, user.id);
   }
 
-  // Masaya gelmeyen işaretleme: masa kartında 22:00 → ertesi gün 10:00
+  // Masaya gelmeyen işaretleme: masa kartında 22:00 → ertesi gün 08:00
   @Get(":id/no-show")
   getNoShowMarking(@Param("id") id: string, @Req() req: Request) {
     const user = req.user as { id: string };
@@ -84,12 +84,6 @@ export class MeetingsController {
   rematchBlock(@Param("id") id: string, @Req() req: Request) {
     const user = req.user as { id: string };
     return this.meetingsService.rematchBlock(id, user.id);
-  }
-
-  @Post(":id/on-my-way")
-  onMyWay(@Param("id") id: string, @Req() req: Request) {
-    const user = req.user as { id: string };
-    return this.meetingsService.onMyWay(id, user.id);
   }
 
   @Post(":id/cancel-registration")

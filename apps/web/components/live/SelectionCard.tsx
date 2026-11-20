@@ -10,7 +10,8 @@ const TITLE: Record<MasaTuru, string> = { GROUP: 'live.wsGroupTitle', ONE_ON_ONE
 const MODE_LABEL: Record<MeetingMode, string> = { TOMORROW: 'live.modeTomorrow', PLANNED: 'live.modeWeekend' };
 
 // Eşleşme Paneli kartı: seçim ekranını açar; seçim değiştirme (buluşma türü) ve iptal yalnız buradan yapılır.
-// Kilitten önce değiştirme / iptal serbest, hak yanmaz; kilitlenmiş masada butonlar kapalı.
+// Seçim Yap, Değiştir ve İptal Et yalnız masa kilitli değilken aktif; kilitli masada üçü de kapalı. Değiştir seçimden 24 saat
+// (Yarın Buluşma'da 3 saat) sonra açılır. İptal eden 24 saat hiçbir türde Seçim Yap'ı kullanamaz. İptalde hak yanmaz.
 export default function SelectionCard({ selection, onOpen, onChange, onCancel }: {
   selection: WeeklySelection | null;
   onOpen: () => void;
@@ -26,6 +27,8 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
   const rows = selection.options.filter((o) => o.selection || o.seated);
   const canPick = selection.options.some((o) => o.hasRight && !o.selection && !o.seated);
   if (rows.length === 0 && !canPick) return null;
+  const now = Date.now();
+  const cooling = !!selection.cancelCooldownUntil && Date.parse(selection.cancelCooldownUntil) > now;
 
   async function run(type: MasaTuru, fn: () => Promise<void>) {
     setBusy(type); setError('');
@@ -50,11 +53,11 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
                 {sub && <span className="text-[#a39c93]" style={{ fontSize: 12 }}>{sub}</span>}
               </span>
             </div>
-            {sel && !o.locked && (
+            {sel && (
               <div className="flex" style={{ gap: 8 }}>
                 <button
                   onClick={() => setConfirm({ kind: 'change', type: o.type, mode: sel.mode === 'TOMORROW' ? 'PLANNED' : 'TOMORROW' })}
-                  disabled={busy !== null}
+                  disabled={busy !== null || o.locked || Date.parse(sel.changeAvailableAt) > now}
                   className="btn-ghost flex-1 justify-center disabled:opacity-50"
                   style={{ minHeight: 44 }}
                 >
@@ -62,7 +65,7 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
                 </button>
                 <button
                   onClick={() => setConfirm({ kind: 'cancel', type: o.type, mode: sel.mode })}
-                  disabled={busy !== null}
+                  disabled={busy !== null || o.locked}
                   className="btn-ghost flex-1 justify-center disabled:opacity-50"
                   style={{ minHeight: 44 }}
                 >
@@ -75,25 +78,31 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
       })}
       {error && <p className="text-[#ff6b6b]" style={{ fontSize: 12, margin: 0 }}>{error}</p>}
       {canPick && (
-        <button onClick={onOpen} className="btn-primary w-full justify-center" style={{ minHeight: 44 }}>{tr('live.selOpen')}</button>
+        <button onClick={onOpen} disabled={cooling} className="btn-primary w-full justify-center disabled:opacity-50" style={{ minHeight: 44 }}>{tr('live.selOpen')}</button>
       )}
       {confirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.7)' }} role="dialog" aria-modal="true" aria-labelledby="sel-confirm-title" onClick={() => setConfirm(null)}>
           <div className="ll-card w-full max-w-md flex flex-col gap-4" style={{ background: '#121212' }} onClick={(e) => e.stopPropagation()}>
-            <h3 id="sel-confirm-title" className="ll-title">{tr(confirm.kind === 'change' ? 'live.selChangeConfirm' : 'live.selCancelConfirm')}</h3>
-            <div className="flex gap-2">
-              <button onClick={() => setConfirm(null)} className="btn-ghost flex-1 justify-center" style={{ minHeight: 44 }}>{tr('live.selConfirmNo')}</button>
+            {/* Büyük başlık, kural metni, butonlar ortada alt alta */}
+            <h3 id="sel-confirm-title" style={{ margin: 0, textAlign: 'center', fontFamily: 'var(--font-serif, "DM Serif Display", Georgia, serif)', fontSize: 26, lineHeight: 1.25, fontWeight: 400, color: '#f4f1ec' }}>
+              {tr(confirm.kind === 'change' ? 'live.selChangeConfirm' : 'live.selCancelConfirm')}
+            </h3>
+            <p style={{ margin: 0, textAlign: 'center', fontSize: 14, lineHeight: 1.6, color: '#c9c2b8' }}>
+              {tr(confirm.kind === 'change' ? 'live.selChangeRule' : 'live.selCancelRule')}
+            </p>
+            <div className="flex flex-col items-center gap-2">
               <button
                 onClick={() => {
                   const c = confirm;
                   setConfirm(null);
                   void run(c.type, () => (c.kind === 'change' ? onChange(c.type, c.mode) : onCancel(c.type)));
                 }}
-                className="btn-primary flex-1 justify-center"
-                style={{ minHeight: 44 }}
+                className="btn-primary justify-center"
+                style={{ minHeight: 44, width: '100%', maxWidth: 280 }}
               >
                 {tr(confirm.kind === 'change' ? 'live.selConfirmChangeYes' : 'live.selConfirmCancelYes')}
               </button>
+              <button onClick={() => setConfirm(null)} className="btn-ghost justify-center" style={{ minHeight: 44, width: '100%', maxWidth: 280 }}>{tr('live.selConfirmNo')}</button>
             </div>
           </div>
         </div>

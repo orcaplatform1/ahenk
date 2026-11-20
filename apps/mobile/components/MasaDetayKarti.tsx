@@ -1,31 +1,33 @@
-// packages/ui/src/components/tables/MasaDetayKarti.tsx karşılığı: mekân, fotoğraflar, HARİTADA GÖR, buluşma,
-// katılımcılar, yapay zeka raporu, bilgi kutusu, Yola Çıktım, sohbet, gelmeyen işaretleme, Acil Yardım.
+// packages/ui/src/components/tables/MasaDetayKarti.tsx karşılığı: mekân, fotoğraf, tarih satırı + HARİTADA GÖR,
+// katılımcılar (fotoğraf, ad, meslek), yapay zeka raporu, Acil Yardım, sohbet, gelmeyen işaretleme, Değerlendir.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
+import { Image, Linking, Modal, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
+import { useRouter } from 'expo-router';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
-import { api, prefetch } from '@/lib/api';
+import { api } from '@/lib/api';
 import { mediaUrl } from '@/lib/venueApi';
 import { requestSosAlwaysPermission, startSosLive } from '@/lib/sosLive';
 import { formatMeetingTime, gColor, type MasaTuru } from '@/lib/masa';
+import { currentLang } from '@/lib/i18n';
 import { openMaps } from '@/lib/links';
 import { useAppRefresh } from '@/lib/useAppRefresh';
 import { DetayAvatar } from './DetayAvatar';
-import { PhotoViewer, pickAndUploadProfilePhoto } from './ProfilePhoto';
-import { KankaPairs, type KankaPerson } from './KankaPairs';
+import { PhotoViewer } from './ProfilePhoto';
+import { SosNotice } from './SosNotice';
 import { InlineLH, Btn, BtnPrimary, Card, Serif, T } from './ui';
 import { LocationDisclosure } from './LocationDisclosure';
 import { PERM_REASON, showSettingsAlert } from '@/lib/permissions';
 import { c, masaKart, sans, tw } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
-import { occupationLabel } from '@ahenk/shared';
+import { formatCardDate, formatDayMonth, occupationLabel, reviewOpensAt } from '@ahenk/shared';
 
-export interface DetayParticipant { initials: string; displayName?: string | null; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean; photoUrl?: string | null; cancelled?: boolean }
+export interface DetayParticipant { initials: string; displayName?: string | null; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean; photoUrl?: string | null; cancelled?: boolean; occupation?: string | null }
 export interface VenuePhoto { url: string; caption?: string }
 export interface MasaDetayData {
   id: string; type?: MasaTuru; maxParticipants?: number; scheduledAt: string; sosEndsAt: string; venueName: string;
-  venueAddress?: string | null; venueDistrict?: string | null; venueMapsUrl?: string | null; venuePhotos?: VenuePhoto[]; participants: DetayParticipant[]; occupations?: string[];
+  venueAddress?: string | null; venueDistrict?: string | null; venueMapsUrl?: string | null; venuePhotos?: VenuePhoto[]; participants: DetayParticipant[];
   aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
 }
 interface ChatMsg { id: string; content: string; createdAt: string; isOwn: boolean; senderName: string; senderGender?: string | null; seatNo?: number | null; reportedByMe: boolean }
@@ -33,11 +35,31 @@ interface ChatMsg { id: string; content: string; createdAt: string; isOwn: boole
 const GREEN = c.green;
 const msgTime = (iso: string) => new Date(iso).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
 
-function buildOrdered(ps: DetayParticipant[]) {
+// Katılımcı satırları (satırda en fazla 2 kişi; web participantRows ile aynı): Grup ve Baş Başa'da her satır 1 erkek + 1 kadın;
+// Kankamla'da üst satır kullanıcının kanka çifti, alt satır karşı çift
+function participantRows(ps: DetayParticipant[], type?: MasaTuru): DetayParticipant[][] {
+  const chunk = (list: DetayParticipant[]) => { const r: DetayParticipant[][] = []; for (let i = 0; i < list.length; i += 2) r.push(list.slice(i, i + 2)); return r; };
+  if (type === 'KANKA') {
+    const mine = ps.filter(p => p.pair === 'MINE').sort((a, b) => Number(!!b.isSelf) - Number(!!a.isSelf));
+    return [...chunk(mine), ...chunk(ps.filter(p => p.pair !== 'MINE'))];
+  }
   const m = ps.filter(p => p.gender === 'MALE'), f = ps.filter(p => p.gender === 'FEMALE'), o = ps.filter(p => p.gender !== 'MALE' && p.gender !== 'FEMALE');
-  const out: DetayParticipant[] = [];
-  for (let i = 0; i < Math.max(m.length, f.length); i++) { if (i < m.length) out.push(m[i]); if (i < f.length) out.push(f[i]); }
-  return [...out, ...o];
+  const rows: DetayParticipant[][] = [];
+  for (let i = 0; i < Math.max(m.length, f.length); i++) rows.push([m[i], f[i]].filter((p): p is DetayParticipant => !!p));
+  return [...rows, ...chunk(o)];
+}
+
+// "Değerlendir": İçerde paket kartı rozetindeki altın geçişli hap (web GOLD_PILL); HIG: en az 44 pt dokunma alanı
+export function GoldPill({ label, onPress }: { label: string; onPress: () => void }) {
+  const g = masaKart.goldPill;
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+      <LinearGradient colors={g.colors} locations={g.stops} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={{ minHeight: g.minH, paddingHorizontal: g.padH, borderRadius: 9999, alignItems: 'center', justifyContent: 'center' }}>
+        <T w={800} style={{ fontSize: g.fontSize, letterSpacing: 0.96, color: g.text }}>{label.toLocaleUpperCase(currentLang() === 'en' ? 'en' : 'tr-TR')}</T>
+      </LinearGradient>
+    </Pressable>
+  );
 }
 
 
@@ -244,6 +266,10 @@ function SosModal({ selected, onToggle, onConfirm, onClose, loading, locError, e
             <T style={{ flex: 1, fontSize: 11.5, color: 'rgba(255,255,255,0.75)', lineHeight: 17.25 }}>{t('masa.sosConsent')}</T>
           </Pressable>
           <Btn variant="sosSubmit" onPress={onConfirm} disabled={!can} label={loading ? t('masa.locating') : error ? t('masa.tryAgain') : t('masa.report')} />
+          {/* Tek dokunuşla 112 */}
+          <Pressable onPress={() => { Linking.openURL('tel:112').catch(() => undefined); }} accessibilityRole="link" style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
+            <T style={{ fontSize: 11.5, color: 'rgba(255,107,107,0.8)', textDecorationLine: 'underline' }}>{t('masa.sosCall112')}</T>
+          </Pressable>
         </Pressable>
       </Pressable>
     </Modal>
@@ -281,7 +307,6 @@ function Lightbox({ photos, start, onClose }: { photos: VenuePhoto[]; start: num
         >
           <Image source={{ uri: mediaUrl(photos[idx].url) }} style={{ width: '100%', height: '100%', borderRadius: 12 }} resizeMode="contain" />
         </Pressable>
-        {!!photos[idx].caption && <T style={{ color: c.tAaa, fontSize: 13, marginTop: 12 }}>{photos[idx].caption}</T>}
         <Btn variant="lightboxClose" onPress={onClose} hitSlop={4} accessibilityLabel={t('masa.close')} label="×" />
       </Pressable>
     </Modal>
@@ -332,33 +357,33 @@ function AiReport({ report }: { report?: MasaDetayData['aiReport'] }) {
   );
 }
 
-// scrollRef: kartın içinde bulunduğu ekran ScrollView'u ("Masa Sohbeti" alttaki sohbet kartına kaydırır)
-function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaDetayData; archive?: boolean; scrollRef?: React.RefObject<ScrollViewInstance | null> }) {
+function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; archive?: boolean }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const live = !archive;
   const [lightbox, setLightbox] = useState<number | null>(null);
-  // Katılımcı profil fotoğrafı tam ekran; kendi fotoğrafında düzenleme butonu
-  const [viewer, setViewer] = useState<{ url: string; self: boolean } | null>(null);
-  const openPhoto = (p: { photoUrl?: string | null; isSelf?: boolean }) => { if (p.photoUrl) setViewer({ url: p.photoUrl, self: !!p.isSelf }); };
-  const [onMyWayDone, setOnMyWayDone] = useState(false);
-  const [onMyWayLoading, setOnMyWayLoading] = useState(false);
-  const [onMyWayWarn, setOnMyWayWarn] = useState('');
-  const opensAt = new Date(masa.scheduledAt).getTime() - 60 * 60 * 1000;
-  const [onMyWayOpen, setOnMyWayOpen] = useState(() => Date.now() >= opensAt);
-  useEffect(() => { if (onMyWayOpen) return; const id = setInterval(() => { if (Date.now() >= opensAt) setOnMyWayOpen(true); }, 15000); return () => clearInterval(id); }, [onMyWayOpen, opensAt]);
+  // Katılımcı profil fotoğrafı tam ekran (kendi fotoğrafında da düzenleme yok; fotoğraf yalnız Profilim'den değişir)
+  const [viewer, setViewer] = useState<string | null>(null);
+  const openPhoto = (p: { photoUrl?: string | null }) => { if (p.photoUrl) setViewer(p.photoUrl); };
 
   const photos = masa.venuePhotos ?? [];
-  const ordered = buildOrdered(masa.participants);
+  const rows = participantRows(masa.participants.filter(p => !p.cancelled), masa.type);
   const hasMap = !!(masa.venueMapsUrl || masa.venueAddress);
 
-  async function onMyWay() {
-    if (!live || onMyWayDone || onMyWayLoading) return;
-    if (!onMyWayOpen) { setOnMyWayWarn(t('masa.onMyWayLater')); setTimeout(() => setOnMyWayWarn(''), 4000); return; }
-    setOnMyWayLoading(true);
-    try { await api.post(`/meetings/${masa.id}/on-my-way`); setOnMyWayDone(true); }
-    catch (e) { const m = (e as Error).message; if (m) { setOnMyWayWarn(m); setTimeout(() => setOnMyWayWarn(''), 4000); } }
-    finally { setOnMyWayLoading(false); }
+  // "Değerlendir": değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı
+  const [reviewWarn, setReviewWarn] = useState('');
+  const reviewAt = reviewOpensAt(masa.scheduledAt);
+  function handleReview() {
+    if (Date.now() < reviewAt.getTime()) {
+      setReviewWarn(t('masa.reviewNotYet', { date: formatDayMonth(reviewAt, currentLang()) }));
+      setTimeout(() => setReviewWarn(''), 4000);
+      return;
+    }
+    router.push(`/degerlendirme/${masa.id}`);
   }
+  // "Nasıl çalışır?" penceresi ve talep sonrası 30 sn uyarı
+  const [sosHowOpen, setSosHowOpen] = useState(false);
+  const [sentNotice, setSentNotice] = useState(false);
 
   const now = new Date();
   const sosVisible = live && now >= new Date(masa.scheduledAt) && now < new Date(masa.sosEndsAt);
@@ -413,7 +438,7 @@ function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaD
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       try {
         const r = await api.post<{ reportId: string }>(`/sos/${masa.id}/report`, { threats, lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
-        setSosDone(true); setShowSos(false);
+        setSosDone(true); setShowSos(false); setSentNotice(true);
         // Talep gönderildi: gönderim Kullanırken yöntemiyle başlar, ardından "Her zaman" izni istenir (red talebi engellemez)
         if (r?.reportId) startSosLive(r.reportId).catch(() => {}).finally(() => { askAlwaysPermission().catch(() => {}); });
       } catch (e) {
@@ -424,31 +449,29 @@ function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaD
     finally { setSosLoading(false); }
   }
 
-  // Kapak, bilgi şeridi ve katılımcılar (web MasaDetayKarti ile aynı yerleşim)
-  const chatRef = useRef<React.ComponentRef<typeof View>>(null);
+  // Kapak, tarih satırı ve katılımcılar (web MasaDetayKarti ile aynı yerleşim)
   // Mekânın yalnız ilk fotoğrafı gösterilir (tek fotoğraf; eski kayıtlardaki diğerleri gösterilmez)
   const cover = photos[0] ?? null;
-  const present = masa.participants.filter(p => !p.cancelled);
-  const femaleCount = present.filter(p => p.gender === 'FEMALE').length;
-  const maleCount = present.filter(p => p.gender === 'MALE').length;
-  const typeLabel = masa.type === 'ONE_ON_ONE' ? t('masa.typeOne') : masa.type === 'KANKA' ? t('masa.typeKanka') : t('masa.typeGroup');
-  // "Masa Sohbeti": alttaki sohbet kartına kaydırır
-  function scrollToChat() {
-    const sv = scrollRef?.current;
-    const inner = sv?.getInnerViewRef?.();
-    if (!sv || !inner || !chatRef.current) return;
-    chatRef.current.measureLayout(inner, (_x: number, y: number) => sv.scrollTo({ y: Math.max(0, y - 16), animated: true }), () => undefined);
-  }
-  const pill = (bg: string, border: string) => ({
-    flexDirection: 'row' as const, alignItems: 'center' as const, gap: masaKart.pill.gap, paddingVertical: masaKart.pill.padV, paddingHorizontal: masaKart.pill.padH,
-    borderRadius: masaKart.pill.radius, backgroundColor: bg, borderWidth: 1, borderColor: border,
-  });
+  const P = masaKart.person;
 
   return (
     <View>
       {lightbox !== null && cover && <Lightbox photos={[cover]} start={lightbox} onClose={() => setLightbox(null)} />}
-      <PhotoViewer url={viewer?.url ?? null} visible={!!viewer} onClose={() => setViewer(null)}
-        onEdit={viewer?.self ? () => { setViewer(null); pickAndUploadProfilePhoto(true).then((ok) => { if (ok) prefetch(['/auth/me']); }).catch(() => undefined); } : undefined} />
+      <PhotoViewer url={viewer} visible={!!viewer} onClose={() => setViewer(null)} />
+      <SosNotice visible={sentNotice} title={t('sos.sentTitle')} lines={[t('sos.sentLine1'), t('sos.sentLine2')]} bold={t('sos.sentBold')}
+        durationMs={30_000} countdown onClose={() => setSentNotice(false)} />
+      <Modal visible={sosHowOpen} transparent animationType="fade" onRequestClose={() => setSosHowOpen(false)} statusBarTranslucent>
+        <Pressable onPress={() => setSosHowOpen(false)} style={{ flex: 1, backgroundColor: 'rgba(10,0,0,0.92)', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <Pressable onPress={() => undefined} accessibilityRole="alert" style={{ width: '100%', maxWidth: 380, backgroundColor: '#0f0808', borderWidth: 1.5, borderColor: 'rgba(192,57,43,0.7)', borderRadius: 16, paddingTop: 24, paddingHorizontal: 20, paddingBottom: 20 }}>
+            <Pressable onPress={() => setSosHowOpen(false)} accessibilityRole="button" accessibilityLabel={t('masa.close')}
+              style={{ position: 'absolute', top: 0, right: 0, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+              <T w={700} style={{ fontSize: 20, color: tw.text }}>×</T>
+            </Pressable>
+            <T w={800} style={{ fontSize: 16, color: tw.accent, marginBottom: 12, marginRight: 36 }}>{t('masa.sosHow')}</T>
+            <T style={{ fontSize: 13, lineHeight: 20.8, color: 'rgba(255,255,255,0.8)' }}>{t('masa.sosHowText')}</T>
+          </Pressable>
+        </Pressable>
+      </Modal>
       {showSos && <SosModal selected={threats} onToggle={t => setThreats(p => (p.includes(t) ? p.filter(x => x !== t) : [...p, t]))} onConfirm={handleSos}
         onClose={() => { setShowSos(false); setLocError(null); setSosError(''); setThreats([]); }} loading={sosLoading} locError={locError} error={sosError} />}
       <LocationDisclosure visible={disclosure} onContinue={() => answerDisclosure(true)} onCancel={() => answerDisclosure(false)} />
@@ -467,12 +490,7 @@ function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaD
             </>
           )}
 
-          {/* Sol üst masa türü */}
-          <View style={[pill(masaKart.typePill.bg, masaKart.typePill.border), cover ? { position: 'absolute', top: 12, left: 12 } : { alignSelf: 'flex-start' }]}>
-            <T w={700} style={{ fontSize: masaKart.pill.fontSize, color: masaKart.typePill.text, letterSpacing: 0.44 }}>{typeLabel}</T>
-          </View>
-
-          {/* Alt: mekân adı + ilçe, sağda Haritada Gör */}
+          {/* Alt: mekân adı + ilçe */}
           <View style={[cover ? { position: 'absolute', left: 14, right: 14, bottom: 12 } : null, { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }]}>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Serif style={{ fontSize: 24, lineHeight: 28.8, color: tw.text, letterSpacing: 0.24 }}>{masa.venueName}</Serif>
@@ -485,6 +503,19 @@ function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaD
                 </View>
               )}
             </View>
+          </View>
+        </View>
+
+        <View style={{ padding: 18 }}>
+          {/* Tarih satırı ("18 Kasım, Çarşamba 20:00"), sağında Haritada Gör */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: masaKart.strip.padV, paddingHorizontal: masaKart.strip.padH,
+            borderRadius: masaKart.strip.radius, backgroundColor: masaKart.strip.bg, borderWidth: 1, borderColor: masaKart.strip.border, marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={masaKart.strip.icon} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <Rect x={3} y={5} width={18} height={16} rx={2} /><Path d="M16 3v4M8 3v4M3 10h18" />
+              </Svg>
+              <T w={700} style={{ fontSize: 15, flexShrink: 1 }}>{formatCardDate(masa.scheduledAt, currentLang())}</T>
+            </View>
             {hasMap && (
               <Pressable onPress={() => openMaps(masa.venueMapsUrl, masa.venueAddress, masa.venueName)} accessibilityRole="link" hitSlop={4}
                 style={{ minHeight: Math.max(masaKart.mapBtn.minH, 44), justifyContent: 'center' }}>
@@ -494,106 +525,39 @@ function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaD
               </Pressable>
             )}
           </View>
-        </View>
 
-        <View style={{ padding: 18 }}>
-          {/* Bilgi şeridi: gün/saat · kişi sayısı + kadın/erkek */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: masaKart.strip.padV, paddingHorizontal: masaKart.strip.padH,
-            borderRadius: masaKart.strip.radius, backgroundColor: masaKart.strip.bg, borderWidth: 1, borderColor: masaKart.strip.border, marginBottom: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={masaKart.strip.icon} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                <Rect x={3} y={5} width={18} height={16} rx={2} /><Path d="M16 3v4M8 3v4M3 10h18" />
-              </Svg>
-              <T w={700} style={{ fontSize: 15 }}>{formatMeetingTime(masa.scheduledAt).replace(' · ', ', ')}</T>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={masaKart.strip.icon} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                <Circle cx={9} cy={8} r={3.5} /><Path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><Path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.2c2.1.7 3.5 2.8 3.5 5.8" />
-              </Svg>
-              <View style={{ alignItems: 'flex-end' }}>
-                <T w={700} style={{ fontSize: 14, lineHeight: 16.8 }}>{t('masa.peopleCount', { n: present.length })}</T>
-                <T style={{ fontSize: 11, lineHeight: 14.3, color: 'rgba(255,255,255,0.6)' }}>{t('masa.genderCount', { f: femaleCount, m: maleCount })}</T>
-              </View>
-            </View>
-          </View>
-
-          {/* Masa Katılımcıları + Masa Sohbeti */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
-            <T w={700} style={{ fontSize: 15, flexShrink: 1 }}>{t('masa.tableParticipants')}</T>
-            {live && (
-              <Pressable onPress={scrollToChat} accessibilityRole="button" hitSlop={6}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: masaKart.chatBtn.minH, paddingHorizontal: masaKart.chatBtn.padH, borderRadius: masaKart.chatBtn.radius,
-                  backgroundColor: masaKart.chatBtn.bg, borderWidth: 1, borderColor: masaKart.chatBtn.border }}>
-                <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={masaKart.chatBtn.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <Path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
-                </Svg>
-                <T w={600} style={{ fontSize: masaKart.chatBtn.fontSize, color: masaKart.chatBtn.text }}>{t('masa.chatJump')}</T>
-              </Pressable>
-            )}
-          </View>
-          <View style={{ marginBottom: 20 }}>
-            {masa.type === 'KANKA' ? (
-              <KankaPairs mine={masa.participants.filter(p => p.pair === 'MINE') as KankaPerson[]} other={masa.participants.filter(p => p.pair === 'OTHER') as KankaPerson[]} onPhoto={openPhoto} />
-            ) : (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: masaKart.avatarGap - 8 }}>
-                {ordered.map((p, i) => {
-                  const av = (
-                    <View style={{ padding: 2, borderRadius: 999, borderWidth: 2, borderColor: p.isSelf ? masaKart.selfRing : 'transparent', backgroundColor: p.isSelf ? masaKart.selfRingGap : 'transparent' }}>
-                      <DetayAvatar participant={p} delay={0.52 + i * 0.1} size={masaKart.avatar} />
-                    </View>
-                  );
-                  const slot = p.photoUrl
-                    ? <Pressable onPress={() => openPhoto(p)} accessibilityRole="imagebutton" accessibilityLabel={t('masa.enlargePhoto')} hitSlop={4}>{av}</Pressable>
-                    : av;
-                  // Görünen ad ("Ahmet Y.") avatarın yanında; fotoğrafsızda avatarın içindeki baş harf aynen kalır
+          {/* Masa Katılımcıları: satırda en fazla 2 kişi; fotoğraf, altında görünen ad ("Ahmet Y."), altında kendi mesleği */}
+          <T w={700} style={{ fontSize: 15, marginBottom: 12 }}>{t('masa.tableParticipants')}</T>
+          <View style={{ gap: P.rowGap, marginBottom: 20 }}>
+            {rows.map((row, r) => (
+              <View key={r} style={{ flexDirection: 'row', gap: P.colGap }}>
+                {row.map((p, i) => {
+                  const av = <DetayAvatar participant={p} delay={0.52 + (r * 2 + i) * 0.1} size={P.avatar} />;
                   return (
-                    <View key={`${p.initials}-${i}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: p.displayName ? 4 : 0 }}>
-                      {slot}
-                      {!!p.displayName && <T w={600} numberOfLines={1} style={{ fontSize: 12, color: '#f4f1ec' }}>{p.displayName}</T>}
+                    <View key={`${p.initials}-${i}`} style={{ flex: 1, minWidth: 0, alignItems: 'center', gap: 6 }}>
+                      {p.photoUrl
+                        ? <Pressable onPress={() => openPhoto(p)} accessibilityRole="imagebutton" accessibilityLabel={t('masa.enlargePhoto')} hitSlop={4}>{av}</Pressable>
+                        : av}
+                      <T w={600} numberOfLines={1} style={{ fontSize: P.name, color: P.nameColor, textAlign: 'center' }}>{p.displayName ?? p.initials}</T>
+                      <T style={{ minHeight: 18, fontSize: P.job, lineHeight: 18, color: P.jobColor, textAlign: 'center' }}>{p.occupation ? occupationLabel(p.occupation, t) : ''}</T>
                     </View>
                   );
                 })}
+                {row.length === 1 && <View style={{ flex: 1 }} />}
               </View>
-            )}
+            ))}
           </View>
-
-          {/* Meslekler: her satırda bir meslek, yalnız yazı; sıra sunucuda her istekte karışık, kime ait olduğu gösterilmez */}
-          {!!masa.occupations?.length && (
-            <View style={{ marginBottom: 20 }}>
-              <T w={700} style={{ marginBottom: 8, fontSize: 13 }}>{t('masa.occupations')}</T>
-              {masa.occupations.map((o, i) => <T key={i} style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 20 }}>{occupationLabel(o, t)}</T>)}
-            </View>
-          )}
 
           <AiReport report={masa.aiReport} />
         </View>
       </Card>
 
-      {/* ── Alt kart: rezervasyon bilgisi, Yola Çıktım, sohbet (ardından gelmeyen işaretleme ve acil yardım) ── */}
+      {/* ── Alt kart: acil yardım (eski rezervasyon kartı ve Yola Çıktım yerinde), sohbet, gelmeyen işaretleme, Değerlendir.
+          Geçmiş masada (archive) bu kart yok ── */}
+      {live && (
       <Card style={{ marginTop: masaKart.cardGap }}>
-        <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 16 }}>
-          <T style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 19.2 }}>{t('masa.reservationDone')}</T>
-        </View>
-
-        <View style={{ marginBottom: 10 }}>
-          {onMyWayDone ? (
-            <Btn variant="doneGreen" disabled style={{ opacity: 1 }} label={t('masa.onMyWayDone')} />
-          ) : (
-            <BtnPrimary label={onMyWayLoading ? t('masa.onMyWayLoading') : t('masa.onMyWay')} full disabled={archive || onMyWayLoading} onPress={onMyWay} />
-          )}
-          {!!onMyWayWarn && (
-            <View accessibilityRole="alert" style={{ marginTop: 8, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14 }}>
-              <T style={{ fontSize: 12, color: c.warnOrange, lineHeight: 19.2 }}>{onMyWayWarn}</T>
-            </View>
-          )}
-        </View>
-
-        {/* Sohbet ("Masa Sohbeti" butonu buraya kaydırır) */}
-        {live && <View ref={chatRef} collapsable={false}><ChatSection meetingId={masa.id} type={masa.type} /></View>}
-        {live && <NoShowSection meetingId={masa.id} />}
-
         {sosVisible && (
-          <View style={{ marginTop: 24 }}>
+          <View style={{ marginBottom: 4 }}>
             {sosDone ? (
               <View style={{ paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(192,57,43,0.12)', borderWidth: 1.5, borderColor: 'rgba(192,57,43,0.5)', alignItems: 'center' }}>
                 <T w={700} style={{ fontSize: 13, color: tw.accent }}>{t('masa.sosReceived')}</T>
@@ -602,16 +566,25 @@ function MasaDetayKartiInner({ masa, archive = false, scrollRef }: { masa: MasaD
             ) : (
               <>
                 <Btn variant="sos" onPress={() => setShowSos(true)} label={t('masa.sosButton')} />
-                <View style={{ marginTop: 10, padding: 10, paddingHorizontal: 12, backgroundColor: 'rgba(192,57,43,0.07)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.22)', borderRadius: 8 }}>
-                  <T style={{ fontSize: 10.5, lineHeight: 16.275, color: 'rgba(255,107,107,0.65)' }}>
-                    {t('masa.sosInfo')} <T w={700} style={{ fontSize: 10.5, color: 'rgba(255,107,107,0.85)' }}>{t('masa.safetyImportant')}</T>
-                  </T>
-                </View>
+                <T style={{ marginTop: 10, fontSize: 11.5, lineHeight: 17.8, color: 'rgba(255,107,107,0.75)' }}>
+                  {t('masa.sosHelp')}{' · '}
+                  <T w={700} onPress={() => setSosHowOpen(true)} accessibilityRole="link" style={{ fontSize: 11.5, color: tw.accent, textDecorationLine: 'underline' }}>{t('masa.sosHow')}</T>
+                </T>
               </>
             )}
           </View>
         )}
+
+        <ChatSection meetingId={masa.id} type={masa.type} />
+        <NoShowSection meetingId={masa.id} />
+
+        {/* Değerlendir: değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı */}
+        <View style={{ marginTop: 20, alignItems: 'center', gap: 8 }}>
+          <GoldPill label={t('tm.review')} onPress={handleReview} />
+          {!!reviewWarn && <T accessibilityRole="alert" style={{ fontSize: 12, color: c.warnOrange, textAlign: 'center' }}>{reviewWarn}</T>}
+        </View>
       </Card>
+      )}
     </View>
   );
 }

@@ -51,9 +51,11 @@ export interface WeeklySelection {
     seated: boolean;
     locked: boolean;
     plannedDeadline: string;
-    selection: { mode: MeetingMode; meetingDate: string | null; kankaWaiting: boolean; nextWeek: boolean } | null;
+    // changeAvailableAt: "Değiştir" bu andan sonra açılır (seçimden 24 saat, Yarın Buluşma'da 3 saat sonra)
+    selection: { mode: MeetingMode; meetingDate: string | null; kankaWaiting: boolean; nextWeek: boolean; changeAvailableAt: string } | null;
   }[];
   tomorrowDate: string;
+  cancelCooldownUntil: string | null; // İptal sonrası 24 saat: bu ana kadar hiçbir türde "Seçim Yap" yok
   showModal: boolean;
 }
 
@@ -66,6 +68,18 @@ export interface MeData {
   profile?: { gender?: string | null };
   kyc?: { status: string; rejectReason?: string | null };
   maintenanceMode?: boolean;
+}
+
+// Varsayılan sekme: masası olan tür (en yakın tarihli masa) → aktif durumdaki ilk tür → pasif ve abonelik yok dışındaki ilk tür →
+// Grup. "Eşleşme Pasif" (PASSIVE) varsayılan olmaz.
+const ACTIVE_STATES: TabStatus[] = ['TABLE', 'FORMING', 'SCANNING', 'KANKA', 'KYC', 'PENDING', 'FAILED', 'CANCELLED'];
+function defaultTabOf(items: DashboardItem[], tables: Record<MasaTuru, boolean>, statuses: Record<MasaTuru, TabStatus>): MasaTuru {
+  const nearest = [...items].sort((a, b) => a.meeting.scheduledAt.localeCompare(b.meeting.scheduledAt))[0]?.meeting.type;
+  return nearest
+    ?? MASA_TURLERI.find(t => tables[t])
+    ?? MASA_TURLERI.find(t => ACTIVE_STATES.includes(statuses[t]))
+    ?? MASA_TURLERI.find(t => statuses[t] !== 'PASSIVE' && statuses[t] !== 'NONE')
+    ?? 'GROUP';
 }
 
 // Eşleşme Paneli ve Masalarım'ın ortak sekme kaynağı: aynı veri, aynı durum hesabı, aynı seçili tür
@@ -203,13 +217,9 @@ export function useMasaTabs() {
   };
   const statuses: Record<MasaTuru, TabStatus> = { GROUP: statusOf('GROUP'), ONE_ON_ONE: statusOf('ONE_ON_ONE'), KANKA: statusOf('KANKA') };
 
-  // Varsayılan sekme (ilk açılış / yenileme): aktif paket = kullanılmamış hakkı olan tür. Tek aktif tür varsa o; birden fazlaysa
-  // taramada / masa kuruldu / detay kartı durumundaki ilk tür, yoksa ilk aktif tür (Grup → Baş Başa → Kankamla); paketsizde Grup
-  const activeTypes = MASA_TURLERI.filter(t => rights[t]);
-  const inState = (t: MasaTuru) => tables[t] || statuses[t] === 'SCANNING';
-  const defaultTab: MasaTuru = activeTypes.length > 1
-    ? MASA_TURLERI.find(inState) ?? activeTypes[0]
-    : activeTypes[0] ?? 'GROUP';
+  // Varsayılan sekme (ilk açılış / yenileme): masası kurulu, kilitli ya da oluşturuluyor olan tür (birden fazlaysa en yakın
+  // tarihli masa); yoksa taramadaki / bekleyen ilk tür; "Eşleşme Pasif" hiçbir zaman varsayılan olmaz
+  const defaultTab: MasaTuru = defaultTabOf(items, tables, statuses);
   const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : defaultTab;
   const tabItem = items.find(i => i.meeting.type === tab);
   // Kurulmuş masası admin tarafından iptal edilen tür (bu hafta)

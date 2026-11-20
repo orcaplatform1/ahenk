@@ -194,7 +194,7 @@ export class MatchingScheduler {
   }
 
   // Her gün 22:00 (TR): o akşam başlamış onaylı masaların katılımcılarına "gelmeyeni işaretle" bildirimi
-  // (uygulama içi; WhatsApp yok). İşaretleme masa kartında ertesi gün 10:00'a kadar açık.
+  // (uygulama içi; WhatsApp yok). İşaretleme masa kartında ertesi gün 08:00'e kadar açık.
   @Cron("0 22 * * *", { timeZone: "Europe/Istanbul" })
   async notifyNoShowMarking(): Promise<void> {
     try {
@@ -225,40 +225,9 @@ export class MatchingScheduler {
     }
   }
 
-  // Her dakika: buluşmasına 1 saat kalan masalardaki katılımcılara "Yola Çıktım" hatırlatması.
-  // Dakika başına göre [t+60dk, t+61dk) aralığındaki masalar seçilir; her masa yalnızca bir kez yakalanır.
-  @Cron("* * * * *", { timeZone: "Europe/Istanbul" })
-  async notifyOnMyWayOpen(): Promise<void> {
-    try {
-      const minute = Math.floor(Date.now() / 60_000) * 60_000;
-      const meetings = await this.prisma.meeting.findMany({
-        where: {
-          status: { in: ["PENDING", "ACTIVE"] },
-          scheduledAt: { gte: new Date(minute + 60 * 60_000), lt: new Date(minute + 61 * 60_000) },
-        },
-        select: {
-          id: true,
-          participants: { where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] }, user: { isBot: false } }, select: { userId: true } },
-        },
-      });
-      for (const m of meetings) {
-        for (const p of m.participants) {
-          await this.notifications.sendToUser(p.userId, {
-            title: "Yola Çıktım",
-            body: "Buluşmana 1 saat kaldı. Yola çıktığında bildirmeyi unutma.",
-            data: { type: "ON_MY_WAY_OPEN", meetingId: m.id },
-            en: { title: "On my way", body: "Your meetup is in 1 hour. Don't forget to let everyone know when you head out." },
-          });
-        }
-      }
-      if (meetings.length > 0) this.logger.log(`Yola çıktım hatırlatması: ${meetings.length} masa`);
-    } catch (err) {
-      this.logger.error(`Yola çıktım hatırlatması hatası: ${err}`);
-    }
-  }
-
-  // Her gün 10:00 (TR): değerlendirmesi bu sabah açılan masalarda (dün buluşanlar) henüz değerlendirmeyen katılımcılara bildirim
-  @Cron("0 10 * * *", { timeZone: "Europe/Istanbul" })
+  // Her gün 08:00 (TR): değerlendirmesi bu sabah açılan masalarda (dün buluşanlar; kart Geçmiş Masalarım'a geçti) henüz
+  // değerlendirmeyen katılımcılara bildirim
+  @Cron("0 8 * * *", { timeZone: "Europe/Istanbul" })
   async notifyReviewOpen(): Promise<void> {
     try {
       const now = new Date();

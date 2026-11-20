@@ -369,7 +369,6 @@
     "notFoundBody": "The page you're looking for may have moved or been deleted.",
     "notParticipant": "You're not a participant of this table",
     "notificationNotVerified": "The notification couldn't be verified",
-    "onMyWayTooEarly": "\"On my way\" opens 1 hour before the meetup.",
     "oneOnOneOnly": "This is only available for Duo meetups",
     "otp6Digits": "The code must be a 6-digit number",
     "otpAlreadyRegistered": "This number is already registered. You can log in.",
@@ -488,7 +487,11 @@
     "phoneInvalidTr": "Enter a valid Turkish phone number",
     "selectionExists": "You already have a booking for this table type.",
     "selectionMissing": "You don't have a booking for this table type.",
-    "selectionLocked": "The table is locked; it can't be cancelled or changed."
+    "selectionLocked": "The table is locked; it can't be cancelled or changed.",
+    "cancelCooldown": "Since you cancelled, you can't join a new table for 24 hours.",
+    "sameDayTable": "You already have a table on this day.",
+    "changeLock": "You can't change your selection for 24 hours after making it.",
+    "changeLockTomorrow": "You can't change your Tomorrow Meetup selection for 3 hours after making it."
   },
   "footer": {
     "brandPrefix": "Ahenk is a",
@@ -879,7 +882,9 @@
     "selConfirmCancelYes": "Yes, Cancel",
     "selKankaWaiting": "Waiting for your Kanka",
     "selLocked": "Table locked",
-    "selNextWeek": "Next week"
+    "selNextWeek": "Next week",
+    "selChangeRule": "Once you make a selection, it can't be changed for 24 hours (3 hours for Tomorrow Meetup).",
+    "selCancelRule": "If you cancel, you can't join any table for 24 hours."
   },
   "login": {
     "accessBlocked": "Access blocked",
@@ -960,18 +965,12 @@
     "noShowInfo": "Mark anyone who didn't show up and send. This can't be undone.",
     "noVenue": "No venue information",
     "notified": "Reported",
-    "onMyWay": "On My Way",
-    "onMyWayDone": "✓ You've let them know you're on your way",
-    "onMyWayLater": "\"On my way\" becomes available 1 hour before the meetup.",
-    "onMyWayLoading": "Sending…",
     "oneOnOne": "DUO",
     "participants": "PARTICIPANTS",
     "photoAlt": "Photo {n}",
     "report": "Report",
     "reportMsg": "Report",
     "reported": "✓ Reported",
-    "reservationDone": "Your booking is confirmed. Just tell the staff your name at the entrance and they'll take you to your table. Have fun!",
-    "safetyImportant": "Your safety matters to us.",
     "seeOnMap": "VIEW ON MAP",
     "send": "Send",
     "sendFailedMsg": "Couldn't send the message",
@@ -983,7 +982,6 @@
     "sosDenied": "⚠ Location access is blocked. Tap the lock icon in your browser's address bar to allow location, then try again.",
     "sosFailed": "⚠ Couldn't send the request: {error}",
     "sosFormTitle": "EMERGENCY REQUEST FORM",
-    "sosInfo": "If, at or after the table, someone from your table subjects you — or might subject you — to physical violence, being held against your will, harassment or abuse, press the button right away, choose what's happening and confirm. When you report, your location is shared with the police and our team keeps monitoring your request until it's resolved, even if the app is closed. The identity details of everyone at the table are also shared with the police immediately.",
     "sosMaybe": "Please select even if any of the above might happen (you can select more than one)",
     "sosOff": "⚠ Your device location is off. Turn on location services and try again.",
     "sosPick": "Choose what's happening:",
@@ -997,17 +995,15 @@
     "tooMany": "Too many attempts. Please try again in a few minutes.",
     "tryAgain": "Try again",
     "noShowQ": "Did anyone not show up at your table?",
-    "occupations": "Occupations:",
     "sosDeniedApp": "⚠ Location access was blocked. Allow location access in Settings → Ahenk → Location, then try again.",
     "close": "Close",
-    "typeGroup": "Group Table",
-    "typeOne": "Duo",
-    "typeKanka": "Bring a Buddy",
     "tableParticipants": "Table Participants",
-    "chatJump": "Table Chat",
     "aiOverall": "Overall Match",
-    "peopleCount": "{n} people",
-    "genderCount": "{f} women · {m} men"
+    "sosHelp": "From the evening of your meetup until 08:00 the next morning, we're with you wherever you are. If you feel in danger, press it right away.",
+    "sosHow": "How does it work?",
+    "sosHowText": "From the evening of your meetup until 08:00 the next morning — at the table or wherever you go afterwards — if someone from your table subjects you to physical violence, holds you against your will, harasses or abuses you, or you sense this might happen, press the button right away, choose what's happening and confirm. Your location and the identity details of everyone at the table reach our team instantly and are shared with the police. Until your request is resolved, our team keeps monitoring you, even if the app is closed. Your safety matters a lot to us.",
+    "sosCall112": "If you're able to call, 112",
+    "reviewNotYet": "You can rate it on {date} at 08:00"
   },
   "nav": {
     "adminPanel": "Admin Panel",
@@ -1574,9 +1570,14 @@
     "title": "Sitemap"
   },
   "sos": {
-    "activeBody": "Your location is being shared with the police and our team is monitoring your request nonstop until it's resolved — please keep your location on. Your report and the identity details of you and your table are also shared with the police.",
-    "activeTitle": "EMERGENCY REQUEST ACTIVE",
-    "liveNotice": "Emergency help: your location is being shared with the police and our team is monitoring."
+    "liveNotice": "Emergency help: your location is being shared with the police and our team is monitoring.",
+    "sentTitle": "YOUR EMERGENCY REQUEST HAS BEEN RECEIVED",
+    "sentLine1": "Our team is monitoring you right now.",
+    "sentLine2": "Your location and table details are shared with the police when needed.",
+    "sentBold": "Don't turn off your location.",
+    "resumedTitle": "YOUR LOCATION IS BEING RECEIVED AGAIN",
+    "resumedLine": "Our team is monitoring.",
+    "resumedBold": "Keep your location on."
   },
   "story": {
     "b1": "15 million people live in Istanbul. 5 million in Ankara. 4 million in Izmir. Millions of stories cross paths in these cities every day, yet most of the time we never even meet. Our social lives have shrunk: colleagues, old school friends, family acquaintances. The same faces, the same conversations. To meet someone new, we either retreat into an app or trust luck — and both end in disappointment. We set out to change that.",
@@ -1880,7 +1881,6 @@
     "s6AiSub": "Overall match and how the table will go",
     "s6b1": "You see the photos of the people at your table here for the first time.",
     "s6b2": "The table chat opens and closes at 22:00 on the meetup day.",
-    "s6b3": "When you head out, let your table know with \"On My Way\".",
     "s7Title": "We're with you every moment",
     "s7Sub": "Ahenk exists for tables where everyone has a comfortable and enjoyable time.",
     "s7c1t": "Verified users",

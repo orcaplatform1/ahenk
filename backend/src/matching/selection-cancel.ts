@@ -87,6 +87,48 @@ export function seatWhere(userId: string, type: MeetingType, now = new Date()): 
   };
 }
 
+// Seçimden sonra "Değiştir" kilidi: Planlı 24 saat, Yarın Buluşma 3 saat (kayıt anından itibaren). İptal kilitten önce serbesttir.
+export const CHANGE_LOCK_MS: Record<MeetingMode, number> = {
+  [MeetingMode.PLANNED]: 24 * 60 * 60 * 1000,
+  [MeetingMode.TOMORROW]: 3 * 60 * 60 * 1000,
+};
+// Seçimi iptal eden kullanıcı 24 saat boyunca hiçbir masa türünde yeni seçim yapamaz (User.selectionCancelledAt)
+export const CANCEL_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+export function changeAvailableAt(sel: { mode: MeetingMode; createdAt: Date }): Date {
+  return new Date(sel.createdAt.getTime() + CHANGE_LOCK_MS[sel.mode]);
+}
+
+export function cancelCooldownUntil(cancelledAt: Date | null | undefined): Date | null {
+  return cancelledAt ? new Date(cancelledAt.getTime() + CANCEL_COOLDOWN_MS) : null;
+}
+
+// TR takvim günü anahtarı (YYYY-MM-DD)
+export function trDayKey(date: Date): string {
+  return new Date(date.getTime() + TR_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+// Yeni kaydın buluşma günü (TR): Yarın → ertesi gün (23:59 sonrası bir sonraki gün); Planlı → hedef haftanın Grup Cuma,
+// Baş Başa Cumartesi, Kankamla Pazar günü (son saat geçtiyse sonraki hafta)
+export function selectionDayKey(type: MeetingType, mode: MeetingMode, now = new Date()): string {
+  if (mode === MeetingMode.TOMORROW) return trDayKey(tomorrowMeetingAt(now));
+  const base = now < deadlineOf(type, now) ? now : new Date(now.getTime() + 7 * 86400000);
+  return trDayKey(new Date(deadlineOf(type, base).getTime() + 86400000));
+}
+
+// Aynı güne kurulu, kilitli ya da oluşturuluyor durumunda masası olan kullanıcı o günün başka bir taramasına giremez
+export async function busyMeetingDays(prisma: PrismaService, userId: string, now = new Date()): Promise<Set<string>> {
+  const seats = await prisma.meetingParticipant.findMany({
+    where: {
+      userId,
+      status: { notIn: LEFT },
+      meeting: { status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] }, scheduledAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } },
+    },
+    select: { meeting: { select: { scheduledAt: true } } },
+  });
+  return new Set(seats.map((s) => trDayKey(s.meeting.scheduledAt)));
+}
+
 export type SelectionDeps = { prisma: PrismaService; notifications: NotificationService; assignQueue: Queue };
 
 // Kilitten önce masadan ayrılma (seçim iptali / buluşma türü değişikliği): kullanım hakkı YANMAZ.

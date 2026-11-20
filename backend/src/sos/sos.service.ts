@@ -1,4 +1,5 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
 import { PrismaService } from "../prisma/prisma.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { FcmService } from "../notification/fcm/fcm.service";
@@ -12,6 +13,14 @@ type SnapshotPerson = { userId: string; [key: string]: unknown };
 const INACTIVE = ["CANCELLED", "DECLINED", "NO_SHOW"];
 // Açık talepte son konum bu süreden eskiyse admin'e "KONUM KESİLDİ" gösterilir
 const LOCATION_STALE_MS = 2 * 60 * 1000;
+// Açık talepte bu süre konum gelmezse talep edene konum kesintisi bildirimi (yedek yöntem; mobil konum servisinin kapandığını
+// algılayınca hemen bildirir). Bildirim kesinti başına bir kez; konum yeniden gelince yeni kesinti sayılır.
+const LOCATION_OFF_PUSH_MS = 120 * 1000;
+// Bildirimde "acil yardım" ifadesi geçmez, başlık yalnız "Ahenk"
+const LOCATION_OFF_PUSH = {
+  tr: "Konum servisin kapalı görünüyor. Uygulamanın düzgün çalışması için konumunu aç.",
+  en: "Your location services seem to be off. Turn on your location so the app can work properly.",
+};
 
 export const THREAT_LABELS: Record<string, string> = {
   LIFE_DANGER:      "Hayatım tehlikede",
@@ -185,13 +194,59 @@ export class SosService {
       data: { reportId, lat, lng, accuracy: accuracy ?? null },
     });
 
-    // En son konumu raporda da güncelle
+    // En son konumu raporda da güncelle; konum kesintisi bildirildiyse kesinti biter (resumed: uygulama "Konumun yeniden alınıyor" gösterir)
+    const resumed = !!report.locationOffNotifiedAt;
     await this.prisma.sosReport.update({
       where: { id: reportId },
-      data: { lat, lng, accuracy: accuracy ?? null },
+      data: { lat, lng, accuracy: accuracy ?? null, ...(resumed && { locationOffNotifiedAt: null }) },
     });
 
+    return { active: true, ...(resumed && { resumed: true }) };
+  }
+
+  // ─── Konum kesintisi ─────────────────────────────────────────────────────
+  // (b) Mobil uygulama açık talep sırasında konum servisinin kapandığını algılayınca bildirir
+  async reportLocationOff(reportId: string, userId: string) {
+    const report = await this.prisma.sosReport.findUnique({ where: { id: reportId }, select: { userId: true, resolvedAt: true } });
+    if (!report || report.userId !== userId) throw new ForbiddenException();
+    if (report.resolvedAt) return { active: false };
+    await this.notifyLocationOff(reportId);
     return { active: true };
+  }
+
+  // (a) Yedek: açık talepte 120 sn konum gelmezse sunucu bildirir
+  @Cron("*/30 * * * * *")
+  async checkLocationOutages(): Promise<void> {
+    try {
+      const reports = await this.prisma.sosReport.findMany({
+        where: { resolvedAt: null, locationOffNotifiedAt: null },
+        select: { id: true, createdAt: true, locationUpdates: { orderBy: { timestamp: "desc" }, take: 1, select: { timestamp: true } } },
+      });
+      const now = Date.now();
+      for (const r of reports) {
+        const last = r.locationUpdates[0]?.timestamp ?? r.createdAt;
+        if (now - last.getTime() >= LOCATION_OFF_PUSH_MS) await this.notifyLocationOff(r.id);
+      }
+    } catch (err) {
+      this.logger.error(`Konum kesintisi denetimi hatası: ${err}`);
+    }
+  }
+
+  // Kesinti başına bir kez: işaret atomik konur, yalnız ilk işaretleyen bildirim gönderir (push; başlık "Ahenk")
+  private async notifyLocationOff(reportId: string): Promise<void> {
+    const claimed = await this.prisma.sosReport.updateMany({
+      where: { id: reportId, resolvedAt: null, locationOffNotifiedAt: null },
+      data: { locationOffNotifiedAt: new Date() },
+    });
+    if (claimed.count === 0) return;
+    const report = await this.prisma.sosReport.findUnique({
+      where: { id: reportId },
+      select: { user: { select: { fcmToken: true, language: true } } },
+    });
+    const token = report?.user?.fcmToken;
+    if (!token) return;
+    const body = report.user?.language === "en" ? LOCATION_OFF_PUSH.en : LOCATION_OFF_PUSH.tr;
+    await this.fcm.sendToToken({ token, title: "Ahenk", body, data: { type: "LOCATION_OFF" } }).catch(() => false);
   }
 
   // Sayfa yenilenince kullanıcının o masadaki açık talebi geri yüklenir (canlı konum devam eder)

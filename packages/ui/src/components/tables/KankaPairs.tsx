@@ -12,8 +12,7 @@ const OPPOSITE = (g?: string | null) => (g === 'FEMALE' ? 'MALE' : g === 'MALE' 
 function Slot({ person, emptyGender, delay, onPhoto }: { person?: KankaPerson; emptyGender?: string | null; delay: number; onPhoto?: (p: KankaPerson) => void }) {
   const t = useTranslations();
   const p = person ? { ...person, photoUrl: onPhoto ? person.photoUrl : null } : { initials: '?', gender: emptyGender };
-  // Masa detay kartında (onPhoto verilen yer) kullanıcının kendi dairesi vurgulu
-  const av = <DetayAvatar participant={p} delay={delay} highlight={!!onPhoto && !!person?.isSelf} />;
+  const av = <DetayAvatar participant={p} delay={delay} />;
   const slot = person?.photoUrl && onPhoto
     ? <button type="button" onClick={() => onPhoto(person)} aria-label={t('masa.enlargePhoto')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>{av}</button>
     : av;

@@ -53,10 +53,12 @@ export function Rings({ type }: { type: MasaTuru }) {
   );
 }
 
-export default function LiveTabs({ tab, statuses, onTab }: {
+// noRings: Masalarım'da üstteki 3 masa türü ikonu (halkalar) gösterilmez; sekme adı ve durumu kalır
+export default function LiveTabs({ tab, statuses, onTab, noRings = false }: {
   tab: MasaTuru;
   statuses: Record<MasaTuru, TabStatus>;
   onTab: (tab: MasaTuru) => void;
+  noRings?: boolean;
 }) {
   const t = useTranslations();
   return (
@@ -78,7 +80,7 @@ export default function LiveTabs({ tab, statuses, onTab }: {
             aria-label={`${label}: ${statusText}`}
             onClick={() => onTab(type)}
           >
-            <Rings type={type} />
+            {!noRings && <Rings type={type} />}
             <span className="ll-tab-label">{label}</span>
             <span className="ll-tab-status">
               <span className={`ll-tab-dot is-${status.toLowerCase()}`} />

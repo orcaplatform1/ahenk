@@ -56,7 +56,8 @@ export function Rings({ type, on, still }: { type: MasaTuru; on: boolean; still?
   );
 }
 
-export function LiveTabs({ tab, statuses, onTab }: { tab: MasaTuru; statuses: Record<MasaTuru, TabStatus>; onTab: (t: MasaTuru) => void }) {
+// noRings: Masalarım'da üstteki 3 masa türü ikonu (halkalar) gösterilmez; sekme adı ve durumu kalır (web LiveTabs noRings)
+export function LiveTabs({ tab, statuses, onTab, noRings = false }: { tab: MasaTuru; statuses: Record<MasaTuru, TabStatus>; onTab: (t: MasaTuru) => void; noRings?: boolean }) {
   const { t } = useTranslation();
   return (
     <View style={s.tabs}>
@@ -69,7 +70,7 @@ export function LiveTabs({ tab, statuses, onTab }: { tab: MasaTuru; statuses: Re
           <Pressable key={type} disabled={off} onPress={() => onTab(type)} accessibilityRole="button"
             accessibilityState={{ selected: on, disabled: off }} accessibilityLabel={`${label}: ${t(statusKey(status))}`}
             style={[s.tab, on && { transform: [{ translateY: llTab.liftY }] }, off && { opacity: 0.55 }]}>
-            <Rings type={type} on={on} />
+            {!noRings && <Rings type={type} on={on} />}
             <Mono w={600} style={[s.label, { color: on ? '#fff' : '#8f887f' }]}>{label}</Mono>
             <View style={s.statusRow}>
               <View style={[s.dot, { backgroundColor: tabDot[status.toLowerCase() as keyof typeof tabDot] ?? tabDot.default }]} />

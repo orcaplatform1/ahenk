@@ -19,21 +19,10 @@ import { cancelSelection } from "../matching/selection-cancel";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { MeetingStatus, MeetingType, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
 
-// Yola Çıktım: buluşmadan 1 saat önce açılır
-export const ON_MY_WAY_OPEN_MS = 60 * 60 * 1000;
-
-
 // Admin ayrı harita linki girmediyse mekan adı + adresle Google Maps araması
 function googleMapsUrl(name?: string | null, address?: string | null): string | null {
   const q = [name, address].filter(Boolean).join(", ");
   return q ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` : null;
-}
-
-// Fisher–Yates karıştırma
-function shuffled<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-  return a;
 }
 
 @Injectable()
@@ -78,8 +67,8 @@ export class MeetingsService {
         // İptal eden kullanıcı masayı artık görmez
         status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED] },
         meeting: {
-          status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE] },
-          // Kart masa saatinden sonra da ertesi gün 10:00'a kadar kalır
+          // Kart masa saatinden sonra ertesi gün 08:00'e kadar Masalarım'da kalır; gece masa kapanışında (COMPLETED) Geçmiş'e düşmez
+          status: { in: [MeetingStatus.PENDING, MeetingStatus.ACTIVE, MeetingStatus.COMPLETED] },
           scheduledAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
         },
       },
@@ -156,6 +145,8 @@ export class MeetingsService {
             return {
               initials: badges.get(p.userId)?.label ?? '?.?.',
               ...(names && { displayName: names.get(p.userId) ?? null }),
+              // Meslek kişinin adının altında (kart açıldıktan sonra); mesleği olmayan botta boş
+              ...(isRevealed && { occupation: p.user.occupationSector ?? null }),
               gender: p.user.profile?.gender ?? null,
               photoUrl: photos.get(p.userId) ?? null,
               joinedAt: p.createdAt, // Katılım listesi giriş sırası
@@ -167,14 +158,8 @@ export class MeetingsService {
             };
           });
 
-        // Meslekler: kime ait olduğu belli olmasın diye her istekte karışık sıra, kişiyle eşleşme bilgisi yok
-        const occupations = shuffled(m.participants
-          .filter((p) => !(p.status === ParticipantStatus.CANCELLED && hideCancelled))
-          .map((p) => p.user.occupationSector)
-          .filter((o): o is string => !!o));
-
         // Mekânın kayıtlı güncel ilk fotoğrafı; mekânın fotoğrafı yoksa boş (kartta fotoğraf alanı gösterilmez)
-        const venuePhotos = m.venue?.photos[0] ? [{ url: m.venue.photos[0], caption: m.venuePhotoCaption1 ?? 'Alan 1' }] : [];
+        const venuePhotos = m.venue?.photos[0] ? [{ url: m.venue.photos[0], caption: m.venuePhotoCaption1 ?? undefined }] : [];
 
         let aiReport = null;
         if (isRevealed) {
@@ -203,7 +188,6 @@ export class MeetingsService {
               venueDistrict: m.venue?.district ?? null,
               venueMapsUrl: m.locationUrl ?? googleMapsUrl(m.locationText, m.venueAddress),
               venuePhotos,
-              occupations,
               aiReport,
             }),
           },
@@ -218,7 +202,7 @@ export class MeetingsService {
 
   async getMyHistory(userId: string) {
     const LEFT = [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED];
-    const participations = await this.prisma.meetingParticipant.findMany({
+    const rows = await this.prisma.meetingParticipant.findMany({
       where: {
         userId,
         status: { notIn: LEFT },
@@ -267,6 +251,9 @@ export class MeetingsService {
         },
       },
     });
+    // Masa detay kartı ertesi gün 08:00'e kadar Masalarım'da (aktif) kalır; Geçmiş Masalarım'a o an geçer
+    const nowMs = Date.now();
+    const participations = rows.filter((p) => meetingCardEnd(p.meeting.scheduledAt).getTime() <= nowMs);
     const pastPhotos = await approvedPhotoMap(this.prisma, participations.flatMap((p) => p.meeting.participants.map((x) => x.userId)));
 
     const reviews = await this.prisma.meetingReview.findMany({
@@ -328,12 +315,11 @@ export class MeetingsService {
         venueDistrict: m.venue?.district ?? null,
         venueMapsUrl: m.locationUrl ?? (m.locationText ? googleMapsUrl(m.locationText, m.venueAddress) : null),
         // Mekânın kayıtlı güncel ilk fotoğrafı; yoksa boş
-        venuePhotos: m.venue?.photos[0] ? [{ url: m.venue.photos[0], caption: m.venuePhotoCaption1 ?? 'Alan 1' }] : [],
+        venuePhotos: m.venue?.photos[0] ? [{ url: m.venue.photos[0], caption: m.venuePhotoCaption1 ?? undefined }] : [],
         aiReport: m.aiReport ?? null,
-        // Meslekler: her istekte karışık sıra, kişiyle eşleşme bilgisi yok
-        occupations: shuffled(m.participants.map((x) => x.user.occupationSector).filter((o): o is string => !!o)),
         participants: m.participants.map((x) => ({
           ...person(x),
+          occupation: x.user.occupationSector ?? null, // Meslek kişinin adının altında; mesleği olmayan botta boş
           photoUrl: pastPhotos.get(x.userId) ?? null,
           ...(x.userId === userId && { isSelf: true }),
           ...(m.type === MeetingType.KANKA && {
@@ -441,7 +427,7 @@ export class MeetingsService {
   }
 
   // ─── Masaya gelmeyen işaretleme ───────────────────────────────────────────
-  // Kartta 22:00 → ertesi gün 10:00, sonra değerlendirme formunda. İşaret geri alınamaz.
+  // Kartta 22:00 → ertesi gün 08:00, sonra değerlendirme formunda. İşaret geri alınamaz.
 
   async getNoShowMarking(meetingId: string, userId: string) {
     const me = await this.prisma.meetingParticipant.findUnique({
@@ -466,7 +452,8 @@ export class MeetingsService {
       select: { userId: true, createdAt: true, user: { select: { profile: { select: { firstName: true, lastName: true } } } } },
     }).then((rows) => rows.map((r) => ({ userId: r.userId, createdAt: r.createdAt, profile: r.user.profile }))));
     return {
-      open: me.meeting.status === MeetingStatus.ACTIVE && now >= opensAt && now < closesAt,
+      // Kart ertesi gün 08:00'e kadar aktif: gece masa kapanışından (COMPLETED) sonra da işaretleme açık kalır
+      open: (me.meeting.status === MeetingStatus.ACTIVE || me.meeting.status === MeetingStatus.COMPLETED) && now >= opensAt && now < closesAt,
       opensAt,
       closesAt,
       participants: others.map((p) => ({
@@ -636,66 +623,6 @@ export class MeetingsService {
     return { rematchBlocked: true, pairedUserId: otherId };
   }
 
-  // ─── Yola Çıktım ─────────────────────────────────────────────────────────────
-
-  async onMyWay(meetingId: string, userId: string) {
-    const participant = await this.prisma.meetingParticipant.findUnique({
-      where: { meetingId_userId: { meetingId, userId } },
-      include: {
-        meeting: {
-          include: {
-            participants: {
-              where: { status: { notIn: ["CANCELLED", "DECLINED", "NO_SHOW"] } },
-              select: { userId: true },
-            },
-          },
-        },
-        user: {
-          select: {
-            profile: { select: { firstName: true, lastName: true } },
-          },
-        },
-      },
-    });
-
-    if (!participant) throw new ForbiddenException("Bu masanın katılımcısı değilsin");
-    if (participant.status === ParticipantStatus.CANCELLED) {
-      throw new ForbiddenException("İptal edilmiş rezervasyon");
-    }
-    // Buluşmaya 1 saatten fazla varken yola çıkış bildirimi kabul edilmez
-    if (Date.now() < participant.meeting.scheduledAt.getTime() - ON_MY_WAY_OPEN_MS) {
-      throw new BadRequestException("Yola çıkış bildirimi, buluşma saatinden 1 saat önce kullanıma açılır.");
-    }
-
-    await this.prisma.meetingParticipant.update({
-      where: { meetingId_userId: { meetingId, userId } },
-      data: { onMyWayAt: new Date() },
-    });
-
-    const firstName = participant.user.profile?.firstName ?? '';
-    const lastName = participant.user.profile?.lastName ?? '';
-    const initials = `${firstName[0] ?? '?'}.${lastName[0] ?? '?'}.`;
-    const notifBody = `${initials} yola çıktığını bildirdi.`;
-    const notifEn = { title: 'On the way', body: `${initials} is on the way.` };
-
-    const otherUserIds = participant.meeting.participants
-      .map((p) => p.userId)
-      .filter((id) => id !== userId);
-
-    await Promise.all(
-      otherUserIds.map((uid) =>
-        this.notifications.sendToUser(uid, {
-          title: 'Yola Çıktı',
-          body: notifBody,
-          data: { type: 'ON_MY_WAY', meetingId },
-          en: notifEn,
-        }),
-      ),
-    );
-
-    return { success: true };
-  }
-
   // ─── Rezervasyon İptali ───────────────────────────────────────────────────────
 
   // Aktif grup aboneliği (Masada/İçerde) başladıktan sonra bir grup masası iptal edildiyse hak kullanılmıştır
@@ -777,6 +704,8 @@ export class MeetingsService {
     // Seçim iptaliyle aynı: masa kilitlenmeden önce; kullanım hakkı yanmaz, kişi yalnız bu seçime ait tarama kaydını ve
     // masadaki eşleşmesini kaybeder (matching/selection-cancel.ts)
     await cancelSelection({ prisma: this.prisma, notifications: this.notifications, assignQueue: this.assignQueue }, userId, meeting.type, note);
+    // İptal eden 24 saat boyunca hiçbir masa türünde yeni seçim yapamaz (weekly-selection ile aynı kural)
+    await this.prisma.user.update({ where: { id: userId }, data: { selectionCancelledAt: new Date() } });
     return { success: true };
   }
 

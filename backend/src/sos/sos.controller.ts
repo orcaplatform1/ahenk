@@ -73,6 +73,13 @@ export class SosController {
     return this.sos.updateLocation(reportId, user.id, dto.lat, dto.lng, dto.accuracy);
   }
 
+  // Açık talepte konum servisi kapandı (mobil algılar): talep edene bir kez konum kesintisi bildirimi
+  @Post("reports/:reportId/location-off")
+  locationOff(@Param("reportId") reportId: string, @Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.sos.reportLocationOff(reportId, user.id);
+  }
+
   // Sayfa yenilenince açık talep geri yüklenir
   @Get("my-open-report")
   myAnyOpenReport(@Req() req: Request) {

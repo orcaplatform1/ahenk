@@ -55,7 +55,7 @@ export default function Bildirimler() {
       case 'KYC_APPROVED': case 'KYC_REJECTED': case 'KYC_SUSPICIOUS':
         router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } }); break;
       case 'MEETING_CONFIRMED': case 'MEETING_PARTICIPANT_LEFT': case 'PARTICIPANT_LEFT': case 'MEETING_NOT_FORMED': case 'MEETING_CANCELLED_BY_ADMIN':
-      case 'CYCLE_CLOSING_SOON': case 'ON_MY_WAY': case 'ON_MY_WAY_OPEN': case 'NO_SHOW_MARK': case 'KANKA_CANCELLED': case 'KANKA_PAIR_LEFT':
+      case 'CYCLE_CLOSING_SOON': case 'NO_SHOW_MARK': case 'KANKA_CANCELLED': case 'KANKA_PAIR_LEFT':
         router.navigate('/(tabs)/masalarim'); break;
       case 'REVIEW_OPEN':
         if (n.data?.meetingId) router.push(`/degerlendirme/${n.data.meetingId}`); else router.navigate('/(tabs)/masalarim'); break;

@@ -77,6 +77,38 @@ export function formatNamed(date: Date | string | number, lang: Lang, options: I
   return d.toLocaleString(intlLocale(lang), { ...options, ...(options.hour ? { hourCycle: "h23" as const } : {}), timeZone });
 }
 
+// Masa detay kartı tarih satırı (gg.aa.yyyy kuralının istisnası): TR "18 Kasım, Çarşamba 20:00", EN "Wednesday, 18 November 20:00"
+export function formatCardDate(date: Date | string | number, lang: Lang, timeZone: string = DEFAULT_TIMEZONE): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return "—";
+  const dm = d.toLocaleDateString(intlLocale(lang), { day: "numeric", month: "long", timeZone });
+  const wd = d.toLocaleDateString(intlLocale(lang), { weekday: "long", timeZone });
+  const time = formatTime(d, timeZone);
+  return lang === "en" ? `${wd}, ${dm} ${time}` : `${dm}, ${wd} ${time}`;
+}
+
+// Masalarım tarih sekmesi: TR "18 Kasım Çarşamba", EN "Wednesday, 18 November"
+export function formatDayTab(date: Date | string | number, lang: Lang, timeZone: string = DEFAULT_TIMEZONE): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return "—";
+  const dm = d.toLocaleDateString(intlLocale(lang), { day: "numeric", month: "long", timeZone });
+  const wd = d.toLocaleDateString(intlLocale(lang), { weekday: "long", timeZone });
+  return lang === "en" ? `${wd}, ${dm}` : `${dm} ${wd}`;
+}
+
+// Gün + ay adı: TR "19 Kasım", EN "19 November"
+export function formatDayMonth(date: Date | string | number, lang: Lang, timeZone: string = DEFAULT_TIMEZONE): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(intlLocale(lang), { day: "numeric", month: "long", timeZone });
+}
+
+// Değerlendirmenin açıldığı an: buluşmanın ertesi günü 08:00 (TR, UTC+3) — backend meeting-windows reviewWindow ile aynı
+export function reviewOpensAt(scheduledAt: Date | string | number): Date {
+  const tr = new Date(new Date(scheduledAt).getTime() + 3 * 60 * 60 * 1000);
+  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 1, 8 - 3, 0, 0, 0));
+}
+
 // Gün adı (0 = Pazar) arayüz dilinde
 export function weekdayName(day: number, lang: Lang): string {
   const base = new Date(Date.UTC(2024, 0, 7 + day, 12)); // 7 Ocak 2024 Pazar

@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { formatNamed, occupationLabel, weekdayName, type Lang } from '@ahenk/shared';
+import { formatDayTab, formatNamed, occupationLabel, weekdayName, type Lang } from '@ahenk/shared';
 import { motion } from 'framer-motion';
 import { api, API_PREFIX } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
-import { useProfilePhotoPicker } from '@/components/ProfilePhoto';
-import { ConfirmedRadarView, KankaPairs, MasaDetayKarti, gColor, type DashboardItem, type MasaDetayData, type MasaTuru, type VenuePhoto } from '@ahenk/ui';
+import { ConfirmedRadarView, GOLD_PILL, KankaPairs, MasaDetayKarti, gColor, type DashboardItem, type MasaDetayData, type MasaTuru, type VenuePhoto } from '@ahenk/ui';
 import LiveTabs from '@/components/live/LiveTabs';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import WeeklySelectionModal from '@/components/live/WeeklySelectionModal';
@@ -25,8 +24,7 @@ interface HistoryMeeting {
   venueMapsUrl?: string | null;
   venuePhotos?: VenuePhoto[];
   aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
-  participants?: { initials: string; displayName?: string | null; gender: string | null; isSelf?: boolean; pair?: 'MINE' | 'OTHER'; photoUrl?: string | null }[];
-  occupations?: string[];
+  participants?: { initials: string; displayName?: string | null; gender: string | null; isSelf?: boolean; pair?: 'MINE' | 'OTHER'; photoUrl?: string | null; occupation?: string | null }[];
   review?: { rating: number; comment: string | null } | null;
   blocked?: { initials: string; gender: string | null }[];
   isReviewed?: boolean;
@@ -60,13 +58,11 @@ function MockAvatar({
   gender,
   delay = 0,
   showCheck = false,
-  highlight = false,
 }: {
   initials: string;
   gender?: string | null;
   delay?: number;
   showCheck?: boolean;
-  highlight?: boolean; // Kullanıcının kendi dairesi (DetayAvatar highlight ile aynı)
 }) {
   const color = gColor(gender);
   const bg    = mockGBg(gender);
@@ -75,7 +71,7 @@ function MockAvatar({
       initial={{ scale: 0.5, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ delay, duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
-      style={{ position: 'relative', width: MAV_D, height: MAV_D, flexShrink: 0, borderRadius: '50%', ...(highlight && { boxShadow: '0 0 0 2px #121212, 0 0 0 4px #ff6b6b' }) }}
+      style={{ position: 'relative', width: MAV_D, height: MAV_D, flexShrink: 0, borderRadius: '50%' }}
     >
       <svg width={MAV_D} height={MAV_D} viewBox={`0 0 ${MAV_D} ${MAV_D}`} style={{ position: 'absolute', inset: 0 }}>
         <circle cx={MAV_R} cy={MAV_R} r={MAV_R - 1} fill={bg} />
@@ -123,7 +119,6 @@ function MockAvatar({
 }
 
 /* ── Boş/preview kart — MasaDetayKarti yeni düzeninin mock hali: kapak, masa türü rozeti, bilgi şeridi, katılımcılar, alt kart ── */
-const CARD_TYPE_LABEL: Record<'group' | 'basbasa' | 'kanka', string> = { group: 'masa.typeGroup', basbasa: 'masa.typeOne', kanka: 'masa.typeKanka' };
 
 function EmptyMasaCard({
   locked,
@@ -140,7 +135,6 @@ function EmptyMasaCard({
 }) {
   const t = useTranslations();
   const locale = useLocale() as Lang;
-  const chatRef = useRef<HTMLDivElement>(null);
   const initials = userInfo
     ? `${(userInfo.firstName[0] ?? '?').toUpperCase()}.${(userInfo.lastName[0] ?? '?').toUpperCase()}.`
     : '?';
@@ -161,8 +155,6 @@ function EmptyMasaCard({
         { initials: '?', gender: uGender ?? 'MALE' },
         { initials: '?', gender: oppGender },
       ];
-  // Bilgi şeridi: ön izlemedeki yuva sayısı (grup 6, baş başa 2, Kankamla 4), kadın/erkek yarı yarıya
-  const seats = cardType === 'basbasa' ? 2 : cardType === 'kanka' ? 4 : 6;
 
   return (
     <div>
@@ -198,15 +190,8 @@ function EmptyMasaCard({
               </>
             )}
 
-            {/* Üst satır: solda masa türü, sağda kilit (fotoğraf varken kapak üstünde) */}
-            <div style={photo ? { display: 'contents' } : { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-            <span style={{
-              ...(photo ? { position: 'absolute', top: 12, left: 12 } : { alignSelf: 'flex-start' }), display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: 9999,
-              background: 'rgba(192,57,43,0.85)', border: '1px solid rgba(255,107,107,0.5)', color: '#fff', fontSize: 11, fontWeight: 700,
-              letterSpacing: '0.04em', fontFamily: 'Inter, sans-serif', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-            }}>
-              {t(CARD_TYPE_LABEL[cardType])}
-            </span>
+            {/* Üst satır: sağda kilit (fotoğraf varken kapak üstünde) */}
+            <div style={photo ? { display: 'contents' } : { display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', gap: 10 }}>
 
             {locked && (
               <>
@@ -222,7 +207,7 @@ function EmptyMasaCard({
             )}
             </div>
 
-            {/* Alt: mekân adı + konum, sağda Haritada Gör (pasif) */}
+            {/* Alt: mekân adı + konum */}
             <div style={{ ...(photo ? { position: 'absolute', left: 14, right: 14, bottom: 12 } : {}), display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
               <div style={{ minWidth: 0 }}>
                 <h2 style={{
@@ -240,13 +225,6 @@ function EmptyMasaCard({
                   İstanbul
                 </p>
               </div>
-              <button disabled style={{
-                flexShrink: 0, display: 'inline-flex', alignItems: 'center', minHeight: 36, padding: '0 14px', borderRadius: 9999,
-                background: '#c0392b', color: '#fff', border: 'none', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-                fontFamily: 'Inter, sans-serif', opacity: 0.5, cursor: 'not-allowed',
-              }}>
-                {t('masa.seeOnMap')}
-              </button>
             </div>
           </div>
 
@@ -259,7 +237,7 @@ function EmptyMasaCard({
               </span>
             </div>
 
-            {/* Bilgi şeridi: buluşma günü/saati + kişi sayısı */}
+            {/* Tarih satırı: buluşma günü/saati, sağında Haritada Gör (pasif) */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
               padding: '12px 14px', borderRadius: 12, marginBottom: 20,
@@ -276,33 +254,19 @@ function EmptyMasaCard({
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.2c2.1.7 3.5 2.8 3.5 5.8" />
-                </svg>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', lineHeight: 1.2 }}>{t('masa.peopleCount', { n: seats })}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter, sans-serif', lineHeight: 1.3 }}>{t('masa.genderCount', { f: seats / 2, m: seats / 2 })}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Katılımcılar + Masa Sohbeti */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
-              <p style={{ margin: 0, fontSize: 9, fontWeight: 700, color: '#555', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-                {cardType === 'basbasa' ? t('masa.oneOnOne') : t('masa.participants')}
-              </p>
-              <button type="button" onClick={() => chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })} style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 32, padding: '0 12px', borderRadius: 9999, cursor: 'pointer',
-                background: 'rgba(192,57,43,0.12)', border: '1px solid rgba(192,57,43,0.5)', color: '#ff6b6b',
-                fontSize: 12, fontWeight: 600, fontFamily: 'Inter, sans-serif',
+              <button disabled style={{
+                flexShrink: 0, display: 'inline-flex', alignItems: 'center', minHeight: 36, padding: '0 14px', borderRadius: 9999,
+                background: '#c0392b', color: '#fff', border: 'none', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
+                fontFamily: 'Inter, sans-serif', opacity: 0.5, cursor: 'not-allowed',
               }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
-                </svg>
-                {t('masa.chatJump')}
+                {t('masa.seeOnMap')}
               </button>
             </div>
+
+            {/* Katılımcılar */}
+            <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#555', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
+              {cardType === 'basbasa' ? t('masa.oneOnOne') : t('masa.participants')}
+            </p>
             <div style={{ marginBottom: 20 }}>
               {cardType === 'kanka' ? (
                 <KankaPairs mine={[{ initials, gender: uGender, isSelf: true }, ...(kanka ? [kanka] : [])]} other={[]} />
@@ -315,7 +279,6 @@ function EmptyMasaCard({
                       gender={p.gender}
                       delay={0.52 + i * 0.1}
                       showCheck={p.check}
-                      highlight={i === 0}
                     />
                   ))}
                 </div>
@@ -366,7 +329,7 @@ function EmptyMasaCard({
         </motion.div>
       </div>
 
-      {/* ── Alt kart: rezervasyon bilgisi, Yola Çıktım, sohbet ── */}
+      {/* ── Alt kart: sohbet ── */}
       <motion.div
         className="ll-card"
         initial={{ opacity: 0, y: 10 }}
@@ -374,25 +337,8 @@ function EmptyMasaCard({
         transition={{ delay: 0.15, duration: 0.5, ease: 'easeOut' }}
         style={{ marginTop: 12 }}
       >
-        <div style={{
-          background: 'rgba(255,255,255,0.025)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 10, padding: '12px 14px', marginBottom: 16,
-        }}>
-          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>
-            {t('masa.reservationDone')}
-          </p>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <button disabled className="btn-primary w-full justify-center">
-            {t('masa.onMyWay')}
-          </button>
-        </div>
-
         {/* Sohbet bölümü */}
-        <div ref={chatRef} style={{ scrollMarginTop: 80 }}>
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', margin: '0 0 20px' }} />
+        <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#555' }} />
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', color: '#555' }}>
@@ -443,8 +389,6 @@ function MasaBlock({
   const t = useTranslations();
   const locale = useLocale() as Lang;
   const meeting = item?.meeting;
-  // Kendi profil fotoğrafını masa detay kartından düzenleme (masa katılımcısı KYC onaylıdır; sunucu yine de kontrol eder)
-  const photo = useProfilePhotoPicker(true);
 
   let content: React.ReactNode;
 
@@ -462,22 +406,11 @@ function MasaBlock({
       venueDistrict: meeting.venueDistrict,
       venueMapsUrl: meeting.venueMapsUrl,
       venuePhotos: meeting.venuePhotos,
-      participants: meeting.participants,
-      occupations: meeting.occupations?.map((o) => occupationLabel(o, t)),
+      participants: meeting.participants.map((p) => ({ ...p, occupation: p.occupation ? occupationLabel(p.occupation, t) : null })),
       aiReport: meeting.aiReport,
     };
-    // Kart kendi ana kartını ve alttaki ayrı kartı (rezervasyon, Yola Çıktım, sohbet) çizer
-    content = (
-      <div>
-        <MasaDetayKarti
-          masa={detayData}
-          apiBase={API_PREFIX}
-          onEditOwnPhoto={photo.pick}
-        />
-        {photo.input}
-        {photo.message && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13, color: photo.uploaded ? '#a39c93' : '#ff6b6b', textAlign: 'center' }}>{photo.message}</p>}
-      </div>
-    );
+    // Kart kendi ana kartını ve alttaki ayrı kartı (acil yardım, sohbet, Değerlendir) çizer
+    content = <MasaDetayKarti masa={detayData} apiBase={API_PREFIX} reviewHref={`/degerlendirme/${meeting.id}`} />;
   } else if (meeting.participants.length > 0) {
     const isOneOnOne = meeting.type === 'ONE_ON_ONE';
     content = (
@@ -519,9 +452,10 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
 }) {
   const t = useTranslations();
   const locale = useLocale() as Lang;
-  const { ready, kanka, tab, tabItem, selectTab, statuses, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
+  const { ready, kanka, tab, tabItem, items, selectTab, statuses, tabAdminCancelled, selection, submitSelection } = useMasaTabs();
   const [history, setHistory] = useState<HistoryMeeting[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [dateId, setDateId] = useState<string | null>(null); // Seçili tarih sekmesindeki masa
 
   useEffect(() => {
     api.get<HistoryMeeting[]>('/meetings/my-history').then(h => setHistory(Array.isArray(h) ? h : [])).catch(() => {});
@@ -534,10 +468,36 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
   // Aktif kaydı (taramada ya da masası kuruluyor) olan kullanıcıya Masalarım'da seçim penceresi açılmaz
   const hasActiveSelection = !!selection?.options.some(o => o.selection || (o.seated && !o.locked));
 
+  // Farklı günlerde birden fazla aktif masa: üstte tarih sekmeleri (aynı güne tek masa olabilir; sekme o masanın türünü seçer)
+  const dated = [...items].sort((a, b) => a.meeting.scheduledAt.localeCompare(b.meeting.scheduledAt));
+  const dayOf = (iso: string) => formatDayTab(iso, locale);
+  const showDates = new Set(dated.map((i) => dayOf(i.meeting.scheduledAt))).size > 1;
+  const activeItem = (dateId ? items.find((i) => i.meeting.id === dateId && i.meeting.type === tab) : undefined) ?? tabItem;
+
   return (
     <div className="flex flex-col gap-6">
       {!hasActiveSelection && <WeeklySelectionModal selection={selection} onSubmit={submitSelection} />}
-      <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
+      {showDates && (
+        <div className="flex gap-2 overflow-x-auto" role="tablist">
+          {dated.map((i) => {
+            const on = activeItem?.meeting.id === i.meeting.id;
+            return (
+              <button
+                key={i.meeting.id}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => { setDateId(i.meeting.id); selectTab(i.meeting.type ?? 'GROUP'); }}
+                className={on ? 'btn-primary' : 'btn-ghost'}
+                style={{ flexShrink: 0, minHeight: 44, whiteSpace: 'nowrap' }}
+              >
+                {dayOf(i.meeting.scheduledAt)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} noRings />
 
       {locked && (
         <div style={{ background: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.25)', borderRadius: 12, padding: '12px 14px' }}>
@@ -554,14 +514,9 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
       )}
 
       <div>
-        <div className="ll-head">
-          <h2 className="ll-title">{locked ? t('tm.cardDetail') : t(CARD_TITLE[tab])}</h2>
-          <button type="button" onClick={() => setHistoryOpen(v => !v)} aria-expanded={historyOpen} className="btn-ghost" style={{ flexShrink: 0 }}>
-            {t('tm.history')}
-          </button>
-        </div>
-        {historyOpen && <HistoryList history={history} />}
-        {tab === 'KANKA' && !tabItem && statuses.KANKA === 'SCANNING' && (
+        {/* Türe göre başlık, ortalı */}
+        <h2 className="ll-title" style={{ textAlign: 'center', marginBottom: 12 }}>{locked ? t('tm.cardDetail') : t(CARD_TITLE[tab])}</h2>
+        {tab === 'KANKA' && !activeItem && statuses.KANKA === 'SCANNING' && (
           <p style={{ margin: '0 0 12px', fontSize: 13, color: '#c9c2b8', lineHeight: 1.6 }}>
             {t('tm.kankaScanning')}
           </p>
@@ -574,14 +529,24 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
           </div>
         ) : (
         <MasaBlock
-          key={tab}
-          item={tabItem}
+          key={activeItem?.meeting.id ?? tab}
+          item={activeItem}
           locked={locked}
           cardType={CARD_TYPE[tab]}
           userInfo={userInfo}
           kanka={kanka}
         />
         )}
+      </div>
+
+      {/* Geçmiş Masalarım: masa kartı ve sohbetin altında */}
+      <div>
+        <div className="flex justify-center" style={{ marginBottom: 12 }}>
+          <button type="button" onClick={() => setHistoryOpen(v => !v)} aria-expanded={historyOpen} className="btn-ghost" style={{ flexShrink: 0 }}>
+            {t('tm.history')}
+          </button>
+        </div>
+        {historyOpen && <HistoryList history={history} />}
       </div>
     </div>
   );
@@ -617,7 +582,7 @@ function HistoryList({ history }: { history: HistoryMeeting[] }) {
             </div>
             {isOpen && <HistoryCard meeting={m} />}
             {!m.isReviewed && (
-              <a href={`/degerlendirme/${m.id}`} className="ll-mono" style={{ display: 'inline-block', margin: '0 0 8px', fontSize: 11, color: '#e8a27a' }}>
+              <a href={`/degerlendirme/${m.id}`} style={{ ...GOLD_PILL, margin: '0 0 8px' }}>
                 {t('tm.review')}
               </a>
             )}
@@ -632,8 +597,6 @@ function HistoryList({ history }: { history: HistoryMeeting[] }) {
 function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
   const t = useTranslations();
   const locale = useLocale() as Lang;
-  // Masa katılımcısı KYC onaylıdır; sunucu yine de kontrol eder
-  const photo = useProfilePhotoPicker(true);
   const masa: MasaDetayData = {
     id: m.id,
     type: m.type,
@@ -645,15 +608,12 @@ function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
     venueDistrict: m.venueDistrict,
     venueMapsUrl: m.venueMapsUrl,
     venuePhotos: m.venuePhotos,
-    participants: m.participants ?? [],
-    occupations: m.occupations?.map((o) => occupationLabel(o, t)),
+    participants: (m.participants ?? []).map((p) => ({ ...p, occupation: p.occupation ? occupationLabel(p.occupation, t) : null })),
     aiReport: m.aiReport,
   };
   return (
     <div style={{ paddingBottom: 12 }}>
-      <MasaDetayKarti masa={masa} archive onEditOwnPhoto={photo.pick} />
-      {photo.input}
-      {photo.message && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13, color: photo.uploaded ? '#a39c93' : '#ff6b6b', textAlign: 'center' }}>{photo.message}</p>}
+      <MasaDetayKarti masa={masa} archive />
       {m.review && (
         <div style={{ marginTop: 12 }}>
           <p className="ll-mono" style={{ margin: '0 0 4px', fontSize: 11, color: '#a39c93' }}>{t('tm.yourReview')}</p>
