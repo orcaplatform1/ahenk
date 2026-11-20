@@ -160,6 +160,8 @@ Paket kartı tasarımı (web + mobil; landing fiyatlandırma, Profil → Paketim
   büyük harf, yuvarlak hap; yalnız landing fiyatlandırma ve paket detay ekranlarında. Landing'de Premium butonu tam genişlik değil, diğer
   paket butonlarıyla aynı boyda (geniş ekranda yarım genişlik) ve ortalı. Web Profil → Paketim ve mobil Paketler liste kartlarında buton
   yok, kart detay açar.
+  Paket detay ekranlarında (tek kart) Premium dahil tüm satın alma butonları tam genişliktedir. Daraltılmış ve ortalı Premium butonu
+  yalnız landing fiyatlandırma bölümünde uygulanır.
   Premium avantajlarının ilki "Her masada öncelikli eşleşme hakkı". Premium detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen"
   etiketi. Web'de bu kart altın / amber çerçeveli, hafif amber geçişli; mobilde diğer süre kartlarıyla aynı düz görünüm (etiket kalır).
   Seçili plan kartının çerçevesi Ahenk paleti kırmızısı (#d6453a), aynen (web + mobil).
