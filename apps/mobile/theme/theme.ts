@@ -188,7 +188,9 @@ export const detayAvatar = { d: 48, strokeWidth: 2.5, fontSize: 11, fontSizeLong
 // ── Tanıtım akışı ("Nasıl Çalışır", components/Onboarding.tsx; web components/Onboarding.tsx ile aynı değerler) ──
 export const onb = {
   bg: '#121212', card: '#1c1c1c', border: '#2e2e2e', primary: '#c0392b', accent: '#ff6b6b', muted: '#b3b3b3', rest: '#333333', text: '#f5f5f5',
-  primeTagBg: '#7A1F2B', primeTagText: '#f4f1ec', ring: '#27ae60', ringTrack: 'rgba(255,255,255,0.08)',
+  // Paket renkleri (web components/paket/PaketKarti.tsx CARDS accent): Masada mavi, Karşımda kırmızı, Kankamla mor, İçerde yeşil, Premium altın / amber
+  pkgColor: { MASADA: '#3b7dd8', KARSIMDA: '#d6453a', KANKAMLA: '#8b5cf6', ICERDE: '#2e9e62' } as Record<string, string>,
+  primeBorder: '#e0a526', primeTagBg: ['#f5d76e', '#e0a526', '#b7811a'] as string[], primeTagText: '#1a1406', ring: '#27ae60', ringTrack: 'rgba(255,255,255,0.08)',
   radius: 14, pill: 9999, barH: 4, padH: 20,
 } as const;
 

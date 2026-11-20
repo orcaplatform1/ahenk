@@ -200,7 +200,7 @@ export class IyzicoService {
 
   async createPrimePlans(plans: { code: string; name: string; months: number; trialDays: number; priceKurus: number }[]) {
     const product = await this.call<{ data?: { referenceCode: string } }>("subscriptionProduct", "create", {
-      locale: "tr", name: "Ahenk Prime", description: "Ahenk Prime abonelik",
+      locale: "tr", name: "Ahenk Premium", description: "Ahenk Premium abonelik",
     });
     if (product.status !== "success" || !product.data) return { status: "failure", errorMessage: product.errorMessage, plans: [] };
     const out: { code: string; referenceCode?: string; errorMessage?: string }[] = [];

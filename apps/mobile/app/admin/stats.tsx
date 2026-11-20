@@ -117,7 +117,7 @@ export default function AdminStats() {
           <Grid>
             <StatCard label="Brüt Ciro" value={data.totalRevenue} prefix="₺" fmtFn={fmtK} accent={adm.green} sub={data.matchRateThisWeek !== 0 ? `${data.matchRateThisWeek > 0 ? '↑' : '↓'} %${Math.abs(data.matchRateThisWeek)} bu hafta` : undefined} />
             <StatCard label="Aktif Üye" value={data.activeUsers} accent={adm.blue} sub={data.kycPending > 0 ? `${data.kycPending} KYC bekliyor` : undefined} />
-            <StatCard label="Aktif Prime" value={data.activePrime ?? 0} accent={adm.amber} />
+            <StatCard label="Aktif Premium" value={data.activePrime ?? 0} accent={adm.amber} />
           </Grid>
           <Grid>
             <StatCard label="Net Ciro" value={data.netRevenue} prefix="₺" fmtFn={fmtK} accent={adm.green} sub="Brüt ciro" />
@@ -173,10 +173,10 @@ export default function AdminStats() {
             <PackageBar label="Karşımda" pct={pkg?.karsimdaPct ?? 0} count={pkg?.karsimdaCount ?? 0} color={adm.cyan} />
             <PackageBar label="İçerde" pct={pkg?.icerdePct ?? 0} count={pkg?.icerdeCount ?? 0} color={adm.green} />
             <PackageBar label="Kankamla" pct={pkg?.kankamlaPct ?? 0} count={pkg?.kankamlaCount ?? 0} color={adm.amber} />
-            <PackageBar label="Prime 1 Aylık" pct={pkg?.prime1mPct ?? 0} count={pkg?.prime1mCount ?? 0} color={adm.amber} />
-            <PackageBar label="Prime 3 Aylık" pct={pkg?.prime3mPct ?? 0} count={pkg?.prime3mCount ?? 0} color={adm.amber} />
-            <PackageBar label="Prime 6 Aylık" pct={pkg?.prime6mPct ?? 0} count={pkg?.prime6mCount ?? 0} color={adm.amber} />
-            <PackageBar label="Prime 12 Aylık" pct={pkg?.prime12mPct ?? 0} count={pkg?.prime12mCount ?? 0} color={adm.amber} />
+            <PackageBar label="Premium 1 Aylık" pct={pkg?.prime1mPct ?? 0} count={pkg?.prime1mCount ?? 0} color={adm.amber} />
+            <PackageBar label="Premium 3 Aylık" pct={pkg?.prime3mPct ?? 0} count={pkg?.prime3mCount ?? 0} color={adm.amber} />
+            <PackageBar label="Premium 6 Aylık" pct={pkg?.prime6mPct ?? 0} count={pkg?.prime6mCount ?? 0} color={adm.amber} />
+            <PackageBar label="Premium 12 Aylık" pct={pkg?.prime12mPct ?? 0} count={pkg?.prime12mCount ?? 0} color={adm.amber} />
           </View>
         )}
       </ACard>

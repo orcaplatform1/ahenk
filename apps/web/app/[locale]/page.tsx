@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { HeroCountdown } from '@/components/HeroCountdown';
 import { PlanPriceText } from '@/components/PlanPrice';
-import { CARDS, Check, PaketKarti } from '@/components/paket/PaketKarti';
+import { AMBER, BuyButton, CARDS, Check, PaketKarti } from '@/components/paket/PaketKarti';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
 
 
@@ -828,34 +828,34 @@ export default function Home() {
             </h2>
           </div>
           {/* Paket ekranıyla aynı Tinder tarzı kartlar; avantajlar ve buton her zaman açık (aç/kapa yok).
-              2 sütunlu grid: Grup + Baş Başa, Kankamla + İçerde, Prime Paket tam genişlik, Prime Abonelik Süreleri tam genişlik; dar ekranda tek sütun */}
+              2 sütunlu grid: Masada + Karşımda, Kankamla + İçerde, Premium Paket tam genişlik, Premium Paket Abonelik Detayları tam genişlik; dar ekranda tek sütun */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
             {CARDS.map((card) => {
               const cs = card.key === 'PRIME' ? null : card.key === 'KANKAMLA' ? getKankamlaCardState(kankamla) : getPlanCardState(card.key, ownedPlans, openParts);
               return (
                 <div key={card.key} className={`flex flex-col gap-2${card.key === 'PRIME' ? ' sm:col-span-2' : ''}`}>
                   {/* Web'de aç/kapa yok: avantajlar ve buton her zaman açık */}
-                  <PaketKarti card={card} badge={cs?.badge ?? null} blocked={!!cs && !cs.showButton} staticCard />
+                  <PaketKarti card={card} blocked={!!cs && !cs.showButton} staticCard />
                   <div className="ll-card flex flex-col gap-3">
                       <h4 className="text-base font-semibold text-[#f5f5f5]">{t('landing.advantages')}</h4>
                       <ul className="flex flex-col gap-2.5">
                         {card.advantages.map((a) => (
-                          <li key={a} className="flex items-center gap-2 text-sm text-[#c9c2b8]"><Check />{t(a)}</li>
+                          <li key={a} className="flex items-center gap-2 text-sm text-[#c9c2b8]"><Check color={card.accent} />{t(a)}</li>
                         ))}
                       </ul>
                       {(!cs || cs.showButton) && (
-                        <button onClick={() => handlePlanSelect(card.key)} className="btn-primary w-full justify-center" style={{ minHeight: 48 }}>
-                          {card.key === 'PRIME' ? t('pkg.subscribe') : t('pkg.buy')}
-                        </button>
+                        // Premium "ABONE OL": tam genişlik değil, diğer paket butonlarıyla aynı boyda (geniş ekranda yarım genişlik), ortalı
+                        <BuyButton card={card} onClick={() => handlePlanSelect(card.key)} className={card.key === 'PRIME' ? 'w-full sm:w-[calc(50%-6px)] self-center' : 'w-full'}
+                          label={card.key === 'PRIME' ? t('pkg.subscribe') : t('pkg.buy')} />
                       )}
                   </div>
                 </div>
               );
             })}
 
-          {/* Prime Abonelik Süreleri: tam genişlik 4. satır; renkler Prime Paket kartıyla aynı (başlık #7A1F2B, çerçeve palet kırmızısı #d6453a) */}
-          <div className="ll-card flex flex-col gap-4 sm:col-span-2" style={{ border: '1px solid #d6453a' }}>
-            <h3 className="font-serif text-2xl" style={{ color: '#7A1F2B' }}>{t('landing.primeDurations')}</h3>
+          {/* Premium Paket Abonelik Detayları: tam genişlik 4. satır; başlık ve çerçeve Premium kartıyla aynı altın / amber */}
+          <div className="ll-card flex flex-col gap-4 sm:col-span-2" style={{ border: `1px solid ${AMBER}` }}>
+            <h3 className="font-serif text-2xl" style={{ color: AMBER }}>{t('landing.primeDurations')}</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {([['PRIME_1M', 'card.month1'], ['PRIME_3M', 'card.month3'], ['PRIME_6M', 'card.month6'], ['PRIME_12M', 'card.month12']] as const).map(([key, label]) => (
                 <div key={key} className="rounded-xl px-3 py-3" style={{ border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.03)' }}>

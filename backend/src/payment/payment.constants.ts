@@ -3,14 +3,14 @@ import { SubscriptionPlan } from "../generated/prisma/client";
 // Paket tanımları. Fiyatlar veritabanında (PlanPrice, admin "Fiyatlar") — bkz. pricing.ts;
 // haklar package-rights.ts'de, Prime dönem / yenileme kuralları prime.ts'de
 export const PLAN_CONFIG: Record<SubscriptionPlan, { nametr: string; label: string | null }> = {
-  [SubscriptionPlan.MASADA]: { nametr: "Grup", label: null },
-  [SubscriptionPlan.KARSIMDA]: { nametr: "Baş Başa", label: null },
+  [SubscriptionPlan.MASADA]: { nametr: "Masada", label: null },
+  [SubscriptionPlan.KARSIMDA]: { nametr: "Karşımda", label: null },
   [SubscriptionPlan.ICERDE]: { nametr: "İçerde", label: null },
   [SubscriptionPlan.KANKAMLA]: { nametr: "Kankamla", label: null },
-  [SubscriptionPlan.PRIME_1M]: { nametr: "Prime 1 Aylık", label: null },
-  [SubscriptionPlan.PRIME_3M]: { nametr: "Prime 3 Aylık", label: null },
-  [SubscriptionPlan.PRIME_6M]: { nametr: "Prime 6 Aylık", label: null },
-  [SubscriptionPlan.PRIME_12M]: { nametr: "Prime 12 Aylık", label: null },
+  [SubscriptionPlan.PRIME_1M]: { nametr: "Premium 1 Aylık", label: null },
+  [SubscriptionPlan.PRIME_3M]: { nametr: "Premium 3 Aylık", label: null },
+  [SubscriptionPlan.PRIME_6M]: { nametr: "Premium 6 Aylık", label: null },
+  [SubscriptionPlan.PRIME_12M]: { nametr: "Premium 12 Aylık", label: null },
 };
 
 // Prime dönem süresi (ay)

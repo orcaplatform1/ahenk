@@ -32,28 +32,42 @@ const PRIME_PLANS = [
   { key: 'PRIME_12M', label: 'card.month12' },
 ] as const;
 
-// web components/paket/PaketKarti.tsx CARDS ile aynı (metinler çeviri anahtarı, ekranda t()): premium kart — aynı renk ailesinde koyudan ortaya geçişli arka plan.
-// Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, kırmızı (palet) çerçeve ve ad (#d6453a); rozet ve ok şarap kırmızısı (#7A1F2B).
-// badgeBg / badgeFg: Tinder GOLD tarzı hap rozet (kartın renk tonuna uyumlu; İçerde ve Prime altın)
-const GOLD = ['#f5d76e', '#c9a227', '#a8861a'];
-const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient: [string, string]; fg: string; nameColor: string; border?: string; badgeBg: string[]; badgeFg: string; arrowColor?: string; advantages: string[] }[] = [
-  { key: 'MASADA', name: 'plans.MASADA', badge: 'card.oneTime', desc: 'card.descMASADA', gradient: ['#06301c', '#1c7a49'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: ['#2e9e62'], badgeFg: '#ffffff',
+// web components/paket/PaketKarti.tsx CARDS ile aynı (metinler çeviri anahtarı, ekranda t()): premium kart, kart bütünüyle paket renginde
+// (koyudan ortaya geçişli arka plan, çerçeve, rozet, onay ikonu, buton). Grup (Masada) mavi, Baş Başa (Karşımda) kırmızı, Kankamla mor,
+// İçerde yeşil, Premium altın / amber. Rozet: tek seferlik "TEK SEFERLİK" / "ONE-TIME", Premium "ABONELİK" / "SUBSCRIPTION" (durum rozeti yok)
+const AMBER = '#e0a526';
+const AMBER_GRADIENT = ['#f5d76e', '#e0a526', '#b7811a'];
+const CARDS: { key: CardKey; name: string; badge: string; desc: string; gradient: [string, string]; fg: string; nameColor: string; border: string; accent: string; accentFg: string; badgeBg: string[]; badgeFg: string; advantages: string[] }[] = [
+  { key: 'MASADA', name: 'plans.MASADA', badge: 'card.oneTime', desc: 'card.descMASADA', gradient: ['#071a3a', '#1d4f9c'], fg: '#ffffff', nameColor: '#ffffff', border: '#3b7dd8', accent: '#3b7dd8', accentFg: '#ffffff', badgeBg: ['#3b7dd8'], badgeFg: '#ffffff',
     advantages: ['card.advMatch', 'card.descMASADA', 'card.advEqual', 'card.advValid'] },
-  { key: 'KARSIMDA', name: 'plans.KARSIMDA', badge: 'card.oneTime', desc: 'card.descKARSIMDA', gradient: ['#3d0907', '#a3231b'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: ['#d6453a'], badgeFg: '#ffffff',
+  { key: 'KARSIMDA', name: 'plans.KARSIMDA', badge: 'card.oneTime', desc: 'card.descKARSIMDA', gradient: ['#3d0907', '#a3231b'], fg: '#ffffff', nameColor: '#ffffff', border: '#d6453a', accent: '#d6453a', accentFg: '#ffffff', badgeBg: ['#d6453a'], badgeFg: '#ffffff',
     advantages: ['card.advMatch', 'card.advAge', 'card.descKARSIMDA', 'card.advValid'] },
-  { key: 'KANKAMLA', name: 'plans.KANKAMLA', badge: 'card.oneTime', desc: 'card.descKANKAMLA', gradient: ['#071a3a', '#1d4f9c'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: ['#3b7dd8'], badgeFg: '#ffffff',
+  { key: 'KANKAMLA', name: 'plans.KANKAMLA', badge: 'card.oneTime', desc: 'card.descKANKAMLA', gradient: ['#1f0a3a', '#5b2a9c'], fg: '#ffffff', nameColor: '#ffffff', border: '#8b5cf6', accent: '#8b5cf6', accentFg: '#ffffff', badgeBg: ['#8b5cf6'], badgeFg: '#ffffff',
     advantages: ['card.advMatch', 'card.advAge', 'card.descKANKAMLA', 'card.advKankaFree', 'card.advValid'] },
-  { key: 'ICERDE', name: 'plans.ICERDE', badge: 'card.oneTime', desc: 'card.descICERDE', gradient: ['#3a2804', '#9c7412'], fg: '#ffffff', nameColor: '#ffffff', badgeBg: GOLD, badgeFg: '#1a1406',
+  { key: 'ICERDE', name: 'plans.ICERDE', badge: 'card.oneTime', desc: 'card.descICERDE', gradient: ['#06301c', '#1c7a49'], fg: '#ffffff', nameColor: '#ffffff', border: '#2e9e62', accent: '#2e9e62', accentFg: '#ffffff', badgeBg: ['#2e9e62'], badgeFg: '#ffffff',
     advantages: ['card.advMatch', 'card.advAge', 'card.descICERDE', 'card.advValidPlural'] },
-  { key: 'PRIME', name: 'plans.PRIME', badge: 'card.subscription', desc: 'card.descPRIME', gradient: ['#000000', '#2b2d31'], fg: '#f4f1ec', nameColor: ll.red, border: ll.red, badgeBg: ['#7A1F2B'], badgeFg: '#f4f1ec', arrowColor: '#7A1F2B',
+  { key: 'PRIME', name: 'plans.PRIME', badge: 'card.subscription', desc: 'card.descPRIME', gradient: ['#3a2804', '#9c7412'], fg: '#ffffff', nameColor: '#f5d76e', border: AMBER, accent: AMBER, accentFg: '#1a1406', badgeBg: AMBER_GRADIENT, badgeFg: '#1a1406',
     advantages: ['card.advPriority', 'card.advMatch', 'card.advAge', 'card.advPrimeMonthly', 'card.advPrimeKeep', 'card.advPrimeRenew'] },
 ];
 // Prime satın alma ekranı abonelik bilgisi (Apple 3.1.2 / Google Play abonelik açıklaması)
 const STORE_NAME = Platform.OS === 'ios' ? 'Apple' : 'Google';
 const STORE_ACCOUNT = Platform.OS === 'ios' ? 'App Store' : 'Google Play';
 
-function Check() {
-  return <Svg viewBox="0 0 20 20" width={16} height={16} fill={c.red}><Path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></Svg>;
+// Avantaj maddesi başındaki V (onay) ikonu: paket renginde
+function Check({ color }: { color: string }) {
+  return <Svg viewBox="0 0 20 20" width={16} height={16} fill={color}><Path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></Svg>;
+}
+// "PAKET AL" / "ABONE OL" (paket detay ekranı): paket renginde, büyük harf; web BuyButton ile aynı
+function BuyButton({ card, label, disabled, onPress }: { card: (typeof CARDS)[number]; label: string; disabled?: boolean; onPress: () => void }) {
+  const colors = (card.key === 'PRIME' ? AMBER_GRADIENT : [card.accent, card.accent]) as [string, string, ...string[]];
+  return (
+    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }}
+      style={({ pressed }) => ({ borderRadius: 999, overflow: 'hidden', opacity: disabled ? 0.5 : pressed ? 0.85 : 1 })}>
+      <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ minHeight: 52, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center' }}>
+        <T w={700} style={{ fontSize: 12, letterSpacing: 1.7, color: card.accentFg }}>{upper(label)}</T>
+      </LinearGradient>
+    </Pressable>
+  );
 }
 function Arrow({ color }: { color: string }) {
   return <Svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M9 6l6 6-6 6" /></Svg>;
@@ -181,7 +195,7 @@ export default function Paketim() {
           {/* "← Paketler": Paketim'deki paket listesine döner; mevcut pillRed etiket stili (yuvarlak köşeli) */}
           <Btn variant="pillRed" label={t('pkg.backToPackages')} style={{ alignSelf: 'flex-start' }} onPress={() => { setDetail(null); setError(''); }} />
           <Card style={{ gap: 20 }}>
-            <T w={700} style={{ fontSize: 28, lineHeight: 34, color: isP ? ll.red : ll.text }}>{t(card.name)}</T>
+            <T w={700} style={{ fontSize: 28, lineHeight: 34, color: isP ? AMBER : ll.text }}>{t(card.name)}</T>
             {isP && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 8 }}>
                 {PRIME_PLANS.map((pl) => {
@@ -210,7 +224,7 @@ export default function Paketim() {
             <View style={{ gap: 10 }}>
               <T w={600} style={{ fontSize: 16, color: ll.text }}>{t('landing.advantages')}</T>
               {card.advantages.map((a) => (
-                <View key={a} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Check /><T style={{ fontSize: 14, color: ll.text2, flexShrink: 1 }}>{t(a)}</T></View>
+                <View key={a} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Check color={card.accent} /><T style={{ fontSize: 14, color: ll.text2, flexShrink: 1 }}>{t(a)}</T></View>
               ))}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end', gap: 12 }}>
@@ -218,7 +232,7 @@ export default function Paketim() {
               <T w={700} style={{ fontSize: 36, lineHeight: 40, color: ll.text }}>{priceView(planKey).now ?? '—'} ₺</T>
             </View>
             {!!error && <T style={{ fontSize: 14, color: tw.accent }}>{error}</T>}
-            <BtnPrimary full disabled={busy} style={[{ minHeight: 52 }, busy && { opacity: 0.5 }]}
+            <BuyButton card={card} disabled={busy}
               label={buying === planKey ? t('pay.redirecting') : st.blocked ? (st.badge ? t(st.badge) : (isP ? t('pkg.subscribe') : t('pkg.buy'))) : isP ? t('pkg.subscribe') : t('pkg.buy')}
               onPress={() => buy(planKey)} />
             <T style={{ fontSize: 12, lineHeight: 18, color: ll.label, textAlign: 'center' }}>{payInfo()}{isP ? ` ${t('pkg.primeRenewInfo')}` : ''}</T>
@@ -305,21 +319,21 @@ export default function Paketim() {
                 const fg = card.fg;
                 return (
                   <Pressable key={card.key} onPress={() => { setDetail(card.key); setError(''); }} accessibilityRole="button" accessibilityLabel={`${t(card.name)}, ${t(card.desc)}`}
-                    style={({ pressed }) => ({ borderRadius: 18, borderWidth: 1, borderColor: card.border ?? 'rgba(255,255,255,0.08)', overflow: 'hidden', opacity: st.blocked ? 0.55 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
+                    style={({ pressed }) => ({ borderRadius: 18, borderWidth: 1, borderColor: card.border, overflow: 'hidden', opacity: st.blocked ? 0.55 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
                     <LinearGradient colors={card.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                       style={{ paddingVertical: 18, paddingHorizontal: 20, minHeight: 76, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                       <View style={{ flex: 1, gap: 4 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          {/* Tipografi: web PaketKarti / landing "Prime Abonelik" başlığıyla aynı (serif, normal ağırlık, 24/32); açıklama 14 sans */}
+                          {/* Tipografi: web PaketKarti / landing "Premium Paket Abonelik Detayları" başlığıyla aynı (serif, normal ağırlık, 24/32); açıklama 14 sans */}
                           <Serif style={{ fontSize: 24, lineHeight: 32, color: card.nameColor }}>{t(card.name)}</Serif>
                           <LinearGradient colors={(card.badgeBg.length > 1 ? card.badgeBg : [card.badgeBg[0], card.badgeBg[0]]) as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                             style={{ borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
-                            <T w={800} style={{ fontSize: 9.9, letterSpacing: 0.8, color: card.badgeFg }}>{upper(t(st.badge ?? card.badge))}</T>
+                            <T w={800} style={{ fontSize: 9.9, letterSpacing: 0.8, color: card.badgeFg }}>{upper(t(card.badge))}</T>
                           </LinearGradient>
                         </View>
                         <T numberOfLines={1} style={{ fontSize: 14, color: fg, opacity: 0.9 }}>{t(card.desc)}</T>
                       </View>
-                      <Arrow color={card.arrowColor ?? card.border ?? fg} />
+                      <Arrow color={card.accent} />
                     </LinearGradient>
                   </Pressable>
                 );

@@ -43,7 +43,6 @@ const VENUE_LABELS: Record<VenuePreference, string> = { ALCOHOLIC: 'venue.alcoho
 const KYC_BADGE: Record<string, { label: string; approved: boolean }> = {
   PENDING: { label: 'prof.unverified', approved: false }, APPROVED: { label: 'prof.verified', approved: true }, REJECTED: { label: 'prof.unverified', approved: false }, SUSPICIOUS: { label: 'prof.unverified', approved: false },
 };
-const ORDINAL = ['prof.ordinal1', 'prof.ordinal2', 'prof.ordinal3'];
 const CITY_ORDER = ['İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Balıkesir', 'Aydın', 'Muğla'];
 const cityLabel = (n: string) => (n === 'Balıkesir' ? 'Balıkesir (Ayvalık / Akçay)' : n);
 function sortCities(cs: City[]) {
@@ -321,7 +320,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
         )}
         {user.noShowWarning && (
           <T w={500} style={{ fontSize: 14, lineHeight: 22.75, color: c.warnYellow }}>
-            {t('prof.noShow', { ordinal: ORDINAL[user.noShowWarning.count - 1] ? t(ORDINAL[user.noShowWarning.count - 1]) : `${user.noShowWarning.count}.`, remaining: user.noShowWarning.remaining })}
+            {t('prof.noShow')}
           </T>
         )}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

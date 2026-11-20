@@ -166,7 +166,7 @@ export class NotificationService {
       data: { event: "MEETING_NOT_FORMED" },
       whatsappTemplate: "ahenk_meeting_not_formed",
       whatsappParams: [],
-      en: { title: "Your table couldn't be set up", body: "We're really sorry — there weren't enough matches to set up your table." },
+      en: { title: "Your table couldn't be set up", body: "We're really sorry, there weren't enough matches to set up your table." },
     });
   }
 

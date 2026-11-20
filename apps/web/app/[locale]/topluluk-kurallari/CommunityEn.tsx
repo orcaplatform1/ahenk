@@ -11,7 +11,7 @@ const sections = [
     title: 'The Spirit of the Ahenk Community',
     content: (
       <p style={{ lineHeight: 1.8 }}>
-        Ahenk brings strangers together through meaningful meetups. The quality of this experience depends not only on our algorithm, but on the attitude of every member of our community. These guidelines aren’t a list of restrictions — they’re the foundation of a safe and meaningful space we build together.
+        Ahenk brings strangers together through meaningful meetups. The quality of this experience depends not only on our algorithm, but on the attitude of every member of our community. These guidelines aren’t a list of restrictions. They’re the foundation of a safe and meaningful space we build together.
         <br /><br />
         <span style={{ color: '#a39c93', fontSize: 13 }}>By joining the platform, you confirm that you have read, understood and accepted these guidelines.</span>
       </p>

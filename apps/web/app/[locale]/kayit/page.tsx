@@ -80,7 +80,7 @@ function KayitPageInner() {
   const router = useRouter();
   // Ülke kodlu telefon (E.164); dil soruları; pasif bölge "Haber ver" (hesap açılınca kaydedilir)
   const [country, setCountry] = useState(DEFAULT_PHONE_COUNTRY);
-  const [speaksEnglish, setSpeaksEnglish] = useState<boolean | null>(null);
+  const [speaksEnglish, setSpeaksEnglish] = useState<boolean | null>(locale === 'en' ? true : null);
   const [speaksTurkish, setSpeaksTurkish] = useState<boolean | null>(locale === 'en' ? null : true);
   const [notifyRegions, setNotifyRegions] = useState<string[]>([]);
   const searchParams = useSearchParams();
@@ -203,7 +203,8 @@ function KayitPageInner() {
     if (!form.occupationSector) { setError(t('reg.pickOccupation')); return; }
     setError(''); setStepDir(1); setStep(1);
   }
-  // Dil soruları: herkese İngilizce; yalnız İngilizce arayüzle kayıtta Türkçe (Türkçe arayüzde Türkçe biliyor sayılır)
+  // Dil soruları: Türkçe arayüzde "Yabancılarla masaya oturmak ister misin?" (speaksEnglish, Profilim ile aynı alan, zorunlu);
+  // İngilizce arayüzde yalnız Türkçe sorusu (İngilizce ana dil, speaksEnglish = true)
   function handleLangStep() {
     if (speaksEnglish === null || speaksTurkish === null) { setError(t('reg.answerBoth')); return; }
     setError(''); setStepDir(1); setStep(2);
@@ -525,7 +526,12 @@ function KayitPageInner() {
               <p className="ll-eyebrow" style={{ marginBottom: 4 }}>{t('reg.stepN', { n: 2 })}</p>
               <h1 className="ll-title" style={{ marginBottom: 4 }}>{t('reg.stepLang')}</h1>
             </div>
-            <YesNo label={t('reg.speaksEnglish')} value={speaksEnglish} onChange={(v) => { setSpeaksEnglish(v); setError(''); }} />
+            {locale !== 'en' && (
+              <div>
+                <YesNo label={t('prof.foreignersQ')} value={speaksEnglish} onChange={(v) => { setSpeaksEnglish(v); setError(''); }} />
+                <p className="text-xs text-[#a39c93] mt-2" style={{ lineHeight: 1.5 }}>{t('prof.foreignersNote')}</p>
+              </div>
+            )}
             {locale === 'en' && <YesNo label={t('reg.speaksTurkish')} value={speaksTurkish} onChange={(v) => { setSpeaksTurkish(v); setError(''); }} />}
             {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
             <div className="flex gap-3 mt-1">

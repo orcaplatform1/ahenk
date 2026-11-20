@@ -106,13 +106,13 @@ export class PaymentService {
       select: { plan: true, groupRights: true, groupCycles: true, usedAt: true, oneOnOneCycles: true, kankaRights: true, kankaCycles: true },
     });
     if (isPrime(plan)) {
-      if (prime) throw new ConflictException("Aktif Prime aboneliğin var; ikinci bir Prime alınamaz.");
+      if (prime) throw new ConflictException("Aktif Premium aboneliğin var; ikinci bir Premium alınamaz.");
     } else if (prime) {
       const blocked =
         (GROUP_RIGHTS[plan] > 0 && groupPartOpen(prime)) ||
         (ONE_ON_ONE_PLANS.includes(plan) && oneOnOnePartOpen(prime)) ||
         (KANKA_PLANS.includes(plan) && kankaPartOpen(prime));
-      if (blocked) throw new ConflictException("Prime aboneliğinde bu türün hakkı duruyor; yalnız hakkı biten türün paketini alabilirsin.");
+      if (blocked) throw new ConflictException("Premium aboneliğinde bu türün hakkı duruyor; yalnız hakkı biten türün paketini alabilirsin.");
     }
     // Kankamla: kanka davet edilmeden alınabilir (kanka satın almadan sonra davet edilir);
     // çiftte (iki kişiden birinde) aktif Kankamla paketi bitene kadar yenisi alınamaz
@@ -191,7 +191,7 @@ export class PaymentService {
 
     // Web Prime: ilk dönem bu ödeme formuyla, otomatik yenileme iyzico abonelik API'siyle (lansmana kadar pasif)
     if (isPrime(plan) && this.config.get<string>("IYZICO_SUBSCRIPTION_ENABLED") !== "true") {
-      throw new ServiceUnavailableException("Prime abonelik henüz aktif değil.");
+      throw new ServiceUnavailableException("Premium abonelik henüz aktif değil.");
     }
 
     // Kimlik numarası (TC / YKN / Pasaport) her web ödemesinde kullanıcıdan alınır, yalnız iyzico'ya gider (saklanmaz)
@@ -469,15 +469,15 @@ export class PaymentService {
   // İlk dönem ödendikten sonra kart kaydı için abonelik formu açılır (planın deneme süresi = ilk dönem, tahsilat yok).
   async initPrimeAutoRenew(userId: string, identityNumber: string) {
     if (this.config.get<string>("IYZICO_SUBSCRIPTION_ENABLED") !== "true") {
-      throw new ServiceUnavailableException("Prime abonelik henüz aktif değil.");
+      throw new ServiceUnavailableException("Premium abonelik henüz aktif değil.");
     }
     const sub = await this.prisma.subscription.findFirst({
       where: { userId, ...livePrimeWhere(), renewCancelledAt: null, iyzicoSubscriptionRef: null, storePlatform: null },
       select: { id: true, plan: true },
     });
-    if (!sub) throw new NotFoundException("Otomatik yenileme başlatılacak Prime aboneliği bulunamadı.");
+    if (!sub) throw new NotFoundException("Otomatik yenileme başlatılacak Premium aboneliği bulunamadı.");
     const planRef = this.config.get<string>(`IYZICO_${sub.plan}_PLAN_REF`);
-    if (!planRef) throw new ServiceUnavailableException("Prime abonelik planı tanımlı değil.");
+    if (!planRef) throw new ServiceUnavailableException("Premium abonelik planı tanımlı değil.");
     const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { profile: true } });
     if (!user) throw new NotFoundException("Kullanıcı bulunamadı");
     const result = await this.iyzico.initSubscriptionCheckoutForm({
@@ -608,7 +608,7 @@ export class PaymentService {
       this.logger.error(`Mağaza ödemesi paketle çakıştı, paket verilmedi: user=${userId} plan=${plan} işlem=${v.transactionId}`);
       await this.paymentAlert(userId);
       throw new ConflictException(isPrime(plan)
-        ? "Aktif Prime aboneliğin var; ikinci bir Prime alınamaz."
+        ? "Aktif Premium aboneliğin var; ikinci bir Premium alınamaz."
         : "Aktif paketin bu paketi kapsıyor; bu paketi şu an satın alamazsın.");
     }
     if (outcome === "DISCOUNT_USED") {

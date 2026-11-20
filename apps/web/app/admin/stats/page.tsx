@@ -238,7 +238,7 @@ export default function AdminStats() {
               accent={BLUE}
               sub={data.kycPending > 0 ? `${data.kycPending} KYC bekliyor` : undefined}
             />
-            <StatCard label="Aktif Prime" value={data.activePrime ?? 0} accent={AMBER} />
+            <StatCard label="Aktif Premium" value={data.activePrime ?? 0} accent={AMBER} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 12 }}>
@@ -350,10 +350,10 @@ export default function AdminStats() {
             <PackageBar label="Karşımda" pct={pkg.karsimdaPct} count={pkg.karsimdaCount} color={CYAN}  />
             <PackageBar label="İçerde"   pct={pkg.icerdePct}   count={pkg.icerdeCount}   color={GREEN} />
             <PackageBar label="Kankamla" pct={pkg.kankamlaPct ?? 0} count={pkg.kankamlaCount ?? 0} color={AMBER} />
-            <PackageBar label="Prime 1 Aylık"  pct={pkg.prime1mPct ?? 0}  count={pkg.prime1mCount ?? 0}  color={AMBER} />
-            <PackageBar label="Prime 3 Aylık"  pct={pkg.prime3mPct ?? 0}  count={pkg.prime3mCount ?? 0}  color={AMBER} />
-            <PackageBar label="Prime 6 Aylık"  pct={pkg.prime6mPct ?? 0}  count={pkg.prime6mCount ?? 0}  color={AMBER} />
-            <PackageBar label="Prime 12 Aylık" pct={pkg.prime12mPct ?? 0} count={pkg.prime12mCount ?? 0} color={AMBER} />
+            <PackageBar label="Premium 1 Aylık"  pct={pkg.prime1mPct ?? 0}  count={pkg.prime1mCount ?? 0}  color={AMBER} />
+            <PackageBar label="Premium 3 Aylık"  pct={pkg.prime3mPct ?? 0}  count={pkg.prime3mCount ?? 0}  color={AMBER} />
+            <PackageBar label="Premium 6 Aylık"  pct={pkg.prime6mPct ?? 0}  count={pkg.prime6mCount ?? 0}  color={AMBER} />
+            <PackageBar label="Premium 12 Aylık" pct={pkg.prime12mPct ?? 0} count={pkg.prime12mCount ?? 0} color={AMBER} />
           </div>
         ) : loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -365,10 +365,10 @@ export default function AdminStats() {
             <PackageBar label="Karşımda" pct={0} count={0} color={CYAN}  />
             <PackageBar label="İçerde"   pct={0} count={0} color={GREEN} />
             <PackageBar label="Kankamla" pct={0} count={0} color={AMBER} />
-            <PackageBar label="Prime 1 Aylık"  pct={0} count={0} color={AMBER} />
-            <PackageBar label="Prime 3 Aylık"  pct={0} count={0} color={AMBER} />
-            <PackageBar label="Prime 6 Aylık"  pct={0} count={0} color={AMBER} />
-            <PackageBar label="Prime 12 Aylık" pct={0} count={0} color={AMBER} />
+            <PackageBar label="Premium 1 Aylık"  pct={0} count={0} color={AMBER} />
+            <PackageBar label="Premium 3 Aylık"  pct={0} count={0} color={AMBER} />
+            <PackageBar label="Premium 6 Aylık"  pct={0} count={0} color={AMBER} />
+            <PackageBar label="Premium 12 Aylık" pct={0} count={0} color={AMBER} />
           </div>
         )}
       </div>

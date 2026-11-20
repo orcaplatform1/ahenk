@@ -128,7 +128,7 @@ function groupByDay(rows: MeetingRow[]) {
   for (const g of groups) g.rows.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
   return groups;
 }
-const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
+const PLAN_LABEL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Premium 1 Aylık', PRIME_3M: 'Premium 3 Aylık', PRIME_6M: 'Premium 6 Aylık', PRIME_12M: 'Premium 12 Aylık' };
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -1015,10 +1015,10 @@ export default function AdminMatches() {
                       title="Paket seç"
                       style={{ flex: 1, width: 'auto', minWidth: 0 }}
                       options={[
-              { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' },
+              { value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' },
               { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
-              { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' },
-              { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' },
+              { value: 'PRIME_1M', label: 'Premium 1 Aylık' }, { value: 'PRIME_3M', label: 'Premium 3 Aylık' },
+              { value: 'PRIME_6M', label: 'Premium 6 Aylık' }, { value: 'PRIME_12M', label: 'Premium 12 Aylık' },
             ]}
                     />
                     <button

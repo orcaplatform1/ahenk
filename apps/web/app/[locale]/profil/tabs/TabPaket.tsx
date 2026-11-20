@@ -13,7 +13,7 @@ import TcknModal from '@/components/paket/TcknModal';
 import { APP_STORE_URL, PLAY_STORE_URL, devicePlatform, openAppOrStore } from '@/lib/appLinks';
 import { DEFAULT_PHONE_COUNTRY, toE164 } from '@ahenk/shared';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
-import { CARDS, Check, PRIME_PLANS, PaketKarti, type CardKey } from '@/components/paket/PaketKarti';
+import { AMBER, BuyButton, CARDS, Check, PRIME_PLANS, PaketKarti, type CardKey } from '@/components/paket/PaketKarti';
 
 // Aktif paket / abonelik (yalnız kullanıcının kendi aldıkları)
 interface Subscription {
@@ -174,14 +174,14 @@ export function TabPaket({ maintenanceMode = false }: Props) {
           {t('pkg.backToPackages')}
         </button>
         <div className="ll-card flex flex-col gap-5">
-          <h3 className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.75rem', color: isPrimeCard ? '#d6453a' : '#f5f5f5' }}>{t(card.name)}</h3>
+          <h3 className="font-bold text-[#f5f5f5]" style={{ fontSize: '1.75rem', color: isPrimeCard ? AMBER : '#f5f5f5' }}>{t(card.name)}</h3>
 
           {isPrimeCard && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
               {PRIME_PLANS.map((pl) => {
                 const on = primePlan === pl.key;
                 const p = priceView(pl.key);
-                // 3 aylık plan: "Tercih Edilen" etiketi, kırmızı (#d6453a) çerçeve ve hafif kırmızımsı geçişli arka plan
+                // 3 aylık plan: "Tercih Edilen" etiketi, altın / amber çerçeve ve hafif amber geçişli arka plan
                 const pref = pl.key === 'PRIME_3M';
                 return (
                   <button
@@ -189,9 +189,9 @@ export function TabPaket({ maintenanceMode = false }: Props) {
                     onClick={() => setPrimePlan(pl.key)}
                     className="relative rounded-xl px-3 py-3 text-left transition-colors"
                     style={{
-                      // Seçili plan: Ahenk paleti kırmızısı (--ll-red); 3 aylık seçili değilken ince kırmızı çerçeve
-                      border: on ? '2px solid #d6453a' : pref ? '1px solid #d6453a' : '1px solid rgba(255,255,255,0.12)',
-                      background: pref ? 'linear-gradient(135deg, rgba(214,69,58,0.22), rgba(214,69,58,0.06))' : on ? 'rgba(214,69,58,0.12)' : 'rgba(255,255,255,0.03)',
+                      // Seçili plan çerçevesi: Ahenk paleti kırmızısı (#d6453a), aynen
+                      border: on ? '2px solid #d6453a' : pref ? `1px solid ${AMBER}` : '1px solid rgba(255,255,255,0.12)',
+                      background: pref ? 'linear-gradient(135deg, rgba(224,165,38,0.22), rgba(224,165,38,0.06))' : on ? 'rgba(214,69,58,0.12)' : 'rgba(255,255,255,0.03)',
                     }}
                     aria-pressed={on}
                   >
@@ -212,7 +212,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
             <h4 className="text-base font-semibold text-[#f5f5f5]">{t('pkg.advantages')}</h4>
             <ul className="flex flex-col gap-2.5">
               {card.advantages.map((a) => (
-                <li key={a} className="flex items-center gap-2 text-sm text-[#c9c2b8]"><Check />{t(a)}</li>
+                <li key={a} className="flex items-center gap-2 text-sm text-[#c9c2b8]"><Check color={card.accent} />{t(a)}</li>
               ))}
             </ul>
           </div>
@@ -224,14 +224,13 @@ export function TabPaket({ maintenanceMode = false }: Props) {
 
           {error && <p className="text-accent text-sm">{error}</p>}
 
-          <button
-            onClick={() => handleBuy(planKey, isPrimeCard ? `Prime ${t(PRIME_PLANS.find((p) => p.key === primePlan)!.label)}` : t(card.name))}
+          <BuyButton
+            card={card}
+            onClick={() => handleBuy(planKey, isPrimeCard ? `${t('plans.PRIME')} ${t(PRIME_PLANS.find((p) => p.key === primePlan)!.label)}` : t(card.name))}
             disabled={st.blocked || buying === planKey || maintenanceMode}
-            className="btn-primary w-full justify-center disabled:opacity-50"
-            style={{ minHeight: 52, fontSize: '1rem' }}
-          >
-            {buying === planKey ? t('pay.redirecting') : st.blocked ? (st.badge ? t(st.badge) : (isPrimeCard ? t('pkg.subscribe') : t('pkg.buy'))) : isPrimeCard ? t('pkg.subscribe') : t('pkg.buy')}
-          </button>
+            minHeight={52}
+            label={buying === planKey ? t('pay.redirecting') : st.blocked ? (st.badge ? t(st.badge) : (isPrimeCard ? t('pkg.subscribe') : t('pkg.buy'))) : isPrimeCard ? t('pkg.subscribe') : t('pkg.buy')}
+          />
           <p className="text-xs text-[#a39c93] text-center" style={{ lineHeight: 1.5 }}>
             {t('pkg.payInfoWeb')}{isPrimeCard ? ` ${t('pkg.primeRenewInfo')}` : ''}
           </p>
@@ -345,7 +344,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
           const st = stateOf(card.key);
           return (
             <div key={card.key} className={card.key === 'PRIME' ? 'sm:col-span-2' : undefined}>
-            <PaketKarti card={card} badge={st.badge} blocked={st.blocked} onClick={() => { setDetail(card.key); setError(''); window.scrollTo({ top: 0, behavior: 'instant' }); }} />
+            <PaketKarti card={card} blocked={st.blocked} onClick={() => { setDetail(card.key); setError(''); window.scrollTo({ top: 0, behavior: 'instant' }); }} />
             </div>
           );
         })}

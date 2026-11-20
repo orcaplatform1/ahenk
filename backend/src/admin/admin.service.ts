@@ -560,7 +560,7 @@ export class AdminService {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${targetId} FOR UPDATE`;
       if (isPrime(plan)) {
         const active = await tx.subscription.count({ where: { userId: targetId, ...livePrimeWhere() } });
-        if (active > 0) throw new ConflictException("Bu kullanıcının aktif Prime'ı var; ikinci bir Prime verilemez.");
+        if (active > 0) throw new ConflictException("Bu kullanıcının aktif Premium'u var; ikinci bir Premium verilemez.");
       }
       // İçeriği çakışan aktif paketler (ücretli dahil) iade yapılmadan iptal edilir.
       // Çakışmayan paket kalır: Masada + Karşımda birlikte olabilir; İçerde ikisini de kapsar.

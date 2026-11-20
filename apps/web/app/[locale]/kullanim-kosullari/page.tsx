@@ -103,11 +103,11 @@ const sections = [
       <>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.65rem', marginBottom: '1.25rem' }}>
           {[
-            { name: 'Grup', price: <PlanPriceText plan="MASADA" suffix="₺" />, desc: '1 grup buluşması hakkı' },
-            { name: 'Baş Başa', price: <PlanPriceText plan="KARSIMDA" suffix="₺" />, desc: '1 baş başa buluşması hakkı' },
+            { name: 'Masada', price: <PlanPriceText plan="MASADA" suffix="₺" />, desc: '1 grup buluşması hakkı' },
+            { name: 'Karşımda', price: <PlanPriceText plan="KARSIMDA" suffix="₺" />, desc: '1 baş başa buluşması hakkı' },
             { name: 'Kankamla', price: <PlanPriceText plan="KANKAMLA" suffix="₺" />, desc: '1 kankamla buluşması hakkı; alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır, 4 kişilik masa' },
             { name: 'İçerde', price: <PlanPriceText plan="ICERDE" suffix="₺" />, desc: '1 grup + 1 baş başa buluşması hakkı' },
-            { name: 'Prime', price: null, desc: '1, 3, 6 ve 12 aylık planlar; her 30 günde 1 grup, 1 baş başa ve 1 kankamla hakkı' },
+            { name: 'Premium', price: null, desc: '1, 3, 6 ve 12 aylık planlar; her 30 günde 1 grup, 1 baş başa ve 1 kankamla hakkı' },
           ].map((pkg) => (
             <div key={pkg.name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1.1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
               <span style={{ fontWeight: 700, color: '#f4f1ec', minWidth: '90px', fontSize: 13 }}>{pkg.name}</span>
@@ -137,10 +137,10 @@ const sections = [
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
-          'Prime üyelik 1, 3, 6 ve 12 aylık planlarla sunulur; her 30 günde 1 Grup, 1 Baş Başa ve 1 Kankamla buluşması hakkı tanımlanır.',
-          'Prime\'da kullanılmayan haklar bir sonraki 30 güne devretmez.',
-          'Prime aboneliği dönem sonunda aynı süreyle otomatik olarak yenilenir.',
-          'Prime aboneliği iptal edildiğinde otomatik yenileme durur; iptal anında elde kalan haklar süre sınırı olmadan, kullanılana kadar geçerli kalır; iade yapılmaz.',
+          'Premium üyelik 1, 3, 6 ve 12 aylık planlarla sunulur; her 30 günde 1 Grup, 1 Baş Başa ve 1 Kankamla buluşması hakkı tanımlanır.',
+          'Premium\'da kullanılmayan haklar bir sonraki 30 güne devretmez.',
+          'Premium aboneliği dönem sonunda aynı süreyle otomatik olarak yenilenir.',
+          'Premium aboneliği iptal edildiğinde otomatik yenileme durur; iptal anında elde kalan haklar süre sınırı olmadan, kullanılana kadar geçerli kalır; iade yapılmaz.',
           'Mağazadan (App Store / Google Play) alınan abonelik mağazadan, iyzico ile alınan abonelik web sitesinden ya da uygulamadan iptal edilir.',
           'Kankamla rezervasyonunu çiftten biri iptal ederse iki kişi birlikte masadan düşer ve paketten 1 masa hakkı düşer; pakette tek iptal hakkı vardır.',
           'Kanka daveti telefon numarasıyla yapılır ve 48 saat geçerlidir; davet yalnızca o numarayı doğrulamış hesap tarafından kabul edilebilir. Kanka, seçildiği hafta değiştirilemez. Bir kullanıcının banlanması kankalığı sona erdirir.',

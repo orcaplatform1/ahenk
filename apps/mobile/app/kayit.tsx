@@ -77,8 +77,9 @@ export default function Kayit() {
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF(p => ({ ...p, [k]: v }));
   const [country, setCountry] = useState(DEFAULT_PHONE_COUNTRY);
   const phoneE164 = toE164(country, f.phoneNumber);
-  // Dil soruları: herkese İngilizce; yalnız İngilizce arayüzle kayıtta Türkçe (Türkçe arayüzde Türkçe biliyor sayılır)
-  const [speaksEnglish, setSpeaksEnglish] = useState<boolean | null>(null);
+  // Dil soruları: Türkçe arayüzde "Yabancılarla masaya oturmak ister misin?" (speaksEnglish, Profilim ile aynı alan, zorunlu);
+  // İngilizce arayüzde yalnız Türkçe sorusu (İngilizce ana dil, speaksEnglish = true)
+  const [speaksEnglish, setSpeaksEnglish] = useState<boolean | null>(lang === 'en' ? true : null);
   const [speaksTurkish, setSpeaksTurkish] = useState<boolean | null>(lang === 'en' ? null : true);
   // "Haber ver" denen pasif bölgeler: kayıt tamamlanınca bekleme listesine yazılır
   const [notifyRegions, setNotifyRegions] = useState<string[]>([]);
@@ -279,11 +280,16 @@ export default function Kayit() {
           </View>
         )}
 
-        {/* Adım 2: dil soruları (tek ekran, Evet / Hayır); Türkçe sorusu yalnız İngilizce arayüzde */}
+        {/* Adım 2: dil soruları (tek ekran, Evet / Hayır); yabancılar sorusu yalnız Türkçe, Türkçe sorusu yalnız İngilizce arayüzde */}
         {step === 1 && (
           <View style={{ gap: 20 }}>
             {header(2, t('reg.stepLang'))}
-            <YesNo label={t('reg.speaksEnglish')} value={speaksEnglish} onChange={(v) => { setSpeaksEnglish(v); setError(''); }} />
+            {lang !== 'en' && (
+              <View style={{ gap: 8 }}>
+                <YesNo label={t('prof.foreignersQ')} value={speaksEnglish} onChange={(v) => { setSpeaksEnglish(v); setError(''); }} />
+                <T style={{ fontSize: 12, color: ll.label, lineHeight: 18 }}>{t('prof.foreignersNote')}</T>
+              </View>
+            )}
             {lang === 'en' && <YesNo label={t('reg.speaksTurkish')} value={speaksTurkish} onChange={(v) => { setSpeaksTurkish(v); setError(''); }} />}
             {!!error && <T style={{ color: tw.accent, fontSize: 13 }}>{error}</T>}
             <View style={{ gap: 12, marginTop: 4 }}>

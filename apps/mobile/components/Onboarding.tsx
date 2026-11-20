@@ -6,6 +6,8 @@ import { Modal, Pressable, ScrollView, View, type ScrollViewInstance } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
+import { upper } from '@/lib/i18n';
 import { api } from '@/lib/api';
 import { gColor } from '@/lib/masa';
 import { onb as C } from '@/theme/theme';
@@ -106,7 +108,7 @@ function Step({ n, prices }: { n: number; prices: Partial<Record<PlanKeyName, Pl
   );
 
   if (n === 3) {
-    const oneOff: [string, string, PlanKeyName][] = [['onb.pGroup', 'onb.pGroupD', 'MASADA'], ['onb.pOne', 'onb.pOneD', 'KARSIMDA'], ['onb.pKanka', 'onb.pKankaD', 'KANKAMLA'], ['onb.pIcerde', 'onb.pIcerdeD', 'ICERDE']];
+    const oneOff: [string, string, PlanKeyName][] = [['onb.pkGroup', 'onb.pGroupD', 'MASADA'], ['onb.pkOne', 'onb.pOneD', 'KARSIMDA'], ['onb.pKanka', 'onb.pKankaD', 'KANKAMLA'], ['onb.pIcerde', 'onb.pIcerdeD', 'ICERDE']];
     const prime: [string, PlanKeyName][] = [['onb.m1', 'PRIME_1M'], ['onb.m3', 'PRIME_3M'], ['onb.m6', 'PRIME_6M'], ['onb.m12', 'PRIME_12M']];
     return (
       <View>
@@ -115,19 +117,23 @@ function Step({ n, prices }: { n: number; prices: Partial<Record<PlanKeyName, Pl
         <T style={{ fontSize: 11, letterSpacing: 1.5, color: C.muted, marginBottom: 8 }}>{t('onb.s3OneOff')}</T>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {oneOff.map(([name, desc, plan]) => (
-            <View key={plan} style={[card, { width: '48.5%' }]}>
+            <View key={plan} style={[card, { width: '48.5%', borderColor: C.pkgColor[plan] }]}>
+              {/* Rozet: "TEK SEFERLİK" / "ONE-TIME", paket renginde */}
+              <View style={{ alignSelf: 'flex-start', backgroundColor: C.pkgColor[plan], borderRadius: C.pill, paddingVertical: 2, paddingHorizontal: 8, marginBottom: 6 }}>
+                <T w={700} style={{ fontSize: 10, letterSpacing: 0.8, color: '#ffffff' }}>{upper(t('card.oneTime'))}</T>
+              </View>
               <Strong>{t(name)}</Strong>
               <Small style={{ fontSize: 12, marginTop: 2, marginBottom: 6 }}>{t(desc)}</Small>
               <T w={700} style={{ fontSize: 15, color: C.accent }}>{price(plan)}</T>
             </View>
           ))}
         </View>
-        <View style={[card, { borderWidth: 1.5, borderColor: C.primary, marginTop: 12 }]}>
+        <View style={[card, { borderWidth: 1.5, borderColor: C.primeBorder, marginTop: 12 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Serif style={{ fontSize: 20, color: C.text }}>{t('onb.prime')}</Serif>
-            <View style={{ backgroundColor: C.primeTagBg, borderRadius: C.pill, paddingVertical: 2, paddingHorizontal: 8 }}>
+            <LinearGradient colors={C.primeTagBg as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: C.pill, paddingVertical: 2, paddingHorizontal: 8 }}>
               <T w={700} style={{ fontSize: 10, letterSpacing: 0.8, color: C.primeTagText }}>{t('onb.primeTag')}</T>
-            </View>
+            </LinearGradient>
           </View>
           <Small style={{ marginTop: 6, marginBottom: 10 }}>{t('onb.primeBody')}</Small>
           <View style={{ flexDirection: 'row', gap: 6 }}>

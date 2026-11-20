@@ -105,8 +105,8 @@ const sections = [
             { name: 'Group', price: <PlanPriceText plan="MASADA" suffix="₺" />, desc: '1 group meetup credit' },
             { name: 'Duo', price: <PlanPriceText plan="KARSIMDA" suffix="₺" />, desc: '1 Duo meetup credit' },
             { name: 'Bring a Buddy', price: <PlanPriceText plan="KANKAMLA" suffix="₺" />, desc: '1 Bring a Buddy meetup credit; the buyer pays, their same-gender Kanka joins for free, table for 4' },
-            { name: 'All-In', price: <PlanPriceText plan="ICERDE" suffix="₺" />, desc: '1 group + 1 Duo meetup credit' },
-            { name: 'Prime', price: null, desc: '1-, 3-, 6- and 12-month plans; 1 group, 1 Duo and 1 Bring a Buddy credit every 30 days' },
+            { name: 'Double Pass', price: <PlanPriceText plan="ICERDE" suffix="₺" />, desc: '1 group + 1 Duo meetup credit' },
+            { name: 'Premium', price: null, desc: '1-, 3-, 6- and 12-month plans; 1 group, 1 Duo and 1 Bring a Buddy credit every 30 days' },
           ].map((pkg) => (
             <div key={pkg.name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1.1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
               <span style={{ fontWeight: 700, color: '#f4f1ec', minWidth: '90px', fontSize: 13 }}>{pkg.name}</span>
@@ -136,10 +136,10 @@ const sections = [
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
-          'Prime membership is offered in 1-, 3-, 6- and 12-month plans; 1 Group, 1 Duo and 1 Bring a Buddy meetup credit is granted every 30 days.',
-          'Unused Prime credits do not carry over to the next 30 days.',
-          'Prime subscriptions renew automatically for the same period at the end of each term.',
-          'When a Prime subscription is cancelled, automatic renewal stops; credits remaining at the moment of cancellation stay valid with no time limit until used; no refunds are given.',
+          'Premium membership is offered in 1-, 3-, 6- and 12-month plans; 1 Group, 1 Duo and 1 Bring a Buddy meetup credit is granted every 30 days.',
+          'Unused Premium credits do not carry over to the next 30 days.',
+          'Premium subscriptions renew automatically for the same period at the end of each term.',
+          'When a Premium subscription is cancelled, automatic renewal stops; credits remaining at the moment of cancellation stay valid with no time limit until used; no refunds are given.',
           'Subscriptions purchased through a store (App Store / Google Play) are cancelled through that store; subscriptions purchased with iyzico are cancelled on the website or in the app.',
           'If either member of a pair cancels a Bring a Buddy booking, both are removed from the table and 1 table credit is deducted from the package; each package includes a single cancellation right.',
           'Kanka invites are sent by phone number and are valid for 48 hours; an invite can only be accepted by the account that has verified that number. A Kanka cannot be changed during the week they are chosen. A user being banned ends the Kanka link.',

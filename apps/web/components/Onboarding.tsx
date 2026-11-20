@@ -2,10 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { gColor } from '@ahenk/ui';
 import { api } from '@/lib/api';
 import { usePlanPrices, type PlanKeyName } from '@/components/PlanPrice';
+import { AMBER, AMBER_GRADIENT, CARDS } from '@/components/paket/PaketKarti';
+
+// Paket renkleri (PaketKarti CARDS accent): Masada mavi, Karşımda kırmızı, Kankamla mor, İçerde yeşil
+const PKG_COLOR = Object.fromEntries(CARDS.map((c) => [c.key, c.accent])) as Record<string, string>;
 import { usePathname } from '@/i18n/navigation';
 
 // Tanıtım akışı ("Nasıl Çalışır"): 8 adım, bilgilendirme amaçlı. Kayıttan sonra bir kez otomatik (OnboardingHost),
@@ -67,6 +71,7 @@ function Timeline({ rows }: { rows: [string, string][] }) {
 
 function Step({ n, t, wide }: { n: number; t: ReturnType<typeof useTranslations>; wide: boolean }) {
   const prices = usePlanPrices();
+  const locale = useLocale();
   const price = (p: PlanKeyName) => (prices?.[p] ? `${prices[p]!.webTL}₺` : '—');
   const [tab, setTab] = useState<'tomorrow' | 'weekend'>('tomorrow');
 
@@ -97,7 +102,7 @@ function Step({ n, t, wide }: { n: number; t: ReturnType<typeof useTranslations>
   );
 
   if (n === 3) {
-    const oneOff: [string, string, PlanKeyName][] = [['onb.pGroup', 'onb.pGroupD', 'MASADA'], ['onb.pOne', 'onb.pOneD', 'KARSIMDA'], ['onb.pKanka', 'onb.pKankaD', 'KANKAMLA'], ['onb.pIcerde', 'onb.pIcerdeD', 'ICERDE']];
+    const oneOff: [string, string, PlanKeyName][] = [['onb.pkGroup', 'onb.pGroupD', 'MASADA'], ['onb.pkOne', 'onb.pOneD', 'KARSIMDA'], ['onb.pKanka', 'onb.pKankaD', 'KANKAMLA'], ['onb.pIcerde', 'onb.pIcerdeD', 'ICERDE']];
     const prime: [string, PlanKeyName][] = [['onb.m1', 'PRIME_1M'], ['onb.m3', 'PRIME_3M'], ['onb.m6', 'PRIME_6M'], ['onb.m12', 'PRIME_12M']];
     return (
       <div>
@@ -106,17 +111,19 @@ function Step({ n, t, wide }: { n: number; t: ReturnType<typeof useTranslations>
         <p style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.14em', color: C.muted, margin: '0 0 8px' }}>{t('onb.s3OneOff')}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {oneOff.map(([name, desc, plan]) => (
-            <div key={plan} style={card}>
+            <div key={plan} style={{ ...card, border: `1px solid ${PKG_COLOR[plan]}` }}>
+              {/* Rozet: "TEK SEFERLİK" / "ONE-TIME", paket renginde */}
+              <span style={{ display: 'inline-block', fontFamily: SANS, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#ffffff', background: PKG_COLOR[plan], borderRadius: 9999, padding: '2px 8px', marginBottom: 6 }}>{t('card.oneTime').toLocaleUpperCase(locale === 'en' ? 'en' : 'tr-TR')}</span>
               <p style={strong}>{t(name)}</p>
               <p style={{ ...small, fontSize: 12, margin: '2px 0 6px' }}>{t(desc)}</p>
               <p style={{ fontFamily: SANS, fontSize: 15, fontWeight: 700, color: C.accent, margin: 0 }}>{price(plan)}</p>
             </div>
           ))}
         </div>
-        <div style={{ ...card, border: `1.5px solid ${C.primary}`, marginTop: 12 }}>
+        <div style={{ ...card, border: `1.5px solid ${AMBER}`, marginTop: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <p style={{ ...strong, fontFamily: SERIF, fontWeight: 400, fontSize: 20 }}>{t('onb.prime')}</p>
-            <span style={{ fontFamily: SANS, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#f4f1ec', background: '#7A1F2B', borderRadius: 9999, padding: '2px 8px' }}>{t('onb.primeTag')}</span>
+            <span style={{ fontFamily: SANS, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#1a1406', background: AMBER_GRADIENT, borderRadius: 9999, padding: '2px 8px' }}>{t('onb.primeTag')}</span>
           </div>
           <p style={{ ...small, margin: '6px 0 10px' }}>{t('onb.primeBody')}</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>

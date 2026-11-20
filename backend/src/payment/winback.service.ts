@@ -23,7 +23,7 @@ const MONDAY_TEXTS = [
   "Yeni haftanın masaları kuruluyor.",
 ];
 const MONDAY_TEXTS_EN = [
-  "Table matching has started — where are you?",
+  "Table matching has started. Where are you?",
   "We've got your weekend plans covered.",
   "Aren't you curious who's at your table this week?",
   "This week's tables are being set up.",

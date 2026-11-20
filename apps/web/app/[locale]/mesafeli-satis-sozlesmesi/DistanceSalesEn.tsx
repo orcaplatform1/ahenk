@@ -38,7 +38,7 @@ const sections = [
     content: (
       <>
         <p style={{ marginBottom: '1.25rem', lineHeight: 1.75 }}>
-          This agreement governs the mutual obligations arising from the Buyer’s purchase of one of the one-time digital service packages or the Prime subscription below, and the Seller’s provision of that service. The services are <strong style={{ color: '#f4f1ec' }}>entirely digital</strong>; there is no physical delivery.
+          This agreement governs the mutual obligations arising from the Buyer’s purchase of one of the one-time digital service packages or the Premium subscription below, and the Seller’s provision of that service. The services are <strong style={{ color: '#f4f1ec' }}>entirely digital</strong>; there is no physical delivery.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.85rem' }}>
           {[
@@ -63,7 +63,7 @@ const sections = [
               ],
             },
             {
-              name: 'All-In Package',
+              name: 'Double Pass Package',
               price: <PlanPriceText plan="ICERDE" suffix="₺" />,
               items: [
                 '1 group + 1 Duo meetup credit',
@@ -81,7 +81,7 @@ const sections = [
               ],
             },
             {
-              name: 'Prime',
+              name: 'Premium Package',
               price: null,
               items: [
                 '1-, 3-, 6- and 12-month plans',
@@ -134,7 +134,7 @@ const sections = [
           'Once payment is confirmed, the package is activated instantly and added to the user’s account.',
           'The service is entirely digital; there is no physical product or delivery.',
           'To use the service during the package period, the user must have completed identity verification.',
-          'One-time package credits remain valid until used; Prime credits are renewed every 30 days.',
+          'One-time package credits remain valid until used; Premium credits are renewed every 30 days.',
           'You cannot be included in matching until identity verification is complete.',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
@@ -167,10 +167,10 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1.25rem' }}>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
           {[
-            'Prime membership is offered in 1-, 3-, 6- and 12-month plans; 1 Group, 1 Duo and 1 Bring a Buddy meetup credit is granted every 30 days.',
-            'Unused Prime credits do not carry over to the next 30 days.',
-            'Prime subscriptions renew automatically for the same period at the end of each term.',
-            'When a Prime subscription is cancelled, automatic renewal stops; credits remaining at the moment of cancellation stay valid with no time limit until used; no refunds are given.',
+            'Premium membership is offered in 1-, 3-, 6- and 12-month plans; 1 Group, 1 Duo and 1 Bring a Buddy meetup credit is granted every 30 days.',
+            'Unused Premium credits do not carry over to the next 30 days.',
+            'Premium subscriptions renew automatically for the same period at the end of each term.',
+            'When a Premium subscription is cancelled, automatic renewal stops; credits remaining at the moment of cancellation stay valid with no time limit until used; no refunds are given.',
             'Subscriptions purchased through a store (App Store / Google Play) are cancelled through that store; subscriptions purchased with iyzico are cancelled on the website or in the app.',
           ].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>

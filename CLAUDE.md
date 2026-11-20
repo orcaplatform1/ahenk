@@ -98,13 +98,17 @@ KYC KURALLARI:
 
 ÖDEME SİSTEMİ (Modül 8):
 Tek seferlik paketler (kodlar korunur; haklar kullanılana kadar geçerli, döngü / süre sınırı yok):
-  - MASADA   → "Grup Paketi":     1 grup buluşması hakkı, ham 299 TL
-  - KARSIMDA → "Baş Başa Paketi": 1 baş başa buluşması hakkı, ham 399 TL
+  - MASADA   → "Masada Paketi" (kısa "Masada"):     1 grup buluşması hakkı, ham 299 TL
+  - KARSIMDA → "Karşımda Paketi" (kısa "Karşımda"; EN "Duo"): 1 baş başa buluşması hakkı, ham 399 TL
   - KANKAMLA → "Kankamla Paketi": 1 kankamla buluşması hakkı, ham 499 TL (alıcı öder, aynı cinsiyetteki kankası ücretsiz katılır)
     · Kanka davet edilmeden satın alınır; kullanıcı paketi aldıktan sonra kankasını davet eder (detay ekranında "Paket Al";
       "Önce Kanka Davet Et" yoktur). Davet linkinden gelen kankanın daveti kabul etmesi ve masaya katılması için KYC onayı zorunlu
-  - ICERDE   → "İçerde Paketi":   1 grup + 1 baş başa buluşması hakkı, ham 599 TL
-  Prime'ın görünen adı "Prime Paket". Kullanıcıya görünen bütün metinlerde "Başbaşa" değil "Baş Başa" yazılır (paket kodları aynen)
+  - ICERDE   → "İçerde Paketi" (EN "Double Pass"; "All In" yok):   1 grup + 1 baş başa buluşması hakkı, ham 599 TL
+  Kankamla EN "Bring a Buddy"; Masada EN adı "Group". Abonelik kodda PRIME (enum, anahtar, fonksiyon adları aynen) ama kullanıcıya görünen
+  her yerde (TR + EN, bildirimler, admin panel, yasal sayfalar) "Premium": TR "Premium Paket", "Premium abonelik"; EN "Premium Package",
+  "Premium subscription"; admin "Premium 1/3/6/12 Aylık", "Aktif Premium". Paket adları yalnız paketle ilgili yerlerde değişti; masa türü
+  adları (Grup, Baş Başa, Kankamla; EN Group, Duo, Bring a Buddy) eşleşme, masa detay kartı, Masalarım vb. yerlerde aynen.
+  Veritabanı enum ve kod anahtarları değişmez. Kullanıcıya görünen bütün metinlerde "Başbaşa" değil "Baş Başa" yazılır (masa türü)
 Prime abonelik (PRIME_1M / PRIME_3M / PRIME_6M / PRIME_12M): ham 899 / 2299 / 3899 / 6499 TL
   - Satın alındığı anda 1 grup + 1 baş başa + 1 kankamla hakkı tanımlanır
   - Abonelik devam ettiği sürece satın alma tarihinden itibaren her 30 günde haklar sıfırlanır ve yeniden 1 + 1 + 1 olur;
@@ -141,23 +145,35 @@ Sadakat Programı (%10 davet indirimi): davet edilen kişi herhangi bir tek sefe
   uygulanır, yenilemeler indirimsiz. Aktif tek seferlik paketi ya da aktif Prime'ı olana 100 TL indirim hiçbir koşulda gösterilmez/uygulanmaz
 Mobil indirim teklifleri (IAP_ENABLED ile pasif): tek seferlik paketlerde indirimli ayrı ürünler (<ürün>.davet10, <ürün>.indirim100);
   Prime'da App Store promosyon teklifi (sunucu imzalı) / Google Play abonelik teklifi (teklif kimlikleri davet10, indirim100)
-Paket kartı rozetleri: Tinder GOLD tarzı hap, dolgu renkli, kalın, büyük harf, küçük (web 0.62rem / 2px 8px, mobil 9.9 / 2-8);
-  renk kartın tonuyla uyumlu, İçerde altın, Prime "ABONELİK" şarap kırmızısı #7A1F2B (yazı #f4f1ec)
-Paket kartı tasarımı (web + mobil, landing dahil): premium; her kartta aynı renk ailesinde koyudan ortaya geçişli (gradient) arka plan,
-  açık / soluk ton yok. Grup yeşil, Baş Başa kırmızı, Kankamla mavi, İçerde altın; Prime siyahtan koyu antrasite, paket listesinde
-  çerçeve palet kırmızısı (#d6453a), "Prime Paket" yazısı ve sağdaki ok #7A1F2B. Prime avantajlarının ilki "Her masada öncelikli
-  eşleşme hakkı". Prime detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen" etiketi. Web'de bu kart altın çerçeveli, hafif
-  altın geçişli; mobilde altın çerçeve / arka plan yok, diğer süre kartlarıyla aynı düz görünüm (etiket kalır).
-  Seçili plan kartının çerçevesi Ahenk paleti kırmızısı (#d6453a); 3 aylık seçiliyse çerçeve kırmızı, etiket kalır (web + mobil).
+Paket kartı tasarımı (web + mobil; landing fiyatlandırma, Profil → Paketim / mobil Paketler, paket detay ekranları, Nasıl Çalışır
+  tanıtım akışı): kart bütünüyle paket renginde: aynı renk ailesinde koyudan ortaya geçişli (gradient) arka plan, çerçeve, rozet, onay
+  ikonu, ok ve buton. Masada mavi (#3b7dd8, gradient #071a3a → #1d4f9c), Karşımda kırmızı (#d6453a, #3d0907 → #a3231b), Kankamla mor
+  (#8b5cf6, #1f0a3a → #5b2a9c), İçerde yeşil (#2e9e62, #06301c → #1c7a49), Premium altın / amber (#e0a526, #3a2804 → #9c7412; ad #f5d76e,
+  rozet ve buton altın geçişli #f5d76e → #e0a526 → #b7811a, yazı #1a1406). Premium'da şarap (#7A1F2B) ve kırmızı (#d6453a) ton yok
+  (detay başlığı, 3 aylık plan kartı çerçevesi, "Premium Paket Abonelik Detayları" kutusu altın / amber). Değerler web
+  components/paket/PaketKarti.tsx CARDS (accent), mobil paketim.tsx CARDS ve theme.ts onb.pkgColor / primeBorder / primeTagBg.
+  Rozet (kart başlığında hap, kalın büyük harf, web 0.62rem / 2px 8px, mobil 9.9 / 2-8, paket renginde): tek seferlik paketlerde
+  "TEK SEFERLİK" / "ONE-TIME" (card.oneTime), abonelikte "ABONELİK" / "SUBSCRIPTION" (card.subscription); eski durum rozetleri
+  ("Aktif Paketin" vb.) kartta yok (blocked kart soluk görünür; detay butonunda durum metni aynen).
+  Avantaj maddelerinin başında paket renginde V (onay) ikonu.
+  "PAKET AL" / "GET PACKAGE" ve Premium'da "ABONE OL" / "SUBSCRIBE" butonu (web BuyButton, mobil paketim.tsx BuyButton): paket renginde,
+  büyük harf, yuvarlak hap; yalnız landing fiyatlandırma ve paket detay ekranlarında. Landing'de Premium butonu tam genişlik değil, diğer
+  paket butonlarıyla aynı boyda (geniş ekranda yarım genişlik) ve ortalı. Web Profil → Paketim ve mobil Paketler liste kartlarında buton
+  yok, kart detay açar.
+  Premium avantajlarının ilki "Her masada öncelikli eşleşme hakkı". Premium detay ekranında 3 aylık plan kartının üstünde "Tercih Edilen"
+  etiketi. Web'de bu kart altın / amber çerçeveli, hafif amber geçişli; mobilde diğer süre kartlarıyla aynı düz görünüm (etiket kalır).
+  Seçili plan kartının çerçevesi Ahenk paleti kırmızısı (#d6453a), aynen (web + mobil).
   "TERCİH EDİLEN" etiketinin arka planı siyah (#000000), yazı rengi #f4f1ec (web + mobil).
-  Mobil Paketler listesinde paket adları web'deki adlarla aynı (plans.* çeviri anahtarından: Grup Paketi, Baş Başa Paketi, Kankamla Paketi,
-  İçerde Paketi, Prime Paket).
-  Paket kartı tipografisi (web + mobil, bütün paket kartları ve "Prime Abonelik Süreleri" kutusu): başlık serif (DM Serif Display), normal
-  ağırlık, web text-2xl (24/32) / mobil Serif 24/32; açıklama sans, normal ağırlık, 14 (text-sm). Renkler ve rozetler aynı
-  Grup Paketi avantajı "Masada erkek ve kadın eşit sayı"
+  Mobil Paketler listesinde paket adları web'deki adlarla aynı (plans.* çeviri anahtarından: Masada Paketi, Karşımda Paketi, Kankamla Paketi,
+  İçerde Paketi, Premium Paket; EN Group Package, Duo Package, Bring a Buddy Package, Double Pass Package, Premium Package).
+  Nasıl Çalışır (Onboarding) paket kartlarında kısa adlar onb.pkGroup / onb.pkOne (Masada / Karşımda; EN Group / Duo), onb.pKanka,
+  onb.pIcerde (EN Double Pass); hafta sonu sekmesindeki masa türü adları (onb.pGroup / pOne) aynen.
+  Paket kartı tipografisi (web + mobil, bütün paket kartları ve "Premium Paket Abonelik Detayları" kutusu): başlık serif (DM Serif Display),
+  normal ağırlık, web text-2xl (24/32) / mobil Serif 24/32; açıklama sans, normal ağırlık, 14 (text-sm).
+  Masada Paketi avantajı "Masada erkek ve kadın eşit sayı"
 Paket kartı yazıları (kart kısa açıklaması; avantajlar PaketKarti.tsx CARDS ve mobil paketim.tsx CARDS'ta aynı liste):
-  Grup Paketi "1 Grup Masası'nda buluşma hakkı"; Baş Başa Paketi "1 Baş Başa Masası'nda buluşma hakkı"; Kankamla Paketi
-  "1 Kankamla Masası'nda buluşma hakkı"; İçerde Paketi "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı"; Prime Paket
+  Masada Paketi "1 Grup Masası'nda buluşma hakkı"; Karşımda Paketi "1 Baş Başa Masası'nda buluşma hakkı"; Kankamla Paketi
+  "1 Kankamla Masası'nda buluşma hakkı"; İçerde Paketi "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı"; Premium Paket
   "Her ay 1 Grup + 1 Baş Başa + 1 Kankamla Masası"
 Mobil paket detay ekranında "← Paketler" (mevcut pillRed etiket stili) ve Android geri tuşu Paketim'deki paket listesine döner
 Profilim "KANKAMLA NASIL İŞLER?" metni: "Kankamla Paketi'ni al, ardından aynı cinsiyetten bir arkadaşını kanka olarak davet et. Kankan
@@ -166,12 +182,13 @@ Profilim "KANKAMLA NASIL İŞLER?" metni: "Kankamla Paketi'ni al, ardından ayn�
   "2 hak", "4 döngü" ifadeleri yoktur
 Landing "Paket Al": giriş yapmamışsa Giriş; giriş yapmışsa (KYC onaylı ya da değil) Profil → Paketim
 Web paket listeleri (landing #pricing ve Profil → Paketim): landing başlığı "Fiyatlandırma". Kartlar 2 sütunlu grid (sm ve üstü; dar
-  ekranda tek sütun): Grup + Baş Başa, Kankamla + İçerde, Prime Paket tam genişlik; landing'de 4. satır "Prime Abonelik Süreleri"
-  kutusu tam genişlik (eski "Prime Üyelik"; başlık #7A1F2B, çerçeve #d6453a — altın renk yok). Prime Paket detay ekranı tam ekran (değişmedi).
+  ekranda tek sütun): Masada + Karşımda, Kankamla + İçerde, Premium Paket tam genişlik; landing'de 4. satır "Premium Paket Abonelik
+  Detayları" / "Premium Package Subscription Details" kutusu tam genişlik (başlık ve çerçeve altın / amber #e0a526; 1/3/6/12 aylık süre
+  kartları; alttaki kural satırlarında ikon yok). Premium Paket detay ekranı tam ekran (değişmedi).
   Landing'de bütün paket kartları varsayılan açık: avantajlar ve "Paket Al" / "Abone Ol" tıklamadan görünür, aç/kapa yok; kartlar
   tıklanamaz (PaketKarti staticCard: div, ok yok). Web Profil → Paketim'de kartlar tıklanınca tam ekran detay (değişmedi). Mobil
   paket ekranlarında grid yoktur; mobil kart davranışı aynı
-Paket kartları (Grup, Baş Başa, Kankamla, İçerde, Prime) tek kaynaktan: apps/web/components/paket/PaketKarti.tsx — paket ekranı ve landing
+Paket kartları (Masada, Karşımda, Kankamla, İçerde, Premium) tek kaynaktan: apps/web/components/paket/PaketKarti.tsx — paket ekranı ve landing
   aynı kartı, açıklamayı ve avantaj listesini kullanır. Landing'de eski görselli paket kartları yoktur; Prime kuralları bölümü durur
 Platform:
   - Web → iyzico. Tek seferlik: Checkout Form. Prime: ilk dönem Checkout Form, otomatik yenileme iyzico abonelik API'si
@@ -427,6 +444,10 @@ HESAP SİLME:
   - Gizlilik Politikası ve KVKK: KYC Ahenk sunucusunda AES-256-GCM şifreli, hesap silinene kadar; üçüncü taraflar iyzico, Meta (WhatsApp
     Business API), Google Firebase Cloud Messaging, Anthropic (masa uyum raporu: katılımcı başı OCEAN skoru + cinsiyet, rapor masa
     kartında), OpenStreetMap Nominatim, Apple / Google mağazaları, Google Analytics / Meta Pixel (web çerezleri). Cloudflare yoktur
+
+METİN KURALI (TR + EN, web + mobil + admin, i18n, bildirim / WhatsApp / e-posta, yasal sayfalar, Topluluk Kuralları, Nasıl Çalışır):
+  cümle içinde ayraç olarak uzun tire (—), orta tire (–) ve çift tire (--) kullanılmaz; cümle virgül, nokta ya da iki nokta ile kurulur.
+  Tarih / sayı aralıkları (4–6, 15 Mayıs – 15 Eylül) ve koddaki tireler (boş değer "—" vb.) bu kuralın dışında.
 
 WEBP KURALI:
   - Web ve mobil projedeki görseller WebP'dir (kalite 80, şeffaflık korunur; mobil sekme ikonları assets/tabs/*.webp, tintColor çalışır).
@@ -715,9 +736,18 @@ Admin işlemleri (masa detayında veya kullanıcı profilinde):
   - Katılımcılar admin panelinde K.A. gibi kısaltmayla gösterilir
   - K.A.'ya tıklayınca o kullanıcının tam profili + geçmişi açılır
   - Uyarı ver: sebep zorunlu, kullanıcı giriş yapabilir ama uyarı mesajı görür ve devam edebilir
-  - Askıya al: sebep + süre zorunlu; kullanıcı o süre boyunca giriş yapamaz
+  - Askıya al (tek model, backend common/suspension.ts): süre yalnız 3 gün / 15 gün / 1 ay (admin web + mobil bütün askı butonları).
+    Askı giriş, oturum, paket, abonelik, iyzico / mağaza aboneliğini etkilemez; User.status değişmez (eski SUSPENDED üye hesapları
+    migration 20261121100000 ile ACTIVE yapıldı, botlarda SUSPENDED = pasif). Askıdaki kullanıcı: seçim / değiştir, kanka daveti / kabulü,
+    paket ve abonelik satın alma (iyzico init + mağaza doğrulama) reddedilir; eşleştirme havuzuna girmez; seçim ekranı otomatik açılmaz,
+    Seçim Yap kapalı + uyarı metni. Askıda şablon push (süre otomatik). Profilim'de geri sayım kartı (Eşleşme Paneli sayacıyla aynı; süre
+    bitince kaybolur; web + mobil). Askı nedeniyle daha önce kesilen abonelikler geri verilmez (konu kapandı)
+  - Uyarılar türe göre ayrı sayılır: sohbet (source CHAT), fotoğraf (PHOTO), gelmedi (meetingId / NO_SHOW). Masadan çıkarmada diğer
+    katılımcılara push + uygulama içi "Masandaki bir katılımcı masadan ayrıldı." (EN karşılığı)
+  - Profilim gelmedi uyarısı (web + mobil, prof.noShow): uyarı varsa yalnız "Gelmedi uyarın var. Tekrarlanırsa hesabın askıya alınır." /
+    "You have a no-show warning. If it happens again, your account will be suspended."; "kalan hak" ifadesi / sayısı yok; uyarı yoksa alan yok
   - Banla: sebep zorunlu; kullanıcı kalıcı olarak giriş yapamaz
-  - Ban, askıya alma ve admin iptali iyzico aboneliğini de iptal eder (iyzico hatası loglanır, işlem sürer); sunucuda iptal
+  - Ban ve admin iptali iyzico aboneliğini de iptal eder (askı etmez) (iyzico hatası loglanır, işlem sürer); sunucuda iptal
     edilmiş kayda sonradan gelen yenileme bildirimi kaydı yeniden aktif etmez, yalnız loglanır
 Kullanıcı giriş ekranında:
   - Uyarı varsa: uyarı metni gösterilir, "Devam et" butonu ile geçilebilir
@@ -732,7 +762,7 @@ Endpoint'ler:
   - DELETE /admin/users/:id/sanction/:sanctionId — yaptırım kaldır
   - GET /auth/me → activeSanction alanı döner (giriş ekranında kontrol için)
 Otomatik geri alma:
-  - SUSPENDED: askı süresi dolan kullanıcı giriş yapınca aktif UserSanction yoksa status → ACTIVE otomatik
+  - SUSPENDED: (eski model) askı artık User.status'u değiştirmez; eski kayıtlar için checkSanction kuralı duruyor
   - BANNED: aynı kural — admin tüm BAN kayıtlarını kaldırırsa status → ACTIVE otomatik (manuel status düzeltmesi gerekmez)
   - Bu mantık checkSanction() içinde uygulanır, her giriş denemesinde kontrol edilir
 WhatsApp OTP giriş yolunda (send-login-otp) da sanction kontrolü yapılır; 403 dönünce frontend sanction modal'ını gösterir
@@ -749,6 +779,17 @@ Tehdit tipleri: LIFE_DANGER, PHYSICAL_VIOLENCE, ABDUCTION, HARASSMENT
 SOS raporu başına tek AdminAlert oluşur. Bildirim tüm ADMIN ve SUPERADMIN'lere gider. Raporu tek bir admin üstlenir, diğer adminler izleyemez. SUPERADMIN sınırsız izler ve müdahale eder.
 Kullanıcı konumu: masa katılımcıları SOS sırasında konum paylaşabilir (ParticipantLocation tablosu).
 Admin SOS sayfası: /acil-yardim — canlı rapor listesi, 15s otomatik yenileme.
+  Admin Acil Yardım (web + mobil): üstte isim / telefon yok; "Haritada Gör" ve "Kapat" / "Detay" buton görünümünde; konum kesildi satırı
+  (son konum zamanı + adres); kişi kartları: fotoğraf (büyür + Sil), ad, telefon, Detay → tüm bilgiler + kimlik ön yüzü (büyür).
+  Google Maps anahtarları: web NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, mobil EXPO_PUBLIC_GOOGLE_MAPS_API_KEY, backend GOOGLE_MAPS_API_KEY (açık
+  talep adresi 50 m değişimde ya da 1 dk'da); anahtar yoksa Leaflet / OSM + Nominatim aynen.
+  Acil Durum Kişisi (web + mobil Profilim > Gizlilik ve Güvenlik): ad + ülke kodlu telefon (User.emergencyContactName / Phone), ekle /
+  düzenle / sil, not metni. SOS talebinde ahenk_emergency_contact WhatsApp şablonu (dil kullanıcıya göre, talep başına bir kez;
+  SosReport.emergencyNotifiedAt / emergencyNotifyFailed); başarısızsa admin detayında "Acil durum kişisine bildirim gönderilemedi".
+  KVKK + Gizlilik Politikası (TR + EN) maddesi var. Hesap silinince kişi silinir.
+Admin masa detayı (web + mobil): katılımcı kartı (fotoğraf büyür + Sil, ad, telefon, Detay); gelmeyende kırmızı "GELMEDİ" → detay
+  penceresi (fotoğraf, ad, bildirenler + zaman, önceki gelmedi uyarıları, "Uyarı ver"; önceki uyarı varsa yalnız askı). Uyarı ver:
+  şablon push + uygulama içi (tarih otomatik). Gelmedi bildirimi admin Uyarılar'a düşer (AdminAlertType NO_SHOW_REPORTED).
   Nominatim (OpenStreetMap) reverse geocoding: TR dili, max 1 istek/saniye (seri kuyruk), adres cache max 200 kayıt.
 Kullanıcı tarafı (web + mobil masa detay kartı):
   - Acil Yardım butonu alt kartın en üstünde (eski Rezervasyon kartı ve Yola Çıktım yerinde); masa saatinden buluşmadan sonraki gün
@@ -854,16 +895,21 @@ API CLIENT KURALLAR (web):
     arayüz dilinde. Mobilde liste yalnız seçici açılınca oluşturulur, FlatList ile sanallaştırılır. Backend telefon doğrulaması aynı; doğrulama libphonenumber-js ile seçilen ülkeye göre; numaralar veritabanında E.164
     (+905…, +44…) saklanır; OTP ve giriş E.164 numarayla çalışır. Profilim telefon değiştirme ve Numara Engelleme'de de ülke kodu seçici
     (varsayılan ülke kayıtlı telefonun ülkesi, E.164 gönderim).
-  - Dil soruları: kayıtta tek ekran, herkese "İngilizce biliyor musunuz?" / "Do you speak English?", yalnız İngilizce arayüzle kayıtta
-    ayrıca "Do you speak Turkish?"; Türkçe arayüzle kayıtta speaksTurkish = true. User.speaksEnglish / speaksTurkish.
+  - Dil soruları: kayıtta tek ekran. Türkçe arayüzle kayıtta "Yabancılarla masaya oturmak ister misin?" Evet / Hayır (prof.foreignersQ),
+    altında küçük not (prof.foreignersNote: "Evet seçersen masanda yabancı katılımcılar olabilir. Ortak dil İngilizce olacağı için temel
+    düzeyde İngilizce bilmen gerekir."); varsayılan boş, zorunlu, seçilmeden kayıt tamamlanmaz; speaksTurkish = true. İngilizce arayüzle
+    kayıtta bu soru yok (speaksEnglish = true), yalnız "Do you speak Turkish?". "İngilizce biliyor musunuz?" sorusu yok. Kayıt ve Profilim
+    aynı tek alanı yazar: User.speaksEnglish (Evet → true; eşleştirmede englishFiller). User.speaksEnglish / speaksTurkish.
     Ana dil: User.nativeLanguage (tr | en) = kayıt olunan arayüz dili (migration 20261116200000: mevcut kullanıcılarda o anki User.language);
     değiştirilemez, ana dilin speaks alanı hep true (kayıt ve PATCH /users/me/spoken-languages zorlar). Profilim'de (web + mobil)
-    "Ana dilin: Türkçe" kilitli satır, altında "Başka konuştuğun diller" başlığıyla diğer dillerin seçilebilir satırları (birden fazla
-    işaretlenebilir, ✓); "İngilizce biliyorum" / "Türkçe biliyorum" anahtarları yok.
+    "Ana dilin: Türkçe" kilitli satır; Türkçe arayüzde altında "Yabancılarla masaya oturmak ister misin?" Evet / Hayır + not (İngilizce
+    arayüzde gösterilmez). "Başka konuştuğun diller" bölümü ve "İngilizce biliyorum" / "Türkçe biliyorum" anahtarları yok.
   - Dil bazlı eşleşme (grup, baş başa, Kankamla; backend/src/matching/matching.service.ts noTurkish / englishFiller / languageCompatible),
     mevcut kurallardan önce zorunlu: a) speaksTurkish = false olan kullanıcı yalnız masadaki herkesin speaksEnglish = true olduğu masaya
     yerleşir; b) speaksTurkish = false olanlar önce birbirleriyle eşleşir; c) masa dolmuyorsa boş yerler telefon kodu +90 olan ve
     speaksEnglish = true olan kullanıcılarla doldurulur; d) dil kuralından sonra cinsiyet dengesi; e) grup masasındaki bot kuralı aynen.
+    İngilizce arayüz kullanıcısı yalnız "Yabancılarla masaya oturmak" sorusuna Evet diyen Türklerle ve diğer İngilizce arayüz
+    kullanıcılarıyla eşleşir.
   - KYC belge türleri (KycSubmission.idType: ID_CARD | DRIVER_LICENSE | PASSPORT | RESIDENCE_PERMIT; TC / YKN eski kayıtlar için enum'da
     durur, seçilemez, mevcut kayda dokunulmadı): "Kimlik Kartı", "Ehliyet", "Pasaport", "Oturma İzni". Kimlik doğrulama başlarken önce
     belge türü sorulur (web + mobil), sonra çekim: Kimlik Kartı / Ehliyet / Oturma İzni'nde önce ön yüz, ön yüz çekilince arka yüz;

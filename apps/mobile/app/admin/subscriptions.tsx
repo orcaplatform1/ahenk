@@ -18,7 +18,7 @@ interface Sub {
 }
 interface ListResponse { items: { user: Sub['user']; subscriptions: Sub[] }[]; total: number; page: number; totalPages: number }
 const TABS = [{ key: 'ACTIVE', label: 'Aktif' }, { key: 'EXPIRED', label: 'Süresi Dolan / Kullanılan' }, { key: 'CANCELLED', label: 'İptal Edilen' }] as const;
-const PLAN_LABEL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
+const PLAN_LABEL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Premium 1 Aylık', PRIME_3M: 'Premium 3 Aylık', PRIME_6M: 'Premium 6 Aylık', PRIME_12M: 'Premium 12 Aylık' };
 const PLATFORM_LABEL: Record<string, string> = { WEB: 'Web', ANDROID: 'Android', IOS: 'iOS' };
 const fmtDate = (d: string | null) => (d ? new Date(d).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
@@ -81,7 +81,7 @@ export default function AdminSubscriptions() {
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
         <AInput value={search} onChangeText={setSearch} onSubmitEditing={() => { setQuery(search.trim()); setPage(1); }} returnKeyType="search" placeholder="Ad, e-posta veya telefon… (Enter)" style={{ flexGrow: 1, minWidth: 0, flexBasis: '100%', paddingHorizontal: 12 }} />
         <View style={{ width: 160 }}>
-          <AdminSelect value={plan} onChange={v => { setPlan(v); setPage(1); }} placeholder="Tüm paketler" title="Paket filtresi" options={[{ value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }, { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' }, { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' }]} />
+          <AdminSelect value={plan} onChange={v => { setPlan(v); setPage(1); }} placeholder="Tüm paketler" title="Paket filtresi" options={[{ value: '', label: 'Tüm paketler' }, { value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }, { value: 'PRIME_1M', label: 'Premium 1 Aylık' }, { value: 'PRIME_3M', label: 'Premium 3 Aylık' }, { value: 'PRIME_6M', label: 'Premium 6 Aylık' }, { value: 'PRIME_12M', label: 'Premium 12 Aylık' }]} />
         </View>
       </View>
       <AError>{error}</AError>

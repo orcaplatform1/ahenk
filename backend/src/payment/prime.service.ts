@@ -70,7 +70,7 @@ export class PrimeService {
   // Dönem yenilendi (iyzico webhook / mağaza bildirimi): yenileme ödemesi (indirimsiz) yazılır, dönem aynı süreyle uzar
   async renew(subscriptionId: string, platform: PaymentPlatform, ref: { iyzicoPaymentId?: string; storeTransactionId?: string; expiresAt?: Date }) {
     const sub = await this.prisma.subscription.findUnique({ where: { id: subscriptionId } });
-    if (!sub || !PRIME_PLANS.includes(sub.plan)) throw new NotFoundException("Prime aboneliği bulunamadı");
+    if (!sub || !PRIME_PLANS.includes(sub.plan)) throw new NotFoundException("Premium aboneliği bulunamadı");
     if (ref.storeTransactionId && (await this.prisma.payment.count({ where: { storeTransactionId: ref.storeTransactionId } })) > 0) return;
     // Sunucuda iptal edilmiş kayıt (ban / askı / admin iptali) geç gelen yenileme bildirimiyle yeniden aktif edilmez
     if (sub.status === SubscriptionStatus.CANCELLED) {
@@ -152,7 +152,7 @@ export class PrimeService {
       where: { userId, ...livePrimeWhere(), renewCancelledAt: null },
       select: { id: true, autoRenew: true, iyzicoSubscriptionRef: true, storePlatform: true, expiresAt: true },
     });
-    if (!sub) throw new NotFoundException("Aktif Prime aboneliğin bulunamadı.");
+    if (!sub) throw new NotFoundException("Aktif Premium aboneliğin bulunamadı.");
     if (sub.storePlatform) return { storeManaged: sub.storePlatform, expiresAt: sub.expiresAt };
     if (sub.iyzicoSubscriptionRef) {
       const r = await this.iyzico.cancelSubscription(sub.iyzicoSubscriptionRef);

@@ -25,14 +25,14 @@ const SS: Record<string, { label: string; color: string; bg: string; border: str
   SUSPENDED: { label: 'Karantina', color: adm.amber, bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.3)' },
   DELETED: { label: 'Silindi', color: adm.muted, bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.3)' },
 };
-const PL: Record<string, string> = { MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık' };
+const PL: Record<string, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Premium 1 Aylık', PRIME_3M: 'Premium 3 Aylık', PRIME_6M: 'Premium 6 Aylık', PRIME_12M: 'Premium 12 Aylık' };
 const oceanAvg = (o: AdminUser['oceanScore']) => (o ? ((o.openness + o.conscientiousness + o.extraversion + o.agreeableness + o.neuroticism) / 5).toFixed(0) : '—');
 const planOf = (subs?: { plan: string }[]) => (subs?.length ? subs.map(s => PL[s.plan] ?? s.plan).join(', ') : '—');
 // Detay penceresi profil alanı: onaylı fotoğraf; yoksa anonim profil (cinsiyet renkli çerçeve + ad soyad baş harfleri)
 const initialsOf = (p?: { firstName?: string | null; lastName?: string | null } | null) => `${(p?.firstName ?? '').trim()[0] ?? ''}${(p?.lastName ?? '').trim()[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?';
-const PLANS = [{ value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }];
+const PLANS = [{ value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' }, { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' }];
 // Paket verme: tek seferlik paketler + ücretsiz Prime (1/3/6/12 ay)
-const GRANT_PLANS = [...PLANS, { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' }, { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' }];
+const GRANT_PLANS = [...PLANS, { value: 'PRIME_1M', label: 'Premium 1 Aylık' }, { value: 'PRIME_3M', label: 'Premium 3 Aylık' }, { value: 'PRIME_6M', label: 'Premium 6 Aylık' }, { value: 'PRIME_12M', label: 'Premium 12 Aylık' }];
 const Sect = ({ children }: { children: React.ReactNode }) => <View style={{ borderTopWidth: 1, borderTopColor: adm.border, paddingTop: 14, gap: 8 }}>{children}</View>;
 
 export default function AdminUsers() {

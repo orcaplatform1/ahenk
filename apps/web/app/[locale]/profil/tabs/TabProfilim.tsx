@@ -63,7 +63,6 @@ interface UserData {
 }
 
 // Sıra sayıları: çeviri anahtarı
-const ORDINAL = ['prof.ordinal1', 'prof.ordinal2', 'prof.ordinal3'];
 
 interface Props {
   user: UserData;
@@ -253,7 +252,7 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
         {/* Gelmedi uyarısı — en üstte, net görünsün */}
         {user.noShowWarning && (
           <p className="text-sm font-medium leading-relaxed" style={{ color: '#facc15' }}>
-            {t('prof.noShow', { ordinal: ORDINAL[user.noShowWarning.count - 1] ? t(ORDINAL[user.noShowWarning.count - 1]) : `${user.noShowWarning.count}.`, remaining: user.noShowWarning.remaining })}
+            {t('prof.noShow')}
           </p>
         )}
 

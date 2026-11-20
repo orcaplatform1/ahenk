@@ -65,8 +65,8 @@ const STATUS_STYLE: Record<string, { label: string; color: string; bg: string; b
 };
 
 const PLAN_LABEL: Record<string, string> = {
-  MASADA: 'Grup', KARSIMDA: 'Baş Başa', ICERDE: 'İçerde', KANKAMLA: 'Kankamla',
-  PRIME_1M: 'Prime 1 Aylık', PRIME_3M: 'Prime 3 Aylık', PRIME_6M: 'Prime 6 Aylık', PRIME_12M: 'Prime 12 Aylık',
+  MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla',
+  PRIME_1M: 'Premium 1 Aylık', PRIME_3M: 'Premium 3 Aylık', PRIME_6M: 'Premium 6 Aylık', PRIME_12M: 'Premium 12 Aylık',
 };
 
 function oceanAvg(o: AdminUser['oceanScore']): string {
@@ -249,10 +249,10 @@ export default function AdminUsers() {
             title="Üye filtresi"
             options={[
               { value: '', label: 'Tüm üyeler' }, { value: 'NO_PLAN', label: 'Aboneliksiz' },
-              { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' },
+              { value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' },
               { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
-              { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' },
-              { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' },
+              { value: 'PRIME_1M', label: 'Premium 1 Aylık' }, { value: 'PRIME_3M', label: 'Premium 3 Aylık' },
+              { value: 'PRIME_6M', label: 'Premium 6 Aylık' }, { value: 'PRIME_12M', label: 'Premium 12 Aylık' },
               { value: 'ADMIN', label: 'Admin' }, { value: 'SUPERADMIN', label: 'Superadmin' },
             ]}
           />
@@ -564,10 +564,10 @@ export default function AdminUsers() {
                       title="Paket seç"
                       style={{ flex: 1, width: 'auto', minWidth: 0 }}
                       options={[
-              { value: 'MASADA', label: 'Grup' }, { value: 'KARSIMDA', label: 'Baş Başa' },
+              { value: 'MASADA', label: 'Masada' }, { value: 'KARSIMDA', label: 'Karşımda' },
               { value: 'ICERDE', label: 'İçerde' }, { value: 'KANKAMLA', label: 'Kankamla' },
-              { value: 'PRIME_1M', label: 'Prime 1 Aylık' }, { value: 'PRIME_3M', label: 'Prime 3 Aylık' },
-              { value: 'PRIME_6M', label: 'Prime 6 Aylık' }, { value: 'PRIME_12M', label: 'Prime 12 Aylık' },
+              { value: 'PRIME_1M', label: 'Premium 1 Aylık' }, { value: 'PRIME_3M', label: 'Premium 3 Aylık' },
+              { value: 'PRIME_6M', label: 'Premium 6 Aylık' }, { value: 'PRIME_12M', label: 'Premium 12 Aylık' },
             ]}
                     />
                     <button

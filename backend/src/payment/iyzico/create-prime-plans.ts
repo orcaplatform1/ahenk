@@ -10,10 +10,10 @@ import { PricingService } from "../pricing.service";
 import { IyzicoService } from "./iyzico.service";
 
 const PLANS: { plan: SubscriptionPlan; name: string; months: number; trialDays: number }[] = [
-  { plan: SubscriptionPlan.PRIME_1M, name: "Prime 1 Aylık", months: 1, trialDays: 30 },
-  { plan: SubscriptionPlan.PRIME_3M, name: "Prime 3 Aylık", months: 3, trialDays: 90 },
-  { plan: SubscriptionPlan.PRIME_6M, name: "Prime 6 Aylık", months: 6, trialDays: 180 },
-  { plan: SubscriptionPlan.PRIME_12M, name: "Prime 12 Aylık", months: 12, trialDays: 365 },
+  { plan: SubscriptionPlan.PRIME_1M, name: "Premium 1 Aylık", months: 1, trialDays: 30 },
+  { plan: SubscriptionPlan.PRIME_3M, name: "Premium 3 Aylık", months: 3, trialDays: 90 },
+  { plan: SubscriptionPlan.PRIME_6M, name: "Premium 6 Aylık", months: 6, trialDays: 180 },
+  { plan: SubscriptionPlan.PRIME_12M, name: "Premium 12 Aylık", months: 12, trialDays: 365 },
 ];
 
 async function main() {
