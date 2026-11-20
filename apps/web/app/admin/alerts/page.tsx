@@ -23,6 +23,7 @@ const ALERT_LABELS: Record<string, string> = {
   BOT_NOT_FOUND: 'Uygun bot bulunamadı',
   PAYMENT_ISSUE: 'Ödeme elle kontrol gerektiriyor',
   BOT_ASSIGNED: 'Masaya bot atandı',
+  NO_SHOW_REPORTED: 'Gelmedi bildirimi',
 };
 
 export default function AdminAlerts() {

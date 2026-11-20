@@ -47,6 +47,7 @@ export interface WeeklySelection {
   }[];
   tomorrowDate: string;
   cancelCooldownUntil: string | null; // İptal sonrası 24 saat: bu ana kadar hiçbir türde "Seçim Yap" yok
+  suspendedUntil?: string | null; // Askı: masaya katılamaz (Seçim Yap kapalı)
   showModal: boolean;
 }
 

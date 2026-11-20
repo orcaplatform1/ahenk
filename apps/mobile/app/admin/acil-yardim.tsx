@@ -1,7 +1,7 @@
 // apps/web/app/admin/acil-yardim/page.tsx karşılığı (Acil Yardım Merkezi): 15 sn yenileme, açık taleplerde tek istekte 1 sn canlı konum + açık adres,
 // Leaflet/OpenStreetMap canlı harita (WebView). Açık adres yalnız backend Nominatim önbelleğinden gelir; uygulama Nominatim'e istek atmaz.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Linking, Pressable, ScrollView, View } from 'react-native';
+import { Animated, Easing, Image, Linking, Modal, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '@/lib/api';
 import { myId, myRole } from '@/lib/adminRole';
@@ -9,6 +9,9 @@ import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, AT, ATitle } from '@/components/admin/AdminUi';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { SosLiveMap } from '@/components/admin/SosLiveMap';
+import { AdminUserPhoto } from '@/components/admin/AdminUserPhoto';
+import { getAccess } from '@/lib/session';
+import { API_PREFIX } from '@/lib/config';
 import { adm, mono } from '@/theme/theme';
 
 type LivePos = { lat: number; lng: number; timestamp: string };
@@ -16,7 +19,7 @@ type LiveAddress = { il: string | null; ilce: string | null; mahalle: string | n
 interface LocUpdate { lat: number; lng: number; accuracy: number | null; timestamp: string; address?: LiveAddress | null }
 interface Participant { userId: string; firstName: string | null; lastName: string | null; email?: string; phone: string | null; age: number | null; gender: string | null; occupation: string | null; city: string | null; isRequester: boolean; isBot?: boolean }
 interface AdminRef { id: string; profile: { firstName: string; lastName: string } | null }
-interface SosReport { id: string; createdAt: string; threats: string[]; lat: number | null; lng: number | null; accuracy: number | null; resolvedAt: string | null; restricted: boolean; claimedAt: string | null; claimedBy: AdminRef | null; resolvedBy?: AdminRef | null; lastAddress?: string | null; lastLocationAt?: string | null; locationStale?: boolean; liveLocationAt?: string | null; participantSnapshot: Participant[]; user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null; meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null; locationUpdates: LocUpdate[] }
+interface SosReport { id: string; createdAt: string; threats: string[]; lat: number | null; lng: number | null; accuracy: number | null; resolvedAt: string | null; restricted: boolean; claimedAt: string | null; claimedBy: AdminRef | null; resolvedBy?: AdminRef | null; lastAddress?: string | null; lastLocationAt?: string | null; locationStale?: boolean; liveLocationAt?: string | null; participantSnapshot: Participant[]; people?: Record<string, { photoUrl: string | null; kycId: string | null }>; emergencyNotifyFailed?: boolean; user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null; meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null; locationUpdates: LocUpdate[] }
 const THREAT: Record<string, string> = { LIFE_DANGER: 'Hayatım tehlikede', PHYSICAL_VIOLENCE: 'Fiziksel şiddet gördüm', ABDUCTION: 'Zorla alıkoyuluyorum', HARASSMENT: 'Taciz veya istismara uğradım' };
 const GENDER_TR: Record<string, string> = { MALE: 'E', FEMALE: 'K' };
 const REFRESH_SEC = 15;
@@ -52,18 +55,54 @@ function AddrRows({ a, color, keyW, fs }: { a: LiveAddress; color: string; keyW:
   const rows: [string, string | null][] = [['İl', a.il], ['İlçe', a.ilce], ['Mahalle', a.mahalle], ['Cadde/Sokak', a.caddeSokak], ['Bina No', a.binaNo], ['Posta Kodu', a.postaKodu], ['Tam Adres', a.tamAdres]];
   return <>{rows.map(([k, v]) => <View key={k} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}><AT style={{ fontSize: fs, color: adm.muted, minWidth: keyW, lineHeight: fs * 1.6 }}>{k}</AT><AT style={{ fontSize: fs, color, flexShrink: 1, lineHeight: fs * 1.6 }}>{v || '—'}</AT></View>)}</>;
 }
-function PersonRow({ p, email, phone, highlight }: { p?: Participant; email?: string; phone: string | null; highlight?: boolean }) {
+// Kişi kartı (talep eden ve diğer katılımcılar aynı yapı): profil fotoğrafı (büyür, "Sil"), ad soyad, telefon, "Detay".
+// Detay'a basınca kişinin tüm bilgileri ve kimlik ön yüzü (basınca büyür) açılır (web PersonRow ile aynı)
+function PersonRow({ p, extra, highlight }: { p?: Participant; extra?: { photoUrl: string | null; kycId: string | null }; highlight?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [zoom, setZoom] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<string | null | undefined>(undefined);
+  useEffect(() => { if (open && !token) getAccess().then(setToken).catch(() => {}); }, [open, token]);
   if (!p) return <AT style={{ fontSize: 11, color: adm.muted }}>—</AT>;
+  const name = `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || '—';
+  const idUri = extra?.kycId ? `${API_PREFIX}/kyc/admin/file/${extra.kycId}/front` : null;
   return (
     <View style={{ paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, marginBottom: 4, backgroundColor: highlight ? RED_DIM : BLUE_DIM, borderWidth: 1, borderColor: highlight ? 'rgba(239,68,68,0.4)' : 'rgba(59,130,246,0.2)' }}>
-      <AT w={700} style={{ marginBottom: 2, fontSize: 13, color: highlight ? adm.red : adm.cyan }}>
-        {p.firstName} {p.lastName}
-        {p.age ? <AT style={{ fontSize: 10, color: adm.muted }}>  {p.age} yaş</AT> : null}
-        {p.gender ? <AT style={{ fontSize: 10, color: adm.muted }}> {GENDER_TR[p.gender] ?? p.gender}</AT> : null}
-        {p.isBot ? <AT w={700} style={{ fontSize: 9, color: adm.amber, letterSpacing: 0.9 }}>  BOT</AT> : null}
-      </AT>
-      <AMono style={{ fontSize: 10 }}>{[email, phone].filter(Boolean).join(' · ') || '—'}</AMono>
-      {(p.occupation || p.city) && <AT style={{ marginTop: 2, fontSize: 10, color: adm.muted }}>{[p.occupation, p.city].filter(Boolean).join(' · ')}</AT>}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <AdminUserPhoto userId={p.userId} photoUrl={photo === undefined ? extra?.photoUrl : photo} gender={p.gender} size={44}
+          initials={`${p.firstName?.[0] ?? ''}${p.lastName?.[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?'} onDeleted={() => setPhoto(null)} />
+        <View style={{ flexShrink: 1 }}>
+          <AT w={700} style={{ fontSize: 13, color: highlight ? adm.red : adm.cyan }}>
+            {name}{p.isBot ? <AT w={700} style={{ fontSize: 9, color: adm.amber, letterSpacing: 0.9 }}>  BOT</AT> : null}
+          </AT>
+          <AMono style={{ fontSize: 11, marginTop: 2 }}>{p.phone ?? '—'}</AMono>
+          <Pressable onPress={() => setOpen(v => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }}
+            style={{ alignSelf: 'flex-start', marginTop: 4, minHeight: 32, paddingHorizontal: 10, borderRadius: 99, borderWidth: 1, borderColor: adm.border, justifyContent: 'center' }}>
+            <AT w={600} style={{ fontSize: 10 }}>Detay</AT>
+          </Pressable>
+        </View>
+      </View>
+      {open && (
+        <View style={{ marginTop: 10 }}>
+          <KV label="Yaş" value={p.age ?? '—'} />
+          <KV label="Cinsiyet" value={p.gender ? (GENDER_TR[p.gender] ?? p.gender) : '—'} />
+          <KV label="E-posta" value={p.email ?? '—'} />
+          <KV label="Telefon" value={p.phone ?? '—'} />
+          <KV label="Meslek" value={p.occupation ?? '—'} />
+          <KV label="Şehir" value={p.city ?? '—'} />
+          <AT style={{ fontSize: 11, color: adm.muted, marginTop: 4, marginBottom: 4 }}>Kimlik ön yüzü</AT>
+          {idUri && token ? (
+            <Pressable onPress={() => setZoom(true)} accessibilityRole="imagebutton" accessibilityLabel="Kimlik ön yüzü">
+              <Image source={{ uri: idUri, headers: { Authorization: `Bearer ${token}` } }} resizeMode="cover" style={{ width: 160, height: 100, borderRadius: 6 }} />
+            </Pressable>
+          ) : <AT style={{ fontSize: 10, color: adm.muted }}>{idUri ? 'Yükleniyor…' : 'Kimlik yok'}</AT>}
+        </View>
+      )}
+      <Modal visible={zoom && !!idUri && !!token} transparent animationType="fade" onRequestClose={() => setZoom(false)} statusBarTranslucent>
+        <Pressable onPress={() => setZoom(false)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' }}>
+          {!!idUri && !!token && <Image source={{ uri: idUri, headers: { Authorization: `Bearer ${token}` } }} resizeMode="contain" style={{ width: '94%', height: '85%' }} />}
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -91,7 +130,7 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress, live
   const canResolve = !report.resolvedAt && (isSuper || claimedByMe);
   async function act(path: 'claim' | 'resolve') { setActing(true); setActionError(''); try { await api.patch(`/sos/admin/reports/${report.id}/${path}`, {}); onChanged(); } catch (e) { setActionError((e as Error).message); } finally { setActing(false); } }
   const requester = report.participantSnapshot.find(p => p.isRequester);
-  const reqName = requester?.firstName ? `${requester.firstName} ${requester.lastName}` : report.user?.phone ?? '—';
+  const people = detail?.people ?? {};
   const latest = detail ? detail.locationUpdates[detail.locationUpdates.length - 1] : report.locationUpdates[report.locationUpdates.length - 1];
   const dLat = latest?.lat ?? report.lat; const dLng = latest?.lng ?? report.lng;
   const elapsed = Math.floor((Date.now() - new Date(report.createdAt).getTime()) / 60000);
@@ -117,14 +156,20 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress, live
               {!!(liveAddress?.tamAdres ?? liveAddress?.kisaAdres) && <AT style={{ fontSize: 10 }}>{liveAddress?.tamAdres ?? liveAddress?.kisaAdres}</AT>}
             </View>
           )}
-          <AT w={700} style={{ fontSize: 13 }}>{reqName}<AT style={{ fontSize: 11, color: adm.muted }}>  {report.user?.phone ?? report.user?.email ?? ''}</AT></AT>
           <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 5 }}>
             {report.threats.map(t => <AT key={t} style={{ fontSize: 10, paddingVertical: 2, paddingHorizontal: 7, borderRadius: 99, overflow: 'hidden', backgroundColor: 'rgba(239,68,68,0.18)', color: 'rgba(239,100,100,0.9)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)' }}>{THREAT[t] ?? t}</AT>)}
           </View>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
-          {!report.resolvedAt && !!dLat && !!dLng && <AT style={{ fontSize: 10, color: adm.cyan, marginBottom: 4 }} onPress={() => Linking.openURL(mapsHref(dLat, dLng))}>📍 Haritada Gör</AT>}
-          <AT style={{ fontSize: 11, color: open ? adm.blue : adm.muted }}>{open ? '▲ Kapat' : '▼ Detay'}</AT>
+          {/* "Haritada Gör" ve "Kapat" / "Detay" buton görünümünde */}
+          {!report.resolvedAt && !!dLat && !!dLng && (
+            <Pressable onPress={() => Linking.openURL(mapsHref(dLat, dLng))} accessibilityRole="link" style={{ minHeight: 32, paddingHorizontal: 12, borderRadius: 99, borderWidth: 1, borderColor: adm.cyan, justifyContent: 'center', marginBottom: 6 }}>
+              <AT w={600} style={{ fontSize: 11, color: adm.cyan }}>Haritada Gör</AT>
+            </Pressable>
+          )}
+          <View style={{ minHeight: 32, paddingHorizontal: 12, borderRadius: 99, borderWidth: 1, borderColor: open ? adm.blue : adm.border, justifyContent: 'center' }}>
+            <AT w={600} style={{ fontSize: 11, color: open ? adm.blue : adm.text }}>{open ? 'Kapat' : 'Detay'}</AT>
+          </View>
         </View>
       </Pressable>
       {open && (
@@ -141,8 +186,9 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress, live
           {loading && !detail && <AMono style={{ fontSize: 13 }}>Veriler yükleniyor…</AMono>}
           <View style={{ flexDirection: 'row', gap: 16 }}>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Section title="ACİL YARDIM TALEP EDEN" accent={adm.red}><PersonRow p={requester} email={report.user?.email} phone={report.user?.phone ?? null} highlight /></Section>
-              <Section title="DİĞER KATILIMCILAR" accent={adm.blue} mt>{report.participantSnapshot.filter(p => !p.isRequester).map((p, i) => <PersonRow key={i} p={p} email={p.email} phone={p.phone} />)}</Section>
+              <Section title="ACİL YARDIM TALEP EDEN" accent={adm.red}><PersonRow p={requester} extra={requester ? people[requester.userId] : undefined} highlight /></Section>
+              {!!(detail?.emergencyNotifyFailed ?? report.emergencyNotifyFailed) && <AT style={{ marginTop: 6, fontSize: 11, color: adm.red }}>Acil durum kişisine bildirim gönderilemedi</AT>}
+              <Section title="DİĞER KATILIMCILAR" accent={adm.blue} mt>{report.participantSnapshot.filter(p => !p.isRequester).map((p, i) => <PersonRow key={i} p={p} extra={people[p.userId]} />)}</Section>
               <Section title="MASA BİLGİSİ" accent={adm.cyan} mt>
                 {report.meeting ? (<>
                   <KV label="Tür" value={report.meeting.type === 'GROUP' ? 'Grup' : 'Baş Başa'} />

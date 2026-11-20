@@ -104,13 +104,20 @@ export class AuthService {
   private async checkSanction(userId: string, status: string): Promise<void> {
     if (status === 'DELETED') throw new ForbiddenException("Bu hesap silinmiş");
 
-    if (status === 'BANNED' || status === 'SUSPENDED') {
+    // Askı girişi engellemez (yalnız masaya katılma ve satın alma kapalı; common/suspension.ts). Eski modelden kalan
+    // SUSPENDED durumundaki hesap girişte ACTIVE'e döner
+    if (status === 'SUSPENDED') {
+      await this.prisma.user.update({ where: { id: userId }, data: { status: 'ACTIVE' } });
+      return;
+    }
+
+    if (status === 'BANNED') {
       const sanction = await this.prisma.userSanction.findFirst({
         where: {
           userId,
           liftedAt: null,
-          // Uyarılar girişi engellemez; sadece askı/ban
-          type: { in: [SanctionType.BAN, SanctionType.SUSPENSION] },
+          // Uyarılar ve askı girişi engellemez; yalnız ban
+          type: SanctionType.BAN,
           OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         },
         orderBy: { createdAt: 'desc' },
@@ -118,7 +125,7 @@ export class AuthService {
       });
 
       // Aktif yaptırım kalmamış ama status güncellenmemiş → otomatik kaldır
-      if (!sanction && (status === 'SUSPENDED' || status === 'BANNED')) {
+      if (!sanction) {
         await this.prisma.user.update({ where: { id: userId }, data: { status: 'ACTIVE' } });
         return;
       }
@@ -543,6 +550,8 @@ export class AuthService {
       // Kankamla: çiftte (kendisi ya da kankası) aktif paket; "BUYER" parayı ödeyen, "KANKA" ücretsiz katılan
       kankamla,
       activeSanction: activeSanction ?? null,
+      // Askı bitişi (Profilim'de geri sayım kartı); askı yoksa null
+      suspendedUntil: activeSanction?.type === SanctionType.SUSPENSION ? activeSanction.expiresAt : null,
       noShowWarning: noShowCount > 0
         ? { count: noShowCount, remaining: Math.max(NO_SHOW_WARNING_LIMIT - noShowCount, 0) }
         : null,

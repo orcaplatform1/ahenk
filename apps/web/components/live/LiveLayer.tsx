@@ -50,7 +50,7 @@ function useLivePoll<T>(path: string | null, intervalMs: number) {
 }
 
 // targetAt verilirse o ana (buluşma), verilmezse günün bir sonraki 23:59'una sayar
-function Countdown({ day, targetAt }: { day: number; targetAt?: number | null }) {
+export function Countdown({ day, targetAt }: { day: number; targetAt?: number | null }) {
   const t = useTranslations();
   const [left, setLeft] = useState<number | null>(null);
   useEffect(() => {

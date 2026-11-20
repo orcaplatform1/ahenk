@@ -495,7 +495,8 @@
     "chatBlocked": "Yapay zekâ bu mesajda kural ihlali tespit etti. Telefon numarası, sosyal medya hesabı ve link paylaşımı yasaktır. Mesajın gönderilmedi ve yöneticilere bildirildi. Tekrarlanması halinde masadan çıkarılırsın ve kullanım hakkın yanar.",
     "chatSendFailed": "Mesajın gönderilemedi, tekrar dene.",
     "reportNoteRequired": "Açıklama yazmalısın.",
-    "reportDuplicate": "Bu mesajı zaten şikâyet ettin."
+    "reportDuplicate": "Bu mesajı zaten şikâyet ettin.",
+    "suspended": "Hesabın askıda olduğu için masalara katılamaz, paket ve abonelik satın alamazsın."
   },
   "footer": {
     "brandPrefix": "Ahenk bir",
@@ -892,7 +893,8 @@
     "selReasonChange24": "Seçimini 24 saat içinde değiştiremezsin.",
     "selReasonChange3": "Seçimini 3 saat içinde değiştiremezsin.",
     "selReasonCooldown": "İptal ettiğin için 24 saat yeni masaya katılamazsın.",
-    "selReasonLocked": "Masan kilitlendi."
+    "selReasonLocked": "Masan kilitlendi.",
+    "selReasonSuspended": "Hesabın askıda olduğu için masalara katılamaz, paket ve abonelik satın alamazsın."
   },
   "login": {
     "accessBlocked": "Erişim engellendi",
@@ -1388,10 +1390,13 @@
     "kvkkNotice": "KVKK Aydınlatma Metni",
     "emailPh": "yeni@eposta.com",
     "nativeLanguage": "Ana dilin",
-    "otherLanguages": "Başka konuştuğun diller",
     "privacySecurity": "Gizlilik ve Güvenlik",
     "accept": "Kabul Ediyorum",
-    "decline": "Kabul Etmiyorum"
+    "decline": "Kabul Etmiyorum",
+    "suspendedTitle": "Hesabın askıya alındı",
+    "suspendedUntil": "Askının bitmesine",
+    "foreignersQ": "Yabancılarla masaya oturmak ister misin?",
+    "foreignersNote": "Evet seçersen masanda yabancı katılımcılar olabilir. Ortak dil İngilizce olacağı için temel düzeyde İngilizce bilmen gerekir."
   },
   "radar": {
     "d": "GÜN",
@@ -1921,5 +1926,14 @@
     "s8c3": "Kuşadası",
     "s8c4": "Ayvalık",
     "s8Foot": "Tatildeyken haftalık şehir seçiminden tatil yerini seçmen yeterli."
+  },
+  "emergency": {
+    "title": "Acil Durum Kişisi",
+    "name": "Ad soyad",
+    "add": "Kişi Ekle",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "nameRequired": "Ad yazmalısın.",
+    "note": "Acil Yardım butonuna bastığında bu kişiye WhatsApp üzerinden otomatik bilgi gider."
   }
 }

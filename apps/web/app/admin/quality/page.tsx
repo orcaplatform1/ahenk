@@ -6,7 +6,7 @@ import { SURFACE, BORDER, TEXT, MUTED, RED, AMBER, GREEN, SANS, MONO, LABEL } fr
 import { AdminUserPhoto } from '@/components/AdminUserPhoto';
 
 // Şikâyetler: masa sohbeti mesaj şikâyetleri ve "Otomatik engel" kayıtları. Detayda şikâyet edilen mesaj işaretli olarak sohbetin
-// tamamı, gönderenin önceki uyarıları ve karar butonları (Uyar / Masadan çıkar / Askıya al 3-15-30 gün). Daha önce uyarı almış
+// tamamı, gönderenin önceki uyarıları ve karar butonları (Uyar / Masadan çıkar / Askıya al 3 gün / 15 gün / 1 ay). Daha önce uyarı almış
 // kullanıcıda yalnız Masadan çıkar ve Askıya al aktif. Admin serbest mesaj yazamaz; kullanıcıya hazır şablon push gider.
 interface ReportRow {
   id: string; createdAt: string; auto: boolean; reasonLabel: string | null; note: string | null;
@@ -49,7 +49,7 @@ export default function AdminQuality() {
 
   async function decide(action: 'WARN' | 'REMOVE' | 'SUSPEND', days?: number) {
     if (!detail) return;
-    const label = action === 'WARN' ? 'uyarılsın' : action === 'REMOVE' ? 'masadan çıkarılsın' : `${days} gün askıya alınsın`;
+    const label = action === 'WARN' ? 'uyarılsın' : action === 'REMOVE' ? 'masadan çıkarılsın' : `${days === 30 ? '1 ay' : `${days} gün`} askıya alınsın`;
     if (!confirm(`Kullanıcı ${label} mı? Kullanıcıya hazır şablon bildirim gönderilir.`)) return;
     setBusy(true); setError('');
     try {
@@ -92,7 +92,7 @@ export default function AdminQuality() {
                   <span style={{ ...LABEL, padding: '2px 7px', borderRadius: 99, border: `1px solid ${r.auto ? AMBER : RED}`, color: r.auto ? AMBER : RED }}>
                     {r.auto ? 'Otomatik engel' : 'Şikayet'}
                   </span>
-                  {r.decision && <span style={{ ...LABEL, padding: '2px 7px', borderRadius: 99, border: `1px solid ${GREEN}`, color: GREEN }}>{DECISION_TR[r.decision]}{r.decisionDays ? ` (${r.decisionDays} gün)` : ''}</span>}
+                  {r.decision && <span style={{ ...LABEL, padding: '2px 7px', borderRadius: 99, border: `1px solid ${GREEN}`, color: GREEN }}>{DECISION_TR[r.decision]}{r.decisionDays ? ` (${r.decisionDays === 30 ? '1 ay' : `${r.decisionDays} gün`})` : ''}</span>}
                 </div>
                 <p style={{ margin: 0, fontSize: 12, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{r.messageContent}"</p>
                 <p style={{ margin: '2px 0 0', fontSize: 11, color: MUTED }}>
@@ -136,7 +136,7 @@ export default function AdminQuality() {
                 </div>
 
                 {detail.decision ? (
-                  <p style={{ margin: 0, fontSize: 12, color: GREEN }}>Karar: {DECISION_TR[detail.decision]}{detail.decisionDays ? ` (${detail.decisionDays} gün)` : ''}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: GREEN }}>Karar: {DECISION_TR[detail.decision]}{detail.decisionDays ? ` (${detail.decisionDays === 30 ? '1 ay' : `${detail.decisionDays} gün`})` : ''}</p>
                 ) : (
                   <>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -148,7 +148,7 @@ export default function AdminQuality() {
                     {suspendOpen && (
                       <div style={{ display: 'flex', gap: 8 }}>
                         {[3, 15, 30].map(d => (
-                          <button key={d} type="button" disabled={busy} onClick={() => void decide('SUSPEND', d)} style={btn(RED, busy)}>{d} gün</button>
+                          <button key={d} type="button" disabled={busy} onClick={() => void decide('SUSPEND', d)} style={btn(RED, busy)}>{d === 30 ? '1 ay' : `${d} gün`}</button>
                         ))}
                       </div>
                     )}

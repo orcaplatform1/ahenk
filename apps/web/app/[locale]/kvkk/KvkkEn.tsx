@@ -58,6 +58,7 @@ const sections = [
             items: [
               'City preference',
               'Emergency location: collected only from the person making an emergency request, at the time of the request and until it is resolved. If the person allows it, location continues to be collected, to the extent the device permits, even when the app is in the background or closed. Other participants’ locations are not collected. The location is shared with the police and monitored by our team. When the request is resolved, coordinates and location history are deleted; the street address of the last location and the request record are kept for legal obligations, possible legal disputes and requests from authorities.',
+              'Emergency contact: the name and phone number of the person you add in My Profile are used only when you make an Emergency Help request, to automatically notify that person via WhatsApp (your name and a link to your location at the time of the request); they are not used for any other purpose. You can delete the contact at any time, and it is also deleted when your account is deleted.',
             ],
           },
           {

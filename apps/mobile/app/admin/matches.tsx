@@ -1,5 +1,8 @@
 // apps/web/app/admin/matches/page.tsx karşılığı (Masalar: Bekleyen / Aktif / Geçmiş / İptal,
 // masa detayı alttan açılan panelde, kullanıcı penceresi)
+import { showAlert } from '@/components/AppAlert';
+import { AdminUserPhoto } from '@/components/admin/AdminUserPhoto';
+import { AdminNoShowDetail } from '@/components/admin/AdminNoShowDetail';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, useWindowDimensions, View, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +12,7 @@ import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
 import { AdminSelect, APager } from '@/components/admin/AdminControls';
 import { StatusPill } from '@/components/admin/StatusPill';
-import { AdminNoShowWarnings, AdminSanctionHistory, AdminUserEdit, type NoShowReportItem, type NoShowWarningInfo } from '@/components/admin/UserParts';
+import { AdminNoShowWarnings, AdminSuspendButtons, AdminSanctionHistory, AdminUserEdit, type NoShowReportItem, type NoShowWarningInfo } from '@/components/admin/UserParts';
 import { adm, llCard } from '@/theme/theme';
 
 function canSanction(t: { id: string; role: string }) {
@@ -20,7 +23,7 @@ function canSanction(t: { id: string; role: string }) {
 
 interface MeetingRow { id: string; title: string; type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA'; status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'; scheduledAt: string; locationText: string | null; venueMissing?: boolean; city?: { name: string } | null; _count: { participants: number } }
 interface OceanScore { openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number }
-interface Participant { userId: string; status: string; user: { id: string; email: string; isBot?: boolean; profile: { firstName: string; lastName: string; city: string | null } | null; oceanScore: OceanScore | null; subscriptions: { plan: string }[] } }
+interface Participant { userId: string; status: string; photoUrl?: string | null; user: { id: string; email: string; phone?: string | null; isBot?: boolean; profile: { firstName: string; lastName: string; city: string | null; gender?: string | null } | null; oceanScore: OceanScore | null; subscriptions: { plan: string }[] } }
 interface MeetingDetail extends MeetingRow {
   maxParticipants: number; participants: Participant[];
   reviews: { id: string; rating: number; comment: string | null; reviewer: { id: string; profile: { firstName: string; lastName: string } | null } }[];
@@ -107,6 +110,7 @@ export default function AdminMatches() {
   const [placingBot, setPlacingBot] = useState(false);
 
   const [userModal, setUserModal] = useState<AdminUserDetail | null>(null);
+  const [noShowFor, setNoShowFor] = useState<string | null>(null); // GELMEDİ detayı açık katılımcı
   const [userLoading, setUserLoading] = useState(false);
   const [userAction, setUserAction] = useState<string | null>(null);
   const [sanctionReasons, setSanctionReasons] = useState<string[]>([]);
@@ -188,7 +192,16 @@ export default function AdminMatches() {
     if (!userModal) return; setUserAction(status); const reason = reasonOverride ?? sanctionReason;
     try { await api.patch(`/admin/users/${userModal.id}/status`, status === 'SUSPENDED' && reason ? { status, reason } : { status }); setUserModal(u => (u ? { ...u, status } : null)); }
     catch (e) { setError(`İşlem başarısız: ${(e as Error).message}`); } finally { setUserAction(null); }
+  }  // Askı tek model: 3 gün / 15 gün / 1 ay; kullanıcı durumu değişmez (giriş açık), şablon push gider
+  function suspendUser(days: 3 | 15 | 30, override?: string) {
+    if (!userModal) return;
+    const target = userModal;
+    showAlert(`Kullanıcı ${days === 30 ? '1 ay' : `${days} gün`} askıya alınsın mı?`, undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Onayla', style: 'destructive', onPress: async () => {
+      try { await api.post(`/admin/users/${target.id}/sanction`, { type: 'SUSPENSION', days, reason: override ?? (sanctionReason || 'Yönetici kararı') }); refreshUser(target.id); }
+      catch (e) { setError(`İşlem başarısız: ${(e as Error).message}`); }
+    } }]);
   }
+
   async function userResetTestLock() {
     if (!userModal) return; setUserAction('test');
     try { await api.patch(`/admin/users/${userModal.id}/test-lock-reset`, {}); setUserModal(u => (u && u.oceanScore ? { ...u, oceanScore: { ...u.oceanScore, adminCanReset: true } } : u)); }
@@ -211,6 +224,16 @@ export default function AdminMatches() {
 
   return (
     <APage maxWidth={900}>
+      {noShowFor && selected && (() => {
+        const p = selected.participants.find(x => x.userId === noShowFor);
+        if (!p) return null;
+        const nameOf = (id: string) => { const q = selected.participants.find(x => x.userId === id)?.user.profile; return q ? `${q.firstName} ${q.lastName}` : '—'; };
+        return (
+          <AdminNoShowDetail meetingId={selected.id} onClose={() => setNoShowFor(null)}
+            user={{ id: p.user.id, name: p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.user.email, photoUrl: p.photoUrl ?? null, gender: p.user.profile?.gender }}
+            reports={selected.noShowReports.filter(r => r.reportedId === p.userId).map(r => ({ reporterName: nameOf(r.reporterId), createdAt: r.createdAt }))} />
+        );
+      })()}
       <View style={{ marginBottom: 24 }}>
         <ATitle>Masalar</ATitle>
         {withoutVenue > 0 && (
@@ -305,14 +328,30 @@ export default function AdminMatches() {
                 <ALabel style={{ marginBottom: 8 }}>KATILIMCILAR ({sel.participants.length})</ALabel>
                 {sel.participants.map((p, i) => (
                   <View key={p.userId} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingVertical: 10, borderBottomWidth: i < sel.participants.length - 1 ? 1 : 0, borderBottomColor: ROW_BORDER }}>
-                    <Pressable onPress={() => openUser(p.user.id)} accessibilityRole="button" style={{ flexGrow: 1, flexBasis: 160, minWidth: 0 }}>
-                      <AT w={600} style={{ fontSize: 13 }}>
-                        {p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.user.email}
-                        {p.user.isBot && <Badge text="BOT" color={adm.cyan} />}
-                        {INACTIVE.includes(p.status) && <Badge text="İPTAL" color={adm.red} />}
-                      </AT>
-                      {!!p.user.email && <AT style={{ marginTop: 2, fontSize: 10, color: adm.muted }}>{p.user.email}</AT>}
-                    </Pressable>
+                    {/* Katılımcı kartı: profil fotoğrafı (büyür, "Sil"), ad soyad, telefon, "Detay". Gelmeyende kırmızı GELMEDİ */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexGrow: 1, flexBasis: 200, minWidth: 0 }}>
+                      <AdminUserPhoto userId={p.user.id} photoUrl={p.photoUrl} gender={p.user.profile?.gender} size={44}
+                        initials={`${p.user.profile?.firstName?.[0] ?? ''}${p.user.profile?.lastName?.[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?'}
+                        onDeleted={() => setSelected(x => (x ? { ...x, participants: x.participants.map(q => (q.userId === p.userId ? { ...q, photoUrl: null } : q)) } : x))} />
+                      <View style={{ flexShrink: 1 }}>
+                        <AT w={600} style={{ fontSize: 13 }}>
+                          {p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.user.email}
+                          {p.user.isBot && <Badge text="BOT" color={adm.cyan} />}
+                          {!(p.status === 'NO_SHOW' || sel.noShowReports.some(r => r.reportedId === p.userId)) && INACTIVE.includes(p.status) && <Badge text="İPTAL" color={adm.red} />}
+                        </AT>
+                        <AT style={{ marginTop: 2, fontSize: 11, color: adm.muted }}>{p.user.phone ?? '—'}</AT>
+                        <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+                          <Pressable onPress={() => openUser(p.user.id)} accessibilityRole="button" style={{ minHeight: 32, paddingHorizontal: 10, borderRadius: 99, borderWidth: 1, borderColor: adm.border, justifyContent: 'center' }}>
+                            <AT w={600} style={{ fontSize: 10 }}>Detay</AT>
+                          </Pressable>
+                          {(p.status === 'NO_SHOW' || sel.noShowReports.some(r => r.reportedId === p.userId)) && (
+                            <Pressable onPress={() => setNoShowFor(p.userId)} accessibilityRole="button" style={{ minHeight: 32, paddingHorizontal: 10, borderRadius: 99, backgroundColor: adm.red, justifyContent: 'center' }}>
+                              <AT w={800} style={{ fontSize: 10, color: '#fff' }}>GELMEDİ</AT>
+                            </Pressable>
+                          )}
+                        </View>
+                      </View>
+                    </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
                       <AMono style={{ fontSize: 10 }}>OCEAN {oceanAvg(p.user.oceanScore)}</AMono>
                       {sel.status !== 'CANCELLED' && sel.status !== 'COMPLETED' && <Btn variant="admRemoveXs" disabled={removing === p.userId} label={removing === p.userId ? '…' : 'Çıkart'} onPress={() => removeParticipant(p.userId)} />}
@@ -432,15 +471,15 @@ export default function AdminMatches() {
                   </View>
                   <AdminUserEdit user={u} canEdit={canSanction(u)} onSaved={() => refreshUser(u.id)} />
                   <AdminNoShowWarnings userId={u.id} reports={u.noShowReportsReceived ?? []} warnings={u.noShowWarnings ?? { count: 0, limit: 3, warnedMeetingIds: [] }} canSanction={canSanction(u)} userStatus={u.status}
-                    suspending={userAction === 'SUSPENDED'} onChanged={w => setUserModal(x => (x ? { ...x, noShowWarnings: w } : null))} onSuspend={() => userUpdateStatus('SUSPENDED', 'Masaya katılım sağlamama')} />
+                    suspending={userAction === 'SUSPENDED'} onChanged={w => setUserModal(x => (x ? { ...x, noShowWarnings: w } : null))} onSuspend={(d) => suspendUser(d, 'Masaya katılım sağlamama')} />
                   <AdminSanctionHistory userId={u.id} canAct={canSanction(u)} onChanged={() => refreshUser(u.id)} />
                   <Sect>
                     <ALabel>HESAP İŞLEMLERİ</ALabel>
                     {canSanction(u) ? (
                       <>
-                        {u.status !== 'SUSPENDED' && <AdminSelect value={sanctionReason} onChange={setSanctionReason} placeholder="Askı sebebi (boşsa: Yönetici kararı)" title="Askı sebebi" options={[{ value: '', label: 'Yönetici kararı' }, ...sanctionReasons.map(x => ({ value: x, label: x }))]} />}
+                        {<AdminSelect value={sanctionReason} onChange={setSanctionReason} placeholder="Askı sebebi (boşsa: Yönetici kararı)" title="Askı sebebi" options={[{ value: '', label: 'Yönetici kararı' }, ...sanctionReasons.map(x => ({ value: x, label: x }))]} />}
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                          {u.status !== 'SUSPENDED' && <Btn variant="admAct6Amber" disabled={!!userAction} label={userAction === 'SUSPENDED' ? '…' : 'Askıya Al (1 ay)'} onPress={() => userUpdateStatus('SUSPENDED')} />}
+                          <AdminSuspendButtons onPick={(d) => suspendUser(d)} />
                           {u.status === 'SUSPENDED' && myRole() === 'SUPERADMIN' && <Btn variant="admAct6Green" disabled={!!userAction} label={userAction === 'ACTIVE' ? '…' : 'Aktifleştir'} onPress={() => userUpdateStatus('ACTIVE')} />}
                           {u.status !== 'DELETED' && <Btn variant="admAct6Red" disabled={!!userAction} label={userAction === 'DELETED' ? '…' : 'Hesabı Sil'} onPress={() => userUpdateStatus('DELETED')} />}
                         </View>

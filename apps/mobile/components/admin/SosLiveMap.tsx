@@ -19,11 +19,23 @@ var mk=L.circleMarker([${lat},${lng}],{radius:9,color:'#ffffff',weight:2,fillCol
 window.setPos=function(a,o){mk.setLatLng([a,o]);map.panTo([a,o]);};
 </script></body></html>`;
 
+// EXPO_PUBLIC_GOOGLE_MAPS_API_KEY tanımlıysa Google Maps (JavaScript API, WebView içinde); yoksa Leaflet / OSM (hata verilmez)
+const GOOGLE_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const googleHtml = (lat: number, lng: number, key: string) => `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<style>html,body,#m{margin:0;padding:0;height:100%;width:100%}</style></head>
+<body><div id="m"></div><script>
+var map,mk;
+function init(){map=new google.maps.Map(document.getElementById('m'),{center:{lat:${lat},lng:${lng}},zoom:16,disableDefaultUI:true,zoomControl:true});
+mk=new google.maps.Marker({map:map,position:{lat:${lat},lng:${lng}},icon:{path:google.maps.SymbolPath.CIRCLE,scale:9,fillColor:'#e53935',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:2}});}
+window.setPos=function(a,o){if(!mk)return;mk.setPosition({lat:a,lng:o});map.panTo({lat:a,lng:o});};
+</script><script async src="https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&callback=init"></script></body></html>`;
+
 export function SosLiveMap({ lat, lng }: { lat: number; lng: number }) {
   const ref = useRef<WebView>(null);
   // İlk konum yalnız haritayı kurarken kullanılır (web: harita bir kez oluşturulur)
   const first = useRef({ lat, lng }).current;
-  const source = useRef({ html: html(first.lat, first.lng), baseUrl: 'https://ahenk.co' }).current;
+  const source = useRef({ html: GOOGLE_KEY ? googleHtml(first.lat, first.lng, GOOGLE_KEY) : html(first.lat, first.lng), baseUrl: 'https://ahenk.co' }).current;
   useEffect(() => {
     ref.current?.injectJavaScript(`window.setPos&&window.setPos(${lat},${lng});true;`);
   }, [lat, lng]);

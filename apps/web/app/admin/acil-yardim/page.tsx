@@ -3,11 +3,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { api } from '@/lib/api';
+import { api, API_PREFIX } from '@/lib/api';
+import { AdminUserPhoto } from '@/components/AdminUserPhoto';
 import { myRole, myId } from '@/lib/adminRole';
 import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
-// Leaflet yalnızca istemcide yüklenir (SSR yok)
+// Harita yalnızca istemcide yüklenir (SSR yok): NEXT_PUBLIC_GOOGLE_MAPS_API_KEY varsa Google Maps, yoksa Leaflet / OSM
 const SosLiveMap = dynamic(() => import('@/components/SosLiveMap'), { ssr: false });
 
 // Canlı harita: sayfa düzeyindeki 1 sn'lik tek istekten gelen, talep edenin en yeni konumu
@@ -46,6 +47,8 @@ interface SosReport {
   locationStale?: boolean;          // açık talep: son konum 2 dk'dan eski (admin detay)
   liveLocationAt?: string | null;
   participantSnapshot: Participant[];
+  people?: Record<string, { photoUrl: string | null; kycId: string | null }>; // detay: profil fotoğrafı ve kimlik ön yüzü
+  emergencyNotifyFailed?: boolean; // acil durum kişisine WhatsApp bildirimi gönderilemedi
   // Kullanıcı / masa silinirse null (SOS kaydı korunur)
   user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null;
   meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null;
@@ -206,7 +209,7 @@ function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress, 
   }
 
   const requester     = report.participantSnapshot.find(p => p.isRequester);
-  const reqName       = requester?.firstName ? `${requester.firstName} ${requester.lastName}` : (report.user?.phone ?? '—');
+  const people        = detail?.people ?? {};
   const latest        = detail
     ? detail.locationUpdates[detail.locationUpdates.length - 1]
     : report.locationUpdates[report.locationUpdates.length - 1];
@@ -290,12 +293,6 @@ function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress, 
               </div>
             );
           })()}
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: TEXT }}>
-            {reqName}
-            <span style={{ fontWeight: 400, color: MUTED, marginLeft: 8, fontSize: 11 }}>
-              {report.user?.phone ?? report.user?.email ?? ''}
-            </span>
-          </p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginTop: 5 }}>
             {report.threats.map(t => (
               <span key={t} style={{
@@ -310,14 +307,17 @@ function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress, 
         </div>
 
         <div style={{ textAlign: 'right' as const, flexShrink: 0 }}>
-          {!report.resolvedAt && displayLat && displayLng && (
-            <a href={mapsHref(displayLat, displayLng)} target="_blank" rel="noopener noreferrer"
-              onClick={e => e.stopPropagation()}
-              style={{ fontSize: 10, color: CYAN, display: 'block', marginBottom: 4, textDecoration: 'none' }}>
-              📍 Haritada Gör
-            </a>
-          )}
-          <span style={{ fontSize: 11, color: open ? BLUE : MUTED }}>{open ? '▲ Kapat' : '▼ Detay'}</span>
+          {/* "Haritada Gör" ve "Kapat" / "Detay" buton görünümünde */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+            {!report.resolvedAt && displayLat && displayLng && (
+              <a href={mapsHref(displayLat, displayLng)} target="_blank" rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                style={{ padding: '5px 12px', borderRadius: 99, border: `1px solid ${CYAN}`, color: CYAN, fontSize: 11, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                Haritada Gör
+              </a>
+            )}
+            <span style={{ padding: '5px 12px', borderRadius: 99, border: `1px solid ${open ? BLUE : BORDER}`, color: open ? BLUE : TEXT, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>{open ? 'Kapat' : 'Detay'}</span>
+          </div>
         </div>
       </div>
 
@@ -354,18 +354,16 @@ function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress, 
             <div>
               {/* Talep Eden */}
               <Section title="ACİL YARDIM TALEP EDEN" accent={RED}>
-                <PersonRow
-                  p={requester}
-                  email={report.user?.email}
-                  phone={report.user?.phone ?? null}
-                  highlight
-                />
+                <PersonRow p={requester} extra={requester ? people[requester.userId] : undefined} highlight />
               </Section>
+              {(detail?.emergencyNotifyFailed ?? report.emergencyNotifyFailed) && (
+                <p style={{ margin: '6px 0 0', fontSize: 11, color: RED }}>Acil durum kişisine bildirim gönderilemedi</p>
+              )}
 
               {/* Diğer katılımcılar */}
               <Section title="DİĞER KATILIMCILAR" accent={BLUE} mt>
                 {report.participantSnapshot.filter(p => !p.isRequester).map((p, i) => (
-                  <PersonRow key={i} p={p} email={p.email} phone={p.phone} />
+                  <PersonRow key={i} p={p} extra={people[p.userId]} />
                 ))}
               </Section>
 
@@ -450,27 +448,61 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function PersonRow({ p, email, phone, highlight }: { p: Participant | undefined; email?: string; phone: string | null; highlight?: boolean }) {
+// Kişi kartı (talep eden ve diğer katılımcılar aynı yapı): profil fotoğrafı (büyür, "Sil"), ad soyad, telefon, "Detay".
+// Detay'a basınca kişinin tüm bilgileri ve kimlik ön yüzü (basınca büyür) açılır
+function PersonRow({ p, extra, highlight }: { p: Participant | undefined; extra?: { photoUrl: string | null; kycId: string | null }; highlight?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [idUrl, setIdUrl] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(false);
+  const [photo, setPhoto] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!open || !extra?.kycId || idUrl) return;
+    fetch(`${API_PREFIX}/kyc/admin/file/${extra.kycId}/front`, { credentials: 'include' })
+      .then(async r => (r.ok ? URL.createObjectURL(await r.blob()) : null)).then(setIdUrl).catch(() => {});
+  }, [open, extra?.kycId, idUrl]);
   if (!p) return <p style={{ fontSize: 11, color: MUTED }}>—</p>;
+  const name = `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || '—';
+  const rows: [string, React.ReactNode][] = [
+    ['Yaş', p.age ?? '—'], ['Cinsiyet', p.gender ? (GENDER_TR[p.gender] ?? p.gender) : '—'], ['E-posta', p.email ?? '—'],
+    ['Telefon', p.phone ?? '—'], ['Meslek', p.occupation ?? '—'], ['Şehir', p.city ?? '—'],
+  ];
   return (
     <div style={{
       padding: '10px 12px', borderRadius: 8, marginBottom: 4,
       background: highlight ? RED_DIM : BLUE_DIM,
       border: `1px solid ${highlight ? 'rgba(239,68,68,0.4)' : 'rgba(59,130,246,0.2)'}`,
     }}>
-      <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: highlight ? RED : CYAN }}>
-        {p.firstName} {p.lastName}
-        {p.age ? <span style={{ fontWeight: 400, color: MUTED, marginLeft: 6, fontSize: 10 }}>{p.age} yaş</span> : null}
-        {p.gender ? <span style={{ fontWeight: 400, color: MUTED, marginLeft: 4, fontSize: 10 }}>{GENDER_TR[p.gender] ?? p.gender}</span> : null}
-        {p.isBot ? <span style={{ fontWeight: 700, color: AMBER, marginLeft: 6, fontSize: 9, letterSpacing: '0.1em' }}>BOT</span> : null}
-      </p>
-      <p style={{ margin: 0, fontSize: 10, color: MUTED, fontFamily: MONO }}>
-        {[email, phone].filter(Boolean).join(' · ') || '—'}
-      </p>
-      {(p.occupation || p.city) && (
-        <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED }}>
-          {[p.occupation, p.city].filter(Boolean).join(' · ')}
-        </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <AdminUserPhoto userId={p.userId} photoUrl={photo === undefined ? extra?.photoUrl : photo} gender={p.gender} size={44}
+          initials={`${p.firstName?.[0] ?? ''}${p.lastName?.[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?'} onDeleted={() => setPhoto(null)} />
+        <div style={{ minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: highlight ? RED : CYAN }}>
+            {name}
+            {p.isBot ? <span style={{ fontWeight: 700, color: AMBER, marginLeft: 6, fontSize: 9, letterSpacing: '0.1em' }}>BOT</span> : null}
+          </p>
+          <p style={{ margin: '2px 0 0', fontSize: 11, color: MUTED, fontFamily: MONO }}>{p.phone ?? '—'}</p>
+          <button type="button" onClick={() => setOpen(v => !v)} aria-expanded={open}
+            style={{ marginTop: 4, padding: '2px 10px', borderRadius: 99, border: `1px solid ${BORDER}`, background: 'transparent', color: TEXT, fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: SANS }}>
+            Detay
+          </button>
+        </div>
+      </div>
+      {open && (
+        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {rows.map(([k, v]) => <Row key={k} label={k} value={v} />)}
+          <span style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>Kimlik ön yüzü</span>
+          {extra?.kycId ? (idUrl
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={idUrl} alt="Kimlik ön yüzü" onClick={() => setZoom(true)} style={{ width: 160, borderRadius: 6, cursor: 'zoom-in', border: `1px solid ${BORDER}` }} />
+            : <span style={{ fontSize: 10, color: MUTED }}>Yükleniyor…</span>)
+            : <span style={{ fontSize: 10, color: MUTED }}>Kimlik yok</span>}
+        </div>
+      )}
+      {zoom && idUrl && (
+        <div role="dialog" aria-label="Kimlik ön yüzü" onClick={() => setZoom(false)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={idUrl} alt="Kimlik ön yüzü" style={{ maxWidth: '94vw', maxHeight: '90vh', objectFit: 'contain' }} />
+        </div>
       )}
     </div>
   );

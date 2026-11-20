@@ -59,6 +59,7 @@ const sections = [
             items: [
               'Şehir tercihi',
               'Acil yardım konumu: yalnız acil yardım talebinde bulunan kişiden, talep anında ve talep çözülene kadar alınır. Kişinin izin vermesi hâlinde konum, uygulama arka plandayken veya kapatılmış olsa dahi, cihazın izin verdiği ölçüde alınmaya devam eder. Diğer katılımcıların konumu alınmaz. Konum emniyet birimleriyle paylaşılır ve ekibim tarafından takip edilir. Talep çözülünce koordinatlar ve konum geçmişi silinir; son konumun açık adresi ve talep kaydı yasal yükümlülükler, olası hukuki uyuşmazlıklar ve resmi makam talepleri için saklanır.',
+              'Acil durum kişisi: Profilim\'de eklediğin kişinin adı ve telefon numarası yalnız Acil Yardım talebinde bulunduğunda, bu kişiye WhatsApp üzerinden otomatik bilgi (adın ve talep anındaki konum bağlantısı) gönderilmesi amacıyla kullanılır; başka amaçla kullanılmaz. Kişiyi istediğin zaman silebilirsin; hesap silinince de silinir.',
             ],
           },
           {

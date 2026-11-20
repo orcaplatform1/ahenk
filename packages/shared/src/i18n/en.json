@@ -495,7 +495,8 @@
     "chatBlocked": "AI detected a rule violation in this message. Sharing phone numbers, social media accounts and links is prohibited. Your message was not sent and has been reported to the admins. If repeated, you will be removed from the table and your credit will be forfeited.",
     "chatSendFailed": "Your message couldn't be sent, try again.",
     "reportNoteRequired": "Please write an explanation.",
-    "reportDuplicate": "You've already reported this message."
+    "reportDuplicate": "You've already reported this message.",
+    "suspended": "Because your account is suspended, you can't join tables or buy packages and subscriptions."
   },
   "footer": {
     "brandPrefix": "Ahenk is a",
@@ -892,7 +893,8 @@
     "selReasonChange24": "You can't change your selection within 24 hours.",
     "selReasonChange3": "You can't change your selection within 3 hours.",
     "selReasonCooldown": "You can't join a new table for 24 hours because you cancelled.",
-    "selReasonLocked": "Your table is locked."
+    "selReasonLocked": "Your table is locked.",
+    "selReasonSuspended": "Because your account is suspended, you can't join tables or buy packages and subscriptions."
   },
   "login": {
     "accessBlocked": "Access blocked",
@@ -1388,10 +1390,13 @@
     "kvkkNotice": "KVKK Privacy Notice",
     "emailPh": "new@email.com",
     "nativeLanguage": "Your native language",
-    "otherLanguages": "Other languages you speak",
     "privacySecurity": "Privacy & Security",
     "accept": "I Accept",
-    "decline": "I Don't Accept"
+    "decline": "I Don't Accept",
+    "suspendedTitle": "Your account is suspended",
+    "suspendedUntil": "Suspension ends in",
+    "foreignersQ": "Would you like to sit at tables with foreigners?",
+    "foreignersNote": "If you choose Yes, there may be foreign participants at your table. Since the common language will be English, you need basic English."
   },
   "radar": {
     "d": "D",
@@ -1921,5 +1926,14 @@
     "s8c3": "Kuşadası",
     "s8c4": "Ayvalık",
     "s8Foot": "While on holiday, just pick your holiday spot in the weekly city selection."
+  },
+  "emergency": {
+    "title": "Emergency Contact",
+    "name": "Full name",
+    "add": "Add Contact",
+    "edit": "Edit",
+    "delete": "Delete",
+    "nameRequired": "Please enter a name.",
+    "note": "When you press the Emergency Help button, this person is automatically notified via WhatsApp."
   }
 }

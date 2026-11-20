@@ -8,6 +8,9 @@ import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
 import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } from '@/components/AdminNoShowWarnings';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 import { AdminSelect } from '@/components/AdminSelect';
+import { AdminUserPhoto } from '@/components/AdminUserPhoto';
+import { AdminNoShowDetail } from '@/components/AdminNoShowDetail';
+import { AdminSuspendButtons } from '@/components/AdminSuspendButtons';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
 function canSanction(target: { id: string; role: string }): boolean {
@@ -43,9 +46,10 @@ interface OceanScore {
 interface Participant {
   userId: string;
   status: string;
+  photoUrl?: string | null;
   user: {
-    id: string; email: string; isBot?: boolean;
-    profile: { firstName: string; lastName: string; city: string | null } | null;
+    id: string; email: string; phone?: string | null; isBot?: boolean;
+    profile: { firstName: string; lastName: string; city: string | null; gender?: string | null } | null;
     oceanScore: OceanScore | null;
     subscriptions: { plan: string }[];
   };
@@ -169,6 +173,7 @@ export default function AdminMatches() {
   const [placingBot, setPlacingBot] = useState(false);
 
   const [userModal, setUserModal] = useState<AdminUserDetail | null>(null);
+  const [noShowFor, setNoShowFor] = useState<string | null>(null); // GELMEDİ detayı açık katılımcı
   const [userLoading, setUserLoading] = useState(false);
   const [userAction, setUserAction] = useState<string | null>(null);
   const [sanctionReasons, setSanctionReasons] = useState<string[]>([]);
@@ -314,6 +319,18 @@ export default function AdminMatches() {
     } catch (e) { setError(`İşlem başarısız: ${(e as Error).message}`); }
     finally { setUserAction(null); }
   }
+  // Askı tek model: 3 gün / 15 gün / 1 ay; kullanıcı durumu değişmez (giriş açık), şablon push gider
+  async function suspendUser(days: 3 | 15 | 30, reasonOverride?: string) {
+    if (!userModal) return;
+    if (!confirm(`Kullanıcı ${days === 30 ? '1 ay' : `${days} gün`} askıya alınsın mı?`)) return;
+    setUserAction('SUSPENDED');
+    try {
+      await api.post(`/admin/users/${userModal.id}/sanction`, { type: 'SUSPENSION', days, reason: reasonOverride ?? (sanctionReason || 'Yönetici kararı') });
+      refreshUser(userModal.id);
+    } catch (e) { setError(`İşlem başarısız: ${(e as Error).message}`); }
+    finally { setUserAction(null); }
+  }
+
 
   async function userResetTestLock() {
     if (!userModal) return;
@@ -351,6 +368,16 @@ export default function AdminMatches() {
 
   return (
     <div className="adm-page" style={{ maxWidth: 900, margin: '0 auto', fontFamily: SANS }}>
+      {noShowFor && selected && (() => {
+        const p = selected.participants.find(x => x.userId === noShowFor);
+        if (!p) return null;
+        const nameOf = (id: string) => { const q = selected.participants.find(x => x.userId === id)?.user.profile; return q ? `${q.firstName} ${q.lastName}` : '—'; };
+        return (
+          <AdminNoShowDetail meetingId={selected.id} onClose={() => setNoShowFor(null)}
+            user={{ id: p.user.id, name: p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.user.email, photoUrl: p.photoUrl ?? null, gender: p.user.profile?.gender }}
+            reports={selected.noShowReports.filter(r => r.reportedId === p.userId).map(r => ({ reporterName: nameOf(r.reporterId), createdAt: r.createdAt }))} />
+        );
+      })()}
 
       <div style={{ marginBottom: 24 }}>
         <h1 className="ll-title">Masalar</h1>
@@ -564,17 +591,29 @@ export default function AdminMatches() {
                     borderBottom: i < selected.participants.length - 1 ? `1px solid rgba(26,58,92,0.5)` : 'none',
                   }}
                 >
-                  <button
-                    onClick={() => openUser(p.user.id)}
-                    style={{ textAlign: 'left', flex: '1 1 160px', minWidth: 0, maxWidth: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, overflowWrap: 'anywhere' }}
-                  >
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>
-                      {p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.user.email}
-                      {p.user.isBot && <span style={{ marginLeft: 6, fontSize: 8, fontWeight: 800, color: CYAN }}>BOT</span>}
-                      {['CANCELLED', 'DECLINED', 'NO_SHOW'].includes(p.status) && <span style={{ marginLeft: 6, fontSize: 8, fontWeight: 800, color: RED }}>İPTAL</span>}
-                    </p>
-                    {p.user.email && <p style={{ margin: '2px 0 0', fontSize: 10, color: MUTED }}>{p.user.email}</p>}
-                  </button>
+                  {/* Katılımcı kartı: profil fotoğrafı (büyür, "Sil"), ad soyad, telefon, "Detay" (tüm bilgiler). Gelmeyende kırmızı GELMEDİ */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 200px', minWidth: 0 }}>
+                    <AdminUserPhoto userId={p.user.id} photoUrl={p.photoUrl} gender={p.user.profile?.gender} size={44}
+                      initials={`${p.user.profile?.firstName?.[0] ?? ''}${p.user.profile?.lastName?.[0] ?? ''}`.toLocaleUpperCase('tr-TR') || '?'}
+                      onDeleted={() => setSelected(s => s ? { ...s, participants: s.participants.map(x => x.userId === p.userId ? { ...x, photoUrl: null } : x) } : null)} />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT, overflowWrap: 'anywhere' }}>
+                        {p.user.profile ? `${p.user.profile.firstName} ${p.user.profile.lastName}` : p.user.email}
+                        {p.user.isBot && <span style={{ marginLeft: 6, fontSize: 8, fontWeight: 800, color: CYAN }}>BOT</span>}
+                        {(p.status === 'NO_SHOW' || selected.noShowReports.some(r => r.reportedId === p.userId)) ? (
+                          <button type="button" onClick={() => setNoShowFor(p.userId)}
+                            style={{ marginLeft: 6, padding: '1px 7px', borderRadius: 99, border: 'none', background: RED, color: '#fff', fontSize: 9, fontWeight: 800, cursor: 'pointer', fontFamily: SANS }}>
+                            GELMEDİ
+                          </button>
+                        ) : ['CANCELLED', 'DECLINED'].includes(p.status) && <span style={{ marginLeft: 6, fontSize: 8, fontWeight: 800, color: RED }}>İPTAL</span>}
+                      </p>
+                      <p style={{ margin: '2px 0 0', fontSize: 11, color: MUTED }}>{p.user.phone ?? '—'}</p>
+                      <button type="button" onClick={() => openUser(p.user.id)}
+                        style={{ marginTop: 4, padding: '2px 10px', borderRadius: 99, border: `1px solid ${BORDER}`, background: 'transparent', color: TEXT, fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: SANS }}>
+                        Detay
+                      </button>
+                    </div>
+                  </div>
                   <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
                     <span style={{ fontSize: 10, color: MUTED, fontFamily: MONO, whiteSpace: 'nowrap' }}>OCEAN {oceanAvg(p.user.oceanScore)}</span>
                     {selected.status !== 'CANCELLED' && selected.status !== 'COMPLETED' && (
@@ -880,7 +919,7 @@ export default function AdminMatches() {
                   userStatus={userModal.status}
                   suspending={userAction === 'SUSPENDED'}
                   onChanged={w => setUserModal(u => u ? { ...u, noShowWarnings: w } : null)}
-                  onSuspend={() => userUpdateStatus('SUSPENDED', 'Masaya katılım sağlamama')}
+                  onSuspend={(days) => suspendUser(days, 'Masaya katılım sağlamama')}
                 />
 
                 {/* Yaptırım geçmişi */}
@@ -889,7 +928,7 @@ export default function AdminMatches() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
                   <p style={{ margin: 0, ...LABEL, color: MUTED }}>HESAP İŞLEMLERİ</p>
                   {canSanction(userModal) ? (<>
-                  {userModal.status !== 'SUSPENDED' && (
+                  {(
                     <AdminSelect
                       value={sanctionReason}
                       onChange={setSanctionReason}
@@ -899,15 +938,7 @@ export default function AdminMatches() {
                     />
                   )}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {userModal.status !== 'SUSPENDED' && (
-                      <button
-                        onClick={() => userUpdateStatus('SUSPENDED')}
-                        disabled={!!userAction}
-                        style={{ padding: '5px 12px', borderRadius: 6, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', fontSize: 11, color: AMBER, cursor: 'pointer', fontFamily: SANS, opacity: !!userAction ? 0.5 : 1 }}
-                      >
-                        {userAction === 'SUSPENDED' ? '…' : 'Askıya Al (1 ay)'}
-                      </button>
-                    )}
+                    <AdminSuspendButtons busy={!!userAction} onPick={(d) => suspendUser(d)} />
                     {userModal.status === 'SUSPENDED' && myRole() === 'SUPERADMIN' && (
                       <button
                         onClick={() => userUpdateStatus('ACTIVE')}

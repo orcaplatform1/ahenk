@@ -201,6 +201,10 @@ const sections = [
           : to convert location coordinates in emergency requests into a street address.
         </p>
         <p>
+          <strong style={{ color: '#f4f1ec' }}>Emergency contact</strong>
+          : the name and phone number of the person you add in My Profile are used only when you make an Emergency Help request, to automatically notify that person via WhatsApp (Meta WhatsApp Business API); they are not used for any other purpose. You can delete the contact at any time, and it is also deleted when your account is deleted.
+        </p>
+        <p>
           <strong style={{ color: '#f4f1ec' }}>Apple (App Store) and Google (Google Play)</strong>
           : purchase transaction details, to verify and manage in-app purchases and subscriptions.
         </p>

@@ -1,4 +1,6 @@
 // apps/web/app/profil/tabs/TabProfilim.tsx karşılığı
+import { SuspensionCard } from '@/components/SuspensionCard';
+import { EmergencyContact } from '@/components/EmergencyContact';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, Pressable, ScrollView, View } from 'react-native';
 import { useReduceMotion } from '@/lib/motion';
@@ -29,7 +31,7 @@ export interface UserData {
   activePlan?: 'MASADA' | 'KARSIMDA' | 'ICERDE' | null; maintenanceMode?: boolean;
   profile?: { gender?: string; birthDate?: string; primaryCity?: City; venuePreference?: VenuePreference };
   language?: string; nativeLanguage?: string; speaksEnglish?: boolean; speaksTurkish?: boolean;
-  kyc?: { status: string }; profilePhotoUrl?: string | null; profilePhotoPending?: boolean; noShowWarning?: { count: number; remaining: number } | null;
+  kyc?: { status: string }; profilePhotoUrl?: string | null; profilePhotoPending?: boolean; suspendedUntil?: string | null; noShowWarning?: { count: number; remaining: number } | null;
 }
 
 const VENUE_OPTIONS: { value: VenuePreference; label: string; description: string }[] = [
@@ -195,14 +197,14 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
   const { t } = useTranslation();
   const [editingVenue, setEditingVenue] = useState(false);
   // Dil bazlı eşleşme (web TabProfilim ile aynı): kayıt dili ana dildir (kilitli, alanı hep true); "Başka konuştuğun diller"
-  // satırlarından diğer diller işaretlenir (birden fazla seçilebilir) → speaksEnglish / speaksTurkish
+  // Kayıt dili ana dildir (kilitli). "Yabancılarla masaya oturmak ister misin?" (yalnız Türkçe arayüzde): Evet → speaksEnglish = true
+  // (yabancılarla da eşleşir), Hayır → yalnız Türkçe konuşanlarla eşleşir (web TabProfilim ile aynı)
   const nativeLang: Lang = user.nativeLanguage === 'en' ? 'en' : 'tr';
-  const [spoken, setSpoken] = useState<Record<Lang, boolean>>({ tr: user.speaksTurkish !== false, en: !!user.speaksEnglish });
-  async function toggleSpoken(l: Lang) {
-    if (l === nativeLang) return;
-    const v = !spoken[l];
-    setSpoken((p) => ({ ...p, [l]: v }));
-    try { await api.patch('/users/me/spoken-languages', l === 'en' ? { speaksEnglish: v } : { speaksTurkish: v }); } catch (e) { setSaveError((e as Error).message); }
+  const [foreigners, setForeigners] = useState<boolean>(!!user.speaksEnglish);
+  async function chooseForeigners(v: boolean) {
+    if (v === foreigners) return;
+    setForeigners(v);
+    try { await api.patch('/users/me/spoken-languages', { speaksEnglish: v }); } catch (e) { setForeigners(!v); setSaveError((e as Error).message); }
   }
   // Dil / Language: cihazda saklanır ve hesaba kaydedilir
   const lang = currentLang();
@@ -304,6 +306,8 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
 
   return (
     <View style={{ gap: 24 }}>
+      {/* Askı süresince profil fotoğrafının altında geri sayım kartı */}
+      <SuspensionCard until={user.suspendedUntil} />
       {/* Profil fotoğrafının hemen altında: Kişilik Ağacım ekranını açan küçük kart */}
       <Pressable onPress={onOpenTest} accessibilityRole="button" accessibilityLabel={t('prof.tree')}
         style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: llCard.padding, borderRadius: llCard.radius, borderWidth: llCard.borderWidth, borderColor: llCard.borderColor, backgroundColor: llCard.bg, opacity: pressed ? 0.7 : 1 })}>
@@ -408,17 +412,21 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
             <T style={{ fontSize: 13, color: ll.text }}>{nativeLang === 'tr' ? t('common.turkish') : t('common.english')}</T>
           </View>
         </View>
-        {/* Başka konuştuğun diller: seçilebilir satırlar, birden fazla dil işaretlenebilir */}
-        <View style={{ gap: 4 }}>
-          <T style={{ fontSize: 12, color: ll.label }}>{t('prof.otherLanguages')}</T>
-          {LANGS.filter((l) => l !== nativeLang).map((l) => (
-            <Pressable key={l} onPress={() => toggleSpoken(l)} accessibilityRole="checkbox" accessibilityState={{ checked: spoken[l] }}
-              style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, borderRadius: 8, backgroundColor: spoken[l] ? tabBar.activeBg : 'transparent', opacity: pressed ? 0.7 : 1 })}>
-              <T style={{ fontSize: 14, color: spoken[l] ? ll.text : ll.text2 }}>{l === 'tr' ? t('common.turkish') : t('common.english')}</T>
-              {spoken[l] && <T style={{ fontSize: 14, color: ll.red }}>✓</T>}
-            </Pressable>
-          ))}
-        </View>
+        {/* Yabancılarla masa (İngilizce arayüzde gösterilmez) */}
+        {currentLang() !== 'en' && (
+          <View style={{ gap: 8 }}>
+            <T style={{ fontSize: 13, color: ll.text2 }}>{t('prof.foreignersQ')}</T>
+            <View style={{ flexDirection: 'row', gap: 8 }} accessibilityRole="radiogroup">
+              {[true, false].map((v) => (
+                <Pressable key={String(v)} onPress={() => { void chooseForeigners(v); }} accessibilityRole="radio" accessibilityState={{ checked: foreigners === v }}
+                  style={({ pressed }) => ({ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: foreigners === v ? tabBar.activeBg : 'rgba(255,255,255,0.04)', opacity: pressed ? 0.7 : 1 })}>
+                  <T style={{ fontSize: 14, color: foreigners === v ? ll.text : ll.text2 }}>{v ? t('common.yes') : t('common.no')}</T>
+                </Pressable>
+              ))}
+            </View>
+            <T style={{ fontSize: 12, color: ll.label, lineHeight: 18 }}>{t('prof.foreignersNote')}</T>
+          </View>
+        )}
         <KankaSection />
       </CardP>
 
@@ -490,6 +498,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
           <T style={{ fontSize: 14, color: ll.text }}>{t('prof.blocking')}</T>
           <T style={{ fontSize: 18, color: ll.label }}>›</T>
         </Pressable>
+        <EmergencyContact />
       </Card>
 
       <View style={{ alignItems: 'center', gap: 12, paddingBottom: 8 }}>

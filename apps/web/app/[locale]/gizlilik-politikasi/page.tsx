@@ -202,6 +202,10 @@ const sections = [
           : acil yardım talebindeki konum koordinatlarının açık adrese çevrilmesi amacıyla.
         </p>
         <p>
+          <strong style={{ color: '#f4f1ec' }}>Acil durum kişisi</strong>
+          : Profilim&apos;de eklediğin kişinin adı ve telefon numarası yalnız Acil Yardım talebinde bulunduğunda bu kişiye WhatsApp (Meta WhatsApp Business API) üzerinden otomatik bilgi gönderilmesi amacıyla kullanılır; başka amaçla kullanılmaz. Kişiyi istediğin zaman silebilirsin; hesap silinince de silinir.
+        </p>
+        <p>
           <strong style={{ color: '#f4f1ec' }}>Apple (App Store) ve Google (Google Play)</strong>
           : mobil uygulama içi satın almaların ve aboneliklerin doğrulanması ve yönetilmesi amacıyla satın alma işlem bilgileri.
         </p>

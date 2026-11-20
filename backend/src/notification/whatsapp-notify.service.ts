@@ -12,7 +12,8 @@ export class WhatsappNotifyService {
   constructor(private config: ConfigService) {}
 
   // language: alıcının dili; şablon dil kodu buna göre seçilir (İngilizce şablonlar Meta'da lansmanda hazırlanır)
-  async send(phone: string, templateName: string, bodyParams: string[], language: string = "tr"): Promise<void> {
+  // Dönüş: gönderildi mi (stub / sahte modda true; kimlik bilgisi yoksa ya da API hata verirse false)
+  async send(phone: string, templateName: string, bodyParams: string[], language: string = "tr"): Promise<boolean> {
     if (isE2eFakeMode()) {
       if (readFakeControl().whatsappFailPhones?.includes(phone)) {
         const err = new Error("The operation was aborted due to timeout");
@@ -20,11 +21,11 @@ export class WhatsappNotifyService {
         throw err;
       }
       recordFake({ channel: "whatsapp", template: templateName, to: last4(phone), params: bodyParams });
-      return;
+      return true;
     }
     if (this.config.get("NODE_ENV") !== "production") {
       this.logger.log(`[WhatsApp bildirim stub] şablon: ${templateName}`);
-      return;
+      return true;
     }
 
     const phoneNumberId = this.config.get<string>("WHATSAPP_PHONE_NUMBER_ID");
@@ -32,7 +33,7 @@ export class WhatsappNotifyService {
 
     if (!phoneNumberId || !accessToken) {
       this.logger.warn("WhatsApp kimlik bilgileri eksik, bildirim atlandı");
-      return;
+      return false;
     }
 
     const normalizedPhone = phone.replace("+", "");
@@ -63,6 +64,8 @@ export class WhatsappNotifyService {
 
     if (!response.ok) {
       this.logger.error(`WhatsApp bildirim hatası [${response.status}]: ${templateName}`);
+      return false;
     }
+    return true;
   }
 }

@@ -6,7 +6,7 @@ import { AMBER, BORDER, MUTED, RED, SANS, TEXT } from '@/lib/adminTheme';
 
 // Yönetim paneli: kullanıcı profil fotoğrafı. Basınca tam ekran büyük görünüm; büyük görünümde "Sil" → onay penceresi.
 // Önceki fotoğraf ihlali yoksa onaylanınca fotoğraf silinir, kullanıcıya uyarı push'u gider (ihlal uyarı olarak kaydedilir);
-// varsa askı süresi (3 / 15 / 30 gün) seçilir ve Askıya al şablonu gider (backend admin-moderation.ts).
+// varsa askı süresi (3 gün / 15 gün / 1 ay) seçilir ve Askıya al şablonu gider (backend admin-moderation.ts).
 export function AdminUserPhoto({ userId, photoUrl, size = 72, gender, initials, onDeleted }: {
   userId: string; photoUrl?: string | null; size?: number; gender?: string | null; initials: string; onDeleted?: () => void;
 }) {
@@ -82,7 +82,7 @@ export function AdminUserPhoto({ userId, photoUrl, size = 72, gender, initials, 
                       <button key={d} type="button" onClick={() => setDays(d)} aria-pressed={days === d}
                         style={{ flex: 1, minHeight: 40, borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: SANS,
                           background: days === d ? 'rgba(245,158,11,0.15)' : 'transparent', border: `1px solid ${days === d ? AMBER : BORDER}`, color: days === d ? AMBER : TEXT }}>
-                        {d} gün
+                        {d === 30 ? '1 ay' : `${d} gün`}
                       </button>
                     ))}
                   </div>

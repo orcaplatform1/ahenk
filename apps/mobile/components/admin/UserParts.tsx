@@ -1,6 +1,6 @@
 // apps/web/components/AdminDeletionRequests, AdminSanctionHistory, AdminNoShowWarnings, AdminUserEdit karşılıkları
 import React, { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { showAlert } from '@/components/AppAlert';
 import { api } from '@/lib/api';
 import { myRole } from '@/lib/adminRole';
@@ -90,8 +90,23 @@ export function AdminSanctionHistory({ userId, canAct, onChanged }: { userId: st
 
 export interface NoShowReportItem { createdAt: string; meeting: { id: string; scheduledAt: string; type: string; locationText: string | null; cycleId?: string | null }; reporter: { id: string; profile: { firstName: string | null; lastName: string | null } | null } }
 export interface NoShowWarningInfo { count: number; limit: number; warnedMeetingIds: string[]; warnedCycleIds?: string[] }
+// Askı tek model: 3 gün / 15 gün / 1 ay (web AdminSuspendButtons ile aynı). HIG: 44 pt dokunma alanı
+export function AdminSuspendButtons({ onPick, busy, color = adm.amber }: { onPick: (days: 3 | 15 | 30) => void; busy?: boolean; color?: string }) {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+      <AT w={600} style={{ fontSize: 11, color }}>Askıya Al:</AT>
+      {([[3, '3 gün'], [15, '15 gün'], [30, '1 ay']] as const).map(([d, l]) => (
+        <Pressable key={d} onPress={() => onPick(d)} disabled={busy} accessibilityRole="button"
+          style={{ minHeight: 44, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: color, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.5 : 1 }}>
+          <AT w={600} style={{ fontSize: 11, color }}>{l}</AT>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 export function AdminNoShowWarnings({ userId, reports, warnings, canSanction, userStatus, suspending, onChanged, onSuspend }: {
-  userId: string; reports: NoShowReportItem[]; warnings: NoShowWarningInfo; canSanction: boolean; userStatus: string; suspending: boolean; onChanged: (w: NoShowWarningInfo) => void; onSuspend: () => void;
+  userId: string; reports: NoShowReportItem[]; warnings: NoShowWarningInfo; canSanction: boolean; userStatus: string; suspending: boolean; onChanged: (w: NoShowWarningInfo) => void; onSuspend: (days: 3 | 15 | 30) => void;
 }) {
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -123,10 +138,11 @@ export function AdminNoShowWarnings({ userId, reports, warnings, canSanction, us
         );
       })}
       {!!error && <AT style={{ fontSize: 11, color: adm.red }}>{error}</AT>}
-      {reached && canSanction && userStatus !== 'SUSPENDED' && (
-        <View style={{ marginTop: 4, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, backgroundColor: adm.surface, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <AT style={{ fontSize: 11, color: adm.red }}>{warnings.limit} uyarıya ulaştı.</AT>
-          <Btn variant="admActRed" disabled={suspending} label={suspending ? '…' : 'Askıya Al (1 ay)'} onPress={onSuspend} />
+      {/* Önceki gelmedi uyarısı varsa yeni uyarı yok; yalnız askı (3 gün / 15 gün / 1 ay) */}
+      {reached && canSanction && (
+        <View style={{ marginTop: 4, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, backgroundColor: adm.surface, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', gap: 8 }}>
+          <AT style={{ fontSize: 11, color: adm.red }}>Kullanıcının önceki gelmedi uyarısı var.</AT>
+          <AdminSuspendButtons busy={suspending} color={adm.red} onPick={onSuspend} />
         </View>
       )}
     </View>

@@ -7,6 +7,7 @@ import { MeetingMode, MeetingType, SubscriptionStatus } from "../generated/prism
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { NotSuspendedGuard, activeSuspension } from "../common/suspension";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { groupPartOpen, kankaPartOpen, oneOnOnePartOpen, RIGHTS_SELECT } from "../payment/package-rights";
 import { meetingCardEnd, meetingLockAt, tomorrowMeetingAt } from "../meetings/meeting-windows";
@@ -87,6 +88,8 @@ export class WeeklySelectionService {
         select: { meeting: { select: { scheduledAt: true } } },
       }),
     ]);
+    // Askıdaki kullanıcı masaya katılamaz: seçim ekranı otomatik açılmaz, Seçim Yap kapalı
+    const suspension = await activeSuspension(this.prisma, userId);
     const cooldownUntil = cancelCooldownUntil(user?.selectionCancelledAt);
     const cooling = !!cooldownUntil && cooldownUntil > now;
     const hasTable = cardSeats.some((s) => meetingCardEnd(s.meeting.scheduledAt) > now);
@@ -129,7 +132,8 @@ export class WeeklySelectionService {
       // Girişte otomatik açılış: masası kurulu / kilitli olan kullanıcıda hiçbir yerde açılmaz; buluşmadan sonraki gün 08:00'de
       // (kart Geçmiş Masalarım'a geçip değerlendirme açılınca) yeniden açılabilir. Aktif seçim / tarama sürüyorsa ya da iptal
       // sonrası 24 saat dolmadıysa açılmaz; aksi hâlde kullanılmamış hak varsa açılır. Elle açılış ("Seçim Yap") aynen.
-      showModal: !hasTable && !cooling && !options.some((o) => !!o.selection || o.seated) && options.some((o) => o.hasRight),
+      suspendedUntil: suspension?.expiresAt ?? null,
+      showModal: !suspension && !hasTable && !cooling && !options.some((o) => !!o.selection || o.seated) && options.some((o) => o.hasRight),
     };
   }
 
@@ -222,11 +226,13 @@ export class WeeklySelectionController {
   }
 
   @Post()
+  @UseGuards(NotSuspendedGuard)
   submit(@Req() req: Request, @Body() dto: SubmitSelectionDto) {
     return this.service.submit((req.user as { id: string }).id, dto.mode, dto.types);
   }
 
   @Post("change")
+  @UseGuards(NotSuspendedGuard)
   change(@Req() req: Request, @Body() dto: ChangeDto) {
     return this.service.change((req.user as { id: string }).id, dto.type, dto.mode);
   }

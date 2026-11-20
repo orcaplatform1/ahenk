@@ -1,9 +1,9 @@
 import { IsE164Phone } from "../common/phone";
-import { Controller, Post, Patch, Get, Body, Param, Req, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Post, Patch, Get, Put, Delete, Body, Param, Req, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
 import { Request } from "express";
 import { LoginGuardService } from "../auth/login-guard.service";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
-import { IsString, IsOptional, IsEnum, Matches, IsEmail, IsIn, IsBoolean } from "class-validator";
+import { IsString, IsOptional, IsEnum, Matches, IsEmail, IsIn, IsBoolean, IsNotEmpty, MaxLength } from "class-validator";
 import { VenuePreference } from "../generated/prisma/client";
 import { UsersService } from "./users.service";
 import { AccountDeletionService } from "./account-deletion.service";
@@ -23,6 +23,17 @@ class UpdateSpokenLanguagesDto {
   @IsOptional()
   @IsBoolean()
   speaksTurkish?: boolean;
+}
+
+// Acil durum kişisi (en fazla 1): ad + E.164 telefon (giriş / kayıttaki ülke listesi)
+class EmergencyContactDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(80)
+  name: string;
+
+  @IsE164Phone()
+  phone: string;
 }
 
 class UpdateVenuePreferenceDto {
@@ -104,6 +115,28 @@ export class UsersController {
   @ApiOperation({ summary: "İngilizce / Türkçe biliyorum (dil bazlı eşleşme)" })
   updateSpokenLanguages(@CurrentUser() user: any, @Body() dto: UpdateSpokenLanguagesDto) {
     return this.usersService.updateSpokenLanguages(user.id, dto);
+  }
+
+  @Get("me/emergency-contact")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  getEmergencyContact(@CurrentUser() user: any) {
+    return this.usersService.getEmergencyContact(user.id);
+  }
+
+  @Put("me/emergency-contact")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Acil durum kişisi ekle / düzenle (Acil Yardım talebinde WhatsApp bildirimi)" })
+  setEmergencyContact(@CurrentUser() user: any, @Body() dto: EmergencyContactDto) {
+    return this.usersService.setEmergencyContact(user.id, dto.name.trim(), dto.phone);
+  }
+
+  @Delete("me/emergency-contact")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  deleteEmergencyContact(@CurrentUser() user: any) {
+    return this.usersService.setEmergencyContact(user.id, null, null);
   }
 
   @Post("me/region-waitlist/:cityId")

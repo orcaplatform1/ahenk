@@ -17,7 +17,7 @@ import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { ASSIGN_QUEUE } from "../matching/assign-queue";
 import { cancelSelection } from "../matching/selection-cancel";
 import { activeKankaLink } from "../kanka/kanka-links";
-import { MeetingStatus, MeetingType, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
+import { AdminAlertType, MeetingStatus, MeetingType, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
 
 // Admin ayrı harita linki girmediyse mekan adı + adresle Google Maps araması
 function googleMapsUrl(name?: string | null, address?: string | null): string | null {
@@ -481,10 +481,24 @@ export class MeetingsService {
     );
     const ids = [...new Set(reportedIds)].filter((id) => valid.has(id));
     if (ids.length === 0) return;
+    const existing = new Set((await this.prisma.noShowReport.findMany({ where: { meetingId, reporterId, reportedId: { in: ids } }, select: { reportedId: true } })).map((r) => r.reportedId));
     await this.prisma.noShowReport.createMany({
       data: ids.map((reportedId) => ({ meetingId, reporterId, reportedId })),
       skipDuplicates: true,
     });
+    // Yeni gelmedi bildirimi: admin paneline (Uyarılar) bildirim
+    const fresh = ids.filter((id) => !existing.has(id));
+    if (fresh.length) {
+      const [meeting, reporter] = await Promise.all([
+        this.prisma.meeting.findUnique({ where: { id: meetingId }, select: { title: true, scheduledAt: true } }),
+        this.prisma.user.findUnique({ where: { id: reporterId }, select: { profile: { select: { firstName: true, lastName: true } } } }),
+      ]);
+      const date = meeting?.scheduledAt.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Istanbul" }) ?? "";
+      const by = `${reporter?.profile?.firstName ?? ""} ${reporter?.profile?.lastName ?? ""}`.trim() || "—";
+      await this.prisma.adminAlert.createMany({
+        data: fresh.map((userId) => ({ userId, alertType: AdminAlertType.NO_SHOW_REPORTED, message: `${date} · ${meeting?.title ?? ""} · Bildiren: ${by}` })),
+      }).catch(() => undefined);
+    }
     await this.applyNoShow(meetingId);
   }
 

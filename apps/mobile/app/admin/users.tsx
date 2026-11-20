@@ -1,4 +1,5 @@
 // apps/web/app/admin/users/page.tsx karşılığı (Kullanıcılar + Silme Talepleri)
+import { showAlert } from '@/components/AppAlert';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { api } from '@/lib/api';
@@ -8,7 +9,7 @@ import { ACard, AError, ALabel, AMono, APage, AT, ATableRow, ATitle } from '@/co
 import { AdminSelect, AInput, APager } from '@/components/admin/AdminControls';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { AdminUserPhoto } from '@/components/admin/AdminUserPhoto';
-import { AdminDeletionRequests, AdminNoShowWarnings, AdminSanctionHistory, AdminUserEdit, type NoShowReportItem, type NoShowWarningInfo } from '@/components/admin/UserParts';
+import { AdminDeletionRequests, AdminNoShowWarnings, AdminSuspendButtons, AdminSanctionHistory, AdminUserEdit, type NoShowReportItem, type NoShowWarningInfo } from '@/components/admin/UserParts';
 import { adm, llCard } from '@/theme/theme';
 
 function canSanction(t: { id: string; role: string }) {
@@ -69,7 +70,16 @@ export default function AdminUsers() {
     if (!modal) return; setAction(status); const r = override ?? reason;
     try { await api.patch(`/admin/users/${modal.id}/status`, status === 'SUSPENDED' && r ? { status, reason: r } : { status }); setModal(u => (u ? { ...u, status } : null)); setUsers(p => p.map(u => (u.id === modal.id ? { ...u, status: status as AdminUser['status'] } : u))); }
     catch (e) { setError(`İşlem başarısız: ${(e as Error).message}`); } finally { setAction(null); }
+  }  // Askı tek model: 3 gün / 15 gün / 1 ay; kullanıcı durumu değişmez (giriş açık), şablon push gider
+  function suspendUser(days: 3 | 15 | 30, override?: string) {
+    if (!modal) return;
+    const target = modal;
+    showAlert(`Kullanıcı ${days === 30 ? '1 ay' : `${days} gün`} askıya alınsın mı?`, undefined, [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Onayla', style: 'destructive', onPress: async () => {
+      try { await api.post(`/admin/users/${target.id}/sanction`, { type: 'SUSPENSION', days, reason: override ?? (reason || 'Yönetici kararı') }); refresh(target.id); }
+      catch (e) { setError(`İşlem başarısız: ${(e as Error).message}`); }
+    } }]);
   }
+
   async function resetTest() { if (!modal) return; setAction('test'); try { await api.patch(`/admin/users/${modal.id}/test-lock-reset`, {}); setModal(u => (u && u.oceanScore ? { ...u, oceanScore: { ...u.oceanScore, adminCanReset: true } } : u)); } catch (e) { setError(`Test kilidi sıfırlanamadı: ${(e as Error).message}`); } finally { setAction(null); } }
   async function approveKyc() { if (!modal) return; setAction('kyc'); try { await api.post(`/admin/users/${modal.id}/kyc-approve`, {}); setModal(u => (u ? { ...u, kyc: { status: 'APPROVED' } } : null)); } catch (e) { setError(`KYC onaylanamadı: ${(e as Error).message}`); } finally { setAction(null); } }
   async function grantSub() { if (!modal || !grant) return; setAction('sub'); try { await api.post(`/admin/users/${modal.id}/free-subscription`, { plan: grant }); setGrant(''); refresh(modal.id); load(); } catch (e) { setError(`Abonelik verilemedi: ${(e as Error).message}`); } finally { setAction(null); } }
@@ -161,15 +171,15 @@ export default function AdminUsers() {
                   )}
                   <AdminUserEdit user={m} canEdit={canSanction(m)} onSaved={() => refresh(m.id)} />
                   <AdminNoShowWarnings userId={m.id} reports={m.noShowReportsReceived ?? []} warnings={m.noShowWarnings ?? { count: 0, limit: 3, warnedMeetingIds: [] }} canSanction={canSanction(m)} userStatus={m.status}
-                    suspending={action === 'SUSPENDED'} onChanged={w => setModal(u => (u ? { ...u, noShowWarnings: w } : null))} onSuspend={() => updStatus('SUSPENDED', 'Masaya katılım sağlamama')} />
+                    suspending={action === 'SUSPENDED'} onChanged={w => setModal(u => (u ? { ...u, noShowWarnings: w } : null))} onSuspend={(d) => suspendUser(d, 'Masaya katılım sağlamama')} />
                   <AdminSanctionHistory userId={m.id} canAct={canSanction(m)} onChanged={() => refresh(m.id)} />
                   <Sect>
                     <ALabel>HESAP İŞLEMLERİ</ALabel>
                     {canSanction(m) ? (
                       <>
-                        {m.status !== 'SUSPENDED' && <AdminSelect value={reason} onChange={setReason} placeholder="Askı sebebi (boşsa: Yönetici kararı)" title="Askı sebebi" options={[{ value: '', label: 'Yönetici kararı' }, ...reasons.map(x => ({ value: x, label: x }))]} />}
+                        {<AdminSelect value={reason} onChange={setReason} placeholder="Askı sebebi (boşsa: Yönetici kararı)" title="Askı sebebi" options={[{ value: '', label: 'Yönetici kararı' }, ...reasons.map(x => ({ value: x, label: x }))]} />}
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                          {m.status !== 'SUSPENDED' && <Btn variant="admActAmber" disabled={!!action} label={action === 'SUSPENDED' ? '…' : 'Askıya Al (1 ay)'} onPress={() => updStatus('SUSPENDED')} />}
+                          <AdminSuspendButtons onPick={(d) => suspendUser(d)} />
                           {m.status === 'SUSPENDED' && myRole() === 'SUPERADMIN' && <Btn variant="admActGreen" disabled={!!action} label={action === 'ACTIVE' ? '…' : 'Aktifleştir'} onPress={() => updStatus('ACTIVE')} />}
                         </View>
                       </>

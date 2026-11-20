@@ -11,8 +11,8 @@ export const SANCTION_REASONS = [
 
 export const DEFAULT_SANCTION_REASON = "Yönetici kararı";
 
-// Gelmedi uyarısı sınırı: bu sayıya ulaşınca admin askıya alma seçeneğini görür (otomatik değil)
-export const NO_SHOW_WARNING_LIMIT = 3;
+// Gelmedi uyarısı sınırı: daha önce gelmedi uyarısı olan kullanıcıya yeni uyarı verilmez; yalnız askı (3 gün / 15 gün / 1 ay)
+export const NO_SHOW_WARNING_LIMIT = 1;
 
 // Askı süresi: 1 ay
 export function suspensionEndDate(from = new Date()): Date {

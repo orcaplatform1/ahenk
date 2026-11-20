@@ -9,6 +9,7 @@ import { AdminSanctionHistory } from '@/components/AdminSanctionHistory';
 import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } from '@/components/AdminNoShowWarnings';
 import { SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 import { AdminSelect } from '@/components/AdminSelect';
+import { AdminSuspendButtons } from '@/components/AdminSuspendButtons';
 import { AdminDeletionRequests } from '@/components/AdminDeletionRequests';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
@@ -151,6 +152,18 @@ export default function AdminUsers() {
     } catch (e) { setError(`İşlem başarısız: ${(e as Error).message}`); }
     finally { setUserAction(null); }
   }
+  // Askı tek model: 3 gün / 15 gün / 1 ay; kullanıcı durumu değişmez (giriş açık), şablon push gider
+  async function suspendUser(days: 3 | 15 | 30, reasonOverride?: string) {
+    if (!userModal) return;
+    if (!confirm(`Kullanıcı ${days === 30 ? '1 ay' : `${days} gün`} askıya alınsın mı?`)) return;
+    setUserAction('SUSPENDED');
+    try {
+      await api.post(`/admin/users/${userModal.id}/sanction`, { type: 'SUSPENSION', days, reason: reasonOverride ?? (sanctionReason || 'Yönetici kararı') });
+      refreshUserModal(userModal.id);
+    } catch (e) { setError(`İşlem başarısız: ${(e as Error).message}`); }
+    finally { setUserAction(null); }
+  }
+
 
   async function modalResetTestLock() {
     if (!userModal) return;
@@ -455,7 +468,7 @@ export default function AdminUsers() {
                   userStatus={userModal.status}
                   suspending={userAction === 'SUSPENDED'}
                   onChanged={w => setUserModal(u => u ? { ...u, noShowWarnings: w } : null)}
-                  onSuspend={() => modalUpdateStatus('SUSPENDED', 'Masaya katılım sağlamama')}
+                  onSuspend={(days) => suspendUser(days, 'Masaya katılım sağlamama')}
                 />
 
                 {/* Yaptırım geçmişi */}
@@ -465,7 +478,7 @@ export default function AdminUsers() {
                 <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <span style={{ ...LABEL, color: MUTED }}>HESAP İŞLEMLERİ</span>
                   {canSanction(userModal) ? (<>
-                  {userModal.status !== 'SUSPENDED' && (
+                  {(
                     <AdminSelect
                       value={sanctionReason}
                       onChange={setSanctionReason}
@@ -475,18 +488,7 @@ export default function AdminUsers() {
                     />
                   )}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {userModal.status !== 'SUSPENDED' && (
-                      <button
-                        onClick={() => modalUpdateStatus('SUSPENDED')} disabled={!!userAction}
-                        style={{
-                          padding: '5px 12px', borderRadius: 8, cursor: userAction ? 'not-allowed' : 'pointer',
-                          background: 'rgba(245,158,11,0.1)', color: AMBER, border: '1px solid rgba(245,158,11,0.3)',
-                          fontSize: 11, fontWeight: 600, fontFamily: SANS, opacity: userAction ? 0.5 : 1,
-                        }}
-                      >
-                        {userAction === 'SUSPENDED' ? '…' : 'Askıya Al (1 ay)'}
-                      </button>
-                    )}
+                    <AdminSuspendButtons busy={!!userAction} onPick={(d) => suspendUser(d)} />
                     {userModal.status === 'SUSPENDED' && myRole() === 'SUPERADMIN' && (
                       <button
                         onClick={() => modalUpdateStatus('ACTIVE')} disabled={!!userAction}

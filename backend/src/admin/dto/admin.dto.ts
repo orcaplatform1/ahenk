@@ -359,9 +359,10 @@ export class CreateSanctionDto {
   @IsNotEmpty()
   reason: string;
 
+  // Askı süresi: 3 gün / 15 gün / 1 ay (30)
   @IsOptional()
-  @IsDateString()
-  expiresAt?: string;
+  @IsIn([3, 15, 30])
+  days?: 3 | 15 | 30;
 }
 
 // ─── Masaya bot yerleştir ────────────────────────────────────────────────────

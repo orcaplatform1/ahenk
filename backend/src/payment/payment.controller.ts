@@ -1,3 +1,4 @@
+import { NotSuspendedGuard } from "../common/suspension";
 import {
   Controller,
   Post,
@@ -86,7 +87,7 @@ export class PaymentController {
   // Ödeme başlat: web iyzico checkout form, mobil uygulama içi satın alma ürünü.
   // KYC satın almadan önce istenmez; ödeme başarılı olunca kullanıcı KYC ekranına yönlendirilir.
   @Post("init")
-  @UseGuards(JwtAuthGuard, TestCompletedGuard)
+  @UseGuards(JwtAuthGuard, TestCompletedGuard, NotSuspendedGuard)
   initCheckout(@Req() req: Request, @Body() dto: InitCheckoutDto) {
     const user = req.user as { id: string };
     return this.paymentService.initCheckout(user.id, dto.plan, dto.platform, dto.useDiscount, req.ip ?? "", dto.identityNumber, dto.identityType);
@@ -100,7 +101,7 @@ export class PaymentController {
 
   // Mobil uygulama içi satın alma doğrulama (App Store / Play Store)
   @Post("store/verify")
-  @UseGuards(JwtAuthGuard, TestCompletedGuard)
+  @UseGuards(JwtAuthGuard, TestCompletedGuard, NotSuspendedGuard)
   verifyStore(@Req() req: Request, @Body() dto: VerifyStoreDto) {
     return this.paymentService.verifyStorePurchase((req.user as { id: string }).id, dto.platform, dto.productId, dto.transaction);
   }

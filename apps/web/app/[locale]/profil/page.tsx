@@ -1,4 +1,5 @@
 'use client';
+import { SuspensionCard } from '@/components/SuspensionCard';
 
 import { useTranslations } from 'next-intl';
 
@@ -35,6 +36,7 @@ interface UserData {
   maintenanceMode?: boolean;
   profilePhotoUrl?: string | null;
   profilePhotoPending?: boolean;
+  suspendedUntil?: string | null; // Askı bitişi: Profilim'de geri sayım kartı
   profile?: {
     gender?: string;
     birthDate?: string;
@@ -173,6 +175,7 @@ function ProfilPage() {
               </div>
             )}
             {activeTab === 'profil'  && <ProfilePhotoHeader photoUrl={user.profilePhotoUrl} initials={buildInitials(user.firstName, user.lastName)} gender={user.profile?.gender} kycApproved={kycApproved} pending={user.profilePhotoPending} />}
+            {activeTab === 'profil'  && <SuspensionCard until={user.suspendedUntil} />}
             {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} onGoTest={() => changeTab('test')} onGoRehber={() => changeTab('rehber')} activePlan={user.activePlan ?? null} />}
             {activeTab === 'test'    && <TabTest />}
             {activeTab === 'masalar' && <TabMasalar userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender }} kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}

@@ -64,6 +64,17 @@ export class UsersService {
   }
 
   // Başka konuşulan diller; ana dilin (nativeLanguage) alanı her zaman true kalır, kapatılamaz
+  // Acil durum kişisi: yalnız Acil Yardım talebinde bu amaçla kullanılır
+  async getEmergencyContact(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { emergencyContactName: true, emergencyContactPhone: true } });
+    return u?.emergencyContactPhone ? { name: u.emergencyContactName, phone: u.emergencyContactPhone } : null;
+  }
+
+  async setEmergencyContact(userId: string, name: string | null, phone: string | null) {
+    await this.prisma.user.update({ where: { id: userId }, data: { emergencyContactName: name, emergencyContactPhone: phone } });
+    return this.getEmergencyContact(userId);
+  }
+
   async updateSpokenLanguages(userId: string, dto: { speaksEnglish?: boolean; speaksTurkish?: boolean }) {
     const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { nativeLanguage: true } });
     const native = me?.nativeLanguage === "en" ? "en" : "tr";

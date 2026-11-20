@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { AdminSuspendButtons } from './AdminSuspendButtons';
 import { SURFACE, BORDER, TEXT, MUTED, RED, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 
@@ -29,7 +30,7 @@ export function AdminNoShowWarnings({
   userStatus: string;
   suspending: boolean;
   onChanged: (w: NoShowWarningInfo) => void;
-  onSuspend: () => void;
+  onSuspend: (days: 3 | 15 | 30) => void;
 }) {
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -105,20 +106,11 @@ export function AdminNoShowWarnings({
 
       {error && <p style={{ margin: 0, fontSize: 11, color: RED }}>{error}</p>}
 
-      {/* Sınıra ulaşınca otomatik askı yok; karar admin'de */}
-      {reachedLimit && canSanction && userStatus !== 'SUSPENDED' && (
-        <div style={{ marginTop: 4, padding: '10px 12px', borderRadius: 8, background: SURFACE, border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <span style={{ fontSize: 11, color: RED }}>{warnings.limit} uyarıya ulaştı.</span>
-          <button
-            onClick={onSuspend} disabled={suspending}
-            style={{
-              padding: '5px 12px', borderRadius: 8, cursor: suspending ? 'not-allowed' : 'pointer',
-              background: 'rgba(239,68,68,0.1)', color: RED, border: '1px solid rgba(239,68,68,0.3)',
-              fontSize: 11, fontWeight: 600, fontFamily: SANS, opacity: suspending ? 0.5 : 1,
-            }}
-          >
-            {suspending ? '…' : 'Askıya Al (1 ay)'}
-          </button>
+      {/* Önceki gelmedi uyarısı varsa yeni uyarı yok; yalnız askı (3 gün / 15 gün / 1 ay), otomatik değil */}
+      {reachedLimit && canSanction && (
+        <div style={{ marginTop: 4, padding: '10px 12px', borderRadius: 8, background: SURFACE, border: '1px solid rgba(239,68,68,0.3)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ fontSize: 11, color: RED }}>Kullanıcının önceki gelmedi uyarısı var.</span>
+          <AdminSuspendButtons busy={suspending} color={RED} onPick={onSuspend} />
         </div>
       )}
     </div>

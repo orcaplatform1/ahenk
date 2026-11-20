@@ -18,6 +18,7 @@ import { trWeekStart, WEEK_MS } from "../admin/tr-week";
 import { Gender, MeetingMode, MeetingType, ParticipantStatus, UserStatus, SubscriptionPlan, KycStatus, Prisma } from "../generated/prisma/client";
 import { pickBot, alertBotNotFound, recentlyMetBotIds, notifyBotAssigned } from "./bot-picker";
 import { consumeOneOnOneRights, restoreOneOnOneRights } from "./one-on-one-right";
+import { notSuspended } from "../common/suspension";
 import { noTableOnDay, plannedTargetWeek, selectedThisWeek, selectedTomorrow } from "./selection-cancel";
 import { chargeKankaRight, GROUP_PLANS, ONE_ON_ONE_PLANS, OPEN_GROUP_SUB, OPEN_KANKA_SUB, OPEN_ONE_ON_ONE_SUB, pairKankaSub, syncPackageStatus } from "../payment/package-rights";
 import { activeKankaLink } from "../kanka/kanka-links";
@@ -41,6 +42,7 @@ type EligibleUser = {
   phone: string | null;
   speaksEnglish: boolean;
   speaksTurkish: boolean;
+  language: string;
   activeCity: string | null;
   occupationSector: string | null;
   profile: {
@@ -100,6 +102,7 @@ const ELIGIBLE_SELECT = {
   phone: true,
   speaksEnglish: true,
   speaksTurkish: true,
+  language: true,
   activeCity: true,
   occupationSector: true,
   profile: { select: { firstName: true, lastName: true, gender: true, city: true, district: true, primaryCity: true, venueCategories: true, venuePreference: true, birthDate: true } },
@@ -127,14 +130,15 @@ function trClock(date: Date): { day: number; minutes: number } {
 
 // Kullanıcının eşleştirme şehri: aktif şehir seçtiyse o, yoksa ana şehir. Şehri olmayan eşleştirmeye alınmaz.
 // ─── DİL KURALI (zorunlu; bütün masa türlerinde diğer kurallardan önce) ────────────────────────────
-// a) Türkçe bilmeyen (speaksTurkish = false) kişi yalnız herkesin İngilizce bildiği masaya oturur.
-// b) Türkçe bilmeyenler önce birbirleriyle eşleşir (masa seçiminde Türkçe bilmeyen olan masa öne alınır).
-// c) Böyle bir masanın boş yerleri yalnız telefon kodu +90 olan ve İngilizce bilen kişilerle dolar.
-// d) Dil kuralından sonra cinsiyet dengesi ve diğer kurallar aynen uygulanır.
-// e) Botlar dil kuralına girmez (grup masasındaki bot kuralı aynen).
-const noTurkish = (u: EligibleUser) => !u.isBot && u.speaksTurkish === false;
-const englishFiller = (u: EligibleUser) => !u.isBot && u.speaksTurkish !== false && u.speaksEnglish === true && (u.phone ?? "").startsWith("+90");
-// Kişiler aynı masada oturabilir mi: masada Türkçe bilmeyen yoksa serbest; varsa herkes ya Türkçe bilmeyen ya da +90 İngilizce bilen
+// Yabancılarla masa: İngilizce arayüz kullanan (User.language = en) kişi "yabancı" sayılır.
+// a) Yabancı yalnız herkesin yabancı ya da "Yabancılarla masaya oturmak ister misin?" sorusuna Evet demiş (speaksEnglish = true)
+//    Türkçe arayüz kullanıcısı olduğu masaya oturur. Hayır diyen yalnız Türkçe konuşanlarla eşleşir.
+// b) Yabancılar önce birbirleriyle eşleşir (masa seçiminde yabancı olan masa öne alınır).
+// c) Dil kuralından sonra cinsiyet dengesi ve diğer kurallar aynen uygulanır.
+// d) Botlar dil kuralına girmez (grup masasındaki bot kuralı aynen).
+const noTurkish = (u: EligibleUser) => !u.isBot && u.language === "en";
+const englishFiller = (u: EligibleUser) => !u.isBot && u.language !== "en" && u.speaksEnglish === true;
+// Kişiler aynı masada oturabilir mi: masada yabancı yoksa serbest; varsa herkes ya yabancı ya da yabancılarla oturmak isteyen
 export function languageCompatible(people: EligibleUser[]): boolean {
   const humans = people.filter((u) => !u.isBot);
   if (!humans.some(noTurkish)) return true;
@@ -292,9 +296,9 @@ export class MatchingService {
   private poolScope(ctx: AssignContext): PoolScope {
     if (ctx.mode === MeetingMode.TOMORROW) {
       const meetingAt = ctx.meetingAt!;
-      return { meeting: { mode: MeetingMode.TOMORROW, scheduledAt: meetingAt }, selected: (t) => ({ AND: [selectedTomorrow(t, meetingAt), noTableOnDay(meetingAt)] }) };
+      return { meeting: { mode: MeetingMode.TOMORROW, scheduledAt: meetingAt }, selected: (t) => ({ AND: [selectedTomorrow(t, meetingAt), noTableOnDay(meetingAt), notSuspended()] }) };
     }
-    return { meeting: { cycleId: ctx.cycleId!, mode: MeetingMode.PLANNED }, selected: (t) => ({ AND: [selectedThisWeek(t), noTableOnDay(this.meetingAtFor(ctx, t))] }) };
+    return { meeting: { cycleId: ctx.cycleId!, mode: MeetingMode.PLANNED }, selected: (t) => ({ AND: [selectedThisWeek(t), noTableOnDay(this.meetingAtFor(ctx, t)), notSuspended()] }) };
   }
 
   // Planlı havuz kapsamı (kapanış ve hatırlatma işleri)

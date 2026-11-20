@@ -30,6 +30,7 @@ export function SelectionCard({ selection, onOpen, onChange, onCancel }: {
   if (rows.length === 0 && !canPick) return null;
   const now = Date.now();
   const cooling = !!selection.cancelCooldownUntil && Date.parse(selection.cancelCooldownUntil) > now;
+  const suspended = !!selection.suspendedUntil && Date.parse(selection.suspendedUntil) > now;
 
   async function run(type: MasaTuru, fn: () => Promise<void>) {
     setBusy(type); setError('');
@@ -82,8 +83,8 @@ export function SelectionCard({ selection, onOpen, onChange, onCancel }: {
         );
       })}
       {!!error && <T style={{ fontSize: 12, color: ll.red2 }}>{error}</T>}
-      {canPick && <BtnPrimary label={t('live.selOpen')} style={{ minHeight: 44 }} disabled={cooling} onPress={onOpen} />}
-      {canPick && cooling && <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>{t('live.selReasonCooldown')}</T>}
+      {canPick && <BtnPrimary label={t('live.selOpen')} style={{ minHeight: 44 }} disabled={cooling || suspended} onPress={onOpen} />}
+      {canPick && (suspended || cooling) && <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>{t(suspended ? 'live.selReasonSuspended' : 'live.selReasonCooldown')}</T>}
     </Card>
   );
 }

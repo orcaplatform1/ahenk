@@ -18,8 +18,8 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { HideEmailForAdminInterceptor } from "./hide-email.interceptor";
 import { AdminAction } from "./admin-action-log";
 import { AdminService } from "./admin.service";
+import { SUSPEND_DAYS, SuspendDays, isSuspendDays } from "../common/suspension";
 
-export const SUSPEND_DAYS = [3, 15, 30] as const;
 
 // Şikâyet nedeni → ihlal türü (bildirimin sonundaki "İhlal: …" / "Violation: …")
 export const REASON_LABEL: Record<ChatReportReason, { tr: string; en: string }> = {
@@ -44,10 +44,6 @@ const REMOVE = {
   tr: "Ahenk Ekibi: Masa sohbetindeki paylaşımın incelendi ve kural ihlali tespit edildi. Bu masadan çıkarıldın, kullanım hakkın yandı ve iade yapılmayacak.",
   en: "Ahenk Team: Your message in the table chat was reviewed and a rule violation was found. You have been removed from this table, your credit has been forfeited and no refund will be given.",
 };
-const suspendText = (days: number) => ({
-  tr: `Ahenk Ekibi: Kural ihlalin nedeniyle hesabın ${days} gün boyunca askıya alındı. Bu süre içinde yeni masalara katılamazsın.`,
-  en: `Ahenk Team: Your account has been suspended for ${days} days due to a rule violation. You can't join new tables during this period.`,
-});
 const PHOTO_REMOVED = {
   tr: "Topluluk kurallarımıza aykırı olan uygunsuz fotoğrafınız kaldırılmıştır.",
   en: "Your inappropriate photo that violates our community guidelines has been removed.",
@@ -72,10 +68,10 @@ class PhotoDeleteDto {
 export class AdminModerationService {
   constructor(private prisma: PrismaService, private notifications: NotificationService, private admin: AdminService) {}
 
-  // Kullanıcının önceki uyarıları (kaldırılmamış WARNING yaptırımları)
+  // Kullanıcının önceki sohbet uyarıları (uyarılar türe göre ayrı sayılır: sohbet / fotoğraf / gelmedi)
   private async warnings(userId: string) {
     return this.prisma.userSanction.findMany({
-      where: { userId, type: SanctionType.WARNING, liftedAt: null },
+      where: { userId, type: SanctionType.WARNING, liftedAt: null, source: "CHAT" },
       orderBy: { createdAt: "desc" },
       select: { id: true, reason: true, source: true, createdAt: true },
     });
@@ -194,11 +190,20 @@ export class AdminModerationService {
         data: { status: ParticipantStatus.CANCELLED, cancelledAt: new Date(), leaveReason: LeaveReason.OTHER, leaveNote: `Admin: masadan çıkarıldı (${reasonText})` },
       });
       await this.push(userId, REMOVE, label, "CHAT_REMOVED");
+      // Masadaki diğer katılımcılara push + uygulama içi bildirim
+      const others = await this.prisma.meetingParticipant.findMany({
+        where: { meetingId: r.message.meetingId, userId: { not: userId }, status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED, ParticipantStatus.NO_SHOW] }, user: { isBot: false } },
+        select: { userId: true },
+      });
+      for (const o of others) {
+        await this.notifications.sendToUser(o.userId, {
+          title: "Ahenk", body: "Masandaki bir katılımcı masadan ayrıldı.", data: { type: "PARTICIPANT_LEFT", meetingId: r.message.meetingId },
+          en: { title: "Ahenk", body: "A participant has left your table." },
+        }).catch(() => undefined);
+      }
     } else {
-      if (!days || !SUSPEND_DAYS.includes(days as 3 | 15 | 30)) throw new BadRequestException("Askı süresi seçilmeli (3, 15 ya da 30 gün)");
-      const s = await this.admin.createSanction(userId, adminId, SanctionType.SUSPENSION, reasonText, new Date(Date.now() + days * 86400000));
-      await this.prisma.userSanction.update({ where: { id: s.id }, data: { source: "CHAT" } });
-      await this.push(userId, suspendText(days), label, "CHAT_SUSPENDED");
+      if (!isSuspendDays(days)) throw new BadRequestException("Askı süresi seçilmeli (3 gün / 15 gün / 1 ay)");
+      await this.admin.suspend(userId, adminId, days, reasonText, label, "CHAT");
     }
     await this.prisma.chatReport.update({
       where: { id },
@@ -207,9 +212,9 @@ export class AdminModerationService {
     return { ok: true };
   }
 
-  // Önceki fotoğraf ihlali sayısı (silme penceresinde askı süresi seçimi bu sayıya göre istenir)
+  // Önceki fotoğraf uyarısı sayısı (silme penceresinde askı süresi seçimi bu sayıya göre istenir; yalnız fotoğraf uyarıları)
   async photoViolations(userId: string) {
-    const count = await this.prisma.userSanction.count({ where: { userId, source: "PHOTO" } });
+    const count = await this.prisma.userSanction.count({ where: { userId, source: "PHOTO", type: SanctionType.WARNING, liftedAt: null } });
     return { count };
   }
 
@@ -219,8 +224,8 @@ export class AdminModerationService {
     const photos = await this.prisma.profilePhoto.findMany({ where: { userId, status: ProfilePhotoStatus.APPROVED } });
     if (!photos.length) throw new NotFoundException("Onaylı profil fotoğrafı bulunamadı");
     const prior = (await this.photoViolations(userId)).count;
-    if (prior > 0 && (!suspendDays || !SUSPEND_DAYS.includes(suspendDays as 3 | 15 | 30))) {
-      throw new BadRequestException("Kullanıcının önceki fotoğraf ihlali var; askı süresi seçilmeli (3, 15 ya da 30 gün)");
+    if (prior > 0 && !isSuspendDays(suspendDays)) {
+      throw new BadRequestException("Kullanıcının önceki fotoğraf ihlali var; askı süresi seçilmeli (3 gün / 15 gün / 1 ay)");
     }
     await this.prisma.profilePhoto.deleteMany({ where: { id: { in: photos.map((p) => p.id) } } });
     for (const p of photos) {
@@ -232,9 +237,7 @@ export class AdminModerationService {
       await this.prisma.userSanction.update({ where: { id: s.id }, data: { source: "PHOTO" } });
       await this.push(userId, PHOTO_REMOVED, null, "PHOTO_REMOVED");
     } else {
-      const s = await this.admin.createSanction(userId, adminId, SanctionType.SUSPENSION, PHOTO_LABEL.tr, new Date(Date.now() + suspendDays! * 86400000));
-      await this.prisma.userSanction.update({ where: { id: s.id }, data: { source: "PHOTO" } });
-      await this.push(userId, suspendText(suspendDays!), PHOTO_LABEL, "PHOTO_SUSPENDED");
+      await this.admin.suspend(userId, adminId, suspendDays as SuspendDays, PHOTO_LABEL.tr, PHOTO_LABEL, "PHOTO");
     }
     return { deleted: true, suspended: prior > 0 };
   }
@@ -260,7 +263,7 @@ export class AdminModerationController {
   }
 
   @AdminAction("CHAT_REPORT_DECISION", async (c) => {
-    const verb = { WARN: "uyardı", REMOVE: "masadan çıkardı", SUSPEND: `${c.body.days} gün askıya aldı` }[String(c.body.action)] ?? "karar verdi";
+    const verb = { WARN: "uyardı", REMOVE: "masadan çıkardı", SUSPEND: `${Number(c.body.days) === 30 ? "1 ay" : `${c.body.days} gün`} askıya aldı` }[String(c.body.action)] ?? "karar verdi";
     return { text: `Masa sohbeti şikâyeti: kullanıcıyı ${verb}` };
   })
   @Post("chat-reports/:id/decision")
@@ -274,7 +277,7 @@ export class AdminModerationController {
     return this.moderation.photoViolations(id);
   }
 
-  @AdminAction("PROFILE_PHOTO_DELETE", async (c) => ({ text: `${await c.userName(c.params.id)} kullanıcısının profil fotoğrafını sildi${c.body.suspendDays ? ` ve ${c.body.suspendDays} gün askıya aldı` : ""}`, targetUserId: c.params.id }))
+  @AdminAction("PROFILE_PHOTO_DELETE", async (c) => ({ text: `${await c.userName(c.params.id)} kullanıcısının profil fotoğrafını sildi${c.body.suspendDays ? ` ve ${Number(c.body.suspendDays) === 30 ? "1 ay" : `${c.body.suspendDays} gün`} askıya aldı` : ""}`, targetUserId: c.params.id }))
   @Post("users/:id/profile-photo/delete")
   @HttpCode(HttpStatus.OK)
   deletePhoto(@Param("id") id: string, @Body() dto: PhotoDeleteDto, @Req() req: Request) {

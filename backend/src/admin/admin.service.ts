@@ -1,4 +1,4 @@
-import { approvedPhotoUrl } from "../profile-photo/profile-photo.util";
+import { approvedPhotoMap, approvedPhotoUrl } from "../profile-photo/profile-photo.util";
 import { writeSeatScores } from "../matching/seat-scores";
 import {
   Injectable,
@@ -10,6 +10,7 @@ import {
 import * as fs from "fs";
 import * as path from "path";
 import { PrismaService } from "../prisma/prisma.service";
+import { SuspendDays, suspendText, suspendUntil } from "../common/suspension";
 import {
   UserStatus,
   UserRole,
@@ -350,19 +351,20 @@ export class AdminService {
     });
     if (already) throw new ConflictException("Bu masa için zaten uyarı verilmiş");
 
+    // Daha önce gelmedi uyarısı varsa yeni uyarı yok: yalnız askı (uyarılar türe göre ayrı sayılır)
     const { count } = await this.noShowWarnings(userId);
-    const remaining = Math.max(NO_SHOW_WARNING_LIMIT - (count + 1), 0);
-    const dateStr = report.meeting.scheduledAt.toLocaleDateString("tr-TR", {
-      day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Istanbul",
-    });
-    const reason =
-      `${dateStr} tarihli masa etkinliğine masa kurulduktan sonra katılmadığın tespit edilmiştir. ` +
-      `${NO_SHOW_WARNING_LIMIT} uyarı hesabın 1 ay askıya alınmasına neden olur. Kalan uyarı hakkı: ${remaining}`;
+    if (count >= NO_SHOW_WARNING_LIMIT) throw new ConflictException("Kullanıcının önceki gelmedi uyarısı var; yalnız askıya alınabilir");
+    const at = report.meeting.scheduledAt;
+    const dateTr = at.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Istanbul" });
+    const dateEn = at.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Istanbul" });
+    const reason = `Ahenk Ekibi: ${dateTr} tarihli masana gelmediğin bildirildi. Masaya gelmemek diğer katılımcıların akşamını etkiler. Tekrarlanması halinde hesabın askıya alınır.`;
+    const reasonEn = `Ahenk Team: You were reported as a no-show for your table on ${dateEn}. Not showing up affects the other participants' evening. If this happens again, your account will be suspended.`;
 
     await this.prisma.userSanction.create({
-      data: { userId, adminId, type: SanctionType.WARNING, reason, meetingId },
+      data: { userId, adminId, type: SanctionType.WARNING, reason, meetingId, source: "NO_SHOW" },
     });
-    // Otomatik askı yok: 3'e ulaşınca admin panelde askıya alma seçeneği görünür
+    // Hazır şablon push + uygulama içi bildirim
+    await this.notifications.sendToUser(userId, { title: "Ahenk", body: reason, data: { type: "NO_SHOW_WARNING", meetingId }, en: { title: "Ahenk", body: reasonEn } }).catch(() => undefined);
     return this.noShowWarnings(userId);
   }
 
@@ -461,15 +463,13 @@ export class AdminService {
     }
 
     // Askı / ban yaptırım kaydıyla uygulanır; aksi halde girişte otomatik kalkar
-    if (status === UserStatus.SUSPENDED || status === UserStatus.BANNED) {
-      const isBan = status === UserStatus.BANNED;
-      await this.createSanction(
-        targetId,
-        actorId,
-        isBan ? SanctionType.BAN : SanctionType.SUSPENSION,
-        reason ?? DEFAULT_SANCTION_REASON,
-        isBan ? undefined : suspensionEndDate(),
-      );
+    if (status === UserStatus.SUSPENDED) {
+      // Askı tek model: durum değişmez, 1 ay askı yaptırımı (giriş açık; masaya katılma / satın alma kapalı)
+      await this.suspend(targetId, actorId, 30, reason ?? DEFAULT_SANCTION_REASON);
+      return { id: targetId, status: UserStatus.ACTIVE };
+    }
+    if (status === UserStatus.BANNED) {
+      await this.createSanction(targetId, actorId, SanctionType.BAN, reason ?? DEFAULT_SANCTION_REASON);
       return { id: targetId, status };
     }
 
@@ -735,8 +735,9 @@ export class AdminService {
               select: {
                 id: true,
                 email: true,
+                phone: true,
                 isBot: true,
-                profile: { select: { firstName: true, lastName: true, city: true } },
+                profile: { select: { firstName: true, lastName: true, city: true, gender: true } },
                 oceanScore: { select: { openness: true, conscientiousness: true, extraversion: true, agreeableness: true, neuroticism: true } },
                 subscriptions: { select: { plan: true }, orderBy: { createdAt: 'desc' }, take: 1 },
               },
@@ -769,10 +770,13 @@ export class AdminService {
       },
     });
 
+    // Katılımcı kartı: onaylı profil fotoğrafı (admin büyütür, "Sil" ile silebilir)
+    const photos = await approvedPhotoMap(this.prisma, participantIds);
+    const withPhotos = meeting.participants.map((p) => ({ ...p, photoUrl: photos.get(p.userId) ?? null }));
     // Bot bilgisi yalnızca SUPERADMIN'e
     const participants = viewerRole === UserRole.SUPERADMIN
-      ? meeting.participants
-      : meeting.participants.map(({ user: { isBot, ...user }, ...p }) => ({ ...p, user }));
+      ? withPhotos
+      : withPhotos.map(({ user: { isBot, ...user }, ...p }) => ({ ...p, user }));
     return { ...meeting, participants, blocks };
   }
 
@@ -1793,22 +1797,10 @@ export class AdminService {
       throw new BadRequestException("Kullanıcı zaten banlı");
     }
 
-    const quarantineUntil = suspensionEndDate();
-
-    // Yaptırım kaydı (askı: 1 ay) — status'u SUSPENDED yapar
-    await this.createSanction(userId, adminId, SanctionType.SUSPENSION, reason ?? DEFAULT_SANCTION_REASON, quarantineUntil);
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { quarantineUntil },
-    });
-
-    if (user.phone) {
-      await this.whatsapp.send(user.phone, "ahenk_quarantine_warning", [
-        quarantineUntil.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" }),
-      ]).catch(() => {});
-    }
-
-    return { quarantinedUntil: quarantineUntil };
+    // Askı tek model: 1 ay; kullanıcıya şablon push (giriş açık, masaya katılma / satın alma kapalı)
+    const s = await this.suspend(userId, adminId, 30, reason ?? DEFAULT_SANCTION_REASON);
+    await this.prisma.user.update({ where: { id: userId }, data: { quarantineUntil: s.expiresAt } });
+    return { quarantinedUntil: s.expiresAt };
   }
 
   // ─── Ban ─────────────────────────────────────────────────────────────────
@@ -2047,17 +2039,22 @@ export class AdminService {
       data: { userId, adminId, type, reason, expiresAt: expiresAt ?? null },
     });
 
-    if (type === SanctionType.BAN || type === SanctionType.SUSPENSION) {
-      const isBan = type === SanctionType.BAN;
-      // Ban / karantina: kişinin bütün oturumları kapanır
-      await this.prisma.refreshToken.updateMany({ where: { userId, revoked: false }, data: { revoked: true } });
-      // Banlı kullanıcı askıyla SUSPENDED'a düşürülmez
-      if (isBan || user.status !== UserStatus.BANNED) {
-        await this.prisma.user.update({
-          where: { id: userId },
-          data: { status: isBan ? UserStatus.BANNED : UserStatus.SUSPENDED },
-        });
+    // Askı (yeni model): giriş, oturum, paket hakları, abonelik ve iyzico / mağaza aboneliği etkilenmez; kişi yalnız masaya
+    // katılamaz (common/suspension.ts): yapılmamış masalardan ve Kankamla eşleşmesinden çıkar
+    if (type === SanctionType.SUSPENSION) {
+      await this.matching.dropKankaPair(userId, "Askıya alındı");
+      const cancelled = await this.matching.dropFromTables(userId, "Askıya alındı");
+      for (const meetingId of cancelled) {
+        await this.venueAssignment.noticeMeetingCancelled(meetingId)
+          .catch((err: unknown) => console.error(`Mekân iptal bildirimi gönderilemedi: ${err}`));
       }
+    }
+
+    if (type === SanctionType.BAN) {
+      const isBan = true;
+      // Ban: kişinin bütün oturumları kapanır
+      await this.prisma.refreshToken.updateMany({ where: { userId, revoked: false }, data: { revoked: true } });
+      await this.prisma.user.update({ where: { id: userId }, data: { status: UserStatus.BANNED } });
       // Abonelik iptal edilir, iade yapılmaz; iyzico aboneliği de iptal edilir (hata loglanır, işlem sürer)
       const activeSubs = await this.prisma.subscription.findMany({
         where: { userId, status: SubscriptionStatus.ACTIVE },
@@ -2090,6 +2087,18 @@ export class AdminService {
     }
 
     return sanction;
+  }
+
+  // Askıya al (tek model): 3 gün / 15 gün / 1 ay; kullanıcıya hazır şablon push ("İhlal: …" ile)
+  async suspend(userId: string, adminId: string, days: SuspendDays, reason: string, label?: { tr: string; en: string }, source?: string) {
+    const s = await this.createSanction(userId, adminId, SanctionType.SUSPENSION, reason, suspendUntil(days));
+    if (source) await this.prisma.userSanction.update({ where: { id: s.id }, data: { source } });
+    const text = suspendText(days);
+    const v = label ?? { tr: reason, en: reason };
+    await this.notifications.sendToUser(userId, {
+      title: "Ahenk", body: `${text.tr} İhlal: ${v.tr}`, data: { type: "SUSPENDED" }, en: { title: "Ahenk", body: `${text.en} Violation: ${v.en}` },
+    }).catch(() => undefined);
+    return s;
   }
 
   async liftSanction(userId: string, sanctionId: string, actorId: string) {

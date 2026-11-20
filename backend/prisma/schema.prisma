@@ -25,6 +25,8 @@ model User {
   onboardingSeenAt DateTime? // Tanıtım ("Nasıl Çalışır") son adımda Başla ya da Atla ile kapatıldı; doluysa otomatik açılmaz
   lastNotificationsSeenAt DateTime? // Bildirimler sayfasının son açılışı (alt menü rozeti: sonrasında gelen okunmamışlar sayı, diğerleri nokta)
   selectionCancelledAt    DateTime? // Son seçim iptali: iptalden sonra 24 saat hiçbir masa türünde yeni seçim yapılamaz
+  emergencyContactName    String? // Acil durum kişisi (en fazla 1): yalnız Acil Yardım talebinde WhatsApp bildirimi için
+  emergencyContactPhone   String? // E.164
   role          UserRole   @default(USER)
   status        UserStatus @default(ACTIVE)
   emailVerified Boolean    @default(false)
@@ -992,6 +994,7 @@ enum AdminAlertType {
   BOT_NOT_FOUND
   PAYMENT_ISSUE
   BOT_ASSIGNED
+  NO_SHOW_REPORTED
 }
 
 // ─────────────────────────────────────────────
@@ -1134,6 +1137,8 @@ model SosReport {
   lastAddress         String?             // Çözülünce: son konumun açık adresi (koordinat ve konum geçmişi silinir)
   lastLocationAt      DateTime?           // Çözülünce: son konumun zamanı
   locationOffNotifiedAt DateTime?         // Açık talepte konum kesintisi bildirimi gönderildi (konum yeniden gelince boşalır; yeni kesinti yeni bildirim)
+  emergencyNotifiedAt   DateTime?         // Acil durum kişisine WhatsApp bildirimi gönderildi (talep başına bir kez)
+  emergencyNotifyFailed Boolean           @default(false) // Acil durum kişisine bildirim gönderilemedi (admin talep detayında)
   locationUpdates     SosLocationUpdate[]
 
   @@index([meetingId])

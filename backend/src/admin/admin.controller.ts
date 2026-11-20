@@ -548,9 +548,7 @@ export class AdminController {
 
   @AdminAction("USER_SANCTION", async (c) => {
     const verb = { WARNING: "uyarı verdi", SUSPENSION: "askıya aldı", BAN: "banladı" }[String(c.body.type)] ?? "yaptırım uyguladı";
-    const until = c.body.expiresAt
-      ? `, bitiş: ${new Date(String(c.body.expiresAt)).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Istanbul" })}`
-      : "";
+    const until = c.body.days ? `, süre: ${Number(c.body.days) === 30 ? "1 ay" : `${c.body.days} gün`}` : "";
     const name = await c.userName(c.params.id);
     const subject = c.body.type === "WARNING" ? `${name} kullanıcısına` : `${name} kullanıcısını`;
     return { text: `${subject} ${verb} (Sebep: ${c.body.reason}${until})`, targetUserId: c.params.id };
@@ -561,17 +559,13 @@ export class AdminController {
     @Body() dto: CreateSanctionDto,
     @Req() req: Request,
   ) {
-    if (dto.type === "SUSPENSION" && (!dto.expiresAt || new Date(dto.expiresAt).getTime() <= Date.now())) {
-      throw new BadRequestException("Askıya alma için gelecekte bir bitiş tarihi zorunludur.");
-    }
     const admin = req.user as { id: string };
-    return this.adminService.createSanction(
-      id,
-      admin.id,
-      dto.type as any,
-      dto.reason,
-      dto.expiresAt ? new Date(dto.expiresAt) : undefined,
-    );
+    // Askı tek model: 3 gün / 15 gün / 1 ay; kullanıcıya şablon push
+    if (dto.type === "SUSPENSION") {
+      if (!dto.days) throw new BadRequestException("Askı süresi seçilmeli (3 gün / 15 gün / 1 ay).");
+      return this.adminService.suspend(id, admin.id, dto.days, dto.reason);
+    }
+    return this.adminService.createSanction(id, admin.id, dto.type as any, dto.reason);
   }
 
   @AdminAction("USER_SANCTION_LIFT", async (c) => ({ text: `${await c.userName(c.params.id)} kullanıcısının yaptırımını kaldırdı`, targetUserId: c.params.id }))

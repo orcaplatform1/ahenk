@@ -1,4 +1,5 @@
 'use client';
+import { EmergencyContact } from '@/components/EmergencyContact';
 
 import { gColor } from '@ahenk/ui';
 import { KankaSection } from '@/components/KankaSection';
@@ -80,15 +81,14 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
   const t = useTranslations();
   const locale = useLocale() as Lang;
   const pathname = usePathname();
-  // Dil bazlı eşleşme (mobil ProfilimTab ile aynı): kayıt dili ana dildir (kilitli, alanı hep true); "Başka konuştuğun diller"
-  // satırlarından diğer diller işaretlenir (birden fazla seçilebilir) → speaksEnglish / speaksTurkish
+  // Kayıt dili ana dildir (kilitli). "Yabancılarla masaya oturmak ister misin?" (yalnız Türkçe arayüzde): Evet → speaksEnglish = true
+  // (yabancılarla da eşleşir), Hayır → yalnız Türkçe konuşanlarla eşleşir (mobil ProfilimTab ile aynı)
   const nativeLang: Lang = user.nativeLanguage === 'en' ? 'en' : 'tr';
-  const [spoken, setSpoken] = useState<Record<Lang, boolean>>({ tr: user.speaksTurkish !== false, en: !!user.speaksEnglish });
-  async function toggleSpoken(l: Lang) {
-    if (l === nativeLang) return;
-    const v = !spoken[l];
-    setSpoken((p) => ({ ...p, [l]: v }));
-    try { await api.patch('/users/me/spoken-languages', l === 'en' ? { speaksEnglish: v } : { speaksTurkish: v }); } catch (e) { setSaveError((e as Error).message); }
+  const [foreigners, setForeigners] = useState<boolean>(!!user.speaksEnglish);
+  async function chooseForeigners(v: boolean) {
+    if (v === foreigners) return;
+    setForeigners(v);
+    try { await api.patch('/users/me/spoken-languages', { speaksEnglish: v }); } catch (e) { setForeigners(!v); setSaveError((e as Error).message); }
   }
   function chooseLanguage(lang: Lang) {
     if (lang === locale) return;
@@ -389,17 +389,21 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
             {nativeLang === 'tr' ? t('common.turkish') : t('common.english')}
           </span>
         </div>
-        {/* Başka konuştuğun diller: seçilebilir satırlar, birden fazla dil işaretlenebilir */}
-        <div className="flex flex-col gap-1">
-          <span className="text-xs text-[#a39c93]">{t('prof.otherLanguages')}</span>
-          {LANGS.filter((l) => l !== nativeLang).map((l) => (
-            <button key={l} type="button" role="checkbox" aria-checked={spoken[l]} onClick={() => toggleSpoken(l)}
-              className="flex items-center justify-between rounded-lg px-3 text-left text-sm" style={{ minHeight: 44, border: 'none', cursor: 'pointer', background: spoken[l] ? 'rgba(192,57,43,0.18)' : 'transparent', color: spoken[l] ? '#f4f1ec' : '#c9c2b8' }}>
-              <span>{l === 'tr' ? t('common.turkish') : t('common.english')}</span>
-              {spoken[l] && <span style={{ color: '#d6453a' }}>✓</span>}
-            </button>
-          ))}
-        </div>
+        {/* Yabancılarla masa (İngilizce arayüzde gösterilmez) */}
+        {locale !== 'en' && (
+          <div className="flex flex-col gap-2">
+            <span className="text-[13px] text-[#c9c2b8]">{t('prof.foreignersQ')}</span>
+            <div className="flex gap-2" role="radiogroup" aria-label={t('prof.foreignersQ')}>
+              {[true, false].map((v) => (
+                <button key={String(v)} type="button" role="radio" aria-checked={foreigners === v} onClick={() => void chooseForeigners(v)}
+                  className="flex-1 rounded-lg px-3 text-sm" style={{ minHeight: 44, border: 'none', cursor: 'pointer', background: foreigners === v ? 'rgba(192,57,43,0.18)' : 'rgba(255,255,255,0.04)', color: foreigners === v ? '#f4f1ec' : '#c9c2b8' }}>
+                  {v ? t('common.yes') : t('common.no')}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs text-[#a39c93]" style={{ lineHeight: 1.5 }}>{t('prof.foreignersNote')}</span>
+          </div>
+        )}
         {/* Kankamla: Aktif Kankanız (davet et / davet var / kankan) + kısa açıklama */}
         <KankaSection />
       </Card>
@@ -533,6 +537,7 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
           <span style={{ fontSize: 14, color: '#f4f1ec' }}>{t('prof.blocking')}</span>
           <span style={{ fontSize: 18, color: '#a39c93' }}>›</span>
         </button>
+        <EmergencyContact />
       </Card>
 
       {/* Oturum ve hesap */}

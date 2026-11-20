@@ -1,3 +1,4 @@
+import { NotSuspendedGuard } from "../common/suspension";
 import { IsE164Phone } from "../common/phone";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
@@ -28,7 +29,7 @@ export class KankaController {
   }
 
   @Post("invite")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, NotSuspendedGuard)
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiBearerAuth()
   @ApiOperation({ summary: "Telefon numarasıyla kanka daveti (48 saat geçerli; link her zaman döner)" })
@@ -47,7 +48,7 @@ export class KankaController {
 
   @Post("invites/:id/accept")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, NotSuspendedGuard)
   @ApiBearerAuth()
   accept(@Req() req: AuthedRequest, @Param("id") id: string) {
     return this.kanka.accept(req.user.id, id);

@@ -1,6 +1,6 @@
 // apps/web/app/admin/quality/page.tsx karşılığı (Şikayetler): masa sohbeti mesaj şikâyetleri ve "Otomatik engel" kayıtları.
 // Detayda şikâyet edilen mesaj işaretli olarak sohbetin tamamı, gönderenin önceki uyarıları ve karar butonları
-// (Uyar / Masadan çıkar / Askıya al 3-15-30 gün). Daha önce uyarı almış kullanıcıda yalnız Masadan çıkar ve Askıya al aktif.
+// (Uyar / Masadan çıkar / Askıya al 3 gün / 15 gün / 1 ay). Daha önce uyarı almış kullanıcıda yalnız Masadan çıkar ve Askıya al aktif.
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { showAlert } from '@/components/AppAlert';
@@ -53,7 +53,7 @@ export default function AdminQuality() {
   }
   function decide(action: 'WARN' | 'REMOVE' | 'SUSPEND', days?: number) {
     if (!detail) return;
-    const label = action === 'WARN' ? 'uyarılsın' : action === 'REMOVE' ? 'masadan çıkarılsın' : `${days} gün askıya alınsın`;
+    const label = action === 'WARN' ? 'uyarılsın' : action === 'REMOVE' ? 'masadan çıkarılsın' : `${days === 30 ? '1 ay' : `${days} gün`} askıya alınsın`;
     showAlert(`Kullanıcı ${label} mı?`, 'Kullanıcıya hazır şablon bildirim gönderilir.', [
       { text: 'Vazgeç', style: 'cancel' },
       { text: 'Onayla', style: 'destructive', onPress: async () => {
@@ -85,7 +85,7 @@ export default function AdminQuality() {
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <AT w={600} style={{ fontSize: 13 }}>{r.senderName}</AT>
                     <ALabel style={{ paddingVertical: 2, paddingHorizontal: 7, borderRadius: 99, overflow: 'hidden', borderWidth: 1, borderColor: r.auto ? adm.amber : adm.red, color: r.auto ? adm.amber : adm.red }}>{r.auto ? 'Otomatik engel' : 'Şikayet'}</ALabel>
-                    {!!r.decision && <ALabel style={{ paddingVertical: 2, paddingHorizontal: 7, borderRadius: 99, overflow: 'hidden', borderWidth: 1, borderColor: adm.green, color: adm.green }}>{`${DECISION_TR[r.decision]}${r.decisionDays ? ` (${r.decisionDays} gün)` : ''}`}</ALabel>}
+                    {!!r.decision && <ALabel style={{ paddingVertical: 2, paddingHorizontal: 7, borderRadius: 99, overflow: 'hidden', borderWidth: 1, borderColor: adm.green, color: adm.green }}>{`${DECISION_TR[r.decision]}${r.decisionDays ? ` (${r.decisionDays === 30 ? '1 ay' : `${r.decisionDays} gün`})` : ''}`}</ALabel>}
                   </View>
                   <AT numberOfLines={1} style={{ fontSize: 12 }}>"{r.messageContent}"</AT>
                   <AT style={{ marginTop: 2, fontSize: 11, color: adm.muted }}>{[r.reasonLabel, r.note, r.reporterName ? `Şikayet eden: ${r.reporterName}` : null].filter(Boolean).join(' · ')}</AT>
@@ -117,7 +117,7 @@ export default function AdminQuality() {
                     ))}
                   </ScrollView>
                   {detail.decision ? (
-                    <AT style={{ fontSize: 12, color: adm.green }}>{`Karar: ${DECISION_TR[detail.decision]}${detail.decisionDays ? ` (${detail.decisionDays} gün)` : ''}`}</AT>
+                    <AT style={{ fontSize: 12, color: adm.green }}>{`Karar: ${DECISION_TR[detail.decision]}${detail.decisionDays ? ` (${detail.decisionDays === 30 ? '1 ay' : `${detail.decisionDays} gün`})` : ''}`}</AT>
                   ) : (
                     <>
                       <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -128,7 +128,7 @@ export default function AdminQuality() {
                       {detail.hasWarning && <AT style={{ fontSize: 11, color: adm.muted }}>Kullanıcı daha önce uyarı aldı: yalnız Masadan çıkar ve Askıya al kullanılabilir.</AT>}
                       {suspendOpen && (
                         <View style={{ flexDirection: 'row', gap: 8 }}>
-                          {[3, 15, 30].map(d => <DecisionBtn key={d} label={`${d} gün`} color={adm.red} disabled={busy} onPress={() => decide('SUSPEND', d)} />)}
+                          {[3, 15, 30].map(d => <DecisionBtn key={d} label={`${d === 30 ? '1 ay' : `${d} gün`}`} color={adm.red} disabled={busy} onPress={() => decide('SUSPEND', d)} />)}
                         </View>
                       )}
                     </>

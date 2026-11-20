@@ -1,5 +1,5 @@
 // web components/AdminUserPhoto.tsx karşılığı: kullanıcı profil fotoğrafı; basınca tam ekran büyük görünüm, "Sil" → onay penceresi.
-// Önceki fotoğraf ihlali yoksa fotoğraf silinir ve kullanıcıya uyarı push'u gider; varsa askı süresi (3 / 15 / 30 gün) seçilir.
+// Önceki fotoğraf ihlali yoksa fotoğraf silinir ve kullanıcıya uyarı push'u gider; varsa askı süresi (3 gün / 15 gün / 1 ay) seçilir.
 // HIG: en az 44 pt dokunma alanı; geri tuşu / dışarı dokunma kapatır.
 import React, { useState } from 'react';
 import { Image, Modal, Pressable, useWindowDimensions, View } from 'react-native';
@@ -61,7 +61,7 @@ export function AdminUserPhoto({ userId, photoUrl, initials, gender, size = 72, 
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     {([3, 15, 30] as const).map((d) => (
                       <Pressable key={d} onPress={() => setDays(d)} accessibilityRole="button" accessibilityState={{ selected: days === d }} style={btn(days === d ? adm.amber : adm.border, days === d)}>
-                        <AT w={600} style={{ fontSize: 12, color: days === d ? adm.amber : adm.text }}>{d} gün</AT>
+                        <AT w={600} style={{ fontSize: 12, color: days === d ? adm.amber : adm.text }}>{d === 30 ? '1 ay' : `${d} gün`}</AT>
                       </Pressable>
                     ))}
                   </View>

@@ -6,6 +6,7 @@ import { FcmService } from "../notification/fcm/fcm.service";
 import { Logger } from "@nestjs/common";
 import { AdminAlertType, MeetingStatus, Prisma, UserRole } from "../generated/prisma/client";
 import { sosWindowEnd } from "../meetings/meeting-windows";
+import { approvedPhotoMap } from "../profile-photo/profile-photo.util";
 
 type Viewer = { id: string; role: UserRole };
 type SnapshotPerson = { userId: string; [key: string]: unknown };
@@ -51,6 +52,14 @@ export interface SosAddress {
   binaNo: string | null; postaKodu: string | null; tamAdres: string | null; guncelleme: Date;
   kisaAdres: string; // katılımcı koordinat satırındaki tek satırlık adres (cadde, mahalle, ilçe, şehir)
 }
+// İki koordinat arası mesafe (metre)
+function distanceM(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000, rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad, dLng = (lng2 - lng1) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
 interface AddressCacheEntry { lat: number; lng: number; checkedAt: number; inFlight: boolean; address: SosAddress | null }
 
 @Injectable()
@@ -174,12 +183,36 @@ export class SosService {
       throw err;
     }
 
+    // Acil durum kişisi kayıtlıysa WhatsApp şablon mesajı (talep başına bir kez); başarısızsa akış durmaz, admin detayında görünür
+    this.notifyEmergencyContact(report.id, userId, lat, lng).catch(() => undefined);
+
     // WhatsApp: tüm admin ve superadmin kullanıcılarına gönder
     this.notifyAdmins(report.id, userId, meetingId, threats, lat, lng).catch(() =>
       this.logger.error(`Admin bildirimi gönderilemedi (rapor: ${report.id}, masa: ${meetingId}, tehdit: ${threats.join(",")})`),
     );
 
     return { reportId: report.id };
+  }
+
+  // ahenk_emergency_contact: TR "Ahenk: [Ad Soyad] acil yardım talebinde bulundu. Ekibimiz durumu takip ediyor. Son konumu: [bağlantı]",
+  // EN "Ahenk: [Full Name] has requested emergency help. Our team is monitoring the situation. Last location: [link]". Dil: kullanıcının dili
+  private async notifyEmergencyContact(reportId: string, userId: string, lat?: number, lng?: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { emergencyContactPhone: true, language: true, profile: { select: { firstName: true, lastName: true } } },
+    });
+    if (!user?.emergencyContactPhone) return;
+    const claimed = await this.prisma.sosReport.updateMany({ where: { id: reportId, emergencyNotifiedAt: null }, data: { emergencyNotifiedAt: new Date() } });
+    if (claimed.count === 0) return;
+    const name = `${user.profile?.firstName ?? ""} ${user.profile?.lastName ?? ""}`.trim();
+    const link = lat != null && lng != null ? `https://maps.google.com/?q=${lat},${lng}` : "-";
+    let ok = false;
+    try {
+      ok = await this.whatsapp.send(user.emergencyContactPhone, "ahenk_emergency_contact", [name, link], user.language === "en" ? "en" : "tr");
+    } catch (err) {
+      this.logger.error(`Acil durum kişisi bildirimi hatası (rapor ${reportId}): ${err}`);
+    }
+    if (!ok) await this.prisma.sosReport.update({ where: { id: reportId }, data: { emergencyNotifyFailed: true } });
   }
 
   // ─── Canlı konum güncelle ─────────────────────────────────────────────────
@@ -296,6 +329,16 @@ export class SosService {
     return people.filter((p) => !bots.has(p.userId) && !deleted.has(p.userId)).map(({ isBot: _isBot, ...p }) => p);
   }
 
+  private async peopleExtras(userIds: string[]): Promise<Record<string, { photoUrl: string | null; kycId: string | null }>> {
+    const ids = [...new Set(userIds.filter(Boolean))];
+    const [photos, kycs] = await Promise.all([
+      approvedPhotoMap(this.prisma, ids),
+      this.prisma.kycSubmission.findMany({ where: { userId: { in: ids } }, select: { id: true, userId: true } }),
+    ]);
+    const kyc = new Map(kycs.map((k) => [k.userId, k.id]));
+    return Object.fromEntries(ids.map((id) => [id, { photoUrl: photos.get(id) ?? null, kycId: kyc.get(id) ?? null }]));
+  }
+
   private adminName = { select: { id: true, profile: { select: { firstName: true, lastName: true } } } } as const;
 
   // ─── Admin: tüm raporlar ──────────────────────────────────────────────────
@@ -358,6 +401,8 @@ export class SosService {
     const deleted = await this.deletedIds(snapshot.map((p) => p.userId));
     return {
       ...report,
+      // Kişi kartları: onaylı profil fotoğrafı (admin büyütür, "Sil" ile silebilir) ve kimlik ön yüzü (KYC başvuru kimliği)
+      people: await this.peopleExtras(snapshot.map((p) => p.userId)),
       // Konum geçmişi: her satıra açık adres (backend önbelleği; yoksa sıraya eklenir, null döner)
       locationUpdates: report.locationUpdates.map((lu) => ({ ...lu, address: this.historyAddress(lu.lat, lu.lng) })),
       restricted: false,
@@ -408,9 +453,28 @@ export class SosService {
 
   // 15 sn kuralı: son kontrolden 15 sn geçmediyse ya da istek sürüyorsa hiçbir şey yapılmaz.
   // Koordinat bir önceki sorgudakiyle aynıysa ve adres varsa Nominatim'e tekrar sorulmaz.
+  // GOOGLE_MAPS_API_KEY tanımlıysa açık talebin adresi Google Geocoding ile alınır: yalnız konum 50 m'den fazla değiştiğinde ya da
+  // en geç 1 dakikada bir. Anahtar yoksa (ya da Google yanıt vermezse) mevcut Nominatim çözümü çalışır.
   private refreshAddress(reportId: string, lat: number, lng: number) {
     const now = Date.now();
     const entry = this.addressCache.get(reportId);
+    if (process.env.GOOGLE_MAPS_API_KEY) {
+      if (entry && (entry.inFlight || (entry.address && distanceM(entry.lat, entry.lng, lat, lng) <= 50 && now - entry.checkedAt < 60_000))) return;
+      const e: AddressCacheEntry = entry ?? { lat, lng, checkedAt: now, inFlight: false, address: null };
+      e.lat = lat; e.lng = lng; e.checkedAt = now; e.inFlight = true;
+      this.addressCache.set(reportId, e);
+      void (async () => {
+        try {
+          const address = (await this.googleGeocode(lat, lng)) ?? (await this.reverseGeocode(lat, lng));
+          const cur = this.addressCache.get(reportId);
+          if (cur && address) cur.address = address;
+        } finally {
+          const cur = this.addressCache.get(reportId);
+          if (cur) cur.inFlight = false;
+        }
+      })();
+      return;
+    }
     if (entry && (entry.inFlight || now - entry.checkedAt < ADDRESS_REFRESH_MS)) return;
     if (entry && entry.address && entry.lat === lat && entry.lng === lng) { entry.checkedAt = now; return; }
     const e: AddressCacheEntry = entry ?? { lat, lng, checkedAt: now, inFlight: false, address: null };
@@ -479,6 +543,32 @@ export class SosService {
       }
     } finally {
       this.nominatimBusy = false;
+    }
+  }
+
+  // Google Geocoding API (reverse geocoding, Türkçe); anahtar yoksa / hata olursa null
+  private async googleGeocode(lat: number, lng: number): Promise<SosAddress | null> {
+    const key = process.env.GOOGLE_MAPS_API_KEY;
+    if (!key) return null;
+    try {
+      const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=tr&key=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(NOMINATIM_TIMEOUT_MS) });
+      if (!res.ok) { this.logger.warn(`Google adres çözümleme hatası: HTTP ${res.status}`); return null; }
+      const d = (await res.json()) as { status: string; results?: { formatted_address: string; address_components: { long_name: string; types: string[] }[] }[] };
+      const r = d.results?.[0];
+      if (d.status !== "OK" || !r) { this.logger.warn(`Google adres çözümleme: ${d.status}`); return null; }
+      const pick = (...types: string[]) => r.address_components.find((c) => types.some((t) => c.types.includes(t)))?.long_name ?? null;
+      const a = {
+        il: pick("administrative_area_level_1"),
+        ilce: pick("administrative_area_level_2", "sublocality_level_1"),
+        mahalle: pick("neighborhood", "sublocality_level_2", "administrative_area_level_4"),
+        caddeSokak: pick("route"),
+        binaNo: pick("street_number"),
+        postaKodu: pick("postal_code"),
+      };
+      return { ...a, tamAdres: r.formatted_address, guncelleme: new Date(), kisaAdres: [a.caddeSokak, a.mahalle, a.ilce, a.il].filter(Boolean).join(", ") || r.formatted_address };
+    } catch (err) {
+      this.logger.warn(`Google adres çözümleme yanıt vermedi: ${(err as Error).message}`);
+      return null;
     }
   }
 
