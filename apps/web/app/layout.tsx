@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { DM_Serif_Display, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+import NoInstallPrompt from '@/components/NoInstallPrompt';
 import Analytics from '@/components/Analytics';
 import CookieBanner from '@/components/CookieBanner';
 import SosOpenReport from '@/components/SosOpenReport';
@@ -94,6 +95,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} data-scroll-behavior="smooth" className={`${dmSerifDisplay.variable} ${inter.variable} ${jetBrainsMono.variable}`}>
       <body className="font-sans antialiased" style={{}}>
+        <NoInstallPrompt />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Analytics nonce={nonce} />
           <NavbarWrapper />
