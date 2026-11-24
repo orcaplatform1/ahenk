@@ -405,7 +405,7 @@ Aşağıdakiler için karar verilmedi; yanıt bekleniyor.
 - S-15: tanıtım/kurumsal sayfalar yok. S-16: yasal sayfalar uygulama içi tarayıcıda (expo-web-browser). S-17: Navbar/Footer yok, çıkış Profilim'de. S-18: CookieBanner/Analytics yok. S-19: `/profil/gecmis`, PoolScreen yok.
 - S-20: üye token'ları expo-secure-store; yenileme webdeki gibi (401 → `/auth/refresh`, Origin'siz istemci gövdede `refreshToken` gönderir). Üye istekleri `credentials: 'omit'` + `Authorization: Bearer`.
 - S-21: Universal Links (ahenk.co); AASA/assetlinks dosyaları webe eklenmez, Team ID/uygulama kimliği raporlanır.
-- S-22: açılış 3 sn, siyah zemin, `assets/start_logo.jpg` dikey eksende dönerek; altında "Ahenk bir Traders.TR 🇹🇷 ticari markasıdır." (Traders `#e8e8e8` 700, .TR `#4a90d9` 800, footer stili). Uygulama ikonu aynı logo.
+- S-22: açılış 3 sn, siyah zemin, `assets/start_logo.jpg` dikey eksende dönerek; altında "Ahenk bir Traders.TR 🇹🇷 ticari markasıdır." (Traders `#e8e8e8` 700, .TR `#4a90d9` 800, footer stili). Uygulama ikonu aynı logo. (Güncelleme 25.11.2026: start_logo.jpg silindi, yerine splash-logo.png kullanılıyor. Commit df77a8c.)
 - S-23: web kenar boşlukları güvenli alanın üstüne eklenir. S-24: görünür boyut aynı, dokunma alanı 44×44 pt (hitSlop).
 - S-25: test ekranında geri kaydırmada uyarı; KYC video kaydında geri kaydırma kapalı.
 - S-26: sekme ikonları ince çizgi; sekme çubuğu renkleri AccountTabBar (seçili `#ff6b6b`, seçili değil `#666`, zemin `#0a0a0a`, üst kenar `rgba(255,255,255,0.12)`); Bildirimler'de okunmamış sayı rozeti.
