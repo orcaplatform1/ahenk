@@ -48,7 +48,7 @@ export default function MekanSifremiUnuttumPage() {
     setLoading(true); setError('');
     try {
       await venueApi.post('/reset-password', { phone: `+90${phone}`, code, newPassword: password });
-      router.push('/mekan/giris');
+      router.push('/giris?sekme=mekan');
     } catch (err) { setError((err as Error).message); setLoading(false); }
   }
 
@@ -84,7 +84,7 @@ export default function MekanSifremiUnuttumPage() {
             <button type="button" onClick={() => sendCode()} disabled={countdown.waiting || loading} className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:opacity-40 disabled:hover:text-[#555] disabled:cursor-not-allowed">{t('vp.resend')}</button>
           </form>
         )}
-        <StdButton variant="ghost" as={Link} href="/mekan/giris" className="w-full justify-center mt-3">{t('vp.backToLogin')}</StdButton>
+        <StdButton variant="ghost" as={Link} href="/giris?sekme=mekan" className="w-full justify-center mt-3">{t('vp.backToLogin')}</StdButton>
       </div>
     </main>
   );

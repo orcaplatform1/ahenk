@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { DEFAULT_PHONE_COUNTRY, formatDateTime, toE164 } from '@ahenk/shared';
@@ -266,6 +266,10 @@ export default function GirisPage() {
   const router = useRouter();
   const [country, setCountry] = useState(DEFAULT_PHONE_COUNTRY);
   const [kind, setKind] = useState<'uye' | 'isletme'>('uye');
+  // /giris?sekme=mekan → Mekân sekmesi açık gelir (eski /mekan/giris adresi buraya yönlenir)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('sekme') === 'mekan') setKind('isletme');
+  }, []);
   const [method, setMethod] = useState<Method>('whatsapp');
 
   /* WhatsApp akışı */

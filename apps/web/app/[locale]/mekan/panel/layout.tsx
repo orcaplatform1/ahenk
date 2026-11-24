@@ -20,7 +20,7 @@ export default function MekanPanelLayout({ children }: { children: React.ReactNo
   const [me, setMe] = useState<VenueMe | null>(null);
   const [error, setError] = useState('');
 
-  const onAuthLost = useCallback(() => router.replace('/mekan/giris'), [router]);
+  const onAuthLost = useCallback(() => router.replace('/giris?sekme=mekan'), [router]);
 
   useEffect(() => {
     venueApi.get<VenueMe>('/me').then(setMe).catch((e) => {

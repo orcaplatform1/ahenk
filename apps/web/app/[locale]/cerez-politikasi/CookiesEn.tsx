@@ -106,7 +106,7 @@ const sections = [
         </div>
 
         <p style={{ color: '#8f887f', fontSize: 13 }}>
-          You can change your consent at any time from the Preferences section of the banner. When you withdraw consent, the related cookies are deleted from your browser. To reopen the banner, use the Update My Cookie Preferences button at the bottom of this page.
+          You can change your consent at any time from the Preferences section of the banner. When you withdraw consent, the related cookies are deleted from your browser. To reopen the banner, use the Update My Cookie Preferences button at the top of this page.
         </p>
       </div>
     ),

@@ -21,6 +21,13 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.cloudflare.com' },
     ],
   },
+  // Eski mekân giriş adresi: /giris Mekân sekmesine kalıcı yönlendirme
+  async redirects() {
+    return [
+      { source: '/mekan/giris', destination: '/giris?sekme=mekan', permanent: true },
+      { source: '/en/mekan/giris', destination: '/en/giris?sekme=mekan', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {
