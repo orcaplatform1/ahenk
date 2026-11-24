@@ -13,11 +13,15 @@ interface CardData {
   type: MeetingKind;
   uyumSkoru: number;
   dnaShort: string | null;
-  venueName: string | null;
+  peopleCount: number; // Masanın gerçek katılımcı sayısı
+  cityName: string | null; // Masanın şehri
   scheduledAt: string;
   teaser: number;
   inviteCode: number | null;
   inviteLink: string | null;
+  sharerName: string; // Paylaşan kullanıcı: "Ahmet Y."
+  sharerInitials: string; // Fotoğraf yoksa: "AY"
+  sharerPhotoUrl: string | null; // Onaylı profil fotoğrafı
 }
 
 // Masa türüne göre isteğe bağlı arka plan görseli (1080 × 1920 WebP): apps/web/public/share-bg/<dosya>.webp.
@@ -69,15 +73,19 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number, maxLine
   return lines;
 }
 
-function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string; type: string; overall: string; teaser: string; footer: string; date: string }, bgImage?: CanvasImageSource | null) {
+// Kartta çizilen görseller: masa türünün arka planı (yoksa gradyan), Ahenk logosu (/logo.webp), paylaşanın profil fotoğrafı (yoksa baş harfler)
+type CardImages = { bg?: CanvasImageSource | null; logo?: CanvasImageSource | null; photo?: CanvasImageSource | null };
+
+function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string; type: string; overall: string; teaser: string; footer: string; date: string; people: string; atTable: string }, imgs: CardImages = {}) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   const col = TYPE_COLORS[d.type];
   canvas.width = W; canvas.height = H;
+  const MAXW = W - PAD * 2;
 
-  if (bgImage) {
+  if (imgs.bg) {
     // Masa türünün arka plan görseli tam boyut
-    ctx.drawImage(bgImage, 0, 0, W, H);
+    ctx.drawImage(imgs.bg, 0, 0, W, H);
   } else {
     const bg = ctx.createLinearGradient(0, 0, W, H);
     bg.addColorStop(0, '#0b0b0b');
@@ -93,27 +101,66 @@ function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string
     ctx.fillRect(0, 0, W, H);
   }
 
+  // Üst: Ahenk logosu "Ahenk" yazısının üstünde, yazıya göre yatayda ortalı; masa türü etiketi sağa yaslı, "Ahenk" yazısıyla aynı hizada
   ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = '#ffffff';
   ctx.font = `400 84px ${SERIF}`;
-  ctx.fillText('Ahenk', PAD, PAD + 70);
+  const brandW = ctx.measureText('Ahenk').width;
+  const LOGO = 120;
+  if (imgs.logo) ctx.drawImage(imgs.logo, PAD + (brandW - LOGO) / 2, PAD, LOGO, LOGO);
+  const brandBase = PAD + LOGO + 82; // "Ahenk" taban çizgisi
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('Ahenk', PAD, brandBase);
+  const brandMid = brandBase - 30; // yazının dikey ortası (büyük harf yüksekliğinin yarısı)
 
-  // Masa türü rozeti (sağ üst)
   ctx.font = `700 34px ${SANS}`;
   const label = texts.type.toLocaleUpperCase(documentLang() === 'en' ? 'en' : 'tr-TR');
   const lw = ctx.measureText(label).width + 56;
-  const lx = W - PAD - lw, ly = PAD + 14;
+  const lx = W - PAD - lw, ly = brandMid - 36;
   ctx.fillStyle = col.accent;
   ctx.beginPath();
   ctx.roundRect(lx, ly, lw, 72, 36);
   ctx.fill();
   ctx.fillStyle = '#ffffff';
   ctx.fillText(label, lx + 28, ly + 48);
+  const TOP = brandBase + 24;
 
-  // Ortadaki içerik bloğu (başlık, yüzde, Genel Uyum, ayırıcı, karakter cümlesi, mekân, tarih, alıntı): önce yerleşim hesaplanır,
-  // sonra blok logo / etiket satırı (alt kenarı 182) ile alt ayraç (1734) arasında dikeyde ortalanarak çizilir.
+  // Alt: paylaşan kullanıcı satırı (fotoğraf / baş harfler, "Ahmet Y.", "bu masada"), ayraç ve davet satırı sabit
+  const FOOT_LINE = H - PAD - 90;
+  const AV = 96;
+  const avY = FOOT_LINE - 40 - AV;
+  const cx = PAD + AV / 2, cy = avY + AV / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, AV / 2, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+  if (imgs.photo) {
+    ctx.drawImage(imgs.photo, PAD, avY, AV, AV);
+  } else {
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(PAD, avY, AV, AV);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 36px ${SANS}`;
+    const iw = ctx.measureText(d.sharerInitials).width;
+    ctx.fillText(d.sharerInitials, cx - iw / 2, cy + 13);
+  }
+  ctx.restore();
+  ctx.strokeStyle = col.accent;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, AV / 2 - 1.5, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `600 40px ${SANS}`;
+  ctx.fillText(d.sharerName, PAD + AV + 28, cy - 4);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = `400 30px ${SANS}`;
+  ctx.fillText(texts.atTable, PAD + AV + 28, cy + 36);
+  const BOTTOM = avY - 40;
+
+  // Ortadaki içerik bloğu (başlık, yüzde, Genel Uyum, ayırıcı, karakter cümlesi, kişi · şehir, tarih, alıntı): önce yerleşim
+  // hesaplanır, sonra üst satır ile paylaşan kullanıcı satırı arasında dikeyde ortalanarak çizilir.
   const ops: ((oy: number) => void)[] = [];
-  const MAXW = W - PAD * 2;
 
   // Başlık: tek satır; 888 px'e sığmazsa yazı küçülür
   let ts = 46;
@@ -124,42 +171,37 @@ function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string
   const ty = y;
   ops.push((oy) => { ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = titleFont; ctx.fillText(texts.title, PAD, oy + ty); });
 
-  // Genel Uyum yüzdesi (önceki 300 px'in yarısı)
-  y += 160;
+  // Genel Uyum yüzdesi (150 px'ten %25 küçük) ve "Genel Uyum" (52 px'ten %25 küçük)
+  y += 130;
   const sy = y;
-  ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = `800 150px ${SANS}`; ctx.fillText(`%${Math.max(0, Math.min(100, d.uyumSkoru))}`, PAD - 5, oy + sy); });
-  y += 90;
+  ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = `800 112.5px ${SANS}`; ctx.fillText(`%${Math.max(0, Math.min(100, d.uyumSkoru))}`, PAD - 4, oy + sy); });
+  y += 68;
   const gy = y;
-  ops.push((oy) => { ctx.fillStyle = '#4ade80'; ctx.font = `700 52px ${SANS}`; ctx.fillText(texts.overall, PAD, oy + gy); });
+  ops.push((oy) => { ctx.fillStyle = '#4ade80'; ctx.font = `700 39px ${SANS}`; ctx.fillText(texts.overall, PAD, oy + gy); });
 
-  // Ayırıcı ve masa DNA'sı (kısa özet; önceki 58 px'ten %25 küçük)
-  y += 70;
+  // Ayırıcı ve masa DNA'sı (kısa özet)
+  y += 60;
   const dy = y;
   ops.push((oy) => { ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(PAD, oy + dy, MAXW, 2); });
   y += 75;
   if (d.dnaShort) {
     ctx.font = `400 43.5px ${SERIF}`;
     for (const line of wrap(ctx, d.dnaShort, MAXW, 3)) {
-      const ly = y;
-      ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = `400 43.5px ${SERIF}`; ctx.fillText(line, PAD, oy + ly); });
+      const ly2 = y;
+      ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = `400 43.5px ${SERIF}`; ctx.fillText(line, PAD, oy + ly2); });
       y += 57;
     }
   }
 
-  // Mekân, tarih ve saat
+  // Kişi sayısı · şehir (mekân adı yok) ve tarih / saat
   y += 60;
-  if (d.venueName) {
-    ctx.font = `700 50px ${SANS}`;
-    for (const line of wrap(ctx, d.venueName, MAXW, 2)) {
-      const ly = y;
-      ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = `700 50px ${SANS}`; ctx.fillText(line, PAD, oy + ly); });
-      y += 64;
-    }
-  }
+  const py = y;
+  ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = `700 50px ${SANS}`; ctx.fillText(texts.people, PAD, oy + py); });
+  y += 64;
   const dty = y;
   ops.push((oy) => { ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = `500 42px ${SANS}`; ctx.fillText(texts.date, PAD, oy + dty); });
 
-  // Alıntı (teaser; önceki 50 px'ten %25 küçük)
+  // Alıntı (teaser)
   y += 110;
   ctx.font = `italic 400 37.5px ${SERIF}`;
   const tLines = wrap(ctx, `“${texts.teaser}”`, MAXW - 30, 4);
@@ -172,20 +214,16 @@ function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string
     tLines.forEach((line, i) => ctx.fillText(line, PAD + 34, oy + tby + i * 49.5));
   });
   const blockH = tby + (tLines.length - 1) * 49.5 + 12;
-
-  const TOP = PAD + 14 + 72; // logo / etiket satırının alt kenarı
-  const BOTTOM = H - PAD - 90; // alt ayraç
   const oy = Math.round(TOP + (BOTTOM - TOP - blockH) / 2);
   for (const op of ops) op(oy);
 
-  // Alt satır
+  // Alt satır: ayraç ve davet satırı (tek satır; 888 px'e sığmazsa yazı küçülür, satır bölünmez)
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
-  ctx.fillRect(PAD, H - PAD - 90, W - PAD * 2, 2);
+  ctx.fillRect(PAD, FOOT_LINE, MAXW, 2);
   ctx.fillStyle = '#ffffff';
-  // Alt satır (davet linki dahil) tek satır: 888 px'e sığmazsa yazı boyutu küçülür, satır bölünmez
   let fs = 40;
   ctx.font = `600 ${fs}px ${SANS}`;
-  while (fs > 16 && ctx.measureText(texts.footer).width > W - PAD * 2) { fs -= 1; ctx.font = `600 ${fs}px ${SANS}`; }
+  while (fs > 16 && ctx.measureText(texts.footer).width > MAXW) { fs -= 1; ctx.font = `600 ${fs}px ${SANS}`; }
   ctx.textAlign = 'center';
   ctx.fillText(texts.footer, W / 2, H - PAD - 10);
   ctx.textAlign = 'left';
@@ -224,24 +262,32 @@ export function ShareCardModal({ meetingId, apiBase, headers, onClose }: {
   useEffect(() => {
     if (!data) return;
     let cancelled = false;
-    const render = (bgImage: HTMLImageElement | null) => {
+    const render = (imgs: CardImages) => {
       if (cancelled) return;
       const canvas = canvasRef.current ?? document.createElement('canvas');
       canvasRef.current = canvas;
       drawCard(canvas, data, {
         title: t('share.title'), type: t(`share.type${data.type}`), overall: t('masa.aiOverall'),
         teaser: teaserText, footer: t('share.footer', { code: data.inviteCode ?? '' }), date: cardDate(data.scheduledAt, locale),
-      }, bgImage);
+        people: t('share.people', { count: data.peopleCount, city: data.cityName ?? '' }), atTable: t('share.atTable'),
+      }, imgs);
       setImg(canvas.toDataURL('image/png'));
     };
-    // Yazı tipleri yüklenince çizilir
-    const bgP = new Promise<HTMLImageElement | null>((resolve) => {
+    // Görsel yükleme: yüklenemeyen görselde yedek kullanılır (arka plan → gradyan, fotoğraf → baş harfler)
+    const load = (src: string | null) => new Promise<HTMLImageElement | null>((resolve) => {
+      if (!src) { resolve(null); return; }
       const im = new Image();
       im.onload = () => resolve(im);
       im.onerror = () => resolve(null);
-      im.src = `/share-bg/${BG_FILE[data.type]}.webp`;
+      im.src = src;
     });
-    Promise.all([(document.fonts?.ready ?? Promise.resolve()).catch(() => undefined), bgP]).then(([, im]) => render(im));
+    // Yazı tipleri ve görseller yüklenince çizilir
+    Promise.all([
+      (document.fonts?.ready ?? Promise.resolve()).catch(() => undefined),
+      load(`/share-bg/${BG_FILE[data.type]}.webp`),
+      load('/logo.webp'),
+      load(data.sharerPhotoUrl),
+    ]).then(([, bg, logo, photo]) => render({ bg, logo, photo }));
     return () => { cancelled = true; };
   }, [data, teaserText, locale]); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { MeetingType, ParticipantStatus } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ensureReferralCode, referralLink } from "../referral/referral-code";
+import { approvedPhotoUrl } from "../profile-photo/profile-photo.util";
 
 // Paylaşım kartı teaser'ları masa türüne göre 10'ar metin (i18n share.teasers.<TÜR>.<0-9>); 10'dan sonra başa döner
 export const TEASER_COUNT = 10;
@@ -32,7 +33,16 @@ export class ShareCardService {
   private async revealedMeeting(meetingId: string, userId: string) {
     const part = await this.prisma.meetingParticipant.findFirst({
       where: { meetingId, userId, status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED] } },
-      select: { meeting: { select: { id: true, type: true, scheduledAt: true, locationText: true, aiReport: true } } },
+      select: {
+        meeting: {
+          select: {
+            id: true, type: true, scheduledAt: true, locationText: true, aiReport: true,
+            city: { select: { name: true } },
+            // Masanın gerçek katılımcı sayısı (iptal / reddetmiş olanlar hariç)
+            _count: { select: { participants: { where: { status: { notIn: [ParticipantStatus.CANCELLED, ParticipantStatus.DECLINED] } } } } },
+          },
+        },
+      },
     });
     const m = part?.meeting;
     const revealed = !!m?.locationText && Date.now() >= m.scheduledAt.getTime() - 10 * 60 * 60 * 1000;
@@ -62,17 +72,26 @@ export class ShareCardService {
 
   async get(meetingId: string, userId: string) {
     const m = await this.revealedMeeting(meetingId, userId);
-    const [user, teaser, code] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: userId }, select: { language: true } }),
+    const [user, teaser, code, photoUrl] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: userId }, select: { language: true, profile: { select: { firstName: true, lastName: true } } } }),
       this.teaserIndex(userId, meetingId, m.type),
       ensureReferralCode(this.prisma, userId),
+      approvedPhotoUrl(this.prisma, userId),
     ]);
+    // Paylaşan kullanıcı (yalnız kendisi): "Ahmet Y." ve baş harfler; diğer katılımcılara ait bilgi dönmez
+    const first = (user?.profile?.firstName ?? "").trim();
+    const last = (user?.profile?.lastName ?? "").trim();
+    const upper = (x: string) => x.toLocaleUpperCase("tr-TR");
     const report = localizeAiReport(m.aiReport!, user?.language ?? "tr");
     return {
       type: m.type,
       uyumSkoru: report.uyumSkoru,
       dnaShort: report.dnaShort,
-      venueName: m.locationText,
+      peopleCount: m._count.participants,
+      cityName: m.city?.name ?? null,
+      sharerName: last ? `${first} ${upper(last[0])}.` : first,
+      sharerInitials: `${upper(first[0] ?? "")}${upper(last[0] ?? "")}`,
+      sharerPhotoUrl: photoUrl,
       scheduledAt: m.scheduledAt,
       teaser,
       inviteCode: code,

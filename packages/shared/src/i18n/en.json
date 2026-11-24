@@ -1951,8 +1951,8 @@
     "note": "When you press the Emergency Help button, this person is automatically notified via WhatsApp."
   },
   "share": {
-    "title": "Ahenk Table Dynamics (AI Report)",
-    "footer": "Find your own table · ahenk.co/davet/{code}",
+    "title": "Ahenk Table Dynamics",
+    "footer": "Sign up now with 10% off › ahenk.co/davet/{code}",
     "typeGROUP": "Group Table",
     "typeONE_ON_ONE": "Duo Table",
     "typeKANKA": "Bring a Buddy Table",
@@ -1968,7 +1968,7 @@
     "shareText": "{teaser} Find your own table: {link}",
     "teasers": {
       "GROUP": {
-        "t0": "Tonight's plan is set: new people, good conversation.",
+        "t0": "Tonight's plan is set: quality people, quality conversation.",
         "t1": "Tonight I'm breaking my routine to join an exciting meetup.",
         "t2": "New faces, new stories, one table.",
         "t3": "Tonight: one plate of food, a table full of new people.",
@@ -2008,6 +2008,8 @@
     "saved": "Image saved to your gallery.",
     "saveFailed": "The image couldn't be prepared. Please try again.",
     "linkCopied": "Your invite link has been copied. Add a 'Link' sticker to your story and paste it. Your invite only counts if your friends join through this link.",
-    "continue": "Continue"
+    "continue": "Continue",
+    "people": "{count} people · {city}",
+    "atTable": "at this table"
   }
 }

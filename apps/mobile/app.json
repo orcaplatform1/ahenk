@@ -211,7 +211,13 @@
           "data": [
             {
               "scheme": "https",
-              "host": "ahenk.co"
+              "host": "ahenk.co",
+              "pathPrefix": "/davet"
+            },
+            {
+              "scheme": "https",
+              "host": "ahenk.co",
+              "pathPrefix": "/kanka"
             }
           ],
           "category": [

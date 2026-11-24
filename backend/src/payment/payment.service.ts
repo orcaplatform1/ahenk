@@ -352,6 +352,7 @@ export class PaymentService {
       if (payment.discountType && !(await this.consumeDiscount(tx, payment.userId, payment.discountType))) {
         throw new Error(DISCOUNT_USED);
       }
+      await this.endInviteeDiscount(tx, payment.userId);
       return "CREATED";
     }).catch((err: unknown) => {
       if (err instanceof Error && err.message === DISCOUNT_USED) return DISCOUNT_USED;
@@ -463,6 +464,12 @@ export class PaymentService {
       where: { referredId: userId, status: ReferralStatus.REGISTERED },
       data: { status: ReferralStatus.KYC_APPROVED },
     });
+  }
+
+  // Davet koduyla kayıt olanın %10 indirimi yalnız ilk paket satın alımında geçerli: ilk ücretli satın alma (iyzico ya da mağaza)
+  // tamamlanınca hak kullanılmamış olsa da kapanır (indirim hakkı harcandıktan sonra çağrılır).
+  private async endInviteeDiscount(db: Db, userId: string) {
+    await db.user.updateMany({ where: { id: userId, referralDiscountAvailable: true }, data: { referralDiscountAvailable: false } });
   }
 
   // ─── Prime otomatik yenileme (web, iyzico abonelik API'si) ────────────────
@@ -602,6 +609,7 @@ export class PaymentService {
         : await tx.subscription.create({ data: { userId, plan, groupRights: GROUP_RIGHTS[plan], kankaRights: kankaRightsOf(plan) } });
       await tx.payment.update({ where: { id: payment.id }, data: { subscriptionId: sub.id } });
       await this.grantReferrerDiscount(tx, userId);
+      await this.endInviteeDiscount(tx, userId);
       return "CREATED";
     });
     if (outcome === "CONFLICT") {

@@ -18,13 +18,17 @@ import { useTranslation } from 'react-i18next';
 import { formatCardDate } from '@ahenk/shared';
 import { api } from '@/lib/api';
 import { currentLang } from '@/lib/i18n';
+import { mediaUrl } from '@/lib/venueApi';
 import { BtnGhost, Serif, T } from './ui';
 import { showAlert } from './AppAlert';
 import { ensurePermission } from '@/lib/permissions';
 import { tw } from '@/theme/theme';
 
 type MeetingKind = 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
-interface CardData { type: MeetingKind; uyumSkoru: number; dnaShort: string | null; venueName: string | null; scheduledAt: string; teaser: number; inviteCode: number | null; inviteLink: string | null }
+interface CardData {
+  type: MeetingKind; uyumSkoru: number; dnaShort: string | null; peopleCount: number; cityName: string | null; scheduledAt: string; teaser: number;
+  inviteCode: number | null; inviteLink: string | null; sharerName: string; sharerInitials: string; sharerPhotoUrl: string | null;
+}
 
 // Masa türü renkleri (paket kartı paletinden: Grup mavi, Baş Başa kırmızı, Kankamla mor; web ShareCard ile aynı)
 const TYPE_COLORS: Record<MeetingKind, { accent: string; from: string; to: string }> = {
@@ -153,24 +157,29 @@ export function ShareCardModal({ meetingId, onClose }: { meetingId: string; onCl
                   <Image source={{ uri: BG_URL[data.type] }} resizeMode="cover" onError={() => setBgFailed(true)} accessible={false} accessibilityIgnoresInvertColors
                     style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
                 )}
-                {/* Üstte sabit: logo + masa türü etiketi */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  <Serif style={{ fontSize: 26, color: '#fff' }}>Ahenk</Serif>
-                  <View style={{ backgroundColor: col.accent, borderRadius: 9999, paddingVertical: 4, paddingHorizontal: 10, flexShrink: 1 }}>
-                    <T w={700} numberOfLines={1} style={{ fontSize: 10, color: '#fff', letterSpacing: 0.6 }}>{t(`share.type${data.type}`).toLocaleUpperCase(currentLang() === 'en' ? 'en' : 'tr-TR')}</T>
+                {/* Üstte sabit: Ahenk logosu "Ahenk" yazısının üstünde yatayda ortalı; masa türü etiketi sağa yaslı, "Ahenk" yazısıyla aynı hizada */}
+                <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
+                  <View style={{ alignItems: 'center' }}>
+                    <Image source={require('@/assets/logo.webp')} style={{ width: 40, height: 40 }} accessible={false} />
+                    <Serif style={{ fontSize: 26, lineHeight: 32, color: '#fff' }}>Ahenk</Serif>
+                  </View>
+                  <View style={{ height: 32, justifyContent: 'center', flexShrink: 1 }}>
+                    <View style={{ backgroundColor: col.accent, borderRadius: 9999, paddingVertical: 4, paddingHorizontal: 10 }}>
+                      <T w={700} numberOfLines={1} style={{ fontSize: 10, color: '#fff', letterSpacing: 0.6 }}>{t(`share.type${data.type}`).toLocaleUpperCase(currentLang() === 'en' ? 'en' : 'tr-TR')}</T>
+                    </View>
                   </View>
                 </View>
                 {/* Ortadaki içerik bloğu dikeyde ortalı: başlık (tek satır), yüzde, Genel Uyum, ayırıcı, karakter cümlesi, mekân, tarih, alıntı */}
                 <View style={{ flex: 1, justifyContent: 'center', gap: 14 }}>
                   <T w={600} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', lineHeight: 19 }}>{t('share.title')}</T>
                   <View>
-                    <T w={800} style={{ fontSize: 42, lineHeight: 46, color: '#fff' }}>%{Math.max(0, Math.min(100, data.uyumSkoru))}</T>
-                    <T w={700} style={{ fontSize: 16, color: '#4ade80' }}>{t('masa.aiOverall')}</T>
+                    <T w={800} style={{ fontSize: 31.5, lineHeight: 34.5, color: '#fff' }}>%{Math.max(0, Math.min(100, data.uyumSkoru))}</T>
+                    <T w={700} style={{ fontSize: 12, color: '#4ade80' }}>{t('masa.aiOverall')}</T>
                     <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: 14 }} />
                     {!!data.dnaShort && <Serif numberOfLines={3} style={{ fontSize: 13.5, lineHeight: 18, color: '#fff' }}>{data.dnaShort}</Serif>}
                   </View>
                   <View style={{ gap: 4 }}>
-                    {!!data.venueName && <T w={700} numberOfLines={2} style={{ fontSize: 15, color: '#fff' }}>{data.venueName}</T>}
+                    <T w={700} numberOfLines={1} style={{ fontSize: 15, color: '#fff' }}>{t('share.people', { count: data.peopleCount, city: data.cityName ?? '' })}</T>
                     <T w={500} style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>{formatCardDate(data.scheduledAt, currentLang())}</T>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -182,6 +191,18 @@ export function ShareCardModal({ meetingId, onClose }: { meetingId: string; onCl
                       style={{ minHeight: 44, minWidth: 44, borderRadius: 9999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.5 : 1 }}>
                       <T w={600} style={{ fontSize: 12, color: '#fff' }}>{t('share.change')}</T>
                     </Pressable>}
+                  </View>
+                </View>
+                {/* Altta sabit: paylaşan kullanıcı (fotoğraf, yoksa baş harfler; masa türü renginde ince çerçeve), "Ahmet Y." ve "bu masada", sonra davet satırı */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: col.accent, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)' }}>
+                    {data.sharerPhotoUrl
+                      ? <Image source={{ uri: mediaUrl(data.sharerPhotoUrl) }} style={{ width: '100%', height: '100%' }} accessible={false} />
+                      : <T w={700} style={{ fontSize: 12, color: '#fff' }}>{data.sharerInitials}</T>}
+                  </View>
+                  <View style={{ flexShrink: 1 }}>
+                    <T w={600} numberOfLines={1} style={{ fontSize: 13, color: '#fff' }}>{data.sharerName}</T>
+                    <T style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)' }}>{t('share.atTable')}</T>
                   </View>
                 </View>
                 {/* Altta sabit: davet linki satırı */}

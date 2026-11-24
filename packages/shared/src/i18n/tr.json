@@ -1951,8 +1951,8 @@
     "note": "Acil Yardım butonuna bastığında bu kişiye WhatsApp üzerinden otomatik bilgi gider."
   },
   "share": {
-    "title": "Ahenk Masa Dinamiği (Yapay Zekâ Raporu)",
-    "footer": "Sen de kendi masanı bul · ahenk.co/davet/{code}",
+    "title": "Ahenk Masa Dinamiği",
+    "footer": "%10 indirimli şimdi kaydol › ahenk.co/davet/{code}",
     "typeGROUP": "Grup Masası",
     "typeONE_ON_ONE": "Baş Başa Masası",
     "typeKANKA": "Kankamla Masası",
@@ -1968,7 +1968,7 @@
     "shareText": "{teaser} Sen de kendi masanı bul: {link}",
     "teasers": {
       "GROUP": {
-        "t0": "Bu akşamın planı belli: yeni insanlar, iyi sohbet.",
+        "t0": "Bu akşamın planı belli: kaliteli insanlar, kaliteli sohbet.",
         "t1": "Bu akşam rutinden çıkıyorum, heyecanlı bir buluşmaya katılacağım.",
         "t2": "Yeni yüzler, yeni hikâyeler, tek masa.",
         "t3": "Bu akşam bir tabak yemek, bir masa dolusu yeni insan.",
@@ -2008,6 +2008,8 @@
     "saved": "Görsel galerine kaydedildi.",
     "saveFailed": "Görsel hazırlanamadı, tekrar dene.",
     "linkCopied": "Davet linkin kopyalandı. Hikâyene 'Bağlantı' çıkartması ekleyip linki yapıştır. Arkadaşların yalnızca bu linkle gelirse davetin sayılır.",
-    "continue": "Devam Et"
+    "continue": "Devam Et",
+    "people": "{count} kişi · {city}",
+    "atTable": "bu masada"
   }
 }
