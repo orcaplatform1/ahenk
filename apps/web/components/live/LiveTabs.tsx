@@ -69,7 +69,8 @@ export default function LiveTabs({ tab, statuses, onTab, noRings = false, even =
         const label = t(`live.tab${type}`);
         const statusText = t(`live.st${statuses[type]}`);
         const status = statuses[type];
-        const off = status === 'NONE';
+        // Eşleşme Paneli'nde (even) "Abonelik Yok" sekmesi de basılabilir: o türün paket alma kartı açılır
+        const off = status === 'NONE' && !even;
         const on = !off && type === tab;
         return (
           <button

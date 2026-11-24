@@ -431,7 +431,7 @@ export class AdminController {
     return this.pricing.updatePrices(dto.prices, actor.id);
   }
 
-  // Geri kazanım indirimi ayarları (paket fiyatları sayfası)
+  // Geri kazanım indirimi ayarları (Sistem Ayarları → Geri Kazanım İndirimi)
   @Get("winback")
   @Roles(UserRole.SUPERADMIN)
   getWinbackSettings() {
@@ -441,7 +441,7 @@ export class AdminController {
   @Patch("winback")
   @Roles(UserRole.SUPERADMIN)
   updateWinbackSettings(@Body() dto: UpdateWinbackDto) {
-    return this.winback.updateSettings(dto.amountTL, dto.plans);
+    return this.winback.updateSettings(dto.enabled, dto.amountTL, dto.plans);
   }
 
   // ─── Ödeme sonuçlandırma (sadece SUPERADMIN) ─────────────────────

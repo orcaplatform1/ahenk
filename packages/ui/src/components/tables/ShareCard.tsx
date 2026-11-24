@@ -73,7 +73,7 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number, maxLine
   return lines;
 }
 
-// Kartta çizilen görseller: masa türünün arka planı (yoksa gradyan), Ahenk logosu (/logo.webp), paylaşanın profil fotoğrafı (yoksa baş harfler)
+// Kartta çizilen görseller: masa türünün arka planı (yoksa gradyan), Ahenk logosu (/logo-white.webp: beyaz, tek renk, transparan zemin), paylaşanın profil fotoğrafı (yoksa baş harfler)
 type CardImages = { bg?: CanvasImageSource | null; logo?: CanvasImageSource | null; photo?: CanvasImageSource | null };
 
 function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string; type: string; overall: string; teaser: string; footer: string; date: string; people: string; atTable: string }, imgs: CardImages = {}) {
@@ -285,7 +285,7 @@ export function ShareCardModal({ meetingId, apiBase, headers, onClose }: {
     Promise.all([
       (document.fonts?.ready ?? Promise.resolve()).catch(() => undefined),
       load(`/share-bg/${BG_FILE[data.type]}.webp`),
-      load('/logo.webp'),
+      load('/logo-white.webp'),
       load(data.sharerPhotoUrl),
     ]).then(([, bg, logo, photo]) => render({ bg, logo, photo }));
     return () => { cancelled = true; };

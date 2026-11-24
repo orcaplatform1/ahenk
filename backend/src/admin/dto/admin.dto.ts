@@ -436,6 +436,9 @@ export class UpdatePricesDto {
 
 // Geri kazanım indirimi ayarları
 export class UpdateWinbackDto {
+  @IsBoolean()
+  enabled: boolean;
+
   @IsInt()
   @Min(1, { message: "İndirim tutarı en az 1 ₺ olmalı" })
   @Max(100000)

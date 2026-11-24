@@ -221,7 +221,8 @@ export function useMasaTabs() {
   // Varsayılan sekme (ilk açılış / yenileme): masası kurulu, kilitli ya da oluşturuluyor olan tür (birden fazlaysa en yakın
   // tarihli masa); yoksa taramadaki / bekleyen ilk tür; "Eşleşme Pasif" hiçbir zaman varsayılan olmaz
   const defaultTab: MasaTuru = defaultTabOf(items, tables, statuses);
-  const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : defaultTab;
+  // "Abonelik Yok" (NONE) sekmesi Eşleşme Paneli'nde seçilebilir: o türün paket alma kartı gösterilir
+  const tab = chosenTab && (owned.includes(chosenTab) || statuses[chosenTab] === 'NONE') ? chosenTab : defaultTab;
   const tabItem = items.find(i => i.meeting.type === tab);
   // Kurulmuş masası admin tarafından iptal edilen tür (bu hafta)
   const tabAdminCancelled = !tabItem && adminCancelledTypes.includes(tab);
@@ -239,6 +240,6 @@ export function useMasaTabs() {
     changeSelection, cancelSelection,
     tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled,
     // Hiç paketi yok ya da bütün hakları bitmiş (hiçbir türde hak, masa ya da iptal kaydı yok): Eşleşme Paneli'nde paket alma kartı
-    noPackage: owned.length === 0,
+    noPackage: owned.length === 0 || statuses[tab] === 'NONE',
   };
 }

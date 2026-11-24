@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { api } from '@/lib/api';
 import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATableRow, ATitle } from '@/components/admin/AdminUi';
-import { ACheck, AInput } from '@/components/admin/AdminControls';
+import { AInput } from '@/components/admin/AdminControls';
 import { ADialog } from '@/components/admin/ADialog';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { adm, mono } from '@/theme/theme';
@@ -75,34 +75,6 @@ function PriceHistory({ history }: { history: HistoryRow[] }) {
   );
 }
 
-function WinbackSettings() {
-  const [amount, setAmount] = useState('');
-  const [plans, setPlans] = useState<PlanKey[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  useEffect(() => { api.get<{ amountTL: number; plans: PlanKey[] }>('/admin/winback').then(d => { setAmount(String(d.amountTL)); setPlans(d.plans); }).catch((e: Error) => setMsg({ ok: false, text: e.message })); }, []);
-  const toggle = (p: PlanKey) => setPlans(c => (c.includes(p) ? c.filter(x => x !== p) : [...c, p]));
-  async function save() { setBusy(true); setMsg(null); try { await api.patch('/admin/winback', { amountTL: Number(amount), plans }); setMsg({ ok: true, text: 'İndirim ayarları güncellendi' }); } catch (e) { setMsg({ ok: false, text: (e as Error).message }); } finally { setBusy(false); } }
-  return (
-    <ACard style={{ marginTop: 20 }}>
-      <ATitle style={{ marginBottom: 10 }}>Geri Kazanım İndirimi</ATitle>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <AT style={{ fontSize: 12, color: adm.muted }}>İndirim tutarı</AT>
-        <AInput value={amount} onChangeText={t => setAmount(t.replace(/\D/g, ''))} keyboardType="number-pad" style={{ width: 90, fontFamily: mono(400) }} />
-        <AT style={{ fontSize: 12, color: adm.muted }}>₺</AT>
-      </View>
-      <AT style={{ marginBottom: 6, fontSize: 12, color: adm.muted }}>Uygulanacak paketler</AT>
-      <View style={{ flexDirection: 'row', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
-        {(Object.keys(PLAN_NAME) as PlanKey[]).map(p => <ACheck key={p} label={PLAN_NAME[p]} checked={plans.includes(p)} onChange={() => toggle(p)} />)}
-      </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-        <Btn variant="admGreen" label="Kaydet" disabled={busy || !amount} onPress={save} />
-        {msg && <AT style={{ fontSize: 13, color: msg.ok ? adm.green : adm.red, flexShrink: 1 }}>{msg.text}</AT>}
-      </View>
-    </ACard>
-  );
-}
-
 export default function AdminFiyatlar() {
   const [fitW, setFitW] = useState(0);
   const fitCols = fitW ? Math.max(1, Math.floor((fitW + 8) / 158)) : 2;
@@ -167,7 +139,6 @@ export default function AdminFiyatlar() {
         <Btn variant="admGreen" label="Kaydet" disabled={changes.length === 0 || invalid} onPress={() => setConfirm(true)} />
         {saved && <AT style={{ fontSize: 13, color: adm.green }}>Fiyatlar güncellendi</AT>}
       </View>
-      <WinbackSettings />
       <ADialog visible={confirm} onClose={() => !saving && setConfirm(false)} title="Fiyat değişikliğini onayla" maxWidth={640}>
         <View style={{ borderWidth: 1, borderColor: adm.border, borderRadius: 8, overflow: 'hidden' }}>
           {changes.map(({ c, net }, i) => { const p = compute(net); return (

@@ -196,7 +196,8 @@ export function useMasaTabs() {
     ?? MASA_TURLERI.find(t => ACTIVE_STATES.includes(statuses[t]))
     ?? MASA_TURLERI.find(t => statuses[t] !== 'PASSIVE' && statuses[t] !== 'NONE')
     ?? 'GROUP';
-  const tab = chosenTab && owned.includes(chosenTab) ? chosenTab : defaultTab;
+  // "Abonelik Yok" (NONE) sekmesi Eşleşme Paneli'nde seçilebilir: o türün paket alma kartı gösterilir
+  const tab = chosenTab && (owned.includes(chosenTab) || statuses[chosenTab] === 'NONE') ? chosenTab : defaultTab;
   const tabItem = items.find(i => i.meeting.type === tab);
   const tabAdminCancelled = !tabItem && adminCancelledTypes.includes(tab);
   const tabPastClosing = pastClosed.split(',').includes(tab);
@@ -208,5 +209,5 @@ export function useMasaTabs() {
 
   return { ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled, selection, submitSelection, changeSelection, cancelSelection,
     // Hiç paketi yok ya da bütün hakları bitmiş: Eşleşme Paneli'nde sayaç kartı yerine paket alma kartı (web ile aynı)
-    noPackage: owned.length === 0 };
+    noPackage: owned.length === 0 || statuses[tab] === 'NONE' };
 }

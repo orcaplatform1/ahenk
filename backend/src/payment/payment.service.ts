@@ -149,13 +149,18 @@ export class PaymentService {
     return (GROUP_RIGHTS[plan] > 0 && groupOpen) || (ONE_ON_ONE_PLANS.includes(plan) && oneOnOneOpen);
   }
 
-  // İndirim burada sadece kontrol edilir; hak ödeme başarılı olunca harcanır. Geri kazanım (100 TL) indirimi süresi
-  // içindeyse otomatik uygulanır ve davet indirimiyle (%10) birleşmez. Aktif paketi / Prime'ı olana geri kazanım uygulanmaz.
+  // İndirim burada sadece kontrol edilir; hak ödeme başarılı olunca harcanır. Davet indirimi (%10) ile geri kazanım indirimi
+  // birleşmez; ikisi aynı anda uygunsa davet indirimi uygulanır. Geri kazanım süresi içindeyse ve davet indirimi yoksa
+  // otomatik uygulanır. Aktif paketi / Prime'ı olana geri kazanım uygulanmaz.
   private async resolveDiscount(
     userId: string, plan: SubscriptionPlan, listKurus: number, discountedKurus: number, useDiscount: 'REFERRER' | 'INVITEE' | undefined,
   ): Promise<{ amountKurus: number; discountType: PaymentDiscountType | null }> {
     const winbackKurus = await this.winback.discountedKurus(userId, plan, listKurus);
-    if (winbackKurus !== null) return { amountKurus: winbackKurus, discountType: PaymentDiscountType.WINBACK };
+    if (winbackKurus !== null) {
+      const referral = await this.availableDiscount(this.prisma, userId);
+      if (referral) return { amountKurus: discountedKurus, discountType: referral };
+      return { amountKurus: winbackKurus, discountType: PaymentDiscountType.WINBACK };
+    }
     if (useDiscount === 'REFERRER') {
       const referral = await this.prisma.referral.findFirst({ where: { referrerId: userId, status: ReferralStatus.KYC_APPROVED } });
       if (referral) return { amountKurus: discountedKurus, discountType: PaymentDiscountType.REFERRER };

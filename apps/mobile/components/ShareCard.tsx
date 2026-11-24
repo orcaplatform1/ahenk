@@ -160,7 +160,7 @@ export function ShareCardModal({ meetingId, onClose }: { meetingId: string; onCl
                 {/* Üstte sabit: Ahenk logosu "Ahenk" yazısının üstünde yatayda ortalı; masa türü etiketi sağa yaslı, "Ahenk" yazısıyla aynı hizada */}
                 <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
                   <View style={{ alignItems: 'center' }}>
-                    <Image source={require('@/assets/logo.webp')} style={{ width: 40, height: 40 }} accessible={false} />
+                    <Image source={require('@/assets/logo-white.webp')} style={{ width: 40, height: 40 }} accessible={false} />
                     <Serif style={{ fontSize: 26, lineHeight: 32, color: '#fff' }}>Ahenk</Serif>
                   </View>
                   <View style={{ height: 32, justifyContent: 'center', flexShrink: 1 }}>

@@ -83,7 +83,8 @@ export function LiveTabs({ tab, statuses, onTab, noRings = false, even = false }
       {TABS.map(({ type, label: labelKey }) => {
         const label = t(labelKey);
         const status = statuses[type];
-        const off = status === 'NONE';
+        // Eşleşme Paneli'nde (even) "Abonelik Yok" sekmesi de basılabilir: o türün paket alma kartı açılır
+        const off = status === 'NONE' && !even;
         const on = !off && type === tab;
         return (
           <Pressable key={type} disabled={off} onPress={() => onTab(type)} accessibilityRole="button"

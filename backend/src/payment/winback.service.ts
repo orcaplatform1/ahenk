@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
-import { KycStatus, Prisma, SubscriptionPlan, SubscriptionStatus, UserStatus } from "../generated/prisma/client";
+import { KycStatus, Prisma, ReferralStatus, SubscriptionPlan, SubscriptionStatus, UserStatus } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { activeKankaLink } from "../kanka/kanka-links";
@@ -12,6 +12,8 @@ type Db = PrismaService | Prisma.TransactionClient;
 
 const AMOUNT_KEY = "WINBACK_AMOUNT_TL";
 const PLANS_KEY = "WINBACK_PLANS";
+// Açık / Kapalı anahtarı (admin Sistem Ayarları → Geri Kazanım İndirimi); kayıt yoksa Kapalı
+const ENABLED_KEY = "WINBACK_ENABLED";
 const OFFER_MS = 60 * 60 * 1000;
 const REMINDER_MS = 15 * 60 * 1000;
 
@@ -41,20 +43,20 @@ export class WinbackService {
 
   // ─── Ayarlar (AppConfig) ──────────────────────────────────────────────────
 
-  async settings(): Promise<{ amountTL: number; plans: SubscriptionPlan[] }> {
-    const rows = await this.prisma.appConfig.findMany({ where: { key: { in: [AMOUNT_KEY, PLANS_KEY] } } });
+  async settings(): Promise<{ enabled: boolean; amountTL: number; plans: SubscriptionPlan[] }> {
+    const rows = await this.prisma.appConfig.findMany({ where: { key: { in: [ENABLED_KEY, AMOUNT_KEY, PLANS_KEY] } } });
     const value = (key: string) => rows.find((r) => r.key === key)?.value ?? "";
     const plans = value(PLANS_KEY).split(",").filter((p) => p in PLAN_CONFIG) as SubscriptionPlan[];
-    return { amountTL: Number(value(AMOUNT_KEY)) || 0, plans };
+    return { enabled: value(ENABLED_KEY) === "true", amountTL: Number(value(AMOUNT_KEY)) || 0, plans };
   }
 
-  async updateSettings(amountTL: number, plans: SubscriptionPlan[]) {
+  async updateSettings(enabled: boolean, amountTL: number, plans: SubscriptionPlan[]) {
     const prices = await this.pricing.all();
     const tooLow = plans.find((p) => prices[p].webKurus <= amountTL * 100 || prices[p].mobileKurus <= amountTL * 100);
     if (tooLow) throw new BadRequestException(`İndirim tutarı ${PLAN_CONFIG[tooLow].nametr} fiyatından küçük olmalı.`);
     const write = (key: string, value: string) =>
       this.prisma.appConfig.upsert({ where: { key }, create: { key, value }, update: { value } });
-    await this.prisma.$transaction([write(AMOUNT_KEY, String(amountTL)), write(PLANS_KEY, plans.join(","))]);
+    await this.prisma.$transaction([write(ENABLED_KEY, String(enabled)), write(AMOUNT_KEY, String(amountTL)), write(PLANS_KEY, plans.join(","))]);
     return this.settings();
   }
 
@@ -69,6 +71,13 @@ export class WinbackService {
     return active > 0 ? null : offer;
   }
 
+  // Harcanmamış davet indirimi: davet edilenin tek seferlik hakkı ya da davet edenin onaylı davet hakkı
+  private async referralAvailable(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { referralDiscountAvailable: true } });
+    if (user?.referralDiscountAvailable) return true;
+    return (await this.prisma.referral.count({ where: { referrerId: userId, status: ReferralStatus.KYC_APPROVED } })) > 0;
+  }
+
   private async isKycApproved(userId: string) {
     const kyc = await this.prisma.kycSubmission.findUnique({ where: { userId }, select: { status: true } });
     return kyc?.status === KycStatus.APPROVED;
@@ -77,7 +86,9 @@ export class WinbackService {
   async state(userId: string) {
     const offer = await this.liveOffer(this.prisma, userId);
     const settings = await this.settings();
-    if (!offer || settings.amountTL <= 0 || settings.plans.length === 0) return { active: false as const };
+    if (!offer || !settings.enabled || settings.amountTL <= 0 || settings.plans.length === 0) return { active: false as const };
+    // Davet indirimi (%10) uygunsa geri kazanım indirimi uygulanmaz, gösterilmez
+    if (await this.referralAvailable(userId)) return { active: false as const };
 
     const kycApproved = await this.isKycApproved(userId);
     const [prices, everBought, link] = await Promise.all([
@@ -139,9 +150,9 @@ export class WinbackService {
   async discountedKurus(userId: string, plan: SubscriptionPlan, listKurus: number): Promise<number | null> {
     const offer = await this.liveOffer(this.prisma, userId);
     if (!offer?.expiresAt) return null;
-    const { amountTL, plans } = await this.settings();
+    const { enabled, amountTL, plans } = await this.settings();
     const amount = listKurus - amountTL * 100;
-    return plans.includes(plan) && amountTL > 0 && amount > 0 ? amount : null;
+    return enabled && plans.includes(plan) && amountTL > 0 && amount > 0 ? amount : null;
   }
 
   // Ödeme başarılı olunca harcanır; bu kişi bir daha hak kazanmaz
@@ -185,6 +196,7 @@ export class WinbackService {
 
   @Cron("* * * * *", { timeZone: "Europe/Istanbul" })
   async expiryReminders(): Promise<void> {
+    if (!(await this.settings()).enabled) return;
     const now = Date.now();
     const offers = await this.prisma.winbackOffer.findMany({
       where: {

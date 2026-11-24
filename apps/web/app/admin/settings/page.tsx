@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { SURFACE, BORDER, TEXT, MUTED, RED, GREEN, SANS } from '@/lib/adminTheme';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, SANS, MONO } from '@/lib/adminTheme';
 
 
 interface Settings {
@@ -43,6 +43,67 @@ function Toggle({ label, desc, value, onChange }: {
           transform: value ? 'translateX(20px)' : 'translateX(0)',
         }} />
       </button>
+    </div>
+  );
+}
+
+// Geri kazanım indirimi: Açık / Kapalı + sabit TL + indirimin uygulanacağı paketler (AppConfig; yalnız SUPERADMIN)
+type PlanKey = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA' | 'PRIME_1M' | 'PRIME_3M' | 'PRIME_6M' | 'PRIME_12M';
+const PLAN_NAME: Record<PlanKey, string> = { MASADA: 'Masada', KARSIMDA: 'Karşımda', ICERDE: 'İçerde', KANKAMLA: 'Kankamla', PRIME_1M: 'Premium 1 Aylık', PRIME_3M: 'Premium 3 Aylık', PRIME_6M: 'Premium 6 Aylık', PRIME_12M: 'Premium 12 Aylık' };
+
+function WinbackSettings() {
+  const [loaded, setLoaded] = useState(false);
+  const [enabled, setEnabled] = useState(false);
+  const [amount, setAmount] = useState('100');
+  const [plans, setPlans] = useState<PlanKey[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    api.get<{ enabled: boolean; amountTL: number; plans: PlanKey[] }>('/admin/winback')
+      .then((d) => { setEnabled(d.enabled); setAmount(String(d.amountTL || 100)); setPlans(d.plans); setLoaded(true); })
+      .catch(() => {});
+  }, []);
+
+  const toggle = (p: PlanKey) => setPlans((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
+
+  async function save() {
+    setBusy(true); setMsg(null);
+    try {
+      await api.patch('/admin/winback', { enabled, amountTL: Number(amount), plans });
+      setMsg({ ok: true, text: 'İndirim ayarları güncellendi' });
+    } catch (e) { setMsg({ ok: false, text: (e as Error).message }); }
+    finally { setBusy(false); }
+  }
+
+  if (!loaded) return null;
+  return (
+    <div className="ll-card" style={{ marginTop: 20 }}>
+      <h2 className="ll-title" style={{ marginBottom: 14 }}>Geri Kazanım İndirimi</h2>
+      <div style={{ marginBottom: 14 }}>
+        <Toggle label="Açık / Kapalı" value={enabled} onChange={setEnabled} />
+      </div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: MUTED, marginBottom: 12 }}>
+        İndirim tutarı
+        <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} inputMode="numeric"
+          style={{ width: 90, background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 10px', fontSize: 13, color: TEXT, fontFamily: MONO, outline: 'none' }} />
+        TL
+      </label>
+      <p style={{ margin: '0 0 6px', fontSize: 12, color: MUTED }}>Uygulanacak paketler</p>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
+        {(Object.keys(PLAN_NAME) as PlanKey[]).map((p) => (
+          <label key={p} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: TEXT, cursor: 'pointer' }}>
+            <input type="checkbox" checked={plans.includes(p)} onChange={() => toggle(p)} />
+            {PLAN_NAME[p]}
+          </label>
+        ))}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={save} disabled={busy || !amount} style={{ padding: '9px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: SANS, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: GREEN, cursor: 'pointer', opacity: busy || !amount ? 0.5 : 1 }}>
+          Kaydet
+        </button>
+        {msg && <span style={{ fontSize: 13, color: msg.ok ? GREEN : RED }}>{msg.text}</span>}
+      </div>
     </div>
   );
 }
@@ -191,6 +252,7 @@ export default function AdminSettings() {
             {saving ? 'Kaydediliyor…' : saved ? 'Kaydedildi ✓' : 'Kaydet'}
           </button>
           {error && <p style={{ margin: '8px 0 0', fontSize: 13, color: RED }}>{error}</p>}
+          {tab === 'general' && <WinbackSettings />}
         </>
       )}
     </div>
