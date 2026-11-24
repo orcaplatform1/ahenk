@@ -496,7 +496,11 @@
     "chatSendFailed": "Mesajın gönderilemedi, tekrar dene.",
     "reportNoteRequired": "Açıklama yazmalısın.",
     "reportDuplicate": "Bu mesajı zaten şikâyet ettin.",
-    "suspended": "Hesabın askıda olduğu için masalara katılamaz, paket ve abonelik satın alamazsın."
+    "suspended": "Hesabın askıda olduğu için masalara katılamaz, paket ve abonelik satın alamazsın.",
+    "rewardClaimed": "Bu ödülün türü zaten seçildi.",
+    "rewardNotFound": "Ödül bulunamadı.",
+    "rewardTypeOpen": "Bu türde kullanılmamış hakkın var; hakkını kullandıktan sonra bu türü seçebilirsin.",
+    "shareCardNotReady": "Paylaşım kartı henüz hazır değil."
   },
   "footer": {
     "brandPrefix": "Ahenk bir",
@@ -953,7 +957,20 @@
     "send": "Davet Gönder",
     "sendFailed": "Gönderilemedi.",
     "sentOk": "Davet başarıyla gönderildi!",
-    "title": "Sadakat Programı"
+    "title": "Sadakat Programı",
+    "copied": "Kopyalandı",
+    "copy": "Kopyala",
+    "myCode": "Davet Kodun",
+    "rewardDone": "Ücretsiz masa hakkın Paketim'e eklendi.",
+    "rewardGroup": "Grup",
+    "rewardKanka": "Kankamla",
+    "rewardOne": "Baş Başa",
+    "rewardTitle": "Ücretsiz masa hakkın hazır. Türünü seç:",
+    "rule": "Her 3 geçerli davette 1 ücretsiz masa hakkı kazanırsın. Davet ettiğin kişi ilk paketini aldığında ve kimliği doğrulandığında davet geçerli sayılır.",
+    "share": "Paylaş",
+    "shareText": "Ahenk'te yeni insanlarla masaya oturuyorum. Davet linkimle kayıt ol, %10 indirim kazan: {link}",
+    "toNext": "1 ücretsiz masaya {count} davet kaldı",
+    "validInvites": "Geçerli Davet"
   },
   "masa": {
     "aiScore": "UYUM SKORU",
@@ -1031,7 +1048,11 @@
     "reason_ADVERTISING": "Reklam/yönlendirme",
     "reason_DISCRIMINATION": "Ayrımcı içerik",
     "reason_FAKE_PROFILE": "Sahte profil şüphesi",
-    "reason_OTHER": "Diğer"
+    "reason_OTHER": "Diğer",
+    "aiComment": "Yapay Zekâ Yorumu",
+    "aiDna": "Masa DNA'sı",
+    "aiQuestions": "Sohbeti Başlatacak 3 Soru",
+    "shareOpen": "Masa Dinamiğini Paylaş"
   },
   "nav": {
     "adminPanel": "Yönetim Paneli",
@@ -1476,7 +1497,8 @@
     "venueQuestion": "Eşleşmenin yapılacağı mekan ortamı nasıl olsun istersin?",
     "verifyPhone": "Telefon numaranı WhatsApp koduyla doğrula.",
     "verifying": "Doğrulanıyor…",
-    "welcome": "Hoş geldin,"
+    "welcome": "Hoş geldin,",
+    "inviteCode": "Davet kodu (isteğe bağlı)"
   },
   "report": {
     "addImage": "Görsel ekle ({count}/{max})",
@@ -1933,5 +1955,60 @@
     "delete": "Sil",
     "nameRequired": "Ad yazmalısın.",
     "note": "Acil Yardım butonuna bastığında bu kişiye WhatsApp üzerinden otomatik bilgi gider."
+  },
+  "share": {
+    "title": "Ahenk Masa Dinamiği (Yapay Zekâ Raporu)",
+    "footer": "Sen de kendi masanı bul · ahenk.co",
+    "typeGROUP": "Grup Masası",
+    "typeONE_ON_ONE": "Baş Başa Masası",
+    "typeKANKA": "Kankamla Masası",
+    "change": "Değiştir",
+    "download": "Görseli İndir",
+    "igStory": "Instagram Hikâye",
+    "fbStory": "Facebook Hikâye",
+    "whatsapp": "WhatsApp",
+    "message": "Mesaj",
+    "more": "Diğer",
+    "close": "Kapat",
+    "storyHint": "Görsel indirildi. Instagram ya da Facebook'ta hikâye olarak paylaşabilirsin.",
+    "shareText": "{teaser} Sen de kendi masanı bul: {link}",
+    "teasers": {
+      "GROUP": {
+        "t0": "Bu akşamın planı belli: yeni insanlar, iyi sohbet.",
+        "t1": "Bu akşam rutinden çıkıyorum, heyecanlı bir buluşmaya katılacağım.",
+        "t2": "Yeni yüzler, yeni hikâyeler, tek masa.",
+        "t3": "Bu akşam bir tabak yemek, bir masa dolusu yeni insan.",
+        "t4": "Bu akşam sıradan bir akşam olmayacak.",
+        "t5": "Bu akşam bir masada kendimi yeniden tanıtacağım.",
+        "t6": "Bu akşam tanımadığım bir grupla aynı masadayım, en iyi kısmı da bu.",
+        "t7": "Bu akşam yeni arkadaşlıklar bir masa etrafında başlıyor.",
+        "t8": "Bu akşam her sandalyede başka bir hikâye var.",
+        "t9": "Bu akşam kalabalık bir sofrada yer ayırttım."
+      },
+      "ONE_ON_ONE": {
+        "t0": "Bu akşam rutinden çıkıyorum, heyecanlı bir buluşmaya katılacağım.",
+        "t1": "Yeni yüzler, yeni hikâyeler, tek masa.",
+        "t2": "Bu akşam bir masaya yabancı olarak oturup tanıdık olarak kalkacağım.",
+        "t3": "Bugün plan yapmadım, plan beni buldu.",
+        "t4": "Bu akşam bir masada bilmediğim bir hikâyenin parçası olacağım.",
+        "t5": "Bu akşamın en güzel anı henüz yaşanmadı.",
+        "t6": "Bu akşam sıradan bir akşam olmayacak.",
+        "t7": "Bu akşam bir masada kendimi yeniden tanıtacağım.",
+        "t8": "Bu akşam iki sandalye, bir masa ve bolca merak.",
+        "t9": "Bu akşam ilk göz temasından sonrası tamamen bilinmez."
+      },
+      "KANKA": {
+        "t0": "Bu akşam kankamla yeni bir masaya oturuyoruz.",
+        "t1": "Bu akşam kankamı da aldım, macera ikiye katlandı.",
+        "t2": "Bu akşam kankamla birlikte yeni bir ikiliyle tanışıyoruz.",
+        "t3": "Bu akşam kankam yanımda, gerisi sürpriz.",
+        "t4": "Bu akşam kankamla planımız belli: yeni insanlar, iyi sohbet.",
+        "t5": "Bu akşam kankamla gidiyorum, hikâyeyi dört kişi yazacağız.",
+        "t6": "Bu akşam kankamla tanımadığımız bir masaya sürpriz yapıyoruz.",
+        "t7": "Bu akşam kankamla rutini bozuyoruz.",
+        "t8": "Bu akşam kankamla yeni insanlara bir şans veriyoruz.",
+        "t9": "Bu akşam kankamla yeni bir masaya, yeni bir enerjiye."
+      }
+    }
   }
 }

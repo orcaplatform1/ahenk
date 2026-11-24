@@ -2,7 +2,7 @@
 // S-14: push bildirim izni kayıt tamamlanınca istenir (token alma Firebase dosyaları gelene kadar raporlandı)
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
@@ -66,6 +66,7 @@ export default function Kayit() {
   const { t } = useTranslation();
   const lang = currentLang();
   const router = useRouter();
+  const params = useLocalSearchParams<{ ref?: string }>();
   const insets = useSafeAreaInsets();
   const kb = useKeyboardFieldScroll();
   const [step, setStep] = useState(0);
@@ -83,6 +84,8 @@ export default function Kayit() {
   const [speaksTurkish, setSpeaksTurkish] = useState<boolean | null>(lang === 'en' ? null : true);
   // "Haber ver" denen pasif bölgeler: kayıt tamamlanınca bekleme listesine yazılır
   const [notifyRegions, setNotifyRegions] = useState<string[]>([]);
+  // Davet kodu (isteğe bağlı): davet linkinden ?ref= ile gelirse otomatik dolar
+  const [inviteCode, setInviteCode] = useState(typeof params.ref === 'string' ? params.ref : '');
   const [pwError, setPwError] = useState('');
   const [pwConfirmError, setPwConfirmError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -152,7 +155,7 @@ export default function Kayit() {
       const res = await fetch(`${API_PREFIX}/auth/register`, {
         method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json', ...langHeaders() },
         body: JSON.stringify({ firstName: f.firstName, lastName: f.lastName, email: f.email, password: f.password, phoneNumber: phoneE164, phoneToken, acceptTerms: true, language: lang, speaksEnglish: !!speaksEnglish, speaksTurkish: lang === 'en' ? !!speaksTurkish : true,
-          gender: f.gender || undefined, birthDate: f.birthDate || undefined, occupationSector: f.occupationSector, primaryCityId: f.primaryCityId || undefined, district: f.district || undefined }),
+          gender: f.gender || undefined, birthDate: f.birthDate || undefined, occupationSector: f.occupationSector, primaryCityId: f.primaryCityId || undefined, district: f.district || undefined, referralCode: inviteCode.trim() || undefined }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { const m = (data as { message?: string | string[] }).message; throw new Error(Array.isArray(m) ? m[0] : m ?? t('common.genericError')); }
@@ -275,6 +278,7 @@ export default function Kayit() {
                 })}
               </View>
             </View>
+            {field(t('reg.inviteCode'), <Input form autoCapitalize="characters" autoCorrect={false} maxLength={40} value={inviteCode} onChangeText={setInviteCode} style={{ fontSize: 13 }} />)}
             {!!error && <T style={{ color: tw.accent, fontSize: 13 }}>{error}</T>}
             <PillButton label={t('reg.continueBtn')} primary disabled={loading} onPress={step1} />
           </View>

@@ -2,6 +2,7 @@ import { Controller, Get, Post, Param, Body, Query, Req, UseGuards } from "@nest
 import { Request } from "express";
 import { MeetingsService } from "./meetings.service";
 import { LiveLayerService } from "./live-layer.service";
+import { ShareCardService } from "./share-card.service";
 import { LiveLayerQueryDto } from "./live-layer.dto";
 import { BlockUsersDto, ReviewMeetingDto, CancelRegistrationDto, MarkNoShowDto } from "./dto/meetings.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -12,6 +13,7 @@ export class MeetingsController {
   constructor(
     private meetingsService: MeetingsService,
     private liveLayer: LiveLayerService,
+    private shareCard: ShareCardService,
   ) {}
 
   // Canlı Katman: sonar + canlı akış (15 sn)
@@ -39,6 +41,20 @@ export class MeetingsController {
   getMyHistory(@Req() req: Request) {
     const user = req.user as { id: string };
     return this.meetingsService.getMyHistory(user.id);
+  }
+
+  // "Ahenk Masa Dinamiği (Yapay Zekâ Raporu)" paylaşım kartı: masa türü, Genel Uyum, kısa DNA, mekân, tarih, teaser, davet linki
+  @Get(":id/share-card")
+  getShareCard(@Param("id") id: string, @Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.shareCard.get(id, user.id);
+  }
+
+  // Paylaşım kartında teaser'ı listedeki bir sonrakiyle değiştir
+  @Post(":id/share-card/teaser")
+  nextShareTeaser(@Param("id") id: string, @Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.shareCard.nextTeaser(id, user.id);
   }
 
   // Katılımcı önizlemesi — ad+soyad baş harfi + cinsiyet

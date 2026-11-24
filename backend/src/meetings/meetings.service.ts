@@ -18,6 +18,7 @@ import { ASSIGN_QUEUE } from "../matching/assign-queue";
 import { cancelSelection } from "../matching/selection-cancel";
 import { activeKankaLink } from "../kanka/kanka-links";
 import { AdminAlertType, MeetingStatus, MeetingType, ParticipantStatus, SubscriptionPlan, SubscriptionStatus } from "../generated/prisma/client";
+import { localizeAiReport } from "./share-card.service";
 
 // Admin ayrı harita linki girmediyse mekan adı + adresle Google Maps araması
 function googleMapsUrl(name?: string | null, address?: string | null): string | null {
@@ -125,6 +126,8 @@ export class MeetingsService {
       approvedPhotoMap(this.prisma, parts.flatMap(({ meeting }) => meeting.participants.map((p) => p.userId))),
     ]);
 
+    // Yapay Zekâ Masa Raporu kullanıcının dilinde gösterilir
+    const userLangP = this.prisma.user.findUnique({ where: { id: userId }, select: { language: true } }).then((u) => u?.language ?? 'tr').catch(() => 'tr');
     const items = await Promise.all(
       parts.map(async ({ meeting: m }) => {
         const sat10UTC = new Date(m.scheduledAt.getTime() - 10 * 60 * 60 * 1000);
@@ -165,9 +168,9 @@ export class MeetingsService {
         if (isRevealed) {
           const report = await this.prisma.meetingAiReport.findUnique({
             where: { meetingId: m.id },
-            select: { content: true, uyumSkoru: true, generatedAt: true },
+            select: { content: true, uyumSkoru: true, generatedAt: true, detail: true },
           });
-          if (report) aiReport = report;
+          if (report) aiReport = localizeAiReport(report, await userLangP);
         }
 
         return {

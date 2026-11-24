@@ -84,7 +84,8 @@ function KayitPageInner() {
   const [speaksTurkish, setSpeaksTurkish] = useState<boolean | null>(locale === 'en' ? null : true);
   const [notifyRegions, setNotifyRegions] = useState<string[]>([]);
   const searchParams = useSearchParams();
-  const referralCode = searchParams.get('ref') ?? undefined;
+  // Davet kodu: davet linkinden (?ref=) otomatik dolar, elle de girilebilir (isteğe bağlı)
+  const [inviteCode, setInviteCode] = useState(searchParams.get('ref') ?? '');
   const [step, setStep] = useState(0);
   const [stepDir, setStepDir] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -228,7 +229,7 @@ function KayitPageInner() {
         occupationSector: form.occupationSector,
         primaryCityId: form.primaryCityId || undefined,
         district: form.district || undefined,
-        referralCode,
+        referralCode: inviteCode.trim() || undefined,
         language: locale,
         speaksEnglish: !!speaksEnglish,
         speaksTurkish: locale === 'en' ? !!speaksTurkish : true,
@@ -499,6 +500,7 @@ function KayitPageInner() {
                 })}
               </div>
             </div>
+            <Field label={t('reg.inviteCode')} value={inviteCode} onChange={setInviteCode} maxLength={40} />
             <AnimatePresence mode="wait">
               {error && (
                 <motion.p

@@ -68,6 +68,10 @@ model User {
   referralDiscountAvailable Boolean               @default(false)
   referralsSent             Referral[]            @relation("ReferralsSent")
   referralsReceived         Referral[]            @relation("ReferralsReceived")
+  referralCode              String?               @unique // Kalıcı kişisel davet kodu (davet linki: /kayit?ref=<kod>)
+  referralRewards           ReferralReward[]
+  shareTeasers              ShareTeaser[]
+  teaserCursors             TeaserCursor[]
   kankaInvitesSent          KankaInvite[]         @relation("KankaInviteSender")
   kankaLinksA               KankaLink[]           @relation("KankaLinkA")
   kankaLinksB               KankaLink[]           @relation("KankaLinkB")
@@ -278,6 +282,7 @@ model Meeting {
   noShowReports        NoShowReport[]
   sanctions            UserSanction[]
   aiReport             MeetingAiReport?
+  shareTeasers         ShareTeaser[]
   chatMessages         ChatMessage[]
   sosReports           SosReport[]
 
@@ -292,7 +297,32 @@ model MeetingAiReport {
   meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   content     String   @db.Text
   uyumSkoru   Int
+  // Ek rapor (claude-sonnet-5-5): { tr: { questions[3], dna, dnaShort, comment }, en: { ... } }
+  detail      Json?
   generatedAt DateTime @default(now())
+}
+
+// Paylaşım kartı teaser'ı: kullanıcının o masadaki kartında gösterilen teaser sırası (0–9)
+model ShareTeaser {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  index     Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, meetingId])
+}
+
+// Kullanıcı başına, masa türü başına sıradaki teaser (10'dan sonra başa döner)
+model TeaserCursor {
+  userId String
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   MeetingType
+  next   Int         @default(0)
+
+  @@id([userId, type])
 }
 
 // Değerlendirmede "masaya katılmadı" bildirimi
@@ -1027,6 +1057,19 @@ model Referral {
   @@index([referrerId])
   @@index([referredId])
   @@index([status])
+}
+
+// Davet ödülü: her 3 geçerli davette 1 ücretsiz masa hakkı; türü kullanıcı seçer (plan: MASADA / KARSIMDA / KANKAMLA)
+model ReferralReward {
+  id             String            @id @default(cuid())
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan           SubscriptionPlan?
+  subscriptionId String?           @unique
+  claimedAt      DateTime?
+  createdAt      DateTime          @default(now())
+
+  @@index([userId])
 }
 
 // ─────────────────────────────────────────────

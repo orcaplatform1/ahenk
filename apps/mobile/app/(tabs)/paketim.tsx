@@ -1,6 +1,7 @@
 // Sekme 4 — Paketim: apps/web/app/profil/tabs/TabPaket.tsx. Ödeme: uygulama içi satın alma (App Store / Play Store), mobil fiyat (mobileTL).
 import React, { useCallback, useState } from 'react';
-import { BackHandler, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { BackHandler, Platform, Pressable, ScrollView, Share, TextInput, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -85,7 +86,12 @@ export default function Paketim() {
   const [prices, setPrices] = useState<Partial<Record<PlanKeyName, PlanPriceInfo>> | null>(null);
   const [kankamla, setKankamla] = useState<KankamlaState | null>(null);
   const [maintenance, setMaintenance] = useState(false);
-  const [stats, setStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
+  // Davet: kişisel kod / link, geçerli davet sayısı, sonraki ücretsiz masaya kalan davet, türü seçilmemiş ödüller
+  const [stats, setStats] = useState<{ totalInvites: number; availableDiscounts: number; referralCode?: string; inviteLink?: string; validInvites?: number; invitesToNextReward?: number; pendingRewards?: { id: string }[] } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [rewardMsg, setRewardMsg] = useState('');
+  const [rewardOk, setRewardOk] = useState(false);
   const [refPhone, setRefPhone] = useState('');
   const [refCountry, setRefCountry] = useState(DEFAULT_PHONE_COUNTRY);
   const [refSending, setRefSending] = useState(false);
@@ -122,6 +128,25 @@ export default function Paketim() {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => { setDetail(null); setError(''); return true; });
     return () => sub.remove();
   }, [detail]));
+
+  function copyCode() {
+    if (!stats?.referralCode) return;
+    Clipboard.setStringAsync(stats.referralCode).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+  }
+  function shareInvite() {
+    if (!stats?.inviteLink) return;
+    Share.share({ message: t('loyalty.shareText', { link: stats.inviteLink }) }).catch(() => {});
+  }
+  // Kazanılan ücretsiz masa hakkının türünü seç: tek seferlik hak olarak Paketim'e eklenir
+  async function claimReward(rewardId: string, type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA') {
+    setClaiming(true); setRewardMsg('');
+    try {
+      await api.post(`/referral/rewards/${rewardId}/claim`, { type });
+      setRewardMsg(t('loyalty.rewardDone')); setRewardOk(true);
+      setStats(await api.get('/referral/my-stats'));
+      await loadSubs();
+    } catch (e) { setRewardMsg((e as Error).message); setRewardOk(false); } finally { setClaiming(false); }
+  }
 
   async function sendReferral() {
     const refE164 = toE164(refCountry, refPhone);
@@ -286,8 +311,35 @@ export default function Paketim() {
                 </View>
               </View>
               {!!refMsg && <T style={{ fontSize: 12, color: refOk ? c.ok : tw.accent }}>{refMsg}</T>}
+              {!!stats?.referralCode && (
+                <View style={{ gap: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+                  <T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.myCode')}</T>
+                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                    <View style={{ flex: 1, minHeight: 44, justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingHorizontal: 14 }}>
+                      <T w={600} selectable style={{ fontSize: 15, letterSpacing: 1.8, color: ll.text }}>{stats.referralCode}</T>
+                    </View>
+                    <BtnGhost label={copied ? t('loyalty.copied') : t('loyalty.copy')} style={{ minHeight: 44 }} onPress={copyCode} />
+                    <BtnPrimary label={t('loyalty.share')} style={{ minHeight: 44 }} onPress={shareInvite} />
+                  </View>
+                  <T selectable style={{ fontSize: 12, color: c.tAaa }}>{stats.inviteLink}</T>
+                  <T w={600} style={{ fontSize: 14, color: ll.text }}>{t('loyalty.toNext', { count: stats.invitesToNextReward ?? 3 })}</T>
+                  <T style={{ color: c.tAaa, fontSize: 12, lineHeight: 18 }}>{t('loyalty.rule')}</T>
+                  {stats.pendingRewards?.map((r) => (
+                    <View key={r.id} style={{ gap: 8, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, backgroundColor: 'rgba(46,158,98,0.10)', borderWidth: 1, borderColor: 'rgba(46,158,98,0.4)' }}>
+                      <T w={600} style={{ fontSize: 14, color: ll.text }}>{t('loyalty.rewardTitle')}</T>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {([['GROUP', 'loyalty.rewardGroup'], ['ONE_ON_ONE', 'loyalty.rewardOne'], ['KANKA', 'loyalty.rewardKanka']] as const).map(([type, label]) => (
+                          <BtnGhost key={type} label={t(label)} disabled={claiming} style={{ flex: 1, minHeight: 44, opacity: claiming ? 0.5 : 1 }} onPress={() => claimReward(r.id, type)} />
+                        ))}
+                      </View>
+                    </View>
+                  ))}
+                  {!!rewardMsg && <T style={{ fontSize: 12, color: rewardOk ? c.ok : tw.accent }}>{rewardMsg}</T>}
+                </View>
+              )}
               <View style={{ flexDirection: 'row', gap: 24, paddingTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
                 <View><T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.invited')}</T><T w={600} style={{ fontSize: 16, color: ll.text }}>{t('loyalty.people', { count: stats?.totalInvites ?? '—' })}</T></View>
+                <View><T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.validInvites')}</T><T w={600} style={{ fontSize: 16, color: ll.text }}>{t('loyalty.people', { count: stats?.validInvites ?? '—' })}</T></View>
                 <View><T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.discounts')}</T><T w={600} style={{ fontSize: 16, color: ll.text }}>{t('loyalty.pieces', { count: stats?.availableDiscounts ?? '—' })}</T></View>
               </View>
             </Card>

@@ -19,6 +19,7 @@ import { SosNotice } from './SosNotice';
 import { InlineLH, Btn, BtnGhost, BtnPrimary, Card, Serif, T } from './ui';
 import { showAlert } from './AppAlert';
 import { LocationDisclosure } from './LocationDisclosure';
+import { ShareCardModal } from './ShareCard';
 import { PERM_REASON, showSettingsAlert } from '@/lib/permissions';
 import { c, ll, masaKart, sans, tw } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
@@ -29,7 +30,7 @@ export interface VenuePhoto { url: string; caption?: string }
 export interface MasaDetayData {
   id: string; type?: MasaTuru; maxParticipants?: number; scheduledAt: string; sosEndsAt: string; venueName: string;
   venueAddress?: string | null; venueDistrict?: string | null; venueMapsUrl?: string | null; venuePhotos?: VenuePhoto[]; participants: DetayParticipant[];
-  aiReport?: { content: string; uyumSkoru: number; generatedAt: string } | null;
+  aiReport?: { content: string; uyumSkoru: number; generatedAt: string; questions?: string[] | null; dna?: string | null; dnaShort?: string | null } | null;
 }
 interface ChatMsg { id: string; content: string; createdAt: string; isOwn: boolean; senderName: string; senderGender?: string | null; seatNo?: number | null; senderPhotoUrl?: string | null; reportedByMe: boolean; pending?: boolean }
 
@@ -432,6 +433,7 @@ function Lightbox({ photos, start, onClose }: { photos: VenuePhoto[]; start: num
 }
 
 // Yapay Zeka Masa Raporu: kayıtlı uyumSkoru yeşil halkada ("Genel Uyum"); rapor yoksa mevcut bilgi metni (tm.meetupNote)
+const upperTr = (s: string) => s.toLocaleUpperCase(currentLang() === 'en' ? 'en' : 'tr-TR');
 function ScoreRing({ score }: { score: number }) {
   const { d: D, stroke: SW } = masaKart.ring;
   const R = (D - SW) / 2, C = 2 * Math.PI * R;
@@ -449,8 +451,11 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
-function AiReport({ report }: { report?: MasaDetayData['aiReport'] }) {
+// Yapay Zekâ Masa Raporu: 3 soru, masa DNA'sı, AI yorumu; kart açıkken "Masa Dinamiğini Paylaş" (paylaşım kartı)
+function AiReport({ report, meetingId }: { report?: MasaDetayData['aiReport']; meetingId?: string }) {
   const { t } = useTranslation();
+  const [shareOpen, setShareOpen] = useState(false);
+  const sub = { fontSize: 10, letterSpacing: 1.2, color: c.aiTitle, marginBottom: 6 } as const;
   return (
     <View style={{ backgroundColor: c.aiBg, borderWidth: 1, borderColor: c.aiBorder, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -466,7 +471,24 @@ function AiReport({ report }: { report?: MasaDetayData['aiReport'] }) {
               <T w={700} style={{ fontSize: 13 }}>{t('masa.aiOverall')}</T>
             </View>
           )}
+          {!!report.questions?.length && (
+            <View style={{ marginBottom: 12 }}>
+              <T w={700} style={sub}>{upperTr(t('masa.aiQuestions'))}</T>
+              {report.questions.map((q, i) => (
+                <T key={i} style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 20, marginBottom: 4 }}>{i + 1}. {q}</T>
+              ))}
+            </View>
+          )}
+          {!!report.dna && (
+            <View style={{ marginBottom: 12 }}>
+              <T w={700} style={sub}>{upperTr(t('masa.aiDna'))}</T>
+              <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 21.45 }}>{report.dna}</T>
+            </View>
+          )}
+          {!!report.dna && <T w={700} style={sub}>{upperTr(t('masa.aiComment'))}</T>}
           <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 21.45 }}>{report.content}</T>
+          {!!meetingId && <BtnPrimary label={t('masa.shareOpen')} full style={{ marginTop: 14, minHeight: 44 }} onPress={() => setShareOpen(true)} />}
+          {shareOpen && !!meetingId && <ShareCardModal meetingId={meetingId} onClose={() => setShareOpen(false)} />}
         </>
       ) : (
         <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', lineHeight: 21.45 }}>{t('tm.meetupNote')}</T>
@@ -666,7 +688,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
             ))}
           </View>
 
-          <AiReport report={masa.aiReport} />
+          <AiReport report={masa.aiReport} meetingId={archive ? undefined : masa.id} />
         </View>
       </Card>
 

@@ -26,6 +26,11 @@ interface Subscription {
   expiresAt: string | null;
 }
 interface Rights { group: number; oneOnOne: number; kanka: number }
+// Davet: kişisel kod / link, geçerli davet sayısı, sonraki ücretsiz masaya kalan davet, türü seçilmemiş ödüller
+interface ReferralStats {
+  totalInvites: number; availableDiscounts: number; referralCode?: string; inviteLink?: string;
+  validInvites?: number; invitesToNextReward?: number; pendingRewards?: { id: string }[];
+}
 
 // Ödeme bilgisi metinleri: pkg.payInfoWeb, pkg.primeRenewInfo
 
@@ -56,7 +61,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
   const [referralCountry, setReferralCountry] = useState(DEFAULT_PHONE_COUNTRY);
   const [referralSending, setReferralSending] = useState(false);
   const [referralMsg, setReferralMsg] = useState('');
-  const [referralStats, setReferralStats] = useState<{ totalInvites: number; availableDiscounts: number } | null>(null);
+  const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
 
   function loadSubs() {
     return api.get<{ subscriptions: Subscription[]; rights: Rights; hasMasada?: boolean; hasKarsimda?: boolean; primeActive?: boolean }>('/payment/subscriptions')
@@ -75,8 +80,38 @@ export function TabPaket({ maintenanceMode = false }: Props) {
     loadSubs().finally(() => setLoading(false));
     api.get<DiscountInfo>('/payment/discount-info').then(setDiscountInfo).catch(() => {});
     api.get<{ kankamla?: KankamlaState }>('/auth/me').then((m) => setKankamla(m.kankamla ?? null)).catch(() => {});
-    api.get<{ totalInvites: number; availableDiscounts: number }>('/referral/my-stats').then(setReferralStats).catch(() => {});
+    api.get<ReferralStats>('/referral/my-stats').then(setReferralStats).catch(() => {});
   }, []);
+
+  const [copied, setCopied] = useState(false);
+  const [rewardMsg, setRewardMsg] = useState('');
+  const [claiming, setClaiming] = useState(false);
+
+  function copyCode() {
+    if (!referralStats?.referralCode) return;
+    navigator.clipboard?.writeText(referralStats.referralCode).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+  }
+
+  async function shareInvite() {
+    if (!referralStats?.inviteLink) return;
+    const text = t('loyalty.shareText', { link: referralStats.inviteLink });
+    try {
+      if (navigator.share) { await navigator.share({ text }); return; }
+    } catch (e) { if ((e as Error).name === 'AbortError') return; }
+    navigator.clipboard?.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+  }
+
+  // Kazanılan ücretsiz masa hakkının türünü seç: tek seferlik hak olarak Paketim'e eklenir
+  async function claimReward(rewardId: string, type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA') {
+    setClaiming(true); setRewardMsg('');
+    try {
+      await api.post(`/referral/rewards/${rewardId}/claim`, { type });
+      setRewardMsg(t('loyalty.rewardDone'));
+      setReferralStats(await api.get<ReferralStats>('/referral/my-stats'));
+      await loadSubs();
+    } catch (e) { setRewardMsg((e as Error).message); }
+    finally { setClaiming(false); }
+  }
 
   async function sendReferralInvite() {
     const referralE164 = toE164(referralCountry, referralPhone);
@@ -89,7 +124,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
       await api.post('/referral/invite', { phoneNumber: referralE164 });
       setReferralMsg(t('loyalty.sentOk'));
       setReferralPhone('');
-      const d = await api.get<{ totalInvites: number; availableDiscounts: number }>('/referral/my-stats');
+      const d = await api.get<ReferralStats>('/referral/my-stats');
       setReferralStats(d);
     } catch (e) { setReferralMsg((e as Error).message || t('loyalty.sendFailed')); }
     finally { setReferralSending(false); }
@@ -276,10 +311,42 @@ export function TabPaket({ maintenanceMode = false }: Props) {
         {referralMsg && (
           <p className="text-xs" style={{ color: referralMsg === t('loyalty.sentOk') ? '#4ade80' : '#ff6b6b' }}>{referralMsg}</p>
         )}
+        {referralStats?.referralCode && (
+          <div className="flex flex-col gap-2 pt-1 border-t border-white/5">
+            <p className="text-xs text-[#c9c2b8]" style={{ marginTop: 8 }}>{t('loyalty.myCode')}</p>
+            <div className="flex gap-2 items-center">
+              <span className="ll-mono" style={{ flex: 1, minWidth: 0, padding: '11px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 15, letterSpacing: '0.12em', color: '#f5f5f5' }}>
+                {referralStats.referralCode}
+              </span>
+              <button type="button" onClick={copyCode} className="btn-ghost justify-center" style={{ minHeight: 44 }}>{copied ? t('loyalty.copied') : t('loyalty.copy')}</button>
+              <button type="button" onClick={shareInvite} className="btn-primary justify-center" style={{ minHeight: 44 }}>{t('loyalty.share')}</button>
+            </div>
+            <p className="text-xs text-[#a39c93]" style={{ wordBreak: 'break-all' }}>{referralStats.inviteLink}</p>
+            <p className="text-sm font-semibold text-[#f4f1ec]">{t('loyalty.toNext', { count: referralStats.invitesToNextReward ?? 3 })}</p>
+            <p style={{ color: '#aaa', fontSize: 12, lineHeight: 1.5, margin: 0 }}>{t('loyalty.rule')}</p>
+            {referralStats.pendingRewards?.map((r) => (
+              <div key={r.id} className="flex flex-col gap-2" style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(46,158,98,0.10)', border: '1px solid rgba(46,158,98,0.4)' }}>
+                <p className="text-sm font-semibold text-[#f4f1ec]" style={{ margin: 0 }}>{t('loyalty.rewardTitle')}</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {([['GROUP', 'loyalty.rewardGroup'], ['ONE_ON_ONE', 'loyalty.rewardOne'], ['KANKA', 'loyalty.rewardKanka']] as const).map(([type, label]) => (
+                    <button key={type} type="button" disabled={claiming} onClick={() => claimReward(r.id, type)} className="btn-ghost justify-center disabled:opacity-50" style={{ minHeight: 44, fontSize: 12 }}>
+                      {t(label)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {rewardMsg && <p className="text-xs" style={{ color: rewardMsg === t('loyalty.rewardDone') ? '#4ade80' : '#ff6b6b' }}>{rewardMsg}</p>}
+          </div>
+        )}
         <div className="flex gap-6 pt-1 border-t border-white/5">
           <div>
             <p className="text-xs text-[#c9c2b8]">{t('loyalty.invited')}</p>
             <p className="text-base font-semibold text-[#f4f1ec]">{t('loyalty.people', { count: referralStats?.totalInvites ?? '—' })}</p>
+          </div>
+          <div>
+            <p className="text-xs text-[#c9c2b8]">{t('loyalty.validInvites')}</p>
+            <p className="text-base font-semibold text-[#f4f1ec]">{t('loyalty.people', { count: referralStats?.validInvites ?? '—' })}</p>
           </div>
           <div>
             <p className="text-xs text-[#c9c2b8]">{t('loyalty.discounts')}</p>

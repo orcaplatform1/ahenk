@@ -4,6 +4,7 @@ import { BullModule } from "@nestjs/bull";
 import { MeetingsService } from "./meetings.service";
 import { MeetingsController } from "./meetings.controller";
 import { AiReportService } from "./ai-report.service";
+import { ShareCardService } from "./share-card.service";
 import { PrismaModule } from "../prisma/prisma.module";
 import { ConfigModule } from "@nestjs/config";
 import { NotificationModule } from "../notification/notification.module";
@@ -17,7 +18,7 @@ import { ASSIGN_QUEUE } from "../matching/assign-queue";
     BullModule.registerQueue({ name: ASSIGN_QUEUE }),
   ],
   controllers: [MeetingsController],
-  providers: [MeetingsService, AiReportService, LiveLayerService],
+  providers: [MeetingsService, AiReportService, LiveLayerService, ShareCardService],
   exports: [AiReportService],
 })
 export class MeetingsModule {}

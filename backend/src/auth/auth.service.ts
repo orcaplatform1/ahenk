@@ -1,4 +1,5 @@
 import { approvedPhotoUrl } from "../profile-photo/profile-photo.util";
+import { ensureReferralCode } from "../referral/referral-code";
 import {
   Injectable,
   UnauthorizedException,
@@ -228,6 +229,8 @@ export class AuthService {
       return created;
     });
     await this.redis.del(`regphone:${dto.phoneNumber}`);
+    // Kalıcı kişisel davet kodu
+    await ensureReferralCode(this.prisma, user.id).catch(() => undefined);
 
     // Referral kodu ile geldiyse ilişkilendir
     if (dto.referralCode) {
@@ -237,10 +240,23 @@ export class AuthService {
         data: { referredId: user.id, status: ReferralStatus.REGISTERED },
       });
       // Referral bulundu ise davet edilen kullanıcıya indirim hakkı ver
-      const updated = await this.prisma.referral.findFirst({
+      let updated = await this.prisma.referral.findFirst({
         where: { inviteCode: dto.referralCode, referredId: user.id },
         select: { referrerId: true },
       });
+      // Kişisel davet kodu / linki (User.referralCode): davet kaydı kayıt anında oluşur
+      if (!updated) {
+        const referrer = await this.prisma.user.findUnique({
+          where: { referralCode: dto.referralCode.trim().toUpperCase() },
+          select: { id: true },
+        });
+        if (referrer && referrer.id !== user.id) {
+          updated = await this.prisma.referral.create({
+            data: { referrerId: referrer.id, referredId: user.id, status: ReferralStatus.REGISTERED },
+            select: { referrerId: true },
+          });
+        }
+      }
       if (updated) {
         await this.prisma.user.update({
           where: { id: user.id },

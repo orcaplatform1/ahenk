@@ -496,7 +496,11 @@
     "chatSendFailed": "Your message couldn't be sent, try again.",
     "reportNoteRequired": "Please write an explanation.",
     "reportDuplicate": "You've already reported this message.",
-    "suspended": "Because your account is suspended, you can't join tables or buy packages and subscriptions."
+    "suspended": "Because your account is suspended, you can't join tables or buy packages and subscriptions.",
+    "rewardClaimed": "You've already picked the type for this reward.",
+    "rewardNotFound": "Reward not found.",
+    "rewardTypeOpen": "You still have an unused right of this type. You can pick it after using that right.",
+    "shareCardNotReady": "The share card isn't ready yet."
   },
   "footer": {
     "brandPrefix": "Ahenk is a",
@@ -953,7 +957,20 @@
     "send": "Send Invite",
     "sendFailed": "Couldn't send.",
     "sentOk": "Invite sent!",
-    "title": "Loyalty Program"
+    "title": "Loyalty Program",
+    "copied": "Copied",
+    "copy": "Copy",
+    "myCode": "Your Invite Code",
+    "rewardDone": "Your free table was added to your packages.",
+    "rewardGroup": "Group",
+    "rewardKanka": "Bring a Buddy",
+    "rewardOne": "Duo",
+    "rewardTitle": "Your free table is ready. Pick its type:",
+    "rule": "You earn 1 free table for every 3 valid invites. An invite counts as valid once your friend buys their first package and verifies their identity.",
+    "share": "Share",
+    "shareText": "I'm meeting new people at Ahenk tables. Sign up with my invite link and get 10% off: {link}",
+    "toNext": "Invites left for 1 free table: {count}",
+    "validInvites": "Valid Invites"
   },
   "masa": {
     "aiScore": "COMPATIBILITY SCORE",
@@ -1031,7 +1048,11 @@
     "reason_ADVERTISING": "Advertising/redirection",
     "reason_DISCRIMINATION": "Discriminatory content",
     "reason_FAKE_PROFILE": "Suspected fake profile",
-    "reason_OTHER": "Other"
+    "reason_OTHER": "Other",
+    "aiComment": "AI Commentary",
+    "aiDna": "Table DNA",
+    "aiQuestions": "3 Questions to Start the Conversation",
+    "shareOpen": "Share Table Dynamics"
   },
   "nav": {
     "adminPanel": "Admin Panel",
@@ -1476,7 +1497,8 @@
     "venueQuestion": "What kind of venue would you like to meet at?",
     "verifyPhone": "Verify your phone number with the WhatsApp code.",
     "verifying": "Verifying…",
-    "welcome": "Welcome,"
+    "welcome": "Welcome,",
+    "inviteCode": "Invite code (optional)"
   },
   "report": {
     "addImage": "Add image ({count}/{max})",
@@ -1933,5 +1955,60 @@
     "delete": "Delete",
     "nameRequired": "Please enter a name.",
     "note": "When you press the Emergency Help button, this person is automatically notified via WhatsApp."
+  },
+  "share": {
+    "title": "Ahenk Table Dynamics (AI Report)",
+    "footer": "Find your own table · ahenk.co",
+    "typeGROUP": "Group Table",
+    "typeONE_ON_ONE": "Duo Table",
+    "typeKANKA": "Bring a Buddy Table",
+    "change": "Change",
+    "download": "Download Image",
+    "igStory": "Instagram Story",
+    "fbStory": "Facebook Story",
+    "whatsapp": "WhatsApp",
+    "message": "Message",
+    "more": "More",
+    "close": "Close",
+    "storyHint": "Image downloaded. You can share it as a story on Instagram or Facebook.",
+    "shareText": "{teaser} Find your own table: {link}",
+    "teasers": {
+      "GROUP": {
+        "t0": "Tonight's plan is set: new people, good conversation.",
+        "t1": "Tonight I'm breaking my routine to join an exciting meetup.",
+        "t2": "New faces, new stories, one table.",
+        "t3": "Tonight: one plate of food, a table full of new people.",
+        "t4": "Tonight won't be an ordinary night.",
+        "t5": "Tonight I'll introduce myself all over again at a new table.",
+        "t6": "Tonight I'm at a table with a group I've never met, and that's the best part.",
+        "t7": "Tonight new friendships begin around a table.",
+        "t8": "Tonight every chair holds a different story.",
+        "t9": "Tonight I've saved my seat at a crowded table."
+      },
+      "ONE_ON_ONE": {
+        "t0": "Tonight I'm breaking my routine to join an exciting meetup.",
+        "t1": "New faces, new stories, one table.",
+        "t2": "Tonight I'll sit down as a stranger and leave as a familiar face.",
+        "t3": "I didn't make plans today, the plan found me.",
+        "t4": "Tonight I'll be part of a story I don't know yet.",
+        "t5": "The best moment of tonight hasn't happened yet.",
+        "t6": "Tonight won't be an ordinary night.",
+        "t7": "Tonight I'll introduce myself all over again at a new table.",
+        "t8": "Tonight: two chairs, one table and plenty of curiosity.",
+        "t9": "Tonight, everything after the first eye contact is a mystery."
+      },
+      "KANKA": {
+        "t0": "Tonight my buddy and I are sitting down at a new table.",
+        "t1": "Tonight I brought my buddy along, the adventure just doubled.",
+        "t2": "Tonight my buddy and I are meeting a new duo.",
+        "t3": "My buddy's by my side tonight, the rest is a surprise.",
+        "t4": "Tonight my buddy and I have a plan: new people, good conversation.",
+        "t5": "Tonight I'm going with my buddy, the four of us will write the story.",
+        "t6": "Tonight my buddy and I are surprising a table of strangers.",
+        "t7": "Tonight my buddy and I are breaking the routine.",
+        "t8": "Tonight my buddy and I are giving new people a chance.",
+        "t9": "Tonight my buddy and I are off to a new table and a new energy."
+      }
+    }
   }
 }

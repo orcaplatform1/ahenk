@@ -7,6 +7,7 @@ import { DetayAvatar } from './DetayAvatar';
 import { PhotoViewer } from './PhotoViewer';
 import { gColor } from './MasaRadar';
 import { documentLang } from '../../lib/lang';
+import { ShareCardModal } from './ShareCard';
 
 // ── Tipler ──────────────────────────────────────────────────────────────────
 export interface DetayParticipant {
@@ -26,9 +27,12 @@ export interface VenuePhoto {
 }
 
 export interface AiReport {
-  content: string;
-  uyumSkoru: number;
+  content: string; // AI yorumu (kullanıcının dilinde)
+  uyumSkoru: number; // Masanın genel skoru
   generatedAt: string;
+  questions?: string[] | null; // Sohbeti başlatacak 3 soru
+  dna?: string | null; // Masa DNA'sı / masa dinamiği
+  dnaShort?: string | null; // Paylaşım kartındaki kısa özet
 }
 
 export interface MasaDetayData {
@@ -80,6 +84,12 @@ function jsonHeaders(token?: string): Record<string, string> {
     ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'Accept-Language': documentLang() }
     : { 'Content-Type': 'application/json', 'Accept-Language': documentLang() };
 }
+
+// Yapay Zekâ Masa Raporu alt başlıkları
+const AI_SUB: React.CSSProperties = {
+  margin: '0 0 6px', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+  fontFamily: 'Inter, sans-serif', color: 'rgba(180,200,255,0.75)',
+};
 
 // ── Renkler ─────────────────────────────────────────────────────────────────
 const GREEN      = '#27ae60';
@@ -889,6 +899,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
   const rows       = participantRows(masa.participants.filter(p => !p.cancelled), masa.type);
 
   const authHeaders = apiBase ? jsonHeaders(token) : null;
+  const [shareOpen, setShareOpen] = useState(false);
 
   const hasChat = !!apiBase;
 
@@ -983,6 +994,9 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
 
   return (
     <>
+      {shareOpen && authHeaders && (
+        <ShareCardModal meetingId={masa.id} apiBase={apiBase!} headers={authHeaders} onClose={() => setShareOpen(false)} />
+      )}
       <AnimatePresence>
         {lightboxIdx !== null && (
           <Lightbox photos={cover ? [cover] : []} startIdx={lightboxIdx} onClose={() => setLightboxIdx(null)} />
@@ -1169,9 +1183,31 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
                     <span style={{ fontSize: 13, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{t('masa.aiOverall')}</span>
                   </div>
                 )}
+                {!!masa.aiReport.questions?.length && (
+                  <div style={{ marginBottom: 12 }}>
+                    <p style={AI_SUB}>{t('masa.aiQuestions')}</p>
+                    <ol style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {masa.aiReport.questions.map((q, i) => (
+                        <li key={i} style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter, sans-serif', lineHeight: 1.55 }}>{q}</li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+                {!!masa.aiReport.dna && (
+                  <div style={{ marginBottom: 12 }}>
+                    <p style={AI_SUB}>{t('masa.aiDna')}</p>
+                    <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.65)', fontFamily: 'Inter, sans-serif', lineHeight: 1.65 }}>{masa.aiReport.dna}</p>
+                  </div>
+                )}
+                {!!masa.aiReport.dna && <p style={AI_SUB}>{t('masa.aiComment')}</p>}
                 <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.65)', fontFamily: 'Inter, sans-serif', lineHeight: 1.65 }}>
                   {masa.aiReport.content}
                 </p>
+                {!archive && authHeaders && (
+                  <button type="button" onClick={() => setShareOpen(true)} className="btn-primary justify-center" style={{ marginTop: 14, minHeight: 44, width: '100%' }}>
+                    {t('masa.shareOpen')}
+                  </button>
+                )}
               </>
             ) : (
               <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', lineHeight: 1.65 }}>
