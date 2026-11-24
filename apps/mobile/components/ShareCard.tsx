@@ -34,9 +34,9 @@ const TYPE_COLORS: Record<MeetingKind, { accent: string; from: string; to: strin
 };
 // Masa türüne göre arka plan görseli (web ile aynı dosyalar); yüklenemezse gradyan görünür
 const BG_URL: Record<MeetingKind, string> = {
-  GROUP: 'https://ahenk.co/share-bg/grup.png',
-  ONE_ON_ONE: 'https://ahenk.co/share-bg/basbasa.png',
-  KANKA: 'https://ahenk.co/share-bg/kankamla.png',
+  GROUP: 'https://ahenk.co/share-bg/grup.webp',
+  ONE_ON_ONE: 'https://ahenk.co/share-bg/basbasa.webp',
+  KANKA: 'https://ahenk.co/share-bg/kankamla.webp',
 };
 
 function ActionBtn({ label, onPress }: { label: string; onPress: () => void }) {
@@ -148,40 +148,43 @@ export function ShareCardModal({ meetingId, onClose }: { meetingId: string; onCl
             {data && (
               <View ref={cardRef} collapsable={false} style={{ width: '100%', borderRadius: 14, overflow: 'hidden' }}>
               <LinearGradient colors={['#0b0b0b', col.from, col.to]} locations={[0, 0.45, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={{ width: '100%', aspectRatio: 9 / 16, borderRadius: 14, padding: 22, justifyContent: 'space-between', overflow: 'hidden' }}>
+                style={{ width: '100%', aspectRatio: 9 / 16, borderRadius: 14, padding: 22, overflow: 'hidden' }}>
                 {!bgFailed && (
                   <Image source={{ uri: BG_URL[data.type] }} resizeMode="cover" onError={() => setBgFailed(true)} accessible={false} accessibilityIgnoresInvertColors
                     style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
                 )}
-                <View style={{ gap: 14 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                    <Serif style={{ fontSize: 26, color: '#fff' }}>Ahenk</Serif>
-                    <View style={{ backgroundColor: col.accent, borderRadius: 9999, paddingVertical: 4, paddingHorizontal: 10, flexShrink: 1 }}>
-                      <T w={700} numberOfLines={1} style={{ fontSize: 10, color: '#fff', letterSpacing: 0.6 }}>{t(`share.type${data.type}`).toLocaleUpperCase(currentLang() === 'en' ? 'en' : 'tr-TR')}</T>
+                {/* Üstte sabit: logo + masa türü etiketi */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <Serif style={{ fontSize: 26, color: '#fff' }}>Ahenk</Serif>
+                  <View style={{ backgroundColor: col.accent, borderRadius: 9999, paddingVertical: 4, paddingHorizontal: 10, flexShrink: 1 }}>
+                    <T w={700} numberOfLines={1} style={{ fontSize: 10, color: '#fff', letterSpacing: 0.6 }}>{t(`share.type${data.type}`).toLocaleUpperCase(currentLang() === 'en' ? 'en' : 'tr-TR')}</T>
+                  </View>
+                </View>
+                {/* Ortadaki içerik bloğu dikeyde ortalı: başlık (tek satır), yüzde, Genel Uyum, ayırıcı, karakter cümlesi, mekân, tarih, alıntı */}
+                <View style={{ flex: 1, justifyContent: 'center', gap: 14 }}>
+                  <T w={600} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', lineHeight: 19 }}>{t('share.title')}</T>
+                  <View>
+                    <T w={800} style={{ fontSize: 42, lineHeight: 46, color: '#fff' }}>%{Math.max(0, Math.min(100, data.uyumSkoru))}</T>
+                    <T w={700} style={{ fontSize: 16, color: '#4ade80' }}>{t('masa.aiOverall')}</T>
+                    <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: 14 }} />
+                    {!!data.dnaShort && <Serif numberOfLines={3} style={{ fontSize: 13.5, lineHeight: 18, color: '#fff' }}>{data.dnaShort}</Serif>}
+                  </View>
+                  <View style={{ gap: 4 }}>
+                    {!!data.venueName && <T w={700} numberOfLines={2} style={{ fontSize: 15, color: '#fff' }}>{data.venueName}</T>}
+                    <T w={500} style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>{formatCardDate(data.scheduledAt, currentLang())}</T>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{ flex: 1, flexDirection: 'row', gap: 10 }}>
+                      <View style={{ width: 3, backgroundColor: col.accent, borderRadius: 2 }} />
+                      <Serif style={{ flex: 1, fontSize: 11.25, lineHeight: 15.75, color: '#fff', fontStyle: 'italic' }}>“{teaserText}”</Serif>
                     </View>
+                    {!capturing && <Pressable onPress={changeTeaser} disabled={busy} accessibilityRole="button" accessibilityLabel={t('share.change')} hitSlop={8}
+                      style={{ minHeight: 44, minWidth: 44, borderRadius: 9999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.5 : 1 }}>
+                      <T w={600} style={{ fontSize: 12, color: '#fff' }}>{t('share.change')}</T>
+                    </Pressable>}
                   </View>
-                  <T w={600} style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', lineHeight: 19 }}>{t('share.title')}</T>
                 </View>
-                <View>
-                  <T w={800} style={{ fontSize: 84, lineHeight: 92, color: '#fff' }}>%{Math.max(0, Math.min(100, data.uyumSkoru))}</T>
-                  <T w={700} style={{ fontSize: 16, color: '#4ade80' }}>{t('masa.aiOverall')}</T>
-                  <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: 14 }} />
-                  {!!data.dnaShort && <Serif numberOfLines={3} style={{ fontSize: 18, lineHeight: 24, color: '#fff' }}>{data.dnaShort}</Serif>}
-                </View>
-                <View style={{ gap: 4 }}>
-                  {!!data.venueName && <T w={700} numberOfLines={2} style={{ fontSize: 15, color: '#fff' }}>{data.venueName}</T>}
-                  <T w={500} style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>{formatCardDate(data.scheduledAt, currentLang())}</T>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <View style={{ flex: 1, flexDirection: 'row', gap: 10 }}>
-                    <View style={{ width: 3, backgroundColor: col.accent, borderRadius: 2 }} />
-                    <Serif style={{ flex: 1, fontSize: 15, lineHeight: 21, color: '#fff', fontStyle: 'italic' }}>“{teaserText}”</Serif>
-                  </View>
-                  {!capturing && <Pressable onPress={changeTeaser} disabled={busy} accessibilityRole="button" accessibilityLabel={t('share.change')} hitSlop={8}
-                    style={{ minHeight: 44, minWidth: 44, borderRadius: 9999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.5 : 1 }}>
-                    <T w={600} style={{ fontSize: 12, color: '#fff' }}>{t('share.change')}</T>
-                  </Pressable>}
-                </View>
+                {/* Altta sabit: davet linki satırı */}
                 <View>
                   <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginBottom: 10 }} />
                   <T w={600} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4} style={{ fontSize: 12, color: '#fff', textAlign: 'center' }}>{t('share.footer', { code: data.inviteCode ?? '' })}</T>

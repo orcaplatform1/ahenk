@@ -20,7 +20,7 @@ interface CardData {
   inviteLink: string | null;
 }
 
-// Masa türüne göre isteğe bağlı arka plan görseli (1080 × 1920 PNG): apps/web/public/share-bg/<dosya>.png.
+// Masa türüne göre isteğe bağlı arka plan görseli (1080 × 1920 WebP): apps/web/public/share-bg/<dosya>.webp.
 // Dosya varsa gradyan ve ışıma yerine bu görsel çizilir; yoksa gradyan ve ışıma aynen kullanılır.
 const BG_FILE: Record<MeetingKind, string> = { GROUP: 'grup', ONE_ON_ONE: 'basbasa', KANKA: 'kankamla' };
 
@@ -110,52 +110,73 @@ function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string
   ctx.fillStyle = '#ffffff';
   ctx.fillText(label, lx + 28, ly + 48);
 
-  // Başlık
-  let y = PAD + 230;
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.font = `600 46px ${SANS}`;
-  for (const line of wrap(ctx, texts.title, W - PAD * 2, 2)) { ctx.fillText(line, PAD, y); y += 60; }
+  // Ortadaki içerik bloğu (başlık, yüzde, Genel Uyum, ayırıcı, karakter cümlesi, mekân, tarih, alıntı): önce yerleşim hesaplanır,
+  // sonra blok logo / etiket satırı (alt kenarı 182) ile alt ayraç (1734) arasında dikeyde ortalanarak çizilir.
+  const ops: ((oy: number) => void)[] = [];
+  const MAXW = W - PAD * 2;
 
-  // Genel Uyum (büyük)
-  y += 230;
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `800 300px ${SANS}`;
-  ctx.fillText(`%${Math.max(0, Math.min(100, d.uyumSkoru))}`, PAD - 10, y);
+  // Başlık: tek satır; 888 px'e sığmazsa yazı küçülür
+  let ts = 46;
+  ctx.font = `600 ${ts}px ${SANS}`;
+  while (ts > 20 && ctx.measureText(texts.title).width > MAXW) { ts -= 1; ctx.font = `600 ${ts}px ${SANS}`; }
+  const titleFont = ctx.font;
+  let y = Math.round(ts * 0.78);
+  const ty = y;
+  ops.push((oy) => { ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = titleFont; ctx.fillText(texts.title, PAD, oy + ty); });
+
+  // Genel Uyum yüzdesi (önceki 300 px'in yarısı)
+  y += 160;
+  const sy = y;
+  ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = `800 150px ${SANS}`; ctx.fillText(`%${Math.max(0, Math.min(100, d.uyumSkoru))}`, PAD - 5, oy + sy); });
   y += 90;
-  ctx.fillStyle = '#4ade80';
-  ctx.font = `700 52px ${SANS}`;
-  ctx.fillText(texts.overall, PAD, y);
+  const gy = y;
+  ops.push((oy) => { ctx.fillStyle = '#4ade80'; ctx.font = `700 52px ${SANS}`; ctx.fillText(texts.overall, PAD, oy + gy); });
 
-  // Masa DNA'sı (kısa özet)
+  // Ayırıcı ve masa DNA'sı (kısa özet; önceki 58 px'ten %25 küçük)
   y += 70;
-  ctx.fillStyle = 'rgba(255,255,255,0.18)';
-  ctx.fillRect(PAD, y, W - PAD * 2, 2);
-  y += 100;
+  const dy = y;
+  ops.push((oy) => { ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(PAD, oy + dy, MAXW, 2); });
+  y += 75;
   if (d.dnaShort) {
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `400 58px ${SERIF}`;
-    for (const line of wrap(ctx, d.dnaShort, W - PAD * 2, 3)) { ctx.fillText(line, PAD, y); y += 76; }
+    ctx.font = `400 43.5px ${SERIF}`;
+    for (const line of wrap(ctx, d.dnaShort, MAXW, 3)) {
+      const ly = y;
+      ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = `400 43.5px ${SERIF}`; ctx.fillText(line, PAD, oy + ly); });
+      y += 57;
+    }
   }
 
   // Mekân, tarih ve saat
   y += 60;
   if (d.venueName) {
-    ctx.fillStyle = '#ffffff';
     ctx.font = `700 50px ${SANS}`;
-    for (const line of wrap(ctx, d.venueName, W - PAD * 2, 2)) { ctx.fillText(line, PAD, y); y += 64; }
+    for (const line of wrap(ctx, d.venueName, MAXW, 2)) {
+      const ly = y;
+      ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = `700 50px ${SANS}`; ctx.fillText(line, PAD, oy + ly); });
+      y += 64;
+    }
   }
-  ctx.fillStyle = 'rgba(255,255,255,0.75)';
-  ctx.font = `500 42px ${SANS}`;
-  ctx.fillText(texts.date, PAD, y);
+  const dty = y;
+  ops.push((oy) => { ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = `500 42px ${SANS}`; ctx.fillText(texts.date, PAD, oy + dty); });
 
-  // Teaser
-  y += 130;
-  ctx.font = `italic 400 50px ${SERIF}`;
-  const tLines = wrap(ctx, `“${texts.teaser}”`, W - PAD * 2 - 30, 4);
-  ctx.fillStyle = col.accent;
-  ctx.fillRect(PAD, y - 46, 8, tLines.length * 66);
-  ctx.fillStyle = '#ffffff';
-  for (const line of tLines) { ctx.fillText(line, PAD + 34, y); y += 66; }
+  // Alıntı (teaser; önceki 50 px'ten %25 küçük)
+  y += 110;
+  ctx.font = `italic 400 37.5px ${SERIF}`;
+  const tLines = wrap(ctx, `“${texts.teaser}”`, MAXW - 30, 4);
+  const tby = y;
+  ops.push((oy) => {
+    ctx.fillStyle = col.accent;
+    ctx.fillRect(PAD, oy + tby - 34.5, 8, tLines.length * 49.5);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `italic 400 37.5px ${SERIF}`;
+    tLines.forEach((line, i) => ctx.fillText(line, PAD + 34, oy + tby + i * 49.5));
+  });
+  const blockH = tby + (tLines.length - 1) * 49.5 + 12;
+
+  const TOP = PAD + 14 + 72; // logo / etiket satırının alt kenarı
+  const BOTTOM = H - PAD - 90; // alt ayraç
+  const oy = Math.round(TOP + (BOTTOM - TOP - blockH) / 2);
+  for (const op of ops) op(oy);
 
   // Alt satır
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
@@ -218,7 +239,7 @@ export function ShareCardModal({ meetingId, apiBase, headers, onClose }: {
       const im = new Image();
       im.onload = () => resolve(im);
       im.onerror = () => resolve(null);
-      im.src = `/share-bg/${BG_FILE[data.type]}.png`;
+      im.src = `/share-bg/${BG_FILE[data.type]}.webp`;
     });
     Promise.all([(document.fonts?.ready ?? Promise.resolve()).catch(() => undefined), bgP]).then(([, im]) => render(im));
     return () => { cancelled = true; };
