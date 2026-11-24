@@ -63,7 +63,7 @@ export default function SifremiUnuttumPage() {
       <div className="relative w-full max-w-sm" style={{ zIndex: 1 }}>
         <div className="mb-10 text-center">
           <div className="flex flex-col items-center gap-2 mb-6">
-            <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
+            <Image src="/logo-welcome.webp" alt="Ahenk" width={48} height={48} />
             <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
           </div>
           <h1 className="ll-title">{t('forgot.title')}</h1>

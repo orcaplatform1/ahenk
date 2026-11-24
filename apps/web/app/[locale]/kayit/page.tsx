@@ -371,7 +371,7 @@ function KayitPageInner() {
 
         {/* Logo */}
         <div className="flex flex-col items-center gap-2 mb-8">
-          <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
+          <Image src="/logo-welcome.webp" alt="Ahenk" width={48} height={48} />
           <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
         </div>
 

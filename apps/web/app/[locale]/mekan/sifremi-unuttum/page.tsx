@@ -56,7 +56,7 @@ export default function MekanSifremiUnuttumPage() {
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-24" style={{ background: '#121212' }}>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-2 mb-8">
-          <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
+          <Image src="/logo-welcome.webp" alt="Ahenk" width={48} height={48} />
           <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
         </div>
         <h1 className="font-serif text-4xl text-[#f5f5f5] text-center mb-2">{t('vp.resetTitle')}</h1>

@@ -530,9 +530,7 @@ function StatCards() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes _statRedBorder{to{transform:rotate(360deg)}}
         .stat-wrap{position:relative;border-radius:16px;padding:1px;overflow:hidden;}
-        .stat-wrap::before{content:'';position:absolute;inset:-80%;background:conic-gradient(from 0deg,transparent 62%,#c0392b 76%,#ff6b6b 83%,transparent 92%);animation:_statRedBorder 3s linear infinite;z-index:0;}
         .stat-inner{position:relative;z-index:1;border-radius:14px;background:rgba(12,8,8,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 12px;}
       ` }} />
       <div className="max-w-3xl mx-auto px-6 py-10">
@@ -657,14 +655,18 @@ export default function Home() {
             </motion.div>
           </div>
 
-          {/* Stats */}
-          {/* ── Sayaç ─────────────────────────────────────────────────────── */}
-          <div className="relative z-10 px-6 lg:px-16 py-8 md:absolute md:bottom-8 md:right-8 md:scale-90 md:origin-bottom-right">
+          {/* ── Sayaç (masaüstü: hero'nun sağ altında) ─────────────────────── */}
+          <div className="hidden md:block relative z-10 px-6 lg:px-16 py-8 md:absolute md:bottom-8 md:right-8 md:scale-90 md:origin-bottom-right">
             <HeroCountdown />
           </div>
         </section>
 
-        <div style={{ background: 'linear-gradient(135deg, #2a0a0a 0%, #1a0508 100%)' }}><StatCards /></div>
+        {/* ── Sayaç (mobil genişlik: hero bittikten sonra, stats'tan önce) ── */}
+        <div className="md:hidden relative z-10 px-6 py-8">
+          <HeroCountdown />
+        </div>
+
+        <div><StatCards /></div>
 
         {/* ── Bunu daha önce denemedin ─────────────────────────────────── */}
         <section className="max-w-6xl mx-auto px-6 lg:px-16 py-20 lg:py-28">
