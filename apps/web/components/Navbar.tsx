@@ -8,6 +8,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
+import { StdButton } from '@ahenk/ui';
 
 /* ── Avatar ─────────────────────────────────────────────────────────── */
 const AV_D    = 36;
@@ -114,7 +115,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <style>{`@keyframes navbar-logo-spin{to{transform:rotate(360deg)}}`}</style>
-            <Image src="/logo.webp" alt="Ahenk" width={28} height={28} className="rounded-full" style={{ animation: 'navbar-logo-spin 10s linear infinite' }} />
+            <Image src="/logo-nav.webp" alt="Ahenk" width={28} height={28} style={{ animation: 'navbar-logo-spin 10s linear infinite' }} />
             <span className="font-sans font-semibold text-sm tracking-[0.12em] text-text">AHENK</span>
           </Link>
 
@@ -221,20 +222,20 @@ export default function Navbar() {
               {checked && (
                 <div className="flex flex-col px-4 pt-5 pb-6 gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.10)', marginTop: 8 }}>
                   {navUser ? (
-                    <button onClick={handleLogout} className="w-full btn-ghost justify-center">
+                    <StdButton variant="ghost" onClick={handleLogout} className="w-full justify-center">
                       {t('nav.logout')}
-                    </button>
+                    </StdButton>
                   ) : (
                     <>
                       {showGiris && (
-                        <Link href="/giris" onClick={() => setMenuOpen(false)} className="w-full btn-ghost justify-center">
+                        <StdButton variant="ghost" as={Link} href="/giris" onClick={() => setMenuOpen(false)} className="w-full justify-center">
                           {t('nav.login')}
-                        </Link>
+                        </StdButton>
                       )}
                       {showKayit && (
-                        <Link href="/kayit" onClick={() => setMenuOpen(false)} className="w-full btn-primary justify-center">
+                        <StdButton variant="primary" as={Link} href="/kayit" onClick={() => setMenuOpen(false)} className="w-full justify-center">
                           {t('nav.register')}
-                        </Link>
+                        </StdButton>
                       )}
                     </>
                   )}

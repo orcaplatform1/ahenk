@@ -6,7 +6,7 @@ import { api } from '@/lib/api';
 import { OCEAN_DIMENSIONS } from '@/lib/oceanData';
 import { topDimension } from '@/lib/kisilikAgaci';
 import { KisilikAgaci } from './KisilikAgaci';
-import { BtnPrimary, Card, Serif, SkeletonBlock, T } from '../ui';
+import { StdButton, Card, Serif, SkeletonBlock, T } from '../ui';
 import { ll, tw } from '@/theme/theme';
 
 import { formatDate } from '@ahenk/shared';
@@ -98,7 +98,7 @@ export function KisilikTab() {
     return (
       <Card style={{ alignItems: 'center', gap: 16 }}>
         <T style={{ color: ll.label, fontSize: 14, textAlign: 'center' }}>{t('tt.notYet')}</T>
-        <BtnPrimary label={t('tt.start')} style={{ alignSelf: 'center' }} onPress={() => router.push('/test')} />
+        <StdButton variant="primary" label={t('tt.start')} style={{ alignSelf: 'center' }} onPress={() => router.push('/test')} />
       </Card>
     );
   }
@@ -121,7 +121,7 @@ export function KisilikTab() {
         </Card>
         <T style={{ fontSize: 11, lineHeight: 16.5, color: ll.label }}>{t('tt.sixMonths')}</T>
       </View>
-      <BtnPrimary label={t('tt.retake')} style={{ alignSelf: 'center' }} disabled={!canRetake} onPress={() => router.push('/test')} />
+      <StdButton variant="primary" label={t('tt.retake')} style={{ alignSelf: 'center' }} disabled={!canRetake} onPress={() => router.push('/test')} />
     </View>
   );
 }

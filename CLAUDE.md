@@ -150,6 +150,11 @@ Davet sistemi:
 İndirimler: %10 davet indirimi ve paketi / aboneliği olmayana gönderilen 100 TL indirim tüm tek seferlik paketlerde ve tüm Prime
   planlarında geçerli (WINBACK_PLANS ayarında 8 plan); ikisi aynı ödemede birlikte kullanılamaz; Prime'da yalnız satın alma ödemesine
   uygulanır, yenilemeler indirimsiz. Aktif tek seferlik paketi ya da aktif Prime'ı olana 100 TL indirim hiçbir koşulda gösterilmez/uygulanmaz
+Geri kazanım indirimi: Admin → Sistem Ayarları → Genel'deki WINBACK_ENABLED anahtarına bağlıdır, varsayılan Kapalı. Kapalıyken
+  ekran, rozet, indirimli fiyat, hatırlatma push'u ve WinbackOffer kaydı yoktur. Pazartesi 21:00 push'u (mondayPush) anahtardan bağımsızdır
+Davet indirimi: yüzde 10'dur, davet koduyla kayıt olanın yalnız ilk ücretli paket alımında otomatik uygulanır, geri kazanım indirimine
+  göre önceliklidir; iki indirim birleşmez
+Davet kodu: kullanıcıya sabittir, kullanım sınırı yoktur
 Mobil indirim teklifleri (IAP_ENABLED ile pasif): tek seferlik paketlerde indirimli ayrı ürünler (<ürün>.davet10, <ürün>.indirim100);
   Prime'da App Store promosyon teklifi (sunucu imzalı) / Google Play abonelik teklifi (teklif kimlikleri davet10, indirim100)
 Paket kartı tasarımı (web + mobil; landing fiyatlandırma, Profil → Paketim / mobil Paketler, paket detay ekranları, Nasıl Çalışır

@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
 import { API_PREFIX, SITE } from '@/lib/config';
 import { getAccess } from '@/lib/session';
-import { BtnGhost, BtnPrimary, Card, SkeletonBlock, T, Title } from '../ui';
+import { StdButton, Card, SkeletonBlock, T, Title } from '../ui';
 import { c, ll, tw, tw4 } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import i18n, { currentLang } from '@/lib/i18n';
@@ -29,7 +29,7 @@ function Done({ label, onRetake }: { label: string; onRetake: () => void }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: 'rgba(74,222,128,0.08)', borderWidth: 1, borderColor: 'rgba(74,222,128,0.2)' }}>
       <T style={{ fontSize: 16, color: tw4.green400 }}>✓</T>
       <T style={{ fontSize: 12, color: tw4.green400 }}>{label}</T>
-      <BtnGhost label={t('kycf.retake')} style={{ marginLeft: 'auto' }} onPress={onRetake} />
+      <StdButton variant="ghost" label={t('kycf.retake')} style={{ marginLeft: 'auto' }} onPress={onRetake} />
     </View>
   );
 }
@@ -53,8 +53,8 @@ export function PhotoCamera({ visible, onClose, onShot }: { visible: boolean; on
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}><T style={{ color: tw.accent, textAlign: 'center' }}>{t('kycf.camDeniedApp')}</T></View>
         )}
         <View style={{ flexDirection: 'row', gap: 8, padding: 16, paddingBottom: 16 + insets.bottom }}>
-          <BtnGhost label={t('kycf.cancel')} style={{ flex: 1 }} onPress={onClose} />
-          <BtnPrimary label={t('kycf.shoot')} style={{ flex: 1 }} disabled={!perm?.granted} onPress={async () => { const p = await ref.current?.takePictureAsync({ quality: 0.85 }); if (p?.uri) { onShot({ uri: p.uri }); onClose(); } }} />
+          <StdButton variant="ghost" label={t('kycf.cancel')} style={{ flex: 1 }} onPress={onClose} />
+          <StdButton variant="primary" label={t('kycf.shoot')} style={{ flex: 1 }} disabled={!perm?.granted} onPress={async () => { const p = await ref.current?.takePictureAsync({ quality: 0.85 }); if (p?.uri) { onShot({ uri: p.uri }); onClose(); } }} />
         </View>
       </View>
     </Modal>
@@ -72,7 +72,7 @@ function ImageUploader({ svg, alt, label, shot, onChange }: { svg: string; alt: 
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)' }} />
         </View>
       ) : <Image source={{ uri: shot.uri }} style={{ width: '100%', height: 220, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }} resizeMode="cover" accessibilityLabel={t('kycf.preview')} />}
-      {shot ? <Done label={t('kycf.photoUploaded')} onRetake={() => onChange(null)} /> : <BtnGhost label={label} full onPress={() => setCam(true)} />}
+      {shot ? <Done label={t('kycf.photoUploaded')} onRetake={() => onChange(null)} /> : <StdButton variant="ghost" label={label} full onPress={() => setCam(true)} />}
       <PhotoCamera visible={cam} onClose={() => setCam(false)} onShot={onChange} />
     </View>
   );
@@ -145,8 +145,8 @@ function LivenessRecorder({ video, onCapture, fullName }: { video: Shot | null; 
             <View style={{ padding: 16, gap: 12 }}>
               <T style={{ fontSize: 12, textAlign: 'center', color: '#2ecc71' }}>{currentLang() === 'en' ? <>{t('kycf.sayEn')} <T w={700} style={{ fontSize: 12, color: '#f5f5f5' }}>&quot;My name is {fullName}&quot;</T></> : t('kycf.sayTr')}</T>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <BtnGhost label={t('kycf.cancel')} style={{ flex: 1 }} onPress={() => setPhase('idle')} />
-                <BtnPrimary label={t('kycf.startRec')} style={{ flex: 1 }} onPress={startRecording} />
+                <StdButton variant="ghost" label={t('kycf.cancel')} style={{ flex: 1 }} onPress={() => setPhase('idle')} />
+                <StdButton variant="primary" label={t('kycf.startRec')} style={{ flex: 1 }} onPress={startRecording} />
               </View>
             </View>
           )}
@@ -160,7 +160,7 @@ function LivenessRecorder({ video, onCapture, fullName }: { video: Shot | null; 
       {video ? <Done label={t('kycf.videoUploaded')} onRetake={() => onCapture(null)} /> : (
         <>
           <Image source={require('@/assets/kyc-liveness-demo.webp')} style={{ width: '100%', height: 180, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' }} resizeMode="cover" accessibilityLabel={t('kycf.videoAlt')} />
-          <BtnGhost label={t('kycf.uploadVideo')} full onPress={openCamera} />
+          <StdButton variant="ghost" label={t('kycf.uploadVideo')} full onPress={openCamera} />
           <View style={{ borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.3)' }}>
             <T style={{ fontSize: 12, color: 'rgba(192,57,43,0.85)', lineHeight: 19.2 }}>
               {t('kycf.privacy')}
@@ -302,14 +302,14 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
               </Pressable>
             ))}
           </View>
-          <BtnPrimary label={t('common.continue')} full style={{ marginTop: 8 }} onPress={() => setTypeChosen(true)} />
+          <StdButton variant="primary" label={t('common.continue')} full style={{ marginTop: 8 }} onPress={() => setTypeChosen(true)} />
         </View>
       ) : (
         <>
           {/* Seçilen belge türü; değiştirilirse çekilen fotoğraflar sıfırlanır */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <T style={{ fontSize: 13, color: '#c9c2b8' }}>{t('kycf.idType')}: <T w={600} style={{ fontSize: 13, color: ll.text }}>{t(`kycf.type${idType}`)}</T></T>
-            <BtnGhost label={t('prof.change')} onPress={() => { setTypeChosen(false); setFront(null); setBack(null); }} />
+            <StdButton variant="ghost" label={t('prof.change')} onPress={() => { setTypeChosen(false); setFront(null); setBack(null); }} />
           </View>
           {/* 2. adım — önce ön yüz (pasaportta fotoğraflı sayfa), ön yüz çekilince arka yüz */}
           <ImageUploader svg="/kyc_demo_identity_card.svg" alt={t('kycf.frontAlt')} label={idType === 'PASSPORT' ? t('kycf.uploadPassport') : t('kycf.uploadFront')} shot={front} onChange={setFront} />
@@ -318,7 +318,7 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
         </>
       )}
       {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}
-      {typeChosen && <BtnPrimary label={submitting ? t('kycf.uploading') : t('kycf.submit')} full disabled={submitting || !front || (needsBack && !back) || !video} style={(submitting || !front || (needsBack && !back) || !video) ? { opacity: 0.5 } : undefined} onPress={submit} />}
+      {typeChosen && <StdButton variant="primary" label={submitting ? t('kycf.uploading') : t('kycf.submit')} full disabled={submitting || !front || (needsBack && !back) || !video} style={(submitting || !front || (needsBack && !back) || !video) ? { opacity: 0.5 } : undefined} onPress={submit} />}
       {submitting && progress > 0 && (
         <View style={{ height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.10)' }}>
           <LinearGradient colors={['#1a5c2a', '#27ae60']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: '100%', width: `${progress}%` }} />

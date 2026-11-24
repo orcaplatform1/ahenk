@@ -6,7 +6,7 @@ import * as Contacts from 'expo-contacts/legacy';
 import { ensurePermission, PERM_REASON } from '@/lib/permissions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
-import { Btn, BtnGhost, BtnPrimary, Card, Head, Input, T, Glow } from '../ui';
+import { Btn, StdButton, Card, Head, Input, T, Glow } from '../ui';
 import { ll, tw, liveGlow } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { formatNamed, splitE164, toE164 } from '@ahenk/shared';
@@ -75,7 +75,7 @@ export function ContactPicker({ visible, onClose, existing, remaining, onPick, c
             </Pressable>
           );
         }} />
-        <BtnPrimary label={t('block.addN', { count: sel.size })} full disabled={sel.size === 0} onPress={() => { onPick([...sel]); onClose(); }} />
+        <StdButton variant="primary" label={t('block.addN', { count: sel.size })} full disabled={sel.size === 0} onPress={() => { onPick([...sel]); onClose(); }} />
       </View>
     </Modal>
   );
@@ -122,9 +122,9 @@ export function RehberTab() {
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <CountryCodeButton country={country} onChange={(c) => { setCountry(c); setError(''); }} />
         <Input style={{ flex: 1 }} keyboardType="number-pad" value={input} onChangeText={v => { setInput(v.replace(/\D/g, '').slice(0, 15)); setError(''); }} placeholder={country === 'TR' ? '5XX XXX XX XX' : ''} onSubmitEditing={add} />
-        <BtnPrimary label={adding ? '…' : t('block.add')} disabled={adding || blocks.length >= MAX} onPress={add} style={[{ alignSelf: 'stretch' }, (adding || blocks.length >= MAX) && { opacity: 0.5 }]} />
+        <StdButton variant="primary" label={adding ? '…' : t('block.add')} disabled={adding || blocks.length >= MAX} onPress={add} style={[{ alignSelf: 'stretch' }, (adding || blocks.length >= MAX) && { opacity: 0.5 }]} />
       </View>
-      <BtnGhost label={t('block.fromContacts')} full disabled={blocks.length >= MAX} onPress={() => setPicker(true)} />
+      <StdButton variant="ghost" label={t('block.fromContacts')} full disabled={blocks.length >= MAX} onPress={() => setPicker(true)} />
       {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}
       {blocks.length >= MAX && <T style={{ color: tw.accent, fontSize: 12 }}>{t('block.maxReached')}</T>}
       {blocks.length > 0 && (

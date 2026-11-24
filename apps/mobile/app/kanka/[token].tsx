@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { API_PREFIX } from '@/lib/config';
 import { langHeaders } from '@/lib/api';
 import { getAccess } from '@/lib/session';
-import { BtnGhost, BtnPrimary, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
+import { StdButton, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { c, gender as G, tw, ll } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -31,10 +31,10 @@ export default function KankaDavet() {
             <Serif style={{ fontSize: 30 }}>{t('kankaInv.title')}</Serif>
             <T style={{ fontSize: 14, color: c.tAaa, lineHeight: 22.75, textAlign: 'center' }}>{t('kankaInv.invitedPre')}<T w={700} style={{ fontSize: 14 }}>{info.inviterInitials}</T> {t('kankaInv.invitedPost')} {t('kankaInv.onePays')}</T>
             <T style={{ fontSize: 12, color: c.t666, lineHeight: 19.5, textAlign: 'center' }}>{t('kankaInv.howAccept')} {t('kankaInv.kycNeeded')}{'\n'}{t('kankaInv.valid48')}</T>
-            {loggedIn ? <BtnPrimary label="Profilim'e Git" full onPress={() => router.replace({ pathname: '/(tabs)/profilim', params: { tab: 'profil' } })} /> : (
+            {loggedIn ? <StdButton variant="primary" label="Profilim'e Git" full onPress={() => router.replace({ pathname: '/(tabs)/profilim', params: { tab: 'profil' } })} /> : (
               <View style={{ gap: 8, width: '100%' }}>
-                <BtnPrimary label={t('kankaInv.register')} full onPress={() => router.replace('/kayit')} />
-                <BtnGhost label={t('kankaInv.login')} full onPress={() => router.replace('/giris')} />
+                <StdButton variant="primary" label={t('kankaInv.register')} full onPress={() => router.replace('/kayit')} />
+                <StdButton variant="ghost" label={t('kankaInv.login')} full onPress={() => router.replace('/giris')} />
               </View>
             )}
           </>
@@ -42,7 +42,7 @@ export default function KankaDavet() {
           <>
             <Serif style={{ fontSize: 30 }}>{t('kankaInv.invalid')}</Serif>
             <T style={{ fontSize: 14, color: c.tAaa, lineHeight: 22.75, textAlign: 'center' }}>{t('kankaInv.invalidBody')}</T>
-            <BtnGhost label="Ana Sayfa" full onPress={() => router.replace('/')} />
+            <StdButton variant="ghost" label="Ana Sayfa" full onPress={() => router.replace('/')} />
           </>
         )}
       </View>

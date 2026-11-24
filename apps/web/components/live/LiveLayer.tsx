@@ -12,6 +12,7 @@ import { LEVELS } from './levels';
 import LiveFeed from './LiveFeed';
 import LiveTabs, { type TabStatus } from './LiveTabs';
 import type { LiveOverview, LivePulse, OceanKey } from './types';
+import { StdButton } from '@ahenk/ui';
 
 const PULSE_MS = 15_000;
 const OVERVIEW_MS = 60_000;
@@ -145,9 +146,9 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
           <section className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 12, borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
             <h2 className="ll-title">{t('live.pkgCardTitle')}</h2>
             <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>{t('live.pkgCardText')}</p>
-            <button type="button" className="btn-primary w-full justify-center" style={{ minHeight: 44 }} onClick={() => router.push('/profil?tab=paket')}>
+            <StdButton variant="primary" type="button" className="w-full justify-center" onClick={() => router.push('/profil?tab=paket')}>
               {t('live.pkgCardBtn')}
-            </button>
+            </StdButton>
           </section>
         ) : (
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>

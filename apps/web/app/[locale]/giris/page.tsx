@@ -12,6 +12,7 @@ import { venueApi } from '@/lib/venueApi';
 import OtpInput from '@/components/ui/OtpInput';
 import { OtpCountdown, OtpNoticeAction, useOtpCountdown } from '@/lib/otpCountdown';
 import { otpNoticeOf, withResendSeconds, type OtpNoticeCode } from '@/lib/otpResend';
+import { StdButton } from '@ahenk/ui';
 
 const API_BASE = API_PREFIX;
 
@@ -191,26 +192,26 @@ function VenueLogin() {
 
       <div className="mt-4 flex flex-col gap-3">
         {method === 'whatsapp' && !otpStep && (
-          <button
+          <StdButton variant="primary"
             type="button"
             onClick={sendOtp}
             disabled={loading || !phoneValid}
-            className="mx-auto block btn-primary mt-1 disabled:opacity-40"
+            className="mx-auto block mt-1 disabled:opacity-40"
             style={{ width: '72%' }}
           >
             {loading ? t('login.sending') : t('login.sendCode')}
-          </button>
+          </StdButton>
         )}
         {method === 'whatsapp' && otpStep && (
           <>
-            <button
+            <StdButton variant="primary"
               type="button"
               onClick={verify}
               disabled={loading || otp.length !== 6}
-              className="w-full btn-primary disabled:opacity-40"
+              className="w-full disabled:opacity-40"
             >
               {loading ? t('login.verifying') : t('login.submit')}
-            </button>
+            </StdButton>
             <button
               type="button"
               onClick={sendOtp}
@@ -229,23 +230,23 @@ function VenueLogin() {
           </>
         )}
         {method === 'email' && (
-          <button
+          <StdButton variant="primary"
             type="button"
             onClick={emailLogin}
             disabled={loading || !email || !password}
-            className="mx-auto block btn-primary mt-1 disabled:opacity-40"
+            className="mx-auto block mt-1 disabled:opacity-40"
             style={{ width: '72%' }}
           >
             {loading ? t('login.loggingIn') : t('login.submit')}
-          </button>
+          </StdButton>
         )}
       </div>
 
       {method === 'email' && (
         <div className="mt-4 flex justify-center">
-          <Link href="/mekan/sifremi-unuttum" className="mx-auto block btn-ghost" style={{ width: '72%' }}>
+          <StdButton variant="ghost" as={Link} href="/mekan/sifremi-unuttum" className="mx-auto block" style={{ width: '72%' }}>
             {t('login.forgot')}
-          </Link>
+          </StdButton>
         </div>
       )}
     </>
@@ -422,17 +423,17 @@ export default function GirisPage() {
               </p>
               {sanction.type === 'WARNING' ? (
                 <div className="flex gap-3 mt-1">
-                  <button onClick={async () => { await api.logout(); setSanction(null); }} className="flex-1 btn-ghost justify-center">
+                  <StdButton variant="ghost" onClick={async () => { await api.logout(); setSanction(null); }} className="flex-1 justify-center">
                     {t('login.cancel')}
-                  </button>
-                  <button onClick={() => { setSanction(null); router.push(afterLoginPath()); }} className="flex-1 btn-primary justify-center">
+                  </StdButton>
+                  <StdButton variant="primary" onClick={() => { setSanction(null); router.push(afterLoginPath()); }} className="flex-1 justify-center">
                     {t('login.continue')}
-                  </button>
+                  </StdButton>
                 </div>
               ) : (
-                <button onClick={() => setSanction(null)} className="w-full btn-ghost justify-center mt-1">
+                <StdButton variant="ghost" onClick={() => setSanction(null)} className="w-full justify-center mt-1">
                   {t('login.close')}
-                </button>
+                </StdButton>
               )}
             </motion.div>
           </motion.div>
@@ -453,7 +454,7 @@ export default function GirisPage() {
               transition={{ delay: 0.1, duration: 0.4, ease: 'easeOut' }}
               className="flex flex-col items-center gap-2 mb-8"
             >
-              <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
+              <Image src="/logo-welcome.webp" alt="Ahenk" width={48} height={48} />
               <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
             </motion.div>
             <motion.h1
@@ -626,26 +627,26 @@ export default function GirisPage() {
 
         <div className="mt-4 flex flex-col gap-3">
             {method === 'whatsapp' && !otpStep && (
-                <button
+                <StdButton variant="primary"
                   type="button"
                   onClick={handleSendOtp}
                   disabled={loading || !phoneValid}
-                  className="mx-auto block btn-primary mt-1 disabled:opacity-40"
+                  className="mx-auto block mt-1 disabled:opacity-40"
                   style={{ width: '72%' }}
                 >
                   {loading ? t('login.sending') : t('login.sendCode')}
-                </button>
+                </StdButton>
             )}
             {method === 'whatsapp' && otpStep && (
               <>
-                <button
+                <StdButton variant="primary"
                   type="button"
                   onClick={handleVerifyOtp}
                   disabled={loading || !canSubmit}
-                  className="w-full btn-primary disabled:opacity-40"
+                  className="w-full disabled:opacity-40"
                 >
                   {loading ? t('login.verifying') : t('login.submit')}
-                </button>
+                </StdButton>
                 <button
                   type="button"
                   onClick={handleSendOtp}
@@ -664,24 +665,24 @@ export default function GirisPage() {
               </>
             )}
             {method === 'email' && (
-                <button
+                <StdButton variant="primary"
                   type="button"
                   onClick={handleEmailLogin}
                   disabled={loading || !canSubmit}
-                  className="mx-auto block btn-primary mt-1 disabled:opacity-40"
+                  className="mx-auto block mt-1 disabled:opacity-40"
                   style={{ width: '72%' }}
                 >
                   {loading ? t('login.loggingIn') : t('login.submit')}
-                </button>
+                </StdButton>
             )}
         </div>
 
         {/* Alt linkler */}
         {method === 'email' && (
           <div className="mt-4 flex justify-center">
-            <Link href="/sifremi-unuttum" className="mx-auto block btn-ghost" style={{ width: '72%' }}>
+            <StdButton variant="ghost" as={Link} href="/sifremi-unuttum" className="mx-auto block" style={{ width: '72%' }}>
               {t('login.forgot')}
-            </Link>
+            </StdButton>
           </div>
         )}
         </>)}

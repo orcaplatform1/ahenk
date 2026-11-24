@@ -9,7 +9,7 @@ import { isAdminLocked, loadLocalAuth, markAdminVerified, onAdminLock, unlockFor
 import { api } from '@/lib/api';
 import { forgetDevice } from '@/lib/session';
 import { setAdminIdentity } from '@/lib/adminRole';
-import { BtnPrimary, Serif, T } from './ui';
+import { StdButton, Serif, T } from './ui';
 import { ll } from '@/theme/theme';
 
 export function AdminLockOverlay() {
@@ -49,7 +49,7 @@ export function AdminLockOverlay() {
         <Serif style={{ fontSize: 28, lineHeight: 34, color: ll.text, textAlign: 'center' }}>Yönetim paneli kilitli</Serif>
         <T style={{ fontSize: 14, lineHeight: 21, color: ll.text2, textAlign: 'center' }}>Devam etmek için kimliğini doğrula.</T>
         {!!failed && <T style={{ fontSize: 13, lineHeight: 19, color: ll.red2, textAlign: 'center' }}>{failed}</T>}
-        {!!failed && !busy && <BtnPrimary label="Tekrar Dene" full style={{ minHeight: 44, marginTop: 8 }} onPress={verify} />}
+        {!!failed && !busy && <StdButton variant="primary" label="Tekrar Dene" full style={{ marginTop: 8 }} onPress={verify} />}
       </View>
     </Modal>
   );

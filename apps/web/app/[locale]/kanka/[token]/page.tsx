@@ -4,6 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { API_PREFIX, api, langHeaders } from '@/lib/api';
+import { StdButton } from '@ahenk/ui';
 
 // Kanka davet linki: sadece yönlendirme. Davet, davet edilen telefon numarasına bağlıdır; kabul Profilim'den,
 // WhatsApp koduyla doğrulanmış o numarayla yapılır. Bu linkle kayıt olan davet indirimi kazanmaz.
@@ -47,11 +48,11 @@ export default function KankaDavetPage({ params }: { params: Promise<{ token: st
               {t('kankaInv.valid48')}
             </p>
             {loggedIn ? (
-              <Link href="/profil?tab=profil" className="btn-primary justify-center w-full">{t('kankaInv.goProfile')}</Link>
+              <StdButton variant="primary" as={Link} href="/profil?tab=profil" className="justify-center w-full">{t('kankaInv.goProfile')}</StdButton>
             ) : (
               <div className="flex flex-col gap-2 w-full">
-                <Link href="/kayit" className="btn-primary justify-center">{t('kankaInv.register')}</Link>
-                <Link href="/giris" className="btn-ghost justify-center">{t('kankaInv.login')}</Link>
+                <StdButton variant="primary" as={Link} href="/kayit" className="justify-center">{t('kankaInv.register')}</StdButton>
+                <StdButton variant="ghost" as={Link} href="/giris" className="justify-center">{t('kankaInv.login')}</StdButton>
               </div>
             )}
           </>
@@ -59,7 +60,7 @@ export default function KankaDavetPage({ params }: { params: Promise<{ token: st
           <>
             <h1 className="font-serif text-3xl text-[#f5f5f5]">{t('kankaInv.invalid')}</h1>
             <p className="text-sm text-[#aaa] leading-relaxed">{t('kankaInv.invalidBody')}</p>
-            <Link href="/" className="btn-ghost justify-center w-full">{t('kankaInv.home')}</Link>
+            <StdButton variant="ghost" as={Link} href="/" className="justify-center w-full">{t('kankaInv.home')}</StdButton>
           </>
         )}
       </div>

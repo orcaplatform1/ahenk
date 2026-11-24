@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { formatDayTab, formatNamed, occupationLabel, weekdayName, type Lang } from '@ahenk/shared';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { api, API_PREFIX } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
-import { ConfirmedRadarView, GOLD_PILL, KankaPairs, MasaDetayKarti, gColor, type DashboardItem, type MasaDetayData, type MasaTuru, type VenuePhoto } from '@ahenk/ui';
+import { ConfirmedRadarView, GOLD_PILL, KankaPairs, MasaDetayKarti, gColor, type DashboardItem, type MasaDetayData, type MasaTuru, type VenuePhoto, StdButton } from '@ahenk/ui';
 import LiveTabs from '@/components/live/LiveTabs';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import WeeklySelectionModal from '@/components/live/WeeklySelectionModal';
@@ -361,9 +361,9 @@ function EmptyMasaCard({
                 fontFamily: 'Inter, sans-serif',
               }}>
               </div>
-              <button disabled className="btn-primary">
+              <StdButton variant="primary" disabled>
                 {t('masa.send')}
-              </button>
+              </StdButton>
             </div>
           </div>
         </div>
@@ -482,17 +482,17 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
           {dated.map((i) => {
             const on = activeItem?.meeting.id === i.meeting.id;
             return (
-              <button
+              <StdButton
+                variant={on ? 'primary' : 'ghost'}
                 key={i.meeting.id}
                 type="button"
                 role="tab"
                 aria-selected={on}
                 onClick={() => { setDateId(i.meeting.id); selectTab(i.meeting.type ?? 'GROUP'); }}
-                className={on ? 'btn-primary' : 'btn-ghost'}
-                style={{ flexShrink: 0, minHeight: 44, whiteSpace: 'nowrap' }}
+                style={{ flexShrink: 0 }}
               >
                 {dayOf(i.meeting.scheduledAt)}
-              </button>
+              </StdButton>
             );
           })}
         </div>
@@ -508,9 +508,9 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
       )}
 
       {locked && (
-        <a href="/profil?tab=paket" className="btn-primary w-full justify-center">
+        <StdButton variant="primary" as="a" href="/profil?tab=paket" className="w-full justify-center">
           {t('pkg.buy')}
-        </a>
+        </StdButton>
       )}
 
       <div>
@@ -542,15 +542,24 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
       {/* Geçmiş Masalarım: masa kartı ve sohbetin altında */}
       <div>
         <div className="flex justify-center" style={{ marginBottom: 12 }}>
-          <button type="button" onClick={() => setHistoryOpen(v => !v)} aria-expanded={historyOpen} className="btn-ghost" style={{ flexShrink: 0 }}>
+          <StdButton variant="ghost" type="button" onClick={() => setHistoryOpen(v => !v)} aria-expanded={historyOpen} style={{ flexShrink: 0 }}>
             {t('tm.history')}
-          </button>
+          </StdButton>
         </div>
         {historyOpen && <HistoryList history={history} />}
       </div>
     </div>
   );
 }
+
+// Değerlendirme penceresi kapanışı (backend meeting-windows.ts reviewWindow ile aynı): buluşmadan 4 gün sonra 23:59:59 TR (UTC+3)
+function reviewExpired(dateIso: string): boolean {
+  const tr = new Date(new Date(dateIso).getTime() + 3 * 60 * 60 * 1000);
+  return Date.now() > Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 4, 23 - 3, 59, 59, 999);
+}
+
+// Küçük Değerlendir butonu (altın geçişli hap, GOLD_PILL)
+const REVIEW_PILL: React.CSSProperties = { ...GOLD_PILL, minHeight: 28, padding: '0 12px', fontSize: 10.5 };
 
 function HistoryList({ history }: { history: HistoryMeeting[] }) {
   const t = useTranslations();
@@ -561,13 +570,15 @@ function HistoryList({ history }: { history: HistoryMeeting[] }) {
     return <section className="ll-card" style={{ marginBottom: 16 }}><p style={{ margin: 0, fontSize: 13, color: '#a39c93' }}>{t('tm.noHistory')}</p></section>;
   }
   return (
-    <section className="ll-card" style={{ marginBottom: 16, padding: '6px 18px' }}>
-      {history.map((m, i) => {
+    <div className="flex flex-col gap-3" style={{ marginBottom: 16 }}>
+      {history.map((m) => {
         const isOpen = openId === m.id;
+        const canReview = !m.isReviewed && !m.review && !reviewExpired(m.date);
         return (
-          <div key={m.id} style={{ borderBottom: i < history.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-            <div className="flex items-center justify-between gap-3" style={{ minHeight: 44, padding: '6px 0' }}>
-              <span style={{ fontSize: 13, color: '#f4f1ec', minWidth: 0 }}>
+          // Her geçmiş masa ayrı kart; açıkken yatay iç boşluk yok, masa detay kartı Masalarım'daki genişlikte
+          <section key={m.id} className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div className="flex items-center justify-between gap-3" style={{ minHeight: 56, padding: '10px 12px 10px 18px' }}>
+              <span style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.45, color: '#f4f1ec', minWidth: 0 }}>
                 {[fmtDate(m.date, locale), t(HISTORY_TYPE[m.type ?? 'GROUP']), m.venueName, m.cityName].filter(Boolean).join(' - ')}
               </span>
               <button
@@ -575,21 +586,45 @@ function HistoryList({ history }: { history: HistoryMeeting[] }) {
                 onClick={() => setOpenId(isOpen ? null : m.id)}
                 aria-expanded={isOpen}
                 aria-label={isOpen ? t('tm.closeCard') : t('tm.openCard')}
-                style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#a39c93', fontSize: 14, padding: 6, transform: isOpen ? 'rotate(180deg)' : undefined, transition: 'transform 0.2s' }}
+                style={{ flexShrink: 0, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
-                ▾
+                <span style={{ width: 34, height: 34, borderRadius: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', color: '#f4f1ec', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </span>
               </button>
             </div>
-            {isOpen && <HistoryCard meeting={m} />}
-            {!m.isReviewed && (
-              <a href={`/degerlendirme/${m.id}`} style={{ ...GOLD_PILL, margin: '0 0 8px' }}>
-                {t('tm.review')}
-              </a>
+            {(canReview || m.review) && (
+              <div style={{ padding: '0 18px 14px' }}>
+                {canReview ? (
+                  <a href={`/degerlendirme/${m.id}`} style={REVIEW_PILL}>{t('tm.review')}</a>
+                ) : m.review && (
+                  <>
+                    <p className="ll-mono" style={{ margin: '0 0 4px', fontSize: 11, color: '#a39c93' }}>{t('tm.yourReview')}</p>
+                    <p style={{ margin: 0, fontSize: 13, color: '#f4f1ec' }}>{m.review.rating}/5{m.review.comment ? ` · ${m.review.comment}` : ''}</p>
+                  </>
+                )}
+              </div>
             )}
-          </div>
+            <AnimatePresence initial={false}>
+              {isOpen && (
+                <motion.div
+                  key="card"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <HistoryCard meeting={m} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </section>
         );
       })}
-    </section>
+    </div>
   );
 }
 
@@ -614,14 +649,8 @@ function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
   return (
     <div style={{ paddingBottom: 12 }}>
       <MasaDetayKarti masa={masa} archive />
-      {m.review && (
-        <div style={{ marginTop: 12 }}>
-          <p className="ll-mono" style={{ margin: '0 0 4px', fontSize: 11, color: '#a39c93' }}>{t('tm.yourReview')}</p>
-          <p style={{ margin: 0, fontSize: 13, color: '#f4f1ec' }}>{m.review.rating}/5{m.review.comment ? ` · ${m.review.comment}` : ''}</p>
-        </div>
-      )}
       {!!m.blocked?.length && (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 12, padding: '0 18px' }}>
           <p className="ll-mono" style={{ margin: '0 0 4px', fontSize: 11, color: '#a39c93' }}>{t('tm.blocked')}</p>
           <div className="flex flex-wrap gap-3">
             {m.blocked.map((b, i) => (

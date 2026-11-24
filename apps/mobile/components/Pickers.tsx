@@ -1,7 +1,7 @@
 // Kayıt formu seçicileri: CityPickerField, SiteSelect (ilçe, aramalı), OccupationField, DateField (apps/web/app/kayit, components/BirthDateField)
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { Btn, BtnPrimary, Input, Mono, Sheet, T } from './ui';
+import { Btn, StdButton, Input, Mono, Sheet, T } from './ui';
 import { c, ll, tw } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { formatNamed } from '@ahenk/shared';
@@ -66,7 +66,7 @@ export function ListPicker({ label, value, onChange, options, placeholder, title
             </>
           )}
         </ScrollView>
-        <BtnPrimary label={t('date.select')} full style={{ marginTop: 16 }} onPress={() => { onChange(tmp); setOpen(false); }} />
+        <StdButton variant="primary" label={t('date.select')} full style={{ marginTop: 16 }} onPress={() => { onChange(tmp); setOpen(false); }} />
       </Sheet>
     </View>
   );
@@ -116,7 +116,7 @@ export function DateField({ label, value, onChange }: { label: string; value: st
           <Column title={t('date.month')} options={MONTHS.map((x, i) => ({ value: i + 1, label: x }))} selected={m} onSelect={setM} />
           <Column title={t('date.year')} options={Array.from({ length: maxYear - minYear + 1 }, (_, i) => ({ value: maxYear - i, label: String(maxYear - i) }))} selected={y} onSelect={setY} />
         </View>
-        <BtnPrimary label={t('date.select')} full style={{ marginTop: 20 }} onPress={() => { onChange(`${y}-${String(m).padStart(2, '0')}-${String(Math.min(d, dim)).padStart(2, '0')}`); setOpen(false); }} />
+        <StdButton variant="primary" label={t('date.select')} full style={{ marginTop: 20 }} onPress={() => { onChange(`${y}-${String(m).padStart(2, '0')}-${String(Math.min(d, dim)).padStart(2, '0')}`); setOpen(false); }} />
       </Sheet>
     </View>
   );

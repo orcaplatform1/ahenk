@@ -15,7 +15,7 @@ import OtpInput from '@/components/ui/OtpInput';
 import { OtpCountdown, OtpNoticeAction, useOtpCountdown } from '@/lib/otpCountdown';
 import { otpNoticeOf, type OtpNoticeCode } from '@/lib/otpResend';
 import SiteSelect from '@/components/SiteSelect';
-import { gColor } from '@ahenk/ui';
+import { gColor, StdButton } from '@ahenk/ui';
 import { DateField } from '@/components/BirthDateField';
 
 interface City { id: string; name: string; isActive?: boolean; isComingSoon?: boolean; countryCode?: string; }
@@ -339,7 +339,7 @@ function KayitPageInner() {
               transition={{ delay: 0.1, duration: 0.4, ease: 'easeOut' }}
               className="flex flex-col items-center gap-2 mb-8"
             >
-              <Image src="/logo.webp" alt="Ahenk" width={48} height={48} className="rounded-full" />
+              <Image src="/logo-welcome.webp" alt="Ahenk" width={48} height={48} />
               <span className="font-sans font-semibold tracking-[0.12em] text-[#f5f5f5]" style={{ fontSize: '15px' }}>AHENK</span>
             </motion.div>
             <motion.h1
@@ -518,9 +518,9 @@ function KayitPageInner() {
                 </motion.p>
               )}
             </AnimatePresence>
-            <button type="button" onClick={handleStep1} disabled={loading} className="w-full btn-primary">
+            <StdButton variant="primary" type="button" onClick={handleStep1} disabled={loading} className="w-full">
               {t('reg.continueBtn')}
-            </button>
+            </StdButton>
           </div>
         )}
 
@@ -540,8 +540,8 @@ function KayitPageInner() {
             {locale === 'en' && <YesNo label={t('reg.speaksTurkish')} value={speaksTurkish} onChange={(v) => { setSpeaksTurkish(v); setError(''); }} />}
             {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
             <div className="flex gap-3 mt-1">
-              <button type="button" onClick={() => { setStepDir(-1); setStep(0); setError(''); }} className="btn-ghost">{t('common.back')}</button>
-              <button type="button" onClick={handleLangStep} className="flex-1 btn-primary">{t('common.continue')}</button>
+              <StdButton variant="ghost" type="button" onClick={() => { setStepDir(-1); setStep(0); setError(''); }}>{t('common.back')}</StdButton>
+              <StdButton variant="primary" type="button" onClick={handleLangStep} className="flex-1">{t('common.continue')}</StdButton>
             </div>
           </div>
         )}
@@ -569,12 +569,12 @@ function KayitPageInner() {
             </div>
             {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
             <div className="flex gap-3 mt-1">
-              <button type="button" onClick={() => { setStepDir(-1); setStep(1); setError(''); }} className="btn-ghost">
+              <StdButton variant="ghost" type="button" onClick={() => { setStepDir(-1); setStep(1); setError(''); }}>
                 {t('common.back')}
-              </button>
-              <button type="button" onClick={handleStep2} disabled={loading} className="flex-1 btn-primary">
+              </StdButton>
+              <StdButton variant="primary" type="button" onClick={handleStep2} disabled={loading} className="flex-1">
                 {loading ? t('reg.saving') : t('reg.continueBtn')}
-              </button>
+              </StdButton>
             </div>
           </div>
         )}
@@ -674,22 +674,22 @@ function KayitPageInner() {
                 {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
 
                 <div className="flex items-center gap-3 mt-1">
-                  <button
+                  <StdButton variant="ghost"
                     type="button"
                     onClick={testGoPrev}
                     disabled={testCurrent === 0}
-                    className="btn-ghost disabled:opacity-30"
+                    className="disabled:opacity-30"
                   >
                     {t('reg.backArrow')}
-                  </button>
-                  <button
+                  </StdButton>
+                  <StdButton variant="primary"
                     type="button"
                     onClick={testGoNext}
                     disabled={!tHasAnswer || testSubmitting}
-                    className="flex-1 btn-primary justify-center disabled:opacity-30"
+                    className="flex-1 justify-center disabled:opacity-30"
                   >
                     {testSubmitting ? '…' : tIsLast ? t('test.finish') : t('test.next')}
-                  </button>
+                  </StdButton>
                 </div>
               </>
             )}
@@ -760,14 +760,14 @@ function KayitPageInner() {
 
             {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
 
-            <button
+            <StdButton variant="primary"
               type="button"
               onClick={handleStep3}
               disabled={loading || !form.venuePreference}
-              className="w-full btn-primary disabled:opacity-40"
+              className="w-full disabled:opacity-40"
             >
               {loading ? t('reg.saving') : t('reg.continueBtn')}
-            </button>
+            </StdButton>
           </div>
         )}
 
@@ -810,9 +810,9 @@ function KayitPageInner() {
               </div>
             )}
             {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
-            <button type="button" onClick={() => handleFinish(false)} disabled={loading} className="w-full btn-primary mt-1">
+            <StdButton variant="primary" type="button" onClick={() => handleFinish(false)} disabled={loading} className="w-full mt-1">
               {loading ? t('reg.saving') : t('reg.finish')}
-            </button>
+            </StdButton>
           </div>
         )}
 
@@ -973,14 +973,14 @@ function OccupationPickerModal({ value, onChange, onClose }: {
             );
           })}
         </div>
-        <button
+        <StdButton variant="primary"
           onClick={() => { if (tmp) { onChange(tmp); onClose(); } }}
           disabled={!tmp}
-          className="btn-primary w-full justify-center disabled:opacity-40"
+          className="w-full justify-center disabled:opacity-40"
           style={{ marginTop: 16 }}
         >
           {t('reg.select')}
-        </button>
+        </StdButton>
       </div>
     </div>
   );
@@ -1102,13 +1102,13 @@ function CityPickerModal({ cities, value, onChange, onClose, optional, title, no
             </>
           )}
         </div>
-        <button
+        <StdButton variant="primary"
           onClick={() => { onChange(tmp); onClose(); }}
-          className="btn-primary w-full justify-center"
+          className="w-full justify-center"
           style={{ marginTop: 16 }}
         >
           {t('reg.select')}
-        </button>
+        </StdButton>
       </div>
     </div>
   );

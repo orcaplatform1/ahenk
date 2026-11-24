@@ -16,3 +16,6 @@ export * from './components/tables/ShareCard';
 
 // Profile
 export * from './components/profile/AhenkHistory';
+
+// Standart buton
+export * from './components/StdButton';

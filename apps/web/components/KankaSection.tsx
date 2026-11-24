@@ -7,6 +7,7 @@ import { Link } from '@/i18n/navigation';
 import { DEFAULT_PHONE_COUNTRY, formatNamed, toE164, type Lang } from '@ahenk/shared';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { api } from '@/lib/api';
+import { StdButton } from '@ahenk/ui';
 
 // Profilim → t('kanka.activeKanka') (Kankamla). Davet telefonla yapılır; davet linki her zaman kopyalanabilir gösterilir
 // (WhatsApp ulaşmazsa davet eden kendisi iletebilir). Pencereler sayfanın üst katmanında açılır.
@@ -185,14 +186,14 @@ export function KankaSection() {
           {!state.kycApproved ? (
             <div className="flex flex-col gap-3">
               <p style={{ fontSize: 13, color: '#aaa', lineHeight: 1.5 }}>{t('kanka.verifyFirst')}</p>
-              <Link href="/profil?tab=kyc" onClick={() => setSheet(null)} className="btn-primary justify-center" style={{ minHeight: 44 }}>{t('kanka.verifyMe')}</Link>
+              <StdButton variant="primary" as={Link} href="/profil?tab=kyc" onClick={() => setSheet(null)} className="justify-center">{t('kanka.verifyMe')}</StdButton>
             </div>
           ) : sentLink ? (
             <div className="flex flex-col gap-3">
               <p style={{ fontSize: 13, color: '#4ade80' }}>{t('kanka.sentOk')}</p>
               <p style={{ fontSize: 12, color: '#888', lineHeight: 1.5 }}>{t('kanka.sentShare')}</p>
               <CopyLink link={sentLink} />
-              <button onClick={() => setSheet(null)} className="btn-ghost justify-center">{t('kanka.ok')}</button>
+              <StdButton variant="ghost" onClick={() => setSheet(null)} className="justify-center">{t('kanka.ok')}</StdButton>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -207,8 +208,8 @@ export function KankaSection() {
               </div>
               {msg && <p style={{ fontSize: 12, color: '#ff6b6b' }}>{msg}</p>}
               <div className="flex gap-2">
-                <button onClick={() => setSheet(null)} className="flex-1 btn-ghost justify-center">{t('kanka.cancel')}</button>
-                <button onClick={sendInvite} disabled={busy} className="flex-1 btn-primary justify-center disabled:opacity-50">{busy ? '…' : t('kanka.sendInvite')}</button>
+                <StdButton variant="ghost" onClick={() => setSheet(null)} className="flex-1 justify-center">{t('kanka.cancel')}</StdButton>
+                <StdButton variant="primary" onClick={sendInvite} disabled={busy} className="flex-1 justify-center disabled:opacity-50">{busy ? '…' : t('kanka.sendInvite')}</StdButton>
               </div>
             </div>
           )}
@@ -226,8 +227,8 @@ export function KankaSection() {
           </div>
           {msg && <p style={{ fontSize: 12, color: '#ff6b6b', marginBottom: 10 }}>{msg}</p>}
           <div className="flex flex-col gap-2">
-            <button onClick={() => respond('accept')} disabled={busy} className="btn-primary justify-center disabled:opacity-50">{busy ? '…' : t('kanka.accept')}</button>
-            <button onClick={() => respond('decline')} disabled={busy} className="btn-ghost justify-center">{t('kanka.cancel')}</button>
+            <StdButton variant="primary" onClick={() => respond('accept')} disabled={busy} className="justify-center disabled:opacity-50">{busy ? '…' : t('kanka.accept')}</StdButton>
+            <StdButton variant="ghost" onClick={() => respond('decline')} disabled={busy} className="justify-center">{t('kanka.cancel')}</StdButton>
           </div>
         </Sheet>
       )}
@@ -248,7 +249,7 @@ export function KankaSection() {
           )}
           {msg && <p style={{ fontSize: 12, color: '#ff6b6b', marginBottom: 10 }}>{msg}</p>}
           <div className="flex gap-2">
-            <button onClick={() => setSheet(null)} className="flex-1 btn-ghost justify-center">{t('kanka.close')}</button>
+            <StdButton variant="ghost" onClick={() => setSheet(null)} className="flex-1 justify-center">{t('kanka.close')}</StdButton>
             {!state.kanka.locked && (
               <button onClick={unlink} disabled={busy}
                 className="flex-1 py-2 rounded-full text-sm font-semibold disabled:opacity-50"

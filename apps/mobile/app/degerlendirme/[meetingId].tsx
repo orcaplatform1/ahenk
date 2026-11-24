@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { Star } from '@/components/Star';
 import { api } from '@/lib/api';
-import { BtnGhost, BtnPrimary, Card, ModalBox, Mono, Serif, T, Title, PageGlow, Glow, ScreenGlow } from '@/components/ui';
+import { StdButton, Card, ModalBox, Mono, Serif, T, Title, PageGlow, Glow, ScreenGlow } from '@/components/ui';
 import { c, inputGlass, sans, tw, ll } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { formatNamed } from '@ahenk/shared';
@@ -91,7 +91,7 @@ export default function Degerlendirme() {
             <T style={{ color: ll.text, fontSize: 14, textAlign: 'center' }}>
               {state === 'reviewed' ? t('review.already') : state === 'notYet' && info ? t('review.opensAt', { date: fmtDT(info.reviewOpensAt) }) : t('review.closed')}
             </T>
-            <BtnGhost label={t('review.backPanel')} onPress={() => router.replace('/(tabs)')} />
+            <StdButton variant="ghost" label={t('review.backPanel')} onPress={() => router.replace('/(tabs)')} />
           </Card>
         ) : (
           <View style={{ gap: 24 }}>
@@ -149,7 +149,7 @@ export default function Degerlendirme() {
             {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}
             <View>
               <T style={{ fontSize: 12, color: c.t555, textAlign: 'center', marginBottom: 12 }}>{t('review.once')}</T>
-              <BtnPrimary label={submitting ? t('review.sending') : t('review.send')} full disabled={submitting || rating === 0 || len < MIN} style={(submitting || rating === 0 || len < MIN) ? { opacity: 0.5 } : undefined} onPress={submit} />
+              <StdButton variant="primary" label={submitting ? t('review.sending') : t('review.send')} full disabled={submitting || rating === 0 || len < MIN} style={(submitting || rating === 0 || len < MIN) ? { opacity: 0.5 } : undefined} onPress={submit} />
             </View>
           </View>
         )}
@@ -158,8 +158,8 @@ export default function Degerlendirme() {
         <T style={{ fontSize: 14, color: c.tCcc, lineHeight: 22.75, marginBottom: 8 }}><T w={700} style={{ color: tw.accent }}>{participants.filter(p => blocks.includes(p.userId)).map(p => p.initials).join(', ')}</T> {t('review.willBlockSuffix')}</T>
         <T style={{ fontSize: 14, color: c.t888, lineHeight: 22.75, marginBottom: 24 }}>{t('review.confirmBody')}</T>
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          <BtnGhost label={t('review.cancel')} style={{ flex: 1 }} onPress={() => setConfirm(false)} />
-          <BtnPrimary label={t('review.confirm')} style={{ flex: 1 }} onPress={send} />
+          <StdButton variant="ghost" label={t('review.cancel')} style={{ flex: 1 }} onPress={() => setConfirm(false)} />
+          <StdButton variant="primary" label={t('review.confirm')} style={{ flex: 1 }} onPress={send} />
         </View>
       </ModalBox>
     </KeyboardAvoidingView>

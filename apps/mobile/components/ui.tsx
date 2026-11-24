@@ -71,24 +71,27 @@ type BtnProps = Omit<PressableProps, 'children' | 'style'> & {
   label: string; style?: StyleProp<ViewStyle>; full?: boolean; redDot?: boolean; textStyle?: StyleProp<TextStyle>; noUpper?: boolean;
 };
 
-// .btn-primary
-export function BtnPrimary({ label, style, full, disabled, textStyle, noUpper, ...rest }: BtnProps) {
-  return (
-    <Pressable hitSlop={HIT} disabled={disabled} accessibilityRole="button" {...rest}
-      style={({ pressed }) => [s.btn, s.btnPrimary, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: btnPrimary.disabledOpacity }, style]}>
-      <View style={[s.dot, { backgroundColor: btnPrimary.dotColor }]} />
-      <Text style={withWebLH([s.btnText, { fontFamily: sans(600), color: c.white }, textStyle])}>{noUpper ? label : upper(label)}</Text>
-    </Pressable>
-  );
+// Ortak standart buton: web .btn-primary (variant "primary": dolgulu, kırmızı nokta) ve .btn-ghost (variant "ghost": ince çerçeveli,
+// gri nokta; redDot ile .btn-ghost-red-dot) tek bileşenin iki varyantı (web karşılığı packages/ui StdButton).
+// Yükseklik, iç boşluk ve yazı boyutu web hero "Hemen Katıl" ile aynı (9 / 24, 11, satır 1.5); uzun yazı yalnız yana uzar (tek satır).
+// style yalnız yerleşim içindir: boyutla ilgili anahtarlar yok sayılır. Dokunma alanı HIT ile 44 pt'nin üstünde.
+const STD_BOX_DROP = ['height', 'minHeight', 'maxHeight', 'padding', 'paddingVertical', 'paddingHorizontal', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingStart', 'paddingEnd'] as const;
+const STD_TEXT_DROP = ['fontSize', 'lineHeight', 'letterSpacing'] as const;
+function dropKeys<S extends object>(style: StyleProp<S>, keys: readonly string[]): S | undefined {
+  const f = StyleSheet.flatten(style) as Record<string, unknown> | undefined;
+  if (!f) return undefined;
+  const o = { ...f };
+  for (const k of keys) delete o[k];
+  return o as S;
 }
-
-// .btn-ghost (+ .btn-ghost-red-dot)
-export function BtnGhost({ label, style, full, disabled, redDot, textStyle, noUpper, ...rest }: BtnProps) {
+export function StdButton({ variant = 'primary', label, style, full, disabled, redDot, textStyle, noUpper, ...rest }: BtnProps & { variant?: 'primary' | 'ghost' }) {
+  const ghost = variant === 'ghost';
+  const dot = ghost ? (redDot ? c.ghostRedDot : btnGhost.dotColor) : btnPrimary.dotColor;
   return (
     <Pressable hitSlop={HIT} disabled={disabled} accessibilityRole="button" {...rest}
-      style={({ pressed }) => [s.btn, s.btnGhost, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: btnGhost.disabledOpacity }, style]}>
-      <View style={[s.dot, { backgroundColor: redDot ? c.ghostRedDot : btnGhost.dotColor }]} />
-      <Text style={withWebLH([s.btnText, { fontFamily: sans(500), color: btnGhost.color }, textStyle])}>{noUpper ? label : upper(label)}</Text>
+      style={({ pressed }) => [s.btn, ghost ? s.btnGhost : s.btnPrimary, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: ghost ? btnGhost.disabledOpacity : btnPrimary.disabledOpacity }, dropKeys<ViewStyle>(style, STD_BOX_DROP)]}>
+      <View style={[s.dot, { backgroundColor: dot }]} />
+      <Text numberOfLines={1} style={withWebLH([s.btnText, { fontFamily: sans(ghost ? 500 : 600), color: ghost ? btnGhost.color : c.white }, dropKeys<TextStyle>(textStyle, STD_TEXT_DROP)])}>{noUpper ? label : upper(label)}</Text>
     </Pressable>
   );
 }

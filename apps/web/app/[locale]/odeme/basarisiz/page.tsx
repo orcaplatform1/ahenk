@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { motion } from 'framer-motion';
+import { StdButton } from '@ahenk/ui';
 
 export default function OdemeBasarisizPage() {
   const t = useTranslations();
@@ -54,15 +55,15 @@ export default function OdemeBasarisizPage() {
           {t('payFail.body')}
         </motion.p>
 
-        <motion.button
+        <StdButton variant="ghost" as={motion.button}
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.35, ease: 'easeOut' }}
           onClick={() => router.push('/profil')}
-          className="btn-ghost mt-2"
+          className="mt-2"
         >
           {t('payFail.back')}
-        </motion.button>
+        </StdButton>
       </div>
     </div>
   );

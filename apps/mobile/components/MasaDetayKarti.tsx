@@ -16,7 +16,7 @@ import { useAppRefresh } from '@/lib/useAppRefresh';
 import { DetayAvatar } from './DetayAvatar';
 import { PhotoViewer } from './ProfilePhoto';
 import { SosNotice } from './SosNotice';
-import { InlineLH, Btn, BtnGhost, BtnPrimary, Card, Serif, T } from './ui';
+import { InlineLH, Btn, StdButton, Card, Serif, T } from './ui';
 import { showAlert } from './AppAlert';
 import { LocationDisclosure } from './LocationDisclosure';
 import { ShareCardModal } from './ShareCard';
@@ -52,13 +52,14 @@ function participantRows(ps: DetayParticipant[], type?: MasaTuru): DetayParticip
 }
 
 // "Değerlendir": İçerde paket kartı rozetindeki altın geçişli hap (web GOLD_PILL); HIG: en az 44 pt dokunma alanı
-export function GoldPill({ label, onPress }: { label: string; onPress: () => void }) {
+export function GoldPill({ label, onPress, small }: { label: string; onPress: () => void; small?: boolean }) {
   const g = masaKart.goldPill;
+  const z = small ? masaKart.goldPillSmall : g;
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
       <LinearGradient colors={g.colors} locations={g.stops} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={{ minHeight: g.minH, paddingHorizontal: g.padH, borderRadius: 9999, alignItems: 'center', justifyContent: 'center' }}>
-        <T w={800} style={{ fontSize: g.fontSize, letterSpacing: 0.96, color: g.text }}>{label.toLocaleUpperCase(currentLang() === 'en' ? 'en' : 'tr-TR')}</T>
+        style={{ minHeight: z.minH, paddingHorizontal: z.padH, borderRadius: 9999, alignItems: 'center', justifyContent: 'center' }}>
+        <T w={800} style={{ fontSize: z.fontSize, letterSpacing: z.fontSize * 0.08, color: g.text }}>{label.toLocaleUpperCase(currentLang() === 'en' ? 'en' : 'tr-TR')}</T>
       </LinearGradient>
     </Pressable>
   );
@@ -123,9 +124,9 @@ function ReportSheet({ visible, onClose, onSubmit }: { visible: boolean; onClose
             )}
             {!!err && <T accessibilityRole="alert" style={{ marginTop: 10, fontSize: 12, color: tw.accent }}>{err}</T>}
             <View style={{ alignItems: 'center', gap: 8, marginTop: 16 }}>
-              <BtnPrimary label={t('masa.reportAction')} disabled={!can} style={{ width: '100%', maxWidth: 280, minHeight: 44 }}
+              <StdButton variant="primary" label={t('masa.reportAction')} disabled={!can} style={{ width: '100%', maxWidth: 280 }}
                 onPress={async () => { if (!reason) return; setBusy(true); setErr(''); const e = await onSubmit(reason, note); setBusy(false); if (e) setErr(e); }} />
-              <BtnGhost label={t('masa.reportCancel')} style={{ width: '100%', maxWidth: 280, minHeight: 44 }} onPress={onClose} />
+              <StdButton variant="ghost" label={t('masa.reportCancel')} style={{ width: '100%', maxWidth: 280 }} onPress={onClose} />
             </View>
           </ScrollView>
         </Pressable>
@@ -487,7 +488,7 @@ function AiReport({ report, meetingId }: { report?: MasaDetayData['aiReport']; m
           )}
           {!!report.dna && <T w={700} style={sub}>{upperTr(t('masa.aiComment'))}</T>}
           <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 21.45 }}>{report.content}</T>
-          {!!meetingId && <BtnPrimary label={t('masa.shareOpen')} full style={{ marginTop: 14, minHeight: 44 }} onPress={() => setShareOpen(true)} />}
+          {!!meetingId && <StdButton variant="primary" label={t('masa.shareOpen')} full style={{ marginTop: 14 }} onPress={() => setShareOpen(true)} />}
           {shareOpen && !!meetingId && <ShareCardModal meetingId={meetingId} onClose={() => setShareOpen(false)} />}
         </>
       ) : (

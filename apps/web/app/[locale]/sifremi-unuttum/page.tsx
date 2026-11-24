@@ -10,6 +10,7 @@ import { DEFAULT_PHONE_COUNTRY, toE164 } from '@ahenk/shared';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { otpNoticeOf, resendSecondsOf, type OtpNoticeCode } from '@/lib/otpResend';
 import { OtpNoticeAction } from '@/lib/otpCountdown';
+import { StdButton } from '@ahenk/ui';
 
 function errorText(e: unknown, tooMany: string): string {
   const msg = (e as Error).message;
@@ -95,21 +96,21 @@ export default function SifremiUnuttumPage() {
         </motion.div>
 
         <div className="mt-4">
-          <button
+          <StdButton variant="primary"
             type="button"
             onClick={handleSubmit}
             disabled={loading || !phoneValid}
-            className="mx-auto block btn-primary mt-1 disabled:opacity-40"
+            className="mx-auto block mt-1 disabled:opacity-40"
             style={{ width: '72%' }}
           >
             {loading ? t('forgot.sending') : t('forgot.send')}
-          </button>
+          </StdButton>
         </div>
 
         <div className="mt-4 flex justify-center">
-          <Link href="/giris" className="mx-auto block btn-ghost" style={{ width: '72%' }}>
+          <StdButton variant="ghost" as={Link} href="/giris" className="mx-auto block" style={{ width: '72%' }}>
             {t('forgot.backToLogin')}
-          </Link>
+          </StdButton>
         </div>
       </div>
     </div>

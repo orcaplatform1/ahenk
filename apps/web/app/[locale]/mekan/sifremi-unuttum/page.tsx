@@ -8,6 +8,7 @@ import OtpInput from '@/components/ui/OtpInput';
 import { venueApi } from '@/lib/venueApi';
 import { OtpCountdown, OtpNoticeAction, useOtpCountdown } from '@/lib/otpCountdown';
 import { otpNoticeOf, type OtpNoticeCode } from '@/lib/otpResend';
+import { StdButton } from '@ahenk/ui';
 
 export default function MekanSifremiUnuttumPage() {
   const t = useTranslations();
@@ -69,7 +70,7 @@ export default function MekanSifremiUnuttumPage() {
             </div>
             {error && <p className="text-xs text-[#ff6b6b]">{error}</p>}
             {error && <OtpNoticeAction code={notice} />}
-            <button type="submit" disabled={loading || !(phone.length === 10 && phone.startsWith('5'))} className="btn-primary w-full justify-center disabled:opacity-70">{loading ? t('vp.sending') : t('vp.sendCode')}</button>
+            <StdButton variant="primary" type="submit" disabled={loading || !(phone.length === 10 && phone.startsWith('5'))} className="w-full justify-center disabled:opacity-70">{loading ? t('vp.sending') : t('vp.sendCode')}</StdButton>
           </form>
         ) : (
           <form onSubmit={reset} className="flex flex-col gap-3 mt-6">
@@ -79,11 +80,11 @@ export default function MekanSifremiUnuttumPage() {
             <input className="input-glass w-full px-4 py-3 text-sm" type="password" autoComplete="new-password" aria-label={t('vp.newPassword')} placeholder={t('vp.newPasswordHint')} maxLength={20} value={password} onChange={(e) => setPassword(e.target.value)} required />
             <input className="input-glass w-full px-4 py-3 text-sm" type="password" autoComplete="new-password" aria-label={t('vp.newPasswordRepeat')} placeholder={t('vp.newPasswordRepeat')} maxLength={20} value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
             {error && <p className="text-xs text-[#ff6b6b]">{error}</p>}
-            <button type="submit" disabled={loading} className="btn-primary w-full justify-center disabled:opacity-70">{loading ? t('vp.saving') : t('vp.updatePassword')}</button>
+            <StdButton variant="primary" type="submit" disabled={loading} className="w-full justify-center disabled:opacity-70">{loading ? t('vp.saving') : t('vp.updatePassword')}</StdButton>
             <button type="button" onClick={() => sendCode()} disabled={countdown.waiting || loading} className="text-[13px] text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:opacity-40 disabled:hover:text-[#555] disabled:cursor-not-allowed">{t('vp.resend')}</button>
           </form>
         )}
-        <Link href="/mekan/giris" className="btn-ghost w-full justify-center mt-3">{t('vp.backToLogin')}</Link>
+        <StdButton variant="ghost" as={Link} href="/mekan/giris" className="w-full justify-center mt-3">{t('vp.backToLogin')}</StdButton>
       </div>
     </main>
   );

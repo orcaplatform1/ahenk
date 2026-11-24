@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { BORDER, MUTED, RED, SANS, TEXT, AMBER } from '@/lib/adminTheme';
 import { AdminUserPhoto } from '@/components/AdminUserPhoto';
 import { AdminSuspendButtons } from '@/components/AdminSuspendButtons';
+import { StdButton } from '@ahenk/ui';
 
 // GELMEDİ detayı (masa detayı): gelmeyenin fotoğrafı ve adı, bildirenler ve bildirim zamanı, önceki gelmedi uyarıları ve
 // "Uyarı ver" (hazır şablon push). Önceki gelmedi uyarısı varsa "Uyarı ver" pasif, yalnız "Askıya al" (3 gün / 15 gün / 1 ay) aktif.
@@ -75,7 +76,7 @@ export function AdminNoShowDetail({ meetingId, user, reports, onClose }: {
         )}
         {msg && <p style={{ margin: 0, fontSize: 12, color: '#22c55e' }}>{msg}</p>}
         {error && <p style={{ margin: 0, fontSize: 12, color: RED }}>{error}</p>}
-        <button type="button" onClick={onClose} className="btn-ghost justify-center" style={{ minHeight: 40 }}>Kapat</button>
+        <StdButton variant="ghost" type="button" onClick={onClose} className="justify-center">Kapat</StdButton>
       </div>
     </div>
   );

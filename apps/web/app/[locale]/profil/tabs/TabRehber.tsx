@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { formatNamed, splitE164, toE164, type Lang } from '@ahenk/shared';
 import { api } from '@/lib/api';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
+import { StdButton } from '@ahenk/ui';
 
 interface ServerBlock { id: string; phoneNumber?: string; hashedPhone?: string; createdAt: string; }
 
@@ -82,13 +83,13 @@ export function TabRehber() {
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           className="input-glass flex-1 px-4 py-3 text-sm"
         />
-        <button
+        <StdButton variant="primary"
           onClick={handleAdd}
           disabled={adding || serverBlocks.length >= 50}
-          className="btn-primary disabled:opacity-50"
+          className="disabled:opacity-50"
         >
           {adding ? '…' : t('prof.add')}
-        </button>
+        </StdButton>
       </div>
 
       {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}

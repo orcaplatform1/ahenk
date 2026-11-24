@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { COMPANY_ADDRESS, JURISDICTION } from '@/lib/companyInfo';
 import { TaxInfo } from '@/components/TaxInfo';
+import { StdButton } from '@ahenk/ui';
 
 const sections = [
   {
@@ -280,12 +281,11 @@ function CerezPolitikasiPageTr() {
           transition={{ delay: 0.6 }}
           style={{ marginTop: '2rem', textAlign: 'center' as const }}
         >
-          <button
+          <StdButton variant="ghost"
             onClick={resetConsent}
-            className="btn-ghost"
           >
             Çerez Tercihlerimi Güncelle
-          </button>
+          </StdButton>
           <p style={{ marginTop: '0.6rem', color: '#444', fontSize: 11 }}>
             Tıklandığında tercihlerin sıfırlanır ve banner tekrar gösterilir.
           </p>

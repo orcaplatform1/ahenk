@@ -11,7 +11,7 @@ import { PasswordInput } from '@/components/AuthShell';
 import { AuthBackground, AuthHeading, useAuthBackgroundIndex, BackArrow, LegalNote, MailIcon, PhoneIcon, PillButton, StepScreen } from '@/components/AuthFlow';
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
 import { OtpInput } from '@/components/OtpInput';
-import { Btn, BtnGhost, BtnPrimary, ErrorText, Input, T } from '@/components/ui';
+import { Btn, StdButton, ErrorText, Input, T } from '@/components/ui';
 import { OtpCountdown, OtpNoticeAction, otpNoticeOf, useOtpCountdown, type OtpNoticeCode } from '@/components/OtpCountdown';
 import { c, ll, tw } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
@@ -113,10 +113,10 @@ export default function Giris() {
             </T>
             {sanction.type === 'WARNING' ? (
               <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
-                <BtnGhost label={t('common.cancel')} style={{ flex: 1 }} onPress={async () => { await api.logout(); setSanction(null); }} />
-                <BtnPrimary label={t('common.continue')} style={{ flex: 1 }} onPress={() => { setSanction(null); router.replace('/(tabs)'); }} />
+                <StdButton variant="ghost" label={t('common.cancel')} style={{ flex: 1 }} onPress={async () => { await api.logout(); setSanction(null); }} />
+                <StdButton variant="primary" label={t('common.continue')} style={{ flex: 1 }} onPress={() => { setSanction(null); router.replace('/(tabs)'); }} />
               </View>
-            ) : <BtnGhost label={t('common.close')} full style={{ marginTop: 4 }} onPress={() => setSanction(null)} />}
+            ) : <StdButton variant="ghost" label={t('common.close')} full style={{ marginTop: 4 }} onPress={() => setSanction(null)} />}
           </View>
         )}
       </View>

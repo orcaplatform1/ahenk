@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { splitE164, toE164 } from '@ahenk/shared';
 import { api } from '@/lib/api';
 import { CountryCodeButton } from './PhoneCountry';
-import { BtnGhost, BtnPrimary, Input, T } from './ui';
+import { StdButton, Input, T } from './ui';
 import { ll, tw } from '@/theme/theme';
 
 export function EmergencyContact() {
@@ -46,12 +46,12 @@ export function EmergencyContact() {
         <View style={{ gap: 8 }}>
           <T style={{ fontSize: 13, color: ll.text2 }}>{contact.name} · {contact.phone}</T>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <BtnGhost label={t('emergency.edit')} style={{ minHeight: 44 }} onPress={startEdit} />
-            <BtnGhost label={t('emergency.delete')} style={{ minHeight: 44 }} disabled={busy} onPress={() => { void remove(); }} />
+            <StdButton variant="ghost" label={t('emergency.edit')} onPress={startEdit} />
+            <StdButton variant="ghost" label={t('emergency.delete')} disabled={busy} onPress={() => { void remove(); }} />
           </View>
         </View>
       )}
-      {!editing && !contact && <View style={{ alignItems: 'flex-start' }}><BtnGhost label={t('emergency.add')} style={{ minHeight: 44 }} onPress={startEdit} /></View>}
+      {!editing && !contact && <View style={{ alignItems: 'flex-start' }}><StdButton variant="ghost" label={t('emergency.add')} onPress={startEdit} /></View>}
       {editing && (
         <View style={{ gap: 8 }}>
           <Input form value={name} onChangeText={(v) => setName(v.slice(0, 80))} placeholder={t('emergency.name')} />
@@ -60,8 +60,8 @@ export function EmergencyContact() {
             <Input form style={{ flex: 1 }} value={national} keyboardType="phone-pad" onChangeText={(v) => { setNational(v.replace(/\D/g, '').slice(0, 15)); setError(''); }} placeholder={country === 'TR' ? '5XX XXX XX XX' : ''} />
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <BtnPrimary label={busy ? '…' : t('common.save')} disabled={busy} style={{ minHeight: 44 }} onPress={() => { void save(); }} />
-            <BtnGhost label={t('common.cancel')} style={{ minHeight: 44 }} onPress={() => setEditing(false)} />
+            <StdButton variant="primary" label={busy ? '…' : t('common.save')} disabled={busy} onPress={() => { void save(); }} />
+            <StdButton variant="ghost" label={t('common.cancel')} onPress={() => setEditing(false)} />
           </View>
         </View>
       )}

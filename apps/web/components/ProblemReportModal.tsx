@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { API_PREFIX, langHeaders } from '@/lib/api';
 import { Modal } from '@/components/ui/Modal';
+import { StdButton } from '@ahenk/ui';
 
 // Web t('report.title') formu: otomatik ekran görüntüsü yok, en fazla 3 görsel (jpg/png/webp, 5 MB)
 const MAX_IMAGES = 3;
@@ -69,7 +70,7 @@ export function ProblemReportModal({ open, onClose, screen }: { open: boolean; o
       {done ? (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-[#c9c2b8]">{t('report.thanks')}</p>
-          <button type="button" onClick={onClose} className="mx-auto block btn-ghost" style={{ width: '72%' }}>{t('report.close')}</button>
+          <StdButton variant="ghost" type="button" onClick={onClose} className="mx-auto block" style={{ width: '72%' }}>{t('report.close')}</StdButton>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -101,19 +102,19 @@ export function ProblemReportModal({ open, onClose, screen }: { open: boolean; o
           {files.length < MAX_IMAGES && (
             <>
               <input ref={inputRef} type="file" accept={ACCEPT.join(',')} multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
-              <button type="button" onClick={() => inputRef.current?.click()} className="btn-ghost justify-center">
+              <StdButton variant="ghost" type="button" onClick={() => inputRef.current?.click()} className="justify-center">
                 {t('report.addImage', { count: files.length, max: MAX_IMAGES })}
-              </button>
+              </StdButton>
             </>
           )}
           {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
           <div className="mt-2 flex flex-col gap-3">
-            <button type="button" onClick={submit} disabled={busy} className="mx-auto block btn-primary disabled:opacity-40" style={{ width: '72%' }}>
+            <StdButton variant="primary" type="button" onClick={submit} disabled={busy} className="mx-auto block disabled:opacity-40" style={{ width: '72%' }}>
               {busy ? t('report.sending') : t('report.send')}
-            </button>
-            <button type="button" onClick={onClose} className="mx-auto block btn-ghost" style={{ width: '72%' }}>
+            </StdButton>
+            <StdButton variant="ghost" type="button" onClick={onClose} className="mx-auto block" style={{ width: '72%' }}>
               {t('report.cancel')}
-            </button>
+            </StdButton>
           </div>
         </div>
       )}

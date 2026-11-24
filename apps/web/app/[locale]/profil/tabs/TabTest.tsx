@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { formatDate } from '@ahenk/shared';
-import { OCEAN_DIMENSIONS } from '@ahenk/ui';
+import { OCEAN_DIMENSIONS, StdButton } from '@ahenk/ui';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { buildTree, frameOf, layoutTree, newAnimState, restart, tick, topDimension, RENK, type Cizgi, type Elips } from '@/lib/kisilikAgaci';
@@ -244,9 +244,9 @@ export function TabTest() {
     return (
       <div className="ll-card flex flex-col items-center gap-4 text-center">
         <p className="text-[#a39c93] text-sm">{t('tt.notYet')}</p>
-        <Link href="/test" className="btn-primary">
+        <StdButton variant="primary" as={Link} href="/test">
           {t('tt.start')}
-        </Link>
+        </StdButton>
       </div>
     );
   }
@@ -275,13 +275,13 @@ export function TabTest() {
 
       {/* Sonraki test tarihine (test tarihi + 6 takvim ayı, backend) kadar pasif */}
       {canRetakeNow ? (
-        <Link href="/test" className="btn-primary mx-auto">
+        <StdButton variant="primary" as={Link} href="/test" className="mx-auto">
           {t('tt.retake')}
-        </Link>
+        </StdButton>
       ) : (
-        <button type="button" disabled className="btn-primary mx-auto disabled:opacity-40 disabled:cursor-not-allowed">
+        <StdButton variant="primary" type="button" disabled className="mx-auto disabled:opacity-40 disabled:cursor-not-allowed">
           {t('tt.retake')}
-        </button>
+        </StdButton>
       )}
     </div>
   );

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { motion } from 'framer-motion';
-import { OCEAN_TRAITS } from '@ahenk/ui';
+import { OCEAN_TRAITS, StdButton } from '@ahenk/ui';
 import { api } from '@/lib/api';
 
 interface OceanScore {
@@ -288,15 +288,15 @@ export default function TestSonucPage() {
           transition={{ delay: 0.9 }}
           className="mt-8 flex flex-col gap-3"
         >
-          <button
+          <StdButton variant="primary"
             onClick={() => router.push('/dashboard')}
-            className="w-full btn-primary"
+            className="w-full"
           >
             {tr('result.goDash')}
-          </button>
-          <button onClick={() => router.push('/profil')} className="w-full btn-ghost justify-center">
+          </StdButton>
+          <StdButton variant="ghost" onClick={() => router.push('/profil')} className="w-full justify-center">
             {tr('result.backProfile')}
-          </button>
+          </StdButton>
         </motion.div>
       </div>
     </div>

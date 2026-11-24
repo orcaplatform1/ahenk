@@ -19,7 +19,7 @@ import { formatCardDate } from '@ahenk/shared';
 import { api } from '@/lib/api';
 import { currentLang } from '@/lib/i18n';
 import { mediaUrl } from '@/lib/venueApi';
-import { BtnGhost, Serif, T } from './ui';
+import { StdButton, Serif, T } from './ui';
 import { showAlert } from './AppAlert';
 import { ensurePermission } from '@/lib/permissions';
 import { tw } from '@/theme/theme';
@@ -227,7 +227,7 @@ export function ShareCardModal({ meetingId, onClose }: { meetingId: string; onCl
                 <ActionBtn label={t('share.more')} onPress={more} />
               </View>
             )}
-            <BtnGhost label={t('share.close')} full style={{ minHeight: 44 }} onPress={onClose} />
+            <StdButton variant="ghost" label={t('share.close')} full onPress={onClose} />
           </ScrollView>
         </View>
       </View>

@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { TabProfilim, TabProfilimSkeleton } from './tabs/TabProfilim';
 import { ProfilePhotoHeader } from '@/components/ProfilePhoto';
-import { buildInitials } from '@ahenk/ui';
+import { buildInitials, StdButton } from '@ahenk/ui';
 import { TabTest } from './tabs/TabTest';
 import { TabMasalar } from './tabs/TabMasalar';
 import { TabPaket } from './tabs/TabPaket';
@@ -133,12 +133,11 @@ function ProfilPage() {
       <main className="min-h-screen bg-bg text-text pt-[52px] flex items-center justify-center">
         <div className="text-center px-6">
           <p className="text-[#888] text-sm mb-4">{t('prof.loadFailed')}</p>
-          <button
+          <StdButton variant="ghost"
             onClick={() => { setFetchError(false); setLoading(true); api.get<UserData>('/auth/me').then(u => setUser(u)).catch(() => setFetchError(true)).finally(() => setLoading(false)); }}
-            className="btn-ghost"
           >
             {t('common.tryAgain')}
-          </button>
+          </StdButton>
         </div>
       </main>
     );
@@ -171,7 +170,7 @@ function ProfilPage() {
             {/* Profil fotoğrafının hemen üstünde, sağa hizalı: tanıtımı 1. adımdan açar (onboardingSeenAt değişmez) */}
             {activeTab === 'profil'  && (
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-                <button type="button" onClick={() => setHowOpen(true)} className="btn-ghost" style={{ minHeight: 44 }}>{t('onb.howItWorks')}</button>
+                <StdButton variant="ghost" type="button" onClick={() => setHowOpen(true)}>{t('onb.howItWorks')}</StdButton>
               </div>
             )}
             {activeTab === 'profil'  && <ProfilePhotoHeader photoUrl={user.profilePhotoUrl} initials={buildInitials(user.firstName, user.lastName)} gender={user.profile?.gender} kycApproved={kycApproved} pending={user.profilePhotoPending} />}

@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Defs, Line, Polygon, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { OCEAN_TRAITS } from '@/lib/oceanData';
-import { Btn, BtnGhost, BtnPrimary, Mono, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
+import { Btn, StdButton, Mono, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { c, glassCard, sans, tw, ll } from '@/theme/theme';
 
 import { useTranslation } from 'react-i18next';
@@ -95,8 +95,8 @@ export default function TestSonuc() {
       </View>
       <TraitCard label={OCEAN_TRAITS[4].label} score={Math.round(score[OCEAN_TRAITS[4].key])} />
       <View style={{ marginTop: 32, gap: 12 }}>
-        <BtnPrimary label={t('result.goDash')} full onPress={() => router.replace('/(tabs)')} />
-        <BtnGhost label={t('result.backProfile')} full onPress={() => router.back()} />
+        <StdButton variant="primary" label={t('result.goDash')} full onPress={() => router.replace('/(tabs)')} />
+        <StdButton variant="ghost" label={t('result.backProfile')} full onPress={() => router.back()} />
       </View>
     </ScrollView>
     </View>

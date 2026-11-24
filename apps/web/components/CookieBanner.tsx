@@ -5,11 +5,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { applyConsent } from '@/lib/analytics';
+import { StdButton } from '@ahenk/ui';
 
 type Prefs = { analitik: boolean; pazarlama: boolean };
 
-const BTN_OUTLINE = 'btn-ghost';
-const BTN_PRIMARY = 'btn-primary';
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -114,15 +113,15 @@ export default function CookieBanner() {
                     {' '}{t('cookie.manageInfo2')}
                   </p>
                   <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <button onClick={() => setManaging(true)} className={BTN_OUTLINE}>
+                    <StdButton variant="ghost" onClick={() => setManaging(true)}>
                       {t('cookie.manage')}
-                    </button>
-                    <button onClick={reject} className={BTN_OUTLINE}>
+                    </StdButton>
+                    <StdButton variant="ghost" onClick={reject}>
                       {t('cookie.reject')}
-                    </button>
-                    <button onClick={acceptAll} className={BTN_PRIMARY}>
+                    </StdButton>
+                    <StdButton variant="primary" onClick={acceptAll}>
                       {t('cookie.acceptAll')}
-                    </button>
+                    </StdButton>
                   </div>
                 </motion.div>
               ) : (
@@ -175,12 +174,12 @@ export default function CookieBanner() {
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.55rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                    <button onClick={reject} className={BTN_OUTLINE}>
+                    <StdButton variant="ghost" onClick={reject}>
                       {t('cookie.rejectAll')}
-                    </button>
-                    <button onClick={savePrefs} className={BTN_PRIMARY}>
+                    </StdButton>
+                    <StdButton variant="primary" onClick={savePrefs}>
                       {t('cookie.savePrefs')}
-                    </button>
+                    </StdButton>
                   </div>
                 </motion.div>
               )}

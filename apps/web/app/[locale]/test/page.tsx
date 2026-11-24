@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { trackOceanTestComplete } from '@/lib/analytics';
+import { StdButton } from '@ahenk/ui';
 
 interface Question {
   id: string;
@@ -138,12 +139,12 @@ export default function TestPage() {
             {t('test.nextIn6')}
           </p>
 
-          <button onClick={() => router.push('/test/sonuc')} className="w-full btn-primary justify-center mb-3">
+          <StdButton variant="primary" onClick={() => router.push('/test/sonuc')} className="w-full justify-center mb-3">
             {t('test.seeProfile')}
-          </button>
-          <button onClick={() => router.push('/dashboard')} className="w-full btn-ghost justify-center">
+          </StdButton>
+          <StdButton variant="ghost" onClick={() => router.push('/dashboard')} className="w-full justify-center">
             {t('test.backDash')}
-          </button>
+          </StdButton>
         </motion.div>
       </div>
     );
@@ -242,13 +243,13 @@ export default function TestPage() {
 
         {/* Alt butonlar */}
         <div className="flex items-center justify-between mt-6 gap-3">
-          <button onClick={goPrev} disabled={current === 0} className="btn-ghost disabled:opacity-30">
+          <StdButton variant="ghost" onClick={goPrev} disabled={current === 0} className="disabled:opacity-30">
             {t('common.back')}
-          </button>
+          </StdButton>
 
-          <button onClick={goNext} disabled={!hasAnswer || submitting} className="flex-1 btn-primary justify-center disabled:opacity-30">
+          <StdButton variant="primary" onClick={goNext} disabled={!hasAnswer || submitting} className="flex-1 justify-center disabled:opacity-30">
             {submitting ? '…' : isLast ? t('test.finish') : t('test.nextPlain')}
-          </button>
+          </StdButton>
         </div>
 
         {error && <p className="text-[#ff6b6b] text-xs text-center mt-4">{error}</p>}

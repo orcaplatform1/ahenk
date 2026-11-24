@@ -1,7 +1,7 @@
 'use client';
 import { EmergencyContact } from '@/components/EmergencyContact';
 
-import { gColor } from '@ahenk/ui';
+import { gColor, StdButton } from '@ahenk/ui';
 import { KankaSection } from '@/components/KankaSection';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import { useState, useRef, useEffect } from 'react';
@@ -280,8 +280,8 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
             <input type="password" value={emailPassword} onChange={e => { setEmailPassword(e.target.value); setEmailError(''); }} placeholder={t('prof.currentPw')} className="input-glass px-4 py-3 text-sm w-full" />
             {emailError && <p className="text-[#ff6b6b] text-xs">{emailError}</p>}
             <div className="flex gap-2">
-              <button onClick={() => { setEmailMode(false); setEmailError(''); }} className="flex-1 btn-ghost justify-center">{t('prof.cancel')}</button>
-              <button onClick={saveEmail} disabled={emailSaving} className="flex-1 btn-primary">{emailSaving ? '…' : t('prof.save')}</button>
+              <StdButton variant="ghost" onClick={() => { setEmailMode(false); setEmailError(''); }} className="flex-1 justify-center">{t('prof.cancel')}</StdButton>
+              <StdButton variant="primary" onClick={saveEmail} disabled={emailSaving} className="flex-1">{emailSaving ? '…' : t('prof.save')}</StdButton>
             </div>
           </div>
         ) : (
@@ -315,8 +315,8 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
             </div>
             {phoneError && <p className="text-[#ff6b6b] text-xs">{phoneError}</p>}
             <div className="flex gap-2">
-              <button onClick={() => { setPhoneMode('idle'); setPhoneError(''); setNewPhone(''); }} className="flex-1 btn-ghost justify-center">{t('prof.cancel')}</button>
-              <button onClick={sendPhoneOtp} disabled={phoneSaving} className="flex-1 btn-primary">{phoneSaving ? '…' : t('prof.sendCode')}</button>
+              <StdButton variant="ghost" onClick={() => { setPhoneMode('idle'); setPhoneError(''); setNewPhone(''); }} className="flex-1 justify-center">{t('prof.cancel')}</StdButton>
+              <StdButton variant="primary" onClick={sendPhoneOtp} disabled={phoneSaving} className="flex-1">{phoneSaving ? '…' : t('prof.sendCode')}</StdButton>
             </div>
           </div>
         )}
@@ -338,8 +338,8 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
             {phoneError && <p className="text-[#ff6b6b] text-xs text-center">{phoneError}</p>}
             <button type="button" onClick={sendPhoneOtp} disabled={phoneCountdown.waiting || phoneSaving} className="text-xs text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:opacity-40 disabled:cursor-not-allowed">{t('prof.resend')}</button>
             <div className="flex gap-2">
-              <button onClick={() => { setPhoneMode('enter'); setPhoneError(''); setPhoneOtp(['', '', '', '', '', '']); phoneCountdown.start(0); }} className="flex-1 btn-ghost justify-center">{t('prof.back')}</button>
-              <button onClick={verifyPhoneOtp} disabled={phoneSaving || phoneOtp.join('').length !== 6} className="flex-1 btn-primary disabled:opacity-40">{phoneSaving ? '…' : t('prof.verify')}</button>
+              <StdButton variant="ghost" onClick={() => { setPhoneMode('enter'); setPhoneError(''); setPhoneOtp(['', '', '', '', '', '']); phoneCountdown.start(0); }} className="flex-1 justify-center">{t('prof.back')}</StdButton>
+              <StdButton variant="primary" onClick={verifyPhoneOtp} disabled={phoneSaving || phoneOtp.join('').length !== 6} className="flex-1 disabled:opacity-40">{phoneSaving ? '…' : t('prof.verify')}</StdButton>
             </div>
           </div>
         )}
@@ -416,18 +416,18 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
               {t('prof.cityWarnPre')} <span style={{ color: '#f5f5f5' }}>{displayPrimaryCity?.name ?? t('prof.yourMainCity')}</span> {t('prof.cityWarnPost')}
             </p>
             <div className="flex flex-col gap-2">
-              <button
+              <StdButton variant="primary"
                 onClick={() => { setActiveCityConfirm(false); confirmAction.current?.(); confirmAction.current = null; }}
-                className="btn-primary w-full justify-center"
+                className="w-full justify-center"
               >
                 {t('prof.accept')}
-              </button>
-              <button
+              </StdButton>
+              <StdButton variant="ghost"
                 onClick={() => setActiveCityConfirm(false)}
-                className="btn-ghost w-full justify-center"
+                className="w-full justify-center"
               >
                 {t('prof.decline')}
-              </button>
+              </StdButton>
             </div>
           </div>
         </div>
@@ -448,13 +448,13 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
             notified={notified}
             onNotify={notifyRegion}
           />
-          <button
+          <StdButton variant="primary"
             onClick={() => { const v = activeCity || null; askConfirm(() => saveActiveCity(v)); }}
             disabled={savingActiveCity}
-            className="btn-primary disabled:opacity-50 whitespace-nowrap"
+            className="disabled:opacity-50 whitespace-nowrap"
           >
             {savingActiveCity ? '…' : t('prof.save')}
-          </button>
+          </StdButton>
         </div>
         {activeCity && (
           <div className="flex items-center justify-between mt-2">
@@ -515,10 +515,10 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
             })}
             {saveError && <p className="text-accent text-sm">{saveError}</p>}
             <div className="flex gap-2 mt-1">
-              <button onClick={() => setEditingVenue(false)} className="flex-1 btn-ghost justify-center">{t('prof.cancel')}</button>
-              <button onClick={saveVenuePreference} disabled={saving} className="flex-1 btn-primary">
+              <StdButton variant="ghost" onClick={() => setEditingVenue(false)} className="flex-1 justify-center">{t('prof.cancel')}</StdButton>
+              <StdButton variant="primary" onClick={saveVenuePreference} disabled={saving} className="flex-1">
                 {saving ? 'Kaydediliyor…' : t('prof.save')}
-              </button>
+              </StdButton>
             </div>
           </div>
         ) : (
@@ -541,18 +541,18 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
 
       {/* Oturum ve hesap */}
       <div className="flex flex-col items-center gap-3 pb-2">
-        <button onClick={() => setReportOpen(true)} className="mx-auto block btn-ghost" style={ACCOUNT_BTN}>
+        <StdButton variant="ghost" onClick={() => setReportOpen(true)} className="mx-auto block" style={ACCOUNT_BTN}>
           {t('report.title')}
-        </button>
-        <button onClick={logoutAll} disabled={logoutAllBusy} className="mx-auto block btn-ghost disabled:opacity-40" style={ACCOUNT_BTN}>
+        </StdButton>
+        <StdButton variant="ghost" onClick={logoutAll} disabled={logoutAllBusy} className="mx-auto block disabled:opacity-40" style={ACCOUNT_BTN}>
           {logoutAllBusy ? t('prof.loggingOut') : t('prof.logoutAll')}
-        </button>
+        </StdButton>
         {deletePending ? (
           <p className="text-xs text-[#a39c93] text-center">{t('prof.deletePending')}</p>
         ) : (
-          <button onClick={() => { setDeleteError(''); setDeleteOpen(true); }} className="mx-auto block btn-ghost btn-ghost-red-dot" style={ACCOUNT_BTN}>
+          <StdButton variant="ghost" redDot onClick={() => { setDeleteError(''); setDeleteOpen(true); }} className="mx-auto block" style={ACCOUNT_BTN}>
             {t('prof.deleteMine')}
-          </button>
+          </StdButton>
         )}
       </div>
 
@@ -687,9 +687,9 @@ function CityPickerModalP({ cities, value, onChange, onClose, optional, title, n
             </>
           )}
         </div>
-        <button onClick={() => { onChange(tmp); onClose(); }} className="btn-primary w-full justify-center" style={{ marginTop: 16 }}>
+        <StdButton variant="primary" onClick={() => { onChange(tmp); onClose(); }} className="w-full justify-center" style={{ marginTop: 16 }}>
           {t('reg.select')}
-        </button>
+        </StdButton>
       </div>
     </div>
   );

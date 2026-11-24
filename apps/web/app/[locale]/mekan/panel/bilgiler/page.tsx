@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { VenueAuthError, VenueMe, mediaUrl, venueApi } from '@/lib/venueApi';
 import { isVenuePhoto, VENUE_PHOTO_ACCEPT } from '@/lib/imageType';
 import { panelCard, useVenuePanel } from '../context';
+import { StdButton } from '@ahenk/ui';
 
 // Tek fotoğraf (en az 1, en fazla 1); yeni seçim ilk fotoğrafın yerine geçer
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -100,7 +101,7 @@ export default function BilgilerPage() {
         <Labeled label={t('vp.alcohol')}>
           <SiteSelect value={form.venueType} options={ALCOHOL_OPTIONS} onChange={(v) => setForm((f) => ({ ...f, venueType: v }))} required ariaLabel={t('vp.alcoholAria')} />
         </Labeled>
-        <button type="submit" disabled={saving} className="btn-primary w-full justify-center disabled:opacity-70">{saving ? t('vp.saving') : t('vp.save')}</button>
+        <StdButton variant="primary" type="submit" disabled={saving} className="w-full justify-center disabled:opacity-70">{saving ? t('vp.saving') : t('vp.save')}</StdButton>
       </form>
 
       <section style={{ ...panelCard, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -113,10 +114,10 @@ export default function BilgilerPage() {
           </div>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
-          <label className={`btn-primary justify-center${uploading ? ' opacity-70' : ''}`} style={{ minHeight: 44, flexShrink: 0, cursor: uploading ? 'not-allowed' : 'pointer' }}>
+          <StdButton variant="primary" as="label" className={`justify-center${uploading ? ' opacity-70' : ''}`} style={{ flexShrink: 0, cursor: uploading ? 'not-allowed' : 'pointer' }}>
             {uploading ? t('vp.loading') : t('vp.photoPick')}
             <input type="file" accept={VENUE_PHOTO_ACCEPT} disabled={uploading} onChange={(e) => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }} style={{ display: 'none' }} />
-          </label>
+          </StdButton>
           <span style={{ fontSize: '0.78rem', color: '#888', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pickedName || t('vp.photoNone')}</span>
         </div>
       </section>

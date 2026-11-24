@@ -8,6 +8,7 @@ import { trackConfirmedPurchase } from '@/lib/analytics';
 import { api } from '@/lib/api';
 import { mountIyzicoForm } from '@/lib/checkout';
 import TcknModal from '@/components/paket/TcknModal';
+import { StdButton } from '@ahenk/ui';
 
 export default function OdemeBasariliPage() {
   const t = useTranslations();
@@ -92,15 +93,15 @@ export default function OdemeBasariliPage() {
           {t('paySuccess.body')}
         </motion.p>
 
-        <motion.button
+        <StdButton variant="primary" as={motion.button}
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.35, ease: 'easeOut' }}
           onClick={() => router.push('/dashboard')}
-          className="btn-primary mt-2"
+          className="mt-2"
         >
           {t('paySuccess.goDashboard')}
-        </motion.button>
+        </StdButton>
 
         <motion.p
           initial={{ opacity: 0 }}

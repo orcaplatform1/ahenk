@@ -6,7 +6,7 @@ import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View } from 'r
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
-import { Btn, BtnGhost, Serif, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
+import { Btn, StdButton, Serif, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
 import { ProfilimTab, type City, type UserData } from '@/components/profil/ProfilimTab';
 import { KisilikTab } from '@/components/profil/KisilikTab';
 import { RehberTab } from '@/components/profil/RehberTab';
@@ -75,14 +75,14 @@ export default function Profilim() {
             {/* Profil fotoğrafının hemen üstünde, sağa hizalı: tanıtımı 1. adımdan açar (onboardingSeenAt değişmez) */}
             {user && tab === 'profil' && (
               <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
-                <BtnGhost label={t('onb.howItWorks')} onPress={() => setHowOpen(true)} />
+                <StdButton variant="ghost" label={t('onb.howItWorks')} onPress={() => setHowOpen(true)} />
               </View>
             )}
             {user && tab === 'profil' && <ProfilePhotoHeader photoUrl={user.profilePhotoUrl} initials={buildInitials(user.firstName, user.lastName)} gender={user.profile?.gender} kycApproved={kycApproved} pending={user.profilePhotoPending} />}
             {loading ? <SkeletonBlock lines={4} /> : fetchError && !user ? (
               <View style={{ alignItems: 'center', paddingHorizontal: 24 }}>
                 <T style={{ color: tw.muted, fontSize: 14, marginBottom: 16 }}>{t('prof.loadFailed')}</T>
-                <BtnGhost label={t('common.tryAgain')} onPress={() => { setLoading(true); load(); }} />
+                <StdButton variant="ghost" label={t('common.tryAgain')} onPress={() => { setLoading(true); load(); }} />
               </View>
             ) : user ? (
               <>

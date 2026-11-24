@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { VenueAuthError, venueApi } from '@/lib/venueApi';
 import { panelCard, useVenuePanel } from '../context';
+import { StdButton } from '@ahenk/ui';
 
 export default function HesapPage() {
   const { me, onAuthLost } = useVenuePanel();
@@ -59,7 +60,7 @@ export default function HesapPage() {
         <input className={input} type="password" autoComplete="new-password" aria-label={t('vp.newPasswordRepeat')} placeholder={t('vp.newPasswordRepeat')} maxLength={20} required value={pw.confirm} onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))} />
         {pwError && <p style={{ color: '#ff6b6b', fontSize: '0.8rem', margin: 0 }}>{pwError}</p>}
         {pwMessage && <p style={{ color: '#4ade80', fontSize: '0.8rem', margin: 0 }}>{pwMessage}</p>}
-        <button type="submit" disabled={pwSaving} className="btn-primary w-full justify-center disabled:opacity-70">{pwSaving ? t('vp.saving') : t('vp.updatePassword')}</button>
+        <StdButton variant="primary" type="submit" disabled={pwSaving} className="w-full justify-center disabled:opacity-70">{pwSaving ? t('vp.saving') : t('vp.updatePassword')}</StdButton>
       </form>
 
       <section style={{ ...panelCard, display: 'flex', flexDirection: 'column', gap: 10 }}>

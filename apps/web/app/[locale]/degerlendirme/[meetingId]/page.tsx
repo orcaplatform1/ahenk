@@ -8,6 +8,7 @@ import { formatNamed, type Lang } from '@ahenk/shared';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { Modal } from '@/components/ui/Modal';
+import { StdButton } from '@ahenk/ui';
 
 interface Participant {
   userId: string;
@@ -216,7 +217,7 @@ export default function DegerlendirmePage() {
               {windowState === 'notYet' && meetingInfo && t('review.opensAt', { date: fmtDateTime(meetingInfo.reviewOpensAt) })}
               {windowState === 'closed' && t('review.closed')}
             </p>
-            <button onClick={() => router.push('/dashboard')} className="btn-ghost">{t('review.backPanel')}</button>
+            <StdButton variant="ghost" onClick={() => router.push('/dashboard')}>{t('review.backPanel')}</StdButton>
           </motion.div>
         ) : (
           <div className="flex flex-col gap-6">
@@ -341,13 +342,13 @@ export default function DegerlendirmePage() {
             {/* Gönder */}
             <motion.div {...fadeUp(0.5)}>
               <p className="text-xs text-[#555] text-center mb-3">{t('review.once')}</p>
-              <button
+              <StdButton variant="primary"
                 onClick={handleSubmit}
                 disabled={submitting || rating === 0 || commentLen < COMMENT_MIN}
-                className="w-full btn-primary disabled:opacity-50"
+                className="w-full disabled:opacity-50"
               >
                 {submitting ? t('review.sending') : t('review.send')}
-              </button>
+              </StdButton>
             </motion.div>
 
           </div>
@@ -363,8 +364,8 @@ export default function DegerlendirmePage() {
           {t('review.confirmBody')}
         </p>
         <div className="flex gap-3">
-          <button onClick={() => setConfirmOpen(false)} className="flex-1 btn-ghost justify-center">{t('review.cancel')}</button>
-          <button onClick={send} className="flex-1 btn-primary justify-center">{t('review.confirm')}</button>
+          <StdButton variant="ghost" onClick={() => setConfirmOpen(false)} className="flex-1 justify-center">{t('review.cancel')}</StdButton>
+          <StdButton variant="primary" onClick={send} className="flex-1 justify-center">{t('review.confirm')}</StdButton>
         </div>
       </Modal>
     </div>

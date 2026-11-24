@@ -1,10 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { MasaTuru } from '@ahenk/ui';
 import type { MeetingMode, WeeklySelection } from './useMasaTabs';
 import { Rings } from './LiveTabs';
+import { StdButton } from '@ahenk/ui';
+
+// Kalan süre: X saat Y dakika (dakika yukarı yuvarlanır)
+function changeIn(ms: number): { h: number; m: number } {
+  const total = Math.max(1, Math.ceil(ms / 60000));
+  return { h: Math.floor(total / 60), m: total % 60 };
+}
 
 const TITLE: Record<MasaTuru, string> = { GROUP: 'live.wsGroupTitle', ONE_ON_ONE: 'live.wsOneTitle', KANKA: 'live.wsKankaTitle' };
 const MODE_LABEL: Record<MeetingMode, string> = { TOMORROW: 'live.modeTomorrow', PLANNED: 'live.modeWeekend' };
@@ -23,11 +30,16 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
   const [error, setError] = useState('');
   // Değiştir / İptal Et önce onay penceresi açar; "Evet" mevcut akışı çalıştırır
   const [confirm, setConfirm] = useState<{ kind: 'change' | 'cancel'; type: MasaTuru; mode: MeetingMode } | null>(null);
+  // Değiştir kilidi geri sayımı: her saniye yenilenir; süre dolunca metin kalkar, Değiştir aktif olur (kural backend'de aynen)
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
   if (!selection) return null;
   const rows = selection.options.filter((o) => o.selection || o.seated);
   const canPick = selection.options.some((o) => o.hasRight && !o.selection && !o.seated);
   if (rows.length === 0 && !canPick) return null;
-  const now = Date.now();
   const cooling = !!selection.cancelCooldownUntil && Date.parse(selection.cancelCooldownUntil) > now;
   const suspended = !!selection.suspendedUntil && Date.parse(selection.suspendedUntil) > now;
 
@@ -56,28 +68,26 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
             </div>
             {sel && (
               <div className="flex" style={{ gap: 8 }}>
-                <button
+                <StdButton variant="ghost"
                   onClick={() => setConfirm({ kind: 'change', type: o.type, mode: sel.mode === 'TOMORROW' ? 'PLANNED' : 'TOMORROW' })}
                   disabled={busy !== null || o.locked || Date.parse(sel.changeAvailableAt) > now}
-                  className="btn-ghost flex-1 justify-center disabled:opacity-50"
-                  style={{ minHeight: 44 }}
+                  className="flex-1 justify-center disabled:opacity-50"
                 >
                   {tr('live.selChange')}
-                </button>
-                <button
+                </StdButton>
+                <StdButton variant="ghost"
                   onClick={() => setConfirm({ kind: 'cancel', type: o.type, mode: sel.mode })}
                   disabled={busy !== null || o.locked}
-                  className="btn-ghost flex-1 justify-center disabled:opacity-50"
-                  style={{ minHeight: 44 }}
+                  className="flex-1 justify-center disabled:opacity-50"
                 >
                   {tr('live.selCancel')}
-                </button>
+                </StdButton>
               </div>
             )}
             {/* Pasif buton nedeni */}
             {sel && (o.locked || Date.parse(sel.changeAvailableAt) > now) && (
               <p className="text-[#a39c93]" style={{ fontSize: 12, margin: 0 }}>
-                {tr(o.locked ? 'live.selReasonLocked' : sel.mode === 'TOMORROW' ? 'live.selReasonChange3' : 'live.selReasonChange24')}
+                {o.locked ? tr('live.selReasonLocked') : tr('live.selChangeIn', changeIn(Date.parse(sel.changeAvailableAt) - now))}
               </p>
             )}
           </div>
@@ -86,7 +96,7 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
       {error && <p className="text-[#ff6b6b]" style={{ fontSize: 12, margin: 0 }}>{error}</p>}
       {canPick && (
         <>
-          <button onClick={onOpen} disabled={cooling || suspended} className="btn-primary w-full justify-center disabled:opacity-50" style={{ minHeight: 44 }}>{tr('live.selOpen')}</button>
+          <StdButton variant="primary" onClick={onOpen} disabled={cooling || suspended} className="w-full justify-center disabled:opacity-50">{tr('live.selOpen')}</StdButton>
           {(suspended || cooling) && <p className="text-[#a39c93] text-center" style={{ fontSize: 12, margin: 0 }}>{tr(suspended ? 'live.selReasonSuspended' : 'live.selReasonCooldown')}</p>}
         </>
       )}
@@ -101,18 +111,18 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
               {tr(confirm.kind === 'change' ? 'live.selChangeRule' : 'live.selCancelRule')}
             </p>
             <div className="flex flex-col items-center gap-2">
-              <button
+              <StdButton variant="primary"
                 onClick={() => {
                   const c = confirm;
                   setConfirm(null);
                   void run(c.type, () => (c.kind === 'change' ? onChange(c.type, c.mode) : onCancel(c.type)));
                 }}
-                className="btn-primary justify-center"
-                style={{ minHeight: 44, width: '100%', maxWidth: 280 }}
+                className="justify-center"
+                style={{ width: '100%', maxWidth: 280 }}
               >
                 {tr(confirm.kind === 'change' ? 'live.selConfirmChangeYes' : 'live.selConfirmCancelYes')}
-              </button>
-              <button onClick={() => setConfirm(null)} className="btn-ghost justify-center" style={{ minHeight: 44, width: '100%', maxWidth: 280 }}>{tr('live.selConfirmNo')}</button>
+              </StdButton>
+              <StdButton variant="ghost" onClick={() => setConfirm(null)} className="justify-center" style={{ width: '100%', maxWidth: 280 }}>{tr('live.selConfirmNo')}</StdButton>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
 import { Modal } from '@/components/ui/Modal';
+import { StdButton } from '@ahenk/ui';
 
 // Herkese açık hesap silme sayfası (Google Play hesap silme bağlantısı). Giriş yapmamış kişi otomatik olarak mevcut giriş
 // sayfasına yönlendirilir, giriş sonrası buraya döner (giris?donus=/hesap-silme) ve
@@ -76,9 +77,9 @@ export default function HesapSilmePage() {
               {!session ? null : pending ? (
                 <p style={{ textAlign: 'center', color: '#a39c93' }}>{t('del.pending')}</p>
               ) : (
-                <button type="button" onClick={() => { setError(''); setOpen(true); }} className="mx-auto block btn-ghost btn-ghost-red-dot" style={{ width: '72%' }}>
+                <StdButton variant="ghost" redDot type="button" onClick={() => { setError(''); setOpen(true); }} className="mx-auto block" style={{ width: '72%' }}>
                   {t('del.deleteMine')}
-                </button>
+                </StdButton>
               )}
             </div>
           ), 0)}

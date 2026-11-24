@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { venueApi } from '@/lib/venueApi';
+import { StdButton } from '@ahenk/ui';
 
 export default function MekanGirisPage() {
   const t = useTranslations();
@@ -34,9 +35,9 @@ export default function MekanGirisPage() {
           <input className="input-glass w-full px-4 py-3 text-sm" type="email" autoComplete="email" aria-label={t('vp.email')} placeholder={t('vp.email')} value={email} onChange={(e) => setEmail(e.target.value)} required />
           <input className="input-glass w-full px-4 py-3 text-sm" type="password" autoComplete="current-password" aria-label={t('vp.password')} placeholder={t('vp.password')} maxLength={20} value={password} onChange={(e) => setPassword(e.target.value)} required />
           {error && <p className="text-xs text-[#ff6b6b]">{error}</p>}
-          <button type="submit" disabled={loading} className="btn-primary w-full justify-center disabled:opacity-70">
+          <StdButton variant="primary" type="submit" disabled={loading} className="w-full justify-center disabled:opacity-70">
             {loading ? t('vp.loggingIn') : t('vp.loginBtn')}
-          </button>
+          </StdButton>
         </form>
         <div className="flex justify-between mt-5 text-xs">
           <Link href="/mekan/sifremi-unuttum" className="text-[#888]">{t('vp.forgot')}</Link>

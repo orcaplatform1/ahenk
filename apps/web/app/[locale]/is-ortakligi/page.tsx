@@ -11,6 +11,7 @@ import { LineIcon } from '@/components/LineIcon';
 import { API_PREFIX, api, langHeaders } from '@/lib/api';
 import { readError } from '@/lib/venueApi';
 import { canPreview, isVenuePhoto, VENUE_PHOTO_ACCEPT } from '@/lib/imageType';
+import { StdButton } from '@ahenk/ui';
 
 /* ── Count-up hook ────────────────────────────────────────────── */
 function useCountUp(target: number, duration = 1600, start = false) {
@@ -201,9 +202,9 @@ export default function IsOrtakligiPage() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
-            <button onClick={scrollToForm} className="btn-primary">
+            <StdButton variant="primary" onClick={scrollToForm}>
               {t('partner.seeOffer')}
-            </button>
+            </StdButton>
           </motion.div>
         </div>
       </section>
@@ -412,16 +413,15 @@ export default function IsOrtakligiPage() {
                   <SelectField label={t('partner.alcohol')} value={form.alcoholStatus} options={ALCOHOL_OPTIONS} onChange={(v) => setForm(f => ({ ...f, alcoholStatus: v }))} required />
                   <TextareaField label={t('partner.address')} value={form.address} onChange={(v) => setForm(f => ({ ...f, address: v }))} maxLength={300} required />
                   <TextField label={t('partner.mapsLabel')} type="url" value={form.locationUrl} onChange={(v) => setForm(f => ({ ...f, locationUrl: v }))} required placeholder="https://maps.app.goo.gl/..." />
-                  <a
+                  <StdButton variant="ghost" as="a"
                     href={form.locationUrl.trim() || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-disabled={!form.locationUrl.trim()}
-                    className="btn-ghost"
                     style={{ alignSelf: 'flex-start', opacity: form.locationUrl.trim() ? 1 : 0.4, pointerEvents: form.locationUrl.trim() ? 'auto' : 'none' }}
                   >
                     {t('partner.checkLink')}
-                  </a>
+                  </StdButton>
 
                   {/* Mekân fotoğrafı (tek) */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -443,10 +443,10 @@ export default function IsOrtakligiPage() {
                     )}
                     {/* Mekân formundaki gibi "Fotoğraf Seç" butonu; dosya adı ya da "Dosya seçilmedi" sağında 16px boşlukla */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
-                      <label className="btn-primary justify-center" style={{ minHeight: 44, flexShrink: 0, cursor: 'pointer' }}>
+                      <StdButton variant="primary" as="label" className="justify-center" style={{ flexShrink: 0, cursor: 'pointer' }}>
                         {t('vp.photoPick')}
                         <input type="file" accept={VENUE_PHOTO_ACCEPT} onChange={(e) => { void pickPhoto(e.target.files?.[0]); e.target.value = ''; }} style={{ display: 'none' }} />
-                      </label>
+                      </StdButton>
                       <span style={{ fontSize: '0.78rem', color: '#888', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{photos[0]?.name || t('vp.photoNone')}</span>
                     </div>
                   </div>
@@ -457,13 +457,13 @@ export default function IsOrtakligiPage() {
 
                   {error && <p style={{ color: '#ff6b6b', fontSize: 13, textAlign: 'center' }}>{error}</p>}
 
-                  <button
+                  <StdButton variant="primary"
                     type="submit"
                     disabled={submitting}
-                    className="btn-primary w-full justify-center mt-2 disabled:opacity-70"
+                    className="w-full justify-center mt-2 disabled:opacity-70"
                   >
                     {submitting ? t('partner.sending') : t('partner.submit')}
-                  </button>
+                  </StdButton>
                 </form>
               )}
             </div>

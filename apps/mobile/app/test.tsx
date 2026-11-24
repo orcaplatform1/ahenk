@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { LIKERT, type Question } from '@/components/TestFlow';
-import { Btn, BtnGhost, BtnPrimary, Mono, PageGlow, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
+import { Btn, StdButton, Mono, PageGlow, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { c, glassCard, tw, ll } from '@/theme/theme';
 
 import { useTranslation } from 'react-i18next';
@@ -53,8 +53,8 @@ export default function Test() {
           <Serif style={{ fontSize: 30, marginBottom: 12 }}>{t('test.done')}</Serif>
           <T style={{ color: c.t888, fontSize: 14, lineHeight: 22.75, textAlign: 'center', marginBottom: 8 }}>{t('test.doneBody')}</T>
           <Mono style={{ fontSize: 12, letterSpacing: 1.2, color: c.t555, marginBottom: 32 }}>{t('test.nextIn6')}</Mono>
-          <BtnPrimary label={t('test.seeProfile')} full style={{ marginBottom: 12 }} onPress={() => router.replace('/test-sonuc')} />
-          <BtnGhost label={t('test.backDash')} full onPress={() => router.replace('/(tabs)')} />
+          <StdButton variant="primary" label={t('test.seeProfile')} full style={{ marginBottom: 12 }} onPress={() => router.replace('/test-sonuc')} />
+          <StdButton variant="ghost" label={t('test.backDash')} full onPress={() => router.replace('/(tabs)')} />
         </View>
       </View>
     );
@@ -101,8 +101,8 @@ export default function Test() {
         </View>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, gap: 12 }}>
-        <BtnGhost label={t('reg.backArrow')} disabled={current === 0} style={current === 0 ? { opacity: 0.3 } : undefined} onPress={() => setCurrent(x => Math.max(0, x - 1))} />
-        <BtnPrimary label={submitting ? '…' : current === total - 1 ? t('test.finish') : t('test.next')} style={[{ flex: 1 }, (!has || submitting) && { opacity: 0.3 }]} disabled={!has || submitting}
+        <StdButton variant="ghost" label={t('reg.backArrow')} disabled={current === 0} style={current === 0 ? { opacity: 0.3 } : undefined} onPress={() => setCurrent(x => Math.max(0, x - 1))} />
+        <StdButton variant="primary" label={submitting ? '…' : current === total - 1 ? t('test.finish') : t('test.next')} style={[{ flex: 1 }, (!has || submitting) && { opacity: 0.3 }]} disabled={!has || submitting}
           onPress={() => { if (!has) return; if (current === total - 1) submit(); else setCurrent(x => x + 1); }} />
       </View>
       {!!error && <T style={{ color: tw.accent, fontSize: 12, textAlign: 'center', marginTop: 16 }}>{error}</T>}

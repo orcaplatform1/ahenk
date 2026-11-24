@@ -7,6 +7,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
+import { StdButton } from '@ahenk/ui';
 
 interface KycStatus {
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPICIOUS';
@@ -177,21 +178,21 @@ function ImageUploader({
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
           <span className="text-green-400">✓</span>
           <p className="text-xs text-green-400">{t('kycf.photoUploaded')}</p>
-          <button
+          <StdButton variant="ghost"
             onClick={() => onChange(null as unknown as File)}
-            className="ml-auto btn-ghost"
+            className="ml-auto"
           >
             {t('kycf.retake')}
-          </button>
+          </StdButton>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <button
+          <StdButton variant="ghost"
             onClick={() => cameraRef.current?.click()}
-            className="w-full btn-ghost justify-center"
+            className="w-full justify-center"
           >
             {uploadLabel}
-          </button>
+          </StdButton>
         </div>
       )}
 
@@ -394,9 +395,9 @@ function LivenessRecorder({ onCapture, initialDone, fullName }: { onCapture: (bl
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
           <span className="text-green-400">✓</span>
           <p className="text-xs text-green-400">{t('kycf.videoUploaded')}</p>
-          <button onClick={retake} className="ml-auto btn-ghost">
+          <StdButton variant="ghost" onClick={retake} className="ml-auto">
             {t('kycf.retake')}
-          </button>
+          </StdButton>
         </div>
       )}
 
@@ -423,17 +424,17 @@ function LivenessRecorder({ onCapture, initialDone, fullName }: { onCapture: (bl
           )}
           <div className="flex gap-2">
           {(phase === 'idle' || phase === 'error') && (
-            <button
+            <StdButton variant="ghost"
               onClick={openCamera}
-              className="flex-1 btn-ghost"
+              className="flex-1"
             >
               {t('kycf.uploadVideo')}
-            </button>
+            </StdButton>
           )}
           {phase === 'preview' && (
-            <button onClick={startRecording} className="flex-1 btn-primary">
+            <StdButton variant="primary" onClick={startRecording} className="flex-1">
               {t('kycf.startRec')}
-            </button>
+            </StdButton>
           )}
           </div>
           {(phase === 'idle' || phase === 'error') && (
@@ -613,14 +614,14 @@ export function TabKyc() {
                 </button>
               ))}
             </div>
-            <button type="button" onClick={() => setTypeChosen(true)} className="w-full btn-primary justify-center mt-4">{t('common.continue')}</button>
+            <StdButton variant="primary" type="button" onClick={() => setTypeChosen(true)} className="w-full justify-center mt-4">{t('common.continue')}</StdButton>
           </div>
           ) : (
           <>
           {/* Seçilen belge türü; değiştirilirse yüklenen belge fotoğrafları sıfırlanır */}
           <div className="flex items-center justify-between gap-2">
             <p className="text-[13px] text-[#c9c2b8]">{t('kycf.idType')}: <span className="font-semibold text-[#f4f1ec]">{t(`kycf.type${idType}`)}</span></p>
-            <button type="button" onClick={() => { resetDocs(); setTypeChosen(false); }} className="btn-ghost">{t('prof.change')}</button>
+            <StdButton variant="ghost" type="button" onClick={() => { resetDocs(); setTypeChosen(false); }}>{t('prof.change')}</StdButton>
           </div>
 
           <ImageUploader
@@ -652,13 +653,13 @@ export function TabKyc() {
 
           {error && <p className="text-accent text-sm">{error}</p>}
 
-          <button
+          <StdButton variant="primary"
             onClick={handleSubmit}
             disabled={submitting || !files.idFront || (needsBack && !files.idBack) || !liveness}
-            className="w-full btn-primary justify-center disabled:opacity-50"
+            className="w-full justify-center disabled:opacity-50"
           >
             {submitting ? t('kycf.uploading') : t('kycf.submit')}
-          </button>
+          </StdButton>
 
           {submitting && progress > 0 && (
             <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)' }}>

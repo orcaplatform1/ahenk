@@ -2,15 +2,21 @@
 // Seçim ekranını açar; seçim değiştirme (buluşma türü) ve iptal yalnız buradan yapılır. Seçim Yap, Değiştir ve İptal Et yalnız
 // masa kilitli değilken aktif; kilitli masada üçü de kapalı. Değiştir seçimden 24 saat (Yarın Buluşma'da 3 saat) sonra açılır;
 // iptal eden 24 saat hiçbir türde Seçim Yap'ı kullanamaz; iptalde hak yanmaz. HIG: en az 44 pt dokunma alanı.
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { MasaTuru } from '@/lib/masa';
 import type { MeetingMode, WeeklySelection } from '@/lib/useMasaTabs';
-import { BtnGhost, BtnPrimary, Card, T, Title } from './ui';
+import { StdButton, Card, T, Title } from './ui';
 import { Rings } from './LiveTabs';
 import { showAlert } from './AppAlert';
 import { ll } from '@/theme/theme';
+
+// Kalan süre: X saat Y dakika (dakika yukarı yuvarlanır)
+function changeIn(ms: number): { h: number; m: number } {
+  const total = Math.max(1, Math.ceil(ms / 60000));
+  return { h: Math.floor(total / 60), m: total % 60 };
+}
 
 const TITLE: Record<MasaTuru, string> = { GROUP: 'live.wsGroupTitle', ONE_ON_ONE: 'live.wsOneTitle', KANKA: 'live.wsKankaTitle' };
 const MODE_LABEL: Record<MeetingMode, string> = { TOMORROW: 'live.modeTomorrow', PLANNED: 'live.modeWeekend' };
@@ -24,11 +30,16 @@ export function SelectionCard({ selection, onOpen, onChange, onCancel }: {
   const { t } = useTranslation();
   const [busy, setBusy] = useState<MasaTuru | null>(null);
   const [error, setError] = useState('');
+  // Değiştir kilidi geri sayımı: her saniye yenilenir; süre dolunca metin kalkar, Değiştir aktif olur (kural backend'de aynen)
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
   if (!selection) return null;
   const rows = selection.options.filter((o) => o.selection || o.seated);
   const canPick = selection.options.some((o) => o.hasRight && !o.selection && !o.seated);
   if (rows.length === 0 && !canPick) return null;
-  const now = Date.now();
   const cooling = !!selection.cancelCooldownUntil && Date.parse(selection.cancelCooldownUntil) > now;
   const suspended = !!selection.suspendedUntil && Date.parse(selection.suspendedUntil) > now;
 
@@ -55,7 +66,7 @@ export function SelectionCard({ selection, onOpen, onChange, onCancel }: {
             </View>
             {sel && (
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <BtnGhost
+                <StdButton variant="ghost"
                   label={t('live.selChange')}
                   disabled={busy !== null || o.locked || Date.parse(sel.changeAvailableAt) > now}
                   style={{ flex: 1, minHeight: 44 }}
@@ -64,7 +75,7 @@ export function SelectionCard({ selection, onOpen, onChange, onCancel }: {
                     { text: t('live.selConfirmNo'), style: 'cancel' },
                   ], { large: true, stacked: true })}
                 />
-                <BtnGhost
+                <StdButton variant="ghost"
                   label={t('live.selCancel')}
                   disabled={busy !== null || o.locked}
                   style={{ flex: 1, minHeight: 44 }}
@@ -77,13 +88,13 @@ export function SelectionCard({ selection, onOpen, onChange, onCancel }: {
             )}
             {/* Pasif buton nedeni */}
             {sel && (o.locked || Date.parse(sel.changeAvailableAt) > now) && (
-              <T style={{ fontSize: 12, color: ll.label }}>{t(o.locked ? 'live.selReasonLocked' : sel.mode === 'TOMORROW' ? 'live.selReasonChange3' : 'live.selReasonChange24')}</T>
+              <T style={{ fontSize: 12, color: ll.label }}>{o.locked ? t('live.selReasonLocked') : t('live.selChangeIn', changeIn(Date.parse(sel.changeAvailableAt) - now))}</T>
             )}
           </View>
         );
       })}
       {!!error && <T style={{ fontSize: 12, color: ll.red2 }}>{error}</T>}
-      {canPick && <BtnPrimary label={t('live.selOpen')} style={{ minHeight: 44 }} disabled={cooling || suspended} onPress={onOpen} />}
+      {canPick && <StdButton variant="primary" label={t('live.selOpen')} disabled={cooling || suspended} onPress={onOpen} />}
       {canPick && (suspended || cooling) && <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>{t(suspended ? 'live.selReasonSuspended' : 'live.selReasonCooldown')}</T>}
     </Card>
   );

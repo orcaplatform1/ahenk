@@ -10,7 +10,7 @@ import { LogoutChoice } from '../LogoutChoice';
 const APP_VERSION = '0.1.6';
 import { gColor } from '@/lib/masa';
 import { useMasaTabs } from '@/lib/useMasaTabs';
-import { Btn, BtnGhost, BtnPrimary, BtnTone, Card, Head, Input, ModalBox, Row, Sheet, Switch, T } from '../ui';
+import { Btn, StdButton, BtnTone, Card, Head, Input, ModalBox, Row, Sheet, Switch, T } from '../ui';
 import { getShakeEnabled, setShakeEnabled } from '@/lib/shakePref';
 import { OtpInput } from '../OtpInput';
 import { OtpCountdown, useOtpCountdown } from '../OtpCountdown';
@@ -120,7 +120,7 @@ function CitySelect({ label, value, onChange, cities, optional, placeholder, tit
             </View>
           )}
         </ScrollView>
-        <BtnPrimary label={t('prof.select')} full style={{ marginTop: 16 }} onPress={() => { onChange(tmp); setOpen(false); }} />
+        <StdButton variant="primary" label={t('prof.select')} full style={{ marginTop: 16 }} onPress={() => { onChange(tmp); setOpen(false); }} />
       </Sheet>
     </View>
   );
@@ -337,8 +337,8 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
             <Input secureTextEntry textContentType="password" value={emailPw} onChangeText={v => { setEmailPw(v); setEmailError(''); }} placeholder={t('prof.currentPw')} />
             {!!emailError && <T style={{ color: tw.accent, fontSize: 12 }}>{emailError}</T>}
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <BtnGhost label={t('prof.cancel')} style={{ flex: 1 }} onPress={() => { setEmailMode(false); setEmailError(''); }} />
-              <BtnPrimary label={emailSaving ? '…' : t('prof.save')} style={{ flex: 1 }} disabled={emailSaving} onPress={saveEmail} />
+              <StdButton variant="ghost" label={t('prof.cancel')} style={{ flex: 1 }} onPress={() => { setEmailMode(false); setEmailError(''); }} />
+              <StdButton variant="primary" label={emailSaving ? '…' : t('prof.save')} style={{ flex: 1 }} disabled={emailSaving} onPress={saveEmail} />
             </View>
           </View>
         ) : (
@@ -368,8 +368,8 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
             </View>
             {!!phoneError && <T style={{ color: tw.accent, fontSize: 12 }}>{phoneError}</T>}
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <BtnGhost label={t('prof.cancel')} style={{ flex: 1 }} onPress={() => { setPhoneMode('idle'); setPhoneError(''); setNewPhone(''); }} />
-              <BtnPrimary label={phoneSaving ? '…' : t('prof.sendCode')} style={{ flex: 1 }} disabled={phoneSaving} onPress={sendPhoneOtp} />
+              <StdButton variant="ghost" label={t('prof.cancel')} style={{ flex: 1 }} onPress={() => { setPhoneMode('idle'); setPhoneError(''); setNewPhone(''); }} />
+              <StdButton variant="primary" label={phoneSaving ? '…' : t('prof.sendCode')} style={{ flex: 1 }} disabled={phoneSaving} onPress={sendPhoneOtp} />
             </View>
           </View>
         )}
@@ -381,8 +381,8 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
             {!!phoneError && <T style={{ color: tw.accent, fontSize: 12, textAlign: 'center' }}>{phoneError}</T>}
             <Btn variant="textLink" disabled={phoneCountdown.waiting || phoneSaving} onPress={sendPhoneOtp} label={t('prof.resend')} />
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <BtnGhost label={t('prof.back')} style={{ flex: 1 }} onPress={() => { setPhoneMode('enter'); setPhoneError(''); setOtp(''); phoneCountdown.start(0); }} />
-              <BtnPrimary label={phoneSaving ? '…' : t('prof.verify')} style={{ flex: 1 }} disabled={phoneSaving || otp.length !== 6} onPress={() => verifyPhone()} />
+              <StdButton variant="ghost" label={t('prof.back')} style={{ flex: 1 }} onPress={() => { setPhoneMode('enter'); setPhoneError(''); setOtp(''); phoneCountdown.start(0); }} />
+              <StdButton variant="primary" label={phoneSaving ? '…' : t('prof.verify')} style={{ flex: 1 }} disabled={phoneSaving || otp.length !== 6} onPress={() => verifyPhone()} />
             </View>
           </View>
         )}
@@ -435,8 +435,8 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
           {t('prof.cityWarnPre')} <T style={{ fontSize: 13, color: tw.text }}>{displayPrimary?.name ?? t('prof.yourMainCity')}</T> {t('prof.cityWarnPost')}
         </T>
         <View style={{ gap: 8 }}>
-          <BtnPrimary label="Kabul Ediyorum" full onPress={() => { setActiveConfirm(false); confirmAction.current?.(); confirmAction.current = null; }} />
-          <BtnGhost label="Kabul Etmiyorum" full onPress={() => setActiveConfirm(false)} />
+          <StdButton variant="primary" label="Kabul Ediyorum" full onPress={() => { setActiveConfirm(false); confirmAction.current?.(); confirmAction.current = null; }} />
+          <StdButton variant="ghost" label="Kabul Etmiyorum" full onPress={() => setActiveConfirm(false)} />
         </View>
       </Sheet>
 
@@ -444,7 +444,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
         <T style={{ fontSize: 12, color: ll.label, marginBottom: 12 }}>{t('prof.activeCityInfo')}</T>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <CitySelect label="" value={activeCity} onChange={setActiveCity} cities={cities} optional placeholder={t('reg.pickCityShort')} title={t('prof.activeCityQuestion')} />
-          <BtnPrimary label={savingActive ? '…' : t('prof.save')} disabled={savingActive} style={[{ alignSelf: 'stretch' }, savingActive && { opacity: 0.5 }]} onPress={() => { const v = activeCity || null; askConfirm(() => saveActiveCity(v)); }} />
+          <StdButton variant="primary" label={savingActive ? '…' : t('prof.save')} disabled={savingActive} style={[{ alignSelf: 'stretch' }, savingActive && { opacity: 0.5 }]} onPress={() => { const v = activeCity || null; askConfirm(() => saveActiveCity(v)); }} />
         </View>
         {!!activeCity && (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
@@ -475,8 +475,8 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
             })}
             {!!saveError && <T style={{ fontSize: 14, color: tw.accent }}>{saveError}</T>}
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-              <BtnGhost label={t('prof.cancel')} style={{ flex: 1 }} onPress={() => setEditingVenue(false)} />
-              <BtnPrimary label={saving ? t('prof.saving') : t('prof.save')} style={{ flex: 1 }} disabled={saving} onPress={saveVenue} />
+              <StdButton variant="ghost" label={t('prof.cancel')} style={{ flex: 1 }} onPress={() => setEditingVenue(false)} />
+              <StdButton variant="primary" label={saving ? t('prof.saving') : t('prof.save')} style={{ flex: 1 }} disabled={saving} onPress={saveVenue} />
             </View>
           </View>
         ) : <Row label={t('prof.preference')} value={t(VENUE_LABELS[displayVenue])} />}
@@ -511,8 +511,8 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
             </Pressable>
           ))}
         </Card>
-        <BtnGhost label={t('nav.logout')} style={accountBtn.box} textStyle={accountBtn.text} onPress={() => setLogoutOpen(true)} />
-        <BtnGhost label={logoutAllBusy ? t('prof.loggingOut') : t('prof.logoutAll')} style={accountBtn.box} textStyle={accountBtn.text} disabled={logoutAllBusy} onPress={logoutAll} />
+        <StdButton variant="ghost" label={t('nav.logout')} style={accountBtn.box} textStyle={accountBtn.text} onPress={() => setLogoutOpen(true)} />
+        <StdButton variant="ghost" label={logoutAllBusy ? t('prof.loggingOut') : t('prof.logoutAll')} style={accountBtn.box} textStyle={accountBtn.text} disabled={logoutAllBusy} onPress={logoutAll} />
         {/* Çıkış ile Hesabımı Sil arasında küçük uygulama logosu ve sürüm */}
         <View style={{ alignItems: 'center', gap: 6, paddingVertical: 4 }}>
           <Image source={require('@/assets/app-icon-small.webp')} style={{ width: 40, height: 40, borderRadius: 10 }} accessibilityLabel="Ahenk" />
@@ -521,7 +521,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
         {/* En alttaki öğe: Hesabımı Sil (ikonsuz, uygulamanın tehlike rengi #e74c3c — Kankalıktan Çıkar / iade butonlarıyla aynı) */}
         {deletePending
           ? <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>{t('prof.deletePending')}</T>
-          : <BtnGhost label={t('prof.deleteMine')} redDot style={accountBtn.box} textStyle={[accountBtn.text, { color: tw.primaryHover }]} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
+          : <StdButton variant="ghost" label={t('prof.deleteMine')} redDot style={accountBtn.box} textStyle={[accountBtn.text, { color: tw.primaryHover }]} onPress={() => { setDeleteError(''); setDeleteOpen(true); }} />}
       </View>
 
       <LogoutChoice visible={logoutOpen} onClose={() => setLogoutOpen(false)} firstName={user.firstName} onLoggedOut={onLoggedOut} remember={rememberAllowed} />

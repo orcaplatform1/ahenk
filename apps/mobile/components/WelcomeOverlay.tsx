@@ -1,5 +1,5 @@
 // app/giris ve app/kayit "Hoş geldin" katmanı: pt-[18%] (genişliğin %18'i), arka plan tamamen siyah (ışıma yok, durum/gezinme çubuğu altı dahil),
-// açılış ekranı AHENK yazılı logosu (ölçek 0,85 → 1, 0,1 sn gecikme, 0,4 sn), "Hoş geldin," (y 12 → 0, 0,4 sn gecikme), ad soyad (y 6 → 0, 0,55 sn gecikme, 0,35 sn)
+// ana logo (uygulama ikonundaki işaret, saydam zemin; assets/logo-welcome.webp) (ölçek 0,85 → 1, 0,1 sn gecikme, 0,4 sn), "Hoş geldin," (y 12 → 0, 0,4 sn gecikme), ad soyad (y 6 → 0, 0,55 sn gecikme, 0,35 sn)
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, Modal, View } from 'react-native';
 import { Serif } from './ui';
@@ -20,7 +20,7 @@ export function WelcomeOverlay({ visible, name }: { visible: boolean; name: stri
         {visible && (
           <>
             <Step delay={100} duration={400} scale style={{ alignItems: 'center', marginBottom: 56 }}>
-              <Image source={require('@/assets/start_logo.jpg')} style={{ width: 120, height: 120, borderRadius: 60 }} />
+              <Image source={require('@/assets/logo-welcome.webp')} style={{ width: 120, height: 120 }} resizeMode="contain" />
             </Step>
             <Step delay={400} duration={400} dy={12} style={{ marginBottom: 4 }}><Serif style={{ fontSize: 36 }}>{t('login.welcome')}</Serif></Step>
             <Step delay={550} duration={350} dy={6}><Serif style={{ fontSize: 36, textAlign: 'center' }}>{name}</Serif></Step>

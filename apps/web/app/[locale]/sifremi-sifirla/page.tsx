@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import OtpInput from '@/components/ui/OtpInput';
 import { OtpCountdown, useOtpCountdown } from '@/lib/otpCountdown';
+import { StdButton } from '@ahenk/ui';
 
 function errorText(e: unknown, tooMany: string): string {
   const msg = (e as Error).message;
@@ -73,7 +74,7 @@ function SifremiSifirlaForm() {
     return (
       <div className="ll-card text-center flex flex-col items-center gap-4">
         <p className="text-[#c9c2b8] text-sm">{t('resetPw.invalidLink')}</p>
-        <Link href="/sifremi-unuttum" className="btn-primary">{t('resetPw.requestCode')}</Link>
+        <StdButton variant="primary" as={Link} href="/sifremi-unuttum">{t('resetPw.requestCode')}</StdButton>
       </div>
     );
   }
@@ -156,14 +157,14 @@ function SifremiSifirlaForm() {
             {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
             </div>
             <div className="flex flex-col gap-3">
-            <button
+            <StdButton variant="primary"
               type="button"
               onClick={handleSubmit}
               disabled={loading || code.length !== 6}
-              className="w-full btn-primary mt-1 disabled:opacity-40"
+              className="w-full mt-1 disabled:opacity-40"
             >
               {loading ? t('resetPw.saving') : t('resetPw.reset')}
-            </button>
+            </StdButton>
             <button
               type="button"
               onClick={handleResend}
@@ -240,9 +241,9 @@ export default function SifremiSifirlaPage() {
         </Suspense>
 
         <div className="mt-8 flex justify-center">
-          <Link href="/giris" className="btn-ghost">
+          <StdButton variant="ghost" as={Link} href="/giris">
             {t('resetPw.backToLogin')}
-          </Link>
+          </StdButton>
         </div>
       </div>
     </div>

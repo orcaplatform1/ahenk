@@ -1,11 +1,11 @@
 // Sistem uyarı penceresi (Alert.alert) yerine Ahenk paletinde özel pencere. Arka plan, başlık ve yazı paletten (sheet / ll);
-// butonlar mevcut stiller: tek buton "Tamam" (BtnPrimary), vazgeç (BtnGhost), onay (BtnPrimary), silme / ban gibi geri alınamaz işlem
+// butonlar mevcut stiller: tek buton "Tamam" (StdButton primary), vazgeç (StdButton ghost), onay (StdButton primary), silme / ban gibi geri alınamaz işlem
 // (BtnTone danger). HIG: kısa başlık, iptal seçeneği, en az 44 pt dokunma alanı; geri tuşu / dışarı dokunma vazgeç sayılır.
 // Kullanım: showAlert(başlık, mesaj?, butonlar?) — Alert.alert ile aynı imza; pencere kök yerleşimdeki <AppAlertHost /> ile çizilir.
 import i18n from '@/lib/i18n';
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
-import { BtnGhost, BtnPrimary, BtnTone, Serif, T } from './ui';
+import { StdButton, BtnTone, Serif, T } from './ui';
 import { ll, sheet } from '@/theme/theme';
 
 export interface AlertButton { text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void }
@@ -46,9 +46,9 @@ export function AppAlertHost() {
             <View style={{ flexDirection: row ? 'row' : 'column', alignItems: stacked ? 'center' : undefined, gap: 12, marginTop: 8 }}>
               {(row ? [...cur.buttons].sort((a, b) => (a.style === 'cancel' ? -1 : b.style === 'cancel' ? 1 : 0)) : cur.buttons).map((b) => {
                 const props = { label: b.text, onPress: () => close(b), style: row ? { flex: 1 } : stacked ? { width: '100%' as const, maxWidth: 280 } : { width: '100%' as const } };
-                if (b.style === 'cancel') return <BtnGhost key={b.text} {...props} />;
+                if (b.style === 'cancel') return <StdButton variant="ghost" key={b.text} {...props} />;
                 if (b.style === 'destructive') return <BtnTone key={b.text} tone="danger" {...props} />;
-                return <BtnPrimary key={b.text} {...props} />;
+                return <StdButton variant="primary" key={b.text} {...props} />;
               })}
             </View>
           </Pressable>

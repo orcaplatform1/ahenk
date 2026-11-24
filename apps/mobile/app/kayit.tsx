@@ -19,7 +19,7 @@ import { OtpInput } from '@/components/OtpInput';
 import { DateField, FieldLabel, ListPicker } from '@/components/Pickers';
 import { TestFlow, type Question } from '@/components/TestFlow';
 import { ContactPicker } from '@/components/profil/RehberTab';
-import { Btn, BtnGhost, ErrorText, Eyebrow, Input, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
+import { Btn, StdButton, ErrorText, Eyebrow, Input, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { OtpCountdown, OtpNoticeAction, otpNoticeOf, useOtpCountdown, type OtpNoticeCode } from '@/components/OtpCountdown';
 import { c, ll, tw, tw4 } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
@@ -372,7 +372,7 @@ export default function Kayit() {
               <Input form keyboardType="number-pad" value={f.contactInput} onChangeText={v => set('contactInput', v.replace(/\D/g, '').slice(0, 10))} placeholder="5XX XXX XX XX" onSubmitEditing={addContact} style={{ flex: 1, fontSize: 13 }} />
               <Btn variant="addSquare" onPress={addContact} label={t('reg.add')} />
             </View>
-            <BtnGhost label={t('block.fromContacts')} full disabled={f.contactNumbers.length >= 50} onPress={() => setPicker(true)} />
+            <StdButton variant="ghost" label={t('block.fromContacts')} full disabled={f.contactNumbers.length >= 50} onPress={() => setPicker(true)} />
             {f.contactNumbers.length > 0 && (
               <View style={{ gap: 8 }}>
                 {f.contactNumbers.map(n => (

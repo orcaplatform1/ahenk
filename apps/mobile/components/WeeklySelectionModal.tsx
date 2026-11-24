@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import type { MasaTuru } from '@/lib/masa';
 import type { MeetingMode, WeeklySelection } from '@/lib/useMasaTabs';
-import { BtnGhost, BtnPrimary, ModalBox, T } from './ui';
+import { StdButton, ModalBox, T } from './ui';
 import { Rings } from './LiveTabs';
 import { ll } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
@@ -99,8 +99,8 @@ export function WeeklySelectionModal({ selection, onSubmit, open, onClose }: {
       </View>
       {!!error && <T style={{ fontSize: 12, color: ll.red2, marginTop: 8 }}>{error}</T>}
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
-        <BtnGhost label={t('live.wsLater')} style={{ flex: 1, minHeight: 44 }} onPress={close} />
-        <BtnPrimary label={sending ? '…' : t('live.wsConfirm')} disabled={disabled} style={[{ flex: 1, minHeight: 44 }, disabled && { opacity: 0.5 }]} onPress={submit} />
+        <StdButton variant="ghost" label={t('live.wsLater')} style={{ flex: 1 }} onPress={close} />
+        <StdButton variant="primary" label={sending ? '…' : t('live.wsConfirm')} disabled={disabled} style={[{ flex: 1 }, disabled && { opacity: 0.5 }]} onPress={submit} />
       </View>
     </ModalBox>
   );

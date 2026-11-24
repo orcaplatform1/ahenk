@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { documentLang } from '../../lib/lang';
+import { StdButton } from '../StdButton';
 
 type MeetingKind = 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
 interface CardData {
@@ -367,12 +368,12 @@ export function ShareCardModal({ meetingId, apiBase, headers, onClose }: {
             style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
             <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 340, background: '#121212', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <p id="story-notice" style={{ margin: 0, fontSize: 14, color: '#f4f1ec', fontFamily: 'Inter, sans-serif', lineHeight: 1.55, textAlign: 'center' }}>{t('share.linkCopied')}</p>
-              <button type="button" className="btn-primary justify-center" style={{ minHeight: 44, width: '100%' }} onClick={() => { setStoryNotice(false); shareStory(); }}>{t('share.continue')}</button>
+              <StdButton variant="primary" type="button" className="justify-center" style={{ width: '100%' }} onClick={() => { setStoryNotice(false); shareStory(); }}>{t('share.continue')}</StdButton>
             </div>
           </div>
         )}
         {hint && <p style={{ margin: 0, fontSize: 12, color: '#a39c93', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>{hint}</p>}
-        <button type="button" className="btn-ghost justify-center" onClick={onClose} style={{ minHeight: 44, width: '100%' }}>{t('share.close')}</button>
+        <StdButton variant="ghost" type="button" className="justify-center" onClick={onClose} style={{ width: '100%' }}>{t('share.close')}</StdButton>
       </div>
     </div>
   );

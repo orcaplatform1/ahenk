@@ -7,7 +7,7 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, settleRefresh } from '@/lib/api';
 import { forgetDevice, rememberDevice } from '@/lib/session';
-import { BtnGhost, BtnPrimary, Sheet, T } from './ui';
+import { StdButton, Sheet, T } from './ui';
 
 import { useTranslation } from 'react-i18next';
 export function LogoutChoice({ visible, onClose, firstName = '', onLoggedOut, remember: allowRemember = true }: { visible: boolean; onClose: () => void; firstName?: string; onLoggedOut: () => void; remember?: boolean }) {
@@ -26,9 +26,9 @@ export function LogoutChoice({ visible, onClose, firstName = '', onLoggedOut, re
     <Sheet visible={visible} onClose={onClose}>
       <T w={700} style={{ fontSize: 16, marginBottom: 16, textAlign: 'center' }}>{t('nav.logout')}</T>
       <View style={{ gap: 12 }}>
-        {allowRemember && <BtnPrimary label={t('prof.rememberDevice')} full onPress={remember} />}
-        <BtnGhost label={t('prof.forgetDevice')} full onPress={forget} />
-        <BtnGhost label={t('masa.dismiss')} full onPress={onClose} />
+        {allowRemember && <StdButton variant="primary" label={t('prof.rememberDevice')} full onPress={remember} />}
+        <StdButton variant="ghost" label={t('prof.forgetDevice')} full onPress={forget} />
+        <StdButton variant="ghost" label={t('masa.dismiss')} full onPress={onClose} />
       </View>
     </Sheet>
   );

@@ -5,7 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { api } from '@/lib/api';
-import { Btn, BtnGhost, BtnPrimary, HIT, Sheet, T } from '../ui';
+import { Btn, StdButton, HIT, Sheet, T } from '../ui';
 import { c, gender as G, sans, tw } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_PHONE_COUNTRY, formatNamed, toE164 } from '@ahenk/shared';
@@ -132,14 +132,14 @@ export function KankaSection() {
         {!state.kycApproved ? (
           <View style={{ gap: 12 }}>
             <T style={{ fontSize: 13, color: c.tAaa, lineHeight: 19.5 }}>{t('kanka.verifyFirst')}</T>
-            <BtnPrimary label={t('kanka.verifyMe')} full onPress={() => { setSheet(null); router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } }); }} />
+            <StdButton variant="primary" label={t('kanka.verifyMe')} full onPress={() => { setSheet(null); router.navigate({ pathname: '/(tabs)/profilim', params: { tab: 'kyc' } }); }} />
           </View>
         ) : sentLink ? (
           <View style={{ gap: 12 }}>
             <T style={{ fontSize: 13, color: c.ok }}>{t('kanka.sentOk')}</T>
             <T style={{ fontSize: 12, color: c.t888, lineHeight: 18 }}>{t('kanka.sentShare')}</T>
             <CopyLink link={sentLink} />
-            <BtnGhost label={t('kanka.ok')} full onPress={() => setSheet(null)} />
+            <StdButton variant="ghost" label={t('kanka.ok')} full onPress={() => setSheet(null)} />
           </View>
         ) : (
           <View style={{ gap: 12 }}>
@@ -153,8 +153,8 @@ export function KankaSection() {
             </View>
             {!!msg && <T style={{ fontSize: 12, lineHeight: 18, color: tw.accent }}>{msg}</T>}
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <BtnGhost label={t('kanka.cancel')} style={{ flex: 1 }} onPress={() => setSheet(null)} />
-              <BtnPrimary label={busy ? '…' : t('kanka.sendInvite')} style={[{ flex: 1 }, busy && { opacity: 0.5 }]} disabled={busy} onPress={sendInvite} />
+              <StdButton variant="ghost" label={t('kanka.cancel')} style={{ flex: 1 }} onPress={() => setSheet(null)} />
+              <StdButton variant="primary" label={busy ? '…' : t('kanka.sendInvite')} style={[{ flex: 1 }, busy && { opacity: 0.5 }]} disabled={busy} onPress={sendInvite} />
             </View>
           </View>
         )}
@@ -170,8 +170,8 @@ export function KankaSection() {
             </View>
             {!!msg && <T style={{ fontSize: 12, lineHeight: 18, color: tw.accent, marginBottom: 10 }}>{msg}</T>}
             <View style={{ gap: 8 }}>
-              <BtnPrimary label={busy ? '…' : t('kanka.accept')} full disabled={busy} style={busy ? { opacity: 0.5 } : undefined} onPress={() => respond('accept')} />
-              <BtnGhost label={t('kanka.cancel')} full disabled={busy} onPress={() => respond('decline')} />
+              <StdButton variant="primary" label={busy ? '…' : t('kanka.accept')} full disabled={busy} style={busy ? { opacity: 0.5 } : undefined} onPress={() => respond('accept')} />
+              <StdButton variant="ghost" label={t('kanka.cancel')} full disabled={busy} onPress={() => respond('decline')} />
             </View>
           </>
         )}
@@ -192,7 +192,7 @@ export function KankaSection() {
             </T>
             {!!msg && <T style={{ fontSize: 12, lineHeight: 18, color: tw.accent, marginBottom: 10 }}>{msg}</T>}
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <BtnGhost label={t('kanka.close')} style={{ flex: 1 }} onPress={() => setSheet(null)} />
+              <StdButton variant="ghost" label={t('kanka.close')} style={{ flex: 1 }} onPress={() => setSheet(null)} />
               {!state.kanka.locked && (
                 <Btn variant="dangerPill" onPress={unlink} disabled={busy} label={busy ? '…' : t('kanka.leave')} />
               )}

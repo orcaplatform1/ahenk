@@ -2,7 +2,7 @@
 // saniyeden (resendSeconds) başlar. Kod gönderen bütün mobil ekranlar bu hook'u ve OtpCountdown bileşenini kullanır.
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { BtnGhost, T } from './ui';
+import { StdButton, T } from './ui';
 import { ll } from '@/theme/theme';
 
 import { useTranslation } from 'react-i18next';
@@ -66,6 +66,6 @@ export function OtpNoticeAction({ code }: { code: OtpNoticeCode | null }) {
   const router = useRouter();
   if (!code) return null;
   return code === 'PHONE_NOT_REGISTERED'
-    ? <BtnGhost full label={t('otp.register')} onPress={() => router.push('/kayit')} />
-    : <BtnGhost full label={t('otp.login')} onPress={() => router.replace('/giris')} />;
+    ? <StdButton variant="ghost" full label={t('otp.register')} onPress={() => router.push('/kayit')} />
+    : <StdButton variant="ghost" full label={t('otp.login')} onPress={() => router.replace('/giris')} />;
 }

@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { isAdminLocked, onAdminLock } from '@/lib/adminLock';
-import { BtnPrimary, Serif, T } from './ui';
+import { StdButton, Serif, T } from './ui';
 import { ll } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -73,7 +73,7 @@ export function PermissionIntro() {
               </View>
             ))}
           </ScrollView>
-          <BtnPrimary label={t('common.continue')} full disabled={busy} style={{ minHeight: 44 }} onPress={proceed} />
+          <StdButton variant="primary" label={t('common.continue')} full disabled={busy} onPress={proceed} />
         </View>
       </View>
     </Modal>

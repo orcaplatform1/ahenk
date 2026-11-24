@@ -4,14 +4,14 @@ import { BackHandler, Platform, Pressable, ScrollView, Share, View } from 'react
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Rect } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '@/lib/api';
 import { payInfo, openStoreSubscriptions, restoreStorePurchases, startPurchase } from '@/lib/purchase';
 import { openLegal } from '@/lib/links';
 import { showAlert } from '@/components/AppAlert';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
-import { Btn, BtnGhost, BtnPrimary, Card, Head, MaintenanceNotice, Serif, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
+import { Btn, StdButton, Card, Head, MaintenanceNotice, Serif, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
 import { useWinback } from '@/components/Winback';
 import { c, ll, sans, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
@@ -123,8 +123,8 @@ export default function Paketim() {
   }, [detail]));
 
   function copyCode() {
-    if (stats?.referralCode == null) return;
-    Clipboard.setStringAsync(String(stats.referralCode)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+    if (!stats?.inviteLink) return;
+    Clipboard.setStringAsync(stats.inviteLink).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
   }
   function shareInvite() {
     if (!stats?.inviteLink) return;
@@ -258,7 +258,7 @@ export default function Paketim() {
                     <T style={{ fontSize: 12, color: ll.text, textDecorationLine: 'underline' }}>{t('footer.privacy')}</T>
                   </Pressable>
                 </View>
-                <BtnGhost full label={restoring ? t('pkg.restoring') : t('pkg.restore')} disabled={restoring} style={{ minHeight: 44 }} onPress={restore} />
+                <StdButton variant="ghost" full label={restoring ? t('pkg.restoring') : t('pkg.restore')} disabled={restoring} onPress={restore} />
               </View>
             )}
           </Card>
@@ -282,13 +282,24 @@ export default function Paketim() {
                 <View style={{ gap: 8 }}>
                   <T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.myCode')}</T>
                   <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                    <View style={{ flex: 1, minHeight: 44, justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingHorizontal: 14 }}>
-                      <T w={600} selectable style={{ fontSize: 15, letterSpacing: 1.8, color: ll.text }}>{stats.referralCode}</T>
+                    {/* Tam davet linki; sağdaki kopyala ikonu linkin tamamını panoya kopyalar */}
+                    <View style={{ flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingLeft: 14 }}>
+                      <T w={600} selectable style={{ flex: 1, fontSize: 13, color: ll.text, paddingVertical: 11 }}>{stats.inviteLink}</T>
+                      <Pressable onPress={copyCode} accessibilityRole="button" accessibilityLabel={t('loyalty.copy')}
+                        style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
+                        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                          <Rect x={9} y={9} width={12} height={12} rx={2} />
+                          <Path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+                        </Svg>
+                      </Pressable>
+                      {copied && (
+                        <View pointerEvents="none" accessibilityLiveRegion="polite" style={{ position: 'absolute', right: 6, top: -30, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999, backgroundColor: ll.bg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
+                          <T style={{ fontSize: 12, color: ll.text }}>{t('loyalty.copied')}</T>
+                        </View>
+                      )}
                     </View>
-                    <BtnGhost label={copied ? t('loyalty.copied') : t('loyalty.copy')} style={{ minHeight: 44 }} onPress={copyCode} />
-                    <BtnPrimary label={t('loyalty.share')} style={{ minHeight: 44 }} onPress={shareInvite} />
+                    <StdButton variant="primary" label={t('loyalty.share')} onPress={shareInvite} />
                   </View>
-                  <T selectable style={{ fontSize: 12, color: c.tAaa }}>{stats.inviteLink}</T>
                   <T w={600} style={{ fontSize: 14, color: ll.text }}>{t('loyalty.toNext', { count: stats.invitesToNextReward ?? 3 })}</T>
                   <T style={{ color: c.tAaa, fontSize: 12, lineHeight: 18 }}>{t('loyalty.rule')}</T>
                   {stats.pendingRewards?.map((r) => (
@@ -296,7 +307,7 @@ export default function Paketim() {
                       <T w={600} style={{ fontSize: 14, color: ll.text }}>{t('loyalty.rewardTitle')}</T>
                       <View style={{ flexDirection: 'row', gap: 8 }}>
                         {([['GROUP', 'loyalty.rewardGroup'], ['ONE_ON_ONE', 'loyalty.rewardOne'], ['KANKA', 'loyalty.rewardKanka']] as const).map(([type, label]) => (
-                          <BtnGhost key={type} label={t(label)} disabled={claiming} style={{ flex: 1, minHeight: 44, opacity: claiming ? 0.5 : 1 }} onPress={() => claimReward(r.id, type)} />
+                          <StdButton variant="ghost" key={type} label={t(label)} disabled={claiming} style={{ flex: 1, opacity: claiming ? 0.5 : 1 }} onPress={() => claimReward(r.id, type)} />
                         ))}
                       </View>
                     </View>

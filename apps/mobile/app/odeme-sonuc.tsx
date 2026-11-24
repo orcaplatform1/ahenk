@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
-import { BtnGhost, BtnPrimary, PageGlow, Serif, T, ScreenGlow } from '@/components/ui';
+import { StdButton, PageGlow, Serif, T, ScreenGlow } from '@/components/ui';
 import { tw } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -30,8 +30,8 @@ export default function OdemeSonuc() {
       )}
       <Serif style={{ fontSize: 36, textAlign: 'center' }}>{ok ? t('paySuccess.title') : t('payFail.title')}</Serif>
       <T style={{ color: '#777', fontSize: 14 }}>{ok ? t('paySuccess.body') : t('payFail.body')}</T>
-      {ok ? <BtnPrimary label="Dashboard'a Git" style={{ alignSelf: 'center', marginTop: 8 }} onPress={() => router.replace('/(tabs)')} />
-        : <BtnGhost label={t('payFail.back')} style={{ alignSelf: 'center', marginTop: 8 }} onPress={() => router.replace('/(tabs)/paketim')} />}
+      {ok ? <StdButton variant="primary" label="Dashboard'a Git" style={{ alignSelf: 'center', marginTop: 8 }} onPress={() => router.replace('/(tabs)')} />
+        : <StdButton variant="ghost" label={t('payFail.back')} style={{ alignSelf: 'center', marginTop: 8 }} onPress={() => router.replace('/(tabs)/paketim')} />}
       {ok && <T style={{ color: '#444', fontSize: 12 }}>{t('paySuccess.redirect')}</T>}
     </View>
   );

@@ -4,7 +4,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-nat
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
-import { BtnGhost, Card, ErrorText, Head, Mono, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
+import { StdButton, Card, ErrorText, Head, Mono, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { unreadBus } from './_layout';
 import { c, ll, llColumn, tw, liveGlow } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
@@ -93,7 +93,7 @@ export default function Bildirimler() {
             {/* Işıma listenin içeriğinde: üst dolgu ve yan dolgu kadar kaydırılarak içeriğin sağ üst köşesine hizalanır */}
             <Glow top={liveGlow.offset - insets.top - llColumn.padTop} right={liveGlow.offset - llColumn.padH} />
             <View style={{ marginBottom: 16 }}><KycNoticeCard /></View>
-            <Head title={t('tabs.notifications')} right={items.some((n) => !n.read) ? <BtnGhost label={t('notif.readAll')} onPress={readAll} style={{ paddingHorizontal: 14 }} /> : undefined} />
+            <Head title={t('tabs.notifications')} right={items.some((n) => !n.read) ? <StdButton variant="ghost" label={t('notif.readAll')} onPress={readAll} style={{ paddingHorizontal: 14 }} /> : undefined} />
             <ErrorText>{error}</ErrorText>
           </View>
         }

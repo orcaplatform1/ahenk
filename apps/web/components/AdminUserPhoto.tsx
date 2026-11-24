@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { AMBER, BORDER, MUTED, RED, SANS, TEXT } from '@/lib/adminTheme';
+import { StdButton } from '@ahenk/ui';
 
 // Yönetim paneli: kullanıcı profil fotoğrafı. Basınca tam ekran büyük görünüm; büyük görünümde "Sil" → onay penceresi.
 // Önceki fotoğraf ihlali yoksa onaylanınca fotoğraf silinir, kullanıcıya uyarı push'u gider (ihlal uyarı olarak kaydedilir);
@@ -89,7 +90,7 @@ export function AdminUserPhoto({ userId, photoUrl, size = 72, gender, initials, 
                 )}
                 {error && <p style={{ margin: 0, fontSize: 12, color: RED }}>{error}</p>}
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" onClick={() => setConfirm(null)} className="btn-ghost flex-1 justify-center" style={{ minHeight: 40 }}>Vazgeç</button>
+                  <StdButton variant="ghost" type="button" onClick={() => setConfirm(null)} className="flex-1 justify-center">Vazgeç</StdButton>
                   <button type="button" onClick={() => void doDelete()} disabled={busy || (confirm.prior > 0 && !days)}
                     style={{ flex: 1, minHeight: 40, borderRadius: 8, cursor: 'pointer', background: RED, border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, opacity: busy || (confirm.prior > 0 && !days) ? 0.5 : 1, fontFamily: SANS }}>
                     {busy ? '…' : 'Onayla'}

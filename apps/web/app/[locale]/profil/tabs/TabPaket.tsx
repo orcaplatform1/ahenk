@@ -12,6 +12,7 @@ import MaintenanceNotice from '@/components/MaintenanceNotice';
 import TcknModal from '@/components/paket/TcknModal';
 import { APP_STORE_URL, PLAY_STORE_URL, devicePlatform, openAppOrStore } from '@/lib/appLinks';
 import { AMBER, BuyButton, CARDS, Check, PRIME_PLANS, PaketKarti, type CardKey } from '@/components/paket/PaketKarti';
+import { StdButton } from '@ahenk/ui';
 
 // Aktif paket / abonelik (yalnız kullanıcının kendi aldıkları)
 interface Subscription {
@@ -82,8 +83,8 @@ export function TabPaket({ maintenanceMode = false }: Props) {
   const [claiming, setClaiming] = useState(false);
 
   function copyCode() {
-    if (referralStats?.referralCode == null) return;
-    navigator.clipboard?.writeText(String(referralStats.referralCode)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+    if (!referralStats?.inviteLink) return;
+    navigator.clipboard?.writeText(referralStats.inviteLink).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
   }
 
   async function shareInvite() {
@@ -262,13 +263,26 @@ export function TabPaket({ maintenanceMode = false }: Props) {
           <div className="flex flex-col gap-2">
             <p className="text-xs text-[#c9c2b8]">{t('loyalty.myCode')}</p>
             <div className="flex gap-2 items-center">
-              <span className="ll-mono" style={{ flex: 1, minWidth: 0, padding: '11px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 15, letterSpacing: '0.12em', color: '#f5f5f5' }}>
-                {referralStats.referralCode}
-              </span>
-              <button type="button" onClick={copyCode} className="btn-ghost justify-center" style={{ minHeight: 44 }}>{copied ? t('loyalty.copied') : t('loyalty.copy')}</button>
-              <button type="button" onClick={shareInvite} className="btn-primary justify-center" style={{ minHeight: 44 }}>{t('loyalty.share')}</button>
+              {/* Tam davet linki; sağdaki kopyala ikonu linkin tamamını panoya kopyalar */}
+              <div style={{ position: 'relative', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4, padding: '0 4px 0 14px', borderRadius: 12, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <span className="ll-mono" style={{ flex: 1, minWidth: 0, padding: '11px 0', fontSize: 13, color: '#f5f5f5', wordBreak: 'break-all' }}>
+                  {referralStats.inviteLink}
+                </span>
+                <button type="button" onClick={copyCode} aria-label={t('loyalty.copy')} title={t('loyalty.copy')}
+                  style={{ flexShrink: 0, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#f5f5f5', cursor: 'pointer' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="12" height="12" rx="2" />
+                    <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+                  </svg>
+                </button>
+                {copied && (
+                  <span role="status" style={{ position: 'absolute', right: 6, top: -30, padding: '4px 10px', borderRadius: 999, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.14)', fontSize: 12, color: '#f4f1ec', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+                    {t('loyalty.copied')}
+                  </span>
+                )}
+              </div>
+              <StdButton variant="primary" type="button" onClick={shareInvite} className="justify-center">{t('loyalty.share')}</StdButton>
             </div>
-            <p className="text-xs text-[#a39c93]" style={{ wordBreak: 'break-all' }}>{referralStats.inviteLink}</p>
             <p className="text-sm font-semibold text-[#f4f1ec]">{t('loyalty.toNext', { count: referralStats.invitesToNextReward ?? 3 })}</p>
             <p style={{ color: '#aaa', fontSize: 12, lineHeight: 1.5, margin: 0 }}>{t('loyalty.rule')}</p>
             {referralStats.pendingRewards?.map((r) => (
@@ -276,9 +290,9 @@ export function TabPaket({ maintenanceMode = false }: Props) {
                 <p className="text-sm font-semibold text-[#f4f1ec]" style={{ margin: 0 }}>{t('loyalty.rewardTitle')}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {([['GROUP', 'loyalty.rewardGroup'], ['ONE_ON_ONE', 'loyalty.rewardOne'], ['KANKA', 'loyalty.rewardKanka']] as const).map(([type, label]) => (
-                    <button key={type} type="button" disabled={claiming} onClick={() => claimReward(r.id, type)} className="btn-ghost justify-center disabled:opacity-50" style={{ minHeight: 44, fontSize: 12 }}>
+                    <StdButton variant="ghost" key={type} type="button" disabled={claiming} onClick={() => claimReward(r.id, type)} className="justify-center disabled:opacity-50">
                       {t(label)}
-                    </button>
+                    </StdButton>
                   ))}
                 </div>
               </div>
@@ -335,11 +349,11 @@ export function TabPaket({ maintenanceMode = false }: Props) {
               {/* Mobil: önce ahenk:// ile uygulama, 1,5 sn'de açılmazsa mağaza; masaüstü: iki mağaza butonu */}
               {devicePlatform() === 'desktop' ? (
                 <div className="flex gap-2">
-                  <a href={APP_STORE_URL || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!APP_STORE_URL} className="btn-primary flex-1 justify-center" style={{ minHeight: 44, ...(APP_STORE_URL ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>App Store</a>
-                  <a href={PLAY_STORE_URL || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!PLAY_STORE_URL} className="btn-primary flex-1 justify-center" style={{ minHeight: 44, ...(PLAY_STORE_URL ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>Play Store</a>
+                  <StdButton variant="primary" as="a" href={APP_STORE_URL || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!APP_STORE_URL} className="flex-1 justify-center" style={{ ...(APP_STORE_URL ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>App Store</StdButton>
+                  <StdButton variant="primary" as="a" href={PLAY_STORE_URL || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!PLAY_STORE_URL} className="flex-1 justify-center" style={{ ...(PLAY_STORE_URL ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>Play Store</StdButton>
                 </div>
               ) : (
-                <button onClick={() => openAppOrStore(devicePlatform() === 'ios' ? 'ios' : 'android')} className="btn-primary w-full justify-center" style={{ minHeight: 44 }}>{t('pkg.openApp')}</button>
+                <StdButton variant="primary" onClick={() => openAppOrStore(devicePlatform() === 'ios' ? 'ios' : 'android')} className="w-full justify-center">{t('pkg.openApp')}</StdButton>
               )}
             </div>
           )}

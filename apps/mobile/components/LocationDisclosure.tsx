@@ -6,7 +6,7 @@
 import React from 'react';
 import { Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BtnGhost, BtnPrimary, Serif, T } from './ui';
+import { StdButton, Serif, T } from './ui';
 import { ll } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -33,8 +33,8 @@ export function LocationDisclosure({ visible, onContinue, onCancel }: { visible:
           ))}
         </ScrollView>
         <View style={{ gap: 12 }}>
-          <BtnPrimary label={t('common.continue')} full style={{ minHeight: 44 }} onPress={onContinue} />
-          <BtnGhost label={t('locd.notNow')} full style={{ minHeight: 44 }} onPress={onCancel} />
+          <StdButton variant="primary" label={t('common.continue')} full onPress={onContinue} />
+          <StdButton variant="ghost" label={t('locd.notNow')} full onPress={onCancel} />
         </View>
       </View>
     </Modal>

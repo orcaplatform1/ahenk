@@ -205,6 +205,10 @@ export const masaKart = {
   person: { avatar: 64, rowGap: 16, colGap: 12, name: 13, nameColor: '#f4f1ec', job: 12, jobColor: 'rgba(255,255,255,0.65)' },
   // "Değerlendir": İçerde paket kartı rozetindeki altın geçişli hap (web GOLD_PILL)
   goldPill: { colors: ['#f5d76e', '#c9a227', '#a8861a'] as const, stops: [0, 0.55, 1] as const, text: '#1a1406', minH: 36, padH: 18, fontSize: 12 },
+  // Geçmiş Masalarım: küçük Değerlendir hapı (web TabMasalar REVIEW_PILL) ve kartı açıp kapatan yuvarlak ok (web ile aynı ölçüler)
+  goldPillSmall: { minH: 28, padH: 12, fontSize: 10.5 },
+  historyChevron: { size: 34, icon: 16, bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.14)', ms: 300 },
+  historyRow: { fontSize: 15, lineHeight: 22, minH: 56 },
   ring: { d: 64, stroke: 6, track: 'rgba(255,255,255,0.08)', color: '#27ae60' },
   cardGap: 12,
 } as const;
@@ -263,7 +267,6 @@ export const btn = {
   monoLink: { box: { alignSelf: 'flex-start', marginBottom: 8 }, text: { fontSize: 11, color: '#e8a27a', fontFamily: 'JetBrainsMono_400Regular' } },
   // Geçmiş Masalarım "Değerlendir": monoLink yazı renginde çerçeveli etiket, yazı biraz büyük
   monoTag: { box: { alignSelf: 'flex-start', marginBottom: 12, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#e8a27a', borderRadius: 8, minHeight: 32, justifyContent: 'center' }, text: { fontSize: 13, color: '#e8a27a', fontFamily: 'JetBrainsMono_400Regular' } },
-  chevron: { box: { padding: 6 }, text: { color: '#a39c93', fontSize: 14 } },
   // Yönetim Paneli: menü bağlantısı (normal / aktif / Acil Yardım), Çıkış, "Okundu" gibi küçük butonlar, Navbar "Yönetim Paneli" rozeti
   admNav: { box: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, text: { fontSize: 13, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)' }, text: { color: '#93c5fd' } } },
   admNavSos: { box: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: 'transparent', flexDirection: 'row', alignItems: 'center' }, text: { weight: 600, fontSize: 13, color: '#ef4444' }, on: { box: { backgroundColor: 'rgba(239,68,68,0.2)', borderColor: 'rgba(239,68,68,0.4)' }, text: { weight: 700, color: '#ef4444' } } },

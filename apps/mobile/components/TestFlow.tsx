@@ -2,7 +2,7 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Btn, BtnGhost, BtnPrimary, Eyebrow, Mono, Serif, T } from './ui';
+import { Btn, StdButton, Eyebrow, Mono, Serif, T } from './ui';
 import { ll, tw } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { currentLang } from '@/lib/i18n';
@@ -50,8 +50,8 @@ export function TestFlow({ questions, current, answers, onPick, onPrev, onNext, 
         </View>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 }}>
-        <BtnGhost label={t('reg.backArrow')} noUpper={false} disabled={current === 0} onPress={onPrev} />
-        <BtnPrimary label={submitting ? '…' : last ? t('test.finish') : t('test.next')} style={{ flex: 1 }} disabled={!has || submitting} onPress={onNext} />
+        <StdButton variant="ghost" label={t('reg.backArrow')} noUpper={false} disabled={current === 0} onPress={onPrev} />
+        <StdButton variant="primary" label={submitting ? '…' : last ? t('test.finish') : t('test.next')} style={{ flex: 1 }} disabled={!has || submitting} onPress={onNext} />
       </View>
     </View>
   );

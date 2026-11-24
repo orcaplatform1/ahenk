@@ -11,6 +11,7 @@ import { FormLabel, TextareaField, TextField, VerifiedPhoneField } from '@/compo
 import { LineIcon } from '@/components/LineIcon';
 import { API_PREFIX, api, langHeaders } from '@/lib/api';
 import { readError } from '@/lib/venueApi';
+import { StdButton } from '@ahenk/ui';
 
 /* ── Count-up ─────────────────────────────────────────────────── */
 function useCountUp(target: number, duration = 1600, start = false) {
@@ -173,9 +174,9 @@ export default function KariyerPage() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42 }}>
-            <button onClick={scrollToForm} className="btn-primary">
+            <StdButton variant="primary" onClick={scrollToForm}>
               {t('career.toForm')}
-            </button>
+            </StdButton>
           </motion.div>
         </div>
       </section>
@@ -385,10 +386,10 @@ export default function KariyerPage() {
 
                   {error && <p style={{ color: '#ff6b6b', fontSize: 13, textAlign: 'center' }}>{error}</p>}
 
-                  <button type="submit" disabled={submitting}
-                    className="btn-primary w-full justify-center mt-2 disabled:opacity-70">
+                  <StdButton variant="primary" type="submit" disabled={submitting}
+                    className="w-full justify-center mt-2 disabled:opacity-70">
                     {submitting ? t('career.sending') : t('career.submit')}
-                  </button>
+                  </StdButton>
                 </form>
               )}
             </div>

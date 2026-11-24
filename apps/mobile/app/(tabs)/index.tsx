@@ -13,7 +13,7 @@ import { Countdown } from '@/components/Countdown';
 import { SelectionCard } from '@/components/SelectionCard';
 import { isForeground, useAppRefresh } from '@/lib/useAppRefresh';
 import type { LiveOverview, LivePulse, OceanKey } from '@/lib/liveTypes';
-import { BtnPrimary, Card, Cta, Glow, Eyebrow, Head, MaintenanceNotice, Mono, Note, Serif, Spinner, T, Title } from '@/components/ui';
+import { StdButton, Card, Cta, Glow, Eyebrow, Head, MaintenanceNotice, Mono, Note, Serif, Spinner, T, Title } from '@/components/ui';
 import { LiveTabs } from '@/components/LiveTabs';
 import { LiveSonar, LEVEL_KEY } from '@/components/Sonar';
 import { WinbackHost } from '@/components/Winback';
@@ -137,7 +137,7 @@ export default function EslesmePaneli() {
                 <LinearGradient colors={['rgba(214,69,58,0.14)', 'rgba(255,255,255,0.02)']} locations={[0, 0.6]} start={{ x: 0.33, y: 0.03 }} end={{ x: 0.67, y: 0.97 }} style={StyleSheet.absoluteFill} />
                 <Serif style={{ fontSize: 23, lineHeight: 27.6, color: ll.text }}>{t('live.pkgCardTitle')}</Serif>
                 <T style={{ fontSize: 13, color: ll.text2, lineHeight: 19.5 }}>{t('live.pkgCardText')}</T>
-                <BtnPrimary label={t('live.pkgCardBtn')} full style={{ minHeight: 44 }} onPress={() => router.navigate('/(tabs)/paketim')} />
+                <StdButton variant="primary" label={t('live.pkgCardBtn')} full onPress={() => router.navigate('/(tabs)/paketim')} />
               </View>
             ) : (
               <View style={[st.card, { borderColor: 'rgba(232,162,122,0.22)', overflow: 'hidden' }]}>

@@ -12,6 +12,7 @@ import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenPa
 import { HeroCountdown } from '@/components/HeroCountdown';
 import { PlanPriceText } from '@/components/PlanPrice';
 import { AMBER, BuyButton, CARDS, Check, PaketKarti } from '@/components/paket/PaketKarti';
+import { StdButton } from '@ahenk/ui';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
 
 
@@ -266,9 +267,9 @@ function FAQSections({ cities, activeCity, setActiveCity }: { cities: {name:stri
           <h2 className="font-serif text-white font-light" style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)', lineHeight: 1.15 }}>
             {t('landing.ctaTitle')}
           </h2>
-          <Link href="/kayit" className="btn-primary">
+          <StdButton variant="primary" as={Link} href="/kayit">
             {t('landing.join')}
-          </Link>
+          </StdButton>
         </div>
       </section>
     </>
@@ -647,12 +648,12 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.15, duration: 0.45, ease: 'easeOut' }}
             >
-              <Link href="/kayit" className="btn-primary">
+              <StdButton variant="primary" as={Link} href="/kayit">
                 {t('landing.join')}
-              </Link>
-              <a href="#how-it-knows-you" className="btn-ghost">
+              </StdButton>
+              <StdButton variant="ghost" as="a" href="#how-it-knows-you">
                 {t('landing.howItWorks')}
-              </a>
+              </StdButton>
             </motion.div>
           </div>
 
@@ -712,9 +713,9 @@ export default function Home() {
             ))}
           </div>
           <div className="flex justify-center mt-14">
-            <Link href="/kayit" className="btn-primary">
+            <StdButton variant="primary" as={Link} href="/kayit">
               {t('landing.pickTable')}
-            </Link>
+            </StdButton>
           </div>
         </section>
 

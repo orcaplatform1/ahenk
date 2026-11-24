@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { currentYearTR } from '@/lib/tr-date';
+import { StdButton } from '@ahenk/ui';
 
 // Kayıt formundaki doğum tarihi seçici (gün / ay / yıl); kariyer formu da bunu kullanır
 
@@ -129,13 +130,13 @@ function DatePickerModal({ value, onChange, onClose }: {
         </div>
 
         {/* Onayla */}
-        <button
+        <StdButton variant="primary"
           onClick={confirm}
-          className="btn-primary w-full justify-center"
+          className="w-full justify-center"
           style={{ marginTop: 20 }}
         >
           {t('date.select')}
-        </button>
+        </StdButton>
       </div>
     </div>
   );

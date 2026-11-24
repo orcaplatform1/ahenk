@@ -8,6 +8,7 @@ import { PhotoViewer } from './PhotoViewer';
 import { gColor } from './MasaRadar';
 import { documentLang } from '../../lib/lang';
 import { ShareCardModal } from './ShareCard';
+import { StdButton } from '../StdButton';
 
 // ── Tipler ──────────────────────────────────────────────────────────────────
 export interface DetayParticipant {
@@ -478,11 +479,11 @@ function ReportModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (re
         )}
         {err && <p role="alert" style={{ margin: '10px 0 0', fontSize: 12, color: '#ff6b6b', fontFamily: 'Inter, sans-serif' }}>{err}</p>}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 16 }}>
-          <button type="button" className="btn-primary justify-center" disabled={!can} style={{ minHeight: 44, width: '100%', maxWidth: 280, opacity: can ? 1 : 0.5 }}
+          <StdButton variant="primary" type="button" className="justify-center" disabled={!can} style={{ width: '100%', maxWidth: 280, opacity: can ? 1 : 0.5 }}
             onClick={async () => { if (!reason) return; setBusy(true); setErr(''); const e = await onSubmit(reason, note); setBusy(false); if (e) setErr(e); }}>
             {t('masa.reportAction')}
-          </button>
-          <button type="button" className="btn-ghost justify-center" onClick={onClose} style={{ minHeight: 44, width: '100%', maxWidth: 280 }}>{t('masa.reportCancel')}</button>
+          </StdButton>
+          <StdButton variant="ghost" type="button" className="justify-center" onClick={onClose} style={{ width: '100%', maxWidth: 280 }}>{t('masa.reportCancel')}</StdButton>
         </div>
       </div>
     </div>
@@ -1204,9 +1205,9 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
                   {masa.aiReport.content}
                 </p>
                 {!archive && authHeaders && (
-                  <button type="button" onClick={() => setShareOpen(true)} className="btn-primary justify-center" style={{ marginTop: 14, minHeight: 44, width: '100%' }}>
+                  <StdButton variant="primary" type="button" onClick={() => setShareOpen(true)} className="justify-center" style={{ marginTop: 14, width: '100%' }}>
                     {t('masa.shareOpen')}
-                  </button>
+                  </StdButton>
                 )}
               </>
             ) : (

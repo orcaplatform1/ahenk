@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { splitE164, toE164 } from '@ahenk/shared';
 import { api } from '@/lib/api';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
+import { StdButton } from '@ahenk/ui';
 
 // Profilim → Gizlilik ve Güvenlik: Acil Durum Kişisi (en fazla 1; ad + telefon, giriş / kayıttaki ülke kodu listesi).
 // Düzenlenebilir ve silinebilir. Acil Yardım talebinde bu kişiye WhatsApp üzerinden otomatik bilgi gider (mobil components/EmergencyContact.tsx).
@@ -47,13 +48,13 @@ export function EmergencyContact() {
         <div className="flex items-center justify-between gap-2">
           <span style={{ fontSize: 13, color: '#c9c2b8' }}>{contact.name} · {contact.phone}</span>
           <span className="flex gap-2">
-            <button type="button" className="btn-ghost" style={{ minHeight: 44 }} onClick={startEdit}>{t('emergency.edit')}</button>
-            <button type="button" className="btn-ghost" style={{ minHeight: 44 }} onClick={() => void remove()} disabled={busy}>{t('emergency.delete')}</button>
+            <StdButton variant="ghost" type="button" onClick={startEdit}>{t('emergency.edit')}</StdButton>
+            <StdButton variant="ghost" type="button" onClick={() => void remove()} disabled={busy}>{t('emergency.delete')}</StdButton>
           </span>
         </div>
       )}
       {!editing && !contact && (
-        <button type="button" className="btn-ghost self-start" style={{ minHeight: 44 }} onClick={startEdit}>{t('emergency.add')}</button>
+        <StdButton variant="ghost" type="button" className="self-start" onClick={startEdit}>{t('emergency.add')}</StdButton>
       )}
       {editing && (
         <div className="flex flex-col gap-2">
@@ -64,8 +65,8 @@ export function EmergencyContact() {
               placeholder={country === 'TR' ? '5XX XXX XX XX' : ''} className="input-glass flex-1 px-4 py-3 text-sm" />
           </div>
           <div className="flex gap-2">
-            <button type="button" className="btn-primary" style={{ minHeight: 44 }} onClick={() => void save()} disabled={busy}>{busy ? '…' : t('common.save')}</button>
-            <button type="button" className="btn-ghost" style={{ minHeight: 44 }} onClick={() => setEditing(false)}>{t('common.cancel')}</button>
+            <StdButton variant="primary" type="button" onClick={() => void save()} disabled={busy}>{busy ? '…' : t('common.save')}</StdButton>
+            <StdButton variant="ghost" type="button" onClick={() => setEditing(false)}>{t('common.cancel')}</StdButton>
           </div>
         </div>
       )}

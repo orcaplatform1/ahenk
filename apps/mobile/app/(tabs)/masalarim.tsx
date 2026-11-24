@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Reanimated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { api } from '@/lib/api';
 import { mediaUrl } from '@/lib/venueApi';
 import { buildInitials, fmtDate, gColor, type DashboardItem, type MasaTuru } from '@/lib/masa';
@@ -17,7 +18,7 @@ import { DetayAvatar } from '@/components/DetayAvatar';
 import { Star } from '@/components/Star';
 import { GoldPill, MasaDetayKarti, type MasaDetayData, type VenuePhoto } from '@/components/MasaDetayKarti';
 import { ConfirmedRadarView } from '@/components/MasaBekleme';
-import { InlineLH, Btn, BtnGhost, BtnPrimary, Card, Mono, Serif, SkeletonBlock, T, Title, Glow, ScreenGlow } from '@/components/ui';
+import { InlineLH, StdButton, Card, Mono, Serif, SkeletonBlock, T, Title, Glow, ScreenGlow } from '@/components/ui';
 import { c, ll, llColumn, masaKart, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
 
@@ -188,7 +189,7 @@ function EmptyMasaCardInner({ locked, cardType, userInfo, kanka, photo }: { lock
             <View style={{ paddingVertical: 16, paddingHorizontal: 12, alignItems: 'center' }}><T style={{ fontSize: 12, lineHeight: 18, textAlign: 'center' }}>{t('masa.noMessages')}</T></View>
             <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 8, paddingHorizontal: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.10)' }}>
               <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8 }} />
-              <BtnPrimary label={t('masa.send')} disabled />
+              <StdButton variant="primary" label={t('masa.send')} disabled />
             </View>
           </View>
         </View>
@@ -226,55 +227,83 @@ function MasaBlock({ item, locked, cardType, userInfo, kanka, width }: {
   return <EmptyMasaCard locked={false} cardType={cardType} userInfo={userInfo} kanka={kanka} photo={m.venuePhotos?.[0]} />;
 }
 
+// Değerlendirme penceresi kapanışı (backend meeting-windows.ts reviewWindow ile aynı): buluşmadan 4 gün sonra 23:59:59 TR (UTC+3)
+function reviewExpired(dateIso: string): boolean {
+  const tr = new Date(new Date(dateIso).getTime() + 3 * 60 * 60 * 1000);
+  return Date.now() > Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 4, 23 - 3, 59, 59, 999);
+}
+
 function HistoryListInner({ history }: { history: HistoryMeeting[] }) {
   const { t } = useTranslation();
-  const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
   if (history.length === 0) return <Card style={{ marginBottom: 16 }}><T style={{ fontSize: 13, color: ll.label }}>{t('tm.noHistory')}</T></Card>;
   return (
-    <Card style={{ marginBottom: 16, paddingVertical: 6, paddingHorizontal: 18 }}>
-      {history.map((m, i) => {
-        const open = openId === m.id;
-        const masa: MasaDetayData = { id: m.id, type: m.type, maxParticipants: m.maxParticipants, scheduledAt: m.date, sosEndsAt: m.date, venueName: m.venueName ?? t('masa.noVenue'),
-          venueAddress: m.venueAddress, venueDistrict: m.venueDistrict, venueMapsUrl: m.venueMapsUrl, venuePhotos: m.venuePhotos, participants: m.participants ?? [], aiReport: m.aiReport };
-        return (
-          <View key={m.id} style={{ borderBottomWidth: i < history.length - 1 ? 1 : 0, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44, paddingVertical: 6 }}>
-              <T style={{ flex: 1, fontSize: 13, color: ll.text }}>{[fmtDate(m.date), t(HISTORY_TYPE[m.type ?? 'GROUP']), m.venueName, m.cityName].filter(Boolean).join(' - ')}</T>
-              <Btn variant="chevron" accessibilityLabel={open ? t('tm.closeCard') : t('tm.openCard')} style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }} label="▾" onPress={() => setOpenId(open ? null : m.id)} />
-            </View>
-            {open && (
-              <View style={{ paddingBottom: 12 }}>
-                {!m.isReviewed && (
-                  <View style={{ alignItems: 'flex-start', marginBottom: 12 }}><GoldPill label={t('tm.review')} onPress={() => router.push(`/degerlendirme/${m.id}`)} /></View>
-                )}
-                {/* Değerlendirme: masa detay kartının en üstünde, Canlı Akış kartı (Card + ll.text) stilinde; puan kadar dolu yıldız · not */}
-                {m.review && (
-                  <Card style={{ marginBottom: 12 }}>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6, rowGap: 4 }}>
-                      <T w={600} style={{ fontSize: 13, color: ll.text }}>{t('tm.reviewLabel')}</T>
-                      <View style={{ flexDirection: 'row', gap: 2 }} accessibilityLabel={t('review.stars', { n: m.review.rating })}>
-                        {Array.from({ length: m.review.rating }).map((_, k) => <Star key={k} filled size={16} />)}
-                      </View>
-                      {!!m.review.comment && <T style={{ fontSize: 13, color: ll.text }}>· {m.review.comment}</T>}
-                    </View>
-                  </Card>
-                )}
-                <MasaDetayKarti masa={masa} archive />
-                {!!m.blocked?.length && (
-                  <View style={{ marginTop: 12 }}>
-                    <Mono style={{ marginBottom: 4, fontSize: 11, color: ll.label }}>{t('tm.blocked')}</Mono>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                      {m.blocked.map((b, j) => <Mono key={`${b.initials}-${j}`} w={600} style={{ fontSize: 14, color: gColor(b.gender) }}>{b.initials}</Mono>)}
-                    </View>
-                  </View>
-                )}
+    <View style={{ marginBottom: 16, gap: 12 }}>
+      {history.map((m) => (
+        <HistoryItem key={m.id} m={m} open={openId === m.id} onToggle={() => setOpenId(openId === m.id ? null : m.id)} />
+      ))}
+    </View>
+  );
+}
+
+// Her geçmiş masa ayrı kart; açıkken yatay iç boşluk yok, masa detay kartı Masalarım'daki genişlikte
+function HistoryItem({ m, open, onToggle }: { m: HistoryMeeting; open: boolean; onToggle: () => void }) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const hc = masaKart.historyChevron;
+  const rot = useRef(new Animated.Value(open ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.timing(rot, { toValue: open ? 1 : 0, duration: hc.ms, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [open, rot, hc.ms]);
+  const rotate = rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+  const canReview = !m.isReviewed && !m.review && !reviewExpired(m.date);
+  const masa: MasaDetayData = { id: m.id, type: m.type, maxParticipants: m.maxParticipants, scheduledAt: m.date, sosEndsAt: m.date, venueName: m.venueName ?? t('masa.noVenue'),
+    venueAddress: m.venueAddress, venueDistrict: m.venueDistrict, venueMapsUrl: m.venueMapsUrl, venuePhotos: m.venuePhotos, participants: m.participants ?? [], aiReport: m.aiReport };
+  return (
+    <Reanimated.View layout={LinearTransition.duration(hc.ms)}>
+      <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: masaKart.historyRow.minH, paddingVertical: 10, paddingLeft: 18, paddingRight: 12 }}>
+          <T w={500} style={{ flex: 1, fontSize: masaKart.historyRow.fontSize, lineHeight: masaKart.historyRow.lineHeight, color: ll.text }}>{[fmtDate(m.date), t(HISTORY_TYPE[m.type ?? 'GROUP']), m.venueName, m.cityName].filter(Boolean).join(' - ')}</T>
+          <Pressable onPress={onToggle} accessibilityRole="button" accessibilityLabel={open ? t('tm.closeCard') : t('tm.openCard')} accessibilityState={{ expanded: open }}
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+            <Animated.View style={{ width: hc.size, height: hc.size, borderRadius: 9999, alignItems: 'center', justifyContent: 'center', backgroundColor: hc.bg, borderWidth: 1, borderColor: hc.border, transform: [{ rotate }] }}>
+              <Svg width={hc.icon} height={hc.icon} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <Path d="M6 9l6 6 6-6" />
+              </Svg>
+            </Animated.View>
+          </Pressable>
+        </View>
+        {(canReview || !!m.review) && (
+          <View style={{ paddingHorizontal: 18, paddingBottom: 14 }}>
+            {canReview ? (
+              <View style={{ alignItems: 'flex-start' }}><GoldPill small label={t('tm.review')} onPress={() => router.push(`/degerlendirme/${m.id}`)} /></View>
+            ) : m.review && (
+              // Verilen puan kadar dolu yıldız · not
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6, rowGap: 4 }}>
+                <T w={600} style={{ fontSize: 13, color: ll.text }}>{t('tm.reviewLabel')}</T>
+                <View style={{ flexDirection: 'row', gap: 2 }} accessibilityLabel={t('review.stars', { n: m.review.rating })}>
+                  {Array.from({ length: m.review.rating }).map((_, k) => <Star key={k} filled size={16} />)}
+                </View>
+                {!!m.review.comment && <T style={{ fontSize: 13, color: ll.text }}>· {m.review.comment}</T>}
               </View>
             )}
           </View>
-        );
-      })}
-    </Card>
+        )}
+        {open && (
+          <Reanimated.View entering={FadeIn.duration(hc.ms)} exiting={FadeOut.duration(hc.ms)} style={{ paddingBottom: 12 }}>
+            <MasaDetayKarti masa={masa} archive />
+            {!!m.blocked?.length && (
+              <View style={{ marginTop: 12, paddingHorizontal: 18 }}>
+                <Mono style={{ marginBottom: 4, fontSize: 11, color: ll.label }}>{t('tm.blocked')}</Mono>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                  {m.blocked.map((b, j) => <Mono key={`${b.initials}-${j}`} w={600} style={{ fontSize: 14, color: gColor(b.gender) }}>{b.initials}</Mono>)}
+                </View>
+              </View>
+            )}
+          </Reanimated.View>
+        )}
+      </Card>
+    </Reanimated.View>
   );
 }
 
@@ -317,8 +346,7 @@ export default function Masalarim() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 12 }}>
               {dated.map((i) => {
                 const on = activeItem?.meeting.id === i.meeting.id;
-                const Comp = on ? BtnPrimary : BtnGhost;
-                return <Comp key={i.meeting.id} label={dayOf(i.meeting.scheduledAt)} style={{ minHeight: 44 }} accessibilityState={{ selected: on }}
+                return <StdButton variant={on ? 'primary' : 'ghost'} key={i.meeting.id} label={dayOf(i.meeting.scheduledAt)} accessibilityState={{ selected: on }}
                   onPress={() => { setDateId(i.meeting.id); selectTab(i.meeting.type ?? 'GROUP'); }} />;
               })}
             </ScrollView>
@@ -332,7 +360,7 @@ export default function Masalarim() {
                 <T style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 16.5 }}>{t('tm.preview')}</T>
               </View>
             )}
-            {locked && <BtnPrimary label={t('pkg.buy')} full onPress={() => router.navigate('/(tabs)/paketim')} />}
+            {locked && <StdButton variant="primary" label={t('pkg.buy')} full onPress={() => router.navigate('/(tabs)/paketim')} />}
             <View>
               {/* Türe göre başlık, ortalı */}
               <Title style={{ textAlign: 'center', marginBottom: 12 }}>{locked ? t('tm.cardDetail') : t(CARD_TITLE[tab])}</Title>
@@ -350,7 +378,7 @@ export default function Masalarim() {
             {/* Geçmiş Masalarım: masa kartı ve sohbetin altında */}
             <View>
               <View style={{ alignItems: 'center', marginBottom: 12 }}>
-                <BtnGhost label={t('tm.history')} onPress={() => setHistoryOpen(v => !v)} accessibilityState={{ expanded: historyOpen }} />
+                <StdButton variant="ghost" label={t('tm.history')} onPress={() => setHistoryOpen(v => !v)} accessibilityState={{ expanded: historyOpen }} />
               </View>
               {historyOpen && <HistoryList history={history} />}
             </View>

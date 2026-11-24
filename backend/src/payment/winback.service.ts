@@ -177,12 +177,16 @@ export class WinbackService {
     const body = MONDAY_TEXTS[(trIsoWeek() - 1) % MONDAY_TEXTS.length];
     const bodyEn = MONDAY_TEXTS_EN[(trIsoWeek() - 1) % MONDAY_TEXTS_EN.length];
     const now = new Date();
+    // Geri kazanım anahtarı Kapalıyken WinbackOffer kaydı oluşturulmaz / sıfırlanmaz; push yine gider
+    const { enabled } = await this.settings();
     for (const t of targets) {
       try {
         const fresh = { grantedAt: now, heldSeenAt: null, shownAt: null, expiresAt: null, reminderSentAt: null };
         const expired = !!t.winbackOffer?.expiresAt && t.winbackOffer.expiresAt <= now;
         // Bekleyen ya da süresi işleyen hak korunur; süresi dolmuş hak sıfırlanır
-        if (!t.winbackOffer) await this.prisma.winbackOffer.create({ data: { userId: t.id, grantedAt: now } });
+        if (!enabled) {
+          // kayıtlara dokunulmaz
+        } else if (!t.winbackOffer) await this.prisma.winbackOffer.create({ data: { userId: t.id, grantedAt: now } });
         else if (expired) await this.prisma.winbackOffer.update({ where: { userId: t.id }, data: fresh });
         await this.notifications.sendToUser(t.id, { title: "Ahenk", body, data: { event: "WEEKLY_MASA" }, en: { title: "Ahenk", body: bodyEn } });
       } catch (err) {

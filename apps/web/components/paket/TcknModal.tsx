@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ID_TYPES, isValidIdNumber, type IdType } from '@ahenk/shared';
+import { StdButton } from '@ahenk/ui';
 
 // Web ödeme ekranı: "Paket Al" / "Abone Ol" sonrası önce kimlik türü (TC / YKN / Pasaport), sonra numara istenir. Zorunlu.
 // TC: 11 hane rakam (mevcut kural); YKN: 11 hane rakam, "99" ile başlar; Pasaport: 6–9 harf ve rakam.
@@ -50,10 +51,10 @@ export default function TcknModal({ open, busy, error, onCancel, onSubmit }: {
         </p>
         {error && <p className="text-xs text-[#ff6b6b]">{error}</p>}
         <div className="flex gap-2 mt-1">
-          <button onClick={() => { setTckn(''); onCancel(); }} className="btn-ghost flex-1 justify-center" style={{ minHeight: 44 }}>{t('pay.cancel')}</button>
-          <button onClick={() => valid && onSubmit(tckn, type)} disabled={!valid || busy} className="btn-primary flex-1 justify-center disabled:opacity-50" style={{ minHeight: 44 }}>
+          <StdButton variant="ghost" onClick={() => { setTckn(''); onCancel(); }} className="flex-1 justify-center">{t('pay.cancel')}</StdButton>
+          <StdButton variant="primary" onClick={() => valid && onSubmit(tckn, type)} disabled={!valid || busy} className="flex-1 justify-center disabled:opacity-50">
             {busy ? t('pay.redirecting') : t('pay.proceed')}
-          </button>
+          </StdButton>
         </div>
       </div>
     </div>
