@@ -136,10 +136,17 @@ Prime abonelik (PRIME_1M / PRIME_3M / PRIME_6M / PRIME_12M): ham 899 / 2299 / 38
       ile uygulama açılmaya çalışılır, 1,5 sn içinde sayfa görünür kalırsa iOS'ta App Store'a, Android'de Play Store'a yönlendirilir;
       uygulama açılırsa yönlendirme yapılmaz. Masaüstünde App Store ve Play Store butonları. Bağlantılar apps/web/lib/appLinks.ts
 Fiyatlar ham fiyattır; admin "Fiyatlar" tablosunda (PlanPrice) tutulur. Web = ham × 1,20 (KDV); mobil = ham × 1,20 ÷ 0,85 (mağaza komisyonu %15)
-Sadakat Programı (%10 davet indirimi): davet edilen kişi herhangi bir tek seferlik paket aldığında ya da Prime aboneliği başlattığında
-  (ücretli satın alma: iyzico ya da mağaza) davet edene %10 indirim hakkı tanımlanır; KYC şartı yoktur. Kutudaki metin: "Davet ettiğin
-  arkadaşın herhangi bir paket aldığında veya abone olduğunda sana %10 indirim hakkı tanımlanır. Her indirim hakkı yalnızca bir paket
-  satın alımında geçerlidir, toplu kullanılamaz ve devredilemez." (Referral durum adı KYC_APPROVED şemada aynen, "hak tanımlandı" anlamında)
+Davet sistemi:
+  - Her kullanıcının kalıcı, benzersiz kişisel davet kodu ve linki vardır. Telefonla yeni davet oluşturma kaldırıldı; eski telefon
+    davet kayıtları DB'de durur ve geçerli davet sayısına eklenmeye devam eder.
+  - Davet edilen kişi kod veya linkle kayıt olursa %10 davet indirimi alır. %10 davet indirimi ile 100 TL indirim aynı anda kullanılamaz.
+  - Geçerli davet: davet edilen kişi ilk paketini satın almış ve KYC'si onaylanmış olmalıdır.
+  - Her 3 geçerli davette davet edene 1 ücretsiz masa hakkı verilir; türünü (Grup / Baş Başa / Kankamla) kullanıcı seçer; aynı türden
+    haklar birikir.
+  - Yapay Zekâ Masa Raporu paylaşım kartındaki link kullanıcının kişisel davet linkidir. Hikâye paylaşımında link panoya kopyalanır ve
+    kullanıcıya bağlantı çıkartması uyarısı gösterilir.
+  - Eski sadakat programı ve paylaşım kartı tıklama-puan sistemi yoktur.
+  - Kankamla masasındaki kanka daveti (telefonla, 48 saat İptal Et) ayrı bir akıştır ve davet sisteminin parçası değildir.
 İndirimler: %10 davet indirimi ve paketi / aboneliği olmayana gönderilen 100 TL indirim tüm tek seferlik paketlerde ve tüm Prime
   planlarında geçerli (WINBACK_PLANS ayarında 8 plan); ikisi aynı ödemede birlikte kullanılamaz; Prime'da yalnız satın alma ödemesine
   uygulanır, yenilemeler indirimsiz. Aktif tek seferlik paketi ya da aktif Prime'ı olana 100 TL indirim hiçbir koşulda gösterilmez/uygulanmaz
