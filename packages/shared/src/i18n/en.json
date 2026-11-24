@@ -944,7 +944,9 @@
     "withWhatsapp": "Log in with WhatsApp"
   },
   "loyalty": {
+    "discounts": "10% Discounts Available",
     "people": "{count} people",
+    "pieces": "{count}",
     "title": "Loyalty Program",
     "copied": "Copied",
     "copy": "Copy",

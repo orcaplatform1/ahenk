@@ -895,7 +895,7 @@ API CLIENT KURALLAR (web):
   - Dünya ikonu (dil seçici): mobilde giriş, kayıt ve "Tekrar hoş geldin" ekranlarında sağ üst (sağdan 20 pt; 24×24 görünür, 44×44 dokunma;
     solunda "TR" / "EN" 13, #FFFFFF, opaklık 0.7, 6 pt ara; açılır kart köşe 12, Türkçe / English, seçilide ✓; renkler tema paletinden:
     kart zemini ll.bg + llCard çerçeve, yazı ll.text, seçili satır tabBar.activeBg, ✓ ll.red — sistem grisi yok); webde header'ın sağ ucu.
-  - Telefon: telefon numarası girilen bütün ekranlarda (giriş, kayıt, şifre sıfırlama, kanka davet, sadakat daveti, Profilim telefon
+  - Telefon: telefon numarası girilen bütün ekranlarda (giriş, kayıt, şifre sıfırlama, kanka davet, Profilim telefon
     değiştirme, Numara Engelleme; web + mobil) tek ortak ülke listesi (packages/shared/src/i18n/countries.ts): yalnız 42 ülke, şu sırayla,
     grup başlığı yok: Türkiye, Birleşik Arap Emirlikleri, Katar, Bahreyn, Kuveyt, ABD, Rusya, Almanya, Birleşik Krallık, Polonya, Bulgaristan,
     Hollanda, Fransa, İtalya, Ukrayna, Romanya, İspanya, Belçika, Avusturya, İsveç, İsviçre, Yunanistan, Danimarka, Çekya, Macaristan,

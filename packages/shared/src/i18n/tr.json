@@ -944,7 +944,9 @@
     "withWhatsapp": "WhatsApp ile Giriş"
   },
   "loyalty": {
+    "discounts": "Toplam %10 İndirim Hakkı",
     "people": "{count} kişi",
+    "pieces": "{count} Adet",
     "title": "Sadakat Programı",
     "copied": "Kopyalandı",
     "copy": "Kopyala",

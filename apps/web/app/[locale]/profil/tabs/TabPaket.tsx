@@ -291,6 +291,10 @@ export function TabPaket({ maintenanceMode = false }: Props) {
             <p className="text-xs text-[#c9c2b8]">{t('loyalty.validInvites')}</p>
             <p className="text-base font-semibold text-[#f4f1ec]">{t('loyalty.people', { count: referralStats?.validInvites ?? '—' })}</p>
           </div>
+          <div>
+            <p className="text-xs text-[#c9c2b8]">{t('loyalty.discounts')}</p>
+            <p className="text-base font-semibold text-[#f4f1ec]">{t('loyalty.pieces', { count: referralStats?.availableDiscounts ?? '—' })}</p>
+          </div>
         </div>
       </div>
 

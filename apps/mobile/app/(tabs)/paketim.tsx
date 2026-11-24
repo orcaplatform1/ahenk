@@ -306,6 +306,7 @@ export default function Paketim() {
               )}
               <View style={{ flexDirection: 'row', gap: 24, paddingTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
                 <View><T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.validInvites')}</T><T w={600} style={{ fontSize: 16, color: ll.text }}>{t('loyalty.people', { count: stats?.validInvites ?? '—' })}</T></View>
+                <View><T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.discounts')}</T><T w={600} style={{ fontSize: 16, color: ll.text }}>{t('loyalty.pieces', { count: stats?.availableDiscounts ?? '—' })}</T></View>
               </View>
             </Card>
 
