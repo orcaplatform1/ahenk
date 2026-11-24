@@ -81,7 +81,7 @@ export function TabRehber() {
           onChange={(e) => { setInput(e.target.value.replace(/\D/g, '').slice(0, 15)); setError(''); }}
           placeholder={country === 'TR' ? '5XX XXX XX XX' : ''}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          className="input-glass flex-1 px-4 py-3 text-sm"
+          className="input-glass flex-1 min-w-0 px-4 py-3 text-sm"
         />
         <StdButton variant="primary"
           onClick={handleAdd}

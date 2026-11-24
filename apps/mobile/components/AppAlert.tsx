@@ -43,7 +43,7 @@ export function AppAlertHost() {
               ? <Serif style={{ fontSize: 26, lineHeight: 32, color: ll.text, textAlign: 'center' }}>{cur.title}</Serif>
               : <T w={700} style={{ fontSize: 17, lineHeight: 23, color: ll.text, textAlign: 'center' }}>{cur.title}</T>}
             {!!cur.message && <T style={{ fontSize: 14, lineHeight: 20, color: ll.text2, textAlign: 'center' }}>{cur.message}</T>}
-            <View style={{ flexDirection: row ? 'row' : 'column', alignItems: stacked ? 'center' : undefined, gap: 12, marginTop: 8 }}>
+            <View style={{ flexDirection: row ? 'row' : 'column', flexWrap: row ? 'wrap' : undefined, alignItems: stacked ? 'center' : undefined, gap: 12, marginTop: 8 }}>
               {(row ? [...cur.buttons].sort((a, b) => (a.style === 'cancel' ? -1 : b.style === 'cancel' ? 1 : 0)) : cur.buttons).map((b) => {
                 const props = { label: b.text, onPress: () => close(b), style: row ? { flex: 1 } : stacked ? { width: '100%' as const, maxWidth: 280 } : { width: '100%' as const } };
                 if (b.style === 'cancel') return <StdButton variant="ghost" key={b.text} {...props} />;

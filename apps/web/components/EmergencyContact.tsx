@@ -45,9 +45,9 @@ export function EmergencyContact() {
     <div className="flex flex-col gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, marginTop: 4 }}>
       <span style={{ fontSize: 14, color: '#f4f1ec' }}>{t('emergency.title')}</span>
       {!editing && contact && (
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <span style={{ fontSize: 13, color: '#c9c2b8' }}>{contact.name} · {contact.phone}</span>
-          <span className="flex gap-2">
+          <span className="flex flex-wrap gap-2">
             <StdButton variant="ghost" type="button" onClick={startEdit}>{t('emergency.edit')}</StdButton>
             <StdButton variant="ghost" type="button" onClick={() => void remove()} disabled={busy}>{t('emergency.delete')}</StdButton>
           </span>
@@ -64,7 +64,7 @@ export function EmergencyContact() {
             <input type="tel" value={national} onChange={(e) => { setNational(e.target.value.replace(/\D/g, '').slice(0, 15)); setError(''); }}
               placeholder={country === 'TR' ? '5XX XXX XX XX' : ''} className="input-glass flex-1 px-4 py-3 text-sm" />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <StdButton variant="primary" type="button" onClick={() => void save()} disabled={busy}>{busy ? '…' : t('common.save')}</StdButton>
             <StdButton variant="ghost" type="button" onClick={() => setEditing(false)}>{t('common.cancel')}</StdButton>
           </div>

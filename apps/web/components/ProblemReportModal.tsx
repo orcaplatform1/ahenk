@@ -70,7 +70,7 @@ export function ProblemReportModal({ open, onClose, screen }: { open: boolean; o
       {done ? (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-[#c9c2b8]">{t('report.thanks')}</p>
-          <StdButton variant="ghost" type="button" onClick={onClose} className="mx-auto block" style={{ width: '72%' }}>{t('report.close')}</StdButton>
+          <StdButton variant="ghost" type="button" onClick={onClose} className="mx-auto block" style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}>{t('report.close')}</StdButton>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -109,10 +109,10 @@ export function ProblemReportModal({ open, onClose, screen }: { open: boolean; o
           )}
           {error && <p className="text-[#ff6b6b] text-sm">{error}</p>}
           <div className="mt-2 flex flex-col gap-3">
-            <StdButton variant="primary" type="button" onClick={submit} disabled={busy} className="mx-auto block disabled:opacity-40" style={{ width: '72%' }}>
+            <StdButton variant="primary" type="button" onClick={submit} disabled={busy} className="mx-auto block disabled:opacity-40" style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}>
               {busy ? t('report.sending') : t('report.send')}
             </StdButton>
-            <StdButton variant="ghost" type="button" onClick={onClose} className="mx-auto block" style={{ width: '72%' }}>
+            <StdButton variant="ghost" type="button" onClick={onClose} className="mx-auto block" style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}>
               {t('report.cancel')}
             </StdButton>
           </div>

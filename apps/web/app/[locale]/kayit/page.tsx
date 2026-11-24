@@ -539,7 +539,7 @@ function KayitPageInner() {
             )}
             {locale === 'en' && <YesNo label={t('reg.speaksTurkish')} value={speaksTurkish} onChange={(v) => { setSpeaksTurkish(v); setError(''); }} />}
             {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
-            <div className="flex gap-3 mt-1">
+            <div className="flex flex-wrap gap-3 mt-1">
               <StdButton variant="ghost" type="button" onClick={() => { setStepDir(-1); setStep(0); setError(''); }}>{t('common.back')}</StdButton>
               <StdButton variant="primary" type="button" onClick={handleLangStep} className="flex-1">{t('common.continue')}</StdButton>
             </div>
@@ -568,7 +568,7 @@ function KayitPageInner() {
               </p>
             </div>
             {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
-            <div className="flex gap-3 mt-1">
+            <div className="flex flex-wrap gap-3 mt-1">
               <StdButton variant="ghost" type="button" onClick={() => { setStepDir(-1); setStep(1); setError(''); }}>
                 {t('common.back')}
               </StdButton>
@@ -673,7 +673,7 @@ function KayitPageInner() {
 
                 {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
 
-                <div className="flex items-center gap-3 mt-1">
+                <div className="flex flex-wrap items-center gap-3 mt-1">
                   <StdButton variant="ghost"
                     type="button"
                     onClick={testGoPrev}

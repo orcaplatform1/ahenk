@@ -157,7 +157,7 @@ export default function Degerlendirme() {
       <ModalBox visible={confirm} onClose={() => setConfirm(false)} title={t('review.confirmTitle')}>
         <T style={{ fontSize: 14, color: c.tCcc, lineHeight: 22.75, marginBottom: 8 }}><T w={700} style={{ color: tw.accent }}>{participants.filter(p => blocks.includes(p.userId)).map(p => p.initials).join(', ')}</T> {t('review.willBlockSuffix')}</T>
         <T style={{ fontSize: 14, color: c.t888, lineHeight: 22.75, marginBottom: 24 }}>{t('review.confirmBody')}</T>
-        <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
           <StdButton variant="ghost" label={t('review.cancel')} style={{ flex: 1 }} onPress={() => setConfirm(false)} />
           <StdButton variant="primary" label={t('review.confirm')} style={{ flex: 1 }} onPress={send} />
         </View>

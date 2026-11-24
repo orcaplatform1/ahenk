@@ -67,7 +67,7 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
               </span>
             </div>
             {sel && (
-              <div className="flex" style={{ gap: 8 }}>
+              <div className="flex flex-wrap" style={{ gap: 8 }}>
                 <StdButton variant="ghost"
                   onClick={() => setConfirm({ kind: 'change', type: o.type, mode: sel.mode === 'TOMORROW' ? 'PLANNED' : 'TOMORROW' })}
                   disabled={busy !== null || o.locked || Date.parse(sel.changeAvailableAt) > now}

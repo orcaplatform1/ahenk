@@ -363,7 +363,7 @@ export default function DegerlendirmePage() {
         <p className="text-sm text-[#888] leading-relaxed mb-6">
           {t('review.confirmBody')}
         </p>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <StdButton variant="ghost" onClick={() => setConfirmOpen(false)} className="flex-1 justify-center">{t('review.cancel')}</StdButton>
           <StdButton variant="primary" onClick={send} className="flex-1 justify-center">{t('review.confirm')}</StdButton>
         </div>

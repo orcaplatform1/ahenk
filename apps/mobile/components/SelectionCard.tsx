@@ -65,7 +65,7 @@ export function SelectionCard({ selection, onOpen, onChange, onCancel }: {
               </View>
             </View>
             {sel && (
-              <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 <StdButton variant="ghost"
                   label={t('live.selChange')}
                   disabled={busy !== null || o.locked || Date.parse(sel.changeAvailableAt) > now}

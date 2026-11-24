@@ -101,14 +101,14 @@ export default function SifremiUnuttumPage() {
             onClick={handleSubmit}
             disabled={loading || !phoneValid}
             className="mx-auto block mt-1 disabled:opacity-40"
-            style={{ width: '72%' }}
+            style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}
           >
             {loading ? t('forgot.sending') : t('forgot.send')}
           </StdButton>
         </div>
 
         <div className="mt-4 flex justify-center">
-          <StdButton variant="ghost" as={Link} href="/giris" className="mx-auto block" style={{ width: '72%' }}>
+          <StdButton variant="ghost" as={Link} href="/giris" className="mx-auto block" style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}>
             {t('forgot.backToLogin')}
           </StdButton>
         </div>

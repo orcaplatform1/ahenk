@@ -102,7 +102,7 @@ export default function WeeklySelectionModal({ selection, onSubmit, open, onClos
           })}
         </div>
         {error && <p className="text-xs text-[#ff6b6b]">{error}</p>}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <StdButton variant="ghost" onClick={close} className="flex-1 justify-center">{tr('live.wsLater')}</StdButton>
           <StdButton variant="primary" onClick={submit} disabled={!mode || picked.length === 0 || sending} className="flex-1 justify-center disabled:opacity-50">
             {sending ? '…' : tr('live.wsConfirm')}

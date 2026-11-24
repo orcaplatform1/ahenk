@@ -26,7 +26,7 @@ interface Shot { uri: string }
 function Done({ label, onRetake }: { label: string; onRetake: () => void }) {
   const { t } = useTranslation();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: 'rgba(74,222,128,0.08)', borderWidth: 1, borderColor: 'rgba(74,222,128,0.2)' }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, backgroundColor: 'rgba(74,222,128,0.08)', borderWidth: 1, borderColor: 'rgba(74,222,128,0.2)' }}>
       <T style={{ fontSize: 16, color: tw4.green400 }}>✓</T>
       <T style={{ fontSize: 12, color: tw4.green400 }}>{label}</T>
       <StdButton variant="ghost" label={t('kycf.retake')} style={{ marginLeft: 'auto' }} onPress={onRetake} />
@@ -52,7 +52,7 @@ export function PhotoCamera({ visible, onClose, onShot }: { visible: boolean; on
         {perm?.granted ? <CameraView ref={ref} style={{ flex: 1 }} facing="back" /> : (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}><T style={{ color: tw.accent, textAlign: 'center' }}>{t('kycf.camDeniedApp')}</T></View>
         )}
-        <View style={{ flexDirection: 'row', gap: 8, padding: 16, paddingBottom: 16 + insets.bottom }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 16, paddingBottom: 16 + insets.bottom }}>
           <StdButton variant="ghost" label={t('kycf.cancel')} style={{ flex: 1 }} onPress={onClose} />
           <StdButton variant="primary" label={t('kycf.shoot')} style={{ flex: 1 }} disabled={!perm?.granted} onPress={async () => { const p = await ref.current?.takePictureAsync({ quality: 0.85 }); if (p?.uri) { onShot({ uri: p.uri }); onClose(); } }} />
         </View>
@@ -144,7 +144,7 @@ function LivenessRecorder({ video, onCapture, fullName }: { video: Shot | null; 
           {phase === 'preview' && (
             <View style={{ padding: 16, gap: 12 }}>
               <T style={{ fontSize: 12, textAlign: 'center', color: '#2ecc71' }}>{currentLang() === 'en' ? <>{t('kycf.sayEn')} <T w={700} style={{ fontSize: 12, color: '#f5f5f5' }}>&quot;My name is {fullName}&quot;</T></> : t('kycf.sayTr')}</T>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 <StdButton variant="ghost" label={t('kycf.cancel')} style={{ flex: 1 }} onPress={() => setPhase('idle')} />
                 <StdButton variant="primary" label={t('kycf.startRec')} style={{ flex: 1 }} onPress={startRecording} />
               </View>
@@ -307,7 +307,7 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
       ) : (
         <>
           {/* Seçilen belge türü; değiştirilirse çekilen fotoğraflar sıfırlanır */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <T style={{ fontSize: 13, color: '#c9c2b8' }}>{t('kycf.idType')}: <T w={600} style={{ fontSize: 13, color: ll.text }}>{t(`kycf.type${idType}`)}</T></T>
             <StdButton variant="ghost" label={t('prof.change')} onPress={() => { setTypeChosen(false); setFront(null); setBack(null); }} />
           </View>

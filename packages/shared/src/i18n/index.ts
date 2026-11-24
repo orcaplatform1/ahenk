@@ -103,10 +103,16 @@ export function formatDayMonth(date: Date | string | number, lang: Lang, timeZon
   return d.toLocaleDateString(intlLocale(lang), { day: "numeric", month: "long", timeZone });
 }
 
-// Değerlendirmenin açıldığı an: buluşmanın ertesi günü 08:00 (TR, UTC+3) — backend meeting-windows reviewWindow ile aynı
+// Değerlendirmenin açıldığı an: buluşma günü 23:59'dan sonra, ertesi gün 00:00 (TR, UTC+3) — backend meeting-windows reviewWindow ile aynı
 export function reviewOpensAt(scheduledAt: Date | string | number): Date {
   const tr = new Date(new Date(scheduledAt).getTime() + 3 * 60 * 60 * 1000);
-  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 1, 8 - 3, 0, 0, 0));
+  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 1, 0 - 3, 0, 0, 0));
+}
+
+// Değerlendirme açılıştan tam 7 gün sonra kapanır (backend REVIEW_WINDOW_MS)
+export const REVIEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+export function reviewClosesAt(scheduledAt: Date | string | number): Date {
+  return new Date(reviewOpensAt(scheduledAt).getTime() + REVIEW_WINDOW_MS);
 }
 
 // Gün adı (0 = Pazar) arayüz dilinde

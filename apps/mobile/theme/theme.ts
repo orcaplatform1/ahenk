@@ -397,7 +397,7 @@ export type BtnVariant = keyof typeof btn;
 export const toggleSwitch = { width: 42, height: 24, radius: 9999, onBg: '#c0392b', offBg: 'rgba(255,255,255,0.12)', knob: 18, knobColor: '#ffffff', inset: 3 } as const;
 
 // TabProfilim ACCOUNT_BTN (btn-ghost üzerine): genişlik %72, dolgu 9/10, yazı clamp(8px, 2.5vw, 10px), harf aralığı 0.04em
-export const accountBtn = { box: { width: '72%', alignSelf: 'center', paddingVertical: 9, paddingHorizontal: 10 }, text: { fontSize: 10, letterSpacing: 0.4 } } as const;
+export const accountBtn = { box: { minWidth: '72%', maxWidth: '100%', alignSelf: 'center', paddingVertical: 9, paddingHorizontal: 10 }, text: { fontSize: 10, letterSpacing: 0.4 } } as const;
 // ── Yönetim Paneli (apps/web/lib/adminTheme.ts + globals.css .admin-shell / .adm-page / .adm-table mobil kuralları) ──
 // Winback "İndirimi Uygula" parlaması (.wb-cta::after + @keyframes wbShine): genişlik %40, left -60% → 130%, skewX(-20deg),
 // 2,8 sn döngü: %0–60 ease-in-out hareket (1680 ms), %60–100 bekleme (1120 ms). Hareketi Azalt açıkken kapalı.

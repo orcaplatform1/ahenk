@@ -131,10 +131,10 @@ function formatCardDate(isoStr: string, locale = 'tr'): string {
   return locale === 'en' ? `${wd}, ${dm} ${time}` : `${dm}, ${wd} ${time}`;
 }
 
-// Değerlendirmenin açıldığı an: buluşmanın ertesi günü 08:00 TR (backend meeting-windows reviewWindow ile aynı)
+// Değerlendirmenin açıldığı an: buluşma günü 23:59'dan sonra, ertesi gün 00:00 TR (backend meeting-windows reviewWindow ile aynı)
 function reviewOpensAt(isoStr: string): Date {
   const tr = new Date(new Date(isoStr).getTime() + 3 * 60 * 60 * 1000);
-  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 1, 8 - 3, 0, 0, 0));
+  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 1, 0 - 3, 0, 0, 0));
 }
 
 // Gün adı arayüz dilinde, saat 24 saat (bölge saat dilimi)
@@ -880,7 +880,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
   // Katılımcı profil fotoğrafı tam ekran (kendi fotoğrafında da düzenleme yok; fotoğraf yalnız Profilim'den değişir)
   const [viewer, setViewer] = useState<string | null>(null);
   const openPhoto = (p: { photoUrl?: string | null }) => { if (p.photoUrl) setViewer(p.photoUrl); };
-  // "Değerlendir" 08:00'den önce basılırsa uyarı
+  // "Değerlendir" açılıştan (ertesi gün 00:00) önce basılırsa uyarı
   const [reviewWarn, setReviewWarn] = useState('');
   const reviewAt = reviewOpensAt(masa.scheduledAt);
   function handleReview() {

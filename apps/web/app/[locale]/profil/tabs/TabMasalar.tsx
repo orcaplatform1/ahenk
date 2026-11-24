@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { formatDayTab, formatNamed, occupationLabel, weekdayName, type Lang } from '@ahenk/shared';
+import { formatDayTab, formatNamed, occupationLabel, reviewClosesAt, weekdayName, type Lang } from '@ahenk/shared';
 import { AnimatePresence, motion } from 'framer-motion';
 import { api, API_PREFIX } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
@@ -552,10 +552,9 @@ export function TabMasalar({ userInfo, kycApproved, onGoKyc }: {
   );
 }
 
-// Değerlendirme penceresi kapanışı (backend meeting-windows.ts reviewWindow ile aynı): buluşmadan 4 gün sonra 23:59:59 TR (UTC+3)
+// Değerlendirme penceresi kapanışı (backend meeting-windows.ts reviewWindow ile aynı): açılıştan (buluşmanın ertesi günü 00:00 TR) 7 gün sonra
 function reviewExpired(dateIso: string): boolean {
-  const tr = new Date(new Date(dateIso).getTime() + 3 * 60 * 60 * 1000);
-  return Date.now() > Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 4, 23 - 3, 59, 59, 999);
+  return Date.now() > reviewClosesAt(dateIso).getTime();
 }
 
 // Küçük Değerlendir butonu (altın geçişli hap, GOLD_PILL)

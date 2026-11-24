@@ -243,9 +243,10 @@ YARIN BULUŞMA (iki takvim modeli; ayrı sistem değil, mevcut paket hakları ay
     iptal yalnız bu karttan; masa kartlarındaki eski "Rezervasyon İptal" butonu kaldırıldı
   - Seçim Yap, Değiştir ve İptal Et yalnız masa kilitli değilken aktif; kilitli masada üçü de kapalı (web + mobil seçim kartı).
     Kaydı olmayan masa türünde Seçim Yap aktif kalır
-  - Değiştir: seçim yapıldıktan sonra 24 saat değiştirilemez, Yarın Buluşma'da bu süre 3 saat (WeeklySelection.createdAt +
-    CHANGE_LOCK_MS; GET /weekly-selection selection.changeAvailableAt; backend 403 "Seçimini yaptıktan sonra 24 saat değiştiremezsin." /
-    "Yarın Buluşma seçimini yaptıktan sonra 3 saat değiştiremezsin.")
+  - Değiştir: seçim yapıldıktan sonra Yarın masasında 3 saat, Hafta Sonu ve Planlı'da 24 saat değiştirilemez (WeeklySelection.createdAt +
+    CHANGE_LOCK_MS; GET /weekly-selection selection.changeAvailableAt); kilit süresince seçim kartında canlı geri sayım (live.selChangeIn).
+    Backend 403: Yarın "Yarın Buluşma seçimini yaptıktan sonra 3 saat değiştiremezsin.", Hafta Sonu / Planlı "Seçimini yaptıktan sonra
+    24 saat değiştiremezsin."
   - İptal Et: masa kilitli olmadığı sürece serbest, kullanım hakkı YANMAZ (Yarın + Planlı); kişi yalnız o kayda ait tarama kaydını ve
     masa eşleşmesini kaybeder (backend matching/selection-cancel.ts). İptal eden kullanıcı 24 saat boyunca hiçbir masa türüne katılamaz:
     tüm türlerde Seçim Yap kapalı (User.selectionCancelledAt; GET /weekly-selection cancelCooldownUntil; backend 403 "İptal ettiğin için
@@ -256,8 +257,9 @@ YARIN BULUŞMA (iki takvim modeli; ayrı sistem değil, mevcut paket hakları ay
     tarama kaydı açamaz (aynı gönderimdeki türler de birbirini sayar); seçim gönderilince / değiştirilince engellenir, uyarı "Bu güne
     zaten bir masan var." / "You already have a table on this day." (selection-cancel.ts busyMeetingDays). Eşleştirme algoritması da
     aynı kullanıcıya aynı güne ikinci masa kurmaz (matching.service poolScope → noTableOnDay)
-  - Pasif butonun altında neden metni (web + mobil seçim kartı): Değiştir 24 saat kilidinde "Seçimini 24 saat içinde değiştiremezsin.",
-    Yarın'da 3 saat kilidinde "Seçimini 3 saat içinde değiştiremezsin.", iptal sonrası Seçim Yap kapalıyken "İptal ettiğin için 24 saat
+  - Pasif butonun altında neden metni (web + mobil seçim kartı): Değiştir kilidinde (Yarın masasında 3 saat, Hafta Sonu ve Planlı'da
+    24 saat) kartta canlı geri sayım "Seçimini X saat Y dakika sonra değiştirebilirsin." / "You can change your choice in X h Y min."
+    (live.selChangeIn; süre dolunca metin kalkar, Değiştir aktif olur), iptal sonrası Seçim Yap kapalıyken "İptal ettiğin için 24 saat
     yeni masaya katılamazsın.", masa kilitliyken "Masan kilitlendi." (live.selReason*)
   - Hafta Sonu (Planlı) son saatler aynen: Grup Perşembe 18:00, Baş Başa Cuma 18:00, Kankamla Cumartesi 18:00; geçtiyse kayıt bir
     sonraki haftanın taramasına yazılır
@@ -390,6 +392,8 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     "Beni hatırla" ile çıkışta doğrudan "Tekrar hoş geldin, [ad]!" ekranına gidilir (süren token yenilemesi beklenir); uygulama kapatılıp
     açılınca da bu ekran görünür
   - Mobil açılışta yerel açılış görseli (siyah zemin, Ahenk logosu) en az 3 sn görünür; 3 sn dolmadan, yazı tipleri yüklenmeden ve açılış yönlendirmesi bitmeden kapanmaz.
+    Native açılış ekranında (splash) ve 3 sn'lik açılışta ana logo (uygulama ikonundaki işaret, saydam zemin; assets/splash-logo.png,
+    app.json expo-splash-screen, imageWidth 160) ekrana taşmadan, tam sığacak şekilde ortalı kullanılır
   - Üye alt menüsü (mobil, app/(tabs)/_layout.tsx): sekme sırası Ana Sayfa (Ahenk logosu, Eşleşme Paneli), Takvim (Masalarım),
     ortada büyük Profil, Paketler (bilet), Bildirimler (zil). Seçili olmayan ikon beyaz (#FFFFFF, opaklık 1), seçili ikon #FF3B30
     (theme.ts tabNavIcon). Orta Profil butonu ölçüleri theme.ts tabCenter değerlerinden (çap 64, 22 yukarı taşma, zemin renginde 4 halka,
@@ -406,7 +410,7 @@ MOBİL GİRİŞ (yalnız mobil uygulama):
     (PermissionIntro permissionIntroDone → Winback WinbackHost); tanıtım gösterilmeyecekse eskisi gibi hemen açılır
   - Profilim yerleşimi (mobil): profil fotoğrafının hemen altında küçük "Kişilik Ağacım" kartı (basınca Kişilik Ağacım ekranı); Hesap
     Bilgileri'nde Kişilik Ağacım ve Numara Engelleme butonları yok. Yasal kartın hemen üstünde "Gizlilik ve Güvenlik" kartı, içinde
-    Numara Engelleme. Hesap Bilgileri'nde "Dil / Language" seçili tarafı kayan segment kontrol (renkler theme.ts: iz inputGlass form zemini,
+    Numara Engelleme. Hesap Bilgileri'nde "Arayüz Dili / Interface Lang." seçili tarafı kayan segment kontrol (renkler theme.ts: iz inputGlass form zemini,
     kayan zemin tabBar.activeBg / activeBorder, seçili yazı tw.accent)
   - Kişilik Ağacım ekranı (mobil): "Kişilik Ağacım" büyük başlık (Serif) "← Profilim" ile aynı satırda, sağa yaslı; üstteki küçük etiket
     yok. Ağaç ekran açılınca bir kez hesaplanır, sabit resim (SkPicture) olarak çizilir; büyüme, yaprak / dal animasyonu, düşen yaprak ve
@@ -466,7 +470,7 @@ METİN KURALI (TR + EN, web + mobil + admin, i18n, bildirim / WhatsApp / e-posta
 WEBP KURALI:
   - Web ve mobil projedeki görseller WebP'dir (kalite 80, şeffaflık korunur; mobil sekme ikonları assets/tabs/*.webp, tintColor çalışır).
   - İstisnalar (PNG / JPG kalır): mobil uygulama ikonu, Android adaptive icon katmanları, splash görseli, bildirim ikonu ve app.json /
-    app.config'te tanımlı tüm görseller (assets/app-icon.png, adaptive-icon.png, start_logo.jpg, icon.png); web favicon, apple-touch-icon,
+    app.config'te tanımlı tüm görseller (assets/app-icon.png, adaptive-icon.png, splash-logo.png, icon.png); web favicon, apple-touch-icon,
     manifest ikonları (icon-192 / icon-512), OG ve sosyal medya paylaşım görseli (public/og-image.jpg; bütün sayfalarda og:image /
     twitter:image https://ahenk.co/og-image.jpg, lib/seo.ts OG_IMAGE; dinamik opengraph-image / twitter-image dosyaları yok), e-posta şablonlarında kullanılan görseller; tüm SVG ve GIF dosyaları; KYC dosyaları.
   - Yüklenen görseller backend'de WebP'ye çevrilir (common/image-webp.ts toWebp). Profil fotoğrafı, bot fotoğrafı ve mekân fotoğrafları
@@ -895,7 +899,7 @@ API CLIENT KURALLAR (web):
     mobil lib/api.ts langHeaders — i18n dili; elle fetch / XMLHttpRequest yapan yerler ve packages/ui istekleri dahil).
   - Dil belirleme sırası (resolveLanguage): 1) giriş yapmış kullanıcının hesabındaki dil (User.language: tr | en, varsayılan tr),
     2) cihazda / tarayıcıda kayıtlı seçim, 3) cihaz / tarayıcı dili Türkçe ise Türkçe, değilse English. Dil değişince hesaba kaydedilir
-    (PATCH /users/me/language). Profilim > Hesap Bilgileri'nde "Dil / Language" satırı (Türkçe / English, seçilide ✓).
+    (PATCH /users/me/language). Profilim > Hesap Bilgileri'nde "Arayüz Dili / Interface Lang." satırı (Türkçe / English, seçilide ✓).
   - Web adresleri: Türkçe mevcut adreslerde, İngilizce /en önekiyle (next-intl localePrefix "as-needed", app/[locale]/).
   - Dünya ikonu (dil seçici): mobilde giriş, kayıt ve "Tekrar hoş geldin" ekranlarında sağ üst (sağdan 20 pt; 24×24 görünür, 44×44 dokunma;
     solunda "TR" / "EN" 13, #FFFFFF, opaklık 0.7, 6 pt ara; açılır kart köşe 12, Türkçe / English, seçilide ✓; renkler tema paletinden:
@@ -983,9 +987,12 @@ MASA DETAY VE ÖN İZLEME KARTI DÜZENİ (web packages/ui MasaDetayKarti + TabMa
     hatırlatma işi, ON_MY_WAY / ON_MY_WAY_OPEN bildirimleri, MeetingParticipant.onMyWayAt (migration 20261120100000) ve metinler
   - 08:00 kuralı: masa detay kartı buluşmadan sonraki gün 08:00'e kadar Masalarım'da aktif kalır (meetingCardEnd; gece masa kapanışında
     COMPLETED olsa da Geçmiş'e düşmez; GET /meetings/my-history yalnız 08:00'i geçenler). Acil Yardım da 08:00'e kadar görünür
-  - Değerlendirme buluşmadan sonraki gün 08:00'de, kart Geçmiş Masalarım'a geçtiği an açılır (reviewWindow; bildirim cron'u 08:00;
-    gelmeyen işaretleme kartta 08:00'e kadar). "Değerlendir" İçerde paket kartı rozetindeki altın geçişli hap (web GOLD_PILL, mobil
-    GoldPill); 08:00'den önce basılırsa "[gün ay] 08:00'de değerlendirebilirsin" (masa.reviewNotYet; tarih değerlendirmenin açıldığı gün)
+  - Değerlendirme süresi (tüm masa türleri, Hafta Sonu / Planlı ve Yarın): buluşma günü 23:59'dan sonra (ertesi gün 00:00 TR) açılır,
+    değerlendirme yapılmamışsa açılıştan 7 gün sonra Değerlendir butonu kaybolur (backend meeting-windows.ts reviewWindow; web + mobil
+    shared reviewOpensAt / reviewClosesAt; değerlendirme bildirimi cron'u 00:00). Süre dolunca ya da değerlendirme yapılmışsa buton yok;
+    yapılmışsa puan ve yorum gösterilir. Gelmeyen işaretleme kartta 08:00'e kadar. "Değerlendir" İçerde paket kartı rozetindeki altın
+    geçişli hap (web GOLD_PILL, mobil GoldPill); açılıştan önce basılırsa "[tarih] 00:00'dan sonra değerlendirebilirsin" / "You can rate
+    after [date] 00:00" (masa.reviewNotYet; tarih değerlendirmenin açıldığı gün)
 
 # CLAUDE.md
 

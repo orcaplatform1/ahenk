@@ -77,7 +77,7 @@ export default function HesapSilmePage() {
               {!session ? null : pending ? (
                 <p style={{ textAlign: 'center', color: '#a39c93' }}>{t('del.pending')}</p>
               ) : (
-                <StdButton variant="ghost" redDot type="button" onClick={() => { setError(''); setOpen(true); }} className="mx-auto block" style={{ width: '72%' }}>
+                <StdButton variant="ghost" redDot type="button" onClick={() => { setError(''); setOpen(true); }} className="mx-auto block" style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}>
                   {t('del.deleteMine')}
                 </StdButton>
               )}

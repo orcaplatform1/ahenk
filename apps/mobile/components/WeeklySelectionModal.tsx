@@ -98,7 +98,7 @@ export function WeeklySelectionModal({ selection, onSubmit, open, onClose }: {
         })}
       </View>
       {!!error && <T style={{ fontSize: 12, color: ll.red2, marginTop: 8 }}>{error}</T>}
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
         <StdButton variant="ghost" label={t('live.wsLater')} style={{ flex: 1 }} onPress={close} />
         <StdButton variant="primary" label={sending ? '…' : t('live.wsConfirm')} disabled={disabled} style={[{ flex: 1 }, disabled && { opacity: 0.5 }]} onPress={submit} />
       </View>

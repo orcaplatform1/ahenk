@@ -336,7 +336,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
             <Input keyboardType="email-address" autoCapitalize="none" textContentType="emailAddress" value={newEmail} onChangeText={v => { setNewEmail(v); setEmailError(''); }} placeholder={t('prof.emailPh')} />
             <Input secureTextEntry textContentType="password" value={emailPw} onChangeText={v => { setEmailPw(v); setEmailError(''); }} placeholder={t('prof.currentPw')} />
             {!!emailError && <T style={{ color: tw.accent, fontSize: 12 }}>{emailError}</T>}
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <StdButton variant="ghost" label={t('prof.cancel')} style={{ flex: 1 }} onPress={() => { setEmailMode(false); setEmailError(''); }} />
               <StdButton variant="primary" label={emailSaving ? '…' : t('prof.save')} style={{ flex: 1 }} disabled={emailSaving} onPress={saveEmail} />
             </View>
@@ -367,7 +367,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
               <Input style={{ flex: 1 }} keyboardType="number-pad" textContentType="telephoneNumber" value={newPhone} onChangeText={v => { setNewPhone(v.replace(/\D/g, '').slice(0, 15)); setPhoneError(''); }} placeholder={phoneCountry === 'TR' ? '5XX XXX XX XX' : ''} />
             </View>
             {!!phoneError && <T style={{ color: tw.accent, fontSize: 12 }}>{phoneError}</T>}
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <StdButton variant="ghost" label={t('prof.cancel')} style={{ flex: 1 }} onPress={() => { setPhoneMode('idle'); setPhoneError(''); setNewPhone(''); }} />
               <StdButton variant="primary" label={phoneSaving ? '…' : t('prof.sendCode')} style={{ flex: 1 }} disabled={phoneSaving} onPress={sendPhoneOtp} />
             </View>
@@ -380,7 +380,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
             <OtpCountdown seconds={phoneCountdown.seconds} fontSize={12} />
             {!!phoneError && <T style={{ color: tw.accent, fontSize: 12, textAlign: 'center' }}>{phoneError}</T>}
             <Btn variant="textLink" disabled={phoneCountdown.waiting || phoneSaving} onPress={sendPhoneOtp} label={t('prof.resend')} />
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <StdButton variant="ghost" label={t('prof.back')} style={{ flex: 1 }} onPress={() => { setPhoneMode('enter'); setPhoneError(''); setOtp(''); phoneCountdown.start(0); }} />
               <StdButton variant="primary" label={phoneSaving ? '…' : t('prof.verify')} style={{ flex: 1 }} disabled={phoneSaving || otp.length !== 6} onPress={() => verifyPhone()} />
             </View>
@@ -474,7 +474,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
               );
             })}
             {!!saveError && <T style={{ fontSize: 14, color: tw.accent }}>{saveError}</T>}
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
               <StdButton variant="ghost" label={t('prof.cancel')} style={{ flex: 1 }} onPress={() => setEditingVenue(false)} />
               <StdButton variant="primary" label={saving ? t('prof.saving') : t('prof.save')} style={{ flex: 1 }} disabled={saving} onPress={saveVenue} />
             </View>

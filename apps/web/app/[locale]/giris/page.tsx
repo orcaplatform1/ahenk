@@ -197,7 +197,7 @@ function VenueLogin() {
             onClick={sendOtp}
             disabled={loading || !phoneValid}
             className="mx-auto block mt-1 disabled:opacity-40"
-            style={{ width: '72%' }}
+            style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}
           >
             {loading ? t('login.sending') : t('login.sendCode')}
           </StdButton>
@@ -235,7 +235,7 @@ function VenueLogin() {
             onClick={emailLogin}
             disabled={loading || !email || !password}
             className="mx-auto block mt-1 disabled:opacity-40"
-            style={{ width: '72%' }}
+            style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}
           >
             {loading ? t('login.loggingIn') : t('login.submit')}
           </StdButton>
@@ -244,7 +244,7 @@ function VenueLogin() {
 
       {method === 'email' && (
         <div className="mt-4 flex justify-center">
-          <StdButton variant="ghost" as={Link} href="/mekan/sifremi-unuttum" className="mx-auto block" style={{ width: '72%' }}>
+          <StdButton variant="ghost" as={Link} href="/mekan/sifremi-unuttum" className="mx-auto block" style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}>
             {t('login.forgot')}
           </StdButton>
         </div>
@@ -422,7 +422,7 @@ export default function GirisPage() {
                 {t('login.contactPost')}
               </p>
               {sanction.type === 'WARNING' ? (
-                <div className="flex gap-3 mt-1">
+                <div className="flex flex-wrap gap-3 mt-1">
                   <StdButton variant="ghost" onClick={async () => { await api.logout(); setSanction(null); }} className="flex-1 justify-center">
                     {t('login.cancel')}
                   </StdButton>
@@ -632,7 +632,7 @@ export default function GirisPage() {
                   onClick={handleSendOtp}
                   disabled={loading || !phoneValid}
                   className="mx-auto block mt-1 disabled:opacity-40"
-                  style={{ width: '72%' }}
+                  style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}
                 >
                   {loading ? t('login.sending') : t('login.sendCode')}
                 </StdButton>
@@ -670,7 +670,7 @@ export default function GirisPage() {
                   onClick={handleEmailLogin}
                   disabled={loading || !canSubmit}
                   className="mx-auto block mt-1 disabled:opacity-40"
-                  style={{ width: '72%' }}
+                  style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}
                 >
                   {loading ? t('login.loggingIn') : t('login.submit')}
                 </StdButton>
@@ -680,7 +680,7 @@ export default function GirisPage() {
         {/* Alt linkler */}
         {method === 'email' && (
           <div className="mt-4 flex justify-center">
-            <StdButton variant="ghost" as={Link} href="/sifremi-unuttum" className="mx-auto block" style={{ width: '72%' }}>
+            <StdButton variant="ghost" as={Link} href="/sifremi-unuttum" className="mx-auto block" style={{ width: 'fit-content', minWidth: '72%', maxWidth: '100%' }}>
               {t('login.forgot')}
             </StdButton>
           </div>

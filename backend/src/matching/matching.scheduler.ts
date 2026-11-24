@@ -227,7 +227,7 @@ export class MatchingScheduler {
 
   // Her gün 08:00 (TR): değerlendirmesi bu sabah açılan masalarda (dün buluşanlar; kart Geçmiş Masalarım'a geçti) henüz
   // değerlendirmeyen katılımcılara bildirim
-  @Cron("0 8 * * *", { timeZone: "Europe/Istanbul" })
+  @Cron("0 0 * * *", { timeZone: "Europe/Istanbul" })
   async notifyReviewOpen(): Promise<void> {
     try {
       const now = new Date();

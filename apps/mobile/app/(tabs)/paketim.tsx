@@ -305,7 +305,7 @@ export default function Paketim() {
                   {stats.pendingRewards?.map((r) => (
                     <View key={r.id} style={{ gap: 8, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, backgroundColor: 'rgba(46,158,98,0.10)', borderWidth: 1, borderColor: 'rgba(46,158,98,0.4)' }}>
                       <T w={600} style={{ fontSize: 14, color: ll.text }}>{t('loyalty.rewardTitle')}</T>
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         {([['GROUP', 'loyalty.rewardGroup'], ['ONE_ON_ONE', 'loyalty.rewardOne'], ['KANKA', 'loyalty.rewardKanka']] as const).map(([type, label]) => (
                           <StdButton variant="ghost" key={type} label={t(label)} disabled={claiming} style={{ flex: 1, opacity: claiming ? 0.5 : 1 }} onPress={() => claimReward(r.id, type)} />
                         ))}

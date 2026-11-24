@@ -112,7 +112,7 @@ export default function Giris() {
               {t('login.contactPre')} <T style={{ fontSize: 12, color: c.red, textDecorationLine: 'underline' }} onPress={() => Linking.openURL('mailto:bilgi@ahenk.co')}>bilgi@ahenk.co</T> {t('login.contactPost')}
             </T>
             {sanction.type === 'WARNING' ? (
-              <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 4 }}>
                 <StdButton variant="ghost" label={t('common.cancel')} style={{ flex: 1 }} onPress={async () => { await api.logout(); setSanction(null); }} />
                 <StdButton variant="primary" label={t('common.continue')} style={{ flex: 1 }} onPress={() => { setSanction(null); router.replace('/(tabs)'); }} />
               </View>

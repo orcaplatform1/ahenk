@@ -1019,7 +1019,7 @@
     "sosHow": "Nasıl çalışır?",
     "sosHowText": "Buluşma akşamından sabah 08:00'e kadar, masada ya da sonrasında nereye gidersen git, masadaki biri tarafından fiziksel şiddet, alıkoyulma, taciz veya istismarla karşılaşırsan ya da bu ihtimali hissedersen hemen butona bas, eylemin türünü seç ve onayla. Konumun ve masadaki kişilerin kimlik bilgileri anında ekibimize ulaşır ve emniyet birimleriyle paylaşılır. Talebin çözülene kadar, uygulama kapalı olsa bile ekibimiz tarafından takip edilirsin. Güvenliğin bizim için çok önemli.",
     "sosCall112": "Arayabilecek durumdaysan 112",
-    "reviewNotYet": "{date} 08:00'de değerlendirebilirsin",
+    "reviewNotYet": "{date} 00:00'dan sonra değerlendirebilirsin",
     "chatTitle": "Masa Sohbeti",
     "chatRulesTitle": "Masa Kuralları:",
     "chatRulesText": "Hakaret, tehdit, taciz, telefon numarası veya sosyal medya paylaşımı, buluşma yerini değiştirme teklifi ve uyuşturucu içerikli mesajlar yasaktır. Tespit edilirse masadan çıkarılırsın, kullanım hakkın yanar ve iade yapılmaz.",

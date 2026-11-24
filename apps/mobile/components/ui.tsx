@@ -84,12 +84,18 @@ function dropKeys<S extends object>(style: StyleProp<S>, keys: readonly string[]
   for (const k of keys) delete o[k];
   return o as S;
 }
+// Yan yana flex:1 butonlar yazının genişliğinin altına daralmaz (yazı kesilmez); satır flexWrap ile dar ekranda alt alta geçer
+function noShrink(style: ViewStyle | undefined): ViewStyle | undefined {
+  if (!style || typeof style.flex !== 'number' || style.flex <= 0) return style;
+  const { flex, ...rest } = style;
+  return { ...rest, flexGrow: flex, flexShrink: 0, flexBasis: 'auto' };
+}
 export function StdButton({ variant = 'primary', label, style, full, disabled, redDot, textStyle, noUpper, ...rest }: BtnProps & { variant?: 'primary' | 'ghost' }) {
   const ghost = variant === 'ghost';
   const dot = ghost ? (redDot ? c.ghostRedDot : btnGhost.dotColor) : btnPrimary.dotColor;
   return (
     <Pressable hitSlop={HIT} disabled={disabled} accessibilityRole="button" {...rest}
-      style={({ pressed }) => [s.btn, ghost ? s.btnGhost : s.btnPrimary, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: ghost ? btnGhost.disabledOpacity : btnPrimary.disabledOpacity }, dropKeys<ViewStyle>(style, STD_BOX_DROP)]}>
+      style={({ pressed }) => [s.btn, ghost ? s.btnGhost : s.btnPrimary, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: ghost ? btnGhost.disabledOpacity : btnPrimary.disabledOpacity }, noShrink(dropKeys<ViewStyle>(style, STD_BOX_DROP))]}>
       <View style={[s.dot, { backgroundColor: dot }]} />
       <Text numberOfLines={1} style={withWebLH([s.btnText, { fontFamily: sans(ghost ? 500 : 600), color: ghost ? btnGhost.color : c.white }, dropKeys<TextStyle>(textStyle, STD_TEXT_DROP)])}>{noUpper ? label : upper(label)}</Text>
     </Pressable>

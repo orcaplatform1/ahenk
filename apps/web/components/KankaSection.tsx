@@ -207,7 +207,7 @@ export function KankaSection() {
                 </div>
               </div>
               {msg && <p style={{ fontSize: 12, color: '#ff6b6b' }}>{msg}</p>}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <StdButton variant="ghost" onClick={() => setSheet(null)} className="flex-1 justify-center">{t('kanka.cancel')}</StdButton>
                 <StdButton variant="primary" onClick={sendInvite} disabled={busy} className="flex-1 justify-center disabled:opacity-50">{busy ? '…' : t('kanka.sendInvite')}</StdButton>
               </div>
@@ -248,7 +248,7 @@ export function KankaSection() {
             <p style={{ fontSize: 12, color: '#888', marginBottom: 12, lineHeight: 1.5 }}>{t('kanka.leaveInfo')}</p>
           )}
           {msg && <p style={{ fontSize: 12, color: '#ff6b6b', marginBottom: 10 }}>{msg}</p>}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <StdButton variant="ghost" onClick={() => setSheet(null)} className="flex-1 justify-center">{t('kanka.close')}</StdButton>
             {!state.kanka.locked && (
               <button onClick={unlink} disabled={busy}

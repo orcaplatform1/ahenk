@@ -53,14 +53,14 @@ function nextDayAt(scheduledAt: Date, hourTR: number): Date {
   return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 1, hourTR - 3, 0, 0, 0));
 }
 
-// Değerlendirme penceresi (TR saati, UTC+3): buluşmanın ertesi günü 08:00 (kart Geçmiş Masalarım'a geçtiği an) → buluşmadan 4 gün sonra 23:59
+// Değerlendirme penceresi (TR saati, UTC+3; tüm masa türleri ve iki mod): buluşma günü 23:59'dan sonra, ertesi gün 00:00'da açılır;
+// açılıştan tam 7 gün sonra kapanır
+export const REVIEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 export function reviewWindow(scheduledAt: Date): { opensAt: Date; closesAt: Date } {
   const tr = new Date(scheduledAt.getTime() + 3 * 60 * 60 * 1000);
   const y = tr.getUTCFullYear(), m = tr.getUTCMonth(), d = tr.getUTCDate();
-  return {
-    opensAt: new Date(Date.UTC(y, m, d + 1, 8 - 3, 0, 0, 0)),
-    closesAt: new Date(Date.UTC(y, m, d + 4, 23 - 3, 59, 59, 999)),
-  };
+  const opensAt = new Date(Date.UTC(y, m, d + 1, 0 - 3, 0, 0, 0));
+  return { opensAt, closesAt: new Date(opensAt.getTime() + REVIEW_WINDOW_MS) };
 }
 
 // Acil yardım süresi (tek kaynak; web süreyi dashboard yanıtındaki sosEndsAt'ten alır): masa saatinden ertesi gün 08:00'e kadar

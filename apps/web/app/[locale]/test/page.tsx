@@ -242,7 +242,7 @@ export default function TestPage() {
         </AnimatePresence>
 
         {/* Alt butonlar */}
-        <div className="flex items-center justify-between mt-6 gap-3">
+        <div className="flex flex-wrap items-center justify-between mt-6 gap-3">
           <StdButton variant="ghost" onClick={goPrev} disabled={current === 0} className="disabled:opacity-30">
             {t('common.back')}
           </StdButton>

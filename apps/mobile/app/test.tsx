@@ -100,7 +100,7 @@ export default function Test() {
           })}
         </View>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, gap: 12 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, gap: 12 }}>
         <StdButton variant="ghost" label={t('reg.backArrow')} disabled={current === 0} style={current === 0 ? { opacity: 0.3 } : undefined} onPress={() => setCurrent(x => Math.max(0, x - 1))} />
         <StdButton variant="primary" label={submitting ? '…' : current === total - 1 ? t('test.finish') : t('test.next')} style={[{ flex: 1 }, (!has || submitting) && { opacity: 0.3 }]} disabled={!has || submitting}
           onPress={() => { if (!has) return; if (current === total - 1) submit(); else setCurrent(x => x + 1); }} />

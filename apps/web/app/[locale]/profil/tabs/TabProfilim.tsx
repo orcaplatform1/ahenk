@@ -74,7 +74,7 @@ interface Props {
 }
 
 // Tüm Cihazlardan Çıkış Yap / Hesabımı Sil: yazı dar ekranda da tek satıra sığar
-const ACCOUNT_BTN: React.CSSProperties = { width: '72%', justifyContent: 'center', whiteSpace: 'nowrap', padding: '9px 10px', fontSize: 'clamp(8px, 2.5vw, 10px)', letterSpacing: '0.04em' };
+const ACCOUNT_BTN: React.CSSProperties = { width: 'fit-content', minWidth: '72%', maxWidth: '100%', justifyContent: 'center', whiteSpace: 'nowrap', padding: '9px 10px', fontSize: 'clamp(8px, 2.5vw, 10px)', letterSpacing: '0.04em' };
 
 export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activePlan }: Props) {
   const t = useTranslations();
@@ -279,7 +279,7 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
             <input type="email" value={newEmail} onChange={e => { setNewEmail(e.target.value); setEmailError(''); }} placeholder="yeni@eposta.com" className="input-glass px-4 py-3 text-sm w-full" />
             <input type="password" value={emailPassword} onChange={e => { setEmailPassword(e.target.value); setEmailError(''); }} placeholder={t('prof.currentPw')} className="input-glass px-4 py-3 text-sm w-full" />
             {emailError && <p className="text-[#ff6b6b] text-xs">{emailError}</p>}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <StdButton variant="ghost" onClick={() => { setEmailMode(false); setEmailError(''); }} className="flex-1 justify-center">{t('prof.cancel')}</StdButton>
               <StdButton variant="primary" onClick={saveEmail} disabled={emailSaving} className="flex-1">{emailSaving ? '…' : t('prof.save')}</StdButton>
             </div>
@@ -314,7 +314,7 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
               <input type="tel" value={newPhone} onChange={e => { setNewPhone(e.target.value.replace(/\D/g, '').slice(0, 15)); setPhoneError(''); }} placeholder={phoneCountry === 'TR' ? '5XX XXX XX XX' : ''} className="input-glass flex-1 px-4 py-3 text-sm" />
             </div>
             {phoneError && <p className="text-[#ff6b6b] text-xs">{phoneError}</p>}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <StdButton variant="ghost" onClick={() => { setPhoneMode('idle'); setPhoneError(''); setNewPhone(''); }} className="flex-1 justify-center">{t('prof.cancel')}</StdButton>
               <StdButton variant="primary" onClick={sendPhoneOtp} disabled={phoneSaving} className="flex-1">{phoneSaving ? '…' : t('prof.sendCode')}</StdButton>
             </div>
@@ -337,7 +337,7 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
             <OtpCountdown seconds={phoneCountdown.seconds} className="text-xs text-[#a39c93] text-center" />
             {phoneError && <p className="text-[#ff6b6b] text-xs text-center">{phoneError}</p>}
             <button type="button" onClick={sendPhoneOtp} disabled={phoneCountdown.waiting || phoneSaving} className="text-xs text-[#a39c93] hover:text-[#888] transition-colors text-center disabled:opacity-40 disabled:cursor-not-allowed">{t('prof.resend')}</button>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <StdButton variant="ghost" onClick={() => { setPhoneMode('enter'); setPhoneError(''); setPhoneOtp(['', '', '', '', '', '']); phoneCountdown.start(0); }} className="flex-1 justify-center">{t('prof.back')}</StdButton>
               <StdButton variant="primary" onClick={verifyPhoneOtp} disabled={phoneSaving || phoneOtp.join('').length !== 6} className="flex-1 disabled:opacity-40">{phoneSaving ? '…' : t('prof.verify')}</StdButton>
             </div>
@@ -514,7 +514,7 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
               );
             })}
             {saveError && <p className="text-accent text-sm">{saveError}</p>}
-            <div className="flex gap-2 mt-1">
+            <div className="flex flex-wrap gap-2 mt-1">
               <StdButton variant="ghost" onClick={() => setEditingVenue(false)} className="flex-1 justify-center">{t('prof.cancel')}</StdButton>
               <StdButton variant="primary" onClick={saveVenuePreference} disabled={saving} className="flex-1">
                 {saving ? 'Kaydediliyor…' : t('prof.save')}

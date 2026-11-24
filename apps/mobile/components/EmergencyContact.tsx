@@ -45,7 +45,7 @@ export function EmergencyContact() {
       {!editing && contact && (
         <View style={{ gap: 8 }}>
           <T style={{ fontSize: 13, color: ll.text2 }}>{contact.name} · {contact.phone}</T>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <StdButton variant="ghost" label={t('emergency.edit')} onPress={startEdit} />
             <StdButton variant="ghost" label={t('emergency.delete')} disabled={busy} onPress={() => { void remove(); }} />
           </View>
@@ -59,7 +59,7 @@ export function EmergencyContact() {
             <CountryCodeButton country={country} onChange={(c) => { setCountry(c); setError(''); }} />
             <Input form style={{ flex: 1 }} value={national} keyboardType="phone-pad" onChangeText={(v) => { setNational(v.replace(/\D/g, '').slice(0, 15)); setError(''); }} placeholder={country === 'TR' ? '5XX XXX XX XX' : ''} />
           </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <StdButton variant="primary" label={busy ? '…' : t('common.save')} disabled={busy} onPress={() => { void save(); }} />
             <StdButton variant="ghost" label={t('common.cancel')} onPress={() => setEditing(false)} />
           </View>

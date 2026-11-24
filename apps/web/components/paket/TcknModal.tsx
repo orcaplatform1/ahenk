@@ -50,7 +50,7 @@ export default function TcknModal({ open, busy, error, onCancel, onSubmit }: {
           {t('pay.iyzicoNote')}
         </p>
         {error && <p className="text-xs text-[#ff6b6b]">{error}</p>}
-        <div className="flex gap-2 mt-1">
+        <div className="flex flex-wrap gap-2 mt-1">
           <StdButton variant="ghost" onClick={() => { setTckn(''); onCancel(); }} className="flex-1 justify-center">{t('pay.cancel')}</StdButton>
           <StdButton variant="primary" onClick={() => valid && onSubmit(tckn, type)} disabled={!valid || busy} className="flex-1 justify-center disabled:opacity-50">
             {busy ? t('pay.redirecting') : t('pay.proceed')}

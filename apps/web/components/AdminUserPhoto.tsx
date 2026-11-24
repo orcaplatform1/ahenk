@@ -89,7 +89,7 @@ export function AdminUserPhoto({ userId, photoUrl, size = 72, gender, initials, 
                   </div>
                 )}
                 {error && <p style={{ margin: 0, fontSize: 12, color: RED }}>{error}</p>}
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   <StdButton variant="ghost" type="button" onClick={() => setConfirm(null)} className="flex-1 justify-center">Vazgeç</StdButton>
                   <button type="button" onClick={() => void doDelete()} disabled={busy || (confirm.prior > 0 && !days)}
                     style={{ flex: 1, minHeight: 40, borderRadius: 8, cursor: 'pointer', background: RED, border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, opacity: busy || (confirm.prior > 0 && !days) ? 0.5 : 1, fontFamily: SANS }}>

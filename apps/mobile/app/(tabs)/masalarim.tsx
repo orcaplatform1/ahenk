@@ -22,7 +22,7 @@ import { InlineLH, StdButton, Card, Mono, Serif, SkeletonBlock, T, Title, Glow, 
 import { c, ll, llColumn, masaKart, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
 
-import { formatDayTab, weekdayName } from '@ahenk/shared';
+import { formatDayTab, reviewClosesAt, weekdayName } from '@ahenk/shared';
 import { currentLang } from '@/lib/i18n';
 import { useTranslation } from 'react-i18next';
 interface HistoryMeeting {
@@ -227,10 +227,9 @@ function MasaBlock({ item, locked, cardType, userInfo, kanka, width }: {
   return <EmptyMasaCard locked={false} cardType={cardType} userInfo={userInfo} kanka={kanka} photo={m.venuePhotos?.[0]} />;
 }
 
-// Değerlendirme penceresi kapanışı (backend meeting-windows.ts reviewWindow ile aynı): buluşmadan 4 gün sonra 23:59:59 TR (UTC+3)
+// Değerlendirme penceresi kapanışı (backend meeting-windows.ts reviewWindow ile aynı): açılıştan (buluşmanın ertesi günü 00:00 TR) 7 gün sonra
 function reviewExpired(dateIso: string): boolean {
-  const tr = new Date(new Date(dateIso).getTime() + 3 * 60 * 60 * 1000);
-  return Date.now() > Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + 4, 23 - 3, 59, 59, 999);
+  return Date.now() > reviewClosesAt(dateIso).getTime();
 }
 
 function HistoryListInner({ history }: { history: HistoryMeeting[] }) {

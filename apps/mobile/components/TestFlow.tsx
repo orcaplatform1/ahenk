@@ -49,7 +49,7 @@ export function TestFlow({ questions, current, answers, onPick, onPrev, onNext, 
           })}
         </View>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 4 }}>
         <StdButton variant="ghost" label={t('reg.backArrow')} noUpper={false} disabled={current === 0} onPress={onPrev} />
         <StdButton variant="primary" label={submitting ? '…' : last ? t('test.finish') : t('test.next')} style={{ flex: 1 }} disabled={!has || submitting} onPress={onNext} />
       </View>

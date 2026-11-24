@@ -288,9 +288,9 @@ export function TabPaket({ maintenanceMode = false }: Props) {
             {referralStats.pendingRewards?.map((r) => (
               <div key={r.id} className="flex flex-col gap-2" style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(46,158,98,0.10)', border: '1px solid rgba(46,158,98,0.4)' }}>
                 <p className="text-sm font-semibold text-[#f4f1ec]" style={{ margin: 0 }}>{t('loyalty.rewardTitle')}</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-wrap gap-2">
                   {([['GROUP', 'loyalty.rewardGroup'], ['ONE_ON_ONE', 'loyalty.rewardOne'], ['KANKA', 'loyalty.rewardKanka']] as const).map(([type, label]) => (
-                    <StdButton variant="ghost" key={type} type="button" disabled={claiming} onClick={() => claimReward(r.id, type)} className="justify-center disabled:opacity-50">
+                    <StdButton variant="ghost" key={type} type="button" disabled={claiming} onClick={() => claimReward(r.id, type)} className="flex-1 justify-center disabled:opacity-50">
                       {t(label)}
                     </StdButton>
                   ))}
@@ -348,7 +348,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
               </p>
               {/* Mobil: önce ahenk:// ile uygulama, 1,5 sn'de açılmazsa mağaza; masaüstü: iki mağaza butonu */}
               {devicePlatform() === 'desktop' ? (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <StdButton variant="primary" as="a" href={APP_STORE_URL || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!APP_STORE_URL} className="flex-1 justify-center" style={{ ...(APP_STORE_URL ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>App Store</StdButton>
                   <StdButton variant="primary" as="a" href={PLAY_STORE_URL || undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!PLAY_STORE_URL} className="flex-1 justify-center" style={{ ...(PLAY_STORE_URL ? {} : { opacity: 0.5, pointerEvents: 'none' as const }) }}>Play Store</StdButton>
                 </div>

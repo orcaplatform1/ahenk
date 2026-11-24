@@ -152,7 +152,7 @@ export function KankaSection() {
               </View>
             </View>
             {!!msg && <T style={{ fontSize: 12, lineHeight: 18, color: tw.accent }}>{msg}</T>}
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <StdButton variant="ghost" label={t('kanka.cancel')} style={{ flex: 1 }} onPress={() => setSheet(null)} />
               <StdButton variant="primary" label={busy ? '…' : t('kanka.sendInvite')} style={[{ flex: 1 }, busy && { opacity: 0.5 }]} disabled={busy} onPress={sendInvite} />
             </View>
@@ -191,7 +191,7 @@ export function KankaSection() {
               {state.kanka.locked ? state.kanka.lockReason : t('kanka.leaveInfo')}
             </T>
             {!!msg && <T style={{ fontSize: 12, lineHeight: 18, color: tw.accent, marginBottom: 10 }}>{msg}</T>}
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <StdButton variant="ghost" label={t('kanka.close')} style={{ flex: 1 }} onPress={() => setSheet(null)} />
               {!state.kanka.locked && (
                 <Btn variant="dangerPill" onPress={unlink} disabled={busy} label={busy ? '…' : t('kanka.leave')} />

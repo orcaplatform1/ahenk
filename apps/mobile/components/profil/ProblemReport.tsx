@@ -69,7 +69,7 @@ export function ProblemReport({ open, onClose, screen }: { open: boolean; onClos
       {done ? (
         <View style={{ gap: 16 }}>
           <T style={{ fontSize: 14, color: ll.text2 }}>{t('report.thanks')}</T>
-          <StdButton variant="ghost" label={t('report.close')} style={{ width: '72%', alignSelf: 'center' }} onPress={onClose} />
+          <StdButton variant="ghost" label={t('report.close')} style={{ minWidth: '72%', maxWidth: '100%', alignSelf: 'center' }} onPress={onClose} />
         </View>
       ) : (
         <View style={{ gap: 12 }}>
@@ -89,8 +89,8 @@ export function ProblemReport({ open, onClose, screen }: { open: boolean; onClos
           {files.length < MAX_IMAGES && <StdButton variant="ghost" label={t('report.addImage', { count: files.length, max: MAX_IMAGES })} full onPress={addFiles} />}
           {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}
           <View style={{ marginTop: 8, gap: 12 }}>
-            <StdButton variant="primary" label={busy ? t('report.sending') : t('report.send')} style={{ width: '72%', alignSelf: 'center' }} disabled={busy} onPress={submit} />
-            <StdButton variant="ghost" label={t('report.cancel')} style={{ width: '72%', alignSelf: 'center' }} onPress={onClose} />
+            <StdButton variant="primary" label={busy ? t('report.sending') : t('report.send')} style={{ minWidth: '72%', maxWidth: '100%', alignSelf: 'center' }} disabled={busy} onPress={submit} />
+            <StdButton variant="ghost" label={t('report.cancel')} style={{ minWidth: '72%', maxWidth: '100%', alignSelf: 'center' }} onPress={onClose} />
           </View>
         </View>
       )}

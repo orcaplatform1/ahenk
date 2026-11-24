@@ -511,7 +511,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
   const rows = participantRows(masa.participants.filter(p => !p.cancelled), masa.type);
   const hasMap = !!(masa.venueMapsUrl || masa.venueAddress);
 
-  // "Değerlendir": değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı
+  // "Değerlendir": değerlendirme buluşma günü 23:59'dan sonra (ertesi gün 00:00) açılır; önce basılırsa uyarı
   const [reviewWarn, setReviewWarn] = useState('');
   const reviewAt = reviewOpensAt(masa.scheduledAt);
   function handleReview() {
