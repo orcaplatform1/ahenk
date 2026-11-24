@@ -6,7 +6,7 @@
 // Hikâye: Instagram / Facebook yüklüyse kart görseli doğrudan hikâye ekranına gider (Meta uygulama kimliği EXPO_PUBLIC_FACEBOOK_APP_ID);
 // uygulama yüklü değilse ya da kimlik tanımlı değilse sistem paylaşım menüsü açılır. Öncesinde kişisel davet linki panoya kopyalanır.
 import React, { useEffect, useRef, useState } from 'react';
-import { Linking, Modal, Platform, Pressable, ScrollView, Share, View } from 'react-native';
+import { Image, Linking, Modal, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { File, Paths } from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library/legacy';
@@ -24,13 +24,19 @@ import { ensurePermission } from '@/lib/permissions';
 import { tw } from '@/theme/theme';
 
 type MeetingKind = 'GROUP' | 'ONE_ON_ONE' | 'KANKA';
-interface CardData { type: MeetingKind; uyumSkoru: number; dnaShort: string | null; venueName: string | null; scheduledAt: string; teaser: number; inviteLink: string }
+interface CardData { type: MeetingKind; uyumSkoru: number; dnaShort: string | null; venueName: string | null; scheduledAt: string; teaser: number; inviteCode: number | null; inviteLink: string | null }
 
 // Masa türü renkleri (paket kartı paletinden: Grup mavi, Baş Başa kırmızı, Kankamla mor; web ShareCard ile aynı)
 const TYPE_COLORS: Record<MeetingKind, { accent: string; from: string; to: string }> = {
   GROUP: { accent: '#3b7dd8', from: '#071a3a', to: '#1d4f9c' },
   ONE_ON_ONE: { accent: '#d6453a', from: '#3d0907', to: '#a3231b' },
   KANKA: { accent: '#8b5cf6', from: '#1f0a3a', to: '#5b2a9c' },
+};
+// Masa türüne göre arka plan görseli (web ile aynı dosyalar); yüklenemezse gradyan görünür
+const BG_URL: Record<MeetingKind, string> = {
+  GROUP: 'https://ahenk.co/share-bg/grup.png',
+  ONE_ON_ONE: 'https://ahenk.co/share-bg/basbasa.png',
+  KANKA: 'https://ahenk.co/share-bg/kankamla.png',
 };
 
 function ActionBtn({ label, onPress }: { label: string; onPress: () => void }) {
@@ -49,6 +55,7 @@ export function ShareCardModal({ meetingId, onClose }: { meetingId: string; onCl
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [bgFailed, setBgFailed] = useState(false);
   // Skia makeImageFromView yerel görünüm referansı ister
   const cardRef = useRef<React.ComponentRef<typeof View> | null>(null) as React.RefObject<any>;
 
@@ -57,7 +64,7 @@ export function ShareCardModal({ meetingId, onClose }: { meetingId: string; onCl
   }, [meetingId]);
 
   const teaserText = data ? t(`share.teasers.${data.type}.t${data.teaser}`) : '';
-  const shareText = data ? t('share.shareText', { teaser: teaserText, link: data.inviteLink }) : '';
+  const shareText = data ? t('share.shareText', { teaser: teaserText, link: data.inviteLink ?? 'https://ahenk.co' }) : '';
 
   async function changeTeaser() {
     if (!data || busy) return;
@@ -111,7 +118,7 @@ export function ShareCardModal({ meetingId, onClose }: { meetingId: string; onCl
       if (appId && (await storyTargetReady(kind))) {
         await RNShare.shareSingle({
           social: kind === 'ig' ? Social.InstagramStories : Social.FacebookStories,
-          appId, backgroundImage: uri, attributionURL: data?.inviteLink,
+          appId, backgroundImage: uri, attributionURL: data?.inviteLink ?? undefined,
         });
         return;
       }
@@ -122,7 +129,7 @@ export function ShareCardModal({ meetingId, onClose }: { meetingId: string; onCl
   // Hikâye: önce kişisel davet linki panoya kopyalanır ve uyarı gösterilir, "Tamam" ile paylaşım başlar
   function story(kind: 'ig' | 'fb') {
     if (!data) return;
-    Clipboard.setStringAsync(data.inviteLink).catch(() => {});
+    if (data.inviteLink) Clipboard.setStringAsync(data.inviteLink).catch(() => {});
     showAlert(t('share.linkCopied'), undefined, [{ text: t('kanka.ok'), onPress: () => { shareStory(kind); } }]);
   }
 
@@ -142,6 +149,10 @@ export function ShareCardModal({ meetingId, onClose }: { meetingId: string; onCl
               <View ref={cardRef} collapsable={false} style={{ width: '100%', borderRadius: 14, overflow: 'hidden' }}>
               <LinearGradient colors={['#0b0b0b', col.from, col.to]} locations={[0, 0.45, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={{ width: '100%', aspectRatio: 9 / 16, borderRadius: 14, padding: 22, justifyContent: 'space-between', overflow: 'hidden' }}>
+                {!bgFailed && (
+                  <Image source={{ uri: BG_URL[data.type] }} resizeMode="cover" onError={() => setBgFailed(true)} accessible={false} accessibilityIgnoresInvertColors
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+                )}
                 <View style={{ gap: 14 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                     <Serif style={{ fontSize: 26, color: '#fff' }}>Ahenk</Serif>
@@ -173,7 +184,7 @@ export function ShareCardModal({ meetingId, onClose }: { meetingId: string; onCl
                 </View>
                 <View>
                   <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginBottom: 10 }} />
-                  <T w={600} style={{ fontSize: 12, color: '#fff', textAlign: 'center' }}>{t('share.footer')}</T>
+                  <T w={600} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4} style={{ fontSize: 12, color: '#fff', textAlign: 'center' }}>{t('share.footer', { code: data.inviteCode ?? '' })}</T>
                 </View>
               </LinearGradient>
               </View>

@@ -1949,7 +1949,7 @@
   },
   "share": {
     "title": "Ahenk Table Dynamics (AI Report)",
-    "footer": "Find your own table · ahenk.co",
+    "footer": "Find your own table · ahenk.co/davet/{code}",
     "typeGROUP": "Group Table",
     "typeONE_ON_ONE": "Duo Table",
     "typeKANKA": "Bring a Buddy Table",

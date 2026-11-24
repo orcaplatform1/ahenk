@@ -1949,7 +1949,7 @@
   },
   "share": {
     "title": "Ahenk Masa Dinamiği (Yapay Zekâ Raporu)",
-    "footer": "Sen de kendi masanı bul · ahenk.co",
+    "footer": "Sen de kendi masanı bul · ahenk.co/davet/{code}",
     "typeGROUP": "Grup Masası",
     "typeONE_ON_ONE": "Baş Başa Masası",
     "typeKANKA": "Kankamla Masası",

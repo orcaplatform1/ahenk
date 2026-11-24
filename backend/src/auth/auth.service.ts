@@ -1,5 +1,5 @@
 import { approvedPhotoUrl } from "../profile-photo/profile-photo.util";
-import { ensureReferralCode } from "../referral/referral-code";
+import { ensureReferralCode, parseReferralCode } from "../referral/referral-code";
 import {
   Injectable,
   UnauthorizedException,
@@ -246,8 +246,9 @@ export class AuthService {
       });
       // Kişisel davet kodu / linki (User.referralCode): davet kaydı kayıt anında oluşur
       if (!updated) {
-        const referrer = await this.prisma.user.findUnique({
-          where: { referralCode: dto.referralCode.trim().toUpperCase() },
+        const code = parseReferralCode(dto.referralCode);
+        const referrer = code == null ? null : await this.prisma.user.findUnique({
+          where: { referralCode: code },
           select: { id: true },
         });
         if (referrer && referrer.id !== user.id) {

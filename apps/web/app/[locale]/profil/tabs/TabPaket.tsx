@@ -26,7 +26,7 @@ interface Subscription {
 interface Rights { group: number; oneOnOne: number; kanka: number }
 // Davet: kişisel kod / link, geçerli davet sayısı, sonraki ücretsiz masaya kalan davet, türü seçilmemiş ödüller
 interface ReferralStats {
-  totalInvites: number; availableDiscounts: number; referralCode?: string; inviteLink?: string;
+  totalInvites: number; availableDiscounts: number; referralCode?: number | null; inviteLink?: string | null;
   validInvites?: number; invitesToNextReward?: number; pendingRewards?: { id: string }[];
 }
 
@@ -82,8 +82,8 @@ export function TabPaket({ maintenanceMode = false }: Props) {
   const [claiming, setClaiming] = useState(false);
 
   function copyCode() {
-    if (!referralStats?.referralCode) return;
-    navigator.clipboard?.writeText(referralStats.referralCode).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+    if (referralStats?.referralCode == null) return;
+    navigator.clipboard?.writeText(String(referralStats.referralCode)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
   }
 
   async function shareInvite() {
@@ -258,7 +258,7 @@ export function TabPaket({ maintenanceMode = false }: Props) {
       {/* Sadakat Programı kartı */}
       <div className="ll-card flex flex-col gap-3">
         <div className="ll-head"><h3 className="ll-title">{t('loyalty.title')}</h3></div>
-        {referralStats?.referralCode && (
+        {referralStats?.referralCode != null && (
           <div className="flex flex-col gap-2">
             <p className="text-xs text-[#c9c2b8]">{t('loyalty.myCode')}</p>
             <div className="flex gap-2 items-center">

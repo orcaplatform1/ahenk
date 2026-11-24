@@ -30,7 +30,7 @@ export class ReferralService {
       totalInvites,
       availableDiscounts,
       referralCode: code,
-      inviteLink: referralLink(code),
+      inviteLink: code == null ? null : referralLink(code),
       validInvites,
       invitesToNextReward: INVITES_PER_REWARD - (validInvites % INVITES_PER_REWARD),
       pendingRewards,

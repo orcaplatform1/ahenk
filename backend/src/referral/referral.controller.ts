@@ -4,6 +4,8 @@ import { IsEnum } from "class-validator";
 import { MeetingType } from "../generated/prisma/client";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { ReferralService } from "./referral.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { parseReferralCode } from "./referral-code";
 
 class ClaimRewardDto {
   @IsEnum(MeetingType)
@@ -30,5 +32,22 @@ export class ReferralController {
   claimReward(@Req() req: Request, @Param("id") id: string, @Body() dto: ClaimRewardDto) {
     const user = (req as any).user;
     return this.referralService.claimReward(user.id, id, dto.type);
+  }
+}
+
+// Davet linki (https://ahenk.co/davet/<KOD>): kod geçerli mi (rakam ve böyle bir kod var mı). Giriş gerektirmez; yalnız
+// { valid } döner, kullanıcıya ait başka bilgi dönmez.
+@ApiTags("referral")
+@Controller("invite")
+export class InviteCodeController {
+  constructor(private prisma: PrismaService) {}
+
+  @Get(":code")
+  @ApiOperation({ summary: "Davet kodu geçerli mi" })
+  async check(@Param("code") raw: string) {
+    const code = parseReferralCode(raw);
+    if (code == null) return { valid: false };
+    const u = await this.prisma.user.findUnique({ where: { referralCode: code }, select: { id: true } });
+    return { valid: !!u };
   }
 }

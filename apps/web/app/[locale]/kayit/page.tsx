@@ -84,8 +84,11 @@ function KayitPageInner() {
   const [speaksTurkish, setSpeaksTurkish] = useState<boolean | null>(locale === 'en' ? null : true);
   const [notifyRegions, setNotifyRegions] = useState<string[]>([]);
   const searchParams = useSearchParams();
-  // Davet kodu: davet linkinden (?ref=) otomatik dolar, elle de girilebilir (isteğe bağlı)
-  const [inviteCode, setInviteCode] = useState(searchParams.get('ref') ?? '');
+  // Davet kodu: yalnız rakam; davet linkinden (?ref=) otomatik dolar, elle de girilebilir (isteğe bağlı).
+  // Eski telefon davet linklerindeki harfli kod (?ref=<kod>) alanda gösterilmez, kayıtta aynen gönderilir.
+  const refParam = searchParams.get('ref') ?? '';
+  const legacyRef = /^\d+$/.test(refParam) ? '' : refParam;
+  const [inviteCode, setInviteCode] = useState(/^\d+$/.test(refParam) ? refParam.slice(0, 9) : '');
   const [step, setStep] = useState(0);
   const [stepDir, setStepDir] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -229,7 +232,7 @@ function KayitPageInner() {
         occupationSector: form.occupationSector,
         primaryCityId: form.primaryCityId || undefined,
         district: form.district || undefined,
-        referralCode: inviteCode.trim() || undefined,
+        referralCode: inviteCode || legacyRef || undefined,
         language: locale,
         speaksEnglish: !!speaksEnglish,
         speaksTurkish: locale === 'en' ? !!speaksTurkish : true,
@@ -500,7 +503,7 @@ function KayitPageInner() {
                 })}
               </div>
             </div>
-            <Field label={t('reg.inviteCode')} value={inviteCode} onChange={setInviteCode} maxLength={40} />
+            <Field label={t('reg.inviteCode')} value={inviteCode} onChange={(v) => setInviteCode(v.replace(/\D/g, '').slice(0, 9))} maxLength={9} />
             <AnimatePresence mode="wait">
               {error && (
                 <motion.p

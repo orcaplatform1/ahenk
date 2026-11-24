@@ -75,7 +75,8 @@ export class ShareCardService {
       venueName: m.locationText,
       scheduledAt: m.scheduledAt,
       teaser,
-      inviteLink: referralLink(code),
+      inviteCode: code,
+      inviteLink: code == null ? null : referralLink(code),
     };
   }
 

@@ -16,8 +16,13 @@ interface CardData {
   venueName: string | null;
   scheduledAt: string;
   teaser: number;
-  inviteLink: string;
+  inviteCode: number | null;
+  inviteLink: string | null;
 }
+
+// Masa türüne göre isteğe bağlı arka plan görseli (1080 × 1920 PNG): apps/web/public/share-bg/<dosya>.png.
+// Dosya varsa gradyan ve ışıma yerine bu görsel çizilir; yoksa gradyan ve ışıma aynen kullanılır.
+const BG_FILE: Record<MeetingKind, string> = { GROUP: 'grup', ONE_ON_ONE: 'basbasa', KANKA: 'kankamla' };
 
 // Masa türü renkleri (paket kartı paletinden: Grup mavi, Baş Başa kırmızı, Kankamla mor)
 const TYPE_COLORS: Record<MeetingKind, { accent: string; from: string; to: string }> = {
@@ -64,24 +69,29 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number, maxLine
   return lines;
 }
 
-function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string; type: string; overall: string; teaser: string; footer: string; date: string }) {
+function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string; type: string; overall: string; teaser: string; footer: string; date: string }, bgImage?: CanvasImageSource | null) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   const col = TYPE_COLORS[d.type];
   canvas.width = W; canvas.height = H;
 
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, '#0b0b0b');
-  bg.addColorStop(0.45, col.from);
-  bg.addColorStop(1, col.to);
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-  // Hafif parıltı
-  const glow = ctx.createRadialGradient(W * 0.8, H * 0.32, 0, W * 0.8, H * 0.32, 700);
-  glow.addColorStop(0, `${col.accent}55`);
-  glow.addColorStop(1, `${col.accent}00`);
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H);
+  if (bgImage) {
+    // Masa türünün arka plan görseli tam boyut
+    ctx.drawImage(bgImage, 0, 0, W, H);
+  } else {
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, '#0b0b0b');
+    bg.addColorStop(0.45, col.from);
+    bg.addColorStop(1, col.to);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+    // Hafif parıltı
+    const glow = ctx.createRadialGradient(W * 0.8, H * 0.32, 0, W * 0.8, H * 0.32, 700);
+    glow.addColorStop(0, `${col.accent}55`);
+    glow.addColorStop(1, `${col.accent}00`);
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+  }
 
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = '#ffffff';
@@ -151,7 +161,10 @@ function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.fillRect(PAD, H - PAD - 90, W - PAD * 2, 2);
   ctx.fillStyle = '#ffffff';
-  ctx.font = `600 40px ${SANS}`;
+  // Alt satır (davet linki dahil) tek satır: 888 px'e sığmazsa yazı boyutu küçülür, satır bölünmez
+  let fs = 40;
+  ctx.font = `600 ${fs}px ${SANS}`;
+  while (fs > 16 && ctx.measureText(texts.footer).width > W - PAD * 2) { fs -= 1; ctx.font = `600 ${fs}px ${SANS}`; }
   ctx.textAlign = 'center';
   ctx.fillText(texts.footer, W / 2, H - PAD - 10);
   ctx.textAlign = 'left';
@@ -190,18 +203,24 @@ export function ShareCardModal({ meetingId, apiBase, headers, onClose }: {
   useEffect(() => {
     if (!data) return;
     let cancelled = false;
-    const render = () => {
+    const render = (bgImage: HTMLImageElement | null) => {
       if (cancelled) return;
       const canvas = canvasRef.current ?? document.createElement('canvas');
       canvasRef.current = canvas;
       drawCard(canvas, data, {
         title: t('share.title'), type: t(`share.type${data.type}`), overall: t('masa.aiOverall'),
-        teaser: teaserText, footer: t('share.footer'), date: cardDate(data.scheduledAt, locale),
-      });
+        teaser: teaserText, footer: t('share.footer', { code: data.inviteCode ?? '' }), date: cardDate(data.scheduledAt, locale),
+      }, bgImage);
       setImg(canvas.toDataURL('image/png'));
     };
     // Yazı tipleri yüklenince çizilir
-    (document.fonts?.ready ?? Promise.resolve()).then(render, render);
+    const bgP = new Promise<HTMLImageElement | null>((resolve) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = () => resolve(null);
+      im.src = `/share-bg/${BG_FILE[data.type]}.png`;
+    });
+    Promise.all([(document.fonts?.ready ?? Promise.resolve()).catch(() => undefined), bgP]).then(([, im]) => render(im));
     return () => { cancelled = true; };
   }, [data, teaserText, locale]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -215,7 +234,7 @@ export function ShareCardModal({ meetingId, apiBase, headers, onClose }: {
     } finally { setBusy(false); }
   }, [apiBase, meetingId, data, busy, headers]);
 
-  const shareText = data ? t('share.shareText', { teaser: teaserText, link: data.inviteLink }) : '';
+  const shareText = data ? t('share.shareText', { teaser: teaserText, link: data.inviteLink ?? 'https://ahenk.co' }) : '';
 
   function download() {
     if (!img) return;
@@ -247,7 +266,7 @@ export function ShareCardModal({ meetingId, apiBase, headers, onClose }: {
   // Hikâye: paylaşımdan önce kişisel davet linki panoya kopyalanır ve uyarı gösterilir; "Devam Et" ile paylaşım başlar
   function story() {
     if (!data) return;
-    navigator.clipboard?.writeText(data.inviteLink).catch(() => {});
+    if (data.inviteLink) navigator.clipboard?.writeText(data.inviteLink).catch(() => {});
     setStoryNotice(true);
   }
 

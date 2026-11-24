@@ -85,7 +85,7 @@ export default function Paketim() {
   const [kankamla, setKankamla] = useState<KankamlaState | null>(null);
   const [maintenance, setMaintenance] = useState(false);
   // Davet: kişisel kod / link, geçerli davet sayısı, sonraki ücretsiz masaya kalan davet, türü seçilmemiş ödüller
-  const [stats, setStats] = useState<{ totalInvites: number; availableDiscounts: number; referralCode?: string; inviteLink?: string; validInvites?: number; invitesToNextReward?: number; pendingRewards?: { id: string }[] } | null>(null);
+  const [stats, setStats] = useState<{ totalInvites: number; availableDiscounts: number; referralCode?: number | null; inviteLink?: string | null; validInvites?: number; invitesToNextReward?: number; pendingRewards?: { id: string }[] } | null>(null);
   const [copied, setCopied] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [rewardMsg, setRewardMsg] = useState('');
@@ -123,8 +123,8 @@ export default function Paketim() {
   }, [detail]));
 
   function copyCode() {
-    if (!stats?.referralCode) return;
-    Clipboard.setStringAsync(stats.referralCode).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+    if (stats?.referralCode == null) return;
+    Clipboard.setStringAsync(String(stats.referralCode)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
   }
   function shareInvite() {
     if (!stats?.inviteLink) return;
@@ -278,7 +278,7 @@ export default function Paketim() {
             {maintenance && <MaintenanceNotice />}
             <Card style={{ gap: 12 }}>
               <Head title={t('loyalty.title')} style={{ marginBottom: 0 }} />
-              {!!stats?.referralCode && (
+              {stats?.referralCode != null && (
                 <View style={{ gap: 8 }}>
                   <T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.myCode')}</T>
                   <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>

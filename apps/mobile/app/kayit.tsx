@@ -85,7 +85,10 @@ export default function Kayit() {
   // "Haber ver" denen pasif bölgeler: kayıt tamamlanınca bekleme listesine yazılır
   const [notifyRegions, setNotifyRegions] = useState<string[]>([]);
   // Davet kodu (isteğe bağlı): davet linkinden ?ref= ile gelirse otomatik dolar
-  const [inviteCode, setInviteCode] = useState(typeof params.ref === 'string' ? params.ref : '');
+  // Yalnız rakam; eski telefon davet linkindeki harfli kod alanda gösterilmez, kayıtta aynen gönderilir
+  const refParam = typeof params.ref === 'string' ? params.ref : '';
+  const legacyRef = /^\d+$/.test(refParam) ? '' : refParam;
+  const [inviteCode, setInviteCode] = useState(/^\d+$/.test(refParam) ? refParam.slice(0, 9) : '');
   const [pwError, setPwError] = useState('');
   const [pwConfirmError, setPwConfirmError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -155,7 +158,7 @@ export default function Kayit() {
       const res = await fetch(`${API_PREFIX}/auth/register`, {
         method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json', ...langHeaders() },
         body: JSON.stringify({ firstName: f.firstName, lastName: f.lastName, email: f.email, password: f.password, phoneNumber: phoneE164, phoneToken, acceptTerms: true, language: lang, speaksEnglish: !!speaksEnglish, speaksTurkish: lang === 'en' ? !!speaksTurkish : true,
-          gender: f.gender || undefined, birthDate: f.birthDate || undefined, occupationSector: f.occupationSector, primaryCityId: f.primaryCityId || undefined, district: f.district || undefined, referralCode: inviteCode.trim() || undefined }),
+          gender: f.gender || undefined, birthDate: f.birthDate || undefined, occupationSector: f.occupationSector, primaryCityId: f.primaryCityId || undefined, district: f.district || undefined, referralCode: inviteCode || legacyRef || undefined }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { const m = (data as { message?: string | string[] }).message; throw new Error(Array.isArray(m) ? m[0] : m ?? t('common.genericError')); }
@@ -278,7 +281,7 @@ export default function Kayit() {
                 })}
               </View>
             </View>
-            {field(t('reg.inviteCode'), <Input form autoCapitalize="characters" autoCorrect={false} maxLength={40} value={inviteCode} onChangeText={setInviteCode} style={{ fontSize: 13 }} />)}
+            {field(t('reg.inviteCode'), <Input form keyboardType="number-pad" inputMode="numeric" autoCorrect={false} maxLength={9} value={inviteCode} onChangeText={(v) => setInviteCode(v.replace(/\D/g, ''))} style={{ fontSize: 13 }} />)}
             {!!error && <T style={{ color: tw.accent, fontSize: 13 }}>{error}</T>}
             <PillButton label={t('reg.continueBtn')} primary disabled={loading} onPress={step1} />
           </View>

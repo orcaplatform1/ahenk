@@ -68,7 +68,7 @@ model User {
   referralDiscountAvailable Boolean               @default(false)
   referralsSent             Referral[]            @relation("ReferralsSent")
   referralsReceived         Referral[]            @relation("ReferralsReceived")
-  referralCode              String?               @unique // Kalıcı kişisel davet kodu (davet linki: /kayit?ref=<kod>)
+  referralCode              Int?                  @unique // Kalıcı kişisel davet kodu: rakam, 1'den sırayla (User_referralCode_seq); botlarda yok. Davet linki: /davet/<kod>
   referralRewards           ReferralReward[]
   shareTeasers              ShareTeaser[]
   teaserCursors             TeaserCursor[]
