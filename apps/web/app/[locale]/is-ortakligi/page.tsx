@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl';
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Link } from '@/i18n/navigation';
 import SiteSelect from '@/components/SiteSelect';
 import { FormLabel, PasswordInput, TextareaField, TextField, VerifiedPhoneField } from '@/components/PublicFormFields';
 import { LineIcon } from '@/components/LineIcon';
@@ -470,32 +469,6 @@ export default function IsOrtakligiPage() {
           </section>
         </FadeIn>
       </div>
-
-      {/* ── Footer ────────────────────────────────────────────── */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.10)', padding: '2.5rem 1.5rem' }}>
-        <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-          <p style={{ color: '#f4f1ec', fontSize: 13, fontWeight: 500 }}>© 2026 Ahenk. {t('footer.rights')}</p>
-          <p style={{ color: '#a39c93', fontSize: 13 }}>
-            {t('footer.brandPrefix')}{' '}
-            <a href="https://ahenk.co" style={{ textDecoration: 'none' }}>
-              <span style={{ color: '#f4f1ec', fontWeight: 600 }}>Traders</span>
-              <span style={{ color: '#1e90ff', fontWeight: 700 }}>.TR</span>
-            </a>
-            <span style={{ marginLeft: '3px' }}>🇹🇷</span>{' '}{t('footer.brandSuffix')}
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.4rem 1.2rem', marginTop: '0.5rem' }}>
-            {[
-              { label: 'sitemap.k1', href: '/' },
-              { label: 'footer.terms', href: '/kullanim-kosullari' },
-              { label: 'footer.privacy', href: '/gizlilik-politikasi' },
-              { label: 'footer.kvkk', href: '/kvkk' },
-              { label: 'footer.sitemap', href: '/site-haritasi' },
-            ].map((link) => (
-              <Link key={link.href} href={link.href} style={{ color: '#8f887f', fontSize: 11, textDecoration: 'none' }}>{t(link.label)}</Link>
-            ))}
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }

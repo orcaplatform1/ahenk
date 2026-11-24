@@ -250,6 +250,23 @@ export default function CookiesEn() {
           </p>
         </motion.div>
 
+        {/* Tercih güncelle butonu */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          style={{ marginTop: '2rem', textAlign: 'center' as const }}
+        >
+          <StdButton variant="ghost"
+            onClick={resetConsent}
+          >
+            Update My Cookie Preferences
+          </StdButton>
+          <p style={{ marginTop: '0.6rem', color: '#444', fontSize: 11 }}>
+            Clicking resets your preferences and shows the banner again.
+          </p>
+        </motion.div>
+
         <div style={{ marginTop: '2.5rem', display: 'flex', flexDirection: 'column' as const, gap: '1.25rem' }}>
           {sections.map((sec, i) => (
             <motion.div
@@ -272,23 +289,6 @@ export default function CookiesEn() {
             </motion.div>
           ))}
         </div>
-
-        {/* Tercih güncelle butonu */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          style={{ marginTop: '2rem', textAlign: 'center' as const }}
-        >
-          <StdButton variant="ghost"
-            onClick={resetConsent}
-          >
-            Update My Cookie Preferences
-          </StdButton>
-          <p style={{ marginTop: '0.6rem', color: '#444', fontSize: 11 }}>
-            Clicking resets your preferences and shows the banner again.
-          </p>
-        </motion.div>
       </div>
     </main>
   );

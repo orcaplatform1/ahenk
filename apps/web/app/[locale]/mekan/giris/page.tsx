@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { venueApi } from '@/lib/venueApi';
@@ -29,6 +30,9 @@ export default function MekanGirisPage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-24" style={{ background: '#121212' }}>
       <div className="w-full max-w-sm">
+        <div className="flex flex-col items-center mb-6">
+          <Image src="/logo-welcome.webp" alt="Ahenk" width={48} height={48} />
+        </div>
         <h1 className="font-serif text-4xl text-[#f5f5f5] text-center mb-2">{t('vp.loginTitle')}</h1>
         <p className="text-[#666] text-sm text-center mb-8">{t('vp.loginSub')}</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
