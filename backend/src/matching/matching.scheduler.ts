@@ -13,6 +13,20 @@ import { closeGroupCycle, closeKankaCycle, closeOneOnOneCycle, OPEN_GROUP_SUB, O
 import { restoreOneOnOneRights } from "./one-on-one-right";
 import { isMatchingEnabled } from "../admin/app-settings";
 
+// Değerlendirme bildirimi: buluşma tarihi Türkiye saatine göre, göreli gün ifadesi olmadan
+// TR "22 Aralık Cuma", EN "Friday, December 22"
+const REVIEW_TZ = "Europe/Istanbul";
+function reviewDateTr(d: Date): string {
+  const dm = d.toLocaleDateString("tr-TR", { day: "numeric", month: "long", timeZone: REVIEW_TZ });
+  const wd = d.toLocaleDateString("tr-TR", { weekday: "long", timeZone: REVIEW_TZ });
+  return `${dm} ${wd}`;
+}
+function reviewDateEn(d: Date): string {
+  const wd = d.toLocaleDateString("en-US", { weekday: "long", timeZone: REVIEW_TZ });
+  const md = d.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: REVIEW_TZ });
+  return `${wd}, ${md}`;
+}
+
 @Injectable()
 export class MatchingScheduler {
   private readonly logger = new Logger(MatchingScheduler.name);
@@ -253,9 +267,9 @@ export class MatchingScheduler {
           if (reviewed.has(p.userId)) continue;
           await this.notifications.sendToUser(p.userId, {
             title: "Masanı değerlendir",
-            body: "Dünkü buluşman nasıl geçti? Değerlendirmeni masa kartından yapabilirsin.",
+            body: `${reviewDateTr(m.scheduledAt)} tarihli buluşman nasıl geçti? Değerlendirmeni masa kartından yapabilirsin.`,
             data: { type: "REVIEW_OPEN", meetingId: m.id },
-            en: { title: "Rate your table", body: "How was yesterday's meetup? You can leave your review on the table card." },
+            en: { title: "Rate your table", body: `How was your meetup on ${reviewDateEn(m.scheduledAt)}? You can leave your review on the table card.` },
           });
         }
       }
