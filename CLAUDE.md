@@ -455,8 +455,8 @@ WEBP KURALI:
   - Web ve mobil projedeki görseller WebP'dir (kalite 80, şeffaflık korunur; mobil sekme ikonları assets/tabs/*.webp, tintColor çalışır).
   - İstisnalar (PNG / JPG kalır): mobil uygulama ikonu, Android adaptive icon katmanları, splash görseli, bildirim ikonu ve app.json /
     app.config'te tanımlı tüm görseller (assets/app-icon.png, adaptive-icon.png, start_logo.jpg, icon.png); web favicon, apple-touch-icon,
-    manifest ikonları (icon-192 / icon-512), OG ve sosyal medya paylaşım görselleri (og-image.jpg, paylaşım görselinde kullanılan
-    public/logo.png), e-posta şablonlarında kullanılan görseller; tüm SVG ve GIF dosyaları; KYC dosyaları.
+    manifest ikonları (icon-192 / icon-512), OG ve sosyal medya paylaşım görseli (public/og-image.jpg; bütün sayfalarda og:image /
+    twitter:image https://ahenk.co/og-image.jpg, lib/seo.ts OG_IMAGE; dinamik opengraph-image / twitter-image dosyaları yok), e-posta şablonlarında kullanılan görseller; tüm SVG ve GIF dosyaları; KYC dosyaları.
   - Yüklenen görseller backend'de WebP'ye çevrilir (common/image-webp.ts toWebp). Profil fotoğrafı, bot fotoğrafı ve mekân fotoğrafları
     mevcut ayarla (kalite 82, profil / bot 1080 + 200 boyutları); diğer bütün görsel yüklemeleri (sorun bildirimi, kariyer fotoğrafı,
     Janti Haydar başvurusu) UPLOAD_WEBP_QUALITY 80, önce EXIF yönü uygulanır, EXIF silinir, boyut değişmez; diske yalnız .webp yazılır,

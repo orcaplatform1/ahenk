@@ -62,7 +62,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: SITE_DESCRIPTION_L,
     url: en ? `${SITE_URL}/en` : SITE_URL,
     siteName: 'Ahenk',
-    locale: en ? 'en_GB' : 'tr_TR',
+    locale: en ? 'en_US' : 'tr_TR',
     type: 'website',
     images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: SITE_TITLE_L }],
   },
