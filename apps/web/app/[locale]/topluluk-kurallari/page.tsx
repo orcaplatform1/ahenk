@@ -70,7 +70,7 @@ const sections = [
               'Diğer kullanıcıların özel hayatına müdahale edecek sorular',
             ].map((item) => (
               <li key={item} style={{ display: 'flex', gap: '0.6rem', color: '#a39c93', fontSize: 13, lineHeight: 1.55 }}>
-                <span style={{ color: '#8f887f', flexShrink: 0 }}>—</span>{item}
+                <span style={{ color: '#8f887f', flexShrink: 0 }}>•</span>{item}
               </li>
             ))}
           </ul>

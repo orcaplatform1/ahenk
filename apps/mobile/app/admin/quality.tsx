@@ -103,7 +103,7 @@ export default function AdminQuality() {
                       <AT style={{ marginTop: 2, fontSize: 11, color: adm.muted }}>{detail.warnings.length ? `Önceki uyarılar: ${detail.warnings.length}` : 'Önceki uyarı yok'}</AT>
                     </View>
                   </View>
-                  {detail.warnings.map(w => <AT key={w.id} style={{ fontSize: 11, color: adm.muted }}>• {fmt(w.createdAt)} — {w.reason}</AT>)}
+                  {detail.warnings.map(w => <AT key={w.id} style={{ fontSize: 11, color: adm.muted }}>• {fmt(w.createdAt)} · {w.reason}</AT>)}
                   <ScrollView nestedScrollEnabled style={{ maxHeight: 360, borderRadius: 8, borderWidth: 1, borderColor: adm.border }} contentContainerStyle={{ padding: 8, gap: 6 }}>
                     {detail.messages.map(m => (
                       <View key={m.id} style={{ paddingVertical: 6, paddingHorizontal: 8, borderRadius: 8, borderWidth: 1, borderColor: m.highlighted ? adm.red : 'transparent', backgroundColor: m.highlighted ? 'rgba(239,68,68,0.12)' : 'transparent' }}>
