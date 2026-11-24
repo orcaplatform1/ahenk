@@ -76,7 +76,7 @@ export default function EslesmePaneli() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, scanning, selfParticipant, selection, submitSelection, changeSelection, cancelSelection } = useMasaTabs();
+  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, scanning, selfParticipant, selection, submitSelection, changeSelection, cancelSelection, noPackage } = useMasaTabs();
   const [selectOpen, setSelectOpen] = useState(false);
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
@@ -126,21 +126,31 @@ export default function EslesmePaneli() {
         <View>
           {/* Halkalar yukarıda: sütunun üst boşluğu bu ekranda yok */}
           <View style={[st.column, { paddingTop: 0 }]}>
-            <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} />
+            <LiveTabs tab={tab} statuses={statuses} onTab={selectTab} noRings even />
             {/* Seçim kartı halkaların altında: KYC kartı yokken halkalar durum çubuğunun hemen altından başlar */}
             <SelectionCard selection={selection} onOpen={() => setSelectOpen(true)} onChange={changeSelection} onCancel={cancelSelection} />
 
-            {/* Geri sayım */}
-            <View style={[st.card, { borderColor: 'rgba(232,162,122,0.22)', overflow: 'hidden' }]}>
-              <LinearGradient colors={['rgba(214,69,58,0.14)', 'rgba(255,255,255,0.02)']} locations={[0, 0.6]} start={{ x: 0.33, y: 0.03 }} end={{ x: 0.67, y: 0.97 }} style={StyleSheet.absoluteFill} />
-              <Eyebrow>{meetingTarget !== null ? t('live.untilMeeting') : waitingScan ? t('live.untilScan') : t(TABLE_TEXT[tab].title)}</Eyebrow>
-              <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} targetAt={meetingTarget} />
-              <T style={{ fontSize: 13, color: ll.text2, lineHeight: 19.5 }}>
-                {waitingScan ? t('live.scanStarts') : t(TABLE_TEXT[tab].note)}
-                {!waitingScan && tabSeatsLeft !== null && !(meetingTarget !== null && tabSeatsLeft === 0)
-                  ? `\n${tabSeatsLeft > 0 ? t('live.seatsLeft', { count: num(tabSeatsLeft) }) : t('live.tableFull')}` : ''}
-              </T>
-            </View>
+            {/* Geri sayım; hiç paketi olmayan ya da hakları biten kullanıcıda aynı yerde, aynı kart görünümünde paket alma kartı (web LiveLayer).
+                HIG: buton en az 44 pt, başlık serif */}
+            {noPackage ? (
+              <View style={[st.card, { borderColor: 'rgba(232,162,122,0.22)', overflow: 'hidden', gap: 12 }]}>
+                <LinearGradient colors={['rgba(214,69,58,0.14)', 'rgba(255,255,255,0.02)']} locations={[0, 0.6]} start={{ x: 0.33, y: 0.03 }} end={{ x: 0.67, y: 0.97 }} style={StyleSheet.absoluteFill} />
+                <Serif style={{ fontSize: 23, lineHeight: 27.6, color: ll.text }}>{t('live.pkgCardTitle')}</Serif>
+                <T style={{ fontSize: 13, color: ll.text2, lineHeight: 19.5 }}>{t('live.pkgCardText')}</T>
+                <BtnPrimary label={t('live.pkgCardBtn')} full style={{ minHeight: 44 }} onPress={() => router.navigate('/(tabs)/paketim')} />
+              </View>
+            ) : (
+              <View style={[st.card, { borderColor: 'rgba(232,162,122,0.22)', overflow: 'hidden' }]}>
+                <LinearGradient colors={['rgba(214,69,58,0.14)', 'rgba(255,255,255,0.02)']} locations={[0, 0.6]} start={{ x: 0.33, y: 0.03 }} end={{ x: 0.67, y: 0.97 }} style={StyleSheet.absoluteFill} />
+                <Eyebrow>{meetingTarget !== null ? t('live.untilMeeting') : waitingScan ? t('live.untilScan') : t(TABLE_TEXT[tab].title)}</Eyebrow>
+                <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} targetAt={meetingTarget} />
+                <T style={{ fontSize: 13, color: ll.text2, lineHeight: 19.5 }}>
+                  {waitingScan ? t('live.scanStarts') : t(TABLE_TEXT[tab].note)}
+                  {!waitingScan && tabSeatsLeft !== null && !(meetingTarget !== null && tabSeatsLeft === 0)
+                    ? `\n${tabSeatsLeft > 0 ? t('live.seatsLeft', { count: num(tabSeatsLeft) }) : t('live.tableFull')}` : ''}
+                </T>
+              </View>
+            )}
 
 
             <LiveSonar sonar={pulse?.sonar ?? null} idle={scanIdle} />

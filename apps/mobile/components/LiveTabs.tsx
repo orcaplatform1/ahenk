@@ -1,7 +1,7 @@
 // apps/web/components/live/LiveTabs.tsx karşılığı (GRUP / BAŞ BAŞA / KANKAMLA, halka SVG'leri, durum noktası)
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Circle, G, Path } from 'react-native-svg';
+import Svg, { Circle, Defs, G, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { T, Mono } from './ui';
 import { llTab, rings, tabDot } from '@/theme/theme';
 import type { MasaTuru } from '@/lib/masa';
@@ -56,8 +56,27 @@ export function Rings({ type, on, still }: { type: MasaTuru; on: boolean; still?
   );
 }
 
+// Seçili sekmenin arka plan vurgusu (web .ll-tab::before: radial-gradient(circle at 50% 40%, rgba(255,59,48,0.2) 0%, transparent 68%), üst / alt 6 px taşar)
+function TabGlow() {
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: -6, bottom: -6 }}>
+      <Svg width="100%" height="100%">
+        <Defs>
+          <RadialGradient id="llTabGlow" cx="50%" cy="40%" r="68%">
+            <Stop offset="0" stopColor="#ff3b30" stopOpacity={0.2} />
+            <Stop offset="1" stopColor="#ff3b30" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#llTabGlow)" />
+      </Svg>
+    </View>
+  );
+}
+
 // noRings: Masalarım'da üstteki 3 masa türü ikonu (halkalar) gösterilmez; sekme adı ve durumu kalır (web LiveTabs noRings)
-export function LiveTabs({ tab, statuses, onTab, noRings = false }: { tab: MasaTuru; statuses: Record<MasaTuru, TabStatus>; onTab: (t: MasaTuru) => void; noRings?: boolean }) {
+// even: Eşleşme Paneli (web LiveTabs even): üç sekmenin yazısı aynı renk ve parlaklıkta, basılabilir görünür; seçili sekme yalnız
+// arka plan vurgusuyla ayrılır. HIG: en az 44 pt dokunma alanı (llTab.minHeight)
+export function LiveTabs({ tab, statuses, onTab, noRings = false, even = false }: { tab: MasaTuru; statuses: Record<MasaTuru, TabStatus>; onTab: (t: MasaTuru) => void; noRings?: boolean; even?: boolean }) {
   const { t } = useTranslation();
   return (
     <View style={s.tabs}>
@@ -69,9 +88,10 @@ export function LiveTabs({ tab, statuses, onTab, noRings = false }: { tab: MasaT
         return (
           <Pressable key={type} disabled={off} onPress={() => onTab(type)} accessibilityRole="button"
             accessibilityState={{ selected: on, disabled: off }} accessibilityLabel={`${label}: ${t(statusKey(status))}`}
-            style={[s.tab, on && { transform: [{ translateY: llTab.liftY }] }, off && { opacity: 0.55 }]}>
+            style={[s.tab, !even && on && { transform: [{ translateY: llTab.liftY }] }, !even && off && { opacity: 0.55 }]}>
+            {even && on && <TabGlow />}
             {!noRings && <Rings type={type} on={on} />}
-            <Mono w={600} style={[s.label, { color: on ? '#fff' : '#8f887f' }]}>{label}</Mono>
+            <Mono w={600} style={[s.label, { color: even || on ? '#fff' : '#8f887f' }]}>{label}</Mono>
             <View style={s.statusRow}>
               <View style={[s.dot, { backgroundColor: tabDot[status.toLowerCase() as keyof typeof tabDot] ?? tabDot.default }]} />
               <T numberOfLines={1} style={s.status}>{t(statusKey(status))}</T>

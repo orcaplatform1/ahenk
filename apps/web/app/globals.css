@@ -318,6 +318,10 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .ll-tab.is-on { transform: translateY(-3px); }
 .ll-tab.is-on::before { opacity: 1; }
 .ll-tab.is-off { opacity: 0.55; cursor: not-allowed; }
+/* Eşleşme Paneli: üç sekmenin yazısı aynı renk ve parlaklıkta; seçili sekme yalnız arka plan vurgusuyla ayrılır */
+.ll-tabs-even .ll-tab.is-on { transform: none; }
+.ll-tabs-even .ll-tab.is-off { opacity: 1; cursor: pointer; }
+.ll-tabs-even .ll-tab-label { color: #fff; }
 .ll-tab-rings { display: block; overflow: visible; transition: filter 0.5s cubic-bezier(.34,1.56,.64,1); }
 .ll-tab.is-on .ll-tab-rings { filter: drop-shadow(0 0 6px rgba(255,59,48,0.55)); }
 .ll-tab-spin { transform-box: view-box; transform-origin: 50% 50%; }

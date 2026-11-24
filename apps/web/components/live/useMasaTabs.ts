@@ -238,5 +238,7 @@ export function useMasaTabs() {
     ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, selection, submitSelection,
     changeSelection, cancelSelection,
     tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled,
+    // Hiç paketi yok ya da bütün hakları bitmiş (hiçbir türde hak, masa ya da iptal kaydı yok): Eşleşme Paneli'nde paket alma kartı
+    noPackage: owned.length === 0,
   };
 }

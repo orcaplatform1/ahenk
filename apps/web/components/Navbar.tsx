@@ -156,6 +156,9 @@ export default function Navbar() {
               </Link>
             )}
 
+            {/* Dil seçici: hamburger menünün hemen solu (ENGLISH_ENABLED = false iken görünmez) */}
+            <LanguageSwitcher />
+            {/* Hamburger menü: header'ın en sağı */}
             <button
               className="flex flex-col justify-center items-center gap-[5px] p-1.5"
               onClick={() => setMenuOpen(v => !v)}
@@ -169,8 +172,6 @@ export default function Navbar() {
               <motion.span animate={menuOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }} transition={{ duration: 0.22 }}
                 style={{ display: 'block', width: 20, height: 1.5, background: '#ccc', borderRadius: 2, transformOrigin: 'center' }} />
             </button>
-            {/* Dil seçici: header'ın sağ ucu (ENGLISH_ENABLED = false iken görünmez) */}
-            <LanguageSwitcher />
           </div>
 
         </div>

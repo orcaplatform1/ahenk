@@ -893,7 +893,10 @@
     "selReasonChange3": "You can't change your selection within 3 hours.",
     "selReasonCooldown": "You can't join a new table for 24 hours because you cancelled.",
     "selReasonLocked": "Your table is locked.",
-    "selReasonSuspended": "Because your account is suspended, you can't join tables or buy packages and subscriptions."
+    "selReasonSuspended": "Because your account is suspended, you can't join tables or buy packages and subscriptions.",
+    "pkgCardTitle": "Your table is waiting",
+    "pkgCardText": "Choose your package to join this week's table with people who match you.",
+    "pkgCardBtn": "CHOOSE YOUR PACKAGE"
   },
   "login": {
     "accessBlocked": "Access blocked",

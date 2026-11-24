@@ -893,7 +893,10 @@
     "selReasonChange3": "Seçimini 3 saat içinde değiştiremezsin.",
     "selReasonCooldown": "İptal ettiğin için 24 saat yeni masaya katılamazsın.",
     "selReasonLocked": "Masan kilitlendi.",
-    "selReasonSuspended": "Hesabın askıda olduğu için masalara katılamaz, paket ve abonelik satın alamazsın."
+    "selReasonSuspended": "Hesabın askıda olduğu için masalara katılamaz, paket ve abonelik satın alamazsın.",
+    "pkgCardTitle": "Masan seni bekliyor",
+    "pkgCardText": "Sana uyumlu insanlarla bu haftanın masasına oturmak için paketini seç.",
+    "pkgCardBtn": "PAKETİNİ SEÇ"
   },
   "login": {
     "accessBlocked": "Erişim engellendi",

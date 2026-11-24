@@ -54,15 +54,17 @@ export function Rings({ type }: { type: MasaTuru }) {
 }
 
 // noRings: Masalarım'da üstteki 3 masa türü ikonu (halkalar) gösterilmez; sekme adı ve durumu kalır
-export default function LiveTabs({ tab, statuses, onTab, noRings = false }: {
+// even: Eşleşme Paneli: üç sekmenin yazısı aynı renk ve parlaklıkta, basılabilir görünür; seçili sekme yalnız arka plan vurgusuyla ayrılır
+export default function LiveTabs({ tab, statuses, onTab, noRings = false, even = false }: {
   tab: MasaTuru;
   statuses: Record<MasaTuru, TabStatus>;
   onTab: (tab: MasaTuru) => void;
   noRings?: boolean;
+  even?: boolean;
 }) {
   const t = useTranslations();
   return (
-    <div className="ll-tabs">
+    <div className={`ll-tabs${even ? ' ll-tabs-even' : ''}`}>
       {TABS.map(({ type }) => {
         const label = t(`live.tab${type}`);
         const statusText = t(`live.st${statuses[type]}`);

@@ -17,7 +17,7 @@ const MEETING_GRACE_MS = 3 * 60 * 60 * 1000;
 
 export default function DashboardPage() {
   const t = useTranslations();
-  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, selection, submitSelection, changeSelection, cancelSelection } = useMasaTabs();
+  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, selection, submitSelection, changeSelection, cancelSelection, noPackage } = useMasaTabs();
   const [selectOpen, setSelectOpen] = useState(false);
   // Buluşma saatinden 3 saat sonra masa panelden düşer: sayaç yeni haftaya geçer, Katılım ve kontenjan sıfırlanır
   // (dashboard 15 sn'de bir yenilendiği için sayfa yenilenmeden geçer)
@@ -61,6 +61,7 @@ export default function DashboardPage() {
         tab={tab}
         statuses={statuses}
         tabPastClosing={tabPastClosing}
+        noPackage={noPackage}
         onTab={selectTab}
         afterTabs={<SelectionCard selection={selection} onOpen={() => setSelectOpen(true)} onChange={changeSelection} onCancel={cancelSelection} />}
         participation={<LiveParticipation tab={tab} item={tabItem} self={selfParticipant} kanka={kanka} scanning={scanning} />}

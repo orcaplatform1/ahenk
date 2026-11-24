@@ -206,5 +206,7 @@ export function useMasaTabs() {
 
   const selfParticipant = me ? { initials: buildInitials(me.firstName, me.lastName), gender: me.profile?.gender ?? null } : undefined;
 
-  return { ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled, selection, submitSelection, changeSelection, cancelSelection };
+  return { ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled, selection, submitSelection, changeSelection, cancelSelection,
+    // Hiç paketi yok ya da bütün hakları bitmiş: Eşleşme Paneli'nde sayaç kartı yerine paket alma kartı (web ile aynı)
+    noPackage: owned.length === 0 };
 }

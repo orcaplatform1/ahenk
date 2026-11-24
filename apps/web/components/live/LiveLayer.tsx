@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import Image from 'next/image';
 import { api } from '@/lib/api';
 import { getNextTarget } from '@/components/HeroCountdown';
 import { CLOSING_DAY, SCAN_START_DAY } from './useMasaTabs';
@@ -99,7 +98,7 @@ function heatColor(index: number, count: number) {
   return `rgba(255,255,255,${mix(0.08, 0.045)})`;
 }
 
-export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, tab, statuses, tabPastClosing, onTab, notice, afterTabs, participation }: {
+export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, tab, statuses, tabPastClosing, noPackage = false, onTab, notice, afterTabs, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
   tabSeatsLeft: number | null; // Kullanıcının masasındaki boş sandalye; masası yoksa null
@@ -107,6 +106,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
   tab: MasaTuru;
   statuses: Record<MasaTuru, TabStatus>;
   tabPastClosing: boolean; // Seçili türün bu haftaki kapanışı geçti mi
+  noPackage?: boolean; // Hiç paketi yok ya da hakları bitmiş: sayaç kartı yerine paket alma kartı
   onTab: (tab: MasaTuru) => void;
   notice?: React.ReactNode; // Sekmelerin hemen üstü
   afterTabs?: React.ReactNode; // Sekmelerin (halkaların) hemen altı: seçim kartı (mobil ile aynı yer)
@@ -137,17 +137,20 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
       <div className="ll-glow" aria-hidden="true" />
       <div className="ll-column">
         {notice}
-        <LiveTabs tab={tab} statuses={statuses} onTab={onTab} />
+        <LiveTabs tab={tab} statuses={statuses} onTab={onTab} noRings even />
         {afterTabs}
 
-        {/* Geri sayım */}
+        {/* Geri sayım; hiç paketi olmayan ya da hakları biten kullanıcıda aynı yerde, aynı kart görünümünde paket alma kartı */}
+        {noPackage ? (
+          <section className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 12, borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
+            <h2 className="ll-title">{t('live.pkgCardTitle')}</h2>
+            <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>{t('live.pkgCardText')}</p>
+            <button type="button" className="btn-primary w-full justify-center" style={{ minHeight: 44 }} onClick={() => router.push('/profil?tab=paket')}>
+              {t('live.pkgCardBtn')}
+            </button>
+          </section>
+        ) : (
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
-          {hasTabTable && statuses[tab] === 'FORMING' && (
-            <Image src="/maskot/jantihaydar_run.webp" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[80px] md:w-[100px]" />
-          )}
-          {!hasTabTable && (
-            <Image src="/maskot/jantihaydar_stop.webp" alt="Janti Haydar" width={960} height={1639} className="block mx-auto h-auto w-[80px] md:w-[100px]" />
-          )}
           <p key={tab} className="ll-eyebrow ll-fade">{meetingTarget !== null ? t('live.untilMeeting') : waitingScan ? t('live.untilScan') : t(`live.until${tab}`)}</p>
           <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} targetAt={meetingTarget} />
           <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>
@@ -159,6 +162,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
             )}
           </p>
         </section>
+        )}
 
         {/* PASİF: tarama dilimi bulunduğu açıda durur (ll-scan-idle, gizlenmez); CANLI: sürekli döner */}
         <div className={scanIdle ? 'll-scan-idle' : undefined}>
