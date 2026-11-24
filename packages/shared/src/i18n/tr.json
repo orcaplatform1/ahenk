@@ -423,12 +423,7 @@
     "recordNotFound": "Kayıt bulunamadı",
     "recordNotYours": "Bu kayıt sana ait değil",
     "redirect": "{count} saniye içinde ana sayfaya yönlendirileceksin.",
-    "referralAlreadyInvited": "Bu numara daha önce davet edildi.",
-    "referralDailyLimit": "Günlük davet hakkın doldu ({limit}). Yarın tekrar deneyebilirsin.",
-    "referralRegistered": "Bu numara zaten Ahenk'e kayıtlı.",
     "referralSelf": "Kendi numaranı davet edemezsin.",
-    "referralSendFailed": "Davet gönderilemedi, lütfen tekrar dene.",
-    "referralTotalLimit": "Toplam davet hakkın doldu ({limit}).",
     "refreshExpired": "Refresh token süresi dolmuş, tekrar giriş yap",
     "refreshInvalid": "Refresh token geçersiz",
     "refreshMissing": "Refresh token bulunamadı",
@@ -949,14 +944,7 @@
     "withWhatsapp": "WhatsApp ile Giriş"
   },
   "loyalty": {
-    "discounts": "Toplam %10 İndirim Hakkı",
-    "info": "Davet ettiğin arkadaşın herhangi bir paket aldığında veya abone olduğunda sana %10 indirim hakkı tanımlanır. Her indirim hakkı yalnızca bir paket satın alımında geçerlidir, toplu kullanılamaz ve devredilemez.",
-    "invited": "Davetli Arkadaş",
     "people": "{count} kişi",
-    "pieces": "{count} Adet",
-    "send": "Davet Gönder",
-    "sendFailed": "Gönderilemedi.",
-    "sentOk": "Davet başarıyla gönderildi!",
     "title": "Sadakat Programı",
     "copied": "Kopyalandı",
     "copy": "Kopyala",
@@ -1270,7 +1258,8 @@
     "location": "Acil Yardım talebinde konumunun iletilebilmesi için konum erişimine izin vermen gerekiyor.",
     "locationAlways": "Acil Yardım talebin sürerken uygulama kapalıyken de konumunun iletilebilmesi için konum iznini \"Her zaman\" yapman gerekiyor.",
     "notifications": "Masa onayı ve buluşma hatırlatmalarını alabilmek için bildirim iznine ihtiyaç var.",
-    "required": "İzin gerekli"
+    "required": "İzin gerekli",
+    "saveImage": "Kartı galerine kaydedebilmek için fotoğraflara kaydetme izni vermen gerekiyor."
   },
   "phone": {
     "change": "Numarayı değiştir",
@@ -2009,6 +1998,11 @@
         "t8": "Bu akşam kankamla yeni insanlara bir şans veriyoruz.",
         "t9": "Bu akşam kankamla yeni bir masaya, yeni bir enerjiye."
       }
-    }
+    },
+    "saveImage": "Görseli kaydet",
+    "saved": "Görsel galerine kaydedildi.",
+    "saveFailed": "Görsel hazırlanamadı, tekrar dene.",
+    "linkCopied": "Davet linkin kopyalandı. Hikâyene 'Bağlantı' çıkartması ekleyip linki yapıştır. Arkadaşların yalnızca bu linkle gelirse davetin sayılır.",
+    "continue": "Devam Et"
   }
 }

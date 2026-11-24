@@ -172,6 +172,7 @@ export function ShareCardModal({ meetingId, apiBase, headers, onClose }: {
   const [hint, setHint] = useState('');
   const [busy, setBusy] = useState(false);
   const [img, setImg] = useState('');
+  const [storyNotice, setStoryNotice] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -243,6 +244,13 @@ export function ShareCardModal({ meetingId, apiBase, headers, onClose }: {
     setHint(t('share.storyHint'));
   }
 
+  // Hikâye: paylaşımdan önce kişisel davet linki panoya kopyalanır ve uyarı gösterilir; "Devam Et" ile paylaşım başlar
+  function story() {
+    if (!data) return;
+    navigator.clipboard?.writeText(data.inviteLink).catch(() => {});
+    setStoryNotice(true);
+  }
+
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="share-title" onClick={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
@@ -262,10 +270,19 @@ export function ShareCardModal({ meetingId, apiBase, headers, onClose }: {
         {data && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <button type="button" onClick={download} disabled={!img} style={BTN}>{t('share.download')}</button>
-            <button type="button" onClick={shareStory} disabled={!img} style={BTN}>{t('share.igStory')}</button>
-            <button type="button" onClick={shareStory} disabled={!img} style={BTN}>{t('share.fbStory')}</button>
+            <button type="button" onClick={story} disabled={!img} style={BTN}>{t('share.igStory')}</button>
+            <button type="button" onClick={story} disabled={!img} style={BTN}>{t('share.fbStory')}</button>
             <button type="button" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer')} style={BTN}>{t('share.whatsapp')}</button>
             <button type="button" onClick={() => { window.location.href = `sms:?&body=${encodeURIComponent(shareText)}`; }} style={{ ...BTN, gridColumn: '1 / -1' }}>{t('share.message')}</button>
+          </div>
+        )}
+        {storyNotice && (
+          <div role="alertdialog" aria-modal="true" aria-describedby="story-notice" onClick={(e) => { e.stopPropagation(); setStoryNotice(false); }}
+            style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 340, background: '#121212', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <p id="story-notice" style={{ margin: 0, fontSize: 14, color: '#f4f1ec', fontFamily: 'Inter, sans-serif', lineHeight: 1.55, textAlign: 'center' }}>{t('share.linkCopied')}</p>
+              <button type="button" className="btn-primary justify-center" style={{ minHeight: 44, width: '100%' }} onClick={() => { setStoryNotice(false); shareStory(); }}>{t('share.continue')}</button>
+            </div>
           </div>
         )}
         {hint && <p style={{ margin: 0, fontSize: 12, color: '#a39c93', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>{hint}</p>}

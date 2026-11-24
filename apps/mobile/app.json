@@ -24,7 +24,8 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Acil yardım talebinde bulunduğunda, uygulama kapansa bile konumun talep çözülene kadar emniyet birimleriyle paylaşılır ve ekibimiz tarafından takip edilir.",
         "UIBackgroundModes": [
           "location"
-        ]
+        ],
+        "NSPhotoLibraryAddUsageDescription": "Masa Dinamiği paylaşım kartını galerine kaydetmek için kullanılır."
       },
       "privacyManifests": {
         "NSPrivacyTracking": false,
@@ -269,7 +270,35 @@
       "expo-iap",
       "./plugins/withAutofillHighlight",
       "./plugins/withAndroidRelease",
-      "expo-localization"
+      "expo-localization",
+      "expo-build-properties",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Profil fotoğrafını ve sorun bildirimi görsellerini galerinden seçip yüklemek için; yönetim paneli hesaplarında ayrıca bot ve mekân fotoğraflarını yüklemek için fotoğraflarına erişim gerekir.",
+          "savePhotosPermission": "Masa Dinamiği paylaşım kartını galerine kaydetmek için kullanılır.",
+          "isAccessMediaLocationEnabled": false,
+          "granularPermissions": [
+            "photo"
+          ]
+        }
+      ],
+      [
+        "react-native-share",
+        {
+          "ios": [
+            "instagram-stories",
+            "facebook-stories",
+            "instagram",
+            "fb"
+          ],
+          "android": [
+            "com.instagram.android",
+            "com.facebook.katana"
+          ],
+          "enableBase64ShareAndroid": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

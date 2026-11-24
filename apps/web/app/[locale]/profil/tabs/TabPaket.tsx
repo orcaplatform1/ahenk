@@ -11,8 +11,6 @@ import { SkeletonBlock } from '@/components/ui/Skeleton';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
 import TcknModal from '@/components/paket/TcknModal';
 import { APP_STORE_URL, PLAY_STORE_URL, devicePlatform, openAppOrStore } from '@/lib/appLinks';
-import { DEFAULT_PHONE_COUNTRY, toE164 } from '@ahenk/shared';
-import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { AMBER, BuyButton, CARDS, Check, PRIME_PLANS, PaketKarti, type CardKey } from '@/components/paket/PaketKarti';
 
 // Aktif paket / abonelik (yalnız kullanıcının kendi aldıkları)
@@ -57,10 +55,6 @@ export function TabPaket({ maintenanceMode = false }: Props) {
   const [detail, setDetail] = useState<CardKey | null>(null);
   const [primePlan, setPrimePlan] = useState<(typeof PRIME_PLANS)[number]['key']>('PRIME_1M');
   const [discountInfo, setDiscountInfo] = useState<DiscountInfo | null>(null);
-  const [referralPhone, setReferralPhone] = useState('');
-  const [referralCountry, setReferralCountry] = useState(DEFAULT_PHONE_COUNTRY);
-  const [referralSending, setReferralSending] = useState(false);
-  const [referralMsg, setReferralMsg] = useState('');
   const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
 
   function loadSubs() {
@@ -111,23 +105,6 @@ export function TabPaket({ maintenanceMode = false }: Props) {
       await loadSubs();
     } catch (e) { setRewardMsg((e as Error).message); }
     finally { setClaiming(false); }
-  }
-
-  async function sendReferralInvite() {
-    const referralE164 = toE164(referralCountry, referralPhone);
-    if (!referralE164) {
-      setReferralMsg(t('phone.invalid'));
-      return;
-    }
-    setReferralSending(true); setReferralMsg('');
-    try {
-      await api.post('/referral/invite', { phoneNumber: referralE164 });
-      setReferralMsg(t('loyalty.sentOk'));
-      setReferralPhone('');
-      const d = await api.get<ReferralStats>('/referral/my-stats');
-      setReferralStats(d);
-    } catch (e) { setReferralMsg((e as Error).message || t('loyalty.sendFailed')); }
-    finally { setReferralSending(false); }
   }
 
   // "Paket Al" / "Abone Ol": önce T.C. No penceresi, sonra iyzico ödeme formu
@@ -281,39 +258,9 @@ export function TabPaket({ maintenanceMode = false }: Props) {
       {/* Sadakat Programı kartı */}
       <div className="ll-card flex flex-col gap-3">
         <div className="ll-head"><h3 className="ll-title">{t('loyalty.title')}</h3></div>
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <CountryCodeButton country={referralCountry} onChange={(c) => { setReferralCountry(c); setReferralMsg(''); }} />
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '0 14px' }}>
-              <input
-                type="tel"
-                inputMode="numeric"
-                placeholder={referralCountry === 'TR' ? '5XX XXX XX XX' : ''}
-                value={referralPhone}
-                onChange={e => setReferralPhone(e.target.value.replace(/\D/g, '').slice(0, 15))}
-                style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: '#f5f5f5', padding: '11px 0' }}
-              />
-            </div>
-          </div>
-          <button
-            onClick={sendReferralInvite}
-            disabled={referralSending}
-            className="w-full btn-primary disabled:opacity-50"
-          >
-            {referralSending ? '…' : t('loyalty.send')}
-          </button>
-          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 14px' }}>
-            <p style={{ color: '#aaa', fontSize: 12, lineHeight: 1.5, margin: 0 }}>
-              {t('loyalty.info')}
-            </p>
-          </div>
-        </div>
-        {referralMsg && (
-          <p className="text-xs" style={{ color: referralMsg === t('loyalty.sentOk') ? '#4ade80' : '#ff6b6b' }}>{referralMsg}</p>
-        )}
         {referralStats?.referralCode && (
-          <div className="flex flex-col gap-2 pt-1 border-t border-white/5">
-            <p className="text-xs text-[#c9c2b8]" style={{ marginTop: 8 }}>{t('loyalty.myCode')}</p>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-[#c9c2b8]">{t('loyalty.myCode')}</p>
             <div className="flex gap-2 items-center">
               <span className="ll-mono" style={{ flex: 1, minWidth: 0, padding: '11px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 15, letterSpacing: '0.12em', color: '#f5f5f5' }}>
                 {referralStats.referralCode}
@@ -341,16 +288,8 @@ export function TabPaket({ maintenanceMode = false }: Props) {
         )}
         <div className="flex gap-6 pt-1 border-t border-white/5">
           <div>
-            <p className="text-xs text-[#c9c2b8]">{t('loyalty.invited')}</p>
-            <p className="text-base font-semibold text-[#f4f1ec]">{t('loyalty.people', { count: referralStats?.totalInvites ?? '—' })}</p>
-          </div>
-          <div>
             <p className="text-xs text-[#c9c2b8]">{t('loyalty.validInvites')}</p>
             <p className="text-base font-semibold text-[#f4f1ec]">{t('loyalty.people', { count: referralStats?.validInvites ?? '—' })}</p>
-          </div>
-          <div>
-            <p className="text-xs text-[#c9c2b8]">{t('loyalty.discounts')}</p>
-            <p className="text-base font-semibold text-[#f4f1ec]">{t('loyalty.pieces', { count: referralStats?.availableDiscounts ?? '—' })}</p>
           </div>
         </div>
       </div>

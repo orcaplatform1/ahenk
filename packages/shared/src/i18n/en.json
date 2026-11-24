@@ -423,12 +423,7 @@
     "recordNotFound": "Record not found",
     "recordNotYours": "This record isn't yours",
     "redirect": "Redirecting to the home page in {count} seconds.",
-    "referralAlreadyInvited": "This number has already been invited.",
-    "referralDailyLimit": "You've used today's invites ({limit}). You can try again tomorrow.",
-    "referralRegistered": "This number is already registered on Ahenk.",
     "referralSelf": "You can't invite your own number.",
-    "referralSendFailed": "Couldn't send the invite, please try again.",
-    "referralTotalLimit": "You've used all your invites ({limit}).",
     "refreshExpired": "Your session has expired, please log in again",
     "refreshInvalid": "Invalid session token",
     "refreshMissing": "Session token not found",
@@ -949,14 +944,7 @@
     "withWhatsapp": "Log in with WhatsApp"
   },
   "loyalty": {
-    "discounts": "10% Discounts Available",
-    "info": "When a friend you invited buys any package or subscribes, you get a 10% discount. Each discount is valid for one package purchase only, can't be combined and can't be transferred.",
-    "invited": "Friends Invited",
     "people": "{count} people",
-    "pieces": "{count}",
-    "send": "Send Invite",
-    "sendFailed": "Couldn't send.",
-    "sentOk": "Invite sent!",
     "title": "Loyalty Program",
     "copied": "Copied",
     "copy": "Copy",
@@ -1270,7 +1258,8 @@
     "location": "To send your location with an Emergency Help request, you need to allow location access.",
     "locationAlways": "To keep sending your location while your Emergency Help request is open, even when the app is closed, you need to set location permission to \"Always\".",
     "notifications": "Notification permission is needed to receive table confirmations and meetup reminders.",
-    "required": "Permission required"
+    "required": "Permission required",
+    "saveImage": "To save the card to your gallery, you need to allow saving to your photos."
   },
   "phone": {
     "change": "Change number",
@@ -2009,6 +1998,11 @@
         "t8": "Tonight my buddy and I are giving new people a chance.",
         "t9": "Tonight my buddy and I are off to a new table and a new energy."
       }
-    }
+    },
+    "saveImage": "Save image",
+    "saved": "Image saved to your gallery.",
+    "saveFailed": "The image couldn't be prepared. Please try again.",
+    "linkCopied": "Your invite link has been copied. Add a 'Link' sticker to your story and paste it. Your invite only counts if your friends join through this link.",
+    "continue": "Continue"
   }
 }

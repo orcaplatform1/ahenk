@@ -1,6 +1,6 @@
 // Sekme 4 — Paketim: apps/web/app/profil/tabs/TabPaket.tsx. Ödeme: uygulama içi satın alma (App Store / Play Store), mobil fiyat (mobileTL).
 import React, { useCallback, useState } from 'react';
-import { BackHandler, Platform, Pressable, ScrollView, Share, TextInput, View } from 'react-native';
+import { BackHandler, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,8 +18,6 @@ import { KycNoticeCard } from '@/components/KycNoticeCard';
 
 import { upper } from '@/lib/i18n';
 import { useTranslation } from 'react-i18next';
-import { DEFAULT_PHONE_COUNTRY, toE164 } from '@ahenk/shared';
-import { CountryCodeButton } from '@/components/PhoneCountry';
 interface Subscription { id: string; plan: string; name: string; isPrime: boolean; autoRenew: boolean; renewCancelledAt: string | null; storePlatform: string | null }
 interface Rights { group: number; oneOnOne: number; kanka: number }
 type PlanKeyName = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA' | 'PRIME_1M' | 'PRIME_3M' | 'PRIME_6M' | 'PRIME_12M';
@@ -92,11 +90,6 @@ export default function Paketim() {
   const [claiming, setClaiming] = useState(false);
   const [rewardMsg, setRewardMsg] = useState('');
   const [rewardOk, setRewardOk] = useState(false);
-  const [refPhone, setRefPhone] = useState('');
-  const [refCountry, setRefCountry] = useState(DEFAULT_PHONE_COUNTRY);
-  const [refSending, setRefSending] = useState(false);
-  const [refMsg, setRefMsg] = useState('');
-  const [refOk, setRefOk] = useState(false);
   const [buying, setBuying] = useState('');
   const [restoring, setRestoring] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -148,16 +141,6 @@ export default function Paketim() {
     } catch (e) { setRewardMsg((e as Error).message); setRewardOk(false); } finally { setClaiming(false); }
   }
 
-  async function sendReferral() {
-    const refE164 = toE164(refCountry, refPhone);
-    if (!refE164) { setRefMsg(t('phone.invalid')); setRefOk(false); return; }
-    setRefSending(true); setRefMsg('');
-    try {
-      await api.post('/referral/invite', { phoneNumber: refE164 });
-      setRefMsg(t('loyalty.sentOk')); setRefOk(true); setRefPhone('');
-      setStats(await api.get('/referral/my-stats'));
-    } catch (e) { setRefMsg((e as Error).message || t('loyalty.sendFailed')); setRefOk(false); } finally { setRefSending(false); }
-  }
   async function buy(plan: string) {
     setBuying(plan); setError('');
     try {
@@ -295,24 +278,8 @@ export default function Paketim() {
             {maintenance && <MaintenanceNotice />}
             <Card style={{ gap: 12 }}>
               <Head title={t('loyalty.title')} style={{ marginBottom: 0 }} />
-              <View style={{ gap: 8 }}>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <CountryCodeButton country={refCountry} onChange={(code) => { setRefCountry(code); setRefMsg(''); }} />
-                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingHorizontal: 14 }}>
-                    <TextInput keyboardType="number-pad" textContentType="telephoneNumber" keyboardAppearance="dark" placeholder={refCountry === 'TR' ? '5XX XXX XX XX' : ''} placeholderTextColor={tw.muted} value={refPhone}
-                      onChangeText={(v) => setRefPhone(v.replace(/\D/g, '').slice(0, 15))} style={{ flex: 1, fontSize: 14, color: tw.text, paddingVertical: 11, fontFamily: sans(400) }} />
-                  </View>
-                </View>
-                <BtnPrimary label={refSending ? '…' : t('kanka.sendInvite')} full disabled={refSending} style={refSending ? { opacity: 0.5 } : undefined} onPress={sendReferral} />
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
-                  <T style={{ color: c.tAaa, fontSize: 12, lineHeight: 18 }}>
-                    {t('loyalty.info')}
-                  </T>
-                </View>
-              </View>
-              {!!refMsg && <T style={{ fontSize: 12, color: refOk ? c.ok : tw.accent }}>{refMsg}</T>}
               {!!stats?.referralCode && (
-                <View style={{ gap: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+                <View style={{ gap: 8 }}>
                   <T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.myCode')}</T>
                   <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                     <View style={{ flex: 1, minHeight: 44, justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingHorizontal: 14 }}>
@@ -338,9 +305,7 @@ export default function Paketim() {
                 </View>
               )}
               <View style={{ flexDirection: 'row', gap: 24, paddingTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
-                <View><T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.invited')}</T><T w={600} style={{ fontSize: 16, color: ll.text }}>{t('loyalty.people', { count: stats?.totalInvites ?? '—' })}</T></View>
                 <View><T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.validInvites')}</T><T w={600} style={{ fontSize: 16, color: ll.text }}>{t('loyalty.people', { count: stats?.validInvites ?? '—' })}</T></View>
-                <View><T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.discounts')}</T><T w={600} style={{ fontSize: 16, color: ll.text }}>{t('loyalty.pieces', { count: stats?.availableDiscounts ?? '—' })}</T></View>
               </View>
             </Card>
 
