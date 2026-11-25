@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { API_PREFIX, langHeaders } from '@/lib/api';
+import { PhotoCropper } from './PhotoCropper';
 
 // Profil fotoğrafı: yalnız KYC onaylıysa yüklenir; fotoğraf admin onayına düşer. Dosya seçimi galeri / dosyalardan
 // (capture özniteliği yok; kamera seçeneği sunulmaz)
@@ -35,15 +36,22 @@ function useProfilePhotoPicker(kycApproved: boolean) {
     if (!kycApproved) { setMessage(t(KYC_PHOTO_MESSAGE)); return; }
     ref.current?.click();
   };
+  // Seçilen dosya önce kırpma ekranında açılır (İptal / Bitti); kırpılmış kare görsel mevcut yükleme akışıyla gider
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const upload = async (f: File) => {
+    setBusy(true); setUploaded(false);
+    try { await uploadPhoto(f); setUploaded(true); setMessage(t(PENDING_PHOTO_MESSAGE)); } catch (err) { const m = (err as Error).message; setMessage(m.startsWith('photo.') ? t(m) : m); } finally { setBusy(false); }
+  };
   const input = (
-    <input ref={ref} type="file" accept="image/*" style={{ display: 'none' }}
-      onChange={async (e) => {
-        const f = e.target.files?.[0];
-        e.target.value = '';
-        if (!f) return;
-        setBusy(true); setUploaded(false);
-        try { await uploadPhoto(f); setUploaded(true); setMessage(t(PENDING_PHOTO_MESSAGE)); } catch (err) { const m = (err as Error).message; setMessage(m.startsWith('photo.') ? t(m) : m); } finally { setBusy(false); }
-      }} />
+    <>
+      <input ref={ref} type="file" accept="image/*" style={{ display: 'none' }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (f) setCropFile(f);
+        }} />
+      <PhotoCropper file={cropFile} onCancel={() => setCropFile(null)} onDone={(c) => { setCropFile(null); upload(c).catch(() => undefined); }} />
+    </>
   );
   return { pick, input, message, busy, uploaded };
 }

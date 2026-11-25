@@ -15,11 +15,12 @@ import { MatchingModule } from "../matching/matching.module";
 import { APP_INTERCEPTOR } from "@nestjs/core";
 import { AdminActionInterceptor } from "./admin-action-log";
 import { AdminModerationController, AdminModerationService } from "./admin-moderation";
+import { AdminScreenshotController, ScreenshotLogController, ScreenshotLogService } from "./admin-screenshot";
 
 @Module({
   imports: [PrismaModule, PaymentModule, UsersModule, NotificationModule, KycModule, MatchingModule, VenuePanelModule, BullModule.registerQueue({ name: ASSIGN_QUEUE })],
-  controllers: [AdminController, AdminModerationController, MediaController],
+  controllers: [AdminController, AdminModerationController, AdminScreenshotController, ScreenshotLogController, MediaController],
   // ADMIN işlem kaydı tüm controller'larda @AdminAction etiketli uç noktalar için çalışır
-  providers: [AdminService, AdminModerationService, WhatsappNotifyService, { provide: APP_INTERCEPTOR, useClass: AdminActionInterceptor }],
+  providers: [AdminService, AdminModerationService, ScreenshotLogService, WhatsappNotifyService, { provide: APP_INTERCEPTOR, useClass: AdminActionInterceptor }],
 })
 export class AdminModule {}

@@ -24,6 +24,7 @@ const ALERT_LABELS: Record<string, string> = {
   PAYMENT_ISSUE: 'Ödeme elle kontrol gerektiriyor',
   BOT_ASSIGNED: 'Masaya bot atandı',
   NO_SHOW_REPORTED: 'Gelmedi bildirimi',
+  SCREENSHOT_VIOLATION: 'Ekran görüntüsü ihlali',
 };
 
 export default function AdminAlerts() {

@@ -1016,6 +1016,7 @@ enum AdminAlertType {
   PAYMENT_ISSUE
   BOT_ASSIGNED
   NO_SHOW_REPORTED
+  SCREENSHOT_VIOLATION // büyütülmüş profil fotoğrafının ekran görüntüsü (iOS)
 }
 
 // ─────────────────────────────────────────────
@@ -1402,6 +1403,22 @@ model LoginLog {
   platform  String // web | ios | android
   success   Boolean
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Büyütülmüş profil fotoğrafı açıkken alınan ekran görüntüsü (iOS algılar). adminAction: NONE (İşlem yapma) | SUSPEND_3 | SUSPEND_15 |
+// SUSPEND_30; adminActionAt / adminId kararla yazılır
+model ScreenshotLog {
+  id            String    @id @default(cuid())
+  userId        String // ekran görüntüsünü alan
+  targetUserId  String // fotoğraf sahibi
+  platform      String // ios | android | web
+  createdAt     DateTime  @default(now())
+  adminAction   String?
+  adminActionAt DateTime?
+  adminId       String?
 
   @@index([userId])
   @@index([createdAt])

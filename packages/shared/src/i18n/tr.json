@@ -1329,7 +1329,14 @@
     "pending": "Fotoğrafın onay sürecinde.",
     "uploadFailed": "Fotoğraf yüklenemedi",
     "title": "Profil Fotoğrafı",
-    "galleryDenied": "Galeri izni verilmedi."
+    "galleryDenied": "Galeri izni verilmedi.",
+    "cropCancel": "İptal",
+    "cropDone": "Bitti",
+    "cropZoom": "Yakınlaştır",
+    "cropFailed": "Fotoğraf kırpılamadı.",
+    "recordingHidden": "Ekran kaydı sırasında fotoğraf gösterilmez.",
+    "screenshotWarn": "Ekran görüntüsü almak yasaktır. Tekrarı halinde hesabın sırasıyla 3/15/30 gün askıya alınır.",
+    "screenshotGotIt": "Anladım"
   },
   "pkg": {
     "activePackage": "Aktif Paket",

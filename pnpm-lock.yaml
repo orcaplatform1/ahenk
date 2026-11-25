@@ -229,6 +229,9 @@ importers:
       expo-iap:
         specifier: ^6.4.3
         version: 6.4.3(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.1)(supports-color@7.2.0))(react@19.3.1)
+      expo-image-manipulator:
+        specifier: ~58.0.16
+        version: 58.0.16(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.1)(supports-color@7.2.0))(react@19.3.1)
       expo-image-picker:
         specifier: ~58.0.10
         version: 58.0.10(expo@58.0.25)
@@ -256,6 +259,9 @@ importers:
       expo-router:
         specifier: ~58.0.31
         version: 58.0.31(a60c57c314a775b6c040ddde15ea3ac0)
+      expo-screen-capture:
+        specifier: ~58.0.6
+        version: 58.0.6(expo@58.0.25)(react@19.3.1)
       expo-secure-store:
         specifier: ~58.0.3
         version: 58.0.3(expo@58.0.25)
@@ -4561,6 +4567,13 @@ packages:
     peerDependencies:
       expo: '*'
 
+  expo-image-manipulator@58.0.16:
+    resolution: {integrity: sha512-KY4Y4GjyaPuvRrZWQ2qDDPC0+q4xOpz9rydrK8/jexU+zwCMHsQGalOPjFwZrC0QhvGxfvvG9H/Qwv6Yh9vlOg==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
+      react-native: '*'
+
   expo-image-picker@58.0.10:
     resolution: {integrity: sha512-yqQC9UYMWSUxk6U0jaS1vE1w+b9Ru0FJmQ3KjUf9Q9oVg5xBxmg8+Ts+usazMAuPoskNIXJ++VZ+uK6br9yUGQ==}
     peerDependencies:
@@ -4688,6 +4701,12 @@ packages:
         optional: true
       react-server-dom-webpack:
         optional: true
+
+  expo-screen-capture@58.0.6:
+    resolution: {integrity: sha512-mJLGEyoP0TiQjxL/+x0pmvx9/QXVzGa4vywVLeH2InEPUTGsqWm5AYW6fQghauch5RmafkMr6oyoxy8RZu/zoA==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
 
   expo-secure-store@58.0.3:
     resolution: {integrity: sha512-RpubZfqJREEcwKbx3HFoWbtDd31t+yESMj7Ei5/mGQp5vViwUBzL4nUCZRLFyt+O690mT8We7dDtIUZeIk6LbQ==}
@@ -11947,6 +11966,13 @@ snapshots:
     dependencies:
       expo: 58.0.25(2d1a68dc50d270a9a8b20e3f2f198267)
 
+  expo-image-manipulator@58.0.16(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.1)(supports-color@7.2.0))(react@19.3.1):
+    dependencies:
+      expo: 58.0.25(2d1a68dc50d270a9a8b20e3f2f198267)
+      expo-image-loader: 58.0.3(expo@58.0.25)
+      react: 19.3.1
+      react-native: 0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.1)(supports-color@7.2.0)
+
   expo-image-picker@58.0.10(expo@58.0.25):
     dependencies:
       expo: 58.0.25(2d1a68dc50d270a9a8b20e3f2f198267)
@@ -12088,6 +12114,11 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
+
+  expo-screen-capture@58.0.6(expo@58.0.25)(react@19.3.1):
+    dependencies:
+      expo: 58.0.25(2d1a68dc50d270a9a8b20e3f2f198267)
+      react: 19.3.1
 
   expo-secure-store@58.0.3(expo@58.0.25):
     dependencies:

@@ -1329,7 +1329,14 @@
     "pending": "Your photo is being reviewed.",
     "uploadFailed": "Couldn't upload the photo",
     "title": "Profile Photo",
-    "galleryDenied": "Photo library access was not granted."
+    "galleryDenied": "Photo library access was not granted.",
+    "cropCancel": "Cancel",
+    "cropDone": "Done",
+    "cropZoom": "Zoom",
+    "cropFailed": "The photo couldn't be cropped.",
+    "recordingHidden": "Photos are hidden during screen recording.",
+    "screenshotWarn": "Taking screenshots is prohibited. Repeated violations will result in your account being suspended for 3, 15 and 30 days respectively.",
+    "screenshotGotIt": "Got it"
   },
   "pkg": {
     "activePackage": "Active Package",

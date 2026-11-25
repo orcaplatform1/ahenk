@@ -32,6 +32,7 @@ const ADMIN_NAV: { href: string; label: string; alertKey?: boolean; sos?: boolea
   { href: '/admin/islem-kayitlari', label: 'İşlem Kayıtları', superadminOnly: true },
   { href: '/admin/veri-saklama', label: 'Veri Saklama', superadminOnly: true },
   { href: '/admin/quality', label: 'Şikayetler' },
+  { href: '/admin/ekran-goruntusu', label: 'Ekran Görüntüsü İhlalleri' },
   { href: '/admin/sorun-bildirimleri', label: 'Sorun Bildirimleri' },
   { href: '/admin/partnerships', label: 'İş Ortaklığı', superadminOnly: true },
   { href: '/admin/careers', label: 'Kariyer', superadminOnly: true },

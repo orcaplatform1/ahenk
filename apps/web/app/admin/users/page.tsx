@@ -10,6 +10,7 @@ import { AdminNoShowWarnings, type NoShowReportItem, type NoShowWarningInfo } fr
 import { SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 import { AdminSelect } from '@/components/AdminSelect';
 import { AdminSuspendButtons } from '@/components/AdminSuspendButtons';
+import { AdminScreenshotViolations } from '@/components/AdminScreenshotViolations';
 import { AdminDeletionRequests } from '@/components/AdminDeletionRequests';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
@@ -114,6 +115,12 @@ export default function AdminUsers() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { api.get<string[]>('/admin/sanction-reasons').then(setSanctionReasons).catch(() => {}); }, []);
+  // Ekran Görüntüsü İhlalleri → "Detay": /admin/users?detay=<kullanıcı ID> detay penceresini açar
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('detay');
+    if (id) void openUserModal(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Pencereyi kapatmadan detayı yeniler (düzenleme / yaptırım sonrası)
   function refreshUserModal(userId: string) {
@@ -394,6 +401,9 @@ export default function AdminUsers() {
                     <span key={c.slot} style={{ fontSize: 11, color: MUTED }}>Acil durum kişisi {c.slot}: <span style={{ color: '#93c5fd' }}>{c.name ?? '—'} · {c.phone}</span></span>
                   ))}
                 </div>
+
+                {/* Ekran görüntüsü ihlal sayısı ve listesi */}
+                <AdminScreenshotViolations userId={userModal.id} />
 
                 {/* Durum badge'leri */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>

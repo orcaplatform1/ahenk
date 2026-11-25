@@ -11,6 +11,8 @@ import { StatusPill } from '@/components/admin/StatusPill';
 import { AdminUserPhoto } from '@/components/admin/AdminUserPhoto';
 import { AdminDeletionRequests, AdminNoShowWarnings, AdminSuspendButtons, AdminSanctionHistory, AdminUserEdit, type NoShowReportItem, type NoShowWarningInfo } from '@/components/admin/UserParts';
 import { adm, llCard } from '@/theme/theme';
+import { useLocalSearchParams } from 'expo-router';
+import { AdminScreenshotViolations } from '@/components/admin/AdminScreenshotViolations';
 
 function canSanction(t: { id: string; role: string }) {
   const me = myId(); if (!me) return false;
@@ -61,6 +63,9 @@ export default function AdminUsers() {
   }, [search, city, type, page]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { api.get<string[]>('/admin/sanction-reasons').then(setReasons).catch(() => {}); }, []);
+  // Ekran Görüntüsü İhlalleri → "Detay": detay parametresiyle gelince kullanıcı detay penceresi açılır
+  const { detay } = useLocalSearchParams<{ detay?: string }>();
+  useEffect(() => { if (detay) void openModal(detay); }, [detay]); // eslint-disable-line react-hooks/exhaustive-deps
   const refresh = (id: string) => { api.get<Detail>(`/admin/users/${id}`).then(setModal).catch((e: Error) => setError(`Kullanıcı yüklenemedi: ${e.message}`)); };
   async function openModal(id: string) {
     setModalLoading(true); setModal(null); setSubToCancel(null);
@@ -150,6 +155,8 @@ export default function AdminUsers() {
                       <AT key={k} style={{ fontSize: 11, color: adm.muted }}>{k}: <AT style={{ fontSize: 11, color: '#93c5fd' }}>{String(v)}</AT></AT>
                     ))}
                   </View>
+                  {/* Ekran görüntüsü ihlal sayısı ve listesi */}
+                  <AdminScreenshotViolations userId={m.id} />
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                     <StatusPill text={st.label} color={st.color} bg={st.bg} border={st.border} pad={[2, 8]} />
                     <StatusPill text={`KYC: ${kycOk ? 'Onaylı ✓' : m.kyc?.status ?? 'Yok'}`} color={kycOk ? adm.green : adm.muted} bg={kycOk ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)'} border={kycOk ? 'rgba(34,197,94,0.3)' : adm.border} pad={[2, 8]} />

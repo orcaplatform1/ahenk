@@ -337,6 +337,29 @@ PROFİL FOTOĞRAFI (web + mobil):
     ekrana (fotoğraf dahil) basınca ya da geri tuşuyla kapanır (masa detay kartında da aynı). Fotoğraf yalnız Profilim'den değiştirilir:
     masa detay kartında ve başka hiçbir yerde kendi fotoğrafına basınca düzenleme (kalem) ikonu çıkmaz
   - Mobil alt menü profil sekmesinde onaylı fotoğraf varsa kısaltma yerine fotoğraf
+  - Kırpma (web + mobil): Profilim'den fotoğraf eklenirken / değiştirilirken galeriden seçilen görsel önce tam ekran kırpma ekranında
+    açılır (WhatsApp / Instagram gibi): yuvarlak kırpma çerçevesi, mobilde tek parmakla sürükle + iki parmakla yakınlaştır, web'de
+    sürükle + sürgü (ve fare tekerleği); butonlar "İptal" / "Bitti" (photo.cropCancel / cropDone). Bitti → çerçevedeki kare alan
+    (mobil expo-image-manipulator, web canvas, JPEG) mevcut POST /users/me/profile-photo akışıyla gider (web components/PhotoCropper.tsx,
+    mobil components/PhotoCropper.tsx)
+  - Büyütülmüş profil fotoğrafı koruması YALNIZ büyütülmüş görünüm (PhotoViewer) açıkken; uygulamanın diğer ekranlarında kısıtlama yok:
+    · Android: ekran görüntüsü ve ekran kaydı FLAG_SECURE ile engellenir (expo-screen-capture preventScreenCaptureAsync); görünüm kapanınca kalkar
+    · iOS ekran kaydı / yansıtma: sürerken fotoğrafın yerine koyu bulanık alan + "Ekran kaydı sırasında fotoğraf gösterilmez." /
+      "Photos are hidden during screen recording." (photo.recordingHidden); kayıt bitince fotoğraf geri gelir (yerel modül
+      apps/mobile/modules/screen-recording, UIScreen.isCaptured)
+    · iOS ekran görüntüsü: uyarı penceresi "Ekran görüntüsü almak yasaktır. Tekrarı halinde hesabın sırasıyla 3/15/30 gün askıya
+      alınır." (photo.screenshotWarn), tek buton "Anladım" / "Got it"; POST /users/me/screenshot-log {photoUrl, platform}
+    · Web: büyütülmüş görünümde fotoğrafta sağ tık menüsü ve sürükleyerek kaydetme kapalı (packages/ui PhotoViewer)
+  - ScreenshotLog (migration 20261125900000_screenshot_log): id, userId (görüntüyü alan), targetUserId (fotoğraf sahibi; fotoğraf
+    adresinden), platform, createdAt, adminAction (NONE | SUSPEND_3 | SUSPEND_15 | SUSPEND_30), adminActionAt, adminId. Her kayıtta admin
+    Uyarılar'a SCREENSHOT_VIOLATION + ADMIN / SUPERADMIN hesaplarına bildirim: "Ekran görüntüsü ihlali: [Ad S.] (#[ID]), [Ad S.] adlı
+    kullanıcının profil fotoğrafının ekran görüntüsünü aldı. Bu, kullanıcının [N]. ekran görüntüsü." (N = kullanıcının toplam kaydı; ID = User.id)
+  - Admin "Ekran Görüntüsü İhlalleri" (web /admin/ekran-goruntusu, mobil admin/ekran-goruntusu; backend admin/admin-screenshot.ts):
+    alan kullanıcı (foto + ad + telefon + Detay), fotoğraf sahibi, platform, tarih saat, kaçıncı ihlal, yapılan işlem; kullanıcı filtresi.
+    Önerilen işlem: 1. ihlal işlem yok (yalnız "Kullanıcıya uyarı gösterildi"), 2. ihlal "3 gün askıya al", 3. ihlal "15 gün askıya al",
+    4. ve sonrası "30 gün askıya al"; ayrıca diğer süreler (3 / 15 / 30 gün) ve "İşlem yapma". Askı mevcut askı sistemi + askı bildirim
+    şablonu, sebep "Ekran görüntüsü ihlali"; karar adminAction / adminActionAt / adminId'ye yazılır (POST /admin/screenshot-logs/:id/decision).
+    Kullanıcı detayında ihlal sayısı ve listesi (GET /admin/users/:id/screenshot-logs)
 
 MASA DETAY KARTI (web + mobil):
   - Katılımcıların onaylı profil fotoğrafları herkese görünür; fotoğrafı olmayanda kısaltma. Fotoğrafa basınca tam ekran büyük görünüm
