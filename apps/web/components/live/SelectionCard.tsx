@@ -13,7 +13,8 @@ function changeIn(ms: number): { h: number; m: number } {
   return { h: Math.floor(total / 60), m: total % 60 };
 }
 
-// İptal kilidi metni: kalan süre (backend cancelCooldownUntil) satır içinde; 1 saat ve üstü "X saat Y dakika", altı yalnız "Y dakika";
+// İptal kilidi metni iki satır: sabit "İptal ettiğin için 24 saat ..." ve geri sayım (backend cancelCooldownUntil) "Yeni katılıma kalan
+// süre: X saat Y dakika" (1 saat altı yalnız "Y dakika");
 // saniye yok, dakika yukarı yuvarlanır (0 dakika gösterilmez). Değer dakika sınırında değişir; süre dolunca metin kalkar, Seçim Yap açılır
 function cooldownKey(ms: number): ['live.selReasonCooldownHm' | 'live.selReasonCooldownM', { h: number; m: number }] {
   const r = changeIn(ms);
@@ -104,7 +105,7 @@ export default function SelectionCard({ selection, onOpen, onChange, onCancel }:
       {canPick && (
         <>
           <StdButton variant="primary" onClick={onOpen} disabled={cooling || suspended} className="w-full justify-center disabled:opacity-50">{tr('live.selOpen')}</StdButton>
-          {(suspended || cooling) && <p className="text-[#a39c93] text-center" style={{ fontSize: 12, margin: 0 }}>{suspended ? tr('live.selReasonSuspended') : tr(...cooldownKey(Date.parse(selection.cancelCooldownUntil!) - now))}</p>}
+          {(suspended || cooling) && <p className="text-[#a39c93] text-center" style={{ fontSize: 12, margin: 0 }}>{suspended ? tr('live.selReasonSuspended') : <>{tr('live.selReasonCooldown')}<br />{tr(...cooldownKey(Date.parse(selection.cancelCooldownUntil!) - now))}</>}</p>}
         </>
       )}
       {confirm && (
