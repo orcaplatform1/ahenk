@@ -487,7 +487,7 @@ export class PaymentService {
 
   // ─── Prime otomatik yenileme (web, iyzico abonelik API'si) ────────────────
   // İlk dönem ödendikten sonra kart kaydı için abonelik formu açılır (planın deneme süresi = ilk dönem, tahsilat yok).
-  async initPrimeAutoRenew(userId: string, identityNumber: string) {
+  async initPrimeAutoRenew(userId: string, identityNumber: string, clientIp: string) {
     if (this.config.get<string>("IYZICO_SUBSCRIPTION_ENABLED") !== "true") {
       throw new ServiceUnavailableException("Premium abonelik henüz aktif değil.");
     }
@@ -496,6 +496,8 @@ export class PaymentService {
       select: { id: true, plan: true },
     });
     if (!sub) throw new NotFoundException("Otomatik yenileme başlatılacak Premium aboneliği bulunamadı.");
+    // Ödeme ekranındaki Ön Bilgilendirme Formu + Mesafeli Satış Sözleşmesi onay kutusu (web) → onay kaydı
+    await recordAgreements(this.prisma, userId, ["mesafeli_satis", "on_bilgilendirme"], clientIp, "web", sub.plan);
     const planRef = this.config.get<string>(`IYZICO_${sub.plan}_PLAN_REF`);
     if (!planRef) throw new ServiceUnavailableException("Premium abonelik planı tanımlı değil.");
     const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { profile: true } });

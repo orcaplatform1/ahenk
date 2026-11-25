@@ -231,11 +231,11 @@ const sections = [
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Apple (App Store) ve Google (Google Play)</strong>
-          : mobil uygulama içi satın almaların ve aboneliklerin doğrulanması ve yönetilmesi amacıyla satın alma işlem bilgileri.
+          : mobil uygulama içi satın almaların ve aboneliklerin doğrulanması ve yönetilmesi amacıyla satın alma işlem bilgileri. Aktarım dayanağı: sözleşmenin ifası (ödeme ve abonelik işlemleri).
         </p>
         <p>
-          <strong style={{ color: '#f4f1ec' }}>Google Analytics ve Meta Pixel</strong>
-          : bu araçlar aracılığıyla çerez verisi işlenir. Bu veri yurt dışındaki sunuculara aktarılabilir. Aktarım açık rızana dayanır ve rızanı çerez tercihlerinden her zaman geri alabilirsin.
+          <strong style={{ color: '#f4f1ec' }}>Google Maps</strong>
+          : Acil Yardım talebindeki konum koordinatları (yönetici acil yardım haritası ve açık adres çözümleme; acil durum kişilerine giden konum bağlantısı da Google Maps bağlantısıdır). Aktarım dayanağı: sözleşmenin ifası (buluşma konumunun gösterilmesi).
         </p>
 
         <div
@@ -248,7 +248,7 @@ const sections = [
           }}
         >
           <p style={{ color: '#f4f1ec', fontSize: 13 }}>
-            Kişisel verilerin satılmaz. Çerez verileri yalnızca açık rızanla Google ve Meta ile reklam ve istatistik amacıyla paylaşılır.
+            Kişisel verilerin satılmaz.
           </p>
         </div>
       </>
@@ -288,7 +288,7 @@ const sections = [
     title: 'Çerezler',
     content: (
       <p>
-        Ahenk, platform işlevselliği için zorunlu çerezler kullanır. Bu çerezler oturum yönetimi ve güvenlik amacıyla kullanılır. Onay vermen halinde Google Analytics ve Meta Pixel çerezleri de çalışır. Detaylı bilgi için{' '}
+        Ahenk, platform işlevselliği için zorunlu çerezler kullanır. Bu çerezler oturum yönetimi ve güvenlik amacıyla kullanılır. Detaylı bilgi için{' '}
         <Link href="/cerez-politikasi" style={{ color: '#c0392b' }}>Çerez Politikamı</Link>
         {' '}incele.
       </p>

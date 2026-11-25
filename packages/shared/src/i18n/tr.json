@@ -692,7 +692,7 @@
     "noCam": "Kamera bulunamadı.",
     "photoUploaded": "Fotoğraf Yüklendi",
     "preview": "Önizleme",
-    "privacy": "Ekibim hesap doğrulama talebini inceleyene kadar bilgiler saklanır. Doğrulama onaylanır veya reddedilir ise, tüm bilgiler veritabanından silinir ve depolanmaz. Doğrulama, sahte profillerin platformu kullanmasını engellemek için bir filtredir.",
+    "privacy": "Kimlik belgeleri ve canlılık videosu hesap silme onayından sonra 48 saat içinde silinir. İstisna: Acil Yardım, şikâyet veya ban kaydına karışmış kullanıcının kimliği kilitli tutulur, 2 yıl saklanır ve yalnız SUPERADMIN erişir. Doğrulama, sahte profillerin platformu kullanmasını engellemek için bir filtredir.",
     "recording": "KAYIT BAŞLADI",
     "rejected": "Başvurun reddedildi",
     "retake": "Tekrar Çek",
@@ -1256,6 +1256,11 @@
     "checkLink": "Kontrol Et"
   },
   "pay": {
+    "agreePre": "",
+    "agreePreInfo": "Ön Bilgilendirme Formu",
+    "agreeMid": "'nu ve ",
+    "agreeDistance": "Mesafeli Satış Sözleşmesi",
+    "agreePost": "'ni okudum, onaylıyorum.",
     "cancel": "Vazgeç",
     "idType": "Kimlik türü",
     "invalidPASSPORT": "Pasaport numarası 6–9 karakter, harf ve rakam olmalı.",
@@ -1459,6 +1464,12 @@
     "venueLater": "Mekan bilgileri masa detayında gözükecektir."
   },
   "reg": {
+    "legalPre": "",
+    "legalTerms": "Kullanım Koşulları",
+    "legalMid": "'nı okudum ve kabul ediyorum; ",
+    "legalKvkk": "KVKK Aydınlatma Metni",
+    "legalPost": "'ni okudum.",
+    "legalRequired": "Devam etmek için Kullanım Koşulları ve KVKK Aydınlatma Metni onayını işaretle.",
     "add": "Ekle",
     "answerBoth": "Lütfen soruları yanıtla.",
     "backArrow": "← Geri",

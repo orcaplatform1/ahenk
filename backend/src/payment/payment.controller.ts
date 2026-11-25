@@ -142,7 +142,7 @@ export class PaymentController {
   @Post("prime/autorenew/init")
   @UseGuards(JwtAuthGuard)
   initPrimeAutoRenew(@Req() req: Request, @Body() dto: PrimeAutoRenewDto) {
-    return this.paymentService.initPrimeAutoRenew((req.user as { id: string }).id, dto.identityNumber);
+    return this.paymentService.initPrimeAutoRenew((req.user as { id: string }).id, dto.identityNumber, req.ip ?? "");
   }
 
   @Post("prime/autorenew/callback")

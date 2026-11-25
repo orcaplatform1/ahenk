@@ -56,7 +56,7 @@ export class RetentionService {
       case "COMMERCIAL_MESSAGE_CONSENT": {
         // Onayın sona erdiği an: kişi + türdeki son kayıt ret (accepted false) ise onun tarihi; onay sürüyorsa süre işlemez
         const rows = await p.consentLog.findMany({
-          where: { type: { in: ["MARKETING_SMS", "MARKETING_EMAIL"] } },
+          where: { type: "MARKETING_SMS" },
           select: { id: true, userId: true, type: true, accepted: true, createdAt: true },
           orderBy: { createdAt: "asc" },
         });
@@ -236,6 +236,24 @@ export class RetentionService {
       case "SOS_RECORD":
         await p.sosReport.updateMany({ where: { id: { in: ids } }, data: { lastAddress: null } });
         return;
+      case "COMPLAINT_MODERATION": {
+        // Süresi dolan şikâyet / otomatik engel kayıtları silinir; şikâyet edilen mesaj, başka şikâyeti kalmadıysa onunla birlikte silinir
+        const reports = await p.chatReport.findMany({ where: { id: { in: ids } }, select: { messageId: true } });
+        await p.chatReport.deleteMany({ where: { id: { in: ids } } });
+        await p.chatMessage.deleteMany({ where: { id: { in: [...new Set(reports.map((r) => r.messageId))] }, reports: { none: {} } } });
+        return;
+      }
+      case "CHAT_MESSAGES":
+        // Yalnız şikâyet edilmemiş mesajlar (masa tarihinden 6 ay)
+        await p.chatMessage.deleteMany({ where: { id: { in: ids }, reports: { none: {} } } });
+        return;
+      case "PROBLEM_REPORTS":
+        // Kayıt + sunucudaki görseller (uploads/problem-reports/<id>/)
+        await p.problemReport.deleteMany({ where: { id: { in: ids } } });
+        for (const id of ids) {
+          try { fs.rmSync(path.join(PROBLEM_REPORT_DIR, id), { recursive: true, force: true }); } catch (e) { this.logger.error(`Sorun bildirimi klasörü silinemedi (${id}): ${e}`); }
+        }
+        return;
       case "TRAFFIC_LOG":
         await p.refreshToken.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("rt:")).map((i) => i.slice(3)) } } });
         await p.venueSession.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("vs:")).map((i) => i.slice(3)) } } });
@@ -367,7 +385,7 @@ export class RetentionService {
       categories: {
         PAYMENT: { payments, subscriptions },
         DISTANCE_SALES_CONSENT: { agreements: agreements.filter((a) => a.documentType !== "acik_riza_biyometrik") },
-        COMMERCIAL_MESSAGE_CONSENT: { consents: consents.filter((c) => c.type === "MARKETING_SMS" || c.type === "MARKETING_EMAIL") },
+        COMMERCIAL_MESSAGE_CONSENT: { consents: consents.filter((c) => c.type === "MARKETING_SMS") },
         TRAFFIC_LOG: { logins: loginLogs, sessions: refreshTokens },
         KVKK_CONSENT: { consents: consents.filter((c) => c.type === "PRIVACY_POLICY"), biometricConsents: agreements.filter((a) => a.documentType === "acik_riza_biyometrik") },
         INCIDENT_IDENTITY: { retainedIdentity: deletionRequests.map((d) => d.retainedIdentity).filter((r) => r && typeof r === "object") },

@@ -95,10 +95,9 @@ const sections = [
               Requires consent
             </span>
           </div>
-          <div style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
-            <span style={{ fontFamily: 'monospace', fontSize: 13, color: '#aaa', display: 'block', marginBottom: '0.2rem' }}>Meta Pixel: _fbp</span>
-            <span style={{ color: '#a39c93', fontSize: 13 }}>Provider: Meta Platforms. Purpose: ad measurement and retargeting. Duration: 3 months. Runs only with consent.</span>
-          </div>
+          <p style={{ color: '#a39c93', fontSize: 13 }}>
+            Marketing cookies are not currently used.
+          </p>
         </div>
 
         <p style={{ color: '#8f887f', fontSize: 13 }}>

@@ -61,8 +61,8 @@ export const RETENTION_POLICY: RetentionCategory[] = [
   {
     id: "COMMERCIAL_MESSAGE_CONSENT",
     label: { tr: "Ticari ileti onay ve ret kayıtları", en: "Commercial message consent and opt-out records" },
-    fields: { tr: "Onay türü (SMS / e-posta), onay ya da ret, zaman damgası, IP, tarayıcı bilgisi", en: "Consent type (SMS / email), consent or opt-out, timestamp, IP, browser info" },
-    location: "ConsentLog (MARKETING_SMS, MARKETING_EMAIL)",
+    fields: { tr: "Onay türü (SMS), onay ya da ret, zaman damgası, IP, tarayıcı bilgisi", en: "Consent type (SMS), consent or opt-out, timestamp, IP, browser info" },
+    location: "ConsentLog (MARKETING_SMS)",
     duration: { tr: "3 yıl", en: "3 years" },
     start: { tr: "Onayın sona erdiği tarih", en: "Date the consent ended" },
     basis: { tr: "Ticari İletişim ve Ticari Elektronik İletiler Hakkında Yönetmelik; hukuki sebep KVKK m.5/2-ç", en: "Regulation on Commercial Communication and Commercial Electronic Messages; legal ground KVKK art. 5/2-ç" },
@@ -154,7 +154,7 @@ export const RETENTION_POLICY: RetentionCategory[] = [
     start: { tr: "Kayıt tarihi", en: "Record date" },
     basis: { tr: "Hukuki sebep KVKK m.5/2-e", en: "Legal ground KVKK art. 5/2-e" },
     years: 2,
-    auto: false,
+    auto: true,
     action: { tr: "Silinir", en: "Deleted" },
   },
   {
@@ -166,7 +166,7 @@ export const RETENTION_POLICY: RetentionCategory[] = [
     start: { tr: "Masa tarihi", en: "Table date" },
     basis: { tr: "Hukuki sebep KVKK m.5/2-c", en: "Legal ground KVKK art. 5/2-c" },
     years: null,
-    auto: false,
+    auto: true,
     action: { tr: "Silinir", en: "Deleted" },
   },
   {
@@ -178,7 +178,7 @@ export const RETENTION_POLICY: RetentionCategory[] = [
     start: { tr: "Kayıt tarihi", en: "Record date" },
     basis: { tr: "Hukuki sebep KVKK m.5/2-f", en: "Legal ground KVKK art. 5/2-f" },
     years: 2,
-    auto: false,
+    auto: true,
     action: { tr: "Silinir", en: "Deleted" },
   },
   {

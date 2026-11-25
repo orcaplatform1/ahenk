@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { ID_TYPES, isValidIdNumber, type IdType } from '@ahenk/shared';
 import { StdButton } from '@ahenk/ui';
 
@@ -18,7 +18,12 @@ export default function TcknModal({ open, busy, error, onCancel, onSubmit }: {
   const t = useTranslations();
   const [type, setType] = useState<IdType>('TC');
   const [tckn, setTckn] = useState('');
+  const locale = useLocale();
+  // Ön Bilgilendirme Formu + Mesafeli Satış Sözleşmesi onay kutusu: işaretlenmeden ödeme butonu pasif (onay kaydı backend'de)
+  const [agreed, setAgreed] = useState(false);
+  useEffect(() => { if (open) setAgreed(false); }, [open]);
   if (!open) return null;
+  const legal = (path: string) => (locale === 'en' ? `/en${path}` : path);
   const valid = isValidIdNumber(type, tckn);
   const clean = (v: string) => (type === 'PASSPORT' ? v.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 9) : v.replace(/\D/g, '').slice(0, 11));
   return (
@@ -49,10 +54,25 @@ export default function TcknModal({ open, busy, error, onCancel, onSubmit }: {
         <p style={{ fontSize: 11, lineHeight: 1.5, color: '#a39c93', margin: 0 }}>
           {t('pay.iyzicoNote')}
         </p>
+        <label className="flex items-start gap-3 cursor-pointer" style={{ minHeight: 44 }}>
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            style={{ width: 18, height: 18, accentColor: '#c0392b', flexShrink: 0, marginTop: 2 }}
+          />
+          <span style={{ fontSize: 12, lineHeight: 1.6, color: '#c9c2b8' }}>
+            {t('pay.agreePre')}
+            <a href={legal('/on-bilgilendirme-formu')} target="_blank" rel="noopener noreferrer" style={{ color: '#c0392b' }}>{t('pay.agreePreInfo')}</a>
+            {t('pay.agreeMid')}
+            <a href={legal('/mesafeli-satis-sozlesmesi')} target="_blank" rel="noopener noreferrer" style={{ color: '#c0392b' }}>{t('pay.agreeDistance')}</a>
+            {t('pay.agreePost')}
+          </span>
+        </label>
         {error && <p className="text-xs text-[#ff6b6b]">{error}</p>}
         <div className="flex flex-wrap gap-2 mt-1">
-          <StdButton variant="ghost" onClick={() => { setTckn(''); onCancel(); }} className="flex-1 justify-center">{t('pay.cancel')}</StdButton>
-          <StdButton variant="primary" onClick={() => valid && onSubmit(tckn, type)} disabled={!valid || busy} className="flex-1 justify-center disabled:opacity-50">
+          <StdButton variant="ghost" onClick={() => { setTckn(''); setAgreed(false); onCancel(); }} className="flex-1 justify-center">{t('pay.cancel')}</StdButton>
+          <StdButton variant="primary" onClick={() => valid && agreed && onSubmit(tckn, type)} disabled={!valid || !agreed || busy} className="flex-1 justify-center disabled:opacity-50">
             {busy ? t('pay.redirecting') : t('pay.proceed')}
           </StdButton>
         </div>

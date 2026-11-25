@@ -1,5 +1,5 @@
 // Sekme 4 — Paketim: apps/web/app/profil/tabs/TabPaket.tsx. Ödeme: uygulama içi satın alma (App Store / Play Store), mobil fiyat (mobileTL).
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { BackHandler, Platform, Pressable, ScrollView, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -98,6 +98,9 @@ export default function Paketim() {
   const [restoring, setRestoring] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [detail, setDetail] = useState<CardKey | null>(null);
+  // Ön Bilgilendirme Formu + Mesafeli Satış Sözleşmesi onay kutusu: işaretlenmeden satın alma butonu pasif (onay kaydı backend'de)
+  const [agreed, setAgreed] = useState(false);
+  useEffect(() => { setAgreed(false); }, [detail]);
   const [primePlan, setPrimePlan] = useState<(typeof PRIME_PLANS)[number]['key']>('PRIME_1M');
   const [error, setError] = useState('');
   const [discount, setDiscount] = useState<{ referralDiscount: boolean; inviteeDiscount: boolean } | null>(null);
@@ -150,6 +153,7 @@ export default function Paketim() {
   }
 
   async function buy(plan: string) {
+    if (!agreed) return;
     setBuying(plan); setError('');
     try {
       const use = discount?.referralDiscount ? 'REFERRER' : discount?.inviteeDiscount ? 'INVITEE' : undefined;
@@ -201,7 +205,7 @@ export default function Paketim() {
     const isP = detail === 'PRIME';
     const planKey = isP ? primePlan : detail;
     const st = stateOf(detail);
-    const busy = st.blocked || buying === planKey || maintenance;
+    const busy = st.blocked || buying === planKey || maintenance || !agreed;
     return (
       <View style={{ flex: 1, backgroundColor: ll.bg, overflow: 'hidden' }}>
         <ScreenGlow />
@@ -248,6 +252,26 @@ export default function Paketim() {
               <T w={700} style={{ fontSize: 36, lineHeight: 40, color: ll.text }}>{priceView(planKey).now ?? '—'} ₺</T>
             </View>
             {!!error && <T style={{ fontSize: 14, color: tw.accent }}>{error}</T>}
+            {/* Zorunlu onay (HIG: checkbox rolü ve durumu, 44 pt dokunma alanı); iki metin ayrı bağlantı, uygulama içi tarayıcıda */}
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, minHeight: 44 }}>
+              <Pressable
+                onPress={() => setAgreed((v) => !v)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: agreed }}
+                accessibilityLabel={`${t('pay.agreePre')}${t('pay.agreePreInfo')}${t('pay.agreeMid')}${t('pay.agreeDistance')}${t('pay.agreePost')}`}
+                hitSlop={13}
+                style={{ width: 18, height: 18, marginTop: 2, borderRadius: 4, borderWidth: 1.5, borderColor: agreed ? '#c0392b' : 'rgba(255,255,255,0.35)', backgroundColor: agreed ? '#c0392b' : 'transparent', alignItems: 'center', justifyContent: 'center' }}
+              >
+                {agreed && <T w={700} style={{ fontSize: 12, lineHeight: 14, color: '#fff' }}>✓</T>}
+              </Pressable>
+              <T style={{ flex: 1, fontSize: 12, lineHeight: 19.2, color: ll.text2 }} onPress={() => setAgreed((v) => !v)}>
+                {t('pay.agreePre')}
+                <T style={{ fontSize: 12, color: '#c0392b' }} onPress={() => { openLegal('/on-bilgilendirme-formu').catch(() => {}); }}>{t('pay.agreePreInfo')}</T>
+                {t('pay.agreeMid')}
+                <T style={{ fontSize: 12, color: '#c0392b' }} onPress={() => { openLegal('/mesafeli-satis-sozlesmesi').catch(() => {}); }}>{t('pay.agreeDistance')}</T>
+                {t('pay.agreePost')}
+              </T>
+            </View>
             <BuyButton card={card} disabled={busy}
               label={buying === planKey ? t('pay.redirecting') : st.blocked ? (st.badge ? t(st.badge) : (isP ? t('pkg.subscribe') : t('pkg.buy'))) : isP ? t('pkg.subscribe') : t('pkg.buy')}
               onPress={() => buy(planKey)} />

@@ -8,7 +8,7 @@ import { PERM_REASON, showSettingsAlert } from '@/lib/permissions';
 import { SvgUri } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { api } from '@/lib/api';
+import { api, CLIENT_PLATFORM } from '@/lib/api';
 import { API_PREFIX, SITE } from '@/lib/config';
 import { getAccess } from '@/lib/session';
 import { openLegal } from '@/lib/links';
@@ -189,6 +189,7 @@ async function uploadKyc(idType: IdType, front: Shot, back: Shot | null, video: 
     xhr.open('POST', `${API_PREFIX}/kyc/upload`);
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.setRequestHeader('Accept-Language', currentLang());
+    xhr.setRequestHeader('X-Client-Platform', CLIENT_PLATFORM);
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve();

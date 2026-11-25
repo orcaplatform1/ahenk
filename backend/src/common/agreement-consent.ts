@@ -1,8 +1,11 @@
 // Sözleşme / onay kaydı (AgreementConsent) ve giriş kaydı (LoginLog) için ortak yardımcılar.
+import { Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
 // Belge versiyonu: yasal metinlerdeki "Son güncelleme" ayı
 export const AGREEMENT_VERSIONS = {
+  kullanim_kosullari: "2026-11",
+  kvkk_aydinlatma: "2026-11",
   mesafeli_satis: "2026-11",
   on_bilgilendirme: "2026-11",
   acik_riza_biyometrik: "2026-11",
@@ -17,6 +20,15 @@ export function platformFromUserAgent(ua: string | undefined | null): ClientPlat
   if (/okhttp/i.test(s)) return "android";
   if (/CFNetwork|Darwin/i.test(s)) return "ios";
   return "web";
+}
+
+// İstemci platformu: önce X-Client-Platform başlığı (web | ios | android; web ve mobil istemciler gönderir), yoksa User-Agent
+export function clientPlatform(headers: Record<string, string | string[] | undefined> | undefined): ClientPlatform {
+  const h = headers?.["x-client-platform"];
+  const v = (Array.isArray(h) ? h[0] : h ?? "").trim().toLowerCase();
+  if (v === "web" || v === "ios" || v === "android") return v;
+  const ua = headers?.["user-agent"];
+  return platformFromUserAgent(Array.isArray(ua) ? ua[0] : ua);
 }
 
 export function cleanIp(ip: string | undefined | null): string | null {
@@ -41,4 +53,21 @@ export async function recordAgreements(
       packageId,
     })),
   });
+}
+
+type Headers = Record<string, string | string[] | undefined>;
+export type RequestLike = { ip?: string; headers: Headers };
+
+const loginLogger = new Logger("LoginLog");
+
+// Giriş kaydı (LoginLog, 5651, 2 yıl): IP, User-Agent, platform (X-Client-Platform, yoksa User-Agent), başarılı / başarısız.
+// userId: üye / admin hesabında User.id, mekân panelinde "venue:<VenueAccount.id>". Kayıt hatası girişi bozmaz
+export async function writeLoginLog(prisma: PrismaService, userId: string, req: RequestLike, success: boolean) {
+  try {
+    const ua = req.headers["user-agent"];
+    const userAgent = (Array.isArray(ua) ? ua[0] : ua)?.slice(0, 500) ?? null;
+    await prisma.loginLog.create({ data: { userId, ip: cleanIp(req.ip), userAgent, platform: clientPlatform(req.headers), success } });
+  } catch (e) {
+    loginLogger.error(`Giriş kaydı yazılamadı: ${(e as Error).message}`);
+  }
 }

@@ -19,7 +19,7 @@ import { AdminAction, reasonTr } from "../admin/admin-action-log";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { Request, Response } from "express";
 import { PrismaService } from "../prisma/prisma.service";
-import { platformFromUserAgent, recordAgreements } from "../common/agreement-consent";
+import { clientPlatform, recordAgreements } from "../common/agreement-consent";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from "@nestjs/swagger";
 import { KycStatus } from "../generated/prisma/client";
 import { KycService } from "./kyc.service";
@@ -68,7 +68,7 @@ export class KycController {
   ) {
     const result = await this.kycService.uploadAndSubmit(userId, files, idType);
     if (biometricConsent === "true") {
-      await recordAgreements(this.prisma, userId, ["acik_riza_biyometrik"], req?.ip, platformFromUserAgent(req?.headers["user-agent"]), null);
+      await recordAgreements(this.prisma, userId, ["acik_riza_biyometrik"], req?.ip, clientPlatform(req?.headers), null);
     }
     return result;
   }

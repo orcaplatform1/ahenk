@@ -96,10 +96,9 @@ const sections = [
               Onaya Bağlı
             </span>
           </div>
-          <div style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
-            <span style={{ fontFamily: 'monospace', fontSize: 13, color: '#aaa', display: 'block', marginBottom: '0.2rem' }}>Meta Pixel: _fbp</span>
-            <span style={{ color: '#a39c93', fontSize: 13 }}>Sağlayıcı: Meta Platforms. Amaç: reklam ölçümü ve yeniden hedefleme. Süre: 3 ay. Yalnızca onayla çalışır.</span>
-          </div>
+          <p style={{ color: '#a39c93', fontSize: 13 }}>
+            Şu anda pazarlama çerezi kullanılmamaktadır.
+          </p>
         </div>
 
         <p style={{ color: '#8f887f', fontSize: 13 }}>

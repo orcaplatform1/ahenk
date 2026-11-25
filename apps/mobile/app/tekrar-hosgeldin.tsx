@@ -6,7 +6,7 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { api, refreshAtLaunch } from '@/lib/api';
+import { api, refreshBiometricLogin } from '@/lib/api';
 import { forgetDevice, getRemembered, restoreRemembered } from '@/lib/session';
 import { isAdminRole, markAdminVerified } from '@/lib/adminLock';
 import { AuthBackground, useAuthBackgroundIndex, BackArrow, LegalNote, PillButton } from '@/components/AuthFlow';
@@ -50,7 +50,7 @@ export default function TekrarHosgeldin() {
     setBusy(true);
     if (!(await biometricOk())) { setBusy(false); router.replace('/giris'); return; }
     await restoreRemembered();
-    const r = await refreshAtLaunch();
+    const r = await refreshBiometricLogin();
     // Hatırlanan token yenilemede tüketildi; yeni oturum token'ları aktif. Hatırlama bilgisi sonraki "beni hatırla" çıkışında yeniden yazılır
     await forgetDevice();
     if (r !== 'ok') { setBusy(false); router.replace('/giris'); return; }

@@ -29,7 +29,7 @@ import { RedisService } from "../redis/redis.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus, SanctionType, Gender, Prisma } from "../generated/prisma/client";
-import { cleanIp, platformFromUserAgent } from "../common/agreement-consent";
+import { RequestLike, clientPlatform, recordAgreements, writeLoginLog } from "../common/agreement-consent";
 import { Logger } from "@nestjs/common";
 
 // Tüketilmiş refresh token bu süre içinde gelirse eşzamanlı yenileme sayılır (çok sekme)
@@ -298,15 +298,22 @@ export class AuthService {
   // ─── Giriş ───────────────────────────────────────────────────────────────
 
   // Giriş kaydı (5651, 2 yıl): yalnız kayıtlı hesaba ait denemeler (kullanıcı bulunamazsa kayıt yazılmaz); kayıt hatası girişi bozmaz
-  async recordLoginAttempt(where: { email: string } | { phone: string } | { id: string }, ip: string | undefined, userAgent: string | undefined, success: boolean) {
+  async recordLoginAttempt(where: { email: string } | { phone: string } | { id: string }, req: RequestLike, success: boolean) {
     try {
       const user = await this.prisma.user.findUnique({ where: where as Prisma.UserWhereUniqueInput, select: { id: true } });
-      if (!user) return;
-      await this.prisma.loginLog.create({
-        data: { userId: user.id, ip: cleanIp(ip), userAgent: userAgent?.slice(0, 500) ?? null, platform: platformFromUserAgent(userAgent), success },
-      });
+      if (user) await writeLoginLog(this.prisma, user.id, req, success);
     } catch (e) {
       this.logger.error(`Giriş kaydı yazılamadı: ${(e as Error).message}`);
+    }
+  }
+
+  // Kayıt onayları (AgreementConsent): Kullanım Koşulları ve KVKK Aydınlatma Metni (kayıt ekranındaki onay kutusu → acceptTerms)
+  async recordRegisterAgreements(userId: string, acceptTerms: boolean, req: RequestLike) {
+    if (!acceptTerms) return;
+    try {
+      await recordAgreements(this.prisma, userId, ["kullanim_kosullari", "kvkk_aydinlatma"], req.ip, clientPlatform(req.headers), null);
+    } catch (e) {
+      this.logger.error(`Kayıt onay kaydı yazılamadı: ${(e as Error).message}`);
     }
   }
 

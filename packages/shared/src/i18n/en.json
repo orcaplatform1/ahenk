@@ -692,7 +692,7 @@
     "noCam": "No camera found.",
     "photoUploaded": "Photo Uploaded",
     "preview": "Preview",
-    "privacy": "Your details are kept until our team reviews your verification request. Once it's approved or declined, all details are deleted from our database and not stored. Verification is a filter that keeps fake profiles off the platform.",
+    "privacy": "ID documents and the liveness video are deleted within 48 hours after the account deletion is approved. Exception: the identity of a user involved in an emergency help, complaint or ban record is kept locked for 2 years and only SUPERADMIN can access it. Verification is a filter that keeps fake profiles off the platform.",
     "recording": "RECORDING",
     "rejected": "Your application was declined",
     "retake": "Retake",
@@ -1256,6 +1256,11 @@
     "checkLink": "Check"
   },
   "pay": {
+    "agreePre": "I have read and approve the ",
+    "agreePreInfo": "Pre-Information Form",
+    "agreeMid": " and the ",
+    "agreeDistance": "Distance Sales Contract",
+    "agreePost": ".",
     "cancel": "Cancel",
     "idType": "ID type",
     "invalidPASSPORT": "The passport number must be 6–9 letters and digits.",
@@ -1459,6 +1464,12 @@
     "venueLater": "Venue details will appear in the table details."
   },
   "reg": {
+    "legalPre": "I have read and accept the ",
+    "legalTerms": "Terms of Use",
+    "legalMid": ", and I have read the ",
+    "legalKvkk": "KVKK Privacy Notice",
+    "legalPost": ".",
+    "legalRequired": "To continue, tick the Terms of Use and KVKK Privacy Notice box.",
     "add": "Add",
     "answerBoth": "Please answer the questions.",
     "backArrow": "← Back",

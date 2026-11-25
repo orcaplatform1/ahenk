@@ -230,11 +230,11 @@ const sections = [
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Apple (App Store) and Google (Google Play)</strong>
-          : purchase transaction details, to verify and manage in-app purchases and subscriptions.
+          : purchase transaction details, to verify and manage in-app purchases and subscriptions. Transfer basis: performance of a contract (payment and subscription transactions).
         </p>
         <p>
-          <strong style={{ color: '#f4f1ec' }}>Google Analytics and Meta Pixel</strong>
-          : cookie data is processed through these tools and may be transferred to servers abroad. The transfer is based on your explicit consent, and you can withdraw it at any time from your cookie preferences.
+          <strong style={{ color: '#f4f1ec' }}>Google Maps</strong>
+          : the location coordinates in an Emergency Help request (admin emergency help map and street address lookup; the location link sent to emergency contacts is also a Google Maps link). Transfer basis: performance of a contract (showing the meetup location).
         </p>
 
         <div
@@ -247,7 +247,7 @@ const sections = [
           }}
         >
           <p style={{ color: '#f4f1ec', fontSize: 13 }}>
-            Your personal data is never sold. Cookie data is shared with Google and Meta for advertising and statistics only with your explicit consent.
+            Your personal data is never sold.
           </p>
         </div>
       </>
@@ -287,9 +287,8 @@ const sections = [
     title: 'Cookies',
     content: (
       <p>
-        Ahenk uses essential cookies for platform functionality, for session management and security. If you consent, Google Analytics and Meta Pixel cookies also run. For details, see our{' '}
-        <Link href="/cerez-politikasi" style={{ color: '#c0392b' }}>Cookie Policy</Link>
-        {' '}inceleyiniz.
+        Ahenk uses essential cookies for platform functionality, for session management and security. For details, see our{' '}
+        <Link href="/cerez-politikasi" style={{ color: '#c0392b' }}>Cookie Policy</Link>.
       </p>
     ),
   },

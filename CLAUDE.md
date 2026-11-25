@@ -475,26 +475,48 @@ HESAP SİLME:
     kişileri ve emniyete iletilir; çözülünce koordinatlar silinir, son açık adres 2 yıl). KVKK'da üç ayrı başlık: Kişilik testi (OCEAN)
     m.5/2-c; Kimlik belgesi m.5/2-c ve m.5/2-f; Canlılık videosu ve yüz eşleştirme biyometrik (özel nitelikli) veri, m.6 açık rıza
   - Cloudflare / R2: ahenk.co trafiği Cloudflare proxy'sinden geçmez (nginx'te real_ip / CF başlığı yok, istemci IP'leri doğrudan);
-    Cloudflare metinlerde yoktur. R2 kullanılmaz, R2_* anahtarları backend/.env'den silindi; SMTP_* anahtarları da silindi (e-posta
+    Cloudflare metinlerde yoktur. R2 kullanılmaz, R2_* anahtarları backend/.env'den silindi, @aws-sdk/client-s3 ve
+    s3-request-presigner bağımlılıkları kaldırıldı; ConsentType.MARKETING_EMAIL enum değeri silindi (migration
+    20261125700000_drop_consent_marketing_email); SMTP_* anahtarları da silindi (e-posta
     gönderim kodu yok; fatura e-postası ve e-posta ile şifre sıfırlama yok, şifre sıfırlama WhatsApp OTP)
 
 AÇIK RIZA METNİ (web /acik-riza-metni, /en/acik-riza-metni; footer Yasal grubu ve mobil Profilim yasal kartı "Açık Rıza Metni"):
   - Canlılık videosu ve yüz eşleştirme (biyometrik veri, KVKK m.6) için açık rıza; ehliyette kan grubu gibi özel nitelikli veriler
     bulunabilir ve işlenmez
   - KYC adımında (web TabKyc, mobil KycTab) canlılık videosundan önce ayrı onay kutusu (kycf.bioConsent*): işaretlenmeden video adımı
-    açılmaz ve gönderilemez. POST /kyc/upload biometricConsent "true" ise AgreementConsent'e documentType "acik_riza_biyometrik" yazılır
-    (sunucu alanı zorunlu tutmaz; eski mobil sürümler için)
+    açılmaz ve gönderilemez (yeni mobil sürümde de zorunlu). POST /kyc/upload biometricConsent "true" ise AgreementConsent'e documentType
+    "acik_riza_biyometrik" yazılır; backend eski sürümler için alanı zorunlu tutmaz
+  - KYC gizlilik notu (kycf.privacy) retention-policy.ts KYC kuralıyla birebir: kimlik belgeleri ve canlılık videosu hesap silme onayından
+    sonra 48 saat içinde silinir; istisna (Acil Yardım / şikâyet / ban kimliği kilitli, 2 yıl, yalnız SUPERADMIN)
+
+YASAL ONAY KUTULARI (web + mobil, TR + EN; hepsi AgreementConsent'e belge versiyonu "2026-11" ile yazılır):
+  - Kayıt (web kayit 3. adım, mobil kayit.tsx şehir adımı; reg.legal*): "Kullanım Koşulları'nı okudum ve kabul ediyorum; KVKK Aydınlatma
+    Metni'ni okudum." İki ayrı link; işaretlenmeden kayıt butonu pasif. acceptTerms = kutu değeri; backend kayıtta kullanim_kosullari +
+    kvkk_aydinlatma yazar (ConsentLog TERMS_OF_SERVICE / PRIVACY_POLICY aynen)
+  - Paket ve Premium ödeme (web TcknModal: Paket Al, Abone Ol, winback, Premium otomatik yenileme formu; mobil Paketim detay ekranı;
+    pay.agree*): "Ön Bilgilendirme Formu'nu ve Mesafeli Satış Sözleşmesi'ni okudum, onaylıyorum." İki ayrı link; işaretlenmeden ödeme
+    butonu pasif. Backend POST /payment/init ve POST /payment/prime/autorenew/init'te mesafeli_satis + on_bilgilendirme yazar
+  - Ön Bilgilendirme Formu sayfası: web /on-bilgilendirme-formu, /en/on-bilgilendirme-formu (satıcı bilgileri Mesafeli Satış'tan,
+    hizmetin temel nitelikleri, toplam fiyat PlanPriceText, ödeme şekli, cayma hakkı ve istisnası, şikâyet yolları)
+  - KYC: biyometrik açık rıza (yukarıda)
+  - Mesafeli Satış "Sözleşmenin Yürürlüğü": "Sözleşme ve ön bilgilendirme formu, hesabında kalıcı olarak saklanır ve istediğin zaman
+    erişebilirsin." (e-posta ile gönderim cümlesi yoktur)
 
 ONAY KAYDI (AgreementConsent, migration 20261125600000_agreement_consent_login_log):
-  - Alanlar: userId, documentType (mesafeli_satis | on_bilgilendirme | acik_riza_biyometrik), documentVersion ("2026-11";
+  - Alanlar: userId, documentType (kullanim_kosullari | kvkk_aydinlatma | mesafeli_satis | on_bilgilendirme | acik_riza_biyometrik),
+    documentVersion ("2026-11";
     common/agreement-consent.ts AGREEMENT_VERSIONS), acceptedAt, ip, platform (web | ios | android), packageId (plan kodu)
   - Satın alma onayı anında POST /payment/init içinde mesafeli_satis + on_bilgilendirme kaydı (web: kimlik numarası doğrulandıktan sonra;
     mobil: mağaza ürün bilgisi döndükten sonra). Saklama 3 yıl; hesap silinse de kalır (FK yok)
 
 GİRİŞ IP KAYDI (LoginLog, aynı migration):
-  - Alanlar: userId, ip, userAgent, platform, success, createdAt. POST /auth/login ve /auth/verify-login-otp: başarılı ve başarısız
-    denemeler (yalnız kayıtlı hesaba ait; hesap bulunamazsa yazılmaz). Platform User-Agent'tan: "okhttp" android, "CFNetwork / Darwin"
-    ios, diğerleri web. Saklama 2 yıl (5651); veri saklama işi TRAFFIC_LOG kategorisinde siler. nginx logları logrotate 730 gün
+  - Alanlar: userId, ip, userAgent, platform, success, createdAt. Yazılan girişler: POST /auth/login ve /auth/verify-login-otp (üye,
+    ADMIN, SUPERADMIN; başarılı ve başarısız, yalnız kayıtlı hesaba ait), POST /auth/register sonrası açılan oturum, mobil "Tekrar hoş
+    geldin" biyometrik girişi (POST /auth/refresh + X-Login-Event: biometric; olağan token yenilemesi yazılmaz), mekân paneli
+    POST /venue-panel/login ve /venue-panel/verify-login-otp (userId "venue:<VenueAccount.id>")
+  - Platform X-Client-Platform başlığından (web | ios | android; web lib/api.ts ve mobil lib/api.ts langHeaders her istekte gönderir);
+    başlık yoksa User-Agent'tan ("okhttp" android, "CFNetwork / Darwin" ios, diğerleri web). User-Agent ayrıca kaydedilir
+  - Saklama 2 yıl (5651); veri saklama işi TRAFFIC_LOG kategorisinde siler. nginx logları logrotate 730 gün
     (/etc/logrotate.d/nginx rotate 730, günlük)
 
 VERİ SAKLAMA (backend/src/retention/retention-policy.ts; admin Veri Saklama sekmesi, KVKK 07, Gizlilik 05, /hesap-silme del.ret0-13 aynı):
@@ -512,9 +534,11 @@ VERİ SAKLAMA (backend/src/retention/retention-policy.ts; admin Veri Saklama sek
   - Banlı kullanıcının okunamaz telefon özeti: ban süresince, m.5/2-f
   - Çerezler: oturum çerezi (refresh_token, ahenk_session) 365 gün (Çerez Politikası)
   - KVKK aydınlatma ve açık rıza onay kayıtları: hesap silinmesinden 10 yıl (mevcut kategori)
-  - Gece 03:30 otomatik silme işi (AUTO_DATA_DELETION) kapalı; açılmaz. Otomatik işe bağlı kategoriler: ödeme, mesafeli satış, ticari
-    ileti, giriş / IP, KVKK onayı, olay kimliği, Acil Yardım son adresi. Kimlik belgeleri, şikâyet / moderasyon, şikâyet edilmemiş sohbet,
-    sorun bildirimi, profil, çerez kategorileri tabloda gösterilir, otomatik işe bağlı değildir
+  - Gece 03:30 otomatik silme işi (AUTO_DATA_DELETION) varsayılan kapalı. Otomatik işe bağlı kategoriler: ödeme, mesafeli satış, ticari
+    ileti, giriş / IP, KVKK onayı, olay kimliği, Acil Yardım son adresi, şikâyet / moderasyon (ChatReport + başka şikâyeti kalmayan
+    şikâyet edilen mesaj, 2 yıl), şikâyet edilmemiş masa sohbeti (masa tarihinden 6 ay), sorun bildirimleri (kayıt + uploads klasörü,
+    2 yıl). Kimlik belgeleri, profil, çerez kategorileri tabloda gösterilir, otomatik işe bağlı değildir. Hesap silme davranışı ayrıdır
+  - Ödeme ve fatura kayıtları bütün yasal metinlerde, hesap silme sayfasında ve retention-policy.ts'de 10 yıl (TTK m.82, VUK m.253)
 
 YURT DIŞI BÖLGE KURALI: yurt dışında tek dil İngilizce; kimlik türleri Kimlik Kartı, Pasaport, Ehliyet; Oturma İzni yalnız Türkiye.
   Mevcut DB / kod bu kurala uymuyor (yurt dışı şehirlerde defaultLanguage tr, idTypes dört tür); değiştirilmedi, ayrı karar bekliyor
@@ -524,12 +548,18 @@ PARA BİRİMİ (rapor41): City.currency yurt dışı şehirlerde yerel para biri
   Purchase olayı sabit TRY; USD fiyat yoktur
 
 ÇEREZ POLİTİKASI: oturum çerezleri refresh_token / ahenk_session 365 gün (JWT_REFRESH_EXPIRES 365d); analitik çerez kategorisinde
-  "Şu anda analitik çerez kullanılmamaktadır." (NEXT_PUBLIC_GA_ID / NEXT_PUBLIC_META_PIXEL_ID boş, mobilde analitik yok); iyzico ödeme
-  formu yalnız web'de, ödeme başlatılınca açılır pencere olarak yüklenir; mobilde iyzico yok. Cloudflare ifadesi yok
+  "Şu anda analitik çerez kullanılmamaktadır.", pazarlama kategorisinde "Şu anda pazarlama çerezi kullanılmamaktadır."
+  (NEXT_PUBLIC_GA_ID / NEXT_PUBLIC_META_PIXEL_ID boş, mobilde analitik yok); iyzico ödeme formu yalnız web'de, ödeme başlatılınca açılır
+  pencere olarak yüklenir; mobilde iyzico yok. Cloudflare ifadesi yok
+  - Google Analytics ve Meta Pixel yüklenmediği için Çerez, Gizlilik ve KVKK metinlerinde GA / Pixel paragrafı yoktur
+  - Talimat dışı alıcı dayanakları (KVKK + Gizlilik): Google Maps "sözleşmenin ifası (buluşma konumunun gösterilmesi)"; App Store ve
+    Google Play "sözleşmenin ifası (ödeme ve abonelik işlemleri)"
 
 KULLANIM KOŞULLARI: 06 Paketler ve Ödeme aynen; 07 "Premium Abonelik" bölümü (1/3/6/12 ay, web fiyatları PlanPriceText, 30 günde
-  1+1+1, otomatik yenileme, iyzico / App Store / Google Play iptal yolu, iade yok, cayma Mesafeli Satış Sözleşmesi'nde); sonraki
-  bölümler 08–15. Bütün yasal sayfalarda "Son güncelleme: Kasım 2026" / "Last updated: November 2026"
+  1+1+1, otomatik yenileme, iyzico / App Store / Google Play iptal yolu); 08 İptal Politikası'ndaki eski Premium maddeleri 07'ye taşındı,
+  Kankamla "pakette tek iptal hakkı" maddesi kaldırıldı. Premium iptal kuralı metni: "Aboneliğini istediğin zaman iptal edebilirsin.
+  İptal, mevcut fatura döneminin sonunda geçerli olur ve dönem sonuna kadar Premium özelliklerini kullanmaya devam edersin. İptal ve
+  iade işlemleri, ödemeyi yaptığın platformun (App Store, Google Play veya iyzico) kurallarına tabidir."; sonraki bölümler 08–15. Bütün yasal sayfalarda "Son güncelleme: Kasım 2026" / "Last updated: November 2026"
 
 METİN KURALI (TR + EN, web + mobil + admin, i18n, bildirim / WhatsApp / e-posta, yasal sayfalar, Topluluk Kuralları, Nasıl Çalışır):
   cümle içinde ayraç olarak uzun tire (—), orta tire (–) ve çift tire (--) kullanılmaz; cümle virgül, nokta ya da iki nokta ile kurulur.

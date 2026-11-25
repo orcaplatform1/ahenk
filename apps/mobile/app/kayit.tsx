@@ -13,6 +13,7 @@ import { api, langHeaders, storeLogin } from '@/lib/api';
 import { gColor } from '@/lib/masa';
 import { PasswordInput } from '@/components/AuthShell';
 import { BackArrow, PillButton } from '@/components/AuthFlow';
+import { openLegal } from '@/lib/links';
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
 import { useKeyboardFieldScroll } from '@/lib/useKeyboardFieldScroll';
 import { OtpInput } from '@/components/OtpInput';
@@ -71,6 +72,8 @@ export default function Kayit() {
   const insets = useSafeAreaInsets();
   const kb = useKeyboardFieldScroll();
   const [step, setStep] = useState(0);
+  // Kullanım Koşulları + KVKK Aydınlatma Metni onay kutusu (kayıt isteğinden önce zorunlu; onay kaydı backend'de AgreementConsent)
+  const [legalAccepted, setLegalAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cities, setCities] = useState<City[]>([]);
@@ -152,11 +155,12 @@ export default function Kayit() {
   async function step2() {
     if (!f.primaryCityId) { setError(t('reg.pickCity')); return; }
     if (districtOptions.length > 0 && !f.district) { setError(t('reg.pickDistrict')); return; }
+    if (!legalAccepted) { setError(t('reg.legalRequired')); return; }
     setLoading(true); setError('');
     try {
       const res = await fetch(`${API_PREFIX}/auth/register`, {
         method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json', ...langHeaders() },
-        body: JSON.stringify({ firstName: f.firstName, lastName: f.lastName, email: f.email, password: f.password, phoneNumber: phoneE164, phoneToken, acceptTerms: true, language: lang, speaksEnglish: !!speaksEnglish, speaksTurkish: lang === 'en' ? !!speaksTurkish : true,
+        body: JSON.stringify({ firstName: f.firstName, lastName: f.lastName, email: f.email, password: f.password, phoneNumber: phoneE164, phoneToken, acceptTerms: legalAccepted, language: lang, speaksEnglish: !!speaksEnglish, speaksTurkish: lang === 'en' ? !!speaksTurkish : true,
           gender: f.gender || undefined, birthDate: f.birthDate || undefined, occupationSector: f.occupationSector, primaryCityId: f.primaryCityId || undefined, district: f.district || undefined, referralCode: inviteCode || legacyRef || undefined }),
       });
       const data = await res.json().catch(() => ({}));
@@ -313,9 +317,29 @@ export default function Kayit() {
             <View style={{ backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.25)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
               <T style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 16.5 }}>{t('reg.tempCity')}</T>
             </View>
+            {/* Zorunlu onay (HIG: checkbox rolü ve durumu, 44 pt dokunma alanı); metinler uygulama içi tarayıcıda */}
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, minHeight: 44 }}>
+              <Pressable
+                onPress={() => { setLegalAccepted((v) => !v); setError(''); }}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: legalAccepted }}
+                accessibilityLabel={`${t('reg.legalPre')}${t('reg.legalTerms')}${t('reg.legalMid')}${t('reg.legalKvkk')}${t('reg.legalPost')}`}
+                hitSlop={13}
+                style={{ width: 18, height: 18, marginTop: 2, borderRadius: 4, borderWidth: 1.5, borderColor: legalAccepted ? '#c0392b' : 'rgba(255,255,255,0.35)', backgroundColor: legalAccepted ? '#c0392b' : 'transparent', alignItems: 'center', justifyContent: 'center' }}
+              >
+                {legalAccepted && <T w={700} style={{ fontSize: 12, lineHeight: 14, color: '#fff' }}>✓</T>}
+              </Pressable>
+              <T style={{ flex: 1, fontSize: 13, lineHeight: 20.8, color: '#c9c2b8' }} onPress={() => { setLegalAccepted((v) => !v); setError(''); }}>
+                {t('reg.legalPre')}
+                <T style={{ fontSize: 13, color: '#c0392b' }} onPress={() => { openLegal('/kullanim-kosullari').catch(() => {}); }}>{t('reg.legalTerms')}</T>
+                {t('reg.legalMid')}
+                <T style={{ fontSize: 13, color: '#c0392b' }} onPress={() => { openLegal('/kvkk').catch(() => {}); }}>{t('reg.legalKvkk')}</T>
+                {t('reg.legalPost')}
+              </T>
+            </View>
             {!!error && <T style={{ color: tw.accent, fontSize: 13 }}>{error}</T>}
             <View style={{ gap: 12, marginTop: 4 }}>
-              <PillButton label={loading ? t('reg.saving') : t('reg.continueBtn')} primary disabled={loading} onPress={step2} />
+              <PillButton label={loading ? t('reg.saving') : t('reg.continueBtn')} primary disabled={loading || !legalAccepted} onPress={step2} />
               <PillButton label={t('common.back')} onPress={() => { setStep(1); setError(''); }} />
             </View>
           </View>

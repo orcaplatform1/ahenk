@@ -139,7 +139,10 @@ const sections = [
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>The Premium subscription is offered with 1-, 3-, 6- and 12-month options. Web prices (VAT included): 1 month <PlanPriceText plan="PRIME_1M" suffix="₺" />, 3 months <PlanPriceText plan="PRIME_3M" suffix="₺" />, 6 months <PlanPriceText plan="PRIME_6M" suffix="₺" />, 12 months <PlanPriceText plan="PRIME_12M" suffix="₺" />. In the mobile app the price differs because of the store (App Store / Google Play) commission and is shown on the purchase screen.</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
-            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>1 Group + 1 Duo + 1 Bring a Buddy meetup credit is granted at the moment of purchase. While the subscription continues, credits reset every 30 days from the purchase date and become 1 + 1 + 1 again; unused credits do not carry over to the next 30 days.</span>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Premium membership is offered in 1-, 3-, 6- and 12-month plans; 1 Group, 1 Duo and 1 Bring a Buddy meetup credit is granted every 30 days.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Unused Premium credits do not carry over to the next 30 days.</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>The full amount for the chosen period is charged at once at the start of each period. Unless cancelled, the subscription renews automatically for the same period at the end of each term. Invite and win-back discounts apply only to the first purchase payment; renewals are not discounted.</span>
@@ -151,10 +154,10 @@ const sections = [
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>A subscription bought from the App Store is cancelled in your Apple account&apos;s subscription settings, and one bought from Google Play in your Google Play subscription settings; the &quot;Cancel Subscription&quot; button in the mobile app opens the store&apos;s subscription page. A store subscription renews automatically unless it is cancelled at least 24 hours before the end of the period.</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
-            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>When cancelled, automatic renewal stops; credits remaining at the moment of cancellation stay valid with no time limit until used.</span>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>When a Premium subscription is cancelled, automatic renewal stops; credits remaining at the moment of cancellation stay valid with no time limit until used; no refunds are given.</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
-            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Subscription fees paid are not refunded. Provisions on the right of withdrawal are set out in the Distance Sales Contract.</span>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>You can cancel your subscription at any time. Cancellation takes effect at the end of the current billing period, and you keep using Premium features until the end of the period. Cancellation and refunds are subject to the rules of the platform you paid through (App Store, Google Play or iyzico).</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>A user with an active Premium subscription cannot buy a second Premium subscription; a one-time package can be bought only if it includes a type whose Premium credit has run out.</span>
@@ -168,12 +171,6 @@ const sections = [
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
-          'Premium membership is offered in 1-, 3-, 6- and 12-month plans; 1 Group, 1 Duo and 1 Bring a Buddy meetup credit is granted every 30 days.',
-          'Unused Premium credits do not carry over to the next 30 days.',
-          'Premium subscriptions renew automatically for the same period at the end of each term.',
-          'When a Premium subscription is cancelled, automatic renewal stops; credits remaining at the moment of cancellation stay valid with no time limit until used; no refunds are given.',
-          'Subscriptions purchased through a store (App Store / Google Play) are cancelled through that store; subscriptions purchased with iyzico are cancelled on the website or in the app.',
-          'If either member of a pair cancels a Bring a Buddy booking, both are removed from the table and 1 table credit is deducted from the package; each package includes a single cancellation right.',
           'Kanka invites are sent by phone number and are valid for 48 hours; an invite can only be accepted by the account that has verified that number. A Kanka cannot be changed during the week they are chosen. A user being banned ends the Kanka link.',
           'Users who have not completed identity verification are not included in matching.',
           'If one or more participants do not attend after a table has been set, this does not mean the service was not performed.',

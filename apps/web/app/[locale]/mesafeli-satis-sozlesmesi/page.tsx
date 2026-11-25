@@ -244,7 +244,7 @@ const sections = [
     title: 'Sözleşmenin Yürürlüğü',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Bu sözleşme, kullanıcının ödeme işlemini onaylamasıyla birlikte yürürlüğe girer ve satın alınan paketin hakları sona erene kadar geçerliliğini korur. Sözleşmenin bir kopyasına profil sayfasından her zaman erişilebilir.
+        Bu sözleşme, kullanıcının ödeme işlemini onaylamasıyla birlikte yürürlüğe girer ve satın alınan paketin hakları sona erene kadar geçerliliğini korur. Sözleşme ve ön bilgilendirme formu, hesabında kalıcı olarak saklanır ve istediğin zaman erişebilirsin.
       </p>
     ),
   },

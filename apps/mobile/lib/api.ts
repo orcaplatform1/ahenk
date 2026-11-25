@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { API_PREFIX } from './config';
 import i18n, { currentLang } from './i18n';
 import { clearTokens, forgetDevice, getAccess, getRefresh, setTokens } from './session';
@@ -6,8 +7,10 @@ import { clearTokens, forgetDevice, getAccess, getRefresh, setTokens } from './s
 // Oturum: HttpOnly çerez yerine Bearer token (Origin'siz istemciye backend token'ı gövdede döndürür).
 // Çerezler kullanılmaz (credentials: 'omit'); CSRF kontrolü Bearer isteklerinde uygulanmaz.
 
-// Her API isteğinde o anki arayüz dili (backend mesaj dili: hesap dili → Accept-Language → Türkçe)
-export const langHeaders = (): Record<string, string> => ({ 'Accept-Language': currentLang() });
+// Her API isteğinde o anki arayüz dili (backend mesaj dili: hesap dili → Accept-Language → Türkçe) ve istemci platformu
+// (X-Client-Platform: ios | android; giriş kaydı LoginLog ve onay kaydı AgreementConsent bunu yazar)
+export const CLIENT_PLATFORM = Platform.OS === 'ios' ? 'ios' : 'android';
+export const langHeaders = (): Record<string, string> => ({ 'Accept-Language': currentLang(), 'X-Client-Platform': CLIENT_PLATFORM });
 
 type Listener = () => void;
 const authListeners = new Set<Listener>();
@@ -18,7 +21,7 @@ let refreshing: Promise<RefreshResult> | null = null;
 
 // Backend /auth/refresh: yeni erişim + yeni yenileme token'ı (365 gün kayan süre). Yalnız 401/403'te oturum düşer;
 // ağ hatası ve sunucu hatasında token'lar korunur (çıkış yapılmadıkça oturum açık kalır).
-async function refreshSessionResult(): Promise<RefreshResult> {
+async function refreshSessionResult(extraHeaders: Record<string, string> = {}): Promise<RefreshResult> {
   if (refreshing) return refreshing;
   refreshing = (async (): Promise<RefreshResult> => {
     try {
@@ -27,7 +30,7 @@ async function refreshSessionResult(): Promise<RefreshResult> {
       const res = await fetch(`${API_PREFIX}/auth/refresh`, {
         method: 'POST',
         credentials: 'omit',
-        headers: { 'Content-Type': 'application/json', ...langHeaders() },
+        headers: { 'Content-Type': 'application/json', ...langHeaders(), ...extraHeaders },
         body: JSON.stringify({ refreshToken }),
       });
       if (res.status === 401 || res.status === 403) { await clearTokens(); return 'expired'; }
@@ -45,6 +48,9 @@ async function refreshSessionResult(): Promise<RefreshResult> {
 
 // Uygulama her açıldığında çağrılır (açılış ekranı)
 export function refreshAtLaunch() { return refreshSessionResult(); }
+
+// "Tekrar hoş geldin" biyometrik girişi: aynı yenileme, backend giriş kaydına (LoginLog) yazsın diye X-Login-Event: biometric
+export function refreshBiometricLogin() { return refreshSessionResult({ 'X-Login-Event': 'biometric' }); }
 
 // Süren bir token yenilemesi varsa bitmesini bekler. "Beni hatırla" çıkışında kullanılır: yenileme sürerken eski (iptal
 // edilecek) yenileme token'ı saklanırsa ya da yenileme çıkıştan sonra token'ları geri yazarsa hatırlanan giriş çalışmaz.

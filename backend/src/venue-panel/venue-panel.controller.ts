@@ -5,6 +5,8 @@ import { Throttle } from "@nestjs/throttler";
 import { VenueAccount } from "../generated/prisma/client";
 import { Request, Response } from "express";
 import { VENUE_COOKIE } from "../auth/auth-cookies";
+import { PrismaService } from "../prisma/prisma.service";
+import { writeLoginLog } from "../common/agreement-consent";
 import { VenueAuthGuard } from "./venue-auth.guard";
 import { LoginGuardService } from "../auth/login-guard.service";
 import { VENUE_SESSION_DAYS, VenuePanelService } from "./venue-panel.service";
@@ -24,7 +26,14 @@ export class VenuePanelController {
     private service: VenuePanelService,
     private config: ConfigService,
     private loginGuard: LoginGuardService,
+    private prisma: PrismaService,
   ) {}
+
+  // Mekân paneli girişi giriş kaydına (LoginLog) "venue:<hesap ID>" ile yazılır; başarısız denemede hesap bulunamazsa yazılmaz
+  private async logVenueLogin(req: Request, where: { email: string } | { phone: string }, success: boolean, accountId?: string) {
+    const id = accountId ?? (await this.prisma.venueAccount.findFirst({ where, select: { id: true } }).catch(() => null))?.id;
+    if (id) await writeLoginLog(this.prisma, `venue:${id}`, req, success);
+  }
 
   private cookieOptions() {
     const production = this.config.get("NODE_ENV") === "production";
@@ -53,7 +62,15 @@ export class VenuePanelController {
   @HttpCode(200)
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   async login(@Body() dto: VenueLoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    return this.issue(req, res, await this.service.login(dto.email, dto.password));
+    let account: VenueAccount;
+    try {
+      account = await this.service.login(dto.email, dto.password);
+    } catch (e) {
+      await this.logVenueLogin(req, { email: dto.email }, false);
+      throw e;
+    }
+    await this.logVenueLogin(req, { email: dto.email }, true, account.id);
+    return this.issue(req, res, account);
   }
 
   @Post("send-login-otp")
@@ -68,7 +85,15 @@ export class VenuePanelController {
   @HttpCode(200)
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   async verifyLoginOtp(@Body() dto: VenueVerifyLoginOtpDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    return this.issue(req, res, await this.service.verifyLoginOtp(dto.phone, dto.code));
+    let account: VenueAccount;
+    try {
+      account = await this.service.verifyLoginOtp(dto.phone, dto.code);
+    } catch (e) {
+      await this.logVenueLogin(req, { phone: dto.phone }, false);
+      throw e;
+    }
+    await this.logVenueLogin(req, { phone: dto.phone }, true, account.id);
+    return this.issue(req, res, account);
   }
 
   // Mobil kalıcı oturum: yenileme token'ı ile yeni erişim + yenileme token'ı (365 gün kayan süre)

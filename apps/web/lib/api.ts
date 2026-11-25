@@ -5,7 +5,8 @@ const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://ahenk.co';
 const PREFIX = `${BASE}/api/v1`;
 
 // Her API isteğinde o anki arayüz dili (backend mesaj dili: hesap dili → Accept-Language → Türkçe)
-export const langHeaders = (): Record<string, string> => ({ 'Accept-Language': documentLang() });
+// İstemci platformu (X-Client-Platform: web; giriş kaydı LoginLog ve onay kaydı AgreementConsent bunu yazar)
+export const langHeaders = (): Record<string, string> => ({ 'Accept-Language': documentLang(), 'X-Client-Platform': 'web' });
 
 // Sunucu mesajı yoksa gösterilen genel hata (seçili dilde)
 const genericError = () => (typeof window !== 'undefined' && (window.location.pathname === '/en' || window.location.pathname.startsWith('/en/')) ? 'Something went wrong' : 'Bir hata oluştu');

@@ -140,7 +140,10 @@ const sections = [
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Premium aboneliği 1, 3, 6 ve 12 aylık süre seçenekleriyle sunulur. Web fiyatları (KDV dahil): 1 aylık <PlanPriceText plan="PRIME_1M" suffix="₺" />, 3 aylık <PlanPriceText plan="PRIME_3M" suffix="₺" />, 6 aylık <PlanPriceText plan="PRIME_6M" suffix="₺" />, 12 aylık <PlanPriceText plan="PRIME_12M" suffix="₺" />. Mobil uygulamada fiyat mağaza (App Store / Google Play) komisyonu nedeniyle farklıdır ve satın alma ekranında gösterilir.</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
-            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Satın alındığı anda 1 Grup + 1 Baş Başa + 1 Kankamla buluşması hakkı tanımlanır. Abonelik sürdükçe satın alma tarihinden itibaren her 30 günde haklar sıfırlanır ve yeniden 1 + 1 + 1 olur; kullanılmayan haklar bir sonraki 30 güne devretmez.</span>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Premium üyelik 1, 3, 6 ve 12 aylık planlarla sunulur; her 30 günde 1 Grup, 1 Baş Başa ve 1 Kankamla buluşması hakkı tanımlanır.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Premium&apos;da kullanılmayan haklar bir sonraki 30 güne devretmez.</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Dönem başında seçilen sürenin tam tutarı tek seferde tahsil edilir. Abonelik iptal edilmediği sürece dönem sonunda aynı süreyle otomatik olarak yenilenir. Davet ve geri kazanım indirimleri yalnız ilk satın alma ödemesine uygulanır; yenilemeler indirimsizdir.</span>
@@ -152,10 +155,10 @@ const sections = [
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>App Store&apos;dan alınan abonelik Apple hesabının abonelik ayarlarından, Google Play&apos;den alınan abonelik Google Play abonelik ayarlarından iptal edilir; mobil uygulamadaki &quot;Aboneliği İptal Et&quot; butonu ilgili mağazanın abonelik sayfasını açar. Mağaza aboneliği dönem bitiminden en az 24 saat önce iptal edilmezse otomatik olarak yenilenir.</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
-            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>İptal edildiğinde otomatik yenileme durur; iptal anında elde kalan haklar süre sınırı olmadan, kullanılana kadar geçerli kalır.</span>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Premium aboneliği iptal edildiğinde otomatik yenileme durur; iptal anında elde kalan haklar süre sınırı olmadan, kullanılana kadar geçerli kalır; iade yapılmaz.</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
-            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Ödenen abonelik bedeli iade edilmez. Cayma hakkına ilişkin hükümler Mesafeli Satış Sözleşmesi&apos;nde yazılıdır.</span>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Aboneliğini istediğin zaman iptal edebilirsin. İptal, mevcut fatura döneminin sonunda geçerli olur ve dönem sonuna kadar Premium özelliklerini kullanmaya devam edersin. İptal ve iade işlemleri, ödemeyi yaptığın platformun (App Store, Google Play veya iyzico) kurallarına tabidir.</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Aktif Premium aboneliği olan kullanıcı ikinci bir Premium aboneliği alamaz; tek seferlik paket yalnız Premium&apos;da hakkı biten türü içeriyorsa alınabilir.</span>
@@ -169,12 +172,6 @@ const sections = [
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
         {[
-          'Premium üyelik 1, 3, 6 ve 12 aylık planlarla sunulur; her 30 günde 1 Grup, 1 Baş Başa ve 1 Kankamla buluşması hakkı tanımlanır.',
-          'Premium\'da kullanılmayan haklar bir sonraki 30 güne devretmez.',
-          'Premium aboneliği dönem sonunda aynı süreyle otomatik olarak yenilenir.',
-          'Premium aboneliği iptal edildiğinde otomatik yenileme durur; iptal anında elde kalan haklar süre sınırı olmadan, kullanılana kadar geçerli kalır; iade yapılmaz.',
-          'Mağazadan (App Store / Google Play) alınan abonelik mağazadan, iyzico ile alınan abonelik web sitesinden ya da uygulamadan iptal edilir.',
-          'Kankamla rezervasyonunu çiftten biri iptal ederse iki kişi birlikte masadan düşer ve paketten 1 masa hakkı düşer; pakette tek iptal hakkı vardır.',
           'Kanka daveti telefon numarasıyla yapılır ve 48 saat geçerlidir; davet yalnızca o numarayı doğrulamış hesap tarafından kabul edilebilir. Kanka, seçildiği hafta değiştirilemez. Bir kullanıcının banlanması kankalığı sona erdirir.',
           'kimlik doğrulaması tamamlanmamış kullanıcılar eşleştirmeye dahil edilmez.',
           'Masa kurulduktan sonra bir veya birden fazla katılımcının buluşmaya katılmaması, hizmetin ifa edilmediği anlamına gelmez.',

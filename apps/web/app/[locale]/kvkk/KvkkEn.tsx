@@ -248,10 +248,6 @@ const sections = [
         </p>
         <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>International Transfers</p>
         <p style={{ marginBottom: '1.25rem' }}>
-          <strong style={{ color: '#f4f1ec' }}>Google Analytics and Meta Pixel</strong>
-          : cookie data is processed through these tools and may be transferred to servers abroad. The transfer is based on your explicit consent (KVKK art. 9/6-a), and you can withdraw it at any time from your cookie preferences.
-        </p>
-        <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Anthropic (artificial intelligence, USA)</strong>
           : Data transferred: for the table compatibility report, for each participant the five OCEAN scores and field of work (if any) under a label such as P1, P2 instead of a name, the table type, number of participants and the table&apos;s overall compatibility score; for table chat moderation, only the text of a chat message containing a suspicious word (up to 1,000 characters). No names, gender, age, contact details or identity information are transferred. Purpose: the AI table compatibility report and chat moderation. Legal basis: KVKK art. 9/4 standard contract; the Personal Data Protection Authority is notified within 5 business days after the contract is signed. Processing ground: for the table compatibility report KVKK art. 5/2-c (performance of a contract), for chat moderation KVKK art. 5/2-f (legitimate interest).
         </p>
@@ -269,11 +265,11 @@ const sections = [
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Google Maps (Emergency Help map, USA)</strong>
-          : Data transferred: the location coordinates in an Emergency Help request (admin emergency help map and street address lookup; the location link sent to emergency contacts is also a Google Maps link). Purpose: showing the requester&apos;s location on a map and finding the street address. Legal basis: KVKK art. 9/6-e (protecting life or physical integrity).
+          : Data transferred: the location coordinates in an Emergency Help request (admin emergency help map and street address lookup; the location link sent to emergency contacts is also a Google Maps link). Purpose: showing the requester&apos;s location on a map and finding the street address. Legal basis: performance of a contract (showing the meetup location).
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Apple (App Store) and Google (Google Play), USA</strong>
-          : Data transferred: in-app purchase and subscription transaction details. Purpose: verifying and managing purchases and subscriptions. Legal basis: KVKK art. 9/6-b (necessary for the performance of a contract).
+          : Data transferred: in-app purchase and subscription transaction details. Purpose: verifying and managing purchases and subscriptions. Legal basis: performance of a contract (payment and subscription transactions).
         </p>
         <div
           style={{
@@ -284,7 +280,7 @@ const sections = [
           }}
         >
           <p style={{ color: '#f4f1ec', fontSize: 13 }}>
-            Your personal data is never sold. Cookie data is shared with Google and Meta for advertising and statistics only with your explicit consent.
+            Your personal data is never sold.
           </p>
         </div>
       </>

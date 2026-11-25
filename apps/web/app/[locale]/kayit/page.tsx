@@ -90,6 +90,8 @@ function KayitPageInner() {
   const legacyRef = /^\d+$/.test(refParam) ? '' : refParam;
   const [inviteCode, setInviteCode] = useState(/^\d+$/.test(refParam) ? refParam.slice(0, 9) : '');
   const [step, setStep] = useState(0);
+  // Kullanım Koşulları + KVKK Aydınlatma Metni onay kutusu (kayıt isteğinden önce zorunlu; onay kaydı backend'de AgreementConsent)
+  const [legalAccepted, setLegalAccepted] = useState(false);
   const [stepDir, setStepDir] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -217,6 +219,7 @@ function KayitPageInner() {
   async function handleStep2() {
     if (!form.primaryCityId) { setError(t('reg.pickCity')); return; }
     if (districtOptions.length > 0 && !form.district) { setError(t('reg.pickDistrict')); return; }
+    if (!legalAccepted) { setError(t('reg.legalRequired')); return; }
     setLoading(true); setError('');
     try {
       await api.post<RegisterResponse>('/auth/register', {
@@ -226,7 +229,7 @@ function KayitPageInner() {
         password: form.password,
         phoneNumber: phoneE164,
         phoneToken,
-        acceptTerms: true,
+        acceptTerms: legalAccepted,
         gender: form.gender || undefined,
         birthDate: form.birthDate || undefined,
         occupationSector: form.occupationSector,
@@ -564,12 +567,27 @@ function KayitPageInner() {
                 {t('reg.tempCity')}
               </p>
             </div>
+            <label className="flex items-start gap-3 cursor-pointer" style={{ minHeight: 44 }}>
+              <input
+                type="checkbox"
+                checked={legalAccepted}
+                onChange={(e) => { setLegalAccepted(e.target.checked); setError(''); }}
+                style={{ width: 18, height: 18, accentColor: '#c0392b', flexShrink: 0, marginTop: 2 }}
+              />
+              <span className="text-[13px] text-[#c9c2b8]" style={{ lineHeight: 1.6 }}>
+                {t('reg.legalPre')}
+                <a href={locale === 'en' ? '/en/kullanim-kosullari' : '/kullanim-kosullari'} target="_blank" rel="noopener noreferrer" style={{ color: '#c0392b' }}>{t('reg.legalTerms')}</a>
+                {t('reg.legalMid')}
+                <a href={locale === 'en' ? '/en/kvkk' : '/kvkk'} target="_blank" rel="noopener noreferrer" style={{ color: '#c0392b' }}>{t('reg.legalKvkk')}</a>
+                {t('reg.legalPost')}
+              </span>
+            </label>
             {error && <p className="text-[#ff6b6b] text-[13px]">{error}</p>}
             <div className="flex flex-wrap gap-3 mt-1">
               <StdButton variant="ghost" type="button" onClick={() => { setStepDir(-1); setStep(1); setError(''); }}>
                 {t('common.back')}
               </StdButton>
-              <StdButton variant="primary" type="button" onClick={handleStep2} disabled={loading} className="flex-1">
+              <StdButton variant="primary" type="button" onClick={handleStep2} disabled={loading || !legalAccepted} className="flex-1 disabled:opacity-50">
                 {loading ? t('reg.saving') : t('reg.continueBtn')}
               </StdButton>
             </div>

@@ -66,6 +66,9 @@ export class AuthController {
     const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ?? req.ip;
     const userAgent = req.headers["user-agent"];
     const { user, accessToken, refreshToken } = await this.authService.register(dto, ip, userAgent);
+    // Kayıt sonrası açılan oturum da giriş kaydına yazılır (LoginLog); kayıt onayları (AgreementConsent) servis içinde
+    await this.authService.recordLoginAttempt({ id: user.id }, req, true);
+    await this.authService.recordRegisterAgreements(user.id, dto.acceptTerms, req);
     return this.issueSession(req, res, user, accessToken, refreshToken);
   }
 
@@ -82,11 +85,11 @@ export class AuthController {
     try {
       result = await this.authService.login(dto);
     } catch (e) {
-      await this.authService.recordLoginAttempt({ email: dto.email }, req.ip, req.headers["user-agent"], false);
+      await this.authService.recordLoginAttempt({ email: dto.email }, req, false);
       throw e;
     }
     const { user, accessToken, refreshToken } = result;
-    await this.authService.recordLoginAttempt({ id: user.id }, req.ip, req.headers["user-agent"], true);
+    await this.authService.recordLoginAttempt({ id: user.id }, req, true);
     return this.issueSession(req, res, user, accessToken, refreshToken);
   }
 
@@ -128,6 +131,8 @@ export class AuthController {
   ) {
     const { user: updatedUser, accessToken, refreshToken } =
       await this.authService.refreshTokens(user.id, user.refreshTokenJti);
+    // Mobil "Tekrar hoş geldin" biyometrik girişi (X-Login-Event: biometric) giriş kaydına yazılır; olağan token yenilemesi yazılmaz
+    if (req.headers["x-login-event"] === "biometric") await this.authService.recordLoginAttempt({ id: updatedUser.id }, req, true);
     return this.issueSession(req, res, updatedUser, accessToken, refreshToken);
   }
 
@@ -181,11 +186,11 @@ export class AuthController {
     try {
       result = await this.authService.verifyLoginOtp(dto.phone, dto.code);
     } catch (e) {
-      await this.authService.recordLoginAttempt({ phone: dto.phone }, req.ip, req.headers["user-agent"], false);
+      await this.authService.recordLoginAttempt({ phone: dto.phone }, req, false);
       throw e;
     }
     const { user, accessToken, refreshToken } = result;
-    await this.authService.recordLoginAttempt({ id: user.id }, req.ip, req.headers["user-agent"], true);
+    await this.authService.recordLoginAttempt({ id: user.id }, req, true);
     return this.issueSession(req, res, user, accessToken, refreshToken);
   }
 

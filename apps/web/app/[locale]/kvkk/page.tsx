@@ -249,10 +249,6 @@ const sections = [
         </p>
         <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Yurt Dışı Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
-          <strong style={{ color: '#f4f1ec' }}>Google Analytics ve Meta Pixel</strong>
-          : bu araçlar aracılığıyla çerez verisi işlenir. Bu veri yurt dışındaki sunuculara aktarılabilir. Aktarım açık rızana dayanır (KVKK m.9/6-a) ve rızanı çerez tercihlerinden her zaman geri alabilirsin.
-        </p>
-        <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Anthropic (yapay zekâ, ABD)</strong>
           : Aktarılan veri: masa uyum raporu için masadaki her katılımcının adı yerine P1, P2 gibi bir etiketle beş OCEAN skoru ve varsa meslek alanı, masa türü, katılımcı sayısı ve masanın genel uyum skoru; masa sohbeti denetimi için şüpheli kelime içeren sohbet mesajının yalnız metni (en fazla 1.000 karakter). Ad, cinsiyet, yaş, iletişim ve kimlik bilgisi aktarılmaz. Amaç: yapay zekâ ile masa uyum raporu ve sohbet denetimi. Aktarım dayanağı: KVKK m.9/4 standart sözleşme; Kişisel Verileri Koruma Kurumu'na sözleşmenin imzalanmasından itibaren 5 iş günü içinde bildirim yapılır. İşleme sebebi: masa uyum raporunda KVKK m.5/2-c (sözleşmenin ifası), sohbet denetiminde KVKK m.5/2-f (meşru menfaat).
         </p>
@@ -270,11 +266,11 @@ const sections = [
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Google Maps (Acil Yardım haritası, ABD)</strong>
-          : Aktarılan veri: Acil Yardım talebindeki konum koordinatları (yönetici acil yardım haritası ve açık adres çözümleme; acil durum kişilerine giden konum bağlantısı da Google Maps bağlantısıdır). Amaç: talep edenin konumunun haritada gösterilmesi ve açık adresinin bulunması. Aktarım dayanağı: KVKK m.9/6-e (hayat veya beden bütünlüğünün korunması).
+          : Aktarılan veri: Acil Yardım talebindeki konum koordinatları (yönetici acil yardım haritası ve açık adres çözümleme; acil durum kişilerine giden konum bağlantısı da Google Maps bağlantısıdır). Amaç: talep edenin konumunun haritada gösterilmesi ve açık adresinin bulunması. Aktarım dayanağı: sözleşmenin ifası (buluşma konumunun gösterilmesi).
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Apple (App Store) ve Google (Google Play), ABD</strong>
-          : Aktarılan veri: mobil uygulama içi satın alma ve abonelik işlem bilgileri. Amaç: satın almaların ve aboneliklerin doğrulanması ve yönetilmesi. Aktarım dayanağı: KVKK m.9/6-b (sözleşmenin ifası için zorunlu olması).
+          : Aktarılan veri: mobil uygulama içi satın alma ve abonelik işlem bilgileri. Amaç: satın almaların ve aboneliklerin doğrulanması ve yönetilmesi. Aktarım dayanağı: sözleşmenin ifası (ödeme ve abonelik işlemleri).
         </p>
         <div
           style={{
@@ -285,7 +281,7 @@ const sections = [
           }}
         >
           <p style={{ color: '#f4f1ec', fontSize: 13 }}>
-            Kişisel verilerin satılmaz. Çerez verileri yalnızca açık rızanla Google ve Meta ile reklam ve istatistik amacıyla paylaşılır.
+            Kişisel verilerin satılmaz.
           </p>
         </div>
       </>
