@@ -51,6 +51,8 @@ export interface WeeklySelection {
   showModal: boolean;
 }
 
+export interface KankaInfo { initials: string; gender: string | null; displayName?: string | null; photoUrl?: string | null }
+
 export interface MeData {
   id?: string;
   firstName: string;
@@ -74,7 +76,8 @@ export function useMasaTabs() {
   const [adminCancelledTypes, setAdminCancelledTypes] = useState<MasaTuru[]>([]);
   const [dashLoaded, setDashLoaded] = useState(false);
   const [chosenTab, setChosenTab] = useState<MasaTuru | null>(null);
-  const [kanka, setKanka] = useState<{ initials: string; gender: string | null } | null>(null);
+  // Kanka (iki yönlü): baş harf, cinsiyet; Masalarım'da (tarama ve önizleme) profil için "Ahmet Y." ve onaylı fotoğraf
+  const [kanka, setKanka] = useState<KankaInfo | null>(null);
   const [subs, setSubs] = useState<OwnSub[]>([]);
   const [kycAt, setKycAt] = useState<string | null>(null);
   const [selection, setSelection] = useState<WeeklySelection | null>(null);
@@ -97,7 +100,7 @@ export function useMasaTabs() {
 
   const reload = useCallback(() => {
     if (!isForeground()) return Promise.resolve();
-    api.get<{ kanka: { initials: string; gender: string | null } | null }>('/kanka/me').then(r => { if (r && 'kanka' in r) setKanka(r.kanka); }).catch(() => {});
+    api.get<{ kanka: KankaInfo | null }>('/kanka/me').then(r => { if (r && 'kanka' in r) setKanka(r.kanka); }).catch(() => {});
     return api.get<{ items: DashboardItem[]; weekTableTypes?: MasaTuru[]; weekCancelledTypes?: MasaTuru[]; weekAdminCancelledTypes?: MasaTuru[] }>('/meetings/dashboard')
       .then(r => {
         if (!r || !Array.isArray(r.items)) return;

@@ -9,6 +9,8 @@ import { PrismaService } from "../prisma/prisma.service";
 import { NotificationService } from "../notification/notification.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
 import { initialsOf } from "../meetings/cancellation-notice";
+import { baseDisplayName } from "../meetings/table-initials";
+import { approvedPhotoUrl } from "../profile-photo/profile-photo.util";
 import { OPEN_KANKA_SUB } from "../payment/package-rights";
 import { activeKankaLink, endKankaLinks, kankaLockReason } from "./kanka-links";
 
@@ -66,6 +68,9 @@ export class KankaService {
       kanka = {
         initials: initialsOf(k.profile),
         gender: k.profile?.gender ?? null,
+        // Masalarım'da (tarama ve önizleme) kankanın profili: "Ahmet Y." ve onaylı profil fotoğrafı
+        displayName: baseDisplayName(k.profile),
+        photoUrl: await approvedPhotoUrl(this.prisma, link.kankaId),
         since: link.createdAt,
         locked: !!lockReason,
         lockReason,

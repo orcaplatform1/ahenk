@@ -56,6 +56,7 @@ interface AdminUserDetail {
   photoUrl?: string | null;
   primaryCityName?: string | null;
   activeCityName?: string | null;
+  emergencyContacts?: { slot: 1 | 2; name: string | null; phone: string }[]; // Acil durum kişileri (1 ya da 2)
 }
 
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -389,6 +390,9 @@ export default function AdminUsers() {
                   <span style={{ fontSize: 11, color: MUTED }}>Baş Başa hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.oneOnOne ?? 0}</span></span>
                   <span style={{ fontSize: 11, color: MUTED }}>Kankamla hakkı: <span style={{ color: '#93c5fd' }}>{userModal.rights?.kanka ?? 0}</span></span>
                   <span style={{ fontSize: 11, color: MUTED }}>Kanka: <span style={{ color: '#93c5fd' }}>{userModal.kanka ? userModal.kanka.name : 'yok'}</span></span>
+                  {(userModal.emergencyContacts ?? []).map((c) => (
+                    <span key={c.slot} style={{ fontSize: 11, color: MUTED }}>Acil durum kişisi {c.slot}: <span style={{ color: '#93c5fd' }}>{c.name ?? '—'} · {c.phone}</span></span>
+                  ))}
                 </div>
 
                 {/* Durum badge'leri */}

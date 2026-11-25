@@ -262,6 +262,8 @@
     "title": "Delete Account"
   },
   "errors": {
+    "emergencyFirstRequired": "Add your first emergency contact first.",
+    "emergencySlotInvalid": "Invalid emergency contact",
     "partnerPhotoMaxOne": "You can only upload 1 photo.",
     "acceptTerms": "You need to accept the Terms of Use",
     "accountBanned": "Your account has been permanently banned",
@@ -1023,8 +1025,9 @@
     "sosCall112": "If you're able to call, 112",
     "reviewNotYet": "You can rate after {date} 00:00",
     "chatTitle": "Table Chat",
-    "chatRulesTitle": "Table Rules:",
-    "chatRulesText": "Insults, threats, harassment, sharing phone numbers or social media, offers to change the meeting place and drug-related messages are prohibited. If detected, you will be removed from the table, your credit will be forfeited and no refund will be given.",
+    "chatRulesTitle": "Chat Rules:",
+    "chatRulesText": "Insults, threats, harassment, sharing phone numbers or social media, offers to change the meeting place and messages about prohibited substances are prohibited. If detected, you will be removed from the table, your credit will be forfeited and no refund will be given.",
+    "chatRulesGotIt": "Got it",
     "msgSending": "sending",
     "emoji": "Emoji",
     "msgMenu": "Message menu",
@@ -1693,7 +1696,8 @@
     "preview": "The table details below are a preview. Once you get a package and are matched, your real booking details will appear here.",
     "review": "Review",
     "venueName": "Venue Name",
-    "yourReview": "YOUR REVIEW"
+    "yourReview": "YOUR REVIEW",
+    "locked": "Locked"
   },
   "tt": {
     "canNow": "Available now",

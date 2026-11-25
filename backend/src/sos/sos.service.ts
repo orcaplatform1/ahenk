@@ -1,4 +1,5 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from "@nestjs/common";
+import { EMERGENCY_SELECT, emergencyContactsOf } from "../common/emergency-contacts";
 import { Cron } from "@nestjs/schedule";
 import { PrismaService } from "../prisma/prisma.service";
 import { WhatsappNotifyService } from "../notification/whatsapp-notify.service";
@@ -199,18 +200,24 @@ export class SosService {
   private async notifyEmergencyContact(reportId: string, userId: string, lat?: number, lng?: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { emergencyContactPhone: true, language: true, profile: { select: { firstName: true, lastName: true } } },
+      select: { ...EMERGENCY_SELECT, language: true, profile: { select: { firstName: true, lastName: true } } },
     });
-    if (!user?.emergencyContactPhone) return;
+    // Kayıtlı her acil durum kişisine (en fazla 2) gönderilir; biri başarısızsa emergencyNotifyFailed
+    const contacts = emergencyContactsOf(user);
+    if (!user || contacts.length === 0) return;
     const claimed = await this.prisma.sosReport.updateMany({ where: { id: reportId, emergencyNotifiedAt: null }, data: { emergencyNotifiedAt: new Date() } });
     if (claimed.count === 0) return;
     const name = `${user.profile?.firstName ?? ""} ${user.profile?.lastName ?? ""}`.trim();
     const link = lat != null && lng != null ? `https://maps.google.com/?q=${lat},${lng}` : "-";
-    let ok = false;
-    try {
-      ok = await this.whatsapp.send(user.emergencyContactPhone, "ahenk_emergency_contact", [name, link], user.language === "en" ? "en" : "tr");
-    } catch (err) {
-      this.logger.error(`Acil durum kişisi bildirimi hatası (rapor ${reportId}): ${err}`);
+    let ok = true;
+    for (const c of contacts) {
+      try {
+        const sent = await this.whatsapp.send(c.phone, "ahenk_emergency_contact", [name, link], user.language === "en" ? "en" : "tr");
+        if (!sent) ok = false;
+      } catch (err) {
+        ok = false;
+        this.logger.error(`Acil durum kişisi ${c.slot} bildirimi hatası (rapor ${reportId}): ${err}`);
+      }
     }
     if (!ok) await this.prisma.sosReport.update({ where: { id: reportId }, data: { emergencyNotifyFailed: true } });
   }
@@ -383,7 +390,7 @@ export class SosService {
       include: {
         user: {
           select: {
-            id: true, email: true, phone: true,
+            id: true, email: true, phone: true, ...EMERGENCY_SELECT,
             profile: { select: { firstName: true, lastName: true, gender: true, birthDate: true, city: true } },
           },
         },
@@ -401,6 +408,8 @@ export class SosService {
     const deleted = await this.deletedIds(snapshot.map((p) => p.userId));
     return {
       ...report,
+      // Talebi açanın acil durum kişileri (ad + telefon, 1 ya da 2 kişi)
+      emergencyContacts: emergencyContactsOf(report.user),
       // Kişi kartları: onaylı profil fotoğrafı (admin büyütür, "Sil" ile silebilir) ve kimlik ön yüzü (KYC başvuru kimliği)
       people: await this.peopleExtras(snapshot.map((p) => p.userId)),
       // Konum geçmişi: her satıra açık adres (backend önbelleği; yoksa sıraya eklenir, null döner)

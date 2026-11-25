@@ -169,8 +169,10 @@ export class AccountDeletionService {
         data: {
           email: `silinmis-${userId}@ahenk.invalid`,
           phone: null,
-          emergencyContactName: null, // Acil durum kişisi silinir
+          emergencyContactName: null, // Acil durum kişileri silinir
           emergencyContactPhone: null,
+          emergencyContact2Name: null,
+          emergencyContact2Phone: null,
           phoneHash: isBanned && user.phone ? hashPhone(user.phone) : null,
           passwordHash: "silindi",
           status: UserStatus.DELETED,

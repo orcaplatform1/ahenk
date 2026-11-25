@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, ConflictException } from "@nestjs/common";
+import { EMERGENCY_SELECT, emergencyContactsOf } from "../common/emergency-contacts";
 import { PrismaService } from "../prisma/prisma.service";
 import { OtpService } from "../auth/otp/otp.service";
 import { VenuePreference, Prisma } from "../generated/prisma/client";
@@ -64,15 +65,44 @@ export class UsersService {
   }
 
   // Başka konuşulan diller; ana dilin (nativeLanguage) alanı her zaman true kalır, kapatılamaz
-  // Acil durum kişisi: yalnız Acil Yardım talebinde bu amaçla kullanılır
+  // Acil durum kişisi: yalnız Acil Yardım talebinde bu amaçla kullanılır (eski tek kişilik uç; 1. kişi)
   async getEmergencyContact(userId: string) {
     const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { emergencyContactName: true, emergencyContactPhone: true } });
     return u?.emergencyContactPhone ? { name: u.emergencyContactName, phone: u.emergencyContactPhone } : null;
   }
 
   async setEmergencyContact(userId: string, name: string | null, phone: string | null) {
+    if (name === null && phone === null) { await this.deleteEmergencyContactSlot(userId, 1); return this.getEmergencyContact(userId); }
     await this.prisma.user.update({ where: { id: userId }, data: { emergencyContactName: name, emergencyContactPhone: phone } });
     return this.getEmergencyContact(userId);
+  }
+
+  // Acil durum kişileri (en fazla 2): [{ slot, name, phone }]
+  async getEmergencyContacts(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: EMERGENCY_SELECT });
+    return emergencyContactsOf(u);
+  }
+
+  async setEmergencyContactSlot(userId: string, slot: 1 | 2, name: string, phone: string) {
+    if (slot === 2) {
+      const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { emergencyContactPhone: true } });
+      if (!u?.emergencyContactPhone) throw new BadRequestException("Önce birinci acil durum kişisini eklemelisin.");
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: slot === 1 ? { emergencyContactName: name, emergencyContactPhone: phone } : { emergencyContact2Name: name, emergencyContact2Phone: phone },
+    });
+    return this.getEmergencyContacts(userId);
+  }
+
+  // 1. kişi silinirse 2. kişi 1. sıraya geçer
+  async deleteEmergencyContactSlot(userId: string, slot: 1 | 2) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: EMERGENCY_SELECT });
+    const data = slot === 2 || !u?.emergencyContact2Phone
+      ? (slot === 2 ? { emergencyContact2Name: null, emergencyContact2Phone: null } : { emergencyContactName: null, emergencyContactPhone: null })
+      : { emergencyContactName: u.emergencyContact2Name, emergencyContactPhone: u.emergencyContact2Phone, emergencyContact2Name: null, emergencyContact2Phone: null };
+    await this.prisma.user.update({ where: { id: userId }, data });
+    return this.getEmergencyContacts(userId);
   }
 
   async updateSpokenLanguages(userId: string, dto: { speaksEnglish?: boolean; speaksTurkish?: boolean }) {

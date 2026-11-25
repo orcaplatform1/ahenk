@@ -11,6 +11,7 @@ import LiveTabs from '@/components/live/LiveTabs';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import WeeklySelectionModal from '@/components/live/WeeklySelectionModal';
 import { ReviewStar } from '@/components/ReviewStar';
+import type { KankaInfo } from '@/components/live/useMasaTabs';
 
 // GET /meetings/my-history yanıtı (sadece tamamlanmış masalar)
 interface HistoryMeeting {
@@ -42,16 +43,21 @@ function fmtDate(val: string, locale: Lang = 'tr') {
   return formatNamed(val, locale, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-/* ── Önizleme kartı (masa kurulmadan): gerçek MasaDetayKarti preview modunda, gerçek veri yok. Mekân adı yer tutucu, tarih satırında
-   buluşma günü + 20:00; kullanıcının kendisi fotoğrafı ve adıyla, diğer yerler baş harfsiz ("?") cinsiyet renkli avatarla; sohbet pasif ── */
+/* ── Önizleme kartı (masa kurulmadan): gerçek MasaDetayKarti preview modunda, gerçek veri yok. Kapakta varsayılan mekân görseli
+   (/share-bg/datenight.webp) ve yalnız konum ikonu, masa kilitliyken sallanan kilit; mekân adı yer tutucu; tarih satırında buluşma
+   günü + 20:00 ve pasif Haritada Gör. Katılımcılar kullanıcının cinsiyetine göre: Baş Başa solda kendisi, sağda karşı cins "?";
+   Grup sol sütunda kendisi + 2 aynı cins "?", sağ sütunda 3 karşı cins "?"; Kankamla üst satırda kendisi ve kankası (fotoğraf + ad),
+   alt satırda 2 karşı cins "?". Sohbet pasif ── */
 function EmptyMasaCard({
+  locked,
   cardType,
   userInfo,
   kanka,
 }: {
+  locked: boolean;
   cardType: 'group' | 'basbasa' | 'kanka';
   userInfo?: UserInfo;
-  kanka?: { initials: string; gender: string | null } | null;
+  kanka?: KankaInfo | null;
 }) {
   const t = useTranslations();
   const locale = useLocale() as Lang;
@@ -62,14 +68,15 @@ function EmptyMasaCard({
   const oppGender = uGender === 'FEMALE' ? 'MALE' : 'FEMALE';
   const self: MasaDetayData['participants'][number] = {
     initials, gender: uGender, isSelf: true, photoUrl: userInfo?.photoUrl ?? null,
-    displayName: last ? `${first} ${last[0].toLocaleUpperCase('tr-TR')}.` : first || initials, pair: 'MINE',
+    displayName: last ? `${first} ${last[0].toLocaleUpperCase('tr-TR')}.` : first || initials,
   };
-  const empty = (gender: string, pair?: 'MINE' | 'OTHER') => ({ initials: '?', gender, displayName: '', ...(pair ? { pair } : {}) });
+  const empty = (gender: string) => ({ initials: '?', gender, displayName: '' });
   const type: MasaTuru = cardType === 'basbasa' ? 'ONE_ON_ONE' : cardType === 'kanka' ? 'KANKA' : 'GROUP';
+  // Satır satır sıra (önizlemede satırda 2 kişi, verilen sırayla): sol sütun kullanıcının cinsiyeti
   const participants = cardType === 'basbasa'
     ? [self, empty(oppGender)]
     : cardType === 'kanka'
-      ? [self, kanka ? { ...kanka, displayName: '', pair: 'MINE' as const } : empty(uGender, 'MINE'), empty(oppGender, 'OTHER'), empty(oppGender, 'OTHER')]
+      ? [self, kanka ? { initials: kanka.initials, gender: kanka.gender, displayName: kanka.displayName ?? '', photoUrl: kanka.photoUrl ?? null } : empty(uGender), empty(oppGender), empty(oppGender)]
       : [self, empty(oppGender), empty(uGender), empty(oppGender), empty(uGender), empty(oppGender)];
   const masa: MasaDetayData = {
     id: `preview-${cardType}`,
@@ -78,12 +85,12 @@ function EmptyMasaCard({
     scheduledAt: new Date().toISOString(),
     sosEndsAt: new Date().toISOString(),
     venueName: t('tm.venueName'),
-    venuePhotos: [],
+    venuePhotos: [{ url: '/share-bg/datenight.webp' }],
     participants,
     aiReport: null,
   };
   const dateLabel = `${weekdayName(cardType === 'basbasa' ? 6 : cardType === 'kanka' ? 0 : 5, locale)} 20:00`;
-  return <MasaDetayKarti masa={masa} preview={{ dateLabel }} />;
+  return <MasaDetayKarti masa={masa} preview={{ dateLabel, locked }} />;
 }
 
 /* ── Tek masa bloğu ── */
@@ -98,7 +105,7 @@ function MasaBlock({
   locked: boolean;
   cardType: 'group' | 'basbasa' | 'kanka';
   userInfo?: UserInfo;
-  kanka?: { initials: string; gender: string | null } | null;
+  kanka?: KankaInfo | null;
 }) {
   const t = useTranslations();
   const meeting = item?.meeting;
@@ -106,7 +113,7 @@ function MasaBlock({
   let content: React.ReactNode;
 
   if (locked || !meeting) {
-    content = <EmptyMasaCard cardType={cardType} userInfo={userInfo} kanka={kanka} />;
+    content = <EmptyMasaCard locked={locked} cardType={cardType} userInfo={userInfo} kanka={kanka} />;
   } else if (item.phase === 'REVEALED' && meeting.venueName) {
     const detayData: MasaDetayData = {
       id: meeting.id,
@@ -136,9 +143,13 @@ function MasaBlock({
         />
         {meeting.type === 'KANKA' && (
           <div style={{ marginTop: 16 }}>
+            {/* Kullanıcı ve kankası masa kurulana kadar da fotoğraf + "Ahmet Y." ile görünür (showMine) */}
             <KankaPairs
-              mine={meeting.participants.filter(p => p.pair === 'MINE' && !p.cancelled)}
+              mine={meeting.participants.filter(p => p.pair === 'MINE' && !p.cancelled).map(p => (p.isSelf
+                ? { ...p, photoUrl: userInfo?.photoUrl ?? null, displayName: userInfo ? (userInfo.lastName ? `${userInfo.firstName} ${userInfo.lastName[0].toLocaleUpperCase('tr-TR')}.` : userInfo.firstName) : p.displayName }
+                : { ...p, photoUrl: kanka?.photoUrl ?? null, displayName: kanka?.displayName ?? p.displayName }))}
               other={meeting.participants.filter(p => p.pair === 'OTHER' && !p.cancelled)}
+              showMine
             />
           </div>
         )}
@@ -146,7 +157,7 @@ function MasaBlock({
       </div>
     );
   } else {
-    content = <EmptyMasaCard cardType={cardType} userInfo={userInfo} kanka={kanka} />;
+    content = <EmptyMasaCard locked={false} cardType={cardType} userInfo={userInfo} kanka={kanka} />;
   }
 
   return <div key={meeting?.id ?? cardType}>{content}</div>;

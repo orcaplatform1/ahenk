@@ -49,6 +49,7 @@ interface SosReport {
   participantSnapshot: Participant[];
   people?: Record<string, { photoUrl: string | null; kycId: string | null }>; // detay: profil fotoğrafı ve kimlik ön yüzü
   emergencyNotifyFailed?: boolean; // acil durum kişisine WhatsApp bildirimi gönderilemedi
+  emergencyContacts?: { slot: 1 | 2; name: string | null; phone: string }[]; // detay: talebi açanın acil durum kişileri (1 ya da 2)
   // Kullanıcı / masa silinirse null (SOS kaydı korunur)
   user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null;
   meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null;
@@ -358,6 +359,14 @@ function ReportCardFull({ report, index, tick, onChanged, livePos, liveAddress, 
               </Section>
               {(detail?.emergencyNotifyFailed ?? report.emergencyNotifyFailed) && (
                 <p style={{ margin: '6px 0 0', fontSize: 11, color: RED }}>Acil durum kişisine bildirim gönderilemedi</p>
+              )}
+              {/* Talebi açanın acil durum kişileri (ad + telefon) */}
+              {!!detail?.emergencyContacts?.length && (
+                <Section title="ACİL DURUM KİŞİLERİ" accent={RED} mt>
+                  {detail.emergencyContacts.map((c) => (
+                    <p key={c.slot} style={{ margin: '0 0 4px', fontSize: 12, color: '#e2e8f0' }}>{c.slot}. {c.name ?? '—'} · {c.phone}</p>
+                  ))}
+                </Section>
               )}
 
               {/* Diğer katılımcılar */}

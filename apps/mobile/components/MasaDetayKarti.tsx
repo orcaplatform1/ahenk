@@ -1,8 +1,9 @@
 // packages/ui/src/components/tables/MasaDetayKarti.tsx karşılığı: mekân, fotoğraf, tarih satırı + HARİTADA GÖR,
 // katılımcılar (fotoğraf, ad, meslek), yapay zeka raporu, Acil Yardım, sohbet, gelmeyen işaretleme, Değerlendir.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, Linking, Modal, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
+import { Animated, Easing, Image, Linking, Modal, Pressable, ScrollView, TextInput, View, type ScrollViewInstance, type TextInputInstance } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
@@ -10,7 +11,7 @@ import { api } from '@/lib/api';
 import { mediaUrl } from '@/lib/venueApi';
 import { requestSosAlwaysPermission, startSosLive } from '@/lib/sosLive';
 import { formatMeetingTime, gColor, type MasaTuru } from '@/lib/masa';
-import { currentLang } from '@/lib/i18n';
+import i18n, { currentLang } from '@/lib/i18n';
 import { openMaps } from '@/lib/links';
 import { useAppRefresh } from '@/lib/useAppRefresh';
 import { DetayAvatar } from './DetayAvatar';
@@ -149,6 +150,19 @@ function ChatSection({ meetingId, count, preview = false }: { meetingId: string;
   const [reportFor, setReportFor] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const scroll = useRef<ScrollViewInstance>(null);
+  const inputRef = useRef<TextInputInstance>(null);
+  // Sohbet Kuralları açılır penceresi: mesaj alanına ilk basışta, her masa için bir kez (AsyncStorage, masa ID'siyle); yalnız "Anladım"
+  // kapatır (dışına basma, Android geri tuşu kapatmaz) — web MasaDetayKarti ile aynı
+  const rulesKey = `ahenk_chat_rules_${meetingId}`;
+  const [rulesSeen, setRulesSeen] = useState<boolean | null>(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  useEffect(() => { AsyncStorage.getItem(rulesKey).then(v => setRulesSeen(v === '1')).catch(() => setRulesSeen(false)); }, [rulesKey]);
+  function ackRules() {
+    AsyncStorage.setItem(rulesKey, '1').catch(() => undefined);
+    setRulesSeen(true);
+    setRulesOpen(false);
+    if (!preview) setTimeout(() => inputRef.current?.focus(), 250);
+  }
 
   const fetchMessages = useCallback(async () => {
     if (preview) return; // Önizlemede mesaj çekilmez
@@ -255,9 +269,16 @@ function ChatSection({ meetingId, count, preview = false }: { meetingId: string;
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: preview ? 0.5 : 1 }}>
                 <T style={{ fontSize: 22 }}>🙂</T>
               </Pressable>
-              <TextInput value={input} onChangeText={(v) => setInput(v.slice(0, 1000))} onSubmitEditing={send} returnKeyType="send" keyboardAppearance="dark" editable={!preview}
-                onFocus={() => setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 300)}
+              {/* Önizlemede alan pasif; basınca yalnız kural penceresi açılır */}
+              <Pressable style={{ flex: 1, minWidth: 0 }} disabled={!preview} onPress={() => { if (!rulesSeen) setRulesOpen(true); }} accessibilityRole={preview ? 'button' : undefined}>
+              <TextInput ref={inputRef} value={input} onChangeText={(v) => setInput(v.slice(0, 1000))} onSubmitEditing={send} returnKeyType="send" keyboardAppearance="dark" editable={!preview}
+                pointerEvents={preview ? 'none' : 'auto'}
+                onFocus={() => {
+                  if (!rulesSeen) { inputRef.current?.blur(); setRulesOpen(true); return; }
+                  setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 300);
+                }}
                 style={{ flex: 1, minWidth: 0, minHeight: 40, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, fontSize: 14, color: tw.text, fontFamily: sans(400), opacity: preview ? 0.5 : 1 }} />
+              </Pressable>
               <Pressable onPress={send} disabled={preview || !input.trim() || sending} accessibilityRole="button" accessibilityLabel={t('masa.send')} accessibilityState={{ disabled: preview || !input.trim() || sending }}
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
                 <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: c.red, alignItems: 'center', justifyContent: 'center', opacity: input.trim() && !sending ? 1 : 0.5 }}>
@@ -272,12 +293,19 @@ function ChatSection({ meetingId, count, preview = false }: { meetingId: string;
         {!!sendError && isOpen && !isClosed && <T accessibilityRole="alert" style={{ paddingHorizontal: 10, paddingBottom: 8, fontSize: 12, lineHeight: 18, color: tw.accent }}>{sendError}</T>}
         {!!notice && <T style={{ paddingHorizontal: 10, paddingBottom: 8, fontSize: 12, color: ll.label }}>{notice}</T>}
       </View>
-      {/* Sabit Masa Kuralları kartı */}
-      <View style={{ marginTop: 10, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, backgroundColor: 'rgba(245,158,11,0.06)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)' }}>
-        <T style={{ fontSize: 11.5, lineHeight: 17.8, color: 'rgba(255,255,255,0.75)' }}>
-          <T w={700} style={{ fontSize: 11.5, color: '#f4f1ec' }}>{t('masa.chatRulesTitle')}</T> {t('masa.chatRulesText')}
-        </T>
-      </View>
+      {/* Sohbet Kuralları açılır penceresi: dışına basınca ve Android geri tuşuyla kapanmaz, yalnız "Anladım" */}
+      <Modal visible={rulesOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => undefined}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', alignItems: 'center', justifyContent: 'center', padding: 16 }} accessibilityViewIsModal>
+          <View style={{ width: '100%', maxWidth: 380, backgroundColor: '#121212', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 16, padding: 16, gap: 14 }}>
+            <View style={{ paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, backgroundColor: 'rgba(245,158,11,0.06)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)' }}>
+              <T style={{ fontSize: 13, lineHeight: 20, color: 'rgba(255,255,255,0.75)' }}>
+                <T w={700} style={{ fontSize: 13, color: '#f4f1ec' }}>{t('masa.chatRulesTitle')}</T> {t('masa.chatRulesText')}
+              </T>
+            </View>
+            <StdButton variant="primary" label={t('masa.chatRulesGotIt')} full onPress={ackRules} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -499,9 +527,30 @@ function AiReport({ report, meetingId }: { report?: MasaDetayData['aiReport']; m
   );
 }
 
-// preview (masa kurulmadan): aynı kart, gerçek veri yok; dateLabel tarih satırında (gün adı + saat); sohbet pasif (mesaj çekilmez,
-// giriş, emoji ve gönder ikonu kapalı); acil yardım ve gelmeyen işaretleme yok; Değerlendir pasif — web MasaDetayKarti ile aynı
-function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDetayData; archive?: boolean; preview?: { dateLabel: string } }) {
+// Önizleme kilidi: lockShake 0,8 sn ease-in-out sonsuz (0 → -3 → 0 → 3 → 0 px), sağ üstte (web @keyframes lockShake ile aynı)
+function LockShake() {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const e = Easing.bezier(0.42, 0, 0.58, 1);
+    const step = (to: number) => Animated.timing(v, { toValue: to, duration: 200, easing: e, useNativeDriver: true });
+    const loop = Animated.loop(Animated.sequence([step(-3), step(0), step(3), step(0)]));
+    loop.start();
+    return () => loop.stop();
+  }, [v]);
+  return <Animated.Image source={require('@/assets/lock-icon.webp')} accessibilityLabel={i18n.t('tm.locked')} style={{ position: 'absolute', top: 12, right: 12, zIndex: 2, width: 56, height: 56, opacity: 0.85, transform: [{ translateX: v }] }} />;
+}
+
+// Önizleme: katılımcılar verilen sırayla satırda 2 kişi (sol sütun kullanıcının cinsiyeti) — web chunkRows ile aynı
+function chunkRows(list: DetayParticipant[]): DetayParticipant[][] {
+  const r: DetayParticipant[][] = [];
+  for (let i = 0; i < list.length; i += 2) r.push(list.slice(i, i + 2));
+  return r;
+}
+
+// preview (masa kurulmadan): aynı kart, gerçek veri yok; dateLabel tarih satırında (gün adı + saat); locked: kapakta sallanan kilit;
+// kapakta yalnız konum ikonu (ilçe yok), Haritada Gör pasif; katılımcılar verilen sırayla; sohbet pasif (mesaj çekilmez, gönder ikonu
+// kapalı); acil yardım, gelmeyen işaretleme ve Değerlendir yok — web MasaDetayKarti ile aynı
+function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDetayData; archive?: boolean; preview?: { dateLabel: string; locked?: boolean } }) {
   const { t } = useTranslation();
   const router = useRouter();
   const live = !archive;
@@ -511,7 +560,7 @@ function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDet
   const openPhoto = (p: { photoUrl?: string | null }) => { if (p.photoUrl) setViewer(p.photoUrl); };
 
   const photos = masa.venuePhotos ?? [];
-  const rows = participantRows(masa.participants.filter(p => !p.cancelled), masa.type);
+  const rows = preview ? chunkRows(masa.participants) : participantRows(masa.participants.filter(p => !p.cancelled), masa.type);
   const hasMap = !!(masa.venueMapsUrl || masa.venueAddress);
 
   // "Değerlendir": değerlendirme buluşma günü 23:59'dan sonra (ertesi gün 00:00) açılır; önce basılırsa uyarı
@@ -627,11 +676,12 @@ function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDet
         <View style={cover ? { aspectRatio: masaKart.coverAspect } : { gap: 12, paddingTop: 12, paddingHorizontal: 14 }}>
           {cover && (
             <>
-              <Pressable onPress={() => setLightbox(0)} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.04)' }} accessibilityRole="imagebutton">
+              <Pressable onPress={() => setLightbox(0)} disabled={!!preview} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.04)' }} accessibilityRole={preview ? 'image' : 'imagebutton'}>
                 {/* Backend göreli adres döner (/api/v1/media/venues/...); mobilde tam adrese çevrilir */}
                 <Image source={{ uri: mediaUrl(cover.url) }} resizeMode="cover" style={{ width: '100%', height: '100%' }} accessibilityLabel={cover.caption ?? t('masa.photoAlt', { n: 1 })} />
               </Pressable>
               <LinearGradient pointerEvents="none" colors={masaKart.coverFade} locations={masaKart.coverFadeStops} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
+              {preview?.locked && <LockShake />}
             </>
           )}
 
@@ -639,12 +689,13 @@ function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDet
           <View style={[cover ? { position: 'absolute', left: 14, right: 14, bottom: 12 } : null, { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }]}>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Serif style={{ fontSize: 24, lineHeight: 28.8, color: tw.text, letterSpacing: 0.24 }}>{masa.venueName}</Serif>
-              {!!masa.venueDistrict && (
+              {(!!masa.venueDistrict || !!preview) && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
                   <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={tw.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                     <Path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" /><Circle cx={12} cy={10} r={2.5} />
                   </Svg>
-                  <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>{masa.venueDistrict}</T>
+                  {/* Önizlemede yalnız ikon */}
+                  {!preview && <T style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>{masa.venueDistrict}</T>}
                 </View>
               )}
             </View>
@@ -661,9 +712,10 @@ function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDet
               </Svg>
               <T w={700} style={{ fontSize: 15, flexShrink: 1 }}>{preview ? preview.dateLabel : archive ? formatWeekdayTime(masa.scheduledAt, currentLang()) : formatCardDate(masa.scheduledAt, currentLang())}</T>
             </View>
-            {hasMap && (
-              <Pressable onPress={() => openMaps(masa.venueMapsUrl, masa.venueAddress, masa.venueName)} accessibilityRole="link" hitSlop={4}
-                style={{ minHeight: Math.max(masaKart.mapBtn.minH, 44), justifyContent: 'center' }}>
+            {(hasMap || !!preview) && (
+              // Önizlemede aynı görünüm, pasif (basınca bir şey olmaz)
+              <Pressable onPress={() => openMaps(masa.venueMapsUrl, masa.venueAddress, masa.venueName)} disabled={!!preview} accessibilityRole="link" accessibilityState={{ disabled: !!preview }} hitSlop={4}
+                style={{ minHeight: Math.max(masaKart.mapBtn.minH, 44), justifyContent: 'center', opacity: preview ? 0.5 : 1 }}>
                 <View style={{ minHeight: masaKart.mapBtn.minH, justifyContent: 'center', paddingHorizontal: masaKart.mapBtn.padH, borderRadius: masaKart.mapBtn.radius, backgroundColor: masaKart.mapBtn.bg }}>
                   <T w={700} style={{ fontSize: masaKart.mapBtn.fontSize, color: masaKart.mapBtn.text, letterSpacing: 0.66 }}>{t('masa.seeOnMap')}</T>
                 </View>
@@ -732,11 +784,13 @@ function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDet
         <ChatSection meetingId={masa.id} preview={!!preview} count={`${masa.participants.filter(p => !p.cancelled).length}/${masa.maxParticipants ?? masa.participants.filter(p => !p.cancelled).length}`} />
         {!preview && <NoShowSection meetingId={masa.id} />}
 
-        {/* Değerlendir: değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı */}
-        <View style={{ marginTop: 20, alignItems: 'center', gap: 8 }}>
-          <GoldPill label={t('tm.review')} onPress={handleReview} disabled={!!preview} />
-          {!!reviewWarn && <T accessibilityRole="alert" style={{ fontSize: 12, color: c.warnOrange, textAlign: 'center' }}>{reviewWarn}</T>}
-        </View>
+        {/* Değerlendir: değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı. Önizlemede yok */}
+        {!preview && (
+          <View style={{ marginTop: 20, alignItems: 'center', gap: 8 }}>
+            <GoldPill label={t('tm.review')} onPress={handleReview} />
+            {!!reviewWarn && <T accessibilityRole="alert" style={{ fontSize: 12, color: c.warnOrange, textAlign: 'center' }}>{reviewWarn}</T>}
+          </View>
+        )}
       </Card>
       )}
     </View>

@@ -262,6 +262,8 @@
     "title": "Hesap Silme"
   },
   "errors": {
+    "emergencyFirstRequired": "Önce birinci acil durum kişisini eklemelisin.",
+    "emergencySlotInvalid": "Geçersiz acil durum kişisi",
     "partnerPhotoMaxOne": "Yalnızca 1 fotoğraf yükleyebilirsin.",
     "acceptTerms": "Kullanım şartlarını kabul etmelisin",
     "accountBanned": "Hesabın kalıcı olarak engellendi",
@@ -1023,8 +1025,9 @@
     "sosCall112": "Arayabilecek durumdaysan 112",
     "reviewNotYet": "{date} 00:00'dan sonra değerlendirebilirsin",
     "chatTitle": "Masa Sohbeti",
-    "chatRulesTitle": "Masa Kuralları:",
-    "chatRulesText": "Hakaret, tehdit, taciz, telefon numarası veya sosyal medya paylaşımı, buluşma yerini değiştirme teklifi ve uyuşturucu içerikli mesajlar yasaktır. Tespit edilirse masadan çıkarılırsın, kullanım hakkın yanar ve iade yapılmaz.",
+    "chatRulesTitle": "Sohbet Kuralları:",
+    "chatRulesText": "Hakaret, tehdit, taciz, telefon numarası veya sosyal medya paylaşımı, buluşma yerini değiştirme teklifi ve yasaklı madde içerikli mesajlar yasaktır. Tespit edilirse masadan çıkarılırsın, kullanım hakkın yanar ve iade yapılmaz.",
+    "chatRulesGotIt": "Anladım",
     "msgSending": "gönderiliyor",
     "emoji": "Emoji",
     "msgMenu": "Mesaj menüsü",
@@ -1693,7 +1696,8 @@
     "preview": "Aşağıda bulunan Masa Detay bilgileri şuanda önizlemedir. Paket alarak eşleştiğinde, gerçek zamanlı randevu bilgileri yer alacaktır.",
     "review": "Değerlendir",
     "venueName": "Mekan Adı",
-    "yourReview": "DEĞERLENDİRMEN"
+    "yourReview": "DEĞERLENDİRMEN",
+    "locked": "Kilitli"
   },
   "tt": {
     "canNow": "Şimdi yapabilirsin",

@@ -78,9 +78,10 @@ interface Props {
   token?: string;
   archive?: boolean; // Geçmiş masa: yalnızca Haritada Gör çalışır, sohbet ve acil yardım yok (apiBase verilmez)
   reviewHref?: string; // Aktif kartta "Değerlendir": değerlendirme açılınca (ertesi gün 08:00) gidilen adres
-  // Önizleme (masa kurulmadan): aynı kart, gerçek veri yok. dateLabel tarih satırında (gün adı + saat); sohbet pasif
-  // (mesaj çekilmez, giriş alanı, emoji ve gönder ikonu kapalı); acil yardım ve gelmeyen işaretleme yok; Değerlendir pasif
-  preview?: { dateLabel: string };
+  // Önizleme (masa kurulmadan): aynı kart, gerçek veri yok. dateLabel tarih satırında (gün adı + saat); locked: kapakta sallanan kilit;
+  // kapakta yalnız konum ikonu (ilçe yok), Haritada Gör pasif; katılımcılar verilen sırayla satır satır (sol sütun kullanıcının
+  // cinsiyeti); sohbet pasif (mesaj çekilmez, gönder ikonu kapalı); acil yardım, gelmeyen işaretleme ve Değerlendir yok
+  preview?: { dateLabel: string; locked?: boolean };
 }
 
 function jsonHeaders(token?: string): Record<string, string> {
@@ -100,6 +101,13 @@ const GREEN      = '#27ae60';
 
 // Katılımcı satırları (satırda en fazla 2 kişi): Grup ve Baş Başa'da her satır 1 erkek + 1 kadın; Kankamla'da üst satır
 // kullanıcının kanka çifti, alt satır karşı çift
+// Önizleme: katılımcılar verilen sırayla satırda 2 kişi
+function chunkRows(list: DetayParticipant[]): DetayParticipant[][] {
+  const rows: DetayParticipant[][] = [];
+  for (let i = 0; i < list.length; i += 2) rows.push(list.slice(i, i + 2));
+  return rows;
+}
+
 function participantRows(participants: DetayParticipant[], type?: MasaDetayData['type']): DetayParticipant[][] {
   const chunk = (list: DetayParticipant[]) => {
     const rows: DetayParticipant[][] = [];
@@ -510,6 +518,16 @@ function ChatSection({ meetingId, apiBase, token, count, preview = false }: { me
   const [notice, setNotice] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Sohbet Kuralları açılır penceresi: mesaj alanına ilk basışta, her masa için bir kez (localStorage, masa ID'siyle); yalnız "Anladım" kapatır
+  const rulesKey = `ahenk_chat_rules_${meetingId}`;
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const rulesSeen = () => { try { return localStorage.getItem(rulesKey) === '1'; } catch { return false; } };
+  function ackRules() {
+    try { localStorage.setItem(rulesKey, '1'); } catch { /* tarayıcı depolaması yoksa yalnız bu açılışta kapanır */ }
+    setRulesOpen(false);
+    if (!preview) setTimeout(() => inputRef.current?.focus(), 0);
+  }
 
   const headers = jsonHeaders(token);
 
@@ -722,20 +740,27 @@ function ChatSection({ meetingId, apiBase, token, count, preview = false }: { me
               style={{ flexShrink: 0, width: 36, height: 36, borderRadius: '50%', background: 'none', border: 'none', cursor: preview ? 'not-allowed' : 'pointer', fontSize: 20, lineHeight: 1, opacity: preview ? 0.5 : 1 }}>
               🙂
             </button>
+            {/* Önizlemede alan pasif; basınca yalnız kural penceresi açılır */}
+            <span onClick={() => { if (preview && !rulesSeen()) setRulesOpen(true); }} style={{ flex: 1, minWidth: 0, display: 'flex' }}>
             <input
+              ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value.slice(0, 1000))}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-              onFocus={() => setTimeout(keepComposerVisible, 300)}
+              onFocus={e => {
+                if (!rulesSeen()) { e.currentTarget.blur(); setRulesOpen(true); return; }
+                setTimeout(keepComposerVisible, 300);
+              }}
               disabled={preview}
               placeholder=""
               className="ahenk-chat-input"
               style={{
                 flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 8, padding: '8px 10px', fontSize: 16, color: '#f5f5f5',
-                fontFamily: 'Inter, sans-serif', outline: 'none', opacity: preview ? 0.5 : 1,
+                fontFamily: 'Inter, sans-serif', outline: 'none', opacity: preview ? 0.5 : 1, pointerEvents: preview ? 'none' : undefined,
               }}
             />
+            </span>
             <button
               type="button"
               onClick={sendMessage}
@@ -757,12 +782,20 @@ function ChatSection({ meetingId, apiBase, token, count, preview = false }: { me
         {notice && <p role="status" style={{ margin: 0, padding: '0 10px 8px', fontSize: 12, color: '#a39c93', fontFamily: 'Inter, sans-serif' }}>{notice}</p>}
       </div>
 
-      {/* Sabit Masa Kuralları kartı */}
-      <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)' }}>
-        <p style={{ margin: 0, fontSize: 11.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter, sans-serif' }}>
-          <strong style={{ color: '#f4f1ec' }}>{t('masa.chatRulesTitle')}</strong> {t('masa.chatRulesText')}
-        </p>
-      </div>
+      {/* Sohbet Kuralları açılır penceresi: dışına basınca / Esc ile kapanmaz, yalnız "Anladım" */}
+      {rulesOpen && (
+        <div role="alertdialog" aria-modal="true" aria-labelledby={`chat-rules-${meetingId}`}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ width: '100%', maxWidth: 380, background: '#121212', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)' }}>
+              <p id={`chat-rules-${meetingId}`} style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: 'rgba(255,255,255,0.75)', fontFamily: 'Inter, sans-serif' }}>
+                <strong style={{ color: '#f4f1ec' }}>{t('masa.chatRulesTitle')}</strong> {t('masa.chatRulesText')}
+              </p>
+            </div>
+            <StdButton variant="primary" type="button" className="justify-center" style={{ width: '100%' }} onClick={ackRules} autoFocus>{t('masa.chatRulesGotIt')}</StdButton>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -901,7 +934,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
 
   const photos     = masa.venuePhotos ?? [];
   const mapLink    = mapsUrl(masa.venueMapsUrl, masa.venueAddress);
-  const rows       = participantRows(masa.participants.filter(p => !p.cancelled), masa.type);
+  const rows       = preview ? chunkRows(masa.participants) : participantRows(masa.participants.filter(p => !p.cancelled), masa.type);
 
   const authHeaders = apiBase ? jsonHeaders(token) : null;
   const [shareOpen, setShareOpen] = useState(false);
@@ -1062,7 +1095,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
         <div style={cover ? { position: 'relative', aspectRatio: '16 / 9' } : { position: 'relative', display: 'flex', flexDirection: 'column', gap: 12, padding: '12px 14px 0' }}>
           {cover && (
             <>
-              <div onClick={() => setLightboxIdx(0)} style={{ position: 'absolute', inset: 0, cursor: 'pointer', overflow: 'hidden', background: 'rgba(255,255,255,0.04)' }}>
+              <div onClick={() => { if (!preview) setLightboxIdx(0); }} style={{ position: 'absolute', inset: 0, cursor: preview ? 'default' : 'pointer', overflow: 'hidden', background: 'rgba(255,255,255,0.04)' }}>
                 <img
                   src={cover.url}
                   alt={cover.caption ?? t('masa.photoAlt', { n: 1 })}
@@ -1073,6 +1106,15 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
               </div>
               {/* Yazıların okunması için alt geçiş */}
               <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,18,18,0.35) 0%, rgba(18,18,18,0) 30%, rgba(18,18,18,0) 45%, rgba(18,18,18,0.92) 100%)' }} />
+              {/* Önizleme: masa kilitliyken sağ üstte sallanan kilit (eski önizlemedeki gibi) */}
+              {preview?.locked && (
+                <>
+                  <style>{`@keyframes lockShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}50%{transform:translateX(0)}75%{transform:translateX(3px)}}`}</style>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/lock-icon.webp" alt={t('tm.locked')} width={56} height={56}
+                    style={{ position: 'absolute', top: 12, right: 12, zIndex: 2, opacity: 0.85, animation: 'lockShake 0.8s ease-in-out infinite' }} />
+                </>
+              )}
             </>
           )}
 
@@ -1088,12 +1130,13 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
               }}>
                 {masa.venueName}
               </h2>
-              {masa.venueDistrict && (
+              {(masa.venueDistrict || preview) && (
                 <p style={{ margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter, sans-serif' }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" /><circle cx="12" cy="10" r="2.5" />
                   </svg>
-                  {masa.venueDistrict}
+                  {/* Önizlemede yalnız ikon */}
+                  {!preview && masa.venueDistrict}
                 </p>
               )}
             </div>
@@ -1113,7 +1156,18 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
               </svg>
               <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{preview ? preview.dateLabel : formatCardDate(masa.scheduledAt, locale, archive)}</span>
             </div>
-            {mapLink && (
+            {/* Önizleme: Haritada Gör aynı görünümde, pasif (basınca bir şey olmaz) */}
+            {preview && (
+              <span role="button" aria-disabled="true" style={{
+                flexShrink: 0, display: 'inline-flex', alignItems: 'center', minHeight: 36,
+                padding: '0 14px', borderRadius: 9999, background: '#c0392b', color: '#fff',
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif',
+                boxShadow: '0 4px 14px rgba(192,57,43,0.4)', opacity: 0.5, cursor: 'not-allowed',
+              }}>
+                {t('masa.seeOnMap')}
+              </span>
+            )}
+            {!preview && mapLink && (
               <a
                 href={mapLink}
                 target="_blank"
@@ -1302,13 +1356,15 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
           <NoShowSection meetingId={masa.id} apiBase={apiBase!} token={token} />
         )}
 
-        {/* Değerlendir: değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı */}
+        {/* Değerlendir: değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı. Önizlemede yok */}
+        {!preview && (
         <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <button type="button" onClick={handleReview} disabled={!!preview} style={{ ...GOLD_PILL, ...(preview ? { opacity: 0.5, cursor: 'not-allowed' } : {}) }}>{t('tm.review')}</button>
+          <button type="button" onClick={handleReview} style={GOLD_PILL}>{t('tm.review')}</button>
           {reviewWarn && (
             <p role="alert" style={{ margin: 0, fontSize: 12, color: '#ffb347', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>{reviewWarn}</p>
           )}
         </div>
+        )}
       </motion.div>
       )}
     </>

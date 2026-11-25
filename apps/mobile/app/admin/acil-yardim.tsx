@@ -19,7 +19,7 @@ type LiveAddress = { il: string | null; ilce: string | null; mahalle: string | n
 interface LocUpdate { lat: number; lng: number; accuracy: number | null; timestamp: string; address?: LiveAddress | null }
 interface Participant { userId: string; firstName: string | null; lastName: string | null; email?: string; phone: string | null; age: number | null; gender: string | null; occupation: string | null; city: string | null; isRequester: boolean; isBot?: boolean }
 interface AdminRef { id: string; profile: { firstName: string; lastName: string } | null }
-interface SosReport { id: string; createdAt: string; threats: string[]; lat: number | null; lng: number | null; accuracy: number | null; resolvedAt: string | null; restricted: boolean; claimedAt: string | null; claimedBy: AdminRef | null; resolvedBy?: AdminRef | null; lastAddress?: string | null; lastLocationAt?: string | null; locationStale?: boolean; liveLocationAt?: string | null; participantSnapshot: Participant[]; people?: Record<string, { photoUrl: string | null; kycId: string | null }>; emergencyNotifyFailed?: boolean; user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null; meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null; locationUpdates: LocUpdate[] }
+interface SosReport { id: string; createdAt: string; threats: string[]; lat: number | null; lng: number | null; accuracy: number | null; resolvedAt: string | null; restricted: boolean; claimedAt: string | null; claimedBy: AdminRef | null; resolvedBy?: AdminRef | null; lastAddress?: string | null; lastLocationAt?: string | null; locationStale?: boolean; liveLocationAt?: string | null; participantSnapshot: Participant[]; people?: Record<string, { photoUrl: string | null; kycId: string | null }>; emergencyNotifyFailed?: boolean; emergencyContacts?: { slot: 1 | 2; name: string | null; phone: string }[]; user: { id: string; email?: string; phone: string | null; profile: { firstName: string; lastName: string } | null } | null; meeting: { id: string; type: string; scheduledAt: string; locationText: string | null; venueAddress: string | null } | null; locationUpdates: LocUpdate[] }
 const THREAT: Record<string, string> = { LIFE_DANGER: 'Hayatım tehlikede', PHYSICAL_VIOLENCE: 'Fiziksel şiddet gördüm', ABDUCTION: 'Zorla alıkoyuluyorum', HARASSMENT: 'Taciz veya istismara uğradım' };
 const GENDER_TR: Record<string, string> = { MALE: 'E', FEMALE: 'K' };
 const REFRESH_SEC = 15;
@@ -188,6 +188,12 @@ function ReportCard({ report, index, tick, onChanged, livePos, liveAddress, live
             <View style={{ flex: 1, minWidth: 0 }}>
               <Section title="ACİL YARDIM TALEP EDEN" accent={adm.red}><PersonRow p={requester} extra={requester ? people[requester.userId] : undefined} highlight /></Section>
               {!!(detail?.emergencyNotifyFailed ?? report.emergencyNotifyFailed) && <AT style={{ marginTop: 6, fontSize: 11, color: adm.red }}>Acil durum kişisine bildirim gönderilemedi</AT>}
+              {/* Talebi açanın acil durum kişileri (ad + telefon) — web acil-yardim ile aynı */}
+              {!!detail?.emergencyContacts?.length && (
+                <Section title="ACİL DURUM KİŞİLERİ" accent={adm.red} mt>
+                  {detail.emergencyContacts.map((c) => <AT key={c.slot} style={{ fontSize: 12, marginBottom: 4 }}>{c.slot}. {c.name ?? '—'} · {c.phone}</AT>)}
+                </Section>
+              )}
               <Section title="DİĞER KATILIMCILAR" accent={adm.blue} mt>{report.participantSnapshot.filter(p => !p.isRequester).map((p, i) => <PersonRow key={i} p={p} extra={people[p.userId]} />)}</Section>
               <Section title="MASA BİLGİSİ" accent={adm.cyan} mt>
                 {report.meeting ? (<>

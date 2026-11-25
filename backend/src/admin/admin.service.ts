@@ -1,4 +1,5 @@
 import { approvedPhotoMap, approvedPhotoUrl } from "../profile-photo/profile-photo.util";
+import { emergencyContactsOf } from "../common/emergency-contacts";
 import { writeSeatScores } from "../matching/seat-scores";
 import {
   Injectable,
@@ -302,6 +303,7 @@ export class AdminService {
     return {
       ...safeUser, ...(viewerRole === UserRole.SUPERADMIN ? { isBot } : {}), groupCount, oneOnOneCount, kankaCount, rights, kanka, noShowWarnings,
       photoUrl, primaryCityName: cityName(user.profile?.primaryCity), activeCityName: cityName(user.activeCity),
+      emergencyContacts: emergencyContactsOf(user), // Acil durum kişileri (ad + telefon, 1 ya da 2 kişi)
     };
   }
 

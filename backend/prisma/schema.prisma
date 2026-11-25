@@ -25,8 +25,10 @@ model User {
   onboardingSeenAt DateTime? // Tanıtım ("Nasıl Çalışır") son adımda Başla ya da Atla ile kapatıldı; doluysa otomatik açılmaz
   lastNotificationsSeenAt DateTime? // Bildirimler sayfasının son açılışı (alt menü rozeti: sonrasında gelen okunmamışlar sayı, diğerleri nokta)
   selectionCancelledAt    DateTime? // Son seçim iptali: iptalden sonra 24 saat hiçbir masa türünde yeni seçim yapılamaz
-  emergencyContactName    String? // Acil durum kişisi (en fazla 1): yalnız Acil Yardım talebinde WhatsApp bildirimi için
+  emergencyContactName    String? // Acil durum kişisi 1 (en fazla 2 kişi): yalnız Acil Yardım talebinde WhatsApp bildirimi için
   emergencyContactPhone   String? // E.164
+  emergencyContact2Name   String? // Acil durum kişisi 2
+  emergencyContact2Phone  String? // E.164
   role          UserRole   @default(USER)
   status        UserStatus @default(ACTIVE)
   emailVerified Boolean    @default(false)

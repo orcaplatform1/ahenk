@@ -7,12 +7,15 @@ import { api } from '@/lib/api';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { StdButton } from '@ahenk/ui';
 
-// Profilim → Gizlilik ve Güvenlik: Acil Durum Kişisi (en fazla 1; ad + telefon, giriş / kayıttaki ülke kodu listesi).
-// Düzenlenebilir ve silinebilir. Acil Yardım talebinde bu kişiye WhatsApp üzerinden otomatik bilgi gider (mobil components/EmergencyContact.tsx).
+// Profilim → Gizlilik ve Güvenlik: Acil Durum Kişisi (en fazla 2; ad + telefon, giriş / kayıttaki ülke kodu listesi).
+// Her kişi düzenlenebilir ve silinebilir (1. silinirse 2. kişi 1. sıraya geçer); 2 kişi kayıtlıyken "Kişi Ekle" gizli. Acil Yardım
+// talebinde kayıtlı her kişiye WhatsApp üzerinden otomatik bilgi gider (mobil components/EmergencyContact.tsx).
+type Contact = { slot: 1 | 2; name: string | null; phone: string };
+
 export function EmergencyContact() {
   const t = useTranslations();
-  const [contact, setContact] = useState<{ name: string; phone: string } | null>(null);
-  const [editing, setEditing] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [editing, setEditing] = useState<1 | 2 | null>(null); // Düzenlenen / eklenen kişinin sırası
   const [name, setName] = useState('');
   const [country, setCountry] = useState('TR');
   const [national, setNational] = useState('');
@@ -20,45 +23,48 @@ export function EmergencyContact() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get<{ name: string; phone: string } | null>('/users/me/emergency-contact').then((c) => setContact(c ?? null)).catch(() => {});
+    api.get<Contact[]>('/users/me/emergency-contacts').then((c) => setContacts(Array.isArray(c) ? c : [])).catch(() => {});
   }, []);
 
-  function startEdit() {
-    const sp = splitE164(contact?.phone);
-    setName(contact?.name ?? ''); setCountry(sp.country); setNational(sp.national); setError(''); setEditing(true);
+  function startEdit(slot: 1 | 2) {
+    const c = contacts.find((x) => x.slot === slot);
+    const sp = splitE164(c?.phone);
+    setName(c?.name ?? ''); setCountry(sp.country); setNational(sp.national); setError(''); setEditing(slot);
   }
   async function save() {
+    if (!editing) return;
     const phone = toE164(country, national);
     if (!name.trim()) { setError(t('emergency.nameRequired')); return; }
     if (!phone) { setError(t('phone.invalid')); return; }
     setBusy(true); setError('');
-    try { setContact(await api.put<{ name: string; phone: string }>('/users/me/emergency-contact', { name: name.trim(), phone })); setEditing(false); }
+    try { setContacts(await api.put<Contact[]>(`/users/me/emergency-contacts/${editing}`, { name: name.trim(), phone })); setEditing(null); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
-  async function remove() {
+  async function remove(slot: 1 | 2) {
     setBusy(true); setError('');
-    try { await api.delete('/users/me/emergency-contact'); setContact(null); setEditing(false); }
+    try { setContacts(await api.delete<Contact[]>(`/users/me/emergency-contacts/${slot}`)); setEditing(null); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
+  const nextSlot: 1 | 2 | null = contacts.length >= 2 ? null : contacts.some((c) => c.slot === 1) ? 2 : 1;
 
   return (
     <div className="flex flex-col gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, marginTop: 4 }}>
-      {/* Başlık satırı (Numara Engelleme satırıyla aynı hiza): solda başlık, kişi yoksa sağında Kişi Ekle */}
+      {/* Başlık satırı (Numara Engelleme satırıyla aynı hiza): solda başlık, 2 kişiden azsa sağında Kişi Ekle */}
       <div className="flex items-center justify-between gap-2" style={{ minHeight: 44 }}>
         <span style={{ fontSize: 14, color: '#f4f1ec' }}>{t('emergency.title')}</span>
-        {!editing && !contact && (
-          <StdButton variant="ghost" type="button" onClick={startEdit}>{t('emergency.add')}</StdButton>
+        {!editing && nextSlot && (
+          <StdButton variant="ghost" type="button" onClick={() => startEdit(nextSlot)}>{t('emergency.add')}</StdButton>
         )}
       </div>
-      {!editing && contact && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span style={{ fontSize: 13, color: '#c9c2b8' }}>{contact.name} · {contact.phone}</span>
+      {!editing && contacts.map((c) => (
+        <div key={c.slot} className="flex flex-wrap items-center justify-between gap-2">
+          <span style={{ fontSize: 13, color: '#c9c2b8' }}>{c.name} · {c.phone}</span>
           <span className="flex flex-wrap gap-2">
-            <StdButton variant="ghost" type="button" onClick={startEdit}>{t('emergency.edit')}</StdButton>
-            <StdButton variant="ghost" type="button" onClick={() => void remove()} disabled={busy}>{t('emergency.delete')}</StdButton>
+            <StdButton variant="ghost" type="button" onClick={() => startEdit(c.slot)}>{t('emergency.edit')}</StdButton>
+            <StdButton variant="ghost" type="button" onClick={() => void remove(c.slot)} disabled={busy}>{t('emergency.delete')}</StdButton>
           </span>
         </div>
-      )}
+      ))}
       {editing && (
         <div className="flex flex-col gap-2">
           <input value={name} onChange={(e) => setName(e.target.value.slice(0, 80))} placeholder={t('emergency.name')} className="input-glass px-4 py-3 text-sm" />
@@ -69,7 +75,7 @@ export function EmergencyContact() {
           </div>
           <div className="flex flex-wrap gap-2">
             <StdButton variant="primary" type="button" onClick={() => void save()} disabled={busy}>{busy ? '…' : t('common.save')}</StdButton>
-            <StdButton variant="ghost" type="button" onClick={() => setEditing(false)}>{t('common.cancel')}</StdButton>
+            <StdButton variant="ghost" type="button" onClick={() => setEditing(null)}>{t('common.cancel')}</StdButton>
           </div>
         </div>
       )}

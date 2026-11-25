@@ -6,6 +6,8 @@ import { api } from '@/lib/api';
 import { getNextTarget } from '@/components/HeroCountdown';
 import type { TabStatus } from './LiveTabs';
 
+export interface KankaInfo { initials: string; gender: string | null; displayName?: string | null; photoUrl?: string | null }
+
 const DASHBOARD_POLL_MS = 15_000;
 const WEEK_MS = 7 * 86_400_000;
 const MASA_TURLERI: MasaTuru[] = ['GROUP', 'ONE_ON_ONE', 'KANKA'];
@@ -93,7 +95,8 @@ export function useMasaTabs() {
   const [adminCancelledTypes, setAdminCancelledTypes] = useState<MasaTuru[]>([]);
   const [dashLoaded, setDashLoaded] = useState(false);
   const [chosenTab, setChosenTab] = useState<MasaTuru | null>(null);
-  const [kanka, setKanka] = useState<{ initials: string; gender: string | null } | null>(null);
+  // Kanka (iki yönlü): baş harf, cinsiyet; Masalarım'da (tarama ve önizleme) profil için "Ahmet Y." ve onaylı fotoğraf
+  const [kanka, setKanka] = useState<KankaInfo | null>(null);
   const [subs, setSubs] = useState<OwnSub[]>([]);
   const [kycAt, setKycAt] = useState<string | null>(null);
   const [selection, setSelection] = useState<WeeklySelection | null>(null);
@@ -118,7 +121,7 @@ export function useMasaTabs() {
 
   const reload = useCallback(() => {
     if (document.hidden) return Promise.resolve();
-    api.get<{ kanka: { initials: string; gender: string | null } | null }>('/kanka/me').then(r => { if (r && 'kanka' in r) setKanka(r.kanka); }).catch(() => {});
+    api.get<{ kanka: KankaInfo | null }>('/kanka/me').then(r => { if (r && 'kanka' in r) setKanka(r.kanka); }).catch(() => {});
     return api.get<{ items: DashboardItem[]; weekTableTypes?: MasaTuru[]; weekCancelledTypes?: MasaTuru[]; weekAdminCancelledTypes?: MasaTuru[] }>('/meetings/dashboard')
       .then(r => {
         // Geçersiz yanıt ekrandaki masa verisini silmez

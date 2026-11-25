@@ -1,5 +1,5 @@
 import { IsE164Phone } from "../common/phone";
-import { Controller, Post, Patch, Get, Put, Delete, Body, Req, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Post, Patch, Get, Put, Delete, Body, Param, ParseIntPipe, BadRequestException, Req, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
 import { Request } from "express";
 import { LoginGuardService } from "../auth/login-guard.service";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
@@ -137,6 +137,31 @@ export class UsersController {
   @ApiBearerAuth()
   deleteEmergencyContact(@CurrentUser() user: any) {
     return this.usersService.setEmergencyContact(user.id, null, null);
+  }
+
+  // Acil durum kişileri (en fazla 2): liste, slot 1 / 2 ekle-düzenle, sil (1. silinirse 2. kişi 1. sıraya geçer)
+  @Get("me/emergency-contacts")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  getEmergencyContacts(@CurrentUser() user: any) {
+    return this.usersService.getEmergencyContacts(user.id);
+  }
+
+  @Put("me/emergency-contacts/:slot")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Acil durum kişisi ekle / düzenle (slot 1 veya 2)" })
+  setEmergencyContactSlot(@CurrentUser() user: any, @Param("slot", ParseIntPipe) slot: number, @Body() dto: EmergencyContactDto) {
+    if (slot !== 1 && slot !== 2) throw new BadRequestException("Geçersiz acil durum kişisi");
+    return this.usersService.setEmergencyContactSlot(user.id, slot, dto.name.trim(), dto.phone);
+  }
+
+  @Delete("me/emergency-contacts/:slot")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  deleteEmergencyContactSlot(@CurrentUser() user: any, @Param("slot", ParseIntPipe) slot: number) {
+    if (slot !== 1 && slot !== 2) throw new BadRequestException("Geçersiz acil durum kişisi");
+    return this.usersService.deleteEmergencyContactSlot(user.id, slot);
   }
 
   @Patch("venue-preference")
