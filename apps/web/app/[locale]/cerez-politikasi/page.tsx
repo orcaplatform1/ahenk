@@ -36,8 +36,8 @@ const sections = [
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
             {[
               { name: 'access_token', desc: 'Giriş yapmış kullanıcının API isteklerini doğrular. Süre: 15 dakika. HttpOnly: Evet.' },
-              { name: 'refresh_token', desc: 'Erişim süresi dolduğunda oturumu yeniler. Süre: 7 gün. HttpOnly: Evet.' },
-              { name: 'ahenk_session', desc: 'Yalnızca oturumun açık olup olmadığını gösteren bir işarettir, içinde kişisel veri bulunmaz. Süre: 7 gün. HttpOnly: Hayır.' },
+              { name: 'refresh_token', desc: 'Erişim süresi dolduğunda oturumu yeniler. Süre: 365 gün. HttpOnly: Evet.' },
+              { name: 'ahenk_session', desc: 'Yalnızca oturumun açık olup olmadığını gösteren bir işarettir, içinde kişisel veri bulunmaz. Süre: 365 gün. HttpOnly: Hayır.' },
               { name: 'venue_token', desc: 'Mekân paneli oturumunu doğrular, yalnızca mekân hesaplarında kullanılır. Süre: 7 gün. HttpOnly: Evet.' },
             ].map((c) => (
               <div key={c.name} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
@@ -81,12 +81,8 @@ const sections = [
               Onaya Bağlı
             </span>
           </div>
-          <div style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
-            <span style={{ fontFamily: 'monospace', fontSize: 13, color: '#aaa', display: 'block', marginBottom: '0.2rem' }}>Google Analytics 4: _ga ve _ga_ ile başlayan çerezler</span>
-            <span style={{ color: '#a39c93', fontSize: 13 }}>Sağlayıcı: Google LLC. Amaç: ziyaret ve trafik kaynağı istatistiği. Süre: 2 yıl.</span>
-          </div>
-          <p style={{ marginTop: '0.6rem', color: '#8f887f', fontSize: 13 }}>
-            Onay verilmeden Google'a çerez içermeyen anonim sinyaller gönderilir; bu sinyallerle kimlik belirlenmez.
+          <p style={{ color: '#a39c93', fontSize: 13 }}>
+            Şu anda analitik çerez kullanılmamaktadır.
           </p>
         </div>
 
@@ -120,7 +116,7 @@ const sections = [
         <div style={{ padding: '1rem 1.25rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
           <p style={{ fontWeight: 600, color: '#f4f1ec', marginBottom: '0.4rem', fontSize: 13 }}>iyzico Ödeme Sistemi</p>
           <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.6 }}>
-            Paket satın alma sayfasında iyzico kendi güvenlik ve dolandırıcılık önleme çerezlerini kullanır. Bu çerezler iyzico'nun gizlilik politikası kapsamındadır ve Ahenk tarafından kontrol edilmez.
+            iyzico yalnız web sitesinde kullanılır: "Paket Al" ya da "Abone Ol" ile ödeme başlatıldığında ve Premium otomatik yenileme formu açıldığında iyzico ödeme formu Ahenk sayfasında açılır pencere olarak yüklenir. Bu form iyzico'nun kendi güvenlik ve dolandırıcılık önleme çerezlerini kullanabilir. Bu çerezler iyzico'nun gizlilik politikası kapsamındadır ve Ahenk tarafından kontrol edilmez. Mobil uygulamada iyzico kullanılmaz; uygulama içi satın alma App Store / Google Play üzerinden yapılır.
           </p>
         </div>
       </div>

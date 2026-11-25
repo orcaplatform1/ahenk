@@ -23,6 +23,7 @@ import { GROUP_RIGHTS, ONE_ON_ONE_PLANS, KANKA_PLANS, groupPartOpen, isLivePrime
 import { PrimeService } from "./prime.service";
 import { StoreService, discountOfOffer, parseProduct } from "./store.service";
 import { activeKankaLink } from "../kanka/kanka-links";
+import { recordAgreements } from "../common/agreement-consent";
 import { ASSIGN_QUEUE, enqueueAssign } from "../matching/assign-queue";
 import { AdminAlertType, Prisma, SubscriptionPlan, PaymentPlatform, PaymentStatus, SubscriptionStatus, ReferralStatus, PaymentDiscountType } from "../generated/prisma/client";
 
@@ -191,7 +192,11 @@ export class PaymentService {
       const p = await this.pricing.current(plan);
       const d = await this.resolveDiscount(userId, plan, p.mobileKurus, p.mobileDiscountKurus, useDiscount);
       const discount = d.discountType === PaymentDiscountType.WINBACK ? "WINBACK" : d.discountType ? "REFERRAL" : null;
-      return this.store.purchaseInfo(plan, platform, discount);
+      const info = await this.store.purchaseInfo(plan, platform, discount);
+      // Mesafeli satış sözleşmesi + ön bilgilendirme onay kaydı (satın alma onayı anında, 3 yıl saklanır)
+      await recordAgreements(this.prisma, userId, ["mesafeli_satis", "on_bilgilendirme"], clientIp,
+        platform === PaymentPlatform.IOS ? "ios" : "android", plan);
+      return info;
     }
 
     // Web Prime: ilk dönem bu ödeme formuyla, otomatik yenileme iyzico abonelik API'siyle (lansmana kadar pasif)
@@ -203,6 +208,9 @@ export class PaymentService {
     if (!identityNumber || !validIdentityNumber(identityType, identityNumber)) {
       throw new BadRequestException("Kimlik numarası geçersiz");
     }
+
+    // Mesafeli satış sözleşmesi + ön bilgilendirme onay kaydı (satın alma onayı anında, 3 yıl saklanır)
+    await recordAgreements(this.prisma, userId, ["mesafeli_satis", "on_bilgilendirme"], clientIp, "web", plan);
 
     const planCfg = PLAN_CONFIG[plan];
     // Web fiyatı: ham + %20 KDV; indirim (davet %10 ya da geri kazanım 100 TL, birlikte kullanılamaz) yalnız bu ödemede

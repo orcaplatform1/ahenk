@@ -52,24 +52,30 @@ const sections = [
     content: (
       <>
         <SubTitle>Kayıt Sırasında</SubTitle>
-        <List items={['Ad ve soyad', 'E-posta adresi', 'Doğum tarihi', 'Cinsiyet', 'Şehir tercihi']} />
+        <List items={['Ad ve soyad', 'E-posta adresi', 'Doğum tarihi', 'Cinsiyet']} />
+        <SubTitle style={{ marginTop: '1.25rem' }}>Konum Verileri</SubTitle>
+        <List
+          items={[
+            'Şehir tercihi: katılmak istediğin şehir (ve varsa ikinci tercih şehir); eşleştirmede kullanılır',
+            'Acil Yardım hassas konumu: yalnız Acil Yardım butonuna basıldığında toplanır, talep çözülene kadar canlı alınır, ekibimize, acil durum kişilerine ve emniyet birimlerine iletilir. Talep çözülünce koordinatlar silinir, son açık adres 2 yıl saklanır. Hukuki sebep: KVKK m.5/2-b (hayati menfaat) ve m.5/2-ç (hukuki yükümlülük)',
+          ]}
+        />
 
         <SubTitle style={{ marginTop: '1.25rem' }}>Kimlik Doğrulama Sırasında</SubTitle>
         <p style={{ color: '#a39c93', fontSize: 13, marginBottom: '0.6rem' }}>
-          Aşağıdaki veriler <strong style={{ color: '#f4f1ec' }}>özel nitelikli kişisel veri</strong> kapsamındadır ve açık rıza alınarak işlenir.
+          Kimlik belgesi kimlik doğrulama ve sahte profillerin engellenmesi için işlenir (KVKK m.5/2-c ve m.5/2-f). Canlılık videosu ve yüz eşleştirme <strong style={{ color: '#f4f1ec' }}>biyometrik veri, yani özel nitelikli kişisel veridir</strong> ve yalnız açık rızanla işlenir (KVKK m.6; <a href="/acik-riza-metni" style={{ color: '#c0392b' }}>Açık Rıza Metni</a>).
         </p>
         <List
           items={[
-            'Kimlik kartı ön yüzü görseli',
-            'Kimlik kartı arka yüzü görseli',
-            'Liveness (canlılık) videosu',
+            'Kimlik belgesi türü ve belge görselleri (ön ve arka yüz; pasaportta fotoğraflı sayfa). Belgede bulunabilecek özel nitelikli veriler (örneğin ehliyette kan grubu) işlenmez',
+            'Canlılık videosu ve yüz eşleştirme (videodaki yüzün kimlik belgesindeki fotoğrafla karşılaştırılması)',
           ]}
         />
 
         <SubTitle style={{ marginTop: '1.25rem' }}>Platform Kullanımı Sırasında</SubTitle>
         <List
           items={[
-            'OCEAN kişilik testi sonuçları ve skorları',
+            'OCEAN kişilik testi sonuçları ve skorları (KVKK m.5/2-c)',
             'Masa buluşma geçmişi',
             'Değerlendirme ve yorum verileri',
             'Rehber engelleme listesi: eklenen telefon numaraları',
@@ -77,7 +83,7 @@ const sections = [
         />
 
         <SubTitle style={{ marginTop: '1.25rem' }}>Teknik Veriler</SubTitle>
-        <List items={['IP adresi', 'Tarayıcı türü', 'Cihaz bilgisi', 'Oturum verileri', 'Çerez verileri']} />
+        <List items={['IP adresi', 'Tarayıcı türü', 'Cihaz bilgisi', 'Oturum verileri', 'Giriş kayıtları (IP, tarayıcı bilgisi, platform, tarih-saat, başarılı / başarısız)', 'Mesafeli satış, ön bilgilendirme ve biyometrik açık rıza onay kayıtları (belge türü ve versiyonu, tarih-saat, IP, platform, paket)', 'Çerez verileri']} />
       </>
     ),
   },
@@ -107,20 +113,28 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.85rem' }}>
         {[
           {
-            basis: 'Açık Rıza: KVKK Madde 5/1',
-            desc: 'OCEAN testi sonuçları, kimlik belgeleri ve liveness videosu',
+            basis: 'Açık Rıza: KVKK Madde 6',
+            desc: 'Canlılık videosu ve yüz eşleştirme (biyometrik veri)',
           },
           {
             basis: 'Sözleşmenin İfası: KVKK Madde 5/2-c',
-            desc: 'Kayıt, ödeme ve hizmet sunumu',
+            desc: 'Kayıt, OCEAN kişilik testi, kimlik belgesi, ödeme ve hizmet sunumu, yapay zekâ masa uyum raporu, push bildirimleri ve WhatsApp doğrulama kodu (OTP)',
           },
           {
             basis: 'Meşru Menfaat: KVKK Madde 5/2-f',
-            desc: 'Platform güvenliği, teknik veriler',
+            desc: 'Platform güvenliği, teknik veriler, kimlik belgesi (sahte profillerin engellenmesi), masa sohbeti denetimi (sohbet moderasyonu), sorun bildirimleri, banlı kullanıcının okunamaz telefon özeti',
           },
           {
             basis: 'Yasal Yükümlülük: KVKK Madde 5/2-ç',
-            desc: 'Mali kayıtlar, yetkili kurum talepleri',
+            desc: 'Mali kayıtlar, mesafeli satış ve ticari ileti onay kayıtları, giriş / IP kayıtları ve sunucu logları (5651), yetkili kurum talepleri',
+          },
+          {
+            basis: 'Hayati Menfaat ve Yasal Yükümlülük: KVKK Madde 5/2-b ve 5/2-ç',
+            desc: 'Acil Yardım konumu ve emniyet birimleriyle paylaşım',
+          },
+          {
+            basis: 'Hakkın Tesisi, Kullanılması veya Korunması: KVKK Madde 5/2-e',
+            desc: 'Acil Yardım, şikâyet veya ban kaydına karışmış kullanıcının kimliği, Acil Yardım talebinin son açık adresi, şikâyet ve moderasyon kayıtları',
           },
         ].map((row) => (
           <div
@@ -145,16 +159,20 @@ const sections = [
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
         {[
-          ['Ödeme, fatura ve işlem kayıtları (iyzico, App Store, Google Play)', '10 yıl, işlemin yapıldığı yılı izleyen takvim yılı başından (TTK m.82, VUK m.253). Hesap silinse de saklanır; süre sonunda kişisel alanlar anonimleştirilir, tutar, tarih ve işlem numarası korunur'],
-          ['Mesafeli satış ve abonelik onay kayıtları (sözleşme kabulü, ön bilgilendirme onayı, zaman damgası, IP)', '3 yıl, işlem tarihinden (Mesafeli Sözleşmeler Yönetmeliği)'],
-          ['Ticari ileti onay ve ret kayıtları', 'Onayın sona erdiği tarihten 3 yıl (Ticari İletişim ve Ticari Elektronik İletiler Hakkında Yönetmelik)'],
-          ['Giriş, IP ve trafik kayıtları', '2 yıl, kayıt tarihinden (5651 sayılı Kanun m.5)'],
+          ['Ödeme ve fatura kayıtları (iyzico, App Store, Google Play)', '10 yıl (TTK m.82, VUK m.253), işlemin yapıldığı yılı izleyen takvim yılı başından. Hesap silinse de saklanır; süre sonunda kişisel alanlar anonimleştirilir. Hukuki sebep: KVKK m.5/2-ç'],
+          ['Mesafeli satış onay kayıtları (mesafeli satış sözleşmesi ve ön bilgilendirme onayı)', '3 yıl (Mesafeli Sözleşmeler Yönetmeliği). Hukuki sebep: KVKK m.5/2-ç'],
+          ['Ticari elektronik ileti onayları', 'Onayın sona ermesinden itibaren 3 yıl. Hukuki sebep: KVKK m.5/2-ç'],
+          ['Giriş / IP kayıtları ve sunucu (nginx) logları', '2 yıl (5651 sayılı Kanun). Hukuki sebep: KVKK m.5/2-ç'],
+          ['Kimlik belgeleri ve canlılık videosu', 'Hesap silme onayından sonra 48 saat içinde silinir. İstisna: Acil Yardım, şikâyet veya ban kaydına karışmış kullanıcının kimliği kilitli tutulur, 2 yıl saklanır ve yalnız SUPERADMIN erişir. Hukuki sebep: KVKK m.5/2-e'],
+          ['Acil Yardım kaydı', 'Koordinat ve konum geçmişi talep çözülünce silinir, son açık adres 2 yıl saklanır. Hukuki sebep: KVKK m.5/2-b ve m.5/2-e'],
+          ['Şikâyet ve moderasyon kayıtları ile şikâyet edilen mesajlar', '2 yıl. Hukuki sebep: KVKK m.5/2-e'],
+          ['Şikâyet edilmemiş masa sohbeti mesajları', 'Masa tarihinden 6 ay sonra silinir. Hukuki sebep: KVKK m.5/2-c'],
+          ['Sorun bildirimleri', '2 yıl. Hukuki sebep: KVKK m.5/2-f'],
+          ['Profil, kişilik testi (OCEAN) ve push token', 'Hesap silinene kadar. Hukuki sebep: KVKK m.5/2-c'],
+          ['Banlı kullanıcının okunamaz telefon özeti', 'Ban süresince. Hukuki sebep: KVKK m.5/2-f'],
+          ['Çerezler', 'Oturum çerezi 365 gün; ayrıntılar Çerez Politikası\'nda'],
           ['KVKK aydınlatma ve açık rıza onay kayıtları', 'Hesabın silinmesinden itibaren 10 yıl (TBK genel zamanaşımı)'],
-          ['Acil yardım talebi, şikâyet ya da ban ile ilişkili kişinin kimlik bilgileri (ad, soyad, e-posta, telefon; kilitli, yalnız yetkili yönetici görür)', 'Olayın kapanışından itibaren 2 yıl (yasal sabit süre yok, şirket politikası)'],
-          ['Banlı hesabın telefon numarasının okunamaz özeti (hash)', 'Süresiz (yeniden kayıt engeli)'],
-          ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', 'Hesap silinene kadar saklanır; hesap silme talebi onaylanınca kimlik görselleri, canlılık videosu ve KYC kaydı silinir'],
-          ['Diğer veriler: profil, OCEAN test sonuçları, profil fotoğrafları, sohbet mesajları, sorun bildirimleri, rehber ve kullanıcı engelleri', 'Hesap silme talebi onaylanınca silinir; rehber engelleri kullanıcı silince de silinir'],
-          ['Acil yardım konum koordinatları ve konum geçmişi', 'Talep çözülünce silinir'],
+          ['Diğer veriler: rehber ve kullanıcı engelleri', 'Hesap silme talebi onaylanınca silinir; rehber engelleri kullanıcı silince de silinir'],
         ].map(([label, value], i, arr) => (
           <div
             key={label}
@@ -193,19 +211,19 @@ const sections = [
         <SubTitle style={{ marginTop: '1.25rem' }}>Yurt Dışı Aktarımlar</SubTitle>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Meta Platforms (WhatsApp Business API)</strong>
-          : telefon numarası, WhatsApp doğrulama kodu ve kritik bildirimlerin (kimlik doğrulama sonucu, masa onayı) iletilmesi amacıyla.
+          : telefon numarası, WhatsApp doğrulama kodu ve kritik bildirimlerin (kimlik doğrulama sonucu, masa onayı) iletilmesi amacıyla. İşleme sebebi: KVKK m.5/2-c (sözleşmenin ifası); Acil Yardım bildiriminde m.5/2-b (hayati menfaat). Aktarım dayanağı: KVKK m.9/4 standart sözleşme; Kişisel Verileri Koruma Kurumu'na sözleşmenin imzalanmasından itibaren 5 iş günü içinde bildirim yapılır.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Google (Firebase Cloud Messaging)</strong>
-          : anlık bildirimlerin iletilmesi amacıyla bildirim cihaz anahtarı ve bildirim içeriği.
+          : anlık bildirimlerin iletilmesi amacıyla bildirim cihaz anahtarı ve bildirim içeriği. İşleme sebebi: KVKK m.5/2-c (sözleşmenin ifası). Aktarım dayanağı: KVKK m.9/4 standart sözleşme; Kişisel Verileri Koruma Kurumu'na sözleşmenin imzalanmasından itibaren 5 iş günü içinde bildirim yapılır.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Anthropic (yapay zekâ)</strong>
-          : masa uyum raporunun oluşturulması amacıyla masadaki her katılımcı için adı yerine P1, P2 gibi bir etiketle beş OCEAN skoru ve varsa meslek alanı, masa türü, katılımcı sayısı ve masanın genel uyum skoru; masa sohbeti denetimi amacıyla şüpheli kelime içeren sohbet mesajının yalnız metni (en fazla 1.000 karakter). Ad, cinsiyet, yaş, iletişim ve kimlik bilgisi gönderilmez.
+          : masa uyum raporunun oluşturulması amacıyla masadaki her katılımcı için adı yerine P1, P2 gibi bir etiketle beş OCEAN skoru ve varsa meslek alanı, masa türü, katılımcı sayısı ve masanın genel uyum skoru; masa sohbeti denetimi amacıyla şüpheli kelime içeren sohbet mesajının yalnız metni (en fazla 1.000 karakter). Ad, cinsiyet, yaş, iletişim ve kimlik bilgisi gönderilmez. İşleme sebebi: masa uyum raporunda KVKK m.5/2-c (sözleşmenin ifası), sohbet denetiminde m.5/2-f (meşru menfaat). Aktarım dayanağı: KVKK m.9/4 standart sözleşme; Kişisel Verileri Koruma Kurumu'na sözleşmenin imzalanmasından itibaren 5 iş günü içinde bildirim yapılır.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>OpenStreetMap (Nominatim)</strong>
-          : acil yardım talebindeki konum koordinatlarının açık adrese çevrilmesi amacıyla.
+          : acil yardım talebindeki konum koordinatlarının açık adrese çevrilmesi amacıyla. Aktarım dayanağı: KVKK m.9/6 kapsamında arızi aktarım (sözleşmenin ifası için zorunlu olması); standart sözleşme imzalanamamaktadır.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Acil durum kişisi</strong>

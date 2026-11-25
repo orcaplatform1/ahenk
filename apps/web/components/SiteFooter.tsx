@@ -9,6 +9,7 @@ const YASAL = [
   { label: 'footer.terms',         href: '/kullanim-kosullari' },
   { label: 'footer.privacy',       href: '/gizlilik-politikasi' },
   { label: 'footer.kvkk',          href: '/kvkk' },
+  { label: 'footer.explicitConsent', href: '/acik-riza-metni' },
   { label: 'footer.cookies',       href: '/cerez-politikasi' },
   { label: 'footer.community',     href: '/topluluk-kurallari' },
   { label: 'footer.deleteAccount', href: '/hesap-silme' },

@@ -12,11 +12,14 @@ import {
   Res,
   HttpCode,
   HttpStatus,
+  Req,
 } from "@nestjs/common";
 import { HideEmailForAdminInterceptor } from "../admin/hide-email.interceptor";
 import { AdminAction, reasonTr } from "../admin/admin-action-log";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
-import { Response } from "express";
+import { Request, Response } from "express";
+import { PrismaService } from "../prisma/prisma.service";
+import { platformFromUserAgent, recordAgreements } from "../common/agreement-consent";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from "@nestjs/swagger";
 import { KycStatus } from "../generated/prisma/client";
 import { KycService } from "./kyc.service";
@@ -31,7 +34,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 @UseGuards(JwtAuthGuard)
 @Controller("kyc")
 export class KycController {
-  constructor(private kycService: KycService) {}
+  constructor(private kycService: KycService, private prisma: PrismaService) {}
 
   // ─── Kullanıcı: Dosya yükle + başvur ─────────────────────────────────────
 
@@ -49,7 +52,7 @@ export class KycController {
       { limits: { fileSize: 100 * 1024 * 1024, files: 3 } },
     ),
   )
-  upload(
+  async upload(
     @CurrentUser("id") userId: string,
     @UploadedFiles() files: {
       idFront?:  Express.Multer.File[];
@@ -59,8 +62,15 @@ export class KycController {
     // Belge türü (ID_CARD | DRIVER_LICENSE | PASSPORT | RESIDENCE_PERMIT); numara istenmez, saklanmaz. Pasaportta yalnız fotoğraflı
     // sayfa (idFront), diğerlerinde ön (idFront) + arka yüz (idBack)
     @Body("idType") idType?: string,
+    // Biyometrik açık rıza onay kutusu (canlılık videosundan önce işaretlenir): "true" ise AgreementConsent'e acik_riza_biyometrik kaydı
+    @Body("biometricConsent") biometricConsent?: string,
+    @Req() req?: Request,
   ) {
-    return this.kycService.uploadAndSubmit(userId, files, idType);
+    const result = await this.kycService.uploadAndSubmit(userId, files, idType);
+    if (biometricConsent === "true") {
+      await recordAgreements(this.prisma, userId, ["acik_riza_biyometrik"], req?.ip, platformFromUserAgent(req?.headers["user-agent"]), null);
+    }
+    return result;
   }
 
   // ─── Kullanıcı: Durum ─────────────────────────────────────────────────────

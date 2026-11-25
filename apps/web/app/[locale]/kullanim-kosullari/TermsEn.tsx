@@ -132,6 +132,38 @@ const sections = [
   },
   {
     n: '07',
+    title: 'Premium Subscription',
+    content: (
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>The Premium subscription is offered with 1-, 3-, 6- and 12-month options. Web prices (VAT included): 1 month <PlanPriceText plan="PRIME_1M" suffix="₺" />, 3 months <PlanPriceText plan="PRIME_3M" suffix="₺" />, 6 months <PlanPriceText plan="PRIME_6M" suffix="₺" />, 12 months <PlanPriceText plan="PRIME_12M" suffix="₺" />. In the mobile app the price differs because of the store (App Store / Google Play) commission and is shown on the purchase screen.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>1 Group + 1 Duo + 1 Bring a Buddy meetup credit is granted at the moment of purchase. While the subscription continues, credits reset every 30 days from the purchase date and become 1 + 1 + 1 again; unused credits do not carry over to the next 30 days.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>The full amount for the chosen period is charged at once at the start of each period. Unless cancelled, the subscription renews automatically for the same period at the end of each term. Invite and win-back discounts apply only to the first purchase payment; renewals are not discounted.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>A subscription bought on the website (with iyzico) is cancelled with the &quot;Cancel Subscription&quot; button under Profile → My Package, on the website or in the mobile app.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>A subscription bought from the App Store is cancelled in your Apple account&apos;s subscription settings, and one bought from Google Play in your Google Play subscription settings; the &quot;Cancel Subscription&quot; button in the mobile app opens the store&apos;s subscription page. A store subscription renews automatically unless it is cancelled at least 24 hours before the end of the period.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>When cancelled, automatic renewal stops; credits remaining at the moment of cancellation stay valid with no time limit until used.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Subscription fees paid are not refunded. Provisions on the right of withdrawal are set out in the Distance Sales Contract.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>A user with an active Premium subscription cannot buy a second Premium subscription; a one-time package can be bought only if it includes a type whose Premium credit has run out.</span>
+          </li>
+      </ul>
+    ),
+  },
+  {
+    n: '08',
     title: 'Cancellation Policy',
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
@@ -154,7 +186,7 @@ const sections = [
     ),
   },
   {
-    n: '08',
+    n: '09',
     title: 'Matching Algorithm and Service Guarantee',
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
@@ -175,7 +207,7 @@ const sections = [
     ),
   },
   {
-    n: '09',
+    n: '10',
     title: 'Account Suspension and Closure',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -184,7 +216,7 @@ const sections = [
     ),
   },
   {
-    n: '10',
+    n: '11',
     title: 'Intellectual Property',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -193,7 +225,7 @@ const sections = [
     ),
   },
   {
-    n: '11',
+    n: '12',
     title: 'Limitation of Liability',
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
@@ -210,7 +242,7 @@ const sections = [
     ),
   },
   {
-    n: '12',
+    n: '13',
     title: 'Changes to the Terms',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -219,7 +251,7 @@ const sections = [
     ),
   },
   {
-    n: '13',
+    n: '14',
     title: 'Contact',
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.45rem' }}>
@@ -232,7 +264,7 @@ const sections = [
     ),
   },
   {
-    n: '14',
+    n: '15',
     title: 'Disputes and Jurisdiction',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -263,7 +295,7 @@ export default function TermsEn() {
             Terms of Use
           </h1>
           <p style={{ marginTop: '0.6rem', color: '#8f887f', fontSize: 13 }}>
-            Last updated: October 2026
+            Last updated: November 2026
           </p>
         </motion.div>
 

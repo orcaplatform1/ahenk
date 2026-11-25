@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
 import { API_PREFIX, SITE } from '@/lib/config';
 import { getAccess } from '@/lib/session';
+import { openLegal } from '@/lib/links';
 import { StdButton, Card, SkeletonBlock, T, Title } from '../ui';
 import { c, ll, tw, tw4 } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
@@ -177,6 +178,8 @@ async function uploadKyc(idType: IdType, front: Shot, back: Shot | null, video: 
   const form = new FormData();
   const ext = video.uri.toLowerCase().endsWith('.mov') ? 'mov' : 'mp4';
   form.append('idType', idType);
+  // Biyometrik açık rıza (canlılık videosundan önce işaretlenir; işaretlenmeden gönderilemez)
+  form.append('biometricConsent', 'true');
   form.append('idFront', { uri: front.uri, name: 'idFront.jpg', type: 'image/jpeg' } as unknown as Blob);
   // Pasaportta yalnız fotoğraflı sayfa (arka yüz yok)
   if (idType !== 'PASSPORT' && back) form.append('idBack', { uri: back.uri, name: 'idBack.jpg', type: 'image/jpeg' } as unknown as Blob);
@@ -233,6 +236,8 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
   const [front, setFront] = useState<Shot | null>(null);
   const [back, setBack] = useState<Shot | null>(null);
   const [video, setVideo] = useState<Shot | null>(null);
+  // Biyometrik açık rıza onay kutusu: işaretlenmeden canlılık videosu adımı açılmaz, gönderilemez
+  const [bioConsent, setBioConsent] = useState(false);
 
   // Bölgede izinli kimlik türleri (City.idTypes) ve canlılık videosu metni için ad soyad
   useEffect(() => {
@@ -255,7 +260,7 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
   }, [onApproved]);
 
   async function submit() {
-    if (!front || (needsBack && !back) || !video) { setError(t('kycf.fillAll')); return; }
+    if (!front || (needsBack && !back) || !video || !bioConsent) { setError(t('kycf.fillAll')); return; }
     setSubmitting(true); setError('');
     try { await uploadKyc(idType, front, needsBack ? back : null, video, setProgress); setStatus({ status: 'PENDING' }); setFront(null); setBack(null); setVideo(null); setProgress(0); }
     catch (e) { setError((e as Error).message); } finally { setSubmitting(false); }
@@ -314,11 +319,29 @@ export function KycTab({ onApproved }: { onApproved?: () => void }) {
           {/* 2. adım — önce ön yüz (pasaportta fotoğraflı sayfa), ön yüz çekilince arka yüz */}
           <ImageUploader svg="/kyc_demo_identity_card.svg" alt={t('kycf.frontAlt')} label={idType === 'PASSPORT' ? t('kycf.uploadPassport') : t('kycf.uploadFront')} shot={front} onChange={setFront} />
           {needsBack && !!front && <ImageUploader svg="/kyc_demo_identity_card_back.svg" alt={t('kycf.backAlt')} label={t('kycf.uploadBack')} shot={back} onChange={setBack} />}
-          <LivenessRecorder video={video} onCapture={setVideo} fullName={fullName} />
+          {/* Biyometrik açık rıza: canlılık videosundan önce, işaretlenmeden ilerlenemez (HIG: 44 pt dokunma alanı, checkbox rolü) */}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.025)' }}>
+            <Pressable
+              onPress={() => setBioConsent((v) => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: bioConsent }}
+              accessibilityLabel={`${t('kycf.bioConsentPre')}${t('kycf.bioConsentLink')}${t('kycf.bioConsentPost')}`}
+              hitSlop={13}
+              style={{ width: 18, height: 18, marginTop: 2, borderRadius: 4, borderWidth: 1.5, borderColor: bioConsent ? '#c0392b' : 'rgba(255,255,255,0.35)', backgroundColor: bioConsent ? '#c0392b' : 'transparent', alignItems: 'center', justifyContent: 'center' }}
+            >
+              {bioConsent && <T w={700} style={{ fontSize: 12, lineHeight: 14, color: '#fff' }}>✓</T>}
+            </Pressable>
+            <T style={{ flex: 1, fontSize: 13, lineHeight: 20.8, color: '#c9c2b8' }} onPress={() => setBioConsent((v) => !v)}>
+              {t('kycf.bioConsentPre')}
+              <T style={{ fontSize: 13, color: '#c0392b' }} onPress={() => openLegal('/acik-riza-metni')}>{t('kycf.bioConsentLink')}</T>
+              {t('kycf.bioConsentPost')}
+            </T>
+          </View>
+          {bioConsent && <LivenessRecorder video={video} onCapture={setVideo} fullName={fullName} />}
         </>
       )}
       {!!error && <T style={{ color: tw.accent, fontSize: 14 }}>{error}</T>}
-      {typeChosen && <StdButton variant="primary" label={submitting ? t('kycf.uploading') : t('kycf.submit')} full disabled={submitting || !front || (needsBack && !back) || !video} style={(submitting || !front || (needsBack && !back) || !video) ? { opacity: 0.5 } : undefined} onPress={submit} />}
+      {typeChosen && <StdButton variant="primary" label={submitting ? t('kycf.uploading') : t('kycf.submit')} full disabled={submitting || !front || (needsBack && !back) || !video || !bioConsent} style={(submitting || !front || (needsBack && !back) || !video || !bioConsent) ? { opacity: 0.5 } : undefined} onPress={submit} />}
       {submitting && progress > 0 && (
         <View style={{ height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.10)' }}>
           <LinearGradient colors={['#1a5c2a', '#27ae60']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: '100%', width: `${progress}%` }} />

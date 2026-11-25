@@ -273,7 +273,7 @@ function MesafeliSatisSozlesmesiPageTr() {
             6502 Sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği Kapsamında
           </p>
           <p style={{ marginTop: '0.25rem', color: '#8f887f', fontSize: 11 }}>
-            Son güncelleme: Ekim 2026
+            Son güncelleme: Kasım 2026
           </p>
         </motion.div>
 

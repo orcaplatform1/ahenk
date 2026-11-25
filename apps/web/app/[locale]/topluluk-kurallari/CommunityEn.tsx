@@ -253,7 +253,7 @@ export default function CommunityEn() {
             So everyone at Ahenk feels safe and at ease.
           </p>
           <p style={{ marginTop: '0.2rem', color: '#8f887f', fontSize: 11 }}>
-            Last updated: October 2026
+            Last updated: November 2026
           </p>
         </motion.div>
 

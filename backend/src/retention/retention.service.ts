@@ -45,8 +45,14 @@ export class RetentionService {
           return { id: r.id, userId: r.userId, start, expiresAt: addYears(start, 10) };
         });
       }
-      case "DISTANCE_SALES_CONSENT":
-        return []; // Kodda mesafeli satış / abonelik onay kaydı tutulmuyor
+      case "DISTANCE_SALES_CONSENT": {
+        // Onay tarihinden 3 yıl; hesap silinse de saklanır
+        const rows = await p.agreementConsent.findMany({
+          where: { documentType: { in: ["mesafeli_satis", "on_bilgilendirme"] } },
+          select: { id: true, userId: true, acceptedAt: true },
+        });
+        return rows.map((r) => ({ id: r.id, userId: r.userId, start: r.acceptedAt, expiresAt: addYears(r.acceptedAt, 3) }));
+      }
       case "COMMERCIAL_MESSAGE_CONSENT": {
         // Onayın sona erdiği an: kişi + türdeki son kayıt ret (accepted false) ise onun tarihi; onay sürüyorsa süre işlemez
         const rows = await p.consentLog.findMany({
@@ -65,11 +71,14 @@ export class RetentionService {
       case "TRAFFIC_LOG": {
         // Kayıt tarihinden 2 yıl; süresi dolmamış / iptal edilmemiş açık oturum, oturum bitene kadar silinmez
         const now = new Date();
-        const [tokens, venue] = await Promise.all([
+        const [tokens, venue, logins] = await Promise.all([
           p.refreshToken.findMany({ select: { id: true, userId: true, createdAt: true, expiresAt: true, revoked: true } }),
           p.venueSession.findMany({ select: { id: true, createdAt: true, revokedAt: true } }),
+          p.loginLog.findMany({ select: { id: true, userId: true, createdAt: true } }),
         ]);
         return [
+          // Giriş kaydı (LoginLog): kayıt tarihinden 2 yıl
+          ...logins.map((l) => ({ id: `ll:${l.id}`, userId: l.userId, start: l.createdAt, expiresAt: addYears(l.createdAt, 2) })),
           ...tokens.map((t) => {
             const open = !t.revoked && t.expiresAt > now;
             const exp = addYears(t.createdAt, 2);
@@ -80,12 +89,14 @@ export class RetentionService {
       }
       case "KVKK_CONSENT": {
         // Hesap silinmesinden (silme talebinin onayı) 10 yıl; hesap silinmediyse süre işlemez
-        const [rows, deletions] = await Promise.all([
+        const [rows, bio, deletions] = await Promise.all([
           p.consentLog.findMany({ where: { type: "PRIVACY_POLICY" }, select: { id: true, userId: true } }),
+          p.agreementConsent.findMany({ where: { documentType: "acik_riza_biyometrik" }, select: { id: true, userId: true } }),
           p.accountDeletionRequest.findMany({ where: { status: "APPROVED" }, select: { userId: true, decidedAt: true } }),
         ]);
         const deletedAt = new Map(deletions.map((d) => [d.userId, d.decidedAt]));
-        return rows.map((r) => {
+        // Biyometrik açık rıza kaydı (AgreementConsent) "ac:" önekiyle
+        return [...rows, ...bio.map((b) => ({ ...b, id: `ac:${b.id}` }))].map((r) => {
           const start = deletedAt.get(r.userId) ?? null;
           return { id: r.id, userId: r.userId, start, expiresAt: start ? addYears(start, 10) : null };
         });
@@ -112,6 +123,36 @@ export class RetentionService {
           out.push({ id: r.id, userId: r.userId, start: closure, expiresAt: closure ? addYears(closure, 2) : null });
         }
         return out;
+      }
+      case "SOS_RECORD": {
+        // Son açık adres: talebin çözülmesinden 2 yıl (koordinat ve konum geçmişi çözülünce zaten silinir)
+        const rows = await p.sosReport.findMany({ where: { lastAddress: { not: null } }, select: { id: true, userId: true, resolvedAt: true } });
+        return rows.map((r) => ({ id: r.id, userId: r.userId, start: r.resolvedAt, expiresAt: r.resolvedAt ? addYears(r.resolvedAt, 2) : null }));
+      }
+      case "KYC_DOCUMENTS": {
+        const rows = await p.kycSubmission.findMany({ select: { id: true, userId: true, submittedAt: true } });
+        return rows.map((r) => ({ id: r.id, userId: r.userId, start: r.submittedAt, expiresAt: null }));
+      }
+      case "COMPLAINT_MODERATION": {
+        const rows = await p.chatReport.findMany({ select: { id: true, reporterId: true, createdAt: true } });
+        return rows.map((r) => ({ id: r.id, userId: r.reporterId, start: r.createdAt, expiresAt: addYears(r.createdAt, 2) }));
+      }
+      case "CHAT_MESSAGES": {
+        // Masa tarihinden 6 ay
+        const rows = await p.chatMessage.findMany({ where: { reports: { none: {} } }, select: { id: true, senderId: true, meeting: { select: { scheduledAt: true } } } });
+        return rows.map((r) => {
+          const start = r.meeting.scheduledAt;
+          const exp = new Date(start); exp.setUTCMonth(exp.getUTCMonth() + 6);
+          return { id: r.id, userId: r.senderId, start, expiresAt: exp };
+        });
+      }
+      case "PROBLEM_REPORTS": {
+        const rows = await p.problemReport.findMany({ select: { id: true, userId: true, createdAt: true } });
+        return rows.map((r) => ({ id: r.id, userId: r.userId, start: r.createdAt, expiresAt: addYears(r.createdAt, 2) }));
+      }
+      case "PROFILE_DATA": {
+        const rows = await p.profile.findMany({ select: { id: true, userId: true, createdAt: true } });
+        return rows.map((r) => ({ id: r.id, userId: r.userId, start: r.createdAt, expiresAt: null }));
       }
       case "BANNED_PHONE_HASH": {
         const rows = await p.user.findMany({ where: { phoneHash: { not: null } }, select: { id: true, updatedAt: true } });
@@ -182,13 +223,23 @@ export class RetentionService {
         }
         return;
       }
+      case "DISTANCE_SALES_CONSENT":
+        await p.agreementConsent.deleteMany({ where: { id: { in: ids } } });
+        return;
       case "COMMERCIAL_MESSAGE_CONSENT":
-      case "KVKK_CONSENT":
         await p.consentLog.deleteMany({ where: { id: { in: ids } } });
+        return;
+      case "KVKK_CONSENT":
+        await p.consentLog.deleteMany({ where: { id: { in: ids.filter((i) => !i.startsWith("ac:")) } } });
+        await p.agreementConsent.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("ac:")).map((i) => i.slice(3)) } } });
+        return;
+      case "SOS_RECORD":
+        await p.sosReport.updateMany({ where: { id: { in: ids } }, data: { lastAddress: null } });
         return;
       case "TRAFFIC_LOG":
         await p.refreshToken.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("rt:")).map((i) => i.slice(3)) } } });
         await p.venueSession.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("vs:")).map((i) => i.slice(3)) } } });
+        await p.loginLog.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("ll:")).map((i) => i.slice(3)) } } });
         return;
       case "INCIDENT_IDENTITY":
         await p.accountDeletionRequest.updateMany({ where: { id: { in: ids } }, data: { retainedIdentity: Prisma.JsonNull } });
@@ -274,7 +325,7 @@ export class RetentionService {
       payments, subscriptions, consents, refreshTokens, deletionRequests, profile, oceanScore, oceanAnswers, kyc, profilePhotos,
       contactBlocks, userBlocks, chatMessages, chatReports, sanctions, sosReports, problemReports, notifications, participations,
       meetingReviews, noShowReports, reports, kankaInvites, kankaLinks, referrals, referralRewards, weeklySelections, winbackOffer,
-      waitlist, adminActions, locks, exports,
+      waitlist, adminActions, locks, exports, agreements, loginLogs,
     ] = await Promise.all([
       p.payment.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
       p.subscription.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
@@ -308,15 +359,17 @@ export class RetentionService {
       p.adminActionLog.findMany({ where: { targetUserId: userId }, orderBy: { createdAt: "asc" } }),
       p.retentionLock.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
       p.dataExportLog.findMany({ where: { targetUserId: userId }, orderBy: { createdAt: "desc" } }),
+      p.agreementConsent.findMany({ where: { userId }, orderBy: { acceptedAt: "asc" } }),
+      p.loginLog.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
     ]);
     return {
       userId,
       categories: {
         PAYMENT: { payments, subscriptions },
-        DISTANCE_SALES_CONSENT: {},
+        DISTANCE_SALES_CONSENT: { agreements: agreements.filter((a) => a.documentType !== "acik_riza_biyometrik") },
         COMMERCIAL_MESSAGE_CONSENT: { consents: consents.filter((c) => c.type === "MARKETING_SMS" || c.type === "MARKETING_EMAIL") },
-        TRAFFIC_LOG: { sessions: refreshTokens },
-        KVKK_CONSENT: { consents: consents.filter((c) => c.type === "PRIVACY_POLICY") },
+        TRAFFIC_LOG: { logins: loginLogs, sessions: refreshTokens },
+        KVKK_CONSENT: { consents: consents.filter((c) => c.type === "PRIVACY_POLICY"), biometricConsents: agreements.filter((a) => a.documentType === "acik_riza_biyometrik") },
         INCIDENT_IDENTITY: { retainedIdentity: deletionRequests.map((d) => d.retainedIdentity).filter((r) => r && typeof r === "object") },
         BANNED_PHONE_HASH: { phoneHash: phoneHash ?? null },
         EXISTING_RULES: {

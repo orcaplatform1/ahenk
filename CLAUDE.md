@@ -452,16 +452,84 @@ HESAP SİLME:
     silinmez, hata loglanır, işlem sürer), rehber / kullanıcı engelleri, sohbet mesajları, bildirimler, oturumlar,
     eşleştirme bekleme listesi (MatchingWaitlist), winback, davet telefonu, profil fotoğrafları (ProfilePhoto + uploads/profile-photos/<userId>/), sorun bildirimleri
     (ProblemReport + uploads/problem-reports/<id>/); hesap anonimleşir; masa geçmişi ve değerlendirmeler kimliksiz kayda taşınır
-  - Saklanan: ödeme ve fatura kayıtları 5 yıl (VUK); acil yardım / şikâyet / yaptırıma karışan kişinin kimlik bilgisi silinmeden sonra
-    2 yıl (yalnız SUPERADMIN); banlı hesabın telefon özeti
+  - Saklanan (süreler VERİ SAKLAMA tablosunda): ödeme ve fatura kayıtları 10 yıl; mesafeli satış onay kayıtları 3 yıl; giriş / IP
+    kayıtları 2 yıl; acil yardım / şikâyet / ban kaydına karışan kişinin kimliği 2 yıl (kilitli, yalnız SUPERADMIN); banlı hesabın
+    telefon özeti ban süresince. Oturumların silinmesi kodda aynen; sayfa metni (del.del7): "Tüm oturumların kapatılır ve silinir; giriş
+    ve IP kayıtların 5651 sayılı Kanun gereği 2 yıl saklanır." Hesap silme uyarısı (del.modalBody, prof.deleteBody) ödeme için 10 yıl
   - Herkese açık https://ahenk.co/hesap-silme (apps/web/app/hesap-silme): giriş yapmamış kullanıcı otomatik /giris?donus=/hesap-silme'ye
     gider, giriş sonrası geri döner (giriş sayfasında izinli dönüş yolu yalnız /hesap-silme) ve talep oluşturur. Silinen / saklanan
     veriler ve süre yazılıdır. Footer Yasal grubunda "Hesap Silme" linki
-  - KYC metni (KVKK, Gizlilik Politikası, /hesap-silme birebir): "Hesap silinene kadar saklanır; hesap silme talebi onaylanınca kimlik
-    görselleri, canlılık videosu ve KYC kaydı silinir"
-  - Gizlilik Politikası ve KVKK: KYC Ahenk sunucusunda AES-256-GCM şifreli, hesap silinene kadar; üçüncü taraflar iyzico, Meta (WhatsApp
-    Business API), Google Firebase Cloud Messaging, Anthropic (masa uyum raporu: katılımcı başı OCEAN skoru + cinsiyet, rapor masa
-    kartında), OpenStreetMap Nominatim, Apple / Google mağazaları, Google Analytics / Meta Pixel (web çerezleri). Cloudflare yoktur
+  - KYC metni (KVKK, Gizlilik Politikası, /hesap-silme, Açık Rıza Metni birebir): "Kimlik belgeleri ve canlılık videosu hesap silme
+    onayından sonra 48 saat içinde silinir. İstisna: Acil Yardım, şikâyet veya ban kaydına karışmış kullanıcının kimliği kilitli tutulur,
+    2 yıl saklanır ve yalnız SUPERADMIN erişir." (kimlik belgesi için "10 yıl" ifadesi yoktur)
+  - Gizlilik Politikası ve KVKK: KYC Ahenk sunucusunda AES-256-GCM şifreli; üçüncü taraflar iyzico, Meta (WhatsApp Business API),
+    Google Firebase Cloud Messaging, Anthropic, OpenStreetMap Nominatim, Google Maps, Apple / Google mağazaları, Google Analytics / Meta
+    Pixel (web çerezleri). Anthropic'e giden veriler: masa raporu (ai-report.service.ts, claude-sonnet-5-5) için katılımcı başı ad yerine
+    P1, P2 etiketiyle beş OCEAN skoru ve varsa meslek alanı, masa türü, katılımcı sayısı, masanın genel uyum skoru (ad, cinsiyet, yaş,
+    iletişim, kimlik, masa ID, mekân, tarih gitmez); sohbet denetimi (chat-moderation.ts, claude-haiku-5-5) için yalnız şüpheli / yasaklı
+    madde kelimesi geçen mesajın metni (ilk 1.000 karakter; gönderen, masa, saat gitmez)
+  - Yurt dışı aktarım dayanakları (KVKK + Gizlilik): Anthropic, Google Firebase FCM, Meta WhatsApp KVKK m.9/4 standart sözleşme
+    (Kurum'a 5 iş günü içinde bildirim); OpenStreetMap Nominatim m.9/6 arızi aktarım (sözleşmenin ifası için zorunlu). İşleme sebepleri:
+    masa raporu, push ve OTP m.5/2-c; sohbet moderasyonu m.5/2-f; Acil Yardım konumu ve emniyetle paylaşım m.5/2-b ve m.5/2-ç.
+    Konum iki kategori: şehir tercihi ve Acil Yardım hassas konumu (yalnız butona basınca, talep çözülene kadar canlı; ekip, acil durum
+    kişileri ve emniyete iletilir; çözülünce koordinatlar silinir, son açık adres 2 yıl). KVKK'da üç ayrı başlık: Kişilik testi (OCEAN)
+    m.5/2-c; Kimlik belgesi m.5/2-c ve m.5/2-f; Canlılık videosu ve yüz eşleştirme biyometrik (özel nitelikli) veri, m.6 açık rıza
+  - Cloudflare / R2: ahenk.co trafiği Cloudflare proxy'sinden geçmez (nginx'te real_ip / CF başlığı yok, istemci IP'leri doğrudan);
+    Cloudflare metinlerde yoktur. R2 kullanılmaz, R2_* anahtarları backend/.env'den silindi; SMTP_* anahtarları da silindi (e-posta
+    gönderim kodu yok; fatura e-postası ve e-posta ile şifre sıfırlama yok, şifre sıfırlama WhatsApp OTP)
+
+AÇIK RIZA METNİ (web /acik-riza-metni, /en/acik-riza-metni; footer Yasal grubu ve mobil Profilim yasal kartı "Açık Rıza Metni"):
+  - Canlılık videosu ve yüz eşleştirme (biyometrik veri, KVKK m.6) için açık rıza; ehliyette kan grubu gibi özel nitelikli veriler
+    bulunabilir ve işlenmez
+  - KYC adımında (web TabKyc, mobil KycTab) canlılık videosundan önce ayrı onay kutusu (kycf.bioConsent*): işaretlenmeden video adımı
+    açılmaz ve gönderilemez. POST /kyc/upload biometricConsent "true" ise AgreementConsent'e documentType "acik_riza_biyometrik" yazılır
+    (sunucu alanı zorunlu tutmaz; eski mobil sürümler için)
+
+ONAY KAYDI (AgreementConsent, migration 20261125600000_agreement_consent_login_log):
+  - Alanlar: userId, documentType (mesafeli_satis | on_bilgilendirme | acik_riza_biyometrik), documentVersion ("2026-11";
+    common/agreement-consent.ts AGREEMENT_VERSIONS), acceptedAt, ip, platform (web | ios | android), packageId (plan kodu)
+  - Satın alma onayı anında POST /payment/init içinde mesafeli_satis + on_bilgilendirme kaydı (web: kimlik numarası doğrulandıktan sonra;
+    mobil: mağaza ürün bilgisi döndükten sonra). Saklama 3 yıl; hesap silinse de kalır (FK yok)
+
+GİRİŞ IP KAYDI (LoginLog, aynı migration):
+  - Alanlar: userId, ip, userAgent, platform, success, createdAt. POST /auth/login ve /auth/verify-login-otp: başarılı ve başarısız
+    denemeler (yalnız kayıtlı hesaba ait; hesap bulunamazsa yazılmaz). Platform User-Agent'tan: "okhttp" android, "CFNetwork / Darwin"
+    ios, diğerleri web. Saklama 2 yıl (5651); veri saklama işi TRAFFIC_LOG kategorisinde siler. nginx logları logrotate 730 gün
+    (/etc/logrotate.d/nginx rotate 730, günlük)
+
+VERİ SAKLAMA (backend/src/retention/retention-policy.ts; admin Veri Saklama sekmesi, KVKK 07, Gizlilik 05, /hesap-silme del.ret0-13 aynı):
+  - Ödeme ve fatura kayıtları: 10 yıl (TTK m.82, VUK m.253), m.5/2-ç
+  - Mesafeli satış onay kayıtları: 3 yıl (Mesafeli Sözleşmeler Yönetmeliği), m.5/2-ç
+  - Ticari elektronik ileti onayları: onayın sona ermesinden itibaren 3 yıl, m.5/2-ç
+  - Giriş / IP kayıtları ve nginx logları: 2 yıl (5651), m.5/2-ç
+  - Kimlik belgeleri ve canlılık videosu: hesap silme onayından sonra 48 saat içinde silinir; istisna Acil Yardım, şikâyet veya ban kaydına
+    karışmış kullanıcının kimliği kilitli, 2 yıl, yalnız SUPERADMIN; m.5/2-e
+  - Acil Yardım kaydı: koordinat ve konum geçmişi talep çözülünce silinir, son açık adres 2 yıl; m.5/2-b ve m.5/2-e
+  - Şikâyet ve moderasyon kayıtları ile şikâyet edilen mesajlar: 2 yıl, m.5/2-e
+  - Şikâyet edilmemiş masa sohbeti mesajları: masa tarihinden 6 ay sonra silinir, m.5/2-c
+  - Sorun bildirimleri: 2 yıl, m.5/2-f
+  - Profil, kişilik testi (OCEAN) ve push token: hesap silinene kadar, m.5/2-c
+  - Banlı kullanıcının okunamaz telefon özeti: ban süresince, m.5/2-f
+  - Çerezler: oturum çerezi (refresh_token, ahenk_session) 365 gün (Çerez Politikası)
+  - KVKK aydınlatma ve açık rıza onay kayıtları: hesap silinmesinden 10 yıl (mevcut kategori)
+  - Gece 03:30 otomatik silme işi (AUTO_DATA_DELETION) kapalı; açılmaz. Otomatik işe bağlı kategoriler: ödeme, mesafeli satış, ticari
+    ileti, giriş / IP, KVKK onayı, olay kimliği, Acil Yardım son adresi. Kimlik belgeleri, şikâyet / moderasyon, şikâyet edilmemiş sohbet,
+    sorun bildirimi, profil, çerez kategorileri tabloda gösterilir, otomatik işe bağlı değildir
+
+YURT DIŞI BÖLGE KURALI: yurt dışında tek dil İngilizce; kimlik türleri Kimlik Kartı, Pasaport, Ehliyet; Oturma İzni yalnız Türkiye.
+  Mevcut DB / kod bu kurala uymuyor (yurt dışı şehirlerde defaultLanguage tr, idTypes dört tür); değiştirilmedi, ayrı karar bekliyor
+
+PARA BİRİMİ (rapor41): City.currency yurt dışı şehirlerde yerel para birimi (Dubai AED, Bangkok THB, Hong Kong HKD, Singapur SGD,
+  Tokyo JPY; packages/shared/src/countryRegion.ts). Ödeme ve fiyat hesabı City.currency kullanmaz: iyzico istekleri ve web analytics
+  Purchase olayı sabit TRY; USD fiyat yoktur
+
+ÇEREZ POLİTİKASI: oturum çerezleri refresh_token / ahenk_session 365 gün (JWT_REFRESH_EXPIRES 365d); analitik çerez kategorisinde
+  "Şu anda analitik çerez kullanılmamaktadır." (NEXT_PUBLIC_GA_ID / NEXT_PUBLIC_META_PIXEL_ID boş, mobilde analitik yok); iyzico ödeme
+  formu yalnız web'de, ödeme başlatılınca açılır pencere olarak yüklenir; mobilde iyzico yok. Cloudflare ifadesi yok
+
+KULLANIM KOŞULLARI: 06 Paketler ve Ödeme aynen; 07 "Premium Abonelik" bölümü (1/3/6/12 ay, web fiyatları PlanPriceText, 30 günde
+  1+1+1, otomatik yenileme, iyzico / App Store / Google Play iptal yolu, iade yok, cayma Mesafeli Satış Sözleşmesi'nde); sonraki
+  bölümler 08–15. Bütün yasal sayfalarda "Son güncelleme: Kasım 2026" / "Last updated: November 2026"
 
 METİN KURALI (TR + EN, web + mobil + admin, i18n, bildirim / WhatsApp / e-posta, yasal sayfalar, Topluluk Kuralları, Nasıl Çalışır):
   cümle içinde ayraç olarak uzun tire (—), orta tire (–) ve çift tire (--) kullanılmaz; cümle virgül, nokta ya da iki nokta ile kurulur.
@@ -773,7 +841,8 @@ Admin işlemleri (masa detayında veya kullanıcı profilinde):
     katılımcılara push + uygulama içi "Masandaki bir katılımcı masadan ayrıldı." (EN karşılığı)
   - Profilim gelmedi uyarısı (web + mobil, prof.noShow): uyarı varsa yalnız "Gelmedi uyarın var. Tekrarlanırsa hesabın askıya alınır." /
     "You have a no-show warning. If it happens again, your account will be suspended."; "kalan hak" ifadesi / sayısı yok; uyarı yoksa alan yok
-  - Banla: sebep zorunlu; kullanıcı kalıcı olarak giriş yapamaz
+  - Banla: sebep zorunlu; kullanıcı kalıcı olarak giriş yapamaz. Banlı telefonla yeniden kayıt engeli mesajı "Bu numarayla kayıt
+    yapılamaz." / "You can't sign up with this number." (errors.phoneCannotRegister)
   - Ban ve admin iptali iyzico aboneliğini de iptal eder (askı etmez) (iyzico hatası loglanır, işlem sürer); sunucuda iptal
     edilmiş kayda sonradan gelen yenileme bildirimi kaydı yeniden aktif etmez, yalnız loglanır
 Kullanıcı giriş ekranında:
@@ -902,7 +971,7 @@ API CLIENT KURALLAR (web):
   - Çeviri anahtarı zorunluluğu: kullanıcıya görünen bütün mobil ve web metinleri yalnız packages/shared/src/i18n/tr.json ve en.json'daki
     anahtarlardan gelir (web next-intl, mobil i18next + react-i18next); ekranlarda sabit Türkçe metin yazılmaz, yeni metinde iki dosyaya
     da anahtar eklenir. İngilizce doğal, samimi, "you" hitaplı; Ahenk ve Prime çevrilmez; "Kişilik Ağacım" → "My Personality Tree".
-  - Admin paneli yalnızca Türkçe. Mekân paneli Türkçe + İngilizce (web app/[locale]/mekan, /en/mekan…; metinler vp.* anahtarlarında).
+  - Admin paneli yalnızca Türkçe (istisna: Veri Saklama sekmesinde TR / EN seçici, dr.* anahtarları; rapor41). Mekân paneli Türkçe + İngilizce (web app/[locale]/mekan, /en/mekan…; metinler vp.* anahtarlarında).
     /en/admin… Türkçe /admin… adresine yönlenir. Mobil yönetim ekranları Türkçe; mobil uygulamada mekân paneli yoktur.
   - Backend mesaj dili: kullanıcıya dönen hata ve bilgi mesajları tr.json / en.json "errors.*" anahtarlarında; kod Türkçe metinle yazılır,
     backend/src/common/api-messages.ts (global filtre + dönüştürücü) metni anahtar üzerinden seçilen dile çevirir. Yeni kullanıcı mesajında
@@ -957,7 +1026,7 @@ API CLIENT KURALLAR (web):
     Jumeirah Lake Towers (JLT), Downtown Dubai: AE, Asia/Dubai, USD, en, +971, Pasaport / Oturma İzni / Ehliyet, pasif (migration
     20261116200100). Admin "Bölgeler" sayfası (web + mobil; GET /admin/regions,
     PATCH /admin/regions/:id): liste, alan düzenleme, tek tuşla aktif / pasif.
-  - Para birimi: Türkiye bölgelerinde TRY (₺), Türkiye dışındaki bütün bölgelerde USD. Dubai'de şimdilik yalnız para birimi alanı var, fiyat yok.
+  - Para birimi: Türkiye bölgelerinde TRY (₺); yurt dışı şehirlerde City.currency yerel para birimi (bkz. PARA BİRİMİ); fiyat yalnız TRY.
   - Şehir listeleri (mobil + web, kayıt ve şehir seçimi dahil): aktif şehirler (seçilebilir) → Yakında şehirler iki grupta (soluk, seçilemez).
     Aktif yapılan bölge otomatik üst gruba geçer.
     Grup 1: countryCode TR; ayırıcı TR "Sezon Masaları 🇹🇷", EN "Season Tables 🇹🇷". Grup 2: countryCode TR değil; ayırıcı TR "Yeni Duraklar 📍",

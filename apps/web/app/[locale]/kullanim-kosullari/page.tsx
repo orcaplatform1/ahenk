@@ -133,6 +133,38 @@ const sections = [
   },
   {
     n: '07',
+    title: 'Premium Abonelik',
+    content: (
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Premium aboneliği 1, 3, 6 ve 12 aylık süre seçenekleriyle sunulur. Web fiyatları (KDV dahil): 1 aylık <PlanPriceText plan="PRIME_1M" suffix="₺" />, 3 aylık <PlanPriceText plan="PRIME_3M" suffix="₺" />, 6 aylık <PlanPriceText plan="PRIME_6M" suffix="₺" />, 12 aylık <PlanPriceText plan="PRIME_12M" suffix="₺" />. Mobil uygulamada fiyat mağaza (App Store / Google Play) komisyonu nedeniyle farklıdır ve satın alma ekranında gösterilir.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Satın alındığı anda 1 Grup + 1 Baş Başa + 1 Kankamla buluşması hakkı tanımlanır. Abonelik sürdükçe satın alma tarihinden itibaren her 30 günde haklar sıfırlanır ve yeniden 1 + 1 + 1 olur; kullanılmayan haklar bir sonraki 30 güne devretmez.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Dönem başında seçilen sürenin tam tutarı tek seferde tahsil edilir. Abonelik iptal edilmediği sürece dönem sonunda aynı süreyle otomatik olarak yenilenir. Davet ve geri kazanım indirimleri yalnız ilk satın alma ödemesine uygulanır; yenilemeler indirimsizdir.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Web sitesinden (iyzico ile) alınan abonelik, Profil → Paketim&apos;deki &quot;Aboneliği İptal Et&quot; butonuyla web sitesinden ya da mobil uygulamadan iptal edilir.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>App Store&apos;dan alınan abonelik Apple hesabının abonelik ayarlarından, Google Play&apos;den alınan abonelik Google Play abonelik ayarlarından iptal edilir; mobil uygulamadaki &quot;Aboneliği İptal Et&quot; butonu ilgili mağazanın abonelik sayfasını açar. Mağaza aboneliği dönem bitiminden en az 24 saat önce iptal edilmezse otomatik olarak yenilenir.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>İptal edildiğinde otomatik yenileme durur; iptal anında elde kalan haklar süre sınırı olmadan, kullanılana kadar geçerli kalır.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Ödenen abonelik bedeli iade edilmez. Cayma hakkına ilişkin hükümler Mesafeli Satış Sözleşmesi&apos;nde yazılıdır.</span>
+          </li>
+          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
+            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Aktif Premium aboneliği olan kullanıcı ikinci bir Premium aboneliği alamaz; tek seferlik paket yalnız Premium&apos;da hakkı biten türü içeriyorsa alınabilir.</span>
+          </li>
+      </ul>
+    ),
+  },
+  {
+    n: '08',
     title: 'İptal Politikası',
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
@@ -155,7 +187,7 @@ const sections = [
     ),
   },
   {
-    n: '08',
+    n: '09',
     title: 'Eşleştirme Algoritması ve Hizmet Garantisi',
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
@@ -176,7 +208,7 @@ const sections = [
     ),
   },
   {
-    n: '09',
+    n: '10',
     title: 'Hesap Askıya Alma ve Kapatma',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -185,7 +217,7 @@ const sections = [
     ),
   },
   {
-    n: '10',
+    n: '11',
     title: 'Fikri Mülkiyet',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -194,7 +226,7 @@ const sections = [
     ),
   },
   {
-    n: '11',
+    n: '12',
     title: 'Sorumluluk Sınırı',
     content: (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
@@ -211,7 +243,7 @@ const sections = [
     ),
   },
   {
-    n: '12',
+    n: '13',
     title: 'Koşulların Değiştirilmesi',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -220,7 +252,7 @@ const sections = [
     ),
   },
   {
-    n: '13',
+    n: '14',
     title: 'İletişim',
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.45rem' }}>
@@ -233,7 +265,7 @@ const sections = [
     ),
   },
   {
-    n: '14',
+    n: '15',
     title: 'Uyuşmazlık ve Yetkili Mahkeme',
     content: (
       <p style={{ lineHeight: 1.75 }}>
@@ -263,7 +295,7 @@ function KullanimKosullariPageTr() {
             Kullanım Koşulları
           </h1>
           <p style={{ marginTop: '0.6rem', color: '#8f887f', fontSize: 13 }}>
-            Son güncelleme: Ekim 2026
+            Son güncelleme: Kasım 2026
           </p>
         </motion.div>
 

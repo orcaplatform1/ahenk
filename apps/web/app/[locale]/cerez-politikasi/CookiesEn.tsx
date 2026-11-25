@@ -35,8 +35,8 @@ const sections = [
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.6rem' }}>
             {[
               { name: 'access_token', desc: 'Authenticates the logged-in user’s API requests. Duration: 15 minutes. HttpOnly: Yes.' },
-              { name: 'refresh_token', desc: 'Renews the session when access expires. Duration: 7 days. HttpOnly: Yes.' },
-              { name: 'ahenk_session', desc: 'A marker that only shows whether a session is open; it contains no personal data. Duration: 7 days. HttpOnly: No.' },
+              { name: 'refresh_token', desc: 'Renews the session when access expires. Duration: 365 days. HttpOnly: Yes.' },
+              { name: 'ahenk_session', desc: 'A marker that only shows whether a session is open; it contains no personal data. Duration: 365 days. HttpOnly: No.' },
               { name: 'venue_token', desc: 'Authenticates the venue panel session; used only for venue accounts. Duration: 7 days. HttpOnly: Yes.' },
             ].map((c) => (
               <div key={c.name} style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
@@ -80,12 +80,8 @@ const sections = [
               Requires consent
             </span>
           </div>
-          <div style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
-            <span style={{ fontFamily: 'monospace', fontSize: 13, color: '#aaa', display: 'block', marginBottom: '0.2rem' }}>Google Analytics 4: cookies starting with _ga and _ga_</span>
-            <span style={{ color: '#a39c93', fontSize: 13 }}>Provider: Google LLC. Purpose: visit and traffic source statistics. Duration: 2 years.</span>
-          </div>
-          <p style={{ marginTop: '0.6rem', color: '#8f887f', fontSize: 13 }}>
-            Without consent, anonymous signals without cookies are sent to Google; these signals do not identify you.
+          <p style={{ color: '#a39c93', fontSize: 13 }}>
+            Analytics cookies are not currently used.
           </p>
         </div>
 
@@ -119,7 +115,7 @@ const sections = [
         <div style={{ padding: '1rem 1.25rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
           <p style={{ fontWeight: 600, color: '#f4f1ec', marginBottom: '0.4rem', fontSize: 13 }}>iyzico Payment System</p>
           <p style={{ color: '#a39c93', fontSize: 13, lineHeight: 1.6 }}>
-            On the package purchase page, iyzico uses its own security and fraud-prevention cookies. These cookies are covered by iyzico’s privacy policy and are not controlled by Ahenk.
+            iyzico is used only on the website: when you start a payment with "Get Package" or "Subscribe", and when the Premium auto-renewal form opens, the iyzico payment form loads as a pop-up on the Ahenk page. This form may use iyzico’s own security and fraud-prevention cookies. These cookies are covered by iyzico’s privacy policy and are not controlled by Ahenk. iyzico is not used in the mobile app; in-app purchases are made through the App Store / Google Play.
           </p>
         </div>
       </div>

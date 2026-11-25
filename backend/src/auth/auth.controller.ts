@@ -78,7 +78,15 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.loginGuard.hit("login", req.ip, dto.email);
-    const { user, accessToken, refreshToken } = await this.authService.login(dto);
+    let result: Awaited<ReturnType<AuthService["login"]>>;
+    try {
+      result = await this.authService.login(dto);
+    } catch (e) {
+      await this.authService.recordLoginAttempt({ email: dto.email }, req.ip, req.headers["user-agent"], false);
+      throw e;
+    }
+    const { user, accessToken, refreshToken } = result;
+    await this.authService.recordLoginAttempt({ id: user.id }, req.ip, req.headers["user-agent"], true);
     return this.issueSession(req, res, user, accessToken, refreshToken);
   }
 
@@ -169,7 +177,15 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.loginGuard.hit("verify-login-otp", req.ip, dto.phone);
-    const { user, accessToken, refreshToken } = await this.authService.verifyLoginOtp(dto.phone, dto.code);
+    let result: Awaited<ReturnType<AuthService["verifyLoginOtp"]>>;
+    try {
+      result = await this.authService.verifyLoginOtp(dto.phone, dto.code);
+    } catch (e) {
+      await this.authService.recordLoginAttempt({ phone: dto.phone }, req.ip, req.headers["user-agent"], false);
+      throw e;
+    }
+    const { user, accessToken, refreshToken } = result;
+    await this.authService.recordLoginAttempt({ id: user.id }, req.ip, req.headers["user-agent"], true);
     return this.issueSession(req, res, user, accessToken, refreshToken);
   }
 

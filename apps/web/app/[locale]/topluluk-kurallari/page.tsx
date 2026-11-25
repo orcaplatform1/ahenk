@@ -253,7 +253,7 @@ function ToplulukKurallariPageTr() {
             Ahenk'te herkesin güvende ve rahat hissetmesi için.
           </p>
           <p style={{ marginTop: '0.2rem', color: '#8f887f', fontSize: 11 }}>
-            Son güncelleme: Ekim 2026
+            Son güncelleme: Kasım 2026
           </p>
         </motion.div>
 

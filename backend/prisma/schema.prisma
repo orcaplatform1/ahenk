@@ -1368,3 +1368,33 @@ model DataExportLog {
 
   @@index([createdAt])
 }
+
+// Sözleşme / onay kaydı: mesafeli satış sözleşmesi ve ön bilgilendirme onayı (satın alma onayı anında, POST /payment/init),
+// biyometrik açık rıza (KYC, canlılık videosundan önce). Saklama 3 yıl (Mesafeli Sözleşmeler Yönetmeliği); hesap silinse de kalır
+model AgreementConsent {
+  id              String   @id @default(cuid())
+  userId          String
+  documentType    String // mesafeli_satis | on_bilgilendirme | acik_riza_biyometrik
+  documentVersion String
+  acceptedAt      DateTime @default(now())
+  ip              String?
+  platform        String // web | ios | android
+  packageId       String? // Plan kodu (MASADA, PRIME_1M …); açık rızada boş
+
+  @@index([userId, documentType])
+  @@index([acceptedAt])
+}
+
+// Giriş kaydı (5651): başarılı / başarısız giriş denemeleri. Saklama 2 yıl; hesap silinse de kalır
+model LoginLog {
+  id        String   @id @default(cuid())
+  userId    String
+  ip        String?
+  userAgent String?
+  platform  String // web | ios | android
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}

@@ -28,13 +28,17 @@ import { LoginGuardService } from "./login-guard.service";
 import { RedisService } from "../redis/redis.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus, SanctionType, Gender } from "../generated/prisma/client";
+import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus, SanctionType, Gender, Prisma } from "../generated/prisma/client";
+import { cleanIp, platformFromUserAgent } from "../common/agreement-consent";
+import { Logger } from "@nestjs/common";
 
 // Tüketilmiş refresh token bu süre içinde gelirse eşzamanlı yenileme sayılır (çok sekme)
 const DEFAULT_REFRESH_REUSE_GRACE_MS = 30_000;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger("AuthService");
+
   constructor(
     private prisma: PrismaService,
     private usersService: UsersService,
@@ -71,7 +75,7 @@ export class AuthService {
   // Banlıyken silinen hesabın numarası sadece phoneHash olarak kalır: bu numarayla yeniden kayıt olunamaz
   private async assertPhoneNotBanned(phone: string) {
     const banned = await this.prisma.user.findFirst({ where: { phoneHash: hashPhone(phone) }, select: { id: true } });
-    if (banned) throw new ForbiddenException("Bu telefon numarasıyla kayıt yapılamaz");
+    if (banned) throw new ForbiddenException("Bu numarayla kayıt yapılamaz.");
   }
 
   // Doğru kod → 30 dk geçerli telefon anahtarı; kayıt bu anahtar olmadan yapılamaz
@@ -292,6 +296,19 @@ export class AuthService {
   }
 
   // ─── Giriş ───────────────────────────────────────────────────────────────
+
+  // Giriş kaydı (5651, 2 yıl): yalnız kayıtlı hesaba ait denemeler (kullanıcı bulunamazsa kayıt yazılmaz); kayıt hatası girişi bozmaz
+  async recordLoginAttempt(where: { email: string } | { phone: string } | { id: string }, ip: string | undefined, userAgent: string | undefined, success: boolean) {
+    try {
+      const user = await this.prisma.user.findUnique({ where: where as Prisma.UserWhereUniqueInput, select: { id: true } });
+      if (!user) return;
+      await this.prisma.loginLog.create({
+        data: { userId: user.id, ip: cleanIp(ip), userAgent: userAgent?.slice(0, 500) ?? null, platform: platformFromUserAgent(userAgent), success },
+      });
+    } catch (e) {
+      this.logger.error(`Giriş kaydı yazılamadı: ${(e as Error).message}`);
+    }
+  }
 
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({

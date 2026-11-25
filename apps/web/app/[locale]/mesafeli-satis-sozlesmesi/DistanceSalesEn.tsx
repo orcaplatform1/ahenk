@@ -273,7 +273,7 @@ export default function DistanceSalesEn() {
             Under Consumer Protection Law No. 6502 and the Distance Contracts Regulation
           </p>
           <p style={{ marginTop: '0.25rem', color: '#8f887f', fontSize: 11 }}>
-            Last updated: October 2026
+            Last updated: November 2026
           </p>
         </motion.div>
 

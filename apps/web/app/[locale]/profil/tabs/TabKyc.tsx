@@ -25,6 +25,8 @@ async function uploadKyc(
 ): Promise<void> {
   const form = new FormData();
   form.append('idType', idType);
+  // Biyometrik açık rıza (canlılık videosundan önce işaretlenir; işaretlenmeden gönderilemez)
+  form.append('biometricConsent', 'true');
   form.append('idFront', idFront);
   if (idType !== 'PASSPORT' && idBack) form.append('idBack', idBack);
   form.append('liveness', new File([livenessBlob], `liveness.${livenessMime === 'video/mp4' ? 'mp4' : 'webm'}`, { type: livenessMime }));
@@ -454,6 +456,7 @@ function LivenessRecorder({ onCapture, initialDone, fullName }: { onCapture: (bl
 
 export function TabKyc() {
   const t = useTranslations();
+  const locale = useLocale();
   // Önce belge türü sorulur (bölgede izin verilen türler: Türkiye'de dördü, diğer bölgelerde Pasaport / Oturma İzni / Ehliyet),
   // sonra çekim: Pasaport'ta fotoğraflı sayfa, diğerlerinde önce ön yüz, ardından arka yüz. Video metni için ad soyad
   const [idTypes, setIdTypes] = useState<IdType[]>(ID_TYPES);
@@ -482,6 +485,8 @@ export function TabKyc() {
 
   const [files,    setFiles]    = useState<{ idFront?: File; idBack?: File }>({});
   const [liveness, setLiveness] = useState<{ blob: Blob; mime: string } | null>(null);
+  // Biyometrik açık rıza onay kutusu: işaretlenmeden canlılık videosu adımı açılmaz, gönderilemez
+  const [bioConsent, setBioConsent] = useState(false);
 
   const handleCapture = useCallback((blob: Blob, mime: string) => {
     if (blob.size === 0) {
@@ -525,7 +530,7 @@ export function TabKyc() {
   }, []);
 
   async function handleSubmit() {
-    if (!files.idFront || (needsBack && !files.idBack) || !liveness) {
+    if (!files.idFront || (needsBack && !files.idBack) || !liveness || !bioConsent) {
       setError(t('kycf.fillAll'));
       return;
     }
@@ -649,13 +654,28 @@ export function TabKyc() {
             }}
           />}
 
-          <LivenessRecorder onCapture={handleCapture} initialDone={!!liveness} fullName={fullName} />
+          {/* Biyometrik açık rıza: canlılık videosundan önce, işaretlenmeden ilerlenemez */}
+          <label className="flex items-start gap-3 cursor-pointer rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <input
+              type="checkbox"
+              checked={bioConsent}
+              onChange={(e) => setBioConsent(e.target.checked)}
+              style={{ width: 18, height: 18, accentColor: '#c0392b', flexShrink: 0, marginTop: 2 }}
+            />
+            <span className="text-[13px] text-[#c9c2b8]" style={{ lineHeight: 1.6 }}>
+              {t('kycf.bioConsentPre')}
+              <a href={locale === 'en' ? '/en/acik-riza-metni' : '/acik-riza-metni'} target="_blank" rel="noopener noreferrer" style={{ color: '#c0392b' }}>{t('kycf.bioConsentLink')}</a>
+              {t('kycf.bioConsentPost')}
+            </span>
+          </label>
+
+          {bioConsent && <LivenessRecorder onCapture={handleCapture} initialDone={!!liveness} fullName={fullName} />}
 
           {error && <p className="text-accent text-sm">{error}</p>}
 
           <StdButton variant="primary"
             onClick={handleSubmit}
-            disabled={submitting || !files.idFront || (needsBack && !files.idBack) || !liveness}
+            disabled={submitting || !files.idFront || (needsBack && !files.idBack) || !liveness || !bioConsent}
             className="w-full justify-center disabled:opacity-50"
           >
             {submitting ? t('kycf.uploading') : t('kycf.submit')}

@@ -46,7 +46,7 @@ const sections = [
           },
           {
             cat: 'Biometric Data',
-            items: ['Liveness video: because it contains facial images, it is considered special category personal data and is processed with explicit consent'],
+            items: ['Liveness video and face matching (comparing the face in the video with the photo on the ID document): biometric data, a special category of personal data (KVKK art. 6), processed only with your explicit consent'],
             special: true,
           },
           {
@@ -56,8 +56,8 @@ const sections = [
           {
             cat: 'Location Data',
             items: [
-              'City preference',
-              'Emergency location: collected only from the person making an emergency request, at the time of the request and until it is resolved. If the person allows it, location continues to be collected, to the extent the device permits, even when the app is in the background or closed. Other participants’ locations are not collected. The location is shared with the police and monitored by our team. When the request is resolved, coordinates and location history are deleted; the street address of the last location and the request record are kept for legal obligations, possible legal disputes and requests from authorities.',
+              'City preference: the city you want to join in (and a second-choice city, if any); used in matching',
+              'Emergency Help precise location: collected only when you press the Emergency Help button and collected live until the request is resolved (if you allow it, also while the app is in the background or closed, to the extent the device permits). Other participants’ locations are not collected. The location is sent to our team, your emergency contacts and the police. When the request is resolved, coordinates are deleted and the last street address is kept for 2 years. Legal ground: KVKK art. 5/2-b (vital interest) and art. 5/2-ç (legal obligation).',
               'Emergency contacts (up to 2): the names and phone numbers of the people you add in My Profile are used only when you make an Emergency Help request, to automatically notify them via WhatsApp (your first and last name and a Google Maps link to your location at the time of the request); they are not used for any other purpose. You can delete the contacts at any time, and they are also deleted when your account is deleted.',
             ],
           },
@@ -83,7 +83,7 @@ const sections = [
           },
           {
             cat: 'Security Data',
-            items: ['Phone numbers added for contact blocking', 'IP address, session information'],
+            items: ['Phone numbers added for contact blocking', 'IP address, session information', 'Login records: IP address, browser info, platform (web / iOS / Android), date and time, success / failure', 'Consent records for the distance sales contract, pre-information and biometric explicit consent: document type and version, date and time, IP, platform, package'],
           },
           {
             cat: 'Technical Data',
@@ -149,28 +149,32 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.85rem' }}>
         {[
           {
-            basis: 'Explicit Consent: Articles 5/1 and 6/2',
-            desc: 'OCEAN personality test results, ID document images and liveness video. Users give explicit consent during registration and identity verification.',
+            basis: 'Explicit Consent: Article 6',
+            desc: 'Liveness video and face matching (biometric data). Explicit consent is collected with a separate checkbox in the identity verification step, before the liveness video.',
           },
           {
             basis: 'Establishment or Performance of a Contract: Article 5/2-c',
-            desc: 'First name, last name, phone number, email, city, field of work, language and venue preferences, package and payment data, table chat messages. For Bring a Buddy, the phone number entered in a Kanka invite (to deliver the invite and match it with a verified account) and the Kanka link.',
+            desc: 'First name, last name, phone number, email, city, field of work, language and venue preferences, OCEAN personality test, ID document, package and payment data, table chat messages, AI table compatibility report, push notifications and the WhatsApp verification code (OTP). For Bring a Buddy, the phone number entered in a Kanka invite (to deliver the invite and match it with a verified account) and the Kanka link.',
           },
           {
             basis: 'Legitimate Interest of the Data Controller: Article 5/2-f',
-            desc: 'Technical data, IP address, security logs, phone numbers added for contact blocking, automatic table chat moderation, complaint, sanction and no-show records, profile photo approval.',
+            desc: 'Technical data, IP address, security logs, ID document (keeping fake profiles off the platform), phone numbers added for contact blocking, automatic table chat moderation (chat moderation), complaint, sanction and no-show records, profile photo approval, problem reports, the unreadable phone summary of a banned user.',
           },
           {
             basis: 'Compliance with a Legal Obligation: Article 5/2-ç',
-            desc: 'Payment records, invoice details, login and traffic records (Law No. 5651), distance sales and commercial message consent records, requests from authorized institutions.',
+            desc: 'Payment records, invoice details, login / IP records and server logs (Law No. 5651), distance sales and commercial message consent records, requests from authorized institutions.',
           },
           {
-            basis: 'Explicit Consent and Vital Interest: Articles 5/1 and 5/2-b',
-            desc: 'Location data in an Emergency Help request (with the device location permission) and notifying emergency contacts: to protect the life or physical integrity of the person or someone else.',
+            basis: 'Vital Interest and Legal Obligation: Articles 5/2-b and 5/2-ç',
+            desc: 'Location data in an Emergency Help request (with the device location permission), notifying emergency contacts and sharing with the police: to protect the life or physical integrity of the person or someone else and for legal obligations.',
+          },
+          {
+            basis: 'Establishing, Exercising or Protecting a Right: Article 5/2-e',
+            desc: 'The identity of a user involved in an emergency help, complaint or ban record, the last street address of an Emergency Help request, complaint and moderation records and reported messages.',
           },
           {
             basis: 'International Transfer: Article 9',
-            desc: 'For each recipient, the data transferred, the purpose and the legal basis for the transfer are set out separately in section 6.',
+            desc: 'Transfers to providers that can sign standard contracts are made under KVKK art. 9/4 standard contracts and are notified to the Personal Data Protection Authority within 5 business days after signing; transfers to providers that cannot sign standard contracts are incidental transfers under KVKK art. 9/6. Each recipient is listed separately in section 6.',
           },
         ].map((row) => (
           <div
@@ -191,27 +195,41 @@ const sections = [
   },
   {
     n: '05',
-    title: 'Processing of Special Category Personal Data',
+    title: 'Personality Test, ID Document and Liveness Data',
     content: (
-      <>
-        <p style={{ marginBottom: '1rem' }}>
-          ID document images (because they contain a photo) and the liveness video (biometric data) are special category personal data. This data is:
-        </p>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.55rem' }}>
-          {[
-            'Processed only for identity verification',
-            'Collected with the user’s explicit consent',
-            'Stored encrypted with AES-256-GCM on Ahenk’s own servers',
-            'Viewable only by authorized admin staff, decrypted in memory through an authorized endpoint',
-            'Not shared with third parties',
-            'Kept until the account is deleted; once an account deletion request is approved, ID images, the liveness video and the KYC record are deleted',
-          ].map((item) => (
-            <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
-              <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span>{item}
-            </li>
-          ))}
-        </ul>
-      </>
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.85rem' }}>
+        {[
+          {
+            basis: 'Personality Test (OCEAN)',
+            desc: <>OCEAN Big Five personality test answers and scores are processed for matching and the AI table compatibility report. Legal ground: KVKK art. 5/2-c (establishment or performance of a contract).</>,
+          },
+          {
+            basis: 'ID Document',
+            desc: <>The document type and document images (front and back; for a passport, the photo page) are processed for identity verification and to keep fake profiles off the platform. ID documents may contain special category data (for example, blood type on a driving licence); this data is not processed. Legal ground: KVKK art. 5/2-c (establishment or performance of a contract) and art. 5/2-f (legitimate interest).</>,
+          },
+          {
+            basis: 'Liveness Video and Face Matching',
+            desc: <>The liveness video and the comparison of the face in it with the photo on the ID document (face matching) are biometric data, a special category of personal data (KVKK art. 6). They are processed only with your explicit consent. Explicit consent is collected with a separate checkbox in the identity verification step, before the liveness video, and is recorded. Details: <a href="/en/acik-riza-metni" style={{ color: '#c0392b' }}>Explicit Consent Notice</a>.</>,
+          },
+          {
+            basis: 'Storage and Security',
+            desc: <>ID document images and the liveness video are stored encrypted with AES-256-GCM on Ahenk&apos;s own servers, can be viewed only by authorized admins, are not shared with third parties and are not transferred abroad. They are deleted within 48 hours after the account deletion is approved; the exception is set out in section 7.</>,
+          },
+        ].map((row) => (
+          <div
+            key={row.basis}
+            style={{
+              padding: '1rem 1.25rem',
+              background: 'rgba(255,255,255,0.025)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '10px',
+            }}
+          >
+            <p style={{ fontWeight: 600, color: '#f4f1ec', marginBottom: '0.25rem', fontSize: 13 }}>{row.basis}</p>
+            <p style={{ color: '#a39c93', fontSize: 13 }}>{row.desc}</p>
+          </div>
+        ))}
+      </div>
     ),
   },
   {
@@ -235,19 +253,19 @@ const sections = [
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Anthropic (artificial intelligence, USA)</strong>
-          : Data transferred: for the table compatibility report, for each participant the five OCEAN scores and field of work (if any) under a label such as P1, P2 instead of a name, the table type, number of participants and the table&apos;s overall compatibility score; for table chat moderation, only the text of a chat message containing a suspicious word (up to 1,000 characters). No names, gender, age, contact details or identity information are transferred. Purpose: the AI table compatibility report and chat moderation. Legal basis: KVKK art. 9/6-b (necessary for the performance of a contract).
+          : Data transferred: for the table compatibility report, for each participant the five OCEAN scores and field of work (if any) under a label such as P1, P2 instead of a name, the table type, number of participants and the table&apos;s overall compatibility score; for table chat moderation, only the text of a chat message containing a suspicious word (up to 1,000 characters). No names, gender, age, contact details or identity information are transferred. Purpose: the AI table compatibility report and chat moderation. Legal basis: KVKK art. 9/4 standard contract; the Personal Data Protection Authority is notified within 5 business days after the contract is signed. Processing ground: for the table compatibility report KVKK art. 5/2-c (performance of a contract), for chat moderation KVKK art. 5/2-f (legitimate interest).
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Google Firebase Cloud Messaging (push notifications, USA)</strong>
-          : Data transferred: the notification device key (FCM token) and notification content. Purpose: delivering push notifications. Legal basis: KVKK art. 9/6-b (necessary for the performance of a contract).
+          : Data transferred: the notification device key (FCM token) and notification content. Purpose: delivering push notifications. Legal basis: KVKK art. 9/4 standard contract; the Personal Data Protection Authority is notified within 5 business days after the contract is signed. Processing ground: KVKK art. 5/2-c (performance of a contract).
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Meta WhatsApp Business API (USA)</strong>
-          : Data transferred: phone number, WhatsApp verification code (OTP), notification content (identity verification result, table confirmation), the invited person&apos;s phone number and invite link in a Bring a Buddy invite; in an Emergency Help request, the emergency contacts&apos; phone numbers, the requester&apos;s first and last name and a location link. Purpose: delivering verification codes and notifications. Legal basis: KVKK art. 9/6-b (necessary for the performance of a contract); for notifying emergency contacts, KVKK art. 9/6-e (protecting life or physical integrity).
+          : Data transferred: phone number, WhatsApp verification code (OTP), notification content (identity verification result, table confirmation), the invited person&apos;s phone number and invite link in a Bring a Buddy invite; in an Emergency Help request, the emergency contacts&apos; phone numbers, the requester&apos;s first and last name and a location link. Purpose: delivering verification codes and notifications. Legal basis: KVKK art. 9/4 standard contract; the Personal Data Protection Authority is notified within 5 business days after the contract is signed. Processing ground: for the verification code (OTP) and notifications KVKK art. 5/2-c (performance of a contract); for the Emergency Help notification KVKK art. 5/2-b (vital interest).
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>OpenStreetMap Nominatim (address lookup, United Kingdom)</strong>
-          : Data transferred: the location coordinates in an Emergency Help request (the OpenStreetMap map service is also used on the admin emergency help map). Purpose: converting coordinates into a street address. Legal basis: KVKK art. 9/6-e (protecting life or physical integrity).
+          : Data transferred: the location coordinates in an Emergency Help request (the OpenStreetMap map service is also used on the admin emergency help map). Purpose: converting coordinates into a street address. Legal basis: incidental transfer under KVKK art. 9/6 (necessary for the performance of a contract); a standard contract cannot be signed. Processing ground: KVKK art. 5/2-b (vital interest) and art. 5/2-ç (legal obligation).
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Google Maps (Emergency Help map, USA)</strong>
@@ -278,16 +296,20 @@ const sections = [
     content: (
       <div>
         {[
-          ['Payment, invoice and transaction records (iyzico, App Store, Google Play)', '10 years from the start of the calendar year following the transaction (Turkish Commercial Code art. 82, Tax Procedure Law art. 253). Kept even if the account is deleted; at the end of the period personal fields are anonymized, while the amount, date and transaction number are kept'],
-          ['Distance sales and subscription consent records (contract acceptance, pre-information consent, timestamp, IP)', '3 years from the transaction date (Regulation on Distance Contracts)'],
-          ['Commercial message consent and opt-out records', '3 years from the date the consent ended (Regulation on Commercial Communication and Commercial Electronic Messages)'],
-          ['Login, IP and traffic records', '2 years from the record date (Law No. 5651 art. 5)'],
+          ['Payment and invoice records (iyzico, App Store, Google Play)', '10 years (Turkish Commercial Code art. 82, Tax Procedure Law art. 253), from the start of the calendar year following the transaction. Kept even if the account is deleted; at the end of the period personal fields are anonymized. Legal ground: KVKK art. 5/2-ç'],
+          ['Distance sales consent records (distance sales contract and pre-information consent)', '3 years (Regulation on Distance Contracts). Legal ground: KVKK art. 5/2-ç'],
+          ['Commercial electronic message consents', '3 years from the end of the consent. Legal ground: KVKK art. 5/2-ç'],
+          ['Login / IP records and server (nginx) logs', '2 years (Law No. 5651). Legal ground: KVKK art. 5/2-ç'],
+          ['ID documents and liveness video', 'Deleted within 48 hours after the account deletion is approved. Exception: the identity of a user involved in an emergency help, complaint or ban record is kept locked for 2 years and only SUPERADMIN can access it. Legal ground: KVKK art. 5/2-e'],
+          ['Emergency Help record', 'Coordinates and location history are deleted when the request is resolved; the last street address is kept for 2 years. Legal ground: KVKK art. 5/2-b and art. 5/2-e'],
+          ['Complaint and moderation records and reported messages', '2 years. Legal ground: KVKK art. 5/2-e'],
+          ['Table chat messages that were not reported', 'Deleted 6 months after the table date. Legal ground: KVKK art. 5/2-c'],
+          ['Problem reports', '2 years. Legal ground: KVKK art. 5/2-f'],
+          ['Profile, personality test (OCEAN) and push token', 'Until the account is deleted. Legal ground: KVKK art. 5/2-c'],
+          ['Unreadable phone summary of a banned user', 'For as long as the ban lasts. Legal ground: KVKK art. 5/2-f'],
+          ['Cookies', 'Session cookie 365 days; details in the Cookie Policy'],
           ['KVKK notice and explicit consent records', '10 years from the deletion of the account (general limitation period, Turkish Code of Obligations)'],
-          ['Identity details of a person involved in an emergency request, complaint or ban (name, surname, email, phone; locked, visible only to authorized admins)', '2 years from the closure of the incident (no fixed legal period, company policy)'],
-          ['Unreadable summary (hash) of a banned account\'s phone number', 'Indefinitely (to prevent signing up again)'],
-          ['Identity documents (ID images and liveness video)', 'Kept until the account is deleted; once an account deletion request is approved, ID images, the liveness video and the KYC record are deleted'],
-          ['Other data: profile, OCEAN test results, profile photos, chat messages, problem reports, contact and user blocks', 'Deleted when the account deletion request is approved; contact blocks are also deleted when the user removes them'],
-          ['Emergency location coordinates and location history', 'Deleted when the request is resolved'],
+          ['Other data: contact and user blocks', 'Deleted when the account deletion request is approved; contact blocks are also deleted when the user removes them'],
         ].map(([label, value], i, arr) => (
           <div
             key={label}

@@ -51,24 +51,30 @@ const sections = [
     content: (
       <>
         <SubTitle>At Registration</SubTitle>
-        <List items={['First and last name', 'Email address', 'Date of birth', 'Gender', 'City preference']} />
+        <List items={['First and last name', 'Email address', 'Date of birth', 'Gender']} />
+        <SubTitle style={{ marginTop: '1.25rem' }}>Location Data</SubTitle>
+        <List
+          items={[
+            'City preference: the city you want to join in (and a second-choice city, if any); used in matching',
+            'Emergency Help precise location: collected only when you press the Emergency Help button, collected live until the request is resolved and sent to our team, your emergency contacts and the police. When the request is resolved, coordinates are deleted and the last street address is kept for 2 years. Legal ground: KVKK art. 5/2-b (vital interest) and art. 5/2-ç (legal obligation)',
+          ]}
+        />
 
         <SubTitle style={{ marginTop: '1.25rem' }}>During Identity Verification</SubTitle>
         <p style={{ color: '#a39c93', fontSize: 13, marginBottom: '0.6rem' }}>
-          The following data is <strong style={{ color: '#f4f1ec' }}>special category personal data</strong> and is processed with your explicit consent.
+          The ID document is processed for identity verification and to keep fake profiles off the platform (KVKK art. 5/2-c and art. 5/2-f). The liveness video and face matching are <strong style={{ color: '#f4f1ec' }}>biometric data, a special category of personal data</strong>, and are processed only with your explicit consent (KVKK art. 6; <a href="/en/acik-riza-metni" style={{ color: '#c0392b' }}>Explicit Consent Notice</a>).
         </p>
         <List
           items={[
-            'Image of the front of your ID card',
-            'Image of the back of your ID card',
-            'Liveness video',
+            'ID document type and document images (front and back; for a passport, the photo page). Special category data that may appear on the document (for example, blood type on a driving licence) is not processed',
+            'Liveness video and face matching (comparing the face in the video with the photo on the ID document)',
           ]}
         />
 
         <SubTitle style={{ marginTop: '1.25rem' }}>While Using the Platform</SubTitle>
         <List
           items={[
-            'OCEAN personality test results and scores',
+            'OCEAN personality test results and scores (KVKK art. 5/2-c)',
             'Table meetup history',
             'Review and comment data',
             'Contact block list: phone numbers you add',
@@ -76,7 +82,7 @@ const sections = [
         />
 
         <SubTitle style={{ marginTop: '1.25rem' }}>Technical Data</SubTitle>
-        <List items={['IP address', 'Browser type', 'Device information', 'Session data', 'Cookie data']} />
+        <List items={['IP address', 'Browser type', 'Device information', 'Session data', 'Login records (IP, browser info, platform, date and time, success / failure)', 'Consent records for distance sales, pre-information and biometric explicit consent (document type and version, date and time, IP, platform, package)', 'Cookie data']} />
       </>
     ),
   },
@@ -106,20 +112,28 @@ const sections = [
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.85rem' }}>
         {[
           {
-            basis: 'Explicit Consent: KVKK Article 5/1',
-            desc: 'OCEAN test results, identity documents and liveness video',
+            basis: 'Explicit Consent: KVKK Article 6',
+            desc: 'Liveness video and face matching (biometric data)',
           },
           {
             basis: 'Performance of a Contract: KVKK Article 5/2-c',
-            desc: 'Registration, payment and service delivery',
+            desc: 'Registration, OCEAN personality test, ID document, payment and service delivery, AI table compatibility report, push notifications and the WhatsApp verification code (OTP)',
           },
           {
             basis: 'Legitimate Interest: KVKK Article 5/2-f',
-            desc: 'Platform security, technical data',
+            desc: 'Platform security, technical data, ID document (keeping fake profiles off the platform), table chat moderation, problem reports, the unreadable phone summary of a banned user',
           },
           {
             basis: 'Legal Obligation: KVKK Article 5/2-ç',
-            desc: 'Financial records, requests from authorized institutions',
+            desc: 'Financial records, distance sales and commercial message consent records, login / IP records and server logs (Law No. 5651), requests from authorized institutions',
+          },
+          {
+            basis: 'Vital Interest and Legal Obligation: KVKK Articles 5/2-b and 5/2-ç',
+            desc: 'Emergency Help location and sharing with the police',
+          },
+          {
+            basis: 'Establishing, Exercising or Protecting a Right: KVKK Article 5/2-e',
+            desc: 'The identity of a user involved in an emergency help, complaint or ban record, the last street address of an Emergency Help request, complaint and moderation records',
           },
         ].map((row) => (
           <div
@@ -144,16 +158,20 @@ const sections = [
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
         {[
-          ['Payment, invoice and transaction records (iyzico, App Store, Google Play)', '10 years from the start of the calendar year following the transaction (Turkish Commercial Code art. 82, Tax Procedure Law art. 253). Kept even if the account is deleted; at the end of the period personal fields are anonymized, while the amount, date and transaction number are kept'],
-          ['Distance sales and subscription consent records (contract acceptance, pre-information consent, timestamp, IP)', '3 years from the transaction date (Regulation on Distance Contracts)'],
-          ['Commercial message consent and opt-out records', '3 years from the date the consent ended (Regulation on Commercial Communication and Commercial Electronic Messages)'],
-          ['Login, IP and traffic records', '2 years from the record date (Law No. 5651 art. 5)'],
+          ['Payment and invoice records (iyzico, App Store, Google Play)', '10 years (Turkish Commercial Code art. 82, Tax Procedure Law art. 253), from the start of the calendar year following the transaction. Kept even if the account is deleted; at the end of the period personal fields are anonymized. Legal ground: KVKK art. 5/2-ç'],
+          ['Distance sales consent records (distance sales contract and pre-information consent)', '3 years (Regulation on Distance Contracts). Legal ground: KVKK art. 5/2-ç'],
+          ['Commercial electronic message consents', '3 years from the end of the consent. Legal ground: KVKK art. 5/2-ç'],
+          ['Login / IP records and server (nginx) logs', '2 years (Law No. 5651). Legal ground: KVKK art. 5/2-ç'],
+          ['ID documents and liveness video', 'Deleted within 48 hours after the account deletion is approved. Exception: the identity of a user involved in an emergency help, complaint or ban record is kept locked for 2 years and only SUPERADMIN can access it. Legal ground: KVKK art. 5/2-e'],
+          ['Emergency Help record', 'Coordinates and location history are deleted when the request is resolved; the last street address is kept for 2 years. Legal ground: KVKK art. 5/2-b and art. 5/2-e'],
+          ['Complaint and moderation records and reported messages', '2 years. Legal ground: KVKK art. 5/2-e'],
+          ['Table chat messages that were not reported', 'Deleted 6 months after the table date. Legal ground: KVKK art. 5/2-c'],
+          ['Problem reports', '2 years. Legal ground: KVKK art. 5/2-f'],
+          ['Profile, personality test (OCEAN) and push token', 'Until the account is deleted. Legal ground: KVKK art. 5/2-c'],
+          ['Unreadable phone summary of a banned user', 'For as long as the ban lasts. Legal ground: KVKK art. 5/2-f'],
+          ['Cookies', 'Session cookie 365 days; details in the Cookie Policy'],
           ['KVKK notice and explicit consent records', '10 years from the deletion of the account (general limitation period, Turkish Code of Obligations)'],
-          ['Identity details of a person involved in an emergency request, complaint or ban (name, surname, email, phone; locked, visible only to authorized admins)', '2 years from the closure of the incident (no fixed legal period, company policy)'],
-          ['Unreadable summary (hash) of a banned account\'s phone number', 'Indefinitely (to prevent signing up again)'],
-          ['Identity documents (ID images and liveness video)', 'Kept until the account is deleted; once an account deletion request is approved, ID images, the liveness video and the KYC record are deleted'],
-          ['Other data: profile, OCEAN test results, profile photos, chat messages, problem reports, contact and user blocks', 'Deleted when the account deletion request is approved; contact blocks are also deleted when the user removes them'],
-          ['Emergency location coordinates and location history', 'Deleted when the request is resolved'],
+          ['Other data: contact and user blocks', 'Deleted when the account deletion request is approved; contact blocks are also deleted when the user removes them'],
         ].map(([label, value], i, arr) => (
           <div
             key={label}
@@ -192,19 +210,19 @@ const sections = [
         <SubTitle style={{ marginTop: '1.25rem' }}>International Transfers</SubTitle>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Meta Platforms (WhatsApp Business API)</strong>
-          : to deliver phone numbers, WhatsApp verification codes and critical notifications (identity verification result, table confirmation).
+          : to deliver phone numbers, WhatsApp verification codes and critical notifications (identity verification result, table confirmation). Processing ground: KVKK art. 5/2-c (performance of a contract); for the Emergency Help notification art. 5/2-b (vital interest). Transfer basis: KVKK art. 9/4 standard contract; the Personal Data Protection Authority is notified within 5 business days after the contract is signed.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Google (Firebase Cloud Messaging)</strong>
-          : the notification device key and notification content, to deliver push notifications.
+          : the notification device key and notification content, to deliver push notifications. Processing ground: KVKK art. 5/2-c (performance of a contract). Transfer basis: KVKK art. 9/4 standard contract; the Personal Data Protection Authority is notified within 5 business days after the contract is signed.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Anthropic (artificial intelligence)</strong>
-          : to create the table compatibility report, for each participant the five OCEAN scores and field of work (if any) under a label such as P1, P2 instead of a name, the table type, number of participants and the table&apos;s overall compatibility score; for table chat moderation, only the text of a chat message containing a suspicious word (up to 1,000 characters). No names, gender, age, contact details or identity information are sent.
+          : to create the table compatibility report, for each participant the five OCEAN scores and field of work (if any) under a label such as P1, P2 instead of a name, the table type, number of participants and the table&apos;s overall compatibility score; for table chat moderation, only the text of a chat message containing a suspicious word (up to 1,000 characters). No names, gender, age, contact details or identity information are sent. Processing ground: for the table compatibility report KVKK art. 5/2-c (performance of a contract), for chat moderation art. 5/2-f (legitimate interest). Transfer basis: KVKK art. 9/4 standard contract; the Personal Data Protection Authority is notified within 5 business days after the contract is signed.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>OpenStreetMap (Nominatim)</strong>
-          : to convert location coordinates in emergency requests into a street address.
+          : to convert location coordinates in emergency requests into a street address. Transfer basis: incidental transfer under KVKK art. 9/6 (necessary for the performance of a contract); a standard contract cannot be signed.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Emergency contact</strong>
