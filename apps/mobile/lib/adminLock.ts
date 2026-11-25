@@ -8,7 +8,7 @@ import { AppState } from 'react-native';
 import { getAccess } from './session';
 import { myRole } from './adminRole';
 
-export const ADMIN_LOCK_AFTER_MS = 5 * 60 * 1000;
+const ADMIN_LOCK_AFTER_MS = 5 * 60 * 1000;
 
 let locked = false;
 let verifiedAt = 0;
@@ -25,7 +25,7 @@ export function loadLocalAuth(): LocalAuth | null {
   try { return require('expo-local-authentication') as LocalAuth; } catch { return null; }
 }
 // Cihazda biyometrik ya da ekran kilidi var mı (yoksa ya da modül bu derlemede yoksa false)
-export async function deviceSecure(): Promise<boolean> {
+async function deviceSecure(): Promise<boolean> {
   const la = loadLocalAuth();
   if (!la) return false;
   try { return (await la.getEnrolledLevelAsync()) !== la.SecurityLevel.NONE; } catch { return false; }

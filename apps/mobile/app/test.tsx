@@ -1,6 +1,6 @@
 // apps/web/app/test/page.tsx karşılığı. S-25: test sırasında geri kaydırmada uyarı gösterilir.
-import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ScrollView, View } from 'react-native';
 import { showAlert } from '@/components/AppAlert';
 import { usePreventRemove, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

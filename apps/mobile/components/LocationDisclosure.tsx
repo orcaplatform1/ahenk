@@ -3,7 +3,6 @@
 // "Şimdi Değil" izin istemeden geri döner. Metin gerçek kullanıma göre: lib/sosLive.ts (10 sn'de bir gönderim, arka plan /
 // kapalı uygulama, talep çözülünce durur), backend/src/sos (admin takibi, OpenStreetMap Nominatim adres çözümleme).
 // HIG: güvenli alan içinde, butonlar en az 44 pt, Android geri tuşu "Şimdi Değil" gibi davranır.
-import React from 'react';
 import { Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StdButton, Serif, T } from './ui';

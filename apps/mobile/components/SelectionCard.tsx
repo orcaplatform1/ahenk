@@ -2,7 +2,7 @@
 // Seçim ekranını açar; seçim değiştirme (buluşma türü) ve iptal yalnız buradan yapılır. Seçim Yap, Değiştir ve İptal Et yalnız
 // masa kilitli değilken aktif; kilitli masada üçü de kapalı. Değiştir seçimden 24 saat (Yarın Buluşma'da 3 saat) sonra açılır;
 // iptal eden 24 saat hiçbir türde Seçim Yap'ı kullanamaz; iptalde hak yanmaz. HIG: en az 44 pt dokunma alanı.
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { MasaTuru } from '@/lib/masa';

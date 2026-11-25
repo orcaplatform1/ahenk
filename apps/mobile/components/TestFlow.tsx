@@ -1,9 +1,8 @@
 // OCEAN testi soru akışı (apps/web/app/kayit adım 3 ve apps/web/app/test/page.tsx ile aynı görünüm)
-import React from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Btn, StdButton, Eyebrow, Mono, Serif, T } from './ui';
-import { ll, tw } from '@/theme/theme';
+import { ll } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { currentLang } from '@/lib/i18n';
 

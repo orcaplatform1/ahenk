@@ -1,5 +1,5 @@
 // apps/web/app/admin/sonuclandirma/page.tsx karşılığı (yalnız SUPERADMIN). Buradan iyzico'ya istek gitmez.
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '@/lib/api';
 import { Btn } from '@/components/ui';

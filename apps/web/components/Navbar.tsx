@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import LanguageSwitcher from './LanguageSwitcher';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { StdButton } from '@ahenk/ui';
@@ -68,7 +68,6 @@ export default function Navbar() {
   const [navUser,  setNavUser]  = useState<NavUser | null>(null);
   const [checked,  setChecked]  = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const initialized = useRef(false);
 
   useEffect(() => {
     if (!api.hasSession()) {

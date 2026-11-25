@@ -1,6 +1,6 @@
 // apps/web/app/admin/kyc/page.tsx karşılığı. Görseller ve canlılık videosu Bearer başlığıyla yüklenir; video uygulama içinde oynatılır (expo-video),
 // görsele dokununca dosya Bearer ile indirilip uygulama içinde açılır (web: blob yeni sekmede).
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, Pressable, TextInput, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { openAuthedFile } from '@/lib/authFile';

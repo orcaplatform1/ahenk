@@ -1,5 +1,5 @@
 // Sekme 4 — Paketim: apps/web/app/profil/tabs/TabPaket.tsx. Ödeme: uygulama içi satın alma (App Store / Play Store), mobil fiyat (mobileTL).
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { BackHandler, Platform, Pressable, ScrollView, Share, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -13,7 +13,7 @@ import { showAlert } from '@/components/AppAlert';
 import { getKankamlaCardState, getPlanCardState, type KankamlaState, type OpenParts, type PlanKey } from '@/lib/planCards';
 import { Btn, StdButton, Card, Head, MaintenanceNotice, Serif, SkeletonBlock, T, Glow, ScreenGlow } from '@/components/ui';
 import { useWinback } from '@/components/Winback';
-import { c, ll, sans, tw } from '@/theme/theme';
+import { c, ll, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
 
 import { upper } from '@/lib/i18n';

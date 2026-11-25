@@ -3,7 +3,7 @@
 // Paket alınınca ve girişte, taramada ya da masada olmayan kullanılmamış hak varsa kendiliğinden açılır; Eşleşme Paneli'ndeki
 // karttan da açılır. Yalnız kullanılmamış hakkı olan (ve henüz kaydı / masası olmayan) türler seçilebilir, diğerleri pasif.
 // HIG: iptal seçeneği ("Sonra"), en az 44 pt dokunma alanı, radyo / onay kutusu erişilebilirlik rolleri.
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import type { MasaTuru } from '@/lib/masa';
 import type { MeetingMode, WeeklySelection } from '@/lib/useMasaTabs';

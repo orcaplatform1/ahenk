@@ -1,5 +1,5 @@
 // apps/web/app/odeme/basarili + basarisiz karşılığı (durum=basarili|basarisiz)
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';

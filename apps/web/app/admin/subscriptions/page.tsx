@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, SANS, MONO, LABEL } from '@/lib/adminTheme';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, AMBER, BLUE, SANS, MONO, LABEL } from '@/lib/adminTheme';
 import { AdminSelect } from '@/components/AdminSelect';
 
 

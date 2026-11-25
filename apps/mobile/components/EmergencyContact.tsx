@@ -1,6 +1,6 @@
 // Profilim → Gizlilik ve Güvenlik: Acil Durum Kişisi (web components/EmergencyContact.tsx karşılığı). En fazla 1 kişi; ad + telefon
 // (giriş / kayıttaki ülke kodu listesi). Düzenlenebilir, silinebilir. HIG: 44 pt dokunma alanı.
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { splitE164, toE164 } from '@ahenk/shared';

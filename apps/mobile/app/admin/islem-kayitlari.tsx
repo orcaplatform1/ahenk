@@ -1,5 +1,5 @@
 // apps/web/app/admin/islem-kayitlari/page.tsx karşılığı (yalnız SUPERADMIN)
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '@/lib/api';
 import { ACard, AError, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';

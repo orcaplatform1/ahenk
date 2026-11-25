@@ -3,14 +3,13 @@
 import { parsePhoneNumberFromString, isValidPhoneNumber, type CountryCode } from "libphonenumber-js/mobile";
 import { COUNTRIES, type Country } from "./countries";
 
-export { COUNTRIES, type Country };
+export { COUNTRIES };
 
 // İngilizce seçeneği bu bayrakla açılır; false iken her durumda Türkçe (dil seçici ve Dil satırı gizli)
 export const ENGLISH_ENABLED: boolean = true;
 
 export type Lang = "tr" | "en";
 export const LANGS: Lang[] = ["tr", "en"];
-export const DEFAULT_LANG: Lang = "tr";
 export const isLang = (v: unknown): v is Lang => v === "tr" || v === "en";
 
 // Dil belirleme sırası: 1) giriş yapmış kullanıcının hesabındaki dil, 2) cihazda / tarayıcıda kayıtlı seçim,
@@ -38,7 +37,7 @@ export function localizedPath(path: string, lang: Lang): string {
 // ─── Tarih / saat ────────────────────────────────────────────────────────────
 // Bütün tarih ve saatler buluşmanın yapıldığı bölgenin saat diliminde. Sayısal biçim iki dilde de gg.aa.yyyy ve 24 saat SS:dd;
 // ay ve gün adları arayüz dilinde.
-export const DEFAULT_TIMEZONE = "Europe/Istanbul";
+const DEFAULT_TIMEZONE = "Europe/Istanbul";
 const intlLocale = (lang: Lang) => (lang === "en" ? "en-GB" : "tr-TR");
 
 function parts(date: Date | string | number, timeZone: string) {
@@ -121,10 +120,6 @@ export function weekdayName(day: number, lang: Lang): string {
   return base.toLocaleDateString(intlLocale(lang), { weekday: "long", timeZone: "UTC" });
 }
 
-// ─── Para birimi ─────────────────────────────────────────────────────────────
-// Türkiye bölgelerinde TRY (₺), Türkiye dışındaki bütün bölgelerde USD ($)
-export const currencySymbol = (currency?: string | null) => (currency === "USD" ? "$" : "₺");
-
 // ─── Telefon (E.164) ─────────────────────────────────────────────────────────
 export const DEFAULT_PHONE_COUNTRY = "TR";
 
@@ -177,16 +172,16 @@ export type IdType = "TC" | "YKN" | "PASSPORT";
 export const ID_TYPES: IdType[] = ["TC", "YKN", "PASSPORT"];
 
 // iyzico satın alımındaki kimlik numarası (numara saklanmaz, yalnız iyzico'ya iletilir). TC: mevcut kural (11 hane rakam)
-export const isValidTckn = (v: string) => /^\d{11}$/.test(v);
-export const isValidYkn = (v: string) => /^99\d{9}$/.test(v);
-export const isValidPassportNo = (v: string) => /^[A-Za-z0-9]{6,9}$/.test(v);
+const isValidTckn = (v: string) => /^\d{11}$/.test(v);
+const isValidYkn = (v: string) => /^99\d{9}$/.test(v);
+const isValidPassportNo = (v: string) => /^[A-Za-z0-9]{6,9}$/.test(v);
 export function isValidIdNumber(type: IdType, v: string): boolean {
   return type === "TC" ? isValidTckn(v) : type === "YKN" ? isValidYkn(v) : isValidPassportNo(v);
 }
 
 // ─── Meslek alanları ─────────────────────────────────────────────────────────
 // Veritabanında Türkçe değer saklanır (eşleştirme bunu karşılaştırır); ekranda çeviri anahtarı "occ.<anahtar>" ile gösterilir
-export const OCCUPATION_KEYS: Record<string, string> = {
+const OCCUPATION_KEYS: Record<string, string> = {
   "Teknoloji & Yazılım": "tech", "Finans & Bankacılık": "finance", "Sağlık & Tıp": "health", "Hukuk": "law",
   "Eğitim & Akademi": "education", "Mühendislik": "engineering", "Pazarlama & Reklam": "marketing", "Medya & İletişim": "media",
   "Sanat & Tasarım": "art", "Girişimcilik & İş Dünyası": "business", "Kamu & Devlet": "public", "Turizm & Hizmet": "tourism",

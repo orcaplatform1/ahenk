@@ -6,7 +6,7 @@ import { KankaSection } from '@/components/KankaSection';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import { useState, useRef, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ENGLISH_ENABLED, LANGS, occupationLabel, splitE164, toE164, type Lang } from '@ahenk/shared';
+import { ENGLISH_ENABLED, occupationLabel, splitE164, toE164, type Lang } from '@ahenk/shared';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { usePathname } from '@/i18n/navigation';
 import { switchLocale } from '@/lib/locale';

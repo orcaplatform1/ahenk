@@ -1,8 +1,8 @@
 // Kayıt formu seçicileri: CityPickerField, SiteSelect (ilçe, aramalı), OccupationField, DateField (apps/web/app/kayit, components/BirthDateField)
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { Btn, StdButton, Input, Mono, Sheet, T } from './ui';
-import { c, ll, tw } from '@/theme/theme';
+import { c, ll } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { formatNamed } from '@ahenk/shared';
 import { currentLang } from '@/lib/i18n';

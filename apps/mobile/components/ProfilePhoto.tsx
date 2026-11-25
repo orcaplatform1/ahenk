@@ -1,6 +1,6 @@
 // Profil fotoğrafı: yuvarlak avatar (fotoğraf yoksa ad soyad kısaltması, çerçeve cinsiyet rengi), tam ekran görünüm
 // (Instagram profil fotoğrafı gibi) ve galeriden yükleme. Yükleme yalnız KYC onaylıysa; fotoğraf admin onayına düşer.
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import { showAlert } from '@/components/AppAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,7 +17,7 @@ import i18n from '@/lib/i18n';
 
 export const absPhoto = (u: string) => (u.startsWith('/') ? `${BASE}${u}` : u);
 
-export function PencilIcon({ size = 16, color = '#fff' }: { size?: number; color?: string }) {
+function PencilIcon({ size = 16, color = '#fff' }: { size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <Path d="M12 20h9" /><Path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
@@ -26,7 +26,7 @@ export function PencilIcon({ size = 16, color = '#fff' }: { size?: number; color
 }
 
 // Palet renginde kalem ikonlu yuvarlak düzenleme butonu (en az 44 pt dokunma alanı)
-export function EditBadge({ size, onPress }: { size: number; onPress: () => void }) {
+function EditBadge({ size, onPress }: { size: number; onPress: () => void }) {
   const pad = Math.max(0, (44 - size) / 2);
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={i18n.t('photo.edit')} hitSlop={pad}
@@ -47,7 +47,7 @@ export function Avatar({ photoUrl, initials, gender, size, borderWidth = 2 }: { 
 }
 
 // Galeriden seç (kamera yok) → yükle. Sonuç: true yüklendi, false vazgeçildi; hata mesajı Ahenk uyarı penceresiyle (showAlert)
-export async function pickAndUploadProfilePhoto(kycApproved: boolean): Promise<boolean> {
+async function pickAndUploadProfilePhoto(kycApproved: boolean): Promise<boolean> {
   if (!kycApproved) { showAlert(i18n.t('photo.title'), i18n.t('photo.kycFirst')); return false; }
   const picked = await pickFromLibrary(1);
   if (picked === 'blocked') return false;

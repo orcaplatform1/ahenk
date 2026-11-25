@@ -16,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from './api';
 
 import i18n from './i18n';
-export const SOS_LIVE_TASK = 'ahenk-sos-live';
+const SOS_LIVE_TASK = 'ahenk-sos-live';
 const KEY = 'ahenk_sos_report';
 export const SOS_POLL_MS = 30_000;
 
@@ -85,7 +85,7 @@ export async function requestSosAlwaysPermission() {
   await Location.requestBackgroundPermissionsAsync().catch(() => undefined);
 }
 
-export async function stopSosLive() {
+async function stopSosLive() {
   await AsyncStorage.removeItem(KEY);
   if (await Location.hasStartedLocationUpdatesAsync(SOS_LIVE_TASK).catch(() => false)) await Location.stopLocationUpdatesAsync(SOS_LIVE_TASK).catch(() => {});
 }

@@ -1,7 +1,7 @@
 // apps/web/app/[locale]/davet/[kod]/page.tsx karşılığı (Universal Link / App Link: https://ahenk.co/davet/<KOD>, ayrıca ahenk://davet/<KOD>).
 // Kod GET /invite/:code ile denetlenir: geçerliyse kayıt ekranı davet kodu dolu, geçersizse (rakam değil ya da böyle bir kod yok) kodsuz açılır.
 // HIG: bekleme sırasında yalnız yükleniyor göstergesi; ekran kendiliğinden kayda geçer.
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { API_PREFIX } from '@/lib/config';

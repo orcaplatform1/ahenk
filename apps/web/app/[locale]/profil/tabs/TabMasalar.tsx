@@ -387,7 +387,6 @@ function MasaBlock({
   kanka?: { initials: string; gender: string | null } | null;
 }) {
   const t = useTranslations();
-  const locale = useLocale() as Lang;
   const meeting = item?.meeting;
 
   let content: React.ReactNode;
@@ -412,7 +411,6 @@ function MasaBlock({
     // Kart kendi ana kartını ve alttaki ayrı kartı (acil yardım, sohbet, Değerlendir) çizer
     content = <MasaDetayKarti masa={detayData} apiBase={API_PREFIX} reviewHref={`/degerlendirme/${meeting.id}`} />;
   } else if (meeting.participants.length > 0) {
-    const isOneOnOne = meeting.type === 'ONE_ON_ONE';
     content = (
       <div className="ll-card">
         <ConfirmedRadarView
@@ -630,7 +628,6 @@ function HistoryList({ history }: { history: HistoryMeeting[] }) {
 // Salt görüntüleme: sohbet yok, yalnızca Haritada Gör çalışır
 function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
   const t = useTranslations();
-  const locale = useLocale() as Lang;
   const masa: MasaDetayData = {
     id: m.id,
     type: m.type,

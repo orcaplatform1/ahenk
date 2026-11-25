@@ -7,8 +7,8 @@ import { API_PREFIX, langHeaders } from '@/lib/api';
 // Profil fotoğrafı: yalnız KYC onaylıysa yüklenir; fotoğraf admin onayına düşer. Dosya seçimi galeri / dosyalardan
 // (capture özniteliği yok; kamera seçeneği sunulmaz)
 // Mesajlar çeviri anahtarı (t(...) ile gösterilir)
-export const KYC_PHOTO_MESSAGE = 'photo.kycFirst';
-export const PENDING_PHOTO_MESSAGE = 'photo.pending';
+const KYC_PHOTO_MESSAGE = 'photo.kycFirst';
+const PENDING_PHOTO_MESSAGE = 'photo.pending';
 const MALE = '#4fc3f7';
 const FEMALE = '#f48fb1';
 export const genderColor = (g?: string | null) => (g === 'FEMALE' ? FEMALE : MALE);
@@ -24,7 +24,7 @@ async function uploadPhoto(file: File): Promise<void> {
 }
 
 // pick(): KYC onaysızsa mesaj; onaylıysa dosya seçiciyi açar ve yükler. input öğesi sayfaya eklenmeli
-export function useProfilePhotoPicker(kycApproved: boolean) {
+function useProfilePhotoPicker(kycApproved: boolean) {
   const t = useTranslations();
   const ref = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState('');

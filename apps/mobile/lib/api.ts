@@ -56,7 +56,7 @@ async function readMessage(res: Response): Promise<string> {
   return msg ?? i18n.t('career.error');
 }
 
-export class ApiError extends Error {
+class ApiError extends Error {
   status: number;
   data: unknown;
   constructor(message: string, status: number, data: unknown) { super(message); this.status = status; this.data = data; }

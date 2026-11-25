@@ -2,7 +2,7 @@
 // Ağaç ekran açılınca bir kez hesaplanır ve sabit bir resim (SkPicture) olarak çizilir; yaprak / dal animasyonu, büyüme ve düşen
 // yaprak yoktur. Seçili boyut değişince resim bir kez yeniden kaydedilir. Tek animasyon: bütün ağaç kökü etrafında tek parça hafifçe
 // salınır (Reanimated frame callback, UI thread, en fazla 30 kare/sn); ekran odakta değilken ve uygulama arka plandayken durur.
-import React, { useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { View } from 'react-native';
 import { useAnimActive } from '@/lib/motion';
 import { useDerivedValue, useFrameCallback, useSharedValue, type FrameInfo } from 'react-native-reanimated';

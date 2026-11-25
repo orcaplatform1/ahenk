@@ -1,5 +1,5 @@
 // Sekme 3 — Bildirimler (S-14). Webde karşılığı yok; satır Canlı Akış kart stilinde (LiveFeed): zaman + olay başlığı.
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

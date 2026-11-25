@@ -1,7 +1,7 @@
 // Açılış yönlendirmesi: dönen logolu 3 sn'lik açılış ekranı kaldırıldı. Yerel açılış görseli (expo-splash-screen) görünürken
 // yazı tipleri yüklenir, oturum yenilenir + /auth/me rol kontrolü yapılır ve hemen gidilecek ekrana geçilir.
 // Gidilecek ekranın açılış verileri arka planda ön yüklenir (beklenmez; ekranlar aynı yolları api.get ile çağırır).
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { forgetDevice, getAccess, getRemembered } from '@/lib/session';

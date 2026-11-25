@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 
 type PlanKey = 'MASADA' | 'KARSIMDA' | 'ICERDE' | 'KANKAMLA' | 'PRIME_1M' | 'PRIME_3M' | 'PRIME_6M' | 'PRIME_12M';

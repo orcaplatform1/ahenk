@@ -1,6 +1,6 @@
 // WhatsApp kodu ekranlarının ortak sayacı (web apps/web/lib/otpCountdown.tsx karşılığı): süre backend'in döndüğü
 // saniyeden (resendSeconds) başlar. Kod gönderen bütün mobil ekranlar bu hook'u ve OtpCountdown bileşenini kullanır.
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { StdButton, T } from './ui';
 import { ll } from '@/theme/theme';

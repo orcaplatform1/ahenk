@@ -1,5 +1,5 @@
 // apps/web/app/admin/careers/page.tsx karşılığı (yalnız SUPERADMIN)
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, Modal, Pressable, TextInput, useWindowDimensions, View } from 'react-native';
 import { getAccess } from '@/lib/session';
 import { openAuthedFile } from '@/lib/authFile';

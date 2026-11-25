@@ -10,7 +10,7 @@ import { api } from '@/lib/api';
 import { myId, myRole } from '@/lib/adminRole';
 import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
-import { AdminSelect, APager } from '@/components/admin/AdminControls';
+import { AdminSelect } from '@/components/admin/AdminControls';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { AdminNoShowWarnings, AdminSuspendButtons, AdminSanctionHistory, AdminUserEdit, type NoShowReportItem, type NoShowWarningInfo } from '@/components/admin/UserParts';
 import { adm, llCard } from '@/theme/theme';

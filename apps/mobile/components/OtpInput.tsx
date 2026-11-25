@@ -1,5 +1,5 @@
 // apps/web/components/ui/OtpInput.tsx karşılığı: 6 haneli kod, tek seferlik kod otomatik doldurma (HIG klavye)
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { Pressable, TextInput, View, type TextInputInstance } from 'react-native';
 import { T } from './ui';
 import { inputGlass, sans, tw } from '@/theme/theme';

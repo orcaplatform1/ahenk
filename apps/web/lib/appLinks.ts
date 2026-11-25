@@ -2,7 +2,7 @@
 export const APP_STORE_URL = '';
 export const PLAY_STORE_URL = '';
 
-export type DevicePlatform = 'ios' | 'android' | 'desktop';
+type DevicePlatform = 'ios' | 'android' | 'desktop';
 
 export function devicePlatform(): DevicePlatform {
   if (typeof navigator === 'undefined') return 'desktop';

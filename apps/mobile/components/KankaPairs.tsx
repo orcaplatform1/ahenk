@@ -1,5 +1,4 @@
 // packages/ui/src/components/tables/KankaPairs.tsx karşılığı
-import React from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { DetayAvatar } from './DetayAvatar';

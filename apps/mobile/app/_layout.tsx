@@ -1,7 +1,7 @@
 // Kök yerleşim: yazı tipleri, güvenli alan, durum çubuğu (açık içerik — web tamamen koyu tema), yığın gezinme.
 // Açılış yönlendirmesi (/) yazı tiplerini ve oturumu yükler, yerel açılış görseli bu sırada görünür (lib/boot).
 // Uygulama doğrudan başka bir yola (bağlantı) açılırsa yazı tipleri yüklenene kadar yerel açılış görseli kalır.
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';

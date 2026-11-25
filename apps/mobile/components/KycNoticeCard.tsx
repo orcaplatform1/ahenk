@@ -1,6 +1,6 @@
 // KYC onaylanmamış kullanıcıda tüm sekmelerin en üstünde (web components/KycNoticeCard.tsx karşılığı).
 // Basınca Profilim → Kimlik Doğrulama açılır; KYC onaylanınca kaybolur. HIG: en az 44 pt dokunma alanı.
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';

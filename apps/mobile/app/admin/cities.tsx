@@ -1,5 +1,5 @@
 // apps/web/app/admin/cities/page.tsx karşılığı (ADMIN + SUPERADMIN)
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { api } from '@/lib/api';
 import { Btn } from '@/components/ui';

@@ -1,6 +1,6 @@
 // apps/web/components/ProblemReportModal.tsx karşılığı: açıklama + yalnız galeriden en fazla 3 görsel (JPG/PNG/WebP, her biri 5 MB).
 // Butonla ve sallayarak açılışta aynı; ekran görüntüsü eklenmez. Gönderim: POST /problem-reports (platform IOS/ANDROID).
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, Platform, TextInput, View } from 'react-native';
 import { File as FsFile } from 'expo-file-system';
 import { api } from '@/lib/api';

@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl';
 
 import { useState, useEffect } from 'react';
 import { Link } from '@/i18n/navigation';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useRouter } from '@/i18n/navigation';
 import { api } from '@/lib/api';

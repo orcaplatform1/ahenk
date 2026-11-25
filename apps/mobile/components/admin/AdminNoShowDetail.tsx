@@ -1,6 +1,6 @@
 // web components/AdminNoShowDetail.tsx karşılığı: GELMEDİ detayı. Gelmeyenin fotoğrafı ve adı, bildirenler ve zamanı, önceki gelmedi
 // uyarıları, "Uyarı ver" (hazır şablon push). Önceki gelmedi uyarısı varsa "Uyarı ver" pasif; yalnız "Askıya al" (3 gün / 15 gün / 1 ay).
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { api } from '@/lib/api';
 import { showAlert } from '@/components/AppAlert';

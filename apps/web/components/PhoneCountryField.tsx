@@ -3,14 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
-import { countryByCode, countryName, flagEmoji, searchCountries, toE164, type Lang } from '@ahenk/shared';
+import { countryByCode, countryName, flagEmoji, searchCountries, type Lang } from '@ahenk/shared';
 
 // Ülke kodlu telefon alanı: bayrak + ülke kodu (varsayılan 🇹🇷 +90). Basınca ortak 42 ülkelik listenin (sabit sıra) olduğu, ad ve kodla aranabilir
 // liste açılır (ülke adları arayüz dilinde). Doğrulama libphonenumber-js ile seçilen ülkeye göre; değer E.164 olarak döner.
-export function usePhoneE164(country: string, national: string): string | null {
-  return toE164(country, national);
-}
-
 export function CountryCodeButton({ country, onChange, disabled }: { country: string; onChange: (code: string) => void; disabled?: boolean }) {
   const t = useTranslations();
   const locale = useLocale() as Lang;

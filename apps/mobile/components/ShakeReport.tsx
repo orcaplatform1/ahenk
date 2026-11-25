@@ -1,6 +1,6 @@
 // Salla-Bildir: giriş yapmış üye telefonu sallayınca Sorun Bildir penceresi açılır (ekran görüntüsü eklenmez; görseller yalnız galeriden).
 // Gönderim web Sorun Bildir ile aynı uç (POST /problem-reports); admin Sorun Bildirimleri'ne düşer.
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'expo-router';
 import { Accelerometer } from 'expo-sensors';
 import { getShakeEnabled, onShakePref } from '@/lib/shakePref';

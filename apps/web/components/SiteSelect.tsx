@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 // Liste body'ye taşınır; böylece kart/animasyon kapsayıcıları içinde kesilmez.
 // disabled: soluk, seçilemez satır; separator: satırın üstünde ortasında yazı olan ince ayırıcı ("Yakında");
 // action: satırın sağındaki küçük buton (ör. "Haber ver")
-export interface SiteSelectOption { value: string; label: string; disabled?: boolean; separator?: string; action?: React.ReactNode }
+interface SiteSelectOption { value: string; label: string; disabled?: boolean; separator?: string; action?: React.ReactNode }
 
 interface Props {
   value: string;

@@ -1,7 +1,7 @@
 // web components/AdminUserPhoto.tsx karşılığı: kullanıcı profil fotoğrafı; basınca tam ekran büyük görünüm, "Sil" → onay penceresi.
 // Önceki fotoğraf ihlali yoksa fotoğraf silinir ve kullanıcıya uyarı push'u gider; varsa askı süresi (3 gün / 15 gün / 1 ay) seçilir.
 // HIG: en az 44 pt dokunma alanı; geri tuşu / dışarı dokunma kapatır.
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Image, Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import { api } from '@/lib/api';
 import { mediaUrl } from '@/lib/venueApi';

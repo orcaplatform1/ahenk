@@ -12,7 +12,7 @@ const PATHS = {
   spark: 'M12 3v5M12 16v5M3 12h5M16 12h5M6 6l3 3M15 15l3 3M18 6l-3 3M9 15l-3 3',
 } as const;
 
-export type LineIconName = keyof typeof PATHS;
+type LineIconName = keyof typeof PATHS;
 
 export function LineIcon({ name, size = 24 }: { name: LineIconName; size?: number }) {
   return (

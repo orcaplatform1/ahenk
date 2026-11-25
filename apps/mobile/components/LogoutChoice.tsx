@@ -2,7 +2,6 @@
 // "Bu cihazda beni hatırla" (oturum kapanır, cihaz hatırlanır → açılışta Tekrar hoş geldin + Face ID / parmak izi + Cihaz Doğrulandı),
 // "Bu cihazda beni unut" (oturum kapanır, hatırlama bilgisi silinir), "Vazgeç". HIG: iptal seçeneği, en az 44 pt dokunma alanı.
 // remember=false verilirse yalnız "Bu cihazda beni unut" ve "Vazgeç" (şu an bütün çağrılar varsayılanı kullanır).
-import React from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, settleRefresh } from '@/lib/api';

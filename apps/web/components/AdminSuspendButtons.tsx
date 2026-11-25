@@ -3,7 +3,7 @@
 import { AMBER, SANS } from '@/lib/adminTheme';
 
 // Askı tek model: 3 gün / 15 gün / 1 ay (30). Askı girişi engellemez; kullanıcı yalnız masaya katılamaz, paket / abonelik alamaz.
-export const SUSPEND_OPTIONS: { days: 3 | 15 | 30; label: string }[] = [
+const SUSPEND_OPTIONS: { days: 3 | 15 | 30; label: string }[] = [
   { days: 3, label: '3 gün' }, { days: 15, label: '15 gün' }, { days: 30, label: '1 ay' },
 ];
 

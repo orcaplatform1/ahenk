@@ -1,7 +1,7 @@
 // apps/web/app/profil/tabs/TabKyc.tsx karşılığı. Önce belge türü sorulur (Kimlik Kartı / Ehliyet / Pasaport / Oturma İzni; bölge
 // ayarından), sonra çekim: Pasaport'ta yalnız fotoğraflı sayfa, diğerlerinde önce ön yüz, ardından arka yüz. Belge fotoğrafı yalnız kamerayla (S-12), canlılık videosu ön kamera
 // (3 sn geri sayım + 5 sn kayıt). Kayıt sırasında pencere kapatılamaz (S-25). Yükleme: POST /kyc/upload (multipart).
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, Modal, Pressable, View } from 'react-native';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { PERM_REASON, showSettingsAlert } from '@/lib/permissions';
@@ -34,7 +34,7 @@ function Done({ label, onRetake }: { label: string; onRetake: () => void }) {
   );
 }
 
-export function PhotoCamera({ visible, onClose, onShot }: { visible: boolean; onClose: () => void; onShot: (s: Shot) => void }) {
+function PhotoCamera({ visible, onClose, onShot }: { visible: boolean; onClose: () => void; onShot: (s: Shot) => void }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const ref = useRef<CameraView>(null);

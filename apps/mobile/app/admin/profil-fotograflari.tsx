@@ -1,6 +1,6 @@
 // apps/web/app/admin/profil-fotograflari/page.tsx karşılığı: onay bekleyen profil fotoğrafları;
 // yüklenen fotoğraf ve KYC kimlik ön yüzü yan yana (Bearer ile yüklenir), altında Onayla / Reddet
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Image, Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import { api } from '@/lib/api';
 import { BASE } from '@/lib/config';

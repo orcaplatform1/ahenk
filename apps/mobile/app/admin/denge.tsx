@@ -1,5 +1,5 @@
 // apps/web/app/admin/denge/page.tsx karşılığı (Bot Yönetimi, yalnız SUPERADMIN)
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, Pressable, View } from 'react-native';
 import { File as FsFile } from 'expo-file-system';
 import { showAlert } from '@/components/AppAlert';

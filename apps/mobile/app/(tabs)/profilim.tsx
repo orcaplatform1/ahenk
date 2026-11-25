@@ -1,7 +1,7 @@
 // Sekme 5 — Profilim: apps/web/app/profil/page.tsx. Üst sekme çubuğu yok; Kişilik Ağacım profil fotoğrafının altındaki kartla, Numara
 // Engelleme "Gizlilik ve Güvenlik" kartıyla,
 // Kimlik Doğrulama KYC kartıyla (tab=kyc) açılır; "← Profilim" ve Android geri tuşu Profilim'e döner
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

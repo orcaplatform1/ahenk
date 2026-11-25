@@ -1,12 +1,12 @@
 // apps/web/app/kanka/[token]/page.tsx karşılığı (Universal Link: https://ahenk.co/kanka/<token>)
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { API_PREFIX } from '@/lib/config';
 import { langHeaders } from '@/lib/api';
 import { getAccess } from '@/lib/session';
 import { StdButton, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
-import { c, gender as G, tw, ll } from '@/theme/theme';
+import { c, gender as G, ll } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 
 export default function KankaDavet() {

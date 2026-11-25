@@ -27,13 +27,6 @@ export async function ensurePermission(
   return r.granted ? true : false;
 }
 
-// Kalıcı reddedilmiş mi (yalnız okuma; reddedilmişse Ayarlara Git uyarısı gösterilir)
-export async function blockedWithAlert(get: () => Promise<PermResult>, reason: string): Promise<boolean> {
-  const cur = await get();
-  if (!cur.granted && !cur.canAskAgain) { showSettingsAlert(reason); return true; }
-  return false;
-}
-
 // Metinler arayüz dilinde (okunduğu anda çevrilir)
 export const PERM_REASON = {
   get library() { return i18n.t('perm.library'); },

@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 
 // Dönüşümlü giriş arka planları: giriş ve "Tekrar hoş geldin" ekranı her açıldığında sıradaki görsel
 // (1 → 2 → 3 → 1 …). En son gösterilen sıra cihazda (AsyncStorage) saklanır; uygulama kapatılıp açılınca kaldığı yerden sürer.
-export const AUTH_BACKGROUNDS = [
+const AUTH_BACKGROUNDS = [
   require('@/assets/mobilappscreen.webp'),
   require('@/assets/mobilappscreen2.webp'),
   require('@/assets/mobilappscreen3.webp'),

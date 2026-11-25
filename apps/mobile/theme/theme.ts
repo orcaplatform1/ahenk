@@ -37,7 +37,6 @@ export const ll = {
   red2: '#ff6b5e',
   red3: '#ff8a7e',
   copper: '#e8a27a',
-  copper2: '#c8743c',
   glow: 'rgba(200,56,44,0.28)',
 } as const;
 
@@ -53,9 +52,6 @@ export const gender = {
 export const c = {
   green: '#27ae60', // MasaDetayKarti GREEN
   red: '#c0392b', // MasaDetayKarti RED
-  wine: '#A21A26', // btn-primary noktası
-  wineBorder: '#722F37', // TabMasalar KYC şeridi
-  ghostDot: 'rgba(230,225,218,0.5)',
   ghostRedDot: '#e74c3c',
   ok: '#4ade80',
   ok2: '#22c55e',
@@ -65,25 +61,18 @@ export const c = {
   maintText: '#e0b84a',
   maintBg: 'rgba(201,162,39,0.10)',
   maintBorder: 'rgba(201,162,39,0.35)',
-  sheetBg: '#1a1a1a',
-  planLeft: '#0c0909',
-  gold1: '#c9a227',
-  gold2: '#e8c84a',
   aiBg: 'rgba(8,18,44,0.75)',
   aiBorder: 'rgba(100,130,200,0.18)',
   aiTitle: 'rgba(180,200,255,0.75)',
   aiIconBg: 'rgba(100,130,200,0.14)',
   aiIconBorder: 'rgba(100,130,200,0.22)',
   aiDivider: 'rgba(100,130,200,0.12)',
-  tradersText: '#e8e8e8', // SiteFooter
-  tradersTR: '#4a90d9', // SiteFooter
   kycBall: '#722f37',
   white: '#ffffff',
   black: '#000000',
   t666: '#666666',
   t555: '#555555',
   t444: '#444444',
-  t333: '#333333',
   tAaa: '#aaaaaa',
   tBbb: '#bbbbbb',
   tCcc: '#cccccc',
@@ -178,7 +167,6 @@ export const inputGlass = {
 } as const;
 export const glassCard = { bg: 'rgba(255,255,255,0.10)', border: 'rgba(255,255,255,0.10)', radius: 16, blur: 20 } as const;
 export const sheet = { bg: '#1a1a1a', border: 'rgba(255,255,255,0.08)', radius: 20, padTop: 24, padH: 20, padBottom: 36, overlay: 'rgba(0,0,0,0.72)', maxWidth: 560 } as const;
-export const accountTab = { size: 12, padV: 6, padH: 12, radius: 8, gap: 4, barPadH: 12, barPadV: 8 } as const;
 export const heat = {
   height: 84, radius: 12, padding: 10, gap: 6,
   // Semt adı ile yoğunluk yazısı arasındaki ışın çizgisi (web .ll-heat-rule)
@@ -257,20 +245,12 @@ export const btn = {
   // MasaDetayKarti "Acil Yardım" ve SOS formu "İhbarda Bulun"
   sos: { box: { borderRadius: 12, overflow: 'hidden', paddingVertical: 15, alignItems: 'center', shadowColor: 'rgba(192,57,43,0.45)', shadowOpacity: 1, shadowRadius: 10 }, text: { weight: 800, fontSize: 14, color: '#fff', letterSpacing: 1.68 }, upper: true, gradient: { colors: ['#7b0000', '#c0392b', '#ff6b6b'], locations: [0, 0.5, 1], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } } },
   sosSubmit: { box: { borderRadius: 10, overflow: 'hidden', paddingVertical: 14, alignItems: 'center' }, text: { weight: 800, fontSize: 14, color: '#fff', letterSpacing: 1.12 }, disabledOpacity: 0.45, gradient: { colors: ['#7b0000', '#c0392b', '#ff6b6b'], locations: [0, 0.6, 1], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } } },
-  // MasaDetayKarti "Yola çıktığını bildirdin" (tamamlandı hali)
-  doneGreen: { box: { paddingVertical: 13, backgroundColor: 'rgba(39,174,96,0.12)', borderWidth: 1, borderColor: 'rgba(39,174,96,0.35)', borderRadius: 9999, alignItems: 'center' }, text: { weight: 700, color: '#27ae60', fontSize: 12, letterSpacing: 1.2 }, upper: true },
   // TabProfilim kart başlığı "Düzenle" ve satır "Değiştir/Ekle"
   cardAction: { box: { paddingHorizontal: 12, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8 }, text: { fontSize: 12, color: '#a39c93' } },
   rowAction: { box: { paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 6 }, text: { fontSize: 12, color: '#a39c93' } },
   // Metin bağlantı butonları ("Kodu tekrar gönder", "← Numarayı değiştir", "Temizle", "Sil")
   textLink: { box: { minHeight: 44, justifyContent: 'center' }, text: { fontSize: 13, color: '#a39c93', textAlign: 'center' } },
   textSmall: { box: { minHeight: 44, justifyContent: 'center' }, text: { fontSize: 12, color: '#a39c93' } },
-  // Sohbet "Şikayet et" metin butonu
-  reportLink: { box: { paddingVertical: 2, marginTop: 2 }, text: { fontSize: 10, color: '#444444' }, on: { box: {}, text: { color: '#333333' } } },
-  // Geçmiş Masalarım "Değerlendir" (ll-mono bakır bağlantı) ve kart açma oku
-  monoLink: { box: { alignSelf: 'flex-start', marginBottom: 8 }, text: { fontSize: 11, color: '#e8a27a', fontFamily: 'JetBrainsMono_400Regular' } },
-  // Geçmiş Masalarım "Değerlendir": monoLink yazı renginde çerçeveli etiket, yazı biraz büyük
-  monoTag: { box: { alignSelf: 'flex-start', marginBottom: 12, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#e8a27a', borderRadius: 8, minHeight: 32, justifyContent: 'center' }, text: { fontSize: 13, color: '#e8a27a', fontFamily: 'JetBrainsMono_400Regular' } },
   // Yönetim Paneli: menü bağlantısı (normal / aktif / Acil Yardım), Çıkış, "Okundu" gibi küçük butonlar, Navbar "Yönetim Paneli" rozeti
   admNav: { box: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, text: { fontSize: 13, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)' }, text: { color: '#93c5fd' } } },
   admNavSos: { box: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: 'transparent', flexDirection: 'row', alignItems: 'center' }, text: { weight: 600, fontSize: 13, color: '#ef4444' }, on: { box: { backgroundColor: 'rgba(239,68,68,0.2)', borderColor: 'rgba(239,68,68,0.4)' }, text: { weight: 700, color: '#ef4444' } } },
@@ -289,7 +269,6 @@ export const btn = {
   admX: { box: { padding: 2 }, text: { fontSize: 15, color: '#64748b' } },
   admSegment: { box: { flex: 1, padding: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#1a3a5c' }, text: { weight: 600, fontSize: 13, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(34,211,238,0.1)', borderColor: 'rgba(34,211,238,0.3)' }, text: { color: '#22d3ee' } } },
   admSave: { box: { marginTop: 12, padding: 10, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,211,238,0.1)', borderWidth: 1, borderColor: 'rgba(34,211,238,0.3)' }, text: { weight: 700, fontSize: 13, color: '#22d3ee' }, on: { box: { backgroundColor: 'rgba(34,197,94,0.15)', borderColor: 'rgba(34,197,94,0.3)' }, text: { color: '#22c55e' } }, disabledOpacity: 0.6 },
-  admReview: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 10, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(34,211,238,0.08)', borderColor: 'rgba(34,211,238,0.3)' }, text: {} } },
   admOkSm: { box: { flex: 1, padding: 7, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { weight: 600, fontSize: 11, color: '#22c55e' }, disabledOpacity: 0.5 },
   admNoSm: { box: { flex: 1, padding: 7, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }, text: { weight: 600, fontSize: 11, color: '#ef4444' }, disabledOpacity: 0.5 },
   admAdd: { box: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 8, backgroundColor: 'rgba(34,211,238,0.1)', borderWidth: 1, borderColor: 'rgba(34,211,238,0.3)' }, text: { weight: 600, fontSize: 13, color: '#22d3ee' } },
@@ -297,7 +276,6 @@ export const btn = {
   admActivate: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { fontSize: 10, color: '#22c55e' }, on: { box: { backgroundColor: 'rgba(100,116,139,0.1)', borderColor: 'rgba(100,116,139,0.25)' }, text: { color: '#64748b' } }, disabledOpacity: 0.5 },
   admDetail: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 7, borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 10, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(34,211,238,0.08)', borderColor: 'rgba(34,211,238,0.3)' }, text: { color: '#22d3ee' } } },
   admLink: { box: {}, text: { fontSize: 12, color: '#22d3ee' } },
-  admAmberSm: { box: { flex: 1, padding: 7, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }, text: { weight: 600, fontSize: 11, color: '#f59e0b' }, disabledOpacity: 0.5 },
   admGreen: { box: { paddingVertical: 9, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.12)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.4)' }, text: { weight: 600, fontSize: 13, color: '#22c55e' }, disabledOpacity: 0.5 },
   admGhost: { box: { paddingVertical: 9, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 13, color: '#64748b' } },
   admCheck: { box: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32 }, text: { fontSize: 13, color: '#e2e8f0' } },
@@ -309,24 +287,19 @@ export const btn = {
   admOkMd: { box: { flex: 1, padding: 8, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { weight: 600, fontSize: 11, color: '#22c55e' }, disabledOpacity: 0.5 },
   admRejectMd: { box: { flex: 1, padding: 8, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)' }, text: { weight: 600, fontSize: 11, color: '#ef4444' }, on: { box: { backgroundColor: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.4)' }, text: {} }, disabledOpacity: 0.5 },
   admCancelMd: { box: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 11, color: '#64748b' } },
-  admSaveSm: { box: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { weight: 600, fontSize: 11, color: '#22c55e' }, disabledOpacity: 0.5 },
   admEditSm: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, backgroundColor: 'rgba(59,130,246,0.08)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.2)' }, text: { fontSize: 10, color: '#93c5fd' } },
   admDelSm: { box: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)' }, text: { fontSize: 10, color: '#ef4444' } },
   admMapSm: { box: { paddingVertical: 7, paddingHorizontal: 10, borderRadius: 8, backgroundColor: 'rgba(59,130,246,0.08)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.25)', justifyContent: 'center' }, text: { weight: 600, fontSize: 11, color: '#93c5fd' }, disabledOpacity: 0.4 },
-  admPhotoX: { box: { position: 'absolute', top: 3, right: 3, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 11, color: '#fff' } },
   admAmberXs: { box: { paddingVertical: 3, paddingHorizontal: 10, borderRadius: 6, alignItems: 'center', backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }, text: { weight: 600, fontSize: 10, color: '#f59e0b' }, disabledOpacity: 0.5 },
   admGreenXs: { box: { paddingVertical: 2, paddingHorizontal: 10, borderRadius: 6, alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { weight: 600, fontSize: 10, color: '#22c55e' }, disabledOpacity: 0.5 },
-  admActAmber: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }, text: { weight: 600, fontSize: 11, color: '#f59e0b' }, disabledOpacity: 0.5 },
   admActGreen: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { weight: 600, fontSize: 11, color: '#22c55e' }, disabledOpacity: 0.5 },
   admActBlue: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', alignSelf: 'flex-start' }, text: { weight: 600, fontSize: 11, color: '#93c5fd' }, disabledOpacity: 0.5 },
-  admActRed: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }, text: { weight: 600, fontSize: 11, color: '#ef4444' }, disabledOpacity: 0.5 },
   admCyanEdit: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,211,238,0.08)', borderWidth: 1, borderColor: 'rgba(34,211,238,0.3)', alignSelf: 'flex-start' }, text: { weight: 600, fontSize: 11, color: '#22d3ee' }, disabledOpacity: 0.5 },
   admCyanSave: { box: { paddingVertical: 7, paddingHorizontal: 7, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,211,238,0.1)', borderWidth: 1, borderColor: 'rgba(34,211,238,0.3)', flex: 1 }, text: { weight: 700, fontSize: 11, color: '#22d3ee' }, disabledOpacity: 0.5 },
   admGreenLg: { box: { paddingVertical: 8, paddingHorizontal: 8, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { weight: 600, fontSize: 13, color: '#22c55e' }, disabledOpacity: 0.5 },
   admCyanVer: { box: { paddingVertical: 7, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,211,238,0.1)', borderWidth: 1, borderColor: 'rgba(34,211,238,0.3)' }, text: { weight: 600, fontSize: 13, color: '#22d3ee' }, disabledOpacity: 0.5 },
   admRed6: { box: { paddingVertical: 6, paddingHorizontal: 6, borderRadius: 6, alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', flex: 1 }, text: { weight: 400, fontSize: 13, color: '#ef4444' }, disabledOpacity: 0.5 },
   admOkDec: { box: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { weight: 600, fontSize: 12, color: '#22c55e' }, disabledOpacity: 0.5 },
-  admNoDec: { box: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }, text: { weight: 600, fontSize: 12, color: '#ef4444' }, disabledOpacity: 0.5 },
   admOutlineFlex: { box: { flex: 1, padding: 7, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 11, color: '#64748b' } },
   admMuted6: { box: { flex: 1, padding: 6, borderRadius: 6, alignItems: 'center', borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 13, color: '#64748b' } },
   admTabSm: { box: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 13, color: '#64748b' }, on: { box: { backgroundColor: 'rgba(34,211,238,0.08)', borderColor: 'rgba(34,211,238,0.3)' }, text: { color: '#e2e8f0' } } },
@@ -350,7 +323,6 @@ export const btn = {
   admCancelNo: { box: { flex: 1, padding: 9, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#1a3a5c' }, text: { fontSize: 13, color: '#64748b' } },
   admCancelYes: { box: { flex: 1, padding: 9, borderRadius: 8, alignItems: 'center', backgroundColor: 'rgba(239,68,68,0.15)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.4)' }, text: { weight: 600, fontSize: 13, color: '#ef4444' }, disabledOpacity: 0.5 },
   // admin/matches kullanıcı penceresi Askıya Al / Aktifleştir / Hesabı Sil (5/12, r6, 11)
-  admAct6Amber: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }, text: { fontSize: 11, color: '#f59e0b' }, disabledOpacity: 0.5 },
   admAct6Green: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)' }, text: { fontSize: 11, color: '#22c55e' }, disabledOpacity: 0.5 },
   admAct6Red: { box: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }, text: { fontSize: 11, color: '#ef4444' }, disabledOpacity: 0.5 },
   // admin/matches kullanıcı penceresi ücretsiz abonelik "Ver" (7/16, r8, mavi, 13/600 #3b82f6)
@@ -360,17 +332,8 @@ export const btn = {
   addSquare: { box: { justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }, text: { fontSize: 13, color: '#c9c2b8' } },
   // Giriş sayfası WhatsApp/E-posta anahtarı (segment)
   segment: { box: { flex: 1, paddingVertical: 8, minHeight: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' }, text: { weight: 500, fontSize: 13, color: '#666' }, on: { box: { backgroundColor: 'rgba(192,57,43,0.18)', borderColor: 'rgba(192,57,43,0.35)' }, text: { color: '#ff6b6b' } } },
-  // AccountTabBar sekme butonu
-  accountTab: { box: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' }, text: { weight: 500, fontSize: 12, color: '#666' }, on: { box: { backgroundColor: 'rgba(192,57,43,0.18)', borderColor: 'rgba(192,57,43,0.35)' }, text: { color: '#ff6b6b' } } },
   // Mekân paneli üst sekme bağlantısı
   venueTab: { box: { paddingVertical: 11.2, paddingHorizontal: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' }, text: { fontSize: 13.6, color: '#888' }, on: { box: { borderBottomColor: '#c0392b' }, text: { color: '#ff6b6b' } } },
-  venueLogout: { box: { minHeight: 44, paddingHorizontal: 8, justifyContent: 'center' }, text: { fontSize: 12.8, color: '#888' } },
-  // Mekân Hesap: "Hesabı Sil", "Vazgeç", "Hesabı Kapat"
-  venueDelete: { box: { minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(192,57,43,0.5)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 14.4, color: '#ff6b6b' } },
-  venueCancel: { box: { flex: 1, minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 16, color: '#aaaaaa' } },
-  venueConfirm: { box: { flex: 1, minHeight: 44, borderRadius: 10, backgroundColor: '#c0392b', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 16, color: '#fff' }, disabledOpacity: 0.6 },
-  // Mekân fotoğraf ekleme (kesik çizgili)
-  venueAddPhoto: { box: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.2)', borderRadius: 10 }, text: { color: '#ff6b6b', fontSize: 14.4 } },
   // Winback "İndirimi Uygula"
   winbackCta: { box: { borderRadius: 999, padding: 16, alignItems: 'center', shadowColor: 'rgba(200,84,50,0.4)', shadowOpacity: 1, shadowRadius: 15, shadowOffset: { width: 0, height: 10 } }, text: { weight: 700, fontSize: 16, letterSpacing: 0.32, color: '#fff' }, disabledOpacity: 0.55, gradient: { colors: ['#c0392b', '#d6453a', '#c8743c'], locations: [0, 0.4, 1], start: { x: 0, y: 0.4 }, end: { x: 1, y: 0.6 } } },
   winbackBadge: { box: { paddingVertical: 7, paddingHorizontal: 16, borderRadius: 999, backgroundColor: 'rgba(214,69,58,0.14)', borderWidth: 1, borderColor: 'rgba(200,116,60,0.6)' }, text: { weight: 600, fontSize: 13, color: '#f5f5f5' } },
@@ -392,7 +355,6 @@ export const btn = {
   // Kapat (×) ikon butonları
   closeX: { box: { minWidth: 24, alignItems: 'center' }, text: { fontSize: 20, lineHeight: 20, color: '#555555' } },
   lightboxClose: { box: { position: 'absolute', top: 56, right: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 18, color: '#f5f5f5' } },
-  photoRemove: { box: { position: 'absolute', top: 4, right: 4, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 16, color: '#fff' } },
   thumbRemove: { box: { position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 10, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }, text: { fontSize: 12, lineHeight: 14, color: '#f5f5f5' } },
 } satisfies Record<string, BtnSpec>;
 export type BtnVariant = keyof typeof btn;

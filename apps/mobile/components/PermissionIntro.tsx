@@ -3,7 +3,7 @@
 // "Devam Et" yalnız bildirim iznini sistem penceresiyle ister; bildirim izni daha önce verilmiş ya da reddedilmişse istek atlanır.
 // Kamera, galeri ve konum izinleri burada istenmez (ilgili özellik kullanılırken istenir).
 // Yönetim paneli kilidi açıkken (lib/adminLock) beklenir. HIG: güvenli alan, en az 44 pt buton. Yalnız "Devam Et" kapatır (karartma, kaydırma, Android geri tuşu kapatmaz).
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';

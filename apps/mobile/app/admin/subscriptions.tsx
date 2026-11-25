@@ -1,5 +1,5 @@
 // apps/web/app/admin/subscriptions/page.tsx karşılığı
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { api } from '@/lib/api';
 import { Btn } from '@/components/ui';

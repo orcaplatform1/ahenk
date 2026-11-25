@@ -4,7 +4,7 @@
 import { api } from '@/lib/api';
 
 export const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? '';
-export const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? '';
+const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? '';
 
 const CONSENT_KEY = 'cookie-consent';
 const PENDING_PURCHASE_KEY = 'ahenk_pending_purchase';
@@ -47,7 +47,7 @@ function isPixelPageViewSafe(pathname: string): boolean {
   );
 }
 
-export function readConsent(): { analitik: boolean; pazarlama: boolean } {
+function readConsent(): { analitik: boolean; pazarlama: boolean } {
   try {
     const stored = localStorage.getItem(CONSENT_KEY);
     if (stored === 'all') return { analitik: true, pazarlama: true };
@@ -112,7 +112,7 @@ function loadPixel() {
 }
 
 // Onayı olmayan araçların çerezlerini siler; alt alan adı seviyesinde yazıldıkları için her alan adı denenir
-export function clearRevokedCookies({ analitik, pazarlama }: { analitik: boolean; pazarlama: boolean }) {
+function clearRevokedCookies({ analitik, pazarlama }: { analitik: boolean; pazarlama: boolean }) {
   const isRevoked = (name: string) =>
     (!analitik && (name === '_ga' || name.startsWith('_ga_'))) ||
     (!pazarlama && (name === '_fbp' || name === '_fbc'));

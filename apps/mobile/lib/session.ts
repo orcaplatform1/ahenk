@@ -6,7 +6,6 @@ const REFRESH = 'ahenk_refresh';
 // Oturum türü (yalnız üye; mekân girişi mobil uygulamada yok)
 const KIND = 'ahenk_kind';
 
-export type SessionKind = 'member';
 // "Bu cihazda beni hatırla": çıkışta yenileme token'ı ve kullanıcının adı bu anahtarlarda saklanır (Face ID / parmak izi ile geri açılır)
 const REMEMBER_REFRESH = 'ahenk_remember_refresh';
 const REMEMBER_NAME = 'ahenk_remember_name';

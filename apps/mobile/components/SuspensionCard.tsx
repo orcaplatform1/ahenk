@@ -1,6 +1,6 @@
 // Askı süresince Profilim'de profil fotoğrafının altında: "Hesabın askıya alındı", "Askının bitmesine" ve Eşleşme Paneli'ndeki
 // geri sayım sayacının aynısı (aynı kart zemini, Serif 40). Süre bitince kart kendiliğinden kaybolur (web components/SuspensionCard.tsx).
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';

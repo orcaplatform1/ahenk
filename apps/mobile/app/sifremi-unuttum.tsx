@@ -1,12 +1,12 @@
 // Şifre sıfırlama (1. adım): "Şifreni gir" ve "Numaranı alabilir miyiz?" ekranlarıyla aynı sade tasarım (AuthFlow StepScreen):
 // sol üstte geri ok ("Şifreni gir" ekranına döner), sola hizalı kalın başlık, açıklama, TR +90 + numara, en altta tam genişlikte "Kod Gönder".
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '@/lib/api';
 import { OtpNoticeAction, otpNoticeOf, resendSecondsOf, type OtpNoticeCode } from '@/components/OtpCountdown';
 import { PillButton, StepScreen } from '@/components/AuthFlow';
-import { ErrorText, Input, T } from '@/components/ui';
+import { ErrorText, Input } from '@/components/ui';
 import { ll } from '@/theme/theme';
 import { DEFAULT_PHONE_COUNTRY, toE164 } from '@ahenk/shared';
 import { CountryCodeButton } from '@/components/PhoneCountry';

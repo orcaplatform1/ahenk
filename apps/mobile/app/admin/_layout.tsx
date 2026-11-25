@@ -1,5 +1,5 @@
 // Yönetim Paneli yerleşimi: apps/web/app/admin/layout.tsx mobil görünümü (üst çubuk 52 px + hamburger çekmece, 208 px)
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Slot, usePathname, useRouter } from 'expo-router';
@@ -14,7 +14,7 @@ import { ALabel, AT } from '@/components/admin/AdminUi';
 import { adm } from '@/theme/theme';
 
 const NAV_TOP = [{ href: '/(tabs)', label: 'Anasayfa' }, { href: '/(tabs)/profilim', label: 'Profilim' }] as const;
-export const ADMIN_NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; superadminOnly?: boolean }[] = [
+const ADMIN_NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; superadminOnly?: boolean }[] = [
   { href: '/admin/acil-yardim', label: 'Acil Yardım', sos: true },
   { href: '/admin/stats', label: 'İstatistikler' },
   { href: '/admin/matches', label: 'Masalar' },

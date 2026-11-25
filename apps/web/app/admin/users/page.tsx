@@ -90,7 +90,6 @@ export default function AdminUsers() {
   const [cityFilter, setCityFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [processing, setProcessing] = useState<Record<string, boolean>>({});
 
   const [userModal, setUserModal] = useState<AdminUserDetail | null>(null);
   const [userModalLoading, setUserModalLoading] = useState(false);
@@ -114,15 +113,6 @@ export default function AdminUsers() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { api.get<string[]>('/admin/sanction-reasons').then(setSanctionReasons).catch(() => {}); }, []);
-
-  async function updateStatus(userId: string, status: 'ACTIVE' | 'SUSPENDED' | 'DELETED') {
-    setProcessing(p => ({ ...p, [userId]: true }));
-    try {
-      await api.patch(`/admin/users/${userId}/status`, { status });
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status } : u));
-    } catch (e) { setError((e as Error).message); }
-    finally { setProcessing(p => { const n = { ...p }; delete n[userId]; return n; }); }
-  }
 
   // Pencereyi kapatmadan detayı yeniler (düzenleme / yaptırım sonrası)
   function refreshUserModal(userId: string) {

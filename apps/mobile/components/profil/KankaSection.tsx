@@ -1,5 +1,5 @@
 // apps/web/components/KankaSection.tsx karşılığı (Profilim → Aktif Kankanız)
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';

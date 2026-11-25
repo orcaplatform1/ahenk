@@ -1,7 +1,7 @@
 // "Bu cihazda beni hatırla" ile çıkış yapılmış cihazda uygulama açılınca: "Tekrar hoş geldin, [ad]!" + "Giriş Yap", altta yasal metin.
 // Giriş Yap → Face ID / parmak izi. Başarılıysa ortada palet renginde onay işaretli daire + "Cihaz Doğrulandı" kısa süre, ardından
 // şifresiz içeri (hatırlanan yenileme token'ı ile oturum açılır). Başarısızsa ya da cihazda yoksa normal giriş ekranı.
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

@@ -7,7 +7,7 @@ import { getPathname } from '@/i18n/navigation';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 // Seçilen dil: tarayıcıda çerez (NEXT_LOCALE, 1 yıl), giriş yapmışsa hesaba da kaydedilir
-export function storeLocale(lang: Lang) {
+function storeLocale(lang: Lang) {
   document.cookie = `NEXT_LOCALE=${lang}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`;
   if (api.hasSession()) return api.patch('/users/me/language', { language: lang }).catch(() => undefined);
   return Promise.resolve(undefined);

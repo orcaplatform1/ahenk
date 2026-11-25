@@ -1,7 +1,7 @@
 // Yönetim paneli kilit ekranı (lib/adminLock.ts): kilitliyken tam ekran, kapatılamaz (Android geri tuşu etkisiz).
 // Açılınca doğrulama kendiliğinden başlar; biyometrik tanımlı değilse cihaz şifresi istenir (disableDeviceFallback: false).
 // Başarısızsa oturum kapanmaz, "Tekrar Dene" butonu görünür. HIG: güvenli alan, en az 44 pt dokunma alanı.
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Modal, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';

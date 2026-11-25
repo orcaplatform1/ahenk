@@ -1,4 +1,3 @@
-import React from 'react';
 import { ALabel } from './AdminUi';
 import { adm } from '@/theme/theme';
 

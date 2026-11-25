@@ -1,5 +1,5 @@
 // apps/web/components/live/LiveTabs.tsx karşılığı (GRUP / BAŞ BAŞA / KANKAMLA, halka SVG'leri, durum noktası)
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, G, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { T, Mono } from './ui';
@@ -16,7 +16,7 @@ const TABS: { type: MasaTuru; label: string }[] = [
 ];
 
 // Durum metni anahtarı: live.st<DURUM>
-export const statusKey = (st: TabStatus) => `live.st${st}`;
+const statusKey = (st: TabStatus) => `live.st${st}`;
 
 const SMALL_RINGS: Partial<Record<MasaTuru, { r: number; stroke: number; rings: [number, number][] }>> = {
   GROUP: { r: 9.189, stroke: 1.622, rings: [[-14.5, -8.5], [-2.9, -8.5], [8.7, -8.5], [14.5, 8.5], [2.9, 8.5], [-8.7, 8.5]] },

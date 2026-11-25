@@ -1,7 +1,7 @@
 // Ülke kodlu telefon alanı: bayrak + ülke kodu (varsayılan 🇹🇷 +90). Basınca ortak 42 ülkelik listenin (@ahenk/shared COUNTRIES,
 // sabit sıra) olduğu, ad ve kodla aranabilir liste (ülke adları arayüz dilinde). Liste yalnız seçici açıkken oluşturulur ve
 // FlatList ile sanallaştırılır. Doğrulama libphonenumber-js ile seçilen ülkeye göre (@ahenk/shared toE164); değer E.164.
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';

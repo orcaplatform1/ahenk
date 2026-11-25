@@ -1,7 +1,7 @@
 // Dünya ikonu (dil seçici): solunda seçili dilin kısaltması (TR / EN; 13 pt, #FFFFFF, opaklık 0.7, 6 pt boşluk), görünen ikon 24×24,
 // dokunma alanı 44×44. Basınca altında kart (köşe 12): Türkçe / English, seçilide ✓. Kart zemini, yazı ve ✓ rengi tema paletinden
 // (ll.bg zemin + llCard çerçeve, ll.text yazı, seçili satır tabBar.activeBg, ✓ ll.red); sistem grisi yok. ENGLISH_ENABLED = false iken görünmez.
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';

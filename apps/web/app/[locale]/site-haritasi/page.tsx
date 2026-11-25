@@ -1,6 +1,5 @@
 'use client';
 
-import NextLink from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { motion } from 'framer-motion';

@@ -1,5 +1,5 @@
 // Dosya türü uzantıya/beyan edilen MIME'a göre değil, ilk baytlarına (imzasına) göre belirlenir — sunucudaki kontrolle aynı.
-export type FileKind = 'jpg' | 'png' | 'webp' | 'gif' | 'bmp' | 'tiff' | 'heic' | 'heif' | 'avif' | 'pdf';
+type FileKind = 'jpg' | 'png' | 'webp' | 'gif' | 'bmp' | 'tiff' | 'heic' | 'heif' | 'avif' | 'pdf';
 
 function startsWith(b: Uint8Array, sig: number[], at = 0) {
   return sig.every((v, i) => b[at + i] === v);

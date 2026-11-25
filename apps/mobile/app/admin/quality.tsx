@@ -1,7 +1,7 @@
 // apps/web/app/admin/quality/page.tsx karşılığı (Şikayetler): masa sohbeti mesaj şikâyetleri ve "Otomatik engel" kayıtları.
 // Detayda şikâyet edilen mesaj işaretli olarak sohbetin tamamı, gönderenin önceki uyarıları ve karar butonları
 // (Uyar / Masadan çıkar / Askıya al 3 gün / 15 gün / 1 ay). Daha önce uyarı almış kullanıcıda yalnız Masadan çıkar ve Askıya al aktif.
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { showAlert } from '@/components/AppAlert';
 import { api } from '@/lib/api';

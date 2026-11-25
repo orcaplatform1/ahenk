@@ -1,6 +1,6 @@
 // Acil yardım uyarı penceresi (web components/SosOpenReport.tsx ile aynı içerik): başlık, satırlar, son satır kalın, sağ üstte X.
 // durationMs dolunca kendiliğinden kapanır; countdown verilirse altta geri sayım çubuğu. HIG: X için en az 44 pt dokunma alanı.
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Easing, Modal, Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { T } from './ui';

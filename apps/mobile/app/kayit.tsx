@@ -1,7 +1,7 @@
 // apps/web/app/kayit/page.tsx karşılığı: 6 adım (Temel Bilgiler + WhatsApp OTP → Dil → Şehir → OCEAN Testi → Mekan Tercihi → Numara Engelleme)
 // S-14: push bildirim izni kayıt tamamlanınca istenir (token alma Firebase dosyaları gelene kadar raporlandı)
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,7 +19,7 @@ import { OtpInput } from '@/components/OtpInput';
 import { DateField, FieldLabel, ListPicker } from '@/components/Pickers';
 import { TestFlow, type Question } from '@/components/TestFlow';
 import { ContactPicker } from '@/components/profil/RehberTab';
-import { Btn, StdButton, ErrorText, Eyebrow, Input, Serif, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
+import { Btn, StdButton, ErrorText, Eyebrow, Input, Spinner, T, Glow, ScreenGlow } from '@/components/ui';
 import { OtpCountdown, OtpNoticeAction, otpNoticeOf, useOtpCountdown, type OtpNoticeCode } from '@/components/OtpCountdown';
 import { c, ll, tw, tw4 } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';

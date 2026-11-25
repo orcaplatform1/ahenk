@@ -1,5 +1,5 @@
 // Kişilik Ağacım sayfası: animasyon (ortada, tam genişlik) → boyut skorları → Big Five bilgi kartı → test tarihleri + not → Tekrar Test Yap
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api } from '@/lib/api';

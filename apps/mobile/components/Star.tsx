@@ -1,5 +1,4 @@
 // Değerlendir ekranı yıldızı (kırmızı geçişli dolu / boş). Değerlendir ekranı ve Geçmiş Masalarım değerlendirme alanı kullanır.
-import React from 'react';
 import Svg, { Defs, LinearGradient as SG, Path, Stop } from 'react-native-svg';
 
 export function Star({ filled, size = 40 }: { filled: boolean; size?: number }) {

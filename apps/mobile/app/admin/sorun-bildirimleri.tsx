@@ -1,5 +1,5 @@
 // apps/web/app/admin/sorun-bildirimleri/page.tsx karşılığı (mobil salla-bildir ve web aynı listede)
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { api } from '@/lib/api';

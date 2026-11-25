@@ -1,5 +1,5 @@
 // packages/ui/src/components/tables/DetayAvatar.tsx karşılığı (48px, 2.5 kenar, 11px yazı)
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, Text, View } from 'react-native';
 import { smallPhotoUrl } from '@/lib/photo';
 import Svg, { Circle } from 'react-native-svg';

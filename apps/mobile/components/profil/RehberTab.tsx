@@ -1,5 +1,5 @@
 // apps/web/app/profil/tabs/TabRehber.tsx karşılığı + S-12: rehberden seçme (expo-contacts), liste web liste stilinde
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Modal, Platform, Pressable, View } from 'react-native';
 // SDK 58: eski fonksiyon API'si (getContactsAsync) ana 'expo-contacts' girişinden çağrılınca hata fırlatıyor ("Rehber okunamadı."); aynı API expo-contacts/legacy'de
 import * as Contacts from 'expo-contacts/legacy';
@@ -18,7 +18,7 @@ const MAX = 50;
 
 // Rehberdeki numara E.164'e: başında + varsa olduğu gibi (ülke kodu numaradan), yoksa kullanıcının kayıtlı telefonunun ülkesi
 // varsayılır (libphonenumber-js, @ahenk/shared toE164). Çevrilemeyen numara null (listeye eklenmez)
-export function normalizeContactPhone(raw: string, country: string): string | null {
+function normalizeContactPhone(raw: string, country: string): string | null {
   return toE164(country, raw.trim());
 }
 

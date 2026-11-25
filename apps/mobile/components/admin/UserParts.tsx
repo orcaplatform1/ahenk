@@ -1,5 +1,5 @@
 // apps/web/components/AdminDeletionRequests, AdminSanctionHistory, AdminNoShowWarnings, AdminUserEdit karşılıkları
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { showAlert } from '@/components/AppAlert';
 import { api } from '@/lib/api';

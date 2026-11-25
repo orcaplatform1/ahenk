@@ -1,5 +1,5 @@
 // apps/web/app/admin/alerts/page.tsx karşılığı
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '@/lib/api';
 import { Btn } from '@/components/ui';

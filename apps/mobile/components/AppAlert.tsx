@@ -3,14 +3,14 @@
 // (BtnTone danger). HIG: kısa başlık, iptal seçeneği, en az 44 pt dokunma alanı; geri tuşu / dışarı dokunma vazgeç sayılır.
 // Kullanım: showAlert(başlık, mesaj?, butonlar?) — Alert.alert ile aynı imza; pencere kök yerleşimdeki <AppAlertHost /> ile çizilir.
 import i18n from '@/lib/i18n';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 import { StdButton, BtnTone, Serif, T } from './ui';
 import { ll, sheet } from '@/theme/theme';
 
-export interface AlertButton { text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void }
+interface AlertButton { text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void }
 // large: büyük başlık; stacked: butonlar ortada alt alta (seçim iptal / değiştir uyarısı)
-export interface AlertOptions { large?: boolean; stacked?: boolean }
+interface AlertOptions { large?: boolean; stacked?: boolean }
 interface AlertState { title: string; message?: string; buttons: AlertButton[]; opts?: AlertOptions }
 
 let push: ((a: AlertState) => void) | null = null;
