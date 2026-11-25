@@ -38,17 +38,6 @@ const LEVEL_ALPHA = { 1: 'd9', 2: 'a6', 3: '73', 4: '4d' } as const;
 const WAIT_CELL = `${LEVELS[4].color}${LEVEL_ALPHA[4]}`;
 const WAIT_TEXT = 'live.waitScan';
 
-function heatColor(index: number, count: number) {
-  const band = count <= 1 ? 0 : Math.min(2, Math.floor((index / count) * 3));
-  const start = Math.ceil((count * band) / 3);
-  const end = Math.ceil((count * (band + 1)) / 3) - 1;
-  const t = end > start ? (index - start) / (end - start) : 0;
-  const mix = (a: number, b: number) => (a + (b - a) * t).toFixed(3);
-  if (band === 0) return `rgba(214,69,58,${mix(0.78, 0.46)})`;
-  if (band === 1) return `rgba(200,116,60,${mix(0.48, 0.24)})`;
-  return `rgba(255,255,255,${mix(0.08, 0.045)})`;
-}
-
 function useLivePoll<T>(path: string, intervalMs: number) {
   const [data, setData] = useState<T | null>(null);
   const load = useCallback(() => { if (!isForeground()) return; api.get<T>(path).then((d) => { if (d) setData(d); }).catch(() => undefined); }, [path]);
@@ -217,15 +206,6 @@ export default function EslesmePaneli() {
                           <Mono style={{ fontSize: d.percent === null ? 11 : 15, color: tw.text }}>{d.percent === null ? t(LEVEL_KEY[d.level]) : `%${d.percent}`}</Mono>
                         </View>
                       )}
-                    </View>
-                  ))}
-                </View>
-              ) : overview?.heatmap.length ? (
-                <View style={st.heat}>
-                  {overview.heatmap.map((d, i) => (
-                    <View key={d.name} style={[st.heatCell, { backgroundColor: scanIdle ? WAIT_CELL : heatColor(i, overview.heatmap.length) }]}>
-                      <T w={700} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
-                      {!scanIdle && <Mono style={{ fontSize: 15, color: tw.text }}>{`%${d.percent}`}</Mono>}
                     </View>
                   ))}
                 </View>

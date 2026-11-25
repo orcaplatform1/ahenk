@@ -14,13 +14,12 @@ function sweepEnd() {
 // Tek sonar görünümü: halkalar, eksenler, dönen kırmızı dilim, merkez noktası.
 // Veriyi çağıran bileşen verir (children: SVG katmanı, overlay: üstteki HTML katmanı).
 // Animasyonlar globals.css'teki .ll-sweep sınıfındadır (hareketi azalt açıkken durur).
-export function AhenkSonar({ width = SONAR_SIZE, ariaLabel, children, overlay, center = true, centerPulse = 0, sweep = true, ringPulse = false }: {
+export function AhenkSonar({ width = SONAR_SIZE, ariaLabel, children, overlay, center = true, sweep = true, ringPulse = false }: {
   width?: number | string;
   ariaLabel: string;
   children?: React.ReactNode;
   overlay?: React.ReactNode;
   center?: boolean;
-  centerPulse?: number; // Değişince merkezde kısa nabız oynar
   sweep?: boolean; // false: dönen tarama dilimi gösterilmez
   ringPulse?: boolean; // true: halkalar yavaş nabız atar
 }) {
@@ -42,7 +41,6 @@ export function AhenkSonar({ width = SONAR_SIZE, ariaLabel, children, overlay, c
         <line x1={c} y1={c - 140} x2={c} y2={c + 140} stroke="rgba(255,255,255,0.05)" />
         {sweep && <path className="ll-sweep" d={`M ${c} ${c} L ${c + 140} ${c} A 140 140 0 0 0 ${sweepEnd()} Z`} fill={`url(#${gradientId})`} />}
         {children}
-        {centerPulse > 0 && <circle key={centerPulse} className="ll-flash" cx={c} cy={c} r={7} fill="#ff6b5e" />}
         {center && <circle cx={c} cy={c} r={5} fill="#e8a27a" />}
       </svg>
       {overlay}

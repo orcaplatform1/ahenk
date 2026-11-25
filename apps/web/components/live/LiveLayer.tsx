@@ -87,18 +87,6 @@ const LEVEL_ALPHA = { 1: 'd9', 2: 'a6', 3: '73', 4: '4d' } as const;
 // Tarama bekleme durumu: yoğunluk kartları "Düşük" kartının grisinde, yazı "Tarama bekleniyor"
 const WAIT_CELL = `${LEVELS[4].color}${LEVEL_ALPHA[4]}`;
 
-// Yoğunluk sırasına göre üç bant; bant içinde sıra ilerledikçe renk solar
-function heatColor(index: number, count: number) {
-  const band = count <= 1 ? 0 : Math.min(2, Math.floor((index / count) * 3));
-  const start = Math.ceil((count * band) / 3);
-  const end = Math.ceil((count * (band + 1)) / 3) - 1;
-  const t = end > start ? (index - start) / (end - start) : 0;
-  const mix = (a: number, b: number) => (a + (b - a) * t).toFixed(3);
-  if (band === 0) return `rgba(214,69,58,${mix(0.78, 0.46)})`;
-  if (band === 1) return `rgba(200,116,60,${mix(0.48, 0.24)})`;
-  return `rgba(255,255,255,${mix(0.08, 0.045)})`;
-}
-
 export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, tab, statuses, tabPastClosing, noPackage = false, onTab, notice, afterTabs, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
@@ -190,15 +178,6 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
                       <span className="ll-mono" style={{ display: 'block', fontSize: d.percent === null ? 11 : 15 }}>{d.percent === null ? t(LEVELS[d.level].label) : `%${d.percent}`}</span>
                     </div>
                   )}
-                </div>
-              ))}
-            </div>
-          ) : overview?.heatmap.length ? (
-            <div className="ll-heat">
-              {overview.heatmap.map((d, i) => (
-                <div key={d.name} className="ll-heat-cell" style={{ background: scanIdle ? WAIT_CELL : heatColor(i, overview.heatmap.length) }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, overflowWrap: 'anywhere' }}>{d.name}</span>
-                  {!scanIdle && <span className="ll-mono" style={{ fontSize: 15 }}>{`%${d.percent}`}</span>}
                 </div>
               ))}
             </div>

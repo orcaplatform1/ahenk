@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { AhenkSonar, SONAR_CENTER as C } from '@ahenk/ui';
 import { LEVELS } from './levels';
@@ -159,7 +159,6 @@ function DotLayer({ sonar, idle }: { sonar: LivePulse['sonar'] | null; idle: boo
         const style = idle ? WAIT_DOT : DOT[d.state];
         return (
           <g key={d.key}>
-            {!idle && d.state === 'new' && <circle className="ll-dot-new" cx={p.x} cy={p.y} r={style.r} fill={style.color} />}
             <circle cx={p.x} cy={p.y} r={style.r} fill={style.color} />
           </g>
         );
@@ -194,21 +193,6 @@ export default function LiveSonar({ sonar, idle = false }: { sonar: LivePulse['s
   const counts = { new: 0, active: 0, pool: 0 };
   dots.forEach((d) => { counts[d.state] += 1; });
 
-  // Yeni giriş: ilçesi listede değilse merkez kısa parlar (semt noktası parlaması kaldırıldı, mobil ile aynı)
-  const seen = useRef<Set<string> | null>(null);
-  const [centerPulse, setCenterPulse] = useState(0);
-  useEffect(() => {
-    if (!sonar) return;
-    const known = seen.current;
-    seen.current = new Set(sonar.dots.map((d) => d.key));
-    if (!known || !density) return; // İlk yüklemede eskiler parlamaz
-    const names = new Set(density.districts.map((d) => d.name));
-    const fresh = sonar.dots.filter((d) => d.state === 'new' && !known.has(d.key));
-    if (fresh.length === 0) return;
-    const stamp = Date.now();
-    const hits = fresh.filter((d) => d.district && names.has(d.district));
-    if (hits.length < fresh.length) setCenterPulse(stamp);
-  }, [sonar, density]);
 
   const legend: [string, string][] = density
     ? Object.values(LEVELS).map((l) => [t(l.label), l.color])
@@ -222,7 +206,6 @@ export default function LiveSonar({ sonar, idle = false }: { sonar: LivePulse['s
       </div>
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <AhenkSonar
-          centerPulse={centerPulse}
           ariaLabel={density
             ? t('live.sonarDensityAria', { count: density.districts.length })
             : t('live.sonarDotsAria', { count: dots.length, fresh: counts.new, active: counts.active })}

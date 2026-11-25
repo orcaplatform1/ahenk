@@ -12,7 +12,6 @@ export interface LiveOverview {
   metrics: { pool: number; tables: number; fillPercent: number };
   groupSeatsLeft: number | null;
   fill: { group: LiveFill; oneOnOne: LiveFill; kanka: LiveFill };
-  heatmap: { name: string; percent: number }[];
   density?: SonarDensity | null;
   signal: { closeCount: number; top: { key: OceanKey; score: number }[]; commonDimension: OceanKey | null };
   hasTable: boolean;
