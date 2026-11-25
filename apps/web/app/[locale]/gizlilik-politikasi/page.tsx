@@ -235,7 +235,7 @@ const sections = [
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Google Maps</strong>
-          : Acil Yardım talebindeki konum koordinatları (yönetici acil yardım haritası ve açık adres çözümleme; acil durum kişilerine giden konum bağlantısı da Google Maps bağlantısıdır). Aktarım dayanağı: sözleşmenin ifası (buluşma konumunun gösterilmesi).
+          : Acil Yardım talebindeki konum koordinatları. Kullanıldığı yerler ve amaçları: (1) yönetici Acil Yardım haritası (web ve mobil yönetim paneli): talep edenin konumunun haritada gösterilmesi; (2) açık adres çözümleme (Google Geocoding): açık Acil Yardım talebindeki konum koordinatlarının açık adrese çevrilmesi; (3) acil durum kişilerine WhatsApp ile giden bildirimdeki ve yönetici Acil Yardım ekranındaki konum bağlantısı: talep anındaki konumun haritada açılması; (4) masa detay kartındaki &quot;Haritada Gör&quot; bağlantısı: mekânın, mekân paneli ya da iş ortaklığı formunda girilen Google Maps bağlantısıyla veya adresiyle haritada açılması; (5) yönetici mekân formundaki harita bağlantısı: mekân adresinin haritada kontrol edilmesi. Aktarım dayanağı: sözleşmenin ifası.
         </p>
 
         <div

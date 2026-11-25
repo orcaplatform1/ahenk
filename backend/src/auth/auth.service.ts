@@ -300,8 +300,11 @@ export class AuthService {
   // Giriş kaydı (5651, 2 yıl): yalnız kayıtlı hesaba ait denemeler (kullanıcı bulunamazsa kayıt yazılmaz); kayıt hatası girişi bozmaz
   async recordLoginAttempt(where: { email: string } | { phone: string } | { id: string }, req: RequestLike, success: boolean) {
     try {
-      const user = await this.prisma.user.findUnique({ where: where as Prisma.UserWhereUniqueInput, select: { id: true } });
-      if (user) await writeLoginLog(this.prisma, user.id, req, success);
+      const user = await this.prisma.user.findUnique({ where: where as Prisma.UserWhereUniqueInput, select: { id: true, role: true } });
+      if (user) {
+        const accountType = user.role === "ADMIN" || user.role === "SUPERADMIN" ? "ADMIN" : "USER";
+        await writeLoginLog(this.prisma, { accountType, userId: user.id }, req, success);
+      }
     } catch (e) {
       this.logger.error(`Giriş kaydı yazılamadı: ${(e as Error).message}`);
     }

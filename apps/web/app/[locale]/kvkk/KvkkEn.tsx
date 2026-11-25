@@ -264,8 +264,8 @@ const sections = [
           : Data transferred: the location coordinates in an Emergency Help request (the OpenStreetMap map service is also used on the admin emergency help map). Purpose: converting coordinates into a street address. Legal basis: incidental transfer under KVKK art. 9/6 (necessary for the performance of a contract); a standard contract cannot be signed. Processing ground: KVKK art. 5/2-b (vital interest) and art. 5/2-ç (legal obligation).
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
-          <strong style={{ color: '#f4f1ec' }}>Google Maps (Emergency Help map, USA)</strong>
-          : Data transferred: the location coordinates in an Emergency Help request (admin emergency help map and street address lookup; the location link sent to emergency contacts is also a Google Maps link). Purpose: showing the requester&apos;s location on a map and finding the street address. Legal basis: performance of a contract (showing the meetup location).
+          <strong style={{ color: '#f4f1ec' }}>Google Maps (USA)</strong>
+          : Data transferred: the location coordinates in an Emergency Help request. Where it is used and why: (1) the admin Emergency Help map (web and mobile admin panel): showing the requester&apos;s location on a map; (2) street address lookup (Google Geocoding): converting the location coordinates of an open Emergency Help request into a street address; (3) the location link in the WhatsApp notification sent to emergency contacts and on the admin Emergency Help screen: opening the location at the time of the request on a map; (4) the &quot;View on Map&quot; link on the table detail card: opening the venue on a map using the Google Maps link entered in the venue panel or partnership form, or the venue address; (5) the map link on the admin venue form: checking the venue address on a map. Legal basis: performance of a contract.
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Apple (App Store) and Google (Google Play), USA</strong>

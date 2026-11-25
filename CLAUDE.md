@@ -509,11 +509,14 @@ ONAY KAYDI (AgreementConsent, migration 20261125600000_agreement_consent_login_l
   - Satın alma onayı anında POST /payment/init içinde mesafeli_satis + on_bilgilendirme kaydı (web: kimlik numarası doğrulandıktan sonra;
     mobil: mağaza ürün bilgisi döndükten sonra). Saklama 3 yıl; hesap silinse de kalır (FK yok)
 
-GİRİŞ IP KAYDI (LoginLog, aynı migration):
-  - Alanlar: userId, ip, userAgent, platform, success, createdAt. Yazılan girişler: POST /auth/login ve /auth/verify-login-otp (üye,
+GİRİŞ IP KAYDI (LoginLog, aynı migration; hesap türü migration 20261125800000_login_log_account_type):
+  - Alanlar: accountType (LoginAccountType: USER | VENUE | ADMIN), userId (USER / ADMIN: User.id), venueAccountId (VENUE:
+    VenueAccount.id), ip, userAgent, platform, success, createdAt. Bütün giriş kayıtları accountType'ı doldurur: üye USER,
+    ADMIN / SUPERADMIN ADMIN, mekân paneli VENUE (common/agreement-consent.ts writeLoginLog). Yazılan girişler: POST /auth/login ve /auth/verify-login-otp (üye,
     ADMIN, SUPERADMIN; başarılı ve başarısız, yalnız kayıtlı hesaba ait), POST /auth/register sonrası açılan oturum, mobil "Tekrar hoş
     geldin" biyometrik girişi (POST /auth/refresh + X-Login-Event: biometric; olağan token yenilemesi yazılmaz), mekân paneli
-    POST /venue-panel/login ve /venue-panel/verify-login-otp (userId "venue:<VenueAccount.id>")
+    POST /venue-panel/login ve /venue-panel/verify-login-otp (accountType VENUE, venueAccountId; "venue:" öneki yoktur, eski kayıtlar
+    migration'da venueAccountId'ye taşındı)
   - Platform X-Client-Platform başlığından (web | ios | android; web lib/api.ts ve mobil lib/api.ts langHeaders her istekte gönderir);
     başlık yoksa User-Agent'tan ("okhttp" android, "CFNetwork / Darwin" ios, diğerleri web). User-Agent ayrıca kaydedilir
   - Saklama 2 yıl (5651); veri saklama işi TRAFFIC_LOG kategorisinde siler. nginx logları logrotate 730 gün
@@ -557,9 +560,10 @@ PARA BİRİMİ (rapor41): City.currency yurt dışı şehirlerde yerel para biri
 
 KULLANIM KOŞULLARI: 06 Paketler ve Ödeme aynen; 07 "Premium Abonelik" bölümü (1/3/6/12 ay, web fiyatları PlanPriceText, 30 günde
   1+1+1, otomatik yenileme, iyzico / App Store / Google Play iptal yolu); 08 İptal Politikası'ndaki eski Premium maddeleri 07'ye taşındı,
-  Kankamla "pakette tek iptal hakkı" maddesi kaldırıldı. Premium iptal kuralı metni: "Aboneliğini istediğin zaman iptal edebilirsin.
-  İptal, mevcut fatura döneminin sonunda geçerli olur ve dönem sonuna kadar Premium özelliklerini kullanmaya devam edersin. İptal ve
-  iade işlemleri, ödemeyi yaptığın platformun (App Store, Google Play veya iyzico) kurallarına tabidir."; sonraki bölümler 08–15. Bütün yasal sayfalarda "Son güncelleme: Kasım 2026" / "Last updated: November 2026"
+  Kankamla "pakette tek iptal hakkı" maddesi kaldırıldı. Premium iptal kuralı (koddaki davranış; Kullanım Koşulları
+  07, Mesafeli Satış 06, Profil / landing Premium metinleri aynı): "Premium aboneliği iptal edildiğinde otomatik yenileme durur; iptal
+  anında elde kalan haklar süre sınırı olmadan, kullanılana kadar geçerli kalır; iade yapılmaz." "Dönem sonuna kadar" / "mevcut fatura
+  döneminin sonunda" iptal metni yoktur; sonraki bölümler 08–15. Bütün yasal sayfalarda "Son güncelleme: Kasım 2026" / "Last updated: November 2026"
 
 METİN KURALI (TR + EN, web + mobil + admin, i18n, bildirim / WhatsApp / e-posta, yasal sayfalar, Topluluk Kuralları, Nasıl Çalışır):
   cümle içinde ayraç olarak uzun tire (—), orta tire (–) ve çift tire (--) kullanılmaz; cümle virgül, nokta ya da iki nokta ile kurulur.

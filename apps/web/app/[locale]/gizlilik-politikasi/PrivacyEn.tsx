@@ -234,7 +234,7 @@ const sections = [
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Google Maps</strong>
-          : the location coordinates in an Emergency Help request (admin emergency help map and street address lookup; the location link sent to emergency contacts is also a Google Maps link). Transfer basis: performance of a contract (showing the meetup location).
+          : the location coordinates in an Emergency Help request. Where it is used and why: (1) the admin Emergency Help map (web and mobile admin panel): showing the requester&apos;s location on a map; (2) street address lookup (Google Geocoding): converting the location coordinates of an open Emergency Help request into a street address; (3) the location link in the WhatsApp notification sent to emergency contacts and on the admin Emergency Help screen: opening the location at the time of the request on a map; (4) the &quot;View on Map&quot; link on the table detail card: opening the venue on a map using the Google Maps link entered in the venue panel or partnership form, or the venue address; (5) the map link on the admin venue form: checking the venue address on a map. Transfer basis: performance of a contract.
         </p>
 
         <div

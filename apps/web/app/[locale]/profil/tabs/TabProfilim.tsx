@@ -9,7 +9,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ENGLISH_ENABLED, occupationLabel, splitE164, toE164, type CitySeasonFields, type Lang } from '@ahenk/shared';
 import { CityExtras, SoonCityGroups } from '@/components/SoonCityGroups';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
-import { usePathname } from '@/i18n/navigation';
+import { Link, usePathname } from '@/i18n/navigation';
 import { switchLocale } from '@/lib/locale';
 import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
@@ -23,6 +23,19 @@ const VENUE_OPTIONS: { value: VenuePreference; label: string; description: strin
   { value: 'ALCOHOLIC',     label: 'venue.alcoholic',    description: 'venue.alcoholicDesc' },
   { value: 'NON_ALCOHOLIC', label: 'venue.nonAlcoholic', description: 'venue.nonAlcoholicDesc' },
   { value: 'NO_PREFERENCE', label: 'venue.both',         description: 'venue.bothDesc' },
+];
+
+// Yasal bağlantılar kartı: mobil Profilim (ProfilimTab.tsx LEGAL_LINKS) ile aynı sayfalar, aynı sıra, aynı başlıklar
+const LEGAL_LINKS = [
+  { label: 'footer.privacy', path: '/gizlilik-politikasi' },
+  { label: 'footer.cookies', path: '/cerez-politikasi' },
+  { label: 'footer.terms', path: '/kullanim-kosullari' },
+  { label: 'pay.agreePreInfo', path: '/on-bilgilendirme-formu' },
+  { label: 'pay.agreeDistance', path: '/mesafeli-satis-sozlesmesi' },
+  { label: 'prof.kvkkNotice', path: '/kvkk' },
+  { label: 'footer.explicitConsent', path: '/acik-riza-metni' },
+  { label: 'footer.community', path: '/topluluk-kurallari' },
+  { label: 'footer.deleteAccount', path: '/hesap-silme' },
 ];
 
 const VENUE_LABELS: Record<VenuePreference, string> = {
@@ -533,6 +546,17 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
         </button>
         <EmergencyContact />
       </Card>
+
+      {/* Yasal bağlantılar (mobil Profilim yasal kartı gibi; satırlar en az 44 px) */}
+      <div className="ll-card" style={{ paddingTop: 4, paddingBottom: 4 }}>
+        {LEGAL_LINKS.map((l, i) => (
+          <Link key={l.path} href={l.path} aria-label={t(l.label)} className="flex w-full items-center justify-between hover:opacity-60"
+            style={{ minHeight: 44, borderTop: i ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+            <span style={{ fontSize: 14, color: '#f4f1ec' }}>{t(l.label)}</span>
+            <span style={{ fontSize: 18, color: '#a39c93' }}>›</span>
+          </Link>
+        ))}
+      </div>
 
       {/* Oturum ve hesap */}
       <div className="flex flex-col items-center gap-3 pb-2">

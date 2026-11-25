@@ -54,10 +54,14 @@ function SmallBtn({ label, onPress }: { label: string; onPress: () => void }) {
   return <Btn variant="rowAction" label={label} onPress={onPress} />;
 }
 
-// Profilim → yasal bağlantılar kartı (web sayfaları: /gizlilik-politikasi, /kullanim-kosullari, /kvkk, /acik-riza-metni, /topluluk-kurallari, /hesap-silme)
+// Profilim → yasal bağlantılar kartı (web sayfaları: /gizlilik-politikasi, /cerez-politikasi, /kullanim-kosullari, /on-bilgilendirme-formu,
+// /mesafeli-satis-sozlesmesi, /kvkk, /acik-riza-metni, /topluluk-kurallari, /hesap-silme). Web Profilim'deki kart aynı liste
 const LEGAL_LINKS = [
   { label: 'footer.privacy', path: '/gizlilik-politikasi' },
+  { label: 'footer.cookies', path: '/cerez-politikasi' },
   { label: 'footer.terms', path: '/kullanim-kosullari' },
+  { label: 'pay.agreePreInfo', path: '/on-bilgilendirme-formu' },
+  { label: 'pay.agreeDistance', path: '/mesafeli-satis-sozlesmesi' },
   { label: 'prof.kvkkNotice', path: '/kvkk' },
   { label: 'footer.explicitConsent', path: '/acik-riza-metni' },
   { label: 'footer.community', path: '/topluluk-kurallari' },

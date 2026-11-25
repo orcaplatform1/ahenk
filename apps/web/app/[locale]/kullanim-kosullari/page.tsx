@@ -158,9 +158,6 @@ const sections = [
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Premium aboneliği iptal edildiğinde otomatik yenileme durur; iptal anında elde kalan haklar süre sınırı olmadan, kullanılana kadar geçerli kalır; iade yapılmaz.</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
-            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Aboneliğini istediğin zaman iptal edebilirsin. İptal, mevcut fatura döneminin sonunda geçerli olur ve dönem sonuna kadar Premium özelliklerini kullanmaya devam edersin. İptal ve iade işlemleri, ödemeyi yaptığın platformun (App Store, Google Play veya iyzico) kurallarına tabidir.</span>
-          </li>
-          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>Aktif Premium aboneliği olan kullanıcı ikinci bir Premium aboneliği alamaz; tek seferlik paket yalnız Premium&apos;da hakkı biten türü içeriyorsa alınabilir.</span>
           </li>
       </ul>

@@ -29,10 +29,10 @@ export class VenuePanelController {
     private prisma: PrismaService,
   ) {}
 
-  // Mekân paneli girişi giriş kaydına (LoginLog) "venue:<hesap ID>" ile yazılır; başarısız denemede hesap bulunamazsa yazılmaz
+  // Mekân paneli girişi giriş kaydına (LoginLog) hesap türü VENUE ve venueAccountId ile yazılır; başarısız denemede hesap bulunamazsa yazılmaz
   private async logVenueLogin(req: Request, where: { email: string } | { phone: string }, success: boolean, accountId?: string) {
     const id = accountId ?? (await this.prisma.venueAccount.findFirst({ where, select: { id: true } }).catch(() => null))?.id;
-    if (id) await writeLoginLog(this.prisma, `venue:${id}`, req, success);
+    if (id) await writeLoginLog(this.prisma, { accountType: "VENUE", venueAccountId: id }, req, success);
   }
 
   private cookieOptions() {

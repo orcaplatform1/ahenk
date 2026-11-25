@@ -265,8 +265,8 @@ const sections = [
           : Aktarılan veri: Acil Yardım talebindeki konum koordinatları (yönetici acil yardım haritasında OpenStreetMap harita servisi de kullanılır). Amaç: koordinatların açık adrese çevrilmesi. Aktarım dayanağı: KVKK m.9/6 kapsamında arızi aktarım (sözleşmenin ifası için zorunlu olması); standart sözleşme imzalanamamaktadır. İşleme sebebi: KVKK m.5/2-b (hayati menfaat) ve m.5/2-ç (hukuki yükümlülük).
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
-          <strong style={{ color: '#f4f1ec' }}>Google Maps (Acil Yardım haritası, ABD)</strong>
-          : Aktarılan veri: Acil Yardım talebindeki konum koordinatları (yönetici acil yardım haritası ve açık adres çözümleme; acil durum kişilerine giden konum bağlantısı da Google Maps bağlantısıdır). Amaç: talep edenin konumunun haritada gösterilmesi ve açık adresinin bulunması. Aktarım dayanağı: sözleşmenin ifası (buluşma konumunun gösterilmesi).
+          <strong style={{ color: '#f4f1ec' }}>Google Maps (ABD)</strong>
+          : Aktarılan veri: Acil Yardım talebindeki konum koordinatları. Kullanıldığı yerler ve amaçları: (1) yönetici Acil Yardım haritası (web ve mobil yönetim paneli): talep edenin konumunun haritada gösterilmesi; (2) açık adres çözümleme (Google Geocoding): açık Acil Yardım talebindeki konum koordinatlarının açık adrese çevrilmesi; (3) acil durum kişilerine WhatsApp ile giden bildirimdeki ve yönetici Acil Yardım ekranındaki konum bağlantısı: talep anındaki konumun haritada açılması; (4) masa detay kartındaki &quot;Haritada Gör&quot; bağlantısı: mekânın, mekân paneli ya da iş ortaklığı formunda girilen Google Maps bağlantısıyla veya adresiyle haritada açılması; (5) yönetici mekân formundaki harita bağlantısı: mekân adresinin haritada kontrol edilmesi. Aktarım dayanağı: sözleşmenin ifası.
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Apple (App Store) ve Google (Google Play), ABD</strong>

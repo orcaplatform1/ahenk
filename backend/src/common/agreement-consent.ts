@@ -61,12 +61,14 @@ export type RequestLike = { ip?: string; headers: Headers };
 const loginLogger = new Logger("LoginLog");
 
 // Giriş kaydı (LoginLog, 5651, 2 yıl): IP, User-Agent, platform (X-Client-Platform, yoksa User-Agent), başarılı / başarısız.
-// userId: üye / admin hesabında User.id, mekân panelinde "venue:<VenueAccount.id>". Kayıt hatası girişi bozmaz
-export async function writeLoginLog(prisma: PrismaService, userId: string, req: RequestLike, success: boolean) {
+// Hesap türü: USER (üye) / ADMIN (ADMIN, SUPERADMIN) → userId = User.id; VENUE (mekân paneli) → venueAccountId = VenueAccount.id.
+// Kayıt hatası girişi bozmaz
+export type LoginAccount = { accountType: "USER" | "ADMIN"; userId: string } | { accountType: "VENUE"; venueAccountId: string };
+export async function writeLoginLog(prisma: PrismaService, account: LoginAccount, req: RequestLike, success: boolean) {
   try {
     const ua = req.headers["user-agent"];
     const userAgent = (Array.isArray(ua) ? ua[0] : ua)?.slice(0, 500) ?? null;
-    await prisma.loginLog.create({ data: { userId, ip: cleanIp(req.ip), userAgent, platform: clientPlatform(req.headers), success } });
+    await prisma.loginLog.create({ data: { ...account, ip: cleanIp(req.ip), userAgent, platform: clientPlatform(req.headers), success } });
   } catch (e) {
     loginLogger.error(`Giriş kaydı yazılamadı: ${(e as Error).message}`);
   }

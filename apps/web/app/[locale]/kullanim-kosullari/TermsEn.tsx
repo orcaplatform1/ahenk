@@ -157,9 +157,6 @@ const sections = [
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>When a Premium subscription is cancelled, automatic renewal stops; credits remaining at the moment of cancellation stay valid with no time limit until used; no refunds are given.</span>
           </li>
           <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
-            <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>You can cancel your subscription at any time. Cancellation takes effect at the end of the current billing period, and you keep using Premium features until the end of the period. Cancellation and refunds are subject to the rules of the platform you paid through (App Store, Google Play or iyzico).</span>
-          </li>
-          <li style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
             <span style={{ color: '#c0392b', flexShrink: 0 }}>›</span><span>A user with an active Premium subscription cannot buy a second Premium subscription; a one-time package can be bought only if it includes a type whose Premium credit has run out.</span>
           </li>
       </ul>

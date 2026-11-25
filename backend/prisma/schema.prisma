@@ -1385,9 +1385,18 @@ model AgreementConsent {
 }
 
 // Giriş kaydı (5651): başarılı / başarısız giriş denemeleri. Saklama 2 yıl; hesap silinse de kalır
+// Giriş kaydında hesap türü: USER (üye), ADMIN (ADMIN / SUPERADMIN), VENUE (mekân paneli)
+enum LoginAccountType {
+  USER
+  VENUE
+  ADMIN
+}
+
 model LoginLog {
-  id        String   @id @default(cuid())
-  userId    String
+  id             String           @id @default(cuid())
+  accountType    LoginAccountType
+  userId         String? // USER / ADMIN: User.id
+  venueAccountId String? // VENUE: VenueAccount.id
   ip        String?
   userAgent String?
   platform  String // web | ios | android
