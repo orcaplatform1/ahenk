@@ -186,8 +186,6 @@ function mapsUrl(url?: string | null, address?: string | null): string | null {
 
 // ── Lightbox ──────────────────────────────────────────────────────────────
 function Lightbox({ photos, startIdx, onClose }: { photos: VenuePhoto[]; startIdx: number; onClose: () => void }) {
-  const t = useTranslations();
-  const locale = useLocale();
   const [idx, setIdx] = useState(startIdx);
   // Telefon genişliğinde (responsive) alttaki noktalar gösterilmez; masaüstünde kalır
   const [narrow, setNarrow] = useState(false);
@@ -293,7 +291,6 @@ function SosModal({
   error: string;
 }) {
   const t = useTranslations();
-  const locale = useLocale();
   // Sahte ihbar beyanı işaretlenmeden ve en az bir tehdit türü seçilmeden talep gönderilemez
   const [accepted, setAccepted] = useState(false);
   const canSubmit = selectedThreats.length > 0 && accepted && !loading;
@@ -772,7 +769,6 @@ interface NoShowMarking {
 
 function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBase: string; token?: string }) {
   const t = useTranslations();
-  const locale = useLocale();
   const [data, setData] = useState<NoShowMarking | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
@@ -912,7 +908,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
   const [showSos,    setShowSos]    = useState(false);
   const [sosLoading, setSosLoading] = useState(false);
   const [sosDone,    setSosDone]    = useState(false);
-  const [sosReportId, setSosReportId] = useState<string | null>(null);
+  const [, setSosReportId] = useState<string | null>(null);
   const [selectedThreats, setSelectedThreats] = useState<string[]>([]);
   const [locError, setLocError] = useState<'off' | 'denied' | null>(null);
   const [sosError, setSosError] = useState('');

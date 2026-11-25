@@ -63,7 +63,6 @@ function TiltCard({ children }: { children: React.ReactNode }) {
 }
 
 function RingBadge({ score }: { score: number }) {
-  const t = useTranslations();
   const r = 22;
   const circ = 2 * Math.PI * r;
   const dash = (score / 100) * circ;
