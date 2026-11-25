@@ -10,6 +10,7 @@ import { ConfirmedRadarView, GOLD_PILL, KankaPairs, MasaDetayKarti, gColor, type
 import LiveTabs from '@/components/live/LiveTabs';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import WeeklySelectionModal from '@/components/live/WeeklySelectionModal';
+import { ReviewStar } from '@/components/ReviewStar';
 
 // GET /meetings/my-history yanıtı (sadece tamamlanmış masalar)
 interface HistoryMeeting {
@@ -576,7 +577,7 @@ function HistoryList({ history }: { history: HistoryMeeting[] }) {
           <section key={m.id} className="ll-card" style={{ padding: 0, overflow: 'hidden' }}>
             <div className="flex items-center justify-between gap-3" style={{ minHeight: 56, padding: '10px 12px 10px 18px' }}>
               <span style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.45, color: '#f4f1ec', minWidth: 0 }}>
-                {[fmtDate(m.date, locale), t(HISTORY_TYPE[m.type ?? 'GROUP']), m.venueName, m.cityName].filter(Boolean).join(' - ')}
+                {`${fmtDate(m.date, locale)} - ${t(HISTORY_TYPE[m.type ?? 'GROUP'])}`}
               </span>
               <button
                 type="button"
@@ -598,8 +599,12 @@ function HistoryList({ history }: { history: HistoryMeeting[] }) {
                   <a href={`/degerlendirme/${m.id}`} style={REVIEW_PILL}>{t('tm.review')}</a>
                 ) : m.review && (
                   <>
-                    <p className="ll-mono" style={{ margin: '0 0 4px', fontSize: 11, color: '#a39c93' }}>{t('tm.yourReview')}</p>
-                    <p style={{ margin: 0, fontSize: 13, color: '#f4f1ec' }}>{m.review.rating}/5{m.review.comment ? ` · ${m.review.comment}` : ''}</p>
+                    {/* Gri etiket → verilen puan kadar yıldız → alt satırda yorum */}
+                    <span className="ll-mono" style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)', fontSize: 10, color: '#a39c93' }}>{t('tm.yourReview')}</span>
+                    <div role="img" aria-label={t('review.stars', { n: m.review.rating })} style={{ display: 'flex', gap: 2, marginTop: 6 }}>
+                      {Array.from({ length: m.review.rating }).map((_, k) => <ReviewStar key={k} filled size={16} />)}
+                    </div>
+                    {m.review.comment && <p style={{ margin: '6px 0 0', fontSize: 13, color: '#f4f1ec' }}>{m.review.comment}</p>}
                   </>
                 )}
               </div>

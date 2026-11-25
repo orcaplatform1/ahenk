@@ -262,7 +262,7 @@ function HistoryItem({ m, open, onToggle }: { m: HistoryMeeting; open: boolean; 
     <Reanimated.View layout={LinearTransition.duration(hc.ms)}>
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: masaKart.historyRow.minH, paddingVertical: 10, paddingLeft: 18, paddingRight: 12 }}>
-          <T w={500} style={{ flex: 1, fontSize: masaKart.historyRow.fontSize, lineHeight: masaKart.historyRow.lineHeight, color: ll.text }}>{[fmtDate(m.date), t(HISTORY_TYPE[m.type ?? 'GROUP']), m.venueName, m.cityName].filter(Boolean).join(' - ')}</T>
+          <T w={500} style={{ flex: 1, fontSize: masaKart.historyRow.fontSize, lineHeight: masaKart.historyRow.lineHeight, color: ll.text }}>{`${fmtDate(m.date)} - ${t(HISTORY_TYPE[m.type ?? 'GROUP'])}`}</T>
           <Pressable onPress={onToggle} accessibilityRole="button" accessibilityLabel={open ? t('tm.closeCard') : t('tm.openCard')} accessibilityState={{ expanded: open }}
             style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
             <Animated.View style={{ width: hc.size, height: hc.size, borderRadius: 9999, alignItems: 'center', justifyContent: 'center', backgroundColor: hc.bg, borderWidth: 1, borderColor: hc.border, transform: [{ rotate }] }}>
@@ -277,13 +277,15 @@ function HistoryItem({ m, open, onToggle }: { m: HistoryMeeting; open: boolean; 
             {canReview ? (
               <View style={{ alignItems: 'flex-start' }}><GoldPill small label={t('tm.review')} onPress={() => router.push(`/degerlendirme/${m.id}`)} /></View>
             ) : m.review && (
-              // Verilen puan kadar dolu yıldız · not
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6, rowGap: 4 }}>
-                <T w={600} style={{ fontSize: 13, color: ll.text }}>{t('tm.reviewLabel')}</T>
-                <View style={{ flexDirection: 'row', gap: 2 }} accessibilityLabel={t('review.stars', { n: m.review.rating })}>
+              // Gri etiket → verilen puan kadar yıldız → alt satırda yorum (web TabMasalar ile aynı)
+              <View style={{ alignItems: 'flex-start' }}>
+                <View style={{ paddingVertical: 2, paddingHorizontal: 8, borderRadius: 9999, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
+                  <Mono style={{ fontSize: 10, color: ll.label }}>{t('tm.yourReview')}</Mono>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 2, marginTop: 6 }} accessible accessibilityRole="image" accessibilityLabel={t('review.stars', { n: m.review.rating })}>
                   {Array.from({ length: m.review.rating }).map((_, k) => <Star key={k} filled size={16} />)}
                 </View>
-                {!!m.review.comment && <T style={{ fontSize: 13, color: ll.text }}>· {m.review.comment}</T>}
+                {!!m.review.comment && <T style={{ marginTop: 6, fontSize: 13, color: ll.text }}>{m.review.comment}</T>}
               </View>
             )}
           </View>
