@@ -942,11 +942,11 @@ API CLIENT KURALLAR (web):
     İstanbul, Ankara, İzmir, Antalya: TR, Europe/Istanbul, TRY, tr, +90, Kimlik Kartı / Ehliyet / Pasaport / Oturma İzni. Dubai Marina,
     Jumeirah Lake Towers (JLT), Downtown Dubai: AE, Asia/Dubai, USD, en, +971, Pasaport / Oturma İzni / Ehliyet, pasif (migration
     20261116200100). Admin "Bölgeler" sayfası (web + mobil; GET /admin/regions,
-    PATCH /admin/regions/:id, GET /admin/regions/:id/waitlist): liste, alan düzenleme, tek tuşla aktif / pasif, bekleme listesi sayısı ve listesi.
+    PATCH /admin/regions/:id): liste, alan düzenleme, tek tuşla aktif / pasif.
   - Para birimi: Türkiye bölgelerinde TRY (₺), Türkiye dışındaki bütün bölgelerde USD. Dubai'de şimdilik yalnız para birimi alanı var, fiyat yok.
   - Şehir listeleri (mobil + web, kayıt ve şehir seçimi dahil): aktif şehirler (seçilebilir) → ince ayırıcı ortasında "Yakında" / "Coming soon"
-    → pasif bölgeler (Dubai Marina, Jumeirah Lake Towers (JLT), Downtown Dubai sırasıyla; soluk, seçilemez, sağında "Haber ver" / "Notify me":
-    RegionWaitlist, kullanıcı başına bölgeye bir kez). Aktif yapılan bölge otomatik üst gruba geçer.
+    → pasif bölgeler (Dubai Marina, Jumeirah Lake Towers (JLT), Downtown Dubai sırasıyla; soluk, seçilemez). Aktif yapılan bölge otomatik üst gruba geçer.
+    Bayrak countryCode TR değilse gösterilir; sezon isteğe bağlıdır, admin şehir formundan girilir; gösterim sırası "şehir adı, bayrak, sezon, Yakında".
   - Tarih / saat: buluşmanın yapıldığı bölgenin saat diliminde; her iki dilde sayısal gg.aa.yyyy ve 24 saat SS:dd; ay ve gün adları arayüz dilinde.
     İstisnalar: masa detay kartı tarih satırı TR "18 Kasım, Çarşamba 20:00", EN "Wednesday, 18 November 20:00" (shared formatCardDate);
     Masalarım tarih sekmesi TR "18 Kasım Çarşamba", EN "Wednesday, 18 November" (formatDayTab).
