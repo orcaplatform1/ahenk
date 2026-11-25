@@ -555,7 +555,10 @@ PARA BİRİMİ (rapor41): City.currency yurt dışı şehirlerde yerel para biri
   (NEXT_PUBLIC_GA_ID / NEXT_PUBLIC_META_PIXEL_ID boş, mobilde analitik yok); iyzico ödeme formu yalnız web'de, ödeme başlatılınca açılır
   pencere olarak yüklenir; mobilde iyzico yok. Cloudflare ifadesi yok
   - Google Analytics ve Meta Pixel yüklenmediği için Çerez, Gizlilik ve KVKK metinlerinde GA / Pixel paragrafı yoktur
-  - Talimat dışı alıcı dayanakları (KVKK + Gizlilik): Google Maps "sözleşmenin ifası (buluşma konumunun gösterilmesi)"; App Store ve
+  - Talimat dışı alıcı dayanakları (KVKK + Gizlilik): Google Maps "sözleşmenin ifası"; aktarılan veri Acil Yardım konum koordinatları;
+    kullanım yerleri: yönetici Acil Yardım haritası (web + mobil), açık adres çözümleme (Google Geocoding), acil durum kişilerine giden
+    WhatsApp bildirimindeki ve yönetici Acil Yardım ekranındaki konum bağlantısı, masa detay kartı "Haritada Gör" (mekânın Google Maps
+    bağlantısı ya da adresi), yönetici mekân formundaki harita bağlantısı ("buluşma konumu" ifadesi yoktur); App Store ve
     Google Play "sözleşmenin ifası (ödeme ve abonelik işlemleri)"
 
 KULLANIM KOŞULLARI: 06 Paketler ve Ödeme aynen; 07 "Premium Abonelik" bölümü (1/3/6/12 ay, web fiyatları PlanPriceText, 30 günde
