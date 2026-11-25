@@ -419,7 +419,6 @@
     "refreshExpired": "Your session has expired, please log in again",
     "refreshInvalid": "Invalid session token",
     "refreshMissing": "Session token not found",
-    "regionAlreadyOpen": "This region is already open",
     "regionNotFound": "Region not found",
     "reservationAlreadyCancelled": "The reservation is already cancelled",
     "reviewAlready": "You've already reviewed this table",

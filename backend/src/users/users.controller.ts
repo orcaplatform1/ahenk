@@ -1,5 +1,5 @@
 import { IsE164Phone } from "../common/phone";
-import { Controller, Post, Patch, Get, Put, Delete, Body, Param, Req, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Post, Patch, Get, Put, Delete, Body, Req, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
 import { Request } from "express";
 import { LoginGuardService } from "../auth/login-guard.service";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
@@ -137,23 +137,6 @@ export class UsersController {
   @ApiBearerAuth()
   deleteEmergencyContact(@CurrentUser() user: any) {
     return this.usersService.setEmergencyContact(user.id, null, null);
-  }
-
-  @Post("me/region-waitlist/:cityId")
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Pasif bölge için \"Haber ver\" (bekleme listesi; aynı bölgeye bir kez)" })
-  joinRegionWaitlist(@CurrentUser() user: any, @Param("cityId") cityId: string) {
-    return this.usersService.joinRegionWaitlist(user.id, cityId);
-  }
-
-  @Get("me/region-waitlist")
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: "Kullanıcının \"Haber ver\" dediği bölgeler" })
-  myRegionWaitlist(@CurrentUser() user: any) {
-    return this.usersService.myRegionWaitlist(user.id);
   }
 
   @Patch("venue-preference")

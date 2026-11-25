@@ -87,20 +87,6 @@ export class UsersService {
     return u;
   }
 
-  // Yalnız Yakında durumundaki bölgeye kayıt olunur; aynı kullanıcı aynı bölgeye bir kez (tekrar istek hata vermez)
-  async joinRegionWaitlist(userId: string, cityId: string) {
-    const city = await this.prisma.city.findUnique({ where: { id: cityId }, select: { isActive: true, isComingSoon: true } });
-    if (!city || (!city.isActive && !city.isComingSoon)) throw new BadRequestException("Bölge bulunamadı");
-    if (city.isActive) throw new BadRequestException("Bu bölge zaten açık");
-    await this.prisma.regionWaitlist.upsert({ where: { userId_cityId: { userId, cityId } }, create: { userId, cityId }, update: {} });
-    return { ok: true };
-  }
-
-  async myRegionWaitlist(userId: string) {
-    const rows = await this.prisma.regionWaitlist.findMany({ where: { userId }, select: { cityId: true } });
-    return rows.map((r) => r.cityId);
-  }
-
   async requestPhoneChange(userId: string, newPhone: string) {
     const existing = await this.prisma.user.findUnique({ where: { phone: newPhone } });
     if (existing && existing.id === userId) throw new BadRequestException("Bu numara zaten hesabında kayıtlı.");

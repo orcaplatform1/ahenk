@@ -1,6 +1,6 @@
 // apps/web/app/admin/bolgeler/page.tsx karşılığı (ADMIN + SUPERADMIN). Türkçe kalır (yönetim paneli).
 // Bölge = şehir ayarları (ülke, saat dilimi, para birimi, varsayılan dil, telefon kodu, kimlik türleri, sıra), tek tuşla Aktif / Pasif / Yakında
-// ve Yakında bölgelerin "Haber ver" bekleme listesi (sayı + liste). Aktif yapılan bölge kullanıcı şehir listelerinde üst gruba geçer.
+// Aktif yapılan bölge kullanıcı şehir listelerinde üst gruba geçer.
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '@/lib/api';
@@ -8,14 +8,12 @@ import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
 import { ACheck, AdminSelect, AInput } from '@/components/admin/AdminControls';
 import { adm } from '@/theme/theme';
-import { formatDateTime } from '@ahenk/shared';
 
 type IdType = 'ID_CARD' | 'DRIVER_LICENSE' | 'PASSPORT' | 'RESIDENCE_PERMIT';
 interface Region {
   id: string; name: string; isActive: boolean; isComingSoon?: boolean; countryCode: string; timezone: string; currency: string;
-  defaultLanguage: string; phoneCountryCode: string; idTypes: IdType[]; sortOrder: number; waitlistCount: number;
+  defaultLanguage: string; phoneCountryCode: string; idTypes: IdType[]; sortOrder: number;
 }
-interface WaitRow { id: string; createdAt: string; userId: string; email: string; phone: string | null; name: string }
 
 // Durum: Aktif / Pasif / Yakında — web admin/bolgeler ile aynı
 type RegionStatus = 'ACTIVE' | 'PASSIVE' | 'COMING_SOON';
@@ -65,8 +63,6 @@ export default function AdminBolgeler() {
   const [error, setError] = useState('');
   const [open, setOpen] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
-  const [waitFor, setWaitFor] = useState<string | null>(null);
-  const [wait, setWait] = useState<WaitRow[]>([]);
   const load = () => { api.get<Region[]>('/admin/regions').then(setRows).catch((e: Error) => setError(e.message)).finally(() => setLoading(false)); };
   useEffect(load, []);
 
@@ -74,11 +70,6 @@ export default function AdminBolgeler() {
     if (statusOf(r) === status) return;
     setToggling(r.id); setError('');
     try { await api.patch(`/admin/regions/${r.id}`, { status }); load(); } catch (e) { setError((e as Error).message); } finally { setToggling(null); }
-  }
-  async function showWait(id: string) {
-    if (waitFor === id) { setWaitFor(null); return; }
-    setWaitFor(id); setWait([]);
-    try { setWait(await api.get<WaitRow[]>(`/admin/regions/${id}/waitlist`)); } catch (e) { setError((e as Error).message); }
   }
 
   return (
@@ -95,20 +86,9 @@ export default function AdminBolgeler() {
               {(['ACTIVE', 'PASSIVE', 'COMING_SOON'] as RegionStatus[]).map((st) => (
                 <Btn key={st} variant="admActivate" selected={statusOf(r) === st} disabled={toggling === r.id} label={toggling === r.id ? '…' : STATUS_LABELS[st]} onPress={() => setStatus(r, st)} />
               ))}
-              <Btn variant="admActivate" selected={waitFor === r.id} label={`Bekleme listesi (${r.waitlistCount})`} onPress={() => showWait(r.id)} />
               <Btn variant="admActivate" selected={open === r.id} label={open === r.id ? 'Kapat' : 'Düzenle'} onPress={() => setOpen(open === r.id ? null : r.id)} />
             </View>
             {open === r.id && <RegionEditor r={r} onSaved={() => { setOpen(null); load(); }} />}
-            {waitFor === r.id && (
-              <View style={{ marginTop: 12, gap: 6 }}>
-                {wait.length === 0 ? <AT style={{ fontSize: 12, color: adm.muted }}>Bekleme listesi boş.</AT> : wait.map((w) => (
-                  <View key={w.id} style={{ borderTopWidth: 1, borderTopColor: adm.border, paddingTop: 6, gap: 2 }}>
-                    <AT style={{ fontSize: 12 }}>{w.name || '—'} · {w.email} · {w.phone ?? '—'}</AT>
-                    <AMono style={{ fontSize: 11, color: adm.muted }}>{formatDateTime(w.createdAt)}</AMono>
-                  </View>
-                ))}
-              </View>
-            )}
           </ACard>
         ))}
     </APage>

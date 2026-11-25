@@ -37,7 +37,6 @@ model User {
   updatedAt     DateTime   @updatedAt
 
   profile                   Profile?
-  regionWaitlist            RegionWaitlist[]
   oceanScore                OceanScore?
   oceanAnswers              OceanAnswer[]
   participations            MeetingParticipant[]
@@ -729,31 +728,16 @@ model City {
   phoneCountryCode String      @default("+90")
   idTypes          KycIdType[] @default([ID_CARD, DRIVER_LICENSE, PASSPORT, RESIDENCE_PERMIT]) // Türkiye: dört tür; diğer bölgeler: PASSPORT, RESIDENCE_PERMIT, DRIVER_LICENSE
   sortOrder        Int         @default(0)
-  // Şehir listesi gösterimi (isteğe bağlı): sezon (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2; TR dışıysa bayrak)
+  // Şehir listesi gösterimi (isteğe bağlı): sezon (gün + ay, yıl yok); countryCode TR değilse listede bayrak
   seasonStartDay   Int?
   seasonStartMonth Int?
   seasonEndDay     Int?
   seasonEndMonth   Int?
-  country          String?
-  regionWaitlist   RegionWaitlist[]
   venues    Venue[]
   meetings  Meeting[]
   districts CityDistrict[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-}
-
-// Pasif bölge bekleme listesi ("Haber ver"): kullanıcı aynı bölgeye bir kez
-model RegionWaitlist {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cityId    String
-  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([userId, cityId])
-  @@index([cityId])
 }
 
 // Admin Şehirler penceresinden girilen ilçeler: statik moddaki şehir yoğunluğu / tarama listesi

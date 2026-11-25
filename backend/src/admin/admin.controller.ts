@@ -327,7 +327,7 @@ export class AdminController {
     return this.adminService.updateCity(id, dto);
   }
 
-  // ─── Bölgeler (şehir = bölge ayarları + "Haber ver" bekleme listesi) ─────────
+  // ─── Bölgeler (şehir = bölge ayarları) ─────────
   @Get("regions")
   listRegions() {
     return this.adminService.listRegions();
@@ -336,11 +336,6 @@ export class AdminController {
   @Patch("regions/:id")
   updateRegion(@Param("id") id: string, @Body() dto: UpdateRegionDto) {
     return this.adminService.updateRegion(id, dto);
-  }
-
-  @Get("regions/:id/waitlist")
-  regionWaitlist(@Param("id") id: string) {
-    return this.adminService.regionWaitlist(id);
   }
 
   // Şehir silme ve ilçe işlemleri ADMIN + SUPERADMIN; ADMIN işlemleri İşlem Kayıtları'nda görünür

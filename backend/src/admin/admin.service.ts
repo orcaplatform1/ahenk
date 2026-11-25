@@ -1213,10 +1213,9 @@ export class AdminService {
   async listRegions() {
     const rows = await this.prisma.city.findMany({
       where: { OR: [{ isActive: true }, { isComingSoon: true }, { countryCode: { not: "TR" } }, { name: { in: ["İstanbul", "Ankara", "İzmir", "Antalya"] } }] },
-      include: { _count: { select: { regionWaitlist: true } } },
       orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
     });
-    return rows.map(({ _count, ...c }) => ({ ...c, waitlistCount: _count.regionWaitlist }));
+    return rows;
   }
 
   async updateRegion(cityId: string, input: { name?: string; countryCode?: string; timezone?: string; currency?: string; defaultLanguage?: string; phoneCountryCode?: string; idTypes?: ("ID_CARD" | "DRIVER_LICENSE" | "PASSPORT" | "RESIDENCE_PERMIT")[]; isActive?: boolean; status?: CityStatus; sortOrder?: number }) {
@@ -1230,15 +1229,6 @@ export class AdminService {
     if (dto.idTypes && dto.idTypes.length === 0) throw new BadRequestException("En az bir kimlik türü seç");
     if (dto.name && dto.name !== city.name && (await this.prisma.city.findUnique({ where: { name: dto.name } }))) throw new ConflictException("Bu ad başka bir bölgede kayıtlı");
     return this.prisma.city.update({ where: { id: cityId }, data: dto });
-  }
-
-  async regionWaitlist(cityId: string) {
-    const rows = await this.prisma.regionWaitlist.findMany({
-      where: { cityId },
-      orderBy: { createdAt: "desc" },
-      include: { user: { select: { id: true, email: true, phone: true, profile: { select: { firstName: true, lastName: true } } } } },
-    });
-    return rows.map((r) => ({ id: r.id, createdAt: r.createdAt, userId: r.user.id, email: r.user.email, phone: r.user.phone, name: `${r.user.profile?.firstName ?? ""} ${r.user.profile?.lastName ?? ""}`.trim() }));
   }
 
   // Yeni şehir varsayılan Pasif
@@ -2202,9 +2192,9 @@ export class AdminService {
 
 }
 
-// Şehir sezonu (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2), isteğe bağlı. Sezon dört alanla birlikte girilir ya da
-// hepsi boş bırakılır; gün ayın gün sayısını aşamaz (Şubat 29). Gönderilmeyen alan değişmez, null temizler.
-type CitySeasonCountry = { seasonStartDay?: number | null; seasonStartMonth?: number | null; seasonEndDay?: number | null; seasonEndMonth?: number | null; country?: string | null };
+// Şehir sezonu (gün + ay, yıl yok), isteğe bağlı: dört alanla birlikte girilir ya da hepsi boş bırakılır; gün ayın gün sayısını
+// aşamaz (Şubat 29). Gönderilmeyen alan değişmez, null temizler. Ülke: zorunlu countryCode (ISO 3166-1 alpha-2), gönderilirse güncellenir.
+type CitySeasonCountry = { seasonStartDay?: number | null; seasonStartMonth?: number | null; seasonEndDay?: number | null; seasonEndMonth?: number | null; countryCode?: string };
 const MONTH_DAYS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 function citySeasonCountryData(dto: CitySeasonCountry): CitySeasonCountry {
   const out: CitySeasonCountry = {};
@@ -2216,7 +2206,7 @@ function citySeasonCountryData(dto: CitySeasonCountry): CitySeasonCountry {
     if (sd !== null && sm !== null && ed !== null && em !== null && (sd > MONTH_DAYS[sm - 1] || ed > MONTH_DAYS[em - 1])) throw new BadRequestException("Geçersiz sezon tarihi");
     keys.forEach((k, i) => { out[k] = vals[i]; });
   }
-  if (dto.country !== undefined) out.country = dto.country || null;
+  if (dto.countryCode) out.countryCode = dto.countryCode;
   return out;
 }
 

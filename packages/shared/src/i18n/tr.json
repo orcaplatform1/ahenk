@@ -419,7 +419,6 @@
     "refreshExpired": "Refresh token süresi dolmuş, tekrar giriş yap",
     "refreshInvalid": "Refresh token geçersiz",
     "refreshMissing": "Refresh token bulunamadı",
-    "regionAlreadyOpen": "Bu bölge zaten açık",
     "regionNotFound": "Bölge bulunamadı",
     "reservationAlreadyCancelled": "Rezervasyon zaten iptal edilmiş",
     "reviewAlready": "Bu masayı zaten değerlendirdin",

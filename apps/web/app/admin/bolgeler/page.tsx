@@ -2,16 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
+import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 // Bölgeler: şehir = bölge ayarları (ülke, saat dilimi, para birimi, varsayılan dil, telefon kodu, kimlik türleri, aktiflik, sıra)
-// ve Yakında bölgelerin "Haber ver" bekleme listesi. Aktif yapılan bölge kullanıcı şehir listelerinde üst gruba geçer.
+// Aktif yapılan bölge kullanıcı şehir listelerinde üst gruba geçer.
 type IdType = 'ID_CARD' | 'DRIVER_LICENSE' | 'PASSPORT' | 'RESIDENCE_PERMIT';
 interface Region {
   id: string; name: string; isActive: boolean; isComingSoon?: boolean; countryCode: string; timezone: string; currency: string;
-  defaultLanguage: string; phoneCountryCode: string; idTypes: IdType[]; sortOrder: number; waitlistCount: number;
+  defaultLanguage: string; phoneCountryCode: string; idTypes: IdType[]; sortOrder: number;
 }
-interface WaitRow { id: string; createdAt: string; userId: string; email: string; phone: string | null; name: string }
 
 // Durum: Aktif / Pasif / Yakında
 type RegionStatus = 'ACTIVE' | 'PASSIVE' | 'COMING_SOON';
@@ -21,7 +20,6 @@ const AMBER = '#f59e0b';
 const ID_LABEL: Record<IdType, string> = { ID_CARD: 'Kimlik Kartı', DRIVER_LICENSE: 'Ehliyet', PASSPORT: 'Pasaport', RESIDENCE_PERMIT: 'Oturma İzni' };
 const inputStyle: React.CSSProperties = { width: '100%', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 12px', fontSize: 13, color: TEXT, outline: 'none', fontFamily: SANS, boxSizing: 'border-box' };
 const btn = (color: string): React.CSSProperties => ({ padding: '6px 12px', minHeight: 36, borderRadius: 8, cursor: 'pointer', background: 'transparent', border: `1px solid ${color}`, fontSize: 12, color, fontFamily: SANS });
-const fmt = (iso: string) => new Date(iso).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 function RegionEditor({ r, onSaved }: { r: Region; onSaved: () => void }) {
   const [f, setF] = useState({ name: r.name, countryCode: r.countryCode, timezone: r.timezone, currency: r.currency, defaultLanguage: r.defaultLanguage, phoneCountryCode: r.phoneCountryCode, idTypes: r.idTypes, sortOrder: r.sortOrder });
@@ -67,19 +65,12 @@ export default function BolgelerPage() {
   const [rows, setRows] = useState<Region[]>([]);
   const [error, setError] = useState('');
   const [open, setOpen] = useState<string | null>(null);
-  const [waitFor, setWaitFor] = useState<string | null>(null);
-  const [wait, setWait] = useState<WaitRow[]>([]);
   const load = () => api.get<Region[]>('/admin/regions').then(setRows).catch((e: Error) => setError(e.message));
   useEffect(() => { load(); }, []);
 
   async function setStatus(r: Region, status: RegionStatus) {
     if (statusOf(r) === status) return;
     try { await api.patch(`/admin/regions/${r.id}`, { status }); load(); } catch (e) { setError((e as Error).message); }
-  }
-  async function showWait(id: string) {
-    if (waitFor === id) { setWaitFor(null); return; }
-    setWaitFor(id); setWait([]);
-    try { setWait(await api.get<WaitRow[]>(`/admin/regions/${id}/waitlist`)); } catch (e) { setError((e as Error).message); }
   }
 
   return (
@@ -105,21 +96,10 @@ export default function BolgelerPage() {
                   </button>
                 );
               })}
-              <button type="button" onClick={() => showWait(r.id)} style={btn(CYAN)}>Bekleme listesi ({r.waitlistCount})</button>
               <button type="button" onClick={() => setOpen(open === r.id ? null : r.id)} style={btn(TEXT)}>{open === r.id ? 'Kapat' : 'Düzenle'}</button>
             </div>
           </div>
           {open === r.id && <RegionEditor r={r} onSaved={() => { setOpen(null); load(); }} />}
-          {waitFor === r.id && (
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {wait.length === 0 ? <p style={{ margin: 0, fontSize: 12, color: MUTED }}>Bekleme listesi boş.</p> : wait.map((w) => (
-                <div key={w.id} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8, fontSize: 12, borderTop: `1px solid ${BORDER}`, paddingTop: 6 }}>
-                  <span>{w.name || '—'} · {w.email} · {w.phone ?? '—'}</span>
-                  <span style={{ color: MUTED, fontFamily: MONO }}>{fmt(w.createdAt)}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       ))}
     </div>

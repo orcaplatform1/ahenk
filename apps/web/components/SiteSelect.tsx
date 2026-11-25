@@ -6,9 +6,8 @@ import { useTranslations } from 'next-intl';
 
 // Sitenin koyu paletinde seçim kutusu: telefonun kendi seçicisi yerine sayfa içinde açılır.
 // Liste body'ye taşınır; böylece kart/animasyon kapsayıcıları içinde kesilmez.
-// disabled: soluk, seçilemez satır; separator: satırın üstünde ortasında yazı olan ince ayırıcı ("Yakında");
-// action: satırın sağındaki küçük buton (ör. "Haber ver")
-interface SiteSelectOption { value: string; label: string; disabled?: boolean; separator?: string; action?: React.ReactNode }
+// disabled: soluk, seçilemez satır; separator: satırın üstünde ortasında yazı olan ince ayırıcı ("Yakında")
+interface SiteSelectOption { value: string; label: string; disabled?: boolean; separator?: string }
 
 interface Props {
   value: string;
@@ -205,7 +204,6 @@ export default function SiteSelect({ value, onChange, options, placeholder, requ
                 }}
               >
                 <span>{o.label}</span>
-                {o.action && <span onClick={(e) => e.stopPropagation()}>{o.action}</span>}
               </li>
               </Fragment>
             );

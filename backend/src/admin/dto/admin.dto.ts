@@ -257,12 +257,12 @@ export class CreateCityDto {
   @IsIn(CITY_STATUSES)
   status?: CityStatus;
 
-  // Sezon (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2); isteğe bağlı, null temizler
+  // Sezon (gün + ay, yıl yok; isteğe bağlı, null temizler) ve ülke kodu (ISO 3166-1 alpha-2, City.countryCode)
   @IsOptional() @IsInt() @Min(1) @Max(31) seasonStartDay?: number | null;
   @IsOptional() @IsInt() @Min(1) @Max(12) seasonStartMonth?: number | null;
   @IsOptional() @IsInt() @Min(1) @Max(31) seasonEndDay?: number | null;
   @IsOptional() @IsInt() @Min(1) @Max(12) seasonEndMonth?: number | null;
-  @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (AE, TH)" }) country?: string | null;
+  @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (TR, AE)" }) countryCode?: string;
 }
 
 export class UpdateCityDto {
@@ -280,12 +280,12 @@ export class UpdateCityDto {
   @MaxLength(60)
   name?: string;
 
-  // Sezon (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2); isteğe bağlı, null temizler
+  // Sezon (gün + ay, yıl yok; isteğe bağlı, null temizler) ve ülke kodu (ISO 3166-1 alpha-2, City.countryCode)
   @IsOptional() @IsInt() @Min(1) @Max(31) seasonStartDay?: number | null;
   @IsOptional() @IsInt() @Min(1) @Max(12) seasonStartMonth?: number | null;
   @IsOptional() @IsInt() @Min(1) @Max(31) seasonEndDay?: number | null;
   @IsOptional() @IsInt() @Min(1) @Max(12) seasonEndMonth?: number | null;
-  @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (AE, TH)" }) country?: string | null;
+  @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (TR, AE)" }) countryCode?: string;
 }
 
 // Bölge (şehir) ayarları — admin "Bölgeler" sayfası

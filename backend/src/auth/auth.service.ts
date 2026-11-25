@@ -595,7 +595,7 @@ export class AuthService {
   getActiveCities() {
     return this.prisma.city.findMany({
       where: { OR: [{ isActive: true }, { isActive: false, isComingSoon: true }] },
-      select: { id: true, name: true, isActive: true, isComingSoon: true, countryCode: true, timezone: true, currency: true, defaultLanguage: true, phoneCountryCode: true, idTypes: true, seasonStartDay: true, seasonStartMonth: true, seasonEndDay: true, seasonEndMonth: true, country: true },
+      select: { id: true, name: true, isActive: true, isComingSoon: true, countryCode: true, timezone: true, currency: true, defaultLanguage: true, phoneCountryCode: true, idTypes: true, seasonStartDay: true, seasonStartMonth: true, seasonEndDay: true, seasonEndMonth: true },
       orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
     });
   }

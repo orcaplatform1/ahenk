@@ -11,22 +11,23 @@ import { adm } from '@/theme/theme';
 
 interface City extends CitySeasonFields { id: string; name: string; isActive: boolean; isComingSoon?: boolean; _count?: { venues: number; districts?: number } }
 
-// Sezon (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2): isteğe bağlı; boşsa kullanıcı şehir listesinde tarih / bayrak yok (web admin/cities ile aynı)
-interface SeasonCountry { sd: string; sm: string; ed: string; em: string; country: string }
+// Sezon (gün + ay, yıl yok; isteğe bağlı, boşsa listede tarih yok) ve ülke (City.countryCode, ISO 3166-1 alpha-2, varsayılan TR;
+// TR değilse listede bayrak). Bölgeler sayfası da aynı countryCode alanını düzenler (web admin/cities ile aynı)
+interface SeasonCountry { sd: string; sm: string; ed: string; em: string; countryCode: string }
 const seasonOf = (c?: CitySeasonFields): SeasonCountry => ({
   sd: c?.seasonStartDay ? String(c.seasonStartDay) : '', sm: c?.seasonStartMonth ? String(c.seasonStartMonth) : '',
-  ed: c?.seasonEndDay ? String(c.seasonEndDay) : '', em: c?.seasonEndMonth ? String(c.seasonEndMonth) : '', country: c?.country ?? '',
+  ed: c?.seasonEndDay ? String(c.seasonEndDay) : '', em: c?.seasonEndMonth ? String(c.seasonEndMonth) : '', countryCode: c?.countryCode || 'TR',
 });
 const seasonBody = (v: SeasonCountry) => ({
   seasonStartDay: v.sd ? Number(v.sd) : null, seasonStartMonth: v.sm ? Number(v.sm) : null,
-  seasonEndDay: v.ed ? Number(v.ed) : null, seasonEndMonth: v.em ? Number(v.em) : null, country: v.country || null,
+  seasonEndDay: v.ed ? Number(v.ed) : null, seasonEndMonth: v.em ? Number(v.em) : null, countryCode: v.countryCode,
 });
 const seasonValid = (v: SeasonCountry) => { const n = [v.sd, v.sm, v.ed, v.em].filter(Boolean).length; return n === 0 || n === 4; };
 const DAY_OPTIONS = [{ value: '', label: 'Gün' }, ...Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))];
 const MONTH_OPTIONS = [{ value: '', label: 'Ay' }, ...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: monthName(i + 1, 'tr') }))];
 // Ülke adları cihaz Intl.DisplayNames destekliyorsa Türkçe, desteklemiyorsa yalnız kod
 const regionName = (() => { try { const dn = new Intl.DisplayNames(['tr'], { type: 'region' }); return (c: string) => dn.of(c) ?? c; } catch { return (c: string) => c; } })();
-const COUNTRY_OPTIONS = [{ value: '', label: 'Seçilmedi' }, ...ISO_COUNTRY_CODES.map(code => ({ code, name: regionName(code) }))
+const COUNTRY_OPTIONS = [...ISO_COUNTRY_CODES.map(code => ({ code, name: regionName(code) }))
   .sort((a, b) => a.name.localeCompare(b.name, 'tr'))
   .map(o => ({ value: o.code, label: o.name === o.code ? `${flagEmoji(o.code)} ${o.code}` : `${flagEmoji(o.code)} ${o.name} (${o.code})` }))];
 
@@ -47,7 +48,7 @@ function SeasonCountryFields({ value, onChange }: { value: SeasonCountry; onChan
       {dayMonth('ed', 'em', 'Sezon bitişi')}
       <View>
         <ALabel style={{ color: adm.muted, marginBottom: 4 }}>Ülke</ALabel>
-        <AdminSelect value={value.country} onChange={x => set('country', x)} options={COUNTRY_OPTIONS} placeholder="Seçilmedi" title="Ülke" />
+        <AdminSelect value={value.countryCode} onChange={x => set('countryCode', x)} options={COUNTRY_OPTIONS} placeholder="Ülke" title="Ülke" />
       </View>
       {!seasonValid(value) && <AT style={{ fontSize: 11, color: adm.red }}>Sezon başlangıcı ve bitişinin gün ve ayı birlikte seçilmeli.</AT>}
     </View>

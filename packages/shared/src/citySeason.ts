@@ -1,4 +1,4 @@
-// Şehir listesi gösterimi: sezon (gün + ay, yıl yok) ve ülke bayrağı (ISO 3166-1 alpha-2 koddan emoji; Türkiye'de bayrak yok).
+// Şehir listesi gösterimi: sezon (gün + ay, yıl yok) ve ülke bayrağı (City.countryCode, ISO 3166-1 alpha-2 koddan emoji; TR'de bayrak yok).
 // TR "(15 Mayıs-15 Eylül)", EN "(May 15-September 15)"; ay adları arayüz dilinde. Web ve mobil şehir listeleri aynı fonksiyonu kullanır.
 import { flagEmoji, formatNamed, type Lang } from "./i18n";
 
@@ -7,7 +7,7 @@ export interface CitySeasonFields {
   seasonStartMonth?: number | null;
   seasonEndDay?: number | null;
   seasonEndMonth?: number | null;
-  country?: string | null;
+  countryCode?: string | null;
 }
 
 export const monthName = (month: number, lang: Lang) => formatNamed(new Date(Date.UTC(2024, month - 1, 15, 12)), lang, { month: "long" }, "UTC");
@@ -21,7 +21,7 @@ export function citySeason(c: CitySeasonFields, lang: Lang): string {
 }
 
 export function cityFlag(c: CitySeasonFields): string {
-  return c.country && c.country !== "TR" ? flagEmoji(c.country) : "";
+  return c.countryCode && c.countryCode !== "TR" ? flagEmoji(c.countryCode) : "";
 }
 
 // Şehir adının sağındaki ek: bayrak (TR dışı) ve sezon; ikisi de boşsa ""

@@ -28,15 +28,16 @@ const STATUS_ACTIONS: Record<CityStatus, string> = { ACTIVE: 'Aktifleştir', PAS
 const STATUS_ORDER: CityStatus[] = ['ACTIVE', 'PASSIVE', 'COMING_SOON'];
 const AMBER = '#f59e0b';
 
-// Sezon (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2): isteğe bağlı; boşsa kullanıcı şehir listesinde tarih / bayrak yok
-interface SeasonCountry { sd: string; sm: string; ed: string; em: string; country: string }
+// Sezon (gün + ay, yıl yok; isteğe bağlı, boşsa listede tarih yok) ve ülke (City.countryCode, ISO 3166-1 alpha-2, varsayılan TR;
+// TR değilse listede bayrak). Bölgeler sayfası da aynı countryCode alanını düzenler
+interface SeasonCountry { sd: string; sm: string; ed: string; em: string; countryCode: string }
 const seasonOf = (c?: CitySeasonFields): SeasonCountry => ({
   sd: c?.seasonStartDay ? String(c.seasonStartDay) : '', sm: c?.seasonStartMonth ? String(c.seasonStartMonth) : '',
-  ed: c?.seasonEndDay ? String(c.seasonEndDay) : '', em: c?.seasonEndMonth ? String(c.seasonEndMonth) : '', country: c?.country ?? '',
+  ed: c?.seasonEndDay ? String(c.seasonEndDay) : '', em: c?.seasonEndMonth ? String(c.seasonEndMonth) : '', countryCode: c?.countryCode || 'TR',
 });
 const seasonBody = (v: SeasonCountry) => ({
   seasonStartDay: v.sd ? Number(v.sd) : null, seasonStartMonth: v.sm ? Number(v.sm) : null,
-  seasonEndDay: v.ed ? Number(v.ed) : null, seasonEndMonth: v.em ? Number(v.em) : null, country: v.country || null,
+  seasonEndDay: v.ed ? Number(v.ed) : null, seasonEndMonth: v.em ? Number(v.em) : null, countryCode: v.countryCode,
 });
 // Sezonun dört alanı birlikte seçilir ya da hepsi boş bırakılır
 const seasonValid = (v: SeasonCountry) => { const n = [v.sd, v.sm, v.ed, v.em].filter(Boolean).length; return n === 0 || n === 4; };
@@ -69,8 +70,7 @@ function SeasonCountryFields({ value, onChange }: { value: SeasonCountry; onChan
       {dayMonth('ed', 'em', 'Sezon bitişi')}
       <div>
         <p style={{ ...LABEL, margin: '0 0 4px', color: MUTED }}>Ülke</p>
-        <select value={value.country} onChange={e => set('country', e.target.value)} aria-label="Ülke" style={{ ...inputStyle }}>
-          <option value="">Seçilmedi</option>
+        <select value={value.countryCode} onChange={e => set('countryCode', e.target.value)} aria-label="Ülke" style={{ ...inputStyle }}>
           {COUNTRY_OPTIONS.map(o => <option key={o.code} value={o.code}>{flagEmoji(o.code)} {o.name} ({o.code})</option>)}
         </select>
       </div>
