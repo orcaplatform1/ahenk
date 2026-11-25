@@ -77,6 +77,30 @@ function Timeline({ rows }: { rows: [string, string][] }) {
   );
 }
 
+// Yarın / Hafta Sonu toggle oku: seçili segmentin iç ucundan başlar, diğer segmentin başından içeri uzanır, diğer segmente bakar.
+// Seçili (kırmızı zemin) segmentte kalan kısım siyah, diğer (koyu zemin) segmentte kalan kısım kırmızı. Ok segmentlerin iç kenarındaki
+// ARROW_PAD boşluğunda kalır, yazılara binmez
+const ARROW_PAD = 22;
+function ToggleArrow({ dir }: { dir: 'right' | 'left' }) {
+  const right = dir === 'right';
+  return (
+    <svg width={36} height={12} viewBox="0 0 36 12" fill="none" aria-hidden="true"
+      style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}>
+      {right ? (
+        <>
+          <path d="M2 6H16" stroke="#000000" strokeWidth={2} strokeLinecap="round" />
+          <path d="M16 6H33M28 2l5 4-5 4" stroke={C.primary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </>
+      ) : (
+        <>
+          <path d="M20 6H34" stroke="#000000" strokeWidth={2} strokeLinecap="round" />
+          <path d="M20 6H3M8 2L3 6l5 4" stroke={C.primary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function Step({ n, t, wide, seasonTag }: { n: number; t: ReturnType<typeof useTranslations>; wide: boolean; seasonTag: string }) {
   const prices = usePlanPrices();
   const locale = useLocale();
@@ -157,13 +181,14 @@ function Step({ n, t, wide, seasonTag }: { n: number; t: ReturnType<typeof useTr
     <div>
       <h2 style={h2}>{t('onb.s4Title')}</h2>
       <p style={sub}>{t('onb.s4Sub')}</p>
-      <div role="tablist" style={{ display: 'flex', background: C.card, border: `1px solid ${C.border}`, borderRadius: 9999, padding: 4, gap: 4 }}>
+      <div role="tablist" style={{ position: 'relative', display: 'flex', background: C.card, border: `1px solid ${C.border}`, borderRadius: 9999, padding: 4, gap: 4 }}>
         {(['tomorrow', 'weekend'] as const).map(k => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-            style={{ flex: 1, minHeight: 44, borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: SANS, fontSize: 14, fontWeight: 600, background: tab === k ? C.primary : 'transparent', color: tab === k ? '#fff' : C.muted }}>
+            style={{ flex: 1, minHeight: 44, borderRadius: 9999, border: 'none', cursor: 'pointer', padding: `0 ${ARROW_PAD}px`, fontFamily: SANS, fontSize: 14, fontWeight: 600, background: tab === k ? C.primary : 'transparent', color: tab === k ? '#fff' : C.muted }}>
             {t(k === 'tomorrow' ? 'onb.tabTomorrow' : 'onb.tabWeekend')}
           </button>
         ))}
+        <ToggleArrow dir={tab === 'tomorrow' ? 'right' : 'left'} />
       </div>
       {tab === 'tomorrow' ? (
         <div style={{ marginTop: 14 }}>
@@ -208,8 +233,8 @@ function Step({ n, t, wide, seasonTag }: { n: number; t: ReturnType<typeof useTr
 
   if (n === 6) {
     // Gerçek MasaDetayKarti (Masalarım'daki bileşen), Baş Başa, masa kurulmuş hâlde; statik örnek veri (canlı kullanıcıya bağlı değil).
-    // apiBase verilmediği için yalnız ana kart çizilir (sohbet / acil yardım / paylaş yok, sunucuya istek yok). Ekrana sığması için
-    // orantılı küçültülür (zoom)
+    // apiBase verilmediği için sunucuya istek yok; showcase: ana kart + pasif Masa Sohbeti (önizlemedeki ChatSection) ve kapağın sağ
+    // üstünde kırmızı "Temsili" etiketi (acil yardım / paylaş / Değerlendir yok). Ekrana sığması için orantılı küçültülür (zoom)
     const sample: MasaDetayData = {
       id: 'onboarding-sample', type: 'ONE_ON_ONE', maxParticipants: 2,
       scheduledAt: nextSaturday20(), sosEndsAt: nextSaturday20(),
@@ -226,7 +251,7 @@ function Step({ n, t, wide, seasonTag }: { n: number; t: ReturnType<typeof useTr
         <h2 style={h2}>{t('onb.s6Title')}</h2>
         <p style={sub}>{t('onb.s6Sub')}</p>
         <div style={{ maxWidth: wide ? 440 : undefined, zoom: wide ? 0.82 : 0.86 }}>
-          <MasaDetayKarti masa={sample} />
+          <MasaDetayKarti masa={sample} showcase />
         </div>
         <ul style={{ listStyle: 'none', padding: 0, margin: '14px 0 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {[1, 2].map(i => (
@@ -271,7 +296,6 @@ function Step({ n, t, wide, seasonTag }: { n: number; t: ReturnType<typeof useTr
             <img src={src} alt="" style={{ display: 'block', width: '100%', aspectRatio: '16 / 10', objectFit: 'cover' }} />
             <div style={{ padding: '10px 12px' }}>
               <p style={strong}>{t(`onb.s8c${idx + 1}`)}</p>
-              <p style={{ ...small, fontSize: 12, marginTop: 2 }}>{t('onb.s8Dates')}</p>
             </div>
           </div>
         ))}

@@ -555,8 +555,9 @@ function chunkRows(list: DetayParticipant[]): DetayParticipant[][] {
 // preview (masa kurulmadan): aynı kart, gerçek veri yok; dateLabel tarih satırında (gün adı + saat); locked: kapakta sallanan kilit;
 // kapakta yalnız konum ikonu (ilçe yok), Haritada Gör pasif; katılımcılar verilen sırayla; sohbet pasif (mesaj çekilmez, gönder ikonu
 // kapalı); acil yardım, gelmeyen işaretleme ve Değerlendir yok — web MasaDetayKarti ile aynı
-// showcase (Nasıl Çalışır örnek kartı): yalnız ana kart (kapak, tarih, katılımcılar, Yapay Zekâ Masa Raporu); alt kart (acil yardım,
-// sohbet, gelmeyen işaretleme, Değerlendir) ve paylaş butonu yok, sunucuya istek atılmaz — web'de apiBase verilmeyen kart ile aynı
+// showcase (Nasıl Çalışır örnek kartı): ana kart (kapak, tarih, katılımcılar, Yapay Zekâ Masa Raporu) + alt kartta yalnız pasif Masa
+// Sohbeti (önizlemedeki ChatSection); kapağın sağ üstünde kırmızı "Temsili" etiketi (onb.s6Badge); acil yardım, gelmeyen işaretleme,
+// Değerlendir ve paylaş butonu yok, sunucuya istek atılmaz — web showcase ile aynı
 function MasaDetayKartiInner({ masa, archive = false, preview, showcase = false }: { masa: MasaDetayData; archive?: boolean; preview?: { dateLabel: string; locked?: boolean }; showcase?: boolean }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -695,6 +696,14 @@ function MasaDetayKartiInner({ masa, archive = false, preview, showcase = false 
                   <T w={600} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4} style={{ fontSize: 12, lineHeight: 16, color: tw.text, textAlign: 'center' }}>{t('masa.previewBadge')}</T>
                 </View>
               )}
+              {/* Nasıl Çalışır örnek kartı: sağ üstte kırmızı etiket; dar ekranda yazı etiket içinde alt satıra iner, kapağın dışına taşmaz */}
+              {showcase && (
+                <View pointerEvents="none" style={{ position: 'absolute', top: 10, right: 10, left: 10, zIndex: 3, alignItems: 'flex-end' }}>
+                  <View style={{ maxWidth: '100%', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 8, backgroundColor: c.red }}>
+                    <T w={700} style={{ fontSize: 11, lineHeight: 15, color: '#ffffff', textAlign: 'right' }}>{t('onb.s6Badge')}</T>
+                  </View>
+                </View>
+              )}
               {preview?.locked && <LockShake />}
             </>
           )}
@@ -774,7 +783,7 @@ function MasaDetayKartiInner({ masa, archive = false, preview, showcase = false 
 
       {/* ── Alt kart: acil yardım (eski rezervasyon kartı ve Yola Çıktım yerinde), sohbet, gelmeyen işaretleme, Değerlendir.
           Geçmiş masada (archive) bu kart yok ── */}
-      {live && (
+      {(live || showcase) && (
       <Card style={{ marginTop: masaKart.cardGap }}>
         {sosVisible && (
           <View style={{ marginBottom: 4 }}>
@@ -795,11 +804,11 @@ function MasaDetayKartiInner({ masa, archive = false, preview, showcase = false 
           </View>
         )}
 
-        <ChatSection meetingId={masa.id} preview={!!preview} count={`${masa.participants.filter(p => !p.cancelled).length}/${masa.maxParticipants ?? masa.participants.filter(p => !p.cancelled).length}`} />
-        {!preview && <NoShowSection meetingId={masa.id} />}
+        <ChatSection meetingId={masa.id} preview={!!preview || showcase} count={`${masa.participants.filter(p => !p.cancelled).length}/${masa.maxParticipants ?? masa.participants.filter(p => !p.cancelled).length}`} />
+        {!preview && !showcase && <NoShowSection meetingId={masa.id} />}
 
         {/* Değerlendir: değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı. Önizlemede yok */}
-        {!preview && (
+        {!preview && !showcase && (
           <View style={{ marginTop: 20, alignItems: 'center', gap: 8 }}>
             <GoldPill label={t('tm.review')} onPress={handleReview} />
             {!!reviewWarn && <T accessibilityRole="alert" style={{ fontSize: 12, color: c.warnOrange, textAlign: 'center' }}>{reviewWarn}</T>}

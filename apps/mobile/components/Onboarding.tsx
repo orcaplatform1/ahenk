@@ -98,6 +98,32 @@ function Scaled({ scale, children }: { scale: number; children: React.ReactNode 
   );
 }
 
+// Yarın / Hafta Sonu toggle oku (web ToggleArrow ile aynı): seçili segmentin iç ucundan başlar, diğer segmentin başından içeri uzanır,
+// diğer segmente bakar. Seçili (kırmızı zemin) segmentte kalan kısım siyah, diğer (koyu zemin) segmentte kalan kısım kırmızı. Ok
+// segmentlerin iç kenarındaki ARROW_PAD boşluğunda kalır, yazılara binmez; dekoratif (erişilebilirlikte gizli, dokunmayı engellemez)
+const ARROW_PAD = 22;
+function ToggleArrow({ dir }: { dir: 'right' | 'left' }) {
+  const right = dir === 'right';
+  return (
+    <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+      style={{ position: 'absolute', left: '50%', top: '50%', marginLeft: -18, marginTop: -6, width: 36, height: 12 }}>
+      <Svg width={36} height={12} viewBox="0 0 36 12" fill="none">
+        {right ? (
+          <>
+            <Path d="M2 6H16" stroke="#000000" strokeWidth={2} strokeLinecap="round" />
+            <Path d="M16 6H33M28 2l5 4-5 4" stroke={C.primary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          </>
+        ) : (
+          <>
+            <Path d="M20 6H34" stroke="#000000" strokeWidth={2} strokeLinecap="round" />
+            <Path d="M20 6H3M8 2L3 6l5 4" stroke={C.primary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          </>
+        )}
+      </Svg>
+    </View>
+  );
+}
+
 function Step({ n, prices, seasonTag }: { n: number; prices: Partial<Record<PlanKeyName, PlanPriceInfo>> | null; seasonTag: string }) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<'tomorrow' | 'weekend'>('tomorrow');
@@ -187,13 +213,14 @@ function Step({ n, prices, seasonTag }: { n: number; prices: Partial<Record<Plan
     <View>
       <H2>{t('onb.s4Title')}</H2>
       <Sub>{t('onb.s4Sub')}</Sub>
-      <View accessibilityRole="tablist" style={{ flexDirection: 'row', backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: C.pill, padding: 4, gap: 4 }}>
+      <View accessibilityRole="tablist" style={{ position: 'relative', flexDirection: 'row', backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: C.pill, padding: 4, gap: 4 }}>
         {(['tomorrow', 'weekend'] as const).map(k => (
           <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: tab === k }} onPress={() => setTab(k)}
-            style={{ flex: 1, minHeight: 44, borderRadius: C.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: tab === k ? C.primary : 'transparent' }}>
-            <T w={600} style={{ fontSize: 14, color: tab === k ? '#ffffff' : C.muted }}>{t(k === 'tomorrow' ? 'onb.tabTomorrow' : 'onb.tabWeekend')}</T>
+            style={{ flex: 1, minHeight: 44, borderRadius: C.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: ARROW_PAD, backgroundColor: tab === k ? C.primary : 'transparent' }}>
+            <T w={600} style={{ fontSize: 14, color: tab === k ? '#ffffff' : C.muted, textAlign: 'center' }}>{t(k === 'tomorrow' ? 'onb.tabTomorrow' : 'onb.tabWeekend')}</T>
           </Pressable>
         ))}
+        <ToggleArrow dir={tab === 'tomorrow' ? 'right' : 'left'} />
       </View>
       {tab === 'tomorrow' ? (
         <View style={{ marginTop: 14 }}>
@@ -234,7 +261,8 @@ function Step({ n, prices, seasonTag }: { n: number; prices: Partial<Record<Plan
 
   if (n === 6) {
     // Gerçek MasaDetayKarti (Masalarım'daki bileşen), Baş Başa, masa kurulmuş hâlde; statik örnek veri (canlı kullanıcıya bağlı değil).
-    // showcase: yalnız ana kart (sohbet / acil yardım / paylaş yok, sunucuya istek yok). Ekrana sığması için orantılı küçültülür
+    // showcase: ana kart + pasif Masa Sohbeti ve kapakta kırmızı "Temsili" etiketi (acil yardım / paylaş / Değerlendir yok, sunucuya
+    // istek yok). Ekrana sığması için orantılı küçültülür
     const sample: MasaDetayData = {
       id: 'onboarding-sample', type: 'ONE_ON_ONE', maxParticipants: 2,
       scheduledAt: nextSaturday20(), sosEndsAt: nextSaturday20(),
@@ -286,12 +314,11 @@ function Step({ n, prices, seasonTag }: { n: number; prices: Partial<Record<Plan
       <Sub style={{ color: C.text }}>{t('onb.s8Body')}</Sub>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {SEASIDE_CITY_IMAGES.map((src, idx) => (
-          <View key={src} accessible accessibilityLabel={`${t(`onb.s8c${idx + 1}`)}, ${t('onb.s8Dates')}`}
+          <View key={src} accessible accessibilityLabel={t(`onb.s8c${idx + 1}`)}
             style={[card, { width: '48.5%', paddingVertical: 0, paddingHorizontal: 0, overflow: 'hidden' }]}>
             <Image source={{ uri: `${SITE}${src}` }} resizeMode="cover" accessibilityIgnoresInvertColors style={{ width: '100%', aspectRatio: 16 / 10 }} />
             <View style={{ paddingVertical: 10, paddingHorizontal: 12 }}>
               <Strong>{t(`onb.s8c${idx + 1}`)}</Strong>
-              <Small style={{ fontSize: 12, marginTop: 2 }}>{t('onb.s8Dates')}</Small>
             </View>
           </View>
         ))}

@@ -1144,8 +1144,8 @@ API CLIENT KURALLAR (web):
     fethiye, marmaris, kusadasi, ayvalik); mobil https://ahenk.co önekiyle. Eşleme packages/shared/src/citySeason.ts CITY_IMAGES / cityImage /
     SEASIDE_CITY_IMAGES; mobil SoonCityGroups.tsx cityImageOption (Btn listOption içeriği)
   - Nasıl Çalışır son sayfası (8. adım, web + mobil Onboarding): dalga ikonlu şehir kutuları yok; 2 sütunda 6 görselli kart: Çeşme, Bodrum,
-    Fethiye, Marmaris, Kuşadası, Ayvalık (onb.s8c1–s8c6). Kart: üstte görsel (16:10, cover), altında kalın şehir adı ve tarih satırı
-    onb.s8Dates (TR "1 Haziran >< 15 Eylül", EN "June 1 >< September 15"); alt metin onb.s8Body ve üstteki sezon etiketi aynen
+    Fethiye, Marmaris, Kuşadası, Ayvalık (onb.s8c1–s8c6). Kart: üstte görsel (16:10, cover), altında yalnız kalın şehir adı (tarih satırı
+    yok; mobil erişilebilirlik etiketi yalnız şehir adı); alt metin onb.s8Body ve üstteki sezon etiketi aynen
   - Tarih / saat: buluşmanın yapıldığı bölgenin saat diliminde; her iki dilde sayısal gg.aa.yyyy ve 24 saat SS:dd; ay ve gün adları arayüz dilinde.
     İstisnalar: masa detay kartı tarih satırı TR "18 Kasım, Çarşamba 20:00", EN "Wednesday, 18 November 20:00" (shared formatCardDate);
     Masalarım tarih sekmesi TR "18 Kasım Çarşamba", EN "Wednesday, 18 November" (formatDayTab).

@@ -82,6 +82,9 @@ interface Props {
   // kapakta yalnız konum ikonu (ilçe yok), Haritada Gör pasif; katılımcılar verilen sırayla satır satır (sol sütun kullanıcının
   // cinsiyeti); sohbet pasif (mesaj çekilmez, gönder ikonu kapalı); acil yardım, gelmeyen işaretleme ve Değerlendir yok
   preview?: { dateLabel: string; locked?: boolean };
+  // Nasıl Çalışır örnek kartı: ana kart + alt kartta yalnız pasif Masa Sohbeti (önizlemedeki ChatSection); kapağın sağ üstünde kırmızı
+  // "Temsili" etiketi (onb.s6Badge); acil yardım, gelmeyen işaretleme ve Değerlendir yok, sunucuya istek atılmaz
+  showcase?: boolean;
 }
 
 function jsonHeaders(token?: string): Record<string, string> {
@@ -918,7 +921,7 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
   );
 }
 
-export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHref, preview }: Props) {
+export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHref, preview, showcase = false }: Props) {
   const t = useTranslations();
   const locale = useLocale();
   const [lightboxIdx,   setLightboxIdx]   = useState<number | null>(null);
@@ -1127,6 +1130,16 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
                   </p>
                 </div>
               )}
+              {/* Nasıl Çalışır örnek kartı: sağ üstte kırmızı etiket; dar ekranda yazı etiket içinde alt satıra iner, kapağın dışına taşmaz */}
+              {showcase && (
+                <p style={{
+                  position: 'absolute', top: 10, right: 10, zIndex: 3, maxWidth: 'calc(100% - 20px)', boxSizing: 'border-box', margin: 0,
+                  padding: '4px 8px', borderRadius: 8, background: '#c0392b', color: '#ffffff', fontFamily: 'Inter, sans-serif',
+                  fontSize: 11, fontWeight: 700, lineHeight: 1.35, textAlign: 'right', overflowWrap: 'anywhere', pointerEvents: 'none',
+                }}>
+                  {t('onb.s6Badge')}
+                </p>
+              )}
               {/* Önizleme: masa kilitliyken sağ üstte (etiketin altında) sallanan kilit (eski önizlemedeki gibi) */}
               {preview?.locked && (
                 <>
@@ -1309,7 +1322,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
 
       {/* ── Alt kart: acil yardım (eski rezervasyon kartı ve Yola Çıktım yerinde), sohbet, gelmeyen işaretleme, Değerlendir.
           Geçmiş masada (archive) bu kart yok ── */}
-      {!archive && (authHeaders || preview) && (
+      {!archive && (authHeaders || preview || showcase) && (
       <motion.div
         className="ll-card"
         initial={{ opacity: 0, y: 10 }}
@@ -1367,8 +1380,8 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
         )}
 
         {/* Sohbet bölümü */}
-        {(hasChat || preview) && (
-          <ChatSection meetingId={masa.id} apiBase={apiBase ?? ''} token={token} preview={!!preview}
+        {(hasChat || preview || showcase) && (
+          <ChatSection meetingId={masa.id} apiBase={apiBase ?? ''} token={token} preview={!!preview || showcase}
             count={`${masa.participants.filter(p => !p.cancelled).length}/${masa.maxParticipants ?? masa.participants.filter(p => !p.cancelled).length}`} />
         )}
 
@@ -1378,7 +1391,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
         )}
 
         {/* Değerlendir: değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı. Önizlemede yok */}
-        {!preview && (
+        {!preview && !showcase && (
         <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <button type="button" onClick={handleReview} style={GOLD_PILL}>{t('tm.review')}</button>
           {reviewWarn && (
