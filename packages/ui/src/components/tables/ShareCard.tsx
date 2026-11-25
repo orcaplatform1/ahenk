@@ -230,6 +230,124 @@ function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string
   ctx.textAlign = 'left';
 }
 
+// ── Sadakat paylaşım kartı (Instagram Hikâye, 1080×1920) ─────────────────────────────────────────────────────────────
+// Masa kartıyla aynı ölçü, kenar boşluğu, yazı tipleri ve etiket biçimi. Arka plan /share-bg/sadakat.webp (yoksa koyu yeşil gradyan).
+// Yukarıdan aşağıya, sola hizalı: logo + "Ahenk" + etiket; iki satır başlık; iki alt metin; davet linki; ayraç; paylaşanın fotoğrafı,
+// "Ahmet Y." ve "seni çağırıyor".
+export const LOYALTY_ACCENT = '#1ebf2b'; // sadakat.webp neon yeşil çerçevenin doygun tonu
+export interface LoyaltyCardData { link: string; sharerName: string; sharerInitials: string }
+export interface LoyaltyCardTexts { tag: string; title1: string; title2: string; sub1: string; sub2: string; invites: string }
+
+export function drawLoyaltyCard(canvas: HTMLCanvasElement, d: LoyaltyCardData, texts: LoyaltyCardTexts, imgs: CardImages = {}, lang: string = documentLang()) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  canvas.width = W; canvas.height = H;
+  const MAXW = W - PAD * 2;
+  if (imgs.bg) {
+    ctx.drawImage(imgs.bg, 0, 0, W, H);
+  } else {
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, '#0b0b0b');
+    bg.addColorStop(1, '#06301c');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Üst: logo, hemen sağında "Ahenk", sağa yaslı etiket (masa kartındaki etiket biçimi)
+  ctx.textBaseline = 'alphabetic';
+  const LOGO = 120;
+  if (imgs.logo) ctx.drawImage(imgs.logo, PAD, PAD, LOGO, LOGO);
+  const mid = PAD + LOGO / 2;
+  ctx.font = `400 84px ${SERIF}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('Ahenk', PAD + LOGO + 24, mid + 30);
+  ctx.font = `700 34px ${SANS}`;
+  const label = texts.tag.toLocaleUpperCase(lang === 'en' ? 'en' : 'tr-TR');
+  const lw = ctx.measureText(label).width + 56;
+  const lx = W - PAD - lw, ly = mid - 36;
+  ctx.fillStyle = LOYALTY_ACCENT;
+  ctx.beginPath();
+  ctx.roundRect(lx, ly, lw, 72, 36);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(label, lx + 28, ly + 48);
+  const TOP = PAD + LOGO + 24;
+
+  // Alt: en altta paylaşan kullanıcı satırı, üstünde ayraç ve davet linki
+  const AV = 96;
+  const avY = H - PAD - AV;
+  const cx = PAD + AV / 2, cy = avY + AV / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, AV / 2, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+  if (imgs.photo) {
+    ctx.drawImage(imgs.photo, PAD, avY, AV, AV);
+  } else {
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(PAD, avY, AV, AV);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 36px ${SANS}`;
+    const iw = ctx.measureText(d.sharerInitials).width;
+    ctx.fillText(d.sharerInitials, cx - iw / 2, cy + 13);
+  }
+  ctx.restore();
+  ctx.strokeStyle = LOYALTY_ACCENT;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, AV / 2 - 1.5, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `600 40px ${SANS}`;
+  ctx.fillText(d.sharerName, PAD + AV + 28, cy - 4);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = `400 30px ${SANS}`;
+  ctx.fillText(texts.invites, PAD + AV + 28, cy + 36);
+
+  const RULE = avY - 40;
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.fillRect(PAD, RULE, MAXW, 2);
+  // Davet linki: tek satır; 888 px'e sığmazsa yazı küçülür, satır bölünmez
+  let fs = 40;
+  ctx.font = `600 ${fs}px ${SANS}`;
+  while (fs > 16 && ctx.measureText(d.link).width > MAXW) { fs -= 1; ctx.font = `600 ${fs}px ${SANS}`; }
+  ctx.fillStyle = '#ffffff';
+  const linkBase = RULE - 40;
+  ctx.fillText(d.link, PAD, linkBase);
+  const BOTTOM = linkBase - fs - 40;
+
+  // Ortadaki blok (başlık iki satır, iki alt metin) üst satır ile davet linki arasında dikeyde ortalı
+  const ops: ((oy: number) => void)[] = [];
+  let y = 0;
+  for (const line of [texts.title1, texts.title2]) {
+    let ts = 96;
+    ctx.font = `400 ${ts}px ${SERIF}`;
+    while (ts > 40 && ctx.measureText(line).width > MAXW) { ts -= 1; ctx.font = `400 ${ts}px ${SERIF}`; }
+    y += Math.round(ts * 1.15);
+    const f = ctx.font, ly2 = y;
+    ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = f; ctx.fillText(line, PAD, oy + ly2); });
+  }
+  y += 100;
+  ctx.font = `700 50px ${SANS}`;
+  for (const line of wrap(ctx, texts.sub1, MAXW, 2)) {
+    const ly2 = y;
+    ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = `700 50px ${SANS}`; ctx.fillText(line, PAD, oy + ly2); });
+    y += 64;
+  }
+  y += 10;
+  ctx.font = `500 42px ${SANS}`;
+  const sub2 = wrap(ctx, texts.sub2, MAXW, 3);
+  sub2.forEach((line, i) => {
+    const ly2 = y;
+    ops.push((oy) => { ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = `500 42px ${SANS}`; ctx.fillText(line, PAD, oy + ly2); });
+    if (i < sub2.length - 1) y += 56;
+  });
+  const blockH = y + 12;
+  const oy = Math.round(TOP + (BOTTOM - TOP - blockH) / 2);
+  for (const op of ops) op(oy);
+}
+
 const BTN: React.CSSProperties = {
   minHeight: 44, borderRadius: 9999, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)',
   color: '#f4f1ec', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer', padding: '0 14px',

@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { localizedInviteLink, type Lang } from '@ahenk/shared';
+import { LoyaltyShareSheet, type LoyaltySharer } from '@/components/LoyaltyShareSheet';
 import { usePlanPrices, type PlanKeyName } from '@/components/PlanPrice';
 import { api } from '@/lib/api';
 import { startCheckout } from '@/lib/checkout';
@@ -39,6 +41,7 @@ interface Props { maintenanceMode?: boolean; }
 
 export function TabPaket({ maintenanceMode = false }: Props) {
   const t = useTranslations();
+  const locale = useLocale() as Lang;
   const prices = usePlanPrices();
   const winback = useWinback();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -74,26 +77,30 @@ export function TabPaket({ maintenanceMode = false }: Props) {
   useEffect(() => {
     loadSubs().finally(() => setLoading(false));
     api.get<DiscountInfo>('/payment/discount-info').then(setDiscountInfo).catch(() => {});
-    api.get<{ kankamla?: KankamlaState }>('/auth/me').then((m) => setKankamla(m.kankamla ?? null)).catch(() => {});
+    api.get<{ kankamla?: KankamlaState; firstName?: string; lastName?: string; profilePhotoUrl?: string | null }>('/auth/me').then((m) => {
+      setKankamla(m.kankamla ?? null);
+      setSharer({ firstName: m.firstName ?? '', lastName: m.lastName ?? '', photoUrl: m.profilePhotoUrl ?? null });
+    }).catch(() => {});
     api.get<ReferralStats>('/referral/my-stats').then(setReferralStats).catch(() => {});
   }, []);
 
   const [copied, setCopied] = useState(false);
   const [rewardMsg, setRewardMsg] = useState('');
   const [claiming, setClaiming] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [sharer, setSharer] = useState<LoyaltySharer | null>(null);
+  // Davet linki arayüz diline göre (TR https://ahenk.co/davet/X, EN https://ahenk.co/en/davet/X); gösterilen, kopyalanan ve paylaşılan link aynı
+  const inviteLink = referralStats?.inviteLink ? localizedInviteLink(referralStats.inviteLink, locale) : null;
 
   function copyCode() {
-    if (!referralStats?.inviteLink) return;
-    navigator.clipboard?.writeText(referralStats.inviteLink).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+    if (!inviteLink) return;
+    navigator.clipboard?.writeText(inviteLink).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
   }
 
-  async function shareInvite() {
-    if (!referralStats?.inviteLink) return;
-    const text = t('loyalty.shareText', { link: referralStats.inviteLink });
-    try {
-      if (navigator.share) { await navigator.share({ text }); return; }
-    } catch (e) { if ((e as Error).name === 'AbortError') return; }
-    navigator.clipboard?.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+  // Paylaş: Ahenk'in kendi alt paneli (Instagram, WhatsApp, Telegram, Facebook, Diğer)
+  function shareInvite() {
+    if (!inviteLink) return;
+    setShareOpen(true);
   }
 
   // Kazanılan ücretsiz masa hakkının türünü seç: tek seferlik hak olarak Paketim'e eklenir
@@ -256,34 +263,36 @@ export function TabPaket({ maintenanceMode = false }: Props) {
   return (
     <div className="flex flex-col gap-5">
       {maintenanceMode && <MaintenanceNotice />}
+      {shareOpen && inviteLink && (
+        <LoyaltyShareSheet link={inviteLink} text={t('loyalty.shareText', { link: inviteLink })} sharer={sharer} onClose={() => setShareOpen(false)} />
+      )}
       {/* Sadakat Programı kartı */}
       <div className="ll-card flex flex-col gap-3">
         <div className="ll-head"><h3 className="ll-title">{t('loyalty.title')}</h3></div>
+        {/* Sıra: başlık, kalan davet, Davet Bağlantın, tam genişlik link, tam genişlik Paylaş, açıklama, (ödül seçimi), istatistikler */}
         {referralStats?.referralCode != null && (
           <div className="flex flex-col gap-2">
-            <p className="text-xs text-[#c9c2b8]">{t('loyalty.myCode')}</p>
-            <div className="flex gap-2 items-center">
-              {/* Tam davet linki; sağdaki kopyala ikonu linkin tamamını panoya kopyalar */}
-              <div style={{ position: 'relative', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4, padding: '0 4px 0 14px', borderRadius: 12, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <span className="ll-mono" style={{ flex: 1, minWidth: 0, padding: '11px 0', fontSize: 13, color: '#f5f5f5', wordBreak: 'break-all' }}>
-                  {referralStats.inviteLink}
-                </span>
-                <button type="button" onClick={copyCode} aria-label={t('loyalty.copy')} title={t('loyalty.copy')}
-                  style={{ flexShrink: 0, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#f5f5f5', cursor: 'pointer' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="9" y="9" width="12" height="12" rx="2" />
-                    <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
-                  </svg>
-                </button>
-                {copied && (
-                  <span role="status" style={{ position: 'absolute', right: 6, top: -30, padding: '4px 10px', borderRadius: 999, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.14)', fontSize: 12, color: '#f4f1ec', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
-                    {t('loyalty.copied')}
-                  </span>
-                )}
-              </div>
-              <StdButton variant="primary" type="button" onClick={shareInvite} className="justify-center">{t('loyalty.share')}</StdButton>
-            </div>
             <p className="text-sm font-semibold text-[#f4f1ec]">{t('loyalty.toNext', { count: referralStats.invitesToNextReward ?? 3 })}</p>
+            <p className="text-xs text-[#c9c2b8]">{t('loyalty.myCode')}</p>
+            {/* Tam davet linki; sağdaki kopyala ikonu linkin tamamını panoya kopyalar */}
+            <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center', gap: 4, padding: '0 4px 0 14px', borderRadius: 12, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <span className="ll-mono" style={{ flex: 1, minWidth: 0, padding: '11px 0', fontSize: 13, color: '#f5f5f5', wordBreak: 'break-all' }}>
+              {inviteLink}
+            </span>
+            <button type="button" onClick={copyCode} aria-label={t('loyalty.copy')} title={t('loyalty.copy')}
+              style={{ flexShrink: 0, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#f5f5f5', cursor: 'pointer' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="12" height="12" rx="2" />
+                <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+              </svg>
+            </button>
+            {copied && (
+              <span role="status" style={{ position: 'absolute', right: 6, top: -30, padding: '4px 10px', borderRadius: 999, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.14)', fontSize: 12, color: '#f4f1ec', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+                {t('loyalty.copied')}
+              </span>
+            )}
+            </div>
+            <StdButton variant="primary" type="button" onClick={shareInvite} className="justify-center" style={{ width: '100%' }}>{t('loyalty.share')}</StdButton>
             <p style={{ color: '#aaa', fontSize: 12, lineHeight: 1.5, margin: 0 }}>{t('loyalty.rule')}</p>
             {referralStats.pendingRewards?.map((r) => (
               <div key={r.id} className="flex flex-col gap-2" style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(46,158,98,0.10)', border: '1px solid rgba(46,158,98,0.4)' }}>

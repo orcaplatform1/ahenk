@@ -1,6 +1,6 @@
 // Sekme 4 — Paketim: apps/web/app/profil/tabs/TabPaket.tsx. Ödeme: uygulama içi satın alma (App Store / Play Store), mobil fiyat (mobileTL).
 import { useCallback, useState } from 'react';
-import { BackHandler, Platform, Pressable, ScrollView, Share, View } from 'react-native';
+import { BackHandler, Platform, Pressable, ScrollView, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +16,9 @@ import { useWinback } from '@/components/Winback';
 import { c, ll, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
 
-import { upper } from '@/lib/i18n';
+import { currentLang, upper } from '@/lib/i18n';
+import { localizedInviteLink } from '@ahenk/shared';
+import { LoyaltyShareSheet, type LoyaltySharer } from '@/components/LoyaltyShareSheet';
 import { useTranslation } from 'react-i18next';
 interface Subscription { id: string; plan: string; name: string; isPrime: boolean; autoRenew: boolean; renewCancelledAt: string | null; storePlatform: string | null }
 interface Rights { group: number; oneOnOne: number; kanka: number }
@@ -87,6 +89,8 @@ export default function Paketim() {
   // Davet: kişisel kod / link, geçerli davet sayısı, sonraki ücretsiz masaya kalan davet, türü seçilmemiş ödüller
   const [stats, setStats] = useState<{ totalInvites: number; availableDiscounts: number; referralCode?: number | null; inviteLink?: string | null; validInvites?: number; invitesToNextReward?: number; pendingRewards?: { id: string }[] } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [sharer, setSharer] = useState<LoyaltySharer | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [rewardMsg, setRewardMsg] = useState('');
   const [rewardOk, setRewardOk] = useState(false);
@@ -108,8 +112,9 @@ export default function Paketim() {
   const load = useCallback(() => {
     loadSubs().finally(() => setLoading(false));
     api.get<PlanPriceInfo[]>('/payment/plans').then((l) => setPrices(Object.fromEntries(l.map((p) => [p.plan, p])))).catch(() => {});
-    api.get<{ kankamla?: KankamlaState; maintenanceMode?: boolean }>('/auth/me').then((m) => {
+    api.get<{ kankamla?: KankamlaState; maintenanceMode?: boolean; firstName?: string; lastName?: string; profilePhotoUrl?: string | null }>('/auth/me').then((m) => {
       setKankamla(m.kankamla ?? null); setMaintenance(!!m.maintenanceMode);
+      setSharer({ firstName: m.firstName ?? '', lastName: m.lastName ?? '', photoUrl: m.profilePhotoUrl ?? null });
     }).catch(() => {});
     api.get<{ totalInvites: number; availableDiscounts: number }>('/referral/my-stats').then(setStats).catch(() => {});
     api.get<{ referralDiscount: boolean; inviteeDiscount: boolean }>('/payment/discount-info').then(setDiscount).catch(() => {});
@@ -122,13 +127,16 @@ export default function Paketim() {
     return () => sub.remove();
   }, [detail]));
 
+  // Davet linki arayüz diline göre (TR https://ahenk.co/davet/X, EN https://ahenk.co/en/davet/X); gösterilen, kopyalanan ve paylaşılan link aynı
+  const inviteLink = stats?.inviteLink ? localizedInviteLink(stats.inviteLink, currentLang()) : null;
   function copyCode() {
-    if (!stats?.inviteLink) return;
-    Clipboard.setStringAsync(stats.inviteLink).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+    if (!inviteLink) return;
+    Clipboard.setStringAsync(inviteLink).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
   }
+  // Paylaş: Ahenk'in kendi alt paneli (Instagram, WhatsApp, Telegram, Facebook, Diğer)
   function shareInvite() {
-    if (!stats?.inviteLink) return;
-    Share.share({ message: t('loyalty.shareText', { link: stats.inviteLink }) }).catch(() => {});
+    if (!inviteLink) return;
+    setShareOpen(true);
   }
   // Kazanılan ücretsiz masa hakkının türünü seç: tek seferlik hak olarak Paketim'e eklenir
   async function claimReward(rewardId: string, type: 'GROUP' | 'ONE_ON_ONE' | 'KANKA') {
@@ -278,29 +286,28 @@ export default function Paketim() {
             {maintenance && <MaintenanceNotice />}
             <Card style={{ gap: 12 }}>
               <Head title={t('loyalty.title')} style={{ marginBottom: 0 }} />
+              {/* Sıra: kalan davet, Davet Bağlantın, tam genişlik link, tam genişlik Paylaş, açıklama, (ödül seçimi), istatistikler */}
               {stats?.referralCode != null && (
                 <View style={{ gap: 8 }}>
-                  <T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.myCode')}</T>
-                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                    {/* Tam davet linki; sağdaki kopyala ikonu linkin tamamını panoya kopyalar */}
-                    <View style={{ flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingLeft: 14 }}>
-                      <T w={600} selectable style={{ flex: 1, fontSize: 13, color: ll.text, paddingVertical: 11 }}>{stats.inviteLink}</T>
-                      <Pressable onPress={copyCode} accessibilityRole="button" accessibilityLabel={t('loyalty.copy')}
-                        style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
-                        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                          <Rect x={9} y={9} width={12} height={12} rx={2} />
-                          <Path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
-                        </Svg>
-                      </Pressable>
-                      {copied && (
-                        <View pointerEvents="none" accessibilityLiveRegion="polite" style={{ position: 'absolute', right: 6, top: -30, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999, backgroundColor: ll.bg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
-                          <T style={{ fontSize: 12, color: ll.text }}>{t('loyalty.copied')}</T>
-                        </View>
-                      )}
-                    </View>
-                    <StdButton variant="primary" label={t('loyalty.share')} onPress={shareInvite} />
-                  </View>
                   <T w={600} style={{ fontSize: 14, color: ll.text }}>{t('loyalty.toNext', { count: stats.invitesToNextReward ?? 3 })}</T>
+                  <T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.myCode')}</T>
+                  {/* Tam davet linki; sağdaki kopyala ikonu linkin tamamını panoya kopyalar */}
+                  <View style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingLeft: 14 }}>
+                    <T w={600} selectable style={{ flex: 1, fontSize: 13, color: ll.text, paddingVertical: 11 }}>{inviteLink}</T>
+                    <Pressable onPress={copyCode} accessibilityRole="button" accessibilityLabel={t('loyalty.copy')}
+                      style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
+                      <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                        <Rect x={9} y={9} width={12} height={12} rx={2} />
+                        <Path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+                      </Svg>
+                    </Pressable>
+                    {copied && (
+                      <View pointerEvents="none" accessibilityLiveRegion="polite" style={{ position: 'absolute', right: 6, top: -30, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999, backgroundColor: ll.bg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
+                        <T style={{ fontSize: 12, color: ll.text }}>{t('loyalty.copied')}</T>
+                      </View>
+                    )}
+                  </View>
+                  <StdButton variant="primary" label={t('loyalty.share')} full onPress={shareInvite} />
                   <T style={{ color: c.tAaa, fontSize: 12, lineHeight: 18 }}>{t('loyalty.rule')}</T>
                   {stats.pendingRewards?.map((r) => (
                     <View key={r.id} style={{ gap: 8, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, backgroundColor: 'rgba(46,158,98,0.10)', borderWidth: 1, borderColor: 'rgba(46,158,98,0.4)' }}>
@@ -320,6 +327,9 @@ export default function Paketim() {
                 <View><T style={{ fontSize: 12, color: ll.text2 }}>{t('loyalty.discounts')}</T><T w={600} style={{ fontSize: 16, color: ll.text }}>{t('loyalty.pieces', { count: stats?.availableDiscounts ?? '—' })}</T></View>
               </View>
             </Card>
+            {inviteLink && (
+              <LoyaltyShareSheet visible={shareOpen} link={inviteLink} text={t('loyalty.shareText', { link: inviteLink })} sharer={sharer} onClose={() => setShareOpen(false)} />
+            )}
 
             {/* Aktif paketler ve türüne göre kalan hak adedi: yalnız aktif paketi / aboneliği olana */}
             {subs.length > 0 && (

@@ -120,6 +120,15 @@ export function weekdayName(day: number, lang: Lang): string {
   return base.toLocaleDateString(intlLocale(lang), { weekday: "long", timeZone: "UTC" });
 }
 
+// ─── Kişisel davet linki ─────────────────────────────────────────────────────
+// Arayüz diline göre: TR https://ahenk.co/davet/X (önek yok), EN https://ahenk.co/en/davet/X (web /en öneki)
+export function localizedInviteLink(link: string, lang: Lang): string {
+  if (lang !== "en") return link;
+  const m = link.match(/^(https?:\/\/[^/]+)(\/.*)?$/);
+  if (!m || (m[2] ?? "").startsWith("/en/")) return link;
+  return `${m[1]}/en${m[2] ?? ""}`;
+}
+
 // ─── Telefon (E.164) ─────────────────────────────────────────────────────────
 export const DEFAULT_PHONE_COUNTRY = "TR";
 

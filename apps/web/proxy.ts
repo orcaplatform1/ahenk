@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import { ENGLISH_ENABLED } from '@ahenk/shared';
 import { routing } from './i18n/routing';
+import { isLinkPreviewBot } from './lib/linkPreviewBots';
 
 const intlMiddleware = createMiddleware(routing);
 // Admin paneli Türkçe kalır: dil yönlendirmesi yapılmaz (mekân paneli Türkçe + İngilizce, [locale] altında)
@@ -59,7 +60,9 @@ export function proxy(request: NextRequest) {
       const stored = request.cookies.get('NEXT_LOCALE')?.value;
       const accept = (request.headers.get('accept-language') ?? '').trim().toLowerCase();
       const wantsEn = stored === 'en' || (!stored && accept !== '' && !accept.startsWith('tr'));
-      if (wantsEn) return NextResponse.redirect(toUrl(bare === '/' ? '/en' : `/en${bare}`));
+      // Önekli olmayan /davet/X önizleme botuna her zaman Türkçe döner (dil yönlendirmesi yok)
+      const previewBot = bare.startsWith('/davet/') && isLinkPreviewBot(request.headers.get('user-agent'));
+      if (wantsEn && !previewBot) return NextResponse.redirect(toUrl(bare === '/' ? '/en' : `/en${bare}`));
     }
   }
 

@@ -167,6 +167,9 @@ export const inputGlass = {
 } as const;
 export const glassCard = { bg: 'rgba(255,255,255,0.10)', border: 'rgba(255,255,255,0.10)', radius: 16, blur: 20 } as const;
 export const sheet = { bg: '#1a1a1a', border: 'rgba(255,255,255,0.08)', radius: 20, padTop: 24, padH: 20, padBottom: 36, overlay: 'rgba(0,0,0,0.72)', maxWidth: 560 } as const;
+// Sadakat paylaşım kartı (web packages/ui ShareCard drawLoyaltyCard ile aynı): etiket / avatar çerçevesi sadakat.webp neon yeşil
+// çerçevenin doygun tonu; arka plan görseli yüklenemezse koyu yeşil gradyan. Paylaşım paneli marka ikonları @ahenk/shared shareBrands
+export const loyaltyCard = { accent: '#1ebf2b', bgFrom: '#0b0b0b', bgTo: '#06301c', bgUrl: 'https://ahenk.co/share-bg/sadakat.webp' } as const;
 export const heat = {
   height: 84, radius: 12, padding: 10, gap: 6,
   // Semt adı ile yoğunluk yazısı arasındaki ışın çizgisi (web .ll-heat-rule)
