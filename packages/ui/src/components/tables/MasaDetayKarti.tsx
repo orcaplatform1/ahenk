@@ -736,42 +736,50 @@ function ChatSection({ meetingId, apiBase, token, count, preview = false }: { me
                 ))}
               </div>
             )}
-            <button type="button" aria-label={t('masa.emoji')} aria-expanded={emojiOpen} onClick={() => setEmojiOpen(v => !v)} disabled={preview}
-              style={{ flexShrink: 0, width: 36, height: 36, borderRadius: '50%', background: 'none', border: 'none', cursor: preview ? 'not-allowed' : 'pointer', fontSize: 20, lineHeight: 1, opacity: preview ? 0.5 : 1 }}>
-              🙂
-            </button>
-            {/* Önizlemede alan pasif; basınca yalnız kural penceresi açılır */}
-            <span onClick={() => { if (preview && !rulesSeen()) setRulesOpen(true); }} style={{ flex: 1, minWidth: 0, display: 'flex' }}>
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value.slice(0, 1000))}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-              onFocus={e => {
-                if (!rulesSeen()) { e.currentTarget.blur(); setRulesOpen(true); return; }
-                setTimeout(keepComposerVisible, 300);
-              }}
-              disabled={preview}
-              placeholder=""
-              className="ahenk-chat-input"
-              style={{
-                flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 8, padding: '8px 10px', fontSize: 16, color: '#f5f5f5',
-                fontFamily: 'Inter, sans-serif', outline: 'none', opacity: preview ? 0.5 : 1, pointerEvents: preview ? 'none' : undefined,
-              }}
-            />
-            </span>
-            <button
-              type="button"
-              onClick={sendMessage}
-              disabled={preview || !input.trim() || sending}
-              aria-label={t('masa.send')}
-              style={{ flexShrink: 0, width: 38, height: 38, borderRadius: '50%', border: 'none', background: '#c0392b', color: '#fff', cursor: input.trim() && !sending ? 'pointer' : 'not-allowed', opacity: input.trim() && !sending ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" />
-              </svg>
-            </button>
+            {/* Yazı kutusu: solunda çizgi gülücük (emoji seçici, gönder kırmızısı), sağında gönder; ikisi kutunun içinde */}
+            <div style={{
+              flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4, padding: '3px 3px 3px 4px',
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 22, boxSizing: 'border-box',
+            }}>
+              <button type="button" aria-label={t('masa.emoji')} aria-expanded={emojiOpen} onClick={() => setEmojiOpen(v => !v)} disabled={preview}
+                style={{ flexShrink: 0, width: 36, height: 36, borderRadius: '50%', background: 'none', border: 'none', cursor: preview ? 'not-allowed' : 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', opacity: preview ? 0.5 : 1 }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9.5" /><path d="M8 14.5s1.5 2 4 2 4-2 4-2" /><path d="M9 9.5h.01M15 9.5h.01" strokeWidth="2.4" />
+                </svg>
+              </button>
+              {/* Önizlemede alan pasif; basınca yalnız kural penceresi açılır */}
+              <span onClick={() => { if (preview && !rulesSeen()) setRulesOpen(true); }} style={{ flex: 1, minWidth: 0, display: 'flex' }}>
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value.slice(0, 1000))}
+                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                onFocus={e => {
+                  if (!rulesSeen()) { e.currentTarget.blur(); setRulesOpen(true); return; }
+                  setTimeout(keepComposerVisible, 300);
+                }}
+                disabled={preview}
+                placeholder=""
+                className="ahenk-chat-input"
+                style={{
+                  flex: 1, minWidth: 0, background: 'transparent', border: 'none',
+                  padding: '6px 4px', fontSize: 16, color: '#f5f5f5',
+                  fontFamily: 'Inter, sans-serif', outline: 'none', opacity: preview ? 0.5 : 1, pointerEvents: preview ? 'none' : undefined,
+                }}
+              />
+              </span>
+              <button
+                type="button"
+                onClick={sendMessage}
+                disabled={preview || !input.trim() || sending}
+                aria-label={t('masa.send')}
+                style={{ flexShrink: 0, width: 38, height: 38, borderRadius: '50%', border: 'none', background: '#c0392b', color: '#fff', cursor: input.trim() && !sending ? 'pointer' : 'not-allowed', opacity: input.trim() && !sending ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" />
+                </svg>
+              </button>
+            </div>
           </div>
         )}
         {sendError && isOpen && !isClosed && (
@@ -1106,13 +1114,25 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
               </div>
               {/* Yazıların okunması için alt geçiş */}
               <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,18,18,0.35) 0%, rgba(18,18,18,0) 30%, rgba(18,18,18,0) 45%, rgba(18,18,18,0.92) 100%)' }} />
-              {/* Önizleme: masa kilitliyken sağ üstte sallanan kilit (eski önizlemedeki gibi) */}
+              {/* Önizleme etiketi: kapağın en üstünde kırmızı bordürlü kutu, tek satır (yazı kapak genişliğine göre küçülür) */}
+              {preview && (
+                <div style={{ position: 'absolute', top: 10, left: 10, right: 10, zIndex: 3, containerType: 'inline-size', pointerEvents: 'none' }}>
+                  <p style={{
+                    margin: 0, padding: '5px 8px', borderRadius: 8, border: '1px solid #c0392b', background: 'rgba(18,18,18,0.72)',
+                    color: '#f5f5f5', fontFamily: 'Inter, sans-serif', fontWeight: 600, whiteSpace: 'nowrap', textAlign: 'center', lineHeight: 1.3,
+                    fontSize: 'min(12px, calc((100cqw - 18px) / 40))',
+                  }}>
+                    {t('masa.previewBadge')}
+                  </p>
+                </div>
+              )}
+              {/* Önizleme: masa kilitliyken sağ üstte (etiketin altında) sallanan kilit (eski önizlemedeki gibi) */}
               {preview?.locked && (
                 <>
                   <style>{`@keyframes lockShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}50%{transform:translateX(0)}75%{transform:translateX(3px)}}`}</style>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/lock-icon.webp" alt={t('tm.locked')} width={56} height={56}
-                    style={{ position: 'absolute', top: 12, right: 12, zIndex: 2, opacity: 0.85, animation: 'lockShake 0.8s ease-in-out infinite' }} />
+                    style={{ position: 'absolute', top: 44, right: 12, zIndex: 2, opacity: 0.85, animation: 'lockShake 0.8s ease-in-out infinite' }} />
                 </>
               )}
             </>

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { formatDayTab, formatNamed, occupationLabel, reviewClosesAt, weekdayName, type Lang } from '@ahenk/shared';
+import { formatDayTab, formatNamed, occupationLabel, reviewClosesAt, type Lang } from '@ahenk/shared';
 import { AnimatePresence, motion } from 'framer-motion';
 import { api, API_PREFIX } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
@@ -37,6 +37,7 @@ interface UserInfo {
   lastName: string;
   gender?: string;
   photoUrl?: string | null; // Onaylı profil fotoğrafı (önizleme kartında kullanıcının kendisi)
+  occupationSector?: string | null; // Meslek (önizleme kartında kullanıcının adının altında)
 }
 
 function fmtDate(val: string, locale: Lang = 'tr') {
@@ -69,6 +70,7 @@ function EmptyMasaCard({
   const self: MasaDetayData['participants'][number] = {
     initials, gender: uGender, isSelf: true, photoUrl: userInfo?.photoUrl ?? null,
     displayName: last ? `${first} ${last[0].toLocaleUpperCase('tr-TR')}.` : first || initials,
+    occupation: userInfo?.occupationSector ? occupationLabel(userInfo.occupationSector, t) : null,
   };
   const empty = (gender: string) => ({ initials: '?', gender, displayName: '' });
   const type: MasaTuru = cardType === 'basbasa' ? 'ONE_ON_ONE' : cardType === 'kanka' ? 'KANKA' : 'GROUP';
@@ -89,8 +91,8 @@ function EmptyMasaCard({
     participants,
     aiReport: null,
   };
-  const dateLabel = `${weekdayName(cardType === 'basbasa' ? 6 : cardType === 'kanka' ? 0 : 5, locale)} 20:00`;
-  return <MasaDetayKarti masa={masa} preview={{ dateLabel, locked }} />;
+  // Tarih satırında tüm masa türlerinde sabit yer tutucu ("Gün & Saat")
+  return <MasaDetayKarti masa={masa} preview={{ dateLabel: t('masa.previewDate'), locked }} />;
 }
 
 /* ── Tek masa bloğu ── */

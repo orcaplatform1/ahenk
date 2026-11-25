@@ -36,6 +36,7 @@ interface UserData {
   maintenanceMode?: boolean;
   profilePhotoUrl?: string | null;
   profilePhotoPending?: boolean;
+  occupationSector?: string; // Meslek (Masalarım önizleme kartı)
   suspendedUntil?: string | null; // Askı bitişi: Profilim'de geri sayım kartı
   profile?: {
     gender?: string;
@@ -177,7 +178,7 @@ function ProfilPage() {
             {activeTab === 'profil'  && <SuspensionCard until={user.suspendedUntil} />}
             {activeTab === 'profil'  && <TabProfilim user={user} cities={cities} onGoKyc={() => changeTab('kyc')} onGoTest={() => changeTab('test')} onGoRehber={() => changeTab('rehber')} activePlan={user.activePlan ?? null} />}
             {activeTab === 'test'    && <TabTest />}
-            {activeTab === 'masalar' && <TabMasalar userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender, photoUrl: user.profilePhotoUrl }} kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
+            {activeTab === 'masalar' && <TabMasalar userInfo={{ firstName: user.firstName, lastName: user.lastName, gender: user.profile?.gender, photoUrl: user.profilePhotoUrl, occupationSector: user.occupationSector }} kycApproved={kycApproved} onGoKyc={() => changeTab('kyc')} />}
             {activeTab === 'paket'   && <TabPaket maintenanceMode={!!user.maintenanceMode} />}
             {activeTab === 'kyc'     && <TabKyc />}
             {activeTab === 'rehber'  && <TabRehber />}

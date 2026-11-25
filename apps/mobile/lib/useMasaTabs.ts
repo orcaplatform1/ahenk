@@ -63,6 +63,7 @@ export interface MeData {
   kankamla?: { open: boolean; hasKanka?: boolean; pairPackageActive?: boolean };
   profile?: { gender?: string | null };
   profilePhotoUrl?: string | null; // /auth/me onaylı profil fotoğrafı (Masalarım önizleme kartında kullanıcının kendisi)
+  occupationSector?: string | null; // /auth/me meslek (önizleme kartında kullanıcının adının altında)
   kyc?: { status: string; rejectReason?: string | null };
   maintenanceMode?: boolean;
 }

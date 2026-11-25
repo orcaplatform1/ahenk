@@ -19,7 +19,7 @@ import { InlineLH, StdButton, Card, Mono, SkeletonBlock, T, Title, Glow, ScreenG
 import { c, ll, llColumn, masaKart, tw } from '@/theme/theme';
 import { KycNoticeCard } from '@/components/KycNoticeCard';
 
-import { formatDayTab, reviewClosesAt, weekdayName } from '@ahenk/shared';
+import { formatDayTab, reviewClosesAt } from '@ahenk/shared';
 import { currentLang } from '@/lib/i18n';
 import { useTranslation } from 'react-i18next';
 interface HistoryMeeting {
@@ -29,7 +29,7 @@ interface HistoryMeeting {
   participants?: { initials: string; displayName?: string | null; gender: string | null; isSelf?: boolean; pair?: 'MINE' | 'OTHER'; photoUrl?: string | null; occupation?: string | null }[];
   review?: { rating: number; comment: string | null } | null; blocked?: { initials: string; gender: string | null }[]; isReviewed?: boolean;
 }
-interface UserInfo { firstName: string; lastName: string; gender?: string | null; photoUrl?: string | null }
+interface UserInfo { firstName: string; lastName: string; gender?: string | null; photoUrl?: string | null; occupationSector?: string | null }
 
 // Çeviri anahtarları (ekranda t())
 const CARD_TITLE: Record<MasaTuru, string> = { GROUP: 'tm.cardGroup', ONE_ON_ONE: 'tm.cardOne', KANKA: 'tm.cardKanka' };
@@ -49,7 +49,7 @@ function EmptyMasaCard({ locked, cardType, userInfo, kanka }: { locked: boolean;
   const ug = userInfo?.gender ?? 'MALE';
   const og = ug === 'FEMALE' ? 'MALE' : 'FEMALE';
   const self: DetayParticipant = { initials, gender: ug, isSelf: true, photoUrl: userInfo?.photoUrl ?? null,
-    displayName: last ? `${first} ${last[0].toLocaleUpperCase('tr-TR')}.` : first || initials };
+    displayName: last ? `${first} ${last[0].toLocaleUpperCase('tr-TR')}.` : first || initials, occupation: userInfo?.occupationSector ?? null };
   const empty = (gender: string): DetayParticipant => ({ initials: '?', gender, displayName: '' });
   const type: MasaTuru = cardType === 'basbasa' ? 'ONE_ON_ONE' : cardType === 'kanka' ? 'KANKA' : 'GROUP';
   // Satır satır sıra (önizlemede satırda 2 kişi, verilen sırayla): sol sütun kullanıcının cinsiyeti
@@ -61,8 +61,8 @@ function EmptyMasaCard({ locked, cardType, userInfo, kanka }: { locked: boolean;
   const nowIso = new Date().toISOString();
   const masa: MasaDetayData = { id: `preview-${cardType}`, type, maxParticipants: participants.length, scheduledAt: nowIso, sosEndsAt: nowIso,
     venueName: t('tm.venueName'), venuePhotos: [{ url: '/share-bg/datenight.webp' }], participants, aiReport: null };
-  const dateLabel = `${weekdayName(cardType === 'basbasa' ? 6 : cardType === 'kanka' ? 0 : 5, currentLang())} 20:00`;
-  return <MasaDetayKarti masa={masa} preview={{ dateLabel, locked }} />;
+  // Tarih satırında tüm masa türlerinde sabit yer tutucu ("Gün & Saat")
+  return <MasaDetayKarti masa={masa} preview={{ dateLabel: t('masa.previewDate'), locked }} />;
 }
 
 function MasaBlock({ item, locked, cardType, userInfo, kanka, width }: {
@@ -196,7 +196,7 @@ export default function Masalarim() {
   useEffect(() => { api.get<HistoryMeeting[]>('/meetings/my-history').then(h => setHistory(Array.isArray(h) ? h : [])).catch(() => {}); }, []);
 
   const colW = Math.min(width, llColumn.maxWidth) - 32;
-  const userInfo = me ? { firstName: me.firstName, lastName: me.lastName, gender: me.profile?.gender, photoUrl: me.profilePhotoUrl } : undefined;
+  const userInfo = me ? { firstName: me.firstName, lastName: me.lastName, gender: me.profile?.gender, photoUrl: me.profilePhotoUrl, occupationSector: me.occupationSector } : undefined;
   const locked = Object.values(statuses).every(s => s === 'NONE');
   // Aktif kaydı (taramada ya da masası kuruluyor) olan kullanıcıya Masalarım'da seçim penceresi açılmaz
   const hasActiveSelection = !!selection?.options.some(o => o.selection || (o.seated && !o.locked));

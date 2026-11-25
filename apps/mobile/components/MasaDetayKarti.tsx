@@ -264,10 +264,14 @@ function ChatSection({ meetingId, count, preview = false }: { meetingId: string;
                 ))}
               </View>
             )}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
+            <View style={{ paddingVertical: 8, paddingHorizontal: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
+            {/* Yazı kutusu: solunda çizgi gülücük (emoji seçici, gönder kırmızısı), sağında gönder; ikisi kutunun içinde — web ile aynı */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, paddingVertical: 1, paddingLeft: 2, paddingRight: 1, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 23 }}>
               <Pressable onPress={() => setEmojiOpen(v => !v)} disabled={preview} accessibilityRole="button" accessibilityLabel={t('masa.emoji')} accessibilityState={{ expanded: emojiOpen, disabled: preview }}
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: preview ? 0.5 : 1 }}>
-                <T style={{ fontSize: 22 }}>🙂</T>
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={c.red} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                  <Circle cx={12} cy={12} r={9.5} /><Path d="M8 14.5s1.5 2 4 2 4-2 4-2" /><Path d="M9 9.5h.01M15 9.5h.01" strokeWidth={2.4} />
+                </Svg>
               </Pressable>
               {/* Önizlemede alan pasif; basınca yalnız kural penceresi açılır */}
               <Pressable style={{ flex: 1, minWidth: 0 }} disabled={!preview} onPress={() => { if (!rulesSeen) setRulesOpen(true); }} accessibilityRole={preview ? 'button' : undefined}>
@@ -277,7 +281,7 @@ function ChatSection({ meetingId, count, preview = false }: { meetingId: string;
                   if (!rulesSeen) { inputRef.current?.blur(); setRulesOpen(true); return; }
                   setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 300);
                 }}
-                style={{ flex: 1, minWidth: 0, minHeight: 40, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, fontSize: 14, color: tw.text, fontFamily: sans(400), opacity: preview ? 0.5 : 1 }} />
+                style={{ flex: 1, minWidth: 0, minHeight: 40, paddingVertical: 8, paddingHorizontal: 4, fontSize: 14, color: tw.text, fontFamily: sans(400), opacity: preview ? 0.5 : 1 }} />
               </Pressable>
               <Pressable onPress={send} disabled={preview || !input.trim() || sending} accessibilityRole="button" accessibilityLabel={t('masa.send')} accessibilityState={{ disabled: preview || !input.trim() || sending }}
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
@@ -287,6 +291,7 @@ function ChatSection({ meetingId, count, preview = false }: { meetingId: string;
                   </Svg>
                 </View>
               </Pressable>
+            </View>
             </View>
           </>
         )}
@@ -537,7 +542,7 @@ function LockShake() {
     loop.start();
     return () => loop.stop();
   }, [v]);
-  return <Animated.Image source={require('@/assets/lock-icon.webp')} accessibilityLabel={i18n.t('tm.locked')} style={{ position: 'absolute', top: 12, right: 12, zIndex: 2, width: 56, height: 56, opacity: 0.85, transform: [{ translateX: v }] }} />;
+  return <Animated.Image source={require('@/assets/lock-icon.webp')} accessibilityLabel={i18n.t('tm.locked')} style={{ position: 'absolute', top: 44, right: 12, zIndex: 2, width: 56, height: 56, opacity: 0.85, transform: [{ translateX: v }] }} />;
 }
 
 // Önizleme: katılımcılar verilen sırayla satırda 2 kişi (sol sütun kullanıcının cinsiyeti) — web chunkRows ile aynı
@@ -681,6 +686,12 @@ function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDet
                 <Image source={{ uri: mediaUrl(cover.url) }} resizeMode="cover" style={{ width: '100%', height: '100%' }} accessibilityLabel={cover.caption ?? t('masa.photoAlt', { n: 1 })} />
               </Pressable>
               <LinearGradient pointerEvents="none" colors={masaKart.coverFade} locations={masaKart.coverFadeStops} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
+              {/* Önizleme etiketi: kapağın en üstünde kırmızı bordürlü kutu, tek satır (yazı sığana kadar küçülür) — web ile aynı */}
+              {!!preview && (
+                <View pointerEvents="none" style={{ position: 'absolute', top: 10, left: 10, right: 10, zIndex: 3, paddingVertical: 5, paddingHorizontal: 8, borderRadius: 8, borderWidth: 1, borderColor: c.red, backgroundColor: 'rgba(18,18,18,0.72)' }}>
+                  <T w={600} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.4} style={{ fontSize: 12, lineHeight: 16, color: tw.text, textAlign: 'center' }}>{t('masa.previewBadge')}</T>
+                </View>
+              )}
               {preview?.locked && <LockShake />}
             </>
           )}
