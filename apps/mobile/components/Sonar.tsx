@@ -1,7 +1,7 @@
 // packages/ui AhenkSonar + apps/web/components/live/LiveSonar.tsx karşılığı
 import React, { useEffect } from 'react';
 import { View } from 'react-native';
-import Svg, { Circle, Defs, Line, LinearGradient as SvgGrad, Path, Stop, Text as SvgText, G } from 'react-native-svg';
+import Svg, { Circle, Defs, Line, LinearGradient as SvgGrad, Path, Stop, Text as SvgText } from 'react-native-svg';
 import Animated, { Easing, cancelAnimation, useAnimatedProps, useAnimatedStyle, useSharedValue, withRepeat, withTiming, type SharedValue } from 'react-native-reanimated';
 import { LEVELS, ll, sans } from '@/theme/theme';
 import { useAnimActive, useReduceMotion } from '@/lib/motion';
@@ -16,68 +16,79 @@ const SIZE = 300; const C = SIZE / 2; const RINGS = [140, 104, 68, 32];
 const RING_RADIUS: Record<SonarState, number> = { new: 50, active: 86, pool: 122 };
 const DOT: Record<SonarState, { color: string; r: number }> = { new: { color: '#ff6b5e', r: 4.5 }, active: { color: '#e8a27a', r: 3.5 }, pool: { color: '#c9c2b8', r: 2.5 } };
 const LABEL_H = 12, LABEL_GAP = 3, EDGE = 4;
-type Box = { x0: number; x1: number; y0: number; y1: number };
-const hit = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
-const inside = (b: Box) => b.x0 >= EDGE && b.x1 <= SIZE - EDGE && b.y0 >= EDGE && b.y1 <= SIZE - EDGE;
+const LEVEL_ORDER = [1, 2, 3, 4] as const;
 function hashAngle(text: string) { let h = 0; for (const ch of text) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return ((h % 360) * Math.PI) / 180; }
 function point(a: number, r: number) { return { x: C + r * Math.cos(a), y: C + r * Math.sin(a) }; }
 function dotAngle(key: string, d: string | null) { if (!d) return hashAngle(key); return hashAngle(d) + ((hashAngle(key) / (2 * Math.PI)) - 0.5) * 0.5; }
 function sweepEnd() { const a = -Math.PI / 3; return `${(C + 140 * Math.cos(a)).toFixed(1)} ${(C + 140 * Math.sin(a)).toFixed(1)}`; }
 
-function placeBubbles(density: SonarDensity) {
-  return ([1, 2, 3, 4] as const).flatMap((level) => {
-    const rows = density.districts.filter((d) => d.level === level);
-    const cfg = LEVELS[level];
-    return rows.map((d, i) => ({ ...d, ...cfg, ...point(((cfg.start + (i * 360) / rows.length) * Math.PI) / 180, cfg.band) }));
-  });
-}
-function placeLabels(bubbles: ReturnType<typeof placeBubbles>) {
-  const circles: Box[] = bubbles.map((b) => ({ x0: b.x - b.r - 1, x1: b.x + b.r + 1, y0: b.y - b.r - 1, y1: b.y + b.r + 1 }));
-  const placed: Box[] = [];
-  return bubbles.map((b, index) => {
-    const width = b.name.length * (b.level <= 2 ? 6.4 : 5.9) + 2;
-    const left = b.x - b.r - LABEL_GAP - width, right = b.x + b.r + LABEL_GAP, center = b.x - width / 2;
-    const above = b.y - b.r - LABEL_GAP - LABEL_H, below = b.y + b.r + LABEL_GAP, beside = b.y - LABEL_H / 2;
-    const toward = b.x >= C ? [left, right] : [right, left];
-    const cands: { x: number; y: number }[] = [...toward.map((x) => ({ x, y: beside })), { x: center, y: b.y >= C ? above : below }, { x: center, y: b.y >= C ? below : above }];
-    for (const step of [13, 26, 39]) for (const x of [...toward, center]) cands.push({ x, y: beside - step }, { x, y: beside + step });
-    const toBox = (c: { x: number; y: number }): Box => ({ x0: c.x, x1: c.x + width, y0: c.y, y1: c.y + LABEL_H });
-    const others = circles.filter((_, i) => i !== index);
-    const free = (box: Box) => inside(box) && !placed.some((p) => hit(p, box)) && !others.some((p) => hit(p, box));
-    const pick = cands.find((c) => free(toBox(c))) ?? cands.find((c) => inside(toBox(c)) && !placed.some((p) => hit(p, toBox(c)))) ?? cands[0];
-    const box = toBox(pick); placed.push(box);
-    return { ...b, labelX: box.x0, labelY: box.y0 + LABEL_H - 2.5 };
+// N semt için açı aralığı 360/N; her semt ayrı açıda. Gruplar sırayla iç içe dizilir (Çok yoğun, Yoğun, Orta, Düşük, tekrar
+// Çok yoğun…) → aynı gruptaki semtler birbirinden en uzak açılara düşer. Uzaklık (band) ve nokta boyu seviye kuralıyla aynı (web LiveSonar ile aynı)
+function placeDistricts(density: SonarDensity) {
+  const groups = LEVEL_ORDER.map((level) => density.districts.filter((d) => d.level === level));
+  const order: SonarDensity['districts'] = [];
+  for (let i = 0; order.length < density.districts.length; i++) groups.forEach((g) => { if (g[i]) order.push(g[i]); });
+  const step = (2 * Math.PI) / Math.max(order.length, 1);
+  return order.map((d, i) => {
+    const angle = -Math.PI / 2 + i * step;
+    const cfg = LEVELS[d.level];
+    const p = point(angle, cfg.band);
+    // İsim: sağ yarıdaki noktada sağa, sol yarıdakinde sola; radar dışına taşacaksa yatayda içeri çekilir ve noktanın
+    // üstüne / altına (merkeze doğru) alınır. Kısaltma yok
+    const right = Math.cos(angle) >= -1e-9;
+    const width = d.name.length * (d.level <= 2 ? 6.4 : 5.9) + 2;
+    let x0 = right ? p.x + cfg.r + LABEL_GAP : p.x - cfg.r - LABEL_GAP - width;
+    let y = p.y + LABEL_H / 2 - 2.5;
+    const clamped = Math.min(Math.max(x0, EDGE), SIZE - EDGE - width);
+    if (clamped !== x0) {
+      x0 = clamped;
+      y = p.y >= C ? p.y - cfg.r - LABEL_GAP - 2.5 : p.y + cfg.r + LABEL_GAP + LABEL_H - 2.5;
+    }
+    return { ...d, ...cfg, ...p, labelX: right ? x0 : x0 + width, labelY: y, anchor: (right ? 'start' : 'end') as 'start' | 'end' };
   });
 }
 
-// Canlı tarama: semt noktası yanıp söner (opaklık seviye opaklığı ↔ %30'u) ve 2,5 sn'de %85 ↔ %115 nefes alır, noktalar kaydırmalı.
-// Bütün noktalar tek paylaşılan saati (0 → 1, 2,5 sn, doğrusal, tekrar) okur; her nokta kendi kaydırmasıyla UI thread'de hesaplanır
-// (reanimated worklet). Nokta başına ayrı animasyon döngüsü, setState ya da JS thread animasyonu yok.
-const BREATHE_MS = 2500;
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-function useBreathClock(active: boolean) {
+// Canlı tarama döngüsü: Çok yoğun → Yoğun → Orta → Düşük, her grup 3 sn, sonsuz. Tek paylaşılan saat (0 → 4, 12 sn, doğrusal,
+// tekrar) UI thread'de (reanimated, native) döner; aktif grup = saatin tam kısmı. React yeniden render ve JS zamanlayıcısı yok.
+// Sırası gelen grubun isimleri yumuşakça belirip kaybolur (opacity), noktaları 3 sn boyunca büyüyüp küçülerek yanıp söner
+// (transform scale + opacity); diğer gruplar sabit, isimsiz. Ekran odakta değilken / arka planda saat durur, dönünce kaldığı yerden
+// sürer; bileşen kaldırılınca iptal edilir. Hareketi Azalt açıkken noktalar büyümez, isimler yalnız yumuşakça belirir (HIG crossfade)
+const GROUP_MS = 3000;
+const FADE_MS = 400;
+const PULSES = 3;
+const AnimatedSvgText = Animated.createAnimatedComponent(SvgText);
+function useCycleClock(active: boolean) {
   const clock = useSharedValue(0);
   useEffect(() => {
     if (!active) { cancelAnimation(clock); return undefined; }
-    const from = clock.value % 1;
+    const from = clock.value % LEVEL_ORDER.length;
     clock.value = from;
-    clock.value = withRepeat(withTiming(from + 1, { duration: BREATHE_MS, easing: Easing.linear }), -1, false);
+    clock.value = withRepeat(withTiming(from + LEVEL_ORDER.length, { duration: GROUP_MS * LEVEL_ORDER.length, easing: Easing.linear }), -1, false);
     return () => cancelAnimation(clock);
   }, [active, clock]);
   return clock;
 }
-function BreathingCircle({ cx, cy, r, fill, opacity, index, clock }: { cx: number; cy: number; r: number; fill: string; opacity: number; index: number; clock: SharedValue<number> }) {
-  const offset = ((index * 370) % BREATHE_MS) / BREATHE_MS;
-  const animatedProps = useAnimatedProps(() => {
-    // 0 → 1 → 0 yumuşak geçiş (eski ease-in-out sıra animasyonunun karşılığı)
-    const v = 0.5 - 0.5 * Math.cos(2 * Math.PI * (clock.value - offset));
-    return { r: r * (0.85 + 0.3 * v), opacity: opacity * (1 - 0.7 * v) };
+function CycleDot({ x, y, r, color, opacity, level, clock, reduce }: { x: number; y: number; r: number; color: string; opacity: number; level: number; clock: SharedValue<number>; reduce: boolean }) {
+  const style = useAnimatedStyle(() => {
+    const c = clock.value % LEVEL_ORDER.length;
+    if (reduce || Math.floor(c) + 1 !== level) return { opacity, transform: [{ scale: 1 }] };
+    const v = 0.5 - 0.5 * Math.cos(2 * Math.PI * PULSES * (c - Math.floor(c)));
+    return { opacity: opacity * (1 - 0.65 * v), transform: [{ scale: 1 + 0.5 * v }] };
   });
-  return <AnimatedCircle cx={cx} cy={cy} fill={fill} animatedProps={animatedProps} />;
+  return <Animated.View style={[{ position: 'absolute', left: x - r, top: y - r, width: r * 2, height: r * 2, borderRadius: r, backgroundColor: color }, style]} />;
+}
+function CycleLabel({ x, y, anchor, level, color, name, clock }: { x: number; y: number; anchor: 'start' | 'end'; level: number; color: string; name: string; clock: SharedValue<number> }) {
+  const animatedProps = useAnimatedProps(() => {
+    const c = clock.value % LEVEL_ORDER.length;
+    if (Math.floor(c) + 1 !== level) return { opacity: 0 };
+    const ms = (c - Math.floor(c)) * GROUP_MS;
+    return { opacity: Math.min(1, ms / FADE_MS, (GROUP_MS - ms) / FADE_MS) };
+  });
+  return <AnimatedSvgText x={x} y={y} textAnchor={anchor} fontSize={10.5} fontWeight={level <= 2 ? '700' : '400'} fill={color} fontFamily={sans(level <= 2 ? 700 : 400)} animatedProps={animatedProps}>{name}</AnimatedSvgText>;
 }
 
 // idle: tek PASSIVE / LIVE durumu — PASSIVE'de ışın bulunduğu açıda durur, LIVE'da sürekli döner
-export function AhenkSonar({ width = SIZE, children, sweep = true, idle = false }: { width?: number; children?: React.ReactNode; sweep?: boolean; idle?: boolean }) {
+export function AhenkSonar({ width = SIZE, children, overlay, sweep = true, idle = false }: { width?: number; children?: React.ReactNode; overlay?: React.ReactNode; sweep?: boolean; idle?: boolean }) {
   const reduce = useReduceMotion();
   // Işın dönüşü UI thread'de (reanimated); ekran odakta değilken / uygulama arka plandayken durur, dönünce kaldığı açıdan sürer
   const active = useAnimActive();
@@ -115,6 +126,7 @@ export function AhenkSonar({ width = SIZE, children, sweep = true, idle = false 
         {children}
         <Circle cx={C} cy={C} r={5} fill="#e8a27a" />
       </Svg>
+      {overlay && <View pointerEvents="none" style={{ position: 'absolute', width, height: width }}>{overlay}</View>}
     </View>
   );
 }
@@ -129,10 +141,10 @@ export function LiveSonar({ sonar, idle = false }: { sonar: LivePulse['sonar'] |
   const { t } = useTranslation();
   const reduce = useReduceMotion();
   const active = useAnimActive();
-  const live = !idle && !reduce;
-  const clock = useBreathClock(live && active);
+  const clock = useCycleClock(!idle && active);
   const dots = sonar?.dots ?? [];
   const density = sonar?.density ?? null;
+  const placed = density ? placeDistricts(density) : [];
   const legend: [string, string][] = density ? (Object.entries(LEVELS) as unknown as [keyof typeof LEVEL_KEY, (typeof LEVELS)[1]][]).map(([k, l]) => [t(LEVEL_KEY[k]), l.color]) : [[t('live.legendNew'), '#ff6b5e'], [t('live.legendActive'), '#e8a27a'], [t('live.legendPool'), '#c9c2b8']];
   return (
     <View>
@@ -143,16 +155,12 @@ export function LiveSonar({ sonar, idle = false }: { sonar: LivePulse['sonar'] |
         </View>
       } />
       <View style={{ alignItems: 'center' }}>
-        <AhenkSonar idle={idle}>
-          {density ? placeLabels(placeBubbles(density)).map((b, i) => (
-            <G key={b.name}>
-              {idle
-                ? <Circle cx={b.x} cy={b.y} r={WAIT_DOT.r} fill={WAIT_DOT.color} opacity={WAIT_DOT.opacity} />
-                : live ? <BreathingCircle index={i} cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} clock={clock} />
-                  : <Circle cx={b.x} cy={b.y} r={b.r} fill={b.color} opacity={b.opacity} />}
-              <SvgText x={b.labelX} y={b.labelY} fontSize={10.5} fontWeight={b.level <= 2 ? '700' : '400'} fill={idle ? ll.text2 : b.color} fontFamily={sans(b.level <= 2 ? 700 : 400)}>{b.name}</SvgText>
-            </G>
-          )) : (
+        <AhenkSonar idle={idle} overlay={density ? placed.map((b) => idle
+          ? <View key={b.name} style={{ position: 'absolute', left: b.x - WAIT_DOT.r, top: b.y - WAIT_DOT.r, width: WAIT_DOT.r * 2, height: WAIT_DOT.r * 2, borderRadius: WAIT_DOT.r, backgroundColor: WAIT_DOT.color, opacity: WAIT_DOT.opacity }} />
+          : <CycleDot key={b.name} x={b.x} y={b.y} r={b.r} color={b.color} opacity={b.opacity} level={b.level} clock={clock} reduce={reduce} />) : undefined}>
+          {density ? (idle ? null : placed.map((b) => (
+            <CycleLabel key={b.name} x={b.labelX} y={b.labelY} anchor={b.anchor} level={b.level} color={b.color} name={b.name} clock={clock} />
+          ))) : (
             <>
               {dots.map((d) => { const p = point(dotAngle(d.key, d.district), RING_RADIUS[d.state]); const st = idle ? WAIT_DOT : DOT[d.state]; return <Circle key={d.key} cx={p.x} cy={p.y} r={st.r} fill={st.color} />; })}
               {(sonar?.labels ?? []).map((l) => {

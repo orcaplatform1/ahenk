@@ -70,7 +70,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(toUrl(pathname.startsWith('/admin') ? '/giris' : `${prefix}/giris`));
   }
 
-  if (isAuth && hasSession) {
+  // Üye oturumu açıkken /giris?sekme=mekan → yönlendirme yok, giriş sayfası Mekân sekmesi açık gösterilir (oturuma dokunulmaz)
+  const venueTab = bare === '/giris' && request.nextUrl.searchParams.get('sekme') === 'mekan';
+  if (isAuth && hasSession && !venueTab) {
     return NextResponse.redirect(toUrl(`${prefix}/dashboard`));
   }
 

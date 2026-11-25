@@ -209,7 +209,7 @@ export default function EslesmePaneli() {
                   {overview.density.districts.map((d) => (
                     // Tarama başlamadan bütün kartlar "Düşük" grisinde, yoğunluk yazısı yok; canlıyken semtin seviye renginde (radar ile aynı)
                     <View key={d.name} style={[st.heatCell, { backgroundColor: scanIdle ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }]}>
-                      <T w={700} numberOfLines={1} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
+                      <T w={700} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
                       {!scanIdle && <Mono style={{ fontSize: d.percent === null ? 11 : 15, color: tw.text }}>{d.percent === null ? t(LEVEL_KEY[d.level]) : `%${d.percent}`}</Mono>}
                     </View>
                   ))}
@@ -218,7 +218,7 @@ export default function EslesmePaneli() {
                 <View style={st.heat}>
                   {overview.heatmap.map((d, i) => (
                     <View key={d.name} style={[st.heatCell, { backgroundColor: scanIdle ? WAIT_CELL : heatColor(i, overview.heatmap.length) }]}>
-                      <T w={700} numberOfLines={1} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
+                      <T w={700} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
                       {!scanIdle && <Mono style={{ fontSize: 15, color: tw.text }}>{`%${d.percent}`}</Mono>}
                     </View>
                   ))}
@@ -269,5 +269,5 @@ const st = StyleSheet.create({
   card: { borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 18 },
   feedRow: { flexDirection: 'row', gap: 8, alignItems: 'baseline', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
   heat: { flexDirection: 'row', flexWrap: 'wrap', gap: heat.gap },
-  heatCell: { width: '31.9%', height: heat.height, borderRadius: heat.radius, padding: heat.padding, justifyContent: 'space-between' },
+  heatCell: { width: '31.9%', minHeight: heat.height, borderRadius: heat.radius, padding: heat.padding, justifyContent: 'space-between' },
 });

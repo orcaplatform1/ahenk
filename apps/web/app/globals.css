@@ -300,7 +300,7 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .ll-feed-row { display: grid; grid-template-columns: 38px 1fr; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .ll-badge { font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 600; padding: 3px 7px; border-radius: 6px; border: 1px solid currentColor; white-space: nowrap; }
 .ll-heat { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.ll-heat-cell { height: 84px; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+.ll-heat-cell { min-height: 84px; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
 .ll-bar { position: relative; overflow: hidden; }
 .ll-bar > span { position: absolute; inset: 0; transform-origin: left; }
 .ll-fade { animation: ll-fade 0.35s ease both; }
@@ -348,11 +348,16 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .ll-ring-pulse { transform-box: view-box; transform-origin: 150px 150px; animation: ll-ring-pulse 3.2s ease-in-out infinite; }
 @keyframes ll-ring-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.04); opacity: 0.45; } }
 .ll-cta { width: 100%; min-height: 56px; border: none; border-radius: 16px; cursor: pointer; color: #fff; font: 700 16px var(--font-sans), system-ui, sans-serif; background: linear-gradient(90deg, #c7342a, #d9603f 55%, #e8a27a); box-shadow: 0 10px 30px rgba(214,69,58,0.35); }
-.ll-bubble-pulse { transform-box: fill-box; transform-origin: center; animation: ll-pulse 2.2s ease-out infinite; }
 .ll-bubble-breathe { transform-box: fill-box; transform-origin: center; animation: ll-breathe 2.5s ease-in-out infinite; }
-/* Canlı tarama semt noktası: nefes (%85 ↔ %115) + yanıp sönme (opaklık seviye opaklığı ↔ %30'u), mobil Sonar.tsx ile aynı */
-.ll-bubble-blink { transform-box: fill-box; transform-origin: center; animation: ll-breathe-blink 2.5s ease-in-out infinite; opacity: var(--ll-o, 1); }
-@keyframes ll-breathe-blink { 0%, 100% { transform: scale(0.85); opacity: var(--ll-o, 1); } 50% { transform: scale(1.15); opacity: calc(var(--ll-o, 1) * 0.3); } }
+/* Canlı tarama semt döngüsü (LiveSonar DensityLayer, mobil Sonar.tsx ile aynı): data-active grubunun isimleri yumuşakça belirir,
+   noktaları 3 sn boyunca büyüyüp küçülerek yanıp söner (yalnız transform + opacity); diğer gruplar sabit, isimsiz */
+.ll-d-dot { transform-box: fill-box; transform-origin: center; opacity: var(--ll-o, 1); }
+.ll-d-name { opacity: 0; transition: opacity 0.4s ease; }
+.ll-density[data-active="1"] .ll-lv-1 .ll-d-name, .ll-density[data-active="2"] .ll-lv-2 .ll-d-name,
+.ll-density[data-active="3"] .ll-lv-3 .ll-d-name, .ll-density[data-active="4"] .ll-lv-4 .ll-d-name { opacity: 1; }
+.ll-density[data-active="1"] .ll-lv-1 .ll-d-dot, .ll-density[data-active="2"] .ll-lv-2 .ll-d-dot,
+.ll-density[data-active="3"] .ll-lv-3 .ll-d-dot, .ll-density[data-active="4"] .ll-lv-4 .ll-d-dot { animation: ll-d-pulse 1s ease-in-out 3; }
+@keyframes ll-d-pulse { 0%, 100% { transform: scale(1); opacity: var(--ll-o, 1); } 50% { transform: scale(1.5); opacity: calc(var(--ll-o, 1) * 0.35); } }
 @keyframes ll-breathe { 0%, 100% { transform: scale(0.85); } 50% { transform: scale(1.15); } }
 .ll-flash { transform-box: fill-box; transform-origin: center; animation: ll-flash 1.4s ease-out forwards; }
 @keyframes ll-flash { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(3.2); opacity: 0; } }
@@ -405,6 +410,7 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   .adm-table td[data-label]::before { content: attr(data-label); font-family: var(--font-mono), monospace; font-size: 11px; color: #64748b; flex-shrink: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ll-live-dot::after, .ll-blink, .ll-sweep, .ll-ring-pulse, .ll-dot-new, .ll-bubble-pulse, .ll-bubble-breathe, .ll-bubble-blink, .ll-feed-track, .ll-fade, .ll-tab-dot.is-scanning, .ll-tab.is-on .ll-tab-spin, .ll-tab.is-on .ll-ring-drift { animation: none; }
+  .ll-live-dot::after, .ll-blink, .ll-sweep, .ll-ring-pulse, .ll-dot-new, .ll-bubble-breathe, .ll-feed-track, .ll-fade, .ll-tab-dot.is-scanning, .ll-tab.is-on .ll-tab-spin, .ll-tab.is-on .ll-ring-drift { animation: none; }
   .ll-flash { animation: none; opacity: 0; }
+  .ll-d-dot { animation: none !important; }
 }

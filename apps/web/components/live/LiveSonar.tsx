@@ -14,15 +14,13 @@ const DOT: Record<SonarState, { color: string; r: number }> = {
 };
 const FLASH_MS = 1500;
 
-// Etiket kutusu tahmini (viewBox birimi) ve sonar sınırı
+// Etiket genişliği tahmini (viewBox birimi) ve sonar sınırı
 const LABEL_H = 12;
 const LABEL_GAP = 3;
 const EDGE = 4;
 const SIZE = 300;
-
-type Box = { x0: number; x1: number; y0: number; y1: number };
-const hit = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
-const inside = (b: Box) => b.x0 >= EDGE && b.x1 <= SIZE - EDGE && b.y0 >= EDGE && b.y1 <= SIZE - EDGE;
+const GROUP_MS = 3000;
+const LEVEL_ORDER = [1, 2, 3, 4] as const;
 
 function hashAngle(text: string): number {
   let h = 0;
@@ -40,47 +38,29 @@ function dotAngle(key: string, district: string | null) {
   return hashAngle(district) + ((hashAngle(key) / (2 * Math.PI)) - 0.5) * 0.5;
 }
 
-// Her seviye kendi bandında eşit açılarla dizilir
-function placeBubbles(density: SonarDensity) {
-  return ([1, 2, 3, 4] as const).flatMap((level) => {
-    const rows = density.districts.filter((d) => d.level === level);
-    const cfg = LEVELS[level];
-    return rows.map((d, i) => {
-      const angle = ((cfg.start + (i * 360) / rows.length) * Math.PI) / 180;
-      return { ...d, ...cfg, ...point(angle, cfg.band) };
-    });
-  });
-}
-
-// Etiketler seviyeler arasında da çakışmaz: her etiket için yandan, üstten ve alttan adaylar denenir;
-// sonar dışına taşan, başka etikete ya da baloncuğa değen aday elenir.
-function placeLabels(bubbles: ReturnType<typeof placeBubbles>) {
-  const circles: Box[] = bubbles.map((b) => ({ x0: b.x - b.r - 1, x1: b.x + b.r + 1, y0: b.y - b.r - 1, y1: b.y + b.r + 1 }));
-  const placed: Box[] = [];
-  return bubbles.map((b, index) => {
-    const width = b.name.length * (b.level <= 2 ? 6.4 : 5.9) + 2;
-    const left = b.x - b.r - LABEL_GAP - width;
-    const right = b.x + b.r + LABEL_GAP;
-    const center = b.x - width / 2;
-    const above = b.y - b.r - LABEL_GAP - LABEL_H;
-    const below = b.y + b.r + LABEL_GAP;
-    const beside = b.y - LABEL_H / 2;
-    const towardCenter = b.x >= C ? [left, right] : [right, left];
-    const candidates: { x: number; y: number }[] = [
-      ...towardCenter.map((x) => ({ x, y: beside })),
-      { x: center, y: b.y >= C ? above : below },
-      { x: center, y: b.y >= C ? below : above },
-    ];
-    for (const step of [13, 26, 39]) {
-      for (const x of [...towardCenter, center]) candidates.push({ x, y: beside - step }, { x, y: beside + step });
+// N semt için açı aralığı 360/N; her semt ayrı açıda. Gruplar sırayla iç içe dizilir (Çok yoğun, Yoğun, Orta, Düşük, tekrar
+// Çok yoğun…) → aynı gruptaki semtler birbirinden en uzak açılara düşer. Uzaklık (band) ve nokta boyu seviye kuralıyla aynı (mobil Sonar.tsx ile aynı)
+function placeDistricts(density: SonarDensity) {
+  const groups = LEVEL_ORDER.map((level) => density.districts.filter((d) => d.level === level));
+  const order: SonarDensity['districts'] = [];
+  for (let i = 0; order.length < density.districts.length; i++) groups.forEach((g) => { if (g[i]) order.push(g[i]); });
+  const step = (2 * Math.PI) / Math.max(order.length, 1);
+  return order.map((d, i) => {
+    const angle = -Math.PI / 2 + i * step;
+    const cfg = LEVELS[d.level];
+    const p = point(angle, cfg.band);
+    // İsim: sağ yarıdaki noktada sağa, sol yarıdakinde sola; radar dışına taşacaksa yatayda içeri çekilir ve noktanın
+    // üstüne / altına (merkeze doğru) alınır. Kısaltma yok
+    const right = Math.cos(angle) >= -1e-9;
+    const width = d.name.length * (d.level <= 2 ? 6.4 : 5.9) + 2;
+    let x0 = right ? p.x + cfg.r + LABEL_GAP : p.x - cfg.r - LABEL_GAP - width;
+    let y = p.y + LABEL_H / 2 - 2.5;
+    const clamped = Math.min(Math.max(x0, EDGE), SIZE - EDGE - width);
+    if (clamped !== x0) {
+      x0 = clamped;
+      y = p.y >= C ? p.y - cfg.r - LABEL_GAP - 2.5 : p.y + cfg.r + LABEL_GAP + LABEL_H - 2.5;
     }
-    const toBox = (c: { x: number; y: number }): Box => ({ x0: c.x, x1: c.x + width, y0: c.y, y1: c.y + LABEL_H });
-    const others = circles.filter((_, i) => i !== index);
-    const free = (box: Box) => inside(box) && !placed.some((p) => hit(p, box)) && !others.some((p) => hit(p, box));
-    const pick = candidates.find((c) => free(toBox(c))) ?? candidates.find((c) => inside(toBox(c)) && !placed.some((p) => hit(p, toBox(c)))) ?? candidates[0];
-    const box = toBox(pick);
-    placed.push(box);
-    return { ...b, labelX: box.x0, labelY: box.y0 + LABEL_H - 2.5 };
+    return { ...d, ...cfg, ...p, labelX: right ? x0 : x0 + width, labelY: y, anchor: (right ? 'start' : 'end') as 'start' | 'end' };
   });
 }
 
@@ -88,23 +68,44 @@ function placeLabels(bubbles: ReturnType<typeof placeBubbles>) {
 // Canlıyken her semtin noktası ve adı yoğunluk seviyesinin renginde (LEVELS — mobil theme LEVELS ile aynı), noktalar yanıp söner
 const WAIT_DOT = { color: LEVELS[4].color, r: LEVELS[4].r, opacity: LEVELS[4].opacity };
 
+// Canlı tarama döngüsü: Çok yoğun → Yoğun → Orta → Düşük, her grup 3 sn, sonsuz. Her 3 sn'de yalnız <g data-active> değişir
+// (React yeniden render yok); sırası gelen grubun isimleri yumuşakça belirir, noktaları büyüyüp küçülerek yanıp söner (CSS
+// transform / opacity). Diğer grupların noktaları sabit, isimleri görünmez. Sekme görünmezken zamanlayıcı durur, dönünce kaldığı
+// gruptan sürer; bileşen kaldırılınca temizlenir. Bekleme (idle): noktalar gri, isim yok, döngü yok
 function DensityLayer({ density, flashes, idle }: { density: SonarDensity; flashes: Record<string, number>; idle: boolean }) {
+  const ref = useRef<SVGGElement>(null);
+  useEffect(() => {
+    const g = ref.current;
+    if (!g || idle) { g?.removeAttribute('data-active'); return undefined; }
+    let index = 0;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const show = () => g.setAttribute('data-active', String(LEVEL_ORDER[index]));
+    const start = () => {
+      if (timer) return;
+      show();
+      timer = setInterval(() => { index = (index + 1) % LEVEL_ORDER.length; show(); }, GROUP_MS);
+    };
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+    const onVisibility = () => { if (document.hidden) stop(); else start(); };
+    if (!document.hidden) start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { stop(); document.removeEventListener('visibilitychange', onVisibility); g.removeAttribute('data-active'); };
+  }, [idle]);
+
+  const placed = placeDistricts(density);
   return (
-    <>
-      {placeLabels(placeBubbles(density)).map((b, i) => idle ? (
-        <g key={b.name}>
-          <circle cx={b.x} cy={b.y} r={WAIT_DOT.r} fill={WAIT_DOT.color} opacity={WAIT_DOT.opacity} />
-          <text x={b.labelX} y={b.labelY} fontSize="10.5" fontWeight={b.level <= 2 ? 700 : 400} fill={b.level <= 2 ? '#f4f1ec' : '#c9c2b8'}
-            style={{ fontFamily: 'var(--font-sans), system-ui, sans-serif' }}>{b.name}</text>
-        </g>
+    <g ref={ref} className="ll-density">
+      {placed.map((b) => idle ? (
+        <circle key={b.name} cx={b.x} cy={b.y} r={WAIT_DOT.r} fill={WAIT_DOT.color} opacity={WAIT_DOT.opacity} />
       ) : (
-        <g key={b.name}>
-          {b.level === 1 && <circle className="ll-bubble-pulse" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
+        <g key={b.name} className={`ll-lv-${b.level}`}>
           {flashes[b.name] > 0 && <circle key={flashes[b.name]} className="ll-flash" cx={b.x} cy={b.y} r={b.r} fill={b.color} />}
-          <circle className="ll-bubble-blink" style={{ animationDelay: `${-(i * 0.37) % 2.5}s`, ['--ll-o' as string]: b.opacity }} cx={b.x} cy={b.y} r={b.r} fill={b.color} />
+          <circle className="ll-d-dot" style={{ ['--ll-o' as string]: b.opacity }} cx={b.x} cy={b.y} r={b.r} fill={b.color} />
           <text
+            className="ll-d-name"
             x={b.labelX}
             y={b.labelY}
+            textAnchor={b.anchor}
             fontSize="10.5"
             fontWeight={b.level <= 2 ? 700 : 400}
             fill={b.color}
@@ -114,7 +115,7 @@ function DensityLayer({ density, flashes, idle }: { density: SonarDensity; flash
           </text>
         </g>
       ))}
-    </>
+    </g>
   );
 }
 

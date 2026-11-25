@@ -182,7 +182,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
             <div className="ll-heat">
               {overview.density.districts.map((d) => (
                 <div key={d.name} className="ll-heat-cell" style={{ background: scanIdle ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, overflowWrap: 'anywhere' }}>{d.name}</span>
                   {!scanIdle && <span className="ll-mono" style={{ fontSize: d.percent === null ? 11 : 15 }}>{d.percent === null ? t(LEVELS[d.level].label) : `%${d.percent}`}</span>}
                 </div>
               ))}
@@ -191,7 +191,7 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
             <div className="ll-heat">
               {overview.heatmap.map((d, i) => (
                 <div key={d.name} className="ll-heat-cell" style={{ background: scanIdle ? WAIT_CELL : heatColor(i, overview.heatmap.length) }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, overflowWrap: 'anywhere' }}>{d.name}</span>
                   {!scanIdle && <span className="ll-mono" style={{ fontSize: 15 }}>{`%${d.percent}`}</span>}
                 </div>
               ))}
