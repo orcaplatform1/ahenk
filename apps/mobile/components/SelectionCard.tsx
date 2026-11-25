@@ -18,6 +18,13 @@ function changeIn(ms: number): { h: number; m: number } {
   return { h: Math.floor(total / 60), m: total % 60 };
 }
 
+// İptal kilidi metni: kalan süre (backend cancelCooldownUntil) satır içinde; 1 saat ve üstü "X saat Y dakika", altı yalnız "Y dakika";
+// saniye yok, dakika yukarı yuvarlanır (0 dakika gösterilmez). Değer dakika sınırında değişir; süre dolunca metin kalkar, Seçim Yap açılır
+function cooldownKey(ms: number): ['live.selReasonCooldownHm' | 'live.selReasonCooldownM', { h: number; m: number }] {
+  const r = changeIn(ms);
+  return [r.h >= 1 ? 'live.selReasonCooldownHm' : 'live.selReasonCooldownM', r];
+}
+
 const TITLE: Record<MasaTuru, string> = { GROUP: 'live.wsGroupTitle', ONE_ON_ONE: 'live.wsOneTitle', KANKA: 'live.wsKankaTitle' };
 const MODE_LABEL: Record<MeetingMode, string> = { TOMORROW: 'live.modeTomorrow', PLANNED: 'live.modeWeekend' };
 
@@ -95,7 +102,7 @@ export function SelectionCard({ selection, onOpen, onChange, onCancel }: {
       })}
       {!!error && <T style={{ fontSize: 12, color: ll.red2 }}>{error}</T>}
       {canPick && <StdButton variant="primary" label={t('live.selOpen')} disabled={cooling || suspended} onPress={onOpen} />}
-      {canPick && (suspended || cooling) && <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>{t(suspended ? 'live.selReasonSuspended' : 'live.selReasonCooldown')}</T>}
+      {canPick && (suspended || cooling) && <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>{suspended ? t('live.selReasonSuspended') : t(...cooldownKey(Date.parse(selection.cancelCooldownUntil!) - now))}</T>}
     </Card>
   );
 }
