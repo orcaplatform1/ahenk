@@ -869,12 +869,6 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
   );
 }
 
-// Baş harf etiketi (Eşleşme Taraması Katılım satırıyla aynı): "MD" → "M.D."
-function initialsLabel(initials: string) {
-  const raw = initials.trim();
-  return raw.length === 2 && !raw.includes('.') ? `${raw[0]}.${raw[1]}.`.toLocaleUpperCase('tr-TR') : raw.toLocaleUpperCase('tr-TR');
-}
-
 export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHref }: Props) {
   const t = useTranslations();
   const locale = useLocale();
@@ -1129,8 +1123,8 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
           </div>
 
           {/* Masa Katılımcıları: satırda en fazla 2 kişi; fotoğraf, altında görünen ad ("Ahmet Y."), altında kendi mesleği.
-              Geçmiş masada (archive): fotoğraf, ad ve meslek yok; Eşleşme Taraması Katılım satırındaki gibi cinsiyet renkli
-              bordürlü yuvarlak içinde baş harfler ("M.D.") */}
+              Geçmiş masada (archive) kullanıcının kendisi aynen; diğer katılımcılarda fotoğraf, ad ve meslek yok, "Masanız Kuruldu"
+              ekranındaki gibi DetayAvatar (cinsiyet renkli bordür, beyaz kalın baş harfler "M.D.") */}
           <p style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>
             {t('masa.tableParticipants')}
           </p>
@@ -1138,12 +1132,10 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
             {rows.map((row, r) => (
               <div key={r} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {row.map((p, i) => {
-                  if (archive) {
+                  if (archive && !p.isSelf) {
                     return (
                       <div key={`${p.initials}-${i}`} style={{ display: 'flex', justifyContent: 'center' }}>
-                        <span style={{ width: 44, height: 44, borderRadius: '50%', border: `2px solid ${gColor(p.gender)}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, letterSpacing: '0.02em', fontFamily: 'Inter, sans-serif', color: gColor(p.gender) }}>
-                          {initialsLabel(p.initials)}
-                        </span>
+                        <DetayAvatar participant={{ initials: p.initials, gender: p.gender }} delay={0.52 + (r * 2 + i) * 0.1} size={64} />
                       </div>
                     );
                   }

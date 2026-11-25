@@ -498,12 +498,6 @@ function AiReport({ report, meetingId }: { report?: MasaDetayData['aiReport']; m
   );
 }
 
-// Baş harf etiketi (Eşleşme Taraması Katılım satırıyla aynı): "MD" → "M.D."
-function initialsLabel(initials: string) {
-  const raw = initials.trim();
-  return raw.length === 2 && !raw.includes('.') ? `${raw[0]}.${raw[1]}.`.toLocaleUpperCase('tr-TR') : raw.toLocaleUpperCase('tr-TR');
-}
-
 function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; archive?: boolean }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -674,19 +668,17 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
           </View>
 
           {/* Masa Katılımcıları: satırda en fazla 2 kişi; fotoğraf, altında görünen ad ("Ahmet Y."), altında kendi mesleği.
-              Geçmiş masada (archive): fotoğraf, ad ve meslek yok; Eşleşme Taraması Katılım satırındaki gibi cinsiyet renkli
-              bordürlü yuvarlak içinde baş harfler ("M.D.") — web MasaDetayKarti ile aynı */}
+              Geçmiş masada (archive) kullanıcının kendisi aynen; diğer katılımcılarda fotoğraf, ad ve meslek yok, "Masanız Kuruldu"
+              ekranındaki gibi DetayAvatar (cinsiyet renkli bordür, beyaz kalın baş harfler "M.D.") — web MasaDetayKarti ile aynı */}
           <T w={700} style={{ fontSize: 15, marginBottom: 12 }}>{t('masa.tableParticipants')}</T>
           <View style={{ gap: P.rowGap, marginBottom: 20 }}>
             {rows.map((row, r) => (
               <View key={r} style={{ flexDirection: 'row', gap: P.colGap }}>
                 {row.map((p, i) => {
-                  if (archive) {
+                  if (archive && !p.isSelf) {
                     return (
                       <View key={`${p.initials}-${i}`} style={{ flex: 1, minWidth: 0, alignItems: 'center' }}>
-                        <View style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: gColor(p.gender), alignItems: 'center', justifyContent: 'center' }}>
-                          <T w={700} style={{ fontSize: 12, letterSpacing: 0.24, color: gColor(p.gender) }}>{initialsLabel(p.initials)}</T>
-                        </View>
+                        <DetayAvatar participant={{ initials: p.initials, gender: p.gender }} delay={0.52 + (r * 2 + i) * 0.1} size={P.avatar} />
                       </View>
                     );
                   }
