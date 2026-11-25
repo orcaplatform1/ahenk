@@ -170,6 +170,13 @@ export const sheet = { bg: '#1a1a1a', border: 'rgba(255,255,255,0.08)', radius: 
 // Sadakat paylaşım kartı (web packages/ui ShareCard drawLoyaltyCard ile aynı): etiket / avatar çerçevesi sadakat.webp neon yeşil
 // çerçevenin doygun tonu; arka plan görseli yüklenemezse koyu yeşil gradyan. Paylaşım paneli marka ikonları @ahenk/shared shareBrands
 export const loyaltyCard = { accent: '#1ebf2b', bgFrom: '#0b0b0b', bgTo: '#06301c', bgUrl: 'https://ahenk.co/share-bg/sadakat.webp' } as const;
+// Sadakat paylaşım kartı yerleşimi (1080 tabanında; web packages/ui ShareCard LOYALTY_LAYOUT ile aynı değerler) ve yazı tipi
+// taban çizgisi ölçüleri (Inter / DM Serif Display hhea ascent / descent, em oranı)
+export const loyaltyCardLayout = {
+  titleSize: 76.8, titleLine: 88, titleFirstBase: 839, titleSubGap: 100,
+  sub1Size: 42.5, sub1Line: 54, sub2Size: 42, sub2Line: 56, sub2LinkGap: 16,
+  interAscent: 0.96875, interDescent: 0.2412, serifAscent: 1.036, serifDescent: 0.335,
+} as const;
 export const heat = {
   height: 84, radius: 12, padding: 10, gap: 6,
   // Semt adı ile yoğunluk yazısı arasındaki ışın çizgisi (web .ll-heat-rule)

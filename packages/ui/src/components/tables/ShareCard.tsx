@@ -231,10 +231,24 @@ function drawCard(canvas: HTMLCanvasElement, d: CardData, texts: { title: string
 }
 
 // ── Sadakat paylaşım kartı (Instagram Hikâye, 1080×1920) ─────────────────────────────────────────────────────────────
-// Masa kartıyla aynı ölçü, kenar boşluğu, yazı tipleri ve etiket biçimi. Arka plan /share-bg/sadakat.webp (yoksa koyu yeşil gradyan).
-// Yukarıdan aşağıya, sola hizalı: logo + "Ahenk" + etiket; iki satır başlık; iki alt metin; davet linki; ayraç; paylaşanın fotoğrafı,
-// "Ahmet Y." ve "seni çağırıyor".
+// Masa kartıyla aynı ölçü, kenar boşluğu, yazı tipleri ve üst bölüm (logo, altında "Ahenk", sağa yaslı etiket). Arka plan
+// /share-bg/sadakat.webp (yoksa koyu yeşil gradyan). Sola hizalı: başlık, alt metin 1; davet linkinin hemen üstünde alt metin 2;
+// davet linki; ayraç; paylaşanın fotoğrafı, "Ahmet Y." ve "seni çağırıyor". Metinler sığmazsa alt satıra geçer, kesilmez.
+// Mobil karşılığı apps/mobile/components/LoyaltyShareSheet.tsx (LOYALTY_LAYOUT aynı değerler).
 export const LOYALTY_ACCENT = '#1ebf2b'; // sadakat.webp neon yeşil çerçevenin doygun tonu
+export const LOYALTY_LAYOUT = {
+  titleSize: 76.8, // 96 px'ten %20 küçük
+  titleLine: 88, // round(76.8 × 1.15)
+  titleFirstBase: 839, // önceki ilk satır taban çizgisi (751) + bir başlık satırı
+  titleSubGap: 100, // son başlık satırı ile alt metin 1 taban çizgileri arası (önceki aralık)
+  sub1Size: 42.5, // 50 px'ten %15 küçük
+  sub1Line: 54, // round(64 × 0.85)
+  sub2Size: 42,
+  sub2Line: 56,
+  sub2LinkGap: 16, // alt metin 2 ile davet linki arası boşluk
+  interAscent: 0.96875,
+  interDescent: 0.2412,
+} as const;
 export interface LoyaltyCardData { link: string; sharerName: string; sharerInitials: string }
 export interface LoyaltyCardTexts { tag: string; title1: string; title2: string; sub1: string; sub2: string; invites: string }
 
@@ -243,6 +257,7 @@ export function drawLoyaltyCard(canvas: HTMLCanvasElement, d: LoyaltyCardData, t
   if (!ctx) return;
   canvas.width = W; canvas.height = H;
   const MAXW = W - PAD * 2;
+  const L = LOYALTY_LAYOUT;
   if (imgs.bg) {
     ctx.drawImage(imgs.bg, 0, 0, W, H);
   } else {
@@ -253,25 +268,26 @@ export function drawLoyaltyCard(canvas: HTMLCanvasElement, d: LoyaltyCardData, t
     ctx.fillRect(0, 0, W, H);
   }
 
-  // Üst: logo, hemen sağında "Ahenk", sağa yaslı etiket (masa kartındaki etiket biçimi)
+  // Üst (masa kartıyla aynı): Ahenk logosu "Ahenk" yazısının üstünde, yazıya göre yatayda ortalı; etiket sağa yaslı, "Ahenk" yazısıyla aynı hizada
   ctx.textBaseline = 'alphabetic';
-  const LOGO = 120;
-  if (imgs.logo) ctx.drawImage(imgs.logo, PAD, PAD, LOGO, LOGO);
-  const mid = PAD + LOGO / 2;
   ctx.font = `400 84px ${SERIF}`;
+  const brandW = ctx.measureText('Ahenk').width;
+  const LOGO = 120;
+  if (imgs.logo) ctx.drawImage(imgs.logo, PAD + (brandW - LOGO) / 2, PAD, LOGO, LOGO);
+  const brandBase = PAD + LOGO + 82;
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('Ahenk', PAD + LOGO + 24, mid + 30);
+  ctx.fillText('Ahenk', PAD, brandBase);
+  const brandMid = brandBase - 30;
   ctx.font = `700 34px ${SANS}`;
   const label = texts.tag.toLocaleUpperCase(lang === 'en' ? 'en' : 'tr-TR');
   const lw = ctx.measureText(label).width + 56;
-  const lx = W - PAD - lw, ly = mid - 36;
+  const lx = W - PAD - lw, ly = brandMid - 36;
   ctx.fillStyle = LOYALTY_ACCENT;
   ctx.beginPath();
   ctx.roundRect(lx, ly, lw, 72, 36);
   ctx.fill();
   ctx.fillStyle = '#ffffff';
   ctx.fillText(label, lx + 28, ly + 48);
-  const TOP = PAD + LOGO + 24;
 
   // Alt: en altta paylaşan kullanıcı satırı, üstünde ayraç ve davet linki
   const AV = 96;
@@ -315,37 +331,23 @@ export function drawLoyaltyCard(canvas: HTMLCanvasElement, d: LoyaltyCardData, t
   ctx.fillStyle = '#ffffff';
   const linkBase = RULE - 40;
   ctx.fillText(d.link, PAD, linkBase);
-  const BOTTOM = linkBase - fs - 40;
 
-  // Ortadaki blok (başlık iki satır, iki alt metin) üst satır ile davet linki arasında dikeyde ortalı
-  const ops: ((oy: number) => void)[] = [];
-  let y = 0;
-  for (const line of [texts.title1, texts.title2]) {
-    let ts = 96;
-    ctx.font = `400 ${ts}px ${SERIF}`;
-    while (ts > 40 && ctx.measureText(line).width > MAXW) { ts -= 1; ctx.font = `400 ${ts}px ${SERIF}`; }
-    y += Math.round(ts * 1.15);
-    const f = ctx.font, ly2 = y;
-    ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = f; ctx.fillText(line, PAD, oy + ly2); });
-  }
-  y += 100;
-  ctx.font = `700 50px ${SANS}`;
-  for (const line of wrap(ctx, texts.sub1, MAXW, 2)) {
-    const ly2 = y;
-    ops.push((oy) => { ctx.fillStyle = '#ffffff'; ctx.font = `700 50px ${SANS}`; ctx.fillText(line, PAD, oy + ly2); });
-    y += 64;
-  }
-  y += 10;
-  ctx.font = `500 42px ${SANS}`;
-  const sub2 = wrap(ctx, texts.sub2, MAXW, 3);
-  sub2.forEach((line, i) => {
-    const ly2 = y;
-    ops.push((oy) => { ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = `500 42px ${SANS}`; ctx.fillText(line, PAD, oy + ly2); });
-    if (i < sub2.length - 1) y += 56;
-  });
-  const blockH = y + 12;
-  const oy = Math.round(TOP + (BOTTOM - TOP - blockH) / 2);
-  for (const op of ops) op(oy);
+  // Alt metin 2: davet linkinin hemen üstünde (aralarında 16 px), Inter 500, %75 beyaz
+  ctx.font = `500 ${L.sub2Size}px ${SANS}`;
+  const sub2 = wrap(ctx, texts.sub2, MAXW, 99);
+  const sub2Last = linkBase - Math.round(fs * L.interAscent) - L.sub2LinkGap - Math.round(L.sub2Size * L.interDescent);
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  sub2.forEach((line, i) => ctx.fillText(line, PAD, sub2Last - (sub2.length - 1 - i) * L.sub2Line));
+
+  // Başlık (DM Serif Display) ve hemen altında alt metin 1 (Inter 400, beyaz)
+  let y = L.titleFirstBase;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `400 ${L.titleSize}px ${SERIF}`;
+  const titleLines = [...wrap(ctx, texts.title1, MAXW, 99), ...wrap(ctx, texts.title2, MAXW, 99)];
+  titleLines.forEach((line, i) => { if (i > 0) y += L.titleLine; ctx.fillText(line, PAD, y); });
+  y += L.titleSubGap;
+  ctx.font = `400 ${L.sub1Size}px ${SANS}`;
+  wrap(ctx, texts.sub1, MAXW, 99).forEach((line, i) => { if (i > 0) y += L.sub1Line; ctx.fillText(line, PAD, y); });
 }
 
 const BTN: React.CSSProperties = {

@@ -1,41 +1,49 @@
 'use client';
 
-// Sadakat Programı "Paylaş" alt paneli (sistem paylaşım penceresi yerine): Instagram, WhatsApp, Telegram, Facebook, Diğer.
-// Instagram: Sadakat paylaşım kartı (1080×1920) tarayıcıda çizilir; dosya paylaşımı destekleniyorsa sistem paylaşımıyla,
-// desteklenmiyorsa görsel indirilir. Diğerleri davet metni / linkiyle ilgili web adresini açar. Mobil karşılığı: apps/mobile/components/LoyaltyShareSheet.tsx
+// Sadakat Programı "Paylaş" alt paneli (sistem paylaşım penceresi yerine). 1. satır: WhatsApp, Telegram, Facebook kare kartlar
+// (yalnız renkli marka logosu); 2. satır: "Kartı İndir" (Sadakat paylaşım kartı 1080×1920 PNG indirilir) ve "Diğer".
+// Instagram butonu INSTAGRAM_SHARE_ENABLED false iken gizli (kod duruyor; true olunca 1. satırın başına gelir): kart dosya
+// paylaşımı destekleniyorsa sistem paylaşımıyla, desteklenmiyorsa indirilir. Mobil karşılığı: apps/mobile/components/LoyaltyShareSheet.tsx
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import { drawLoyaltyCard } from '@ahenk/ui';
-import { SHARE_BRAND_COLORS, SHARE_BRAND_PATHS } from '@ahenk/shared';
+import { INSTAGRAM_SHARE_ENABLED, SHARE_BRAND_COLORS, SHARE_BRAND_PATHS } from '@ahenk/shared';
 
 export interface LoyaltySharer { firstName: string; lastName: string; photoUrl: string | null }
 
-type Target = 'instagram' | 'whatsapp' | 'telegram' | 'facebook' | 'more';
+type Target = 'instagram' | 'whatsapp' | 'telegram' | 'facebook';
 
-function BrandIcon({ target }: { target: Target }) {
+// Resmî renkli marka logoları: WhatsApp yeşil daire üzerinde beyaz logo; Telegram ve Facebook marka renginde daire, beyaz uçak / f
+function BrandLogo({ target, size }: { target: Target; size: number }) {
   if (target === 'instagram') {
     return (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={SHARE_BRAND_COLORS.instagram} strokeWidth="2" aria-hidden="true">
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={SHARE_BRAND_COLORS.instagram} strokeWidth="2" aria-hidden="true">
         <rect x="3" y="3" width="18" height="18" rx="5" />
         <circle cx="12" cy="12" r="4" />
         <circle cx="17.5" cy="6.5" r="1" fill={SHARE_BRAND_COLORS.instagram} stroke="none" />
       </svg>
     );
   }
-  if (target === 'more') {
+  if (target === 'whatsapp') {
     return (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="#f4f1ec" aria-hidden="true">
-        <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
+      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="12" fill={SHARE_BRAND_COLORS.whatsapp} />
+        <path d={SHARE_BRAND_PATHS.whatsapp} fill="#ffffff" transform="translate(4.8 4.8) scale(0.6)" />
       </svg>
     );
   }
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill={SHARE_BRAND_COLORS[target]} aria-hidden="true">
-      <path d={SHARE_BRAND_PATHS[target]} />
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10.5" fill="#ffffff" />
+      <path d={SHARE_BRAND_PATHS[target as 'telegram' | 'facebook']} fill={SHARE_BRAND_COLORS[target as 'telegram' | 'facebook']} />
     </svg>
   );
 }
+
+const PANEL_BTN: React.CSSProperties = {
+  borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', color: '#f4f1ec', cursor: 'pointer',
+};
 
 const upper = (x: string) => x.toLocaleUpperCase('tr-TR');
 
@@ -95,6 +103,19 @@ export function LoyaltyShareSheet({ link, text, sharer, onClose }: { link: strin
     } finally { setBusy(false); }
   }
 
+  async function downloadCard() {
+    if (busy) return;
+    setBusy(true); setMsg('');
+    try {
+      const file = await cardFile();
+      if (!file) { setMsg(t('share.saveFailed')); return; }
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url; a.download = file.name; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } finally { setBusy(false); }
+  }
+
   async function more() {
     try {
       if (navigator.share) { await navigator.share({ text }); return; }
@@ -102,12 +123,11 @@ export function LoyaltyShareSheet({ link, text, sharer, onClose }: { link: strin
     navigator.clipboard?.writeText(text).then(() => setMsg(t('loyalty.copied'))).catch(() => {});
   }
 
-  const actions: [Target, string, () => void][] = [
-    ['instagram', t('loyalty.shareInstagram'), instagram],
+  const brands: [Target, string, () => void][] = [
+    ...(INSTAGRAM_SHARE_ENABLED ? [['instagram', t('loyalty.shareInstagram'), instagram] as [Target, string, () => void]] : []),
     ['whatsapp', t('loyalty.shareWhatsapp'), () => open(`https://wa.me/?text=${encodeURIComponent(text)}`)],
     ['telegram', t('loyalty.shareTelegram'), () => open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(textNoLink)}`)],
     ['facebook', t('loyalty.shareFacebook'), () => open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`)],
-    ['more', t('loyalty.shareMore'), more],
   ];
 
   return createPortal(
@@ -119,14 +139,31 @@ export function LoyaltyShareSheet({ link, text, sharer, onClose }: { link: strin
           <button type="button" onClick={onClose} aria-label={t('share.close')}
             style={{ width: 44, height: 44, marginRight: -10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#a39c93', fontSize: 24, lineHeight: 1, cursor: 'pointer' }}>×</button>
         </div>
-        <div className="flex flex-col gap-2">
-          {actions.map(([target, label, onPress]) => (
-            <button key={target} type="button" onClick={onPress} disabled={target === 'instagram' && busy}
-              style={{ minHeight: 52, display: 'flex', alignItems: 'center', gap: 14, padding: '0 16px', borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', color: '#f4f1ec', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left', opacity: target === 'instagram' && busy ? 0.5 : 1 }}>
-              <BrandIcon target={target} />
-              <span>{label}</span>
+        {/* 1. satır: eşit genişlikte kare kartlar, yalnız renkli marka logosu (erişilebilirlik etiketi uygulama adı) */}
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${brands.length}, 1fr)`, gap: 8 }}>
+          {brands.map(([target, label, onPress]) => (
+            <button key={target} type="button" onClick={onPress} aria-label={label} title={label} disabled={target === 'instagram' && busy}
+              style={{ ...PANEL_BTN, aspectRatio: '1 / 1', minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: target === 'instagram' && busy ? 0.5 : 1 }}>
+              <BrandLogo target={target} size={40} />
             </button>
           ))}
+        </div>
+        {/* 2. satır: Kartı İndir ve Diğer, eşit genişlikte */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+          <button type="button" onClick={downloadCard} disabled={busy}
+            style={{ ...PANEL_BTN, minHeight: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '0 12px', fontSize: 15, fontWeight: 600, opacity: busy ? 0.5 : 1 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f4f1ec" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" />
+            </svg>
+            <span>{t('loyalty.downloadCard')}</span>
+          </button>
+          <button type="button" onClick={more}
+            style={{ ...PANEL_BTN, minHeight: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '0 12px', fontSize: 15, fontWeight: 600 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#f4f1ec" aria-hidden="true">
+              <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
+            </svg>
+            <span>{t('loyalty.shareMore')}</span>
+          </button>
         </div>
         {msg && <p role="status" style={{ margin: '12px 0 0', fontSize: 12, color: '#a39c93', textAlign: 'center' }}>{msg}</p>}
       </div>
