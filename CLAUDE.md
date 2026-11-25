@@ -1135,14 +1135,20 @@ API CLIENT KURALLAR (web):
     dilinde): Grup 1 TR "Takvim: 1 Haziran >< 15 Eylül", EN "Schedule: June 1 >< September 15"; tarih Grup 1 şehirlerinin sezon alanlarından:
     hepsinde aynıysa o, farklıysa en erken başlangıç ile en geç bitiş, hiçbirinde yoksa TR "Takvim: Yakında", EN "Schedule: Coming soon".
     Grup 2 her zaman TR "Takvim: Yakında", EN "Schedule: Coming soon". Sezon isteğe bağlı, admin şehir formundan girilir.
-    Grup 1 satırı: yalnız şehir adı ve en sağda "Yakında" etiketi (satırda sezon metni yok).
-    Grup 2 satırı: şehir adı, sağında bayrak (countryCode'dan emoji), en sağda "Yakında" etiketi.
+    Grup 1 ve Grup 2 şehirleri görseli varsa kare kart (aşağıda); görseli yoksa düz satır: Grup 1 yalnız şehir adı ve en sağda "Yakında"
+    etiketi (satırda sezon metni yok), Grup 2 şehir adı, sağında bayrak (countryCode'dan emoji), en sağda "Yakında" etiketi.
     Ortak mantık packages/shared/src/citySeason.ts (cityExtras, soonCityGroups, groupSeason).
-  - Şehir kartı görselleri (web + mobil, TR + EN): kayıt ve Profilim şehir seçimi listesinde İstanbul, Ankara, İzmir ve Antalya satırları
-    kart: üstte şehir görseli (tam genişlik, yükseklik 96, köşe 8, kırpmalı / cover), altında mevcut ad satırı; seçim mantığı aynen.
-    Görseli olmayan şehir düz satır. Görseller apps/web/public/share-bg/<şehir>.webp (istanbul, ankara, izmir, antalya, cesme, bodrum,
-    fethiye, marmaris, kusadasi, ayvalik); mobil https://ahenk.co önekiyle. Eşleme packages/shared/src/citySeason.ts CITY_IMAGES / cityImage /
-    SEASIDE_CITY_IMAGES; mobil SoonCityGroups.tsx cityImageOption (Btn listOption içeriği)
+  - Şehir kartı görselleri (web + mobil, TR + EN): kayıt ve Profilim "Hangi şehirdeki masalara katılmak istersin?" şehir seçimi listesinde
+    görseli olan şehirler kare kart, her satırda yan yana 2 kart (web grid 2 sütun aralık 8, CITY_GRID / cityGridItem; mobil satır başına
+    2 kart, her biri %49): üstte kare görsel (1:1, kart genişliğini doldurur, köşe 8, kırpmalı / cover), altında şehir adı. Aktif şehirler
+    (İstanbul, Ankara, İzmir, Antalya) seçilebilir, seçili kart görünümü aynen. Sezon Masaları (Çeşme, Bodrum, Fethiye, Marmaris, Kuşadası,
+    Ayvalık) ve Yeni Duraklar (Dubai, Hong Kong, Singapur, Bangkok, Tokyo) aynı kare kart düzeninde, görsel soluk (opaklık 0.4), seçilemez;
+    adın yanında (Yeni Duraklar'da bayrakla) kartın içinde "Yakında" etiketi; grup başlıkları ve takvim satırları aynen. Görseli olmayan
+    şehir tam satır düz satır. Seçim mantığı, sıralama, filtreler, grup yapısı ve liste yüksekliği (300) aynen. Görseller
+    apps/web/public/share-bg/<şehir>.webp (istanbul, ankara, izmir, antalya, cesme, bodrum, fethiye, marmaris, kusadasi, ayvalik, dubai,
+    hongkong, singapur, bangkok, tokyo); mobil https://ahenk.co önekiyle. Eşleme packages/shared/src/citySeason.ts CITY_IMAGES / cityImage /
+    SEASIDE_CITY_IMAGES; web components/SoonCityGroups.tsx (CITY_GRID, cityGridItem, CITY_SQUARE_IMG), mobil SoonCityGroups.tsx
+    (CITY_GRID, cityGridItem, cityImageOption: Btn listOption içeriği)
   - Nasıl Çalışır son sayfası (8. adım, web + mobil Onboarding): dalga ikonlu şehir kutuları yok; 2 sütunda 6 görselli kart: Çeşme, Bodrum,
     Fethiye, Marmaris, Kuşadası, Ayvalık (onb.s8c1–s8c6). Kart: üstte görsel (16:10, cover), altında yalnız kalın şehir adı (tarih satırı
     yok; mobil erişilebilirlik etiketi yalnız şehir adı); alt metin onb.s8Body ve üstteki sezon etiketi aynen

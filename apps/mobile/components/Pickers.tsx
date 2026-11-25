@@ -5,7 +5,7 @@ import { Btn, StdButton, Input, Mono, Sheet, T } from './ui';
 import { c, ll } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { formatNamed, type CitySeasonFields } from '@ahenk/shared';
-import { cityImageOption, SoonCityGroups } from './SoonCityGroups';
+import { CITY_GRID, cityGridItem, cityImageOption, SoonCityGroups } from './SoonCityGroups';
 import { currentLang } from '@/lib/i18n';
 
 export function FieldLabel({ children }: { children: string }) {
@@ -40,11 +40,15 @@ export function ListPicker({ label, value, onChange, options, placeholder, title
         </View>
         {searchable && <Input form placeholder={searchPlaceholder} value={q} onChangeText={setQ} style={{ marginBottom: 8 }} />}
         <ScrollView style={{ maxHeight: 300 }} keyboardShouldPersistTaps="handled">
+          {/* Şehir listesinde görselli şehir kare kart (satırda yan yana 2), görseli olmayan tam satır; şehir dışı listelerde düz satır */}
+          <View style={CITY_GRID}>
           {shown.map(o => (
-            <Btn key={o.value} variant="listOption" selected={tmp === o.value} label={o.extra ? `${o.label} ${o.extra}` : o.label} onPress={() => setTmp(o.value)}>
+            <Btn key={o.value} variant="listOption" selected={tmp === o.value} label={o.extra ? `${o.label} ${o.extra}` : o.label} onPress={() => setTmp(o.value)}
+              style={o.cityName ? cityGridItem(o.cityName) : { width: '100%' }}>
               {o.cityName ? cityImageOption(o.cityName, o.extra ? `${o.label} ${o.extra}` : o.label, tmp === o.value) : undefined}
             </Btn>
           ))}
+          </View>
           {!!soon?.length && <SoonCityGroups cities={soon} fontSize={15} color="rgba(201,194,184,0.4)" paddingHorizontal={14} />}
         </ScrollView>
         <StdButton variant="primary" label={t('date.select')} full style={{ marginTop: 16 }} onPress={() => { onChange(tmp); setOpen(false); }} />

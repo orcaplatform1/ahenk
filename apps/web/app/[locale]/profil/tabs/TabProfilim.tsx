@@ -7,7 +7,7 @@ import { useMasaTabs } from '@/components/live/useMasaTabs';
 import { useState, useRef, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { cityImage, ENGLISH_ENABLED, occupationLabel, splitE164, toE164, type CitySeasonFields, type Lang } from '@ahenk/shared';
-import { CityExtras, SoonCityGroups } from '@/components/SoonCityGroups';
+import { CITY_GRID, CITY_SQUARE_IMG, CityExtras, cityGridItem, SoonCityGroups } from '@/components/SoonCityGroups';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { Link, usePathname } from '@/i18n/navigation';
 import { switchLocale } from '@/lib/locale';
@@ -677,15 +677,18 @@ function CityPickerModalP({ cities, value, onChange, onClose, optional, title }:
               {t('reg.noCity')}
             </div>
           )}
+          {/* Aktif şehirler: görselli şehir kare kart (satırda yan yana 2), görseli olmayan tam satır */}
+          <div style={CITY_GRID}>
           {sorted.map(c => {
             const isSel = c.id === tmp;
             return (
-              <div key={c.id} onClick={() => setTmp(c.id)} style={{ padding: '13px 14px', fontSize: 15, color: isSel ? '#ff6b6b' : '#ccc', fontWeight: isSel ? 600 : 400, background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}>
-                {cityImage(c.name) && <img src={cityImage(c.name)} alt="" style={{ display: 'block', width: '100%', height: 96, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />}
+              <div key={c.id} onClick={() => setTmp(c.id)} style={{ ...cityGridItem(c.name), padding: '13px 14px', fontSize: 15, color: isSel ? '#ff6b6b' : '#ccc', fontWeight: isSel ? 600 : 400, background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}>
+                {cityImage(c.name) && <img src={cityImage(c.name)} alt="" style={CITY_SQUARE_IMG} />}
                 {cityLabelP(c.name)}<CityExtras city={c} />
               </div>
             );
           })}
+          </div>
           {soon.length > 0 && <SoonCityGroups cities={soon} color="rgba(204,204,204,0.4)" />}
         </div>
         <StdButton variant="primary" onClick={() => { onChange(tmp); onClose(); }} className="w-full justify-center" style={{ marginTop: 16 }}>

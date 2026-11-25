@@ -71,8 +71,9 @@ export function seasonRangeTag(cities: CitySeasonFields[], lang: Lang): string {
   return `${start.seasonStartDay} ${monthName(start.seasonStartMonth!, lang)} – ${end.seasonEndDay} ${monthName(end.seasonEndMonth!, lang)}`;
 }
 
-// Şehir kartı görselleri (apps/web/public/share-bg; mobil https://ahenk.co önekiyle). Kayıt + Profilim şehir seçimi kartlarının üst kısmı
-// (İstanbul, Ankara, İzmir, Antalya) ve Nasıl Çalışır son sayfasındaki sahil kartları (SEASIDE_CITIES sırası). Görseli olmayan şehirde ""
+// Şehir kartı görselleri (apps/web/public/share-bg; mobil https://ahenk.co önekiyle). Kayıt + Profilim şehir seçimi listesindeki kare
+// kartlar (aktif şehirler, Sezon Masaları ve Yeni Duraklar grupları) ve Nasıl Çalışır son sayfasındaki sahil kartları (SEASIDE_CITIES
+// sırası). Görseli olmayan şehirde "" (düz satır)
 export const CITY_IMAGES: Record<string, string> = {
   "İstanbul": "/share-bg/istanbul.webp",
   "Ankara": "/share-bg/ankara.webp",
@@ -84,6 +85,11 @@ export const CITY_IMAGES: Record<string, string> = {
   "Marmaris": "/share-bg/marmaris.webp",
   "Kuşadası": "/share-bg/kusadasi.webp",
   "Ayvalık": "/share-bg/ayvalik.webp",
+  "Dubai": "/share-bg/dubai.webp",
+  "Hong Kong": "/share-bg/hongkong.webp",
+  "Singapur": "/share-bg/singapur.webp",
+  "Bangkok": "/share-bg/bangkok.webp",
+  "Tokyo": "/share-bg/tokyo.webp",
 };
 export const cityImage = (name: string): string => CITY_IMAGES[name] ?? "";
 // Nasıl Çalışır son sayfası kartları: onb.s8c1..s8c6 ile aynı sıra
