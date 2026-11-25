@@ -924,7 +924,8 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
   const [lightboxIdx,   setLightboxIdx]   = useState<number | null>(null);
   // Katılımcı profil fotoğrafı tam ekran (kendi fotoğrafında da düzenleme yok; fotoğraf yalnız Profilim'den değişir)
   const [viewer, setViewer] = useState<string | null>(null);
-  const openPhoto = (p: { photoUrl?: string | null }) => { if (p.photoUrl) setViewer(p.photoUrl); };
+  const [viewerOwn, setViewerOwn] = useState(false); // kendi fotoğrafı: koruma yok
+  const openPhoto = (p: { photoUrl?: string | null; isSelf?: boolean }) => { if (p.photoUrl) { setViewerOwn(!!p.isSelf); setViewer(p.photoUrl); } };
   // "Değerlendir" açılıştan (ertesi gün 00:00) önce basılırsa uyarı
   const [reviewWarn, setReviewWarn] = useState('');
   const reviewAt = reviewOpensAt(masa.scheduledAt);
@@ -1059,7 +1060,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
           />
         )}
       </AnimatePresence>
-      <PhotoViewer url={viewer} onClose={() => setViewer(null)} />
+      <PhotoViewer url={viewer} own={viewerOwn} onClose={() => setViewer(null)} />
       <AnimatePresence>
         {sosHowOpen && (
           <motion.div

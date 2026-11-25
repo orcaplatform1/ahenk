@@ -81,6 +81,8 @@ KYC KURALLARI:
 - Kanka bölümünde KYC bilgi yazısı yoktur (web + mobil); KYC onaysız kişinin kanka daveti / kabulü ve masaya katılamaması kuralı backend'de aynen
 - KYC onaysız kullanıcıda "Kanka Davet Et" penceresinde başlık altında "Kanka davet etmek için önce kimliğini doğrula." yazısı ve
   "Kimliğimi Doğrula" butonu (KYC ekranını açar) vardır (web + mobil)
+- "Kanka Davet Et" alt penceresi (web + mobil): telefon alanına dokununca klavye açıldığında pencere klavyenin üstüne kayar; telefon alanı
+  ve Davet Et butonu klavyenin üstünde (web visualViewport farkı kadar alt boşluk; mobil ui.tsx Sheet avoidKeyboard, pencere / klavye örtüşmesi kadar)
 - 100 TL indirim ekranında KYC notu yoktur
 - KYC onaylanmadan kullanıcı hiçbir buluşma taramasına giremez (havuz sorgularında kyc APPROVED şartı)
 - Admin KYC onayında T.C. no girilmez, karşılaştırılmaz; UserIdentity tablosu kaldırıldı
@@ -189,6 +191,14 @@ Paket kartı yazıları (kart kısa açıklaması; avantajlar PaketKarti.tsx CAR
   Masada Paketi "1 Grup Masası'nda buluşma hakkı"; Karşımda Paketi "1 Baş Başa Masası'nda buluşma hakkı"; Kankamla Paketi
   "1 Kankamla Masası'nda buluşma hakkı"; İçerde Paketi "1 Grup Masası + 1 Baş Başa Masası'nda buluşma hakkı"; Premium Paket
   "Her ay 1 Grup + 1 Baş Başa + 1 Kankamla Masası"
+Nasıl Çalışır paket sayfası (web + mobil Onboarding 3. adım): Premium kartındaki "3 ay" kutusu altın kenarlıklı (#e0a526, web AMBER,
+  mobil onb.primeBorder); üst kenarında ortalı küçük siyah zeminli (#000000) beyaz yazılı "Önerilen" / "Recommended" (onb.recommended)
+Nasıl Çalışır masa detay kartı sayfası (6. adım): eski örnek kart yok; Masalarım'daki gerçek MasaDetayKarti (web packages/ui, mobil
+  showcase modu), Baş Başa, masa kurulmuş hâlde, ekrana sığacak şekilde orantılı küçültülmüş (web zoom, mobil Scaled); varsayılan mekân
+  görseli /share-bg/datenight.webp; yalnız ana kart (sohbet, acil yardım, paylaş, Değerlendir yok; sunucuya istek yok). Katılımcılar statik
+  örnek: "Mert D." (Finans & Bankacılık, apps/web/public/onboarding/sample-mert.webp) ve "Nursena Y." (Eğitim & Akademi,
+  sample-nursena.webp; SUPERADMIN hesabı ve Nursena botunun fotoğraflarından kopya, canlı veriye bağlı değil). Yapay Zekâ Masa Raporu
+  uyum %91, metin onb.s6AiReport; tarih önümüzdeki Cumartesi 20:00. Maddeler onb.s6b1 / s6b2; başlık ve "Buluşma günü saat 10:00'da açılır." aynen
 Mobil paket detay ekranında "← Paketler" (mevcut pillRed etiket stili) ve Android geri tuşu Paketim'deki paket listesine döner
 Profilim "KANKAMLA NASIL İŞLER?" metni: "Kankamla Paketi'ni al, ardından aynı cinsiyetten bir arkadaşını kanka olarak davet et. Kankan
   ücretsiz katılır; davet linkinden geldiğinde kimlik doğrulaması yapması zorunludur. İkiniz, karşı cinsten bir kanka çiftiyle Pazar
@@ -333,13 +343,15 @@ PROFİL FOTOĞRAFI (web + mobil):
   - Admin "Profil Fotoğrafları" ekranı (web + mobil): yüklenen fotoğraf ve KYC kimlik ön yüzü yan yana, Onayla / Reddet; görsellere basınca
     uygulama / sayfa içinde tam ekran büyük görünüm (görselin tamamı), basınca / geri tuşu / Esc ile kapanır. Profil fotoğrafı alanlarında
     Janti Haydar görseli yoktur
-  - Profilim'deki profil fotoğrafına basınca tam ekran büyük görünüm (Instagram gibi); kalem butonu yükleme akışını açar. Büyük görünüm
+  - Profilim'deki profil fotoğrafına basınca tam ekran büyük görünüm (Instagram gibi; web + mobil PhotoViewer own, kendi fotoğrafı
+    olduğu için koruma yok); kalem butonu galeri → kırpma akışını açar. Büyük görünüm
     ekrana (fotoğraf dahil) basınca ya da geri tuşuyla kapanır (masa detay kartında da aynı). Fotoğraf yalnız Profilim'den değiştirilir:
     masa detay kartında ve başka hiçbir yerde kendi fotoğrafına basınca düzenleme (kalem) ikonu çıkmaz
   - Mobil alt menü profil sekmesinde onaylı fotoğraf varsa kısaltma yerine fotoğraf
   - Kırpma (web + mobil): Profilim'den fotoğraf eklenirken / değiştirilirken galeriden seçilen görsel önce tam ekran kırpma ekranında
     açılır (WhatsApp / Instagram gibi): yuvarlak kırpma çerçevesi, mobilde tek parmakla sürükle + iki parmakla yakınlaştır, web'de
-    sürükle + sürgü (ve fare tekerleği); butonlar "İptal" / "Bitti" (photo.cropCancel / cropDone). Bitti → çerçevedeki kare alan
+    tek parmak / fareyle sürükle, dokunmatikte iki parmakla yakınlaştır / uzaklaştır (Instagram gibi), masaüstünde fare tekerleği;
+    yakınlaştırma sürgüsü yok; butonlar "İptal" / "Bitti" (photo.cropCancel / cropDone). Bitti → çerçevedeki kare alan
     (mobil expo-image-manipulator, web canvas, JPEG) mevcut POST /users/me/profile-photo akışıyla gider (web components/PhotoCropper.tsx,
     mobil components/PhotoCropper.tsx)
   - Büyütülmüş profil fotoğrafı koruması YALNIZ büyütülmüş görünüm (PhotoViewer) açıkken; uygulamanın diğer ekranlarında kısıtlama yok.
@@ -738,7 +750,9 @@ YÖNETİM PANELİ EK KURALLARI (web + mobil):
     ProfilePhoto tablosuna doğrudan APPROVED kaydedilir (onay yok), önceki fotoğraf (dosya + kayıt) silinir; GET /matching/admin/bots photoUrl döner;
     bot silinince fotoğraf klasörü de silinir
   - SUPERADMIN, SUPERADMIN ve ADMIN hesaplarını düzenleyebilir (kişisel bilgi, durum, yaptırım, yaptırım kaldırma, gelmedi uyarısı;
-    assertCanSanction); ADMIN bu hesaplara işlem yapamaz; kimse kendi hesabını değiştiremez
+    assertCanSanction); ADMIN, SUPERADMIN ve ADMIN hesaplarına hiçbir işlem yapamaz. SUPERADMIN kendi hesabını da düzenler (kendi
+    detayında hesap işlemleri görünür, "Bu hesaba işlem yetkin yok" çıkmaz); diğer roller kendi hesabını değiştiremez; kendi rolünü kimse
+    değiştiremez
   - Kullanıcılar listesi: satırda yalnız ad soyad, telefon ve "Detay". Detay penceresinin üstünde 72 px yuvarlak profil (onaylı fotoğraf,
     yoksa cinsiyet renkli çerçeve + baş harfler); e-posta, durum, Şehir, Bu hafta (aktif şehir), Paket, OCEAN Ort. Detay'da
     (GET /admin/users/:id photoUrl, primaryCityName, activeCityName)
@@ -749,6 +763,13 @@ YÖNETİM PANELİ EK KURALLARI (web + mobil):
   - Kariyer başvurusu fotoğrafı: /kariyer formunda CV altında zorunlu "Fotoğraf *" (tek dosya; not "Yüzünüzün net olduğu herhangi bir
     fotoğraf yüklemelisiniz"); JPEG/PNG/WebP/HEIC/HEIF, en fazla 10 MB, WebP olarak uploads/career-photos/ (herkese açık değil;
     CareerApplication.photoFile). GET /admin/careers/:id/photo yalnız SUPERADMIN; panelde 64 px, basınca tam ekran (basınca / Esc / geri tuşu kapanır)
+  - Menü bildirim baloncukları (web + mobil): GET /admin/menu-counts (backend admin/admin-menu-counts.ts) sayfa açılınca ve 60 sn'de bir;
+    her sekmede bekleyen iş sayısı küçük kırmızı yuvarlak (0 ise yok, 99'dan fazlası 99+): Acil Yardım açık talep, KYC Bekleyenler PENDING,
+    Profil Fotoğrafları PENDING, Kullanıcılar onay bekleyen hesap silme talebi, Uyarılar okunmamış (rol filtresi aynen), Ekran Görüntüsü
+    İhlalleri karar bekleyen 2. ve sonraki ihlal, Şikayetler kararsız kayıt, Ödeme Sonuçlandırma DUPLICATE ödeme, İş Ortaklığı ve Kariyer
+    PENDING başvuru (son üçü yalnız SUPERADMIN)
+  - Veri Saklama sekmesi (web + mobil): dar ekranda (web 768 px altı, mobil uygulama) her kategori ayrı kart, alanlar "Etiket: Değer" alt
+    alta; geniş ekranda tablo, sütunlar okunabilir en küçük genişlikte, gerekirse yatay kaydırma (kelimeler harf harf kırılmaz)
   - Menü: üst barda "AHENK YÖNETİM PANELİ" yanında logo yok; açılır menüde "Acil Yardım" emoji yok, kırmızı geçişli hap etiket (beyaz kalın
     büyük harf, solda beyaz nokta, kırmızı parıltı); mobil çekmece güvenli alanın hemen altından başlar (statusBarTranslucent),
     web mobil görünüm çekmecesi env(safe-area-inset-top)
@@ -958,6 +979,9 @@ Admin SOS sayfası: /acil-yardim — canlı rapor listesi, 15s otomatik yenileme
   Acil Durum Kişisi (web + mobil Profilim > Gizlilik ve Güvenlik): en fazla 2 kişi, her biri ad + ülke kodlu telefon (1. kişi
   User.emergencyContactName / Phone, 2. kişi emergencyContact2Name / Phone; migration 20261125400000_emergency_contact_2). Her kişi
   düzenlenir / silinir (1. silinirse 2. kişi 1. sıraya geçer), 2 kişi kayıtlıyken "Kişi Ekle" gizli; "Kişi Ekle" başlığın sağında; not metni.
+  Her kişi Numara Engelleme'deki engellenen numara kutularıyla aynı stilde ayrı kutu (web ll-card 12 / 16, mobil Card): solda
+  "Babam · +905…" ana kırmızı (#c0392b), sağda kalem (düzenle) ve kırmızı çöp kutusu (sil) ikonu (44 pt); 2 kişi alt alta. DÜZENLE / SİL
+  yazılı butonları yok.
   Uçlar: GET /users/me/emergency-contacts, PUT / DELETE /users/me/emergency-contacts/:slot (1 | 2); eski tek kişilik
   /users/me/emergency-contact uçları 1. kişi için duruyor. SOS talebinde ahenk_emergency_contact WhatsApp şablonu kayıtlı her iki kişiye
   gider (dil kullanıcıya göre, talep başına bir kez; SosReport.emergencyNotifiedAt / emergencyNotifyFailed); biri başarısızsa admin

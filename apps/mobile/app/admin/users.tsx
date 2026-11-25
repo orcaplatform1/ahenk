@@ -16,7 +16,8 @@ import { AdminScreenshotViolations } from '@/components/admin/AdminScreenshotVio
 
 function canSanction(t: { id: string; role: string }) {
   const me = myId(); if (!me) return false;
-  if (me === t.id) return false;
+  // Kendi hesabını yalnız SUPERADMIN düzenler
+  if (me === t.id) return myRole() === 'SUPERADMIN';
   return (t.role !== 'ADMIN' && t.role !== 'SUPERADMIN') || myRole() === 'SUPERADMIN';
 }
 interface AdminUser { id: string; email: string; phone?: string; role: string; status: 'ACTIVE' | 'SUSPENDED' | 'DELETED'; profile?: { firstName?: string; lastName?: string; city?: string | null; isPioneer?: boolean } | null; kyc?: { status: string } | null; oceanScore?: { openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number } | null; subscriptions?: { plan: string }[]; primaryCityName?: string | null; activeCityName?: string | null }

@@ -373,12 +373,14 @@ export class AdminService {
   // ─── Yaptırım yetkisi ────────────────────────────────────────────────────
 
   // SUPERADMIN ve ADMIN hesaplarına yalnızca SUPERADMIN işlem yapabilir (SUPERADMIN, SUPERADMIN hesaplarını düzenleyebilir)
+  // SUPERADMIN ve ADMIN hesaplarını yalnız SUPERADMIN düzenler; ADMIN bu hesaplara hiçbir işlem yapamaz. Kendi hesabını yalnız SUPERADMIN
+  // düzenleyebilir (diğer roller kendi hesabını değiştiremez)
   private async assertCanSanction(targetId: string, actorId: string) {
-    if (targetId === actorId) throw new BadRequestException("Kendi hesabını değiştiremezsin");
     const [target, actor] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: targetId }, select: { role: true } }),
       this.prisma.user.findUnique({ where: { id: actorId }, select: { role: true } }),
     ]);
+    if (targetId === actorId && actor?.role !== UserRole.SUPERADMIN) throw new BadRequestException("Kendi hesabını değiştiremezsin");
     if (!target) throw new NotFoundException("Kullanıcı bulunamadı");
     if (
       (target.role === UserRole.SUPERADMIN || target.role === UserRole.ADMIN) &&

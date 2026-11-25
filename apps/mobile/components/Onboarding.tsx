@@ -10,7 +10,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { upper } from '@/lib/i18n';
 import { api } from '@/lib/api';
 import { seasonRangeTag, type CitySeasonFields } from '@ahenk/shared';
-import { gColor } from '@/lib/masa';
+import { MasaDetayKarti, type MasaDetayData } from './MasaDetayKarti';
+import { SITE } from '@/lib/config';
 import { onb as C } from '@/theme/theme';
 import { Serif, T } from './ui';
 
@@ -71,6 +72,29 @@ function IconRow({ icon, title, body }: { icon: keyof typeof ICONS; title: strin
     <View style={[card, { flexDirection: 'row', gap: 14, alignItems: 'flex-start' }]}>
       <View style={{ marginTop: 2 }}><Icon name={icon} /></View>
       <View style={{ flex: 1 }}><Strong>{title}</Strong><Small style={{ marginTop: 4 }}>{body}</Small></View>
+    </View>
+  );
+}
+
+// Örnek kartın tarihi: önümüzdeki Cumartesi 20:00 (TR, UTC+3); Baş Başa buluşma günü
+function nextSaturday20(): string {
+  const tr = new Date(Date.now() + 3 * 3600_000);
+  const add = (6 - tr.getUTCDay() + 7) % 7 || 7;
+  return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + add, 20 - 3, 0, 0)).toISOString();
+}
+
+// Orantılı küçültme: içerik scale ile küçülür, kapladığı yükseklik ölçülen yükseklik × scale olur (dokunma alanları birlikte küçülür)
+function Scaled({ scale, children }: { scale: number; children: React.ReactNode }) {
+  const [w, setW] = useState(0);
+  const [h, setH] = useState(0);
+  return (
+    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: h ? h * scale : undefined }}>
+      {w > 0 && (
+        <View onLayout={(e) => setH(e.nativeEvent.layout.height)}
+          style={{ position: h ? 'absolute' : 'relative', top: 0, left: 0, width: w / scale, transform: [{ scale }], transformOrigin: 'top left' }}>
+          {children}
+        </View>
+      )}
     </View>
   );
 }
@@ -139,7 +163,15 @@ function Step({ n, prices, seasonTag }: { n: number; prices: Partial<Record<Plan
           <Small style={{ marginTop: 6, marginBottom: 10 }}>{t('onb.primeBody')}</Small>
           <View style={{ flexDirection: 'row', gap: 6 }}>
             {prime.map(([m, plan]) => (
-              <View key={plan} style={{ flex: 1, backgroundColor: C.bg, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 2, alignItems: 'center' }}>
+              // 3 ay: Premium altın kenarlık + üst kenarda ortalı "Önerilen" / "Recommended" etiketi (siyah zemin, beyaz yazı)
+              <View key={plan} style={{ flex: 1, backgroundColor: C.bg, borderWidth: 1, borderColor: plan === 'PRIME_3M' ? C.primeBorder : C.border, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 2, alignItems: 'center' }}>
+                {plan === 'PRIME_3M' && (
+                  <View pointerEvents="none" style={{ position: 'absolute', top: -7, left: 0, right: 0, alignItems: 'center' }}>
+                    <View style={{ backgroundColor: '#000000', borderRadius: C.pill, paddingVertical: 1, paddingHorizontal: 6 }}>
+                      <T w={700} numberOfLines={1} style={{ fontSize: 9, lineHeight: 12, letterSpacing: 0.4, color: '#ffffff' }}>{t('onb.recommended')}</T>
+                    </View>
+                  </View>
+                )}
                 <Small style={{ fontSize: 12 }}>{t(m)}</Small>
                 <T w={700} style={{ fontSize: 13, color: C.text, marginTop: 2 }}>{price(plan)}</T>
               </View>
@@ -202,51 +234,24 @@ function Step({ n, prices, seasonTag }: { n: number; prices: Partial<Record<Plan
   );
 
   if (n === 6) {
-    const people: [string, string][] = [['A.K.', 'MALE'], ['E.Y.', 'FEMALE'], ['M.D.', 'MALE'], ['S.T.', 'FEMALE'], ['C.A.', 'MALE'], ['D.Ö.', 'FEMALE']];
-    const D = 52, SW = 5, R = (D - SW) / 2, CIRC = 2 * Math.PI * R;
+    // Gerçek MasaDetayKarti (Masalarım'daki bileşen), Baş Başa, masa kurulmuş hâlde; statik örnek veri (canlı kullanıcıya bağlı değil).
+    // showcase: yalnız ana kart (sohbet / acil yardım / paylaş yok, sunucuya istek yok). Ekrana sığması için orantılı küçültülür
+    const sample: MasaDetayData = {
+      id: 'onboarding-sample', type: 'ONE_ON_ONE', maxParticipants: 2,
+      scheduledAt: nextSaturday20(), sosEndsAt: nextSaturday20(),
+      venueName: t('onb.s6Venue'), venueDistrict: t('onb.s6District'),
+      venuePhotos: [{ url: '/share-bg/datenight.webp' }],
+      participants: [
+        { initials: 'M.D.', gender: 'MALE', displayName: 'Mert D.', occupation: 'Finans & Bankacılık', photoUrl: `${SITE}/onboarding/sample-mert.webp` },
+        { initials: 'N.Y.', gender: 'FEMALE', displayName: 'Nursena Y.', occupation: 'Eğitim & Akademi', photoUrl: `${SITE}/onboarding/sample-nursena.webp` },
+      ],
+      aiReport: { content: t('onb.s6AiReport'), uyumSkoru: 91, generatedAt: nextSaturday20() },
+    };
     return (
       <View>
         <H2>{t('onb.s6Title')}</H2>
         <Sub>{t('onb.s6Sub')}</Sub>
-        <View style={{ backgroundColor: C.bg, borderWidth: 1, borderColor: C.border, borderRadius: 16, overflow: 'hidden' }}>
-          <View style={{ height: 120, backgroundColor: C.card }}>
-            <View style={{ position: 'absolute', top: 10, left: 10, paddingVertical: 3, paddingHorizontal: 9, borderRadius: C.pill, backgroundColor: 'rgba(192,57,43,0.85)', borderWidth: 1, borderColor: 'rgba(255,107,107,0.5)' }}>
-              <T w={700} style={{ fontSize: 10, color: '#ffffff' }}>{t('onb.s6Type')}</T>
-            </View>
-            <View style={{ position: 'absolute', top: 10, right: 10, paddingVertical: 3, paddingHorizontal: 9, borderRadius: C.pill, borderWidth: 1, borderColor: C.border, backgroundColor: 'rgba(18,18,18,0.6)' }}>
-              <T w={600} style={{ fontSize: 10, color: C.muted }}>{t('onb.s6Sample')}</T>
-            </View>
-            <View style={{ position: 'absolute', left: 12, bottom: 10 }}>
-              <Serif style={{ fontSize: 20, color: C.text }}>{t('onb.s6Venue')}</Serif>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Icon name="pin" size={12} /><Small style={{ fontSize: 12 }}>{t('onb.s6District')}</Small></View>
-            </View>
-          </View>
-          <View style={{ padding: 12, gap: 10 }}>
-            <View style={[card, { flexDirection: 'row', justifyContent: 'space-between', gap: 8, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10 }]}>
-              <T w={700} style={{ fontSize: 13, color: C.text }}>{t('onb.s6Time')}</T>
-              <Small style={{ fontSize: 12, flexShrink: 1, textAlign: 'right' }}>{t('onb.s6People')}</Small>
-            </View>
-            <View style={{ flexDirection: 'row', gap: 6 }}>
-              {people.map(([ini, g]) => (
-                <View key={ini} style={{ width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: gColor(g), alignItems: 'center', justifyContent: 'center' }}>
-                  <T w={700} style={{ fontSize: 9, color: '#f0f0f0' }}>{ini}</T>
-                </View>
-              ))}
-            </View>
-            <View style={[card, { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10 }]}>
-              <View style={{ width: D, height: D }}>
-                <Svg width={D} height={D} viewBox={`0 0 ${D} ${D}`} style={{ transform: [{ rotate: '-90deg' }] }}>
-                  <Circle cx={D / 2} cy={D / 2} r={R} fill="none" stroke={C.ringTrack} strokeWidth={SW} />
-                  <Circle cx={D / 2} cy={D / 2} r={R} fill="none" stroke={C.ring} strokeWidth={SW} strokeLinecap="round" strokeDasharray={`${CIRC}`} strokeDashoffset={CIRC * 0.13} />
-                </Svg>
-                <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-                  <T w={700} style={{ fontSize: 13, color: C.text }}>%87</T>
-                </View>
-              </View>
-              <View style={{ flex: 1 }}><Strong style={{ fontSize: 13 }}>{t('onb.s6AiTitle')}</Strong><Small style={{ fontSize: 12 }}>{t('onb.s6AiSub')}</Small></View>
-            </View>
-          </View>
-        </View>
+        <Scaled scale={0.86}><MasaDetayKarti masa={sample} showcase /></Scaled>
         <View style={{ marginTop: 14, gap: 8 }}>
           {[1, 2].map(i => (
             <View key={i} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>

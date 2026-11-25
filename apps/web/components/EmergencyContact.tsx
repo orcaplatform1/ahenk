@@ -56,12 +56,20 @@ export function EmergencyContact() {
           <StdButton variant="ghost" type="button" onClick={() => startEdit(nextSlot)}>{t('emergency.add')}</StdButton>
         )}
       </div>
+      {/* Her kişi Numara Engelleme kutularıyla aynı stilde ayrı kutu: solda "Ad · Numara" (ana kırmızı), sağda kalem (düzenle) ve
+          kırmızı çöp kutusu (sil); 2 kişi varsa alt alta */}
       {!editing && contacts.map((c) => (
-        <div key={c.slot} className="flex flex-wrap items-center justify-between gap-2">
-          <span style={{ fontSize: 13, color: '#c9c2b8' }}>{c.name} · {c.phone}</span>
-          <span className="flex flex-wrap gap-2">
-            <StdButton variant="ghost" type="button" onClick={() => startEdit(c.slot)}>{t('emergency.edit')}</StdButton>
-            <StdButton variant="ghost" type="button" onClick={() => void remove(c.slot)} disabled={busy}>{t('emergency.delete')}</StdButton>
+        <div key={c.slot} className="ll-card flex items-center justify-between gap-2" style={{ padding: '12px 16px' }}>
+          <span style={{ fontSize: 13, color: '#c0392b', minWidth: 0, overflowWrap: 'anywhere' }}>{c.name} · {c.phone}</span>
+          <span className="flex items-center" style={{ flexShrink: 0 }}>
+            <button type="button" onClick={() => startEdit(c.slot)} aria-label={t('emergency.edit')}
+              style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a39c93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z" /></svg>
+            </button>
+            <button type="button" onClick={() => void remove(c.slot)} disabled={busy} aria-label={t('emergency.delete')}
+              style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', opacity: busy ? 0.4 : 1 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
+            </button>
           </span>
         </div>
       ))}

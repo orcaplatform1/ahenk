@@ -16,7 +16,8 @@ import { AdminSuspendButtons } from '@/components/AdminSuspendButtons';
 function canSanction(target: { id: string; role: string }): boolean {
   const meId = myId();
   if (!meId) return false;
-  if (meId === target.id) return false;
+  // Kendi hesabını yalnız SUPERADMIN düzenler
+  if (meId === target.id) return myRole() === 'SUPERADMIN';
   return (target.role !== 'ADMIN' && target.role !== 'SUPERADMIN') || myRole() === 'SUPERADMIN';
 }
 

@@ -555,10 +555,12 @@ function chunkRows(list: DetayParticipant[]): DetayParticipant[][] {
 // preview (masa kurulmadan): aynı kart, gerçek veri yok; dateLabel tarih satırında (gün adı + saat); locked: kapakta sallanan kilit;
 // kapakta yalnız konum ikonu (ilçe yok), Haritada Gör pasif; katılımcılar verilen sırayla; sohbet pasif (mesaj çekilmez, gönder ikonu
 // kapalı); acil yardım, gelmeyen işaretleme ve Değerlendir yok — web MasaDetayKarti ile aynı
-function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDetayData; archive?: boolean; preview?: { dateLabel: string; locked?: boolean } }) {
+// showcase (Nasıl Çalışır örnek kartı): yalnız ana kart (kapak, tarih, katılımcılar, Yapay Zekâ Masa Raporu); alt kart (acil yardım,
+// sohbet, gelmeyen işaretleme, Değerlendir) ve paylaş butonu yok, sunucuya istek atılmaz — web'de apiBase verilmeyen kart ile aynı
+function MasaDetayKartiInner({ masa, archive = false, preview, showcase = false }: { masa: MasaDetayData; archive?: boolean; preview?: { dateLabel: string; locked?: boolean }; showcase?: boolean }) {
   const { t } = useTranslation();
   const router = useRouter();
-  const live = !archive;
+  const live = !archive && !showcase;
   const [lightbox, setLightbox] = useState<number | null>(null);
   // Katılımcı profil fotoğrafı tam ekran (kendi fotoğrafında da düzenleme yok; fotoğraf yalnız Profilim'den değişir)
   const [viewer, setViewer] = useState<string | null>(null);
@@ -766,7 +768,7 @@ function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDet
             ))}
           </View>
 
-          <AiReport report={masa.aiReport} meetingId={archive || preview ? undefined : masa.id} />
+          <AiReport report={masa.aiReport} meetingId={archive || preview || showcase ? undefined : masa.id} />
         </View>
       </Card>
 

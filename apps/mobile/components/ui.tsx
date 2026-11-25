@@ -1,10 +1,10 @@
 // Web globals.css sınıflarının RN karşılıkları: .ll-card, .ll-title, .ll-eyebrow, .btn-primary, .btn-ghost,
 // .input-glass, .ll-cta, Sheet (KankaSection/TabProfilim), Modal (components/ui/Modal.tsx), Skeleton, MaintenanceNotice.
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import {
   useWindowDimensions,
-  ActivityIndicator, KeyboardAvoidingView, Modal as RNModal, Pressable, StyleSheet, Text, TextInput, View,
-  type PressableProps, type TextInputInstance, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
+  ActivityIndicator, Keyboard, Modal as RNModal, Platform, Pressable, StyleSheet, Text, TextInput, View,
+  type HostInstance, type PressableProps, type TextInputInstance, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Defs, Ellipse, RadialGradient as SvgRadial, Rect as SvgRect, Stop } from 'react-native-svg';
@@ -207,19 +207,32 @@ export function Row({ label, value, color }: { label: string; value: string; col
 
 // Alttan açılan pencere (KankaSection Sheet)
 // pad: web'de bazı alt pencereler 20px 16px dolgu kullanır (CityPickerModalP, BirthDateField); varsayılan 24px 20px (KankaSection, TabProfilim)
-// avoidKeyboard: klavye açılınca pencere klavyenin üstüne kayar (Kanka Davet Et)
+// avoidKeyboard: klavye açılınca pencere klavyenin üstüne kayar (odaklı alan ve butonlar klavyenin üstünde). Pay = pencerenin alt kenarı
+// ile klavyenin üst kenarı arasındaki örtüşme (ölçülür); sistem pencereyi zaten küçülttüyse örtüşme 0 olur, iki kez kaydırılmaz (iOS + Android)
 export function Sheet({ visible, onClose, children, pad, avoidKeyboard }: { visible: boolean; onClose: () => void; children: React.ReactNode; pad?: { top: number; h: number }; avoidKeyboard?: boolean }) {
   const insets = useSafeAreaInsets();
+  const overlay = useRef<HostInstance>(null);
+  const [kbPad, setKbPad] = useState(0);
+  useEffect(() => {
+    if (!visible || !avoidKeyboard) { setKbPad(0); return; }
+    const ios = Platform.OS === 'ios';
+    const show = Keyboard.addListener(ios ? 'keyboardWillShow' : 'keyboardDidShow', (e) => {
+      const kbTop = e.endCoordinates.screenY;
+      overlay.current?.measureInWindow((_x, y, _w, h) => setKbPad(Math.max(0, y + h - kbTop)));
+    });
+    const hide = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () => setKbPad(0));
+    return () => { show.remove(); hide.remove(); };
+  }, [visible, avoidKeyboard]);
   const body = (
-    <Pressable style={s.sheetOverlay} onPress={onClose}>
-      <Pressable style={[s.sheet, pad && { paddingTop: pad.top, paddingHorizontal: pad.h }, { paddingBottom: sheet.padBottom + insets.bottom }]} onPress={() => undefined}>
+    <Pressable ref={overlay} style={[s.sheetOverlay, kbPad > 0 && { paddingBottom: kbPad }]} onPress={onClose}>
+      <Pressable style={[s.sheet, pad && { paddingTop: pad.top, paddingHorizontal: pad.h }, { paddingBottom: kbPad > 0 ? sheet.padBottom : sheet.padBottom + insets.bottom }]} onPress={() => undefined}>
         {children}
       </Pressable>
     </Pressable>
   );
   return (
     <RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      {avoidKeyboard ? <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">{body}</KeyboardAvoidingView> : body}
+      {body}
     </RNModal>
   );
 }

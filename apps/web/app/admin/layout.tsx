@@ -13,7 +13,7 @@ const NAV_TOP = [
   { href: '/profil', label: 'Profilim' },
 ];
 
-const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; superadminOnly?: boolean }[] = [
+const NAV: { href: string; label: string; sos?: boolean; superadminOnly?: boolean }[] = [
   { href: '/admin/acil-yardim',  label: 'Acil Yardım', sos: true },
   { href: '/admin/stats',        label: 'İstatistikler' },
   { href: '/admin/matches',      label: 'Masalar' },
@@ -21,7 +21,7 @@ const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; sup
   { href: '/admin/profil-fotograflari', label: 'Profil Fotoğrafları' },
   { href: '/admin/users',        label: 'Kullanıcılar' },
   { href: '/admin/subscriptions', label: 'Abonelikler' },
-  { href: '/admin/alerts',       label: 'Uyarılar', alertKey: true },
+  { href: '/admin/alerts',       label: 'Uyarılar' },
   { href: '/admin/sonuclandirma', label: 'Ödeme Sonuçlandırma', superadminOnly: true },
   { href: '/admin/venues',       label: 'Mekanlar', superadminOnly: true },
   { href: '/admin/cities',       label: 'Şehirler' },
@@ -40,8 +40,8 @@ const NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; sup
 ];
 
 
-function NavLinks({ pathname, onClose, onLogout, unread, role }: {
-  pathname: string; onClose?: () => void; onLogout: () => void; unread: number; role: string | null;
+function NavLinks({ pathname, onClose, onLogout, counts, role }: {
+  pathname: string; onClose?: () => void; onLogout: () => void; counts: Record<string, number>; role: string | null;
 }) {
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', padding: 12, flex: 1, overflowY: 'auto' }}>
@@ -78,9 +78,10 @@ function NavLinks({ pathname, onClose, onLogout, unread, role }: {
                   {n.label}
                 </span>
               ) : n.label}
-              {n.alertKey && unread > 0 && (
+              {/* Bekleyen / okunmamış iş sayısı (0 ise yok, 99'dan fazlası 99+) */}
+              {(counts[n.href] ?? 0) > 0 && (
                 <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 99, background: RED, color: '#fff', minWidth: 18, textAlign: 'center' }}>
-                  {unread > 99 ? '99+' : unread}
+                  {counts[n.href] > 99 ? '99+' : counts[n.href]}
                 </span>
               )}
             </Link>
@@ -102,7 +103,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const unread = counts['/admin/alerts'] ?? 0;
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -116,12 +118,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setAdminIdentity({ id: me.id, role: r });
       setRole(r);
       setReady(true);
-      api.get<{ unreadCount: number }>('/admin/alerts').then(d => setUnread(d.unreadCount ?? 0)).catch(() => {});
     }).catch(() => { if (!cancelled) router.replace('/giris'); });
     return () => { cancelled = true; };
   }, [router]);
 
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
+
+  // Menü bildirim baloncukları: sayfa açılınca ve 60 sn'de bir (GET /admin/menu-counts)
+  useEffect(() => {
+    if (!ready) return;
+    const load = () => { api.get<Record<string, number>>('/admin/menu-counts').then(setCounts).catch(() => {}); };
+    load();
+    const id = setInterval(load, 60_000);
+    return () => clearInterval(id);
+  }, [ready, pathname]);
 
   // Bot sayfaları yalnızca SUPERADMIN
   const blocked = ready && role !== 'SUPERADMIN' && NAV.some((n) => n.superadminOnly && (pathname === n.href || pathname.startsWith(n.href + '/')));
@@ -163,7 +173,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {/* Sidebar (desktop) */}
         <aside className="hidden md:flex" style={{ width: 208, flexShrink: 0, flexDirection: 'column', position: 'sticky', top: 52, height: 'calc(100vh - 52px)', background: SURFACE, borderRight: `1px solid ${BORDER}` }}>
-          <NavLinks pathname={pathname} onLogout={handleLogout} unread={unread} role={role} />
+          <NavLinks pathname={pathname} onLogout={handleLogout} counts={counts} role={role} />
         </aside>
         <main style={{ flex: 1, minWidth: 0, overflowX: 'hidden', background: BG }}>{children}</main>
       </div>
@@ -177,7 +187,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <motion.div className="md:hidden" style={{ position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 210, width: 208, background: SURFACE, borderRight: `1px solid ${BORDER}`, boxShadow: '8px 0 32px rgba(0,0,0,0.7)', paddingTop: 'env(safe-area-inset-top)', display: 'flex', flexDirection: 'column' }}
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}>
-              <NavLinks pathname={pathname} onClose={() => setDrawerOpen(false)} onLogout={handleLogout} unread={unread} role={role} />
+              <NavLinks pathname={pathname} onClose={() => setDrawerOpen(false)} onLogout={handleLogout} counts={counts} role={role} />
             </motion.div>
           </>
         )}

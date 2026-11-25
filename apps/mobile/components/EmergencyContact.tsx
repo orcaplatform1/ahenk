@@ -2,12 +2,13 @@
 // (giriş / kayıttaki ülke kodu listesi). Her kişi düzenlenebilir, silinebilir (1. silinirse 2. kişi 1. sıraya geçer); 2 kişi kayıtlıyken
 // "Kişi Ekle" gizli. HIG: 44 pt dokunma alanı.
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { splitE164, toE164 } from '@ahenk/shared';
 import { api } from '@/lib/api';
 import { CountryCodeButton } from './PhoneCountry';
-import { StdButton, Input, T } from './ui';
+import { Card, StdButton, Input, T } from './ui';
 import { ll, tw } from '@/theme/theme';
 
 type Contact = { slot: 1 | 2; name: string | null; phone: string };
@@ -52,14 +53,22 @@ export function EmergencyContact() {
         <T style={{ fontSize: 14, color: ll.text, flexShrink: 1 }}>{t('emergency.title')}</T>
         {!editing && nextSlot && <StdButton variant="ghost" label={t('emergency.add')} onPress={() => startEdit(nextSlot)} />}
       </View>
+      {/* Her kişi Numara Engelleme kutularıyla aynı stilde ayrı kutu (Card 12 / 16): solda "Ad · Numara" (ana kırmızı), sağda kalem
+          (düzenle) ve kırmızı çöp kutusu (sil), ikisi de 44 pt; 2 kişi varsa alt alta */}
       {!editing && contacts.map((c) => (
-        <View key={c.slot} style={{ gap: 8 }}>
-          <T style={{ fontSize: 13, color: ll.text2 }}>{c.name} · {c.phone}</T>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <StdButton variant="ghost" label={t('emergency.edit')} onPress={() => startEdit(c.slot)} />
-            <StdButton variant="ghost" label={t('emergency.delete')} disabled={busy} onPress={() => { void remove(c.slot); }} />
+        <Card key={c.slot} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 16, gap: 8 }}>
+          <T style={{ fontSize: 13, color: tw.primary, flexShrink: 1 }}>{c.name} · {c.phone}</T>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Pressable onPress={() => startEdit(c.slot)} accessibilityRole="button" accessibilityLabel={t('emergency.edit')}
+              style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={ll.label} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 20h9" /><Path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z" /></Svg>
+            </Pressable>
+            <Pressable onPress={() => { void remove(c.slot); }} disabled={busy} accessibilityRole="button" accessibilityLabel={t('emergency.delete')} accessibilityState={{ disabled: busy }}
+              style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.4 : pressed ? 0.6 : 1 })}>
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={tw.primary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 6h18" /><Path d="M8 6V4h8v2" /><Path d="M19 6l-1 14H6L5 6" /><Path d="M10 11v6" /><Path d="M14 11v6" /></Svg>
+            </Pressable>
           </View>
-        </View>
+        </Card>
       ))}
       {!!editing && (
         <View style={{ gap: 8 }}>

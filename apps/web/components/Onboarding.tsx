@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
-import { gColor } from '@ahenk/ui';
-import { seasonRangeTag, type CitySeasonFields } from '@ahenk/shared';
+import { MasaDetayKarti, type MasaDetayData } from '@ahenk/ui';
+import { occupationLabel, seasonRangeTag, type CitySeasonFields } from '@ahenk/shared';
 import { api } from '@/lib/api';
 import { usePlanPrices, type PlanKeyName } from '@/components/PlanPrice';
 import { AMBER, AMBER_GRADIENT, CARDS } from '@/components/paket/PaketKarti';
@@ -48,6 +48,14 @@ function RingLogo({ size = 72 }: { size?: number }) {
       <circle cx="36" cy="36" r="13" stroke={C.primary} strokeWidth="2" />
     </svg>
   );
+}
+
+// Örnek kartın tarihi: önümüzdeki Cumartesi 20:00 (TR, UTC+3); Baş Başa buluşma günü
+function nextSaturday20(): string {
+  const tr = new Date(Date.now() + 3 * 3600_000);
+  const add = (6 - tr.getUTCDay() + 7) % 7 || 7;
+  const d = new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate() + add, 20 - 3, 0, 0));
+  return d.toISOString();
 }
 
 const card: React.CSSProperties = { background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '14px 16px' };
@@ -129,7 +137,11 @@ function Step({ n, t, wide, seasonTag }: { n: number; t: ReturnType<typeof useTr
           <p style={{ ...small, margin: '6px 0 10px' }}>{t('onb.primeBody')}</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
             {prime.map(([m, plan]) => (
-              <div key={plan} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: '8px 4px', textAlign: 'center' }}>
+              // 3 ay: Premium altın kenarlık + üst kenarda ortalı "Önerilen" / "Recommended" etiketi (siyah zemin, beyaz yazı)
+              <div key={plan} style={{ position: 'relative', background: C.bg, border: `1px solid ${plan === 'PRIME_3M' ? AMBER : C.border}`, borderRadius: 10, padding: '8px 4px', textAlign: 'center' }}>
+                {plan === 'PRIME_3M' && (
+                  <span style={{ position: 'absolute', top: 0, left: '50%', transform: 'translate(-50%, -50%)', whiteSpace: 'nowrap', fontFamily: SANS, fontSize: 9, fontWeight: 700, letterSpacing: '0.04em', color: '#ffffff', background: '#000000', borderRadius: 9999, padding: '1px 6px', lineHeight: 1.4 }}>{t('onb.recommended')}</span>
+                )}
                 <p style={{ ...small, fontSize: 12 }}>{t(m)}</p>
                 <p style={{ fontFamily: SANS, fontSize: 13, fontWeight: 700, color: C.text, margin: '2px 0 0' }}>{price(plan)}</p>
               </div>
@@ -196,43 +208,26 @@ function Step({ n, t, wide, seasonTag }: { n: number; t: ReturnType<typeof useTr
   );
 
   if (n === 6) {
-    const people: [string, string][] = [['A.K.', 'MALE'], ['E.Y.', 'FEMALE'], ['M.D.', 'MALE'], ['S.T.', 'FEMALE'], ['C.A.', 'MALE'], ['D.Ö.', 'FEMALE']];
-    const D = 52, SW = 5, R = (D - SW) / 2, CIRC = 2 * Math.PI * R;
+    // Gerçek MasaDetayKarti (Masalarım'daki bileşen), Baş Başa, masa kurulmuş hâlde; statik örnek veri (canlı kullanıcıya bağlı değil).
+    // apiBase verilmediği için yalnız ana kart çizilir (sohbet / acil yardım / paylaş yok, sunucuya istek yok). Ekrana sığması için
+    // orantılı küçültülür (zoom)
+    const sample: MasaDetayData = {
+      id: 'onboarding-sample', type: 'ONE_ON_ONE', maxParticipants: 2,
+      scheduledAt: nextSaturday20(), sosEndsAt: nextSaturday20(),
+      venueName: t('onb.s6Venue'), venueDistrict: t('onb.s6District'),
+      venuePhotos: [{ url: '/share-bg/datenight.webp' }],
+      participants: [
+        { initials: 'M.D.', gender: 'MALE', displayName: 'Mert D.', occupation: occupationLabel('Finans & Bankacılık', t), photoUrl: '/onboarding/sample-mert.webp' },
+        { initials: 'N.Y.', gender: 'FEMALE', displayName: 'Nursena Y.', occupation: occupationLabel('Eğitim & Akademi', t), photoUrl: '/onboarding/sample-nursena.webp' },
+      ],
+      aiReport: { content: t('onb.s6AiReport'), uyumSkoru: 91, generatedAt: nextSaturday20() },
+    };
     return (
       <div>
         <h2 style={h2}>{t('onb.s6Title')}</h2>
         <p style={sub}>{t('onb.s6Sub')}</p>
-        <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 16, overflow: 'hidden', maxWidth: wide ? 440 : undefined }}>
-          <div style={{ position: 'relative', height: 120, background: 'linear-gradient(135deg, #2a2a2a 0%, #1c1c1c 100%)' }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(18,18,18,0) 40%, rgba(18,18,18,0.92) 100%)' }} />
-            <span style={{ position: 'absolute', top: 10, left: 10, padding: '3px 9px', borderRadius: 9999, background: 'rgba(192,57,43,0.85)', border: '1px solid rgba(255,107,107,0.5)', color: '#fff', fontFamily: SANS, fontSize: 10, fontWeight: 700 }}>{t('onb.s6Type')}</span>
-            <span style={{ position: 'absolute', top: 10, right: 10, padding: '3px 9px', borderRadius: 9999, background: 'rgba(18,18,18,0.6)', border: `1px solid ${C.border}`, color: C.muted, fontFamily: SANS, fontSize: 10, fontWeight: 600 }}>{t('onb.s6Sample')}</span>
-            <div style={{ position: 'absolute', left: 12, bottom: 10 }}>
-              <p style={{ fontFamily: SERIF, fontSize: 20, color: C.text, margin: 0 }}>{t('onb.s6Venue')}</p>
-              <p style={{ display: 'flex', alignItems: 'center', gap: 4, ...small, fontSize: 12 }}><Icon d={ICONS.pin} size={12} />{t('onb.s6District')}</p>
-            </div>
-          </div>
-          <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, ...card, padding: '8px 10px', borderRadius: 10 }}>
-              <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 700, color: C.text }}>{t('onb.s6Time')}</span>
-              <span style={{ fontFamily: SANS, fontSize: 12, color: C.muted }}>{t('onb.s6People')}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {people.map(([ini, g]) => (
-                <span key={ini} style={{ width: 34, height: 34, borderRadius: '50%', border: `2px solid ${gColor(g)}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: SANS, fontSize: 9, fontWeight: 700, color: '#f0f0f0' }}>{ini}</span>
-              ))}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, ...card, padding: '10px 12px', borderRadius: 10 }}>
-              <div style={{ position: 'relative', width: D, height: D, flexShrink: 0 }}>
-                <svg width={D} height={D} viewBox={`0 0 ${D} ${D}`} style={{ transform: 'rotate(-90deg)' }}>
-                  <circle cx={D / 2} cy={D / 2} r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={SW} />
-                  <circle cx={D / 2} cy={D / 2} r={R} fill="none" stroke="#27ae60" strokeWidth={SW} strokeLinecap="round" strokeDasharray={CIRC} strokeDashoffset={CIRC * 0.13} />
-                </svg>
-                <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SANS, fontSize: 13, fontWeight: 700, color: C.text }}>%87</span>
-              </div>
-              <div><p style={{ ...strong, fontSize: 13 }}>{t('onb.s6AiTitle')}</p><p style={{ ...small, fontSize: 12 }}>{t('onb.s6AiSub')}</p></div>
-            </div>
-          </div>
+        <div style={{ maxWidth: wide ? 440 : undefined, zoom: wide ? 0.82 : 0.86 }}>
+          <MasaDetayKarti masa={sample} />
         </div>
         <ul style={{ listStyle: 'none', padding: 0, margin: '14px 0 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {[1, 2].map(i => (

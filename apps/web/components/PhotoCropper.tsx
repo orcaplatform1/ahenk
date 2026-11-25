@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 // Profil fotoğrafı kırpma ekranı (WhatsApp / Instagram gibi): tam ekran, yuvarlak kırpma çerçevesi; fotoğraf sürüklenir,
-// sürgü ya da fare tekerleğiyle yakınlaştırılır. "İptal" / "Bitti". Bitti → çerçevedeki kare alan tuvalde kırpılır, JPEG File döner
+// dokunmatik ekranda iki parmakla (Instagram gibi), masaüstünde fare tekerleğiyle yakınlaştırılır. "İptal" / "Bitti". Bitti → çerçevedeki kare alan tuvalde kırpılır, JPEG File döner
 // (yükleme akışı aynen: çağıran gönderir).
 const MAX_ZOOM = 4;
 
@@ -16,7 +16,11 @@ export function PhotoCropper({ file, onCancel, onDone }: { file: File | null; on
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [D, setD] = useState(320);
   const [busy, setBusy] = useState(false);
-  const drag = useRef<{ id: number; x: number; y: number; px: number; py: number } | null>(null);
+  // Etkin dokunuşlar: tek parmak sürükler, iki parmak yakınlaştırır / uzaklaştırır (dokunuş sayısı değişince başlangıç yeniden alınır)
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const gesture = useRef<{ x: number; y: number; px: number; py: number; dist: number; zoom: number } | null>(null);
+  const live = useRef({ zoom, pos });
+  live.current = { zoom, pos };
 
   useEffect(() => {
     setImg(null); setZoom(1); setPos({ x: 0, y: 0 });
@@ -50,6 +54,14 @@ export function PhotoCropper({ file, onCancel, onDone }: { file: File | null; on
   };
   const setZoomClamped = (z: number) => { const nz = Math.max(1, Math.min(MAX_ZOOM, z)); setZoom(nz); setPos((p) => clamp(nz, p.x, p.y)); };
 
+  // Hareket başlangıcı (dokunuş sayısı her değiştiğinde)
+  const begin = () => {
+    const pts = [...pointers.current.values()];
+    if (!pts.length) { gesture.current = null; return; }
+    const { zoom: z, pos: p } = live.current;
+    gesture.current = { x: pts[0].x, y: pts[0].y, px: p.x, py: p.y, dist: pts.length >= 2 ? Math.max(1, Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)) : 1, zoom: z };
+  };
+
   const done = () => {
     if (!img || busy) return;
     setBusy(true);
@@ -74,10 +86,21 @@ export function PhotoCropper({ file, onCancel, onDone }: { file: File | null; on
     <div role="dialog" aria-modal="true" aria-label={t('photo.title')}
       style={{ position: 'fixed', inset: 0, zIndex: 1100, background: '#000', touchAction: 'none', userSelect: 'none' }}>
       <div
-        onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, px: pos.x, py: pos.y }; }}
-        onPointerMove={(e) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; setPos(clamp(zoom, d.px + e.clientX - d.x, d.py + e.clientY - d.y)); }}
-        onPointerUp={() => { drag.current = null; }}
-        onPointerCancel={() => { drag.current = null; }}
+        onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); begin(); }}
+        onPointerMove={(e) => {
+          if (!pointers.current.has(e.pointerId)) return;
+          pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          const g = gesture.current; if (!g) return;
+          const pts = [...pointers.current.values()];
+          if (pts.length >= 2) {
+            const z = Math.max(1, Math.min(MAX_ZOOM, g.zoom * (Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) / g.dist)));
+            setZoom(z); setPos(clamp(z, g.px, g.py));
+          } else {
+            setPos(clamp(live.current.zoom, g.px + pts[0].x - g.x, g.py + pts[0].y - g.y));
+          }
+        }}
+        onPointerUp={(e) => { pointers.current.delete(e.pointerId); begin(); }}
+        onPointerCancel={(e) => { pointers.current.delete(e.pointerId); begin(); }}
         onWheel={(e) => setZoomClamped(zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08))}
         style={{ position: 'absolute', inset: 0, overflow: 'hidden', cursor: 'grab' }}>
         {img && (
@@ -99,11 +122,6 @@ export function PhotoCropper({ file, onCancel, onDone }: { file: File | null; on
           style={{ minWidth: 44, minHeight: 44, padding: '0 12px', background: 'transparent', border: 'none', color: '#f4f1ec', fontSize: 17, fontWeight: 700, cursor: 'pointer', opacity: busy || !img ? 0.5 : 1 }}>
           {t('photo.cropDone')}
         </button>
-      </div>
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 'max(24px, env(safe-area-inset-bottom))', display: 'flex', justifyContent: 'center', padding: '0 32px' }}>
-        <input type="range" min={1} max={MAX_ZOOM} step={0.01} value={zoom} aria-label={t('photo.cropZoom')}
-          onChange={(e) => setZoomClamped(Number(e.target.value))}
-          style={{ width: '100%', maxWidth: 360, accentColor: '#c0392b' }} />
       </div>
     </div>
   );

@@ -86,12 +86,13 @@ export default function VeriSaklama() {
   );
 }
 
+// Kartta her alan "Etiket: Değer" biçiminde alt alta (web dar ekran kartlarıyla aynı)
 function Row({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean }) {
   return (
-    <View style={{ marginTop: 6 }}>
-      <ALabel style={{ color: adm.muted }}>{k}</ALabel>
-      {mono ? <AMono style={{ fontSize: 12, color: adm.text }}>{v}</AMono> : <AT style={{ fontSize: 12 }}>{v}</AT>}
-    </View>
+    <AT style={{ marginTop: 6, fontSize: 12 }}>
+      <AT style={{ fontSize: 12, color: adm.muted }}>{k}: </AT>
+      {mono ? <AMono style={{ fontSize: 12, color: adm.text }}>{v}</AMono> : v}
+    </AT>
   );
 }
 

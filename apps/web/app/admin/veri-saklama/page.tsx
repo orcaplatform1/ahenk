@@ -97,33 +97,48 @@ export default function VeriSaklamaPage() {
   );
 }
 
+// Dar ekranda (768 px altı) her kategori ayrı kart, alanlar "Etiket: Değer" alt alta; geniş ekranda tablo (okunabilir sütun genişlikleri,
+// gerekirse yatay kaydırma; kelimeler harf harf kırılmaz)
+const COL_MIN: Record<string, number> = { category: 180, fields: 280, location: 200, duration: 140, start: 140, basis: 200, action: 160, count: 80, oldest: 130, next: 130, dueNow: 90 };
 function PolicyTab({ t, lang, policy }: { t: (k: string) => string; lang: Lang; policy: { autoDataDeletion: boolean; categories: Category[] } | null }) {
   if (!policy) return <p style={{ color: MUTED, fontSize: 13 }}>{t('loading')}</p>;
   const heads = ['category', 'fields', 'location', 'duration', 'start', 'basis', 'action', 'count', 'oldest', 'next', 'dueNow'];
+  const values = (c: Category): [string, React.ReactNode, boolean][] => [
+    ['fields', c.fields[lang], false], ['location', c.location, true], ['duration', c.duration[lang], false], ['start', c.start[lang], false],
+    ['basis', c.basis[lang], false], ['action', c.action[lang], false], ['count', c.count ?? '-', true], ['oldest', fmt(c.oldest, lang), false],
+    ['next', c.auto ? fmt(c.nextDeletion, lang) : '-', false], ['dueNow', c.dueNow ?? '-', true],
+  ];
+  const wrap: React.CSSProperties = { wordBreak: 'normal', overflowWrap: 'break-word', whiteSpace: 'normal' };
   return (
     <div className="ll-card">
+      <style>{`.vs-cards{display:none}@media (max-width:767px){.vs-table{display:none}.vs-cards{display:flex}}`}</style>
       <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: policy.autoDataDeletion ? GREEN : MUTED }}>{policy.autoDataDeletion ? t('autoOn') : t('autoOff')}</p>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', minWidth: 1000, width: '100%' }}>
-          <thead><tr>{heads.map((h) => <th key={h} style={{ ...cell, ...LABEL, color: MUTED }}>{t(h)}</th>)}</tr></thead>
+      <div className="vs-table" style={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%', tableLayout: 'auto' }}>
+          <thead><tr>{heads.map((h) => <th key={h} style={{ ...cell, ...LABEL, ...wrap, color: MUTED, minWidth: COL_MIN[h] }}>{t(h)}</th>)}</tr></thead>
           <tbody>
             {policy.categories.map((c) => (
               <tr key={c.id}>
-                <td style={{ ...cell, fontWeight: 600 }}>{c.label[lang]}</td>
-                <td style={cell}>{c.fields[lang]}</td>
-                <td style={{ ...cell, fontFamily: MONO, fontSize: 11 }}>{c.location}</td>
-                <td style={cell}>{c.duration[lang]}</td>
-                <td style={cell}>{c.start[lang]}</td>
-                <td style={cell}>{c.basis[lang]}</td>
-                <td style={cell}>{c.action[lang]}</td>
-                <td style={{ ...cell, fontFamily: MONO }}>{c.count ?? '-'}</td>
-                <td style={cell}>{fmt(c.oldest, lang)}</td>
-                <td style={cell}>{c.auto ? fmt(c.nextDeletion, lang) : '-'}</td>
-                <td style={{ ...cell, fontFamily: MONO }}>{c.dueNow ?? '-'}</td>
+                <td style={{ ...cell, ...wrap, fontWeight: 600, minWidth: COL_MIN.category }}>{c.label[lang]}</td>
+                {values(c).map(([k, v, mono]) => (
+                  <td key={k} style={{ ...cell, ...wrap, minWidth: COL_MIN[k], ...(mono ? { fontFamily: MONO, fontSize: k === 'location' ? 11 : 12 } : {}) }}>{v}</td>
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="vs-cards" style={{ flexDirection: 'column', gap: 10 }}>
+        {policy.categories.map((c) => (
+          <div key={c.id} style={{ border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: TEXT, ...wrap }}>{c.label[lang]}</p>
+            {values(c).map(([k, v, mono]) => (
+              <p key={k} style={{ margin: 0, fontSize: 12, color: TEXT, ...wrap }}>
+                <span style={{ color: MUTED }}>{t(k)}: </span><span style={mono ? { fontFamily: MONO } : undefined}>{v}</span>
+              </p>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );

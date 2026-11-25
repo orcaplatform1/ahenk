@@ -16,10 +16,11 @@ import { APP_INTERCEPTOR } from "@nestjs/core";
 import { AdminActionInterceptor } from "./admin-action-log";
 import { AdminModerationController, AdminModerationService } from "./admin-moderation";
 import { AdminScreenshotController, ScreenshotLogController, ScreenshotLogService } from "./admin-screenshot";
+import { AdminMenuCountsController } from "./admin-menu-counts";
 
 @Module({
   imports: [PrismaModule, PaymentModule, UsersModule, NotificationModule, KycModule, MatchingModule, VenuePanelModule, BullModule.registerQueue({ name: ASSIGN_QUEUE })],
-  controllers: [AdminController, AdminModerationController, AdminScreenshotController, ScreenshotLogController, MediaController],
+  controllers: [AdminController, AdminModerationController, AdminScreenshotController, ScreenshotLogController, AdminMenuCountsController, MediaController],
   // ADMIN işlem kaydı tüm controller'larda @AdminAction etiketli uç noktalar için çalışır
   providers: [AdminService, AdminModerationService, ScreenshotLogService, WhatsappNotifyService, { provide: APP_INTERCEPTOR, useClass: AdminActionInterceptor }],
 })

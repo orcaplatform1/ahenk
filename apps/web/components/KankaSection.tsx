@@ -36,9 +36,26 @@ function Bubble({ initials, gender, size = 40 }: { initials: string; gender: Gen
   );
 }
 
+// Mobil tarayıcıda klavye açılınca pencere klavyenin üstüne kayar: görünür alan (visualViewport) ile sayfa yüksekliği farkı kadar alttan
+// boşluk bırakılır; telefon alanı ve Davet Et butonu klavyenin üstünde kalır
+function useKeyboardInset(): number {
+  const [inset, setInset] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setInset(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update); };
+  }, []);
+  return inset;
+}
+
 function Sheet({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  const kb = useKeyboardInset();
   return createPortal(
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', paddingBottom: kb, transition: 'padding-bottom 0.15s' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '24px 20px 36px', maxWidth: 560, margin: '0 auto' }}>
         {children}
       </div>

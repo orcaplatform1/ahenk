@@ -14,7 +14,7 @@ import { ALabel, AT } from '@/components/admin/AdminUi';
 import { adm } from '@/theme/theme';
 
 const NAV_TOP = [{ href: '/(tabs)', label: 'Anasayfa' }, { href: '/(tabs)/profilim', label: 'Profilim' }] as const;
-const ADMIN_NAV: { href: string; label: string; alertKey?: boolean; sos?: boolean; superadminOnly?: boolean }[] = [
+const ADMIN_NAV: { href: string; label: string; sos?: boolean; superadminOnly?: boolean }[] = [
   { href: '/admin/acil-yardim', label: 'Acil Yardım', sos: true },
   { href: '/admin/stats', label: 'İstatistikler' },
   { href: '/admin/matches', label: 'Masalar' },
@@ -22,7 +22,7 @@ const ADMIN_NAV: { href: string; label: string; alertKey?: boolean; sos?: boolea
   { href: '/admin/profil-fotograflari', label: 'Profil Fotoğrafları' },
   { href: '/admin/users', label: 'Kullanıcılar' },
   { href: '/admin/subscriptions', label: 'Abonelikler' },
-  { href: '/admin/alerts', label: 'Uyarılar', alertKey: true },
+  { href: '/admin/alerts', label: 'Uyarılar' },
   { href: '/admin/sonuclandirma', label: 'Ödeme Sonuçlandırma', superadminOnly: true },
   { href: '/admin/venues', label: 'Mekanlar', superadminOnly: true },
   { href: '/admin/cities', label: 'Şehirler' },
@@ -49,7 +49,8 @@ export default function AdminLayout() {
   const [firstName, setFirstName] = useState('');
   // Biyometrik / ekran kilidi olmayan cihazda admin için "Bu cihazda beni hatırla" yok
   const rememberAllowed = useRememberAllowed(role);
-  const [unread, setUnread] = useState(0);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const unread = counts['/admin/alerts'] ?? 0;
   const [drawer, setDrawer] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const x = useRef(new Animated.Value(-adm.drawerW)).current;
@@ -61,10 +62,18 @@ export default function AdminLayout() {
       if (cancelled) return;
       if (me?.role !== 'ADMIN' && me?.role !== 'SUPERADMIN') { router.replace('/(tabs)'); return; }
       setAdminIdentity({ id: me.id, role: me.role }); setRole(me.role); setFirstName(me.firstName ?? ''); setReady(true);
-      api.get<{ unreadCount: number }>('/admin/alerts').then(d => setUnread(d.unreadCount ?? 0)).catch(() => {});
     }).catch(() => { if (!cancelled) router.replace('/giris'); });
     return () => { cancelled = true; };
   }, [router]);
+
+  // Menü bildirim baloncukları: sayfa açılınca ve 60 sn'de bir (GET /admin/menu-counts)
+  useEffect(() => {
+    if (!ready) return;
+    const load = () => { api.get<Record<string, number>>('/admin/menu-counts').then(setCounts).catch(() => {}); };
+    load();
+    const id = setInterval(load, 60_000);
+    return () => clearInterval(id);
+  }, [ready, pathname]);
 
   const blocked = ready && role !== 'SUPERADMIN' && ADMIN_NAV.some(n => n.superadminOnly && (pathname === n.href || pathname.startsWith(n.href + '/')));
   useEffect(() => { if (blocked) router.replace('/admin/stats'); }, [blocked, router]);
@@ -128,7 +137,7 @@ export default function AdminLayout() {
                         </LinearGradient>
                       </View>
                     ) : <AT w={400} style={{ fontSize: 13, color: active ? adm.navActive : adm.muted, flexShrink: 1 }}>{n.label}</AT>}
-                    {n.alertKey && unread > 0 && <AT w={700} style={{ fontSize: 10, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 99, backgroundColor: adm.red, color: '#fff', minWidth: 18, textAlign: 'center', overflow: 'hidden' }}>{unread > 99 ? '99+' : unread}</AT>}
+                    {(counts[n.href] ?? 0) > 0 && <AT w={700} style={{ fontSize: 10, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 99, backgroundColor: adm.red, color: '#fff', minWidth: 18, textAlign: 'center', overflow: 'hidden' }}>{counts[n.href] > 99 ? '99+' : counts[n.href]}</AT>}
                   </Btn>
                 );
               })}

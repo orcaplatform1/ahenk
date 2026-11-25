@@ -17,7 +17,8 @@ import { adm, llCard } from '@/theme/theme';
 
 function canSanction(t: { id: string; role: string }) {
   const me = myId(); if (!me) return false;
-  if (me === t.id) return false;
+  // Kendi hesabını yalnız SUPERADMIN düzenler
+  if (me === t.id) return myRole() === 'SUPERADMIN';
   return (t.role !== 'ADMIN' && t.role !== 'SUPERADMIN') || myRole() === 'SUPERADMIN';
 }
 

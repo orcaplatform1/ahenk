@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { API_PREFIX, langHeaders } from '@/lib/api';
 import { PhotoCropper } from './PhotoCropper';
+import { PhotoViewer } from '@ahenk/ui';
 
 // Profil fotoğrafı: yalnız KYC onaylıysa yüklenir; fotoğraf admin onayına düşer. Dosya seçimi galeri / dosyalardan
 // (capture özniteliği yok; kamera seçeneği sunulmaz)
@@ -68,20 +69,24 @@ export function ProfilePhotoHeader({ photoUrl, initials, gender, kycApproved, pe
   const { pick, input, message, busy, uploaded } = useProfilePhotoPicker(kycApproved);
   const showPending = !!pending || uploaded;
   const SIZE = 112;
+  const [viewer, setViewer] = useState(false);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
       <div style={{ position: 'relative', width: SIZE, height: SIZE }}>
-        <div style={{ width: SIZE, height: SIZE, borderRadius: '50%', border: `3px solid ${genderColor(gender)}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)' }}>
+        {/* Fotoğrafa basınca büyütülmüş görünüm (kendi fotoğrafı: koruma yok); kalem mevcut galeri → kırpma akışı */}
+        <button type="button" disabled={!photoUrl} onClick={() => setViewer(true)} aria-label={t('masa.enlargePhoto')}
+          style={{ width: SIZE, height: SIZE, padding: 0, borderRadius: '50%', border: `3px solid ${genderColor(gender)}`, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', cursor: photoUrl ? 'pointer' : 'default' }}>
           {photoUrl
             ? <img src={photoUrl} alt={t('photo.alt')} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             : <span style={{ fontSize: 32, fontWeight: 700, color: '#f5f5f5' }}>{initials}</span>}
-        </div>
+        </button>
         <button type="button" onClick={pick} disabled={busy} aria-label={t('photo.edit')}
           style={{ position: 'absolute', right: -4, bottom: -4, width: 44, height: 44, borderRadius: '50%', background: '#c0392b', border: '2px solid #0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>
           <Pencil />
         </button>
       </div>
       {input}
+      <PhotoViewer own url={viewer && photoUrl ? photoUrl : null} onClose={() => setViewer(false)} />
       {showPending && <p role="status" style={{ margin: '10px 0 0', fontSize: 12, color: '#a39c93', textAlign: 'center' }}>{t(PENDING_PHOTO_MESSAGE)}</p>}
       {message && message !== t(PENDING_PHOTO_MESSAGE) && <p role="alert" style={{ margin: '12px 0 0', fontSize: 13, color: '#ff6b6b', textAlign: 'center' }}>{message}</p>}
     </div>

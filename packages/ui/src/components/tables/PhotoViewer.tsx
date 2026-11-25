@@ -4,7 +4,8 @@ import { useTranslations } from 'next-intl';
 import { useEffect, type CSSProperties } from 'react';
 
 // Profil fotoğrafı tam ekran büyük görünüm (Instagram profil fotoğrafı gibi); onEdit verilirse sağ altta palet renginde kalem butonu
-export function PhotoViewer({ url, onClose, onEdit }: { url: string | null; onClose: () => void; onEdit?: () => void }) {
+// own: kullanıcının kendi fotoğrafı → koruma (sağ tık / sürükleme engeli) yok
+export function PhotoViewer({ url, onClose, onEdit, own = false }: { url: string | null; onClose: () => void; onEdit?: () => void; own?: boolean }) {
   const t = useTranslations();
   useEffect(() => {
     if (!url) return;
@@ -18,8 +19,8 @@ export function PhotoViewer({ url, onClose, onEdit }: { url: string | null; onCl
       style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative', width: 'min(86vw, 86vh, 520px)', aspectRatio: '1 / 1' }}>
         {/* Büyütülmüş görünüm açıkken fotoğrafta sağ tık menüsü ve sürükleyerek kaydetme kapalı */}
-        <img src={url} alt={t('photo.alt')} draggable={false} onContextMenu={(e) => e.preventDefault()} onDragStart={(e) => e.preventDefault()}
-          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', display: 'block', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' } as CSSProperties} />
+        <img src={url} alt={t('photo.alt')} draggable={own} onContextMenu={own ? undefined : (e) => e.preventDefault()} onDragStart={own ? undefined : (e) => e.preventDefault()}
+          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', display: 'block', ...(own ? {} : { WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }) } as CSSProperties} />
         {onEdit && (
           <button type="button" onClick={onEdit} aria-label={t('photo.edit')}
             style={{ position: 'absolute', right: '8%', bottom: '8%', width: 48, height: 48, borderRadius: '50%', background: '#c0392b', border: '2px solid #0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>

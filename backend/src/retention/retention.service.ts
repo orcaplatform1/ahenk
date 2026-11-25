@@ -353,7 +353,7 @@ export class RetentionService {
       payments, subscriptions, consents, refreshTokens, deletionRequests, profile, oceanScore, oceanAnswers, kyc, profilePhotos,
       contactBlocks, userBlocks, chatMessages, chatReports, sanctions, sosReports, problemReports, notifications, participations,
       meetingReviews, noShowReports, reports, kankaInvites, kankaLinks, referrals, referralRewards, weeklySelections, winbackOffer,
-      waitlist, adminActions, locks, exports, agreements, loginLogs,
+      waitlist, adminActions, locks, exports, agreements, loginLogs, screenshotLogs,
     ] = await Promise.all([
       p.payment.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
       p.subscription.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
@@ -389,6 +389,8 @@ export class RetentionService {
       p.dataExportLog.findMany({ where: { targetUserId: userId }, orderBy: { createdAt: "desc" } }),
       p.agreementConsent.findMany({ where: { userId }, orderBy: { acceptedAt: "asc" } }),
       p.loginLog.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+      // Ekran görüntüsü ihlal kayıtları: görüntüyü alan ya da fotoğrafı görüntülenen kişi
+      p.screenshotLog.findMany({ where: or2("userId", "targetUserId"), orderBy: { createdAt: "asc" } }),
     ]);
     return {
       userId,
@@ -400,6 +402,7 @@ export class RetentionService {
         KVKK_CONSENT: { consents: consents.filter((c) => c.type === "PRIVACY_POLICY"), biometricConsents: agreements.filter((a) => a.documentType === "acik_riza_biyometrik") },
         INCIDENT_IDENTITY: { retainedIdentity: deletionRequests.map((d) => d.retainedIdentity).filter((r) => r && typeof r === "object") },
         BANNED_PHONE_HASH: { phoneHash: phoneHash ?? null },
+        COMPLAINT_MODERATION: { screenshotLogs },
         EXISTING_RULES: {
           user: userRow, profile, oceanScore, oceanAnswers,
           kyc: kyc ? { id: kyc.id, idType: kyc.idType, status: kyc.status, submittedAt: kyc.submittedAt, reviewedAt: kyc.reviewedAt, rejectReason: kyc.rejectReason, adminNote: kyc.adminNote, files: [kyc.idFrontKey, kyc.idBackKey, kyc.livenessKey].filter(Boolean).map((f) => path.basename(f as string)) } : null,
