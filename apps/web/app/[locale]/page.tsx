@@ -13,6 +13,7 @@ import { PlanPriceText } from '@/components/PlanPrice';
 import { AMBER, BuyButton, CARDS, Check, PaketKarti } from '@/components/paket/PaketKarti';
 import { StdButton } from '@ahenk/ui';
 /* ─── Veri ───────────────────────────────────────────────────────────────── */
+const WEBSITE_JSON_LD = JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'Ahenk', alternateName: 'ahenk.co', url: 'https://ahenk.co/' });
 
 
 
@@ -599,6 +600,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#121212] text-[#f5f5f5] overflow-x-hidden">
+      {/* Arama sonuçlarında site adı: schema.org WebSite (TR ve EN ana sayfada aynı) */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: WEBSITE_JSON_LD }} />
       {/* Sayfa geneli kırmızı glow'lar */}
       <motion.div
         className="fixed inset-0 pointer-events-none"

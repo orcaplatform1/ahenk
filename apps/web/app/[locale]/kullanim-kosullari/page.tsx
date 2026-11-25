@@ -205,9 +205,14 @@ const sections = [
     n: '10',
     title: 'Hesap Askıya Alma ve Kapatma',
     content: (
+      <>
       <p style={{ lineHeight: 1.75 }}>
         Kullanım koşullarının ihlali, sahte kimlik kullanımı, başka kullanıcılara zarar verici davranış veya yasal düzenlemelere aykırı eylemler tespit edildiğinde Ahenk, kullanıcı hesabını önceden bildirim yapmaksızın geçici olarak askıya alabilir veya kalıcı olarak kapatabilir. Hesap kapatma kararı Ahenk'in takdir yetkisindedir. Banlanarak kalıcı olarak kapatılan hesabın sahibi Ahenk'e yeniden kayıt olamaz.
       </p>
+      <p style={{ lineHeight: 1.75, marginTop: '0.75rem' }}>
+        Profil fotoğrafları kişiye özeldir. Büyütülmüş profil fotoğrafı görünümünde Android cihazlarda ekran görüntüsü ve ekran kaydı tamamen engellenir. iOS cihazlarda ekran kaydı sırasında fotoğraf gösterilmez; ekran görüntüsü alınması ise kayıt altına alınır ve ihlal sayılır. İlk ihlalde uyarı yapılır; ikinci ihlalde hesap 3 gün, üçüncü ihlalde 15 gün, dördüncü ve sonraki ihlallerde 30 gün süreyle askıya alınır. Askı süresince yeni masalara katılamaz ve satın alma yapamazsın.
+      </p>
+      </>
     ),
   },
   {

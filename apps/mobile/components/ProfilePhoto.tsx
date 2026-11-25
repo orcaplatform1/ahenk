@@ -96,11 +96,12 @@ function useViewerProtection(active: boolean, url: string | null) {
 
 // Tam ekran büyük görünüm (Instagram profil fotoğrafı gibi); ekrana (fotoğraf dahil) basınca ya da geri tuşuyla kapanır.
 // onEdit verilirse fotoğrafın sağ altında düzenleme butonu (yalnız ona basmak yükleme akışını açar)
-export function PhotoViewer({ url, visible, onClose, onEdit }: { url: string | null; visible: boolean; onClose: () => void; onEdit?: () => void }) {
+// own: kullanıcının kendi fotoğrafı → koruma yok (FLAG_SECURE, kayıt bulanıklaştırması, ekran görüntüsü uyarısı / kaydı çalışmaz)
+export function PhotoViewer({ url, visible, onClose, onEdit, own }: { url: string | null; visible: boolean; onClose: () => void; onEdit?: () => void; own?: boolean }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const size = Math.min(width - 48, height - insets.top - insets.bottom - 96);
-  const { captured, shot, dismissShot } = useViewerProtection(visible && !!url, url);
+  const { captured, shot, dismissShot } = useViewerProtection(visible && !!url && !own, url);
   return (
     <Modal visible={visible && !!url} transparent animationType="fade" onRequestClose={() => { if (shot) dismissShot(); else onClose(); }} statusBarTranslucent>
       <Pressable onPress={onClose} accessibilityLabel={i18n.t('common.close')} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' }}>
@@ -153,7 +154,7 @@ export function ProfilePhotoHeader({ photoUrl, initials, gender, kycApproved, pe
         </Pressable>
         <View style={{ position: 'absolute', right: 0, bottom: 0 }}><EditBadge size={36} onPress={upload} /></View>
       </View>
-      <PhotoViewer url={photoUrl ?? null} visible={viewer} onClose={() => setViewer(false)} onEdit={() => { setViewer(false); upload(); }} />
+      <PhotoViewer own url={photoUrl ?? null} visible={viewer} onClose={() => setViewer(false)} onEdit={() => { setViewer(false); upload(); }} />
       <PhotoCropper uri={cropUri} onCancel={() => setCropUri(null)} onDone={cropped} />
       {isPending && <T style={{ marginTop: 10, fontSize: 12, color: ll.label }}>{t('photo.pending')}</T>}
     </View>

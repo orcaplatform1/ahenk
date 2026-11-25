@@ -342,7 +342,9 @@ PROFİL FOTOĞRAFI (web + mobil):
     sürükle + sürgü (ve fare tekerleği); butonlar "İptal" / "Bitti" (photo.cropCancel / cropDone). Bitti → çerçevedeki kare alan
     (mobil expo-image-manipulator, web canvas, JPEG) mevcut POST /users/me/profile-photo akışıyla gider (web components/PhotoCropper.tsx,
     mobil components/PhotoCropper.tsx)
-  - Büyütülmüş profil fotoğrafı koruması YALNIZ büyütülmüş görünüm (PhotoViewer) açıkken; uygulamanın diğer ekranlarında kısıtlama yok:
+  - Büyütülmüş profil fotoğrafı koruması YALNIZ büyütülmüş görünüm (PhotoViewer) açıkken; uygulamanın diğer ekranlarında kısıtlama yok.
+    Kullanıcının KENDİ fotoğrafında (Profilim, masa detay kartında isSelf; PhotoViewer own) koruma yok: FLAG_SECURE, kayıt bulanıklaştırması,
+    ekran görüntüsü uyarısı, ScreenshotLog ve admin bildirimi oluşmaz (backend de targetUserId = userId ise kayıt yazmaz):
     · Android: ekran görüntüsü ve ekran kaydı FLAG_SECURE ile engellenir (expo-screen-capture preventScreenCaptureAsync); görünüm kapanınca kalkar
     · iOS ekran kaydı / yansıtma: sürerken fotoğrafın yerine koyu bulanık alan + "Ekran kaydı sırasında fotoğraf gösterilmez." /
       "Photos are hidden during screen recording." (photo.recordingHidden); kayıt bitince fotoğraf geri gelir (yerel modül
@@ -352,12 +354,25 @@ PROFİL FOTOĞRAFI (web + mobil):
     · Web: büyütülmüş görünümde fotoğrafta sağ tık menüsü ve sürükleyerek kaydetme kapalı (packages/ui PhotoViewer)
   - ScreenshotLog (migration 20261125900000_screenshot_log): id, userId (görüntüyü alan), targetUserId (fotoğraf sahibi; fotoğraf
     adresinden), platform, createdAt, adminAction (NONE | SUSPEND_3 | SUSPEND_15 | SUSPEND_30), adminActionAt, adminId. Her kayıtta admin
-    Uyarılar'a SCREENSHOT_VIOLATION + ADMIN / SUPERADMIN hesaplarına bildirim: "Ekran görüntüsü ihlali: [Ad S.] (#[ID]), [Ad S.] adlı
-    kullanıcının profil fotoğrafının ekran görüntüsünü aldı. Bu, kullanıcının [N]. ekran görüntüsü." (N = kullanıcının toplam kaydı; ID = User.id)
+    Uyarılar'a SCREENSHOT_VIOLATION + bütün ADMIN / SUPERADMIN hesaplarına bildirim: "Ekran görüntüsü ihlali: [Ad S.] ([telefon]), [Ad S.]
+    adlı kullanıcının profil fotoğrafının ekran görüntüsünü aldı. Bu, kullanıcının [N]. ekran görüntüsü." (EN "Screenshot violation: [Name S.]
+    ([phone]) took a screenshot of [Name S.]'s profile photo. This is the user's [Nth] screenshot."; N = kullanıcının toplam kaydı).
+    User.id (cuid) bildirimde ve ihlal sayfasında gösterilmez; telefon gösterilir
+  - Android: app.json android.blockedPermissions'ta READ_MEDIA_IMAGES ve DETECT_SCREEN_CAPTURE (kodda kullanılmıyor; expo-screen-capture
+    ekran görüntüsü dinleyicisi yalnız iOS'ta, expo-media-library yalnız yazma izniyle kullanılır)
+  - Kullanım Koşulları 10 (Hesap Askıya Alma ve Kapatma) ve Topluluk Kuralları 06 (TR + EN): "Profil fotoğrafları kişiye özeldir.
+    Büyütülmüş profil fotoğrafı görünümünde Android cihazlarda ekran görüntüsü ve ekran kaydı tamamen engellenir. iOS cihazlarda ekran
+    kaydı sırasında fotoğraf gösterilmez; ekran görüntüsü alınması ise kayıt altına alınır ve ihlal sayılır. İlk ihlalde uyarı yapılır;
+    ikinci ihlalde hesap 3 gün, üçüncü ihlalde 15 gün, dördüncü ve sonraki ihlallerde 30 gün süreyle askıya alınır. Askı süresince yeni
+    masalara katılamaz ve satın alma yapamazsın." (web'den bahsedilmez)
+  - Gizlilik Politikası ve KVKK (TR + EN): veri kategorisi "Ekran görüntüsü ihlal kayıtları: ekran görüntüsünü alan kullanıcı, fotoğrafı
+    görüntülenen kullanıcı, platform ve tarih-saat bilgisi. Kayıtları yalnız ADMIN ve SUPERADMIN görür"; amaç topluluk kurallarının
+    uygulanması ve kullanıcıların kişisel verilerinin korunması; hukuki sebep KVKK m.5/2-f ve m.5/2-c; saklama 2 yıl (şikâyet ve moderasyon
+    kayıtlarıyla aynı; retention-policy.ts COMPLAINT_MODERATION kategorisinde ScreenshotLog, gece silme işine bağlı, iş kapalı)
   - Admin "Ekran Görüntüsü İhlalleri" (web /admin/ekran-goruntusu, mobil admin/ekran-goruntusu; backend admin/admin-screenshot.ts):
     alan kullanıcı (foto + ad + telefon + Detay), fotoğraf sahibi, platform, tarih saat, kaçıncı ihlal, yapılan işlem; kullanıcı filtresi.
-    Önerilen işlem: 1. ihlal işlem yok (yalnız "Kullanıcıya uyarı gösterildi"), 2. ihlal "3 gün askıya al", 3. ihlal "15 gün askıya al",
-    4. ve sonrası "30 gün askıya al"; ayrıca diğer süreler (3 / 15 / 30 gün) ve "İşlem yapma". Askı mevcut askı sistemi + askı bildirim
+    Önerilen işlem: 1. ihlal işlem yok, askı seçeneği de yok (yalnız "Kullanıcıya uyarı gösterildi"), 2. ihlal "3 gün askıya al",
+    3. ihlal "15 gün askıya al", 4. ve sonrası "30 gün askıya al"; 2. ihlalden itibaren ayrıca diğer süreler (3 / 15 / 30 gün) ve "İşlem yapma". Askı mevcut askı sistemi + askı bildirim
     şablonu, sebep "Ekran görüntüsü ihlali"; karar adminAction / adminActionAt / adminId'ye yazılır (POST /admin/screenshot-logs/:id/decision).
     Kullanıcı detayında ihlal sayısı ve listesi (GET /admin/users/:id/screenshot-logs)
 
@@ -554,6 +569,7 @@ VERİ SAKLAMA (backend/src/retention/retention-policy.ts; admin Veri Saklama sek
     karışmış kullanıcının kimliği kilitli, 2 yıl, yalnız SUPERADMIN; m.5/2-e
   - Acil Yardım kaydı: koordinat ve konum geçmişi talep çözülünce silinir, son açık adres 2 yıl; m.5/2-b ve m.5/2-e
   - Şikâyet ve moderasyon kayıtları ile şikâyet edilen mesajlar: 2 yıl, m.5/2-e
+  - Ekran görüntüsü ihlal kayıtları (ScreenshotLog): 2 yıl (şikâyet ve moderasyon kategorisinde), yasal metinlerde m.5/2-f ve m.5/2-c
   - Şikâyet edilmemiş masa sohbeti mesajları: masa tarihinden 6 ay sonra silinir, m.5/2-c
   - Sorun bildirimleri: 2 yıl, m.5/2-f
   - Profil, kişilik testi (OCEAN) ve push token: hesap silinene kadar, m.5/2-c
@@ -562,7 +578,7 @@ VERİ SAKLAMA (backend/src/retention/retention-policy.ts; admin Veri Saklama sek
   - KVKK aydınlatma ve açık rıza onay kayıtları: hesap silinmesinden 10 yıl (mevcut kategori)
   - Gece 03:30 otomatik silme işi (AUTO_DATA_DELETION) varsayılan kapalı. Otomatik işe bağlı kategoriler: ödeme, mesafeli satış, ticari
     ileti, giriş / IP, KVKK onayı, olay kimliği, Acil Yardım son adresi, şikâyet / moderasyon (ChatReport + başka şikâyeti kalmayan
-    şikâyet edilen mesaj, 2 yıl), şikâyet edilmemiş masa sohbeti (masa tarihinden 6 ay), sorun bildirimleri (kayıt + uploads klasörü,
+    şikâyet edilen mesaj + ScreenshotLog, 2 yıl), şikâyet edilmemiş masa sohbeti (masa tarihinden 6 ay), sorun bildirimleri (kayıt + uploads klasörü,
     2 yıl). Kimlik belgeleri, profil, çerez kategorileri tabloda gösterilir, otomatik işe bağlı değildir. Hesap silme davranışı ayrıdır
   - Ödeme ve fatura kayıtları bütün yasal metinlerde, hesap silme sayfasında ve retention-policy.ts'de 10 yıl (TTK m.82, VUK m.253)
 

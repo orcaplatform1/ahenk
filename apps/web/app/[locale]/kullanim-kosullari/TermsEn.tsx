@@ -204,9 +204,14 @@ const sections = [
     n: '10',
     title: 'Account Suspension and Closure',
     content: (
+      <>
       <p style={{ lineHeight: 1.75 }}>
         If a breach of these terms, use of a false identity, conduct harmful to other users or actions contrary to legal regulations is detected, Ahenk may temporarily suspend or permanently close the user’s account without prior notice. The decision to close an account is at Ahenk’s discretion. A person whose account has been permanently closed by a ban cannot sign up to Ahenk again.
       </p>
+      <p style={{ lineHeight: 1.75, marginTop: '0.75rem' }}>
+        Profile photos are personal. In the enlarged profile photo view, screenshots and screen recordings are fully blocked on Android devices. On iOS devices, the photo is not shown during screen recording; taking a screenshot is recorded and counts as a violation. The first violation results in a warning; the second suspends the account for 3 days, the third for 15 days, and the fourth and any later violations for 30 days. While suspended, you can&apos;t join new tables or make purchases.
+      </p>
+      </>
     ),
   },
   {

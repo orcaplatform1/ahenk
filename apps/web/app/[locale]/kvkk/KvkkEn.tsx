@@ -75,7 +75,7 @@ const sections = [
           },
           {
             cat: 'Communication Content and Complaint Data',
-            items: ['Table chat messages (hidden on the user side when the chat closes, kept on the admin side)', 'Chat complaints and automatic block records', 'Problem reports and attached images'],
+            items: ['Table chat messages (hidden on the user side when the chat closes, kept on the admin side)', 'Chat complaints and automatic block records', 'Screenshot violation records: the user who took the screenshot, the user whose photo was viewed, platform and date-time information. Only ADMIN and SUPERADMIN can see these records', 'Problem reports and attached images'],
           },
           {
             cat: 'Behavioral Data',
@@ -133,6 +133,7 @@ const sections = [
           'Matching and chat moderation are carried out by automated systems; your right to object to their results is set out in section 8',
           'Fulfilling legal obligations and providing information/documents to authorized institutions',
           'Handling complaints and requests',
+          'Screenshot violation records: enforcing the community guidelines and protecting users\' personal data',
           'Improving service quality and carrying out platform development',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
@@ -154,11 +155,11 @@ const sections = [
           },
           {
             basis: 'Establishment or Performance of a Contract: Article 5/2-c',
-            desc: 'First name, last name, phone number, email, city, field of work, language and venue preferences, OCEAN personality test, ID document, package and payment data, table chat messages, AI table compatibility report, push notifications and the WhatsApp verification code (OTP). For Bring a Buddy, the phone number entered in a Kanka invite (to deliver the invite and match it with a verified account) and the Kanka link.',
+            desc: 'First name, last name, phone number, email, city, field of work, language and venue preferences, OCEAN personality test, ID document, package and payment data, table chat messages, AI table compatibility report, push notifications and the WhatsApp verification code (OTP). For Bring a Buddy, the phone number entered in a Kanka invite (to deliver the invite and match it with a verified account) and the Kanka link, screenshot violation records.',
           },
           {
             basis: 'Legitimate Interest of the Data Controller: Article 5/2-f',
-            desc: 'Technical data, IP address, security logs, ID document (keeping fake profiles off the platform), phone numbers added for contact blocking, automatic table chat moderation (chat moderation), complaint, sanction and no-show records, profile photo approval, problem reports, the unreadable phone summary of a banned user.',
+            desc: 'Technical data, IP address, security logs, ID document (keeping fake profiles off the platform), phone numbers added for contact blocking, automatic table chat moderation (chat moderation), complaint, sanction and no-show records, profile photo approval, problem reports, the unreadable phone summary of a banned user, screenshot violation records.',
           },
           {
             basis: 'Compliance with a Legal Obligation: Article 5/2-ç',
@@ -299,6 +300,7 @@ const sections = [
           ['ID documents and liveness video', 'Deleted within 48 hours after the account deletion is approved. Exception: the identity of a user involved in an emergency help, complaint or ban record is kept locked for 2 years and only SUPERADMIN can access it. Legal ground: KVKK art. 5/2-e'],
           ['Emergency Help record', 'Coordinates and location history are deleted when the request is resolved; the last street address is kept for 2 years. Legal ground: KVKK art. 5/2-b and art. 5/2-e'],
           ['Complaint and moderation records and reported messages', '2 years. Legal ground: KVKK art. 5/2-e'],
+          ['Screenshot violation records', '2 years (same as complaint and moderation records). Legal ground: KVKK art. 5/2-f and art. 5/2-c'],
           ['Table chat messages that were not reported', 'Deleted 6 months after the table date. Legal ground: KVKK art. 5/2-c'],
           ['Problem reports', '2 years. Legal ground: KVKK art. 5/2-f'],
           ['Profile, personality test (OCEAN) and push token', 'Until the account is deleted. Legal ground: KVKK art. 5/2-c'],

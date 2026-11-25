@@ -76,7 +76,7 @@ const sections = [
           },
           {
             cat: 'İletişim İçerikleri ve Şikâyet Verileri',
-            items: ['Masa sohbeti mesajları (sohbet kapanınca kullanıcı tarafında görünmez olur, yönetim tarafında saklanır)', 'Sohbet şikâyetleri ve otomatik engel kayıtları', 'Sorun bildirimleri ve ekli görseller'],
+            items: ['Masa sohbeti mesajları (sohbet kapanınca kullanıcı tarafında görünmez olur, yönetim tarafında saklanır)', 'Sohbet şikâyetleri ve otomatik engel kayıtları', 'Ekran görüntüsü ihlal kayıtları: ekran görüntüsünü alan kullanıcı, fotoğrafı görüntülenen kullanıcı, platform ve tarih-saat bilgisi. Kayıtları yalnız ADMIN ve SUPERADMIN görür', 'Sorun bildirimleri ve ekli görseller'],
           },
           {
             cat: 'Davranış Verileri',
@@ -134,6 +134,7 @@ const sections = [
           'Eşleştirme ve sohbet denetimi otomatik sistemlerle yapılır; bu işlemlerin sonucuna itiraz hakkın 8. maddede yazılıdır',
           'Yasal yükümlülüklerin yerine getirilmesi, yetkili kurum ve kuruluşlara bilgi/belge sunulması',
           'Şikâyet ve taleplerin yönetilmesi',
+          'Ekran görüntüsü ihlal kayıtları: topluluk kurallarının uygulanması ve kullanıcıların kişisel verilerinin korunması',
           'Hizmet kalitesinin iyileştirilmesi ve platform geliştirme faaliyetlerinin yürütülmesi',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
@@ -155,11 +156,11 @@ const sections = [
           },
           {
             basis: 'Sözleşmenin Kurulması veya İfası: Madde 5/2-c',
-            desc: 'Ad, soyad, telefon numarası, e-posta, şehir, meslek, dil ve mekân tercihleri, OCEAN kişilik testi, kimlik belgesi, paket ve ödeme verileri, masa sohbeti mesajları, yapay zekâ masa uyum raporu, push bildirimleri ve WhatsApp doğrulama kodu (OTP). Kankamla için kanka davetinde girilen telefon numarası (davetin iletilmesi ve doğrulanmış hesapla eşleştirilmesi amacıyla) ve kanka bağlantısı.',
+            desc: 'Ad, soyad, telefon numarası, e-posta, şehir, meslek, dil ve mekân tercihleri, OCEAN kişilik testi, kimlik belgesi, paket ve ödeme verileri, masa sohbeti mesajları, yapay zekâ masa uyum raporu, push bildirimleri ve WhatsApp doğrulama kodu (OTP). Kankamla için kanka davetinde girilen telefon numarası (davetin iletilmesi ve doğrulanmış hesapla eşleştirilmesi amacıyla) ve kanka bağlantısı, ekran görüntüsü ihlal kayıtları.',
           },
           {
             basis: 'Veri Sorumlusunun Meşru Menfaati: Madde 5/2-f',
-            desc: 'Teknik veriler, IP adresi, güvenlik logları, kimlik belgesi (sahte profillerin engellenmesi), rehber engelleme için eklenen telefon numaraları, masa sohbetinin otomatik denetimi (sohbet moderasyonu), şikâyet, yaptırım ve gelmedi kayıtları, profil fotoğrafı onayı, sorun bildirimleri, banlı kullanıcının okunamaz telefon özeti.',
+            desc: 'Teknik veriler, IP adresi, güvenlik logları, kimlik belgesi (sahte profillerin engellenmesi), rehber engelleme için eklenen telefon numaraları, masa sohbetinin otomatik denetimi (sohbet moderasyonu), şikâyet, yaptırım ve gelmedi kayıtları, profil fotoğrafı onayı, sorun bildirimleri, banlı kullanıcının okunamaz telefon özeti, ekran görüntüsü ihlal kayıtları.',
           },
           {
             basis: 'Hukuki Yükümlülüğün Yerine Getirilmesi: Madde 5/2-ç',
@@ -300,6 +301,7 @@ const sections = [
           ['Kimlik belgeleri ve canlılık videosu', 'Hesap silme onayından sonra 48 saat içinde silinir. İstisna: Acil Yardım, şikâyet veya ban kaydına karışmış kullanıcının kimliği kilitli tutulur, 2 yıl saklanır ve yalnız SUPERADMIN erişir. Hukuki sebep: KVKK m.5/2-e'],
           ['Acil Yardım kaydı', 'Koordinat ve konum geçmişi talep çözülünce silinir, son açık adres 2 yıl saklanır. Hukuki sebep: KVKK m.5/2-b ve m.5/2-e'],
           ['Şikâyet ve moderasyon kayıtları ile şikâyet edilen mesajlar', '2 yıl. Hukuki sebep: KVKK m.5/2-e'],
+          ['Ekran görüntüsü ihlal kayıtları', '2 yıl (şikâyet ve moderasyon kayıtlarıyla aynı). Hukuki sebep: KVKK m.5/2-f ve m.5/2-c'],
           ['Şikâyet edilmemiş masa sohbeti mesajları', 'Masa tarihinden 6 ay sonra silinir. Hukuki sebep: KVKK m.5/2-c'],
           ['Sorun bildirimleri', '2 yıl. Hukuki sebep: KVKK m.5/2-f'],
           ['Profil, kişilik testi (OCEAN) ve push token', 'Hesap silinene kadar. Hukuki sebep: KVKK m.5/2-c'],

@@ -79,6 +79,7 @@ const sections = [
             'Masa buluşma geçmişi',
             'Değerlendirme ve yorum verileri',
             'Rehber engelleme listesi: eklenen telefon numaraları',
+            'Ekran görüntüsü ihlal kayıtları: ekran görüntüsünü alan kullanıcı, fotoğrafı görüntülenen kullanıcı, platform ve tarih-saat bilgisi. Kayıtları yalnız ADMIN ve SUPERADMIN görür',
           ]}
         />
 
@@ -102,6 +103,7 @@ const sections = [
           'Kullanıcıyla push bildirimi ve WhatsApp aracılığıyla iletişim kurulması',
           'Yasal yükümlülüklerin yerine getirilmesi ve yetkili kurumlara bildirim yapılması',
           'Platform güvenliğinin sağlanması ve kötüye kullanımın önlenmesi',
+          'Ekran görüntüsü ihlal kayıtları: topluluk kurallarının uygulanması ve kullanıcıların kişisel verilerinin korunması',
         ]}
       />
     ),
@@ -118,11 +120,11 @@ const sections = [
           },
           {
             basis: 'Sözleşmenin İfası: KVKK Madde 5/2-c',
-            desc: 'Kayıt, OCEAN kişilik testi, kimlik belgesi, ödeme ve hizmet sunumu, yapay zekâ masa uyum raporu, push bildirimleri ve WhatsApp doğrulama kodu (OTP)',
+            desc: 'Kayıt, OCEAN kişilik testi, kimlik belgesi, ödeme ve hizmet sunumu, yapay zekâ masa uyum raporu, push bildirimleri ve WhatsApp doğrulama kodu (OTP), ekran görüntüsü ihlal kayıtları',
           },
           {
             basis: 'Meşru Menfaat: KVKK Madde 5/2-f',
-            desc: 'Platform güvenliği, teknik veriler, kimlik belgesi (sahte profillerin engellenmesi), masa sohbeti denetimi (sohbet moderasyonu), sorun bildirimleri, banlı kullanıcının okunamaz telefon özeti',
+            desc: 'Platform güvenliği, teknik veriler, kimlik belgesi (sahte profillerin engellenmesi), masa sohbeti denetimi (sohbet moderasyonu), sorun bildirimleri, banlı kullanıcının okunamaz telefon özeti, ekran görüntüsü ihlal kayıtları',
           },
           {
             basis: 'Yasal Yükümlülük: KVKK Madde 5/2-ç',
@@ -166,6 +168,7 @@ const sections = [
           ['Kimlik belgeleri ve canlılık videosu', 'Hesap silme onayından sonra 48 saat içinde silinir. İstisna: Acil Yardım, şikâyet veya ban kaydına karışmış kullanıcının kimliği kilitli tutulur, 2 yıl saklanır ve yalnız SUPERADMIN erişir. Hukuki sebep: KVKK m.5/2-e'],
           ['Acil Yardım kaydı', 'Koordinat ve konum geçmişi talep çözülünce silinir, son açık adres 2 yıl saklanır. Hukuki sebep: KVKK m.5/2-b ve m.5/2-e'],
           ['Şikâyet ve moderasyon kayıtları ile şikâyet edilen mesajlar', '2 yıl. Hukuki sebep: KVKK m.5/2-e'],
+          ['Ekran görüntüsü ihlal kayıtları', '2 yıl (şikâyet ve moderasyon kayıtlarıyla aynı). Hukuki sebep: KVKK m.5/2-f ve m.5/2-c'],
           ['Şikâyet edilmemiş masa sohbeti mesajları', 'Masa tarihinden 6 ay sonra silinir. Hukuki sebep: KVKK m.5/2-c'],
           ['Sorun bildirimleri', '2 yıl. Hukuki sebep: KVKK m.5/2-f'],
           ['Profil, kişilik testi (OCEAN) ve push token', 'Hesap silinene kadar. Hukuki sebep: KVKK m.5/2-c'],

@@ -78,6 +78,7 @@ const sections = [
             'Table meetup history',
             'Review and comment data',
             'Contact block list: phone numbers you add',
+            'Screenshot violation records: the user who took the screenshot, the user whose photo was viewed, platform and date-time information. Only ADMIN and SUPERADMIN can see these records',
           ]}
         />
 
@@ -101,6 +102,7 @@ const sections = [
           'Communicating with users via push notifications and WhatsApp',
           'Fulfilling legal obligations and notifying authorized institutions',
           'Keeping the platform secure and preventing misuse',
+          'Screenshot violation records: enforcing the community guidelines and protecting users\' personal data',
         ]}
       />
     ),
@@ -117,11 +119,11 @@ const sections = [
           },
           {
             basis: 'Performance of a Contract: KVKK Article 5/2-c',
-            desc: 'Registration, OCEAN personality test, ID document, payment and service delivery, AI table compatibility report, push notifications and the WhatsApp verification code (OTP)',
+            desc: 'Registration, OCEAN personality test, ID document, payment and service delivery, AI table compatibility report, push notifications and the WhatsApp verification code (OTP), screenshot violation records',
           },
           {
             basis: 'Legitimate Interest: KVKK Article 5/2-f',
-            desc: 'Platform security, technical data, ID document (keeping fake profiles off the platform), table chat moderation, problem reports, the unreadable phone summary of a banned user',
+            desc: 'Platform security, technical data, ID document (keeping fake profiles off the platform), table chat moderation, problem reports, the unreadable phone summary of a banned user, screenshot violation records',
           },
           {
             basis: 'Legal Obligation: KVKK Article 5/2-ç',
@@ -165,6 +167,7 @@ const sections = [
           ['ID documents and liveness video', 'Deleted within 48 hours after the account deletion is approved. Exception: the identity of a user involved in an emergency help, complaint or ban record is kept locked for 2 years and only SUPERADMIN can access it. Legal ground: KVKK art. 5/2-e'],
           ['Emergency Help record', 'Coordinates and location history are deleted when the request is resolved; the last street address is kept for 2 years. Legal ground: KVKK art. 5/2-b and art. 5/2-e'],
           ['Complaint and moderation records and reported messages', '2 years. Legal ground: KVKK art. 5/2-e'],
+          ['Screenshot violation records', '2 years (same as complaint and moderation records). Legal ground: KVKK art. 5/2-f and art. 5/2-c'],
           ['Table chat messages that were not reported', 'Deleted 6 months after the table date. Legal ground: KVKK art. 5/2-c'],
           ['Problem reports', '2 years. Legal ground: KVKK art. 5/2-f'],
           ['Profile, personality test (OCEAN) and push token', 'Until the account is deleted. Legal ground: KVKK art. 5/2-c'],

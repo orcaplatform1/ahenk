@@ -148,8 +148,11 @@ export const RETENTION_POLICY: RetentionCategory[] = [
   {
     id: "COMPLAINT_MODERATION",
     label: { tr: "Şikâyet ve moderasyon kayıtları, şikâyet edilen mesajlar", en: "Complaint and moderation records, reported messages" },
-    fields: { tr: "Sohbet şikâyetleri ve otomatik engel kayıtları, şikâyet edilen mesajlar, admin kararları", en: "Chat reports and automatic block records, reported messages, admin decisions" },
-    location: "ChatReport, ChatMessage (şikâyet edilen)",
+    fields: {
+      tr: "Sohbet şikâyetleri ve otomatik engel kayıtları, şikâyet edilen mesajlar, admin kararları; ekran görüntüsü ihlal kayıtları (ekran görüntüsünü alan kullanıcı, fotoğrafı görüntülenen kullanıcı, platform, tarih-saat, admin kararı)",
+      en: "Chat reports and automatic block records, reported messages, admin decisions; screenshot violation records (user who took the screenshot, user whose photo was viewed, platform, date and time, admin decision)",
+    },
+    location: "ChatReport, ChatMessage (şikâyet edilen), ScreenshotLog",
     duration: { tr: "2 yıl", en: "2 years" },
     start: { tr: "Kayıt tarihi", en: "Record date" },
     basis: { tr: "Hukuki sebep KVKK m.5/2-e", en: "Legal ground KVKK art. 5/2-e" },

@@ -30,6 +30,13 @@ export function suggestedDays(nth: number): SuspendDays | null {
   return 30;
 }
 
+// 1st, 2nd, 3rd, 4th … (İngilizce bildirim metni)
+function ordinalEn(n: number): string {
+  const t = n % 100;
+  if (t >= 11 && t <= 13) return `${n}th`;
+  return `${n}${({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th"}`;
+}
+
 export class ScreenshotLogDto {
   @IsString() @MaxLength(500)
   photoUrl!: string;
@@ -63,19 +70,23 @@ export class ScreenshotLogService {
   async record(userId: string, dto: ScreenshotLogDto) {
     const targetUserId = this.ownerFromUrl(dto.photoUrl);
     if (!targetUserId) throw new BadRequestException("Geçersiz fotoğraf");
+    // Kendi fotoğrafı: kayıt ve admin bildirimi oluşmaz
+    if (targetUserId === userId) return { ok: true };
     const [actor, target] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, profile: { select: { firstName: true, lastName: true } } } }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, phone: true, profile: { select: { firstName: true, lastName: true } } } }),
       this.prisma.user.findUnique({ where: { id: targetUserId }, select: { id: true, profile: { select: { firstName: true, lastName: true } } } }),
     ]);
     if (!actor || !target) throw new NotFoundException("Kullanıcı bulunamadı");
     await this.prisma.screenshotLog.create({ data: { userId, targetUserId, platform: dto.platform } });
     const n = await this.prisma.screenshotLog.count({ where: { userId } });
-    const message = `Ekran görüntüsü ihlali: ${baseDisplayName(actor.profile)} (#${actor.id}), ${baseDisplayName(target.profile)} adlı kullanıcının profil fotoğrafının ekran görüntüsünü aldı. Bu, kullanıcının ${n}. ekran görüntüsü.`;
+    const phone = actor.phone ?? "—";
+    const message = `Ekran görüntüsü ihlali: ${baseDisplayName(actor.profile)} (${phone}), ${baseDisplayName(target.profile)} adlı kullanıcının profil fotoğrafının ekran görüntüsünü aldı. Bu, kullanıcının ${n}. ekran görüntüsü.`;
+    const messageEn = `Screenshot violation: ${baseDisplayName(actor.profile)} (${phone}) took a screenshot of ${baseDisplayName(target.profile)}'s profile photo. This is the user's ${ordinalEn(n)} screenshot.`;
     try {
       await this.prisma.adminAlert.create({ data: { userId, alertType: AdminAlertType.SCREENSHOT_VIOLATION, message } });
       const admins = await this.prisma.user.findMany({ where: { role: { in: [UserRole.ADMIN, UserRole.SUPERADMIN] }, isBot: false }, select: { id: true } });
       for (const a of admins) {
-        await this.notifications.sendToUser(a.id, { title: "Ekran görüntüsü ihlali", body: message, data: { type: "SCREENSHOT_VIOLATION" } }).catch(() => undefined);
+        await this.notifications.sendToUser(a.id, { title: "Ekran görüntüsü ihlali", body: message, data: { type: "SCREENSHOT_VIOLATION" }, en: { title: "Screenshot violation", body: messageEn } }).catch(() => undefined);
       }
     } catch (e) {
       this.logger.error(`Admin bildirimi gönderilemedi: ${(e as Error).message}`);

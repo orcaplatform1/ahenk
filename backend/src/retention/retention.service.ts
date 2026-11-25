@@ -134,8 +134,15 @@ export class RetentionService {
         return rows.map((r) => ({ id: r.id, userId: r.userId, start: r.submittedAt, expiresAt: null }));
       }
       case "COMPLAINT_MODERATION": {
-        const rows = await p.chatReport.findMany({ select: { id: true, reporterId: true, createdAt: true } });
-        return rows.map((r) => ({ id: r.id, userId: r.reporterId, start: r.createdAt, expiresAt: addYears(r.createdAt, 2) }));
+        // Şikâyet / otomatik engel kayıtları ve ekran görüntüsü ihlal kayıtları (ScreenshotLog, "sl:" önekli): kayıt tarihinden 2 yıl
+        const [rows, shots] = await Promise.all([
+          p.chatReport.findMany({ select: { id: true, reporterId: true, createdAt: true } }),
+          p.screenshotLog.findMany({ select: { id: true, userId: true, createdAt: true } }),
+        ]);
+        return [
+          ...rows.map((r) => ({ id: r.id, userId: r.reporterId, start: r.createdAt, expiresAt: addYears(r.createdAt, 2) })),
+          ...shots.map((r) => ({ id: `sl:${r.id}`, userId: r.userId, start: r.createdAt, expiresAt: addYears(r.createdAt, 2) })),
+        ];
       }
       case "CHAT_MESSAGES": {
         // Masa tarihinden 6 ay
@@ -237,9 +244,12 @@ export class RetentionService {
         await p.sosReport.updateMany({ where: { id: { in: ids } }, data: { lastAddress: null } });
         return;
       case "COMPLAINT_MODERATION": {
-        // Süresi dolan şikâyet / otomatik engel kayıtları silinir; şikâyet edilen mesaj, başka şikâyeti kalmadıysa onunla birlikte silinir
-        const reports = await p.chatReport.findMany({ where: { id: { in: ids } }, select: { messageId: true } });
-        await p.chatReport.deleteMany({ where: { id: { in: ids } } });
+        // Süresi dolan şikâyet / otomatik engel kayıtları silinir; şikâyet edilen mesaj, başka şikâyeti kalmadıysa onunla birlikte silinir.
+        // Süresi dolan ekran görüntüsü ihlal kayıtları ("sl:" önekli) silinir
+        await p.screenshotLog.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("sl:")).map((i) => i.slice(3)) } } });
+        const reportIds = ids.filter((i) => !i.startsWith("sl:"));
+        const reports = await p.chatReport.findMany({ where: { id: { in: reportIds } }, select: { messageId: true } });
+        await p.chatReport.deleteMany({ where: { id: { in: reportIds } } });
         await p.chatMessage.deleteMany({ where: { id: { in: [...new Set(reports.map((r) => r.messageId))] }, reports: { none: {} } } });
         return;
       }

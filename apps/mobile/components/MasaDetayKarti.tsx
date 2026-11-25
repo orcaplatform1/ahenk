@@ -562,7 +562,8 @@ function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDet
   const [lightbox, setLightbox] = useState<number | null>(null);
   // Katılımcı profil fotoğrafı tam ekran (kendi fotoğrafında da düzenleme yok; fotoğraf yalnız Profilim'den değişir)
   const [viewer, setViewer] = useState<string | null>(null);
-  const openPhoto = (p: { photoUrl?: string | null }) => { if (p.photoUrl) setViewer(p.photoUrl); };
+  const [viewerOwn, setViewerOwn] = useState(false); // kendi fotoğrafı: büyütülmüş görünüm koruması çalışmaz
+  const openPhoto = (p: { photoUrl?: string | null; isSelf?: boolean }) => { if (p.photoUrl) { setViewerOwn(!!p.isSelf); setViewer(p.photoUrl); } };
 
   const photos = masa.venuePhotos ?? [];
   const rows = preview ? chunkRows(masa.participants) : participantRows(masa.participants.filter(p => !p.cancelled), masa.type);
@@ -655,7 +656,7 @@ function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDet
   return (
     <View>
       {lightbox !== null && cover && <Lightbox photos={[cover]} start={lightbox} onClose={() => setLightbox(null)} />}
-      <PhotoViewer url={viewer} visible={!!viewer} onClose={() => setViewer(null)} />
+      <PhotoViewer url={viewer} visible={!!viewer} own={viewerOwn} onClose={() => setViewer(null)} />
       <SosNotice visible={sentNotice} title={t('sos.sentTitle')} lines={[t('sos.sentLine1'), t('sos.sentLine2')]} bold={t('sos.sentBold')}
         durationMs={30_000} countdown onClose={() => setSentNotice(false)} />
       <Modal visible={sosHowOpen} transparent animationType="fade" onRequestClose={() => setSosHowOpen(false)} statusBarTranslucent>
