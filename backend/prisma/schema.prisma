@@ -729,6 +729,12 @@ model City {
   phoneCountryCode String      @default("+90")
   idTypes          KycIdType[] @default([ID_CARD, DRIVER_LICENSE, PASSPORT, RESIDENCE_PERMIT]) // Türkiye: dört tür; diğer bölgeler: PASSPORT, RESIDENCE_PERMIT, DRIVER_LICENSE
   sortOrder        Int         @default(0)
+  // Şehir listesi gösterimi (isteğe bağlı): sezon (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2; TR dışıysa bayrak)
+  seasonStartDay   Int?
+  seasonStartMonth Int?
+  seasonEndDay     Int?
+  seasonEndMonth   Int?
+  country          String?
   regionWaitlist   RegionWaitlist[]
   venues    Venue[]
   meetings  Meeting[]

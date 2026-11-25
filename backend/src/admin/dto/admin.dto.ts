@@ -256,6 +256,13 @@ export class CreateCityDto {
   @IsOptional()
   @IsIn(CITY_STATUSES)
   status?: CityStatus;
+
+  // Sezon (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2); isteğe bağlı, null temizler
+  @IsOptional() @IsInt() @Min(1) @Max(31) seasonStartDay?: number | null;
+  @IsOptional() @IsInt() @Min(1) @Max(12) seasonStartMonth?: number | null;
+  @IsOptional() @IsInt() @Min(1) @Max(31) seasonEndDay?: number | null;
+  @IsOptional() @IsInt() @Min(1) @Max(12) seasonEndMonth?: number | null;
+  @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (AE, TH)" }) country?: string | null;
 }
 
 export class UpdateCityDto {
@@ -272,6 +279,13 @@ export class UpdateCityDto {
   @MinLength(2)
   @MaxLength(60)
   name?: string;
+
+  // Sezon (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2); isteğe bağlı, null temizler
+  @IsOptional() @IsInt() @Min(1) @Max(31) seasonStartDay?: number | null;
+  @IsOptional() @IsInt() @Min(1) @Max(12) seasonStartMonth?: number | null;
+  @IsOptional() @IsInt() @Min(1) @Max(31) seasonEndDay?: number | null;
+  @IsOptional() @IsInt() @Min(1) @Max(12) seasonEndMonth?: number | null;
+  @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (AE, TH)" }) country?: string | null;
 }
 
 // Bölge (şehir) ayarları — admin "Bölgeler" sayfası

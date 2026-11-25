@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import { DEFAULT_PHONE_COUNTRY, occupationLabel, toE164 } from '@ahenk/shared';
+import { DEFAULT_PHONE_COUNTRY, cityExtras, occupationLabel, toE164, type CitySeasonFields } from '@ahenk/shared';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
 import Image from 'next/image';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
@@ -18,7 +18,7 @@ import SiteSelect from '@/components/SiteSelect';
 import { gColor, StdButton } from '@ahenk/ui';
 import { DateField } from '@/components/BirthDateField';
 
-interface City { id: string; name: string; isActive?: boolean; isComingSoon?: boolean; countryCode?: string; }
+interface City extends CitySeasonFields { id: string; name: string; isActive?: boolean; isComingSoon?: boolean; countryCode?: string; }
 
 // Token'lar HttpOnly çerezle gelir; yanıt gövdesinde sadece kullanıcı
 interface RegisterResponse {
@@ -78,11 +78,10 @@ function KayitPageInner() {
   const t = useTranslations();
   const locale = useLocale();
   const router = useRouter();
-  // Ülke kodlu telefon (E.164); dil soruları; pasif bölge "Haber ver" (hesap açılınca kaydedilir)
+  // Ülke kodlu telefon (E.164); dil soruları
   const [country, setCountry] = useState(DEFAULT_PHONE_COUNTRY);
   const [speaksEnglish, setSpeaksEnglish] = useState<boolean | null>(locale === 'en' ? true : null);
   const [speaksTurkish, setSpeaksTurkish] = useState<boolean | null>(locale === 'en' ? null : true);
-  const [notifyRegions, setNotifyRegions] = useState<string[]>([]);
   const searchParams = useSearchParams();
   // Davet kodu: yalnız rakam; davet linkinden (?ref=) otomatik dolar, elle de girilebilir (isteğe bağlı).
   // Eski telefon davet linklerindeki harfli kod (?ref=<kod>) alanda gösterilmez, kayıtta aynen gönderilir.
@@ -238,8 +237,6 @@ function KayitPageInner() {
         speaksTurkish: locale === 'en' ? !!speaksTurkish : true,
       });
       api.onLogin();
-      // Kayıtta "Haber ver" denen pasif bölgeler bekleme listesine yazılır
-      for (const id of notifyRegions) await api.post(`/users/me/region-waitlist/${id}`, {}).catch(() => undefined);
 
       const res = await api.get<QuestionsResponse>('/test/questions');
       const flat = res.sections.flatMap(s => s.questions);
@@ -554,8 +551,7 @@ function KayitPageInner() {
               <h1 className="ll-title" style={{ marginBottom: 4 }}>{t('reg.stepCityTitle')}</h1>
               <p className="text-[#a39c93] text-[13px]">{t('reg.cityHint')}</p>
             </div>
-            <CityPickerField label={t('reg.primaryCity')} value={form.primaryCityId} onChange={(v) => { set('primaryCityId', v); set('district', ''); }} cities={cities} title={t('reg.pickPrimaryCity')}
-              notified={notifyRegions} onNotify={(id) => setNotifyRegions((p) => (p.includes(id) ? p : [...p, id]))} />
+            <CityPickerField label={t('reg.primaryCity')} value={form.primaryCityId} onChange={(v) => { set('primaryCityId', v); set('district', ''); }} cities={cities} title={t('reg.pickPrimaryCity')} />
             {districtOptions.length > 0 && (
               <div>
                 <label className="block ll-mono text-[11px] text-[#a39c93] mb-2">{t('reg.district')}</label>
@@ -1036,13 +1032,15 @@ function sortCities(cities: City[]): City[] {
   });
 }
 
-function CityPickerModal({ cities, value, onChange, onClose, optional, title, notified, onNotify }: {
+function CityPickerModal({ cities, value, onChange, onClose, optional, title }: {
   cities: City[]; value: string; onChange: (v: string) => void; onClose: () => void;
-  optional?: boolean; title: string; notified?: string[]; onNotify?: (id: string) => void;
+  optional?: boolean; title: string;
 }) {
   const t = useTranslations();
+  const lang = useLocale() === 'en' ? 'en' : 'tr';
   const [tmp, setTmp] = useState(value);
-  // Üst grup: seçilebilir bölgeler; alt grup ("Yakında"): pasif bölgeler, soluk, seçilemez, sağda "Haber ver"
+  // Üst grup: seçilebilir bölgeler; alt grup ("Yakında"): pasif bölgeler, soluk, seçilemez.
+  // Şehir adının sağında ("Yakında" etiketinden önce): TR dışı ülke bayrağı ve sezon (cityExtras)
   const sorted = sortCities(cities.filter((c) => c.isActive !== false));
   const soon = cities.filter((c) => c.isActive === false);
 
@@ -1076,7 +1074,7 @@ function CityPickerModal({ cities, value, onChange, onClose, optional, title, no
                 onClick={() => setTmp(c.id)}
                 style={{ padding: '13px 14px', fontSize: 15, color: isSel ? '#ff6b6b' : '#c9c2b8', fontWeight: isSel ? 600 : 400, background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}
               >
-                {cityLabel(c.name)}
+                {cityLabel(c.name)}{cityExtras(c, lang) && <span style={{ marginLeft: 6 }}>{cityExtras(c, lang)}</span>}
               </div>
             );
           })}
@@ -1085,20 +1083,11 @@ function CityPickerModal({ cities, value, onChange, onClose, optional, title, no
               <div role="separator" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 4px', color: '#8f887f', fontSize: 11 }}>
                 <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />{t('common.comingSoon')}<span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />
               </div>
-              {soon.map((c) => {
-                const done = notified?.includes(c.id);
-                return (
-                  <div key={c.id} aria-disabled="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 14px', fontSize: 15, color: 'rgba(201,194,184,0.4)' }}>
-                    <span>{c.name}<span style={{ marginLeft: 8, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(143,136,127,0.4)', fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</span></span>
-                    {onNotify && (
-                      <button type="button" disabled={done} onClick={() => onNotify(c.id)}
-                        style={{ minHeight: 32, padding: '0 10px', fontSize: 11, borderRadius: 999, border: '1px solid rgba(192,57,43,0.5)', background: done ? 'transparent' : 'rgba(192,57,43,0.10)', color: done ? '#8f887f' : '#ff6b6b', cursor: done ? 'default' : 'pointer' }}>
-                        {done ? t('common.notified') : t('common.notifyMe')}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+              {soon.map((c) => (
+                <div key={c.id} aria-disabled="true" style={{ padding: '9px 14px', fontSize: 15, color: 'rgba(201,194,184,0.4)' }}>
+                  <span>{c.name}{cityExtras(c, lang) && <span style={{ marginLeft: 6 }}>{cityExtras(c, lang)}</span>}<span style={{ marginLeft: 8, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(143,136,127,0.4)', fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</span></span>
+                </div>
+              ))}
             </>
           )}
         </div>
@@ -1114,8 +1103,8 @@ function CityPickerModal({ cities, value, onChange, onClose, optional, title, no
   );
 }
 
-function CityPickerField({ label, value, onChange, cities, optional, title, notified, onNotify }: {
-  label: string; value: string; onChange: (v: string) => void; cities: City[]; optional?: boolean; title?: string; notified?: string[]; onNotify?: (id: string) => void;
+function CityPickerField({ label, value, onChange, cities, optional, title }: {
+  label: string; value: string; onChange: (v: string) => void; cities: City[]; optional?: boolean; title?: string;
 }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
@@ -1131,7 +1120,7 @@ function CityPickerField({ label, value, onChange, cities, optional, title, noti
       >
         {display}
       </button>
-      {open && <CityPickerModal cities={cities} value={value} onChange={onChange} onClose={() => setOpen(false)} optional={optional} title={title ?? t('reg.pickCityShort')} notified={notified} onNotify={onNotify} />}
+      {open && <CityPickerModal cities={cities} value={value} onChange={onChange} onClose={() => setOpen(false)} optional={optional} title={title ?? t('reg.pickCityShort')} />}
     </div>
   );
 }

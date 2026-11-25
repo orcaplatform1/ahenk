@@ -6,7 +6,7 @@ import { KankaSection } from '@/components/KankaSection';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import { useState, useRef, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ENGLISH_ENABLED, occupationLabel, splitE164, toE164, type Lang } from '@ahenk/shared';
+import { ENGLISH_ENABLED, cityExtras, occupationLabel, splitE164, toE164, type CitySeasonFields, type Lang } from '@ahenk/shared';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { usePathname } from '@/i18n/navigation';
 import { switchLocale } from '@/lib/locale';
@@ -37,7 +37,7 @@ const KYC_BADGE: Record<string, { label: string; approved: boolean }> = {
   SUSPICIOUS: { label: 'prof.unverified', approved: false },
 };
 
-interface City { id: string; name: string; isActive?: boolean; countryCode?: string; }
+interface City extends CitySeasonFields { id: string; name: string; isActive?: boolean; countryCode?: string; }
 
 interface UserData {
   id: string;
@@ -93,10 +93,6 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
     if (lang === locale) return;
     switchLocale(lang, pathname);
   }
-  // Pasif bölgeler için "Haber ver" (aynı bölgeye bir kez)
-  const [notified, setNotified] = useState<string[]>([]);
-  useEffect(() => { api.silentGet<string[]>('/users/me/region-waitlist').then((r) => setNotified(Array.isArray(r) ? r : [])).catch(() => {}); }, []);
-  const notifyRegion = (id: string) => { setNotified((p) => (p.includes(id) ? p : [...p, id])); api.post(`/users/me/region-waitlist/${id}`, {}).catch(() => undefined); };
   const [editingVenue, setEditingVenue] = useState(false);
 
   // Ana şehir üye tarafından değiştirilemez; yalnız admin panelinden düzeltilir
@@ -445,8 +441,6 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
             optional
             placeholder={t('reg.pickCityShort')}
             title={t('prof.activeCityQuestion')}
-            notified={notified}
-            onNotify={notifyRegion}
           />
           <StdButton variant="primary"
             onClick={() => { const v = activeCity || null; askConfirm(() => saveActiveCity(v)); }}
@@ -635,13 +629,15 @@ function sortCitiesP(cities: City[]): City[] {
   });
 }
 
-function CityPickerModalP({ cities, value, onChange, onClose, optional, title, notified, onNotify }: {
+function CityPickerModalP({ cities, value, onChange, onClose, optional, title }: {
   cities: City[]; value: string; onChange: (v: string) => void; onClose: () => void;
-  optional?: boolean; title: string; notified?: string[]; onNotify?: (id: string) => void;
+  optional?: boolean; title: string;
 }) {
   const t = useTranslations();
+  const lang: Lang = useLocale() === 'en' ? 'en' : 'tr';
   const [tmp, setTmp] = useState(value);
-  // Üst grup seçilebilir bölgeler; "Yakında" grubu pasif bölgeler (soluk, seçilemez, sağda "Haber ver")
+  // Üst grup seçilebilir bölgeler; "Yakında" grubu pasif bölgeler (soluk, seçilemez).
+  // Şehir adının sağında ("Yakında" etiketinden önce): TR dışı ülke bayrağı ve sezon (cityExtras)
   const sorted = sortCitiesP(cities.filter((c) => c.isActive !== false));
   const soon = cities.filter((c) => c.isActive === false);
   return (
@@ -661,7 +657,7 @@ function CityPickerModalP({ cities, value, onChange, onClose, optional, title, n
             const isSel = c.id === tmp;
             return (
               <div key={c.id} onClick={() => setTmp(c.id)} style={{ padding: '13px 14px', fontSize: 15, color: isSel ? '#ff6b6b' : '#ccc', fontWeight: isSel ? 600 : 400, background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}>
-                {cityLabelP(c.name)}
+                {cityLabelP(c.name)}{cityExtras(c, lang) && <span style={{ marginLeft: 6 }}>{cityExtras(c, lang)}</span>}
               </div>
             );
           })}
@@ -670,20 +666,11 @@ function CityPickerModalP({ cities, value, onChange, onClose, optional, title, n
               <div role="separator" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 4px', color: '#8f887f', fontSize: 11 }}>
                 <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />{t('common.comingSoon')}<span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />
               </div>
-              {soon.map((c) => {
-                const done = notified?.includes(c.id);
-                return (
-                  <div key={c.id} aria-disabled="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 14px', fontSize: 15, color: 'rgba(204,204,204,0.4)' }}>
-                    <span>{c.name}<span style={{ marginLeft: 8, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(143,136,127,0.4)', fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</span></span>
-                    {onNotify && (
-                      <button type="button" disabled={done} onClick={() => onNotify(c.id)}
-                        style={{ minHeight: 32, padding: '0 10px', fontSize: 11, borderRadius: 999, border: '1px solid rgba(192,57,43,0.5)', background: done ? 'transparent' : 'rgba(192,57,43,0.10)', color: done ? '#8f887f' : '#ff6b6b', cursor: done ? 'default' : 'pointer' }}>
-                        {done ? t('common.notified') : t('common.notifyMe')}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+              {soon.map((c) => (
+                <div key={c.id} aria-disabled="true" style={{ padding: '9px 14px', fontSize: 15, color: 'rgba(204,204,204,0.4)' }}>
+                  <span>{c.name}{cityExtras(c, lang) && <span style={{ marginLeft: 6 }}>{cityExtras(c, lang)}</span>}<span style={{ marginLeft: 8, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(143,136,127,0.4)', fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</span></span>
+                </div>
+              ))}
             </>
           )}
         </div>
@@ -694,8 +681,8 @@ function CityPickerModalP({ cities, value, onChange, onClose, optional, title, n
     </div>
   );
 }
-function Select({ label, value, onChange, cities, optional, placeholder, title, notified, onNotify }: {
-  label: string; value: string; onChange: (v: string) => void; cities: City[]; optional?: boolean; placeholder?: string; title?: string; notified?: string[]; onNotify?: (id: string) => void;
+function Select({ label, value, onChange, cities, optional, placeholder, title }: {
+  label: string; value: string; onChange: (v: string) => void; cities: City[]; optional?: boolean; placeholder?: string; title?: string;
 }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
@@ -711,7 +698,7 @@ function Select({ label, value, onChange, cities, optional, placeholder, title, 
       >
         {display}
       </button>
-      {open && <CityPickerModalP cities={cities} value={value} onChange={onChange} onClose={() => setOpen(false)} optional={optional} title={title ?? t('reg.pickCityShort')} notified={notified} onNotify={onNotify} />}
+      {open && <CityPickerModalP cities={cities} value={value} onChange={onChange} onClose={() => setOpen(false)} optional={optional} title={title ?? t('reg.pickCityShort')} />}
     </div>
   );
 }

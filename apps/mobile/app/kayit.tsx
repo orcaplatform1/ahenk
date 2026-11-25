@@ -23,12 +23,12 @@ import { Btn, StdButton, ErrorText, Eyebrow, Input, Spinner, T, Glow, ScreenGlow
 import { OtpCountdown, OtpNoticeAction, otpNoticeOf, useOtpCountdown, type OtpNoticeCode } from '@/components/OtpCountdown';
 import { c, ll, tw, tw4 } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
-import { DEFAULT_PHONE_COUNTRY, ENGLISH_ENABLED, occupationLabel, toE164 } from '@ahenk/shared';
+import { DEFAULT_PHONE_COUNTRY, ENGLISH_ENABLED, cityExtras, occupationLabel, toE164, type CitySeasonFields } from '@ahenk/shared';
 import i18n, { currentLang } from '@/lib/i18n';
 import { CountryCodeButton } from '@/components/PhoneCountry';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
-interface City { id: string; name: string; isActive?: boolean; isComingSoon?: boolean; countryCode?: string }
+interface City extends CitySeasonFields { id: string; name: string; isActive?: boolean; isComingSoon?: boolean; countryCode?: string }
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE' | '';
 const STEPS = ['reg.stepBasic', 'reg.stepLang', 'reg.stepCity', 'reg.stepTest', 'reg.stepVenue', 'reg.stepBlock'];
 const OCCUPATIONS = ['Teknoloji & Yazılım', 'Finans & Bankacılık', 'Sağlık & Tıp', 'Hukuk', 'Eğitim & Akademi', 'Mühendislik', 'Pazarlama & Reklam', 'Medya & İletişim', 'Sanat & Tasarım', 'Girişimcilik & İş Dünyası', 'Kamu & Devlet', 'Turizm & Hizmet', 'Öğrenci', 'Diğer'];
@@ -82,8 +82,6 @@ export default function Kayit() {
   // İngilizce arayüzde yalnız Türkçe sorusu (İngilizce ana dil, speaksEnglish = true)
   const [speaksEnglish, setSpeaksEnglish] = useState<boolean | null>(lang === 'en' ? true : null);
   const [speaksTurkish, setSpeaksTurkish] = useState<boolean | null>(lang === 'en' ? null : true);
-  // "Haber ver" denen pasif bölgeler: kayıt tamamlanınca bekleme listesine yazılır
-  const [notifyRegions, setNotifyRegions] = useState<string[]>([]);
   // Davet kodu (isteğe bağlı): davet linkinden ?ref= ile gelirse otomatik dolar
   // Yalnız rakam; eski telefon davet linkindeki harfli kod alanda gösterilmez, kayıtta aynen gönderilir
   const refParam = typeof params.ref === 'string' ? params.ref : '';
@@ -163,7 +161,6 @@ export default function Kayit() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { const m = (data as { message?: string | string[] }).message; throw new Error(Array.isArray(m) ? m[0] : m ?? t('common.genericError')); }
       await storeLogin(data as { accessToken?: string; refreshToken?: string });
-      for (const id of notifyRegions) await api.post(`/users/me/region-waitlist/${id}`, {}).catch(() => undefined);
       const q = await api.get<{ sections: { questions: Question[] }[] }>('/test/questions');
       setQuestions(q.sections.flatMap(s => s.questions)); setTCurrent(0); setAnswers({}); setStep(3);
     } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
@@ -309,8 +306,8 @@ export default function Kayit() {
         {step === 2 && (
           <View style={{ gap: 20 }}>
             {header(3, t('reg.stepCityTitle'), t('reg.cityHint'))}
-            <ListPicker label={t('reg.primaryCity')} value={f.primaryCityId} onChange={v => setF(p => ({ ...p, primaryCityId: v, district: '' }))} options={sortedCities.map(x => ({ value: x.id, label: cityLabel(x.name) }))} placeholder={t('reg.pickCityShort')} title={t('reg.pickPrimaryCity')}
-              soon={soonCities.map(x => ({ value: x.id, label: x.name }))} notified={notifyRegions} onNotify={(id) => setNotifyRegions((p) => (p.includes(id) ? p : [...p, id]))} />
+            <ListPicker label={t('reg.primaryCity')} value={f.primaryCityId} onChange={v => setF(p => ({ ...p, primaryCityId: v, district: '' }))} options={sortedCities.map(x => ({ value: x.id, label: cityLabel(x.name), extra: cityExtras(x, lang) }))} placeholder={t('reg.pickCityShort')} title={t('reg.pickPrimaryCity')}
+              soon={soonCities.map(x => ({ value: x.id, label: x.name, extra: cityExtras(x, lang) }))} />
             {districtOptions.length > 0 && <ListPicker key={f.primaryCityId} label={t('reg.district')} value={f.district} onChange={v => set('district', v)} options={districtOptions.map(d => ({ value: d, label: d }))} placeholder={t('reg.pickDistrictPh')} title={t('reg.districtAria')} searchable searchPlaceholder={t('reg.districtSearch')} />}
             <View style={{ backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.25)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
               <T style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 16.5 }}>{t('reg.tempCity')}</T>

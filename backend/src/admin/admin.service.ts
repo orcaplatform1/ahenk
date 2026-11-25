@@ -1242,17 +1242,17 @@ export class AdminService {
   }
 
   // Yeni şehir varsayılan Pasif
-  async createCity(name: string, status: CityStatus = "PASSIVE") {
+  async createCity(name: string, status: CityStatus = "PASSIVE", extra: CitySeasonCountry = {}) {
     const exists = await this.prisma.city.findUnique({ where: { name } });
     if (exists) throw new ConflictException("Bu şehir zaten kayıtlı");
-    return this.prisma.city.create({ data: { name, ...cityStatusData(status) } });
+    return this.prisma.city.create({ data: { name, ...cityStatusData(status), ...citySeasonCountryData(extra) } });
   }
 
   // Ad değişikliği yalnız City.name'i günceller; id aynı kalır, ilçe / mekân / kullanıcı bağları korunur
-  async updateCity(cityId: string, dto: { isActive?: boolean; status?: CityStatus; name?: string }) {
+  async updateCity(cityId: string, dto: { isActive?: boolean; status?: CityStatus; name?: string } & CitySeasonCountry) {
     const city = await this.prisma.city.findUnique({ where: { id: cityId } });
     if (!city) throw new NotFoundException("Şehir bulunamadı");
-    const data: { name?: string; isActive?: boolean; isComingSoon?: boolean } = { ...cityStatusData(dto.status, dto.isActive) };
+    const data: { name?: string; isActive?: boolean; isComingSoon?: boolean } & CitySeasonCountry = { ...cityStatusData(dto.status, dto.isActive), ...citySeasonCountryData(dto) };
     if (dto.name !== undefined) {
       const name = dto.name.trim();
       if (name.length < 2) throw new BadRequestException("Şehir adı en az 2 karakter olmalı");
@@ -2200,6 +2200,24 @@ export class AdminService {
     return { items, total, page, totalPages: Math.ceil(total / limit), admins };
   }
 
+}
+
+// Şehir sezonu (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2), isteğe bağlı. Sezon dört alanla birlikte girilir ya da
+// hepsi boş bırakılır; gün ayın gün sayısını aşamaz (Şubat 29). Gönderilmeyen alan değişmez, null temizler.
+type CitySeasonCountry = { seasonStartDay?: number | null; seasonStartMonth?: number | null; seasonEndDay?: number | null; seasonEndMonth?: number | null; country?: string | null };
+const MONTH_DAYS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+function citySeasonCountryData(dto: CitySeasonCountry): CitySeasonCountry {
+  const out: CitySeasonCountry = {};
+  const keys = ["seasonStartDay", "seasonStartMonth", "seasonEndDay", "seasonEndMonth"] as const;
+  if (keys.some((k) => dto[k] !== undefined)) {
+    const vals = keys.map((k) => dto[k] ?? null);
+    if (vals.some((v) => v === null) && vals.some((v) => v !== null)) throw new BadRequestException("Sezon başlangıcı ve bitişinin gün ve ayı birlikte seçilmeli");
+    const [sd, sm, ed, em] = vals;
+    if (sd !== null && sm !== null && ed !== null && em !== null && (sd > MONTH_DAYS[sm - 1] || ed > MONTH_DAYS[em - 1])) throw new BadRequestException("Geçersiz sezon tarihi");
+    keys.forEach((k, i) => { out[k] = vals[i]; });
+  }
+  if (dto.country !== undefined) out.country = dto.country || null;
+  return out;
 }
 
 // Durum → alanlar: Aktif = isActive; Yakında = !isActive && isComingSoon; Pasif = ikisi de false

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
+import { ISO_COUNTRY_CODES, flagEmoji, monthName, type CitySeasonFields } from '@ahenk/shared';
 
 
 const inputStyle: React.CSSProperties = {
@@ -11,7 +12,7 @@ const inputStyle: React.CSSProperties = {
   outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
 };
 
-interface City {
+interface City extends CitySeasonFields {
   id: string;
   name: string;
   isActive: boolean;
@@ -26,6 +27,57 @@ const STATUS_LABELS: Record<CityStatus, string> = { ACTIVE: 'Aktif', PASSIVE: 'P
 const STATUS_ACTIONS: Record<CityStatus, string> = { ACTIVE: 'Aktifleştir', PASSIVE: 'Pasifleştir', COMING_SOON: 'Yakında yap' };
 const STATUS_ORDER: CityStatus[] = ['ACTIVE', 'PASSIVE', 'COMING_SOON'];
 const AMBER = '#f59e0b';
+
+// Sezon (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2): isteğe bağlı; boşsa kullanıcı şehir listesinde tarih / bayrak yok
+interface SeasonCountry { sd: string; sm: string; ed: string; em: string; country: string }
+const seasonOf = (c?: CitySeasonFields): SeasonCountry => ({
+  sd: c?.seasonStartDay ? String(c.seasonStartDay) : '', sm: c?.seasonStartMonth ? String(c.seasonStartMonth) : '',
+  ed: c?.seasonEndDay ? String(c.seasonEndDay) : '', em: c?.seasonEndMonth ? String(c.seasonEndMonth) : '', country: c?.country ?? '',
+});
+const seasonBody = (v: SeasonCountry) => ({
+  seasonStartDay: v.sd ? Number(v.sd) : null, seasonStartMonth: v.sm ? Number(v.sm) : null,
+  seasonEndDay: v.ed ? Number(v.ed) : null, seasonEndMonth: v.em ? Number(v.em) : null, country: v.country || null,
+});
+// Sezonun dört alanı birlikte seçilir ya da hepsi boş bırakılır
+const seasonValid = (v: SeasonCountry) => { const n = [v.sd, v.sm, v.ed, v.em].filter(Boolean).length; return n === 0 || n === 4; };
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
+const regionName = (() => { try { const dn = new Intl.DisplayNames(['tr'], { type: 'region' }); return (c: string) => dn.of(c) ?? c; } catch { return (c: string) => c; } })();
+const COUNTRY_OPTIONS = ISO_COUNTRY_CODES.map(code => ({ code, name: regionName(code) })).sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+
+function SeasonCountryFields({ value, onChange }: { value: SeasonCountry; onChange: (v: SeasonCountry) => void }) {
+  const set = (k: keyof SeasonCountry, x: string) => onChange({ ...value, [k]: x });
+  const sel: React.CSSProperties = { ...inputStyle, flex: 1, minWidth: 0 };
+  const dayMonth = (dk: 'sd' | 'ed', mk: 'sm' | 'em', label: string) => (
+    <div>
+      <p style={{ ...LABEL, margin: '0 0 4px', color: MUTED }}>{label}</p>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <select value={value[dk]} onChange={e => set(dk, e.target.value)} aria-label={`${label} günü`} style={sel}>
+          <option value="">Gün</option>
+          {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+        </select>
+        <select value={value[mk]} onChange={e => set(mk, e.target.value)} aria-label={`${label} ayı`} style={sel}>
+          <option value="">Ay</option>
+          {MONTHS.map(m => <option key={m} value={m}>{monthName(m, 'tr')}</option>)}
+        </select>
+      </div>
+    </div>
+  );
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {dayMonth('sd', 'sm', 'Sezon başlangıcı')}
+      {dayMonth('ed', 'em', 'Sezon bitişi')}
+      <div>
+        <p style={{ ...LABEL, margin: '0 0 4px', color: MUTED }}>Ülke</p>
+        <select value={value.country} onChange={e => set('country', e.target.value)} aria-label="Ülke" style={{ ...inputStyle }}>
+          <option value="">Seçilmedi</option>
+          {COUNTRY_OPTIONS.map(o => <option key={o.code} value={o.code}>{flagEmoji(o.code)} {o.name} ({o.code})</option>)}
+        </select>
+      </div>
+      {!seasonValid(value) && <p style={{ margin: 0, fontSize: 11, color: RED }}>Sezon başlangıcı ve bitişinin gün ve ayı birlikte seçilmeli.</p>}
+    </div>
+  );
+}
 
 // İlçe seviyeleri (statik moddaki şehir yoğunluğu / tarama listesi)
 interface District { id: string; name: string; level: number }
@@ -66,6 +118,8 @@ function DistrictModal({ city, onClose, onChanged }: { city: City; onClose: () =
   const [level, setLevel] = useState(1);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [season, setSeason] = useState<SeasonCountry>(seasonOf(city));
+  const [savedSeason, setSavedSeason] = useState<SeasonCountry>(seasonOf(city));
 
   function load() {
     api.get<District[]>(`/admin/cities/${city.id}/districts`)
@@ -96,6 +150,15 @@ function DistrictModal({ city, onClose, onChanged }: { city: City; onClose: () =
   }
   const nameDirty = cityName.trim() !== savedName && cityName.trim().length >= 2;
 
+  // Sezon ve ülke: boş bırakılan alanlar temizlenir
+  async function saveSeason() {
+    setBusy('season'); setError('');
+    try { await api.patch(`/admin/cities/${city.id}`, seasonBody(season)); setSavedSeason(season); onChanged(); }
+    catch (e) { setError((e as Error).message); }
+    finally { setBusy(null); }
+  }
+  const seasonDirty = JSON.stringify(season) !== JSON.stringify(savedSeason) && seasonValid(season);
+
   async function delCity() {
     setBusy('city'); setError('');
     try { await api.delete(`/admin/cities/${city.id}`); onChanged(true); onClose(); }
@@ -115,6 +178,14 @@ function DistrictModal({ city, onClose, onChanged }: { city: City; onClose: () =
           <button onClick={saveName} disabled={busy === 'name' || !nameDirty}
             style={{ ...smallBtn(CYAN, CYAN_BG, CYAN_BORDER), fontSize: 12, fontWeight: 700, padding: '6px 12px', opacity: busy === 'name' || !nameDirty ? 0.5 : 1 }}>
             {busy === 'name' ? 'Kaydediliyor…' : 'Adı Kaydet'}
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+          <SeasonCountryFields value={season} onChange={setSeason} />
+          <button onClick={saveSeason} disabled={busy === 'season' || !seasonDirty}
+            style={{ ...smallBtn(CYAN, CYAN_BG, CYAN_BORDER), alignSelf: 'flex-end', fontSize: 12, fontWeight: 700, padding: '6px 12px', opacity: busy === 'season' || !seasonDirty ? 0.5 : 1 }}>
+            {busy === 'season' ? 'Kaydediliyor…' : 'Sezon ve Ülkeyi Kaydet'}
           </button>
         </div>
 
@@ -177,6 +248,7 @@ export default function AdminCities() {
   const [modal, setModal] = useState<'add' | null>(null);
   const [nameInput, setNameInput] = useState('');
   const [statusInput, setStatusInput] = useState<CityStatus>('PASSIVE');
+  const [seasonInput, setSeasonInput] = useState<SeasonCountry>(seasonOf());
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [districtCity, setDistrictCity] = useState<City | null>(null);
@@ -190,12 +262,12 @@ export default function AdminCities() {
 
   useEffect(() => { load(); }, []);
 
-  function openAdd() { setNameInput(''); setStatusInput('PASSIVE'); setError(''); setModal('add'); }
+  function openAdd() { setNameInput(''); setStatusInput('PASSIVE'); setSeasonInput(seasonOf()); setError(''); setModal('add'); }
 
   async function save() {
     setSaving(true); setError('');
     try {
-      await api.post('/admin/cities', { name: nameInput.trim(), status: statusInput });
+      await api.post('/admin/cities', { name: nameInput.trim(), status: statusInput, ...seasonBody(seasonInput) });
       setModal(null);
       load();
     } catch (e) { setError((e as Error).message); }
@@ -337,15 +409,16 @@ export default function AdminCities() {
                   );
                 })}
               </div>
+              <SeasonCountryFields value={seasonInput} onChange={setSeasonInput} />
               {error && <p style={{ margin: 0, fontSize: 11, color: RED }}>{error}</p>}
               <button
                 onClick={save}
-                disabled={saving || nameInput.trim().length < 2}
+                disabled={saving || nameInput.trim().length < 2 || !seasonValid(seasonInput)}
                 style={{
                   width: '100%', padding: '9px', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer',
                   background: 'rgba(34,211,238,0.1)', border: `1px solid rgba(34,211,238,0.3)`,
                   fontSize: 13, fontWeight: 700, color: CYAN, fontFamily: SANS,
-                  opacity: saving || nameInput.trim().length < 2 ? 0.5 : 1,
+                  opacity: saving || nameInput.trim().length < 2 || !seasonValid(seasonInput) ? 0.5 : 1,
                 }}
               >
                 {saving ? 'Kaydediliyor…' : 'Kaydet'}

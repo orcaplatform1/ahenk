@@ -318,7 +318,8 @@ export class AdminController {
 
   @Post("cities")
   createCity(@Body() dto: CreateCityDto) {
-    return this.adminService.createCity(dto.name, dto.status);
+    const { name, status, ...extra } = dto;
+    return this.adminService.createCity(name, status, extra);
   }
 
   @Patch("cities/:id")

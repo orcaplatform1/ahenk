@@ -20,11 +20,11 @@ import Svg, { Path, Rect } from 'react-native-svg';
 import { openLegal } from '@/lib/links';
 import { useRememberAllowed } from '@/lib/adminLock';
 import { useTranslation } from 'react-i18next';
-import { ENGLISH_ENABLED, LANGS, occupationLabel, splitE164, toE164, type Lang } from '@ahenk/shared';
+import { ENGLISH_ENABLED, LANGS, cityExtras, occupationLabel, splitE164, toE164, type CitySeasonFields, type Lang } from '@ahenk/shared';
 import { CountryCodeButton } from '../PhoneCountry';
 import { chooseLanguage, currentLang } from '@/lib/i18n';
 
-export interface City { id: string; name: string; isActive?: boolean }
+export interface City extends CitySeasonFields { id: string; name: string; isActive?: boolean }
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
 export interface UserData {
   id: string; firstName: string; lastName: string; email: string; phone?: string; role?: string; activeCity?: string | null; occupationSector?: string;
@@ -74,12 +74,10 @@ function CardP({ title, action, children }: { title: string; action?: { label: s
 function CitySelect({ label, value, onChange, cities, optional, placeholder, title }: { label: string; value: string; onChange: (v: string) => void; cities: City[]; optional?: boolean; placeholder?: string; title: string }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  // "Yakında" grubu: pasif bölgeler (soluk, seçilemez, sağda "Haber ver" — bölge başına bir kez); web TabProfilim ile aynı
+  // "Yakında" grubu: pasif bölgeler (soluk, seçilemez); web TabProfilim ile aynı. Adın sağında TR dışı bayrak ve sezon (cityExtras)
+  const lang = currentLang();
   const active = cities.filter(x => x.isActive !== false);
   const soon = cities.filter(x => x.isActive === false);
-  const [notified, setNotified] = useState<string[]>([]);
-  useEffect(() => { api.get<string[]>('/users/me/region-waitlist').then((r) => setNotified(Array.isArray(r) ? r : [])).catch(() => {}); }, []);
-  const notify = (id: string) => { setNotified((p) => (p.includes(id) ? p : [...p, id])); api.post(`/users/me/region-waitlist/${id}`, {}).catch(() => undefined); };
   const [tmp, setTmp] = useState(value);
   const found = cities.find(x => x.id === value);
   const display = found ? cityLabel(found.name) : optional ? (placeholder ?? t('reg.noCity')) : t('reg.pickCityShort');
@@ -97,7 +95,7 @@ function CitySelect({ label, value, onChange, cities, optional, placeholder, tit
             <Btn variant="listOption" selected={tmp === ''} label={t('reg.noCity')} textStyle={tmp === '' ? undefined : { color: c.t888 }} onPress={() => setTmp('')} />
           )}
           {sortCities(active).map(x => (
-            <Btn key={x.id} variant="listOption" selected={tmp === x.id} label={cityLabel(x.name)} onPress={() => setTmp(x.id)} />
+            <Btn key={x.id} variant="listOption" selected={tmp === x.id} label={cityExtras(x, lang) ? `${cityLabel(x.name)} ${cityExtras(x, lang)}` : cityLabel(x.name)} onPress={() => setTmp(x.id)} />
           ))}
           {soon.length > 0 && (
             <View>
@@ -106,17 +104,11 @@ function CitySelect({ label, value, onChange, cities, optional, placeholder, tit
                 <T style={{ fontSize: 11, color: '#8f887f' }}>{t('common.comingSoon')}</T>
                 <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
               </View>
-              {soon.map(x => {
-                const done = notified.includes(x.id);
-                return (
-                  <View key={x.id} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}><T style={{ fontSize: 14, color: c.t888, opacity: 0.6 }}>{x.name}</T><View style={{ paddingVertical: 1, paddingHorizontal: 7, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(143,136,127,0.4)' }}><T style={{ fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</T></View></View>
-                    <Pressable disabled={done} onPress={() => notify(x.id)} accessibilityRole="button" hitSlop={8} style={{ minHeight: 44, justifyContent: 'center' }}>
-                      <T style={{ fontSize: 11, color: done ? '#8f887f' : '#ff6b6b' }}>{done ? t('common.notified') : t('common.notifyMe')}</T>
-                    </Pressable>
-                  </View>
-                );
-              })}
+              {soon.map(x => (
+                <View key={x.id} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, flexShrink: 1 }}><T style={{ fontSize: 14, color: c.t888, opacity: 0.6 }}>{cityExtras(x, lang) ? `${x.name} ${cityExtras(x, lang)}` : x.name}</T><View style={{ paddingVertical: 1, paddingHorizontal: 7, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(143,136,127,0.4)' }}><T style={{ fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</T></View></View>
+                </View>
+              ))}
             </View>
           )}
         </ScrollView>

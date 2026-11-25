@@ -4,11 +4,55 @@ import { Pressable, View } from 'react-native';
 import { api } from '@/lib/api';
 import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
-import { AInput } from '@/components/admin/AdminControls';
+import { AInput, AdminSelect } from '@/components/admin/AdminControls';
+import { ISO_COUNTRY_CODES, flagEmoji, monthName, type CitySeasonFields } from '@ahenk/shared';
 import { ADialog } from '@/components/admin/ADialog';
 import { adm } from '@/theme/theme';
 
-interface City { id: string; name: string; isActive: boolean; isComingSoon?: boolean; _count?: { venues: number; districts?: number } }
+interface City extends CitySeasonFields { id: string; name: string; isActive: boolean; isComingSoon?: boolean; _count?: { venues: number; districts?: number } }
+
+// Sezon (gün + ay, yıl yok) ve ülke (ISO 3166-1 alpha-2): isteğe bağlı; boşsa kullanıcı şehir listesinde tarih / bayrak yok (web admin/cities ile aynı)
+interface SeasonCountry { sd: string; sm: string; ed: string; em: string; country: string }
+const seasonOf = (c?: CitySeasonFields): SeasonCountry => ({
+  sd: c?.seasonStartDay ? String(c.seasonStartDay) : '', sm: c?.seasonStartMonth ? String(c.seasonStartMonth) : '',
+  ed: c?.seasonEndDay ? String(c.seasonEndDay) : '', em: c?.seasonEndMonth ? String(c.seasonEndMonth) : '', country: c?.country ?? '',
+});
+const seasonBody = (v: SeasonCountry) => ({
+  seasonStartDay: v.sd ? Number(v.sd) : null, seasonStartMonth: v.sm ? Number(v.sm) : null,
+  seasonEndDay: v.ed ? Number(v.ed) : null, seasonEndMonth: v.em ? Number(v.em) : null, country: v.country || null,
+});
+const seasonValid = (v: SeasonCountry) => { const n = [v.sd, v.sm, v.ed, v.em].filter(Boolean).length; return n === 0 || n === 4; };
+const DAY_OPTIONS = [{ value: '', label: 'Gün' }, ...Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))];
+const MONTH_OPTIONS = [{ value: '', label: 'Ay' }, ...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: monthName(i + 1, 'tr') }))];
+// Ülke adları cihaz Intl.DisplayNames destekliyorsa Türkçe, desteklemiyorsa yalnız kod
+const regionName = (() => { try { const dn = new Intl.DisplayNames(['tr'], { type: 'region' }); return (c: string) => dn.of(c) ?? c; } catch { return (c: string) => c; } })();
+const COUNTRY_OPTIONS = [{ value: '', label: 'Seçilmedi' }, ...ISO_COUNTRY_CODES.map(code => ({ code, name: regionName(code) }))
+  .sort((a, b) => a.name.localeCompare(b.name, 'tr'))
+  .map(o => ({ value: o.code, label: o.name === o.code ? `${flagEmoji(o.code)} ${o.code}` : `${flagEmoji(o.code)} ${o.name} (${o.code})` }))];
+
+function SeasonCountryFields({ value, onChange }: { value: SeasonCountry; onChange: (v: SeasonCountry) => void }) {
+  const set = (k: keyof SeasonCountry, x: string) => onChange({ ...value, [k]: x });
+  const dayMonth = (dk: 'sd' | 'ed', mk: 'sm' | 'em', label: string) => (
+    <View>
+      <ALabel style={{ color: adm.muted, marginBottom: 4 }}>{label}</ALabel>
+      <View style={{ flexDirection: 'row', gap: 6 }}>
+        <AdminSelect value={value[dk]} onChange={x => set(dk, x)} options={DAY_OPTIONS} placeholder="Gün" title={`${label} günü`} style={{ flex: 1 }} />
+        <AdminSelect value={value[mk]} onChange={x => set(mk, x)} options={MONTH_OPTIONS} placeholder="Ay" title={`${label} ayı`} style={{ flex: 1 }} />
+      </View>
+    </View>
+  );
+  return (
+    <View style={{ gap: 8 }}>
+      {dayMonth('sd', 'sm', 'Sezon başlangıcı')}
+      {dayMonth('ed', 'em', 'Sezon bitişi')}
+      <View>
+        <ALabel style={{ color: adm.muted, marginBottom: 4 }}>Ülke</ALabel>
+        <AdminSelect value={value.country} onChange={x => set('country', x)} options={COUNTRY_OPTIONS} placeholder="Seçilmedi" title="Ülke" />
+      </View>
+      {!seasonValid(value) && <AT style={{ fontSize: 11, color: adm.red }}>Sezon başlangıcı ve bitişinin gün ve ayı birlikte seçilmeli.</AT>}
+    </View>
+  );
+}
 
 // İlçe seviyeleri (statik moddaki şehir yoğunluğu / tarama listesi) — web admin/cities ile aynı
 interface District { id: string; name: string; level: number }
@@ -59,6 +103,8 @@ function DistrictDialog({ city, onClose, onChanged }: { city: City; onClose: () 
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [cityName, setCityName] = useState(city.name);
   const [savedName, setSavedName] = useState(city.name);
+  const [season, setSeason] = useState<SeasonCountry>(seasonOf(city));
+  const [savedSeason, setSavedSeason] = useState<SeasonCountry>(seasonOf(city));
   const load = () => { api.get<District[]>(`/admin/cities/${city.id}/districts`).then(setRows).catch((e: Error) => setError(e.message)).finally(() => setLoading(false)); };
   useEffect(load, [city.id]);
   async function run(key: string, fn: () => Promise<unknown>, after?: () => void) {
@@ -75,6 +121,12 @@ function DistrictDialog({ city, onClose, onChanged }: { city: City; onClose: () 
     try { await api.patch(`/admin/cities/${city.id}`, { name: n }); setSavedName(n); setCityName(n); onChanged(); } catch (e) { setError((e as Error).message); } finally { setBusy(null); }
   }
   const nameDirty = cityName.trim() !== savedName && cityName.trim().length >= 2;
+  // Sezon ve ülke: boş bırakılan alanlar temizlenir
+  async function saveSeason() {
+    setBusy('season'); setError('');
+    try { await api.patch(`/admin/cities/${city.id}`, seasonBody(season)); setSavedSeason(season); onChanged(); } catch (e) { setError((e as Error).message); } finally { setBusy(null); }
+  }
+  const seasonDirty = JSON.stringify(season) !== JSON.stringify(savedSeason) && seasonValid(season);
   async function delCity() {
     setBusy('city'); setError('');
     try { await api.delete(`/admin/cities/${city.id}`); onChanged(); onClose(); } catch (e) { setError((e as Error).message); setBusy(null); setConfirmDel(null); }
@@ -84,6 +136,12 @@ function DistrictDialog({ city, onClose, onChanged }: { city: City; onClose: () 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <AInput value={cityName} onChangeText={setCityName} placeholder="Şehir adı" maxLength={60} style={{ flex: 1, paddingHorizontal: 12 }} />
         <SmallBtn label={busy === 'name' ? 'Kaydediliyor…' : 'Adı Kaydet'} tone="cyan" disabled={busy === 'name' || !nameDirty} onPress={saveName} />
+      </View>
+      <View style={{ gap: 8, marginBottom: 16 }}>
+        <SeasonCountryFields value={season} onChange={setSeason} />
+        <View style={{ alignSelf: 'flex-end' }}>
+          <SmallBtn label={busy === 'season' ? 'Kaydediliyor…' : 'Sezon ve Ülkeyi Kaydet'} tone="cyan" disabled={busy === 'season' || !seasonDirty} onPress={saveSeason} />
+        </View>
       </View>
       <View style={{ gap: 8, marginBottom: 16 }}>
         <AInput value={name} onChangeText={setName} placeholder="İlçe adı" maxLength={60} style={{ paddingHorizontal: 12 }} />
@@ -130,6 +188,7 @@ export default function AdminCities() {
   const [modal, setModal] = useState(false);
   const [name, setName] = useState('');
   const [status, setStatus] = useState<CityStatus>('PASSIVE');
+  const [seasonInput, setSeasonInput] = useState<SeasonCountry>(seasonOf());
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [districtCity, setDistrictCity] = useState<City | null>(null);
@@ -137,7 +196,7 @@ export default function AdminCities() {
   useEffect(load, []);
   async function save() {
     setSaving(true); setError('');
-    try { await api.post('/admin/cities', { name: name.trim(), status }); setModal(false); load(); } catch (e) { setError((e as Error).message); } finally { setSaving(false); }
+    try { await api.post('/admin/cities', { name: name.trim(), status, ...seasonBody(seasonInput) }); setModal(false); load(); } catch (e) { setError((e as Error).message); } finally { setSaving(false); }
   }
   async function changeStatus(c: City, st: CityStatus) {
     setToggling(c.id); setError('');
@@ -153,7 +212,7 @@ export default function AdminCities() {
     <APage maxWidth={760}>
       <View style={{ marginBottom: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <ATitle>Şehirler</ATitle>
-        <Btn variant="admAdd" label="+ Şehir Ekle" onPress={() => { setName(''); setStatus('PASSIVE'); setError(''); setModal(true); }} />
+        <Btn variant="admAdd" label="+ Şehir Ekle" onPress={() => { setName(''); setStatus('PASSIVE'); setSeasonInput(seasonOf()); setError(''); setModal(true); }} />
       </View>
       {!modal && <AError>{error}</AError>}
       <ACard style={{ padding: 0, overflow: 'hidden' }}>
@@ -181,7 +240,7 @@ export default function AdminCities() {
           ))}
       </ACard>
       {districtCity && <DistrictDialog city={districtCity} onClose={() => setDistrictCity(null)} onChanged={load} />}
-      <ADialog visible={modal} onClose={() => setModal(false)} title="Yeni Şehir">
+      <ADialog visible={modal} onClose={() => setModal(false)} title="Yeni Şehir" keyboardScroll>
         <View style={{ gap: 10 }}>
           <AInput value={name} onChangeText={setName} placeholder="Şehir adı" style={{ paddingHorizontal: 12 }} />
           <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -191,8 +250,9 @@ export default function AdminCities() {
               </View>
             ))}
           </View>
+          <SeasonCountryFields value={seasonInput} onChange={setSeasonInput} />
           {!!error && <AT style={{ fontSize: 11, color: adm.red }}>{error}</AT>}
-          <Btn variant="admCyanFull" disabled={saving || name.trim().length < 2} label={saving ? 'Kaydediliyor…' : 'Kaydet'} onPress={save} />
+          <Btn variant="admCyanFull" disabled={saving || name.trim().length < 2 || !seasonValid(seasonInput)} label={saving ? 'Kaydediliyor…' : 'Kaydet'} onPress={save} />
         </View>
       </ADialog>
     </APage>
