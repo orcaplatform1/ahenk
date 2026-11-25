@@ -291,10 +291,10 @@ function HistoryItem({ m, open, onToggle }: { m: HistoryMeeting; open: boolean; 
           </View>
         )}
         {open && (
-          <Reanimated.View entering={FadeIn.duration(hc.ms)} exiting={FadeOut.duration(hc.ms)} style={{ paddingBottom: 12 }}>
+          <Reanimated.View entering={FadeIn.duration(hc.ms)} exiting={FadeOut.duration(hc.ms)}>
             <MasaDetayKarti masa={masa} archive />
             {!!m.blocked?.length && (
-              <View style={{ marginTop: 12, paddingHorizontal: 18 }}>
+              <View style={{ marginTop: 12, paddingHorizontal: 18, paddingBottom: 12 }}>
                 <Mono style={{ marginBottom: 4, fontSize: 11, color: ll.label }}>{t('tm.blocked')}</Mono>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                   {m.blocked.map((b, j) => <Mono key={`${b.initials}-${j}`} w={600} style={{ fontSize: 14, color: gColor(b.gender) }}>{b.initials}</Mono>)}

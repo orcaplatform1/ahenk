@@ -120,7 +120,9 @@ function participantRows(participants: DetayParticipant[], type?: MasaDetayData[
 
 // Tarih satırı (gg.aa.yyyy kuralının istisnası; @ahenk/shared formatCardDate ile aynı): TR "18 Kasım, Çarşamba 20:00",
 // EN "Wednesday, 18 November 20:00"
-function formatCardDate(isoStr: string, locale = 'tr'): string {
+// weekdayOnly (Geçmiş Masalarım, archive): tarih kartın başlığında olduğu için yalnız gün adı ve saat, TR "Çarşamba 20:00",
+// EN "Wednesday 20:00" (@ahenk/shared formatWeekdayTime ile aynı)
+function formatCardDate(isoStr: string, locale = 'tr', weekdayOnly = false): string {
   const d = new Date(isoStr);
   if (Number.isNaN(d.getTime())) return '';
   const loc = locale === 'en' ? 'en-GB' : 'tr-TR';
@@ -128,6 +130,7 @@ function formatCardDate(isoStr: string, locale = 'tr'): string {
   const dm = d.toLocaleDateString(loc, { day: 'numeric', month: 'long', timeZone: tz });
   const wd = d.toLocaleDateString(loc, { weekday: 'long', timeZone: tz });
   const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz });
+  if (weekdayOnly) return `${wd} ${time}`;
   return locale === 'en' ? `${wd}, ${dm} ${time}` : `${dm}, ${wd} ${time}`;
 }
 
@@ -1031,13 +1034,13 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
         )}
       </AnimatePresence>
 
-      {/* ── Ana kart ── */}
+      {/* ── Ana kart ── Geçmiş masada (archive) kendi kenarı ve köşesi yok: Geçmiş Masalarım dış kartının içinde tek kenarla biter */}
       <motion.div
         className="ll-card"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        style={{ position: 'relative', overflow: 'hidden', padding: 0, background: '#121212' }}
+        style={{ position: 'relative', overflow: 'hidden', padding: 0, background: '#121212', ...(archive ? { border: 'none', borderRadius: 0 } : {}) }}
       >
         <motion.div
           initial={{ opacity: 0.6, x: '-100%' }}
@@ -1103,7 +1106,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
                 <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" />
               </svg>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{formatCardDate(masa.scheduledAt, locale)}</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{formatCardDate(masa.scheduledAt, locale, archive)}</span>
             </div>
             {mapLink && (
               <a

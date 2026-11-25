@@ -23,7 +23,7 @@ import { ShareCardModal } from './ShareCard';
 import { PERM_REASON, showSettingsAlert } from '@/lib/permissions';
 import { c, ll, masaKart, sans, tw } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
-import { formatCardDate, formatDayMonth, occupationLabel, reviewOpensAt } from '@ahenk/shared';
+import { formatCardDate, formatDayMonth, formatWeekdayTime, occupationLabel, reviewOpensAt } from '@ahenk/shared';
 
 export interface DetayParticipant { initials: string; displayName?: string | null; gender: 'MALE' | 'FEMALE' | string | null; pair?: 'MINE' | 'OTHER'; isSelf?: boolean; photoUrl?: string | null; cancelled?: boolean; occupation?: string | null }
 export interface VenuePhoto { url: string; caption?: string }
@@ -618,7 +618,8 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
       <LocationDisclosure visible={disclosure} onContinue={() => answerDisclosure(true)} onCancel={() => answerDisclosure(false)} />
 
       {/* ── Ana kart ── */}
-      <Card style={{ padding: 0, overflow: 'hidden', backgroundColor: tw.bg }}>
+      {/* Geçmiş masada (archive) kendi kenarı ve köşesi yok: Geçmiş Masalarım dış kartının içinde tek kenarla biter */}
+      <Card style={{ padding: 0, overflow: 'hidden', backgroundColor: tw.bg, ...(archive ? { borderWidth: 0, borderRadius: 0 } : {}) }}>
         {/* Kapak: mekânın tek fotoğrafı tam genişlikte 16:9 (cover); fotoğraf yoksa fotoğraf alanı yok, masa türü ve mekân adı normal akışta */}
         <View style={cover ? { aspectRatio: masaKart.coverAspect } : { gap: 12, paddingTop: 12, paddingHorizontal: 14 }}>
           {cover && (
@@ -655,7 +656,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
               <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={masaKart.strip.icon} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
                 <Rect x={3} y={5} width={18} height={16} rx={2} /><Path d="M16 3v4M8 3v4M3 10h18" />
               </Svg>
-              <T w={700} style={{ fontSize: 15, flexShrink: 1 }}>{formatCardDate(masa.scheduledAt, currentLang())}</T>
+              <T w={700} style={{ fontSize: 15, flexShrink: 1 }}>{archive ? formatWeekdayTime(masa.scheduledAt, currentLang()) : formatCardDate(masa.scheduledAt, currentLang())}</T>
             </View>
             {hasMap && (
               <Pressable onPress={() => openMaps(masa.venueMapsUrl, masa.venueAddress, masa.venueName)} accessibilityRole="link" hitSlop={4}

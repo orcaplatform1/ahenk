@@ -648,10 +648,10 @@ function HistoryCard({ meeting: m }: { meeting: HistoryMeeting }) {
     aiReport: m.aiReport,
   };
   return (
-    <div style={{ paddingBottom: 12 }}>
+    <div>
       <MasaDetayKarti masa={masa} archive />
       {!!m.blocked?.length && (
-        <div style={{ marginTop: 12, padding: '0 18px' }}>
+        <div style={{ marginTop: 12, padding: '0 18px 12px' }}>
           <p className="ll-mono" style={{ margin: '0 0 4px', fontSize: 11, color: '#a39c93' }}>{t('tm.blocked')}</p>
           <div className="flex flex-wrap gap-3">
             {m.blocked.map((b, i) => (

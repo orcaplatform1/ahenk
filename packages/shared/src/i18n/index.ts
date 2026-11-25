@@ -86,6 +86,13 @@ export function formatCardDate(date: Date | string | number, lang: Lang, timeZon
   return lang === "en" ? `${wd}, ${dm} ${time}` : `${dm}, ${wd} ${time}`;
 }
 
+// Geçmiş Masalarım masa detay kartı tarih satırı (tarih kartın başlığında): yalnız gün adı ve saat, TR "Çarşamba 20:00", EN "Wednesday 20:00"
+export function formatWeekdayTime(date: Date | string | number, lang: Lang, timeZone: string = DEFAULT_TIMEZONE): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return "—";
+  return `${d.toLocaleDateString(intlLocale(lang), { weekday: "long", timeZone })} ${formatTime(d, timeZone)}`;
+}
+
 // Masalarım tarih sekmesi: TR "18 Kasım Çarşamba", EN "Wednesday, 18 November"
 export function formatDayTab(date: Date | string | number, lang: Lang, timeZone: string = DEFAULT_TIMEZONE): string {
   const d = date instanceof Date ? date : new Date(date);
