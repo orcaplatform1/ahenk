@@ -944,9 +944,14 @@ API CLIENT KURALLAR (web):
     20261116200100). Admin "Bölgeler" sayfası (web + mobil; GET /admin/regions,
     PATCH /admin/regions/:id): liste, alan düzenleme, tek tuşla aktif / pasif.
   - Para birimi: Türkiye bölgelerinde TRY (₺), Türkiye dışındaki bütün bölgelerde USD. Dubai'de şimdilik yalnız para birimi alanı var, fiyat yok.
-  - Şehir listeleri (mobil + web, kayıt ve şehir seçimi dahil): aktif şehirler (seçilebilir) → ince ayırıcı ortasında "Yakında" / "Coming soon"
-    → pasif bölgeler (Dubai Marina, Jumeirah Lake Towers (JLT), Downtown Dubai sırasıyla; soluk, seçilemez). Aktif yapılan bölge otomatik üst gruba geçer.
-    Bayrak countryCode TR değilse gösterilir; sezon isteğe bağlıdır, admin şehir formundan girilir; gösterim sırası "şehir adı, bayrak, sezon, Yakında".
+  - Şehir listeleri (mobil + web, kayıt ve şehir seçimi dahil): aktif şehirler (seçilebilir) → Yakında şehirler iki grupta (soluk, seçilemez),
+    her grubun üstünde ince ayırıcı ortasında yazı: Grup 1 countryCode TR olanlar, TR "Sezon Masaları 🇹🇷" / EN "Season Tables 🇹🇷";
+    Grup 2 countryCode TR olmayanlar, TR "Sezon Masaları 🌐" / EN "Season Tables 🌐". Grup içinde City.sortOrder'a göre sıralanır
+    (Çeşme, Bodrum, Fethiye, Marmaris, Kuşadası, Ayvalık; Dubai, Hong Kong, Singapur, Bangkok, Tokyo); "Sıra" admin şehir formundan
+    (web + mobil) girilir. Aktif yapılan bölge otomatik üst gruba geçer.
+    Satır düzeni: Grup 1 şehir adı, hemen sağında sezon; Grup 2 şehir adı, hemen sağında bayrak (countryCode TR değilse); "Yakında"
+    etiketi satırın en sağında, hizalı. Sezon isteğe bağlıdır, admin şehir formundan girilir; parantezsiz, italik, addan biraz küçük:
+    TR "1 Haziran >< 15 Eylül", EN "June 1 >< September 15" (ay adları arayüz dilinde). Ortak mantık packages/shared citySeason.ts.
   - Tarih / saat: buluşmanın yapıldığı bölgenin saat diliminde; her iki dilde sayısal gg.aa.yyyy ve 24 saat SS:dd; ay ve gün adları arayüz dilinde.
     İstisnalar: masa detay kartı tarih satırı TR "18 Kasım, Çarşamba 20:00", EN "Wednesday, 18 November 20:00" (shared formatCardDate);
     Masalarım tarih sekmesi TR "18 Kasım Çarşamba", EN "Wednesday, 18 November" (formatDayTab).

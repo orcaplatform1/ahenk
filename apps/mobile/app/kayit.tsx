@@ -23,7 +23,8 @@ import { Btn, StdButton, ErrorText, Eyebrow, Input, Spinner, T, Glow, ScreenGlow
 import { OtpCountdown, OtpNoticeAction, otpNoticeOf, useOtpCountdown, type OtpNoticeCode } from '@/components/OtpCountdown';
 import { c, ll, tw, tw4 } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
-import { DEFAULT_PHONE_COUNTRY, ENGLISH_ENABLED, cityExtras, occupationLabel, toE164, type CitySeasonFields } from '@ahenk/shared';
+import { DEFAULT_PHONE_COUNTRY, ENGLISH_ENABLED, occupationLabel, toE164, type CitySeasonFields } from '@ahenk/shared';
+import { cityLabelWithExtras } from '@/components/SoonCityGroups';
 import i18n, { currentLang } from '@/lib/i18n';
 import { CountryCodeButton } from '@/components/PhoneCountry';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -306,8 +307,8 @@ export default function Kayit() {
         {step === 2 && (
           <View style={{ gap: 20 }}>
             {header(3, t('reg.stepCityTitle'), t('reg.cityHint'))}
-            <ListPicker label={t('reg.primaryCity')} value={f.primaryCityId} onChange={v => setF(p => ({ ...p, primaryCityId: v, district: '' }))} options={sortedCities.map(x => ({ value: x.id, label: cityLabel(x.name), extra: cityExtras(x, lang) }))} placeholder={t('reg.pickCityShort')} title={t('reg.pickPrimaryCity')}
-              soon={soonCities.map(x => ({ value: x.id, label: x.name, extra: cityExtras(x, lang) }))} />
+            <ListPicker label={t('reg.primaryCity')} value={f.primaryCityId} onChange={v => setF(p => ({ ...p, primaryCityId: v, district: '' }))} options={sortedCities.map(x => ({ value: x.id, label: cityLabel(x.name), extra: cityLabelWithExtras('', x) }))} placeholder={t('reg.pickCityShort')} title={t('reg.pickPrimaryCity')}
+              soon={soonCities} />
             {districtOptions.length > 0 && <ListPicker key={f.primaryCityId} label={t('reg.district')} value={f.district} onChange={v => set('district', v)} options={districtOptions.map(d => ({ value: d, label: d }))} placeholder={t('reg.pickDistrictPh')} title={t('reg.districtAria')} searchable searchPlaceholder={t('reg.districtSearch')} />}
             <View style={{ backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.25)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>
               <T style={{ color: 'rgba(192,57,43,0.85)', fontSize: 11, lineHeight: 16.5 }}>{t('reg.tempCity')}</T>

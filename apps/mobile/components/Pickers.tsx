@@ -4,7 +4,8 @@ import { ScrollView, View } from 'react-native';
 import { Btn, StdButton, Input, Mono, Sheet, T } from './ui';
 import { c, ll } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
-import { formatNamed } from '@ahenk/shared';
+import { formatNamed, type CitySeasonFields } from '@ahenk/shared';
+import { SoonCityGroups } from './SoonCityGroups';
 import { currentLang } from '@/lib/i18n';
 
 export function FieldLabel({ children }: { children: string }) {
@@ -17,10 +18,10 @@ function FieldButton({ text, filled, onPress }: { text: string; filled: boolean;
   );
 }
 
-// soon: "Yakında" ayracının altındaki pasif bölgeler (soluk, seçilemez). extra: listede adın sağındaki ek (şehirde TR dışı bayrak ve sezon)
+// soon: Yakında şehirler (soluk, seçilemez; iki grup "Sezon Masaları 🇹🇷 / 🌐", components/SoonCityGroups.tsx). extra: listede adın sağındaki ek
 export function ListPicker({ label, value, onChange, options, placeholder, title, searchable, searchPlaceholder, soon }: {
   label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string; extra?: string }[]; placeholder: string; title: string; searchable?: boolean; searchPlaceholder?: string;
-  soon?: { value: string; label: string; extra?: string }[];
+  soon?: (CitySeasonFields & { id: string; name: string })[];
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -42,20 +43,7 @@ export function ListPicker({ label, value, onChange, options, placeholder, title
           {shown.map(o => (
             <Btn key={o.value} variant="listOption" selected={tmp === o.value} label={o.extra ? `${o.label} ${o.extra}` : o.label} onPress={() => setTmp(o.value)} />
           ))}
-          {!!soon?.length && (
-            <>
-              <View accessibilityRole="none" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 10, marginHorizontal: 4 }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-                <T style={{ fontSize: 11, color: '#8f887f' }}>{t('common.comingSoon')}</T>
-                <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-              </View>
-              {soon.map((o) => (
-                <View key={o.value} accessibilityState={{ disabled: true }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, paddingHorizontal: 14, minHeight: 44 }}>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, flexShrink: 1 }}><T style={{ fontSize: 15, color: 'rgba(201,194,184,0.4)' }}>{o.extra ? `${o.label} ${o.extra}` : o.label}</T><View style={{ paddingVertical: 1, paddingHorizontal: 7, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(143,136,127,0.4)' }}><T style={{ fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</T></View></View>
-                </View>
-              ))}
-            </>
-          )}
+          {!!soon?.length && <SoonCityGroups cities={soon} fontSize={15} color="rgba(201,194,184,0.4)" paddingHorizontal={14} />}
         </ScrollView>
         <StdButton variant="primary" label={t('date.select')} full style={{ marginTop: 16 }} onPress={() => { onChange(tmp); setOpen(false); }} />
       </Sheet>

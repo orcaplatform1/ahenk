@@ -1,5 +1,8 @@
-// Şehir listesi gösterimi: sezon (gün + ay, yıl yok) ve ülke bayrağı (City.countryCode, ISO 3166-1 alpha-2 koddan emoji; TR'de bayrak yok).
-// TR "(15 Mayıs-15 Eylül)", EN "(May 15-September 15)"; ay adları arayüz dilinde. Web ve mobil şehir listeleri aynı fonksiyonu kullanır.
+// Şehir listesi gösterimi (web + mobil, kayıt ve Profilim şehir listeleri aynı fonksiyonları kullanır):
+// - Yakında şehirler iki grupta: countryCode TR olanlar ("Sezon Masaları 🇹🇷") ve TR olmayanlar ("Sezon Masaları 🌐"); grup içinde
+//   sortOrder (yoksa gelen sıra) ile sıralanır.
+// - Sezon: parantezsiz, TR "1 Haziran >< 15 Eylül", EN "June 1 >< September 15"; ay adları arayüz dilinde.
+// - Bayrak: countryCode TR değilse ülke kodundan emoji.
 import { flagEmoji, formatNamed, type Lang } from "./i18n";
 
 export interface CitySeasonFields {
@@ -8,6 +11,7 @@ export interface CitySeasonFields {
   seasonEndDay?: number | null;
   seasonEndMonth?: number | null;
   countryCode?: string | null;
+  sortOrder?: number | null;
 }
 
 export const monthName = (month: number, lang: Lang) => formatNamed(new Date(Date.UTC(2024, month - 1, 15, 12)), lang, { month: "long" }, "UTC");
@@ -16,17 +20,23 @@ export function citySeason(c: CitySeasonFields, lang: Lang): string {
   const { seasonStartDay: sd, seasonStartMonth: sm, seasonEndDay: ed, seasonEndMonth: em } = c;
   if (!sd || !sm || !ed || !em) return "";
   return lang === "en"
-    ? `(${monthName(sm, lang)} ${sd}-${monthName(em, lang)} ${ed})`
-    : `(${sd} ${monthName(sm, lang)}-${ed} ${monthName(em, lang)})`;
+    ? `${monthName(sm, lang)} ${sd} >< ${monthName(em, lang)} ${ed}`
+    : `${sd} ${monthName(sm, lang)} >< ${ed} ${monthName(em, lang)}`;
 }
 
 export function cityFlag(c: CitySeasonFields): string {
   return c.countryCode && c.countryCode !== "TR" ? flagEmoji(c.countryCode) : "";
 }
 
-// Şehir adının sağındaki ek: bayrak (TR dışı) ve sezon; ikisi de boşsa ""
-export function cityExtras(c: CitySeasonFields, lang: Lang): string {
-  return [cityFlag(c), citySeason(c, lang)].filter(Boolean).join(" ");
+// Şehir adının sağındaki ekler: bayrak (TR dışı) ve sezon metni; yoksa boş metin
+export function cityExtras(c: CitySeasonFields, lang: Lang): { flag: string; season: string } {
+  return { flag: cityFlag(c), season: citySeason(c, lang) };
+}
+
+// Yakında şehirleri iki gruba ayırır: tr (countryCode TR) ve intl (TR dışı); grup içinde sortOrder'a göre (eşitse gelen sıra)
+export function soonCityGroups<T extends CitySeasonFields>(soon: T[]): { tr: T[]; intl: T[] } {
+  const sorted = soon.map((c, i) => ({ c, i })).sort((a, b) => (a.c.sortOrder ?? 0) - (b.c.sortOrder ?? 0) || a.i - b.i).map((x) => x.c);
+  return { tr: sorted.filter((c) => (c.countryCode ?? "TR") === "TR"), intl: sorted.filter((c) => (c.countryCode ?? "TR") !== "TR") };
 }
 
 // Admin "Ülke" seçimi: ISO 3166-1 alpha-2 kodları

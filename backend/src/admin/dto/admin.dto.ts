@@ -263,6 +263,8 @@ export class CreateCityDto {
   @IsOptional() @IsInt() @Min(1) @Max(31) seasonEndDay?: number | null;
   @IsOptional() @IsInt() @Min(1) @Max(12) seasonEndMonth?: number | null;
   @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (TR, AE)" }) countryCode?: string;
+  // Sıra (City.sortOrder): şehir listelerinde grup içi sıralama
+  @IsOptional() @IsInt() sortOrder?: number;
 }
 
 export class UpdateCityDto {
@@ -286,6 +288,8 @@ export class UpdateCityDto {
   @IsOptional() @IsInt() @Min(1) @Max(31) seasonEndDay?: number | null;
   @IsOptional() @IsInt() @Min(1) @Max(12) seasonEndMonth?: number | null;
   @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (TR, AE)" }) countryCode?: string;
+  // Sıra (City.sortOrder): şehir listelerinde grup içi sıralama
+  @IsOptional() @IsInt() sortOrder?: number;
 }
 
 // Bölge (şehir) ayarları — admin "Bölgeler" sayfası

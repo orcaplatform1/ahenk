@@ -6,7 +6,8 @@ import { KankaSection } from '@/components/KankaSection';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import { useState, useRef, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ENGLISH_ENABLED, cityExtras, occupationLabel, splitE164, toE164, type CitySeasonFields, type Lang } from '@ahenk/shared';
+import { ENGLISH_ENABLED, occupationLabel, splitE164, toE164, type CitySeasonFields, type Lang } from '@ahenk/shared';
+import { CityExtras, SoonCityGroups } from '@/components/SoonCityGroups';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { usePathname } from '@/i18n/navigation';
 import { switchLocale } from '@/lib/locale';
@@ -634,10 +635,9 @@ function CityPickerModalP({ cities, value, onChange, onClose, optional, title }:
   optional?: boolean; title: string;
 }) {
   const t = useTranslations();
-  const lang: Lang = useLocale() === 'en' ? 'en' : 'tr';
   const [tmp, setTmp] = useState(value);
   // Üst grup seçilebilir bölgeler; "Yakında" grubu pasif bölgeler (soluk, seçilemez).
-  // Şehir adının sağında ("Yakında" etiketinden önce): TR dışı ülke bayrağı ve sezon (cityExtras)
+  // Yakında şehirler iki grupta (Sezon Masaları 🇹🇷 / 🌐), components/SoonCityGroups.tsx; adın sağında bayrak ve sezon (CityExtras)
   const sorted = sortCitiesP(cities.filter((c) => c.isActive !== false));
   const soon = cities.filter((c) => c.isActive === false);
   return (
@@ -657,22 +657,11 @@ function CityPickerModalP({ cities, value, onChange, onClose, optional, title }:
             const isSel = c.id === tmp;
             return (
               <div key={c.id} onClick={() => setTmp(c.id)} style={{ padding: '13px 14px', fontSize: 15, color: isSel ? '#ff6b6b' : '#ccc', fontWeight: isSel ? 600 : 400, background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}>
-                {cityLabelP(c.name)}{cityExtras(c, lang) && <span style={{ marginLeft: 6 }}>{cityExtras(c, lang)}</span>}
+                {cityLabelP(c.name)}<CityExtras city={c} />
               </div>
             );
           })}
-          {soon.length > 0 && (
-            <>
-              <div role="separator" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 4px', color: '#8f887f', fontSize: 11 }}>
-                <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />{t('common.comingSoon')}<span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />
-              </div>
-              {soon.map((c) => (
-                <div key={c.id} aria-disabled="true" style={{ padding: '9px 14px', fontSize: 15, color: 'rgba(204,204,204,0.4)' }}>
-                  <span>{c.name}{cityExtras(c, lang) && <span style={{ marginLeft: 6 }}>{cityExtras(c, lang)}</span>}<span style={{ marginLeft: 8, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(143,136,127,0.4)', fontSize: 10, color: '#8f887f' }}>{t('common.comingSoon')}</span></span>
-                </div>
-              ))}
-            </>
-          )}
+          {soon.length > 0 && <SoonCityGroups cities={soon} color="rgba(204,204,204,0.4)" />}
         </div>
         <StdButton variant="primary" onClick={() => { onChange(tmp); onClose(); }} className="w-full justify-center" style={{ marginTop: 16 }}>
           {t('reg.select')}

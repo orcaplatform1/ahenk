@@ -13,14 +13,14 @@ interface City extends CitySeasonFields { id: string; name: string; isActive: bo
 
 // Sezon (gün + ay, yıl yok; isteğe bağlı, boşsa listede tarih yok) ve ülke (City.countryCode, ISO 3166-1 alpha-2, varsayılan TR;
 // TR değilse listede bayrak). Bölgeler sayfası da aynı countryCode alanını düzenler (web admin/cities ile aynı)
-interface SeasonCountry { sd: string; sm: string; ed: string; em: string; countryCode: string }
+interface SeasonCountry { sd: string; sm: string; ed: string; em: string; countryCode: string; sortOrder: string }
 const seasonOf = (c?: CitySeasonFields): SeasonCountry => ({
   sd: c?.seasonStartDay ? String(c.seasonStartDay) : '', sm: c?.seasonStartMonth ? String(c.seasonStartMonth) : '',
-  ed: c?.seasonEndDay ? String(c.seasonEndDay) : '', em: c?.seasonEndMonth ? String(c.seasonEndMonth) : '', countryCode: c?.countryCode || 'TR',
+  ed: c?.seasonEndDay ? String(c.seasonEndDay) : '', em: c?.seasonEndMonth ? String(c.seasonEndMonth) : '', countryCode: c?.countryCode || 'TR', sortOrder: String(c?.sortOrder ?? 0),
 });
 const seasonBody = (v: SeasonCountry) => ({
   seasonStartDay: v.sd ? Number(v.sd) : null, seasonStartMonth: v.sm ? Number(v.sm) : null,
-  seasonEndDay: v.ed ? Number(v.ed) : null, seasonEndMonth: v.em ? Number(v.em) : null, countryCode: v.countryCode,
+  seasonEndDay: v.ed ? Number(v.ed) : null, seasonEndMonth: v.em ? Number(v.em) : null, countryCode: v.countryCode, sortOrder: Number(v.sortOrder) || 0,
 });
 const seasonValid = (v: SeasonCountry) => { const n = [v.sd, v.sm, v.ed, v.em].filter(Boolean).length; return n === 0 || n === 4; };
 const DAY_OPTIONS = [{ value: '', label: 'Gün' }, ...Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))];
@@ -49,6 +49,10 @@ function SeasonCountryFields({ value, onChange }: { value: SeasonCountry; onChan
       <View>
         <ALabel style={{ color: adm.muted, marginBottom: 4 }}>Ülke</ALabel>
         <AdminSelect value={value.countryCode} onChange={x => set('countryCode', x)} options={COUNTRY_OPTIONS} placeholder="Ülke" title="Ülke" />
+      </View>
+      <View>
+        <ALabel style={{ color: adm.muted, marginBottom: 4 }}>Sıra</ALabel>
+        <AInput value={value.sortOrder} onChangeText={x => set('sortOrder', x.replace(/[^0-9-]/g, ''))} keyboardType="numbers-and-punctuation" accessibilityLabel="Sıra" style={{ paddingHorizontal: 12 }} />
       </View>
       {!seasonValid(value) && <AT style={{ fontSize: 11, color: adm.red }}>Sezon başlangıcı ve bitişinin gün ve ayı birlikte seçilmeli.</AT>}
     </View>
@@ -141,7 +145,7 @@ function DistrictDialog({ city, onClose, onChanged }: { city: City; onClose: () 
       <View style={{ gap: 8, marginBottom: 16 }}>
         <SeasonCountryFields value={season} onChange={setSeason} />
         <View style={{ alignSelf: 'flex-end' }}>
-          <SmallBtn label={busy === 'season' ? 'Kaydediliyor…' : 'Sezon ve Ülkeyi Kaydet'} tone="cyan" disabled={busy === 'season' || !seasonDirty} onPress={saveSeason} />
+          <SmallBtn label={busy === 'season' ? 'Kaydediliyor…' : 'Sezon, Ülke ve Sırayı Kaydet'} tone="cyan" disabled={busy === 'season' || !seasonDirty} onPress={saveSeason} />
         </View>
       </View>
       <View style={{ gap: 8, marginBottom: 16 }}>

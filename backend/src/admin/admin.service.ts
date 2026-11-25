@@ -2194,7 +2194,7 @@ export class AdminService {
 
 // Şehir sezonu (gün + ay, yıl yok), isteğe bağlı: dört alanla birlikte girilir ya da hepsi boş bırakılır; gün ayın gün sayısını
 // aşamaz (Şubat 29). Gönderilmeyen alan değişmez, null temizler. Ülke: zorunlu countryCode (ISO 3166-1 alpha-2), gönderilirse güncellenir.
-type CitySeasonCountry = { seasonStartDay?: number | null; seasonStartMonth?: number | null; seasonEndDay?: number | null; seasonEndMonth?: number | null; countryCode?: string };
+type CitySeasonCountry = { seasonStartDay?: number | null; seasonStartMonth?: number | null; seasonEndDay?: number | null; seasonEndMonth?: number | null; countryCode?: string; sortOrder?: number };
 const MONTH_DAYS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 function citySeasonCountryData(dto: CitySeasonCountry): CitySeasonCountry {
   const out: CitySeasonCountry = {};
@@ -2207,6 +2207,7 @@ function citySeasonCountryData(dto: CitySeasonCountry): CitySeasonCountry {
     keys.forEach((k, i) => { out[k] = vals[i]; });
   }
   if (dto.countryCode) out.countryCode = dto.countryCode;
+  if (dto.sortOrder !== undefined) out.sortOrder = dto.sortOrder;
   return out;
 }
 
