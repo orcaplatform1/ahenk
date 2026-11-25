@@ -311,7 +311,7 @@ export default function Kayit() {
         {step === 2 && (
           <View style={{ gap: 20 }}>
             {header(3, t('reg.stepCityTitle'), t('reg.cityHint'))}
-            <ListPicker label={t('reg.primaryCity')} value={f.primaryCityId} onChange={v => setF(p => ({ ...p, primaryCityId: v, district: '' }))} options={sortedCities.map(x => ({ value: x.id, label: cityLabel(x.name), extra: cityLabelWithExtras('', x) }))} placeholder={t('reg.pickCityShort')} title={t('reg.pickPrimaryCity')}
+            <ListPicker label={t('reg.primaryCity')} value={f.primaryCityId} onChange={v => setF(p => ({ ...p, primaryCityId: v, district: '' }))} options={sortedCities.map(x => ({ value: x.id, label: cityLabel(x.name), extra: cityLabelWithExtras('', x), cityName: x.name }))} placeholder={t('reg.pickCityShort')} title={t('reg.pickPrimaryCity')}
               soon={soonCities} />
             {districtOptions.length > 0 && <ListPicker key={f.primaryCityId} label={t('reg.district')} value={f.district} onChange={v => set('district', v)} options={districtOptions.map(d => ({ value: d, label: d }))} placeholder={t('reg.pickDistrictPh')} title={t('reg.districtAria')} searchable searchPlaceholder={t('reg.districtSearch')} />}
             <View style={{ backgroundColor: 'rgba(192,57,43,0.08)', borderWidth: 1, borderColor: 'rgba(192,57,43,0.25)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }}>

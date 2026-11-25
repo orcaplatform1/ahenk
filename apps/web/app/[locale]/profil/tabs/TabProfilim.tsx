@@ -6,7 +6,7 @@ import { KankaSection } from '@/components/KankaSection';
 import { useMasaTabs } from '@/components/live/useMasaTabs';
 import { useState, useRef, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ENGLISH_ENABLED, occupationLabel, splitE164, toE164, type CitySeasonFields, type Lang } from '@ahenk/shared';
+import { cityImage, ENGLISH_ENABLED, occupationLabel, splitE164, toE164, type CitySeasonFields, type Lang } from '@ahenk/shared';
 import { CityExtras, SoonCityGroups } from '@/components/SoonCityGroups';
 import { CountryCodeButton } from '@/components/PhoneCountryField';
 import { Link, usePathname } from '@/i18n/navigation';
@@ -681,6 +681,7 @@ function CityPickerModalP({ cities, value, onChange, onClose, optional, title }:
             const isSel = c.id === tmp;
             return (
               <div key={c.id} onClick={() => setTmp(c.id)} style={{ padding: '13px 14px', fontSize: 15, color: isSel ? '#ff6b6b' : '#ccc', fontWeight: isSel ? 600 : 400, background: isSel ? 'rgba(192,57,43,0.12)' : 'transparent', borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', transition: 'color 0.1s, background 0.1s' }}>
+                {cityImage(c.name) && <img src={cityImage(c.name)} alt="" style={{ display: 'block', width: '100%', height: 96, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />}
                 {cityLabelP(c.name)}<CityExtras city={c} />
               </div>
             );

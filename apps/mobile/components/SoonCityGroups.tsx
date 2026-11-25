@@ -2,9 +2,11 @@
 // İki grup, her grubun üstünde ayırıcı çizgi: countryCode TR ("Sezon Masaları 🇹🇷"), TR dışı ("Yeni Duraklar 📍"); ayırıcının altında ortalı,
 // italik takvim satırı (Grup 1 groupSeason, yoksa "Takvim: Yakında"; Grup 2 "Takvim: Yakında"). Satır: ad (Grup 2'de + bayrak),
 // "Yakında" etiketi satırın en sağında. Gruplama ve sıralama packages/shared citySeason.ts. Satırlar en az 44 pt, seçilemez.
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { cityExtras, cityFlag, groupSeason, soonCityGroups, type CitySeasonFields } from '@ahenk/shared';
+import { cityExtras, cityFlag, cityImage, groupSeason, soonCityGroups, type CitySeasonFields } from '@ahenk/shared';
+import { SITE } from '@/lib/config';
+import { btn } from '@/theme/theme';
 import { currentLang } from '@/lib/i18n';
 import { T } from './ui';
 
@@ -14,6 +16,20 @@ type SoonCity = CitySeasonFields & { id: string; name: string };
 export function cityLabelWithExtras(name: string, c: CitySeasonFields): string {
   const { flag, season } = cityExtras(c, currentLang());
   return [name, flag, season].filter(Boolean).join(' ');
+}
+
+// Seçilebilir şehir kartının içeriği (Btn listOption children): üstte şehir görseli (web kayıt / Profilim ile aynı, 96 yükseklik,
+// köşe 8, cover), altında etiket; listOption yazı stilleri (seçili: kırmızı + 600). Görseli olmayan şehirde undefined (Btn düz satırı çizer)
+export function cityImageOption(name: string, label: string, selected: boolean) {
+  const src = cityImage(name);
+  if (!src) return undefined;
+  const spec = btn.listOption;
+  return (
+    <View>
+      <Image source={{ uri: `${SITE}${src}` }} resizeMode="cover" accessibilityIgnoresInvertColors style={{ width: '100%', height: 96, borderRadius: 8, marginBottom: 8 }} />
+      <T w={selected ? 600 : 400} style={[{ fontSize: spec.text.fontSize, color: spec.text.color }, selected && { color: spec.on.text.color }]}>{label}</T>
+    </View>
+  );
 }
 
 function Separator({ label, schedule }: { label: string; schedule: string }) {

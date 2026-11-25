@@ -1138,6 +1138,14 @@ API CLIENT KURALLAR (web):
     Grup 1 satırı: yalnız şehir adı ve en sağda "Yakında" etiketi (satırda sezon metni yok).
     Grup 2 satırı: şehir adı, sağında bayrak (countryCode'dan emoji), en sağda "Yakında" etiketi.
     Ortak mantık packages/shared/src/citySeason.ts (cityExtras, soonCityGroups, groupSeason).
+  - Şehir kartı görselleri (web + mobil, TR + EN): kayıt ve Profilim şehir seçimi listesinde İstanbul, Ankara, İzmir ve Antalya satırları
+    kart: üstte şehir görseli (tam genişlik, yükseklik 96, köşe 8, kırpmalı / cover), altında mevcut ad satırı; seçim mantığı aynen.
+    Görseli olmayan şehir düz satır. Görseller apps/web/public/share-bg/<şehir>.webp (istanbul, ankara, izmir, antalya, cesme, bodrum,
+    fethiye, marmaris, kusadasi, ayvalik); mobil https://ahenk.co önekiyle. Eşleme packages/shared/src/citySeason.ts CITY_IMAGES / cityImage /
+    SEASIDE_CITY_IMAGES; mobil SoonCityGroups.tsx cityImageOption (Btn listOption içeriği)
+  - Nasıl Çalışır son sayfası (8. adım, web + mobil Onboarding): dalga ikonlu şehir kutuları yok; 2 sütunda 6 görselli kart: Çeşme, Bodrum,
+    Fethiye, Marmaris, Kuşadası, Ayvalık (onb.s8c1–s8c6). Kart: üstte görsel (16:10, cover), altında kalın şehir adı ve tarih satırı
+    onb.s8Dates (TR "1 Haziran >< 15 Eylül", EN "June 1 >< September 15"); alt metin onb.s8Body ve üstteki sezon etiketi aynen
   - Tarih / saat: buluşmanın yapıldığı bölgenin saat diliminde; her iki dilde sayısal gg.aa.yyyy ve 24 saat SS:dd; ay ve gün adları arayüz dilinde.
     İstisnalar: masa detay kartı tarih satırı TR "18 Kasım, Çarşamba 20:00", EN "Wednesday, 18 November 20:00" (shared formatCardDate);
     Masalarım tarih sekmesi TR "18 Kasım Çarşamba", EN "Wednesday, 18 November" (formatDayTab).

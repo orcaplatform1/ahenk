@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import { MasaDetayKarti, type MasaDetayData } from '@ahenk/ui';
-import { occupationLabel, seasonRangeTag, type CitySeasonFields } from '@ahenk/shared';
+import { occupationLabel, seasonRangeTag, SEASIDE_CITY_IMAGES, type CitySeasonFields } from '@ahenk/shared';
 import { api } from '@/lib/api';
 import { usePlanPrices, type PlanKeyName } from '@/components/PlanPrice';
 import { AMBER, AMBER_GRADIENT, CARDS } from '@/components/paket/PaketKarti';
@@ -35,7 +35,6 @@ const ICONS = {
   check: <><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z" /><path d="M8.5 12l2.5 2.5 4.5-5" /></>,
   sos: <><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 16.5v.5" /></>,
   user: <><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" /><path d="M18 4l3 3M21 4l-3 3" /></>,
-  wave: <><path d="M3 10c2 0 2-2 4.5-2S10 10 12 10s2-2 4.5-2S19 10 21 10" /><path d="M3 15c2 0 2-2 4.5-2S10 15 12 15s2-2 4.5-2S19 15 21 15" /></>,
   sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
 };
 
@@ -267,10 +266,13 @@ function Step({ n, t, wide, seasonTag }: { n: number; t: ReturnType<typeof useTr
       <h2 style={h2}>{t('onb.s8Title')}</h2>
       <p style={{ ...sub, color: C.text }}>{t('onb.s8Body')}</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} style={{ ...card, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Icon d={ICONS.wave} />
-            <span style={strong}>{t(`onb.s8c${i}`)}</span>
+        {SEASIDE_CITY_IMAGES.map((src, idx) => (
+          <div key={src} style={{ ...card, padding: 0, overflow: 'hidden' }}>
+            <img src={src} alt="" style={{ display: 'block', width: '100%', aspectRatio: '16 / 10', objectFit: 'cover' }} />
+            <div style={{ padding: '10px 12px' }}>
+              <p style={strong}>{t(`onb.s8c${idx + 1}`)}</p>
+              <p style={{ ...small, fontSize: 12, marginTop: 2 }}>{t('onb.s8Dates')}</p>
+            </div>
           </div>
         ))}
       </div>

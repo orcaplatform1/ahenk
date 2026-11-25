@@ -1971,8 +1971,11 @@
     "s8Body": "Her gün Çeşme, Bodrum, Fethiye, Marmaris, Kuşadası ve Ayvalık'ta Baş Başa ve Kankamla masaları.",
     "s8c1": "Çeşme",
     "s8c2": "Bodrum",
-    "s8c3": "Kuşadası",
-    "s8c4": "Ayvalık",
+    "s8c3": "Fethiye",
+    "s8c4": "Marmaris",
+    "s8c5": "Kuşadası",
+    "s8c6": "Ayvalık",
+    "s8Dates": "1 Haziran >< 15 Eylül",
     "s8Foot": "Tatildeyken haftalık şehir seçiminden tatil yerini seçmen yeterli.",
     "recommended": "Önerilen",
     "s6AiReport": "İkinizin de meraklı ve sosyal yapısı sohbetin kendiliğinden akmasını sağlayacak. Seyahat ve yemek kültürü güçlü bir ortak nokta. İlk dakikalardaki tanışma kısa sürecek, akşamın geri kalanı rahat geçecek."

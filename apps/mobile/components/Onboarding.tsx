@@ -2,14 +2,14 @@
 // 8 adım, bilgilendirme amaçlı. Kayıttan sonra bir kez otomatik (sekme yerleşimi, User.onboardingSeenAt boşken),
 // Profilim'deki "Nasıl Çalışır?" butonuyla her zaman. Son adımda "Başla" ya da herhangi bir adımda "Atla" → onClose(true).
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, View, type ScrollViewInstance } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, View, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { upper } from '@/lib/i18n';
 import { api } from '@/lib/api';
-import { seasonRangeTag, type CitySeasonFields } from '@ahenk/shared';
+import { seasonRangeTag, SEASIDE_CITY_IMAGES, type CitySeasonFields } from '@ahenk/shared';
 import { MasaDetayKarti, type MasaDetayData } from './MasaDetayKarti';
 import { SITE } from '@/lib/config';
 import { onb as C } from '@/theme/theme';
@@ -29,7 +29,6 @@ const ICONS: Record<string, React.ReactNode> = {
   check: <><Path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z" /><Path d="M8.5 12l2.5 2.5 4.5-5" /></>,
   sos: <><Circle cx={12} cy={12} r={9} /><Path d="M12 7v6M12 16.5v.5" /></>,
   user: <><Circle cx={12} cy={8} r={3.5} /><Path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" /><Path d="M18 4l3 3M21 4l-3 3" /></>,
-  wave: <><Path d="M3 10c2 0 2-2 4.5-2S10 10 12 10s2-2 4.5-2S19 10 21 10" /><Path d="M3 15c2 0 2-2 4.5-2S10 15 12 15s2-2 4.5-2S19 15 21 15" /></>,
   sun: <><Circle cx={12} cy={12} r={4} /><Path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
 };
 function Icon({ name, size = 22, color = C.accent }: { name: keyof typeof ICONS; size?: number; color?: string }) {
@@ -286,10 +285,14 @@ function Step({ n, prices, seasonTag }: { n: number; prices: Partial<Record<Plan
       <H2>{t('onb.s8Title')}</H2>
       <Sub style={{ color: C.text }}>{t('onb.s8Body')}</Sub>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {[1, 2, 3, 4].map(i => (
-          <View key={i} style={[card, { width: '48.5%', flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
-            <Icon name="wave" />
-            <Strong style={{ flexShrink: 1 }}>{t(`onb.s8c${i}`)}</Strong>
+        {SEASIDE_CITY_IMAGES.map((src, idx) => (
+          <View key={src} accessible accessibilityLabel={`${t(`onb.s8c${idx + 1}`)}, ${t('onb.s8Dates')}`}
+            style={[card, { width: '48.5%', paddingVertical: 0, paddingHorizontal: 0, overflow: 'hidden' }]}>
+            <Image source={{ uri: `${SITE}${src}` }} resizeMode="cover" accessibilityIgnoresInvertColors style={{ width: '100%', aspectRatio: 16 / 10 }} />
+            <View style={{ paddingVertical: 10, paddingHorizontal: 12 }}>
+              <Strong>{t(`onb.s8c${idx + 1}`)}</Strong>
+              <Small style={{ fontSize: 12, marginTop: 2 }}>{t('onb.s8Dates')}</Small>
+            </View>
           </View>
         ))}
       </View>

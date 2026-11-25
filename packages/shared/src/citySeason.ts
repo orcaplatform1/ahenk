@@ -70,3 +70,21 @@ export function seasonRangeTag(cities: CitySeasonFields[], lang: Lang): string {
   const end = tr.reduce((a, c) => (key(c.seasonEndMonth!, c.seasonEndDay!) > key(a.seasonEndMonth!, a.seasonEndDay!) ? c : a));
   return `${start.seasonStartDay} ${monthName(start.seasonStartMonth!, lang)} – ${end.seasonEndDay} ${monthName(end.seasonEndMonth!, lang)}`;
 }
+
+// Şehir kartı görselleri (apps/web/public/share-bg; mobil https://ahenk.co önekiyle). Kayıt + Profilim şehir seçimi kartlarının üst kısmı
+// (İstanbul, Ankara, İzmir, Antalya) ve Nasıl Çalışır son sayfasındaki sahil kartları (SEASIDE_CITIES sırası). Görseli olmayan şehirde ""
+export const CITY_IMAGES: Record<string, string> = {
+  "İstanbul": "/share-bg/istanbul.webp",
+  "Ankara": "/share-bg/ankara.webp",
+  "İzmir": "/share-bg/izmir.webp",
+  "Antalya": "/share-bg/antalya.webp",
+  "Çeşme": "/share-bg/cesme.webp",
+  "Bodrum": "/share-bg/bodrum.webp",
+  "Fethiye": "/share-bg/fethiye.webp",
+  "Marmaris": "/share-bg/marmaris.webp",
+  "Kuşadası": "/share-bg/kusadasi.webp",
+  "Ayvalık": "/share-bg/ayvalik.webp",
+};
+export const cityImage = (name: string): string => CITY_IMAGES[name] ?? "";
+// Nasıl Çalışır son sayfası kartları: onb.s8c1..s8c6 ile aynı sıra
+export const SEASIDE_CITY_IMAGES = ["cesme", "bodrum", "fethiye", "marmaris", "kusadasi", "ayvalik"].map((k) => `/share-bg/${k}.webp`);

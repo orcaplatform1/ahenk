@@ -5,7 +5,7 @@ import { Btn, StdButton, Input, Mono, Sheet, T } from './ui';
 import { c, ll } from '@/theme/theme';
 import { useTranslation } from 'react-i18next';
 import { formatNamed, type CitySeasonFields } from '@ahenk/shared';
-import { SoonCityGroups } from './SoonCityGroups';
+import { cityImageOption, SoonCityGroups } from './SoonCityGroups';
 import { currentLang } from '@/lib/i18n';
 
 export function FieldLabel({ children }: { children: string }) {
@@ -20,7 +20,7 @@ function FieldButton({ text, filled, onPress }: { text: string; filled: boolean;
 
 // soon: Yakında şehirler (soluk, seçilemez; iki grup "Sezon Masaları 🇹🇷 / 🌐", components/SoonCityGroups.tsx). extra: listede adın sağındaki ek
 export function ListPicker({ label, value, onChange, options, placeholder, title, searchable, searchPlaceholder, soon }: {
-  label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string; extra?: string }[]; placeholder: string; title: string; searchable?: boolean; searchPlaceholder?: string;
+  label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string; extra?: string; cityName?: string }[]; placeholder: string; title: string; searchable?: boolean; searchPlaceholder?: string;
   soon?: (CitySeasonFields & { id: string; name: string })[];
 }) {
   const { t } = useTranslation();
@@ -41,7 +41,9 @@ export function ListPicker({ label, value, onChange, options, placeholder, title
         {searchable && <Input form placeholder={searchPlaceholder} value={q} onChangeText={setQ} style={{ marginBottom: 8 }} />}
         <ScrollView style={{ maxHeight: 300 }} keyboardShouldPersistTaps="handled">
           {shown.map(o => (
-            <Btn key={o.value} variant="listOption" selected={tmp === o.value} label={o.extra ? `${o.label} ${o.extra}` : o.label} onPress={() => setTmp(o.value)} />
+            <Btn key={o.value} variant="listOption" selected={tmp === o.value} label={o.extra ? `${o.label} ${o.extra}` : o.label} onPress={() => setTmp(o.value)}>
+              {o.cityName ? cityImageOption(o.cityName, o.extra ? `${o.label} ${o.extra}` : o.label, tmp === o.value) : undefined}
+            </Btn>
           ))}
           {!!soon?.length && <SoonCityGroups cities={soon} fontSize={15} color="rgba(201,194,184,0.4)" paddingHorizontal={14} />}
         </ScrollView>
