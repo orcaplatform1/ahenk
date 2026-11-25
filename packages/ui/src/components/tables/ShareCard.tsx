@@ -268,7 +268,7 @@ export function drawLoyaltyCard(canvas: HTMLCanvasElement, d: LoyaltyCardData, t
     ctx.fillRect(0, 0, W, H);
   }
 
-  // Üst (masa kartıyla aynı): Ahenk logosu "Ahenk" yazısının üstünde, yazıya göre yatayda ortalı; etiket sağa yaslı, "Ahenk" yazısıyla aynı hizada
+  // Üst (ölçüler masa kartıyla aynı): Ahenk logosu "Ahenk" yazısının üstünde, yazıya göre yatayda ortalı; etiket sağa yaslı, logoyla dikeyde ortalı
   ctx.textBaseline = 'alphabetic';
   ctx.font = `400 84px ${SERIF}`;
   const brandW = ctx.measureText('Ahenk').width;
@@ -277,11 +277,10 @@ export function drawLoyaltyCard(canvas: HTMLCanvasElement, d: LoyaltyCardData, t
   const brandBase = PAD + LOGO + 82;
   ctx.fillStyle = '#ffffff';
   ctx.fillText('Ahenk', PAD, brandBase);
-  const brandMid = brandBase - 30;
   ctx.font = `700 34px ${SANS}`;
   const label = texts.tag.toLocaleUpperCase(lang === 'en' ? 'en' : 'tr-TR');
   const lw = ctx.measureText(label).width + 56;
-  const lx = W - PAD - lw, ly = brandMid - 36;
+  const lx = W - PAD - lw, ly = PAD + LOGO / 2 - 36; // logoyla dikeyde ortalı
   ctx.fillStyle = LOYALTY_ACCENT;
   ctx.beginPath();
   ctx.roundRect(lx, ly, lw, 72, 36);

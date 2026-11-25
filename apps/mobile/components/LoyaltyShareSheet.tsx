@@ -199,12 +199,12 @@ export function LoyaltyShareSheet({ visible, link, text, sharer, onClose }: { vi
               style={{ flex: 1, padding: 96 * k }}>
               <Image source={{ uri: loyaltyCard.bgUrl }} resizeMode="cover" onLoad={imageDone} onError={imageDone} accessible={false}
                 style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-              {/* Üst (masa kartıyla aynı): logo "Ahenk" yazısının üstünde yatayda ortalı; etiket sağa yaslı, "Ahenk" yazısıyla aynı hizada */}
+              {/* Üst (ölçüler masa kartıyla aynı): logo "Ahenk" yazısının üstünde yatayda ortalı; etiket sağa yaslı, logoyla dikeyde ortalı */}
               <View style={{ position: 'absolute', left: 96 * k, top: 96 * k, alignItems: 'center' }}>
                 <Image source={require('@/assets/logo-white.webp')} style={{ width: 120 * k, height: 120 * k }} accessible={false} />
                 <Serif allowFontScaling={false} style={{ marginTop: (BRAND_TOP - 216) * k, fontSize: 84 * k, lineHeight: 116 * k, color: '#fff' }}>Ahenk</Serif>
               </View>
-              <View style={{ position: 'absolute', right: 96 * k, top: 232 * k, height: 72 * k, borderRadius: 36 * k, paddingHorizontal: 28 * k, justifyContent: 'center', backgroundColor: loyaltyCard.accent }}>
+              <View style={{ position: 'absolute', right: 96 * k, top: (96 + 60 - 36) * k, height: 72 * k, borderRadius: 36 * k, paddingHorizontal: 28 * k, justifyContent: 'center', backgroundColor: loyaltyCard.accent }}>
                 <T w={700} allowFontScaling={false} style={{ fontSize: 34 * k, lineHeight: 42 * k, color: '#fff' }}>{t('loyalty.cardTag').toLocaleUpperCase(lang === 'en' ? 'en' : 'tr-TR')}</T>
               </View>
               {/* Başlık (ilk taban çizgisi 839) ve hemen altında alt metin 1; sığmayan metin alt satıra geçer */}
