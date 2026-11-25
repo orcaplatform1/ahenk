@@ -5,22 +5,26 @@ import { api } from '@/lib/api';
 import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
 import { AInput, AdminSelect } from '@/components/admin/AdminControls';
-import { ISO_COUNTRY_CODES, flagEmoji, monthName, type CitySeasonFields } from '@ahenk/shared';
+import { ISO_COUNTRY_CODES, flagEmoji, monthName, countryRegion, REGION_CURRENCIES, type CitySeasonFields } from '@ahenk/shared';
 import { ADialog } from '@/components/admin/ADialog';
 import { adm } from '@/theme/theme';
 
-interface City extends CitySeasonFields { id: string; name: string; isActive: boolean; isComingSoon?: boolean; _count?: { venues: number; districts?: number } }
+interface City extends RegionFields { id: string; name: string; isActive: boolean; isComingSoon?: boolean; _count?: { venues: number; districts?: number } }
 
 // Sezon (gün + ay, yıl yok; isteğe bağlı, boşsa listede tarih yok) ve ülke (City.countryCode, ISO 3166-1 alpha-2, varsayılan TR;
 // TR değilse listede bayrak). Bölgeler sayfası da aynı countryCode alanını düzenler (web admin/cities ile aynı)
-interface SeasonCountry { sd: string; sm: string; ed: string; em: string; countryCode: string; sortOrder: string }
-const seasonOf = (c?: CitySeasonFields): SeasonCountry => ({
+// Saat dilimi, para birimi ve telefon kodu: ülke seçilince COUNTRY_REGION'dan (packages/shared countryRegion.ts) dolar, elle değiştirilebilir
+interface RegionFields extends CitySeasonFields { timezone?: string; currency?: string; phoneCountryCode?: string }
+interface SeasonCountry { sd: string; sm: string; ed: string; em: string; countryCode: string; sortOrder: string; timezone: string; currency: string; phoneCountryCode: string }
+const seasonOf = (c?: RegionFields): SeasonCountry => ({
   sd: c?.seasonStartDay ? String(c.seasonStartDay) : '', sm: c?.seasonStartMonth ? String(c.seasonStartMonth) : '',
   ed: c?.seasonEndDay ? String(c.seasonEndDay) : '', em: c?.seasonEndMonth ? String(c.seasonEndMonth) : '', countryCode: c?.countryCode || 'TR', sortOrder: String(c?.sortOrder ?? 0),
+  timezone: c?.timezone || 'Europe/Istanbul', currency: c?.currency || 'TRY', phoneCountryCode: c?.phoneCountryCode || '+90',
 });
 const seasonBody = (v: SeasonCountry) => ({
   seasonStartDay: v.sd ? Number(v.sd) : null, seasonStartMonth: v.sm ? Number(v.sm) : null,
   seasonEndDay: v.ed ? Number(v.ed) : null, seasonEndMonth: v.em ? Number(v.em) : null, countryCode: v.countryCode, sortOrder: Number(v.sortOrder) || 0,
+  timezone: v.timezone.trim(), currency: v.currency, phoneCountryCode: v.phoneCountryCode.trim(),
 });
 const seasonValid = (v: SeasonCountry) => { const n = [v.sd, v.sm, v.ed, v.em].filter(Boolean).length; return n === 0 || n === 4; };
 const DAY_OPTIONS = [{ value: '', label: 'Gün' }, ...Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))];
@@ -48,7 +52,21 @@ function SeasonCountryFields({ value, onChange }: { value: SeasonCountry; onChan
       {dayMonth('ed', 'em', 'Sezon bitişi')}
       <View>
         <ALabel style={{ color: adm.muted, marginBottom: 4 }}>Ülke</ALabel>
-        <AdminSelect value={value.countryCode} onChange={x => set('countryCode', x)} options={COUNTRY_OPTIONS} placeholder="Ülke" title="Ülke" />
+        <AdminSelect value={value.countryCode} onChange={x => onChange({ ...value, countryCode: x, ...(countryRegion(x) ?? {}) })} options={COUNTRY_OPTIONS} placeholder="Ülke" title="Ülke" />
+      </View>
+      <View>
+        <ALabel style={{ color: adm.muted, marginBottom: 4 }}>Saat dilimi</ALabel>
+        <AInput value={value.timezone} autoCapitalize="none" onChangeText={x => set('timezone', x)} accessibilityLabel="Saat dilimi" style={{ paddingHorizontal: 12 }} />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 6 }}>
+        <View style={{ flex: 1 }}>
+          <ALabel style={{ color: adm.muted, marginBottom: 4 }}>Para birimi</ALabel>
+          <AdminSelect value={value.currency} onChange={x => set('currency', x)} options={REGION_CURRENCIES.map(c => ({ value: c, label: c }))} placeholder="Para birimi" title="Para birimi" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <ALabel style={{ color: adm.muted, marginBottom: 4 }}>Telefon kodu</ALabel>
+          <AInput value={value.phoneCountryCode} onChangeText={x => set('phoneCountryCode', x)} accessibilityLabel="Telefon kodu" style={{ paddingHorizontal: 12 }} />
+        </View>
       </View>
       <View>
         <ALabel style={{ color: adm.muted, marginBottom: 4 }}>Sıra</ALabel>

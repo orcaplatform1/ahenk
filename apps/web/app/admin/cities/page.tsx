@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
-import { ISO_COUNTRY_CODES, flagEmoji, monthName, type CitySeasonFields } from '@ahenk/shared';
+import { ISO_COUNTRY_CODES, flagEmoji, monthName, countryRegion, REGION_CURRENCIES, type CitySeasonFields } from '@ahenk/shared';
 
 
 const inputStyle: React.CSSProperties = {
@@ -12,7 +12,7 @@ const inputStyle: React.CSSProperties = {
   outline: 'none', fontFamily: SANS, boxSizing: 'border-box',
 };
 
-interface City extends CitySeasonFields {
+interface City extends RegionFields {
   id: string;
   name: string;
   isActive: boolean;
@@ -30,14 +30,18 @@ const AMBER = '#f59e0b';
 
 // Sezon (gün + ay, yıl yok; isteğe bağlı, boşsa listede tarih yok) ve ülke (City.countryCode, ISO 3166-1 alpha-2, varsayılan TR;
 // TR değilse listede bayrak). Bölgeler sayfası da aynı countryCode alanını düzenler
-interface SeasonCountry { sd: string; sm: string; ed: string; em: string; countryCode: string; sortOrder: string }
-const seasonOf = (c?: CitySeasonFields): SeasonCountry => ({
+// Saat dilimi, para birimi ve telefon kodu: ülke seçilince COUNTRY_REGION'dan (packages/shared countryRegion.ts) dolar, elle değiştirilebilir
+interface RegionFields extends CitySeasonFields { timezone?: string; currency?: string; phoneCountryCode?: string }
+interface SeasonCountry { sd: string; sm: string; ed: string; em: string; countryCode: string; sortOrder: string; timezone: string; currency: string; phoneCountryCode: string }
+const seasonOf = (c?: RegionFields): SeasonCountry => ({
   sd: c?.seasonStartDay ? String(c.seasonStartDay) : '', sm: c?.seasonStartMonth ? String(c.seasonStartMonth) : '',
   ed: c?.seasonEndDay ? String(c.seasonEndDay) : '', em: c?.seasonEndMonth ? String(c.seasonEndMonth) : '', countryCode: c?.countryCode || 'TR', sortOrder: String(c?.sortOrder ?? 0),
+  timezone: c?.timezone || 'Europe/Istanbul', currency: c?.currency || 'TRY', phoneCountryCode: c?.phoneCountryCode || '+90',
 });
 const seasonBody = (v: SeasonCountry) => ({
   seasonStartDay: v.sd ? Number(v.sd) : null, seasonStartMonth: v.sm ? Number(v.sm) : null,
   seasonEndDay: v.ed ? Number(v.ed) : null, seasonEndMonth: v.em ? Number(v.em) : null, countryCode: v.countryCode, sortOrder: Number(v.sortOrder) || 0,
+  timezone: v.timezone.trim(), currency: v.currency, phoneCountryCode: v.phoneCountryCode.trim(),
 });
 // Sezonun dört alanı birlikte seçilir ya da hepsi boş bırakılır
 const seasonValid = (v: SeasonCountry) => { const n = [v.sd, v.sm, v.ed, v.em].filter(Boolean).length; return n === 0 || n === 4; };
@@ -70,9 +74,25 @@ function SeasonCountryFields({ value, onChange }: { value: SeasonCountry; onChan
       {dayMonth('ed', 'em', 'Sezon bitişi')}
       <div>
         <p style={{ ...LABEL, margin: '0 0 4px', color: MUTED }}>Ülke</p>
-        <select value={value.countryCode} onChange={e => set('countryCode', e.target.value)} aria-label="Ülke" style={{ ...inputStyle }}>
+        <select value={value.countryCode} onChange={e => { const code = e.target.value; onChange({ ...value, countryCode: code, ...(countryRegion(code) ?? {}) }); }} aria-label="Ülke" style={{ ...inputStyle }}>
           {COUNTRY_OPTIONS.map(o => <option key={o.code} value={o.code}>{flagEmoji(o.code)} {o.name} ({o.code})</option>)}
         </select>
+      </div>
+      <div>
+        <p style={{ ...LABEL, margin: '0 0 4px', color: MUTED }}>Saat dilimi</p>
+        <input value={value.timezone} onChange={e => set('timezone', e.target.value)} aria-label="Saat dilimi" style={{ ...inputStyle }} />
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ ...LABEL, margin: '0 0 4px', color: MUTED }}>Para birimi</p>
+          <select value={value.currency} onChange={e => set('currency', e.target.value)} aria-label="Para birimi" style={{ ...inputStyle }}>
+            {REGION_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ ...LABEL, margin: '0 0 4px', color: MUTED }}>Telefon kodu</p>
+          <input value={value.phoneCountryCode} onChange={e => set('phoneCountryCode', e.target.value)} aria-label="Telefon kodu" style={{ ...inputStyle }} />
+        </div>
       </div>
       <div>
         <p style={{ ...LABEL, margin: '0 0 4px', color: MUTED }}>Sıra</p>

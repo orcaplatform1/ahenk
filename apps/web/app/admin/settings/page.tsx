@@ -10,6 +10,7 @@ interface Settings {
   botSystemActive?: boolean; // yalnızca SUPERADMIN'e gelir
   maintenanceMode: boolean;
   liveDistrictSource?: 'static' | 'real';
+  autoDataDeletion?: boolean; // Otomatik Veri Silme (varsayılan Kapalı)
   // Eşleştirme Kriterleri: Planlı Buluşma'da masa türüne göre OCEAN sıralaması
   oceanGroup?: boolean;
   oceanOneOnOne?: boolean;
@@ -131,6 +132,7 @@ export default function AdminSettings() {
       botSystemActive: settings.botSystemActive,
       maintenanceMode: settings.maintenanceMode,
       liveDistrictSource: settings.liveDistrictSource,
+      autoDataDeletion: settings.autoDataDeletion,
       oceanGroup: settings.oceanGroup,
       oceanOneOnOne: settings.oceanOneOnOne,
       oceanKanka: settings.oceanKanka,
@@ -212,6 +214,12 @@ export default function AdminSettings() {
                 desc="Platform açık kalır; masa ataması ve paket satın alma durur, üyelere bakım uyarısı gösterilir"
                 value={settings.maintenanceMode}
                 onChange={v => setSettings(s => s ? { ...s, maintenanceMode: v } : s)}
+              />
+              <Toggle
+                label="Otomatik Veri Silme"
+                desc="Her gece 03:30'da saklama süresi dolan kayıtlar silinir (ödeme kayıtları anonimleştirilir). Kapalıyken yalnız sayılır, silinmez."
+                value={settings.autoDataDeletion ?? false}
+                onChange={v => setSettings(s => s ? { ...s, autoDataDeletion: v } : s)}
               />
               <div>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEXT }}>Canlı katman ilçe verisi</p>

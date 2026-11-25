@@ -42,7 +42,7 @@ const sections = [
         {[
           {
             cat: 'Identity Data',
-            items: ['First name, last name, date of birth, gender', 'ID card images (front and back)'],
+            items: ['First name, last name, date of birth, gender', 'Identity document type (ID Card, Driver\'s License, Passport, Residence Permit) and document images (front and back; for a passport, the photo page)', 'The Turkish ID, foreign resident ID (YKN) or passport number entered for a web payment: not stored by Ahenk, only passed to iyzico'],
           },
           {
             cat: 'Biometric Data',
@@ -51,14 +51,14 @@ const sections = [
           },
           {
             cat: 'Contact Data',
-            items: ['Email address'],
+            items: ['Phone number (for the WhatsApp verification code and notifications)', 'Email address', 'The phone number of the person invited in a Bring a Buddy (Kanka) invite'],
           },
           {
             cat: 'Location Data',
             items: [
               'City preference',
               'Emergency location: collected only from the person making an emergency request, at the time of the request and until it is resolved. If the person allows it, location continues to be collected, to the extent the device permits, even when the app is in the background or closed. Other participants’ locations are not collected. The location is shared with the police and monitored by our team. When the request is resolved, coordinates and location history are deleted; the street address of the last location and the request record are kept for legal obligations, possible legal disputes and requests from authorities.',
-              'Emergency contact: the name and phone number of the person you add in My Profile are used only when you make an Emergency Help request, to automatically notify that person via WhatsApp (your name and a link to your location at the time of the request); they are not used for any other purpose. You can delete the contact at any time, and it is also deleted when your account is deleted.',
+              'Emergency contacts (up to 2): the names and phone numbers of the people you add in My Profile are used only when you make an Emergency Help request, to automatically notify them via WhatsApp (your first and last name and a Google Maps link to your location at the time of the request); they are not used for any other purpose. You can delete the contacts at any time, and they are also deleted when your account is deleted.',
             ],
           },
           {
@@ -70,8 +70,16 @@ const sections = [
             items: ['OCEAN Big Five personality test results and scores (Openness, Conscientiousness, Extraversion, Agreeableness, Emotional Balance)'],
           },
           {
+            cat: 'Profile and Preference Data',
+            items: ['Field of work', 'Language preferences (interface language, native language, preference for sitting with foreigners)', 'Venue category and alcohol preference', 'Profile photo: shown to table participants after admin approval'],
+          },
+          {
+            cat: 'Communication Content and Complaint Data',
+            items: ['Table chat messages (hidden on the user side when the chat closes, kept on the admin side)', 'Chat complaints and automatic block records', 'Problem reports and attached images'],
+          },
+          {
             cat: 'Behavioral Data',
-            items: ['Table meetup history', 'Review scores and comments'],
+            items: ['Table meetup history', 'Review scores and comments', 'No-show reports', 'Sanction records (warning, suspension, ban)'],
           },
           {
             cat: 'Security Data',
@@ -79,7 +87,7 @@ const sections = [
           },
           {
             cat: 'Technical Data',
-            items: ['Browser type, device information, cookie data'],
+            items: ['Browser type, device information, cookie data', 'Mobile notification device key (FCM token) and notification content', 'Session information kept on the device in the mobile app ("remember me" info, language and permission preferences)'],
           },
         ].map((row) => (
           <div key={row.cat}>
@@ -117,7 +125,12 @@ const sections = [
           'Carrying out identity verification and keeping the platform secure',
           'Organizing suitable table meetups through algorithmic matching based on the OCEAN personality model',
           'Processing package purchases and payments through the iyzico infrastructure',
-          'Communicating with users via system notifications and email',
+          'Communicating with users via push notifications and WhatsApp',
+          'Using age, venue category and language preferences in matching',
+          'Creating the table compatibility report with artificial intelligence',
+          'Automatically moderating table chat with artificial intelligence and enforcing the community guidelines (warning, suspension, ban)',
+          'Handling Emergency Help requests: following the location, notifying emergency contacts and sharing with the police',
+          'Matching and chat moderation are carried out by automated systems; your right to object to their results is set out in section 8',
           'Fulfilling legal obligations and providing information/documents to authorized institutions',
           'Handling complaints and requests',
           'Improving service quality and carrying out platform development',
@@ -141,15 +154,23 @@ const sections = [
           },
           {
             basis: 'Establishment or Performance of a Contract: Article 5/2-c',
-            desc: 'First name, last name, email, city, package and payment data. For Bring a Buddy, the phone number entered in a Kanka invite (to deliver the invite and match it with a verified account) and the Kanka link.',
+            desc: 'First name, last name, phone number, email, city, field of work, language and venue preferences, package and payment data, table chat messages. For Bring a Buddy, the phone number entered in a Kanka invite (to deliver the invite and match it with a verified account) and the Kanka link.',
           },
           {
             basis: 'Legitimate Interest of the Data Controller: Article 5/2-f',
-            desc: 'Technical data, IP address, security logs, phone numbers added for contact blocking.',
+            desc: 'Technical data, IP address, security logs, phone numbers added for contact blocking, automatic table chat moderation, complaint, sanction and no-show records, profile photo approval.',
           },
           {
             basis: 'Compliance with a Legal Obligation: Article 5/2-ç',
-            desc: 'Payment records, invoice details, requests from authorized institutions.',
+            desc: 'Payment records, invoice details, login and traffic records (Law No. 5651), distance sales and commercial message consent records, requests from authorized institutions.',
+          },
+          {
+            basis: 'Explicit Consent and Vital Interest: Articles 5/1 and 5/2-b',
+            desc: 'Location data in an Emergency Help request (with the device location permission) and notifying emergency contacts: to protect the life or physical integrity of the person or someone else.',
+          },
+          {
+            basis: 'International Transfer: Article 9',
+            desc: 'For each recipient, the data transferred, the purpose and the legal basis for the transfer are set out separately in section 6.',
           },
         ].map((row) => (
           <div
@@ -201,7 +222,7 @@ const sections = [
         <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Domestic Transfers</p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>iyzico Ödeme Hizmetleri A.Ş.</strong>
-          : financial data required for payment and package transactions is transferred; iyzico fulfills its own KVKK obligations.
+          : financial data required for payment and package transactions and the Turkish ID, YKN or passport number entered for a web payment are transferred (the number is not stored by Ahenk); iyzico fulfills its own KVKK obligations.
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Identity documents and liveness video</strong>
@@ -210,7 +231,31 @@ const sections = [
         <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>International Transfers</p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Google Analytics and Meta Pixel</strong>
-          : cookie data is processed through these tools and may be transferred to servers abroad. The transfer is based on your explicit consent, and you can withdraw it at any time from your cookie preferences.
+          : cookie data is processed through these tools and may be transferred to servers abroad. The transfer is based on your explicit consent (KVKK art. 9/6-a), and you can withdraw it at any time from your cookie preferences.
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Anthropic (artificial intelligence, USA)</strong>
+          : Data transferred: for the table compatibility report, for each participant the five OCEAN scores and field of work (if any) under a label such as P1, P2 instead of a name, the table type, number of participants and the table&apos;s overall compatibility score; for table chat moderation, only the text of a chat message containing a suspicious word (up to 1,000 characters). No names, gender, age, contact details or identity information are transferred. Purpose: the AI table compatibility report and chat moderation. Legal basis: KVKK art. 9/6-b (necessary for the performance of a contract).
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Google Firebase Cloud Messaging (push notifications, USA)</strong>
+          : Data transferred: the notification device key (FCM token) and notification content. Purpose: delivering push notifications. Legal basis: KVKK art. 9/6-b (necessary for the performance of a contract).
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Meta WhatsApp Business API (USA)</strong>
+          : Data transferred: phone number, WhatsApp verification code (OTP), notification content (identity verification result, table confirmation), the invited person&apos;s phone number and invite link in a Bring a Buddy invite; in an Emergency Help request, the emergency contacts&apos; phone numbers, the requester&apos;s first and last name and a location link. Purpose: delivering verification codes and notifications. Legal basis: KVKK art. 9/6-b (necessary for the performance of a contract); for notifying emergency contacts, KVKK art. 9/6-e (protecting life or physical integrity).
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>OpenStreetMap Nominatim (address lookup, United Kingdom)</strong>
+          : Data transferred: the location coordinates in an Emergency Help request (the OpenStreetMap map service is also used on the admin emergency help map). Purpose: converting coordinates into a street address. Legal basis: KVKK art. 9/6-e (protecting life or physical integrity).
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Google Maps (Emergency Help map, USA)</strong>
+          : Data transferred: the location coordinates in an Emergency Help request (admin emergency help map and street address lookup; the location link sent to emergency contacts is also a Google Maps link). Purpose: showing the requester&apos;s location on a map and finding the street address. Legal basis: KVKK art. 9/6-e (protecting life or physical integrity).
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Apple (App Store) and Google (Google Play), USA</strong>
+          : Data transferred: in-app purchase and subscription transaction details. Purpose: verifying and managing purchases and subscriptions. Legal basis: KVKK art. 9/6-b (necessary for the performance of a contract).
         </p>
         <div
           style={{
@@ -233,12 +278,16 @@ const sections = [
     content: (
       <div>
         {[
-          ['User account and profile data', 'Until the account is deleted + 2 years'],
+          ['Payment, invoice and transaction records (iyzico, App Store, Google Play)', '10 years from the start of the calendar year following the transaction (Turkish Commercial Code art. 82, Tax Procedure Law art. 253). Kept even if the account is deleted; at the end of the period personal fields are anonymized, while the amount, date and transaction number are kept'],
+          ['Distance sales and subscription consent records (contract acceptance, pre-information consent, timestamp, IP)', '3 years from the transaction date (Regulation on Distance Contracts)'],
+          ['Commercial message consent and opt-out records', '3 years from the date the consent ended (Regulation on Commercial Communication and Commercial Electronic Messages)'],
+          ['Login, IP and traffic records', '2 years from the record date (Law No. 5651 art. 5)'],
+          ['KVKK notice and explicit consent records', '10 years from the deletion of the account (general limitation period, Turkish Code of Obligations)'],
+          ['Identity details of a person involved in an emergency request, complaint or ban (name, surname, email, phone; locked, visible only to authorized admins)', '2 years from the closure of the incident (no fixed legal period, company policy)'],
+          ['Unreadable summary (hash) of a banned account\'s phone number', 'Indefinitely (to prevent signing up again)'],
           ['Identity documents (ID images and liveness video)', 'Kept until the account is deleted; once an account deletion request is approved, ID images, the liveness video and the KYC record are deleted'],
-          ['OCEAN test results', 'As long as the account is active; destroyed when the account is deleted'],
-          ['Payment and invoice records', '5 years, under the Tax Procedure Law'],
-          ['Phone numbers added for contact blocking', 'Until deleted by the user'],
-          ['IP address and session logs', '2 years'],
+          ['Other data: profile, OCEAN test results, profile photos, chat messages, problem reports, contact and user blocks', 'Deleted when the account deletion request is approved; contact blocks are also deleted when the user removes them'],
+          ['Emergency location coordinates and location history', 'Deleted when the request is resolved'],
         ].map(([label, value], i, arr) => (
           <div
             key={label}
@@ -297,7 +346,7 @@ const sections = [
           Your application should include
         </p>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.4rem', marginBottom: '1rem' }}>
-          {['Your first and last name', 'Your Turkish ID number (for identity verification)', 'The subject of your request', 'Your contact details'].map((item) => (
+          {['Your first and last name', 'Your Turkish ID number; if you are a foreign national, your nationality and passport number or ID number if you have one (to verify your identity)', 'The subject of your request', 'Your contact details'].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.6rem', color: '#c9c2b8', fontSize: 13 }}>
               <span style={{ color: '#c0392b' }}>›</span>{item}
             </li>
@@ -362,7 +411,7 @@ export default function KvkkEn() {
             Information Notice Under KVKK No. 6698
           </p>
           <p style={{ marginTop: '0.25rem', color: '#8f887f', fontSize: 11 }}>
-            Last updated: October 2026
+            Last updated: November 2026
           </p>
         </motion.div>
 

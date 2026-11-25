@@ -179,7 +179,7 @@ const sections = [
     title: 'Account Suspension and Closure',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        If a breach of these terms, use of a false identity, conduct harmful to other users or actions contrary to legal regulations is detected, Ahenk may temporarily suspend or permanently close the user’s account without prior notice. The decision to close an account is at Ahenk’s discretion. Reopening a closed account may be requested; the request is evaluated by Ahenk.
+        If a breach of these terms, use of a false identity, conduct harmful to other users or actions contrary to legal regulations is detected, Ahenk may temporarily suspend or permanently close the user’s account without prior notice. The decision to close an account is at Ahenk’s discretion. A person whose account has been permanently closed by a ban cannot sign up to Ahenk again.
       </p>
     ),
   },
@@ -214,7 +214,7 @@ const sections = [
     title: 'Changes to the Terms',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Ahenk reserves the right to update these terms of use, subject to prior notice. Updates are announced by email or platform notification. Continuing to use the platform after an update means you accept the new terms.
+        Ahenk reserves the right to update these terms of use, subject to prior notice. Updates are announced by push notification and WhatsApp. Continuing to use the platform after an update means you accept the new terms.
       </p>
     ),
   },

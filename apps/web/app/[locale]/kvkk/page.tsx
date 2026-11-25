@@ -43,7 +43,7 @@ const sections = [
         {[
           {
             cat: 'Kimlik Verileri',
-            items: ['Ad, soyad, doğum tarihi, cinsiyet', 'Kimlik kartı görseli (ön ve arka yüz)'],
+            items: ['Ad, soyad, doğum tarihi, cinsiyet', 'Kimlik belgesi türü (Kimlik Kartı, Ehliyet, Pasaport, Oturma İzni) ve belge görselleri (ön ve arka yüz; pasaportta fotoğraflı sayfa)', 'Web ödemesinde girilen T.C. kimlik, yabancı kimlik (YKN) ya da pasaport numarası: Ahenk tarafından saklanmaz, yalnız iyzico\'ya iletilir'],
           },
           {
             cat: 'Biyometrik Veri',
@@ -52,14 +52,14 @@ const sections = [
           },
           {
             cat: 'İletişim Verisi',
-            items: ['E-posta adresi'],
+            items: ['Telefon numarası (WhatsApp doğrulama kodu ve bildirimler için)', 'E-posta adresi', 'Kankamla davetinde girilen, davet edilen kişinin telefon numarası'],
           },
           {
             cat: 'Konum Verisi',
             items: [
               'Şehir tercihi',
               'Acil yardım konumu: yalnız acil yardım talebinde bulunan kişiden, talep anında ve talep çözülene kadar alınır. Kişinin izin vermesi hâlinde konum, uygulama arka plandayken veya kapatılmış olsa dahi, cihazın izin verdiği ölçüde alınmaya devam eder. Diğer katılımcıların konumu alınmaz. Konum emniyet birimleriyle paylaşılır ve ekibim tarafından takip edilir. Talep çözülünce koordinatlar ve konum geçmişi silinir; son konumun açık adresi ve talep kaydı yasal yükümlülükler, olası hukuki uyuşmazlıklar ve resmi makam talepleri için saklanır.',
-              'Acil durum kişisi: Profilim\'de eklediğin kişinin adı ve telefon numarası yalnız Acil Yardım talebinde bulunduğunda, bu kişiye WhatsApp üzerinden otomatik bilgi (adın ve talep anındaki konum bağlantısı) gönderilmesi amacıyla kullanılır; başka amaçla kullanılmaz. Kişiyi istediğin zaman silebilirsin; hesap silinince de silinir.',
+              'Acil durum kişileri (en fazla 2): Profilim\'de eklediğin kişilerin adı ve telefon numarası yalnız Acil Yardım talebinde bulunduğunda, bu kişilere WhatsApp üzerinden otomatik bilgi (adın, soyadın ve talep anındaki konumunun Google Maps bağlantısı) gönderilmesi amacıyla kullanılır; başka amaçla kullanılmaz. Kişileri istediğin zaman silebilirsin; hesap silinince de silinir.',
             ],
           },
           {
@@ -71,8 +71,16 @@ const sections = [
             items: ['OCEAN Big Five kişilik testi sonuçları ve skorları (Açıklık, Öz-Disiplin, Dışadönüklük, Uyumluluk, Duygusal Denge)'],
           },
           {
+            cat: 'Profil ve Tercih Verileri',
+            items: ['Meslek alanı', 'Dil tercihleri (arayüz dili, ana dil, yabancılarla masaya oturma tercihi)', 'Mekân kategorisi ve alkol tercihi', 'Profil fotoğrafı: yönetici onayından sonra masa katılımcılarına gösterilir'],
+          },
+          {
+            cat: 'İletişim İçerikleri ve Şikâyet Verileri',
+            items: ['Masa sohbeti mesajları (sohbet kapanınca kullanıcı tarafında görünmez olur, yönetim tarafında saklanır)', 'Sohbet şikâyetleri ve otomatik engel kayıtları', 'Sorun bildirimleri ve ekli görseller'],
+          },
+          {
             cat: 'Davranış Verileri',
-            items: ['Masa buluşma geçmişi', 'Değerlendirme puanları ve yorumlar'],
+            items: ['Masa buluşma geçmişi', 'Değerlendirme puanları ve yorumlar', 'Gelmedi bildirimleri', 'Yaptırım kayıtları (uyarı, askı, ban)'],
           },
           {
             cat: 'Güvenlik Verileri',
@@ -80,7 +88,7 @@ const sections = [
           },
           {
             cat: 'Teknik Veriler',
-            items: ['Tarayıcı türü, cihaz bilgisi, çerez verileri'],
+            items: ['Tarayıcı türü, cihaz bilgisi, çerez verileri', 'Mobil bildirim cihaz anahtarı (FCM token) ve bildirim içerikleri', 'Mobil uygulamada cihazda tutulan oturum bilgileri ("beni hatırla" bilgisi, dil ve izin tercihleri)'],
           },
         ].map((row) => (
           <div key={row.cat}>
@@ -118,7 +126,12 @@ const sections = [
           'kimlik doğrulama sürecinin yürütülmesi ve platform güvenliğinin sağlanması',
           'OCEAN kişilik modeline dayalı algoritmik eşleştirme ile kullanıcıya uygun masa buluşmalarının organize edilmesi',
           'Paket satın alma ve ödeme işlemlerinin iyzico altyapısı üzerinden gerçekleştirilmesi',
-          'Kullanıcıyla sistem bildirimleri ve e-posta aracılığıyla iletişim kurulması',
+          'Kullanıcıyla push bildirimi ve WhatsApp aracılığıyla iletişim kurulması',
+          'Eşleştirmede yaş, mekân kategorisi ve dil tercihlerinin kullanılması',
+          'Yapay zekâ ile masa uyum raporunun oluşturulması',
+          'Masa sohbetinin yapay zekâ ile otomatik denetimi ve topluluk kurallarının uygulanması (uyarı, askı, ban)',
+          'Acil Yardım talebinin yürütülmesi: konumun takibi, acil durum kişilerine bildirim ve emniyet birimleriyle paylaşım',
+          'Eşleştirme ve sohbet denetimi otomatik sistemlerle yapılır; bu işlemlerin sonucuna itiraz hakkın 8. maddede yazılıdır',
           'Yasal yükümlülüklerin yerine getirilmesi, yetkili kurum ve kuruluşlara bilgi/belge sunulması',
           'Şikâyet ve taleplerin yönetilmesi',
           'Hizmet kalitesinin iyileştirilmesi ve platform geliştirme faaliyetlerinin yürütülmesi',
@@ -142,15 +155,23 @@ const sections = [
           },
           {
             basis: 'Sözleşmenin Kurulması veya İfası: Madde 5/2-c',
-            desc: 'Ad, soyad, e-posta, şehir, paket ve ödeme verileri. Kankamla için kanka davetinde girilen telefon numarası (davetin iletilmesi ve doğrulanmış hesapla eşleştirilmesi amacıyla) ve kanka bağlantısı.',
+            desc: 'Ad, soyad, telefon numarası, e-posta, şehir, meslek, dil ve mekân tercihleri, paket ve ödeme verileri, masa sohbeti mesajları. Kankamla için kanka davetinde girilen telefon numarası (davetin iletilmesi ve doğrulanmış hesapla eşleştirilmesi amacıyla) ve kanka bağlantısı.',
           },
           {
             basis: 'Veri Sorumlusunun Meşru Menfaati: Madde 5/2-f',
-            desc: 'Teknik veriler, IP adresi, güvenlik logları, rehber engelleme için eklenen telefon numaraları.',
+            desc: 'Teknik veriler, IP adresi, güvenlik logları, rehber engelleme için eklenen telefon numaraları, masa sohbetinin otomatik denetimi, şikâyet, yaptırım ve gelmedi kayıtları, profil fotoğrafı onayı.',
           },
           {
             basis: 'Hukuki Yükümlülüğün Yerine Getirilmesi: Madde 5/2-ç',
-            desc: 'Ödeme kayıtları, fatura bilgileri, yetkili kurum talepleri.',
+            desc: 'Ödeme kayıtları, fatura bilgileri, giriş ve trafik kayıtları (5651 sayılı Kanun), mesafeli satış ve ticari ileti onay kayıtları, yetkili kurum talepleri.',
+          },
+          {
+            basis: 'Açık Rıza ve Hayati Menfaat: Madde 5/1 ve 5/2-b',
+            desc: 'Acil Yardım talebindeki konum verisi (cihaz konum izniyle) ve acil durum kişilerine bildirim: kişinin kendisinin ya da bir başkasının hayatı veya beden bütünlüğünün korunması için.',
+          },
+          {
+            basis: 'Yurt Dışına Aktarım: Madde 9',
+            desc: 'Her alıcı için aktarılan veri, amaç ve aktarım dayanağı 6. maddede ayrı ayrı yazılıdır.',
           },
         ].map((row) => (
           <div
@@ -202,7 +223,7 @@ const sections = [
         <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Yurt İçi Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>iyzico Ödeme Hizmetleri A.Ş.</strong>
-          : ödeme ve paket işlemleri için zorunlu finansal veriler aktarılır; iyzico kendi KVKK yükümlülüklerini yerine getirmektedir.
+          : ödeme ve paket işlemleri için zorunlu finansal veriler ve web ödemesinde girilen T.C. kimlik, YKN ya da pasaport numarası aktarılır (numara Ahenk tarafından saklanmaz); iyzico kendi KVKK yükümlülüklerini yerine getirmektedir.
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Kimlik belgeleri ve liveness videosu</strong>
@@ -211,7 +232,31 @@ const sections = [
         <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#8f887f', marginBottom: '0.6rem' }}>Yurt Dışı Aktarım</p>
         <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Google Analytics ve Meta Pixel</strong>
-          : bu araçlar aracılığıyla çerez verisi işlenir. Bu veri yurt dışındaki sunuculara aktarılabilir. Aktarım açık rızana dayanır ve rızanı çerez tercihlerinden her zaman geri alabilirsin.
+          : bu araçlar aracılığıyla çerez verisi işlenir. Bu veri yurt dışındaki sunuculara aktarılabilir. Aktarım açık rızana dayanır (KVKK m.9/6-a) ve rızanı çerez tercihlerinden her zaman geri alabilirsin.
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Anthropic (yapay zekâ, ABD)</strong>
+          : Aktarılan veri: masa uyum raporu için masadaki her katılımcının adı yerine P1, P2 gibi bir etiketle beş OCEAN skoru ve varsa meslek alanı, masa türü, katılımcı sayısı ve masanın genel uyum skoru; masa sohbeti denetimi için şüpheli kelime içeren sohbet mesajının yalnız metni (en fazla 1.000 karakter). Ad, cinsiyet, yaş, iletişim ve kimlik bilgisi aktarılmaz. Amaç: yapay zekâ ile masa uyum raporu ve sohbet denetimi. Aktarım dayanağı: KVKK m.9/6-b (sözleşmenin ifası için zorunlu olması).
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Google Firebase Cloud Messaging (push bildirimi, ABD)</strong>
+          : Aktarılan veri: bildirim cihaz anahtarı (FCM token) ve bildirim içeriği. Amaç: push bildirimlerinin iletilmesi. Aktarım dayanağı: KVKK m.9/6-b (sözleşmenin ifası için zorunlu olması).
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Meta WhatsApp Business API (ABD)</strong>
+          : Aktarılan veri: telefon numarası, WhatsApp doğrulama kodu (OTP), bildirim içerikleri (kimlik doğrulama sonucu, masa onayı), Kankamla davetinde davet edilen kişinin telefon numarası ve davet bağlantısı; Acil Yardım talebinde acil durum kişilerinin telefon numarası, talep edenin adı soyadı ve konum bağlantısı. Amaç: doğrulama kodu ve bildirimlerin iletilmesi. Aktarım dayanağı: KVKK m.9/6-b (sözleşmenin ifası için zorunlu olması); acil durum kişilerine bildirimde KVKK m.9/6-e (hayat veya beden bütünlüğünün korunması).
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>OpenStreetMap Nominatim (adres çözümleme, Birleşik Krallık)</strong>
+          : Aktarılan veri: Acil Yardım talebindeki konum koordinatları (yönetici acil yardım haritasında OpenStreetMap harita servisi de kullanılır). Amaç: koordinatların açık adrese çevrilmesi. Aktarım dayanağı: KVKK m.9/6-e (hayat veya beden bütünlüğünün korunması).
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Google Maps (Acil Yardım haritası, ABD)</strong>
+          : Aktarılan veri: Acil Yardım talebindeki konum koordinatları (yönetici acil yardım haritası ve açık adres çözümleme; acil durum kişilerine giden konum bağlantısı da Google Maps bağlantısıdır). Amaç: talep edenin konumunun haritada gösterilmesi ve açık adresinin bulunması. Aktarım dayanağı: KVKK m.9/6-e (hayat veya beden bütünlüğünün korunması).
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Apple (App Store) ve Google (Google Play), ABD</strong>
+          : Aktarılan veri: mobil uygulama içi satın alma ve abonelik işlem bilgileri. Amaç: satın almaların ve aboneliklerin doğrulanması ve yönetilmesi. Aktarım dayanağı: KVKK m.9/6-b (sözleşmenin ifası için zorunlu olması).
         </p>
         <div
           style={{
@@ -234,12 +279,16 @@ const sections = [
     content: (
       <div>
         {[
-          ['Kullanıcı hesap ve profil verileri', 'Hesap silinene kadar + 2 yıl'],
+          ['Ödeme, fatura ve işlem kayıtları (iyzico, App Store, Google Play)', '10 yıl, işlemin yapıldığı yılı izleyen takvim yılı başından (TTK m.82, VUK m.253). Hesap silinse de saklanır; süre sonunda kişisel alanlar anonimleştirilir, tutar, tarih ve işlem numarası korunur'],
+          ['Mesafeli satış ve abonelik onay kayıtları (sözleşme kabulü, ön bilgilendirme onayı, zaman damgası, IP)', '3 yıl, işlem tarihinden (Mesafeli Sözleşmeler Yönetmeliği)'],
+          ['Ticari ileti onay ve ret kayıtları', 'Onayın sona erdiği tarihten 3 yıl (Ticari İletişim ve Ticari Elektronik İletiler Hakkında Yönetmelik)'],
+          ['Giriş, IP ve trafik kayıtları', '2 yıl, kayıt tarihinden (5651 sayılı Kanun m.5)'],
+          ['KVKK aydınlatma ve açık rıza onay kayıtları', 'Hesabın silinmesinden itibaren 10 yıl (TBK genel zamanaşımı)'],
+          ['Acil yardım talebi, şikâyet ya da ban ile ilişkili kişinin kimlik bilgileri (ad, soyad, e-posta, telefon; kilitli, yalnız yetkili yönetici görür)', 'Olayın kapanışından itibaren 2 yıl (yasal sabit süre yok, şirket politikası)'],
+          ['Banlı hesabın telefon numarasının okunamaz özeti (hash)', 'Süresiz (yeniden kayıt engeli)'],
           ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', 'Hesap silinene kadar saklanır; hesap silme talebi onaylanınca kimlik görselleri, canlılık videosu ve KYC kaydı silinir'],
-          ['OCEAN test sonuçları', 'Hesap aktif olduğu sürece; hesap silindiğinde imha edilir'],
-          ['Ödeme ve fatura kayıtları', '5 yıl, Vergi Usul Kanunu'],
-          ['Rehber engelleme için eklenen telefon numaraları', 'Kullanıcı tarafından silinene kadar'],
-          ['IP adresi ve oturum logları', '2 yıl'],
+          ['Diğer veriler: profil, OCEAN test sonuçları, profil fotoğrafları, sohbet mesajları, sorun bildirimleri, rehber ve kullanıcı engelleri', 'Hesap silme talebi onaylanınca silinir; rehber engelleri kullanıcı silince de silinir'],
+          ['Acil yardım konum koordinatları ve konum geçmişi', 'Talep çözülünce silinir'],
         ].map(([label, value], i, arr) => (
           <div
             key={label}
@@ -298,7 +347,7 @@ const sections = [
           Başvuruda yer alması gerekenler
         </p>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' as const, gap: '0.4rem', marginBottom: '1rem' }}>
-          {['Adın ve soyadın', 'TC kimlik numaran (kimlik doğrulama için)', 'Talep konusu', 'İletişim bilgilerin'].map((item) => (
+          {['Adın ve soyadın', 'T.C. kimlik numaran; yabancıysan uyruğun ve pasaport numaran ya da varsa kimlik numaran (kimliğini doğrulamak için)', 'Talep konusu', 'İletişim bilgilerin'].map((item) => (
             <li key={item} style={{ display: 'flex', gap: '0.6rem', color: '#c9c2b8', fontSize: 13 }}>
               <span style={{ color: '#c0392b' }}>›</span>{item}
             </li>
@@ -362,7 +411,7 @@ function KvkkPageTr() {
             6698 Sayılı KVKK Kapsamında Aydınlatma Metni
           </p>
           <p style={{ marginTop: '0.25rem', color: '#8f887f', fontSize: 11 }}>
-            Son güncelleme: Ekim 2026
+            Son güncelleme: Kasım 2026
           </p>
         </motion.div>
 

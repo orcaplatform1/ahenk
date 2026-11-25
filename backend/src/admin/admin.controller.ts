@@ -392,6 +392,7 @@ export class AdminController {
       botSystemActive: dto.botSystemActive,
       maintenanceMode: dto.maintenanceMode,
       liveDistrictSource: dto.liveDistrictSource,
+      autoDataDeletion: dto.autoDataDeletion,
       oceanGroup: dto.oceanGroup,
       oceanOneOnOne: dto.oceanOneOnOne,
       oceanKanka: dto.oceanKanka,

@@ -90,9 +90,10 @@ const sections = [
           'Kullanıcı hesabının oluşturulması ve yönetilmesi',
           'Kimlik doğrulama sürecinin yürütülmesi ve güvenli platform ortamının sağlanması',
           'OCEAN kişilik modeline dayalı algoritmik eşleştirme ile uyumlu masa buluşmalarının organize edilmesi',
-          'Masa uyum raporu oluşturulması: buluşma günü sabahı onaylı masadaki her katılımcının OCEAN skorları ve cinsiyeti kişi başı olarak yapay zekâ hizmeti Anthropic\'e gönderilir; oluşan rapor masa katılımcılarına masa kartında gösterilir. Ad, iletişim ve kimlik bilgisi yapay zekâ sistemine aktarılmaz',
+          'Masa uyum raporu oluşturulması: buluşma günü sabahı onaylı masadaki her katılımcı için adı yerine P1, P2 gibi bir etiketle beş OCEAN skoru ve varsa meslek alanı; ayrıca masa türü, katılımcı sayısı ve masanın genel uyum skoru yapay zekâ hizmeti Anthropic\'e gönderilir; oluşan rapor masa katılımcılarına masa kartında gösterilir. Ad, cinsiyet, yaş, iletişim ve kimlik bilgisi yapay zekâ sistemine aktarılmaz',
+          'Masa sohbeti denetimi: şüpheli kelime içeren sohbet mesajının yalnız metni (en fazla 1.000 karakter) kural ihlali kontrolü için yapay zekâ hizmeti Anthropic\'e gönderilir. Gönderenin adı, kimliği ve masa bilgisi gönderilmez',
           'Paket satın alma ve ödeme işlemlerinin gerçekleştirilmesi',
-          'Kullanıcıyla e-posta ve sistem bildirimleri aracılığıyla iletişim kurulması',
+          'Kullanıcıyla push bildirimi ve WhatsApp aracılığıyla iletişim kurulması',
           'Yasal yükümlülüklerin yerine getirilmesi ve yetkili kurumlara bildirim yapılması',
           'Platform güvenliğinin sağlanması ve kötüye kullanımın önlenmesi',
         ]}
@@ -144,12 +145,17 @@ const sections = [
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
         {[
-          ['Kullanıcı hesap verileri', 'Hesap silinene kadar + 2 yıl'],
+          ['Ödeme, fatura ve işlem kayıtları (iyzico, App Store, Google Play)', '10 yıl, işlemin yapıldığı yılı izleyen takvim yılı başından (TTK m.82, VUK m.253). Hesap silinse de saklanır; süre sonunda kişisel alanlar anonimleştirilir, tutar, tarih ve işlem numarası korunur'],
+          ['Mesafeli satış ve abonelik onay kayıtları (sözleşme kabulü, ön bilgilendirme onayı, zaman damgası, IP)', '3 yıl, işlem tarihinden (Mesafeli Sözleşmeler Yönetmeliği)'],
+          ['Ticari ileti onay ve ret kayıtları', 'Onayın sona erdiği tarihten 3 yıl (Ticari İletişim ve Ticari Elektronik İletiler Hakkında Yönetmelik)'],
+          ['Giriş, IP ve trafik kayıtları', '2 yıl, kayıt tarihinden (5651 sayılı Kanun m.5)'],
+          ['KVKK aydınlatma ve açık rıza onay kayıtları', 'Hesabın silinmesinden itibaren 10 yıl (TBK genel zamanaşımı)'],
+          ['Acil yardım talebi, şikâyet ya da ban ile ilişkili kişinin kimlik bilgileri (ad, soyad, e-posta, telefon; kilitli, yalnız yetkili yönetici görür)', 'Olayın kapanışından itibaren 2 yıl (yasal sabit süre yok, şirket politikası)'],
+          ['Banlı hesabın telefon numarasının okunamaz özeti (hash)', 'Süresiz (yeniden kayıt engeli)'],
           ['kimlik belgeleri (kimlik görselleri ve liveness videosu)', 'Hesap silinene kadar saklanır; hesap silme talebi onaylanınca kimlik görselleri, canlılık videosu ve KYC kaydı silinir'],
-          ['OCEAN testi sonuçları', 'Hesap aktif olduğu sürece'],
-          ['Ödeme kayıtları', '5 yıl, Vergi Usul Kanunu'],
-          ['Rehber engelleme için eklenen telefon numaraları', 'Kullanıcı silene kadar'],
-        ].map(([label, value], i) => (
+          ['Diğer veriler: profil, OCEAN test sonuçları, profil fotoğrafları, sohbet mesajları, sorun bildirimleri, rehber ve kullanıcı engelleri', 'Hesap silme talebi onaylanınca silinir; rehber engelleri kullanıcı silince de silinir'],
+          ['Acil yardım konum koordinatları ve konum geçmişi', 'Talep çözülünce silinir'],
+        ].map(([label, value], i, arr) => (
           <div
             key={label}
             style={{
@@ -158,11 +164,11 @@ const sections = [
               alignItems: 'flex-start',
               gap: '1rem',
               padding: '0.85rem 0',
-              borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.10)' : 'none',
+              borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.10)' : 'none',
             }}
           >
             <span style={{ color: '#c9c2b8', fontSize: 13, flex: 1 }}>{label}</span>
-            <span style={{ color: '#a39c93', fontSize: 13, textAlign: 'right' as const, flexShrink: 0 }}>{value}</span>
+            <span style={{ color: '#a39c93', fontSize: 13, textAlign: 'right' as const, flex: 1 }}>{value}</span>
           </div>
         ))}
       </div>
@@ -195,7 +201,7 @@ const sections = [
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Anthropic (yapay zekâ)</strong>
-          : masa uyum raporunun oluşturulması amacıyla masadaki katılımcıların OCEAN skorları ve cinsiyeti; ad, iletişim ve kimlik bilgisi gönderilmez.
+          : masa uyum raporunun oluşturulması amacıyla masadaki her katılımcı için adı yerine P1, P2 gibi bir etiketle beş OCEAN skoru ve varsa meslek alanı, masa türü, katılımcı sayısı ve masanın genel uyum skoru; masa sohbeti denetimi amacıyla şüpheli kelime içeren sohbet mesajının yalnız metni (en fazla 1.000 karakter). Ad, cinsiyet, yaş, iletişim ve kimlik bilgisi gönderilmez.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>OpenStreetMap (Nominatim)</strong>
@@ -289,7 +295,7 @@ const sections = [
     title: 'Politika Değişiklikleri',
     content: (
       <p>
-        Bu politika gerektiğinde güncellenebilir. Önemli değişiklikler kayıtlı e-posta adresine bildirilir. Güncel politikaya her zaman{' '}
+        Bu politika gerektiğinde güncellenebilir. Önemli değişiklikler push bildirimi ve WhatsApp ile bildirilir. Güncel politikaya her zaman{' '}
         <Link href="/gizlilik-politikasi" style={{ color: '#c0392b' }}>ahenk.co/gizlilik-politikasi</Link>
         {' '}adresinden ulaşabilirsin.
       </p>

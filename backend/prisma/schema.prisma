@@ -434,7 +434,6 @@ model Notification {
 }
 
 enum NotificationType {
-  EMAIL
   PUSH
   SMS
   IN_APP
@@ -638,6 +637,7 @@ model Payment {
   listKurus            Int? // indirimsiz liste fiyatı (o anki fiyattan); indirim tutarı istatistiği için
   isRenewal            Boolean              @default(false) // Prime otomatik yenileme ödemesi (indirimsiz)
   storeTransactionId   String?              @unique // App Store / Play uygulama içi satın alma işlem kimliği
+  anonymizedAt         DateTime? // Saklama süresi (10 yıl) dolunca kişisel alanlar anonimleştirildi (tutar / tarih / işlem no korunur)
   paidAt               DateTime?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
@@ -1324,4 +1324,47 @@ model ProfilePhoto {
 enum ProfilePhotoStatus {
   PENDING
   APPROVED
+}
+
+// ─────────────────────────────────────────────
+// VERİ SAKLAMA (retention/retention-policy.ts)
+// ─────────────────────────────────────────────
+
+// Saklama kilidi: kişi (userId) ya da tek kayıt (category + recordId) bazında; açıkken (releasedAt boş) otomatik silme atlar
+model RetentionLock {
+  id            String    @id @default(cuid())
+  userId        String?
+  category      String?
+  recordId      String?
+  reason        String    @db.Text
+  createdById   String
+  createdAt     DateTime  @default(now())
+  releasedAt    DateTime?
+  releasedById  String?
+  releaseReason String?   @db.Text
+
+  @@index([userId])
+  @@index([category, recordId])
+}
+
+// Otomatik silme çalışması: kategori başına bir satır (silinen / anahtar kapalıyken silinecek adet)
+model RetentionRun {
+  id       String   @id @default(cuid())
+  ranAt    DateTime @default(now())
+  category String
+  count    Int
+  enabled  Boolean // "Otomatik Veri Silme" anahtarı: false ise yalnız sayıldı, silinmedi
+
+  @@index([ranAt])
+}
+
+// Veri Saklama → Dışa Aktar kaydı: kim, ne zaman, kimin verisi, gerekçe
+model DataExportLog {
+  id           String   @id @default(cuid())
+  adminId      String
+  targetUserId String
+  reason       String   @db.Text
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
 }

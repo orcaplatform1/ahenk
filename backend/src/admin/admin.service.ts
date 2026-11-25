@@ -1363,6 +1363,8 @@ export class AdminService {
       ...(viewerRole === UserRole.SUPERADMIN ? { botSystemActive: map['BOT_SYSTEM_ACTIVE'] !== 'false' } : {}),
       maintenanceMode: map['MAINTENANCE_MODE'] === 'true',
       liveDistrictSource: map['LIVE_DISTRICT_SOURCE'] === 'real' ? 'real' : 'static',
+      // Otomatik Veri Silme (retention/retention.service.ts): varsayılan Kapalı
+      autoDataDeletion: map['AUTO_DATA_DELETION'] === 'true',
       // Eşleştirme Kriterleri (app-settings.ts oceanCriteria ile aynı varsayılanlar)
       oceanGroup: map['OCEAN_GROUP'] !== 'false',
       oceanOneOnOne: map['OCEAN_ONE_ON_ONE'] === 'true',
@@ -1370,7 +1372,7 @@ export class AdminService {
     };
   }
 
-  async updateSettings(data: { matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean; liveDistrictSource?: "static" | "real"; oceanGroup?: boolean; oceanOneOnOne?: boolean; oceanKanka?: boolean }, viewerRole: UserRole) {
+  async updateSettings(data: { matchingEnabled?: boolean; botSystemActive?: boolean; maintenanceMode?: boolean; liveDistrictSource?: "static" | "real"; autoDataDeletion?: boolean; oceanGroup?: boolean; oceanOneOnOne?: boolean; oceanKanka?: boolean }, viewerRole: UserRole) {
     if (data.botSystemActive !== undefined && viewerRole !== UserRole.SUPERADMIN) {
       throw new ForbiddenException("Bu ayarı değiştirme yetkin yok");
     }
@@ -1379,6 +1381,7 @@ export class AdminService {
     if (data.botSystemActive !== undefined) updates.push({ key: "BOT_SYSTEM_ACTIVE", value: String(data.botSystemActive) });
     if (data.maintenanceMode !== undefined) updates.push({ key: "MAINTENANCE_MODE", value: String(data.maintenanceMode) });
     if (data.liveDistrictSource !== undefined) updates.push({ key: "LIVE_DISTRICT_SOURCE", value: data.liveDistrictSource });
+    if (data.autoDataDeletion !== undefined) updates.push({ key: "AUTO_DATA_DELETION", value: String(data.autoDataDeletion) });
     if (data.oceanGroup !== undefined) updates.push({ key: "OCEAN_GROUP", value: String(data.oceanGroup) });
     if (data.oceanOneOnOne !== undefined) updates.push({ key: "OCEAN_ONE_ON_ONE", value: String(data.oceanOneOnOne) });
     if (data.oceanKanka !== undefined) updates.push({ key: "OCEAN_KANKA", value: String(data.oceanKanka) });
@@ -2196,7 +2199,7 @@ export class AdminService {
 
 // Şehir sezonu (gün + ay, yıl yok), isteğe bağlı: dört alanla birlikte girilir ya da hepsi boş bırakılır; gün ayın gün sayısını
 // aşamaz (Şubat 29). Gönderilmeyen alan değişmez, null temizler. Ülke: zorunlu countryCode (ISO 3166-1 alpha-2), gönderilirse güncellenir.
-type CitySeasonCountry = { seasonStartDay?: number | null; seasonStartMonth?: number | null; seasonEndDay?: number | null; seasonEndMonth?: number | null; countryCode?: string; sortOrder?: number };
+type CitySeasonCountry = { seasonStartDay?: number | null; seasonStartMonth?: number | null; seasonEndDay?: number | null; seasonEndMonth?: number | null; countryCode?: string; sortOrder?: number; timezone?: string; currency?: string; phoneCountryCode?: string };
 const MONTH_DAYS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 function citySeasonCountryData(dto: CitySeasonCountry): CitySeasonCountry {
   const out: CitySeasonCountry = {};
@@ -2210,6 +2213,13 @@ function citySeasonCountryData(dto: CitySeasonCountry): CitySeasonCountry {
   }
   if (dto.countryCode) out.countryCode = dto.countryCode;
   if (dto.sortOrder !== undefined) out.sortOrder = dto.sortOrder;
+  // Bölge alanları (admin formunda ülkeden dolar, elle değiştirilebilir)
+  if (dto.timezone) {
+    try { new Intl.DateTimeFormat("en", { timeZone: dto.timezone }); } catch { throw new BadRequestException("Geçersiz saat dilimi (IANA, ör. Europe/Istanbul)"); }
+    out.timezone = dto.timezone;
+  }
+  if (dto.currency) out.currency = dto.currency;
+  if (dto.phoneCountryCode) out.phoneCountryCode = dto.phoneCountryCode;
   return out;
 }
 

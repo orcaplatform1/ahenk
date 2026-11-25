@@ -243,7 +243,7 @@ const sections = [
     title: 'Entry Into Force',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        This agreement enters into force when the user confirms the payment and remains valid until the rights of the purchased package end. A copy of the agreement is sent to the user’s registered email address and can always be accessed from the profile page.
+        This agreement enters into force when the user confirms the payment and remains valid until the rights of the purchased package end. A copy of the agreement can always be accessed from the profile page.
       </p>
     ),
   },

@@ -8,7 +8,7 @@ import { ACheck, AInput, AdminToggle } from '@/components/admin/AdminControls';
 import { adm, mono } from '@/theme/theme';
 
 // oceanGroup / oceanOneOnOne / oceanKanka: Eşleştirme Kriterleri (Planlı Buluşma'da masa türüne göre OCEAN sıralaması)
-interface Settings { matchingEnabled: boolean; botSystemActive?: boolean; maintenanceMode: boolean; liveDistrictSource?: 'static' | 'real'; oceanGroup?: boolean; oceanOneOnOne?: boolean; oceanKanka?: boolean }
+interface Settings { matchingEnabled: boolean; botSystemActive?: boolean; maintenanceMode: boolean; liveDistrictSource?: 'static' | 'real'; autoDataDeletion?: boolean; oceanGroup?: boolean; oceanOneOnOne?: boolean; oceanKanka?: boolean }
 type Tab = 'general' | 'criteria';
 const TABS: [Tab, string][] = [['general', 'Genel'], ['criteria', 'Eşleştirme Kriterleri']];
 const OCEAN_DESC = "Yalnız Planlı Buluşma. Açık: sıralama OCEAN %100. Kapalı: yaş yakınlığı %50 + mekân kategori %50. Yarın Buluşma'da OCEAN her zaman kapalı."
@@ -60,7 +60,7 @@ export default function AdminSettings() {
   async function save() {
     if (!s) return;
     setSaving(true); setError('');
-    try { await api.patch('/admin/settings', { matchingEnabled: s.matchingEnabled, botSystemActive: s.botSystemActive, maintenanceMode: s.maintenanceMode, liveDistrictSource: s.liveDistrictSource, oceanGroup: s.oceanGroup, oceanOneOnOne: s.oceanOneOnOne, oceanKanka: s.oceanKanka }); setSaved(true); setTimeout(() => setSaved(false), 2000); }
+    try { await api.patch('/admin/settings', { matchingEnabled: s.matchingEnabled, botSystemActive: s.botSystemActive, maintenanceMode: s.maintenanceMode, liveDistrictSource: s.liveDistrictSource, autoDataDeletion: s.autoDataDeletion, oceanGroup: s.oceanGroup, oceanOneOnOne: s.oceanOneOnOne, oceanKanka: s.oceanKanka }); setSaved(true); setTimeout(() => setSaved(false), 2000); }
     catch (e) { setError(`Kaydedilemedi: ${(e as Error).message}`); } finally { setSaving(false); }
   }
   const upd = (p: Partial<Settings>) => setS(x => (x ? { ...x, ...p } : x));
@@ -87,6 +87,7 @@ export default function AdminSettings() {
             <AdminToggle label="Eşleştirme Aktif" desc="Grup, baş başa ve Kankamla masa ataması yapılsın mı. Kapalıyken hak düşümü, kilit ve eşleştirme bildirimleri de durur." value={s.matchingEnabled} onChange={v => upd({ matchingEnabled: v })} />
             {s.botSystemActive !== undefined && <AdminToggle label="Bot Sistemi Aktif" desc="Eksik masalara bot ekleme" value={s.botSystemActive} onChange={v => upd({ botSystemActive: v })} />}
             <AdminToggle label="Bakım Modu" desc="Platform açık kalır; masa ataması ve paket satın alma durur, üyelere bakım uyarısı gösterilir" value={s.maintenanceMode} onChange={v => upd({ maintenanceMode: v })} />
+            <AdminToggle label="Otomatik Veri Silme" desc="Her gece 03:30'da saklama süresi dolan kayıtlar silinir (ödeme kayıtları anonimleştirilir). Kapalıyken yalnız sayılır, silinmez." value={s.autoDataDeletion ?? false} onChange={v => upd({ autoDataDeletion: v })} />
             <View>
               <AT w={600} style={{ fontSize: 13 }}>Canlı katman ilçe verisi</AT>
               <AT style={{ marginTop: 2, marginBottom: 8, fontSize: 11, color: adm.muted }}>Statik: Şehirler sayfasındaki ilçe listeleri. Gerçek: üyelerin ilçe verisinden hesaplanır.</AT>

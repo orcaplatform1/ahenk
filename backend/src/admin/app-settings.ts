@@ -28,6 +28,12 @@ export async function oceanCriteria(prisma: PrismaService): Promise<{ GROUP: boo
   return { GROUP: v("OCEAN_GROUP") !== "false", ONE_ON_ONE: v("OCEAN_ONE_ON_ONE") === "true", KANKA: v("OCEAN_KANKA") === "true" };
 }
 
+// "Otomatik Veri Silme": kapalıyken (varsayılan) gece saklama işi yalnız sayar, silmez
+export async function isAutoDataDeletionEnabled(prisma: PrismaService): Promise<boolean> {
+  const row = await prisma.appConfig.findUnique({ where: { key: "AUTO_DATA_DELETION" } });
+  return row?.value === "true";
+}
+
 // "Eşleştirme Aktif" kapalıysa masa atamaları, kilitler, hak düşümleri ve eşleştirme bildirimleri durur
 export async function isMatchingEnabled(prisma: PrismaService): Promise<boolean> {
   const row = await prisma.appConfig.findUnique({ where: { key: "MATCHING_ENABLED" } });

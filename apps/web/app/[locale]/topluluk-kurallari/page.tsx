@@ -168,7 +168,7 @@ const sections = [
           {[
             { level: 'Uyarı', desc: 'Bildirim gönderme: hafif ihlaller için ilk adım.' },
             { level: 'Askıya Alma', desc: 'Hesabı geçici olarak kapatma: 1-30 gün arası.' },
-            { level: 'Kalıcı Kapatma', desc: 'Hesabı kalıcı olarak kapatma ve platforma erişimi engelleme.' },
+            { level: 'Kalıcı Kapatma', desc: 'Hesabı kalıcı olarak kapatma ve platforma erişimi engelleme. Banlanan kişi yeniden kayıt olamaz.' },
           ].map((row) => (
             <div key={row.level} style={{ display: 'flex', gap: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', alignItems: 'flex-start' }}>
               <span style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.06em', color: '#c0392b', minWidth: '100px', paddingTop: '0.1rem' }}>{row.level.toUpperCase()}</span>
@@ -211,7 +211,7 @@ const sections = [
     title: 'Kuralların Güncellenmesi',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Bu kurallar topluluk geri bildirimleri ve platform gelişimine bağlı olarak güncellenebilir. Önemli değişiklikler e-posta ile bildirilir. Platformu kullanmaya devam etmek güncel kuralları kabul etmek anlamına gelir.
+        Bu kurallar topluluk geri bildirimleri ve platform gelişimine bağlı olarak güncellenebilir. Önemli değişiklikler push bildirimi ve WhatsApp ile bildirilir. Platformu kullanmaya devam etmek güncel kuralları kabul etmek anlamına gelir.
       </p>
     ),
   },

@@ -26,6 +26,7 @@ import { KankaModule } from "./kanka/kanka.module";
 import { ChatModule } from "./chat/chat.module";
 import { SosModule } from "./sos/sos.module";
 import { VenuePanelModule } from "./venue-panel/venue-panel.module";
+import { RetentionModule } from "./retention/retention.module";
 import { isE2eFakeMode } from "./common/e2e/fake-layer";
 
 @Module({
@@ -67,6 +68,7 @@ import { isE2eFakeMode } from "./common/e2e/fake-layer";
     ContactBlocksModule,
     PartnershipsModule,
     VenuePanelModule,
+    RetentionModule,
     ReferralModule,
     KankaModule,
     CareersModule,

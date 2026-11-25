@@ -247,6 +247,9 @@ export class UpdateVenueDto {
 export const CITY_STATUSES = ["ACTIVE", "PASSIVE", "COMING_SOON"] as const;
 export type CityStatus = (typeof CITY_STATUSES)[number];
 
+// Bölge para birimleri (packages/shared countryRegion.ts REGION_CURRENCIES ile aynı liste)
+const REGION_CURRENCIES = ["TRY", "USD", "AED", "THB", "HKD", "SGD", "JPY"];
+
 export class CreateCityDto {
   @IsString()
   @MinLength(2)
@@ -265,6 +268,10 @@ export class CreateCityDto {
   @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (TR, AE)" }) countryCode?: string;
   // Sıra (City.sortOrder): şehir listelerinde grup içi sıralama
   @IsOptional() @IsInt() sortOrder?: number;
+  // Bölge alanları: admin formunda ülke seçilince packages/shared countryRegion.ts'den dolar, elle değiştirilebilir
+  @IsOptional() @IsString() @MinLength(3) @MaxLength(60) timezone?: string;
+  @IsOptional() @IsIn(REGION_CURRENCIES) currency?: string;
+  @IsOptional() @IsString() @Matches(/^\+[1-9]\d{0,3}$/, { message: "Telefon kodu +90 biçiminde olmalı" }) phoneCountryCode?: string;
 }
 
 export class UpdateCityDto {
@@ -290,6 +297,10 @@ export class UpdateCityDto {
   @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (TR, AE)" }) countryCode?: string;
   // Sıra (City.sortOrder): şehir listelerinde grup içi sıralama
   @IsOptional() @IsInt() sortOrder?: number;
+  // Bölge alanları: admin formunda ülke seçilince packages/shared countryRegion.ts'den dolar, elle değiştirilebilir
+  @IsOptional() @IsString() @MinLength(3) @MaxLength(60) timezone?: string;
+  @IsOptional() @IsIn(REGION_CURRENCIES) currency?: string;
+  @IsOptional() @IsString() @Matches(/^\+[1-9]\d{0,3}$/, { message: "Telefon kodu +90 biçiminde olmalı" }) phoneCountryCode?: string;
 }
 
 // Bölge (şehir) ayarları — admin "Bölgeler" sayfası
@@ -297,7 +308,7 @@ export class UpdateRegionDto {
   @IsOptional() @IsString() @MinLength(2) @MaxLength(60) name?: string;
   @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/, { message: "Ülke kodu 2 büyük harf olmalı (TR, AE)" }) countryCode?: string;
   @IsOptional() @IsString() @MinLength(3) @MaxLength(60) timezone?: string;
-  @IsOptional() @IsIn(["TRY", "USD"]) currency?: string;
+  @IsOptional() @IsIn(REGION_CURRENCIES) currency?: string;
   @IsOptional() @IsIn(["tr", "en"]) defaultLanguage?: string;
   @IsOptional() @IsString() @Matches(/^\+[1-9]\d{0,3}$/, { message: "Telefon kodu +90 biçiminde olmalı" }) phoneCountryCode?: string;
   @IsOptional() @IsArray() @IsIn(["ID_CARD", "DRIVER_LICENSE", "PASSPORT", "RESIDENCE_PERMIT"], { each: true }) idTypes?: ("ID_CARD" | "DRIVER_LICENSE" | "PASSPORT" | "RESIDENCE_PERMIT")[];
@@ -353,6 +364,11 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsIn(["static", "real"])
   liveDistrictSource?: "static" | "real";
+
+  // "Otomatik Veri Silme" (AUTO_DATA_DELETION): kapalıyken gece işi yalnız sayar, silmez (varsayılan Kapalı)
+  @IsOptional()
+  @IsBoolean()
+  autoDataDeletion?: boolean;
 
   // Eşleştirme Kriterleri: Planlı Buluşma'da masa türüne göre OCEAN sıralaması
   @IsOptional()

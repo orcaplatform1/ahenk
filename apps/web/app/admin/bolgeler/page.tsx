@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, SANS, MONO, LABEL } from '@/lib/adminTheme';
+import { countryRegion, REGION_CURRENCIES } from '@ahenk/shared';
 
 // Bölgeler: şehir = bölge ayarları (ülke, saat dilimi, para birimi, varsayılan dil, telefon kodu, kimlik türleri, aktiflik, sıra)
 // Aktif yapılan bölge kullanıcı şehir listelerinde üst gruba geçer.
@@ -37,9 +38,9 @@ function RegionEditor({ r, onSaved }: { r: Region; onSaved: () => void }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
       {field('Ad', <input style={inputStyle} value={f.name} onChange={(e) => set('name', e.target.value)} />)}
-      {field('Ülke kodu', <input style={inputStyle} value={f.countryCode} maxLength={2} onChange={(e) => set('countryCode', e.target.value.toUpperCase())} />)}
+      {field('Ülke kodu', <input style={inputStyle} value={f.countryCode} maxLength={2} onChange={(e) => { const code = e.target.value.toUpperCase(); setF((p) => ({ ...p, countryCode: code, ...(countryRegion(code) ?? {}) })); }} />)}
       {field('Saat dilimi', <input style={inputStyle} value={f.timezone} onChange={(e) => set('timezone', e.target.value)} />)}
-      {field('Para birimi', <select style={inputStyle} value={f.currency} onChange={(e) => set('currency', e.target.value)}><option value="TRY">TRY</option><option value="USD">USD</option></select>)}
+      {field('Para birimi', <select style={inputStyle} value={f.currency} onChange={(e) => set('currency', e.target.value)}>{REGION_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}</select>)}
       {field('Varsayılan dil', <select style={inputStyle} value={f.defaultLanguage} onChange={(e) => set('defaultLanguage', e.target.value)}><option value="tr">Türkçe</option><option value="en">English</option></select>)}
       {field('Telefon kodu', <input style={inputStyle} value={f.phoneCountryCode} onChange={(e) => set('phoneCountryCode', e.target.value)} />)}
       {field('Sıra', <input style={inputStyle} type="number" value={f.sortOrder} onChange={(e) => set('sortOrder', Number(e.target.value))} />)}

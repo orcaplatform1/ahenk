@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { upper } from '@/lib/i18n';
 import { api } from '@/lib/api';
+import { seasonRangeTag, type CitySeasonFields } from '@ahenk/shared';
 import { gColor } from '@/lib/masa';
 import { onb as C } from '@/theme/theme';
 import { Serif, T } from './ui';
@@ -74,7 +75,7 @@ function IconRow({ icon, title, body }: { icon: keyof typeof ICONS; title: strin
   );
 }
 
-function Step({ n, prices }: { n: number; prices: Partial<Record<PlanKeyName, PlanPriceInfo>> | null }) {
+function Step({ n, prices, seasonTag }: { n: number; prices: Partial<Record<PlanKeyName, PlanPriceInfo>> | null; seasonTag: string }) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<'tomorrow' | 'weekend'>('tomorrow');
   const price = (p: PlanKeyName) => (prices?.[p] ? `${prices[p]!.mobileTL}₺` : '—');
@@ -271,10 +272,12 @@ function Step({ n, prices }: { n: number; prices: Partial<Record<PlanKeyName, Pl
 
   return (
     <View>
-      <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4, paddingHorizontal: 10, borderRadius: C.pill, borderWidth: 1, borderColor: C.primary, marginBottom: 12 }}>
-        <Icon name="sun" size={14} />
-        <T style={{ fontSize: 12, color: C.accent }}>{t('onb.s8Tag')}</T>
-      </View>
+      {!!seasonTag && (
+        <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4, paddingHorizontal: 10, borderRadius: C.pill, borderWidth: 1, borderColor: C.primary, marginBottom: 12 }}>
+          <Icon name="sun" size={14} />
+          <T style={{ fontSize: 12, color: C.accent }}>{seasonTag}</T>
+        </View>
+      )}
       <H2>{t('onb.s8Title')}</H2>
       <Sub style={{ color: C.text }}>{t('onb.s8Body')}</Sub>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -291,7 +294,7 @@ function Step({ n, prices }: { n: number; prices: Partial<Record<PlanKeyName, Pl
 }
 
 export function Onboarding({ visible, onClose }: { visible: boolean; onClose: (completed: boolean) => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(1);
   const [prices, setPrices] = useState<Partial<Record<PlanKeyName, PlanPriceInfo>> | null>(null);
@@ -302,6 +305,13 @@ export function Onboarding({ visible, onClose }: { visible: boolean; onClose: (c
     if (!visible || prices) return;
     api.get<PlanPriceInfo[]>('/payment/plans').then((l) => setPrices(Object.fromEntries(l.map((p) => [p.plan, p])))).catch(() => {});
   }, [visible, prices]);
+  // 8. adım sezon etiketi DB'deki City sezon alanlarından (seasonRangeTag)
+  const [seasonCities, setSeasonCities] = useState<CitySeasonFields[] | null>(null);
+  useEffect(() => {
+    if (!visible || seasonCities) return;
+    api.get<CitySeasonFields[]>('/auth/cities').then(setSeasonCities).catch(() => {});
+  }, [visible, seasonCities]);
+  const seasonTag = seasonCities ? seasonRangeTag(seasonCities, i18n.language === 'en' ? 'en' : 'tr') : '';
   useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [step]);
 
   const go = (n: number) => setStep(Math.min(TOTAL, Math.max(1, n)));
@@ -321,7 +331,7 @@ export function Onboarding({ visible, onClose }: { visible: boolean; onClose: (c
         </View>
         {/* İçerik: sığmazsa kaydırılır, butonlar sabit */}
         <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: C.padH, paddingTop: 8, paddingBottom: 16 }}>
-          <Step key={step} n={step} prices={prices} />
+          <Step key={step} n={step} prices={prices} seasonTag={seasonTag} />
         </ScrollView>
         {/* Alt: solda Geri (1. adımda yok), sağda yuvarlak kırmızı ana buton */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: C.padH, paddingTop: 12, paddingBottom: 16, borderTopWidth: 1, borderTopColor: C.border }}>

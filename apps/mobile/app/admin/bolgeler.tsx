@@ -8,6 +8,7 @@ import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
 import { ACheck, AdminSelect, AInput } from '@/components/admin/AdminControls';
 import { adm } from '@/theme/theme';
+import { countryRegion, REGION_CURRENCIES } from '@ahenk/shared';
 
 type IdType = 'ID_CARD' | 'DRIVER_LICENSE' | 'PASSPORT' | 'RESIDENCE_PERMIT';
 interface Region {
@@ -38,9 +39,9 @@ function RegionEditor({ r, onSaved }: { r: Region; onSaved: () => void }) {
   return (
     <View style={{ gap: 10, marginTop: 12 }}>
       <Field label="Ad"><AInput value={f.name} onChangeText={(v) => set('name', v)} style={{ paddingHorizontal: 12 }} /></Field>
-      <Field label="Ülke kodu"><AInput value={f.countryCode} maxLength={2} autoCapitalize="characters" onChangeText={(v) => set('countryCode', v.toUpperCase())} style={{ paddingHorizontal: 12 }} /></Field>
+      <Field label="Ülke kodu"><AInput value={f.countryCode} maxLength={2} autoCapitalize="characters" onChangeText={(v) => { const code = v.toUpperCase(); setF((p) => ({ ...p, countryCode: code, ...(countryRegion(code) ?? {}) })); }} style={{ paddingHorizontal: 12 }} /></Field>
       <Field label="Saat dilimi"><AInput value={f.timezone} autoCapitalize="none" onChangeText={(v) => set('timezone', v)} style={{ paddingHorizontal: 12 }} /></Field>
-      <Field label="Para birimi"><AdminSelect value={f.currency} onChange={(v) => set('currency', v)} options={[{ value: 'TRY', label: 'TRY' }, { value: 'USD', label: 'USD' }]} placeholder="Para birimi" /></Field>
+      <Field label="Para birimi"><AdminSelect value={f.currency} onChange={(v) => set('currency', v)} options={REGION_CURRENCIES.map((c) => ({ value: c, label: c }))} placeholder="Para birimi" /></Field>
       <Field label="Varsayılan dil"><AdminSelect value={f.defaultLanguage} onChange={(v) => set('defaultLanguage', v)} options={[{ value: 'tr', label: 'Türkçe' }, { value: 'en', label: 'English' }]} placeholder="Varsayılan dil" /></Field>
       <Field label="Telefon kodu"><AInput value={f.phoneCountryCode} onChangeText={(v) => set('phoneCountryCode', v)} style={{ paddingHorizontal: 12 }} /></Field>
       <Field label="Sıra"><AInput value={f.sortOrder} keyboardType="number-pad" onChangeText={(v) => set('sortOrder', v.replace(/[^\d-]/g, ''))} style={{ paddingHorizontal: 12 }} /></Field>

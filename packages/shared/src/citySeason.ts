@@ -59,3 +59,14 @@ export const ISO_COUNTRY_CODES = (
   "PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK " +
   "TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW"
 ).split(" ");
+
+// Nasıl Çalışır (Onboarding) 8. adım sezon etiketi: DB'deki City sezon alanlarından (countryCode TR olan sezonlu şehirler; aynıysa o,
+// farklıysa en erken başlangıç ile en geç bitiş). TR "1 Haziran – 15 Eylül", EN "1 June – 15 September"; sezonlu şehir yoksa ""
+export function seasonRangeTag(cities: CitySeasonFields[], lang: Lang): string {
+  const tr = cities.filter((c) => (c.countryCode ?? "TR") === "TR" && c.seasonStartDay && c.seasonStartMonth && c.seasonEndDay && c.seasonEndMonth);
+  if (!tr.length) return "";
+  const key = (m: number, d: number) => m * 100 + d;
+  const start = tr.reduce((a, c) => (key(c.seasonStartMonth!, c.seasonStartDay!) < key(a.seasonStartMonth!, a.seasonStartDay!) ? c : a));
+  const end = tr.reduce((a, c) => (key(c.seasonEndMonth!, c.seasonEndDay!) > key(a.seasonEndMonth!, a.seasonEndDay!) ? c : a));
+  return `${start.seasonStartDay} ${monthName(start.seasonStartMonth!, lang)} – ${end.seasonEndDay} ${monthName(end.seasonEndMonth!, lang)}`;
+}

@@ -167,7 +167,7 @@ const sections = [
           {[
             { level: 'Warning', desc: 'A notification: the first step for minor violations.' },
             { level: 'Suspension', desc: 'Temporarily closing the account: between 1 and 30 days.' },
-            { level: 'Permanent Closure', desc: 'Permanently closing the account and blocking access to the platform.' },
+            { level: 'Permanent Closure', desc: 'Permanently closing the account and blocking access to the platform. A banned person cannot sign up again.' },
           ].map((row) => (
             <div key={row.level} style={{ display: 'flex', gap: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', alignItems: 'flex-start' }}>
               <span style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.06em', color: '#c0392b', minWidth: '100px', paddingTop: '0.1rem' }}>{row.level.toUpperCase()}</span>
@@ -210,7 +210,7 @@ const sections = [
     title: 'Updates to the Guidelines',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        These guidelines may be updated based on community feedback and platform development. Significant changes are announced by email. Continuing to use the platform means you accept the current guidelines.
+        These guidelines may be updated based on community feedback and platform development. Significant changes are announced by push notification and WhatsApp. Continuing to use the platform means you accept the current guidelines.
       </p>
     ),
   },

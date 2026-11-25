@@ -180,7 +180,7 @@ const sections = [
     title: 'Hesap Askıya Alma ve Kapatma',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Kullanım koşullarının ihlali, sahte kimlik kullanımı, başka kullanıcılara zarar verici davranış veya yasal düzenlemelere aykırı eylemler tespit edildiğinde Ahenk, kullanıcı hesabını önceden bildirim yapmaksızın geçici olarak askıya alabilir veya kalıcı olarak kapatabilir. Hesap kapatma kararı Ahenk'in takdir yetkisindedir. Kapatılan hesabın yeniden açılması talep edilebilir; değerlendirme Ahenk tarafından yapılır.
+        Kullanım koşullarının ihlali, sahte kimlik kullanımı, başka kullanıcılara zarar verici davranış veya yasal düzenlemelere aykırı eylemler tespit edildiğinde Ahenk, kullanıcı hesabını önceden bildirim yapmaksızın geçici olarak askıya alabilir veya kalıcı olarak kapatabilir. Hesap kapatma kararı Ahenk'in takdir yetkisindedir. Banlanarak kalıcı olarak kapatılan hesabın sahibi Ahenk'e yeniden kayıt olamaz.
       </p>
     ),
   },
@@ -215,7 +215,7 @@ const sections = [
     title: 'Koşulların Değiştirilmesi',
     content: (
       <p style={{ lineHeight: 1.75 }}>
-        Ahenk, bu kullanım koşullarını önceden bildirimde bulunmak kaydıyla güncelleme hakkını saklı tutar. Güncellemeler e-posta veya platform bildirimi aracılığıyla duyurulur. Güncelleme sonrası platformu kullanmaya devam etmek yeni koşulları kabul etmek anlamına gelir.
+        Ahenk, bu kullanım koşullarını önceden bildirimde bulunmak kaydıyla güncelleme hakkını saklı tutar. Güncellemeler push bildirimi ve WhatsApp aracılığıyla duyurulur. Güncelleme sonrası platformu kullanmaya devam etmek yeni koşulları kabul etmek anlamına gelir.
       </p>
     ),
   },

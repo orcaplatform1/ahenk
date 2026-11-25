@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import { gColor } from '@ahenk/ui';
+import { seasonRangeTag, type CitySeasonFields } from '@ahenk/shared';
 import { api } from '@/lib/api';
 import { usePlanPrices, type PlanKeyName } from '@/components/PlanPrice';
 import { AMBER, AMBER_GRADIENT, CARDS } from '@/components/paket/PaketKarti';
@@ -69,7 +70,7 @@ function Timeline({ rows }: { rows: [string, string][] }) {
   );
 }
 
-function Step({ n, t, wide }: { n: number; t: ReturnType<typeof useTranslations>; wide: boolean }) {
+function Step({ n, t, wide, seasonTag }: { n: number; t: ReturnType<typeof useTranslations>; wide: boolean; seasonTag: string }) {
   const prices = usePlanPrices();
   const locale = useLocale();
   const price = (p: PlanKeyName) => (prices?.[p] ? `${prices[p]!.webTL}₺` : '—');
@@ -263,9 +264,11 @@ function Step({ n, t, wide }: { n: number; t: ReturnType<typeof useTranslations>
 
   return (
     <div>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 9999, border: `1px solid ${C.primary}`, fontFamily: SANS, fontSize: 12, color: C.accent, marginBottom: 12 }}>
-        <Icon d={ICONS.sun} size={14} />{t('onb.s8Tag')}
-      </span>
+      {seasonTag && (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 9999, border: `1px solid ${C.primary}`, fontFamily: SANS, fontSize: 12, color: C.accent, marginBottom: 12 }}>
+          <Icon d={ICONS.sun} size={14} />{seasonTag}
+        </span>
+      )}
       <h2 style={h2}>{t('onb.s8Title')}</h2>
       <p style={{ ...sub, color: C.text }}>{t('onb.s8Body')}</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -283,8 +286,16 @@ function Step({ n, t, wide }: { n: number; t: ReturnType<typeof useTranslations>
 
 export default function Onboarding({ open, onClose }: { open: boolean; onClose: (completed: boolean) => void }) {
   const t = useTranslations();
+  const locale = useLocale();
   const [step, setStep] = useState(1);
   const [wide, setWide] = useState(false);
+  // 8. adım sezon etiketi DB'deki City sezon alanlarından (seasonRangeTag)
+  const [seasonCities, setSeasonCities] = useState<CitySeasonFields[] | null>(null);
+  useEffect(() => {
+    if (!open || seasonCities) return;
+    api.get<CitySeasonFields[]>('/auth/cities').then(setSeasonCities).catch(() => undefined);
+  }, [open, seasonCities]);
+  const seasonTag = seasonCities ? seasonRangeTag(seasonCities, locale === 'en' ? 'en' : 'tr') : '';
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -330,7 +341,7 @@ export default function Onboarding({ open, onClose }: { open: boolean; onClose: 
 
   const content = (
     <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: wide ? '8px 36px 16px' : '8px 20px 16px' }}>
-      <Step key={step} n={step} t={t} wide={wide} />
+      <Step key={step} n={step} t={t} wide={wide} seasonTag={seasonTag} />
     </div>
   );
 

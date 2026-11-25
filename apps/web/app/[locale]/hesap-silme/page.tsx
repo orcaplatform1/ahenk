@@ -18,7 +18,8 @@ const DELETED = ["del.del0", "del.del1", "del.del2", "del.del3", "del.del4", "de
 
 const ANONYMIZED = ["del.anon0", "del.anon1", "del.anon2"];
 
-const RETAINED: [string, string][] = [["del.ret0L", "del.ret0R"], ["del.ret1L", "del.ret1R"], ["del.ret2L", "del.ret2R"]];
+// Saklama süreleri backend/src/retention/retention-policy.ts tablosuyla aynı
+const RETAINED: [string, string][] = [0, 1, 2, 3, 4, 5, 6].map((i) => [`del.ret${i}L`, `del.ret${i}R`]);
 
 export default function HesapSilmePage() {
   const t = useTranslations();

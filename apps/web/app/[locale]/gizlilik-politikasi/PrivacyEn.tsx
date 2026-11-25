@@ -89,9 +89,10 @@ const sections = [
           'Creating and managing user accounts',
           'Carrying out identity verification and keeping the platform safe',
           'Organizing compatible table meetups through algorithmic matching based on the OCEAN personality model',
-          'Creating table compatibility reports: on the morning of the meetup, the OCEAN scores and gender of each participant at a confirmed table are sent, per person, to the AI service Anthropic; the resulting report is shown to table participants on the table card. No names, contact details or identity information are passed to the AI system',
+          'Creating table compatibility reports: on the morning of the meetup, for each participant at a confirmed table, the five OCEAN scores and field of work (if any) under a label such as P1, P2 instead of a name, together with the table type, number of participants and the table\'s overall compatibility score, are sent to the AI service Anthropic; the resulting report is shown to table participants on the table card. No names, gender, age, contact details or identity information are passed to the AI system',
+          'Table chat moderation: only the text of a chat message containing a suspicious word (up to 1,000 characters) is sent to the AI service Anthropic to check it for rule violations. The sender\'s name, identity and table details are not sent',
           'Processing package purchases and payments',
-          'Communicating with users via email and system notifications',
+          'Communicating with users via push notifications and WhatsApp',
           'Fulfilling legal obligations and notifying authorized institutions',
           'Keeping the platform secure and preventing misuse',
         ]}
@@ -143,12 +144,17 @@ const sections = [
     content: (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0' }}>
         {[
-          ['User account data', 'Until the account is deleted + 2 years'],
+          ['Payment, invoice and transaction records (iyzico, App Store, Google Play)', '10 years from the start of the calendar year following the transaction (Turkish Commercial Code art. 82, Tax Procedure Law art. 253). Kept even if the account is deleted; at the end of the period personal fields are anonymized, while the amount, date and transaction number are kept'],
+          ['Distance sales and subscription consent records (contract acceptance, pre-information consent, timestamp, IP)', '3 years from the transaction date (Regulation on Distance Contracts)'],
+          ['Commercial message consent and opt-out records', '3 years from the date the consent ended (Regulation on Commercial Communication and Commercial Electronic Messages)'],
+          ['Login, IP and traffic records', '2 years from the record date (Law No. 5651 art. 5)'],
+          ['KVKK notice and explicit consent records', '10 years from the deletion of the account (general limitation period, Turkish Code of Obligations)'],
+          ['Identity details of a person involved in an emergency request, complaint or ban (name, surname, email, phone; locked, visible only to authorized admins)', '2 years from the closure of the incident (no fixed legal period, company policy)'],
+          ['Unreadable summary (hash) of a banned account\'s phone number', 'Indefinitely (to prevent signing up again)'],
           ['Identity documents (ID images and liveness video)', 'Kept until the account is deleted; once an account deletion request is approved, ID images, the liveness video and the KYC record are deleted'],
-          ['OCEAN test results', 'As long as the account is active'],
-          ['Payment records', '5 years, under the Tax Procedure Law'],
-          ['Phone numbers added for contact blocking', 'Until the user deletes them'],
-        ].map(([label, value], i) => (
+          ['Other data: profile, OCEAN test results, profile photos, chat messages, problem reports, contact and user blocks', 'Deleted when the account deletion request is approved; contact blocks are also deleted when the user removes them'],
+          ['Emergency location coordinates and location history', 'Deleted when the request is resolved'],
+        ].map(([label, value], i, arr) => (
           <div
             key={label}
             style={{
@@ -157,11 +163,11 @@ const sections = [
               alignItems: 'flex-start',
               gap: '1rem',
               padding: '0.85rem 0',
-              borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.10)' : 'none',
+              borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.10)' : 'none',
             }}
           >
             <span style={{ color: '#c9c2b8', fontSize: 13, flex: 1 }}>{label}</span>
-            <span style={{ color: '#a39c93', fontSize: 13, textAlign: 'right' as const, flexShrink: 0 }}>{value}</span>
+            <span style={{ color: '#a39c93', fontSize: 13, textAlign: 'right' as const, flex: 1 }}>{value}</span>
           </div>
         ))}
       </div>
@@ -194,7 +200,7 @@ const sections = [
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>Anthropic (artificial intelligence)</strong>
-          : the OCEAN scores and gender of table participants, to create the table compatibility report; no names, contact details or identity information are sent.
+          : to create the table compatibility report, for each participant the five OCEAN scores and field of work (if any) under a label such as P1, P2 instead of a name, the table type, number of participants and the table&apos;s overall compatibility score; for table chat moderation, only the text of a chat message containing a suspicious word (up to 1,000 characters). No names, gender, age, contact details or identity information are sent.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>OpenStreetMap (Nominatim)</strong>
@@ -288,7 +294,7 @@ const sections = [
     title: 'Policy Changes',
     content: (
       <p>
-        This policy may be updated when needed. Significant changes are sent to your registered email address. You can always find the current policy at{' '}
+        This policy may be updated when needed. Significant changes are announced by push notification and WhatsApp. You can always find the current policy at{' '}
         <Link href="/gizlilik-politikasi" style={{ color: '#c0392b' }}>ahenk.co/en/gizlilik-politikasi</Link>
         {' '}.
       </p>
