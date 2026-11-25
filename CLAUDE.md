@@ -696,13 +696,22 @@ Görünüm (web packages/ui MasaDetayKarti ChatSection, mobil MasaDetayKarti Cha
   - Gönder yazısı yok, gönder (ileti) ikonu; yazı alanının solunda emoji seçici
   - Klavye: web'de odak / visualViewport değişiminde son mesajlar ve yazı alanı görünür kalır; mobilde Masalarım ScrollView
     automaticallyAdjustKeyboardInsets + useKeyboardFieldScroll
-  - Sohbetin altında sabit "Masa Kuralları: …" kartı (masa.chatRulesTitle / chatRulesText)
+  - Sohbet Kuralları açılır penceresi (gerçek kart + önizleme): sohbetin altında sabit kural kartı yok. Mesaj yazma alanına ilk
+    dokunuşta sarı çerçeveli "Sohbet Kuralları: …" metni (masa.chatRulesTitle / chatRulesText; "yasaklı madde içerikli mesajlar")
+    pencerede açılır; altında yalnız "Anladım" / "Got it" (masa.chatRulesGotIt). Dışarı basınca, Esc ya da Android geri tuşuyla kapanmaz;
+    "Anladım" ile kapanır, yazı alanı odaklanır ve klavye açılır (önizlemede alan pasif). Masa başına bir kez: cihazda saklanır (web
+    localStorage, mobil AsyncStorage, anahtar ahenk_chat_rules_<masa ID>), DB'ye yazılmaz
 Otomatik mesaj engeli (backend chat/chat-moderation.ts):
   - Normalize: boşluk, nokta, tire silinir; küçük harf; 1→i, 0→o, 3→e. 7+ rakam (rakam sayımı harf dönüşümünden önce) ya da link
     (www, http, .com / .net / .org / .tr ve benzeri alan uzantıları; uzantı noktayla aranır) → anında engel, karşı tarafa iletilmez
   - Şüpheli kelime (instagram, insta, instgram, ig, snap, snapchat, telegram, whatsapp, wp, numaram, tel, hesabım, takip et, dm;
     ig / wp / tel / dm yalnız ayrı sözcük) → mesaj bekletilir (gönderende "gönderiliyor"), Claude Haiku (claude-haiku-5-5, CLAUDE_API_KEY)
     sorulur: masum → iletilir, ihlal → engellenir. Listeye girmeyen mesaj Haiku'ya gönderilmez
+  - Yasaklı madde şüpheli kelimeleri (kokain, koko, eroin, metamfetamin, met, kristal, kri, kıristal, kıris, esrar, kenevir, hint keneviri,
+    türk otu, mariana, marik, mariuana, marry jane, marry ceyn, meri ceyn, lemon / limon / purple haise-haize-heys-heyz-hais-haiz, ot,
+    extacy, lilika, ilaç): aynı normalize kuralıyla eşleşir, çok sözcüklüler boşluksuz hâliyle; kısa olanlar (ot, met, kri) yalnız ayrı
+    sözcük. Anında engel yok: mesaj Haiku'ya gider, istemde yasaklı madde kuralı açıkça yazılıdır ve Haiku kelimenin mesajdaki kullanımına
+    göre karar verir ("ilaç", "ot", "met", "koko", "kri" başka anlamdaysa ihlal sayılmaz); ihlalde mevcut engel akışı
   - Engelde gönderene errors.chatBlocked ("Yapay zekâ bu mesajda kural ihlali tespit etti. …"); mesaj ChatMessage.blockedAt ile saklanır
     (yalnız admin görür) ve Şikâyetler'e "Otomatik engel" kaydı (ChatReport.auto) düşer
   - Haiku'ya ulaşılamazsa / anahtar yoksa mesaj iletilmez, kaydedilmez: "Mesajın gönderilemedi, tekrar dene." (errors.chatSendFailed)
@@ -801,10 +810,15 @@ Admin SOS sayfası: /acil-yardim — canlı rapor listesi, 15s otomatik yenileme
   (son konum zamanı + adres); kişi kartları: fotoğraf (büyür + Sil), ad, telefon, Detay → tüm bilgiler + kimlik ön yüzü (büyür).
   Google Maps anahtarları: web NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, mobil EXPO_PUBLIC_GOOGLE_MAPS_API_KEY, backend GOOGLE_MAPS_API_KEY (açık
   talep adresi 50 m değişimde ya da 1 dk'da); anahtar yoksa Leaflet / OSM + Nominatim aynen.
-  Acil Durum Kişisi (web + mobil Profilim > Gizlilik ve Güvenlik): ad + ülke kodlu telefon (User.emergencyContactName / Phone), ekle /
-  düzenle / sil, not metni. SOS talebinde ahenk_emergency_contact WhatsApp şablonu (dil kullanıcıya göre, talep başına bir kez;
-  SosReport.emergencyNotifiedAt / emergencyNotifyFailed); başarısızsa admin detayında "Acil durum kişisine bildirim gönderilemedi".
-  KVKK + Gizlilik Politikası (TR + EN) maddesi var. Hesap silinince kişi silinir.
+  Acil Durum Kişisi (web + mobil Profilim > Gizlilik ve Güvenlik): en fazla 2 kişi, her biri ad + ülke kodlu telefon (1. kişi
+  User.emergencyContactName / Phone, 2. kişi emergencyContact2Name / Phone; migration 20261125400000_emergency_contact_2). Her kişi
+  düzenlenir / silinir (1. silinirse 2. kişi 1. sıraya geçer), 2 kişi kayıtlıyken "Kişi Ekle" gizli; "Kişi Ekle" başlığın sağında; not metni.
+  Uçlar: GET /users/me/emergency-contacts, PUT / DELETE /users/me/emergency-contacts/:slot (1 | 2); eski tek kişilik
+  /users/me/emergency-contact uçları 1. kişi için duruyor. SOS talebinde ahenk_emergency_contact WhatsApp şablonu kayıtlı her iki kişiye
+  gider (dil kullanıcıya göre, talep başına bir kez; SosReport.emergencyNotifiedAt / emergencyNotifyFailed); biri başarısızsa admin
+  detayında "Acil durum kişisine bildirim gönderilemedi". Admin Acil Yardım talep detayında "ACİL DURUM KİŞİLERİ" ve admin Kullanıcılar
+  detayında "Acil durum kişisi 1 / 2" (ad + telefon; yanıtlarda emergencyContacts) görünür (web + mobil).
+  KVKK + Gizlilik Politikası (TR + EN) maddesi var. Hesap silinince kişiler silinir.
 Admin masa detayı (web + mobil): katılımcı kartı (fotoğraf büyür + Sil, ad, telefon, Detay); gelmeyende kırmızı "GELMEDİ" → detay
   penceresi (fotoğraf, ad, bildirenler + zaman, önceki gelmedi uyarıları, "Uyarı ver"; önceki uyarı varsa yalnız askı). Uyarı ver:
   şablon push + uygulama içi (tarih otomatik). Gelmedi bildirimi admin Uyarılar'a düşer (AdminAlertType NO_SHOW_REPORTED).
