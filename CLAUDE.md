@@ -946,12 +946,15 @@ API CLIENT KURALLAR (web):
   - Para birimi: Türkiye bölgelerinde TRY (₺), Türkiye dışındaki bütün bölgelerde USD. Dubai'de şimdilik yalnız para birimi alanı var, fiyat yok.
   - Şehir listeleri (mobil + web, kayıt ve şehir seçimi dahil): aktif şehirler (seçilebilir) → Yakında şehirler iki grupta (soluk, seçilemez).
     Aktif yapılan bölge otomatik üst gruba geçer.
-    Grup 1: countryCode TR; ayırıcı TR "Sezon Masaları 🇹🇷", EN "Season Tables 🇹🇷". Grup 2: countryCode TR değil; ayırıcı TR "Sezon Masaları 🌐",
-    EN "Season Tables 🌐". Grup içi sıralama City.sortOrder'a göre; sortOrder admin şehir formundaki "Sıra" alanından değiştirilir.
-    Grup 1 satırı: şehir adı, sağında italik ve küçük sezon metni, en sağda "Yakında" etiketi. Sezon formatı parantezsiz: TR "1 Haziran >< 15 Eylül",
-    EN "June 1 >< September 15". Sezon isteğe bağlı, admin şehir formundan girilir.
+    Grup 1: countryCode TR; ayırıcı TR "Sezon Masaları 🇹🇷", EN "Season Tables 🇹🇷". Grup 2: countryCode TR değil; ayırıcı TR "Yeni Duraklar 📍",
+    EN "Next Stops 📍". Grup içi sıralama City.sortOrder'a göre; sortOrder admin şehir formundaki "Sıra" alanından değiştirilir.
+    Her ayırıcının hemen altında ortalı tek satır takvim (ikon yok; italik, şehir adından küçük, ayırıcı yazısıyla aynı renk; ay adları arayüz
+    dilinde): Grup 1 TR "Takvim: 1 Haziran >< 15 Eylül", EN "Schedule: June 1 >< September 15"; tarih Grup 1 şehirlerinin sezon alanlarından:
+    hepsinde aynıysa o, farklıysa en erken başlangıç ile en geç bitiş, hiçbirinde yoksa TR "Takvim: Yakında", EN "Schedule: Coming soon".
+    Grup 2 her zaman TR "Takvim: Yakında", EN "Schedule: Coming soon". Sezon isteğe bağlı, admin şehir formundan girilir.
+    Grup 1 satırı: yalnız şehir adı ve en sağda "Yakında" etiketi (satırda sezon metni yok).
     Grup 2 satırı: şehir adı, sağında bayrak (countryCode'dan emoji), en sağda "Yakında" etiketi.
-    Ortak mantık packages/shared/src/citySeason.ts (cityExtras, soonCityGroups).
+    Ortak mantık packages/shared/src/citySeason.ts (cityExtras, soonCityGroups, groupSeason).
   - Tarih / saat: buluşmanın yapıldığı bölgenin saat diliminde; her iki dilde sayısal gg.aa.yyyy ve 24 saat SS:dd; ay ve gün adları arayüz dilinde.
     İstisnalar: masa detay kartı tarih satırı TR "18 Kasım, Çarşamba 20:00", EN "Wednesday, 18 November 20:00" (shared formatCardDate);
     Masalarım tarih sekmesi TR "18 Kasım Çarşamba", EN "Wednesday, 18 November" (formatDayTab).

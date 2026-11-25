@@ -1,7 +1,7 @@
 // Şehir listesi gösterimi (web + mobil, kayıt ve Profilim şehir listeleri aynı fonksiyonları kullanır):
-// - Yakında şehirler iki grupta: countryCode TR olanlar ("Sezon Masaları 🇹🇷") ve TR olmayanlar ("Sezon Masaları 🌐"); grup içinde
-//   sortOrder (yoksa gelen sıra) ile sıralanır.
-// - Sezon: parantezsiz, TR "1 Haziran >< 15 Eylül", EN "June 1 >< September 15"; ay adları arayüz dilinde.
+// - Yakında şehirler iki grupta: countryCode TR olanlar ("Sezon Masaları 🇹🇷") ve TR olmayanlar ("Yeni Duraklar 📍"); grup içinde
+//   sortOrder (yoksa gelen sıra) ile sıralanır. Her ayırıcının altında takvim satırı: Grup 1 groupSeason (yoksa "Yakında"), Grup 2 "Yakında".
+// - Sezon: parantezsiz, TR "1 Haziran >< 15 Eylül", EN "June 1 >< September 15"; ay adları arayüz dilinde. Şehir satırında sezon yok.
 // - Bayrak: countryCode TR değilse ülke kodundan emoji.
 import { flagEmoji, formatNamed, type Lang } from "./i18n";
 
@@ -15,6 +15,17 @@ export interface CitySeasonFields {
 }
 
 export const monthName = (month: number, lang: Lang) => formatNamed(new Date(Date.UTC(2024, month - 1, 15, 12)), lang, { month: "long" }, "UTC");
+
+// Grup takvimi (ayırıcının altındaki satır): şehirlerin sezonu aynıysa o, farklıysa en erken başlangıç ile en geç bitiş; hiçbirinde sezon
+// yoksa "" (ekranda "Takvim: Yakında"). Biçim citySeason ile aynı: TR "1 Haziran >< 15 Eylül", EN "June 1 >< September 15"
+export function groupSeason(cities: CitySeasonFields[], lang: Lang): string {
+  const withSeason = cities.filter((c) => c.seasonStartDay && c.seasonStartMonth && c.seasonEndDay && c.seasonEndMonth);
+  if (!withSeason.length) return "";
+  const key = (m: number, d: number) => m * 100 + d;
+  const start = withSeason.reduce((a, c) => (key(c.seasonStartMonth!, c.seasonStartDay!) < key(a.seasonStartMonth!, a.seasonStartDay!) ? c : a));
+  const end = withSeason.reduce((a, c) => (key(c.seasonEndMonth!, c.seasonEndDay!) > key(a.seasonEndMonth!, a.seasonEndDay!) ? c : a));
+  return citySeason({ seasonStartDay: start.seasonStartDay, seasonStartMonth: start.seasonStartMonth, seasonEndDay: end.seasonEndDay, seasonEndMonth: end.seasonEndMonth }, lang);
+}
 
 export function citySeason(c: CitySeasonFields, lang: Lang): string {
   const { seasonStartDay: sd, seasonStartMonth: sm, seasonEndDay: ed, seasonEndMonth: em } = c;
