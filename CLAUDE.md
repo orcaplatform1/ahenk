@@ -195,7 +195,9 @@ Nasıl Çalışır paket sayfası (web + mobil Onboarding 3. adım): Premium kar
   mobil onb.primeBorder); üst kenarında ortalı küçük siyah zeminli (#000000) beyaz yazılı "Önerilen" / "Recommended" (onb.recommended)
 Nasıl Çalışır masa detay kartı sayfası (6. adım): eski örnek kart yok; Masalarım'daki gerçek MasaDetayKarti (web packages/ui, mobil
   showcase modu), Baş Başa, masa kurulmuş hâlde, ekrana sığacak şekilde orantılı küçültülmüş (web zoom, mobil Scaled); varsayılan mekân
-  görseli /share-bg/datenight.webp; yalnız ana kart (sohbet, acil yardım, paylaş, Değerlendir yok; sunucuya istek yok). Katılımcılar statik
+  görseli /share-bg/datenight.webp; ana kart + Yapay Zekâ Masa Raporu'nun altında pasif Masa Sohbeti önizlemesi (önizleme modundaki
+  ChatSection); mekân görselinin sağ üstünde kırmızı "Temsili" etiketi (onb.s6Badge: TR "Temsili Masa Detay Kartıdır ve Mekan Görselidir",
+  EN "Sample Table Detail Card and Venue Image"); acil yardım, paylaş, Değerlendir yok; sunucuya istek yok. Katılımcılar statik
   örnek: "Mert D." (Finans & Bankacılık, apps/web/public/onboarding/sample-mert.webp) ve "Nursena Y." (Eğitim & Akademi,
   sample-nursena.webp; SUPERADMIN hesabı ve Nursena botunun fotoğraflarından kopya, canlı veriye bağlı değil). Yapay Zekâ Masa Raporu
   uyum %91, metin onb.s6AiReport; tarih önümüzdeki Cumartesi 20:00. Maddeler onb.s6b1 / s6b2; başlık ve "Buluşma günü saat 10:00'da açılır." aynen

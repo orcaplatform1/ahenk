@@ -21,7 +21,7 @@ import { openLegal } from '@/lib/links';
 import { useRememberAllowed } from '@/lib/adminLock';
 import { useTranslation } from 'react-i18next';
 import { ENGLISH_ENABLED, LANGS, occupationLabel, splitE164, toE164, type CitySeasonFields, type Lang } from '@ahenk/shared';
-import { CITY_GRID, cityGridItem, cityImageOption, SoonCityGroups, cityLabelWithExtras } from '@/components/SoonCityGroups';
+import { CityGrid, CityGridCell, cityImageOption, SoonCityGroups, cityLabelWithExtras } from '@/components/SoonCityGroups';
 import { CountryCodeButton } from '../PhoneCountry';
 import { chooseLanguage, currentLang } from '@/lib/i18n';
 
@@ -100,13 +100,15 @@ function CitySelect({ label, value, onChange, cities, optional, placeholder, tit
             <Btn variant="listOption" selected={tmp === ''} label={t('reg.noCity')} textStyle={tmp === '' ? undefined : { color: c.t888 }} onPress={() => setTmp('')} />
           )}
           {/* Aktif şehirler: görselli şehir kare kart (satırda yan yana 2), görseli olmayan tam satır */}
-          <View style={CITY_GRID}>
+          <CityGrid>
           {sortCities(active).map(x => (
-            <Btn key={x.id} variant="listOption" selected={tmp === x.id} label={cityLabelWithExtras(cityLabel(x.name), x)} onPress={() => setTmp(x.id)} style={cityGridItem(x.name)}>
+            <CityGridCell key={x.id} name={x.name}>
+            <Btn variant="listOption" selected={tmp === x.id} label={cityLabelWithExtras(cityLabel(x.name), x)} onPress={() => setTmp(x.id)}>
               {cityImageOption(x.name, cityLabelWithExtras(cityLabel(x.name), x), tmp === x.id)}
             </Btn>
+            </CityGridCell>
           ))}
-          </View>
+          </CityGrid>
           {soon.length > 0 && <SoonCityGroups cities={soon} fontSize={14} color={c.t888} paddingHorizontal={12} />}
         </ScrollView>
         <StdButton variant="primary" label={t('prof.select')} full style={{ marginTop: 16 }} onPress={() => { onChange(tmp); setOpen(false); }} />

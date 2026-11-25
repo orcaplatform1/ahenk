@@ -3,7 +3,8 @@
 // italik takvim satırı (Grup 1 groupSeason, yoksa "Takvim: Yakında"; Grup 2 "Takvim: Yakında"). Görseli olan şehir kare görselli kart
 // (satırda yan yana 2; görsel soluk, altında ad, Grup 2'de + bayrak, ve kartın içinde "Yakında" etiketi); görseli olmayan şehir düz satır
 // (ad + "Yakında" en sağda). Gruplama ve sıralama packages/shared citySeason.ts. Satırlar en az 44 pt, seçilemez.
-import { Image, View, type ViewStyle } from 'react-native';
+import { createContext, useContext, useState, type ReactNode } from 'react';
+import { Image, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { cityExtras, cityFlag, cityImage, groupSeason, soonCityGroups, type CitySeasonFields } from '@ahenk/shared';
 import { SITE } from '@/lib/config';
@@ -20,9 +21,23 @@ export function cityLabelWithExtras(name: string, c: CitySeasonFields): string {
 }
 
 // Şehir seçim listesi kare kartları (kayıt + Profilim; web components/SoonCityGroups.tsx CITY_GRID ile aynı): satırda yan yana 2 kart,
-// satır aralığı 8, iki kart arası kalan boşluk (her kart %49); görseli olmayan şehir tam satır (cityGridItem)
-export const CITY_GRID: ViewStyle = { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8 };
-export const cityGridItem = (name: string): ViewStyle => ({ width: cityImage(name) ? '49%' : '100%' });
+// yatay ve dikey aralık tam 8 pt. Kart genişliği ızgara genişliğinden ölçülür: (genişlik − 8) / 2 (ölçülene kadar %48);
+// görseli olmayan şehir ve şehir dışı satır tam genişlik (CityGridCell)
+const GRID_GAP = 8;
+const GridWidth = createContext(0);
+export function CityGrid({ children }: { children: ReactNode }) {
+  const [w, setW] = useState(0);
+  return (
+    <View onLayout={e => setW(e.nativeEvent.layout.width)} style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: GRID_GAP, rowGap: GRID_GAP }}>
+      <GridWidth.Provider value={w}>{children}</GridWidth.Provider>
+    </View>
+  );
+}
+export function CityGridCell({ name, children }: { name?: string; children: ReactNode }) {
+  const w = useContext(GridWidth);
+  const width = name && cityImage(name) ? (w ? Math.floor((w - GRID_GAP) / 2) : '48%') : '100%';
+  return <View style={{ width }}>{children}</View>;
+}
 const SQUARE_IMG = { width: '100%', aspectRatio: 1, borderRadius: 8, marginBottom: 8 } as const;
 
 // Seçilebilir şehir kartının içeriği (Btn listOption children): üstte kare şehir görseli (web kayıt / Profilim ile aynı, 1:1, köşe 8,
@@ -73,23 +88,23 @@ export function SoonCityGroups({ cities, fontSize, color, paddingHorizontal }: {
       </T>
     );
     if (!img) return (
-      <View key={c.id} accessibilityState={{ disabled: true }} style={{ width: '100%', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, paddingHorizontal }}>
+      <CityGridCell key={c.id}><View accessibilityState={{ disabled: true }} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, paddingHorizontal }}>
         {name}{soonTag}
-      </View>
+      </View></CityGridCell>
     );
     // Kare kart: soluk görsel, altında ad + "Yakında" etiketi (dar kartta etiket alt satıra iner); tek erişilebilirlik öğesi, seçilemez
     return (
-      <View key={c.id} accessible accessibilityLabel={`${c.name}${flag ? ` ${flag}` : ''}, ${t('common.comingSoon')}`} accessibilityState={{ disabled: true }}
-        style={[cityGridItem(c.name), { paddingVertical: 13, paddingHorizontal, borderRadius: 8 }]}>
+      <CityGridCell key={c.id} name={c.name}><View accessible accessibilityLabel={`${c.name}${flag ? ` ${flag}` : ''}, ${t('common.comingSoon')}`} accessibilityState={{ disabled: true }}
+        style={{ paddingVertical: 13, paddingHorizontal, borderRadius: 8 }}>
         <Image source={{ uri: `${SITE}${img}` }} resizeMode="cover" accessibilityIgnoresInvertColors style={[SQUARE_IMG, { opacity: 0.4 }]} />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>{name}{soonTag}</View>
-      </View>
+      </View></CityGridCell>
     );
   };
   return (
     <>
-      {tr.length > 0 && <><Separator label={t('common.seasonTablesTr')} schedule={schedule(trRange)} /><View style={CITY_GRID}>{tr.map(row)}</View></>}
-      {intl.length > 0 && <><Separator label={t('common.seasonTablesIntl')} schedule={schedule('')} /><View style={CITY_GRID}>{intl.map(row)}</View></>}
+      {tr.length > 0 && <><Separator label={t('common.seasonTablesTr')} schedule={schedule(trRange)} /><CityGrid>{tr.map(row)}</CityGrid></>}
+      {intl.length > 0 && <><Separator label={t('common.seasonTablesIntl')} schedule={schedule('')} /><CityGrid>{intl.map(row)}</CityGrid></>}
     </>
   );
 }
