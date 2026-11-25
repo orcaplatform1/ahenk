@@ -1141,8 +1141,9 @@ API CLIENT KURALLAR (web):
     etiketi (satırda sezon metni yok), Grup 2 şehir adı, sağında bayrak (countryCode'dan emoji), en sağda "Yakında" etiketi.
     Ortak mantık packages/shared/src/citySeason.ts (cityExtras, soonCityGroups, groupSeason).
   - Şehir kartı görselleri (web + mobil, TR + EN): kayıt ve Profilim "Hangi şehirdeki masalara katılmak istersin?" şehir seçimi listesinde
-    görseli olan şehirler kare kart, her satırda yan yana 2 kart (web grid 2 sütun aralık 8, CITY_GRID / cityGridItem; mobil satır başına
-    2 kart, her biri %49): üstte kare görsel (1:1, kart genişliğini doldurur, köşe 8, kırpmalı / cover), altında şehir adı. Aktif şehirler
+    görseli olan şehirler kare kart, her satırda yan yana 2 kart (web grid 2 sütun aralık 8, CITY_GRID / cityGridItem; mobilde satır başına
+    2 kart, kartlar arası yatay boşluk tam 8 pt, CityGrid / CityGridCell bileşenleri (SoonCityGroups.tsx) kullanılır, görselli şehirde
+    kart genişliği ölçüme göre hesaplanır, görselsiz şehirler ve şehir dışı satırlar tam genişliktir): üstte kare görsel (1:1, kart genişliğini doldurur, köşe 8, kırpmalı / cover), altında şehir adı. Aktif şehirler
     (İstanbul, Ankara, İzmir, Antalya) seçilebilir, seçili kart görünümü aynen. Sezon Masaları (Çeşme, Bodrum, Fethiye, Marmaris, Kuşadası,
     Ayvalık) ve Yeni Duraklar (Dubai, Hong Kong, Singapur, Bangkok, Tokyo) aynı kare kart düzeninde, görsel soluk (opaklık 0.4), seçilemez;
     adın yanında (Yeni Duraklar'da bayrakla) kartın içinde "Yakında" etiketi; grup başlıkları ve takvim satırları aynen. Görseli olmayan
@@ -1150,7 +1151,7 @@ API CLIENT KURALLAR (web):
     apps/web/public/share-bg/<şehir>.webp (istanbul, ankara, izmir, antalya, cesme, bodrum, fethiye, marmaris, kusadasi, ayvalik, dubai,
     hongkong, singapur, bangkok, tokyo); mobil https://ahenk.co önekiyle. Eşleme packages/shared/src/citySeason.ts CITY_IMAGES / cityImage /
     SEASIDE_CITY_IMAGES; web components/SoonCityGroups.tsx (CITY_GRID, cityGridItem, CITY_SQUARE_IMG), mobil SoonCityGroups.tsx
-    (CITY_GRID, cityGridItem, cityImageOption: Btn listOption içeriği)
+    (CityGrid, CityGridCell, cityImageOption: Btn listOption içeriği)
   - Nasıl Çalışır son sayfası (8. adım, web + mobil Onboarding): dalga ikonlu şehir kutuları yok; 2 sütunda 6 görselli kart: Çeşme, Bodrum,
     Fethiye, Marmaris, Kuşadası, Ayvalık (onb.s8c1–s8c6). Kart: üstte görsel (16:10, cover), altında yalnız kalın şehir adı (tarih satırı
     yok; mobil erişilebilirlik etiketi yalnız şehir adı); alt metin onb.s8Body ve üstteki sezon etiketi aynen
