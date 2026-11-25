@@ -183,7 +183,13 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
               {overview.density.districts.map((d) => (
                 <div key={d.name} className="ll-heat-cell" style={{ background: scanIdle ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }}>
                   <span style={{ fontSize: 12, fontWeight: 700, overflowWrap: 'anywhere' }}>{d.name}</span>
-                  {!scanIdle && <span className="ll-mono" style={{ fontSize: d.percent === null ? 11 : 15 }}>{d.percent === null ? t(LEVELS[d.level].label) : `%${d.percent}`}</span>}
+                  {!scanIdle && (
+                    // Semt adı ile yoğunluk yazısı arasında ince ışın çizgisi (mobil ile aynı)
+                    <div>
+                      <div className="ll-heat-rule" />
+                      <span className="ll-mono" style={{ display: 'block', fontSize: d.percent === null ? 11 : 15 }}>{d.percent === null ? t(LEVELS[d.level].label) : `%${d.percent}`}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

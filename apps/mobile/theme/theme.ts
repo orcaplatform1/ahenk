@@ -179,7 +179,11 @@ export const inputGlass = {
 export const glassCard = { bg: 'rgba(255,255,255,0.10)', border: 'rgba(255,255,255,0.10)', radius: 16, blur: 20 } as const;
 export const sheet = { bg: '#1a1a1a', border: 'rgba(255,255,255,0.08)', radius: 20, padTop: 24, padH: 20, padBottom: 36, overlay: 'rgba(0,0,0,0.72)', maxWidth: 560 } as const;
 export const accountTab = { size: 12, padV: 6, padH: 12, radius: 8, gap: 4, barPadH: 12, barPadV: 8 } as const;
-export const heat = { height: 84, radius: 12, padding: 10, gap: 6 } as const;
+export const heat = {
+  height: 84, radius: 12, padding: 10, gap: 6,
+  // Semt adı ile yoğunluk yazısı arasındaki ışın çizgisi (web .ll-heat-rule)
+  rule: { height: 1, margin: 8, colors: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.35)', 'rgba(255,255,255,0)'] },
+} as const;
 export const llTab = { minHeight: 44, padV: 8, padH: 2, gap: 6, labelSize: 11, labelLetter: 0.14, statusSize: 10.5, liftY: -3 } as const;
 
 // ── DetayAvatar (packages/ui/src/components/tables/DetayAvatar.tsx) ───────

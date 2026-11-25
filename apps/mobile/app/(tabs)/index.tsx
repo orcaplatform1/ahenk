@@ -210,7 +210,13 @@ export default function EslesmePaneli() {
                     // Tarama başlamadan bütün kartlar "Düşük" grisinde, yoğunluk yazısı yok; canlıyken semtin seviye renginde (radar ile aynı)
                     <View key={d.name} style={[st.heatCell, { backgroundColor: scanIdle ? WAIT_CELL : `${LEVELS[d.level].color}${LEVEL_ALPHA[d.level]}` }]}>
                       <T w={700} style={{ fontSize: 12, lineHeight: 18 }}>{d.name}</T>
-                      {!scanIdle && <Mono style={{ fontSize: d.percent === null ? 11 : 15, color: tw.text }}>{d.percent === null ? t(LEVEL_KEY[d.level]) : `%${d.percent}`}</Mono>}
+                      {!scanIdle && (
+                        // Semt adı ile yoğunluk yazısı arasında ince ışın çizgisi (web .ll-heat-rule)
+                        <View>
+                          <LinearGradient colors={heat.rule.colors as unknown as [string, string, string]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: heat.rule.height, marginVertical: heat.rule.margin }} />
+                          <Mono style={{ fontSize: d.percent === null ? 11 : 15, color: tw.text }}>{d.percent === null ? t(LEVEL_KEY[d.level]) : `%${d.percent}`}</Mono>
+                        </View>
+                      )}
                     </View>
                   ))}
                 </View>
