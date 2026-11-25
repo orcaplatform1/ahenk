@@ -41,7 +41,11 @@ export function EmergencyContact() {
 
   return (
     <View style={{ gap: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', paddingTop: 12, marginTop: 4, paddingBottom: 8 }}>
-      <T style={{ fontSize: 14, color: ll.text }}>{t('emergency.title')}</T>
+      {/* Başlık satırı (Numara Engelleme satırıyla aynı hiza, en az 44 pt): solda başlık, kişi yoksa sağında Kişi Ekle */}
+      <View style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <T style={{ fontSize: 14, color: ll.text, flexShrink: 1 }}>{t('emergency.title')}</T>
+        {!editing && !contact && <StdButton variant="ghost" label={t('emergency.add')} onPress={startEdit} />}
+      </View>
       {!editing && contact && (
         <View style={{ gap: 8 }}>
           <T style={{ fontSize: 13, color: ll.text2 }}>{contact.name} · {contact.phone}</T>
@@ -51,7 +55,6 @@ export function EmergencyContact() {
           </View>
         </View>
       )}
-      {!editing && !contact && <View style={{ alignItems: 'flex-start' }}><StdButton variant="ghost" label={t('emergency.add')} onPress={startEdit} /></View>}
       {editing && (
         <View style={{ gap: 8 }}>
           <Input form value={name} onChangeText={(v) => setName(v.slice(0, 80))} placeholder={t('emergency.name')} />

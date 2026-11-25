@@ -43,7 +43,13 @@ export function EmergencyContact() {
 
   return (
     <div className="flex flex-col gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, marginTop: 4 }}>
-      <span style={{ fontSize: 14, color: '#f4f1ec' }}>{t('emergency.title')}</span>
+      {/* Başlık satırı (Numara Engelleme satırıyla aynı hiza): solda başlık, kişi yoksa sağında Kişi Ekle */}
+      <div className="flex items-center justify-between gap-2" style={{ minHeight: 44 }}>
+        <span style={{ fontSize: 14, color: '#f4f1ec' }}>{t('emergency.title')}</span>
+        {!editing && !contact && (
+          <StdButton variant="ghost" type="button" onClick={startEdit}>{t('emergency.add')}</StdButton>
+        )}
+      </div>
       {!editing && contact && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span style={{ fontSize: 13, color: '#c9c2b8' }}>{contact.name} · {contact.phone}</span>
@@ -52,9 +58,6 @@ export function EmergencyContact() {
             <StdButton variant="ghost" type="button" onClick={() => void remove()} disabled={busy}>{t('emergency.delete')}</StdButton>
           </span>
         </div>
-      )}
-      {!editing && !contact && (
-        <StdButton variant="ghost" type="button" className="self-start" onClick={startEdit}>{t('emergency.add')}</StdButton>
       )}
       {editing && (
         <div className="flex flex-col gap-2">

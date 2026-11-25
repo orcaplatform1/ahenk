@@ -78,6 +78,9 @@ interface Props {
   token?: string;
   archive?: boolean; // Geçmiş masa: yalnızca Haritada Gör çalışır, sohbet ve acil yardım yok (apiBase verilmez)
   reviewHref?: string; // Aktif kartta "Değerlendir": değerlendirme açılınca (ertesi gün 08:00) gidilen adres
+  // Önizleme (masa kurulmadan): aynı kart, gerçek veri yok. dateLabel tarih satırında (gün adı + saat); sohbet pasif
+  // (mesaj çekilmez, giriş alanı, emoji ve gönder ikonu kapalı); acil yardım ve gelmeyen işaretleme yok; Değerlendir pasif
+  preview?: { dateLabel: string };
 }
 
 function jsonHeaders(token?: string): Record<string, string> {
@@ -490,7 +493,7 @@ function ReportModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (re
   );
 }
 
-function ChatSection({ meetingId, apiBase, token, count }: { meetingId: string; apiBase: string; token?: string; count?: string }) {
+function ChatSection({ meetingId, apiBase, token, count, preview = false }: { meetingId: string; apiBase: string; token?: string; count?: string; preview?: boolean }) {
   const t = useTranslations();
   const locale = useLocale();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -533,6 +536,7 @@ function ChatSection({ meetingId, apiBase, token, count }: { meetingId: string; 
   }, [meetingId, apiBase, token]);
 
   useEffect(() => {
+    if (preview) return; // Önizlemede mesaj çekilmez
     fetchMessages();
     const id = setInterval(fetchMessages, 8000);
     // Sayfa tekrar görünür olduğunda, pencere odaklandığında ve internet geri geldiğinde yeniden çekilir
@@ -546,7 +550,7 @@ function ChatSection({ meetingId, apiBase, token, count }: { meetingId: string; 
       window.removeEventListener('focus', fetchMessages);
       window.removeEventListener('online', fetchMessages);
     };
-  }, [fetchMessages]);
+  }, [fetchMessages, preview]);
 
   // Kapanış saati (22:00 TR) geldiğinde sohbet sayfa yenilenmeden kapanır
   useEffect(() => {
@@ -714,8 +718,8 @@ function ChatSection({ meetingId, apiBase, token, count }: { meetingId: string; 
                 ))}
               </div>
             )}
-            <button type="button" aria-label={t('masa.emoji')} aria-expanded={emojiOpen} onClick={() => setEmojiOpen(v => !v)}
-              style={{ flexShrink: 0, width: 36, height: 36, borderRadius: '50%', background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>
+            <button type="button" aria-label={t('masa.emoji')} aria-expanded={emojiOpen} onClick={() => setEmojiOpen(v => !v)} disabled={preview}
+              style={{ flexShrink: 0, width: 36, height: 36, borderRadius: '50%', background: 'none', border: 'none', cursor: preview ? 'not-allowed' : 'pointer', fontSize: 20, lineHeight: 1, opacity: preview ? 0.5 : 1 }}>
               🙂
             </button>
             <input
@@ -723,18 +727,19 @@ function ChatSection({ meetingId, apiBase, token, count }: { meetingId: string; 
               onChange={e => setInput(e.target.value.slice(0, 1000))}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
               onFocus={() => setTimeout(keepComposerVisible, 300)}
+              disabled={preview}
               placeholder=""
               className="ahenk-chat-input"
               style={{
                 flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 8, padding: '8px 10px', fontSize: 16, color: '#f5f5f5',
-                fontFamily: 'Inter, sans-serif', outline: 'none',
+                fontFamily: 'Inter, sans-serif', outline: 'none', opacity: preview ? 0.5 : 1,
               }}
             />
             <button
               type="button"
               onClick={sendMessage}
-              disabled={!input.trim() || sending}
+              disabled={preview || !input.trim() || sending}
               aria-label={t('masa.send')}
               style={{ flexShrink: 0, width: 38, height: 38, borderRadius: '50%', border: 'none', background: '#c0392b', color: '#fff', cursor: input.trim() && !sending ? 'pointer' : 'not-allowed', opacity: input.trim() && !sending ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
             >
@@ -872,7 +877,7 @@ function NoShowSection({ meetingId, apiBase, token }: { meetingId: string; apiBa
   );
 }
 
-export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHref }: Props) {
+export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHref, preview }: Props) {
   const t = useTranslations();
   const locale = useLocale();
   const [lightboxIdx,   setLightboxIdx]   = useState<number | null>(null);
@@ -1106,7 +1111,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
                 <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" />
               </svg>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{formatCardDate(masa.scheduledAt, locale, archive)}</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif' }}>{preview ? preview.dateLabel : formatCardDate(masa.scheduledAt, locale, archive)}</span>
             </div>
             {mapLink && (
               <a
@@ -1229,7 +1234,7 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
 
       {/* ── Alt kart: acil yardım (eski rezervasyon kartı ve Yola Çıktım yerinde), sohbet, gelmeyen işaretleme, Değerlendir.
           Geçmiş masada (archive) bu kart yok ── */}
-      {!archive && authHeaders && (
+      {!archive && (authHeaders || preview) && (
       <motion.div
         className="ll-card"
         initial={{ opacity: 0, y: 10 }}
@@ -1287,19 +1292,19 @@ export function MasaDetayKarti({ masa, apiBase, token, archive = false, reviewHr
         )}
 
         {/* Sohbet bölümü */}
-        {hasChat && (
-          <ChatSection meetingId={masa.id} apiBase={apiBase!} token={token}
+        {(hasChat || preview) && (
+          <ChatSection meetingId={masa.id} apiBase={apiBase ?? ''} token={token} preview={!!preview}
             count={`${masa.participants.filter(p => !p.cancelled).length}/${masa.maxParticipants ?? masa.participants.filter(p => !p.cancelled).length}`} />
         )}
 
         {/* Masaya gelmeyen işaretleme */}
-        {hasChat && (
+        {hasChat && !preview && (
           <NoShowSection meetingId={masa.id} apiBase={apiBase!} token={token} />
         )}
 
         {/* Değerlendir: değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı */}
         <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <button type="button" onClick={handleReview} style={GOLD_PILL}>{t('tm.review')}</button>
+          <button type="button" onClick={handleReview} disabled={!!preview} style={{ ...GOLD_PILL, ...(preview ? { opacity: 0.5, cursor: 'not-allowed' } : {}) }}>{t('tm.review')}</button>
           {reviewWarn && (
             <p role="alert" style={{ margin: 0, fontSize: 12, color: '#ffb347', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>{reviewWarn}</p>
           )}

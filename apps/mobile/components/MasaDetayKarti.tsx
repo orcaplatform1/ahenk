@@ -52,11 +52,11 @@ function participantRows(ps: DetayParticipant[], type?: MasaTuru): DetayParticip
 }
 
 // "Değerlendir": İçerde paket kartı rozetindeki altın geçişli hap (web GOLD_PILL); HIG: en az 44 pt dokunma alanı
-export function GoldPill({ label, onPress, small }: { label: string; onPress: () => void; small?: boolean }) {
+export function GoldPill({ label, onPress, small, disabled }: { label: string; onPress: () => void; small?: boolean; disabled?: boolean }) {
   const g = masaKart.goldPill;
   const z = small ? masaKart.goldPillSmall : g;
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled: !!disabled }} style={{ minHeight: 44, justifyContent: 'center', opacity: disabled ? 0.5 : 1 }}>
       <LinearGradient colors={g.colors} locations={g.stops} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={{ minHeight: z.minH, paddingHorizontal: z.padH, borderRadius: 9999, alignItems: 'center', justifyContent: 'center' }}>
         <T w={800} style={{ fontSize: z.fontSize, letterSpacing: z.fontSize * 0.08, color: g.text }}>{label.toLocaleUpperCase(currentLang() === 'en' ? 'en' : 'tr-TR')}</T>
@@ -135,7 +135,7 @@ function ReportSheet({ visible, onClose, onSubmit }: { visible: boolean; onClose
   );
 }
 
-function ChatSection({ meetingId, count }: { meetingId: string; count?: string }) {
+function ChatSection({ meetingId, count, preview = false }: { meetingId: string; count?: string; preview?: boolean }) {
   const { t } = useTranslation();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isClosed, setIsClosed] = useState(false);
@@ -151,14 +151,15 @@ function ChatSection({ meetingId, count }: { meetingId: string; count?: string }
   const scroll = useRef<ScrollViewInstance>(null);
 
   const fetchMessages = useCallback(async () => {
+    if (preview) return; // Önizlemede mesaj çekilmez
     try {
       const data = await api.get<{ isOpen: boolean; isClosed: boolean; openAt: string; closeAt?: string; messages: ChatMsg[] }>(`/chat/${meetingId}/messages`);
       setIsOpen(data.isOpen); setOpenAt(data.openAt); setCloseAt(data.closeAt ?? null);
       setIsClosed(data.isClosed || (!!data.closeAt && Date.now() >= new Date(data.closeAt).getTime()));
       setMessages(prev => { const by = new Map(prev.map(m => [m.id, m])); for (const m of data.messages ?? []) by.set(m.id, m); return [...by.values()].sort((a, b) => a.createdAt.localeCompare(b.createdAt)); });
     } catch { /* ekrandaki veri korunur */ }
-  }, [meetingId]);
-  useEffect(() => { fetchMessages(); const id = setInterval(fetchMessages, 8000); return () => clearInterval(id); }, [fetchMessages]);
+  }, [meetingId, preview]);
+  useEffect(() => { if (preview) return; fetchMessages(); const id = setInterval(fetchMessages, 8000); return () => clearInterval(id); }, [fetchMessages, preview]);
   useAppRefresh(fetchMessages);
   useEffect(() => {
     if (!closeAt || isClosed) return;
@@ -250,14 +251,14 @@ function ChatSection({ meetingId, count }: { meetingId: string; count?: string }
               </View>
             )}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
-              <Pressable onPress={() => setEmojiOpen(v => !v)} accessibilityRole="button" accessibilityLabel={t('masa.emoji')} accessibilityState={{ expanded: emojiOpen }}
-                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+              <Pressable onPress={() => setEmojiOpen(v => !v)} disabled={preview} accessibilityRole="button" accessibilityLabel={t('masa.emoji')} accessibilityState={{ expanded: emojiOpen, disabled: preview }}
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: preview ? 0.5 : 1 }}>
                 <T style={{ fontSize: 22 }}>🙂</T>
               </Pressable>
-              <TextInput value={input} onChangeText={(v) => setInput(v.slice(0, 1000))} onSubmitEditing={send} returnKeyType="send" keyboardAppearance="dark"
+              <TextInput value={input} onChangeText={(v) => setInput(v.slice(0, 1000))} onSubmitEditing={send} returnKeyType="send" keyboardAppearance="dark" editable={!preview}
                 onFocus={() => setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 300)}
-                style={{ flex: 1, minWidth: 0, minHeight: 40, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, fontSize: 14, color: tw.text, fontFamily: sans(400) }} />
-              <Pressable onPress={send} disabled={!input.trim() || sending} accessibilityRole="button" accessibilityLabel={t('masa.send')}
+                style={{ flex: 1, minWidth: 0, minHeight: 40, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, fontSize: 14, color: tw.text, fontFamily: sans(400), opacity: preview ? 0.5 : 1 }} />
+              <Pressable onPress={send} disabled={preview || !input.trim() || sending} accessibilityRole="button" accessibilityLabel={t('masa.send')} accessibilityState={{ disabled: preview || !input.trim() || sending }}
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
                 <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: c.red, alignItems: 'center', justifyContent: 'center', opacity: input.trim() && !sending ? 1 : 0.5 }}>
                   <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -498,7 +499,9 @@ function AiReport({ report, meetingId }: { report?: MasaDetayData['aiReport']; m
   );
 }
 
-function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; archive?: boolean }) {
+// preview (masa kurulmadan): aynı kart, gerçek veri yok; dateLabel tarih satırında (gün adı + saat); sohbet pasif (mesaj çekilmez,
+// giriş, emoji ve gönder ikonu kapalı); acil yardım ve gelmeyen işaretleme yok; Değerlendir pasif — web MasaDetayKarti ile aynı
+function MasaDetayKartiInner({ masa, archive = false, preview }: { masa: MasaDetayData; archive?: boolean; preview?: { dateLabel: string } }) {
   const { t } = useTranslation();
   const router = useRouter();
   const live = !archive;
@@ -527,7 +530,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
   const [sentNotice, setSentNotice] = useState(false);
 
   const now = new Date();
-  const sosVisible = live && now >= new Date(masa.scheduledAt) && now < new Date(masa.sosEndsAt);
+  const sosVisible = live && !preview && now >= new Date(masa.scheduledAt) && now < new Date(masa.sosEndsAt);
   const [showSos, setShowSos] = useState(false);
   const [sosLoading, setSosLoading] = useState(false);
   const [sosDone, setSosDone] = useState(false);
@@ -656,7 +659,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
               <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={masaKart.strip.icon} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
                 <Rect x={3} y={5} width={18} height={16} rx={2} /><Path d="M16 3v4M8 3v4M3 10h18" />
               </Svg>
-              <T w={700} style={{ fontSize: 15, flexShrink: 1 }}>{archive ? formatWeekdayTime(masa.scheduledAt, currentLang()) : formatCardDate(masa.scheduledAt, currentLang())}</T>
+              <T w={700} style={{ fontSize: 15, flexShrink: 1 }}>{preview ? preview.dateLabel : archive ? formatWeekdayTime(masa.scheduledAt, currentLang()) : formatCardDate(masa.scheduledAt, currentLang())}</T>
             </View>
             {hasMap && (
               <Pressable onPress={() => openMaps(masa.venueMapsUrl, masa.venueAddress, masa.venueName)} accessibilityRole="link" hitSlop={4}
@@ -699,7 +702,7 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
             ))}
           </View>
 
-          <AiReport report={masa.aiReport} meetingId={archive ? undefined : masa.id} />
+          <AiReport report={masa.aiReport} meetingId={archive || preview ? undefined : masa.id} />
         </View>
       </Card>
 
@@ -726,12 +729,12 @@ function MasaDetayKartiInner({ masa, archive = false }: { masa: MasaDetayData; a
           </View>
         )}
 
-        <ChatSection meetingId={masa.id} count={`${masa.participants.filter(p => !p.cancelled).length}/${masa.maxParticipants ?? masa.participants.filter(p => !p.cancelled).length}`} />
-        <NoShowSection meetingId={masa.id} />
+        <ChatSection meetingId={masa.id} preview={!!preview} count={`${masa.participants.filter(p => !p.cancelled).length}/${masa.maxParticipants ?? masa.participants.filter(p => !p.cancelled).length}`} />
+        {!preview && <NoShowSection meetingId={masa.id} />}
 
         {/* Değerlendir: değerlendirme ertesi gün 08:00'de açılır; önce basılırsa uyarı */}
         <View style={{ marginTop: 20, alignItems: 'center', gap: 8 }}>
-          <GoldPill label={t('tm.review')} onPress={handleReview} />
+          <GoldPill label={t('tm.review')} onPress={handleReview} disabled={!!preview} />
           {!!reviewWarn && <T accessibilityRole="alert" style={{ fontSize: 12, color: c.warnOrange, textAlign: 'center' }}>{reviewWarn}</T>}
         </View>
       </Card>

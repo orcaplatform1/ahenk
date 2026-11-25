@@ -60,6 +60,7 @@ export interface MeData {
   openParts?: { group: boolean; oneOnOne: boolean };
   kankamla?: { open: boolean; hasKanka?: boolean; pairPackageActive?: boolean };
   profile?: { gender?: string | null };
+  profilePhotoUrl?: string | null; // /auth/me onaylı profil fotoğrafı (Masalarım önizleme kartında kullanıcının kendisi)
   kyc?: { status: string; rejectReason?: string | null };
   maintenanceMode?: boolean;
 }

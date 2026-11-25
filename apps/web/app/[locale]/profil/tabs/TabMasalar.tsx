@@ -35,342 +35,55 @@ interface UserInfo {
   firstName: string;
   lastName: string;
   gender?: string;
+  photoUrl?: string | null; // Onaylı profil fotoğrafı (önizleme kartında kullanıcının kendisi)
 }
 
 function fmtDate(val: string, locale: Lang = 'tr') {
   return formatNamed(val, locale, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-/* ── Mock kart renk sabitleri (MasaDetayKarti ile aynı) ── */
-const GREEN      = '#27ae60';
-
-const MAV_D    = 44; // Masa detay kartındaki tek satır daire boyu
-const MAV_R    = MAV_D / 2;
-const MAV_BR   = MAV_R - 2.5;
-const MAV_CIRC = 2 * Math.PI * MAV_BR;
-
-function mockGBg(g?: string | null) {
-  return g === 'FEMALE' ? 'rgba(244,143,177,0.12)' : 'rgba(79,195,247,0.12)';
-}
-
-/* ── Mock avatar (DetayAvatar ile birebir aynı tasarım) ── */
-function MockAvatar({
-  initials,
-  gender,
-  delay = 0,
-  showCheck = false,
-}: {
-  initials: string;
-  gender?: string | null;
-  delay?: number;
-  showCheck?: boolean;
-}) {
-  const color = gColor(gender);
-  const bg    = mockGBg(gender);
-  return (
-    <motion.div
-      initial={{ scale: 0.5, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ delay, duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
-      style={{ position: 'relative', width: MAV_D, height: MAV_D, flexShrink: 0, borderRadius: '50%' }}
-    >
-      <svg width={MAV_D} height={MAV_D} viewBox={`0 0 ${MAV_D} ${MAV_D}`} style={{ position: 'absolute', inset: 0 }}>
-        <circle cx={MAV_R} cy={MAV_R} r={MAV_R - 1} fill={bg} />
-        <motion.circle
-          cx={MAV_R} cy={MAV_R} r={MAV_BR}
-          fill="none" stroke={color} strokeWidth={2.5}
-          strokeLinecap="round" strokeDasharray={MAV_CIRC}
-          style={{ rotate: '-90deg', transformOrigin: `${MAV_R}px ${MAV_R}px` }}
-          initial={{ strokeDashoffset: MAV_CIRC }}
-          animate={{ strokeDashoffset: 0 }}
-          transition={{ delay: delay + 0.5, duration: 0.8, ease: 'easeOut' }}
-        />
-        <motion.circle
-          cx={MAV_R} cy={MAV_R} r={MAV_BR}
-          fill="none" stroke={color} strokeWidth={2.5}
-          style={{ filter: `drop-shadow(0 0 4px ${color}88)` }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0.35, 0.85, 0.35] }}
-          transition={{ delay: delay + 1.35, duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </svg>
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, fontWeight: 700, color: '#f0f0f0',
-        letterSpacing: '0.02em', fontFamily: 'Inter, sans-serif',
-        userSelect: 'none', pointerEvents: 'none',
-      }}>
-        {initials}
-      </div>
-      {showCheck && (
-        <div style={{
-          position: 'absolute', bottom: -2, right: -2,
-          width: 16, height: 16, borderRadius: '50%',
-          background: GREEN,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 9, color: '#fff', fontWeight: 700,
-          border: '2px solid #111',
-        }}>
-          ✓
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-/* ── Boş/preview kart — MasaDetayKarti yeni düzeninin mock hali: kapak, masa türü rozeti, bilgi şeridi, katılımcılar, alt kart ── */
-
+/* ── Önizleme kartı (masa kurulmadan): gerçek MasaDetayKarti preview modunda, gerçek veri yok. Mekân adı yer tutucu, tarih satırında
+   buluşma günü + 20:00; kullanıcının kendisi fotoğrafı ve adıyla, diğer yerler baş harfsiz ("?") cinsiyet renkli avatarla; sohbet pasif ── */
 function EmptyMasaCard({
-  locked,
   cardType,
   userInfo,
   kanka,
-  photo,
 }: {
-  locked: boolean;
   cardType: 'group' | 'basbasa' | 'kanka';
   userInfo?: UserInfo;
   kanka?: { initials: string; gender: string | null } | null;
-  photo?: VenuePhoto | null; // Masaya bağlı mekânın güncel ilk fotoğrafı (sunucudan geldiyse)
 }) {
   const t = useTranslations();
   const locale = useLocale() as Lang;
-  const initials = userInfo
-    ? `${(userInfo.firstName[0] ?? '?').toUpperCase()}.${(userInfo.lastName[0] ?? '?').toUpperCase()}.`
-    : '?';
-  const uGender   = userInfo?.gender ?? null;
+  const first = userInfo?.firstName ?? '';
+  const last = userInfo?.lastName ?? '';
+  const initials = userInfo ? `${(first[0] ?? '?').toUpperCase()}.${(last[0] ?? '?').toUpperCase()}.` : '?';
+  const uGender = userInfo?.gender ?? 'MALE';
   const oppGender = uGender === 'FEMALE' ? 'MALE' : 'FEMALE';
-
-  type MockP = { initials: string; gender: string | null; check?: boolean };
-  const participants: MockP[] = cardType === 'basbasa'
-    ? [
-        { initials, gender: uGender },
-        { initials: '?', gender: oppGender },
-      ]
-    : [
-        { initials, gender: uGender ?? 'MALE' },
-        { initials: '?', gender: oppGender },
-        { initials: '?', gender: uGender ?? 'MALE' },
-        { initials: '?', gender: oppGender },
-        { initials: '?', gender: uGender ?? 'MALE' },
-        { initials: '?', gender: oppGender },
-      ];
-
-  return (
-    <div>
-      {/* ── Ana kart ── */}
-      <div className="ll-card" style={{ position: 'relative', overflow: 'hidden', padding: 0, background: '#121212' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          style={{ position: 'relative', overflow: 'hidden' }}
-        >
-          {/* Shimmer */}
-          <motion.div
-            initial={{ opacity: 0.6, x: '-100%' }}
-            animate={{ opacity: 0, x: '200%' }}
-            transition={{ duration: 1.0, ease: 'easeOut', delay: 0.1 }}
-            style={{
-              position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10,
-              background: 'linear-gradient(105deg, transparent 30%, rgba(39,174,96,0.15) 50%, transparent 70%)',
-            }}
-          />
-
-          {/* Kapak: mekânın güncel ilk fotoğrafı tam genişlikte 16:9 (object-fit: cover); fotoğraf yoksa fotoğraf alanı yok,
-              masa türü ve mekân adı normal akışta (MasaDetayKarti ile aynı) */}
-          <div style={photo ? { position: 'relative', aspectRatio: '16 / 9' } : { position: 'relative', display: 'flex', flexDirection: 'column', gap: 12, padding: '12px 14px 0' }}>
-            {photo && (
-              <>
-                <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: 'rgba(255,255,255,0.04)' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo.url} alt={photo.caption ?? t('masa.photoAlt', { n: 1 })} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                </div>
-                <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,18,18,0.35) 0%, rgba(18,18,18,0) 30%, rgba(18,18,18,0) 45%, rgba(18,18,18,0.92) 100%)' }} />
-              </>
-            )}
-
-            {/* Üst satır: sağda kilit (fotoğraf varken kapak üstünde) */}
-            <div style={photo ? { display: 'contents' } : { display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', gap: 10 }}>
-
-            {locked && (
-              <>
-                <style>{`@keyframes lockShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}50%{transform:translateX(0)}75%{transform:translateX(3px)}}`}</style>
-                <img
-                  src="/lock-icon.webp"
-                  alt={t('tm.locked')}
-                  width={56}
-                  height={56}
-                  style={{ ...(photo ? { position: 'absolute', top: 12, right: 12 } : {}), zIndex: 2, opacity: 0.85, animation: 'lockShake 0.8s ease-in-out infinite' }}
-                />
-              </>
-            )}
-            </div>
-
-            {/* Alt: mekân adı + konum */}
-            <div style={{ ...(photo ? { position: 'absolute', left: 14, right: 14, bottom: 12 } : {}), display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
-              <div style={{ minWidth: 0 }}>
-                <h2 style={{
-                  margin: 0,
-                  fontFamily: 'var(--font-serif, "DM Serif Display", Georgia, serif)',
-                  fontSize: 24, fontWeight: 400, color: '#f5f5f5',
-                  letterSpacing: '0.01em', lineHeight: 1.2,
-                }}>
-                  {t('tm.venueName')}
-                </h2>
-                <p style={{ margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter, sans-serif' }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" /><circle cx="12" cy="10" r="2.5" />
-                  </svg>
-                  İstanbul
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ padding: 18 }}>
-            {/* MASA DETAYI etiketi */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-              <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: GREEN, flexShrink: 0 }} />
-              <span style={{ fontSize: 10, fontWeight: 700, color: GREEN, letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-                {t('masa.detailTitle')}
-              </span>
-            </div>
-
-            {/* Tarih satırı: buluşma günü/saati, sağında Haritada Gör (pasif) */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-              padding: '12px 14px', borderRadius: 12, marginBottom: 20,
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" />
-                </svg>
-                <div>
-                  <div style={{ fontSize: 11, color: '#888', fontFamily: 'Inter, sans-serif', lineHeight: 1.3 }}>{t('masa.meetup')}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', lineHeight: 1.2 }}>
-                    {`${weekdayName(cardType === 'basbasa' ? 6 : cardType === 'kanka' ? 0 : 5, locale)}, 20:00`}
-                  </div>
-                </div>
-              </div>
-              <button disabled style={{
-                flexShrink: 0, display: 'inline-flex', alignItems: 'center', minHeight: 36, padding: '0 14px', borderRadius: 9999,
-                background: '#c0392b', color: '#fff', border: 'none', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-                fontFamily: 'Inter, sans-serif', opacity: 0.5, cursor: 'not-allowed',
-              }}>
-                {t('masa.seeOnMap')}
-              </button>
-            </div>
-
-            {/* Katılımcılar */}
-            <p style={{ margin: '0 0 12px', fontSize: 9, fontWeight: 700, color: '#555', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>
-              {cardType === 'basbasa' ? t('masa.oneOnOne') : t('masa.participants')}
-            </p>
-            <div style={{ marginBottom: 20 }}>
-              {cardType === 'kanka' ? (
-                <KankaPairs mine={[{ initials, gender: uGender, isSelf: true }, ...(kanka ? [kanka] : [])]} other={[]} />
-              ) : (
-                <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, overflowX: 'auto', padding: 4, margin: -4 }}>
-                  {participants.map((p, i) => (
-                    <MockAvatar
-                      key={i}
-                      initials={p.initials}
-                      gender={p.gender}
-                      delay={0.52 + i * 0.1}
-                      showCheck={p.check}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Yapay Zeka Masa Raporu */}
-            <div style={{
-              background: 'rgba(8,18,44,0.75)',
-              border: '1px solid rgba(100,130,200,0.18)',
-              borderRadius: 12, padding: '14px 16px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <div style={{
-                  width: 34, height: 34, borderRadius: 8,
-                  background: 'rgba(100,130,200,0.14)', border: '1px solid rgba(100,130,200,0.22)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                  <span style={{ fontSize: 16, lineHeight: 1 }}>✦</span>
-                </div>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase',
-                  fontFamily: 'Inter, sans-serif', color: 'rgba(180,200,255,0.75)',
-                }}>
-                  {t('masa.aiTitle')}
-                </span>
-              </div>
-              <div style={{ height: 1, background: 'rgba(100,130,200,0.12)', marginBottom: 12 }} />
-              {/* Uyum skoru: boş halka "%—" */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-                <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
-                  <svg width={64} height={64} viewBox="0 0 64 64">
-                    <circle cx={32} cy={32} r={29} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={6} />
-                  </svg>
-                  <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: '#f0f0f0', fontFamily: 'Inter, sans-serif' }}>
-                    %—
-                  </span>
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.88)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>
-                  {t('masa.aiScore')}
-                </span>
-              </div>
-              <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.62)', fontFamily: 'Inter, sans-serif', lineHeight: 1.65 }}>
-                {t('tm.meetupNote')}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* ── Alt kart: sohbet ── */}
-      <motion.div
-        className="ll-card"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15, duration: 0.5, ease: 'easeOut' }}
-        style={{ marginTop: 12 }}
-      >
-        {/* Sohbet bölümü */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-            <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#555' }} />
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', color: '#555' }}>
-              {t('masa.chatTitle')}
-            </span>
-          </div>
-          <div style={{
-            background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 10, overflow: 'hidden',
-          }}>
-            <div style={{ padding: '16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ margin: 0, fontSize: 12, color: '#f5f5f5', fontFamily: 'Inter, sans-serif', textAlign: 'center' }}>
-                {t('tm.noMessages')}
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: 8, padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.10)' }}>
-              <div style={{
-                flex: 1, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 8, padding: '8px 10px', fontSize: 13, color: '#555',
-                fontFamily: 'Inter, sans-serif',
-              }}>
-              </div>
-              <StdButton variant="primary" disabled>
-                {t('masa.send')}
-              </StdButton>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
+  const self: MasaDetayData['participants'][number] = {
+    initials, gender: uGender, isSelf: true, photoUrl: userInfo?.photoUrl ?? null,
+    displayName: last ? `${first} ${last[0].toLocaleUpperCase('tr-TR')}.` : first || initials, pair: 'MINE',
+  };
+  const empty = (gender: string, pair?: 'MINE' | 'OTHER') => ({ initials: '?', gender, displayName: '', ...(pair ? { pair } : {}) });
+  const type: MasaTuru = cardType === 'basbasa' ? 'ONE_ON_ONE' : cardType === 'kanka' ? 'KANKA' : 'GROUP';
+  const participants = cardType === 'basbasa'
+    ? [self, empty(oppGender)]
+    : cardType === 'kanka'
+      ? [self, kanka ? { ...kanka, displayName: '', pair: 'MINE' as const } : empty(uGender, 'MINE'), empty(oppGender, 'OTHER'), empty(oppGender, 'OTHER')]
+      : [self, empty(oppGender), empty(uGender), empty(oppGender), empty(uGender), empty(oppGender)];
+  const masa: MasaDetayData = {
+    id: `preview-${cardType}`,
+    type,
+    maxParticipants: participants.length,
+    scheduledAt: new Date().toISOString(),
+    sosEndsAt: new Date().toISOString(),
+    venueName: t('tm.venueName'),
+    venuePhotos: [],
+    participants,
+    aiReport: null,
+  };
+  const dateLabel = `${weekdayName(cardType === 'basbasa' ? 6 : cardType === 'kanka' ? 0 : 5, locale)} 20:00`;
+  return <MasaDetayKarti masa={masa} preview={{ dateLabel }} />;
 }
 
 /* ── Tek masa bloğu ── */
@@ -393,7 +106,7 @@ function MasaBlock({
   let content: React.ReactNode;
 
   if (locked || !meeting) {
-    content = <EmptyMasaCard locked={locked} cardType={cardType} userInfo={userInfo} kanka={kanka} photo={meeting?.venuePhotos?.[0]} />;
+    content = <EmptyMasaCard cardType={cardType} userInfo={userInfo} kanka={kanka} />;
   } else if (item.phase === 'REVEALED' && meeting.venueName) {
     const detayData: MasaDetayData = {
       id: meeting.id,
@@ -433,7 +146,7 @@ function MasaBlock({
       </div>
     );
   } else {
-    content = <EmptyMasaCard locked={false} cardType={cardType} userInfo={userInfo} kanka={kanka} photo={meeting?.venuePhotos?.[0]} />;
+    content = <EmptyMasaCard cardType={cardType} userInfo={userInfo} kanka={kanka} />;
   }
 
   return <div key={meeting?.id ?? cardType}>{content}</div>;
@@ -599,10 +312,12 @@ function HistoryList({ history }: { history: HistoryMeeting[] }) {
                   <a href={`/degerlendirme/${m.id}`} style={REVIEW_PILL}>{t('tm.review')}</a>
                 ) : m.review && (
                   <>
-                    {/* Gri etiket → verilen puan kadar yıldız → alt satırda yorum */}
-                    <span className="ll-mono" style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)', fontSize: 10, color: '#a39c93' }}>{t('tm.yourReview')}</span>
-                    <div role="img" aria-label={t('review.stars', { n: m.review.rating })} style={{ display: 'flex', gap: 2, marginTop: 6 }}>
-                      {Array.from({ length: m.review.rating }).map((_, k) => <ReviewStar key={k} filled size={16} />)}
+                    {/* [Gri etiket + sağında verilen puan kadar yıldız] → alt satırda yorum */}
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                      <span className="ll-mono" style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)', fontSize: 10, color: '#a39c93' }}>{t('tm.yourReview')}</span>
+                      <div role="img" aria-label={t('review.stars', { n: m.review.rating })} style={{ display: 'flex', gap: 2 }}>
+                        {Array.from({ length: m.review.rating }).map((_, k) => <ReviewStar key={k} filled size={16} />)}
+                      </div>
                     </div>
                     {m.review.comment && <p style={{ margin: '6px 0 0', fontSize: 13, color: '#f4f1ec' }}>{m.review.comment}</p>}
                   </>
