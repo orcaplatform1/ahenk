@@ -944,14 +944,14 @@ API CLIENT KURALLAR (web):
     20261116200100). Admin "Bölgeler" sayfası (web + mobil; GET /admin/regions,
     PATCH /admin/regions/:id): liste, alan düzenleme, tek tuşla aktif / pasif.
   - Para birimi: Türkiye bölgelerinde TRY (₺), Türkiye dışındaki bütün bölgelerde USD. Dubai'de şimdilik yalnız para birimi alanı var, fiyat yok.
-  - Şehir listeleri (mobil + web, kayıt ve şehir seçimi dahil): aktif şehirler (seçilebilir) → Yakında şehirler iki grupta (soluk, seçilemez),
-    her grubun üstünde ince ayırıcı ortasında yazı: Grup 1 countryCode TR olanlar, TR "Sezon Masaları 🇹🇷" / EN "Season Tables 🇹🇷";
-    Grup 2 countryCode TR olmayanlar, TR "Sezon Masaları 🌐" / EN "Season Tables 🌐". Grup içinde City.sortOrder'a göre sıralanır
-    (Çeşme, Bodrum, Fethiye, Marmaris, Kuşadası, Ayvalık; Dubai, Hong Kong, Singapur, Bangkok, Tokyo); "Sıra" admin şehir formundan
-    (web + mobil) girilir. Aktif yapılan bölge otomatik üst gruba geçer.
-    Satır düzeni: Grup 1 şehir adı, hemen sağında sezon; Grup 2 şehir adı, hemen sağında bayrak (countryCode TR değilse); "Yakında"
-    etiketi satırın en sağında, hizalı. Sezon isteğe bağlıdır, admin şehir formundan girilir; parantezsiz, italik, addan biraz küçük:
-    TR "1 Haziran >< 15 Eylül", EN "June 1 >< September 15" (ay adları arayüz dilinde). Ortak mantık packages/shared citySeason.ts.
+  - Şehir listeleri (mobil + web, kayıt ve şehir seçimi dahil): aktif şehirler (seçilebilir) → Yakında şehirler iki grupta (soluk, seçilemez).
+    Aktif yapılan bölge otomatik üst gruba geçer.
+    Grup 1: countryCode TR; ayırıcı TR "Sezon Masaları 🇹🇷", EN "Season Tables 🇹🇷". Grup 2: countryCode TR değil; ayırıcı TR "Sezon Masaları 🌐",
+    EN "Season Tables 🌐". Grup içi sıralama City.sortOrder'a göre; sortOrder admin şehir formundaki "Sıra" alanından değiştirilir.
+    Grup 1 satırı: şehir adı, sağında italik ve küçük sezon metni, en sağda "Yakında" etiketi. Sezon formatı parantezsiz: TR "1 Haziran >< 15 Eylül",
+    EN "June 1 >< September 15". Sezon isteğe bağlı, admin şehir formundan girilir.
+    Grup 2 satırı: şehir adı, sağında bayrak (countryCode'dan emoji), en sağda "Yakında" etiketi.
+    Ortak mantık packages/shared/src/citySeason.ts (cityExtras, soonCityGroups).
   - Tarih / saat: buluşmanın yapıldığı bölgenin saat diliminde; her iki dilde sayısal gg.aa.yyyy ve 24 saat SS:dd; ay ve gün adları arayüz dilinde.
     İstisnalar: masa detay kartı tarih satırı TR "18 Kasım, Çarşamba 20:00", EN "Wednesday, 18 November 20:00" (shared formatCardDate);
     Masalarım tarih sekmesi TR "18 Kasım Çarşamba", EN "Wednesday, 18 November" (formatDayTab).
@@ -968,7 +968,7 @@ API CLIENT KURALLAR (web):
   - Aktif = isActive true. Yakında = isActive false + isComingSoon true. Pasif = ikisi de false (City.isComingSoon,
     migration 20261116210000_city_coming_soon; Dubai Marina, JLT, Downtown Dubai Yakında).
   - Pasif şehirler kayıt ve haftalık şehir seçiminde görünmez.
-  - Yakında şehirler listenin sonunda "Yakında" ayırıcısı altında, her birinin yanında "Yakında" etiketiyle görünür, seçilemez,
+  - Yakında şehirler listenin sonunda iki grupta (bkz. Şehir listeleri), her birinin yanında "Yakında" etiketiyle görünür, seçilemez,
     eşleştirmeye ve taramaya girmez.
   - Şehir adı düzenlenebilir (admin İlçe Ekle penceresi: ad alanı + "Adı Kaydet", web + mobil), id değişmez; ilçe, mekân ve kullanıcı
     bağları korunur. Yeni şehir varsayılan Pasif; admin Şehirler ve Bölgeler sayfalarında (web + mobil) üç durum seçilir.
