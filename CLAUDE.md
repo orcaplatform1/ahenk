@@ -450,7 +450,7 @@ HESAP SİLME:
     {status:"APPROVED"} (SUPERADMIN). Panelde (web + mobil) yalnız "Onayla"; talep en geç 48 saat içinde sonuçlanır
   - Onayda silinenler: profil, OCEAN, KYC kaydı + şifreli dosyaları (.enc) ve boşalan uploads/kyc/<userId>/ klasörü (boş değilse
     silinmez, hata loglanır, işlem sürer), rehber / kullanıcı engelleri, sohbet mesajları, bildirimler, oturumlar,
-    bekleme listesi, winback, davet telefonu, profil fotoğrafları (ProfilePhoto + uploads/profile-photos/<userId>/), sorun bildirimleri
+    eşleştirme bekleme listesi (MatchingWaitlist), winback, davet telefonu, profil fotoğrafları (ProfilePhoto + uploads/profile-photos/<userId>/), sorun bildirimleri
     (ProblemReport + uploads/problem-reports/<id>/); hesap anonimleşir; masa geçmişi ve değerlendirmeler kimliksiz kayda taşınır
   - Saklanan: ödeme ve fatura kayıtları 5 yıl (VUK); acil yardım / şikâyet / yaptırıma karışan kişinin kimlik bilgisi silinmeden sonra
     2 yıl (yalnız SUPERADMIN); banlı hesabın telefon özeti
@@ -964,7 +964,7 @@ API CLIENT KURALLAR (web):
     migration 20261116210000_city_coming_soon; Dubai Marina, JLT, Downtown Dubai Yakında).
   - Pasif şehirler kayıt ve haftalık şehir seçiminde görünmez.
   - Yakında şehirler listenin sonunda "Yakında" ayırıcısı altında, her birinin yanında "Yakında" etiketiyle görünür, seçilemez,
-    eşleştirmeye ve taramaya girmez ("Haber ver" bekleme listesi aynen, yalnız Yakında şehirde).
+    eşleştirmeye ve taramaya girmez.
   - Şehir adı düzenlenebilir (admin İlçe Ekle penceresi: ad alanı + "Adı Kaydet", web + mobil), id değişmez; ilçe, mekân ve kullanıcı
     bağları korunur. Yeni şehir varsayılan Pasif; admin Şehirler ve Bölgeler sayfalarında (web + mobil) üç durum seçilir.
 
