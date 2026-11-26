@@ -1600,6 +1600,7 @@ model SupportRestriction {
   reason         String?   @db.Text // kısıtlama sebebi (zorunlu, boşluklar hariç en az 5 karakter); eski kayıtlarda boş
   liftedAt       DateTime?
   liftedById     String?
+  liftReason     String?   @db.Text // kaldırma sebebi (zorunlu, boşluklar hariç en az 5 karakter); eski kayıtlarda boş
   createdAt      DateTime  @default(now())
 
   @@index([userId])

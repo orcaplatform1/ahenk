@@ -745,7 +745,10 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     SUPPORT hesaplarını kullanır (support.service.ts onlineAgents). ADMIN'e hiçbir zaman sohbet atanmaz; ADMIN bütün sohbetleri yalnız salt
     okunur görür: mesaj, görsel, iç not, yazıyor, devir, sonlandırma, kısıtlama ve devralma butonları ADMIN'e gösterilmez, backend 403 döner
     (denyAdmin). SUPERADMIN'e otomatik ya da başka bir yolla sohbet atanmaz; SUPERADMIN bütün açık sohbetleri canlı
-    izler ve yalnız "Devral" ile elle alır (Devral yetkisi ve davranışı aynen) (devir notu "SUPERADMIN devraldı", TAKEOVER_NOTE). Devralınan sohbet eski temsilcinin "Açık Sohbetlerim"
+    izler ve yalnız "Devral" ile elle alır (Devral yetkisi ve davranışı aynen). SUPERADMIN izlediği (Devral etmediği) sohbette yalnız Devral
+    yapabilir: mesaj, görsel, iç not, Sonlandır, Kötüye kullanım ve Haiku asistanı butonları gösterilmez, backend 403 döner (agentClose,
+    addNote, chatForAi yalnız chat.agentId === kendisi). Devral ettiği sohbette atanmış temsilcinin bütün yetkilerine sahiptir.
+    Kısıtlamalar ekranından kısıt kaldırma bu kuraldan etkilenmez (devir notu "SUPERADMIN devraldı", TAKEOVER_NOTE). Devralınan sohbet eski temsilcinin "Açık Sohbetlerim"
     listesinden ve kotasından hemen düşer, eski temsilciye bildirim gitmez; ekranında açıksa 403 gösterilmez, son hâli salt okunur kalır
     (mesaj alanı, hazır yanıtlar, iç not, devir, Haiku kapalı), en altta "Bu sohbet SUPERADMIN tarafından devralındı." (yönetim paneli
     yalnız Türkçe); SUPPORT rolüne GET /admin/live-support/chats/:id yalnız {takenOver: true} döner, ekrandan çıkınca yeniden açılamaz. Yazıyor ve çevrimiçi / çevrimdışı durumu bellekte; Temsilci No ilk kullanımda atanır
@@ -755,6 +758,8 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     temsilciye; yoksa sıranın başına döner. Durum Çevrimiçi / Mola / Çevrimdışı; mola ve çevrimdışı yeni sohbet almaz, açıklara devam eder.
     ADMIN ve SUPERADMIN atama almadığı için temsilci ekranında (web + mobil) Çevrimiçi / Çevrimdışı / Mola kontrolleri ve mola şeridi yoktur
     (GET /admin/live-support/state me.assignable yalnız SUPPORT'ta true); PATCH /admin/live-support/status yalnız SUPPORT (diğerlerine 403).
+    ADMIN / SUPERADMIN SupportAgent durumu hep OFFLINE: rol değişikliği gibi başka bir yoldan ONLINE / BREAK kalırsa 10 sn'lik iş çevrimdışı
+    yapar, açık mola kaydını kapatır (SupportAgent kaydı ve Temsilci No silinmez).
     90 sn sıra uyarısı ADMIN ve SUPERADMIN'e mevcut hâliyle gider, atama yapılmaz.
     Mola (yalnız SUPPORT; web + mobil): temsilci ekranının üst kartında tek buton, çevrimiçiyken "Molaya Çık", moladayken
     "Moladan Dön" (çevrimdışıyken mola butonu yok; Çevrimiçi / Çevrimdışı seçimi aynen). "Molaya Çık" admin paletinde ortak onay penceresi
@@ -768,7 +773,7 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     çevrimdışı olur, açık mola kaydı o anki saatle kapanır; çevrimdışı temsilciye yeni sohbet atanmaz. Çevrimdışı olunca açık sohbetler: çıkış,
     20 sn kopma ve elle Çevrimdışı seçiminde temsilcide (ACTIVE) kalır, sıraya dönmez (ilk yanıtı verilmemişse 2 dk kuralıyla sıraya döner);
     hesap kapatılınca sıraya döner. Temsilciler sekmesi ADMIN + SUPERADMIN; ADMIN salt okunur (liste, durum, mola geçmişi; hesap açma / kapama
-    yalnız SUPERADMIN): her temsilcinin
+    yalnız SUPERADMIN); listede (web + mobil) yalnız SUPPORT rolündeki temsilciler, ADMIN / SUPERADMIN hesapları gösterilmez: her temsilcinin
     durumu (Çevrimiçi / Molada / Çevrimdışı, moladaysa geçen dakika) ve "Mola Geçmişi" (tarih, başlangıç, bitiş, süre; GET
     /admin/live-support/manage/agents/:userId/breaks, ADMIN + SUPERADMIN).
     Devret: zorunlu notla başka çevrimiçi temsilciye; devralan geçmişi ve notu görür; kullanıcı yeni Temsilci No'yu görür ve sistem mesajı
@@ -790,7 +795,14 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     satırda veriliş tarihi saati, süre (1 / 7 / 30 gün), bitiş tarihi saati, durum (Aktif / Süresi doldu / Kaldırıldı), veren Temsilci No,
     sebep; kaldırılmışsa kaldıran kişi (ad soyad, rol, varsa Temsilci No) ve kaldırma zamanı. Kısıt yoksa "Kısıtlama yok". Görme yetkisi detay
     sayfasıyla aynı (ADMIN + SUPERADMIN; GET /admin/live-support/manage/restrictions/user/:userId ve /restrictions/venue/:venueId);
-    kaldırma yalnız SUPERADMIN, Kısıtlamalar ekranından (aynen). Kaldırma sebebi alanı yoktur. Yetkiler ve süre mantığı aynen
+    kaldırma yalnız SUPERADMIN, Kısıtlamalar ekranından. Kaldırma sebebi (SupportRestriction.liftReason, migration
+    20261126400000_support_restriction_lift_reason): Kısıtlamalar ekranında (web + mobil) "Kaldır" → çok satırlı sebep alanı (yer tutucu yok)
+    + "Kaldır" onay butonu; buton yalnız sebep boşluklar hariç en az 5 karakterken aktif (uyarı / yardım metni yok); basınca admin paletli
+    ortak onay penceresi (AdminConfirm / AConfirm) "Kısıtlamayı kaldırmak istediğinden emin misin?" Evet / Hayır; Evet sebeple kaldırır,
+    Hayır işlem yapmaz, sebep kaybolmaz. POST /admin/live-support/manage/restrictions/:id/lift {reason} zorunlu, kısa sebep 400 ("Kaldırma
+    sebebi en az 5 karakter olmalı"). Kaldırma sebebi kullanıcı / mekân detayı listesinde (kaldıran kişi ve zamanın altında), Kısıtlamalar
+    ekranında, SUPERADMIN Tüm Sohbetler detayında ve İşlem Kayıtları'nda ("Kısıtlama kaldırma sebebi: …") görünür, kullanıcıya gösterilmez;
+    eski kaldırılmış kayıtlarda "Sebep girilmemiş". Yetkiler ve süre mantığı aynen
   - Haiku asistanı (support-ai.service.ts, claude-haiku-5-5, CLAUDE_API_KEY): yalnız okur; veri değiştirmez / silmez, iade / iptal / hak
     tanımlamaz, kullanıcıya mesaj göndermez (mesajı temsilci gönderir: "Kopyala", "Sohbete ekle"). Okuma işlevleri parametre almaz; hesabı
     sunucu sohbet kaydından verir (metinden ID / isim / telefon alınmaz, başka hesap istenirse reddeder). Tahmin yok: tutar, tarih, sayı

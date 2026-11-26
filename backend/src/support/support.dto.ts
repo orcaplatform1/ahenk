@@ -40,6 +40,11 @@ export class CloseDto {
   @IsOptional() @IsString() @MaxLength(1000) abuseReason?: string;
 }
 
+// Kısıtlama kaldırma: sebep zorunlu, boşluklar hariç en az 5 karakter (servis denetler)
+export class LiftDto {
+  @IsString() @MaxLength(1000) reason!: string;
+}
+
 export class AiDto {
   @IsOptional() @IsString() @MaxLength(2000) question?: string;
   @IsOptional() @IsBoolean() draft?: boolean;

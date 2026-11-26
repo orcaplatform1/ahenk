@@ -26,6 +26,7 @@ export function AdminSupportRestrictions(props: { userId: string } | { venueId: 
           </AT>
           <AT style={{ fontSize: 11, color: adm.muted }}>Sebep: <AT style={{ fontSize: 11 }}>{r.reason}</AT></AT>
           {r.status === 'LIFTED' && <AT style={{ fontSize: 11, color: adm.muted }}>Kaldıran: <AT style={{ fontSize: 11 }}>{lifterLabel(r)}</AT>{r.liftedAt ? ` · ${fmtDate(r.liftedAt)}` : ''}</AT>}
+          {r.status === 'LIFTED' && <AT style={{ fontSize: 11, color: adm.muted }}>Kaldırma sebebi: <AT style={{ fontSize: 11 }}>{r.liftReason ?? 'Sebep girilmemiş'}</AT></AT>}
         </View>
       ))}
     </View>

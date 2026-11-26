@@ -191,7 +191,8 @@ function ChatsTab() {
           <div className="ll-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}><p style={{ color: MUTED, fontSize: 13 }}>Soldan bir sohbet seç.</p></div>
         )}
         {/* SUPERADMIN devraldıysa eski temsilcide Haiku asistanı kapanır */}
-        {sel && !takenOver.has(sel) ? <HaikuPanel chatId={sel} onInsert={(t) => window.dispatchEvent(new CustomEvent('cd-insert', { detail: t }))} /> : <div className="ll-card" />}
+        {/* Haiku: devralınan sohbette ve SUPERADMIN'in izlediği (Devral etmediği) sohbette kapalı */}
+        {sel && !takenOver.has(sel) && !(superadmin && !st.mine.some((r) => r.id === sel)) ? <HaikuPanel chatId={sel} onInsert={(t) => window.dispatchEvent(new CustomEvent('cd-insert', { detail: t }))} /> : <div className="ll-card" />}
       </div>
     </div>
   );
@@ -315,14 +316,15 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
             </div>
           )}
         </div>
+        {/* SUPERADMIN izlediği sohbette yalnız Devral; Sonlandır ve kötüye kullanım yalnız atanmış temsilcide (Devral sonrası SUPERADMIN dahil) */}
         {open && (c.mine || st.me.role === 'SUPERADMIN') && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 6, flexShrink: 0 }}>
             {!c.mine && st.me.role === 'SUPERADMIN' && <button style={btn(BLUE)} onClick={() => act(() => api.post(`/admin/live-support/chats/${id}/take`, {}))}>Devral</button>}
-            <button style={btn(MUTED)} onClick={() => setConfirm(0)}>Sonlandır</button>
+            {c.mine && <button style={btn(MUTED)} onClick={() => setConfirm(0)}>Sonlandır</button>}
           </div>
         )}
       </div>
-      {open && (c.mine || st.me.role === 'SUPERADMIN') && (
+      {open && c.mine && (
         <details style={{ padding: '8px 14px', background: 'rgba(239,68,68,0.06)', borderBottom: `1px solid ${BORDER}` }}>
           <summary style={{ fontSize: 12, fontWeight: 600, color: RED, cursor: 'pointer' }}>Kötüye kullanım</summary>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
@@ -395,7 +397,7 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
           {c.transfers.map((x) => <p key={x.id} style={{ fontSize: 12, color: AMBER }}>Devir {x.from ?? '—'} → {x.to ?? '—'} · {dt(x.createdAt)}: {x.note}</p>)}
           {c.notes.map((n) => <p key={n.id} style={{ fontSize: 12 }}><span style={{ color: MUTED }}>No {n.agentNo} · {dt(n.createdAt)}:</span> {n.content}</p>)}
-          {(c.mine || st.me.role === 'SUPERADMIN') && (
+          {c.mine && (
             <div style={{ display: 'flex', gap: 6 }}>
               <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="İç not ekle" style={{ ...inputStyle, flex: 1 }} />
               <button style={btn(BLUE)} onClick={() => note.trim() && act(() => api.post(`/admin/live-support/chats/${id}/notes`, { content: note.trim() }), () => setNote(''))}>Ekle</button>
@@ -484,7 +486,7 @@ interface AllDetail {
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
   rating: { helped: boolean; stars: number; tags: string[]; comment: string | null; createdAt: string } | null;
   aiLogs: AiLog[];
-  restriction: { days: number; reason: string; createdAt: string; expiresAt: string; liftedAt: string | null; agentNo: string | null } | null;
+  restriction: { days: number; reason: string; createdAt: string; expiresAt: string; liftedAt: string | null; agentNo: string | null; liftReason: string | null } | null;
 }
 const CHAT_STATUS: Record<string, string> = { QUEUED: 'Sırada', ACTIVE: 'Açık', CLOSED: 'Kapandı' };
 const CLOSED_BY: Record<string, string> = { USER: 'kullanıcı', AGENT: 'temsilci', AUTO: 'otomatik', ABUSE: 'kötüye kullanım' };
@@ -626,6 +628,7 @@ function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
           <p style={{ ...LABEL, color: RED }}>KÖTÜYE KULLANIM KISITLAMASI</p>
           <p style={{ fontSize: 12 }}>{c.restriction.days} gün · {dt(c.restriction.createdAt)} → {dt(c.restriction.expiresAt)} · Temsilci No {c.restriction.agentNo ?? '—'}{c.restriction.liftedAt ? ` · kaldırıldı ${dt(c.restriction.liftedAt)}` : ''}</p>
           <p style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>Sebep: {c.restriction.reason}</p>
+          {c.restriction.liftedAt && <p style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>Kaldırma sebebi: {c.restriction.liftReason ?? 'Sebep girilmemiş'}</p>}
         </div>
       )}
       <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -846,14 +849,27 @@ function AgentsTab({ superadmin }: { superadmin: boolean }) {
 
 // ─── Kısıtlamalar (SUPERADMIN kaldırır) ────────────────────────────────────
 
-interface Restr { id: string; requesterName: string; kind: string; days: number; expiresAt: string; createdAt: string; agentNo: string | null; liftedAt: string | null; active: boolean; reason: string }
+interface Restr { id: string; requesterName: string; kind: string; days: number; expiresAt: string; createdAt: string; agentNo: string | null; liftedAt: string | null; active: boolean; reason: string; liftReason: string | null }
+// Kısıt kaldırma (yalnız SUPERADMIN): "Kaldır" → sebep alanı (boşluklar hariç en az 5 karakter) + "Kaldır" → onay penceresi → kaldırma
 function RestrictionsTab() {
   const [rows, setRows] = useState<Restr[]>([]);
   const [err, setErr] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [liftReason, setLiftReason] = useState('');
+  const [ask, setAsk] = useState(false);
   const load = () => api.get<Restr[]>('/admin/live-support/manage/restrictions').then(setRows).catch((e) => setErr((e as Error).message));
   useEffect(() => { load(); }, []);
+  const liftOk = liftReason.replace(/\s/g, '').length >= REASON_MIN;
+  function lift() {
+    const id = openId; if (!id) return;
+    setAsk(false); setErr('');
+    api.post(`/admin/live-support/manage/restrictions/${id}/lift`, { reason: liftReason.trim() })
+      .then(() => { setOpenId(null); setLiftReason(''); load(); })
+      .catch((e) => setErr((e as Error).message));
+  }
   return (
     <div style={{ maxWidth: 860 }}>
+      <AdminConfirm open={ask} text="Kısıtlamayı kaldırmak istediğinden emin misin?" onNo={() => setAsk(false)} onYes={lift} />
       {err && <p style={{ color: RED, fontSize: 12 }}>{err}</p>}
       {!rows.length && <p style={{ fontSize: 13, color: MUTED }}>Kısıtlama kaydı yok.</p>}
       {rows.map((r) => (
@@ -862,8 +878,15 @@ function RestrictionsTab() {
             <p style={{ fontSize: 13, fontWeight: 600 }}>{r.requesterName} <span style={{ fontSize: 11, color: MUTED }}>· {r.kind === 'venue' ? 'Mekân' : 'Üye'}</span></p>
             <p style={{ fontSize: 11, color: MUTED }}>{r.days} gün · {dt(r.createdAt)} → {dt(r.expiresAt)} · Temsilci No {r.agentNo ?? '—'}{r.liftedAt ? ` · kaldırıldı ${dt(r.liftedAt)}` : ''}</p>
             <p style={{ fontSize: 12, whiteSpace: 'pre-wrap', marginTop: 2 }}>Sebep: {r.reason}</p>
+            {r.liftedAt && <p style={{ fontSize: 12, whiteSpace: 'pre-wrap', marginTop: 2 }}>Kaldırma sebebi: {r.liftReason ?? 'Sebep girilmemiş'}</p>}
           </div>
-          {r.active && <button style={btn(GREEN)} onClick={() => api.post(`/admin/live-support/manage/restrictions/${r.id}/lift`, {}).then(load).catch((e) => setErr((e as Error).message))}>Kısıtlamayı Kaldır</button>}
+          {r.active && openId !== r.id && <button style={btn(GREEN)} onClick={() => { setOpenId(r.id); setLiftReason(''); }}>Kaldır</button>}
+          {r.active && openId === r.id && (
+            <div style={{ flexBasis: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <textarea value={liftReason} onChange={(e) => setLiftReason(e.target.value.slice(0, 1000))} rows={3} aria-label="Kaldırma sebebi" style={{ ...inputStyle, resize: 'vertical' }} />
+              <button style={{ ...btn(GREEN, true), alignSelf: 'flex-start', opacity: liftOk ? 1 : 0.4, cursor: liftOk ? 'pointer' : 'not-allowed' }} disabled={!liftOk} onClick={() => setAsk(true)}>Kaldır</button>
+            </div>
+          )}
         </div>
       ))}
     </div>

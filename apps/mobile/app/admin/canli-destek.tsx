@@ -269,7 +269,8 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
           )}
         </View>
         {/* Devralınan sohbette Haiku asistanı, iç not ve işlemler kapalı */}
-        {!c.takenOver && <SmallBtn label="Haiku" color={adm.cyan} onPress={() => setHaiku(true)} />}
+        {/* Haiku: SUPERADMIN'in izlediği (Devral etmediği) sohbette kapalı */}
+        {!c.takenOver && !(superadmin && !c.mine) && <SmallBtn label="Haiku" color={adm.cyan} onPress={() => setHaiku(true)} />}
         {!c.takenOver && <SmallBtn label="⋯" color={adm.muted} onPress={() => setExtra((v) => !v)} />}
       </View>
       {extra && !c.takenOver && (
@@ -277,9 +278,10 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
           {/* Web temsilci başlığıyla aynı sıra: Devral / Sonlandır alt alta; altında kötüye kullanım alanı (web ile aynı düzen) */}
           <View style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
             {open && !c.mine && superadmin && <SmallBtn label="Devral" color={adm.blue} onPress={() => act(() => api.post(`/admin/live-support/chats/${id}/take`, {}))} />}
-            {open && (c.mine || superadmin) && <SmallBtn label="Sonlandır" color={adm.muted} onPress={() => setConfirm(0)} />}
+            {/* SUPERADMIN izlediği sohbette yalnız Devral; Sonlandır ve kötüye kullanım yalnız atanmış temsilcide (Devral sonrası SUPERADMIN dahil) */}
+            {open && c.mine && <SmallBtn label="Sonlandır" color={adm.muted} onPress={() => setConfirm(0)} />}
           </View>
-          {open && (c.mine || superadmin) && (
+          {open && c.mine && (
             <View style={{ gap: 8, padding: 10, borderRadius: 8, backgroundColor: 'rgba(239,68,68,0.06)', borderWidth: 1, borderColor: adm.border }}>
               <AT style={{ fontSize: 12 }}>Sohbeti kapat ve canlı destek erişimini kısıtla:</AT>
               <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 6 }}>
@@ -292,7 +294,7 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
           <ALabel>İÇ NOTLAR ({c.notes.length}) · DEVİRLER ({c.transfers.length})</ALabel>
           {c.transfers.map((x) => <AT key={x.id} style={{ fontSize: 12, color: adm.amber }}>Devir {x.from ?? '—'} → {x.to ?? '—'} · {dt(x.createdAt)}: {x.note}</AT>)}
           {c.notes.map((n) => <AT key={n.id} style={{ fontSize: 12 }}>No {n.agentNo} · {dt(n.createdAt)}: {n.content}</AT>)}
-          {(c.mine || superadmin) && <View style={{ flexDirection: 'row', gap: 6 }}>
+          {c.mine && <View style={{ flexDirection: 'row', gap: 6 }}>
             <TextInput value={note} onChangeText={setNote} placeholder="İç not ekle" placeholderTextColor={adm.muted} style={[input, { flex: 1 }]} keyboardAppearance="dark" />
             <SmallBtn label="Ekle" color={adm.blue} onPress={() => note.trim() && act(() => api.post(`/admin/live-support/chats/${id}/notes`, { content: note.trim() }), () => setNote(''))} />
           </View>}
@@ -461,7 +463,7 @@ interface AllDetail {
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
   rating: { helped: boolean; stars: number; tags: string[]; comment: string | null; createdAt: string } | null;
   aiLogs: AiLog[];
-  restriction: { days: number; reason: string; createdAt: string; expiresAt: string; liftedAt: string | null; agentNo: string | null } | null;
+  restriction: { days: number; reason: string; createdAt: string; expiresAt: string; liftedAt: string | null; agentNo: string | null; liftReason: string | null } | null;
 }
 const CHAT_STATUS: Record<string, string> = { QUEUED: 'Sırada', ACTIVE: 'Açık', CLOSED: 'Kapandı' };
 const CLOSED_BY: Record<string, string> = { USER: 'kullanıcı', AGENT: 'temsilci', AUTO: 'otomatik', ABUSE: 'kötüye kullanım' };
@@ -602,6 +604,7 @@ function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
               <ALabel style={{ color: adm.red }}>KÖTÜYE KULLANIM KISITLAMASI</ALabel>
               <AT style={{ fontSize: 12 }}>{c.restriction.days} gün · {dt(c.restriction.createdAt)} → {dt(c.restriction.expiresAt)} · Temsilci No {c.restriction.agentNo ?? '—'}{c.restriction.liftedAt ? ` · kaldırıldı ${dt(c.restriction.liftedAt)}` : ''}</AT>
               <AT style={{ fontSize: 13, lineHeight: 19 }}>Sebep: {c.restriction.reason}</AT>
+              {!!c.restriction.liftedAt && <AT style={{ fontSize: 13, lineHeight: 19 }}>Kaldırma sebebi: {c.restriction.liftReason ?? 'Sebep girilmemiş'}</AT>}
             </ACard>
           )}
           <ACard style={{ gap: 4 }}>
@@ -791,14 +794,27 @@ function AgentsTab({ superadmin }: { superadmin: boolean }) {
 
 // ─── Kısıtlamalar ve Haiku kayıtları (SUPERADMIN) ──────────────────────────
 
-interface Restr { id: string; requesterName: string; kind: string; days: number; expiresAt: string; createdAt: string; agentNo: string | null; liftedAt: string | null; active: boolean; reason: string }
+interface Restr { id: string; requesterName: string; kind: string; days: number; expiresAt: string; createdAt: string; agentNo: string | null; liftedAt: string | null; active: boolean; reason: string; liftReason: string | null }
+// Kısıt kaldırma (yalnız SUPERADMIN): "Kaldır" → sebep alanı (boşluklar hariç en az 5 karakter) + "Kaldır" → onay penceresi → kaldırma
 function RestrictionsTab() {
   const [rows, setRows] = useState<Restr[]>([]);
   const [err, setErr] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [liftReason, setLiftReason] = useState('');
+  const [ask, setAsk] = useState(false);
   const load = useCallback(() => { api.get<Restr[]>('/admin/live-support/manage/restrictions').then(setRows).catch((e: Error) => setErr(e.message)); }, []);
   useEffect(() => { load(); }, [load]);
+  const liftOk = liftReason.replace(/\s/g, '').length >= REASON_MIN;
+  function lift() {
+    const id = openId; if (!id) return;
+    setAsk(false); setErr('');
+    api.post(`/admin/live-support/manage/restrictions/${id}/lift`, { reason: liftReason.trim() })
+      .then(() => { setOpenId(null); setLiftReason(''); load(); })
+      .catch((e: Error) => setErr(e.message));
+  }
   return (
     <View style={{ gap: 8 }}>
+      <AConfirm visible={ask} text="Kısıtlamayı kaldırmak istediğinden emin misin?" onNo={() => setAsk(false)} onYes={lift} />
       {!!err && <AError>{err}</AError>}
       {!rows.length && <AT style={{ fontSize: 13, color: adm.muted }}>Kısıtlama kaydı yok.</AT>}
       {rows.map((r) => (
@@ -806,7 +822,14 @@ function RestrictionsTab() {
           <AT w={600} style={{ fontSize: 13 }}>{r.requesterName} · {r.kind === 'venue' ? 'Mekân' : 'Üye'}</AT>
           <AT style={{ fontSize: 11, color: adm.muted }}>{r.days} gün · {dt(r.createdAt)} → {dt(r.expiresAt)} · Temsilci No {r.agentNo ?? '—'}{r.liftedAt ? ` · kaldırıldı ${dt(r.liftedAt)}` : ''}</AT>
           <AT style={{ fontSize: 12, lineHeight: 18 }}>Sebep: {r.reason}</AT>
-          {r.active && <SmallBtn label="Kısıtlamayı Kaldır" color={adm.green} onPress={() => { api.post(`/admin/live-support/manage/restrictions/${r.id}/lift`, {}).then(load).catch((e: Error) => setErr(e.message)); }} />}
+          {!!r.liftedAt && <AT style={{ fontSize: 12, lineHeight: 18 }}>Kaldırma sebebi: {r.liftReason ?? 'Sebep girilmemiş'}</AT>}
+          {r.active && openId !== r.id && <SmallBtn label="Kaldır" color={adm.green} onPress={() => { setOpenId(r.id); setLiftReason(''); }} />}
+          {r.active && openId === r.id && (
+            <View style={{ gap: 8 }}>
+              <TextInput value={liftReason} onChangeText={(v) => setLiftReason(v.slice(0, 1000))} multiline accessibilityLabel="Kaldırma sebebi" style={[input, { minHeight: 72, textAlignVertical: 'top' }]} keyboardAppearance="dark" />
+              <SmallBtn label="Kaldır" color={adm.green} filled disabled={!liftOk} onPress={() => setAsk(true)} />
+            </View>
+          )}
         </ACard>
       ))}
     </View>

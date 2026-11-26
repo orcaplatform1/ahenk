@@ -453,6 +453,17 @@ export class SupportService implements OnModuleInit {
         await this.prisma.supportAgent.update({ where: { userId: a.userId }, data: { status: SupportAgentStatus.OFFLINE, statusChangedAt: at } });
         await closeOpenBreak(this.prisma, a.userId, at);
       }
+      // 6) ADMIN / SUPERADMIN (SUPPORT dışı) hesapların temsilci durumu hiçbir yoldan ONLINE / BREAK kalmaz (ör. rol değişikliği):
+      // çevrimdışı yapılır, açık mola kaydı o anki saatle kapanır
+      const live = await this.prisma.supportAgent.findMany({ where: { status: { in: [SupportAgentStatus.ONLINE, SupportAgentStatus.BREAK] } }, select: { userId: true } });
+      if (live.length) {
+        const nonSupport = await this.prisma.user.findMany({ where: { id: { in: live.map((a) => a.userId) }, role: { not: UserRole.SUPPORT } }, select: { id: true } });
+        for (const u of nonSupport) {
+          const at = new Date();
+          await this.prisma.supportAgent.update({ where: { userId: u.id }, data: { status: SupportAgentStatus.OFFLINE, statusChangedAt: at } });
+          await closeOpenBreak(this.prisma, u.id, at);
+        }
+      }
       // Süresi geçen yazıyor kayıtları
       for (const [k, t] of this.typing) {
         if ((!t.userAt || now - t.userAt > TYPING_TTL_MS) && (!t.agentAt || now - t.agentAt > TYPING_TTL_MS)) this.typing.delete(k);
@@ -657,8 +668,10 @@ export class SupportService implements OnModuleInit {
   }
 
   async addNote(staff: Staff, chatId: string, content: string) {
-    const { me } = await this.staffChat(staff, chatId);
+    const { me, chat } = await this.staffChat(staff, chatId);
     this.denyAdmin(me);
+    // İç not yalnız sohbete atanmış temsilci (SUPERADMIN yalnız Devral ettiği sohbette)
+    if (chat.agentId !== me.id) throw new ForbiddenException("Bu sohbete yalnız atanmış temsilci yazabilir.");
     const text = (content ?? "").trim();
     if (!text) throw new BadRequestException("Not boş olamaz");
     const agent = await this.ensureAgent(me.id);
@@ -711,7 +724,8 @@ export class SupportService implements OnModuleInit {
     const { me, chat } = await this.staffChat(staff, chatId);
     this.denyAdmin(me);
     if (!OPEN.includes(chat.status)) throw new BadRequestException("Sohbet açık değil");
-    if (chat.agentId !== me.id && me.role !== UserRole.SUPERADMIN) throw new ForbiddenException("Bu sohbeti kapatamazsın");
+    // Sonlandır ve Kötüye kullanım yalnız atanmış temsilci (SUPERADMIN yalnız Devral ettiği sohbette; izlediği sohbette 403)
+    if (chat.agentId !== me.id) throw new ForbiddenException("Bu sohbeti kapatamazsın");
     if (abuseDays !== undefined) {
       if (!(RESTRICT_DAYS as readonly number[]).includes(abuseDays)) throw new BadRequestException("Kısıtlama süresi 1, 7 ya da 30 gün olmalı");
       if (!reasonOk(abuseReason)) throw new BadRequestException("Kısıtlama sebebi en az 5 karakter olmalı");
@@ -757,8 +771,9 @@ export class SupportService implements OnModuleInit {
   // ─── Temsilci hesapları (yalnız SUPERADMIN) ───────────────────────────────
 
   async agentAccounts() {
+    // Temsilciler listesi yalnız SUPPORT rolü (ADMIN / SUPERADMIN gösterilmez; SupportAgent kayıtları ve numaraları durur)
     const users = await this.prisma.user.findMany({
-      where: { role: { in: STAFF_ROLES } },
+      where: { role: UserRole.SUPPORT },
       select: { id: true, email: true, phone: true, role: true, status: true, createdAt: true, profile: { select: { firstName: true, lastName: true } } },
       orderBy: { createdAt: "asc" },
     });
@@ -825,6 +840,7 @@ export class SupportService implements OnModuleInit {
       id: r.id, requesterName: chats.get(r.chatId) ?? "—", kind: r.venueAccountId ? "venue" : "user", days: r.days,
       expiresAt: r.expiresAt.toISOString(), createdAt: r.createdAt.toISOString(), agentNo: agents.get(r.createdById) ?? null,
       liftedAt: r.liftedAt?.toISOString() ?? null, active: !r.liftedAt && r.expiresAt.getTime() > now, reason: r.reason ?? NO_REASON,
+      liftReason: r.liftedAt ? r.liftReason ?? NO_REASON : null,
     }));
   }
 
@@ -841,6 +857,7 @@ export class SupportService implements OnModuleInit {
       status: r.liftedAt ? "LIFTED" : r.expiresAt.getTime() > now ? "ACTIVE" : "EXPIRED",
       agentNo: agents.get(r.createdById) ?? null, reason: r.reason ?? NO_REASON,
       liftedAt: r.liftedAt?.toISOString() ?? null, liftedBy: r.liftedById ? lifters.get(r.liftedById) ?? null : null,
+      liftReason: r.liftedAt ? r.liftReason ?? NO_REASON : null,
     }));
   }
 
@@ -858,13 +875,15 @@ export class SupportService implements OnModuleInit {
     return { userTyping: typing, userDraft: typing && chat.agentId === me.id ? this.typing.get(chatId)?.userText ?? "" : "" };
   }
 
-  async liftRestriction(actorId: string, id: string) {
+  async liftRestriction(actorId: string, id: string, liftReason: string) {
+    if (!reasonOk(liftReason)) throw new BadRequestException("Kaldırma sebebi en az 5 karakter olmalı");
     const r = await this.prisma.supportRestriction.findUnique({ where: { id } });
     if (!r) throw new NotFoundException("Kısıtlama bulunamadı");
     if (r.liftedAt) return { ok: true };
-    await this.prisma.supportRestriction.update({ where: { id }, data: { liftedAt: new Date(), liftedById: actorId } });
+    const reason = liftReason.trim().slice(0, 1000);
+    await this.prisma.supportRestriction.update({ where: { id }, data: { liftedAt: new Date(), liftedById: actorId, liftReason: reason } });
     const chat = await this.prisma.supportChat.findUnique({ where: { id: r.chatId }, select: { requesterName: true } });
-    await this.prisma.adminActionLog.create({ data: { adminId: actorId, action: "SUPPORT_RESTRICT_LIFT", targetUserId: r.userId, description: `${chat?.requesterName ?? "—"} için canlı destek kısıtlamasını kaldırdı. Kısıtlama sebebi: ${r.reason ?? NO_REASON}` } });
+    await this.prisma.adminActionLog.create({ data: { adminId: actorId, action: "SUPPORT_RESTRICT_LIFT", targetUserId: r.userId, description: `${chat?.requesterName ?? "—"} için canlı destek kısıtlamasını kaldırdı. Kısıtlama sebebi: ${r.reason ?? NO_REASON}. Kısıtlama kaldırma sebebi: ${reason}` } });
     return { ok: true };
   }
 
@@ -999,6 +1018,7 @@ export class SupportService implements OnModuleInit {
       restriction: restriction ? {
         days: restriction.days, reason: restriction.reason ?? NO_REASON, createdAt: restriction.createdAt.toISOString(), expiresAt: restriction.expiresAt.toISOString(),
         liftedAt: restriction.liftedAt?.toISOString() ?? null, agentNo: no.get(restriction.createdById) ?? null,
+        liftReason: restriction.liftedAt ? restriction.liftReason ?? NO_REASON : null,
       } : null,
     };
   }
@@ -1010,6 +1030,8 @@ export class SupportService implements OnModuleInit {
   // Haiku için sohbet kaydı (ID sunucudan)
   async chatForAi(staff: Staff, chatId: string) {
     const { me, chat } = await this.staffChat(staff, chatId);
+    // SUPERADMIN izlediği (Devral etmediği) sohbette Haiku asistanını kullanamaz
+    if (me.role === UserRole.SUPERADMIN && chat.agentId !== me.id) throw new ForbiddenException("Bu işlem için yetkin yok");
     const agent = await this.ensureAgent(me.id);
     const messages = await this.prisma.supportMessage.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } });
     return { chat, agent, messages };

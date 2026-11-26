@@ -11,7 +11,7 @@ import { SupportService, type Requester, type Staff } from "./support.service";
 import { SupportAiService } from "./support-ai.service";
 import { SUPPORT_IMAGE_MAX_BYTES, SUPPORT_MAX_IMAGES } from "./support.constants";
 import {
-  AgentActiveDto, AgentStatusDto, AiDto, CannedDto, CloseDto, CreateAgentDto, MessageDto, NoteDto, RatingDto, StartChatDto,
+  AgentActiveDto, AgentStatusDto, AiDto, CannedDto, CloseDto, CreateAgentDto, LiftDto, MessageDto, NoteDto, RatingDto, StartChatDto,
   SupportSettingsDto, TransferDto, TypingDto,
 } from "./support.dto";
 
@@ -108,7 +108,7 @@ export class SupportManageController {
   @Get("restrictions/user/:userId") userRestrictions(@Param("userId") userId: string) { return this.support.restrictionsOfUser(userId); }
   @Get("restrictions/venue/:venueId") venueRestrictions(@Param("venueId") venueId: string) { return this.support.restrictionsOfVenue(venueId); }
   @Get("restrictions") @Roles(UserRole.SUPERADMIN) restrictions() { return this.support.restrictions(); }
-  @Post("restrictions/:id/lift") @Roles(UserRole.SUPERADMIN) lift(@Req() req: Request, @Param("id") id: string) { return this.support.liftRestriction(this.actor(req), id); }
+  @Post("restrictions/:id/lift") @Roles(UserRole.SUPERADMIN) lift(@Req() req: Request, @Param("id") id: string, @Body() dto: LiftDto) { return this.support.liftRestriction(this.actor(req), id, dto.reason); }
   @Get("ai-logs") @Roles(UserRole.SUPERADMIN) aiLogs() { return this.support.aiLogs(); }
   // Tüm Sohbetler (yalnız SUPERADMIN): liste + sohbetin tamamı; devralma mevcut POST /admin/live-support/chats/:id/take ile
   @Get("chats") @Roles(UserRole.SUPERADMIN) allChats(

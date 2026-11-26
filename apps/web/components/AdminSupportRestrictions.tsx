@@ -28,6 +28,7 @@ export function AdminSupportRestrictions(props: { userId: string } | { venueId: 
             </p>
             <p style={{ margin: 0, color: MUTED }}>Sebep: <span style={{ color: TEXT }}>{r.reason}</span></p>
             {r.status === 'LIFTED' && <p style={{ margin: 0, color: MUTED }}>Kaldıran: <span style={{ color: TEXT }}>{lifterLabel(r)}</span>{r.liftedAt ? <span style={{ fontFamily: MONO }}> · {fmtDate(r.liftedAt)}</span> : null}</p>}
+            {r.status === 'LIFTED' && <p style={{ margin: 0, color: MUTED }}>Kaldırma sebebi: <span style={{ color: TEXT }}>{r.liftReason ?? 'Sebep girilmemiş'}</span></p>}
           </div>
         );
       })}
