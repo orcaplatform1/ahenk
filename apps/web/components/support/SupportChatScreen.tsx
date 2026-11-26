@@ -4,7 +4,7 @@
 // Anlık iletişim Masa Sohbeti gibi kısa aralıklı yoklama (3 sn). Konu seçimi → sıra → temsilci → sohbet → değerlendirme.
 // Kullanıcı geçmiş destek sohbetlerini göremez: sohbet kapanınca ekrandan kalkar. Küçült butonu sohbeti baloncuğa alır (SupportBubble);
 // kuyruktayken "Beklerken oyna" Breakout açar, temsilci bağlanınca ya da küçültülünce oyun tamamen kapanır.
-// Maskot: kuyrukta sıra satırının üstünde tam sürüm (72 px yükseklik), temsilci bağlanınca başlığın solunda tam sürüm (60 px yükseklik),
+// Maskot: kuyrukta sıra satırının üstünde tam sürüm (72 px yükseklik), temsilci bağlanınca başlığın solunda tam sürüm (36 px yükseklik),
 // sohbet alanında sabit filigran (tam sürüm, alan genişliğinin %60'ı, ortada, opaklık %8 koyu tema; oyun açıkken gizli).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -42,8 +42,9 @@ const TEXT = '#f4f1ec';
 const MUTED = '#a39c93';
 // Canlı destek maskotu (public/maskot); filigran opaklığı: uygulama yalnız koyu temada (%8)
 const MASCOT_FULL = '/maskot/destek-tam.webp';
-// Bağlı sohbet başlığındaki maskot yüksekliği: temsilci ekranı başlık avatarı (48 px) + %25
-const MASCOT_HEADER = 60;
+// Sohbet başlığı (temsilci ekranı başlığının oranlarında küçük): maskot yüksekliği ve küçült butonunun görünen çapı
+const MASCOT_HEADER = 36;
+const MIN_BTN = 22;
 const WATERMARK_OPACITY = 0.08;
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Istanbul' });
@@ -200,48 +201,30 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
 
   return (
     <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', height: 'min(72dvh, 680px)' }}>
-      {/* Başlık: temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
-      {chat.status === 'ACTIVE' ? (
-        // Temsilci bağlanınca (temsilci ekranı başlığıyla aynı mantık): solda maskot tam sürüm (60 px = temsilci ekranı avatarı 48 px + %25),
-        // sağında başlık + Temsilci No ve durum etiketi, en sağda küçült ve Sonlandır; tek satır, dikeyde en az yer
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* Başlık (kuyrukta ve bağlıyken; temsilci ekranı başlığının oranlarında küçük): bağlıyken solda maskot tam sürüm, sağında
+          1. satır "Müşteri Temsilcisi", 2. satır Temsilci No + durum etiketi ve en sağda SONLANDIR; küçült butonu kartın sağ üst köşesinde.
+          Hiçbir yazı kesilmez; dar ekranda 2. satır kendi içinde alt satıra geçer. Temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
+      <div style={{ position: 'relative', padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        {chat.status === 'ACTIVE' && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={MASCOT_FULL} alt="" aria-hidden height={MASCOT_HEADER} style={{ height: MASCOT_HEADER, width: 'auto', flexShrink: 0 }} />
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <p style={{ fontSize: 15, fontWeight: 700, color: TEXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('sup.header')}</p>
-            {!!chat.agentNo && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', minWidth: 0 }}>
-                <span style={{ fontSize: 12, fontWeight: 400, color: MUTED, overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('sup.agentNo', { no: chat.agentNo })}</span>
-                <StatusPill status={status} label={status === 'typing' ? t('sup.typing') : status === 'online' ? t('sup.online') : t('sup.offlineStatus')} />
-              </div>
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-            <button type="button" aria-label={t('sup.minimize')} title={t('sup.minimize')} onClick={onMinimize} style={ICON_BTN}>
-              <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth={2} strokeLinecap="round"><path d="M5 12h14" /></svg>
-            </button>
-            <StdButton variant="ghost" onClick={() => setEndAsk(true)}>{t('sup.endShort')}</StdButton>
+        )}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: TEXT, lineHeight: '18px', paddingRight: MIN_BTN + 4 }}>{t('sup.agentTitle')}</p>
+          <div style={{ display: 'flex', alignItems: 'center', columnGap: 6, rowGap: 4, flexWrap: 'wrap' }}>
+            {chat.status === 'ACTIVE' && !!chat.agentNo && (<>
+              <span style={{ fontSize: 10, fontWeight: 400, color: MUTED, whiteSpace: 'nowrap' }}>{t('sup.agentNo', { no: chat.agentNo })}</span>
+              <StatusPill small status={status} label={status === 'typing' ? t('sup.typing') : status === 'online' ? t('sup.online') : t('sup.offlineStatus')} />
+            </>)}
+            <button type="button" className="btn-ghost" onClick={() => setEndAsk(true)} style={{ marginLeft: 'auto', padding: '4px 10px', fontSize: 9, lineHeight: 1.5, gap: 6, whiteSpace: 'nowrap' }}>{t('sup.endShort')}</button>
           </div>
         </div>
-      ) : (
-      /* Kuyrukta: başlık metni kırılmaz; sığmazsa küçült ve Sohbeti Sonlandır başlığın altında tek satıra iner */
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: 10, rowGap: 6 }}>
-        <div style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <p style={{ fontSize: 15, fontWeight: 700, color: TEXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('sup.header')}</p>
-          {!!chat.agentNo && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
-              <span style={{ fontSize: 13, color: MUTED }}>{t('sup.agentNo', { no: chat.agentNo })}</span>
-            </div>
-          )}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginLeft: 'auto' }}>
-          <button type="button" aria-label={t('sup.minimize')} title={t('sup.minimize')} onClick={onMinimize} style={ICON_BTN}>
-            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth={2} strokeLinecap="round"><path d="M5 12h14" /></svg>
-          </button>
-          <StdButton variant="ghost" onClick={end}>{t('sup.end')}</StdButton>
-        </div>
+        {/* Küçült: kartın sağ üst köşesinde çerçeveli küçük yuvarlak buton (yatay çizgi) */}
+        <button type="button" aria-label={t('sup.minimize')} title={t('sup.minimize')} onClick={onMinimize}
+          style={{ position: 'absolute', top: 6, right: 8, width: MIN_BTN, height: MIN_BTN, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth={2.4} strokeLinecap="round" aria-hidden><path d="M5 12h14" /></svg>
+        </button>
       </div>
-      )}
       {/* Sonlandır onayı (site paleti): Evet → mevcut sonlandırma akışı (değerlendirme dahil), Hayır / dışarı basma / Esc → işlem yok */}
       {endAsk && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.7)' }} role="dialog" aria-modal="true" aria-labelledby="sup-end-title"
@@ -338,10 +321,11 @@ function Bubble({ m, chatId, client, onImage }: { m: Msg; chatId: string; client
       <div style={{ alignSelf: 'center', maxWidth: '90%', padding: '8px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.5, textAlign: 'center' }}>
           {m.content === 'NOTICE' ? (
-            <>{t('sup.sysNoticePre')}<Link href="/kvkk" style={{ color: TEXT, textDecoration: 'underline' }}>{t('sup.sysNoticeLink')}</Link>{t('sup.sysNoticePost')}</>
+            <>{t('sup.sysNoticePre')}<Link href="/kvkk" target="_blank" rel="noopener noreferrer" style={{ color: TEXT, textDecoration: 'underline' }}>{t('sup.sysNoticeLink')}</Link>{t('sup.sysNoticePost')}</>
           ) : m.content === 'TRANSFERRED' ? t('sup.sysTransferred') : m.content === 'IDLE_WARNING' ? t('sup.sysIdle') : m.content}
         </p>
-        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'center', marginTop: 2 }}>{time(m.createdAt)}</p>
+        {/* Kayıt bildirimi (NOTICE) saatsiz */}
+        {m.content !== 'NOTICE' && <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'center', marginTop: 2 }}>{time(m.createdAt)}</p>}
       </div>
     );
   }

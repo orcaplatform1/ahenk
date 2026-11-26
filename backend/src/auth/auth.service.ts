@@ -28,6 +28,7 @@ import { LoginGuardService } from "./login-guard.service";
 import { RedisService } from "../redis/redis.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
+import { endBreakOnLogout } from "../support/support-break";
 import { ConsentType, UserRole, SubscriptionStatus, ReferralStatus, SanctionType, Gender, Prisma } from "../generated/prisma/client";
 import { RequestLike, clientPlatform, recordAgreements, writeLoginLog } from "../common/agreement-consent";
 import { Logger } from "@nestjs/common";
@@ -356,6 +357,8 @@ export class AuthService {
     });
     // Eldeki erişim token'ları hemen geçersiz olur (süresini beklemez)
     await this.prisma.user.updateMany({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } });
+    // Canlı destek: moladaki temsilci çıkışta çevrimdışı olur, açık mola kaydı kapanır
+    await endBreakOnLogout(this.prisma, userId);
   }
 
   // Çerezdeki refresh token'ı iptal eder; imza geçersizse sessizce geçer (çerezler yine silinir)
@@ -410,6 +413,7 @@ export class AuthService {
   async logoutAll(userId: string) {
     await this.revokeAllSessions(userId);
     await this.prisma.user.update({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } });
+    await endBreakOnLogout(this.prisma, userId);
   }
 
   private revokeAllSessions(userId: string) {

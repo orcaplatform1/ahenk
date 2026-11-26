@@ -74,7 +74,7 @@ export class SupportAgentController {
   @Post("chats/:id/notes") note(@Req() req: Request, @Param("id") id: string, @Body() dto: NoteDto) { return this.support.addNote(this.staff(req), id, dto.content); }
   @Post("chats/:id/transfer") transfer(@Req() req: Request, @Param("id") id: string, @Body() dto: TransferDto) { return this.support.transfer(this.staff(req), id, dto.toAgentId, dto.note); }
   @Post("chats/:id/take") take(@Req() req: Request, @Param("id") id: string) { return this.support.takeOver(this.staff(req), id); }
-  @Post("chats/:id/close") close(@Req() req: Request, @Param("id") id: string, @Body() dto: CloseDto) { return this.support.agentClose(this.staff(req), id, dto.abuseDays); }
+  @Post("chats/:id/close") close(@Req() req: Request, @Param("id") id: string, @Body() dto: CloseDto) { return this.support.agentClose(this.staff(req), id, dto.abuseDays, dto.abuseReason); }
   @Post("chats/:id/ai") askAi(@Req() req: Request, @Param("id") id: string, @Body() dto: AiDto) { return this.ai.ask(this.staff(req), id, dto); }
   @Get("chats/:id/images/:file") async image(@Req() req: Request, @Param("id") id: string, @Param("file") file: string, @Res() res: Response) {
     sendImage(res, await this.support.agentImage(this.staff(req), id, file));
@@ -95,7 +95,9 @@ export class SupportManageController {
   @Delete("canned/:id") cannedDelete(@Param("id") id: string) { return this.support.cannedDelete(id); }
   @Get("reports") reports(@Query("days") days?: string) { return this.support.reports(Number(days) || 0); }
 
-  @Get("agents") @Roles(UserRole.SUPERADMIN) agents() { return this.support.agentAccounts(); }
+  // Temsilci listesi (durum, moladaysa geçen süre) ve mola geçmişi: ADMIN + SUPERADMIN; hesap açma / kapama yalnız SUPERADMIN
+  @Get("agents") agents() { return this.support.agentAccounts(); }
+  @Get("agents/:userId/breaks") agentBreaks(@Param("userId") userId: string) { return this.support.agentBreaks(userId); }
   @Post("agents") @Roles(UserRole.SUPERADMIN) createAgent(@Req() req: Request, @Body() dto: CreateAgentDto) { return this.support.createAgentAccount(this.actor(req), dto); }
   @Patch("agents/:userId") @Roles(UserRole.SUPERADMIN) agentActive(@Req() req: Request, @Param("userId") userId: string, @Body() dto: AgentActiveDto) {
     return this.support.setAgentAccountActive(this.actor(req), userId, dto.active);

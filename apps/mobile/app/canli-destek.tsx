@@ -3,10 +3,10 @@
 // HIG: güvenli alan, en az 44 pt dokunma alanı, klavye açıkken mesaj alanı klavyenin üstünde (KeyboardAvoidingView).
 // Küçült butonu sohbeti baloncuğa alır (components/SupportBubble.tsx). Kuyruktayken "Beklerken oyna" Breakout açar; temsilci bağlanınca
 // (hafif titreşim) ya da küçültülünce oyun tamamen kapanır, dönüşte yeniden başlamaz.
-// Maskot: kuyrukta sıra satırının üstünde tam sürüm (72 pt yükseklik), temsilci bağlanınca başlığın solunda tam sürüm (50 pt yükseklik),
+// Maskot: kuyrukta sıra satırının üstünde tam sürüm (72 pt yükseklik), temsilci bağlanınca başlığın solunda tam sürüm (36 pt yükseklik),
 // sohbet alanında sabit filigran (tam sürüm, alan genişliğinin %60'ı, ortada, opaklık %8 koyu tema, pointerEvents none; oyun açıkken gizli).
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
+import { BackHandler, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ import { api } from '@/lib/api';
 import { API_PREFIX } from '@/lib/config';
 import { getAccess } from '@/lib/session';
 import { openLegal } from '@/lib/links';
+import { upper } from '@/lib/i18n';
 import { pickFromLibrary, type PickedImage } from '@/lib/imagePick';
 import { supportRemaining } from '@/lib/supportTime';
 import { emitSupportChange } from '@/lib/supportBus';
@@ -23,7 +24,7 @@ import { Breakout } from '@/components/Breakout';
 import { ChatComposer, StatusPill, SUPPORT_EMOJIS } from '@/components/SupportChatParts';
 import { Card, Serif, StdButton, T } from '@/components/ui';
 import { showAlert } from '@/components/AppAlert';
-import { btn, c, inputGlass, ll, sans, tw } from '@/theme/theme';
+import { btn, btnGhost, c, inputGlass, ll, sans, tw } from '@/theme/theme';
 
 type Sender = 'USER' | 'AGENT' | 'SYSTEM';
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string; pending?: boolean }
@@ -45,8 +46,21 @@ const MAX_BYTES = 5 * 1024 * 1024;
 // Canlı destek maskotu (assets); tam sürüm en-boy oranı 1009 / 1024; filigran opaklığı: uygulama yalnız koyu temada (%8)
 const MASCOT_FULL = require('@/assets/destek-tam.webp');
 const MASCOT_RATIO = 1009 / 1024;
-// Bağlı sohbet başlığındaki maskot yüksekliği: temsilci ekranı başlık avatarı (40 pt) + %25
-const MASCOT_HEADER = 50;
+// Sohbet başlığı (temsilci ekranı başlığının oranlarında küçük): maskot yüksekliği ve küçült butonunun görünen çapı
+const MASCOT_HEADER = 36;
+const MIN_BTN = 22;
+
+// Başlıktaki küçük SONLANDIR: StdButton ghost stili (hap, ince çerçeve, nokta, %14 harf aralığı, büyük harf) küçük boy ve iç boşlukla;
+// görünen boy küçük, dokunma alanı hitSlop ile en az 44 pt
+function EndButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}
+      style={({ pressed }) => ({ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: btnGhost.radius, borderWidth: 1, borderColor: btnGhost.border, paddingVertical: 4, paddingHorizontal: 10, backgroundColor: pressed ? 'rgba(255,255,255,0.05)' : 'transparent' })}>
+      <View style={{ width: btnGhost.dot, height: btnGhost.dot, borderRadius: btnGhost.dot / 2, backgroundColor: btnGhost.dotColor }} />
+      <Text numberOfLines={1} style={{ fontSize: 9, lineHeight: 13.5, letterSpacing: 9 * btnGhost.letterSpacing, color: btnGhost.color, fontFamily: sans(500) }}>{upper(label)}</Text>
+    </Pressable>
+  );
+}
 const WATERMARK_OPACITY = 0.08;
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Istanbul' });
 
@@ -196,46 +210,29 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
 
   return (
     <View style={{ flex: 1, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.025)', overflow: 'hidden' }}>
-      {/* Başlık: temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
-      {chat.status === 'ACTIVE' ? (
-        // Temsilci bağlanınca (temsilci ekranı başlığıyla aynı mantık): solda maskot tam sürüm (50 pt = temsilci ekranı avatarı 40 pt + %25),
-        // sağında başlık + Temsilci No ve durum etiketi, en sağda küçült ve Sonlandır; tek satır, dikeyde en az yer
-        <View style={{ paddingVertical: 6, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Image source={MASCOT_FULL} accessible={false} style={{ height: MASCOT_HEADER, width: MASCOT_HEADER * MASCOT_RATIO }} />
-          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-            <T w={700} numberOfLines={1} style={{ fontSize: 15, color: ll.text }}>{t('sup.header')}</T>
-            {!!chat.agentNo && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <T numberOfLines={1} style={{ fontSize: 12, color: ll.label, flexShrink: 1 }}>{t('sup.agentNo', { no: chat.agentNo })}</T>
-                <StatusPill status={status} label={status === 'typing' ? t('sup.typing') : status === 'online' ? t('sup.online') : t('sup.offlineStatus')} />
-              </View>
-            )}
-          </View>
-          <Pressable onPress={onMinimize} accessibilityRole="button" accessibilityLabel={t('sup.minimize')} style={ICON}>
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={2} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
-          </Pressable>
-          {/* Sonlandır onayı (site paleti, AppAlert): Evet → mevcut sonlandırma akışı (değerlendirme dahil), Hayır / geri tuşu / dışarı basma → işlem yok */}
-          <StdButton variant="ghost" label={t('sup.endShort')} onPress={() => showAlert(t('sup.endConfirm'), undefined, [{ text: t('sup.no'), style: 'cancel' }, { text: t('sup.yes'), onPress: () => { void end(); } }])} />
-        </View>
-      ) : (
-        /* Kuyrukta: başlık metni kırılmaz; küçült ve Sohbeti Sonlandır başlığın altında tek satırda */
-        <View style={{ paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', gap: 6 }}>
-          <View style={{ gap: 4 }}>
-            <T w={700} numberOfLines={1} style={{ fontSize: 15, color: ll.text }}>{t('sup.header')}</T>
-            {!!chat.agentNo && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <T numberOfLines={1} style={{ fontSize: 13, color: ll.label }}>{t('sup.agentNo', { no: chat.agentNo })}</T>
-              </View>
-            )}
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
-            <Pressable onPress={onMinimize} accessibilityRole="button" accessibilityLabel={t('sup.minimize')} style={ICON}>
-              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={2} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
-            </Pressable>
-            <StdButton variant="ghost" label={t('sup.end')} onPress={end} />
+      {/* Başlık (kuyrukta ve bağlıyken; temsilci ekranı başlığının oranlarında küçük, 320 pt genişlikte tek parça): bağlıyken solda maskot
+          tam sürüm, sağında 1. satır "Müşteri Temsilcisi", 2. satır Temsilci No + durum etiketi ve en sağda SONLANDIR; küçült butonu kartın
+          sağ üst köşesinde (görünen 22 pt, dokunma alanı 44 pt). Hiçbir yazı kesilmez; dar ekranda 2. satır kendi içinde alt satıra geçer.
+          Temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
+      <View style={{ paddingVertical: 6, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        {chat.status === 'ACTIVE' && <Image source={MASCOT_FULL} accessible={false} style={{ height: MASCOT_HEADER, width: MASCOT_HEADER * MASCOT_RATIO }} />}
+        <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+          <T w={700} style={{ fontSize: 13, lineHeight: 18, color: ll.text, paddingRight: MIN_BTN + 4 }}>{t('sup.agentTitle')}</T>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 6, rowGap: 4 }}>
+            {chat.status === 'ACTIVE' && !!chat.agentNo && (<>
+              <T style={{ fontSize: 10, lineHeight: 14, color: ll.label }}>{t('sup.agentNo', { no: chat.agentNo })}</T>
+              <StatusPill small status={status} label={status === 'typing' ? t('sup.typing') : status === 'online' ? t('sup.online') : t('sup.offlineStatus')} />
+            </>)}
+            {/* Sonlandır onayı (site paleti, AppAlert): Evet → mevcut sonlandırma / kuyruktan çıkış akışı (değerlendirme dahil), Hayır / geri tuşu / dışarı basma → işlem yok */}
+            <EndButton label={t('sup.endShort')} onPress={() => showAlert(t('sup.endConfirm'), undefined, [{ text: t('sup.no'), style: 'cancel' }, { text: t('sup.yes'), onPress: () => { void end(); } }])} />
           </View>
         </View>
-      )}
+        {/* Küçült: kartın sağ üst köşesinde çerçeveli küçük yuvarlak buton (yatay çizgi) */}
+        <Pressable onPress={onMinimize} accessibilityRole="button" accessibilityLabel={t('sup.minimize')} hitSlop={(44 - MIN_BTN) / 2}
+          style={({ pressed }) => ({ position: 'absolute', top: 6, right: 8, width: MIN_BTN, height: MIN_BTN, borderRadius: MIN_BTN / 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)', backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
+          <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={2.4} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
+        </Pressable>
+      </View>
       {chat.status === 'QUEUED' && !!chat.queue && (
         <View style={{ paddingVertical: game ? 6 : 10, paddingHorizontal: 14, backgroundColor: 'rgba(245,158,11,0.06)', borderBottomWidth: 1, borderBottomColor: 'rgba(245,158,11,0.2)', gap: 4 }}>
           {/* Oyun açıkken sıra ve tahmin satırı üstte küçük */}
@@ -310,7 +307,6 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
   );
 }
 
-const ICON = { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' } as const;
 
 function Bubble({ m, img, onImage }: { m: Msg; img: (f: string) => { uri: string; headers?: Record<string, string> }; onImage: (u: string) => void }) {
   const { t } = useTranslation();
@@ -326,7 +322,8 @@ function Bubble({ m, img, onImage }: { m: Msg; img: (f: string) => { uri: string
         ) : (
           <T style={{ fontSize: 12, color: ll.label, lineHeight: 18, textAlign: 'center' }}>{m.content === 'TRANSFERRED' ? t('sup.sysTransferred') : m.content === 'IDLE_WARNING' ? t('sup.sysIdle') : m.content}</T>
         )}
-        <T style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'center', marginTop: 2 }}>{time(m.createdAt)}</T>
+        {/* Kayıt bildirimi (NOTICE) saatsiz */}
+        {m.content !== 'NOTICE' && <T style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'center', marginTop: 2 }}>{time(m.createdAt)}</T>}
       </View>
     );
   }

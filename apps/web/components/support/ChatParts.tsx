@@ -41,7 +41,8 @@ const PILL = {
   offline: { color: '#a39c93', bg: 'rgba(163,156,147,0.12)', border: 'rgba(163,156,147,0.4)' },
   typing: { color: '#f4f1ec', bg: 'rgba(192,57,43,0.22)', border: 'rgba(192,57,43,0.6)' },
 } as const;
-export function StatusPill({ status, label }: { status: keyof typeof PILL; label: string }) {
+// small: üye / mekân sohbet başlığı (küçük boy ve iç boşluk)
+export function StatusPill({ status, label, small = false }: { status: keyof typeof PILL; label: string; small?: boolean }) {
   const p = PILL[status];
-  return <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, lineHeight: '16px', whiteSpace: 'nowrap', color: p.color, background: p.bg, border: `1px solid ${p.border}` }}>{label}</span>;
+  return <span style={{ display: 'inline-flex', alignItems: 'center', padding: small ? '1px 6px' : '2px 8px', borderRadius: 9999, fontSize: small ? 9 : 11, fontWeight: 600, lineHeight: small ? '13px' : '16px', whiteSpace: 'nowrap', color: p.color, background: p.bg, border: `1px solid ${p.border}` }}>{label}</span>;
 }

@@ -17,11 +17,12 @@ const PILL = {
   typing: { color: '#f4f1ec', bg: 'rgba(192,57,43,0.22)', border: 'rgba(192,57,43,0.6)' },
 } as const;
 export type PillStatus = keyof typeof PILL;
-export function StatusPill({ status, label }: { status: PillStatus; label: string }) {
+// small: üye / mekân sohbet başlığı (küçük boy ve iç boşluk)
+export function StatusPill({ status, label, small = false }: { status: PillStatus; label: string; small?: boolean }) {
   const p = PILL[status];
   return (
-    <View style={{ alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, borderWidth: 1, borderColor: p.border, backgroundColor: p.bg }}>
-      <Text numberOfLines={1} style={{ fontSize: 11, lineHeight: 16, color: p.color, fontFamily: sans(600) }}>{label}</Text>
+    <View style={{ alignSelf: small ? 'center' : 'flex-start', paddingHorizontal: small ? 6 : 8, paddingVertical: small ? 1 : 2, borderRadius: 9999, borderWidth: 1, borderColor: p.border, backgroundColor: p.bg }}>
+      <Text numberOfLines={1} style={{ fontSize: small ? 9 : 11, lineHeight: small ? 13 : 16, color: p.color, fontFamily: sans(600) }}>{label}</Text>
     </View>
   );
 }

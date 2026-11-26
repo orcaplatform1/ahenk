@@ -160,13 +160,16 @@ export class RetentionService {
       }
       case "SUPPORT_CHATS": {
         // Destek sohbeti (mesaj, görsel, not, devir, değerlendirme onunla silinir) ve Haiku sorgu kaydı ("ai:" önekli): kayıt tarihinden 2 yıl
-        const [chats, logs] = await Promise.all([
+        // Temsilci mola kaydı ("br:" önekli): mola başlangıcından 2 yıl
+        const [chats, logs, breaks] = await Promise.all([
           p.supportChat.findMany({ select: { id: true, userId: true, createdAt: true } }),
           p.supportAiLog.findMany({ select: { id: true, createdAt: true } }),
+          p.supportBreak.findMany({ select: { id: true, agentId: true, startedAt: true } }),
         ]);
         return [
           ...chats.map((r) => ({ id: r.id, userId: r.userId, start: r.createdAt, expiresAt: addYears(r.createdAt, 2) })),
           ...logs.map((r) => ({ id: `ai:${r.id}`, userId: null, start: r.createdAt, expiresAt: addYears(r.createdAt, 2) })),
+          ...breaks.map((r) => ({ id: `br:${r.id}`, userId: r.agentId, start: r.startedAt, expiresAt: addYears(r.startedAt, 2) })),
         ];
       }
       case "PROFILE_DATA": {
@@ -278,7 +281,8 @@ export class RetentionService {
         return;
       case "SUPPORT_CHATS": {
         await p.supportAiLog.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("ai:")).map((i) => i.slice(3)) } } });
-        const chatIds = ids.filter((i) => !i.startsWith("ai:"));
+        await p.supportBreak.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("br:")).map((i) => i.slice(3)) } } });
+        const chatIds = ids.filter((i) => !i.startsWith("ai:") && !i.startsWith("br:"));
         await p.supportChat.deleteMany({ where: { id: { in: chatIds } } });
         for (const id of chatIds) {
           try { fs.rmSync(path.join(SUPPORT_DIR, id), { recursive: true, force: true }); } catch (e) { this.logger.error(`Destek sohbeti klasörü silinemedi (${id}): ${e}`); }

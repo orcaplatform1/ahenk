@@ -1597,10 +1597,22 @@ model SupportRestriction {
   days           Int
   expiresAt      DateTime
   createdById    String
+  reason         String?   @db.Text // kısıtlama sebebi (zorunlu, boşluklar hariç en az 5 karakter); eski kayıtlarda boş
   liftedAt       DateTime?
   liftedById     String?
   createdAt      DateTime  @default(now())
 
   @@index([userId])
   @@index([venueAccountId])
+}
+
+// Temsilci molası: her mola başlangıç ve bitiş saatiyle (açık mola endedAt boş); saklama canlı destek kayıtlarıyla aynı (2 yıl)
+model SupportBreak {
+  id        String    @id @default(cuid())
+  agentId   String // temsilcinin User.id'si
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  @@index([agentId, startedAt])
+  @@index([startedAt])
 }

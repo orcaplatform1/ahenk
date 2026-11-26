@@ -2153,7 +2153,7 @@
     "imgLimit": "Bir mesajda en fazla 3 görsel gönderebilirsin.",
     "imgType": "Yalnız JPG, PNG ve WebP görseller gönderebilirsin.",
     "imgSize": "Her görsel en fazla 5 MB olabilir.",
-    "end": "Sohbeti Sonlandır",
+    "agentTitle": "Müşteri Temsilcisi",
     "endShort": "Sonlandır",
     "endConfirm": "Görüşmeyi sonlandırmak istediğinden emin misin?",
     "error": "Bir hata oluştu, tekrar dene.",

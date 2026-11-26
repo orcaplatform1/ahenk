@@ -666,31 +666,40 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     "{n} people ahead of you · ~{m} min" (tahmin = önündeki kişi × son 7 günün ortalama sohbet süresi ÷ çevrimiçi temsilci sayısı, tam
     dakikaya yukarı, en az 1 dk; çevrimiçi temsilci yoksa ya da son 7 günde veri yoksa yalnız "Önünde {n} kişi var"); çevrimiçi temsilci
     yoksa ayrıca "Şu an tüm temsilcilerimiz meşgul ya da çevrimdışı…" (mesaj bırakılır, sıraya girer). Altında "Beklerken oyna" /
-    "Play while you wait". Başlık kelime kelime kırılmaz. Temsilci bağlanınca (ACTIVE) başlık temsilci ekranı başlığıyla aynı mantıkta tek
-    satır, dikeyde en az yer: solda maskot tam sürüm (destek-tam.webp; yükseklik web 60 px / mobil 50 pt = temsilci ekranı başlık avatarı
-    48 px / 40 pt + %25), sağında 1. satır "Ahenk Müşteri Temsilcisi" / "Ahenk Support Agent" (sup.header, kalın 15), 2. satır küçük ve
-    ince "Temsilci No: {agentNo}" / "Agent No: {agentNo}" (sup.agentNo, 12, normal ağırlık, soluk renk) ve hemen yanında karşı tarafın
-    durum etiketi; en sağda küçült (—) ve onun sağında "SONLANDIR" / "END" (sup.endShort, mevcut ghost buton stili). "SONLANDIR"a basınca
-    site paletinde (admin paleti değil) onay penceresi: "Görüşmeyi sonlandırmak istediğinden emin misin?" / "Are you sure you want to end
-    the chat?" (sup.endConfirm), butonlar "Hayır" / "No" (ghost) ve "Evet" / "Yes" (primary) (sup.no / sup.yes; web SupportChatScreen
-    satır içi pencere, mobil AppAlert showAlert); Evet mevcut sonlandırma akışı (değerlendirme dahil), Hayır / dışarı basma / Esc / geri
-    tuşu hiçbir işlem yapmaz. Kuyruktayken (QUEUED) başlık eskisi gibi: 1. satır sup.header, 2. satır sup.agentNo; küçült ve "Sohbeti
-    Sonlandır" (sup.end, onaysız) başlığı daraltmaz, dar ekranda (mobilde her zaman) başlığın altında tek satırda. Durum etiketi (yuvarlak köşeli küçük rozet,
+    "Play while you wait". Sohbet başlığı (kuyrukta ve bağlıyken, web + mobil) temsilci ekranı başlığının
+    oranlarında küçük, en dar mobil ekranda (320 pt) dahil tek parça; hiçbir yazı "…" ile kesilmez, hiçbir öğe taşmaz (dar ekranda 2. satır
+    kendi içinde alt satıra geçer): bağlıyken (ACTIVE) solda maskot tam sürüm (destek-tam.webp, yükseklik 36 px / pt; baloncuk sürümü
+    başlıkta yok), sağında 1. satır "Müşteri Temsilcisi" / "Support Agent" (sup.agentTitle, kalın 13, satırın tamamı görünür; sup.header
+    "Ahenk Müşteri Temsilcisi" yalnız konu seçim ekranı başlığında), 2. satır "Temsilci No: {agentNo}" / "Agent No: {agentNo}" (sup.agentNo,
+    10, ağırlık 400, soluk renk; iki platformda kesin görünür) ve hemen yanında küçük durum etiketi (StatusPill small: yazı 9, iç boşluk
+    1 / 6), satırın en sağında küçük "SONLANDIR" / "END" (sup.endShort; ghost stili aynen: hap, ince çerçeve, nokta, %14 harf aralığı;
+    yazı 9, iç boşluk 4 / 10; mobil EndButton, web btn-ghost). Kuyrukta (QUEUED) maskot ve 2. satırdaki Temsilci No / durum yok, aynı
+    başlık ve SONLANDIR. Küçült butonu kartın sağ üst köşesinde çerçeveli küçük yuvarlak buton (görünen 22, içinde yatay çizgi —, aşağı ok
+    yok; mobil dokunma alanı hitSlop ile 44 pt). Başlık ile mesaj alanı arasındaki yatay ayırıcı aynen. "SONLANDIR"a basınca (kuyrukta ve
+    bağlıyken) site paletinde (admin paleti değil) onay penceresi: "Görüşmeyi sonlandırmak istediğinden emin misin?" / "Are you sure you
+    want to end the chat?" (sup.endConfirm), butonlar "Hayır" / "No" (ghost) ve "Evet" / "Yes" (primary) (sup.no / sup.yes; web
+    SupportChatScreen satır içi pencere, mobil AppAlert showAlert); Evet mevcut sonlandırma / kuyruktan çıkış akışı (değerlendirme dahil),
+    Hayır / dışarı basma / Esc / geri tuşu hiçbir işlem yapmaz. sup.end anahtarı yoktur. Mobilde yeni yazı tipi ağırlığı yüklenmez. Durum etiketi (yuvarlak köşeli küçük rozet,
     kullanıcı, mekân ve temsilci ekranı; web components/support/ChatParts.tsx StatusPill, mobil components/SupportChatParts.tsx):
     "Çevrimiçi" yeşil, "Çevrimdışı" gri, "yazıyor…" Ahenk kırmızısı (EN Online / Offline / typing…; çevrimiçi = son 20 sn'de yoklama,
     bellekte); temsilci tarafında da kullanıcının durumu. Mesaj kutusu (kullanıcı, mekân ve temsilci ekranı aynı; web ChatParts, mobil
     SupportChatParts ChatComposer): dosya ikonu, emoji ikonu, yazı alanı ve en sağda gönder ikonu ("Gönder" yazısı yok) kutunun içinde;
     en az 48 px, yazdıkça en fazla 5 satır büyür; yazı alanında yer tutucu metin yoktur (üye, mekân ve temsilci ekranı; boş görünür);
     temsilci ekranında "/" hazır yanıt aynen. "Okundu" / "Read" yalnız
-    gönderenin kendi mesajlarından karşı tarafın okuduğu sonuncusunun hemen altında. Temsilci ekranı başlığında (web) Devral / Sonlandır /
-    Kötüye kullanım sağda alt alta, bilgi alanı solda geniş; mobil temsilci ekranında "⋯" panelinin içinde aynı sırayla alt alta (Devral,
-    Sonlandır, Kötüye kullanım · 1 / 7 / 30 gün; tam genişlik). Temsilci / ADMIN / SUPERADMIN ekranında "Sonlandır" ve kötüye kullanım
-    gün seçimi (web: "Kötüye kullanım" butonu + 1 / 7 / 30 gün; mobil üç ayrı buton; düzen aynen) doğrudan işlem yapmaz: admin paletinde
-    ortak onay penceresi (web components/AdminConfirm.tsx, mobil components/admin/AConfirm.tsx; yönetim paneli yalnız Türkçe) açılır:
-    "Görüşmeyi sonlandırmak istediğinden emin misin?" ya da "{gün} gün kısıtlama vermek istediğinden emin misin?", butonlar "Hayır" ve
-    "Evet". Evet mevcut işlemi (sonlandırma; kısıt + sohbet kapanışı) aynen yapar, Hayır / dışarı basma / Esc / geri tuşu hiçbir işlem yapmaz. Temsilcinin adı / cinsiyeti / fotoğrafı hiçbir yerde
+    gönderenin kendi mesajlarından karşı tarafın okuduğu sonuncusunun hemen altında. Temsilci ekranı başlığında (web) Devral / Sonlandır
+    sağda alt alta, bilgi alanı solda geniş; mobil temsilci ekranında "⋯" panelinin içinde aynı sırayla alt alta (Devral, Sonlandır; tam
+    genişlik). Kötüye kullanım alanı (web: başlığın altında açılır "Kötüye kullanım" bölümü; mobil: "⋯" panelinde, Sonlandır'ın altında;
+    düzen iki platformda aynı): 1. satır "Sohbeti kapat ve canlı destek erişimini kısıtla:", 2. satır "1 gün" / "7 gün" / "30 gün" (tek seçim),
+    altında çok satırlı sebep alanı (yer tutucu yok), altında "Kısıtla". "Kısıtla" yalnız gün seçili ve sebep boşluklar hariç en az 5
+    karakterse aktif (aksi hâlde pasif görünür, uyarı / yardım metni yok). Temsilci / ADMIN / SUPERADMIN ekranında "Sonlandır" ve "Kısıtla"
+    doğrudan işlem yapmaz: admin paletinde ortak onay penceresi (web components/AdminConfirm.tsx, mobil components/admin/AConfirm.tsx;
+    yönetim paneli yalnız Türkçe) açılır: "Görüşmeyi sonlandırmak istediğinden emin misin?" ya da "{gün} gün kısıtlama vermek istediğinden
+    emin misin?", butonlar "Hayır" ve "Evet". Evet mevcut işlemi (sonlandırma; sebepli kısıt + sohbet kapanışı) yapar, Hayır / dışarı basma /
+    Esc / geri tuşu hiçbir işlem yapmaz (girilen sebep ve gün seçimi kaybolmaz). Temsilcinin adı / cinsiyeti / fotoğrafı hiçbir yerde
     gösterilmez. Temsilci bağlandığı an mobilde hafif titreşim (expo-haptics). İlk atamada 2 otomatik mesaj (sistem kodları NOTICE: kayıt + Aydınlatma Metni linki
-    /kvkk, GREETING: karşılama); istemci kodu arayüz dilinde gösterir. GREETING metni (sup.sysGreeting) TR "Merhaba, ben Ahenk müşteri
+    /kvkk, GREETING: karşılama); NOTICE mesajında saat gösterilmez (üye, mekân ve admin ekranları; metin aynen); "Aydınlatma Metni" web'de
+    yeni sekmede (target="_blank", rel="noopener noreferrer"), mobilde uygulama içi tarayıcıda (lib/links.ts openLegal, expo-web-browser)
+    açılır, sohbet ekranı kapanmaz, pencere kapanınca aynı sohbete dönülür; istemci kodu arayüz dilinde gösterir. GREETING metni (sup.sysGreeting) TR "Merhaba, ben Ahenk müşteri
     temsilcisiyim. Bugün size yardımcı olmaktan mutluluk duyacağım.", EN "Hello, I'm an Ahenk customer representative. I'll be happy to
     help you today."; TR metin harfiyen böyledir: sen dili (hitap) kuralının bilinçli istisnasıdır, değiştirilmez. Yazıyor göstergesi, okundu, saat, emoji, görsel (yalnız JPG / PNG /
     WebP, dosya başına 5 MB, mesaj başına 3; EXIF silinerek WebP'ye çevrilir, bulanıklaştırma yok; uploads/support/<chatId>/, git'e eklenmez).
@@ -705,7 +714,7 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     "Sorunun çözüldü mü?" / "Was your issue resolved?" Evet / Hayır + 5 yıldız (zorunlu); 4–5 yıldız "Neyi beğendin?", 2–3 "Ne daha iyi olabilirdi?",
     1 "Ne kötü gitti?" etiketleri (hepsi isteğe bağlı, etiket seçmeden gönderilebilir); serbest metin; "Değerlendir" → "Değerlendirmeni aldık! …" + "Kapat"
   - Beklerken oyna (web components/support/Breakout.tsx canvas, mobil components/Breakout.tsx Skia + Reanimated frame callback): yalnız
-    kuyruktayken butonla açılır; tek seviye, 5 sıra tuğla, 3 can, bitince "Tekrar oyna" / "Play again"; oyun ekranında "Oyunu kapat" / "Close game" butonu (oyun tamamen kapanır, sıra ekranına dönülür); ses / efekt yok; top, raket, tuğla
+    kuyruktayken butonla açılır; çevrimiçi temsilci olsa da olmasa da (hepsi çevrimdışı ya da molada olsa da) açılır ve oynanır; tek seviye, 5 sıra tuğla, 3 can, bitince "Tekrar oyna" / "Play again"; oyun ekranında "Oyunu kapat" / "Close game" butonu (oyun tamamen kapanır, sıra ekranına dönülür); ses / efekt yok; top, raket, tuğla
     Ahenk renklerinde; raket parmak / fareyle sürüklenir; sabit adımlı (en fazla 60 kare/sn). Oyun açıkken sıra satırı üstte küçük. Skor
     yalnız ekranda; hiçbir oyun verisi DB'ye, sunucuya, yerel depolamaya ya da loga yazılmaz. Temsilci bağlanınca ya da sohbet küçültülünce
     oyun tamamen kapanır, dönüşte yeniden başlamaz
@@ -729,6 +738,18 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     az açık sohbeti olana, eşitse en uzun süredir boşta olana (idleSince). Eşzamanlı sınır varsayılan 3 (AppConfig SUPPORT_MAX_CHATS, Ayarlar →
     Canlı Destek). Herkes doluysa sırada bekler, sohbet kapanınca sıradaki atanır. Atanan temsilci 2 dk içinde ilk cevabı vermezse başka uygun
     temsilciye; yoksa sıranın başına döner. Durum Çevrimiçi / Mola / Çevrimdışı; mola ve çevrimdışı yeni sohbet almaz, açıklara devam eder.
+    Mola (SUPPORT, ADMIN, SUPERADMIN; web + mobil): temsilci ekranının üst kartında tek buton, çevrimiçiyken "Molaya Çık", moladayken
+    "Moladan Dön" (çevrimdışıyken mola butonu yok; Çevrimiçi / Çevrimdışı seçimi aynen). "Molaya Çık" admin paletinde ortak onay penceresi
+    açar ("Molaya çıkmak istediğinden emin misin?" Evet / Hayır); "Moladan Dön" onaysız, hemen yeni sohbet almaya başlar. Moladaki temsilciye
+    yeni sohbet atanmaz (FIFO atama ve 2 dk yeniden atama yalnız çevrimiçileri seçer); 90 sn sıra uyarısı moladaki ADMIN / SUPERADMIN'e
+    gitmez. Molaya çıkarken açık sohbetler temsilcide kalır, devam edebilir; müşteri tarafındaki durum etiketi değişmez. Moladayken üstte
+    "Moladasın · X dk" şeridi (mola başlangıcından geçen dakika). Her mola SupportBreak tablosunda (agentId, startedAt, endedAt; migration
+    20261126300000_support_restriction_reason_breaks) başlangıç ve bitiş saatiyle; PATCH /admin/live-support/status BREAK'e geçişte kayıt
+    açar, başka duruma geçişte kapatır. Temsilci çıkış yapınca (POST /auth/logout, tüm cihazlardan çıkış; support-break.ts
+    endBreakOnLogout) ya da moladayken 20 sn'den uzun yoklama yoksa (zamanlanmış iş) çevrimdışı olur, açık mola kaydı o anki saatle kapanır;
+    temsilci hesabı kapatılınca da kapanır. Temsilciler sekmesi ADMIN + SUPERADMIN (hesap açma / kapama yalnız SUPERADMIN): her temsilcinin
+    durumu (Çevrimiçi / Molada / Çevrimdışı, moladaysa geçen dakika) ve "Mola Geçmişi" (tarih, başlangıç, bitiş, süre; GET
+    /admin/live-support/manage/agents/:userId/breaks, ADMIN + SUPERADMIN).
     Devret: zorunlu notla başka çevrimiçi temsilciye; devralan geçmişi ve notu görür; kullanıcı yeni Temsilci No'yu görür ve sistem mesajı
     "Görüşmen başka bir temsilcimize aktarıldı, durumu baştan anlatmana gerek yok." düşer. Vardiya (Ayarlar): Gündüz 08:00-20:00, Gece
     20:00-08:00 (SUPPORT_SHIFT_DAY / SUPPORT_SHIFT_NIGHT), yalnız raporlamada; sistem 7/24 açık. Sırada 90 sn'yi geçen sohbet: bütün ADMIN ve
@@ -738,7 +759,11 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     alttan yarım ekran panel. Listede / başlıkta üye için ad soyad, mekân için mekân adı · yetkili ad soyad, konu etiketi, bekleme süresi;
     kullanıcı hakkında Haiku dışında veri yok. Hazır yanıtlar (admin ekler / düzenler / siler; "/" ile liste), yazı önizlemesi, iç not
     (kullanıcıya asla gösterilmez), web sesli uyarı (yeni sohbet / yeni mesaj), mobilde push. Kötüye kullanım: sohbeti kapatıp canlı destek
-    erişimini 1 / 7 / 30 gün kısıtlar (SupportRestriction); kısıtlı kullanıcı butonda kalan süreyi görür; SUPERADMIN kaldırır; İşlem Kayıtları'na yazılır
+    erişimini 1 / 7 / 30 gün kısıtlar (SupportRestriction); kısıtlı kullanıcı butonda kalan süreyi görür; SUPERADMIN kaldırır; İşlem Kayıtları'na yazılır.
+    Sebep zorunlu: POST /admin/live-support/chats/:id/close {abuseDays, abuseReason}; boşluklar hariç 5 karakterden kısa sebep reddedilir
+    ("Kısıtlama sebebi en az 5 karakter olmalı"); SupportRestriction.reason'a yazılır (aynı migration). Sebep SUPERADMIN Tüm Sohbetler detayında
+    ("Kötüye kullanım kısıtlaması" kartı), Kısıtlamalar (kaldırma) ekranında ve İşlem Kayıtları açıklamasında (kısıt ve kaldırma) görünür;
+    kullanıcıya gösterilmez. Sebebi olmayan eski kayıtlarda "Sebep girilmemiş". Yetkiler ve süre mantığı aynen
   - Haiku asistanı (support-ai.service.ts, claude-haiku-5-5, CLAUDE_API_KEY): yalnız okur; veri değiştirmez / silmez, iade / iptal / hak
     tanımlamaz, kullanıcıya mesaj göndermez (mesajı temsilci gönderir: "Kopyala", "Sohbete ekle"). Okuma işlevleri parametre almaz; hesabı
     sunucu sohbet kaydından verir (metinden ID / isim / telefon alınmaz, başka hesap istenirse reddeder). Tahmin yok: tutar, tarih, sayı
@@ -755,8 +780,8 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     devralma). Uçlar GET /admin/live-support/manage/chats, GET /admin/live-support/manage/chats/:id (SUPERADMIN)
   - Raporlar (ADMIN + SUPERADMIN): temsilci başına ilk yanıt süresi, ortalama sohbet süresi, kapatılan sohbet, puan ortalaması, Evet oranı,
     etiket dağılımı; genel konu dağılımı, saatlik ve vardiya yoğunluğu, ortalama bekleme
-  - Saklama: destek sohbetleri, görseller, iç notlar, değerlendirmeler ve Haiku sorgu kayıtları 2 yıl (retention-policy.ts SUPPORT_CHATS, gece
-    otomatik silme işine bağlı). Hesap silinince sohbetin hesapla bağı koparılır (userId boş), ad soyad "Silinmiş kullanıcı", içerik süre
+  - Saklama: destek sohbetleri, görseller, iç notlar, değerlendirmeler, Haiku sorgu kayıtları ve temsilci mola kayıtları (SupportBreak, mola
+    başlangıcından) 2 yıl (retention-policy.ts SUPPORT_CHATS, gece otomatik silme işine bağlı). Hesap silinince sohbetin hesapla bağı koparılır (userId boş), ad soyad "Silinmiş kullanıcı", içerik süre
     dolana kadar kalır. KVKK, Gizlilik (TR + EN) ve hesap silme sayfası (del.ret15) metinleri; Anthropic (ABD) aktarımı KVKK m.9/4, işleme
     sebebi m.5/2-c ve m.5/2-f. Kişisel veri dökümünde (Veri Saklama) destek sohbetleri ve görselleri var
   - SupportChat.status: QUEUED (sırada), ACTIVE (atanmış), CLOSED; OPEN ve TICKET ileride destek bileti için ayrıldı (arayüz yok)
@@ -766,8 +791,8 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     mobil c.red) yalnız dairenin çerçevesinde: web 2 px, mobil 2 pt (maskotun üstünde, boyutu değiştirmez); sıra (kuyrukta) ve okunmamış rozeti sağ üstte maskotun
     üstünde; erişilebilirlik etiketi sup.title ("Canlı Destek" / "Live Support") + sıra / okunmamış bilgisi; davranış aynen
   - Kuyruk: sıra satırının hemen üstünde maskot tam sürüm, yükseklik 72 (pt / px); oyun açıkken gösterilmez
-  - Sohbet başlığı: temsilci bağlanınca (ACTIVE) başlığın solunda maskot tam sürüm (web 60 px / mobil 50 pt yükseklik; yukarıda); başlığın
-    üstünde ortalı baloncuk maskotu yoktur
+  - Sohbet başlığı: temsilci bağlanınca (ACTIVE) başlığın solunda maskot tam sürüm (36 px / pt yükseklik; yukarıda); başlığın üstünde ortalı
+    baloncuk maskotu yoktur
   - Filigran (yalnız üye ve mekân ekranı; temsilci / ADMIN / SUPERADMIN ekranında yok): sohbet alanının ortasında maskot tam sürüm, alan
     genişliğinin %60'ı, oran korunur, sabit (mesajlar üstünden kayar), opaklık %8 (uygulama yalnız koyu tema; açık temada %10 kuralı),
     renkli, dokunma almaz (web pointer-events none, mobil pointerEvents none); kuyrukta ve sohbet boyunca görünür, Breakout açıkken gizli

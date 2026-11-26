@@ -26,7 +26,7 @@ type Sender = 'USER' | 'AGENT' | 'SYSTEM';
 // Kullanıcı avatarı (Masa Kuruldu DetayAvatar): onaylı fotoğraf ya da baş harfler, cinsiyet renkli çerçeve; mekânda cinsiyet / foto yok
 interface Avatar { initials: string; gender: string | null; photoUrl: string | null }
 interface Row { id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar: Avatar | null; queuedAt: string; agentNo: string | null; unread: number }
-interface AgentState { me: { userId: string; role: string; agentNo: string; status: 'ONLINE' | 'BREAK' | 'OFFLINE' }; maxChats: number; queue: Row[]; mine: Row[]; others: Row[]; onlineAgents: { userId: string; agentNo: string }[] }
+interface AgentState { me: { userId: string; role: string; agentNo: string; status: 'ONLINE' | 'BREAK' | 'OFFLINE'; breakStartedAt: string | null }; maxChats: number; queue: Row[]; mine: Row[]; others: Row[]; onlineAgents: { userId: string; agentNo: string }[] }
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string }
 interface ChatDetail {
   id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar?: Avatar | null; queuedAt: string; agentNo: string | null; mine: boolean; takenOver?: boolean;
@@ -42,7 +42,11 @@ const AI_ERROR: Record<string, string> = { NO_KEY: 'anahtar yok', TIMEOUT: 'zama
 const aiResult = (l: { success: boolean; errorType: string | null }) => (l.success ? 'Başarılı' : `Başarısız${l.errorType ? ` · ${AI_ERROR[l.errorType] ?? l.errorType}` : ''}`);
 
 const TOPIC: Record<string, string> = { ACCOUNT: 'Hesap', PAYMENT: 'Ödeme', MEETING: 'Masa', OTHER: 'Diğer' };
-const STATUS: [AgentState['me']['status'], string, string][] = [['ONLINE', 'Çevrimiçi', adm.green], ['BREAK', 'Mola', adm.amber], ['OFFLINE', 'Çevrimdışı', adm.muted]];
+// Çevrimiçi / Çevrimdışı seçimi; mola tek butonla (Molaya Çık / Moladan Dön)
+const STATUS: [AgentState['me']['status'], string, string][] = [['ONLINE', 'Çevrimiçi', adm.green], ['OFFLINE', 'Çevrimdışı', adm.muted]];
+const AGENT_STATUS: Record<string, string> = { ONLINE: 'Çevrimiçi', BREAK: 'Molada', OFFLINE: 'Çevrimdışı' };
+const sinceMin = (iso: string) => Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
+const REASON_MIN = 5; // kötüye kullanım sebebi: boşluklar hariç en az 5 karakter
 const SYS: Record<string, string> = {
   NOTICE: "Hizmet kalitesinin artırılması ve güvenliğin için görüşmelerimiz kayıt altına alınır. Kişisel verilerinle ilgili Aydınlatma Metni'ni inceleyebilirsin.",
   GREETING: 'Merhaba, ben Ahenk müşteri temsilcisiyim. Bugün size yardımcı olmaktan mutluluk duyacağım.',
@@ -72,8 +76,8 @@ export default function AdminCanliDestek() {
   const tabs: [Tab, string][] = [
     ['chats', 'Sohbetler'],
     ...(role === 'SUPERADMIN' ? ([['all', 'Tüm Sohbetler']] as [Tab, string][]) : []),
-    ...(role === 'ADMIN' || role === 'SUPERADMIN' ? ([['canned', 'Hazır Yanıtlar'], ['reports', 'Raporlar']] as [Tab, string][]) : []),
-    ...(role === 'SUPERADMIN' ? ([['agents', 'Temsilciler'], ['restrictions', 'Kısıtlamalar'], ['ai', 'Haiku Kayıtları']] as [Tab, string][]) : []),
+    ...(role === 'ADMIN' || role === 'SUPERADMIN' ? ([['canned', 'Hazır Yanıtlar'], ['reports', 'Raporlar'], ['agents', 'Temsilciler']] as [Tab, string][]) : []),
+    ...(role === 'SUPERADMIN' ? ([['restrictions', 'Kısıtlamalar'], ['ai', 'Haiku Kayıtları']] as [Tab, string][]) : []),
   ];
   const [tab, setTab] = useState<Tab>('chats');
   const [chatId, setChatId] = useState<string | null>(null);
@@ -92,7 +96,7 @@ export default function AdminCanliDestek() {
       {tab === 'all' && <AllChatsTab onOpen={setAllId} />}
       {tab === 'canned' && <CannedTab />}
       {tab === 'reports' && <ReportsTab />}
-      {tab === 'agents' && <AgentsTab />}
+      {tab === 'agents' && <AgentsTab superadmin={role === 'SUPERADMIN'} />}
       {tab === 'restrictions' && <RestrictionsTab />}
       {tab === 'ai' && <AiLogsTab />}
     </APage>
@@ -105,6 +109,8 @@ function ChatList({ onOpen }: { onOpen: (id: string) => void }) {
   const load = useCallback(() => { api.get<AgentState>('/admin/live-support/state').then((s) => { setSt(s); setErr(''); }).catch((e: Error) => setErr(e.message)); }, []);
   useFocusEffect(useCallback(() => { load(); const id = setInterval(load, 3000); return () => clearInterval(id); }, [load]));
   async function setStatus(status: AgentState['me']['status']) { try { await api.patch('/admin/live-support/status', { status }); load(); } catch (e) { setErr((e as Error).message); } }
+  // Molaya Çık onaylı; Moladan Dön onaysız
+  const [breakAsk, setBreakAsk] = useState(false);
   if (!st) return err ? <AError>{err}</AError> : <AT style={{ color: adm.muted }}>Yükleniyor…</AT>;
   const list = (title: string, rows: Row[], showAgent = false) => (
     <View style={{ marginBottom: 14 }}>
@@ -128,9 +134,18 @@ function ChatList({ onOpen }: { onOpen: (id: string) => void }) {
       <ACard style={{ marginBottom: 12, gap: 10 }}>
         <AT style={{ fontSize: 13 }}>Temsilci No: <AMono w={600}>{st.me.agentNo}</AMono> · Eşzamanlı sınır: {st.maxChats}</AT>
         <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+          {st.me.status === 'BREAK'
+            ? <SmallBtn label="Moladan Dön" color={adm.amber} filled onPress={() => setStatus('ONLINE')} />
+            : st.me.status === 'ONLINE' && <SmallBtn label="Molaya Çık" color={adm.amber} onPress={() => setBreakAsk(true)} />}
           {STATUS.map(([k, l, c]) => <SmallBtn key={k} label={l} color={c} filled={st.me.status === k} onPress={() => setStatus(k)} />)}
         </View>
       </ACard>
+      {st.me.status === 'BREAK' && (
+        <View accessibilityRole="text" style={{ marginBottom: 12, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.4)' }}>
+          <AT w={600} style={{ fontSize: 13, color: adm.amber }}>Moladasın{st.me.breakStartedAt ? ` · ${sinceMin(st.me.breakStartedAt)} dk` : ''}</AT>
+        </View>
+      )}
+      <AConfirm visible={breakAsk} text="Molaya çıkmak istediğinden emin misin?" onNo={() => setBreakAsk(false)} onYes={() => { setBreakAsk(false); setStatus('BREAK'); }} />
       {!!err && <AError>{err}</AError>}
       {list('Sıradakiler', st.queue)}
       {list('Açık Sohbetlerim', st.mine)}
@@ -153,6 +168,10 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
   const [extra, setExtra] = useState(false);
   // Onay penceresi: 0 = Sonlandır, 1 / 7 / 30 = kötüye kullanım gün sayısı; null = kapalı
   const [confirm, setConfirm] = useState<number | null>(null);
+  // Kötüye kullanım: gün seçimi (tek) + sebep (boşluklar hariç en az 5 karakter) → Kısıtla → onay
+  const [abuseDays, setAbuseDays] = useState<number | null>(null);
+  const [abuseReason, setAbuseReason] = useState('');
+  const abuseOk = abuseDays !== null && abuseReason.replace(/\s/g, '').length >= REASON_MIN;
   const [note, setNote] = useState('');
   const [transferTo, setTransferTo] = useState('');
   const [transferNote, setTransferNote] = useState('');
@@ -238,12 +257,21 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
       </View>
       {extra && !c.takenOver && (
         <ScrollView style={{ maxHeight: 300, borderBottomWidth: 1, borderBottomColor: adm.border }} contentContainerStyle={{ padding: 12, gap: 8 }} keyboardShouldPersistTaps="handled">
-          {/* Web temsilci başlığıyla aynı sıra: Devral / Sonlandır / Kötüye kullanım alt alta */}
+          {/* Web temsilci başlığıyla aynı sıra: Devral / Sonlandır alt alta; altında kötüye kullanım alanı (web ile aynı düzen) */}
           <View style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
             {open && !c.mine && superadmin && <SmallBtn label="Devral" color={adm.blue} onPress={() => act(() => api.post(`/admin/live-support/chats/${id}/take`, {}))} />}
             {open && (c.mine || superadmin) && <SmallBtn label="Sonlandır" color={adm.muted} onPress={() => setConfirm(0)} />}
-            {open && (c.mine || superadmin) && [1, 7, 30].map((d) => <SmallBtn key={d} label={`Kötüye kullanım · ${d} gün`} color={adm.red} onPress={() => setConfirm(d)} />)}
           </View>
+          {open && (c.mine || superadmin) && (
+            <View style={{ gap: 8, padding: 10, borderRadius: 8, backgroundColor: 'rgba(239,68,68,0.06)', borderWidth: 1, borderColor: adm.border }}>
+              <AT style={{ fontSize: 12 }}>Sohbeti kapat ve canlı destek erişimini kısıtla:</AT>
+              <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 6 }}>
+                {[1, 7, 30].map((d) => <View key={d} style={{ flex: 1 }}><SmallBtn label={`${d} gün`} color={adm.red} filled={abuseDays === d} onPress={() => setAbuseDays(d)} /></View>)}
+              </View>
+              <TextInput value={abuseReason} onChangeText={(v) => setAbuseReason(v.slice(0, 1000))} multiline accessibilityLabel="Kısıtlama sebebi" style={[input, { minHeight: 72, textAlignVertical: 'top' }]} keyboardAppearance="dark" />
+              <SmallBtn label="Kısıtla" color={adm.red} filled disabled={!abuseOk} onPress={() => setConfirm(abuseDays)} />
+            </View>
+          )}
           <ALabel>İÇ NOTLAR ({c.notes.length}) · DEVİRLER ({c.transfers.length})</ALabel>
           {c.transfers.map((x) => <AT key={x.id} style={{ fontSize: 12, color: adm.amber }}>Devir {x.from ?? '—'} → {x.to ?? '—'} · {dt(x.createdAt)}: {x.note}</AT>)}
           {c.notes.map((n) => <AT key={n.id} style={{ fontSize: 12 }}>No {n.agentNo} · {dt(n.createdAt)}: {n.content}</AT>)}
@@ -266,7 +294,7 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
       <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 12, gap: 8 }} keyboardShouldPersistTaps="handled" onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
         {!open && <AT style={{ fontSize: 12, color: adm.muted }}>Sohbet kapandı{c.closedAt ? ` (${dt(c.closedAt)})` : ''}.</AT>}
         {c.messages.map((m) => {
-          if (m.sender === 'SYSTEM' && m.content !== 'GREETING') return <AT key={m.id} style={{ alignSelf: 'center', textAlign: 'center', fontSize: 11, color: adm.muted }}>{SYS[m.content] ?? m.content} · {hm(m.createdAt)}</AT>;
+          if (m.sender === 'SYSTEM' && m.content !== 'GREETING') return <AT key={m.id} style={{ alignSelf: 'center', textAlign: 'center', fontSize: 11, color: adm.muted }}>{SYS[m.content] ?? m.content}{m.content === 'NOTICE' ? '' : ` · ${hm(m.createdAt)}`}</AT>;
           const user = m.sender === 'USER';
           return (
             <View key={m.id}>
@@ -327,7 +355,7 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
       <AConfirm visible={confirm !== null}
         text={confirm ? `${confirm} gün kısıtlama vermek istediğinden emin misin?` : 'Görüşmeyi sonlandırmak istediğinden emin misin?'}
         onNo={() => setConfirm(null)}
-        onYes={() => { const d = confirm; setConfirm(null); act(() => api.post(`/admin/live-support/chats/${id}/close`, d ? { abuseDays: d } : {}), onBack); }} />
+        onYes={() => { const d = confirm; setConfirm(null); act(() => api.post(`/admin/live-support/chats/${id}/close`, d ? { abuseDays: d, abuseReason: abuseReason.trim() } : {}), onBack); }} />
       <HaikuSheet visible={haiku && !c.takenOver} chatId={id} onClose={() => setHaiku(false)} onInsert={(t) => { setText((v) => (v ? `${v}\n` : '') + t); setHaiku(false); }} />
       <Modal visible={!!viewer} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setViewer(null)}>
         <Pressable onPress={() => setViewer(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' }}>
@@ -416,6 +444,7 @@ interface AllDetail {
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
   rating: { helped: boolean; stars: number; tags: string[]; comment: string | null; createdAt: string } | null;
   aiLogs: AiLog[];
+  restriction: { days: number; reason: string; createdAt: string; expiresAt: string; liftedAt: string | null; agentNo: string | null } | null;
 }
 const CHAT_STATUS: Record<string, string> = { QUEUED: 'Sırada', ACTIVE: 'Açık', CLOSED: 'Kapandı' };
 const CLOSED_BY: Record<string, string> = { USER: 'kullanıcı', AGENT: 'temsilci', AUTO: 'otomatik', ABUSE: 'kötüye kullanım' };
@@ -529,7 +558,7 @@ function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
           <ACard style={{ gap: 8 }}>
             <ALabel>MESAJLAR ({c.messages.length})</ALabel>
             {c.messages.map((m) => {
-              if (m.sender === 'SYSTEM' && m.content !== 'GREETING') return <AT key={m.id} style={{ alignSelf: 'center', textAlign: 'center', fontSize: 11, color: adm.muted }}>{SYS[m.content] ?? m.content} · {dt(m.createdAt)}</AT>;
+              if (m.sender === 'SYSTEM' && m.content !== 'GREETING') return <AT key={m.id} style={{ alignSelf: 'center', textAlign: 'center', fontSize: 11, color: adm.muted }}>{SYS[m.content] ?? m.content}{m.content === 'NOTICE' ? '' : ` · ${dt(m.createdAt)}`}</AT>;
               const user = m.sender === 'USER';
               return (
                 <View key={m.id} style={{ alignSelf: user ? 'flex-start' : 'flex-end', maxWidth: '86%', padding: 8, borderRadius: 12, backgroundColor: user ? adm.surface : 'rgba(59,130,246,0.14)', borderWidth: 1, borderColor: user ? adm.border : 'rgba(59,130,246,0.35)' }}>
@@ -551,6 +580,13 @@ function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
             {c.notes.map((n) => <AT key={n.id} style={{ fontSize: 12 }}>No {n.agentNo} · {dt(n.createdAt)}: {n.content}</AT>)}
             {!c.notes.length && !c.transfers.length && <AT style={{ fontSize: 12, color: adm.muted }}>—</AT>}
           </ACard>
+          {!!c.restriction && (
+            <ACard style={{ gap: 4 }}>
+              <ALabel style={{ color: adm.red }}>KÖTÜYE KULLANIM KISITLAMASI</ALabel>
+              <AT style={{ fontSize: 12 }}>{c.restriction.days} gün · {dt(c.restriction.createdAt)} → {dt(c.restriction.expiresAt)} · Temsilci No {c.restriction.agentNo ?? '—'}{c.restriction.liftedAt ? ` · kaldırıldı ${dt(c.restriction.liftedAt)}` : ''}</AT>
+              <AT style={{ fontSize: 13, lineHeight: 19 }}>Sebep: {c.restriction.reason}</AT>
+            </ACard>
+          )}
           <ACard style={{ gap: 4 }}>
             <ALabel>DEĞERLENDİRME</ALabel>
             {c.rating ? (<>
@@ -678,10 +714,26 @@ function ReportsTab() {
   );
 }
 
-// ─── Temsilciler (SUPERADMIN) ──────────────────────────────────────────────
+// ─── Temsilciler (liste, durum ve mola geçmişi ADMIN + SUPERADMIN; hesap açma / kapama SUPERADMIN) ───────
 
-interface AgentRow { userId: string; name: string; email: string; phone: string | null; role: string; active: boolean; agentNo: string | null; status: string | null }
-function AgentsTab() {
+interface AgentRow { userId: string; name: string; email: string; phone: string | null; role: string; active: boolean; agentNo: string | null; status: string | null; breakStartedAt: string | null }
+interface BreakRow { id: string; startedAt: string; endedAt: string | null; durationMin: number }
+const dOnly = (iso: string) => new Date(iso).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Istanbul' });
+function BreakHistory({ userId }: { userId: string }) {
+  const [rows, setRows] = useState<BreakRow[] | null>(null);
+  const [err, setErr] = useState('');
+  useEffect(() => { api.get<BreakRow[]>(`/admin/live-support/manage/agents/${userId}/breaks`).then(setRows).catch((e: Error) => setErr(e.message)); }, [userId]);
+  if (err) return <AError>{err}</AError>;
+  if (!rows) return <AT style={{ fontSize: 12, color: adm.muted }}>Yükleniyor…</AT>;
+  if (!rows.length) return <AT style={{ fontSize: 12, color: adm.muted }}>Mola kaydı yok.</AT>;
+  return (
+    <View style={{ gap: 4 }}>
+      {rows.map((b) => <AT key={b.id} style={{ fontSize: 12 }}>{dOnly(b.startedAt)} · {hm(b.startedAt)} → {b.endedAt ? hm(b.endedAt) : 'Sürüyor'} · {Math.round(b.durationMin)} dk</AT>)}
+    </View>
+  );
+}
+function AgentsTab({ superadmin }: { superadmin: boolean }) {
+  const [open, setOpen] = useState<string | null>(null);
   const [rows, setRows] = useState<AgentRow[]>([]);
   const [f, setF] = useState({ firstName: '', lastName: '', email: '', phone: '', password: '' });
   const [err, setErr] = useState('');
@@ -696,7 +748,8 @@ function AgentsTab() {
   const roleTr: Record<string, string> = { SUPPORT: 'Temsilci', ADMIN: 'Admin', SUPERADMIN: 'Süper Admin' };
   return (
     <View style={{ gap: 8 }}>
-      <ACard style={{ gap: 8 }}>
+      {!superadmin && !!err && <AError>{err}</AError>}
+      {superadmin && <ACard style={{ gap: 8 }}>
         <AT w={600} style={{ fontSize: 13 }}>Temsilci hesabı aç</AT>
         {([['firstName', 'Ad'], ['lastName', 'Soyad'], ['email', 'E-posta'], ['phone', 'Telefon (+90…)'], ['password', 'Şifre (en az 8)']] as const).map(([k, l]) => (
           <TextInput key={k} value={f[k]} onChangeText={(v) => setF((p) => ({ ...p, [k]: v }))} placeholder={l} placeholderTextColor={adm.muted} secureTextEntry={k === 'password'} autoCapitalize={k === 'email' || k === 'password' ? 'none' : 'words'} keyboardType={k === 'email' ? 'email-address' : k === 'phone' ? 'phone-pad' : 'default'} style={input} keyboardAppearance="dark" />
@@ -704,13 +757,15 @@ function AgentsTab() {
         <SmallBtn label="Hesap Aç" color={adm.green} onPress={create} />
         {!!err && <AError>{err}</AError>}
         {!!ok && <AT style={{ fontSize: 12, color: adm.green }}>{ok}</AT>}
-      </ACard>
+      </ACard>}
       {rows.map((r) => (
         <ACard key={r.userId} style={{ gap: 6, opacity: r.active ? 1 : 0.55 }}>
           <AT w={600} style={{ fontSize: 13 }}>{r.name} · {roleTr[r.role] ?? r.role}</AT>
-          <AT style={{ fontSize: 11, color: adm.muted }}>{r.email} · {r.phone ?? '—'} · Temsilci No {r.agentNo ?? '—'} · {r.status === 'ONLINE' ? 'Çevrimiçi' : r.status === 'BREAK' ? 'Mola' : 'Çevrimdışı'}</AT>
+          <AT style={{ fontSize: 11, color: adm.muted }}>{r.email} · {r.phone ?? '—'} · Temsilci No {r.agentNo ?? '—'} · <AT style={{ fontSize: 11, color: r.status === 'ONLINE' ? adm.green : r.status === 'BREAK' ? adm.amber : adm.muted }}>{AGENT_STATUS[r.status ?? 'OFFLINE']}{r.status === 'BREAK' && r.breakStartedAt ? ` · ${sinceMin(r.breakStartedAt)} dk` : ''}</AT></AT>
           {!r.active && <AT style={{ fontSize: 11, color: adm.amber }}>Bu temsilci artık destek ekibinde değil.</AT>}
-          {r.role === 'SUPPORT' && <SmallBtn label={r.active ? 'Hesabı Kapat' : 'Hesabı Aç'} color={r.active ? adm.red : adm.green} onPress={() => { api.patch(`/admin/live-support/manage/agents/${r.userId}`, { active: !r.active }).then(load).catch((e: Error) => setErr(e.message)); }} />}
+          <SmallBtn label="Mola Geçmişi" color={adm.amber} filled={open === r.userId} onPress={() => setOpen((v) => (v === r.userId ? null : r.userId))} />
+          {open === r.userId && <BreakHistory userId={r.userId} />}
+          {superadmin && r.role === 'SUPPORT' && <SmallBtn label={r.active ? 'Hesabı Kapat' : 'Hesabı Aç'} color={r.active ? adm.red : adm.green} onPress={() => { api.patch(`/admin/live-support/manage/agents/${r.userId}`, { active: !r.active }).then(load).catch((e: Error) => setErr(e.message)); }} />}
         </ACard>
       ))}
     </View>
@@ -719,7 +774,7 @@ function AgentsTab() {
 
 // ─── Kısıtlamalar ve Haiku kayıtları (SUPERADMIN) ──────────────────────────
 
-interface Restr { id: string; requesterName: string; kind: string; days: number; expiresAt: string; createdAt: string; agentNo: string | null; liftedAt: string | null; active: boolean }
+interface Restr { id: string; requesterName: string; kind: string; days: number; expiresAt: string; createdAt: string; agentNo: string | null; liftedAt: string | null; active: boolean; reason: string }
 function RestrictionsTab() {
   const [rows, setRows] = useState<Restr[]>([]);
   const [err, setErr] = useState('');
@@ -733,6 +788,7 @@ function RestrictionsTab() {
         <ACard key={r.id} style={{ gap: 6 }}>
           <AT w={600} style={{ fontSize: 13 }}>{r.requesterName} · {r.kind === 'venue' ? 'Mekân' : 'Üye'}</AT>
           <AT style={{ fontSize: 11, color: adm.muted }}>{r.days} gün · {dt(r.createdAt)} → {dt(r.expiresAt)} · Temsilci No {r.agentNo ?? '—'}{r.liftedAt ? ` · kaldırıldı ${dt(r.liftedAt)}` : ''}</AT>
+          <AT style={{ fontSize: 12, lineHeight: 18 }}>Sebep: {r.reason}</AT>
           {r.active && <SmallBtn label="Kısıtlamayı Kaldır" color={adm.green} onPress={() => { api.post(`/admin/live-support/manage/restrictions/${r.id}/lift`, {}).then(load).catch((e: Error) => setErr(e.message)); }} />}
         </ACard>
       ))}

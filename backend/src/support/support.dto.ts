@@ -36,6 +36,8 @@ export class TransferDto {
 
 export class CloseDto {
   @IsOptional() @Type(() => Number) @IsIn([1, 7, 30]) abuseDays?: number;
+  // Kötüye kullanım sebebi: abuseDays ile zorunlu, boşluklar hariç en az 5 karakter (servis denetler)
+  @IsOptional() @IsString() @MaxLength(1000) abuseReason?: string;
 }
 
 export class AiDto {
