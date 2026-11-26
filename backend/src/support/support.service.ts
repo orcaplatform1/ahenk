@@ -367,7 +367,7 @@ export class SupportService implements OnModuleInit {
     await this.prisma.supportAgent.update({ where: { userId: agent.userId }, data: { idleSince: null } });
     if (first) {
       // Temsilci atanınca otomatik 2 mesaj: kayıt / Aydınlatma Metni bildirimi ve karşılama
-      await this.prisma.supportMessage.create({ data: { chatId, sender: SupportSender.SYSTEM, content: SYS.NOTICE, images: [] } });
+      await this.prisma.supportMessage.create({ data: { chatId, sender: SupportSender.SYSTEM, content: SYS.NOTICE, images: [], createdAt: now } });
       await this.prisma.supportMessage.create({ data: { chatId, sender: SupportSender.SYSTEM, agentNo: agent.agentNo, content: SYS.GREETING, images: [], createdAt: new Date(now.getTime() + 1) } });
     }
     await this.pushAgent(agent.userId, "Canlı Destek: yeni sohbet atandı", "Sana yeni bir destek sohbeti atandı.", chatId);
