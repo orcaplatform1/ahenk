@@ -673,7 +673,7 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     "Ahenk Müşteri Temsilcisi" yalnız konu seçim ekranı başlığında), 2. satır "Temsilci No: {agentNo}" / "Agent No: {agentNo}" (sup.agentNo,
     10, ağırlık 400, soluk renk; iki platformda kesin görünür) ve hemen yanında küçük durum etiketi (StatusPill small: yazı 9, iç boşluk
     1 / 6), satırın en sağında küçük "SONLANDIR" / "END" (sup.endShort; ghost stili aynen: hap, ince çerçeve, nokta, %14 harf aralığı;
-    yazı 9, iç boşluk 4 / 10; mobil EndButton, web btn-ghost). Kuyrukta (QUEUED) maskot ve 2. satırdaki Temsilci No / durum yok, aynı
+    yazı 9, iç boşluk 4 / 10; mobil SmallGhostButton, web btn-ghost). Kuyrukta (QUEUED) maskot ve 2. satırdaki Temsilci No / durum yok, aynı
     başlık ve SONLANDIR. Küçült butonu kartın sağ üst köşesinde çerçeveli küçük yuvarlak buton (görünen 22, içinde yatay çizgi —, aşağı ok
     yok; mobil dokunma alanı hitSlop ile 44 pt). Başlık ile mesaj alanı arasındaki yatay ayırıcı aynen. "SONLANDIR"a basınca (kuyrukta ve
     bağlıyken) site paletinde (admin paleti değil) onay penceresi: "Görüşmeyi sonlandırmak istediğinden emin misin?" / "Are you sure you
@@ -725,7 +725,9 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     "Sorunun çözüldü mü?" / "Was your issue resolved?" Evet / Hayır + 5 yıldız (zorunlu); 4–5 yıldız "Neyi beğendin?", 2–3 "Ne daha iyi olabilirdi?",
     1 "Ne kötü gitti?" etiketleri (hepsi isteğe bağlı, etiket seçmeden gönderilebilir); serbest metin; "Değerlendir" → "Değerlendirmeni aldık! …" + "Kapat"
   - Beklerken oyna (web components/support/Breakout.tsx canvas, mobil components/Breakout.tsx Skia + Reanimated frame callback): yalnız
-    kuyruktayken butonla açılır; çevrimiçi temsilci olsa da olmasa da (hepsi çevrimdışı ya da molada olsa da) açılır ve oynanır; tek seviye, 5 sıra tuğla, 3 can, bitince "Tekrar oyna" / "Play again"; oyun ekranında "Oyunu kapat" / "Close game" butonu (oyun tamamen kapanır, sıra ekranına dönülür); ses / efekt yok; top, raket, tuğla
+    kuyruktayken butonla açılır; çevrimiçi temsilci olsa da olmasa da (hepsi çevrimdışı ya da molada olsa da) açılır ve oynanır; tek seviye, 5 sıra tuğla, 3 can, bitince "Tekrar oyna" / "Play again"; oyun açıkken her zaman görünen "Oyunu kapat" / "Close game" butonu oyun alanının üstündeki Skor / Can
+    satırının ortasında (kaydırmadan görünür; küçük ghost buton, sohbet başlığındaki SONLANDIR ile aynı stil: web btn-ghost yazı 9 / iç boşluk
+    4 / 10, mobil SupportChatParts SmallGhostButton; Breakout onClose) (oyun tamamen kapanır, sıra ekranına dönülür); ses / efekt yok; top, raket, tuğla
     Ahenk renklerinde; raket parmak / fareyle sürüklenir; sabit adımlı (en fazla 60 kare/sn). Oyun açıkken sıra satırı üstte küçük. Skor
     yalnız ekranda; hiçbir oyun verisi DB'ye, sunucuya, yerel depolamaya ya da loga yazılmaz. Temsilci bağlanınca ya da sohbet küçültülünce
     oyun tamamen kapanır, dönüşte yeniden başlamaz
@@ -778,7 +780,8 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     durumu (Çevrimiçi / Molada / Çevrimdışı, moladaysa geçen dakika) ve "Mola Geçmişi" (tarih, başlangıç, bitiş, süre; GET
     /admin/live-support/manage/agents/:userId/breaks, ADMIN + SUPERADMIN).
     Devret: zorunlu notla başka çevrimiçi temsilciye; devralan geçmişi ve notu görür; kullanıcı yeni Temsilci No'yu görür ve sistem mesajı
-    "Görüşmen başka bir temsilcimize aktarıldı, durumu baştan anlatmana gerek yok." düşer. Vardiya (Ayarlar): Gündüz 08:00-20:00, Gece
+    "Görüşmen başka bir temsilcimize aktarıldı, yeni temsilci tüm sohbet geçmişini görüntülemektedir." / "Your chat has been transferred to
+    another agent, the new agent can view the entire chat history." (SYS TRANSFERRED, sup.sysTransferred; gönderim mantığı aynen) düşer. Vardiya (Ayarlar): Gündüz 08:00-20:00, Gece
     20:00-08:00 (SUPPORT_SHIFT_DAY / SUPPORT_SHIFT_NIGHT), yalnız raporlamada; sistem 7/24 açık. Sırada 90 sn'yi geçen sohbet: bütün ADMIN ve
     SUPERADMIN'e uygulama içi bildirim + push (sohbet başına bir kez). Admin menüsünde "/admin/canli-destek" baloncuğu sıradaki sohbet sayısı
     (menu-counts; Temsilci için canlı destek durumundan)

@@ -266,9 +266,8 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
       )}
       {game ? (
         <div style={{ flex: 1, overflowY: 'auto', padding: 14 }}>
-          <Breakout />
-          {/* Oyunu kapat: oyun tamamen kapanır (bileşen kaldırılır), sıra ekranına dönülür; hiçbir oyun verisi saklanmaz */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}><StdButton variant="ghost" onClick={() => setGame(false)}>{t('sup.closeGame')}</StdButton></div>
+          {/* Oyunu kapat Skor / Can satırının ortasında: oyun tamamen kapanır (bileşen kaldırılır), sıra ekranına dönülür */}
+          <Breakout onClose={() => setGame(false)} />
         </div>
       ) : (<>
       {/* Filigran: sohbet alanının ortasında sabit (mesajlar üstünden kayar), dokunma almaz; renkler korunur */}

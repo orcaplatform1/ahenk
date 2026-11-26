@@ -45,7 +45,7 @@ const REASON_MIN = 5; // kötüye kullanım sebebi: boşluklar hariç en az 5 ka
 const SYS: Record<string, string> = {
   NOTICE: "Hizmet kalitesinin artırılması ve güvenliğin için görüşmelerimiz kayıt altına alınır. Kişisel verilerinle ilgili Aydınlatma Metni'ni inceleyebilirsin.",
   GREETING: 'Merhaba, ben Ahenk müşteri temsilcisiyim. Bugün size yardımcı olmaktan mutluluk duyacağım.',
-  TRANSFERRED: 'Görüşmen başka bir temsilcimize aktarıldı, durumu baştan anlatmana gerek yok.',
+  TRANSFERRED: 'Görüşmen başka bir temsilcimize aktarıldı, yeni temsilci tüm sohbet geçmişini görüntülemektedir.',
   IDLE_WARNING: '1 dakika içinde yanıt vermezsen sohbet sonlanacak.',
 };
 const EMOJIS = ['😀', '😊', '🙏', '👍', '🙌', '🎉', '❤️', '✨', '😉', '🤗', '👋', '😇'];

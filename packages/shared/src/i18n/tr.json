@@ -2141,7 +2141,7 @@
     "sysNoticeLink": "Aydınlatma Metni",
     "sysNoticePost": "'ni inceleyebilirsin.",
     "sysGreeting": "Merhaba, ben Ahenk müşteri temsilcisiyim. Bugün size yardımcı olmaktan mutluluk duyacağım.",
-    "sysTransferred": "Görüşmen başka bir temsilcimize aktarıldı, durumu baştan anlatmana gerek yok.",
+    "sysTransferred": "Görüşmen başka bir temsilcimize aktarıldı, yeni temsilci tüm sohbet geçmişini görüntülemektedir.",
     "sysIdle": "1 dakika içinde yanıt vermezsen sohbet sonlanacak.",
     "typing": "yazıyor…",
     "read": "Okundu",

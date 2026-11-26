@@ -15,16 +15,15 @@ import { api } from '@/lib/api';
 import { API_PREFIX } from '@/lib/config';
 import { getAccess } from '@/lib/session';
 import { openLegal } from '@/lib/links';
-import { upper } from '@/lib/i18n';
 import { pickFromLibrary, type PickedImage } from '@/lib/imagePick';
 import { supportRemaining } from '@/lib/supportTime';
 import { emitSupportChange } from '@/lib/supportBus';
 import * as Haptics from 'expo-haptics';
 import { Breakout } from '@/components/Breakout';
-import { ChatComposer, StatusPill, SUPPORT_EMOJIS } from '@/components/SupportChatParts';
+import { ChatComposer, SmallGhostButton, StatusPill, SUPPORT_EMOJIS } from '@/components/SupportChatParts';
 import { Card, Serif, StdButton, T } from '@/components/ui';
 import { showAlert } from '@/components/AppAlert';
-import { btn, btnGhost, c, inputGlass, ll, sans, tw } from '@/theme/theme';
+import { btn, c, inputGlass, ll, sans, tw } from '@/theme/theme';
 
 type Sender = 'USER' | 'AGENT' | 'SYSTEM';
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string; pending?: boolean }
@@ -52,15 +51,6 @@ const MIN_BTN = 22;
 
 // Başlıktaki küçük SONLANDIR: StdButton ghost stili (hap, ince çerçeve, nokta, %14 harf aralığı, büyük harf) küçük boy ve iç boşlukla;
 // görünen boy küçük, dokunma alanı hitSlop ile en az 44 pt
-function EndButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}
-      style={({ pressed }) => ({ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: btnGhost.radius, borderWidth: 1, borderColor: btnGhost.border, paddingVertical: 4, paddingHorizontal: 10, backgroundColor: pressed ? 'rgba(255,255,255,0.05)' : 'transparent' })}>
-      <View style={{ width: btnGhost.dot, height: btnGhost.dot, borderRadius: btnGhost.dot / 2, backgroundColor: btnGhost.dotColor }} />
-      <Text numberOfLines={1} style={{ fontSize: 9, lineHeight: 13.5, letterSpacing: 9 * btnGhost.letterSpacing, color: btnGhost.color, fontFamily: sans(500) }}>{upper(label)}</Text>
-    </Pressable>
-  );
-}
 const WATERMARK_OPACITY = 0.08;
 const TYPING_GAP_MS = 300; // yazı önizlemesi en fazla 300 ms aralıkla gönderilir
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Istanbul' });
@@ -237,7 +227,7 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
               <StatusPill small status={status} label={status === 'typing' ? t('sup.typing') : status === 'online' ? t('sup.online') : t('sup.offlineStatus')} />
             </>)}
             {/* Sonlandır onayı (site paleti, AppAlert): Evet → mevcut sonlandırma / kuyruktan çıkış akışı (değerlendirme dahil), Hayır / geri tuşu / dışarı basma → işlem yok */}
-            <EndButton label={t('sup.endShort')} onPress={() => showAlert(t('sup.endConfirm'), undefined, [{ text: t('sup.no'), style: 'cancel' }, { text: t('sup.yes'), onPress: () => { void end(); } }])} />
+            <SmallGhostButton style={{ marginLeft: 'auto' }} label={t('sup.endShort')} onPress={() => showAlert(t('sup.endConfirm'), undefined, [{ text: t('sup.no'), style: 'cancel' }, { text: t('sup.yes'), onPress: () => { void end(); } }])} />
           </View>
         </View>
         {/* Küçült: kartın sağ üst köşesinde çerçeveli küçük yuvarlak buton (yatay çizgi) */}
@@ -260,9 +250,8 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
       )}
       {game ? (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 12 }} scrollEnabled={false}>
-          <Breakout />
-          {/* Oyunu kapat: oyun tamamen kapanır (bileşen kaldırılır), sıra ekranına dönülür; hiçbir oyun verisi saklanmaz */}
-          <StdButton variant="ghost" label={t('sup.closeGame')} style={{ alignSelf: 'center', marginTop: 12 }} onPress={() => setGame(false)} />
+          {/* Oyunu kapat Skor / Can satırının ortasında: oyun tamamen kapanır (bileşen kaldırılır), sıra ekranına dönülür */}
+          <Breakout onClose={() => setGame(false)} />
         </ScrollView>
       ) : (<>
       {/* Filigran: sohbet alanının ortasında sabit (mesajlar üstünden kayar), dokunma almaz; renkler korunur */}

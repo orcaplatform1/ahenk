@@ -18,7 +18,8 @@ const ROW_COLORS = ['#c0392b', '#d6453a', '#ff6b5e', '#ff8a7e', '#e8a27a'];
 type G = { px: number; bx: number; by: number; vx: number; vy: number; bricks: boolean[]; score: number; lives: number; over: boolean };
 const fresh = (): G => ({ px: W / 2, bx: W / 2, by: PY - 20, vx: SPEED * 0.6, vy: -SPEED * 0.8, bricks: Array(ROWS * COLS).fill(true), score: 0, lives: 3, over: false });
 
-export function Breakout() {
+// onClose: "Oyunu kapat" (Skor / Can satırının ortasında, oyun alanının üstünde; kaydırmadan görünür)
+export function Breakout({ onClose }: { onClose: () => void }) {
   const t = useTranslations();
   const canvas = useRef<HTMLCanvasElement>(null);
   const g = useRef<G>(fresh());
@@ -98,8 +99,11 @@ export function Breakout() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', maxWidth: 320, fontSize: 12, color: '#a39c93' }}>
-        <span>{t('sup.score', { n: hud.score })}</span><span>{t('sup.lives', { n: hud.lives })}</span>
+      <div style={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: 320, fontSize: 12, color: '#a39c93' }}>
+        <span style={{ flex: 1 }}>{t('sup.score', { n: hud.score })}</span>
+        {/* Küçük ghost buton (sohbet başlığındaki SONLANDIR ile aynı stil) */}
+        <button type="button" className="btn-ghost" onClick={onClose} style={{ padding: '4px 10px', fontSize: 9, lineHeight: 1.5, gap: 6, whiteSpace: 'nowrap' }}>{t('sup.closeGame')}</button>
+        <span style={{ flex: 1, textAlign: 'right' }}>{t('sup.lives', { n: hud.lives })}</span>
       </div>
       <canvas ref={canvas} style={{ width: '100%', maxWidth: 320, aspectRatio: `${W} / ${H}`, borderRadius: 12, touchAction: 'none', border: '1px solid rgba(255,255,255,0.08)' }} />
       {hud.over && <StdButton variant="primary" onClick={() => setRun((n) => n + 1)}>{t('sup.playAgain')}</StdButton>}

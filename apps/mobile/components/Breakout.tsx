@@ -10,6 +10,7 @@ import { Canvas, Circle, Group, Rect } from '@shopify/react-native-skia';
 import { useAnimActive } from '@/lib/motion';
 import { StdButton, T } from './ui';
 import { c, ll } from '@/theme/theme';
+import { SmallGhostButton } from './SupportChatParts';
 
 const W = 320; const H = 400;
 const ROWS = 5; const COLS = 7; const GAP = 6; const TOP = 40; const BH = 14;
@@ -25,7 +26,8 @@ function Brick({ i, bricks }: { i: number; bricks: SharedValue<number[]> }) {
   return <Rect x={GAP + (i % COLS) * (BW + GAP)} y={TOP + Math.floor(i / COLS) * (BH + GAP)} width={BW} height={BH} color={ROW_COLORS[Math.floor(i / COLS)]} opacity={opacity} />;
 }
 
-export function Breakout() {
+// onClose: "Oyunu kapat" (Skor / Can satırının ortasında, oyun alanının üstünde; kaydırmadan görünür)
+export function Breakout({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
   const [width, setWidth] = useState(0);
   const [hud, setHud] = useState({ score: 0, lives: 3, over: false });
@@ -97,9 +99,10 @@ export function Breakout() {
 
   return (
     <View style={{ alignItems: 'center', gap: 8 }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: W * scale }}>
-        <T style={{ fontSize: 12, color: ll.label }}>{t('sup.score', { n: hud.score })}</T>
-        <T style={{ fontSize: 12, color: ll.label }}>{t('sup.lives', { n: hud.lives })}</T>
+      <View style={{ flexDirection: 'row', alignItems: 'center', width: W * scale }}>
+        <T style={{ flex: 1, fontSize: 12, color: ll.label }}>{t('sup.score', { n: hud.score })}</T>
+        <SmallGhostButton label={t('sup.closeGame')} onPress={onClose} />
+        <T style={{ flex: 1, fontSize: 12, color: ll.label, textAlign: 'right' }}>{t('sup.lives', { n: hud.lives })}</T>
       </View>
       {width > 0 && (
         <View onStartShouldSetResponder={() => true} onMoveShouldSetResponder={() => true} onResponderGrant={move} onResponderMove={move}

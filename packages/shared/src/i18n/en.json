@@ -2141,7 +2141,7 @@
     "sysNoticeLink": "Privacy Notice",
     "sysNoticePost": " about your personal data.",
     "sysGreeting": "Hello, I'm an Ahenk customer representative. I'll be happy to help you today.",
-    "sysTransferred": "Your chat has been passed to another representative, no need to explain everything again.",
+    "sysTransferred": "Your chat has been transferred to another agent, the new agent can view the entire chat history.",
     "sysIdle": "If you don't reply within 1 minute, the chat will end.",
     "typing": "typing…",
     "read": "Read",

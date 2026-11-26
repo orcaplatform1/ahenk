@@ -3,9 +3,22 @@
 // AutoTextarea / StatusPill karşılığı). HIG: ikon butonları 44×44 pt dokunma alanı.
 import { Pressable, TextInput, View, Text } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { c, sans } from '@/theme/theme';
+import { btnGhost, c, sans } from '@/theme/theme';
+import { upper } from '@/lib/i18n';
 
 export const SUPPORT_EMOJIS = ['😀', '😂', '😊', '😍', '🥰', '😎', '🤔', '😅', '😉', '🙏', '👍', '👏', '🙌', '💪', '🎉', '❤️', '🔥', '✨', '☕', '😮', '😢', '👋', '🤝', '😇', '🤗'];
+
+// Küçük ghost buton (Ahenk paleti: hap, ince çerçeve, nokta, harf aralıklı büyük yazı; yazı 9, iç boşluk 4 / 10): sohbet başlığındaki
+// SONLANDIR ve Breakout "Oyunu kapat". HIG: hitSlop ile dokunma alanı ~44 pt
+export function SmallGhostButton({ label, onPress, style }: { label: string; onPress: () => void; style?: { marginLeft?: 'auto' } }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}
+      style={({ pressed }) => ({ ...style, flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: btnGhost.radius, borderWidth: 1, borderColor: btnGhost.border, paddingVertical: 4, paddingHorizontal: 10, backgroundColor: pressed ? 'rgba(255,255,255,0.05)' : 'transparent' })}>
+      <View style={{ width: btnGhost.dot, height: btnGhost.dot, borderRadius: btnGhost.dot / 2, backgroundColor: btnGhost.dotColor }} />
+      <Text numberOfLines={1} style={{ fontSize: 9, lineHeight: 13.5, letterSpacing: 9 * btnGhost.letterSpacing, color: btnGhost.color, fontFamily: sans(500) }}>{upper(label)}</Text>
+    </Pressable>
+  );
+}
 
 const ICON = { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' } as const;
 const LINE = 20; // yazı alanı satır yüksekliği; en fazla 5 satır büyür
