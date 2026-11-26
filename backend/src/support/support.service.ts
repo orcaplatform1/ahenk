@@ -1030,6 +1030,8 @@ export class SupportService implements OnModuleInit {
   // Haiku için sohbet kaydı (ID sunucudan)
   async chatForAi(staff: Staff, chatId: string) {
     const { me, chat } = await this.staffChat(staff, chatId);
+    // ADMIN Haiku asistanını hiçbir sohbette kullanamaz (soru, taslak, kullanıcı verisi okuma işlevleri)
+    this.denyAdmin(me);
     // SUPERADMIN izlediği (Devral etmediği) sohbette Haiku asistanını kullanamaz
     if (me.role === UserRole.SUPERADMIN && chat.agentId !== me.id) throw new ForbiddenException("Bu işlem için yetkin yok");
     const agent = await this.ensureAgent(me.id);

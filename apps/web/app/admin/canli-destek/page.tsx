@@ -191,8 +191,8 @@ function ChatsTab() {
           <div className="ll-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}><p style={{ color: MUTED, fontSize: 13 }}>Soldan bir sohbet seç.</p></div>
         )}
         {/* SUPERADMIN devraldıysa eski temsilcide Haiku asistanı kapanır */}
-        {/* Haiku: devralınan sohbette ve SUPERADMIN'in izlediği (Devral etmediği) sohbette kapalı */}
-        {sel && !takenOver.has(sel) && !(superadmin && !st.mine.some((r) => r.id === sel)) ? <HaikuPanel chatId={sel} onInsert={(t) => window.dispatchEvent(new CustomEvent('cd-insert', { detail: t }))} /> : <div className="ll-card" />}
+        {/* Haiku: ADMIN'e hiç gösterilmez; devralınan sohbette ve SUPERADMIN'in izlediği (Devral etmediği) sohbette kapalı */}
+        {sel && st.me.role !== 'ADMIN' && !takenOver.has(sel) && !(superadmin && !st.mine.some((r) => r.id === sel)) ? <HaikuPanel chatId={sel} onInsert={(t) => window.dispatchEvent(new CustomEvent('cd-insert', { detail: t }))} /> : <div className="ll-card" />}
       </div>
     </div>
   );

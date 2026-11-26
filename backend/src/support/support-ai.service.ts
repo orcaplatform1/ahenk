@@ -191,9 +191,10 @@ export class SupportAiService {
   }
 
   async ask(staff: Staff, chatId: string, input: { question?: string; draft?: boolean; includeImages?: boolean }) {
+    // Yetki önce: ADMIN 403, SUPERADMIN yalnız Devral ettiği sohbette (chatForAi)
+    const { chat, agent, messages } = await this.support.chatForAi(staff, chatId);
     const question = (input.question ?? "").trim().slice(0, 2000);
     if (!input.draft && !question) throw new BadRequestException("Soru boş olamaz");
-    const { chat, agent, messages } = await this.support.chatForAi(staff, chatId);
     const called: string[] = [];
     const writeLog = (success: boolean, errorType: string | null) =>
       this.prisma.supportAiLog.create({

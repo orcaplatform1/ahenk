@@ -269,8 +269,8 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
           )}
         </View>
         {/* Devralınan sohbette Haiku asistanı, iç not ve işlemler kapalı */}
-        {/* Haiku: SUPERADMIN'in izlediği (Devral etmediği) sohbette kapalı */}
-        {!c.takenOver && !(superadmin && !c.mine) && <SmallBtn label="Haiku" color={adm.cyan} onPress={() => setHaiku(true)} />}
+        {/* Haiku: ADMIN'e hiç gösterilmez; SUPERADMIN'in izlediği (Devral etmediği) sohbette kapalı */}
+        {!c.takenOver && st?.me.role !== 'ADMIN' && !(superadmin && !c.mine) && <SmallBtn label="Haiku" color={adm.cyan} onPress={() => setHaiku(true)} />}
         {!c.takenOver && <SmallBtn label="⋯" color={adm.muted} onPress={() => setExtra((v) => !v)} />}
       </View>
       {extra && !c.takenOver && (

@@ -743,8 +743,9 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     ADMIN / SUPERADMIN'in numarası ve SupportAgent kaydı silinmez, Devral sonrası müşteriye gösterilir).
     Sohbet ataması yalnız SUPPORT rolüne: FIFO otomatik atama, 2 dk ilk yanıt yeniden ataması, devir hedefi ve sıra tahmini yalnız çevrimiçi
     SUPPORT hesaplarını kullanır (support.service.ts onlineAgents). ADMIN'e hiçbir zaman sohbet atanmaz; ADMIN bütün sohbetleri yalnız salt
-    okunur görür: mesaj, görsel, iç not, yazıyor, devir, sonlandırma, kısıtlama ve devralma butonları ADMIN'e gösterilmez, backend 403 döner
-    (denyAdmin). SUPERADMIN'e otomatik ya da başka bir yolla sohbet atanmaz; SUPERADMIN bütün açık sohbetleri canlı
+    okunur görür: mesaj, görsel, iç not, yazıyor, devir, sonlandırma, kısıtlama, devralma ve Haiku asistanı (soru, taslak yanıt, kullanıcı
+    verisi okuma) ADMIN'e gösterilmez (web Haiku paneli, mobil Haiku butonu yok), backend 403 döner (denyAdmin; Haiku POST
+    /admin/live-support/chats/:id/ai → chatForAi). Haiku Kayıtları ekranı ve SupportAiLog görme yetkileri aynen. SUPERADMIN'e otomatik ya da başka bir yolla sohbet atanmaz; SUPERADMIN bütün açık sohbetleri canlı
     izler ve yalnız "Devral" ile elle alır (Devral yetkisi ve davranışı aynen). SUPERADMIN izlediği (Devral etmediği) sohbette yalnız Devral
     yapabilir: mesaj, görsel, iç not, Sonlandır, Kötüye kullanım ve Haiku asistanı butonları gösterilmez, backend 403 döner (agentClose,
     addNote, chatForAi yalnız chat.agentId === kendisi). Devral ettiği sohbette atanmış temsilcinin bütün yetkilerine sahiptir.
