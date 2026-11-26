@@ -3,6 +3,8 @@
 // HIG: güvenli alan, en az 44 pt dokunma alanı, klavye açıkken mesaj alanı klavyenin üstünde (KeyboardAvoidingView).
 // Küçült butonu sohbeti baloncuğa alır (components/SupportBubble.tsx). Kuyruktayken "Beklerken oyna" Breakout açar; temsilci bağlanınca
 // (hafif titreşim) ya da küçültülünce oyun tamamen kapanır, dönüşte yeniden başlamaz.
+// Maskot: kuyrukta sıra satırının üstünde tam sürüm (72 pt yükseklik), temsilci bağlanınca başlığın üstünde baloncuk sürümü (40 pt),
+// sohbet alanında sabit filigran (tam sürüm, alan genişliğinin %60'ı, ortada, opaklık %8 koyu tema, pointerEvents none; oyun açıkken gizli).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -39,6 +41,11 @@ const TAGS = {
 } as const;
 const OK_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_BYTES = 5 * 1024 * 1024;
+// Canlı destek maskotu (assets); tam sürüm en-boy oranı 1009 / 1024; filigran opaklığı: uygulama yalnız koyu temada (%8)
+const MASCOT_BUBBLE = require('@/assets/destek-baloncuk.webp');
+const MASCOT_FULL = require('@/assets/destek-tam.webp');
+const MASCOT_RATIO = 1009 / 1024;
+const WATERMARK_OPACITY = 0.08;
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Istanbul' });
 
 export default function CanliDestek() {
@@ -190,6 +197,8 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
       {/* Başlık: temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
       {/* Başlık metni kırılmaz (1. satır başlık, 2. satır Temsilci No + durum etiketi); küçült ve Sohbeti Sonlandır başlığın altında tek satırda */}
       <View style={{ paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', gap: 6 }}>
+        {/* Temsilci bağlanınca başlık bloğunun üstünde ortalı maskot (baloncuk sürümü, 40 pt) */}
+        {chat.status === 'ACTIVE' && <Image source={MASCOT_BUBBLE} accessible={false} style={{ width: 40, height: 40, alignSelf: 'center' }} />}
         <View style={{ gap: 4 }}>
           <T w={700} numberOfLines={1} style={{ fontSize: 15, color: ll.text }}>{t('sup.header')}</T>
           {!!chat.agentNo && (
@@ -210,6 +219,8 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
         <View style={{ paddingVertical: game ? 6 : 10, paddingHorizontal: 14, backgroundColor: 'rgba(245,158,11,0.06)', borderBottomWidth: 1, borderBottomColor: 'rgba(245,158,11,0.2)', gap: 4 }}>
           {/* Oyun açıkken sıra ve tahmin satırı üstte küçük */}
           {!chat.queue.online && !game && <T style={{ fontSize: 13, color: ll.text, lineHeight: 19 }}>{t('sup.offline')}</T>}
+          {/* Sıra bilgisinin hemen üstünde maskot (tam sürüm, 72 pt yükseklik); oyun açıkken sıra satırı küçük kaldığı için gösterilmez */}
+          {!game && <Image source={MASCOT_FULL} accessible={false} style={{ height: 72, width: 72 * MASCOT_RATIO }} />}
           <T style={{ fontSize: game ? 11 : 13, color: chat.queue.online && !game ? ll.text : ll.label, lineHeight: game ? 16 : 19 }}>
             {chat.queue.etaMin !== null ? t('sup.queue', { n: chat.queue.ahead, m: chat.queue.etaMin }) : t('sup.queueNoEta', { n: chat.queue.ahead })}
           </T>
@@ -223,15 +234,21 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
           <StdButton variant="ghost" label={t('sup.closeGame')} style={{ alignSelf: 'center', marginTop: 12 }} onPress={() => setGame(false)} />
         </ScrollView>
       ) : (<>
-      <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 12, gap: 8 }} keyboardShouldPersistTaps="handled"
-        onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
-        {msgs.map((m) => (
-          <View key={m.id}>
-            <Bubble m={m} img={img} onImage={(u) => setViewer(u)} />
-            {m.id === readId && <T style={{ alignSelf: 'flex-end', fontSize: 10, color: ll.label, marginTop: 2 }}>{t('sup.read')}</T>}
-          </View>
-        ))}
-      </ScrollView>
+      {/* Filigran: sohbet alanının ortasında sabit (mesajlar üstünden kayar), dokunma almaz; renkler korunur */}
+      <View style={{ flex: 1 }}>
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+          <Image source={MASCOT_FULL} accessible={false} style={{ width: '60%', height: undefined, aspectRatio: MASCOT_RATIO, opacity: WATERMARK_OPACITY }} />
+        </View>
+        <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 12, gap: 8 }} keyboardShouldPersistTaps="handled"
+          onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
+          {msgs.map((m) => (
+            <View key={m.id}>
+              <Bubble m={m} img={img} onImage={(u) => setViewer(u)} />
+              {m.id === readId && <T style={{ alignSelf: 'flex-end', fontSize: 10, color: ll.label, marginTop: 2 }}>{t('sup.read')}</T>}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
       {!!err && <T accessibilityRole="alert" style={{ paddingHorizontal: 12, paddingBottom: 6, fontSize: 12, color: tw.accent }}>{err}</T>}
       {files.length > 0 && (
         <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 12, paddingBottom: 8 }}>

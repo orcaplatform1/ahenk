@@ -16,6 +16,8 @@ import {
   Prisma, SupportAgentStatus, SupportChatStatus, SupportCloseReason, SupportSender, SupportTopic, UserRole, UserStatus,
 } from "../generated/prisma/client";
 import { detectImageKind, toWebp, UPLOAD_WEBP_QUALITY } from "../common/image-webp";
+import { approvedPhotoMap } from "../profile-photo/profile-photo.util";
+import { initialsOf } from "../meetings/cancellation-notice";
 import { isE164Mobile, normalizePhone } from "../common/phone";
 import {
   AWAY_MS, DEFAULT_MAX_CHATS, DEFAULT_SHIFT_DAY, DEFAULT_SHIFT_NIGHT, FIRST_REPLY_TIMEOUT_MS, IDLE_CLOSE_MS, IDLE_WARN_MS,
@@ -456,6 +458,29 @@ export class SupportService implements OnModuleInit {
 
   // ─── Temsilci tarafı ──────────────────────────────────────────────────────
 
+  // Temsilci ekranı avatarı (Masa Kuruldu DetayAvatar): üyede ad soyad baş harfleri, cinsiyet ve onaylı profil fotoğrafı;
+  // mekân hesabında cinsiyet ve profil fotoğrafı yoktur: yalnız yetkili ad soyadının baş harfleri (requesterName "mekân · yetkili")
+  private async avatars(chats: { id: string; userId: string | null; venueAccountId: string | null; requesterName: string }[]) {
+    const userIds = [...new Set(chats.map((c) => c.userId).filter((x): x is string => !!x))];
+    const [profiles, photos] = await Promise.all([
+      userIds.length ? this.prisma.profile.findMany({ where: { userId: { in: userIds } }, select: { userId: true, firstName: true, lastName: true, gender: true } }) : Promise.resolve([]),
+      approvedPhotoMap(this.prisma, userIds),
+    ]);
+    const prof = new Map(profiles.map((p) => [p.userId, p]));
+    const out = new Map<string, { initials: string; gender: string | null; photoUrl: string | null }>();
+    for (const c of chats) {
+      if (c.venueAccountId) {
+        const i = c.requesterName.lastIndexOf(" · ");
+        const words = (i > 0 ? c.requesterName.slice(i + 3) : "").trim().split(/\s+/).filter((w) => w && w !== "—");
+        out.set(c.id, { initials: initialsOf({ firstName: words[0], lastName: words.length > 1 ? words[words.length - 1] : undefined }), gender: null, photoUrl: null });
+      } else {
+        const p = c.userId ? prof.get(c.userId) : undefined;
+        out.set(c.id, { initials: initialsOf(p), gender: p?.gender ?? null, photoUrl: c.userId ? photos.get(c.userId) ?? null : null });
+      }
+    }
+    return out;
+  }
+
   async agentState(staff: Staff) {
     const me = await this.staffUser(staff.id);
     const agent = await this.ensureAgent(me.id);
@@ -475,10 +500,11 @@ export class SupportService implements OnModuleInit {
     for (const c of mine) {
       unread.set(c.id, await this.prisma.supportMessage.count({ where: { chatId: c.id, sender: SupportSender.USER, ...(c.agentReadAt ? { createdAt: { gt: c.agentReadAt } } : {}) } }));
     }
+    const avatar = await this.avatars([...queued, ...mine, ...all]);
     const row = (c: (typeof queued)[number]) => ({
       id: c.id, status: c.status, topic: c.topic, requesterName: c.requesterName, kind: c.venueAccountId ? "venue" : "user",
       queuedAt: c.queuedAt.toISOString(), assignedAt: c.assignedAt?.toISOString() ?? null, agentNo: c.agentId ? agentNos.get(c.agentId) ?? null : null,
-      lastUserMessageAt: c.lastUserMessageAt?.toISOString() ?? null, unread: unread.get(c.id) ?? 0,
+      lastUserMessageAt: c.lastUserMessageAt?.toISOString() ?? null, unread: unread.get(c.id) ?? 0, avatar: avatar.get(c.id) ?? null,
     });
     return {
       me: { userId: me.id, role: me.role, agentNo: agent.agentNo, status: agent.status },
@@ -527,11 +553,12 @@ export class SupportService implements OnModuleInit {
       throw new ForbiddenException("Bu sohbete erişim yetkin yok");
     }
     this.seen.set(`a:${me.id}`, Date.now());
-    const [messages, notes, transfers, agents] = await Promise.all([
+    const [messages, notes, transfers, agents, avatar] = await Promise.all([
       this.prisma.supportMessage.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
       this.prisma.supportNote.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
       this.prisma.supportTransfer.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
       this.prisma.supportAgent.findMany({ select: { userId: true, agentNo: true } }),
+      this.avatars([chat]),
     ]);
     const no = new Map(agents.map((a) => [a.userId, a.agentNo]));
     if (chat.agentId === me.id) {
@@ -542,7 +569,7 @@ export class SupportService implements OnModuleInit {
     const userTypingLive = !!t?.userAt && Date.now() - t.userAt < TYPING_TTL_MS;
     return {
       id: chat.id, status: chat.status, topic: chat.topic, requesterName: chat.requesterName, kind: chat.venueAccountId ? "venue" : "user",
-      queuedAt: chat.queuedAt.toISOString(), agentId: chat.agentId, agentNo: chat.agentId ? no.get(chat.agentId) ?? null : null,
+      avatar: avatar.get(chat.id) ?? null, queuedAt: chat.queuedAt.toISOString(), agentId: chat.agentId, agentNo: chat.agentId ? no.get(chat.agentId) ?? null : null,
       mine: chat.agentId === me.id, takenOver, closedAt: chat.closedAt?.toISOString() ?? null, closedBy: chat.closedBy,
       userReadAt: chat.userReadAt?.toISOString() ?? null,
       userTyping: userTypingLive,
@@ -842,10 +869,11 @@ export class SupportService implements OnModuleInit {
       this.prisma.supportChat.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * size, take: size, include: { rating: { select: { stars: true } } } }),
     ]);
     const now = Date.now();
+    const avatar = await this.avatars(rows);
     return {
       total, page, pages: Math.max(1, Math.ceil(total / size)),
       rows: rows.map((c) => ({
-        id: c.id, name: this.displayName(c), kind: c.venueAccountId ? "venue" : "user", topic: c.topic, status: c.status,
+        id: c.id, name: this.displayName(c), kind: c.venueAccountId ? "venue" : "user", avatar: avatar.get(c.id) ?? null, topic: c.topic, status: c.status,
         agentNo: c.agentId ? no.get(c.agentId) ?? null : null, startedAt: c.createdAt.toISOString(),
         durationMin: ((c.closedAt?.getTime() ?? now) - c.createdAt.getTime()) / 60_000, stars: c.rating?.stars ?? null,
       })),
@@ -856,18 +884,19 @@ export class SupportService implements OnModuleInit {
   async allChatDetail(chatId: string) {
     const chat = await this.prisma.supportChat.findUnique({ where: { id: chatId }, include: { rating: true } });
     if (!chat) throw new NotFoundException("Sohbet bulunamadı");
-    const [messages, notes, transfers, aiLogs, agents] = await Promise.all([
+    const [messages, notes, transfers, aiLogs, agents, avatar] = await Promise.all([
       this.prisma.supportMessage.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
       this.prisma.supportNote.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
       this.prisma.supportTransfer.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
       this.prisma.supportAiLog.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
       this.prisma.supportAgent.findMany({ select: { userId: true, agentNo: true } }),
+      this.avatars([chat]),
     ]);
     const no = new Map(agents.map((a) => [a.userId, a.agentNo]));
     const r = chat.rating;
     return {
       id: chat.id, name: this.displayName(chat), requesterName: chat.requesterName, kind: chat.venueAccountId ? "venue" : "user",
-      topic: chat.topic, status: chat.status, agentNo: chat.agentId ? no.get(chat.agentId) ?? null : null,
+      avatar: avatar.get(chat.id) ?? null, topic: chat.topic, status: chat.status, agentNo: chat.agentId ? no.get(chat.agentId) ?? null : null,
       startedAt: chat.createdAt.toISOString(), closedAt: chat.closedAt?.toISOString() ?? null, closedBy: chat.closedBy,
       durationMin: ((chat.closedAt?.getTime() ?? Date.now()) - chat.createdAt.getTime()) / 60_000,
       messages: messages.map((m) => this.messageView(m)),

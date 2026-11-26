@@ -745,6 +745,20 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     dolana kadar kalır. KVKK, Gizlilik (TR + EN) ve hesap silme sayfası (del.ret15) metinleri; Anthropic (ABD) aktarımı KVKK m.9/4, işleme
     sebebi m.5/2-c ve m.5/2-f. Kişisel veri dökümünde (Veri Saklama) destek sohbetleri ve görselleri var
   - SupportChat.status: QUEUED (sırada), ACTIVE (atanmış), CLOSED; OPEN ve TICKET ileride destek bileti için ayrıldı (arayüz yok)
+  - Maskot (kırmızı kulaklıklı sandalye, şeffaf WebP): baloncuk sürümü yalnız üst kısım 512×512 (web public/maskot/destek-baloncuk.webp,
+    mobil assets/destek-baloncuk.webp); tam sürüm uzun kenar 1024 (public/maskot/destek-tam.webp, assets/destek-tam.webp)
+  - Baloncuk: mesaj ikonu yok, maskotun baloncuk sürümü; mobil 60 pt, web 64 px; sıra (kuyrukta) ve okunmamış rozeti sağ üstte maskotun
+    üstünde; erişilebilirlik etiketi sup.title ("Canlı Destek" / "Live Support") + sıra / okunmamış bilgisi; davranış aynen
+  - Kuyruk: sıra satırının hemen üstünde maskot tam sürüm, yükseklik 72 (pt / px); oyun açıkken gösterilmez
+  - Sohbet başlığı: temsilci bağlanınca (ACTIVE) başlık bloğunun üstünde ortalı maskot baloncuk sürümü 40 (pt / px); iki satırlı başlık ve
+    Sohbeti Sonlandır aynen
+  - Filigran (yalnız üye ve mekân ekranı; temsilci / ADMIN / SUPERADMIN ekranında yok): sohbet alanının ortasında maskot tam sürüm, alan
+    genişliğinin %60'ı, oran korunur, sabit (mesajlar üstünden kayar), opaklık %8 (uygulama yalnız koyu tema; açık temada %10 kuralı),
+    renkli, dokunma almaz (web pointer-events none, mobil pointerEvents none); kuyrukta ve sohbet boyunca görünür, Breakout açıkken gizli
+  - Temsilci ekranı avatarı (web + mobil; sohbet listesi satırları, açık sohbet başlığı, Tüm Sohbetler satırı ve detayı): Masa Kuruldu
+    DetayAvatar (web @ahenk/ui, mobil components/DetayAvatar). Üye: onaylı profil fotoğrafı ya da ad soyad baş harfleri, cinsiyet renkli
+    çerçeve + cinsiyet tonlu zemin. Mekân hesabında cinsiyet ve fotoğraf yok: yetkili ad soyadının baş harfleri, bileşenin varsayılan
+    (erkek / mavi) rengiyle. Backend satır ve detay yanıtlarında avatar {initials, gender, photoUrl} (support.service.ts avatars)
 
 BİLDİRİM SERVİSİ (Modül 9):
 Kanallar:

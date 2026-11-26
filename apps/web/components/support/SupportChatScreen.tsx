@@ -4,6 +4,8 @@
 // Anlık iletişim Masa Sohbeti gibi kısa aralıklı yoklama (3 sn). Konu seçimi → sıra → temsilci → sohbet → değerlendirme.
 // Kullanıcı geçmiş destek sohbetlerini göremez: sohbet kapanınca ekrandan kalkar. Küçült butonu sohbeti baloncuğa alır (SupportBubble);
 // kuyruktayken "Beklerken oyna" Breakout açar, temsilci bağlanınca ya da küçültülünce oyun tamamen kapanır.
+// Maskot: kuyrukta sıra satırının üstünde tam sürüm (72 px yükseklik), temsilci bağlanınca başlığın üstünde baloncuk sürümü (40 px),
+// sohbet alanında sabit filigran (tam sürüm, alan genişliğinin %60'ı, ortada, opaklık %8 koyu tema; oyun açıkken gizli).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { StdButton } from '@ahenk/ui';
@@ -38,6 +40,10 @@ const OK_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const RED = '#c0392b';
 const TEXT = '#f4f1ec';
 const MUTED = '#a39c93';
+// Canlı destek maskotu (public/maskot); filigran opaklığı: uygulama yalnız koyu temada (%8)
+const MASCOT_BUBBLE = '/maskot/destek-baloncuk.webp';
+const MASCOT_FULL = '/maskot/destek-tam.webp';
+const WATERMARK_OPACITY = 0.08;
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Istanbul' });
 
@@ -195,6 +201,13 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
       {/* Başlık: temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
       {/* Başlık metni kırılmaz; sığmazsa küçült ve Sohbeti Sonlandır başlığın altında tek satıra iner */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: 10, rowGap: 6 }}>
+        {/* Temsilci bağlanınca başlık bloğunun üstünde ortalı maskot (baloncuk sürümü, 40 px) */}
+        {chat.status === 'ACTIVE' && (
+          <div style={{ flexBasis: '100%', display: 'flex', justifyContent: 'center' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={MASCOT_BUBBLE} alt="" aria-hidden width={40} height={40} style={{ width: 40, height: 40 }} />
+          </div>
+        )}
         <div style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <p style={{ fontSize: 15, fontWeight: 700, color: TEXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('sup.header')}</p>
           {!!chat.agentNo && (
@@ -215,6 +228,9 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
         <div style={{ padding: game ? '6px 16px' : '10px 16px', background: 'rgba(245,158,11,0.06)', borderBottom: '1px solid rgba(245,158,11,0.2)' }}>
           {/* Oyun açıkken sıra ve tahmin satırı üstte küçük */}
           {!chat.queue.online && !game && <p style={{ fontSize: 13, color: TEXT, lineHeight: 1.5, marginBottom: 4 }}>{t('sup.offline')}</p>}
+          {/* Sıra bilgisinin hemen üstünde maskot (tam sürüm, 72 px yükseklik); oyun açıkken sıra satırı küçük kaldığı için gösterilmez */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {!game && <img src={MASCOT_FULL} alt="" aria-hidden height={72} style={{ display: 'block', height: 72, width: 'auto', marginBottom: 4 }} />}
           <p style={{ fontSize: game ? 11 : 13, color: chat.queue.online && !game ? TEXT : MUTED, lineHeight: 1.5 }}>
             {chat.queue.etaMin !== null ? t('sup.queue', { n: chat.queue.ahead, m: chat.queue.etaMin }) : t('sup.queueNoEta', { n: chat.queue.ahead })}
           </p>
@@ -228,13 +244,18 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}><StdButton variant="ghost" onClick={() => setGame(false)}>{t('sup.closeGame')}</StdButton></div>
         </div>
       ) : (<>
-      <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {msgs.map((m) => (
-          <div key={m.id} style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-            <Bubble m={m} chatId={chat.id} client={client} onImage={setViewer} />
-            {m.id === readId && <p style={{ alignSelf: 'flex-end', fontSize: 10, color: MUTED, marginTop: 2 }}>{t('sup.read')}</p>}
-          </div>
-        ))}
+      {/* Filigran: sohbet alanının ortasında sabit (mesajlar üstünden kayar), dokunma almaz; renkler korunur */}
+      <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={MASCOT_FULL} alt="" aria-hidden style={{ position: 'absolute', top: '50%', left: '50%', width: '60%', height: 'auto', transform: 'translate(-50%, -50%)', opacity: WATERMARK_OPACITY, pointerEvents: 'none', userSelect: 'none' }} />
+        <div ref={listRef} style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {msgs.map((m) => (
+            <div key={m.id} style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+              <Bubble m={m} chatId={chat.id} client={client} onImage={setViewer} />
+              {m.id === readId && <p style={{ alignSelf: 'flex-end', fontSize: 10, color: MUTED, marginTop: 2 }}>{t('sup.read')}</p>}
+            </div>
+          ))}
+        </div>
       </div>
       {!!err && <p role="alert" style={{ padding: '0 14px 6px', fontSize: 12, color: '#ff6b6b' }}>{err}</p>}
       {files.length > 0 && (

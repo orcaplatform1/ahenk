@@ -13,6 +13,7 @@ export * from './components/tables/MasaDetayKarti';
 export * from './components/tables/KankaPairs';
 export * from './components/tables/PhotoViewer';
 export * from './components/tables/ShareCard';
+export * from './components/tables/DetayAvatar';
 
 // Profile
 export * from './components/profile/AhenkHistory';

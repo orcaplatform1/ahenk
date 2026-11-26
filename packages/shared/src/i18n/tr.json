@@ -2195,7 +2195,6 @@
     "score": "Skor: {n}",
     "lives": "Can: {n}",
     "minimize": "Sohbeti küçült",
-    "bubble": "Canlı Destek sohbetini aç",
     "bubbleUnread": "{n} okunmamış mesaj",
     "bubbleQueue": "Sıra: {pos}"
   }

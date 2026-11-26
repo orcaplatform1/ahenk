@@ -2195,7 +2195,6 @@
     "score": "Score: {n}",
     "lives": "Lives: {n}",
     "minimize": "Minimize chat",
-    "bubble": "Open Live Support chat",
     "bubbleUnread": "{n} unread messages",
     "bubbleQueue": "Queue: {pos}"
   }

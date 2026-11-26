@@ -7,15 +7,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, API_PREFIX, langHeaders } from '@/lib/api';
 import { myRole } from '@/lib/adminRole';
+import { DetayAvatar } from '@ahenk/ui';
 import { AttachIcon, AutoTextarea, EmojiIcon, SendIcon, StatusPill } from '@/components/support/ChatParts';
 import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 type Sender = 'USER' | 'AGENT' | 'SYSTEM';
-interface Row { id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; queuedAt: string; assignedAt: string | null; agentNo: string | null; unread: number }
+// Kullanıcı avatarı (Masa Kuruldu DetayAvatar): onaylı fotoğraf ya da baş harfler, cinsiyet renkli çerçeve; mekânda cinsiyet / foto yok
+interface Avatar { initials: string; gender: string | null; photoUrl: string | null }
+interface Row { id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar: Avatar | null; queuedAt: string; assignedAt: string | null; agentNo: string | null; unread: number }
 interface AgentState { me: { userId: string; role: string; agentNo: string; status: 'ONLINE' | 'BREAK' | 'OFFLINE' }; maxChats: number; queue: Row[]; mine: Row[]; others: Row[]; onlineAgents: { userId: string; agentNo: string }[] }
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string }
 interface ChatDetail {
-  id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; queuedAt: string; agentNo: string | null; mine: boolean; takenOver?: boolean;
+  id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar?: Avatar | null; queuedAt: string; agentNo: string | null; mine: boolean; takenOver?: boolean;
   closedAt: string | null; userReadAt: string | null; userTyping: boolean; userOnline: boolean; userDraft: string; messages: Msg[];
   notes: { id: string; agentNo: string; content: string; createdAt: string }[];
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
@@ -126,8 +129,9 @@ function ChatsTab() {
       {rows.length === 0 && <p style={{ fontSize: 12, color: MUTED }}>—</p>}
       {rows.map((r) => (
         <button key={r.id} onClick={() => setSel(r.id)} style={{ width: '100%', textAlign: 'left', marginBottom: 6, padding: '9px 10px', borderRadius: 10, cursor: r.status === 'QUEUED' && !superadmin ? 'default' : 'pointer', background: sel === r.id ? 'rgba(59,130,246,0.15)' : CARD, border: `1px solid ${sel === r.id ? 'rgba(59,130,246,0.35)' : BORDER}`, color: TEXT }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.requesterName}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <DetayAvatar participant={r.avatar ?? {}} delay={0} size={36} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.requesterName}</span>
             {r.unread > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 99, background: RED, color: '#fff' }}>{r.unread}</span>}
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 4, fontSize: 11, color: MUTED, flexWrap: 'wrap' }}>
@@ -257,6 +261,7 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
     <section className="ll-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', minHeight: 520, maxHeight: '78vh', overflow: 'hidden' }}>
       {/* Bilgi alanı solda genişler; Devral / Kapat / Kötüye kullanım sağda alt alta */}
       <div style={{ padding: '12px 14px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        {c.avatar !== undefined && <DetayAvatar participant={c.avatar ?? {}} delay={0} size={48} />}
         <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <p style={{ fontSize: 15, fontWeight: 700 }}>{c.requesterName}</p>
           <p style={{ fontSize: 11, color: MUTED }}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · bekleme {waited(c.queuedAt)}{c.agentNo ? ` · Temsilci No ${c.agentNo}` : ''}</p>
@@ -417,9 +422,9 @@ function HaikuPanel({ chatId, onInsert }: { chatId: string; onInsert: (t: string
 // Açık, sıradaki ve kapanmış bütün sohbetler (üye + mekân). Sohbete basınca tamamı: mesajlar, görseller, iç notlar, devirler,
 // değerlendirme ve yorum, Haiku sorgu kayıtları. Açık sohbette mevcut devralma (POST /admin/live-support/chats/:id/take).
 
-interface AllRow { id: string; name: string; kind: 'user' | 'venue'; topic: string; status: string; agentNo: string | null; startedAt: string; durationMin: number; stars: number | null }
+interface AllRow { id: string; name: string; kind: 'user' | 'venue'; avatar: Avatar | null; topic: string; status: string; agentNo: string | null; startedAt: string; durationMin: number; stars: number | null }
 interface AllDetail {
-  id: string; name: string; requesterName: string; kind: 'user' | 'venue'; topic: string; status: string; agentNo: string | null;
+  id: string; name: string; requesterName: string; kind: 'user' | 'venue'; avatar: Avatar | null; topic: string; status: string; agentNo: string | null;
   startedAt: string; closedAt: string | null; closedBy: string | null; durationMin: number; messages: Msg[];
   notes: { id: string; agentNo: string; content: string; createdAt: string }[];
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
@@ -470,7 +475,7 @@ function AllChatsTab() {
             <tbody>
               {data.rows.map((r) => (
                 <tr key={r.id} onClick={() => setSel(r.id)} style={{ borderTop: `1px solid ${BORDER}`, cursor: 'pointer' }}>
-                  <td style={{ padding: '8px', fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ padding: '8px', fontWeight: 600 }}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><DetayAvatar participant={r.avatar ?? {}} delay={0} size={32} /><span>{r.name}</span></div></td>
                   <td style={{ padding: '8px' }}>{r.kind === 'venue' ? 'Mekân' : 'Üye'}</td>
                   <td style={{ padding: '8px' }}>{TOPIC[r.topic]}</td>
                   <td style={{ padding: '8px', color: r.status === 'CLOSED' ? MUTED : r.status === 'ACTIVE' ? GREEN : AMBER }}>{CHAT_STATUS[r.status] ?? r.status}</td>
@@ -523,8 +528,13 @@ function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
         {err && <span style={{ fontSize: 12, color: RED }}>{err}</span>}
       </div>
       <div className="ll-card">
-        <p style={{ fontSize: 16, fontWeight: 700 }}>{c.name}</p>
-        {c.kind === 'venue' && c.requesterName !== c.name && <p style={{ fontSize: 12, color: MUTED }}>{c.requesterName}</p>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <DetayAvatar participant={c.avatar ?? {}} delay={0} size={48} />
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 16, fontWeight: 700 }}>{c.name}</p>
+            {c.kind === 'venue' && c.requesterName !== c.name && <p style={{ fontSize: 12, color: MUTED }}>{c.requesterName}</p>}
+          </div>
+        </div>
         <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>
           {c.kind === 'venue' ? 'Mekân' : 'Üye'} · {TOPIC[c.topic]} · {CHAT_STATUS[c.status] ?? c.status} · Temsilci No {c.agentNo ?? '—'} · {dt(c.startedAt)} · {dur(c.durationMin)}
           {c.closedAt ? ` · kapanış ${dt(c.closedAt)}${c.closedBy ? ` (${CLOSED_BY[c.closedBy] ?? c.closedBy})` : ''}` : ''}

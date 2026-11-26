@@ -14,15 +14,18 @@ import { getAccess } from '@/lib/session';
 import { myRole } from '@/lib/adminRole';
 import { pickFromLibrary, type PickedImage } from '@/lib/imagePick';
 import { ChatComposer, StatusPill, SUPPORT_EMOJIS } from '@/components/SupportChatParts';
+import { DetayAvatar } from '@/components/DetayAvatar';
 import { ACard, AError, ALabel, AMono, APage, AT } from '@/components/admin/AdminUi';
 import { adm, sans } from '@/theme/theme';
 
 type Sender = 'USER' | 'AGENT' | 'SYSTEM';
-interface Row { id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; queuedAt: string; agentNo: string | null; unread: number }
+// Kullanıcı avatarı (Masa Kuruldu DetayAvatar): onaylı fotoğraf ya da baş harfler, cinsiyet renkli çerçeve; mekânda cinsiyet / foto yok
+interface Avatar { initials: string; gender: string | null; photoUrl: string | null }
+interface Row { id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar: Avatar | null; queuedAt: string; agentNo: string | null; unread: number }
 interface AgentState { me: { userId: string; role: string; agentNo: string; status: 'ONLINE' | 'BREAK' | 'OFFLINE' }; maxChats: number; queue: Row[]; mine: Row[]; others: Row[]; onlineAgents: { userId: string; agentNo: string }[] }
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string }
 interface ChatDetail {
-  id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; queuedAt: string; agentNo: string | null; mine: boolean; takenOver?: boolean;
+  id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar?: Avatar | null; queuedAt: string; agentNo: string | null; mine: boolean; takenOver?: boolean;
   closedAt: string | null; userReadAt: string | null; userTyping: boolean; userOnline: boolean; userDraft: string; messages: Msg[];
   notes: { id: string; agentNo: string; content: string; createdAt: string }[];
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
@@ -106,8 +109,9 @@ function ChatList({ onOpen }: { onOpen: (id: string) => void }) {
       {rows.map((r) => (
         <Pressable key={r.id} onPress={() => onOpen(r.id)} accessibilityRole="button"
           style={({ pressed }) => ({ minHeight: 44, marginBottom: 6, padding: 10, borderRadius: 10, backgroundColor: adm.card, borderWidth: 1, borderColor: adm.border, opacity: pressed ? 0.7 : 1 })}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-            <AT w={600} style={{ fontSize: 13, flexShrink: 1 }} numberOfLines={1}>{r.requesterName}</AT>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <DetayAvatar participant={r.avatar ?? {}} size={36} />
+            <AT w={600} style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>{r.requesterName}</AT>
             {r.unread > 0 && <AT w={700} style={{ fontSize: 10, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 99, backgroundColor: adm.red, color: '#fff', overflow: 'hidden' }}>{r.unread}</AT>}
           </View>
           <AT style={{ fontSize: 11, color: adm.muted, marginTop: 4 }}>{TOPIC[r.topic]} · {r.kind === 'venue' ? 'Mekân' : 'Üye'} · {waited(r.queuedAt)}{showAgent && r.agentNo ? ` · Temsilci No ${r.agentNo}` : ''}</AT>
@@ -211,6 +215,7 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: adm.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + adm.headerH : 0}>
       <View style={{ paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Geri" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><AT style={{ fontSize: 20 }}>‹</AT></Pressable>
+        {c.avatar !== undefined && <DetayAvatar participant={c.avatar ?? {}} size={40} />}
         <View style={{ flex: 1, minWidth: 0 }}>
           <AT w={700} style={{ fontSize: 14 }} numberOfLines={1}>{c.requesterName}</AT>
           <AT style={{ fontSize: 11, color: adm.muted }} numberOfLines={1}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · {waited(c.queuedAt)}{c.agentNo ? ` · No ${c.agentNo}` : ''}</AT>
@@ -393,9 +398,9 @@ function HaikuSheet({ visible, chatId, onClose, onInsert }: { visible: boolean; 
 // Açık, sıradaki ve kapanmış bütün sohbetler (üye + mekân); basınca tamamı: mesajlar, görseller, iç notlar, devirler, değerlendirme,
 // Haiku sorgu kayıtları. Açık sohbette mevcut devralma (POST /admin/live-support/chats/:id/take).
 
-interface AllRow { id: string; name: string; kind: 'user' | 'venue'; topic: string; status: string; agentNo: string | null; startedAt: string; durationMin: number; stars: number | null }
+interface AllRow { id: string; name: string; kind: 'user' | 'venue'; avatar: Avatar | null; topic: string; status: string; agentNo: string | null; startedAt: string; durationMin: number; stars: number | null }
 interface AllDetail {
-  id: string; name: string; requesterName: string; kind: 'user' | 'venue'; topic: string; status: string; agentNo: string | null;
+  id: string; name: string; requesterName: string; kind: 'user' | 'venue'; avatar: Avatar | null; topic: string; status: string; agentNo: string | null;
   startedAt: string; closedAt: string | null; closedBy: string | null; durationMin: number; messages: Msg[];
   notes: { id: string; agentNo: string; content: string; createdAt: string }[];
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
@@ -447,8 +452,9 @@ function AllChatsTab({ onOpen }: { onOpen: (id: string) => void }) {
           {data.rows.map((r) => (
             <Pressable key={r.id} onPress={() => onOpen(r.id)} accessibilityRole="button" accessibilityLabel={r.name}
               style={({ pressed }) => ({ minHeight: 44, padding: 10, borderRadius: 10, backgroundColor: adm.card, borderWidth: 1, borderColor: adm.border, opacity: pressed ? 0.7 : 1, gap: 3 })}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-                <AT w={600} style={{ fontSize: 13, flexShrink: 1 }} numberOfLines={1}>{r.name}</AT>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <DetayAvatar participant={r.avatar ?? {}} size={32} />
+                <AT w={600} style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>{r.name}</AT>
                 <AT style={{ fontSize: 12, color: r.status === 'CLOSED' ? adm.muted : r.status === 'ACTIVE' ? adm.green : adm.amber }}>{CHAT_STATUS[r.status] ?? r.status}</AT>
               </View>
               <AT style={{ fontSize: 11, color: adm.muted }}>{r.kind === 'venue' ? 'Mekân' : 'Üye'} · {TOPIC[r.topic]} · Temsilci No {r.agentNo ?? '—'}</AT>
@@ -498,8 +504,13 @@ function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
       {!c ? (!err && <AT style={{ color: adm.muted }}>Yükleniyor…</AT>) : (
         <View style={{ gap: 10 }}>
           <ACard style={{ gap: 4 }}>
-            <AT w={700} style={{ fontSize: 16 }}>{c.name}</AT>
-            {c.kind === 'venue' && c.requesterName !== c.name && <AT style={{ fontSize: 12, color: adm.muted }}>{c.requesterName}</AT>}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <DetayAvatar participant={c.avatar ?? {}} size={48} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <AT w={700} style={{ fontSize: 16 }}>{c.name}</AT>
+                {c.kind === 'venue' && c.requesterName !== c.name && <AT style={{ fontSize: 12, color: adm.muted }}>{c.requesterName}</AT>}
+              </View>
+            </View>
             <AT style={{ fontSize: 12, color: adm.muted }}>
               {c.kind === 'venue' ? 'Mekân' : 'Üye'} · {TOPIC[c.topic]} · {CHAT_STATUS[c.status] ?? c.status} · Temsilci No {c.agentNo ?? '—'} · {dt(c.startedAt)} · {dur(c.durationMin)}
               {c.closedAt ? ` · kapanış ${dt(c.closedAt)}${c.closedBy ? ` (${CLOSED_BY[c.closedBy] ?? c.closedBy})` : ''}` : ''}
