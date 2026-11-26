@@ -71,6 +71,8 @@ export class SupportAgentController {
     return this.support.agentMessage(this.staff(req), id, dto.content, files ?? []);
   }
   @Post("chats/:id/typing") typing(@Req() req: Request, @Param("id") id: string) { return this.support.agentTyping(this.staff(req), id); }
+  // Kullanıcının yazıyor bilgisi ve gönderilmemiş yazı önizlemesi (yalnız atanmış temsilciye; bellekten)
+  @Get("chats/:id/typing") typingState(@Req() req: Request, @Param("id") id: string) { return this.support.agentTypingState(this.staff(req), id); }
   @Post("chats/:id/notes") note(@Req() req: Request, @Param("id") id: string, @Body() dto: NoteDto) { return this.support.addNote(this.staff(req), id, dto.content); }
   @Post("chats/:id/transfer") transfer(@Req() req: Request, @Param("id") id: string, @Body() dto: TransferDto) { return this.support.transfer(this.staff(req), id, dto.toAgentId, dto.note); }
   @Post("chats/:id/take") take(@Req() req: Request, @Param("id") id: string) { return this.support.takeOver(this.staff(req), id); }
@@ -102,6 +104,9 @@ export class SupportManageController {
   @Patch("agents/:userId") @Roles(UserRole.SUPERADMIN) agentActive(@Req() req: Request, @Param("userId") userId: string, @Body() dto: AgentActiveDto) {
     return this.support.setAgentAccountActive(this.actor(req), userId, dto.active);
   }
+  // Kullanıcı / mekân detayı "Canlı destek kısıtlamaları" (detay sayfasını görenler: ADMIN + SUPERADMIN); kaldırma yalnız SUPERADMIN
+  @Get("restrictions/user/:userId") userRestrictions(@Param("userId") userId: string) { return this.support.restrictionsOfUser(userId); }
+  @Get("restrictions/venue/:venueId") venueRestrictions(@Param("venueId") venueId: string) { return this.support.restrictionsOfVenue(venueId); }
   @Get("restrictions") @Roles(UserRole.SUPERADMIN) restrictions() { return this.support.restrictions(); }
   @Post("restrictions/:id/lift") @Roles(UserRole.SUPERADMIN) lift(@Req() req: Request, @Param("id") id: string) { return this.support.liftRestriction(this.actor(req), id); }
   @Get("ai-logs") @Roles(UserRole.SUPERADMIN) aiLogs() { return this.support.aiLogs(); }

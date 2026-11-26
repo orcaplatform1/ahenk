@@ -19,8 +19,9 @@ import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, SANS, 
 type Sender = 'USER' | 'AGENT' | 'SYSTEM';
 // Kullanıcı avatarı (Masa Kuruldu DetayAvatar): onaylı fotoğraf ya da baş harfler, cinsiyet renkli çerçeve; mekânda cinsiyet / foto yok
 interface Avatar { initials: string; gender: string | null; photoUrl: string | null }
-interface Row { id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar: Avatar | null; queuedAt: string; assignedAt: string | null; agentNo: string | null; unread: number }
-interface AgentState { me: { userId: string; role: string; agentNo: string; status: 'ONLINE' | 'BREAK' | 'OFFLINE'; breakStartedAt: string | null }; maxChats: number; queue: Row[]; mine: Row[]; others: Row[]; onlineAgents: { userId: string; agentNo: string }[] }
+interface Row { id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar: Avatar | null; queuedAt: string; assignedAt: string | null; agentNo: string | null; unread: number; userTyping?: boolean }
+// assignable: yalnız Temsilci (SUPPORT) atama alır; ADMIN / SUPERADMIN ekranında durum seçimi ve mola şeridi yok
+interface AgentState { me: { userId: string; role: string; agentNo: string; status: 'ONLINE' | 'BREAK' | 'OFFLINE'; breakStartedAt: string | null; assignable?: boolean }; maxChats: number; queue: Row[]; mine: Row[]; others: Row[]; onlineAgents: { userId: string; agentNo: string }[] }
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string }
 interface ChatDetail {
   id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar?: Avatar | null; queuedAt: string; agentNo: string | null; mine: boolean; takenOver?: boolean;
@@ -150,6 +151,7 @@ function ChatsTab() {
             <span>{r.kind === 'venue' ? 'Mekân' : 'Üye'}</span>
             <span>· {waited(r.queuedAt)}</span>
             {showAgent && r.agentNo && <span>· Temsilci No {r.agentNo}</span>}
+            {r.userTyping && <span style={{ color: RED, fontStyle: 'italic' }}>· yazıyor…</span>}
           </div>
         </button>
       ))}
@@ -161,16 +163,16 @@ function ChatsTab() {
       <div className="ll-card" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12, padding: '10px 14px' }}>
         <span style={{ fontSize: 13 }}>Temsilci No: <strong style={{ fontFamily: MONO }}>{st.me.agentNo}</strong></span>
         <span style={{ fontSize: 12, color: MUTED }}>Eşzamanlı sınır: {st.maxChats}</span>
-        <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
+        {st.me.assignable && <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
           {st.me.status === 'BREAK'
             ? <button style={btn(AMBER, true)} onClick={() => setStatus('ONLINE')}>Moladan Dön</button>
             : st.me.status === 'ONLINE' && <button style={btn(AMBER)} onClick={() => setBreakAsk(true)}>Molaya Çık</button>}
           {STATUS.map(([k, l, c]) => (
             <button key={k} onClick={() => setStatus(k)} aria-pressed={st.me.status === k} style={{ ...btn(c, st.me.status === k), color: st.me.status === k ? '#020c1b' : c }}>{l}</button>
           ))}
-        </div>
+        </div>}
       </div>
-      {st.me.status === 'BREAK' && (
+      {st.me.assignable && st.me.status === 'BREAK' && (
         <div role="status" style={{ marginBottom: 12, padding: '8px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.4)', color: AMBER, fontSize: 13, fontWeight: 600 }}>
           Moladasın{st.me.breakStartedAt ? ` · ${sinceMin(st.me.breakStartedAt)} dk` : ''}
         </div>
@@ -216,6 +218,21 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
   const fileRef = useRef<HTMLInputElement>(null);
   const typingAt = useRef(0);
   const count = useRef(0);
+  // Atanmış temsilci: kullanıcının yazıyor bilgisi ve gönderilmemiş yazı önizlemesi 300 ms aralıkla (sunucuda yalnız bellekte)
+  const [live, setLive] = useState<{ userTyping: boolean; userDraft: string } | null>(null);
+  const liveOn = !!c && c.mine && c.status === 'ACTIVE' && !c.takenOver;
+  useEffect(() => {
+    if (!liveOn) { setLive(null); return; }
+    let stop = false; let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = async () => {
+      try { const r = await api.get<{ userTyping: boolean; userDraft: string }>(`/admin/live-support/chats/${id}/typing`); if (!stop) setLive(r); } catch { /* sonraki yoklamada */ }
+      if (!stop) timer = setTimeout(poll, 300);
+    };
+    poll();
+    return () => { stop = true; if (timer) clearTimeout(timer); };
+  }, [liveOn, id]);
+  const draft = live ? live.userDraft : c?.userDraft ?? '';
+  useEffect(() => { if (draft) listRef.current?.scrollTo({ top: listRef.current.scrollHeight }); }, [draft]);
 
   const loaded = useRef(false);
   const cb = useRef({ onClosed, onTakenOver });
@@ -248,6 +265,7 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
   if (!c) return <div className="ll-card"><p style={{ color: err ? RED : MUTED, fontSize: 13 }}>{err || 'Yükleniyor…'}</p></div>;
   const open = c.status === 'ACTIVE' || c.status === 'QUEUED';
   const canWrite = c.mine && c.status === 'ACTIVE';
+  const userTyping = live ? live.userTyping : c.userTyping;
   const abuseOk = abuseDays !== null && abuseReason.replace(/\s/g, '').length >= REASON_MIN;
   // Okundu: yalnız temsilci mesajlarından kullanıcının okuduğu sonuncusunun altında
   const readId = c.userReadAt ? [...c.messages].reverse().find((m) => m.sender === 'AGENT' && m.createdAt <= c.userReadAt!)?.id : undefined;
@@ -292,7 +310,7 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
           <p style={{ fontSize: 11, color: MUTED }}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · bekleme {waited(c.queuedAt)}{c.agentNo ? ` · Temsilci No ${c.agentNo}` : ''}</p>
           {open && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <StatusPill status={c.userTyping ? 'typing' : c.userOnline ? 'online' : 'offline'} label={c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'} />
+              <StatusPill status={userTyping ? 'typing' : c.userOnline ? 'online' : 'offline'} label={userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'} />
               {((!c.mine && st.me.role === 'ADMIN') || c.takenOver) && <span style={{ fontSize: 11, color: MUTED }}>salt okunur</span>}
             </div>
           )}
@@ -342,8 +360,8 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
             </div>
           );
         })}
-        {/* Yazı önizlemesi: kullanıcının gönderilmemiş metni (sunucuda yalnız bellekte) */}
-        {c.userTyping && <p style={{ fontSize: 12, color: AMBER, fontStyle: 'italic' }}>yazıyor…{c.userDraft ? ` “${c.userDraft}”` : ''}</p>}
+        {/* Yazı önizlemesi: kullanıcının gönderilmemiş metni, listenin en altında gri ve italik (sunucuda yalnız bellekte; yalnız atanmış temsilci) */}
+        {!!draft && <p style={{ alignSelf: 'flex-start', maxWidth: '78%', flexShrink: 0, fontSize: 13, color: MUTED, fontStyle: 'italic', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{draft}</p>}
         {c.takenOver && <p style={{ alignSelf: 'center', marginTop: 6, padding: '6px 12px', borderRadius: 8, fontSize: 12, color: AMBER, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', textAlign: 'center' }}>{TAKEN_OVER}</p>}
       </div>
       {err && <p style={{ padding: '0 12px 6px', fontSize: 12, color: RED }}>{err}</p>}

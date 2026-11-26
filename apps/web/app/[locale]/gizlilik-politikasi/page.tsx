@@ -105,7 +105,7 @@ const sections = [
           'Yasal yükümlülüklerin yerine getirilmesi ve yetkili kurumlara bildirim yapılması',
           'Platform güvenliğinin sağlanması ve kötüye kullanımın önlenmesi',
           'Ekran görüntüsü ihlal kayıtları: topluluk kurallarının uygulanması ve kullanıcıların kişisel verilerinin korunması',
-          'Canlı destek hizmetinin yürütülmesi: taleplerinin yanıtlanması, hizmet kalitesinin artırılması ve güvenliğin için görüşmelerin kayıt altına alınması (KVKK m.5/2-c ve m.5/2-f)',
+          'Canlı destek hizmetinin yürütülmesi: taleplerinin yanıtlanması, hizmet kalitesinin artırılması ve güvenliğin için görüşmelerin kayıt altına alınması (KVKK m.5/2-c ve m.5/2-f). Canlı destek sohbetinde yazdığın metin, göndermeden önce müşteri temsilcisinin ekranında anlık olarak görünebilir. Gönderilmeyen metin kaydedilmez.',
         ]}
       />
     ),

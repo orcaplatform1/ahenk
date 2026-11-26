@@ -25,8 +25,9 @@ const VENUE_RING = { color: onb.primeBorder, bg: 'rgba(224,165,38,0.12)' };
 type Sender = 'USER' | 'AGENT' | 'SYSTEM';
 // Kullanıcı avatarı (Masa Kuruldu DetayAvatar): onaylı fotoğraf ya da baş harfler, cinsiyet renkli çerçeve; mekânda cinsiyet / foto yok
 interface Avatar { initials: string; gender: string | null; photoUrl: string | null }
-interface Row { id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar: Avatar | null; queuedAt: string; agentNo: string | null; unread: number }
-interface AgentState { me: { userId: string; role: string; agentNo: string; status: 'ONLINE' | 'BREAK' | 'OFFLINE'; breakStartedAt: string | null }; maxChats: number; queue: Row[]; mine: Row[]; others: Row[]; onlineAgents: { userId: string; agentNo: string }[] }
+interface Row { id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar: Avatar | null; queuedAt: string; agentNo: string | null; unread: number; userTyping?: boolean }
+// assignable: yalnız Temsilci (SUPPORT) atama alır; ADMIN / SUPERADMIN ekranında durum seçimi ve mola şeridi yok
+interface AgentState { me: { userId: string; role: string; agentNo: string; status: 'ONLINE' | 'BREAK' | 'OFFLINE'; breakStartedAt: string | null; assignable?: boolean }; maxChats: number; queue: Row[]; mine: Row[]; others: Row[]; onlineAgents: { userId: string; agentNo: string }[] }
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string }
 interface ChatDetail {
   id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; avatar?: Avatar | null; queuedAt: string; agentNo: string | null; mine: boolean; takenOver?: boolean;
@@ -124,7 +125,7 @@ function ChatList({ onOpen }: { onOpen: (id: string) => void }) {
             <AT w={600} style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>{r.requesterName}</AT>
             {r.unread > 0 && <AT w={700} style={{ fontSize: 10, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 99, backgroundColor: adm.red, color: '#fff', overflow: 'hidden' }}>{r.unread}</AT>}
           </View>
-          <AT style={{ fontSize: 11, color: adm.muted, marginTop: 4 }}>{TOPIC[r.topic]} · {r.kind === 'venue' ? 'Mekân' : 'Üye'} · {waited(r.queuedAt)}{showAgent && r.agentNo ? ` · Temsilci No ${r.agentNo}` : ''}</AT>
+          <AT style={{ fontSize: 11, color: adm.muted, marginTop: 4 }}>{TOPIC[r.topic]} · {r.kind === 'venue' ? 'Mekân' : 'Üye'} · {waited(r.queuedAt)}{showAgent && r.agentNo ? ` · Temsilci No ${r.agentNo}` : ''}{r.userTyping && <AT style={{ fontSize: 11, color: adm.red, fontStyle: 'italic' }}> · yazıyor…</AT>}</AT>
         </Pressable>
       ))}
     </View>
@@ -133,14 +134,14 @@ function ChatList({ onOpen }: { onOpen: (id: string) => void }) {
     <View>
       <ACard style={{ marginBottom: 12, gap: 10 }}>
         <AT style={{ fontSize: 13 }}>Temsilci No: <AMono w={600}>{st.me.agentNo}</AMono> · Eşzamanlı sınır: {st.maxChats}</AT>
-        <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+        {!!st.me.assignable && <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
           {st.me.status === 'BREAK'
             ? <SmallBtn label="Moladan Dön" color={adm.amber} filled onPress={() => setStatus('ONLINE')} />
             : st.me.status === 'ONLINE' && <SmallBtn label="Molaya Çık" color={adm.amber} onPress={() => setBreakAsk(true)} />}
           {STATUS.map(([k, l, c]) => <SmallBtn key={k} label={l} color={c} filled={st.me.status === k} onPress={() => setStatus(k)} />)}
-        </View>
+        </View>}
       </ACard>
-      {st.me.status === 'BREAK' && (
+      {!!st.me.assignable && st.me.status === 'BREAK' && (
         <View accessibilityRole="text" style={{ marginBottom: 12, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.4)' }}>
           <AT w={600} style={{ fontSize: 13, color: adm.amber }}>Moladasın{st.me.breakStartedAt ? ` · ${sinceMin(st.me.breakStartedAt)} dk` : ''}</AT>
         </View>
@@ -180,6 +181,21 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
   const scroll = useRef<ScrollViewInstance>(null);
   const typingAt = useRef(0);
   const [emoji, setEmoji] = useState(false);
+  // Atanmış temsilci: kullanıcının yazıyor bilgisi ve gönderilmemiş yazı önizlemesi 300 ms aralıkla (sunucuda yalnız bellekte);
+  // yalnız ekran odaktayken
+  const [live, setLive] = useState<{ userTyping: boolean; userDraft: string } | null>(null);
+  const liveOn = !!c && c.mine && c.status === 'ACTIVE' && !c.takenOver;
+  useFocusEffect(useCallback(() => {
+    if (!liveOn) { setLive(null); return; }
+    let stop = false; let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = async () => {
+      try { const r = await api.get<{ userTyping: boolean; userDraft: string }>(`/admin/live-support/chats/${id}/typing`); if (!stop) setLive(r); } catch { /* sonraki yoklamada */ }
+      if (!stop) timer = setTimeout(poll, 300);
+    };
+    poll();
+    return () => { stop = true; if (timer) clearTimeout(timer); };
+  }, [liveOn, id]));
+  const draft = live ? live.userDraft : c?.userDraft ?? '';
 
   const loaded = useRef(false);
   const back = useRef(onBack);
@@ -206,6 +222,7 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
   if (!c) return <APage>{err ? <AError>{err}</AError> : <AT style={{ color: adm.muted }}>Yükleniyor…</AT>}</APage>;
   const open = c.status === 'ACTIVE' || c.status === 'QUEUED';
   const canWrite = c.mine && c.status === 'ACTIVE';
+  const userTyping = live ? live.userTyping : c.userTyping;
   const superadmin = st?.me.role === 'SUPERADMIN';
   const slash = text.startsWith('/') ? canned.filter((x) => x.title.toLocaleLowerCase('tr').includes(text.slice(1).toLocaleLowerCase('tr'))) : [];
   const img = (f: string) => ({ uri: `${API_PREFIX}/admin/live-support/chats/${id}/images/${f}`, headers: token ? { Authorization: `Bearer ${token}` } : undefined });
@@ -246,7 +263,7 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
           <AT style={{ fontSize: 11, color: adm.muted }} numberOfLines={1}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · {waited(c.queuedAt)}{c.agentNo ? ` · No ${c.agentNo}` : ''}</AT>
           {open && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-              <StatusPill status={c.userTyping ? 'typing' : c.userOnline ? 'online' : 'offline'} label={c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'} />
+              <StatusPill status={userTyping ? 'typing' : c.userOnline ? 'online' : 'offline'} label={userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'} />
               {((!c.mine && st?.me.role === 'ADMIN') || !!c.takenOver) && <AT style={{ fontSize: 11, color: adm.muted }}>salt okunur</AT>}
             </View>
           )}
@@ -311,8 +328,8 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
             </View>
           );
         })}
-        {/* Yazı önizlemesi: kullanıcının gönderilmemiş metni (sunucuda yalnız bellekte) */}
-        {c.userTyping && <AT style={{ fontSize: 12, color: adm.amber, fontStyle: 'italic' }}>yazıyor…{c.userDraft ? ` “${c.userDraft}”` : ''}</AT>}
+        {/* Yazı önizlemesi: kullanıcının gönderilmemiş metni, listenin en altında gri ve italik (sunucuda yalnız bellekte; yalnız atanmış temsilci) */}
+        {!!draft && <AT style={{ alignSelf: 'flex-start', maxWidth: '82%', fontSize: 13, lineHeight: 19, color: adm.muted, fontStyle: 'italic' }}>{draft}</AT>}
         {c.takenOver && (
           <View accessibilityRole="text" style={{ alignSelf: 'center', marginTop: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: 'rgba(245,158,11,0.08)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }}>
             <AT style={{ fontSize: 12, color: adm.amber, textAlign: 'center' }}>{TAKEN_OVER}</AT>

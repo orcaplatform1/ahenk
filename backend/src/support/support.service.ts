@@ -271,9 +271,10 @@ export class SupportService implements OnModuleInit {
 
   userTyping(r: Requester, chatId: string, text: string) {
     return this.ownChat(r, chatId).then(() => {
+      // Yazı önizlemesi yalnız bellekte (DB'ye / loga yazılmaz); çubuk tamamen silinince önizleme ve yazıyor hemen kalkar
       const t = this.typing.get(chatId) ?? {};
-      t.userText = (text ?? "").slice(0, SUPPORT_MESSAGE_MAX);
-      t.userAt = Date.now();
+      const v = (text ?? "").slice(0, SUPPORT_MESSAGE_MAX);
+      if (v.trim()) { t.userText = v; t.userAt = Date.now(); } else { t.userText = undefined; t.userAt = undefined; }
       this.typing.set(chatId, t);
       return { ok: true };
     });
@@ -338,10 +339,12 @@ export class SupportService implements OnModuleInit {
 
   // ─── Atama ───────────────────────────────────────────────────────────────
 
+  // Atama alabilen temsilciler: yalnız SUPPORT rolü (ADMIN ve SUPERADMIN'e hiçbir yolla sohbet atanmaz; SUPERADMIN yalnız Devral ile alır).
+  // FIFO atama, 2 dk yeniden atama, devir hedefi ve sıra tahmini bu listeyi kullanır
   private async onlineAgents() {
     const agents = await this.prisma.supportAgent.findMany({ where: { status: SupportAgentStatus.ONLINE } });
     if (!agents.length) return [];
-    const users = await this.prisma.user.findMany({ where: { id: { in: agents.map((a) => a.userId) }, role: { in: STAFF_ROLES }, status: UserStatus.ACTIVE }, select: { id: true } });
+    const users = await this.prisma.user.findMany({ where: { id: { in: agents.map((a) => a.userId) }, role: UserRole.SUPPORT, status: UserStatus.ACTIVE }, select: { id: true } });
     const ok = new Set(users.map((u) => u.id));
     return agents.filter((a) => ok.has(a.userId));
   }
@@ -441,9 +444,10 @@ export class SupportService implements OnModuleInit {
           }
         }
       }
-      // 5) Moladaki temsilcinin bağlantısı 20 sn'den uzun koptuysa çevrimdışı sayılır, açık mola kaydı o anki saatle kapanır
-      const onBreak = await this.prisma.supportAgent.findMany({ where: { status: SupportAgentStatus.BREAK }, select: { userId: true } });
-      for (const a of onBreak) {
+      // 5) Çevrimiçi ya da moladaki temsilcinin bağlantısı 20 sn'den uzun koptuysa çevrimdışı sayılır, açık mola kaydı o anki saatle kapanır.
+      // Açık sohbetleri temsilcide kalır (sıraya dönmez)
+      const present = await this.prisma.supportAgent.findMany({ where: { status: { in: [SupportAgentStatus.ONLINE, SupportAgentStatus.BREAK] } }, select: { userId: true } });
+      for (const a of present) {
         if (now - (this.seen.get(`a:${a.userId}`) ?? this.startedAt) <= AWAY_MS) continue;
         const at = new Date();
         await this.prisma.supportAgent.update({ where: { userId: a.userId }, data: { status: SupportAgentStatus.OFFLINE, statusChangedAt: at } });
@@ -519,12 +523,14 @@ export class SupportService implements OnModuleInit {
       id: c.id, status: c.status, topic: c.topic, requesterName: c.requesterName, kind: c.venueAccountId ? "venue" : "user",
       queuedAt: c.queuedAt.toISOString(), assignedAt: c.assignedAt?.toISOString() ?? null, agentNo: c.agentId ? agentNos.get(c.agentId) ?? null : null,
       lastUserMessageAt: c.lastUserMessageAt?.toISOString() ?? null, unread: unread.get(c.id) ?? 0, avatar: avatar.get(c.id) ?? null,
+      userTyping: this.userTypingLive(c.id),
     });
     const openBreak = agent.status === SupportAgentStatus.BREAK
       ? await this.prisma.supportBreak.findFirst({ where: { agentId: me.id, endedAt: null }, orderBy: { startedAt: "desc" }, select: { startedAt: true } })
       : null;
     return {
-      me: { userId: me.id, role: me.role, agentNo: agent.agentNo, status: agent.status, breakStartedAt: openBreak?.startedAt.toISOString() ?? null },
+      // assignable: yalnız SUPPORT atama alır; ADMIN / SUPERADMIN ekranında durum seçimi ve mola şeridi yok
+      me: { userId: me.id, role: me.role, agentNo: agent.agentNo, status: agent.status, breakStartedAt: openBreak?.startedAt.toISOString() ?? null, assignable: me.role === UserRole.SUPPORT },
       maxChats: settings.maxChats,
       queue: queued.map(row),
       mine: mine.map(row),
@@ -534,7 +540,9 @@ export class SupportService implements OnModuleInit {
   }
 
   async setStatus(staff: Staff, status: SupportAgentStatus) {
-    await this.staffUser(staff.id);
+    const me = await this.staffUser(staff.id);
+    // ADMIN ve SUPERADMIN atama almaz: çevrimiçi / çevrimdışı / mola durumu yalnız temsilcide (SUPPORT)
+    if (me.role !== UserRole.SUPPORT) throw new ForbiddenException("Bu işlem için yetkin yok");
     const agent = await this.ensureAgent(staff.id);
     const busy = await this.prisma.supportChat.count({ where: { agentId: staff.id, status: SupportChatStatus.ACTIVE } });
     const now = new Date();
@@ -550,7 +558,18 @@ export class SupportService implements OnModuleInit {
     return { status };
   }
 
-  // Erişim: atanmış temsilci; ADMIN bütün sohbetleri salt okunur görür (yalnız kendine atanana yazar); SUPERADMIN bütün sohbetleri izler
+  // ADMIN bütün sohbetleri yalnız salt okunur görür: mesaj, görsel, iç not, yazıyor, devir, sonlandırma, kısıtlama ve devralma 403
+  private denyAdmin(me: { role: UserRole }) {
+    if (me.role === UserRole.ADMIN) throw new ForbiddenException("Bu işlem için yetkin yok");
+  }
+
+  // Kullanıcı tarafı yazıyor bilgisi (bellekte, 5 sn)
+  private userTypingLive(chatId: string) {
+    const t = this.typing.get(chatId);
+    return !!t?.userAt && Date.now() - t.userAt < TYPING_TTL_MS;
+  }
+
+  // Erişim: atanmış temsilci; ADMIN bütün sohbetleri salt okunur görür; SUPERADMIN bütün sohbetleri izler (Devral ile alır)
   private async staffChat(staff: Staff, chatId: string) {
     const me = await this.staffUser(staff.id);
     const chat = await this.prisma.supportChat.findUnique({ where: { id: chatId } });
@@ -591,7 +610,7 @@ export class SupportService implements OnModuleInit {
       if (lastUser && (!chat.agentReadAt || chat.agentReadAt < lastUser.createdAt)) await this.prisma.supportChat.update({ where: { id: chatId }, data: { agentReadAt: new Date() } });
     }
     const t = this.typing.get(chatId);
-    const userTypingLive = !!t?.userAt && Date.now() - t.userAt < TYPING_TTL_MS;
+    const userTypingLive = this.userTypingLive(chatId);
     return {
       id: chat.id, status: chat.status, topic: chat.topic, requesterName: chat.requesterName, kind: chat.venueAccountId ? "venue" : "user",
       avatar: avatar.get(chat.id) ?? null, queuedAt: chat.queuedAt.toISOString(), agentId: chat.agentId, agentNo: chat.agentId ? no.get(chat.agentId) ?? null : null,
@@ -599,7 +618,8 @@ export class SupportService implements OnModuleInit {
       userReadAt: chat.userReadAt?.toISOString() ?? null,
       userTyping: userTypingLive,
       userOnline: OPEN.includes(chat.status) && this.isSeen(`c:${chat.id}`),
-      userDraft: userTypingLive ? t?.userText ?? "" : "",
+      // Yazı önizlemesi yalnız sohbete atanmış temsilciye (SUPERADMIN Devral ile aldıysa ona); salt okunur izleyen görmez
+      userDraft: userTypingLive && chat.agentId === me.id ? t?.userText ?? "" : "",
       messages: messages.map((m) => this.messageView(m)),
       notes: notes.map((n) => ({ id: n.id, agentNo: n.agentNo, content: n.content, createdAt: n.createdAt.toISOString() })),
       transfers: transfers.map((x) => ({ id: x.id, from: no.get(x.fromAgentId) ?? null, to: no.get(x.toAgentId) ?? null, note: x.note, createdAt: x.createdAt.toISOString() })),
@@ -608,6 +628,7 @@ export class SupportService implements OnModuleInit {
 
   async agentMessage(staff: Staff, chatId: string, content: string | undefined, files: Upload[]) {
     const { me, chat } = await this.staffChat(staff, chatId);
+    this.denyAdmin(me);
     if (chat.status !== SupportChatStatus.ACTIVE || chat.agentId !== me.id) throw new ForbiddenException("Bu sohbete yalnız atanmış temsilci yazabilir.");
     const text = this.cleanText(content);
     if (!text && !files.length) throw new BadRequestException("Mesaj boş olamaz");
@@ -627,6 +648,7 @@ export class SupportService implements OnModuleInit {
 
   async agentTyping(staff: Staff, chatId: string) {
     const { me, chat } = await this.staffChat(staff, chatId);
+    this.denyAdmin(me);
     if (chat.agentId !== me.id) return { ok: false };
     const t = this.typing.get(chatId) ?? {};
     t.agentAt = Date.now();
@@ -635,8 +657,8 @@ export class SupportService implements OnModuleInit {
   }
 
   async addNote(staff: Staff, chatId: string, content: string) {
-    const { me, chat } = await this.staffChat(staff, chatId);
-    if (me.role === UserRole.ADMIN && chat.agentId !== me.id) throw new ForbiddenException("Bu sohbete yalnız atanmış temsilci yazabilir.");
+    const { me } = await this.staffChat(staff, chatId);
+    this.denyAdmin(me);
     const text = (content ?? "").trim();
     if (!text) throw new BadRequestException("Not boş olamaz");
     const agent = await this.ensureAgent(me.id);
@@ -647,6 +669,7 @@ export class SupportService implements OnModuleInit {
   // Devret: zorunlu not, hedef çevrimiçi temsilci; kullanıcıya sistem mesajı, başlıkta yeni Temsilci No
   async transfer(staff: Staff, chatId: string, toAgentId: string, note: string) {
     const { me, chat } = await this.staffChat(staff, chatId);
+    this.denyAdmin(me);
     if (chat.status !== SupportChatStatus.ACTIVE || chat.agentId !== me.id) throw new ForbiddenException("Yalnız kendi açık sohbetini devredebilirsin.");
     const text = (note ?? "").trim();
     if (!text) throw new BadRequestException("Devir için açıklama notu zorunlu");
@@ -686,6 +709,7 @@ export class SupportService implements OnModuleInit {
   // Temsilci kapatır; "Kötüye kullanım" ile kullanıcının canlı destek erişimi 1 / 7 / 30 gün kısıtlanır (İşlem Kayıtları'na yazılır)
   async agentClose(staff: Staff, chatId: string, abuseDays?: number, abuseReason?: string) {
     const { me, chat } = await this.staffChat(staff, chatId);
+    this.denyAdmin(me);
     if (!OPEN.includes(chat.status)) throw new BadRequestException("Sohbet açık değil");
     if (chat.agentId !== me.id && me.role !== UserRole.SUPERADMIN) throw new ForbiddenException("Bu sohbeti kapatamazsın");
     if (abuseDays !== undefined) {
@@ -802,6 +826,36 @@ export class SupportService implements OnModuleInit {
       expiresAt: r.expiresAt.toISOString(), createdAt: r.createdAt.toISOString(), agentNo: agents.get(r.createdById) ?? null,
       liftedAt: r.liftedAt?.toISOString() ?? null, active: !r.liftedAt && r.expiresAt.getTime() > now, reason: r.reason ?? NO_REASON,
     }));
+  }
+
+  // Kullanıcı / mekân detayındaki "Canlı destek kısıtlamaları": o hesabın bütün kısıtları, en yeni en üstte
+  async restrictionsOf(where: Prisma.SupportRestrictionWhereInput) {
+    const rows = await this.prisma.supportRestriction.findMany({ where, orderBy: { createdAt: "desc" } });
+    const agents = new Map((await this.prisma.supportAgent.findMany({ select: { userId: true, agentNo: true } })).map((a) => [a.userId, a.agentNo]));
+    const lifterIds = [...new Set(rows.map((r) => r.liftedById).filter((x): x is string => !!x))];
+    const lifters = new Map((lifterIds.length ? await this.prisma.user.findMany({ where: { id: { in: lifterIds } }, select: { id: true, role: true, profile: { select: { firstName: true, lastName: true } } } }) : [])
+      .map((u) => [u.id, { name: u.profile ? `${u.profile.firstName} ${u.profile.lastName}`.trim() : "—", role: u.role, agentNo: agents.get(u.id) ?? null }]));
+    const now = Date.now();
+    return rows.map((r) => ({
+      id: r.id, days: r.days, createdAt: r.createdAt.toISOString(), expiresAt: r.expiresAt.toISOString(),
+      status: r.liftedAt ? "LIFTED" : r.expiresAt.getTime() > now ? "ACTIVE" : "EXPIRED",
+      agentNo: agents.get(r.createdById) ?? null, reason: r.reason ?? NO_REASON,
+      liftedAt: r.liftedAt?.toISOString() ?? null, liftedBy: r.liftedById ? lifters.get(r.liftedById) ?? null : null,
+    }));
+  }
+
+  restrictionsOfUser(userId: string) { return this.restrictionsOf({ userId }); }
+
+  async restrictionsOfVenue(venueId: string) {
+    const acc = await this.prisma.venueAccount.findUnique({ where: { venueId }, select: { id: true } });
+    return acc ? this.restrictionsOf({ venueAccountId: acc.id }) : [];
+  }
+
+  // Temsilci ekranı yazı önizlemesi (300 ms yoklama): yalnız bellekten okur, hiçbir yere yazmaz
+  async agentTypingState(staff: Staff, chatId: string) {
+    const { me, chat } = await this.staffChat(staff, chatId);
+    const typing = OPEN.includes(chat.status) && this.userTypingLive(chatId);
+    return { userTyping: typing, userDraft: typing && chat.agentId === me.id ? this.typing.get(chatId)?.userText ?? "" : "" };
   }
 
   async liftRestriction(actorId: string, id: string) {

@@ -5,6 +5,7 @@ import { api, API_PREFIX } from '@/lib/api';
 import { isVenuePhoto, VENUE_PHOTO_ACCEPT } from '@/lib/imageType';
 import { mediaUrl } from '@/lib/venueApi';
 import { AdminSelect } from '@/components/AdminSelect';
+import { AdminSupportRestrictions } from '@/components/AdminSupportRestrictions';
 import { BG, SURFACE, BORDER, TEXT, MUTED, RED, GREEN, CYAN, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 
@@ -405,6 +406,8 @@ export default function AdminVenues() {
                   <input inputMode="decimal" value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} style={inputStyle} />
                 </div>
               </div>
+              {/* Canlı destek kısıtlamaları (mekân hesabının; en yeni en üstte) */}
+              {editing && <AdminSupportRestrictions venueId={editing.id} />}
               {editing?.account && (
                 <div>
                   <p style={labelStyle}>PANEL HESABI İLETİŞİM</p>

@@ -13,6 +13,7 @@ import { AdminDeletionRequests, AdminNoShowWarnings, AdminSuspendButtons, AdminS
 import { adm, llCard } from '@/theme/theme';
 import { useLocalSearchParams } from 'expo-router';
 import { AdminScreenshotViolations } from '@/components/admin/AdminScreenshotViolations';
+import { AdminSupportRestrictions } from '@/components/admin/AdminSupportRestrictions';
 
 function canSanction(t: { id: string; role: string }) {
   const me = myId(); if (!me) return false;
@@ -158,6 +159,8 @@ export default function AdminUsers() {
                   </View>
                   {/* Ekran görüntüsü ihlal sayısı ve listesi */}
                   <AdminScreenshotViolations userId={m.id} />
+                  {/* Canlı destek kısıtlamaları (en yeni en üstte) */}
+                  <AdminSupportRestrictions userId={m.id} />
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                     <StatusPill text={st.label} color={st.color} bg={st.bg} border={st.border} pad={[2, 8]} />
                     <StatusPill text={`KYC: ${kycOk ? 'Onaylı ✓' : m.kyc?.status ?? 'Yok'}`} color={kycOk ? adm.green : adm.muted} bg={kycOk ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)'} border={kycOk ? 'rgba(34,197,94,0.3)' : adm.border} pad={[2, 8]} />

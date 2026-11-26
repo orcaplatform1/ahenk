@@ -10,6 +10,7 @@ import { Btn } from '@/components/ui';
 import { ACard, AError, ALabel, AMono, APage, AT, ATitle } from '@/components/admin/AdminUi';
 import { AdminSelect, AInput } from '@/components/admin/AdminControls';
 import { ADialog } from '@/components/admin/ADialog';
+import { AdminSupportRestrictions } from '@/components/admin/AdminSupportRestrictions';
 import { StatusPill } from '@/components/admin/StatusPill';
 import { adm, sans } from '@/theme/theme';
 
@@ -152,6 +153,8 @@ export default function AdminVenues() {
             <View style={{ flex: 1 }}><Field label="ENLEM (OPSİYONEL)"><AInput keyboardType="decimal-pad" value={form.latitude} onChangeText={set('latitude')} style={{ paddingHorizontal: 12 }} /></Field></View>
             <View style={{ flex: 1 }}><Field label="BOYLAM (OPSİYONEL)"><AInput keyboardType="decimal-pad" value={form.longitude} onChangeText={set('longitude')} style={{ paddingHorizontal: 12 }} /></Field></View>
           </View>
+          {/* Canlı destek kısıtlamaları (mekân hesabının; en yeni en üstte) */}
+          {!!editing && <AdminSupportRestrictions venueId={editing.id} />}
           {editing?.account && <Field label="PANEL HESABI İLETİŞİM"><AT style={{ fontSize: 13, color: adm.muted }}>{[editing.account.application?.contactName, editing.account.email, editing.account.phone].filter(Boolean).join(' · ')}</AT></Field>}
           <Field label="FOTOĞRAF: 1 ADET, EN FAZLA 5 MB">
             {/* Yalnız ilk fotoğraf gösterilir; eski kayıtlardaki diğer fotoğraflar veritabanında durur */}

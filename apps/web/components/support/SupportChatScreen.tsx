@@ -46,6 +46,7 @@ const MASCOT_FULL = '/maskot/destek-tam.webp';
 const MASCOT_HEADER = 36;
 const MIN_BTN = 22;
 const WATERMARK_OPACITY = 0.08;
+const TYPING_GAP_MS = 300; // yazı önizlemesi en fazla 300 ms aralıkla gönderilir
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Istanbul' });
 
@@ -157,10 +158,19 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
   }, [chat.messages]);
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }); }, [msgs.length]);
 
-  // Yazı önizlemesi: temsilci gönderilmeden önce görür (sunucuda yalnız bellekte, 5 sn)
+  // Yazı önizlemesi: atanmış temsilci gönderilmeden önce görür (sunucuda yalnız bellekte, 5 sn). En fazla 300 ms aralıkla son metin
+  // gönderilir; çubuk tamamen silinince hemen boş gider (önizleme ve yazıyor kalkar)
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const draftRef = useRef('');
+  useEffect(() => () => { if (typingTimer.current) clearTimeout(typingTimer.current); }, []);
+  function pushTyping() { typingAt.current = Date.now(); client.post(`/chats/${chat.id}/typing`, { text: draftRef.current }).catch(() => undefined); }
   function onType(v: string) {
-    setText(v.slice(0, 2000));
-    if (Date.now() - typingAt.current > 1200) { typingAt.current = Date.now(); client.post(`/chats/${chat.id}/typing`, { text: v.slice(0, 2000) }).catch(() => undefined); }
+    const val = v.slice(0, 2000);
+    setText(val);
+    draftRef.current = val;
+    const wait = TYPING_GAP_MS - (Date.now() - typingAt.current);
+    if (!val.trim() || wait <= 0) { if (typingTimer.current) { clearTimeout(typingTimer.current); typingTimer.current = undefined; } pushTyping(); return; }
+    if (!typingTimer.current) typingTimer.current = setTimeout(() => { typingTimer.current = undefined; pushTyping(); }, wait);
   }
 
   function pick(list: FileList | null) {
@@ -186,6 +196,9 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
     if (content) fd.append('content', content);
     files.forEach((f) => fd.append('images', f));
     setText(''); setFiles([]);
+    // Gönderilince bekleyen önizleme gönderimi iptal (sunucu mesajla birlikte önizlemeyi siler)
+    if (typingTimer.current) { clearTimeout(typingTimer.current); typingTimer.current = undefined; }
+    draftRef.current = '';
     try { await client.form(`/chats/${chat.id}/messages`, fd); setMsgs((p) => p.filter((m) => m.id !== temp.id)); reload(); }
     catch (e) { setMsgs((p) => p.filter((m) => m.id !== temp.id)); setErr((e as Error).message || t('sup.error')); }
     finally { setBusy(false); }

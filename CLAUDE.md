@@ -706,7 +706,18 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     Masa Sohbeti link / telefon / şüpheli kelime engelleri destek sohbetinde yok. Sonlandır ve küçült butonu. Mobilde klavye açıkken mesaj alanı
     klavyenin üstünde (KeyboardAvoidingView). Kullanıcı geçmiş destek sohbetlerini göremez, kapanan sohbet ekrandan kalkar
   - Anlık iletişim: Masa Sohbeti gibi yoklama (3 sn). Yazıyor göstergesi ve gönderilmemiş yazı önizlemesi yalnız backend süreç belleğinde
-    (5 sn), hiçbir yere yazılmaz. Kullanıcı 20 sn'dir yoklamıyorsa temsilci cevabı push + uygulama içi bildirimle gider (üye; mekân hesabında
+    (5 sn), hiçbir yere yazılmaz (DB, log, kayıt yok). "Yazıyor…" iki yönlü: temsilci yazarken üye / mekân ekranındaki durum etiketi
+    "yazıyor…"; üye / mekân sahibi yazarken temsilci ekranında sohbet başlığındaki durum etiketi ve sohbet listesindeki satır "yazıyor…"
+    (GET /admin/live-support/state satır userTyping). Yazı önizlemesi: üye / mekân sahibinin mesaj çubuğundaki gönderilmemiş metni istemci
+    en fazla 300 ms aralıkla son hâliyle gönderir (POST …/chats/:id/typing {text}; web SupportChatScreen, mobil canli-destek.tsx
+    TYPING_GAP_MS); temsilci ekranında mesaj listesinin en altında gri ve italik görünür, atanmış temsilci 300 ms'de bir okur
+    (GET /admin/live-support/chats/:id/typing {userTyping, userDraft}, yalnız ekran açıkken). Mesaj gönderilince ya da çubuk tamamen
+    silinince (boş text) önizleme ve yazıyor hemen kalkar; 5 sn yazılmazsa kalkar. Önizlemeyi yalnız sohbete atanmış temsilci görür
+    (SUPERADMIN Devral ile aldıysa o); salt okunur izleyen ADMIN / SUPERADMIN'e userDraft boş döner. Temsilcinin yazdığı metin kullanıcıya
+    önizleme olarak gitmez, kullanıcı yalnız "yazıyor…" görür. KVKK Aydınlatma Metni ve Gizlilik Politikası (TR + EN) canlı destek amacı
+    maddesinde: "Canlı destek sohbetinde yazdığın metin, göndermeden önce müşteri temsilcisinin ekranında anlık olarak görünebilir. Gönderilmeyen
+    metin kaydedilmez." / "Text you type in the live support chat may appear live on the support representative's screen before you send it.
+    Unsent text is not saved." Kullanıcı 20 sn'dir yoklamıyorsa temsilci cevabı push + uygulama içi bildirimle gider (üye; mekân hesabında
     bildirim altyapısı yok)
   - Hareketsizlik: temsilcinin son (elle yazdığı) mesajından sonra kullanıcı 2 dk cevap vermezse sistem mesajı "1 dakika içinde yanıt vermezsen
     sohbet sonlanacak.", 3. dakikada otomatik sonlanır (closedBy AUTO) ve değerlendirme push ile gider
@@ -728,9 +739,13 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     RolesGuard'da reddedilir (SUPPORT seviyesi ADMIN'in altında), canlı destek uçları rolü ayrıca denetler. Temsilci hesabını yalnız SUPERADMIN
     açar (ad, soyad, e-posta, telefon, şifre; rol SUPPORT) ve kapatır (status DELETED, oturumlar düşer, açık sohbetleri sıraya döner;
     girişte ve temsilci listesinde "Bu temsilci artık destek ekibinde değil." / "This agent is no longer on the support team.").
-    Her temsilciye ve canlı destek yapan ADMIN / SUPERADMIN'e benzersiz, rastgele, 5 haneli, değişmeyen Temsilci No (SupportAgent.agentNo).
-    ADMIN bütün sohbetleri salt okunur görür, yalnız kendine atanan sohbete yazar (mesaj, iç not). SUPERADMIN bütün açık sohbetleri canlı
-    izler ve istediğini devralır (devir notu "SUPERADMIN devraldı", TAKEOVER_NOTE). Devralınan sohbet eski temsilcinin "Açık Sohbetlerim"
+    Her temsilciye ve canlı destek ekranını açan ADMIN / SUPERADMIN'e benzersiz, rastgele, 5 haneli, değişmeyen Temsilci No (SupportAgent.agentNo;
+    ADMIN / SUPERADMIN'in numarası ve SupportAgent kaydı silinmez, Devral sonrası müşteriye gösterilir).
+    Sohbet ataması yalnız SUPPORT rolüne: FIFO otomatik atama, 2 dk ilk yanıt yeniden ataması, devir hedefi ve sıra tahmini yalnız çevrimiçi
+    SUPPORT hesaplarını kullanır (support.service.ts onlineAgents). ADMIN'e hiçbir zaman sohbet atanmaz; ADMIN bütün sohbetleri yalnız salt
+    okunur görür: mesaj, görsel, iç not, yazıyor, devir, sonlandırma, kısıtlama ve devralma butonları ADMIN'e gösterilmez, backend 403 döner
+    (denyAdmin). SUPERADMIN'e otomatik ya da başka bir yolla sohbet atanmaz; SUPERADMIN bütün açık sohbetleri canlı
+    izler ve yalnız "Devral" ile elle alır (Devral yetkisi ve davranışı aynen) (devir notu "SUPERADMIN devraldı", TAKEOVER_NOTE). Devralınan sohbet eski temsilcinin "Açık Sohbetlerim"
     listesinden ve kotasından hemen düşer, eski temsilciye bildirim gitmez; ekranında açıksa 403 gösterilmez, son hâli salt okunur kalır
     (mesaj alanı, hazır yanıtlar, iç not, devir, Haiku kapalı), en altta "Bu sohbet SUPERADMIN tarafından devralındı." (yönetim paneli
     yalnız Türkçe); SUPPORT rolüne GET /admin/live-support/chats/:id yalnız {takenOver: true} döner, ekrandan çıkınca yeniden açılamaz. Yazıyor ve çevrimiçi / çevrimdışı durumu bellekte; Temsilci No ilk kullanımda atanır
@@ -738,16 +753,22 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     az açık sohbeti olana, eşitse en uzun süredir boşta olana (idleSince). Eşzamanlı sınır varsayılan 3 (AppConfig SUPPORT_MAX_CHATS, Ayarlar →
     Canlı Destek). Herkes doluysa sırada bekler, sohbet kapanınca sıradaki atanır. Atanan temsilci 2 dk içinde ilk cevabı vermezse başka uygun
     temsilciye; yoksa sıranın başına döner. Durum Çevrimiçi / Mola / Çevrimdışı; mola ve çevrimdışı yeni sohbet almaz, açıklara devam eder.
-    Mola (SUPPORT, ADMIN, SUPERADMIN; web + mobil): temsilci ekranının üst kartında tek buton, çevrimiçiyken "Molaya Çık", moladayken
+    ADMIN ve SUPERADMIN atama almadığı için temsilci ekranında (web + mobil) Çevrimiçi / Çevrimdışı / Mola kontrolleri ve mola şeridi yoktur
+    (GET /admin/live-support/state me.assignable yalnız SUPPORT'ta true); PATCH /admin/live-support/status yalnız SUPPORT (diğerlerine 403).
+    90 sn sıra uyarısı ADMIN ve SUPERADMIN'e mevcut hâliyle gider, atama yapılmaz.
+    Mola (yalnız SUPPORT; web + mobil): temsilci ekranının üst kartında tek buton, çevrimiçiyken "Molaya Çık", moladayken
     "Moladan Dön" (çevrimdışıyken mola butonu yok; Çevrimiçi / Çevrimdışı seçimi aynen). "Molaya Çık" admin paletinde ortak onay penceresi
     açar ("Molaya çıkmak istediğinden emin misin?" Evet / Hayır); "Moladan Dön" onaysız, hemen yeni sohbet almaya başlar. Moladaki temsilciye
     yeni sohbet atanmaz (FIFO atama ve 2 dk yeniden atama yalnız çevrimiçileri seçer); 90 sn sıra uyarısı moladaki ADMIN / SUPERADMIN'e
     gitmez. Molaya çıkarken açık sohbetler temsilcide kalır, devam edebilir; müşteri tarafındaki durum etiketi değişmez. Moladayken üstte
     "Moladasın · X dk" şeridi (mola başlangıcından geçen dakika). Her mola SupportBreak tablosunda (agentId, startedAt, endedAt; migration
     20261126300000_support_restriction_reason_breaks) başlangıç ve bitiş saatiyle; PATCH /admin/live-support/status BREAK'e geçişte kayıt
-    açar, başka duruma geçişte kapatır. Temsilci çıkış yapınca (POST /auth/logout, tüm cihazlardan çıkış; support-break.ts
-    endBreakOnLogout) ya da moladayken 20 sn'den uzun yoklama yoksa (zamanlanmış iş) çevrimdışı olur, açık mola kaydı o anki saatle kapanır;
-    temsilci hesabı kapatılınca da kapanır. Temsilciler sekmesi ADMIN + SUPERADMIN (hesap açma / kapama yalnız SUPERADMIN): her temsilcinin
+    açar, başka duruma geçişte kapatır. Çevrimiçi ya da moladaki temsilci çıkış yapınca (POST /auth/logout, tüm cihazlardan çıkış; support-break.ts
+    agentOfflineOnLogout), 20 sn'den uzun yoklama (heartbeat) yoksa (10 sn'lik zamanlanmış iş) ve temsilci hesabı kapatılınca otomatik
+    çevrimdışı olur, açık mola kaydı o anki saatle kapanır; çevrimdışı temsilciye yeni sohbet atanmaz. Çevrimdışı olunca açık sohbetler: çıkış,
+    20 sn kopma ve elle Çevrimdışı seçiminde temsilcide (ACTIVE) kalır, sıraya dönmez (ilk yanıtı verilmemişse 2 dk kuralıyla sıraya döner);
+    hesap kapatılınca sıraya döner. Temsilciler sekmesi ADMIN + SUPERADMIN; ADMIN salt okunur (liste, durum, mola geçmişi; hesap açma / kapama
+    yalnız SUPERADMIN): her temsilcinin
     durumu (Çevrimiçi / Molada / Çevrimdışı, moladaysa geçen dakika) ve "Mola Geçmişi" (tarih, başlangıç, bitiş, süre; GET
     /admin/live-support/manage/agents/:userId/breaks, ADMIN + SUPERADMIN).
     Devret: zorunlu notla başka çevrimiçi temsilciye; devralan geçmişi ve notu görür; kullanıcı yeni Temsilci No'yu görür ve sistem mesajı
@@ -763,7 +784,13 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     Sebep zorunlu: POST /admin/live-support/chats/:id/close {abuseDays, abuseReason}; boşluklar hariç 5 karakterden kısa sebep reddedilir
     ("Kısıtlama sebebi en az 5 karakter olmalı"); SupportRestriction.reason'a yazılır (aynı migration). Sebep SUPERADMIN Tüm Sohbetler detayında
     ("Kötüye kullanım kısıtlaması" kartı), Kısıtlamalar (kaldırma) ekranında ve İşlem Kayıtları açıklamasında (kısıt ve kaldırma) görünür;
-    kullanıcıya gösterilmez. Sebebi olmayan eski kayıtlarda "Sebep girilmemiş". Yetkiler ve süre mantığı aynen
+    kullanıcıya gösterilmez. Sebebi olmayan eski kayıtlarda "Sebep girilmemiş".
+    Admin kullanıcı detayı ve mekân detayı (Mekanı Düzenle; web + mobil; web components/AdminSupportRestrictions.tsx, mobil
+    components/admin/AdminSupportRestrictions.tsx) "Canlı destek kısıtlamaları" bölümü: o hesaba verilmiş bütün kısıtlar, en yeni en üstte;
+    satırda veriliş tarihi saati, süre (1 / 7 / 30 gün), bitiş tarihi saati, durum (Aktif / Süresi doldu / Kaldırıldı), veren Temsilci No,
+    sebep; kaldırılmışsa kaldıran kişi (ad soyad, rol, varsa Temsilci No) ve kaldırma zamanı. Kısıt yoksa "Kısıtlama yok". Görme yetkisi detay
+    sayfasıyla aynı (ADMIN + SUPERADMIN; GET /admin/live-support/manage/restrictions/user/:userId ve /restrictions/venue/:venueId);
+    kaldırma yalnız SUPERADMIN, Kısıtlamalar ekranından (aynen). Kaldırma sebebi alanı yoktur. Yetkiler ve süre mantığı aynen
   - Haiku asistanı (support-ai.service.ts, claude-haiku-5-5, CLAUDE_API_KEY): yalnız okur; veri değiştirmez / silmez, iade / iptal / hak
     tanımlamaz, kullanıcıya mesaj göndermez (mesajı temsilci gönderir: "Kopyala", "Sohbete ekle"). Okuma işlevleri parametre almaz; hesabı
     sunucu sohbet kaydından verir (metinden ID / isim / telefon alınmaz, başka hesap istenirse reddeder). Tahmin yok: tutar, tarih, sayı

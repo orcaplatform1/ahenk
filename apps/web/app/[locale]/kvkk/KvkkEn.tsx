@@ -134,7 +134,7 @@ const sections = [
           'Fulfilling legal obligations and providing information/documents to authorized institutions',
           'Handling complaints and requests',
           'Screenshot violation records: enforcing the community guidelines and protecting users\' personal data',
-          'Providing live support: answering your requests, and recording conversations to improve service quality and for your safety (KVKK art. 5/2-c and art. 5/2-f)',
+          "Providing live support: answering your requests, and recording conversations to improve service quality and for your safety (KVKK art. 5/2-c and art. 5/2-f). Text you type in the live support chat may appear live on the support representative's screen before you send it. Unsent text is not saved.",
           'Improving service quality and carrying out platform development',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>

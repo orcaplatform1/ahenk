@@ -11,6 +11,7 @@ import { SURFACE, BORDER, TEXT, MUTED, RED, GREEN, AMBER, CYAN, SANS, MONO, LABE
 import { AdminSelect } from '@/components/AdminSelect';
 import { AdminSuspendButtons } from '@/components/AdminSuspendButtons';
 import { AdminScreenshotViolations } from '@/components/AdminScreenshotViolations';
+import { AdminSupportRestrictions } from '@/components/AdminSupportRestrictions';
 import { AdminDeletionRequests } from '@/components/AdminDeletionRequests';
 
 // Yaptırım yetkisi (backend assertCanSanction ile aynı kural)
@@ -405,6 +406,9 @@ export default function AdminUsers() {
 
                 {/* Ekran görüntüsü ihlal sayısı ve listesi */}
                 <AdminScreenshotViolations userId={userModal.id} />
+
+                {/* Canlı destek kısıtlamaları (en yeni en üstte) */}
+                <AdminSupportRestrictions userId={userModal.id} />
 
                 {/* Durum badge'leri */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>

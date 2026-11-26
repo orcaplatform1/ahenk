@@ -6,9 +6,9 @@ export async function closeOpenBreak(prisma: PrismaService, agentId: string, at 
   await prisma.supportBreak.updateMany({ where: { agentId, endedAt: null }, data: { endedAt: at } });
 }
 
-// Çıkış yapan temsilci: moladaysa çevrimdışı olur, açık mola kaydı o anki saatle kapanır
-export async function endBreakOnLogout(prisma: PrismaService, userId: string) {
+// Çıkış yapan (ya da tüm cihazlardan çıkan) temsilci: çevrimiçi ya da moladaysa çevrimdışı olur, açık mola kaydı o anki saatle kapanır
+export async function agentOfflineOnLogout(prisma: PrismaService, userId: string) {
   const at = new Date();
-  const res = await prisma.supportAgent.updateMany({ where: { userId, status: SupportAgentStatus.BREAK }, data: { status: SupportAgentStatus.OFFLINE, statusChangedAt: at } });
+  const res = await prisma.supportAgent.updateMany({ where: { userId, status: { in: [SupportAgentStatus.ONLINE, SupportAgentStatus.BREAK] } }, data: { status: SupportAgentStatus.OFFLINE, statusChangedAt: at } });
   if (res.count) await closeOpenBreak(prisma, userId, at);
 }

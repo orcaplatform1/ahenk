@@ -104,7 +104,7 @@ const sections = [
           'Fulfilling legal obligations and notifying authorized institutions',
           'Keeping the platform secure and preventing misuse',
           'Screenshot violation records: enforcing the community guidelines and protecting users\' personal data',
-          'Providing live support: answering your requests, and recording conversations to improve service quality and for your safety (KVKK art. 5/2-c and art. 5/2-f)',
+          "Providing live support: answering your requests, and recording conversations to improve service quality and for your safety (KVKK art. 5/2-c and art. 5/2-f). Text you type in the live support chat may appear live on the support representative's screen before you send it. Unsent text is not saved.",
         ]}
       />
     ),
