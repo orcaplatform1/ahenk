@@ -139,21 +139,40 @@ export class SupportService implements OnModuleInit {
 
   // ─── Kullanıcı tarafı ─────────────────────────────────────────────────────
 
+  private queuePosition(chat: { queuedAt: Date }) {
+    return this.prisma.supportChat.count({ where: { status: SupportChatStatus.QUEUED, queuedAt: { lte: chat.queuedAt } } });
+  }
+
   private async queueInfo(chat: { queuedAt: Date }) {
-    const [position, settings, online, recent] = await Promise.all([
-      this.prisma.supportChat.count({ where: { status: SupportChatStatus.QUEUED, queuedAt: { lte: chat.queuedAt } } }),
-      this.settings(),
+    const [position, online, recent] = await Promise.all([
+      this.queuePosition(chat),
       this.onlineAgents(),
       this.prisma.supportChat.findMany({
-        where: { status: SupportChatStatus.CLOSED, firstAssignedAt: { not: null } },
-        orderBy: { closedAt: "desc" }, take: 20, select: { firstAssignedAt: true, closedAt: true },
+        where: { status: SupportChatStatus.CLOSED, firstAssignedAt: { not: null }, closedAt: { gte: new Date(Date.now() - 7 * 86_400_000) } },
+        select: { firstAssignedAt: true, closedAt: true },
       }),
     ]);
-    // Tahmini bekleme: son 20 kapanan sohbetin ortalama süresi × sıra ÷ (çevrimiçi temsilci × eşzamanlı sınır)
+    // Tahmini bekleme = önündeki kişi sayısı × son 7 günün ortalama sohbet süresi ÷ çevrimiçi temsilci sayısı; tam dakikaya yukarı,
+    // en az 1 dk. Çevrimiçi temsilci yoksa ya da son 7 günde kapanan sohbet yoksa tahmin yok (yalnız sıra)
+    const ahead = Math.max(0, position - 1);
     const mean = avg(recent.map((c) => (c.closedAt!.getTime() - c.firstAssignedAt!.getTime()) / 60_000));
-    const slots = Math.max(1, online.length * settings.maxChats);
-    const etaMin = mean === null ? null : Math.max(1, Math.ceil((position * mean) / slots));
-    return { position, etaMin, online: online.length > 0 };
+    const etaMin = mean === null || online.length === 0 ? null : Math.max(1, Math.ceil((ahead * mean) / online.length));
+    return { position, ahead, etaMin, online: online.length > 0 };
+  }
+
+  // Karşı tarafın çevrimiçi bilgisi (bellekte, son yoklama 20 sn içinde)
+  private isSeen(key: string) { return Date.now() - (this.seen.get(key) ?? 0) <= AWAY_MS; }
+
+  // Baloncuk / mekân paneli menü rozeti: açık sohbetin durumu, sıra numarası ve okunmamış mesaj sayısı. Okundu yazmaz;
+  // kullanıcı uygulamadaysa çevrimiçi sayılır (temsilci cevabı push yerine baloncuk rozetiyle görünür)
+  async summary(r: Requester) {
+    const chat = await this.prisma.supportChat.findFirst({ where: { ...reqWhere(r), status: { in: OPEN } }, orderBy: { createdAt: "desc" } });
+    if (!chat) return { chat: null };
+    this.seen.set(`c:${chat.id}`, Date.now());
+    const unread = await this.prisma.supportMessage.count({
+      where: { chatId: chat.id, sender: { not: SupportSender.USER }, ...(chat.userReadAt ? { createdAt: { gt: chat.userReadAt } } : {}) },
+    });
+    return { chat: { id: chat.id, status: chat.status, position: chat.status === SupportChatStatus.QUEUED ? await this.queuePosition(chat) : null, unread } };
   }
 
   private messageView(m: { id: string; sender: SupportSender; agentNo: string | null; content: string; images: string[]; createdAt: Date }) {
@@ -188,6 +207,7 @@ export class SupportService implements OnModuleInit {
         agentNo: chat.status === SupportChatStatus.ACTIVE ? agent?.agentNo ?? null : null,
         queue: chat.status === SupportChatStatus.QUEUED ? await this.queueInfo(chat) : null,
         agentTyping: !!t?.agentAt && Date.now() - t.agentAt < TYPING_TTL_MS,
+        agentOnline: chat.status === SupportChatStatus.ACTIVE && !!chat.agentId && this.isSeen(`a:${chat.agentId}`),
         agentReadAt: chat.agentReadAt?.toISOString() ?? null,
         messages: messages.map((m) => this.messageView(m)),
       },
@@ -431,7 +451,7 @@ export class SupportService implements OnModuleInit {
     if (Date.now() - at <= AWAY_MS) return;
     await this.notify.sendToUser(chat.userId, {
       title: "Ahenk Müşteri Temsilcisi", body: tr.slice(0, 180), data: { type: "SUPPORT_MESSAGE", chatId: chat.id },
-      en: { title: "Ahenk Customer Representative", body: en.slice(0, 180) },
+      en: { title: "Ahenk Support Agent", body: en.slice(0, 180) },
     });
   }
 
@@ -442,10 +462,12 @@ export class SupportService implements OnModuleInit {
     const agent = await this.ensureAgent(me.id);
     this.seen.set(`a:${me.id}`, Date.now());
     const superadmin = me.role === UserRole.SUPERADMIN;
+    // ADMIN ve SUPERADMIN diğer açık sohbetleri görür (ADMIN salt okunur, SUPERADMIN devralabilir)
+    const seesAll = superadmin || me.role === UserRole.ADMIN;
     const [queued, mine, all, online, settings] = await Promise.all([
       this.prisma.supportChat.findMany({ where: { status: SupportChatStatus.QUEUED }, orderBy: { queuedAt: "asc" } }),
       this.prisma.supportChat.findMany({ where: { status: SupportChatStatus.ACTIVE, agentId: me.id }, orderBy: { assignedAt: "asc" } }),
-      superadmin ? this.prisma.supportChat.findMany({ where: { status: SupportChatStatus.ACTIVE, NOT: { agentId: me.id } }, orderBy: { assignedAt: "asc" } }) : Promise.resolve([]),
+      seesAll ? this.prisma.supportChat.findMany({ where: { status: SupportChatStatus.ACTIVE, NOT: { agentId: me.id } }, orderBy: { assignedAt: "asc" } }) : Promise.resolve([]),
       this.onlineAgents(),
       this.settings(),
     ]);
@@ -478,12 +500,12 @@ export class SupportService implements OnModuleInit {
     return { status };
   }
 
-  // Erişim: atanmış temsilci; SUPERADMIN bütün sohbetleri izler
+  // Erişim: atanmış temsilci; ADMIN bütün sohbetleri salt okunur görür (yalnız kendine atanana yazar); SUPERADMIN bütün sohbetleri izler
   private async staffChat(staff: Staff, chatId: string) {
     const me = await this.staffUser(staff.id);
     const chat = await this.prisma.supportChat.findUnique({ where: { id: chatId } });
     if (!chat) throw new NotFoundException("Sohbet bulunamadı");
-    if (me.role !== UserRole.SUPERADMIN && chat.agentId !== me.id) throw new ForbiddenException("Bu sohbete erişim yetkin yok");
+    if (me.role === UserRole.SUPPORT && chat.agentId !== me.id) throw new ForbiddenException("Bu sohbete erişim yetkin yok");
     return { me, chat };
   }
 
@@ -509,6 +531,7 @@ export class SupportService implements OnModuleInit {
       mine: chat.agentId === me.id, closedAt: chat.closedAt?.toISOString() ?? null, closedBy: chat.closedBy,
       userReadAt: chat.userReadAt?.toISOString() ?? null,
       userTyping: userTypingLive,
+      userOnline: OPEN.includes(chat.status) && this.isSeen(`c:${chat.id}`),
       userDraft: userTypingLive ? t?.userText ?? "" : "",
       messages: messages.map((m) => this.messageView(m)),
       notes: notes.map((n) => ({ id: n.id, agentNo: n.agentNo, content: n.content, createdAt: n.createdAt.toISOString() })),
@@ -545,7 +568,8 @@ export class SupportService implements OnModuleInit {
   }
 
   async addNote(staff: Staff, chatId: string, content: string) {
-    const { me } = await this.staffChat(staff, chatId);
+    const { me, chat } = await this.staffChat(staff, chatId);
+    if (me.role === UserRole.ADMIN && chat.agentId !== me.id) throw new ForbiddenException("Bu sohbete yalnız atanmış temsilci yazabilir.");
     const text = (content ?? "").trim();
     if (!text) throw new BadRequestException("Not boş olamaz");
     const agent = await this.ensureAgent(me.id);

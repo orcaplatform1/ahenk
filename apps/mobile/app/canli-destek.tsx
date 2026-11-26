@@ -1,6 +1,8 @@
 // Canlı Destek (üye): web components/support/SupportChatScreen.tsx karşılığı; Profilim → "Canlı Destek".
 // Masa Sohbeti gibi kısa aralıklı yoklama (3 sn, yalnız ekran odaktayken). Konu seçimi → sıra → temsilci → sohbet → değerlendirme.
 // HIG: güvenli alan, en az 44 pt dokunma alanı, klavye açıkken mesaj alanı klavyenin üstünde (KeyboardAvoidingView).
+// Küçült butonu sohbeti baloncuğa alır (components/SupportBubble.tsx). Kuyruktayken "Beklerken oyna" Breakout açar; temsilci bağlanınca
+// (hafif titreşim) ya da küçültülünce oyun tamamen kapanır, dönüşte yeniden başlamaz.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -13,6 +15,9 @@ import { getAccess } from '@/lib/session';
 import { openLegal } from '@/lib/links';
 import { pickFromLibrary, type PickedImage } from '@/lib/imagePick';
 import { supportRemaining } from '@/lib/supportTime';
+import { emitSupportChange } from '@/lib/supportBus';
+import * as Haptics from 'expo-haptics';
+import { Breakout } from '@/components/Breakout';
 import { Card, Serif, StdButton, T } from '@/components/ui';
 import { btn, c, inputGlass, ll, sans, tw } from '@/theme/theme';
 
@@ -20,8 +25,8 @@ type Sender = 'USER' | 'AGENT' | 'SYSTEM';
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string; pending?: boolean }
 interface ChatView {
   id: string; status: 'QUEUED' | 'ACTIVE'; topic: string; agentNo: string | null;
-  queue: { position: number; etaMin: number | null; online: boolean } | null;
-  agentTyping: boolean; agentReadAt: string | null; messages: Msg[];
+  queue: { position: number; ahead: number; etaMin: number | null; online: boolean } | null;
+  agentTyping: boolean; agentOnline: boolean; agentReadAt: string | null; messages: Msg[];
 }
 interface State { restriction: { expiresAt: string } | null; chat: ChatView | null; pendingRating: string | null }
 
@@ -59,7 +64,7 @@ export default function CanliDestek() {
 
   async function start(topic: string) {
     setError('');
-    try { await api.post('/support/chats', { topic }); await load(); } catch (e) { setError((e as Error).message || t('sup.error')); }
+    try { await api.post('/support/chats', { topic }); await load(); emitSupportChange(); } catch (e) { setError((e as Error).message || t('sup.error')); }
   }
 
   const back = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)/profilim'));
@@ -73,7 +78,7 @@ export default function CanliDestek() {
       </Card>
     );
   } else if (rateFor && !state.chat) body = <RatingView chatId={rateFor} onDone={() => setThanks(true)} />;
-  else if (state.chat) body = <ChatPanel chat={state.chat} token={token} reload={load} onEnded={(id) => setRateFor(id)} />;
+  else if (state.chat) body = <ChatPanel chat={state.chat} token={token} reload={load} onEnded={(id) => setRateFor(id)} onMinimize={() => { emitSupportChange(); back(); }} />;
   else if (state.restriction) body = <Card><T style={{ color: ll.text, fontSize: 14, lineHeight: 21 }}>{t('sup.restricted', { time: supportRemaining(state.restriction.expiresAt, t) })}</T></Card>;
   else {
     body = (
@@ -108,7 +113,7 @@ export default function CanliDestek() {
   );
 }
 
-function ChatPanel({ chat, token, reload, onEnded }: { chat: ChatView; token: string | null; reload: () => void; onEnded: (id: string) => void }) {
+function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatView; token: string | null; reload: () => void; onEnded: (id: string) => void; onMinimize: () => void }) {
   const { t } = useTranslation();
   const [pending, setPending] = useState<Msg[]>([]);
   const [text, setText] = useState('');
@@ -120,6 +125,14 @@ function ChatPanel({ chat, token, reload, onEnded }: { chat: ChatView; token: st
   const scroll = useRef<ScrollViewInstance>(null);
   const typingAt = useRef(0);
   const msgs = [...chat.messages, ...pending];
+  // Oyun yalnız kuyruktayken; temsilci bağlandığı an hafif titreşim ve oyun tamamen kapanır
+  const [game, setGame] = useState(false);
+  const lastStatus = useRef(chat.status);
+  useEffect(() => {
+    if (lastStatus.current === 'QUEUED' && chat.status === 'ACTIVE') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    lastStatus.current = chat.status;
+    if (chat.status !== 'QUEUED') setGame(false);
+  }, [chat.status]);
 
   useEffect(() => {
     if (!viewer) return;
@@ -176,24 +189,35 @@ function ChatPanel({ chat, token, reload, onEnded }: { chat: ChatView; token: st
       {/* Başlık: temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
       <View style={{ paddingVertical: 12, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <T w={700} style={{ fontSize: 15, color: ll.text }}>{t('sup.header')}</T>
-          {!!chat.agentNo && <T style={{ fontSize: 12, color: ll.label }}>{t('sup.agentNo', { no: chat.agentNo })}</T>}
+          <T w={700} style={{ fontSize: 15, color: ll.text }}>{chat.agentNo ? t('sup.headerAgent', { no: chat.agentNo }) : t('sup.header')}</T>
+          {chat.status === 'ACTIVE' && (
+            <T style={{ fontSize: 12, color: chat.agentTyping || chat.agentOnline ? c.ok2 : ll.label }}>
+              {chat.agentTyping ? t('sup.typing') : chat.agentOnline ? t('sup.online') : t('sup.offlineStatus')}
+            </T>
+          )}
         </View>
+        <Pressable onPress={onMinimize} accessibilityRole="button" accessibilityLabel={t('sup.minimize')} style={ICON}>
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={2} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
+        </Pressable>
         <StdButton variant="ghost" label={t('sup.end')} onPress={end} />
       </View>
       {chat.status === 'QUEUED' && !!chat.queue && (
-        <View style={{ paddingVertical: 10, paddingHorizontal: 14, backgroundColor: 'rgba(245,158,11,0.06)', borderBottomWidth: 1, borderBottomColor: 'rgba(245,158,11,0.2)', gap: 4 }}>
-          <T style={{ fontSize: 13, color: ll.text, lineHeight: 19 }}>
-            {!chat.queue.online ? t('sup.offline') : chat.queue.etaMin !== null ? t('sup.queue', { pos: chat.queue.position, min: chat.queue.etaMin }) : t('sup.queueNoEta', { pos: chat.queue.position })}
+        <View style={{ paddingVertical: game ? 6 : 10, paddingHorizontal: 14, backgroundColor: 'rgba(245,158,11,0.06)', borderBottomWidth: 1, borderBottomColor: 'rgba(245,158,11,0.2)', gap: 4 }}>
+          {/* Oyun açıkken sıra ve tahmin satırı üstte küçük */}
+          {!chat.queue.online && !game && <T style={{ fontSize: 13, color: ll.text, lineHeight: 19 }}>{t('sup.offline')}</T>}
+          <T style={{ fontSize: game ? 11 : 13, color: chat.queue.online && !game ? ll.text : ll.label, lineHeight: game ? 16 : 19 }}>
+            {chat.queue.etaMin !== null ? t('sup.queue', { n: chat.queue.ahead, m: chat.queue.etaMin }) : t('sup.queueNoEta', { n: chat.queue.ahead })}
           </T>
-          {!chat.queue.online && <T style={{ fontSize: 12, color: ll.label }}>{t('sup.queueNoEta', { pos: chat.queue.position })}</T>}
+          {!game && <StdButton variant="ghost" label={t('sup.play')} style={{ alignSelf: 'flex-start', marginTop: 4 }} onPress={() => setGame(true)} />}
         </View>
       )}
+      {game ? (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 12 }} scrollEnabled={false}><Breakout /></ScrollView>
+      ) : (<>
       <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 12, gap: 8 }} keyboardShouldPersistTaps="handled"
         onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
         {msgs.map((m) => <Bubble key={m.id} m={m} img={img} onImage={(u) => setViewer(u)} />)}
         {read && <T style={{ alignSelf: 'flex-end', fontSize: 10, color: ll.label }}>{t('sup.read')}</T>}
-        {chat.agentTyping && <T style={{ fontSize: 12, color: ll.label, fontStyle: 'italic' }}>{t('sup.typing')}</T>}
       </ScrollView>
       {!!err && <T accessibilityRole="alert" style={{ paddingHorizontal: 12, paddingBottom: 6, fontSize: 12, color: tw.accent }}>{err}</T>}
       {files.length > 0 && (
@@ -234,6 +258,7 @@ function ChatPanel({ chat, token, reload, onEnded }: { chat: ChatView; token: st
           </View>
         </Pressable>
       </View>
+      </>)}
       <Modal visible={!!viewer} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setViewer(null)}>
         <Pressable onPress={() => setViewer(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' }}>
           {!!viewer && <Image source={{ uri: viewer, headers: token ? { Authorization: `Bearer ${token}` } : undefined }} resizeMode="contain" style={{ width: '94%', height: '85%' }} accessibilityLabel={t('sup.image')} />}

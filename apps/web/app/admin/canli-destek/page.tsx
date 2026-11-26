@@ -15,7 +15,7 @@ interface AgentState { me: { userId: string; role: string; agentNo: string; stat
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string }
 interface ChatDetail {
   id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; queuedAt: string; agentNo: string | null; mine: boolean;
-  closedAt: string | null; userReadAt: string | null; userTyping: boolean; userDraft: string; messages: Msg[];
+  closedAt: string | null; userReadAt: string | null; userTyping: boolean; userOnline: boolean; userDraft: string; messages: Msg[];
   notes: { id: string; agentNo: string; content: string; createdAt: string }[];
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
 }
@@ -145,7 +145,8 @@ function ChatsTab() {
         <aside className="ll-card" style={{ padding: 12, maxHeight: '78vh', overflowY: 'auto' }}>
           {list('Sıradakiler', st.queue)}
           {list('Açık Sohbetlerim', st.mine)}
-          {superadmin && list('Diğer Açık Sohbetler', st.others, true)}
+          {/* ADMIN salt okunur izler, SUPERADMIN devralabilir */}
+          {(superadmin || st.me.role === 'ADMIN') && list('Diğer Açık Sohbetler', st.others, true)}
         </aside>
         {sel ? <ChatColumn key={sel} id={sel} st={st} reload={load} onClosed={() => setSel(null)} /> : (
           <div className="ll-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}><p style={{ color: MUTED, fontSize: 13 }}>Soldan bir sohbet seç.</p></div>
@@ -229,6 +230,7 @@ function ChatColumn({ id, st, reload, onClosed }: { id: string; st: AgentState; 
         <div style={{ minWidth: 0, flex: 1 }}>
           <p style={{ fontSize: 15, fontWeight: 700 }}>{c.requesterName}</p>
           <p style={{ fontSize: 11, color: MUTED }}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · bekleme {waited(c.queuedAt)}{c.agentNo ? ` · Temsilci No ${c.agentNo}` : ''}</p>
+          {open && <p style={{ fontSize: 11, color: c.userTyping || c.userOnline ? GREEN : MUTED }}>{c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'}{!c.mine && st.me.role === 'ADMIN' ? ' · salt okunur' : ''}</p>}
         </div>
         {open && !c.mine && st.me.role === 'SUPERADMIN' && <button style={btn(BLUE)} onClick={() => act(() => api.post(`/admin/live-support/chats/${id}/take`, {}))}>Devral</button>}
         {open && (c.mine || st.me.role === 'SUPERADMIN') && (
@@ -265,7 +267,7 @@ function ChatColumn({ id, st, reload, onClosed }: { id: string; st: AgentState; 
         })}
         {c.userReadAt && c.messages.some((m) => m.sender === 'AGENT') && c.userReadAt >= ([...c.messages].reverse().find((m) => m.sender === 'AGENT')?.createdAt ?? '') && <p style={{ alignSelf: 'flex-end', fontSize: 10, color: MUTED }}>Okundu</p>}
         {/* Yazı önizlemesi: kullanıcının gönderilmemiş metni (sunucuda yalnız bellekte) */}
-        {c.userTyping && <p style={{ fontSize: 12, color: AMBER, fontStyle: 'italic' }}>Yazıyor…{c.userDraft ? ` “${c.userDraft}”` : ''}</p>}
+        {c.userTyping && <p style={{ fontSize: 12, color: AMBER, fontStyle: 'italic' }}>yazıyor…{c.userDraft ? ` “${c.userDraft}”` : ''}</p>}
       </div>
       {err && <p style={{ padding: '0 12px 6px', fontSize: 12, color: RED }}>{err}</p>}
       {canWrite && (
@@ -299,10 +301,12 @@ function ChatColumn({ id, st, reload, onClosed }: { id: string; st: AgentState; 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
           {c.transfers.map((x) => <p key={x.id} style={{ fontSize: 12, color: AMBER }}>Devir {x.from ?? '—'} → {x.to ?? '—'} · {dt(x.createdAt)}: {x.note}</p>)}
           {c.notes.map((n) => <p key={n.id} style={{ fontSize: 12 }}><span style={{ color: MUTED }}>No {n.agentNo} · {dt(n.createdAt)}:</span> {n.content}</p>)}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="İç not ekle" style={{ ...inputStyle, flex: 1 }} />
-            <button style={btn(BLUE)} onClick={() => note.trim() && act(() => api.post(`/admin/live-support/chats/${id}/notes`, { content: note.trim() }), () => setNote(''))}>Ekle</button>
-          </div>
+          {(c.mine || st.me.role === 'SUPERADMIN') && (
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="İç not ekle" style={{ ...inputStyle, flex: 1 }} />
+              <button style={btn(BLUE)} onClick={() => note.trim() && act(() => api.post(`/admin/live-support/chats/${id}/notes`, { content: note.trim() }), () => setNote(''))}>Ekle</button>
+            </div>
+          )}
           {canWrite && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <select value={transferTo} onChange={(e) => setTransferTo(e.target.value)} style={inputStyle}>
@@ -511,6 +515,7 @@ function AgentsTab() {
           <div style={{ flex: 1, minWidth: 200 }}>
             <p style={{ fontSize: 13, fontWeight: 600 }}>{r.name} <span style={{ fontSize: 11, color: MUTED }}>· {roleTr[r.role] ?? r.role}</span></p>
             <p style={{ fontSize: 11, color: MUTED }}>{r.email} · {r.phone ?? '—'} · Temsilci No {r.agentNo ?? '—'} · {r.status === 'ONLINE' ? 'Çevrimiçi' : r.status === 'BREAK' ? 'Mola' : 'Çevrimdışı'}</p>
+            {!r.active && <p style={{ fontSize: 11, color: AMBER }}>Bu temsilci artık destek ekibinde değil.</p>}
           </div>
           {r.role === 'SUPPORT' && (
             <button style={btn(r.active ? RED : GREEN)} onClick={() => api.patch(`/admin/live-support/manage/agents/${r.userId}`, { active: !r.active }).then(load).catch((e) => setErr((e as Error).message))}>

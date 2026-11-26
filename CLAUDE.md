@@ -659,13 +659,17 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     yapmış mekân sahibi (web mekân paneli menüsü "Canlı Destek", /mekan/panel/canli-destek; mobilde mekân paneli yok). Uçlar oturum zorunlu:
     üye /support/* (JWT), mekân /venue-panel/support/* (mekân çerezi yolu /api/v1/venue-panel). Sohbet başlatan hesabın ID'sine bağlı
     (SupportChat.userId / venueAccountId); hiçbir eşleştirme isimle yapılmaz. Üye ve mekân aynı ekran (web components/support/SupportChatScreen.tsx)
-  - Kullanıcı ekranı (sup.* anahtarları, TR + EN): konu Hesap / Ödeme / Masa / Diğer; sırada "Sıradasın: N. sıra · Tahmini bekleme ~X dk"
-    (son 20 kapanan sohbetin ortalama süresi × sıra ÷ (çevrimiçi temsilci × eşzamanlı sınır); veri yoksa yalnız sıra); çevrimiçi temsilci yoksa
-    "Şu an tüm temsilcilerimiz meşgul ya da çevrimdışı…" (mesaj bırakılır, sıraya girer). Başlık "Ahenk Müşteri Temsilcisi" + "Temsilci No: XXXXX";
-    temsilcinin adı / cinsiyeti hiçbir yerde gösterilmez. İlk atamada 2 otomatik mesaj (sistem kodları NOTICE: kayıt + Aydınlatma Metni linki
+  - Kullanıcı ekranı (sup.* anahtarları, TR + EN): konu Hesap / Ödeme / Masa / Diğer; sırada canlı "Önünde {n} kişi var · ~{m} dk" /
+    "{n} people ahead of you · ~{m} min" (tahmin = önündeki kişi × son 7 günün ortalama sohbet süresi ÷ çevrimiçi temsilci sayısı, tam
+    dakikaya yukarı, en az 1 dk; çevrimiçi temsilci yoksa ya da son 7 günde veri yoksa yalnız "Önünde {n} kişi var"); çevrimiçi temsilci
+    yoksa ayrıca "Şu an tüm temsilcilerimiz meşgul ya da çevrimdışı…" (mesaj bırakılır, sıraya girer). Altında "Beklerken oyna" /
+    "Play while you wait". Başlık "Ahenk Müşteri Temsilcisi · Temsilci No: {agentNo}" / "Ahenk Support Agent · Agent No: {agentNo}"
+    (sup.headerAgent), altında karşı tarafın durumu "yazıyor…" / "Çevrimiçi" / "Çevrimdışı" (EN typing… / Online / Offline; çevrimiçi =
+    son 20 sn'de yoklama, bellekte); temsilci tarafında da kullanıcının durumu. Temsilcinin adı / cinsiyeti / fotoğrafı hiçbir yerde
+    gösterilmez. Temsilci bağlandığı an mobilde hafif titreşim (expo-haptics). İlk atamada 2 otomatik mesaj (sistem kodları NOTICE: kayıt + Aydınlatma Metni linki
     /kvkk, GREETING: karşılama); istemci kodu arayüz dilinde gösterir. Yazıyor göstergesi, okundu, saat, emoji, görsel (yalnız JPG / PNG /
     WebP, dosya başına 5 MB, mesaj başına 3; EXIF silinerek WebP'ye çevrilir, bulanıklaştırma yok; uploads/support/<chatId>/, git'e eklenmez).
-    Masa Sohbeti link / telefon / şüpheli kelime engelleri destek sohbetinde yok. "Sohbeti Sonlandır". Mobilde klavye açıkken mesaj alanı
+    Masa Sohbeti link / telefon / şüpheli kelime engelleri destek sohbetinde yok. "Sohbeti Sonlandır" ve küçült butonu. Mobilde klavye açıkken mesaj alanı
     klavyenin üstünde (KeyboardAvoidingView). Kullanıcı geçmiş destek sohbetlerini göremez, kapanan sohbet ekrandan kalkar
   - Anlık iletişim: Masa Sohbeti gibi yoklama (3 sn). Yazıyor göstergesi ve gönderilmemiş yazı önizlemesi yalnız backend süreç belleğinde
     (5 sn), hiçbir yere yazılmaz. Kullanıcı 20 sn'dir yoklamıyorsa temsilci cevabı push + uygulama içi bildirimle gider (üye; mekân hesabında
@@ -673,13 +677,26 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
   - Hareketsizlik: temsilcinin son (elle yazdığı) mesajından sonra kullanıcı 2 dk cevap vermezse sistem mesajı "1 dakika içinde yanıt vermezsen
     sohbet sonlanacak.", 3. dakikada otomatik sonlanır (closedBy AUTO) ve değerlendirme push ile gider
   - Değerlendirme (sohbet kullanıcı, temsilci ya da otomatik kapanınca; kötüye kullanımla kapananda yok; kapanıştan 24 saat açılabilir):
-    "Yardımcı olabildik mi?" Evet / Hayır + 5 yıldız (zorunlu); 4–5 yıldız "Neyi beğendin?" (isteğe bağlı), 2–3 "Ne daha iyi olabilirdi?",
+    "Sorunun çözüldü mü?" / "Was your issue resolved?" Evet / Hayır + 5 yıldız (zorunlu); 4–5 yıldız "Neyi beğendin?" (isteğe bağlı), 2–3 "Ne daha iyi olabilirdi?",
     1 "Ne kötü gitti?" (zorunlu) etiketleri; serbest metin; "Değerlendir" → "Değerlendirmeni aldık! …" + "Kapat"
+  - Beklerken oyna (web components/support/Breakout.tsx canvas, mobil components/Breakout.tsx Skia + Reanimated frame callback): yalnız
+    kuyruktayken butonla açılır; tek seviye, 5 sıra tuğla, 3 can, bitince "Tekrar oyna" / "Play again"; ses / efekt yok; top, raket, tuğla
+    Ahenk renklerinde; raket parmak / fareyle sürüklenir; sabit adımlı (en fazla 60 kare/sn). Oyun açıkken sıra satırı üstte küçük. Skor
+    yalnız ekranda; hiçbir oyun verisi DB'ye, sunucuya, yerel depolamaya ya da loga yazılmaz. Temsilci bağlanınca ya da sohbet küçültülünce
+    oyun tamamen kapanır, dönüşte yeniden başlamaz
+  - Baloncuk (web components/support/SupportBubble.tsx: üyenin her sayfası [locale]/layout, mekân panelinin her sayfası; mobil
+    components/SupportBubble.tsx: her ekran; yönetim panelinde, giriş ekranlarında ve sohbet ekranında yok): yalnız açık destek sohbeti
+    varken (Canlı Destek'ten başlatılmış) sağ altta sabit, sürüklenmez. Kuyruktayken sıra numarası; yeni mesajda okunmamış sayı rozeti
+    (mobilde hafif titreşim). Basınca sohbet açılır; sohbet herhangi bir şekilde kapanınca kaybolur. GET /support/summary ve
+    /venue-panel/support/summary (durum, sıra, okunmamış; okundu yazmaz), açık sohbet varken 4 sn'de bir. Mekân paneli menüsündeki
+    "Canlı Destek" öğesinde okunmamış mesaj sayısı baloncuğu (10 sn'de bir; mekân hesabına uygulama içi bildirim)
   - Rol: UserRole.SUPPORT (Temsilci). Yönetim panelinde (web + mobil) yalnız "Canlı Destek" sekmesi; diğer sayfalar açılmaz, ADMIN uçları
     RolesGuard'da reddedilir (SUPPORT seviyesi ADMIN'in altında), canlı destek uçları rolü ayrıca denetler. Temsilci hesabını yalnız SUPERADMIN
-    açar (ad, soyad, e-posta, telefon, şifre; rol SUPPORT) ve kapatır (status DELETED, oturumlar düşer, açık sohbetleri sıraya döner).
+    açar (ad, soyad, e-posta, telefon, şifre; rol SUPPORT) ve kapatır (status DELETED, oturumlar düşer, açık sohbetleri sıraya döner;
+    girişte ve temsilci listesinde "Bu temsilci artık destek ekibinde değil." / "This agent is no longer on the support team.").
     Her temsilciye ve canlı destek yapan ADMIN / SUPERADMIN'e benzersiz, rastgele, 5 haneli, değişmeyen Temsilci No (SupportAgent.agentNo).
-    SUPERADMIN bütün açık sohbetleri canlı izler ve istediğini devralır
+    ADMIN bütün sohbetleri salt okunur görür, yalnız kendine atanan sohbete yazar (mesaj, iç not). SUPERADMIN bütün açık sohbetleri canlı
+    izler ve istediğini devralır. Yazıyor ve çevrimiçi / çevrimdışı durumu bellekte; Temsilci No ilk kullanımda atanır
   - Sıra ve atama (her 10 sn zamanlanmış iş + her olayda): tek ortak sıra, ilk gelen ilk alınır (queuedAt). Çevrimiçi temsilciler arasında en
     az açık sohbeti olana, eşitse en uzun süredir boşta olana (idleSince). Eşzamanlı sınır varsayılan 3 (AppConfig SUPPORT_MAX_CHATS, Ayarlar →
     Canlı Destek). Herkes doluysa sırada bekler, sohbet kapanınca sıradaki atanır. Atanan temsilci 2 dk içinde ilk cevabı vermezse başka uygun

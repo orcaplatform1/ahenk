@@ -21,7 +21,7 @@ interface AgentState { me: { userId: string; role: string; agentNo: string; stat
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string }
 interface ChatDetail {
   id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; queuedAt: string; agentNo: string | null; mine: boolean;
-  closedAt: string | null; userReadAt: string | null; userTyping: boolean; userDraft: string; messages: Msg[];
+  closedAt: string | null; userReadAt: string | null; userTyping: boolean; userOnline: boolean; userDraft: string; messages: Msg[];
   notes: { id: string; agentNo: string; content: string; createdAt: string }[];
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
 }
@@ -114,7 +114,8 @@ function ChatList({ onOpen }: { onOpen: (id: string) => void }) {
       {!!err && <AError>{err}</AError>}
       {list('Sıradakiler', st.queue)}
       {list('Açık Sohbetlerim', st.mine)}
-      {st.me.role === 'SUPERADMIN' && list('Diğer Açık Sohbetler', st.others, true)}
+      {/* ADMIN salt okunur izler, SUPERADMIN devralabilir */}
+      {(st.me.role === 'SUPERADMIN' || st.me.role === 'ADMIN') && list('Diğer Açık Sohbetler', st.others, true)}
     </View>
   );
 }
@@ -188,6 +189,7 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
         <View style={{ flex: 1, minWidth: 0 }}>
           <AT w={700} style={{ fontSize: 14 }} numberOfLines={1}>{c.requesterName}</AT>
           <AT style={{ fontSize: 11, color: adm.muted }} numberOfLines={1}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · {waited(c.queuedAt)}{c.agentNo ? ` · No ${c.agentNo}` : ''}</AT>
+          {open && <AT style={{ fontSize: 11, color: c.userTyping || c.userOnline ? adm.green : adm.muted }}>{c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'}{!c.mine && st?.me.role === 'ADMIN' ? ' · salt okunur' : ''}</AT>}
         </View>
         <SmallBtn label="Haiku" color={adm.cyan} onPress={() => setHaiku(true)} />
         <SmallBtn label="⋯" color={adm.muted} onPress={() => setExtra((v) => !v)} />
@@ -202,10 +204,10 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
           <ALabel>İÇ NOTLAR ({c.notes.length}) · DEVİRLER ({c.transfers.length})</ALabel>
           {c.transfers.map((x) => <AT key={x.id} style={{ fontSize: 12, color: adm.amber }}>Devir {x.from ?? '—'} → {x.to ?? '—'} · {dt(x.createdAt)}: {x.note}</AT>)}
           {c.notes.map((n) => <AT key={n.id} style={{ fontSize: 12 }}>No {n.agentNo} · {dt(n.createdAt)}: {n.content}</AT>)}
-          <View style={{ flexDirection: 'row', gap: 6 }}>
+          {(c.mine || superadmin) && <View style={{ flexDirection: 'row', gap: 6 }}>
             <TextInput value={note} onChangeText={setNote} placeholder="İç not ekle" placeholderTextColor={adm.muted} style={[input, { flex: 1 }]} keyboardAppearance="dark" />
             <SmallBtn label="Ekle" color={adm.blue} onPress={() => note.trim() && act(() => api.post(`/admin/live-support/chats/${id}/notes`, { content: note.trim() }), () => setNote(''))} />
-          </View>
+          </View>}
           {canWrite && !!st && (
             <View style={{ gap: 6 }}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -237,7 +239,7 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
         })}
         {!!lastAgent && !!c.userReadAt && c.userReadAt >= lastAgent.createdAt && <AT style={{ alignSelf: 'flex-end', fontSize: 10, color: adm.muted }}>Okundu</AT>}
         {/* Yazı önizlemesi: kullanıcının gönderilmemiş metni (sunucuda yalnız bellekte) */}
-        {c.userTyping && <AT style={{ fontSize: 12, color: adm.amber, fontStyle: 'italic' }}>Yazıyor…{c.userDraft ? ` “${c.userDraft}”` : ''}</AT>}
+        {c.userTyping && <AT style={{ fontSize: 12, color: adm.amber, fontStyle: 'italic' }}>yazıyor…{c.userDraft ? ` “${c.userDraft}”` : ''}</AT>}
       </ScrollView>
       {!!err && <View style={{ paddingHorizontal: 12 }}><AError>{err}</AError></View>}
       {canWrite && (
@@ -457,6 +459,7 @@ function AgentsTab() {
         <ACard key={r.userId} style={{ gap: 6, opacity: r.active ? 1 : 0.55 }}>
           <AT w={600} style={{ fontSize: 13 }}>{r.name} · {roleTr[r.role] ?? r.role}</AT>
           <AT style={{ fontSize: 11, color: adm.muted }}>{r.email} · {r.phone ?? '—'} · Temsilci No {r.agentNo ?? '—'} · {r.status === 'ONLINE' ? 'Çevrimiçi' : r.status === 'BREAK' ? 'Mola' : 'Çevrimdışı'}</AT>
+          {!r.active && <AT style={{ fontSize: 11, color: adm.amber }}>Bu temsilci artık destek ekibinde değil.</AT>}
           {r.role === 'SUPPORT' && <SmallBtn label={r.active ? 'Hesabı Kapat' : 'Hesabı Aç'} color={r.active ? adm.red : adm.green} onPress={() => { api.patch(`/admin/live-support/manage/agents/${r.userId}`, { active: !r.active }).then(load).catch((e: Error) => setErr(e.message)); }} />}
         </ACard>
       ))}

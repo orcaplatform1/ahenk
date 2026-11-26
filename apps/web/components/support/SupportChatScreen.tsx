@@ -2,20 +2,25 @@
 
 // Canlı Destek kullanıcı ekranı (üye ve mekân sahibi aynı ekran; mobil app/canli-destek.tsx ile aynı akış).
 // Anlık iletişim Masa Sohbeti gibi kısa aralıklı yoklama (3 sn). Konu seçimi → sıra → temsilci → sohbet → değerlendirme.
-// Kullanıcı geçmiş destek sohbetlerini göremez: sohbet kapanınca ekrandan kalkar.
+// Kullanıcı geçmiş destek sohbetlerini göremez: sohbet kapanınca ekrandan kalkar. Küçült butonu sohbeti baloncuğa alır (SupportBubble);
+// kuyruktayken "Beklerken oyna" Breakout açar, temsilci bağlanınca ya da küçültülünce oyun tamamen kapanır.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { StdButton } from '@ahenk/ui';
 import { Link } from '@/i18n/navigation';
 import { api, API_PREFIX, langHeaders } from '@/lib/api';
 import { venueApi } from '@/lib/venueApi';
+import { Breakout } from './Breakout';
+
+// Baloncuk (SupportBubble) sohbet başlatılınca / küçültülünce durumu yeniden okur
+export const SUPPORT_EVENT = 'ahenk:support';
 
 type Sender = 'USER' | 'AGENT' | 'SYSTEM';
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string; pending?: boolean }
 interface ChatView {
   id: string; status: 'QUEUED' | 'ACTIVE'; topic: string; agentNo: string | null;
-  queue: { position: number; etaMin: number | null; online: boolean } | null;
-  agentTyping: boolean; agentReadAt: string | null; messages: Msg[];
+  queue: { position: number; ahead: number; etaMin: number | null; online: boolean } | null;
+  agentTyping: boolean; agentOnline: boolean; agentReadAt: string | null; messages: Msg[];
 }
 interface State { restriction: { expiresAt: string } | null; chat: ChatView | null; pendingRating: string | null }
 
@@ -58,7 +63,7 @@ function clientFor(mode: 'member' | 'venue') {
   };
 }
 
-export function SupportChatScreen({ mode, onExit }: { mode: 'member' | 'venue'; onExit?: () => void }) {
+export function SupportChatScreen({ mode, onExit, onMinimize }: { mode: 'member' | 'venue'; onExit?: () => void; onMinimize?: () => void }) {
   const t = useTranslations();
   const client = useRef(clientFor(mode)).current;
   const [state, setState] = useState<State | null>(null);
@@ -79,7 +84,7 @@ export function SupportChatScreen({ mode, onExit }: { mode: 'member' | 'venue'; 
 
   async function start(topic: string) {
     setError('');
-    try { await client.post('/chats', { topic }); await load(); } catch (e) { setError((e as Error).message || t('sup.error')); }
+    try { await client.post('/chats', { topic }); await load(); window.dispatchEvent(new Event(SUPPORT_EVENT)); } catch (e) { setError((e as Error).message || t('sup.error')); }
   }
 
   if (!state) return <p style={{ color: MUTED, fontSize: 13 }}>…</p>;
@@ -98,7 +103,7 @@ export function SupportChatScreen({ mode, onExit }: { mode: 'member' | 'venue'; 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {!!error && <p role="alert" style={{ color: '#ff6b6b', fontSize: 13 }}>{error}</p>}
       {state.chat ? (
-        <ChatPanel client={client} chat={state.chat} reload={load} onEnded={(id) => setRateFor(id)} />
+        <ChatPanel client={client} chat={state.chat} reload={load} onEnded={(id) => setRateFor(id)} onMinimize={() => { window.dispatchEvent(new Event(SUPPORT_EVENT)); onMinimize?.(); }} />
       ) : state.restriction ? (
         <div className="ll-card"><p style={{ color: TEXT, fontSize: 14 }}>{t('sup.restricted', { time: supportRemaining(state.restriction.expiresAt, t) })}</p></div>
       ) : (
@@ -121,7 +126,7 @@ export function SupportChatScreen({ mode, onExit }: { mode: 'member' | 'venue'; 
 
 type Client = ReturnType<typeof clientFor>;
 
-function ChatPanel({ client, chat, reload, onEnded }: { client: Client; chat: ChatView; reload: () => void; onEnded: (id: string) => void }) {
+function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Client; chat: ChatView; reload: () => void; onEnded: (id: string) => void; onMinimize: () => void }) {
   const t = useTranslations();
   const [msgs, setMsgs] = useState<Msg[]>(chat.messages);
   const [text, setText] = useState('');
@@ -133,11 +138,14 @@ function ChatPanel({ client, chat, reload, onEnded }: { client: Client; chat: Ch
   const listRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const typingAt = useRef(0);
+  // Oyun yalnız kuyruktayken; temsilci bağlanınca tamamen kapanır
+  const [game, setGame] = useState(false);
+  useEffect(() => { if (chat.status !== 'QUEUED') setGame(false); }, [chat.status]);
 
   useEffect(() => {
     setMsgs((prev) => [...chat.messages, ...prev.filter((m) => m.pending)]);
   }, [chat.messages]);
-  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }); }, [msgs.length, chat.agentTyping]);
+  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }); }, [msgs.length]);
 
   // Yazı önizlemesi: temsilci gönderilmeden önce görür (sunucuda yalnız bellekte, 5 sn)
   function onType(v: string) {
@@ -185,23 +193,36 @@ function ChatPanel({ client, chat, reload, onEnded }: { client: Client; chat: Ch
       {/* Başlık: temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
       <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <div style={{ minWidth: 0 }}>
-          <p style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{t('sup.header')}</p>
-          {chat.agentNo && <p style={{ fontSize: 12, color: MUTED }}>{t('sup.agentNo', { no: chat.agentNo })}</p>}
+          <p style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{chat.agentNo ? t('sup.headerAgent', { no: chat.agentNo }) : t('sup.header')}</p>
+          {chat.status === 'ACTIVE' && (
+            <p style={{ fontSize: 12, color: chat.agentTyping || chat.agentOnline ? '#22c55e' : MUTED }}>
+              {chat.agentTyping ? t('sup.typing') : chat.agentOnline ? t('sup.online') : t('sup.offlineStatus')}
+            </p>
+          )}
         </div>
-        <StdButton variant="ghost" onClick={end} style={{ flexShrink: 0 }}>{t('sup.end')}</StdButton>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          <button type="button" aria-label={t('sup.minimize')} title={t('sup.minimize')} onClick={onMinimize} style={ICON_BTN}>
+            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth={2} strokeLinecap="round"><path d="M5 12h14" /></svg>
+          </button>
+          <StdButton variant="ghost" onClick={end}>{t('sup.end')}</StdButton>
+        </div>
       </div>
       {chat.status === 'QUEUED' && chat.queue && (
-        <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.06)', borderBottom: '1px solid rgba(245,158,11,0.2)' }}>
-          <p style={{ fontSize: 13, color: TEXT, lineHeight: 1.5 }}>
-            {!chat.queue.online ? t('sup.offline') : chat.queue.etaMin !== null ? t('sup.queue', { pos: chat.queue.position, min: chat.queue.etaMin }) : t('sup.queueNoEta', { pos: chat.queue.position })}
+        <div style={{ padding: game ? '6px 16px' : '10px 16px', background: 'rgba(245,158,11,0.06)', borderBottom: '1px solid rgba(245,158,11,0.2)' }}>
+          {/* Oyun açıkken sıra ve tahmin satırı üstte küçük */}
+          {!chat.queue.online && !game && <p style={{ fontSize: 13, color: TEXT, lineHeight: 1.5, marginBottom: 4 }}>{t('sup.offline')}</p>}
+          <p style={{ fontSize: game ? 11 : 13, color: chat.queue.online && !game ? TEXT : MUTED, lineHeight: 1.5 }}>
+            {chat.queue.etaMin !== null ? t('sup.queue', { n: chat.queue.ahead, m: chat.queue.etaMin }) : t('sup.queueNoEta', { n: chat.queue.ahead })}
           </p>
-          {!chat.queue.online && <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{t('sup.queueNoEta', { pos: chat.queue.position })}</p>}
+          {!game && <StdButton variant="ghost" onClick={() => setGame(true)} style={{ marginTop: 8 }}>{t('sup.play')}</StdButton>}
         </div>
       )}
+      {game ? (
+        <div style={{ flex: 1, overflowY: 'auto', padding: 14 }}><Breakout /></div>
+      ) : (<>
       <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {msgs.map((m) => <Bubble key={m.id} m={m} chatId={chat.id} client={client} onImage={setViewer} />)}
         {read && <p style={{ alignSelf: 'flex-end', fontSize: 10, color: MUTED }}>{t('sup.read')}</p>}
-        {chat.agentTyping && <p style={{ fontSize: 12, color: MUTED, fontStyle: 'italic' }}>{t('sup.typing')}</p>}
       </div>
       {!!err && <p role="alert" style={{ padding: '0 14px 6px', fontSize: 12, color: '#ff6b6b' }}>{err}</p>}
       {files.length > 0 && (
@@ -238,6 +259,7 @@ function ChatPanel({ client, chat, reload, onEnded }: { client: Client; chat: Ch
           </span>
         </button>
       </div>
+      </>)}
       {viewer && (
         <div role="dialog" aria-modal="true" onClick={() => setViewer(null)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

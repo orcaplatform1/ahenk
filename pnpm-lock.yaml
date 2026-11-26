@@ -226,6 +226,9 @@ importers:
       expo-font:
         specifier: ~58.0.12
         version: 58.0.12(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.1)(supports-color@7.2.0))(react@19.3.1)
+      expo-haptics:
+        specifier: ~58.0.8
+        version: 58.0.8(expo@58.0.25)
       expo-iap:
         specifier: ^6.4.3
         version: 6.4.3(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.1)(supports-color@7.2.0))(react@19.3.1)
@@ -4547,6 +4550,11 @@ packages:
       expo: '*'
       react: '*'
       react-native: '*'
+
+  expo-haptics@58.0.8:
+    resolution: {integrity: sha512-hxW9LoJQhAJ4hRlGx0DZ10ncs2NFqC/0nfKSnGy1PcpH6e8dJ4/oJO9eOcAG/vFg8k5oonbZkWL7RK9G3729Tg==}
+    peerDependencies:
+      expo: '*'
 
   expo-iap@6.4.3:
     resolution: {integrity: sha512-KNQ4BkptFBuzIU0Ap7WvfJ2mKF9GdFOmQJ4NDWLchWL8qYtD7FQIroX4t/kCLs6TNv08fi77sQbWEDjBtWFhEg==}
@@ -11955,6 +11963,10 @@ snapshots:
       expo: 58.0.25(2d1a68dc50d270a9a8b20e3f2f198267)
       react: 19.3.1
       react-native: 0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.1)(supports-color@7.2.0)
+
+  expo-haptics@58.0.8(expo@58.0.25):
+    dependencies:
+      expo: 58.0.25(2d1a68dc50d270a9a8b20e3f2f198267)
 
   expo-iap@6.4.3(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.1)(supports-color@7.2.0))(react@19.3.1):
     dependencies:

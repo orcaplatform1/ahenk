@@ -107,7 +107,12 @@ export class AuthService {
   }
 
   private async checkSanction(userId: string, status: string): Promise<void> {
-    if (status === 'DELETED') throw new ForbiddenException("Bu hesap silinmiş");
+    if (status === 'DELETED') {
+      // Kapatılan temsilci hesabı (rol SUPPORT): canlı destek ekibinden çıkarıldı
+      const role = (await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } }))?.role;
+      if (role === 'SUPPORT') throw new ForbiddenException("Bu temsilci artık destek ekibinde değil.");
+      throw new ForbiddenException("Bu hesap silinmiş");
+    }
 
     // Askı girişi engellemez (yalnız masaya katılma ve satın alma kapalı; common/suspension.ts). Eski modelden kalan
     // SUSPENDED durumundaki hesap girişte ACTIVE'e döner

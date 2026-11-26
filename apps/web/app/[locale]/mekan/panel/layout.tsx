@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { VenueAuthError, VenueMe, venueApi } from '@/lib/venueApi';
 import { VenuePanelContext } from './context';
+import { SupportBubble, type SupportSummary } from '@/components/support/SupportBubble';
 
 const NAV = [
   { href: '/mekan/panel/bilgiler', label: 'vp.navInfo' },
@@ -22,6 +23,15 @@ export default function MekanPanelLayout({ children }: { children: React.ReactNo
   const [error, setError] = useState('');
 
   const onAuthLost = useCallback(() => router.replace('/giris?sekme=mekan'), [router]);
+  // Canlı Destek menü öğesi rozeti: açık destek sohbetindeki okunmamış mesaj sayısı (uygulama içi bildirim; 10 sn'de bir)
+  const [supportUnread, setSupportUnread] = useState(0);
+  useEffect(() => {
+    if (!me) return;
+    const load = () => { venueApi.get<SupportSummary>('/support/summary').then((r) => setSupportUnread(r.chat?.unread ?? 0)).catch(() => {}); };
+    load();
+    const id = setInterval(load, 10_000);
+    return () => clearInterval(id);
+  }, [me, path]);
 
   useEffect(() => {
     venueApi.get<VenueMe>('/me').then(setMe).catch((e) => {
@@ -52,6 +62,11 @@ export default function MekanPanelLayout({ children }: { children: React.ReactNo
               return (
                 <Link key={n.href} href={n.href} aria-current={active ? 'page' : undefined} style={{ flexShrink: 0, padding: '0.7rem 0.75rem', fontSize: '0.85rem', textDecoration: 'none', color: active ? '#ff6b6b' : '#888', borderBottom: `2px solid ${active ? '#c0392b' : 'transparent'}` }}>
                   {t(n.label)}
+                  {n.href === '/mekan/panel/canli-destek' && supportUnread > 0 && (
+                    <span aria-label={t('sup.bubbleUnread', { n: supportUnread })} style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 99, background: '#c0392b', color: '#fff' }}>
+                      {supportUnread > 99 ? '99+' : supportUnread}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -61,6 +76,8 @@ export default function MekanPanelLayout({ children }: { children: React.ReactNo
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.25rem 1rem 3rem' }}>
         {error && <p style={{ color: '#ff6b6b', fontSize: '0.85rem' }}>{error}</p>}
         {me ? <VenuePanelContext.Provider value={{ me, setMe, onAuthLost }}>{children}</VenuePanelContext.Provider> : !error && <p style={{ color: '#666', fontSize: '0.85rem' }}>{t('vp.loading')}</p>}
+        {/* Canlı Destek baloncuğu: mekân panelinin her sayfasında, yalnız açık destek sohbeti varken */}
+        {me && <SupportBubble mode="venue" />}
       </div>
     </main>
   );

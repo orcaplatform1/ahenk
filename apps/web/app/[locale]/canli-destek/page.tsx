@@ -20,7 +20,8 @@ export default function CanliDestekPage() {
           <Link href="/profil" style={{ fontSize: 13, color: '#a39c93', minHeight: 44, display: 'flex', alignItems: 'center' }}>← {t('tabs.profil')}</Link>
           <h1 className="font-serif" style={{ fontSize: 26 }}>{t('sup.title')}</h1>
         </div>
-        <SupportChatScreen mode="member" onExit={() => router.push('/profil')} />
+        <SupportChatScreen mode="member" onExit={() => router.push('/profil')}
+          onMinimize={() => { if (window.history.length > 1) router.back(); else router.push('/profil'); }} />
       </div>
     </main>
   );

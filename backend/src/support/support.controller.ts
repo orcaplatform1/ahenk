@@ -24,6 +24,7 @@ abstract class RequesterEndpoints {
   protected abstract who(req: Request): Requester;
 
   @Get("state") state(@Req() req: Request) { return this.support.state(this.who(req)); }
+  @Get("summary") summary(@Req() req: Request) { return this.support.summary(this.who(req)); }
   @Post("chats") start(@Req() req: Request, @Body() dto: StartChatDto) { return this.support.start(this.who(req), dto.topic); }
   @Post("chats/:id/messages") @UseInterceptors(upload)
   message(@Req() req: Request, @Param("id") id: string, @Body() dto: MessageDto, @UploadedFiles() files?: Express.Multer.File[]) {

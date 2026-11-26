@@ -12,6 +12,7 @@ import '@/lib/sosLive';
 import '@/lib/i18n';
 import { AppAlertHost } from '@/components/AppAlert';
 import { AdminLockOverlay } from '@/components/AdminLockOverlay';
+import { SupportBubble } from '@/components/SupportBubble';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -46,6 +47,8 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ gestureEnabled: false, animation: 'fade' }} />
         <Stack.Screen name="tekrar-hosgeldin" options={{ gestureEnabled: false, animation: 'fade' }} />
       </Stack>
+      {/* Canlı Destek baloncuğu: yalnız açık destek sohbeti varken her ekranda (yönetim paneli ve giriş ekranları hariç) */}
+      <SupportBubble />
       {/* Uygulama genelindeki uyarı penceresi (Alert.alert yerine Ahenk paletinde) */}
       <AppAlertHost />
       {/* ADMIN / SUPERADMIN kalıcı oturumunda biyometrik kilit (açılışta ve 5 dk'dan uzun arka plan sonrası) */}

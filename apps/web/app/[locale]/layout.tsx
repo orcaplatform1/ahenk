@@ -5,6 +5,7 @@ import { ENGLISH_ENABLED } from '@ahenk/shared';
 import { routing } from '@/i18n/routing';
 import LocaleSync from '@/components/LocaleSync';
 import { OnboardingHost } from '@/components/Onboarding';
+import { SupportBubble } from '@/components/support/SupportBubble';
 
 // Kullanıcı sayfaları: Türkçe önek yok, İngilizce /en. Admin ve mekân paneli bu klasörün dışında (Türkçe)
 export default async function LocaleLayout({ children, params }: { children: React.ReactNode; params: Promise<{ locale: string }> }) {
@@ -17,6 +18,8 @@ export default async function LocaleLayout({ children, params }: { children: Rea
       {/* Kayıttan sonra bir kez tanıtım ("Nasıl Çalışır") */}
       <OnboardingHost />
       {children}
+      {/* Canlı Destek baloncuğu: yalnız açık destek sohbeti varken, üyenin her sayfasında (sohbet ekranı ve mekân paneli hariç) */}
+      <SupportBubble mode="member" />
     </>
   );
 }
