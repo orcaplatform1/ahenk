@@ -76,7 +76,7 @@ const sections = [
           },
           {
             cat: 'İletişim İçerikleri ve Şikâyet Verileri',
-            items: ['Masa sohbeti mesajları (sohbet kapanınca kullanıcı tarafında görünmez olur, yönetim tarafında saklanır)', 'Sohbet şikâyetleri ve otomatik engel kayıtları', 'Ekran görüntüsü ihlal kayıtları: ekran görüntüsünü alan kullanıcı, fotoğrafı görüntülenen kullanıcı, platform ve tarih-saat bilgisi. Kayıtları yalnız ADMIN ve SUPERADMIN görür', 'Sorun bildirimleri ve ekli görseller'],
+            items: ['Masa sohbeti mesajları (sohbet kapanınca kullanıcı tarafında görünmez olur, yönetim tarafında saklanır)', 'Sohbet şikâyetleri ve otomatik engel kayıtları', 'Ekran görüntüsü ihlal kayıtları: ekran görüntüsünü alan kullanıcı, fotoğrafı görüntülenen kullanıcı, platform ve tarih-saat bilgisi. Kayıtları yalnız ADMIN ve SUPERADMIN görür', 'Sorun bildirimleri ve ekli görseller', 'Canlı destek sohbet kayıtları: destek konusu, mesajlar, gönderdiğin görseller, saat ve okundu bilgisi, temsilci numarası, temsilcilerin iç notları ve devir notları, değerlendirmen; destek amaçlı yapay zekâ asistanı (Claude Haiku) sorgu kayıtları'],
           },
           {
             cat: 'Davranış Verileri',
@@ -135,6 +135,7 @@ const sections = [
           'Yasal yükümlülüklerin yerine getirilmesi, yetkili kurum ve kuruluşlara bilgi/belge sunulması',
           'Şikâyet ve taleplerin yönetilmesi',
           'Ekran görüntüsü ihlal kayıtları: topluluk kurallarının uygulanması ve kullanıcıların kişisel verilerinin korunması',
+          'Canlı destek hizmetinin yürütülmesi: taleplerinin yanıtlanması, hizmet kalitesinin artırılması ve güvenliğin için görüşmelerin kayıt altına alınması (KVKK m.5/2-c ve m.5/2-f)',
           'Hizmet kalitesinin iyileştirilmesi ve platform geliştirme faaliyetlerinin yürütülmesi',
         ].map((item) => (
           <li key={item} style={{ display: 'flex', gap: '0.65rem', color: '#c9c2b8', fontSize: 13, lineHeight: 1.6 }}>
@@ -254,6 +255,10 @@ const sections = [
           : Aktarılan veri: masa uyum raporu için masadaki her katılımcının adı yerine P1, P2 gibi bir etiketle beş OCEAN skoru ve varsa meslek alanı, masa türü, katılımcı sayısı ve masanın genel uyum skoru; masa sohbeti denetimi için şüpheli kelime içeren sohbet mesajının yalnız metni (en fazla 1.000 karakter). Ad, cinsiyet, yaş, iletişim ve kimlik bilgisi aktarılmaz. Amaç: yapay zekâ ile masa uyum raporu ve sohbet denetimi. Aktarım dayanağı: KVKK m.9/4 standart sözleşme; Kişisel Verileri Koruma Kurumu'na sözleşmenin imzalanmasından itibaren 5 iş günü içinde bildirim yapılır. İşleme sebebi: masa uyum raporunda KVKK m.5/2-c (sözleşmenin ifası), sohbet denetiminde KVKK m.5/2-f (meşru menfaat).
         </p>
         <p style={{ marginBottom: '1.25rem' }}>
+          <strong style={{ color: '#f4f1ec' }}>Anthropic (yapay zekâ, ABD), canlı destek</strong>
+          : Aktarılan veri: temsilci istediğinde canlı destek sohbetinin metni, temsilci isterse sohbette gönderdiğin görseller ve yalnız o sohbetin bağlı olduğu hesabın destek için gereken kayıtları (ad soyad, şehir, dil, kayıt tarihi, paketler ve kalan haklar, Premium aboneliği, ödemeler, masalar, masa seçimi, KYC durumu, uyarı / askı / ban durumu, davet ve indirim durumu; mekân hesabında mekân bilgisi, onay durumu ve atanmış masalar). KYC görselleri ve videosu, kimlik numarası, telefon numarası, OCEAN sonuçları, Masa Sohbeti içerikleri, Acil Yardım kayıtları ve başka kullanıcıların verisi aktarılmaz. Yapay zekâ yalnız okur, kullanıcıya mesaj göndermez ve hiçbir kaydı değiştirmez. Amaç: temsilcinin talebini hızlı ve doğru yanıtlaması. İşleme sebebi: KVKK m.5/2-c (sözleşmenin ifası) ve m.5/2-f (meşru menfaat). Aktarım dayanağı: KVKK m.9/4 standart sözleşme; Kişisel Verileri Koruma Kurumu'na sözleşmenin imzalanmasından itibaren 5 iş günü içinde bildirim yapılır.
+        </p>
+        <p style={{ marginBottom: '1.25rem' }}>
           <strong style={{ color: '#f4f1ec' }}>Google Firebase Cloud Messaging (push bildirimi, ABD)</strong>
           : Aktarılan veri: bildirim cihaz anahtarı (FCM token) ve bildirim içeriği. Amaç: push bildirimlerinin iletilmesi. Aktarım dayanağı: KVKK m.9/4 standart sözleşme; Kişisel Verileri Koruma Kurumu'na sözleşmenin imzalanmasından itibaren 5 iş günü içinde bildirim yapılır. İşleme sebebi: KVKK m.5/2-c (sözleşmenin ifası).
         </p>
@@ -304,6 +309,7 @@ const sections = [
           ['Ekran görüntüsü ihlal kayıtları', '2 yıl (şikâyet ve moderasyon kayıtlarıyla aynı). Hukuki sebep: KVKK m.5/2-f ve m.5/2-c'],
           ['Şikâyet edilmemiş masa sohbeti mesajları', 'Masa tarihinden 6 ay sonra silinir. Hukuki sebep: KVKK m.5/2-c'],
           ['Sorun bildirimleri', '2 yıl. Hukuki sebep: KVKK m.5/2-f'],
+          ['Canlı destek sohbetleri, görseller, iç notlar, değerlendirmeler ve yapay zekâ sorgu kayıtları', '2 yıl. Hesap silinince sohbetin hesapla bağı koparılır, ad soyad anonimleştirilir. Hukuki sebep: KVKK m.5/2-c ve m.5/2-f'],
           ['Profil, kişilik testi (OCEAN) ve push token', 'Hesap silinene kadar. Hukuki sebep: KVKK m.5/2-c'],
           ['Banlı kullanıcının okunamaz telefon özeti', 'Ban süresince. Hukuki sebep: KVKK m.5/2-f'],
           ['Çerezler', 'Oturum çerezi 365 gün; ayrıntılar Çerez Politikası\'nda'],

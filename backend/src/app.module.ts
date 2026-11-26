@@ -27,6 +27,7 @@ import { ChatModule } from "./chat/chat.module";
 import { SosModule } from "./sos/sos.module";
 import { VenuePanelModule } from "./venue-panel/venue-panel.module";
 import { RetentionModule } from "./retention/retention.module";
+import { SupportModule } from "./support/support.module";
 import { isE2eFakeMode } from "./common/e2e/fake-layer";
 
 @Module({
@@ -76,6 +77,7 @@ import { isE2eFakeMode } from "./common/e2e/fake-layer";
     ProblemReportsModule,
     ChatModule,
     SosModule,
+    SupportModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

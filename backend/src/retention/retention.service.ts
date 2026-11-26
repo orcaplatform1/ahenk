@@ -8,6 +8,7 @@ import { isAutoDataDeletionEnabled } from "../admin/app-settings";
 import { hashPhone } from "../users/account-deletion.service";
 import { PROFILE_PHOTO_DIR } from "../profile-photo/profile-photo.util";
 import { PROBLEM_REPORT_DIR } from "../problem-reports/problem-reports.service";
+import { SUPPORT_DIR } from "../support/support.constants";
 import { decryptKyc, KYC_ENC_SUFFIX } from "../kyc/kyc-crypto";
 import { buildZip } from "../common/zip";
 import { RETENTION_JOB_CRON, RETENTION_JOB_TZ, RETENTION_POLICY, type RetentionCategoryId } from "./retention-policy";
@@ -157,6 +158,17 @@ export class RetentionService {
         const rows = await p.problemReport.findMany({ select: { id: true, userId: true, createdAt: true } });
         return rows.map((r) => ({ id: r.id, userId: r.userId, start: r.createdAt, expiresAt: addYears(r.createdAt, 2) }));
       }
+      case "SUPPORT_CHATS": {
+        // Destek sohbeti (mesaj, görsel, not, devir, değerlendirme onunla silinir) ve Haiku sorgu kaydı ("ai:" önekli): kayıt tarihinden 2 yıl
+        const [chats, logs] = await Promise.all([
+          p.supportChat.findMany({ select: { id: true, userId: true, createdAt: true } }),
+          p.supportAiLog.findMany({ select: { id: true, createdAt: true } }),
+        ]);
+        return [
+          ...chats.map((r) => ({ id: r.id, userId: r.userId, start: r.createdAt, expiresAt: addYears(r.createdAt, 2) })),
+          ...logs.map((r) => ({ id: `ai:${r.id}`, userId: null, start: r.createdAt, expiresAt: addYears(r.createdAt, 2) })),
+        ];
+      }
       case "PROFILE_DATA": {
         const rows = await p.profile.findMany({ select: { id: true, userId: true, createdAt: true } });
         return rows.map((r) => ({ id: r.id, userId: r.userId, start: r.createdAt, expiresAt: null }));
@@ -264,6 +276,15 @@ export class RetentionService {
           try { fs.rmSync(path.join(PROBLEM_REPORT_DIR, id), { recursive: true, force: true }); } catch (e) { this.logger.error(`Sorun bildirimi klasörü silinemedi (${id}): ${e}`); }
         }
         return;
+      case "SUPPORT_CHATS": {
+        await p.supportAiLog.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("ai:")).map((i) => i.slice(3)) } } });
+        const chatIds = ids.filter((i) => !i.startsWith("ai:"));
+        await p.supportChat.deleteMany({ where: { id: { in: chatIds } } });
+        for (const id of chatIds) {
+          try { fs.rmSync(path.join(SUPPORT_DIR, id), { recursive: true, force: true }); } catch (e) { this.logger.error(`Destek sohbeti klasörü silinemedi (${id}): ${e}`); }
+        }
+        return;
+      }
       case "TRAFFIC_LOG":
         await p.refreshToken.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("rt:")).map((i) => i.slice(3)) } } });
         await p.venueSession.deleteMany({ where: { id: { in: ids.filter((i) => i.startsWith("vs:")).map((i) => i.slice(3)) } } });
@@ -353,7 +374,7 @@ export class RetentionService {
       payments, subscriptions, consents, refreshTokens, deletionRequests, profile, oceanScore, oceanAnswers, kyc, profilePhotos,
       contactBlocks, userBlocks, chatMessages, chatReports, sanctions, sosReports, problemReports, notifications, participations,
       meetingReviews, noShowReports, reports, kankaInvites, kankaLinks, referrals, referralRewards, weeklySelections, winbackOffer,
-      waitlist, adminActions, locks, exports, agreements, loginLogs, screenshotLogs,
+      waitlist, adminActions, locks, exports, agreements, loginLogs, screenshotLogs, supportChats,
     ] = await Promise.all([
       p.payment.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
       p.subscription.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
@@ -391,6 +412,8 @@ export class RetentionService {
       p.loginLog.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
       // Ekran görüntüsü ihlal kayıtları: görüntüyü alan ya da fotoğrafı görüntülenen kişi
       p.screenshotLog.findMany({ where: or2("userId", "targetUserId"), orderBy: { createdAt: "asc" } }),
+      // Canlı destek sohbetleri (mesajlar, iç notlar, devirler, değerlendirme)
+      p.supportChat.findMany({ where: { userId }, include: { messages: { orderBy: { createdAt: "asc" } }, notes: true, transfers: true, rating: true }, orderBy: { createdAt: "asc" } }),
     ]);
     return {
       userId,
@@ -403,6 +426,7 @@ export class RetentionService {
         INCIDENT_IDENTITY: { retainedIdentity: deletionRequests.map((d) => d.retainedIdentity).filter((r) => r && typeof r === "object") },
         BANNED_PHONE_HASH: { phoneHash: phoneHash ?? null },
         COMPLAINT_MODERATION: { screenshotLogs },
+        SUPPORT_CHATS: { supportChats },
         EXISTING_RULES: {
           user: userRow, profile, oceanScore, oceanAnswers,
           kyc: kyc ? { id: kyc.id, idType: kyc.idType, status: kyc.status, submittedAt: kyc.submittedAt, reviewedAt: kyc.reviewedAt, rejectReason: kyc.rejectReason, adminNote: kyc.adminNote, files: [kyc.idFrontKey, kyc.idBackKey, kyc.livenessKey].filter(Boolean).map((f) => path.basename(f as string)) } : null,
@@ -417,6 +441,7 @@ export class RetentionService {
       _files: {
         kyc: kyc ? [kyc.idFrontKey, kyc.idBackKey, kyc.livenessKey].filter((f): f is string => !!f) : [],
         problemReportIds: problemReports.map((r) => r.id),
+        supportChatIds: supportChats.map((c) => c.id),
       },
     };
   }
@@ -448,6 +473,7 @@ export class RetentionService {
     };
     addDir(path.join(PROFILE_PHOTO_DIR, userId), "profil-fotograflari");
     for (const id of _files.problemReportIds) addDir(path.join(PROBLEM_REPORT_DIR, id), `sorun-bildirimleri/${id}`);
+    for (const id of _files.supportChatIds) addDir(path.join(SUPPORT_DIR, id), `canli-destek/${id}`);
     const zip = buildZip(entries);
     await this.prisma.dataExportLog.create({ data: { adminId, targetUserId: userId, reason: why } });
     return { fileName: `ahenk-veri-${userId}-${new Date().toISOString().slice(0, 10)}.zip`, base64: zip.toString("base64") };

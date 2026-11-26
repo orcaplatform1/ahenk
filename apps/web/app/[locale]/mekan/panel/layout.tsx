@@ -11,6 +11,7 @@ const NAV = [
   { href: '/mekan/panel/masalar', label: 'vp.navTables' },
   { href: '/mekan/panel/abonelik', label: 'vp.navSubscription' },
   { href: '/mekan/panel/hesap', label: 'vp.navAccount' },
+  { href: '/mekan/panel/canli-destek', label: 'sup.button' }, // Canlı Destek (yalnız giriş yapmış mekân sahibi)
 ];
 
 export default function MekanPanelLayout({ children }: { children: React.ReactNode }) {

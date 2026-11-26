@@ -14,6 +14,7 @@ export type RetentionCategoryId =
   | "COMPLAINT_MODERATION"
   | "CHAT_MESSAGES"
   | "PROBLEM_REPORTS"
+  | "SUPPORT_CHATS"
   | "PROFILE_DATA"
   | "COOKIES"
   | "EXISTING_RULES";
@@ -183,6 +184,21 @@ export const RETENTION_POLICY: RetentionCategory[] = [
     years: 2,
     auto: true,
     action: { tr: "Silinir", en: "Deleted" },
+  },
+  {
+    id: "SUPPORT_CHATS",
+    label: { tr: "Canlı destek sohbetleri", en: "Live support chats" },
+    fields: {
+      tr: "Destek sohbeti mesajları ve görselleri, konu, temsilci numarası, iç notlar, devir notları, değerlendirmeler, Haiku asistanı sorgu kayıtları",
+      en: "Support chat messages and images, topic, representative number, internal notes, transfer notes, ratings, Haiku assistant query logs",
+    },
+    location: "SupportChat, SupportMessage, SupportNote, SupportTransfer, SupportRating, SupportAiLog + uploads/support",
+    duration: { tr: "2 yıl", en: "2 years" },
+    start: { tr: "Sohbet tarihi", en: "Chat date" },
+    basis: { tr: "Hukuki sebep KVKK m.5/2-c ve m.5/2-f. Hesap silinince sohbetin hesapla bağı koparılır, ad soyad anonimleştirilir", en: "Legal ground KVKK art. 5/2-c and art. 5/2-f. When the account is deleted, the chat is unlinked from the account and the name is anonymized" },
+    years: 2,
+    auto: true,
+    action: { tr: "Sohbet, mesajlar, görseller, notlar, değerlendirme ve sorgu kayıtları silinir", en: "Chat, messages, images, notes, rating and query logs are deleted" },
   },
   {
     id: "PROFILE_DATA",

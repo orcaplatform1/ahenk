@@ -6,6 +6,7 @@ import { UserRole } from "../../generated/prisma/client";
 const ROLE_HIERARCHY: Record<UserRole, number> = {
   USER: 0,
   COACH: 1,
+  SUPPORT: 1, // Temsilci: ADMIN uçlarına giremez; canlı destek uçları rolü ayrıca denetler
   ADMIN: 2,
   SUPERADMIN: 3,
 };

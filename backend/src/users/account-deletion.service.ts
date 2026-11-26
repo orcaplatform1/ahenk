@@ -154,6 +154,11 @@ export class AccountDeletionService {
       await tx.profilePhoto.deleteMany({ where: { userId } });
       await tx.problemReport.deleteMany({ where: { userId } });
       await tx.referral.updateMany({ where: { referredId: userId }, data: { invitedPhone: null } });
+      // Canlı destek: sohbetlerin hesapla bağı kopar, ad soyad anonimleşir, içerik saklama süresi (2 yıl) dolana kadar kalır;
+      // açık sohbet kapanır, kısıtlama kayıtları silinir
+      await tx.supportChat.updateMany({ where: { userId, status: { in: ["QUEUED", "ACTIVE"] } }, data: { status: "CLOSED", closedAt: new Date(), closedBy: "USER" } });
+      await tx.supportChat.updateMany({ where: { userId }, data: { userId: null, requesterName: "Silinmiş kullanıcı" } });
+      await tx.supportRestriction.deleteMany({ where: { userId } });
 
       // Kullanılmamış haklar kullanılamaz hâle gelir (Subscription kaydı saklanır)
       await tx.subscription.updateMany({

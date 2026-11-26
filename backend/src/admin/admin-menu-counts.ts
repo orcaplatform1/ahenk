@@ -10,10 +10,11 @@
 //   /admin/sonuclandirma        sonuçlandırma bekleyen mükerrer ödemeler (Payment DUPLICATE; yalnız SUPERADMIN)
 //   /admin/partnerships         bekleyen iş ortaklığı başvuruları (PENDING; yalnız SUPERADMIN)
 //   /admin/careers              bekleyen kariyer başvuruları (PENDING; yalnız SUPERADMIN)
+//   /admin/canli-destek         sırada bekleyen canlı destek sohbetleri (SupportChat QUEUED)
 import { Controller, Get, Req, UseGuards } from "@nestjs/common";
 import { SkipThrottle } from "@nestjs/throttler";
 import { Request } from "express";
-import { AdminAlertType, CareerStatus, DeletionRequestStatus, KycStatus, PartnershipStatus, PaymentStatus, ProfilePhotoStatus, UserRole } from "../generated/prisma/client";
+import { AdminAlertType, CareerStatus, SupportChatStatus, DeletionRequestStatus, KycStatus, PartnershipStatus, PaymentStatus, ProfilePhotoStatus, UserRole } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -32,7 +33,7 @@ export class AdminMenuCountsController {
     const role = (await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } }))?.role;
     const superadmin = role === UserRole.SUPERADMIN;
     const p = this.prisma;
-    const [sos, kyc, photos, deletions, alerts, shots, reports, settlements, partnerships, careers] = await Promise.all([
+    const [sos, kyc, photos, deletions, alerts, shots, reports, settlements, partnerships, careers, supportQueue] = await Promise.all([
       p.sosReport.count({ where: { resolvedAt: null } }),
       p.kycSubmission.count({ where: { status: KycStatus.PENDING } }),
       p.profilePhoto.count({ where: { status: ProfilePhotoStatus.PENDING } }),
@@ -43,6 +44,7 @@ export class AdminMenuCountsController {
       superadmin ? p.payment.count({ where: { status: PaymentStatus.DUPLICATE } }) : Promise.resolve(0),
       superadmin ? p.partnershipApplication.count({ where: { status: PartnershipStatus.PENDING } }) : Promise.resolve(0),
       superadmin ? p.careerApplication.count({ where: { status: CareerStatus.PENDING } }) : Promise.resolve(0),
+      p.supportChat.count({ where: { status: SupportChatStatus.QUEUED } }),
     ]);
     // Ekran görüntüsü: 1. ihlalde işlem yok; 2. ve sonraki ihlallerden karar verilmemiş olanlar
     const seen = new Map<string, number>();
@@ -63,6 +65,7 @@ export class AdminMenuCountsController {
       "/admin/sonuclandirma": settlements,
       "/admin/partnerships": partnerships,
       "/admin/careers": careers,
+      "/admin/canli-destek": supportQueue,
     };
   }
 }

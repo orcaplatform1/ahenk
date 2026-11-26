@@ -115,6 +115,7 @@ enum DeletionRequestStatus {
 enum UserRole {
   USER
   COACH
+  SUPPORT // Temsilci: yönetim panelinde yalnız Canlı Destek
   ADMIN
   SUPERADMIN
 }
@@ -1422,4 +1423,181 @@ model ScreenshotLog {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────
+// CANLI DESTEK
+// ─────────────────────────────────────────────
+
+// Destek sohbetinin durumu: QUEUED sırada (temsilci yok), ACTIVE temsilciye atanmış, CLOSED kapandı.
+// OPEN ve TICKET ileride destek bileti için ayrıldı (şu an kullanılmıyor, arayüz yok).
+enum SupportChatStatus {
+  OPEN
+  QUEUED
+  ACTIVE
+  CLOSED
+  TICKET
+}
+
+enum SupportTopic {
+  ACCOUNT
+  PAYMENT
+  MEETING
+  OTHER
+}
+
+enum SupportCloseReason {
+  USER   // kullanıcı "Sohbeti Sonlandır"
+  AGENT  // temsilci kapattı
+  AUTO   // kullanıcı hareketsizliği (3 dk)
+  ABUSE  // temsilci "Kötüye kullanım" olarak kapattı
+}
+
+enum SupportAgentStatus {
+  ONLINE
+  BREAK
+  OFFLINE
+}
+
+enum SupportSender {
+  USER
+  AGENT
+  SYSTEM
+}
+
+// Temsilci (SUPPORT) ile canlı destek yapan ADMIN / SUPERADMIN hesabı: benzersiz, rastgele, 5 haneli, değişmeyen Temsilci No
+model SupportAgent {
+  userId          String             @id
+  agentNo         String             @unique
+  status          SupportAgentStatus @default(OFFLINE)
+  statusChangedAt DateTime           @default(now())
+  idleSince       DateTime? // açık sohbeti 0'a düştüğü an (atamada "en uzun süredir boşta")
+  createdAt       DateTime           @default(now())
+}
+
+// Destek sohbeti: başlatan hesabın ID'sine bağlı (üye userId ya da mekân venueAccountId); isimle eşleştirme yapılmaz.
+// Hesap silinince userId boşalır, requesterName anonimleşir, içerik 2 yıl saklanır.
+model SupportChat {
+  id                 String              @id @default(cuid())
+  userId             String?
+  venueAccountId     String?
+  requesterName      String // üye: ad soyad; mekân: mekân adı · yetkili ad soyad (temsilci listesi)
+  topic              SupportTopic
+  status             SupportChatStatus   @default(QUEUED)
+  agentId            String? // atanan temsilcinin User.id'si
+  queuedAt           DateTime            @default(now()) // sıraya giriş (ilk gelen ilk alınır)
+  firstAssignedAt    DateTime? // ilk atama (bekleme ve sohbet süresi raporları)
+  assignedAt         DateTime? // mevcut temsilciye atanma anı (2 dk ilk cevap süresi buradan)
+  agentRepliedAt     DateTime? // mevcut temsilcinin ilk cevabı (devir / yeniden atamada boşalır)
+  firstResponseAt    DateTime? // sohbetin ilk temsilci cevabı (raporlama)
+  lastAgentMessageAt DateTime?
+  lastUserMessageAt  DateTime?
+  idleWarnedAt       DateTime? // "1 dakika içinde yanıt vermezsen…" uyarısı
+  queueAlertedAt     DateTime? // 90 sn sıra uyarısı gönderildi
+  userReadAt         DateTime? // kullanıcının okuduğu son an (okundu bilgisi)
+  agentReadAt        DateTime?
+  closedAt           DateTime?
+  closedBy           SupportCloseReason?
+  createdAt          DateTime            @default(now())
+  messages           SupportMessage[]
+  notes              SupportNote[]
+  transfers          SupportTransfer[]
+  rating             SupportRating?
+
+  @@index([status, queuedAt])
+  @@index([agentId, status])
+  @@index([userId])
+  @@index([venueAccountId])
+  @@index([createdAt])
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  chatId    String
+  chat      SupportChat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender    SupportSender
+  senderId  String? // AGENT: temsilcinin User.id'si
+  agentNo   String? // AGENT: gönderen Temsilci No
+  content   String        @db.Text
+  images    String[] // uploads/support/<chatId>/<dosya>.webp (yalnız dosya adı)
+  createdAt DateTime      @default(now())
+
+  @@index([chatId, createdAt])
+}
+
+// İç not: yalnız temsilci, ADMIN ve SUPERADMIN görür; kullanıcıya hiçbir yerde gösterilmez
+model SupportNote {
+  id        String      @id @default(cuid())
+  chatId    String
+  chat      SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  authorId  String
+  agentNo   String
+  content   String      @db.Text
+  createdAt DateTime    @default(now())
+
+  @@index([chatId])
+}
+
+// Devir: zorunlu açıklama notuyla başka çevrimiçi temsilciye aktarım
+model SupportTransfer {
+  id          String      @id @default(cuid())
+  chatId      String
+  chat        SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  fromAgentId String
+  toAgentId   String
+  note        String      @db.Text
+  createdAt   DateTime    @default(now())
+
+  @@index([chatId])
+}
+
+model SupportRating {
+  id        String      @id @default(cuid())
+  chatId    String      @unique
+  chat      SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  helped    Boolean
+  stars     Int
+  tags      String[]
+  comment   String?     @db.Text
+  createdAt DateTime    @default(now())
+}
+
+// Hazır yanıtlar (admin panelinden eklenir / düzenlenir / silinir; temsilci "/" ile ekler)
+model SupportCannedReply {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Haiku asistanı sorgu kaydı (SUPERADMIN görür)
+model SupportAiLog {
+  id        String   @id @default(cuid())
+  chatId    String
+  agentId   String
+  agentNo   String
+  question  String   @db.Text
+  tools     String[]
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([chatId])
+}
+
+// Kötüye kullanım kısıtlaması: canlı destek erişimi 1 / 7 / 30 gün kapalı; SUPERADMIN kaldırabilir
+model SupportRestriction {
+  id             String    @id @default(cuid())
+  userId         String?
+  venueAccountId String?
+  chatId         String
+  days           Int
+  expiresAt      DateTime
+  createdById    String
+  liftedAt       DateTime?
+  liftedById     String?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId])
+  @@index([venueAccountId])
 }

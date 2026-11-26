@@ -120,7 +120,7 @@ export default function Navbar() {
 
           {/* Sağ alan */}
           <div className="flex items-center gap-2">
-            {checked && navUser && (navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN') && (
+            {checked && navUser && (navUser.role === 'ADMIN' || navUser.role === 'SUPERADMIN' || navUser.role === 'SUPPORT') && (
               <>
                 <style>{`
                   @keyframes navAdminPulse {

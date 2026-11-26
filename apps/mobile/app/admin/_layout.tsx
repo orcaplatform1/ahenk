@@ -13,9 +13,12 @@ import { useRememberAllowed } from '@/lib/adminLock';
 import { ALabel, AT } from '@/components/admin/AdminUi';
 import { adm } from '@/theme/theme';
 
+// Temsilci (SUPPORT) yalnız Canlı Destek'i görür; diğer sekmeler ve sayfalar kapalı (backend uçları da yetkiyle engelli) — web ile aynı
+const SUPPORT_HOME = '/admin/canli-destek';
 const NAV_TOP = [{ href: '/(tabs)', label: 'Anasayfa' }, { href: '/(tabs)/profilim', label: 'Profilim' }] as const;
 const ADMIN_NAV: { href: string; label: string; sos?: boolean; superadminOnly?: boolean }[] = [
   { href: '/admin/acil-yardim', label: 'Acil Yardım', sos: true },
+  { href: '/admin/canli-destek', label: 'Canlı Destek' },
   { href: '/admin/stats', label: 'İstatistikler' },
   { href: '/admin/matches', label: 'Masalar' },
   { href: '/admin/kyc', label: 'KYC Bekleyenler' },
@@ -60,7 +63,7 @@ export default function AdminLayout() {
     let cancelled = false;
     api.get<{ id: string; role: string; firstName?: string }>('/auth/me').then(me => {
       if (cancelled) return;
-      if (me?.role !== 'ADMIN' && me?.role !== 'SUPERADMIN') { router.replace('/(tabs)'); return; }
+      if (me?.role !== 'ADMIN' && me?.role !== 'SUPERADMIN' && me?.role !== 'SUPPORT') { router.replace('/(tabs)'); return; }
       setAdminIdentity({ id: me.id, role: me.role }); setRole(me.role); setFirstName(me.firstName ?? ''); setReady(true);
     }).catch(() => { if (!cancelled) router.replace('/giris'); });
     return () => { cancelled = true; };
@@ -69,14 +72,20 @@ export default function AdminLayout() {
   // Menü bildirim baloncukları: sayfa açılınca ve 60 sn'de bir (GET /admin/menu-counts)
   useEffect(() => {
     if (!ready) return;
-    const load = () => { api.get<Record<string, number>>('/admin/menu-counts').then(setCounts).catch(() => {}); };
+    // Temsilci menu-counts ucuna giremez: sıradaki sohbet sayısı canlı destek durumundan
+    const load = () => {
+      if (role === 'SUPPORT') { api.get<{ queue: unknown[] }>('/admin/live-support/state').then((s) => setCounts({ [SUPPORT_HOME]: s.queue.length })).catch(() => {}); return; }
+      api.get<Record<string, number>>('/admin/menu-counts').then(setCounts).catch(() => {});
+    };
     load();
     const id = setInterval(load, 60_000);
     return () => clearInterval(id);
-  }, [ready, pathname]);
+  }, [ready, pathname, role]);
 
-  const blocked = ready && role !== 'SUPERADMIN' && ADMIN_NAV.some(n => n.superadminOnly && (pathname === n.href || pathname.startsWith(n.href + '/')));
-  useEffect(() => { if (blocked) router.replace('/admin/stats'); }, [blocked, router]);
+  const blocked = ready && (role === 'SUPPORT'
+    ? !(pathname === SUPPORT_HOME || pathname.startsWith(SUPPORT_HOME + '/'))
+    : role !== 'SUPERADMIN' && ADMIN_NAV.some(n => n.superadminOnly && (pathname === n.href || pathname.startsWith(n.href + '/'))));
+  useEffect(() => { if (blocked) router.replace((role === 'SUPPORT' ? SUPPORT_HOME : '/admin/stats') as never); }, [blocked, router, role]);
 
   const openDrawer = useCallback((v: boolean) => {
     drawerOpen.current = v;
@@ -101,7 +110,7 @@ export default function AdminLayout() {
           <Pressable onPress={() => openDrawer(true)} accessibilityLabel="Menü" hitSlop={10} style={{ padding: 4, gap: 5 }}>
             {[0, 1, 2].map(i => <View key={i} style={{ width: 18, height: 1.5, backgroundColor: adm.muted, borderRadius: 2 }} />)}
           </Pressable>
-          <Pressable onPress={() => router.navigate('/admin/stats')} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
+          <Pressable onPress={() => router.navigate((role === 'SUPPORT' ? SUPPORT_HOME : '/admin/stats') as never)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
             <ALabel style={{ flexShrink: 1 }}>AHENK YÖNETİM PANELİ</ALabel>
           </Pressable>
           {unread > 0 && (
@@ -123,7 +132,7 @@ export default function AdminLayout() {
               {NAV_TOP.map(n => <Btn key={n.href} variant="admNav" label={n.label} onPress={() => go(n.href)} />)}
             </View>
             <View style={{ gap: 2 }}>
-              {ADMIN_NAV.filter(n => !n.superadminOnly || role === 'SUPERADMIN').map(n => {
+              {ADMIN_NAV.filter(n => (role === 'SUPPORT' ? n.href === SUPPORT_HOME : !n.superadminOnly || role === 'SUPERADMIN')).map(n => {
                 const active = pathname === n.href || pathname.startsWith(n.href + '/');
                 return (
                   <Btn key={n.href} variant={n.sos ? 'admNavSos' : 'admNav'} selected={active} accessibilityLabel={n.label} onPress={() => go(n.href)}>

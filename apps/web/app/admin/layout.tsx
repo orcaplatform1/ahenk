@@ -13,8 +13,12 @@ const NAV_TOP = [
   { href: '/profil', label: 'Profilim' },
 ];
 
+// Temsilci (SUPPORT) yönetim panelinde yalnız Canlı Destek'i görür; diğer sekmeler ve sayfalar kapalı (backend uçları da yetkiyle engelli)
+const SUPPORT_HOME = '/admin/canli-destek';
+
 const NAV: { href: string; label: string; sos?: boolean; superadminOnly?: boolean }[] = [
   { href: '/admin/acil-yardim',  label: 'Acil Yardım', sos: true },
+  { href: '/admin/canli-destek', label: 'Canlı Destek' },
   { href: '/admin/stats',        label: 'İstatistikler' },
   { href: '/admin/matches',      label: 'Masalar' },
   { href: '/admin/kyc',          label: 'KYC Bekleyenler' },
@@ -54,7 +58,7 @@ function NavLinks({ pathname, onClose, onLogout, counts, role }: {
         ))}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-        {NAV.filter((n) => !n.superadminOnly || role === 'SUPERADMIN').map((n) => {
+        {NAV.filter((n) => (role === 'SUPPORT' ? n.href === SUPPORT_HOME : !n.superadminOnly || role === 'SUPERADMIN')).map((n) => {
           const active = pathname === n.href || pathname.startsWith(n.href + '/');
           const style = n.sos
             ? active
@@ -114,7 +118,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     api.get<{ id: string; role: string }>('/auth/me').then(me => {
       if (cancelled) return;
       const r = me?.role;
-      if (r !== 'ADMIN' && r !== 'SUPERADMIN') { router.replace('/dashboard'); return; }
+      if (r !== 'ADMIN' && r !== 'SUPERADMIN' && r !== 'SUPPORT') { router.replace('/dashboard'); return; }
       setAdminIdentity({ id: me.id, role: r });
       setRole(r);
       setReady(true);
@@ -127,15 +131,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Menü bildirim baloncukları: sayfa açılınca ve 60 sn'de bir (GET /admin/menu-counts)
   useEffect(() => {
     if (!ready) return;
-    const load = () => { api.get<Record<string, number>>('/admin/menu-counts').then(setCounts).catch(() => {}); };
+    // Temsilci menu-counts ucuna giremez: sıradaki sohbet sayısı canlı destek durumundan
+    const load = () => {
+      if (role === 'SUPPORT') { api.get<{ queue: unknown[] }>('/admin/live-support/state').then((s) => setCounts({ [SUPPORT_HOME]: s.queue.length })).catch(() => {}); return; }
+      api.get<Record<string, number>>('/admin/menu-counts').then(setCounts).catch(() => {});
+    };
     load();
     const id = setInterval(load, 60_000);
     return () => clearInterval(id);
-  }, [ready, pathname]);
+  }, [ready, pathname, role]);
 
   // Bot sayfaları yalnızca SUPERADMIN
-  const blocked = ready && role !== 'SUPERADMIN' && NAV.some((n) => n.superadminOnly && (pathname === n.href || pathname.startsWith(n.href + '/')));
-  useEffect(() => { if (blocked) router.replace('/admin/stats'); }, [blocked, router]);
+  const blocked = ready && (role === 'SUPPORT'
+    ? !(pathname === SUPPORT_HOME || pathname.startsWith(SUPPORT_HOME + '/'))
+    : role !== 'SUPERADMIN' && NAV.some((n) => n.superadminOnly && (pathname === n.href || pathname.startsWith(n.href + '/'))));
+  useEffect(() => { if (blocked) router.replace(role === 'SUPPORT' ? SUPPORT_HOME : '/admin/stats'); }, [blocked, router, role]);
 
   async function handleLogout() { await api.logout(); setAdminIdentity(null); router.push('/'); }
 

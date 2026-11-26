@@ -333,7 +333,8 @@ HAFTALIK BULUŞMA SEÇİMİ (Planlı):
     düşmez; kilit anından 5 sn ve 65 sn sonra seçim yeniden okunur, kart kilit sonrası duruma geçer (Yarın kilidi geçince veri gelene
     kadar kart gizli). Sandalye satırı kartın ait olduğu masanın verisinden: "Masanda X boş sandalye kaldı." / "X empty chairs left at
     your table." (live.seatsLeft), tekil "Masanda 1 boş sandalye kaldı." / "1 empty chair left at your table." (live.seatsLeftOne);
-    "koltuk" yazılmaz
+    "koltuk" yazılmaz. Eşleşme Paneli buton metni live.reserveSeats TR "Masanı Ayır · {count} sandalye kaldı", EN "Book Your Seat ·
+    {count} chairs left"
   - Eşleşme taraması Katılım satırı: Grupta "Katılım x/6:" tek başına, isimler bir alt satırda; her kısaltma cinsiyet renkli
     çerçeveli yuvarlak dairede (web + mobil). Baş Başa ve Kankamla satırı eskisi gibi
 
@@ -652,6 +653,61 @@ VERİTABANI YEDEĞİ: Yeni veritabanı yedeği alınıp doğrulandığında önc
 
 İPTAL EDİLEN KONU: Admin'in verdiği paketin hangi admin tarafından verildiğinin kaydı / gösterimi (rapor104 ve rapor105'te sorulan)
   iptal edildi; tekrar sorulmayacak.
+
+CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
+  - Erişim: yalnız giriş yapmış üye (Profilim → "Canlı Destek", web /canli-destek, mobil app/canli-destek.tsx) ve mekân paneline giriş
+    yapmış mekân sahibi (web mekân paneli menüsü "Canlı Destek", /mekan/panel/canli-destek; mobilde mekân paneli yok). Uçlar oturum zorunlu:
+    üye /support/* (JWT), mekân /venue-panel/support/* (mekân çerezi yolu /api/v1/venue-panel). Sohbet başlatan hesabın ID'sine bağlı
+    (SupportChat.userId / venueAccountId); hiçbir eşleştirme isimle yapılmaz. Üye ve mekân aynı ekran (web components/support/SupportChatScreen.tsx)
+  - Kullanıcı ekranı (sup.* anahtarları, TR + EN): konu Hesap / Ödeme / Masa / Diğer; sırada "Sıradasın: N. sıra · Tahmini bekleme ~X dk"
+    (son 20 kapanan sohbetin ortalama süresi × sıra ÷ (çevrimiçi temsilci × eşzamanlı sınır); veri yoksa yalnız sıra); çevrimiçi temsilci yoksa
+    "Şu an tüm temsilcilerimiz meşgul ya da çevrimdışı…" (mesaj bırakılır, sıraya girer). Başlık "Ahenk Müşteri Temsilcisi" + "Temsilci No: XXXXX";
+    temsilcinin adı / cinsiyeti hiçbir yerde gösterilmez. İlk atamada 2 otomatik mesaj (sistem kodları NOTICE: kayıt + Aydınlatma Metni linki
+    /kvkk, GREETING: karşılama); istemci kodu arayüz dilinde gösterir. Yazıyor göstergesi, okundu, saat, emoji, görsel (yalnız JPG / PNG /
+    WebP, dosya başına 5 MB, mesaj başına 3; EXIF silinerek WebP'ye çevrilir, bulanıklaştırma yok; uploads/support/<chatId>/, git'e eklenmez).
+    Masa Sohbeti link / telefon / şüpheli kelime engelleri destek sohbetinde yok. "Sohbeti Sonlandır". Mobilde klavye açıkken mesaj alanı
+    klavyenin üstünde (KeyboardAvoidingView). Kullanıcı geçmiş destek sohbetlerini göremez, kapanan sohbet ekrandan kalkar
+  - Anlık iletişim: Masa Sohbeti gibi yoklama (3 sn). Yazıyor göstergesi ve gönderilmemiş yazı önizlemesi yalnız backend süreç belleğinde
+    (5 sn), hiçbir yere yazılmaz. Kullanıcı 20 sn'dir yoklamıyorsa temsilci cevabı push + uygulama içi bildirimle gider (üye; mekân hesabında
+    bildirim altyapısı yok)
+  - Hareketsizlik: temsilcinin son (elle yazdığı) mesajından sonra kullanıcı 2 dk cevap vermezse sistem mesajı "1 dakika içinde yanıt vermezsen
+    sohbet sonlanacak.", 3. dakikada otomatik sonlanır (closedBy AUTO) ve değerlendirme push ile gider
+  - Değerlendirme (sohbet kullanıcı, temsilci ya da otomatik kapanınca; kötüye kullanımla kapananda yok; kapanıştan 24 saat açılabilir):
+    "Yardımcı olabildik mi?" Evet / Hayır + 5 yıldız (zorunlu); 4–5 yıldız "Neyi beğendin?" (isteğe bağlı), 2–3 "Ne daha iyi olabilirdi?",
+    1 "Ne kötü gitti?" (zorunlu) etiketleri; serbest metin; "Değerlendir" → "Değerlendirmeni aldık! …" + "Kapat"
+  - Rol: UserRole.SUPPORT (Temsilci). Yönetim panelinde (web + mobil) yalnız "Canlı Destek" sekmesi; diğer sayfalar açılmaz, ADMIN uçları
+    RolesGuard'da reddedilir (SUPPORT seviyesi ADMIN'in altında), canlı destek uçları rolü ayrıca denetler. Temsilci hesabını yalnız SUPERADMIN
+    açar (ad, soyad, e-posta, telefon, şifre; rol SUPPORT) ve kapatır (status DELETED, oturumlar düşer, açık sohbetleri sıraya döner).
+    Her temsilciye ve canlı destek yapan ADMIN / SUPERADMIN'e benzersiz, rastgele, 5 haneli, değişmeyen Temsilci No (SupportAgent.agentNo).
+    SUPERADMIN bütün açık sohbetleri canlı izler ve istediğini devralır
+  - Sıra ve atama (her 10 sn zamanlanmış iş + her olayda): tek ortak sıra, ilk gelen ilk alınır (queuedAt). Çevrimiçi temsilciler arasında en
+    az açık sohbeti olana, eşitse en uzun süredir boşta olana (idleSince). Eşzamanlı sınır varsayılan 3 (AppConfig SUPPORT_MAX_CHATS, Ayarlar →
+    Canlı Destek). Herkes doluysa sırada bekler, sohbet kapanınca sıradaki atanır. Atanan temsilci 2 dk içinde ilk cevabı vermezse başka uygun
+    temsilciye; yoksa sıranın başına döner. Durum Çevrimiçi / Mola / Çevrimdışı; mola ve çevrimdışı yeni sohbet almaz, açıklara devam eder.
+    Devret: zorunlu notla başka çevrimiçi temsilciye; devralan geçmişi ve notu görür; kullanıcı yeni Temsilci No'yu görür ve sistem mesajı
+    "Görüşmen başka bir temsilcimize aktarıldı, durumu baştan anlatmana gerek yok." düşer. Vardiya (Ayarlar): Gündüz 08:00-20:00, Gece
+    20:00-08:00 (SUPPORT_SHIFT_DAY / SUPPORT_SHIFT_NIGHT), yalnız raporlamada; sistem 7/24 açık. Sırada 90 sn'yi geçen sohbet: bütün ADMIN ve
+    SUPERADMIN'e uygulama içi bildirim + push (sohbet başına bir kez). Admin menüsünde "/admin/canli-destek" baloncuğu sıradaki sohbet sayısı
+    (menu-counts; Temsilci için canlı destek durumundan)
+  - Temsilci ekranı: web 3 sütun (sol sıradaki ve açık sohbetler, orta aktif sohbet, sağ Haiku paneli); mobil sohbet ekranında "Haiku" butonu
+    alttan yarım ekran panel. Listede / başlıkta üye için ad soyad, mekân için mekân adı · yetkili ad soyad, konu etiketi, bekleme süresi;
+    kullanıcı hakkında Haiku dışında veri yok. Hazır yanıtlar (admin ekler / düzenler / siler; "/" ile liste), yazı önizlemesi, iç not
+    (kullanıcıya asla gösterilmez), web sesli uyarı (yeni sohbet / yeni mesaj), mobilde push. Kötüye kullanım: sohbeti kapatıp canlı destek
+    erişimini 1 / 7 / 30 gün kısıtlar (SupportRestriction); kısıtlı kullanıcı butonda kalan süreyi görür; SUPERADMIN kaldırır; İşlem Kayıtları'na yazılır
+  - Haiku asistanı (support-ai.service.ts, claude-haiku-5-5, CLAUDE_API_KEY): yalnız okur; veri değiştirmez / silmez, iade / iptal / hak
+    tanımlamaz, kullanıcıya mesaj göndermez (mesajı temsilci gönderir: "Kopyala", "Sohbete ekle"). Okuma işlevleri parametre almaz; hesabı
+    sunucu sohbet kaydından verir (metinden ID / isim / telefon alınmaz, başka hesap istenirse reddeder). Tahmin yok: tutar, tarih, sayı
+    veritabanından. Üye işlevleri: hesap_ozeti, paketler_ve_haklar, premium_abonelik, odemeler, masalar, haftalik_secim, kyc_durumu, yaptirimlar,
+    davet_ve_indirim; mekân: mekan_bilgisi, mekan_masalari. Kapalı: KYC görsel / video, kimlik no, telefon, OCEAN, Masa Sohbeti, Acil Yardım,
+    başka kullanıcıların verisi. Temsilci isterse sohbetteki görselleri okur; taslak cevap önerir. Her sorgu SupportAiLog (Temsilci No, sohbet
+    ID, soru, çağrılan işlevler, zaman; SUPERADMIN görür)
+  - Raporlar (ADMIN + SUPERADMIN): temsilci başına ilk yanıt süresi, ortalama sohbet süresi, kapatılan sohbet, puan ortalaması, Evet oranı,
+    etiket dağılımı; genel konu dağılımı, saatlik ve vardiya yoğunluğu, ortalama bekleme
+  - Saklama: destek sohbetleri, görseller, iç notlar, değerlendirmeler ve Haiku sorgu kayıtları 2 yıl (retention-policy.ts SUPPORT_CHATS, gece
+    otomatik silme işine bağlı). Hesap silinince sohbetin hesapla bağı koparılır (userId boş), ad soyad "Silinmiş kullanıcı", içerik süre
+    dolana kadar kalır. KVKK, Gizlilik (TR + EN) ve hesap silme sayfası (del.ret15) metinleri; Anthropic (ABD) aktarımı KVKK m.9/4, işleme
+    sebebi m.5/2-c ve m.5/2-f. Kişisel veri dökümünde (Veri Saklama) destek sohbetleri ve görselleri var
+  - SupportChat.status: QUEUED (sırada), ACTIVE (atanmış), CLOSED; OPEN ve TICKET ileride destek bileti için ayrıldı (arayüz yok)
 
 BİLDİRİM SERVİSİ (Modül 9):
 Kanallar:

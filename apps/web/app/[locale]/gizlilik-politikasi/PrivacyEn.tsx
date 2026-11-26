@@ -79,6 +79,7 @@ const sections = [
             'Review and comment data',
             'Contact block list: phone numbers you add',
             'Screenshot violation records: the user who took the screenshot, the user whose photo was viewed, platform and date-time information. Only ADMIN and SUPERADMIN can see these records',
+            "Live support chat records: support topic, messages, images you sent, time and read status, representative number, representatives' internal and transfer notes, your rating; logs of queries to the AI assistant (Claude Haiku) used for support",
           ]}
         />
 
@@ -103,6 +104,7 @@ const sections = [
           'Fulfilling legal obligations and notifying authorized institutions',
           'Keeping the platform secure and preventing misuse',
           'Screenshot violation records: enforcing the community guidelines and protecting users\' personal data',
+          'Providing live support: answering your requests, and recording conversations to improve service quality and for your safety (KVKK art. 5/2-c and art. 5/2-f)',
         ]}
       />
     ),
@@ -170,6 +172,7 @@ const sections = [
           ['Screenshot violation records', '2 years (same as complaint and moderation records). Legal ground: KVKK art. 5/2-f and art. 5/2-c'],
           ['Table chat messages that were not reported', 'Deleted 6 months after the table date. Legal ground: KVKK art. 5/2-c'],
           ['Problem reports', '2 years. Legal ground: KVKK art. 5/2-f'],
+          ['Live support chats, images, internal notes, ratings and AI query logs', '2 years. When the account is deleted, the chat is unlinked from the account and the name is anonymized. Legal ground: KVKK art. 5/2-c and art. 5/2-f'],
           ['Profile, personality test (OCEAN) and push token', 'Until the account is deleted. Legal ground: KVKK art. 5/2-c'],
           ['Unreadable phone summary of a banned user', 'For as long as the ban lasts. Legal ground: KVKK art. 5/2-f'],
           ['Cookies', 'Session cookie 365 days; details in the Cookie Policy'],
@@ -222,6 +225,10 @@ const sections = [
         <p>
           <strong style={{ color: '#f4f1ec' }}>Anthropic (artificial intelligence)</strong>
           : to create the table compatibility report, for each participant the five OCEAN scores and field of work (if any) under a label such as P1, P2 instead of a name, the table type, number of participants and the table&apos;s overall compatibility score; for table chat moderation, only the text of a chat message containing a suspicious word (up to 1,000 characters). No names, gender, age, contact details or identity information are sent. Processing ground: for the table compatibility report KVKK art. 5/2-c (performance of a contract), for chat moderation art. 5/2-f (legitimate interest). Transfer basis: KVKK art. 9/4 standard contract; the Personal Data Protection Authority is notified within 5 business days after the contract is signed.
+        </p>
+        <p>
+          <strong style={{ color: '#f4f1ec' }}>Anthropic (artificial intelligence, USA), live support</strong>
+          : Data transferred: when the representative asks, the text of the live support chat, the images you sent in the chat if the representative chooses, and only the records of the account linked to that chat that are needed for support (name, city, language, sign-up date, packages and remaining rights, Premium subscription, payments, tables, table selection, KYC status, warning / suspension / ban status, invite and discount status; for a venue account, venue details, approval status and assigned tables). KYC images and video, ID number, phone number, OCEAN results, Table Chat content, Emergency Help records and other users&apos; data are not transferred. The AI only reads; it does not send messages to users or change any record. Purpose: helping the representative answer your request quickly and accurately. Legal ground: KVKK art. 5/2-c (performance of the contract) and art. 5/2-f (legitimate interest). Transfer basis: KVKK art. 9/4 standard contract; the Personal Data Protection Authority is notified within 5 business days of signing the contract.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>OpenStreetMap (Nominatim)</strong>

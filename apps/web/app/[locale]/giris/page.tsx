@@ -331,7 +331,7 @@ export default function GirisPage() {
         setSanction(me.activeSanction);
         return; // dashboard'a geçmeden uyarıyı göster
       }
-      if (me?.role === 'ADMIN' || me?.role === 'SUPERADMIN') {
+      if (me?.role === 'ADMIN' || me?.role === 'SUPERADMIN' || me?.role === 'SUPPORT') {
         window.location.href = '/admin';
         return;
       }

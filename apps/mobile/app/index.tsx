@@ -36,7 +36,8 @@ export default function Acilis() {
           const me = await api.get<{ role: string; language?: string }>('/auth/me').catch(() => null);
           applyAccountLanguage(me?.language);
           const admin = me?.role === 'ADMIN' || me?.role === 'SUPERADMIN';
-          dest = admin ? '/admin' : '/(tabs)';
+          // Temsilci (SUPPORT): yönetim panelinde yalnız Canlı Destek (biyometrik yönetim kilidi ADMIN / SUPERADMIN'e özel, aynen)
+          dest = admin || me?.role === 'SUPPORT' ? '/admin' : '/(tabs)';
           // Admin kalıcı oturumu: uygulama sıfırdan açılınca biyometrik doğrulama (kilit ekranı yönetim panelinin üstünde açılır)
           if (admin && me) {
             setAdminIdentity({ id: (me as { id?: string }).id ?? '', role: me.role });

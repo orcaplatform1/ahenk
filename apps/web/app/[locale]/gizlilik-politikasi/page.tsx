@@ -80,6 +80,7 @@ const sections = [
             'Değerlendirme ve yorum verileri',
             'Rehber engelleme listesi: eklenen telefon numaraları',
             'Ekran görüntüsü ihlal kayıtları: ekran görüntüsünü alan kullanıcı, fotoğrafı görüntülenen kullanıcı, platform ve tarih-saat bilgisi. Kayıtları yalnız ADMIN ve SUPERADMIN görür',
+            'Canlı destek sohbet kayıtları: destek konusu, mesajlar, gönderdiğin görseller, saat ve okundu bilgisi, temsilci numarası, temsilcilerin iç notları ve devir notları, değerlendirmen; destek amaçlı yapay zekâ asistanı (Claude Haiku) sorgu kayıtları',
           ]}
         />
 
@@ -104,6 +105,7 @@ const sections = [
           'Yasal yükümlülüklerin yerine getirilmesi ve yetkili kurumlara bildirim yapılması',
           'Platform güvenliğinin sağlanması ve kötüye kullanımın önlenmesi',
           'Ekran görüntüsü ihlal kayıtları: topluluk kurallarının uygulanması ve kullanıcıların kişisel verilerinin korunması',
+          'Canlı destek hizmetinin yürütülmesi: taleplerinin yanıtlanması, hizmet kalitesinin artırılması ve güvenliğin için görüşmelerin kayıt altına alınması (KVKK m.5/2-c ve m.5/2-f)',
         ]}
       />
     ),
@@ -171,6 +173,7 @@ const sections = [
           ['Ekran görüntüsü ihlal kayıtları', '2 yıl (şikâyet ve moderasyon kayıtlarıyla aynı). Hukuki sebep: KVKK m.5/2-f ve m.5/2-c'],
           ['Şikâyet edilmemiş masa sohbeti mesajları', 'Masa tarihinden 6 ay sonra silinir. Hukuki sebep: KVKK m.5/2-c'],
           ['Sorun bildirimleri', '2 yıl. Hukuki sebep: KVKK m.5/2-f'],
+          ['Canlı destek sohbetleri, görseller, iç notlar, değerlendirmeler ve yapay zekâ sorgu kayıtları', '2 yıl. Hesap silinince sohbetin hesapla bağı koparılır, ad soyad anonimleştirilir. Hukuki sebep: KVKK m.5/2-c ve m.5/2-f'],
           ['Profil, kişilik testi (OCEAN) ve push token', 'Hesap silinene kadar. Hukuki sebep: KVKK m.5/2-c'],
           ['Banlı kullanıcının okunamaz telefon özeti', 'Ban süresince. Hukuki sebep: KVKK m.5/2-f'],
           ['Çerezler', 'Oturum çerezi 365 gün; ayrıntılar Çerez Politikası\'nda'],
@@ -223,6 +226,10 @@ const sections = [
         <p>
           <strong style={{ color: '#f4f1ec' }}>Anthropic (yapay zekâ)</strong>
           : masa uyum raporunun oluşturulması amacıyla masadaki her katılımcı için adı yerine P1, P2 gibi bir etiketle beş OCEAN skoru ve varsa meslek alanı, masa türü, katılımcı sayısı ve masanın genel uyum skoru; masa sohbeti denetimi amacıyla şüpheli kelime içeren sohbet mesajının yalnız metni (en fazla 1.000 karakter). Ad, cinsiyet, yaş, iletişim ve kimlik bilgisi gönderilmez. İşleme sebebi: masa uyum raporunda KVKK m.5/2-c (sözleşmenin ifası), sohbet denetiminde m.5/2-f (meşru menfaat). Aktarım dayanağı: KVKK m.9/4 standart sözleşme; Kişisel Verileri Koruma Kurumu'na sözleşmenin imzalanmasından itibaren 5 iş günü içinde bildirim yapılır.
+        </p>
+        <p>
+          <strong style={{ color: '#f4f1ec' }}>Anthropic (yapay zekâ, ABD), canlı destek</strong>
+          : Aktarılan veri: temsilci istediğinde canlı destek sohbetinin metni, temsilci isterse sohbette gönderdiğin görseller ve yalnız o sohbetin bağlı olduğu hesabın destek için gereken kayıtları (ad soyad, şehir, dil, kayıt tarihi, paketler ve kalan haklar, Premium aboneliği, ödemeler, masalar, masa seçimi, KYC durumu, uyarı / askı / ban durumu, davet ve indirim durumu; mekân hesabında mekân bilgisi, onay durumu ve atanmış masalar). KYC görselleri ve videosu, kimlik numarası, telefon numarası, OCEAN sonuçları, Masa Sohbeti içerikleri, Acil Yardım kayıtları ve başka kullanıcıların verisi aktarılmaz. Yapay zekâ yalnız okur, kullanıcıya mesaj göndermez ve hiçbir kaydı değiştirmez. Amaç: temsilcinin talebini hızlı ve doğru yanıtlaması. İşleme sebebi: KVKK m.5/2-c (sözleşmenin ifası) ve m.5/2-f (meşru menfaat). Aktarım dayanağı: KVKK m.9/4 standart sözleşme; Kişisel Verileri Koruma Kurumu'na sözleşmenin imzalanmasından itibaren 5 iş günü içinde bildirim yapılır.
         </p>
         <p>
           <strong style={{ color: '#f4f1ec' }}>OpenStreetMap (Nominatim)</strong>

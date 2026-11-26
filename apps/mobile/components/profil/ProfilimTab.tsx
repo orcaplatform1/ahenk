@@ -24,6 +24,8 @@ import { ENGLISH_ENABLED, LANGS, occupationLabel, splitE164, toE164, type CitySe
 import { CityGrid, CityGridCell, cityImageOption, SoonCityGroups, cityLabelWithExtras } from '@/components/SoonCityGroups';
 import { CountryCodeButton } from '../PhoneCountry';
 import { chooseLanguage, currentLang } from '@/lib/i18n';
+import { useRouter } from 'expo-router';
+import { supportRemaining } from '@/lib/supportTime';
 
 export interface City extends CitySeasonFields { id: string; name: string; isActive?: boolean }
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
@@ -241,6 +243,12 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
   const [shake, setShake] = useState(true);
 
   useEffect(() => { getShakeEnabled().then(setShake); }, []);
+  // Canlı Destek: kötüye kullanım kısıtlaması varsa buton kapalı, kalan süre görünür (web TabProfilim ile aynı)
+  const router = useRouter();
+  const [supportRestricted, setSupportRestricted] = useState<string | null>(null);
+  useEffect(() => {
+    api.get<{ restriction: { expiresAt: string } | null }>('/support/state').then(r => setSupportRestricted(r?.restriction?.expiresAt ?? null)).catch(() => {});
+  }, []);
   useEffect(() => {
     api.get<{ request: { id: string } | null }>('/users/me/deletion-request').then(r => setDeletePending(!!r?.request?.id)).catch(() => {});
   }, []);
@@ -306,7 +314,7 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
       </Pressable>
       <CardP title={t('prof.accountInfo')}>
         {/* Yönetim Paneli butonu: Hesap Bilgileri başlığının hemen altında */}
-        {(user.role === 'ADMIN' || user.role === 'SUPERADMIN') && (
+        {(user.role === 'ADMIN' || user.role === 'SUPERADMIN' || user.role === 'SUPPORT') && (
           <AdminChip onPress={onAdmin} />
         )}
         {user.noShowWarning && (
@@ -502,6 +510,8 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
             </Pressable>
           ))}
         </Card>
+        <StdButton variant="ghost" label={t('sup.button')} style={accountBtn.box} textStyle={accountBtn.text} disabled={!!supportRestricted} onPress={() => router.push('/canli-destek')} />
+        {!!supportRestricted && <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>{t('sup.restricted', { time: supportRemaining(supportRestricted, t) })}</T>}
         <StdButton variant="ghost" label={t('nav.logout')} style={accountBtn.box} textStyle={accountBtn.text} onPress={() => setLogoutOpen(true)} />
         <StdButton variant="ghost" label={logoutAllBusy ? t('prof.loggingOut') : t('prof.logoutAll')} style={accountBtn.box} textStyle={accountBtn.text} disabled={logoutAllBusy} onPress={logoutAll} />
         {/* Çıkış ile Hesabımı Sil arasında küçük uygulama logosu ve sürüm */}

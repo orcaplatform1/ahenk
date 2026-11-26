@@ -20,7 +20,7 @@ const ANONYMIZED = ["del.anon0", "del.anon1", "del.anon2"];
 
 // Saklama süreleri backend/src/retention/retention-policy.ts tablosuyla aynı
 // 14: ekran görüntüsü ihlal kayıtları (şikâyet ve moderasyon kayıtlarının hemen altında)
-const RETAINED: [string, string][] = [0, 1, 2, 3, 4, 5, 6, 14, 7, 8, 9, 10, 11, 12, 13].map((i) => [`del.ret${i}L`, `del.ret${i}R`]);
+const RETAINED: [string, string][] = [0, 1, 2, 3, 4, 5, 6, 14, 7, 8, 15, 9, 10, 11, 12, 13].map((i) => [`del.ret${i}L`, `del.ret${i}R`]);
 
 export default function HesapSilmePage() {
   const t = useTranslations();

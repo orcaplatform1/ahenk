@@ -1,0 +1,343 @@
+'use client';
+
+// Canlı Destek kullanıcı ekranı (üye ve mekân sahibi aynı ekran; mobil app/canli-destek.tsx ile aynı akış).
+// Anlık iletişim Masa Sohbeti gibi kısa aralıklı yoklama (3 sn). Konu seçimi → sıra → temsilci → sohbet → değerlendirme.
+// Kullanıcı geçmiş destek sohbetlerini göremez: sohbet kapanınca ekrandan kalkar.
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { StdButton } from '@ahenk/ui';
+import { Link } from '@/i18n/navigation';
+import { api, API_PREFIX, langHeaders } from '@/lib/api';
+import { venueApi } from '@/lib/venueApi';
+
+type Sender = 'USER' | 'AGENT' | 'SYSTEM';
+interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string; pending?: boolean }
+interface ChatView {
+  id: string; status: 'QUEUED' | 'ACTIVE'; topic: string; agentNo: string | null;
+  queue: { position: number; etaMin: number | null; online: boolean } | null;
+  agentTyping: boolean; agentReadAt: string | null; messages: Msg[];
+}
+interface State { restriction: { expiresAt: string } | null; chat: ChatView | null; pendingRating: string | null }
+
+const TOPICS = ['ACCOUNT', 'PAYMENT', 'MEETING', 'OTHER'] as const;
+const EMOJIS = ['😀', '😂', '😊', '😍', '🥰', '😎', '🤔', '😅', '😉', '🙏', '👍', '👏', '🙌', '💪', '🎉', '❤️', '🔥', '✨', '☕', '😮', '😢', '👋', '🤝', '😇', '🤗'];
+const TAGS = {
+  good: ['CARED', 'SOLUTION', 'POLITE', 'FAST', 'PROCESS_OK'],
+  mid: ['MORE_CARING', 'KNOWLEDGE', 'FASTER', 'PROCESS_IMPROVE'],
+  bad: ['UNINTERESTED', 'NO_REPLY', 'LACK_KNOWLEDGE', 'RUDE', 'PROCESS_BAD', 'SLOW'],
+} as const;
+const MAX_IMAGES = 3;
+const MAX_BYTES = 5 * 1024 * 1024;
+const OK_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const RED = '#c0392b';
+const TEXT = '#f4f1ec';
+const MUTED = '#a39c93';
+
+const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Istanbul' });
+
+// Kısıtlamanın kalan süresi ("2 gün 5 saat" / "3 saat 12 dakika")
+export function supportRemaining(iso: string, t: (k: string, v?: Record<string, number>) => string) {
+  const ms = Math.max(0, new Date(iso).getTime() - Date.now());
+  const d = Math.floor(ms / 86_400_000); const h = Math.floor((ms % 86_400_000) / 3_600_000); const m = Math.floor((ms % 3_600_000) / 60_000);
+  return d > 0 ? t('sup.timeDH', { d, h }) : t('sup.timeHM', { h, m });
+}
+
+// Üye: /support (üye oturumu); mekân: /venue-panel/support (mekân çerezi)
+function clientFor(mode: 'member' | 'venue') {
+  const base = mode === 'member' ? `${API_PREFIX}/support` : `${API_PREFIX}/venue-panel/support`;
+  return {
+    get: <T,>(p: string) => (mode === 'member' ? api.get<T>(`/support${p}`) : venueApi.get<T>(`/support${p}`)),
+    post: <T,>(p: string, body: unknown = {}) => (mode === 'member' ? api.post<T>(`/support${p}`, body) : venueApi.post<T>(`/support${p}`, body)),
+    form: async <T,>(p: string, fd: FormData): Promise<T> => {
+      const res = await fetch(`${base}${p}`, { method: 'POST', body: fd, credentials: 'include', headers: langHeaders() });
+      const data = await res.json().catch(() => null) as { message?: string | string[] } | null;
+      if (!res.ok) throw new Error((Array.isArray(data?.message) ? data?.message[0] : data?.message) ?? '');
+      return data as T;
+    },
+    image: (chatId: string, file: string) => `${base}/chats/${chatId}/images/${file}`,
+  };
+}
+
+export function SupportChatScreen({ mode, onExit }: { mode: 'member' | 'venue'; onExit?: () => void }) {
+  const t = useTranslations();
+  const client = useRef(clientFor(mode)).current;
+  const [state, setState] = useState<State | null>(null);
+  const [rateFor, setRateFor] = useState<string | null>(null);
+  const [thanks, setThanks] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    try {
+      const s = await client.get<State>('/state');
+      // Sohbet bitince (kullanıcı, temsilci ya da otomatik) değerlendirme ekranı açılır; kötüye kullanımla kapananda açılmaz
+      if (!s.chat && s.pendingRating) setRateFor((r) => r ?? s.pendingRating);
+      setState(s);
+    } catch (e) { setError((e as Error).message || t('sup.error')); }
+  }, [client, t]);
+
+  useEffect(() => { load(); const id = setInterval(load, 3000); return () => clearInterval(id); }, [load]);
+
+  async function start(topic: string) {
+    setError('');
+    try { await client.post('/chats', { topic }); await load(); } catch (e) { setError((e as Error).message || t('sup.error')); }
+  }
+
+  if (!state) return <p style={{ color: MUTED, fontSize: 13 }}>…</p>;
+
+  if (thanks) {
+    return (
+      <div className="ll-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <p style={{ color: TEXT, fontSize: 15, lineHeight: 1.5 }}>{t('sup.rateThanks')}</p>
+        <StdButton variant="primary" onClick={() => { setThanks(false); setRateFor(null); onExit?.(); }} className="w-full">{t('sup.close')}</StdButton>
+      </div>
+    );
+  }
+  if (rateFor && !state.chat) return <RatingView client={client} chatId={rateFor} onDone={() => setThanks(true)} />;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {!!error && <p role="alert" style={{ color: '#ff6b6b', fontSize: 13 }}>{error}</p>}
+      {state.chat ? (
+        <ChatPanel client={client} chat={state.chat} reload={load} onEnded={(id) => setRateFor(id)} />
+      ) : state.restriction ? (
+        <div className="ll-card"><p style={{ color: TEXT, fontSize: 14 }}>{t('sup.restricted', { time: supportRemaining(state.restriction.expiresAt, t) })}</p></div>
+      ) : (
+        <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p className="font-serif" style={{ fontSize: 22, color: TEXT }}>{t('sup.header')}</p>
+          <p style={{ fontSize: 13, color: MUTED }}>{t('sup.chooseTopic')}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {TOPICS.map((k) => (
+              <button key={k} type="button" onClick={() => start(k)}
+                style={{ minHeight: 48, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', color: TEXT, fontSize: 14, cursor: 'pointer' }}>
+                {t(`sup.topic${k}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type Client = ReturnType<typeof clientFor>;
+
+function ChatPanel({ client, chat, reload, onEnded }: { client: Client; chat: ChatView; reload: () => void; onEnded: (id: string) => void }) {
+  const t = useTranslations();
+  const [msgs, setMsgs] = useState<Msg[]>(chat.messages);
+  const [text, setText] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [emoji, setEmoji] = useState(false);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [viewer, setViewer] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const typingAt = useRef(0);
+
+  useEffect(() => {
+    setMsgs((prev) => [...chat.messages, ...prev.filter((m) => m.pending)]);
+  }, [chat.messages]);
+  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }); }, [msgs.length, chat.agentTyping]);
+
+  // Yazı önizlemesi: temsilci gönderilmeden önce görür (sunucuda yalnız bellekte, 5 sn)
+  function onType(v: string) {
+    setText(v.slice(0, 2000));
+    if (Date.now() - typingAt.current > 1200) { typingAt.current = Date.now(); client.post(`/chats/${chat.id}/typing`, { text: v.slice(0, 2000) }).catch(() => undefined); }
+  }
+
+  function pick(list: FileList | null) {
+    setErr('');
+    const next = [...files];
+    for (const f of Array.from(list ?? [])) {
+      if (!OK_TYPES.includes(f.type)) { setErr(t('sup.imgType')); continue; }
+      if (f.size > MAX_BYTES) { setErr(t('sup.imgSize')); continue; }
+      if (next.length >= MAX_IMAGES) { setErr(t('sup.imgLimit')); break; }
+      next.push(f);
+    }
+    setFiles(next);
+    if (fileRef.current) fileRef.current.value = '';
+  }
+
+  async function send() {
+    const content = text.trim();
+    if ((!content && !files.length) || busy) return;
+    setBusy(true); setErr(''); setEmoji(false);
+    const temp: Msg = { id: `p-${Date.now()}`, sender: 'USER', agentNo: null, content, images: [], createdAt: new Date().toISOString(), pending: true };
+    setMsgs((p) => [...p, temp]);
+    const fd = new FormData();
+    if (content) fd.append('content', content);
+    files.forEach((f) => fd.append('images', f));
+    setText(''); setFiles([]);
+    try { await client.form(`/chats/${chat.id}/messages`, fd); setMsgs((p) => p.filter((m) => m.id !== temp.id)); reload(); }
+    catch (e) { setMsgs((p) => p.filter((m) => m.id !== temp.id)); setErr((e as Error).message || t('sup.error')); }
+    finally { setBusy(false); }
+  }
+
+  async function end() {
+    try { await client.post(`/chats/${chat.id}/close`); onEnded(chat.id); reload(); } catch (e) { setErr((e as Error).message || t('sup.error')); }
+  }
+
+  const lastOwn = [...msgs].reverse().find((m) => m.sender === 'USER' && !m.pending);
+  const read = !!lastOwn && !!chat.agentReadAt && chat.agentReadAt >= lastOwn.createdAt;
+
+  return (
+    <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', height: 'min(72dvh, 680px)' }}>
+      {/* Başlık: temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{t('sup.header')}</p>
+          {chat.agentNo && <p style={{ fontSize: 12, color: MUTED }}>{t('sup.agentNo', { no: chat.agentNo })}</p>}
+        </div>
+        <StdButton variant="ghost" onClick={end} style={{ flexShrink: 0 }}>{t('sup.end')}</StdButton>
+      </div>
+      {chat.status === 'QUEUED' && chat.queue && (
+        <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.06)', borderBottom: '1px solid rgba(245,158,11,0.2)' }}>
+          <p style={{ fontSize: 13, color: TEXT, lineHeight: 1.5 }}>
+            {!chat.queue.online ? t('sup.offline') : chat.queue.etaMin !== null ? t('sup.queue', { pos: chat.queue.position, min: chat.queue.etaMin }) : t('sup.queueNoEta', { pos: chat.queue.position })}
+          </p>
+          {!chat.queue.online && <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{t('sup.queueNoEta', { pos: chat.queue.position })}</p>}
+        </div>
+      )}
+      <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {msgs.map((m) => <Bubble key={m.id} m={m} chatId={chat.id} client={client} onImage={setViewer} />)}
+        {read && <p style={{ alignSelf: 'flex-end', fontSize: 10, color: MUTED }}>{t('sup.read')}</p>}
+        {chat.agentTyping && <p style={{ fontSize: 12, color: MUTED, fontStyle: 'italic' }}>{t('sup.typing')}</p>}
+      </div>
+      {!!err && <p role="alert" style={{ padding: '0 14px 6px', fontSize: 12, color: '#ff6b6b' }}>{err}</p>}
+      {files.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, padding: '0 14px 8px' }}>
+          {files.map((f, i) => (
+            <div key={i} style={{ position: 'relative', width: 56, height: 56 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={URL.createObjectURL(f)} alt={t('sup.image')} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8 }} />
+              <button type="button" aria-label={t('sup.removeImage')} onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
+                style={{ position: 'absolute', top: -6, right: -6, width: 22, height: 22, borderRadius: 11, border: 'none', background: RED, color: '#fff', fontSize: 12, cursor: 'pointer' }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+      {emoji && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', padding: '6px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          {EMOJIS.map((e) => <button key={e} type="button" onClick={() => setText((v) => (v + e).slice(0, 2000))} style={{ width: 40, height: 40, fontSize: 22, background: 'none', border: 'none', cursor: 'pointer' }}>{e}</button>)}
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, padding: 8, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <button type="button" aria-label={t('sup.emoji')} onClick={() => setEmoji((v) => !v)} style={ICON_BTN}>
+          <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth={1.8} strokeLinecap="round"><circle cx={12} cy={12} r={9.5} /><path d="M8 14.5s1.5 2 4 2 4-2 4-2" /><path d="M9 9.5h.01M15 9.5h.01" strokeWidth={2.4} /></svg>
+        </button>
+        <button type="button" aria-label={t('sup.attach')} onClick={() => fileRef.current?.click()} style={ICON_BTN}>
+          <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x={3} y={3} width={18} height={18} rx={3} /><circle cx={8.5} cy={8.5} r={1.5} /><path d="m21 15-5-5L5 21" /></svg>
+        </button>
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => pick(e.target.files)} />
+        <textarea value={text} onChange={(e) => onType(e.target.value)} placeholder={t('sup.placeholder')} rows={1}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+          style={{ flex: 1, minWidth: 0, resize: 'none', maxHeight: 120, padding: '10px 12px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: TEXT, fontSize: 14, outline: 'none' }} />
+        <button type="button" aria-label={t('sup.send')} onClick={send} disabled={busy || (!text.trim() && !files.length)} style={{ ...ICON_BTN, opacity: busy || (!text.trim() && !files.length) ? 0.5 : 1 }}>
+          <span style={{ width: 38, height: 38, borderRadius: 19, background: RED, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" /></svg>
+          </span>
+        </button>
+      </div>
+      {viewer && (
+        <div role="dialog" aria-modal="true" onClick={() => setViewer(null)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={viewer} alt={t('sup.image')} style={{ maxWidth: '94vw', maxHeight: '90vh', objectFit: 'contain' }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+const ICON_BTN: React.CSSProperties = { width: 44, height: 44, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer' };
+
+function Bubble({ m, chatId, client, onImage }: { m: Msg; chatId: string; client: Client; onImage: (u: string) => void }) {
+  const t = useTranslations();
+  if (m.sender === 'SYSTEM' && m.content !== 'GREETING') {
+    return (
+      <div style={{ alignSelf: 'center', maxWidth: '90%', padding: '8px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.5, textAlign: 'center' }}>
+          {m.content === 'NOTICE' ? (
+            <>{t('sup.sysNoticePre')}<Link href="/kvkk" style={{ color: TEXT, textDecoration: 'underline' }}>{t('sup.sysNoticeLink')}</Link>{t('sup.sysNoticePost')}</>
+          ) : m.content === 'TRANSFERRED' ? t('sup.sysTransferred') : m.content === 'IDLE_WARNING' ? t('sup.sysIdle') : m.content}
+        </p>
+        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'center', marginTop: 2 }}>{time(m.createdAt)}</p>
+      </div>
+    );
+  }
+  const own = m.sender === 'USER';
+  const body = m.sender === 'SYSTEM' ? t('sup.sysGreeting') : m.content;
+  return (
+    <div style={{ alignSelf: own ? 'flex-end' : 'flex-start', maxWidth: '78%' }}>
+      <div style={{ padding: '7px 10px 5px', borderRadius: 12, borderBottomRightRadius: own ? 2 : 12, borderBottomLeftRadius: own ? 12 : 2, background: own ? 'rgba(192,57,43,0.16)' : 'rgba(255,255,255,0.05)', border: `1px solid ${own ? 'rgba(192,57,43,0.4)' : 'rgba(255,255,255,0.1)'}`, opacity: m.pending ? 0.7 : 1 }}>
+        {m.images.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: body ? 6 : 0 }}>
+            {m.images.map((f) => {
+              const url = client.image(chatId, f);
+              // eslint-disable-next-line @next/next/no-img-element
+              return <img key={f} src={url} alt={t('sup.image')} onClick={() => onImage(url)} style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8, cursor: 'zoom-in' }} />;
+            })}
+          </div>
+        )}
+        {!!body && <p style={{ fontSize: 14, color: TEXT, lineHeight: 1.45, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{body}</p>}
+        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', textAlign: 'right', marginTop: 2 }}>{m.pending ? t('sup.sending') : time(m.createdAt)}</p>
+      </div>
+    </div>
+  );
+}
+
+function RatingView({ client, chatId, onDone }: { client: Client; chatId: string; onDone: () => void }) {
+  const t = useTranslations();
+  const [helped, setHelped] = useState<boolean | null>(null);
+  const [stars, setStars] = useState(0);
+  const [tags, setTags] = useState<string[]>([]);
+  const [comment, setComment] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const group = stars >= 4 ? 'good' : stars >= 2 ? 'mid' : stars === 1 ? 'bad' : null;
+  const can = helped !== null && stars > 0 && (group === 'good' || tags.length > 0) && !busy;
+  useEffect(() => { setTags([]); }, [group]);
+
+  async function submit() {
+    if (!can) return;
+    setBusy(true); setErr('');
+    try { await client.post(`/chats/${chatId}/rating`, { helped, stars, tags, comment: comment.trim() || undefined }); onDone(); }
+    catch (e) { setErr((e as Error).message || t('sup.error')); }
+    finally { setBusy(false); }
+  }
+
+  const pill = (on: boolean): React.CSSProperties => ({ minHeight: 44, padding: '0 14px', borderRadius: 22, cursor: 'pointer', fontSize: 13, color: on ? '#fff' : TEXT, background: on ? RED : 'rgba(255,255,255,0.04)', border: `1px solid ${on ? RED : 'rgba(255,255,255,0.12)'}` });
+  return (
+    <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div>
+        <p style={{ fontSize: 15, fontWeight: 600, color: TEXT, marginBottom: 10 }}>{t('sup.rateHelped')}</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" style={pill(helped === true)} onClick={() => setHelped(true)}>{t('sup.yes')}</button>
+          <button type="button" style={pill(helped === false)} onClick={() => setHelped(false)}>{t('sup.no')}</button>
+        </div>
+      </div>
+      <div>
+        <p style={{ fontSize: 15, fontWeight: 600, color: TEXT, marginBottom: 10 }}>{t('sup.rateStars')}</p>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button key={n} type="button" aria-label={t('sup.star', { n })} onClick={() => setStars(n)} style={{ width: 44, height: 44, background: 'none', border: 'none', cursor: 'pointer', fontSize: 30, color: n <= stars ? '#e0a526' : 'rgba(255,255,255,0.2)' }}>★</button>
+          ))}
+        </div>
+      </div>
+      {group && (
+        <div>
+          <p style={{ fontSize: 14, fontWeight: 600, color: TEXT, marginBottom: 10 }}>{t(group === 'good' ? 'sup.rateGood' : group === 'mid' ? 'sup.rateMid' : 'sup.rateBad')}</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {TAGS[group].map((k) => {
+              const on = tags.includes(k);
+              return <button key={k} type="button" style={pill(on)} onClick={() => setTags((p) => (on ? p.filter((x) => x !== k) : [...p, k]))}>{t(`sup.tag${k}`)}</button>;
+            })}
+          </div>
+        </div>
+      )}
+      <textarea value={comment} onChange={(e) => setComment(e.target.value.slice(0, 1000))} placeholder={t('sup.rateComment')} rows={3}
+        style={{ resize: 'vertical', padding: 12, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: TEXT, fontSize: 14, outline: 'none' }} />
+      {!!err && <p role="alert" style={{ fontSize: 12, color: '#ff6b6b' }}>{err}</p>}
+      <StdButton variant="primary" onClick={submit} disabled={!can} className="w-full disabled:opacity-40">{t('sup.rateSubmit')}</StdButton>
+    </div>
+  );
+}

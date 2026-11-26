@@ -59,7 +59,7 @@ export default function TekrarHosgeldin() {
     const admin = isAdminRole(me?.role);
     if (admin) markAdminVerified();
     setVerified(true);
-    setTimeout(() => router.replace(admin ? '/admin' : '/(tabs)'), VERIFIED_MS);
+    setTimeout(() => router.replace(admin || me?.role === 'SUPPORT' ? '/admin' : '/(tabs)'), VERIFIED_MS);
   }
 
   if (verified) {

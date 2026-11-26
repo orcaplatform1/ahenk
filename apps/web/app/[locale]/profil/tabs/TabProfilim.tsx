@@ -15,6 +15,7 @@ import { api } from '@/lib/api';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { Modal } from '@/components/ui/Modal';
 import { ProblemReportModal } from '@/components/ProblemReportModal';
+import { supportRemaining } from '@/components/support/SupportChatScreen';
 import { OtpCountdown, useOtpCountdown } from '@/lib/otpCountdown';
 
 type VenuePreference = 'ALCOHOLIC' | 'NON_ALCOHOLIC' | 'NO_PREFERENCE';
@@ -152,6 +153,12 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [deletePending, setDeletePending] = useState(false);
+
+  // Canlı Destek: kötüye kullanım kısıtlaması varsa buton kapalı, kalan süre görünür
+  const [supportRestricted, setSupportRestricted] = useState<string | null>(null);
+  useEffect(() => {
+    api.silentGet<{ restriction: { expiresAt: string } | null }>('/support/state').then((r) => setSupportRestricted(r?.restriction?.expiresAt ?? null)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     api.silentGet<{ request: { id: string } | null }>('/users/me/deletion-request').then((r) => setDeletePending(!!r?.request?.id)).catch(() => {});
@@ -560,6 +567,14 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
 
       {/* Oturum ve hesap */}
       <div className="flex flex-col items-center gap-3 pb-2">
+        {supportRestricted ? (
+          <div className="flex flex-col items-center gap-1">
+            <StdButton variant="ghost" disabled className="mx-auto block disabled:opacity-40" style={ACCOUNT_BTN}>{t('sup.button')}</StdButton>
+            <p className="text-xs text-[#a39c93] text-center">{t('sup.restricted', { time: supportRemaining(supportRestricted, t) })}</p>
+          </div>
+        ) : (
+          <StdButton as={Link} href="/canli-destek" variant="ghost" className="mx-auto block text-center" style={ACCOUNT_BTN}>{t('sup.button')}</StdButton>
+        )}
         <StdButton variant="ghost" onClick={() => setReportOpen(true)} className="mx-auto block" style={ACCOUNT_BTN}>
           {t('report.title')}
         </StdButton>

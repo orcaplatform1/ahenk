@@ -17,8 +17,8 @@ interface Settings {
   oceanKanka?: boolean;
 }
 
-type Tab = 'general' | 'criteria';
-const TABS: [Tab, string][] = [['general', 'Genel'], ['criteria', 'Eşleştirme Kriterleri']];
+type Tab = 'general' | 'criteria' | 'support';
+const TABS: [Tab, string][] = [['general', 'Genel'], ['criteria', 'Eşleştirme Kriterleri'], ['support', 'Canlı Destek']];
 const OCEAN_DESC = "Yalnız Planlı Buluşma. Açık: sıralama OCEAN %100. Kapalı: yaş yakınlığı %50 + mekân kategori %50. Yarın Buluşma'da OCEAN her zaman kapalı."
 
 function Toggle({ label, desc, value, onChange }: {
@@ -109,6 +109,50 @@ function WinbackSettings() {
   );
 }
 
+// Canlı Destek: temsilci başına eşzamanlı sohbet sınırı (varsayılan 3) ve vardiya saatleri (raporlamada kullanılır; sistem 7/24 açık)
+function SupportSettingsCard() {
+  const [maxChats, setMaxChats] = useState('');
+  const [shiftDay, setShiftDay] = useState('');
+  const [shiftNight, setShiftNight] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => {
+    api.get<{ maxChats: number; shiftDay: string; shiftNight: string }>('/admin/live-support/manage/settings')
+      .then((d) => { setMaxChats(String(d.maxChats)); setShiftDay(d.shiftDay); setShiftNight(d.shiftNight); })
+      .catch((e: Error) => setMsg({ ok: false, text: e.message }));
+  }, []);
+  async function save() {
+    setBusy(true); setMsg(null);
+    try {
+      await api.patch('/admin/live-support/manage/settings', { maxChats: Number(maxChats), shiftDay, shiftNight });
+      setMsg({ ok: true, text: 'Canlı destek ayarları güncellendi' });
+    } catch (e) { setMsg({ ok: false, text: (e as Error).message }); }
+    finally { setBusy(false); }
+  }
+  const input = { background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '7px 10px', fontSize: 13, color: TEXT, fontFamily: MONO, outline: 'none' } as const;
+  return (
+    <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 13, color: TEXT }}>
+        Temsilci başına eşzamanlı sohbet sınırı
+        <input value={maxChats} onChange={(e) => setMaxChats(e.target.value.replace(/\D/g, ''))} inputMode="numeric" style={{ ...input, width: 70 }} />
+      </label>
+      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 13, color: TEXT }}>
+        Gündüz vardiyası
+        <input value={shiftDay} onChange={(e) => setShiftDay(e.target.value)} placeholder="08:00-20:00" style={{ ...input, width: 130 }} />
+      </label>
+      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 13, color: TEXT }}>
+        Gece vardiyası
+        <input value={shiftNight} onChange={(e) => setShiftNight(e.target.value)} placeholder="20:00-08:00" style={{ ...input, width: 130 }} />
+      </label>
+      <p style={{ margin: 0, fontSize: 11, color: MUTED }}>Sistem 7 gün 24 saat açıktır. Vardiya bilgisi yalnız raporlamada kullanılır.</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={save} disabled={busy || !maxChats} style={{ padding: '9px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: SANS, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: GREEN, cursor: 'pointer', opacity: busy || !maxChats ? 0.5 : 1 }}>Kaydet</button>
+        {msg && <span style={{ fontSize: 13, color: msg.ok ? GREEN : RED }}>{msg.text}</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminSettings() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -184,7 +228,9 @@ export default function AdminSettings() {
             })}
           </div>
 
-          {tab === 'criteria' ? (
+          {tab === 'support' ? (
+            <SupportSettingsCard />
+          ) : tab === 'criteria' ? (
             <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <Toggle label="OCEAN – Grup" desc={OCEAN_DESC} value={settings.oceanGroup ?? true} onChange={v => setSettings(s => s ? { ...s, oceanGroup: v } : s)} />
               <Toggle label="OCEAN – Baş Başa" desc={OCEAN_DESC} value={settings.oceanOneOnOne ?? false} onChange={v => setSettings(s => s ? { ...s, oceanOneOnOne: v } : s)} />
@@ -245,6 +291,8 @@ export default function AdminSettings() {
           </div>
           )}
 
+          {tab !== 'support' && (
+          <>
           <button
             onClick={save} disabled={saving}
             style={{
@@ -259,6 +307,8 @@ export default function AdminSettings() {
           >
             {saving ? 'Kaydediliyor…' : saved ? 'Kaydedildi ✓' : 'Kaydet'}
           </button>
+          </>
+          )}
           {error && <p style={{ margin: '8px 0 0', fontSize: 13, color: RED }}>{error}</p>}
           {tab === 'general' && <WinbackSettings />}
         </>
