@@ -227,7 +227,8 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
       </View>
       {extra && !c.takenOver && (
         <ScrollView style={{ maxHeight: 300, borderBottomWidth: 1, borderBottomColor: adm.border }} contentContainerStyle={{ padding: 12, gap: 8 }} keyboardShouldPersistTaps="handled">
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {/* Web temsilci başlığıyla aynı sıra: Devral / Kapat / Kötüye kullanım alt alta */}
+          <View style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
             {open && !c.mine && superadmin && <SmallBtn label="Devral" color={adm.blue} onPress={() => act(() => api.post(`/admin/live-support/chats/${id}/take`, {}))} />}
             {open && (c.mine || superadmin) && <SmallBtn label="Kapat" color={adm.muted} onPress={() => act(() => api.post(`/admin/live-support/chats/${id}/close`, {}), onBack)} />}
             {open && (c.mine || superadmin) && [1, 7, 30].map((d) => <SmallBtn key={d} label={`Kötüye kullanım · ${d} gün`} color={adm.red} onPress={() => act(() => api.post(`/admin/live-support/chats/${id}/close`, { abuseDays: d }), onBack)} />)}

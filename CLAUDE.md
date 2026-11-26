@@ -672,7 +672,8 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     SupportChatParts ChatComposer): dosya ikonu, emoji ikonu, yazı alanı ve en sağda gönder ikonu ("Gönder" yazısı yok) kutunun içinde;
     en az 48 px, yazdıkça en fazla 5 satır büyür; temsilci ekranında "/" hazır yanıt ve yer tutucu aynen. "Okundu" / "Read" yalnız
     gönderenin kendi mesajlarından karşı tarafın okuduğu sonuncusunun hemen altında. Temsilci ekranı başlığında (web) Devral / Kapat /
-    Kötüye kullanım sağda alt alta, bilgi alanı solda geniş. Temsilcinin adı / cinsiyeti / fotoğrafı hiçbir yerde
+    Kötüye kullanım sağda alt alta, bilgi alanı solda geniş; mobil temsilci ekranında "⋯" panelinin içinde aynı sırayla alt alta (Devral,
+    Kapat, Kötüye kullanım · 1 / 7 / 30 gün; tam genişlik). Temsilcinin adı / cinsiyeti / fotoğrafı hiçbir yerde
     gösterilmez. Temsilci bağlandığı an mobilde hafif titreşim (expo-haptics). İlk atamada 2 otomatik mesaj (sistem kodları NOTICE: kayıt + Aydınlatma Metni linki
     /kvkk, GREETING: karşılama); istemci kodu arayüz dilinde gösterir. GREETING metni (sup.sysGreeting) TR "Merhaba, ben Ahenk müşteri
     temsilcisiyim. Bugün size yardımcı olmaktan mutluluk duyacağım.", EN "Hello, I'm an Ahenk customer representative. I'll be happy to
