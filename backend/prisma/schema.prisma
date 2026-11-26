@@ -1579,6 +1579,9 @@ model SupportAiLog {
   agentNo   String
   question  String   @db.Text
   tools     String[]
+  requestType String  @default("QUESTION") // QUESTION (soru) | DRAFT (AI taslak yanıt)
+  success     Boolean @default(true) // false: anahtar yok, model hatası, zaman aşımı, bağlantı hatası
+  errorType   String? // NO_KEY | TIMEOUT | MODEL_ERROR | CONNECTION_ERROR | INTERNAL_ERROR
   createdAt DateTime @default(now())
 
   @@index([createdAt])

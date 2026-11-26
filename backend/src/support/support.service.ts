@@ -20,7 +20,7 @@ import { isE164Mobile, normalizePhone } from "../common/phone";
 import {
   AWAY_MS, DEFAULT_MAX_CHATS, DEFAULT_SHIFT_DAY, DEFAULT_SHIFT_NIGHT, FIRST_REPLY_TIMEOUT_MS, IDLE_CLOSE_MS, IDLE_WARN_MS,
   PENDING_RATING_MS, QUEUE_ALERT_MS, RATING_TAGS, RATING_TAG_TR, RESTRICT_DAYS, SUPPORT_DIR, SUPPORT_MAX_IMAGES, SUPPORT_MESSAGE_MAX,
-  SYS, SYS_TR, TICK_MS, TOPIC_TR, TYPING_TTL_MS,
+  SYS, SYS_TR, TAKEOVER_NOTE, TICK_MS, TOPIC_TR, TYPING_TTL_MS,
 } from "./support.constants";
 
 export type Requester = { kind: "user"; id: string } | { kind: "venue"; id: string };
@@ -508,8 +508,24 @@ export class SupportService implements OnModuleInit {
     return { me, chat };
   }
 
+  // SUPERADMIN devraldıysa eski temsilci (son devri bu kayıt olan): sohbet salt okunur, ekranın altında "devralındı" notu.
+  // SUPPORT rolüne yeni içerik dönmez (yalnız takenOver bayrağı); istemci elindeki son hâli salt okunur tutar, ekrandan çıkınca
+  // sohbet hiçbir listede olmadığı için yeniden açılamaz.
+  private async takenOverFrom(meId: string, chat: { id: string; agentId: string | null }) {
+    if (chat.agentId === meId) return false;
+    const last = await this.prisma.supportTransfer.findFirst({ where: { chatId: chat.id, fromAgentId: meId }, orderBy: { createdAt: "desc" }, select: { note: true } });
+    return last?.note === TAKEOVER_NOTE;
+  }
+
   async agentChat(staff: Staff, chatId: string) {
-    const { me, chat } = await this.staffChat(staff, chatId);
+    const me = await this.staffUser(staff.id);
+    const chat = await this.prisma.supportChat.findUnique({ where: { id: chatId } });
+    if (!chat) throw new NotFoundException("Sohbet bulunamadı");
+    const takenOver = await this.takenOverFrom(me.id, chat);
+    if (me.role === UserRole.SUPPORT && chat.agentId !== me.id) {
+      if (takenOver) return { id: chat.id, takenOver: true };
+      throw new ForbiddenException("Bu sohbete erişim yetkin yok");
+    }
     this.seen.set(`a:${me.id}`, Date.now());
     const [messages, notes, transfers, agents] = await Promise.all([
       this.prisma.supportMessage.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
@@ -527,7 +543,7 @@ export class SupportService implements OnModuleInit {
     return {
       id: chat.id, status: chat.status, topic: chat.topic, requesterName: chat.requesterName, kind: chat.venueAccountId ? "venue" : "user",
       queuedAt: chat.queuedAt.toISOString(), agentId: chat.agentId, agentNo: chat.agentId ? no.get(chat.agentId) ?? null : null,
-      mine: chat.agentId === me.id, closedAt: chat.closedAt?.toISOString() ?? null, closedBy: chat.closedBy,
+      mine: chat.agentId === me.id, takenOver, closedAt: chat.closedAt?.toISOString() ?? null, closedBy: chat.closedBy,
       userReadAt: chat.userReadAt?.toISOString() ?? null,
       userTyping: userTypingLive,
       userOnline: OPEN.includes(chat.status) && this.isSeen(`c:${chat.id}`),
@@ -596,7 +612,7 @@ export class SupportService implements OnModuleInit {
     if (!OPEN.includes(chat.status)) throw new BadRequestException("Sohbet açık değil");
     if (chat.agentId === me.id) return { ok: true };
     const agent = await this.ensureAgent(me.id);
-    await this.handOver(chat.id, chat.agentId, agent, "SUPERADMIN devraldı");
+    await this.handOver(chat.id, chat.agentId, agent, TAKEOVER_NOTE);
     return { ok: true };
   }
 
@@ -739,7 +755,7 @@ export class SupportService implements OnModuleInit {
 
   async aiLogs() {
     const rows = await this.prisma.supportAiLog.findMany({ orderBy: { createdAt: "desc" }, take: 300 });
-    return rows.map((r) => ({ id: r.id, agentNo: r.agentNo, chatId: r.chatId, question: r.question, tools: r.tools, createdAt: r.createdAt.toISOString() }));
+    return rows.map((r) => ({ id: r.id, agentNo: r.agentNo, chatId: r.chatId, question: r.question, tools: r.tools, requestType: r.requestType, success: r.success, errorType: r.errorType, createdAt: r.createdAt.toISOString() }));
   }
 
   // ─── Raporlar (ADMIN ve SUPERADMIN) ───────────────────────────────────────
@@ -858,7 +874,7 @@ export class SupportService implements OnModuleInit {
       notes: notes.map((n) => ({ id: n.id, agentNo: n.agentNo, content: n.content, createdAt: n.createdAt.toISOString() })),
       transfers: transfers.map((x) => ({ id: x.id, from: no.get(x.fromAgentId) ?? null, to: no.get(x.toAgentId) ?? null, note: x.note, createdAt: x.createdAt.toISOString() })),
       rating: r ? { helped: r.helped, stars: r.stars, tags: r.tags.map((t) => RATING_TAG_TR[t] ?? t), comment: r.comment, createdAt: r.createdAt.toISOString() } : null,
-      aiLogs: aiLogs.map((l) => ({ id: l.id, agentNo: l.agentNo, question: l.question, tools: l.tools, createdAt: l.createdAt.toISOString() })),
+      aiLogs: aiLogs.map((l) => ({ id: l.id, agentNo: l.agentNo, question: l.question, tools: l.tools, requestType: l.requestType, success: l.success, errorType: l.errorType, createdAt: l.createdAt.toISOString() })),
     };
   }
 

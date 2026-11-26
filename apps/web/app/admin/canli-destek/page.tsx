@@ -14,12 +14,17 @@ interface Row { id: string; status: string; topic: string; requesterName: string
 interface AgentState { me: { userId: string; role: string; agentNo: string; status: 'ONLINE' | 'BREAK' | 'OFFLINE' }; maxChats: number; queue: Row[]; mine: Row[]; others: Row[]; onlineAgents: { userId: string; agentNo: string }[] }
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string }
 interface ChatDetail {
-  id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; queuedAt: string; agentNo: string | null; mine: boolean;
+  id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; queuedAt: string; agentNo: string | null; mine: boolean; takenOver?: boolean;
   closedAt: string | null; userReadAt: string | null; userTyping: boolean; userOnline: boolean; userDraft: string; messages: Msg[];
   notes: { id: string; agentNo: string; content: string; createdAt: string }[];
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
 }
 interface Canned { id: string; title: string; content: string }
+// Haiku sorgu kaydı: istek türü, sonuç ve hata türü (başarısız istekler de yazılır)
+interface AiLog { id: string; agentNo: string; chatId?: string; question: string; tools: string[]; requestType: string; success: boolean; errorType: string | null; createdAt: string }
+const AI_TYPE: Record<string, string> = { QUESTION: 'Soru', DRAFT: 'AI taslak' };
+const AI_ERROR: Record<string, string> = { NO_KEY: 'anahtar yok', TIMEOUT: 'zaman aşımı', MODEL_ERROR: 'model hatası', CONNECTION_ERROR: 'bağlantı hatası', INTERNAL_ERROR: 'sunucu hatası' };
+const aiResult = (l: { success: boolean; errorType: string | null }) => (l.success ? 'Başarılı' : `Başarısız${l.errorType ? ` · ${AI_ERROR[l.errorType] ?? l.errorType}` : ''}`);
 
 const TOPIC: Record<string, string> = { ACCOUNT: 'Hesap', PAYMENT: 'Ödeme', MEETING: 'Masa', OTHER: 'Diğer' };
 const STATUS: [AgentState['me']['status'], string, string][] = [['ONLINE', 'Çevrimiçi', GREEN], ['BREAK', 'Mola', AMBER], ['OFFLINE', 'Çevrimdışı', MUTED]];
@@ -35,6 +40,7 @@ const hm = (iso: string) => new Date(iso).toLocaleTimeString('tr-TR', { hour: '2
 const dt = (iso: string) => new Date(iso).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
 function waited(iso: string) { const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000)); return s < 60 ? `${s} sn` : s < 3600 ? `${Math.floor(s / 60)} dk` : `${Math.floor(s / 3600)} sa ${Math.floor((s % 3600) / 60)} dk`; }
 const fmtMin = (n: number | null) => (n === null ? '—' : `${n.toFixed(1)} dk`);
+const TAKEN_OVER = 'Bu sohbet SUPERADMIN tarafından devralındı.';
 const imgUrl = (chatId: string, f: string) => `${API_PREFIX}/admin/live-support/chats/${chatId}/images/${f}`;
 
 const btn = (color: string, filled = false): React.CSSProperties => ({ minHeight: 36, padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: SANS, cursor: 'pointer', color: filled ? '#fff' : color, background: filled ? color : 'transparent', border: `1px solid ${color}` });
@@ -88,6 +94,7 @@ export default function CanliDestekAdmin() {
 function ChatsTab() {
   const [st, setSt] = useState<AgentState | null>(null);
   const [sel, setSel] = useState<string | null>(null);
+  const [takenOver, setTakenOver] = useState<Set<string>>(new Set());
   const [err, setErr] = useState('');
   const prev = useRef<{ mine: Set<string>; unread: number } | null>(null);
 
@@ -150,16 +157,17 @@ function ChatsTab() {
           {/* ADMIN salt okunur izler, SUPERADMIN devralabilir */}
           {(superadmin || st.me.role === 'ADMIN') && list('Diğer Açık Sohbetler', st.others, true)}
         </aside>
-        {sel ? <ChatColumn key={sel} id={sel} st={st} reload={load} onClosed={() => setSel(null)} /> : (
+        {sel ? <ChatColumn key={sel} id={sel} st={st} reload={load} onClosed={() => setSel(null)} onTakenOver={() => setTakenOver((p) => (p.has(sel) ? p : new Set(p).add(sel)))} /> : (
           <div className="ll-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}><p style={{ color: MUTED, fontSize: 13 }}>Soldan bir sohbet seç.</p></div>
         )}
-        {sel ? <HaikuPanel chatId={sel} onInsert={(t) => window.dispatchEvent(new CustomEvent('cd-insert', { detail: t }))} /> : <div className="ll-card" />}
+        {/* SUPERADMIN devraldıysa eski temsilcide Haiku asistanı kapanır */}
+        {sel && !takenOver.has(sel) ? <HaikuPanel chatId={sel} onInsert={(t) => window.dispatchEvent(new CustomEvent('cd-insert', { detail: t }))} /> : <div className="ll-card" />}
       </div>
     </div>
   );
 }
 
-function ChatColumn({ id, st, reload, onClosed }: { id: string; st: AgentState; reload: () => void; onClosed: () => void }) {
+function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st: AgentState; reload: () => void; onClosed: () => void; onTakenOver: () => void }) {
   const [c, setC] = useState<ChatDetail | null>(null);
   const [err, setErr] = useState('');
   const [text, setText] = useState('');
@@ -177,8 +185,21 @@ function ChatColumn({ id, st, reload, onClosed }: { id: string; st: AgentState; 
   const typingAt = useRef(0);
   const count = useRef(0);
 
+  const loaded = useRef(false);
+  const cb = useRef({ onClosed, onTakenOver });
+  cb.current = { onClosed, onTakenOver };
+  // SUPERADMIN devraldıysa: Temsilci (SUPPORT) yalnız { takenOver: true } alır, elindeki son hâl salt okunur kalır (403 gösterilmez);
+  // sohbet ilk açılışta zaten devralınmışsa ekran kapanır (sohbet hiçbir listede olmadığından yeniden açılamaz)
   const load = useCallback(async () => {
-    try { setC(await api.get<ChatDetail>(`/admin/live-support/chats/${id}`)); setErr(''); } catch (e) { setErr((e as Error).message); }
+    try {
+      const d = await api.get<ChatDetail | { id: string; takenOver: true }>(`/admin/live-support/chats/${id}`);
+      if (!('messages' in d)) {
+        if (!loaded.current) { cb.current.onClosed(); return; }
+        setC((p) => (p ? { ...p, mine: false, takenOver: true, userTyping: false, userDraft: '' } : p));
+      } else { loaded.current = true; setC(d); }
+      if ((d as { takenOver?: boolean }).takenOver) cb.current.onTakenOver();
+      setErr('');
+    } catch (e) { setErr((e as Error).message); }
   }, [id]);
   useEffect(() => { load(); const t = setInterval(load, 3000); return () => clearInterval(t); }, [load]);
   useEffect(() => { api.get<Canned[]>('/admin/live-support/canned').then(setCanned).catch(() => {}); }, []);
@@ -232,7 +253,7 @@ function ChatColumn({ id, st, reload, onClosed }: { id: string; st: AgentState; 
         <div style={{ minWidth: 0, flex: 1 }}>
           <p style={{ fontSize: 15, fontWeight: 700 }}>{c.requesterName}</p>
           <p style={{ fontSize: 11, color: MUTED }}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · bekleme {waited(c.queuedAt)}{c.agentNo ? ` · Temsilci No ${c.agentNo}` : ''}</p>
-          {open && <p style={{ fontSize: 11, color: c.userTyping || c.userOnline ? GREEN : MUTED }}>{c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'}{!c.mine && st.me.role === 'ADMIN' ? ' · salt okunur' : ''}</p>}
+          {open && <p style={{ fontSize: 11, color: c.userTyping || c.userOnline ? GREEN : MUTED }}>{c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'}{(!c.mine && st.me.role === 'ADMIN') || c.takenOver ? ' · salt okunur' : ''}</p>}
         </div>
         {open && !c.mine && st.me.role === 'SUPERADMIN' && <button style={btn(BLUE)} onClick={() => act(() => api.post(`/admin/live-support/chats/${id}/take`, {}))}>Devral</button>}
         {open && (c.mine || st.me.role === 'SUPERADMIN') && (
@@ -270,6 +291,7 @@ function ChatColumn({ id, st, reload, onClosed }: { id: string; st: AgentState; 
         {c.userReadAt && c.messages.some((m) => m.sender === 'AGENT') && c.userReadAt >= ([...c.messages].reverse().find((m) => m.sender === 'AGENT')?.createdAt ?? '') && <p style={{ alignSelf: 'flex-end', fontSize: 10, color: MUTED }}>Okundu</p>}
         {/* Yazı önizlemesi: kullanıcının gönderilmemiş metni (sunucuda yalnız bellekte) */}
         {c.userTyping && <p style={{ fontSize: 12, color: AMBER, fontStyle: 'italic' }}>yazıyor…{c.userDraft ? ` “${c.userDraft}”` : ''}</p>}
+        {c.takenOver && <p style={{ alignSelf: 'center', marginTop: 6, padding: '6px 12px', borderRadius: 8, fontSize: 12, color: AMBER, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', textAlign: 'center' }}>{TAKEN_OVER}</p>}
       </div>
       {err && <p style={{ padding: '0 12px 6px', fontSize: 12, color: RED }}>{err}</p>}
       {canWrite && (
@@ -297,8 +319,8 @@ function ChatColumn({ id, st, reload, onClosed }: { id: string; st: AgentState; 
           </div>
         </div>
       )}
-      {/* İç not (kullanıcıya asla gösterilmez) ve devir */}
-      <details style={{ borderTop: `1px solid ${BORDER}`, padding: '8px 12px' }}>
+      {/* İç not (kullanıcıya asla gösterilmez) ve devir; devralınan sohbette kapalı */}
+      {!c.takenOver && <details style={{ borderTop: `1px solid ${BORDER}`, padding: '8px 12px' }}>
         <summary style={{ fontSize: 12, color: MUTED, cursor: 'pointer' }}>İç notlar ({c.notes.length}) ve devir geçmişi ({c.transfers.length})</summary>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
           {c.transfers.map((x) => <p key={x.id} style={{ fontSize: 12, color: AMBER }}>Devir {x.from ?? '—'} → {x.to ?? '—'} · {dt(x.createdAt)}: {x.note}</p>)}
@@ -320,7 +342,7 @@ function ChatColumn({ id, st, reload, onClosed }: { id: string; st: AgentState; 
             </div>
           )}
         </div>
-      </details>
+      </details>}
       {viewer && (
         <div onClick={() => setViewer(null)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -338,12 +360,17 @@ function HaikuPanel({ chatId, onInsert }: { chatId: string; onInsert: (t: string
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [items, setItems] = useState<{ q: string; a: string }[]>([]);
+  const [copied, setCopied] = useState<number | null>(null);
+  // Kopyala: yalnız panoya yazar, kısa onay gösterir; kopyalama hiçbir yere kaydedilmez
+  function copy(i: number, text: string) {
+    navigator.clipboard?.writeText(text).then(() => { setCopied(i); setTimeout(() => setCopied((v) => (v === i ? null : v)), 1500); }).catch(() => {});
+  }
   async function run(draft: boolean) {
     if (busy || (!draft && !q.trim())) return;
     setBusy(true); setErr('');
     try {
       const r = await api.post<{ answer: string }>(`/admin/live-support/chats/${chatId}/ai`, { question: draft ? undefined : q.trim(), draft, includeImages: images });
-      setItems((p) => [{ q: draft ? 'Taslak cevap' : q.trim(), a: r.answer }, ...p]);
+      setItems((p) => [{ q: draft ? 'Taslak cevap' : q.trim(), a: r.answer }, ...p]); setCopied(null);
       if (!draft) setQ('');
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
@@ -366,7 +393,7 @@ function HaikuPanel({ chatId, onInsert }: { chatId: string; onInsert: (t: string
           <p style={{ fontSize: 11, color: MUTED, marginBottom: 4 }}>{it.q}</p>
           <p style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{it.a}</p>
           <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-            <button style={btn(MUTED)} onClick={() => navigator.clipboard?.writeText(it.a).catch(() => {})}>Kopyala</button>
+            <button style={btn(copied === i ? GREEN : MUTED)} onClick={() => copy(i, it.a)} aria-live="polite">{copied === i ? 'Kopyalandı ✓' : 'Kopyala'}</button>
             <button style={btn(GREEN)} onClick={() => onInsert(it.a)}>Sohbete ekle</button>
           </div>
         </div>
@@ -386,7 +413,7 @@ interface AllDetail {
   notes: { id: string; agentNo: string; content: string; createdAt: string }[];
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
   rating: { helped: boolean; stars: number; tags: string[]; comment: string | null; createdAt: string } | null;
-  aiLogs: { id: string; agentNo: string; question: string; tools: string[]; createdAt: string }[];
+  aiLogs: AiLog[];
 }
 const CHAT_STATUS: Record<string, string> = { QUEUED: 'Sırada', ACTIVE: 'Açık', CLOSED: 'Kapandı' };
 const CLOSED_BY: Record<string, string> = { USER: 'kullanıcı', AGENT: 'temsilci', AUTO: 'otomatik', ABUSE: 'kötüye kullanım' };
@@ -531,7 +558,7 @@ function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
         <p style={{ ...LABEL, color: '#22d3ee', marginBottom: 6 }}>HAIKU SORGU KAYITLARI ({c.aiLogs.length})</p>
         {c.aiLogs.map((l) => (
           <div key={l.id} style={{ padding: '6px 0', borderTop: `1px solid ${BORDER}` }}>
-            <p style={{ fontSize: 11, color: MUTED }}>{dt(l.createdAt)} · Temsilci No {l.agentNo}</p>
+            <p style={{ fontSize: 11, color: MUTED }}>{dt(l.createdAt)} · Temsilci No {l.agentNo} · {AI_TYPE[l.requestType] ?? l.requestType} · <span style={{ color: l.success ? GREEN : RED }}>{aiResult(l)}</span></p>
             <p style={{ fontSize: 13 }}>{l.question}</p>
             <p style={{ fontSize: 11, color: '#22d3ee' }}>{l.tools.join(', ') || '—'}</p>
           </div>
@@ -731,22 +758,24 @@ function RestrictionsTab() {
 // ─── Haiku sorgu kayıtları (SUPERADMIN) ────────────────────────────────────
 
 function AiLogsTab() {
-  const [rows, setRows] = useState<{ id: string; agentNo: string; chatId: string; question: string; tools: string[]; createdAt: string }[]>([]);
+  const [rows, setRows] = useState<AiLog[]>([]);
   const [err, setErr] = useState('');
   useEffect(() => { api.get<typeof rows>('/admin/live-support/manage/ai-logs').then(setRows).catch((e) => setErr((e as Error).message)); }, []);
   return (
     <div className="ll-card" style={{ overflowX: 'auto' }}>
       {err && <p style={{ color: RED, fontSize: 12 }}>{err}</p>}
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-        <thead><tr style={{ color: MUTED, textAlign: 'left' }}>{['Zaman', 'Temsilci No', 'Sohbet ID', 'Soru', 'Çağrılan işlevler'].map((h) => <th key={h} style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{h}</th>)}</tr></thead>
+        <thead><tr style={{ color: MUTED, textAlign: 'left' }}>{['Zaman', 'Temsilci No', 'Sohbet ID', 'Tür', 'Soru', 'Çağrılan işlevler', 'Sonuç'].map((h) => <th key={h} style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{h}</th>)}</tr></thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.id} style={{ borderTop: `1px solid ${BORDER}` }}>
               <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{dt(r.createdAt)}</td>
               <td style={{ padding: '6px 8px', fontFamily: MONO }}>{r.agentNo}</td>
               <td style={{ padding: '6px 8px', fontFamily: MONO, fontSize: 10 }}>{r.chatId}</td>
+              <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{AI_TYPE[r.requestType] ?? r.requestType}</td>
               <td style={{ padding: '6px 8px' }}>{r.question}</td>
               <td style={{ padding: '6px 8px' }}>{r.tools.join(', ') || '—'}</td>
+              <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', color: r.success ? GREEN : RED }}>{aiResult(r)}</td>
             </tr>
           ))}
         </tbody>

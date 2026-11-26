@@ -696,7 +696,10 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     girişte ve temsilci listesinde "Bu temsilci artık destek ekibinde değil." / "This agent is no longer on the support team.").
     Her temsilciye ve canlı destek yapan ADMIN / SUPERADMIN'e benzersiz, rastgele, 5 haneli, değişmeyen Temsilci No (SupportAgent.agentNo).
     ADMIN bütün sohbetleri salt okunur görür, yalnız kendine atanan sohbete yazar (mesaj, iç not). SUPERADMIN bütün açık sohbetleri canlı
-    izler ve istediğini devralır. Yazıyor ve çevrimiçi / çevrimdışı durumu bellekte; Temsilci No ilk kullanımda atanır
+    izler ve istediğini devralır (devir notu "SUPERADMIN devraldı", TAKEOVER_NOTE). Devralınan sohbet eski temsilcinin "Açık Sohbetlerim"
+    listesinden ve kotasından hemen düşer, eski temsilciye bildirim gitmez; ekranında açıksa 403 gösterilmez, son hâli salt okunur kalır
+    (mesaj alanı, hazır yanıtlar, iç not, devir, Haiku kapalı), en altta "Bu sohbet SUPERADMIN tarafından devralındı." (yönetim paneli
+    yalnız Türkçe); SUPPORT rolüne GET /admin/live-support/chats/:id yalnız {takenOver: true} döner, ekrandan çıkınca yeniden açılamaz. Yazıyor ve çevrimiçi / çevrimdışı durumu bellekte; Temsilci No ilk kullanımda atanır
   - Sıra ve atama (her 10 sn zamanlanmış iş + her olayda): tek ortak sıra, ilk gelen ilk alınır (queuedAt). Çevrimiçi temsilciler arasında en
     az açık sohbeti olana, eşitse en uzun süredir boşta olana (idleSince). Eşzamanlı sınır varsayılan 3 (AppConfig SUPPORT_MAX_CHATS, Ayarlar →
     Canlı Destek). Herkes doluysa sırada bekler, sohbet kapanınca sıradaki atanır. Atanan temsilci 2 dk içinde ilk cevabı vermezse başka uygun
@@ -716,8 +719,10 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     sunucu sohbet kaydından verir (metinden ID / isim / telefon alınmaz, başka hesap istenirse reddeder). Tahmin yok: tutar, tarih, sayı
     veritabanından. Üye işlevleri: hesap_ozeti, paketler_ve_haklar, premium_abonelik, odemeler, masalar, haftalik_secim, kyc_durumu, yaptirimlar,
     davet_ve_indirim; mekân: mekan_bilgisi, mekan_masalari. Kapalı: KYC görsel / video, kimlik no, telefon, OCEAN, Masa Sohbeti, Acil Yardım,
-    başka kullanıcıların verisi. Temsilci isterse sohbetteki görselleri okur; taslak cevap önerir. Her sorgu SupportAiLog (Temsilci No, sohbet
-    ID, soru, çağrılan işlevler, zaman; SUPERADMIN görür)
+    başka kullanıcıların verisi. Temsilci isterse sohbetteki görselleri okur; taslak cevap önerir. Her yanıtta "Kopyala" (panoya yazar, 1,5 sn "Kopyalandı ✓",
+    mobilde hafif titreşim; kopyalama kaydedilmez). Her istek SupportAiLog (Temsilci No, sohbet ID, istek türü requestType QUESTION | DRAFT,
+    soru, çağrılan işlevler, sonuç success, hata türü errorType NO_KEY | TIMEOUT | MODEL_ERROR | CONNECTION_ERROR | INTERNAL_ERROR, zaman;
+    başarısız istekler de yazılır, temsilciye giden hata metni aynı; migration 20261126200000_support_ai_log_result; SUPERADMIN görür)
   - Tüm Sohbetler sekmesi (yalnız SUPERADMIN; ADMIN ve SUPPORT görmez; web + mobil): açık, sıradaki ve kapanmış bütün üye ve mekân sohbetleri;
     satırda ad soyad (mekânda mekân adı), konu, durum, Temsilci No, başlangıç tarihi saati, süre (başlangıçtan kapanışa / şimdiye), yıldız;
     filtre tarih aralığı, durum, konu, Temsilci No, hesap türü; ad soyad / mekân adıyla arama; sayfa başına 50. Basınca sohbetin tamamı

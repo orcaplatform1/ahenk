@@ -2,7 +2,8 @@
 // Okuma işlevleri (tool use) parametre almaz: hangi hesabın okunacağını sunucu sohbet kaydından (SupportChat.userId /
 // venueAccountId) verir. Temsilcinin ya da kullanıcının yazdığı metinden ID, isim veya telefon alınmaz.
 // Kapalı veriler: KYC görselleri / videosu, kimlik numarası, telefon, OCEAN, Masa Sohbeti, Acil Yardım, başka kullanıcıların verisi.
-// Her sorgu SupportAiLog'a yazılır (Temsilci No, sohbet ID, soru, çağrılan işlevler, zaman).
+// Her istek (soru ve AI taslak) SupportAiLog'a yazılır: başarısız olanlar da (anahtar yok, model hatası, zaman aşımı, bağlantı hatası).
+// Kayıtta Temsilci No, sohbet ID, istek türü, soru, çağrılan işlevler, sonuç, hata türü ve zaman. Temsilciye giden hata metni değişmez.
 import Anthropic from "@anthropic-ai/sdk";
 import * as fs from "fs";
 import * as path from "path";
@@ -190,11 +191,19 @@ export class SupportAiService {
   }
 
   async ask(staff: Staff, chatId: string, input: { question?: string; draft?: boolean; includeImages?: boolean }) {
-    const apiKey = process.env.CLAUDE_API_KEY;
-    if (!apiKey) throw new ServiceUnavailableException("Haiku asistanı şu an kullanılamıyor");
     const question = (input.question ?? "").trim().slice(0, 2000);
     if (!input.draft && !question) throw new BadRequestException("Soru boş olamaz");
     const { chat, agent, messages } = await this.support.chatForAi(staff, chatId);
+    const called: string[] = [];
+    const writeLog = (success: boolean, errorType: string | null) =>
+      this.prisma.supportAiLog.create({
+        data: { chatId: chat.id, agentId: staff.id, agentNo: agent.agentNo, question: input.draft ? "[Taslak cevap]" : question, tools: called, requestType: input.draft ? "DRAFT" : "QUESTION", success, errorType },
+      }).catch((e) => this.logger.error(`Haiku kaydı yazılamadı: ${e}`));
+    const apiKey = process.env.CLAUDE_API_KEY;
+    if (!apiKey) {
+      await writeLog(false, "NO_KEY");
+      throw new ServiceUnavailableException("Haiku asistanı şu an kullanılamıyor");
+    }
     const tools = chat.userId ? this.memberTools(chat.userId) : chat.venueAccountId ? this.venueTools(chat.venueAccountId) : {};
     const toolDefs: Anthropic.Tool[] = Object.entries(tools).map(([name, t]) => ({ name, description: t.description, input_schema: { type: "object", properties: {}, additionalProperties: false } }));
 
@@ -214,7 +223,6 @@ export class SupportAiService {
     });
 
     const msgs: Anthropic.MessageParam[] = [{ role: "user", content }];
-    const called: string[] = [];
     const client = new Anthropic({ apiKey, timeout: 30_000, maxRetries: 1 });
     let answer = "";
     try {
@@ -239,10 +247,13 @@ export class SupportAiService {
       }
     } catch (e) {
       this.logger.error(`Haiku asistanı hatası: ${e}`);
+      const errorType = e instanceof Anthropic.APIConnectionTimeoutError ? "TIMEOUT"
+        : e instanceof Anthropic.APIConnectionError ? "CONNECTION_ERROR"
+        : e instanceof Anthropic.APIError ? "MODEL_ERROR" : "INTERNAL_ERROR";
+      await writeLog(false, errorType);
       throw new ServiceUnavailableException("Haiku asistanı şu an yanıt veremiyor, tekrar dene");
-    } finally {
-      await this.prisma.supportAiLog.create({ data: { chatId: chat.id, agentId: staff.id, agentNo: agent.agentNo, question: input.draft ? "[Taslak cevap]" : question, tools: called } }).catch((e) => this.logger.error(`Haiku kaydı yazılamadı: ${e}`));
     }
+    await writeLog(true, null);
     return { answer: answer || "Yanıt alınamadı.", tools: called };
   }
 }

@@ -3,10 +3,11 @@
 // Android geri tuşuyla kapanır). Hazır Yanıtlar ve Raporlar: ADMIN + SUPERADMIN. Tüm Sohbetler, Temsilciler, Kısıtlamalar, Haiku Kayıtları: SUPERADMIN.
 // Yeni sohbet atanınca ve uygulama dışındayken yeni mesaj gelince push (backend). Temsilci kullanıcı hakkında Haiku dışında veri görmez.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
+import { AccessibilityInfo, BackHandler, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { api } from '@/lib/api';
 import { API_PREFIX } from '@/lib/config';
 import { getAccess } from '@/lib/session';
@@ -20,12 +21,17 @@ interface Row { id: string; status: string; topic: string; requesterName: string
 interface AgentState { me: { userId: string; role: string; agentNo: string; status: 'ONLINE' | 'BREAK' | 'OFFLINE' }; maxChats: number; queue: Row[]; mine: Row[]; others: Row[]; onlineAgents: { userId: string; agentNo: string }[] }
 interface Msg { id: string; sender: Sender; agentNo: string | null; content: string; images: string[]; createdAt: string }
 interface ChatDetail {
-  id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; queuedAt: string; agentNo: string | null; mine: boolean;
+  id: string; status: string; topic: string; requesterName: string; kind: 'user' | 'venue'; queuedAt: string; agentNo: string | null; mine: boolean; takenOver?: boolean;
   closedAt: string | null; userReadAt: string | null; userTyping: boolean; userOnline: boolean; userDraft: string; messages: Msg[];
   notes: { id: string; agentNo: string; content: string; createdAt: string }[];
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
 }
 interface Canned { id: string; title: string; content: string }
+// Haiku sorgu kaydı: istek türü, sonuç ve hata türü (başarısız istekler de yazılır)
+interface AiLog { id: string; agentNo: string; chatId?: string; question: string; tools: string[]; requestType: string; success: boolean; errorType: string | null; createdAt: string }
+const AI_TYPE: Record<string, string> = { QUESTION: 'Soru', DRAFT: 'AI taslak' };
+const AI_ERROR: Record<string, string> = { NO_KEY: 'anahtar yok', TIMEOUT: 'zaman aşımı', MODEL_ERROR: 'model hatası', CONNECTION_ERROR: 'bağlantı hatası', INTERNAL_ERROR: 'sunucu hatası' };
+const aiResult = (l: { success: boolean; errorType: string | null }) => (l.success ? 'Başarılı' : `Başarısız${l.errorType ? ` · ${AI_ERROR[l.errorType] ?? l.errorType}` : ''}`);
 
 const TOPIC: Record<string, string> = { ACCOUNT: 'Hesap', PAYMENT: 'Ödeme', MEETING: 'Masa', OTHER: 'Diğer' };
 const STATUS: [AgentState['me']['status'], string, string][] = [['ONLINE', 'Çevrimiçi', adm.green], ['BREAK', 'Mola', adm.amber], ['OFFLINE', 'Çevrimdışı', adm.muted]];
@@ -35,6 +41,7 @@ const SYS: Record<string, string> = {
   TRANSFERRED: 'Görüşmen başka bir temsilcimize aktarıldı, durumu baştan anlatmana gerek yok.',
   IDLE_WARNING: '1 dakika içinde yanıt vermezsen sohbet sonlanacak.',
 };
+const TAKEN_OVER = 'Bu sohbet SUPERADMIN tarafından devralındı.';
 const hm = (iso: string) => new Date(iso).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
 const dt = (iso: string) => new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 function waited(iso: string) { const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000)); return s < 60 ? `${s} sn` : s < 3600 ? `${Math.floor(s / 60)} dk` : `${Math.floor(s / 3600)} sa ${Math.floor((s % 3600) / 60)} dk`; }
@@ -143,8 +150,19 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
   const scroll = useRef<ScrollViewInstance>(null);
   const typingAt = useRef(0);
 
+  const loaded = useRef(false);
+  const back = useRef(onBack);
+  back.current = onBack;
+  // SUPERADMIN devraldıysa: Temsilci (SUPPORT) yalnız { takenOver: true } alır, elindeki son hâl salt okunur kalır (403 gösterilmez);
+  // sohbet ilk açılışta zaten devralınmışsa ekran kapanır (sohbet hiçbir listede olmadığından yeniden açılamaz)
   const load = useCallback(() => {
-    api.get<ChatDetail>(`/admin/live-support/chats/${id}`).then((d) => { setC(d); setErr(''); }).catch((e: Error) => setErr(e.message));
+    api.get<ChatDetail | { id: string; takenOver: true }>(`/admin/live-support/chats/${id}`).then((d) => {
+      if (!('messages' in d)) {
+        if (!loaded.current) { back.current(); return; }
+        setC((p) => (p ? { ...p, mine: false, takenOver: true, userTyping: false, userDraft: '' } : p));
+      } else { loaded.current = true; setC(d); }
+      setErr('');
+    }).catch((e: Error) => setErr(e.message));
     api.get<AgentState>('/admin/live-support/state').then(setSt).catch(() => {});
   }, [id]);
   useFocusEffect(useCallback(() => { load(); const t = setInterval(load, 3000); return () => clearInterval(t); }, [load]));
@@ -193,12 +211,13 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
         <View style={{ flex: 1, minWidth: 0 }}>
           <AT w={700} style={{ fontSize: 14 }} numberOfLines={1}>{c.requesterName}</AT>
           <AT style={{ fontSize: 11, color: adm.muted }} numberOfLines={1}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · {waited(c.queuedAt)}{c.agentNo ? ` · No ${c.agentNo}` : ''}</AT>
-          {open && <AT style={{ fontSize: 11, color: c.userTyping || c.userOnline ? adm.green : adm.muted }}>{c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'}{!c.mine && st?.me.role === 'ADMIN' ? ' · salt okunur' : ''}</AT>}
+          {open && <AT style={{ fontSize: 11, color: c.userTyping || c.userOnline ? adm.green : adm.muted }}>{c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'}{(!c.mine && st?.me.role === 'ADMIN') || c.takenOver ? ' · salt okunur' : ''}</AT>}
         </View>
-        <SmallBtn label="Haiku" color={adm.cyan} onPress={() => setHaiku(true)} />
-        <SmallBtn label="⋯" color={adm.muted} onPress={() => setExtra((v) => !v)} />
+        {/* Devralınan sohbette Haiku asistanı, iç not ve işlemler kapalı */}
+        {!c.takenOver && <SmallBtn label="Haiku" color={adm.cyan} onPress={() => setHaiku(true)} />}
+        {!c.takenOver && <SmallBtn label="⋯" color={adm.muted} onPress={() => setExtra((v) => !v)} />}
       </View>
-      {extra && (
+      {extra && !c.takenOver && (
         <ScrollView style={{ maxHeight: 300, borderBottomWidth: 1, borderBottomColor: adm.border }} contentContainerStyle={{ padding: 12, gap: 8 }} keyboardShouldPersistTaps="handled">
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
             {open && !c.mine && superadmin && <SmallBtn label="Devral" color={adm.blue} onPress={() => act(() => api.post(`/admin/live-support/chats/${id}/take`, {}))} />}
@@ -244,6 +263,11 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
         {!!lastAgent && !!c.userReadAt && c.userReadAt >= lastAgent.createdAt && <AT style={{ alignSelf: 'flex-end', fontSize: 10, color: adm.muted }}>Okundu</AT>}
         {/* Yazı önizlemesi: kullanıcının gönderilmemiş metni (sunucuda yalnız bellekte) */}
         {c.userTyping && <AT style={{ fontSize: 12, color: adm.amber, fontStyle: 'italic' }}>yazıyor…{c.userDraft ? ` “${c.userDraft}”` : ''}</AT>}
+        {c.takenOver && (
+          <View accessibilityRole="text" style={{ alignSelf: 'center', marginTop: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: 'rgba(245,158,11,0.08)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }}>
+            <AT style={{ fontSize: 12, color: adm.amber, textAlign: 'center' }}>{TAKEN_OVER}</AT>
+          </View>
+        )}
       </ScrollView>
       {!!err && <View style={{ paddingHorizontal: 12 }}><AError>{err}</AError></View>}
       {canWrite && (
@@ -270,7 +294,7 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
           </View>
         </View>
       )}
-      <HaikuSheet visible={haiku} chatId={id} onClose={() => setHaiku(false)} onInsert={(t) => { setText((v) => (v ? `${v}\n` : '') + t); setHaiku(false); }} />
+      <HaikuSheet visible={haiku && !c.takenOver} chatId={id} onClose={() => setHaiku(false)} onInsert={(t) => { setText((v) => (v ? `${v}\n` : '') + t); setHaiku(false); }} />
       <Modal visible={!!viewer} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setViewer(null)}>
         <Pressable onPress={() => setViewer(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' }}>
           {!!viewer && <Image source={img(viewer)} resizeMode="contain" style={{ width: '94%', height: '85%' }} accessibilityLabel="Görsel" />}
@@ -288,12 +312,22 @@ function HaikuSheet({ visible, chatId, onClose, onInsert }: { visible: boolean; 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [items, setItems] = useState<{ q: string; a: string }[]>([]);
+  const [copied, setCopied] = useState<number | null>(null);
+  // Kopyala: yalnız panoya yazar; kısa onay (buton metni + hafif dokunsal geri bildirim + ekran okuyucu duyurusu). Hiçbir yere kaydedilmez
+  function copy(i: number, text: string) {
+    Clipboard.setStringAsync(text).then(() => {
+      setCopied(i);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      AccessibilityInfo.announceForAccessibility('Kopyalandı');
+      setTimeout(() => setCopied((v) => (v === i ? null : v)), 1500);
+    }).catch(() => {});
+  }
   async function run(draft: boolean) {
     if (busy || (!draft && !q.trim())) return;
     setBusy(true); setErr('');
     try {
       const r = await api.post<{ answer: string }>(`/admin/live-support/chats/${chatId}/ai`, { question: draft ? undefined : q.trim(), draft, includeImages: images });
-      setItems((p) => [{ q: draft ? 'Taslak cevap' : q.trim(), a: r.answer }, ...p]);
+      setItems((p) => [{ q: draft ? 'Taslak cevap' : q.trim(), a: r.answer }, ...p]); setCopied(null);
       if (!draft) setQ('');
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
@@ -324,7 +358,7 @@ function HaikuSheet({ visible, chatId, onClose, onInsert }: { visible: boolean; 
                 <AT style={{ fontSize: 11, color: adm.muted }}>{it.q}</AT>
                 <AT style={{ fontSize: 13, lineHeight: 19 }}>{it.a}</AT>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
-                  <SmallBtn label="Kopyala" color={adm.muted} onPress={() => { Clipboard.setStringAsync(it.a).catch(() => {}); }} />
+                  <SmallBtn label={copied === i ? 'Kopyalandı ✓' : 'Kopyala'} color={copied === i ? adm.green : adm.muted} onPress={() => copy(i, it.a)} />
                   <SmallBtn label="Sohbete ekle" color={adm.green} onPress={() => onInsert(it.a)} />
                 </View>
               </ACard>
@@ -347,7 +381,7 @@ interface AllDetail {
   notes: { id: string; agentNo: string; content: string; createdAt: string }[];
   transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
   rating: { helped: boolean; stars: number; tags: string[]; comment: string | null; createdAt: string } | null;
-  aiLogs: { id: string; agentNo: string; question: string; tools: string[]; createdAt: string }[];
+  aiLogs: AiLog[];
 }
 const CHAT_STATUS: Record<string, string> = { QUEUED: 'Sırada', ACTIVE: 'Açık', CLOSED: 'Kapandı' };
 const CLOSED_BY: Record<string, string> = { USER: 'kullanıcı', AGENT: 'temsilci', AUTO: 'otomatik', ABUSE: 'kötüye kullanım' };
@@ -490,7 +524,7 @@ function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
             <ALabel style={{ color: adm.cyan }}>HAIKU SORGU KAYITLARI ({c.aiLogs.length})</ALabel>
             {c.aiLogs.map((l) => (
               <View key={l.id} style={{ gap: 2, paddingTop: 6, borderTopWidth: 1, borderTopColor: adm.border }}>
-                <AT style={{ fontSize: 11, color: adm.muted }}>{dt(l.createdAt)} · Temsilci No {l.agentNo}</AT>
+                <AT style={{ fontSize: 11, color: adm.muted }}>{dt(l.createdAt)} · Temsilci No {l.agentNo} · {AI_TYPE[l.requestType] ?? l.requestType} · <AT style={{ fontSize: 11, color: l.success ? adm.green : adm.red }}>{aiResult(l)}</AT></AT>
                 <AT style={{ fontSize: 13 }}>{l.question}</AT>
                 <AT style={{ fontSize: 11, color: adm.cyan }}>{l.tools.join(', ') || '—'}</AT>
               </View>
@@ -667,7 +701,7 @@ function RestrictionsTab() {
 }
 
 function AiLogsTab() {
-  const [rows, setRows] = useState<{ id: string; agentNo: string; chatId: string; question: string; tools: string[]; createdAt: string }[]>([]);
+  const [rows, setRows] = useState<AiLog[]>([]);
   const [err, setErr] = useState('');
   useEffect(() => { api.get<typeof rows>('/admin/live-support/manage/ai-logs').then(setRows).catch((e: Error) => setErr(e.message)); }, []);
   return (
@@ -676,7 +710,7 @@ function AiLogsTab() {
       {!rows.length && <AT style={{ fontSize: 13, color: adm.muted }}>Kayıt yok.</AT>}
       {rows.map((r) => (
         <ACard key={r.id} style={{ gap: 3 }}>
-          <AT style={{ fontSize: 11, color: adm.muted }}>{dt(r.createdAt)} · Temsilci No {r.agentNo}</AT>
+          <AT style={{ fontSize: 11, color: adm.muted }}>{dt(r.createdAt)} · Temsilci No {r.agentNo} · {AI_TYPE[r.requestType] ?? r.requestType} · <AT style={{ fontSize: 11, color: r.success ? adm.green : adm.red }}>{aiResult(r)}</AT></AT>
           <AMono style={{ fontSize: 10, color: adm.muted }}>{r.chatId}</AMono>
           <AT style={{ fontSize: 13 }}>{r.question}</AT>
           <AT style={{ fontSize: 11, color: adm.cyan }}>{r.tools.join(', ') || '—'}</AT>

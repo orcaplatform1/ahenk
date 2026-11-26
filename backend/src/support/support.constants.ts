@@ -17,6 +17,7 @@ export const DEFAULT_MAX_CHATS = 3;
 export const DEFAULT_SHIFT_DAY = "08:00-20:00";
 export const DEFAULT_SHIFT_NIGHT = "20:00-08:00";
 export const TICK_MS = 10_000;
+export const TAKEOVER_NOTE = "SUPERADMIN devraldı"; // SUPERADMIN devralmasının devir notu (eski temsilcinin salt okunur görünümü bu kayda bakar)
 
 // Sistem mesajı kodları (istemci arayüz dilinde gösterir: sup.sys*)
 export const SYS = {
