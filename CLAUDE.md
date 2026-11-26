@@ -323,6 +323,17 @@ HAFTALIK BULUŞMA SEÇİMİ (Planlı):
   - Seçim ekranı kartları (web + mobil): solda eşleşme alanındaki halka ikonu, sağda kalın başlık + küçük alt metin (Hafta Sonu'nda
     Grup / Baş Başa / Kankamla metinleri, buluşma Cuma / Cumartesi / Pazar 20:00; Yarın'da "Buluşma yarın 20:00'de gerçekleşir.").
     "Sonra" ve "Seçimi Onayla" butonları
+  - Sayaç kartı ("[Masa türü] masası kurulmasına", web components/live/LiveLayer.tsx, mobil app/(tabs)/index.tsx): sayaç ve kapanış metni
+    o masa türünün açık kaydındaki buluşma türüne göre; her türün kartı kendi kaydından ayrı hesaplanır. Hedef an backend'den gelir
+    (GET /weekly-selection options[].selection.lockAt; selection-cancel.ts selectionLockAt: Yarın meetingLockAt, Hafta Sonu haftalık kilit
+    plannedLockOf ile aynı hesap); istemcide gün / saat yeniden yazılmaz. Yarın Buluşma: Türkiye saatiyle bugün 23:59, metin "Bugün 23:59'da
+    masa kapanır." / "The table closes today at 23:59." (live.closesTomorrow). Hafta Sonu: Grup Perşembe, Baş Başa Cuma, Kankamla Cumartesi
+    23:59 (live.closes<TÜR>); kilit geçmiş Hafta Sonu kaydında mevcut "Yeni tarama başlamasına" kartı, Yarın kaydında bu durum yok.
+    Kurulmuş masada "Buluşmana kalan süre". Açık kaydı (ve kurulmuş masası) olmayan türde kart gösterilmez. Sayaç 0'da durur, eksiye
+    düşmez; kilit anından 5 sn ve 65 sn sonra seçim yeniden okunur, kart kilit sonrası duruma geçer (Yarın kilidi geçince veri gelene
+    kadar kart gizli). Sandalye satırı kartın ait olduğu masanın verisinden: "Masanda X boş sandalye kaldı." / "X empty chairs left at
+    your table." (live.seatsLeft), tekil "Masanda 1 boş sandalye kaldı." / "1 empty chair left at your table." (live.seatsLeftOne);
+    "koltuk" yazılmaz
   - Eşleşme taraması Katılım satırı: Grupta "Katılım x/6:" tek başına, isimler bir alt satırda; her kısaltma cinsiyet renkli
     çerçeveli yuvarlak dairede (web + mobil). Baş Başa ve Kankamla satırı eskisi gibi
 

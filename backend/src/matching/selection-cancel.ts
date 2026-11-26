@@ -48,6 +48,13 @@ export function plannedLockOf(type: MeetingType, now = new Date()): Date {
   return weekAt(type, now, PLANNED_LOCK_MIN);
 }
 
+// Açık kaydın kilit anı (UTC; Eşleşme Paneli sayaç kartı bu ana sayar): Yarın → buluşmadan önceki gün 23:59 (meetingLockAt,
+// runTomorrowLock ile aynı an); Planlı → kaydın haftasındaki son seçim gününün 23:59'u (plannedLockOf ile aynı hesap)
+export function selectionLockAt(sel: { type: MeetingType; mode: MeetingMode; meetingDate: Date | null; year: number; weekNumber: number }): Date | null {
+  if (sel.mode === MeetingMode.TOMORROW) return sel.meetingDate ? new Date(meetingLockAt(sel.meetingDate)) : null;
+  return new Date(isoWeekMonday(sel.year, sel.weekNumber) + (SELECTION_DEADLINE[sel.type].day - 1) * 86400000 + PLANNED_LOCK_MIN * 60000 - TR_OFFSET_MS);
+}
+
 // Planlı kaydın haftası: son saat geçmediyse bu hafta, geçtiyse bir sonraki hafta
 export function plannedTargetWeek(type: MeetingType, now = new Date()): { week: number; year: number } {
   return trIsoWeekOf(now < deadlineOf(type, now) ? now : new Date(now.getTime() + 7 * 86400000));

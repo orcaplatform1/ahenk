@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { gColor, num, type MasaTuru } from '@/lib/masa';
-import { CLOSING_DAY, SCAN_START_DAY, useMasaTabs } from '@/lib/useMasaTabs';
+import { SCAN_START_DAY, useMasaTabs } from '@/lib/useMasaTabs';
 import { WeeklySelectionModal } from '@/components/WeeklySelectionModal';
 import { Countdown } from '@/components/Countdown';
 import { SelectionCard } from '@/components/SelectionCard';
@@ -65,7 +65,7 @@ export default function EslesmePaneli() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, scanning, selfParticipant, selection, submitSelection, changeSelection, cancelSelection, noPackage } = useMasaTabs();
+  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, tabPastClosing, tabSel, scanning, selfParticipant, selection, submitSelection, changeSelection, cancelSelection, noPackage } = useMasaTabs();
   const [selectOpen, setSelectOpen] = useState(false);
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
@@ -76,8 +76,14 @@ export default function EslesmePaneli() {
   const hasTabTable = !!tabItem;
   const tabSeatsLeft = tabItem ? Math.max(0, (tabItem.meeting.maxParticipants ?? 0) - tabItem.meeting.participants.filter(p => !p.cancelled).length) : null;
   const meetingAt = tabItem && statuses[tab] === 'TABLE' ? tabItem.meeting.scheduledAt : null;
-  const waitingScan = tabPastClosing && !hasTabTable;
+  // Yarın Buluşma her gün tarar: haftalık "Yeni tarama başlamasına" durumu yalnız Hafta Sonu (Planlı) kaydında ve kaydı olmayan türde (web LiveLayer)
+  const tomorrow = tabSel?.mode === 'TOMORROW';
+  const waitingScan = tabPastClosing && !hasTabTable && !tomorrow;
   const meetingTarget = hasTabTable && meetingAt ? Date.parse(meetingAt) : null;
+  // Sayaç kartı: kurulmuş masada buluşmaya; açık kayıtta kaydın buluşma türüne göre backend kilit anına (Yarın: bugün 23:59,
+  // Hafta Sonu: haftalık kilit). Açık kayıt yoksa kart yok. Yarın kilidi geçince kart kilit sonrası veri gelene kadar gizli.
+  const lockAt = tabSel?.lockAt ? Date.parse(tabSel.lockAt) : null;
+  const showCountdown = meetingTarget !== null || (!!tabSel && !(tomorrow && lockAt !== null && lockAt <= Date.now()));
   const seats = overview?.groupSeatsLeft ?? null;
   // PASİF: tarama başlamadı (geri sayım kartında "Yeni tarama başlamasına"); CANLI: tarama başlamış. Rozet, radar ve yoğunluk
   // kartları yalnız bu tek durumdan okunur
@@ -128,15 +134,15 @@ export default function EslesmePaneli() {
                 <T style={{ fontSize: 13, color: ll.text2, lineHeight: 19.5 }}>{t('live.pkgCardText')}</T>
                 <StdButton variant="primary" label={t('live.pkgCardBtn')} full onPress={() => router.navigate('/(tabs)/paketim')} />
               </View>
-            ) : (
+            ) : showCountdown && (
               <View style={[st.card, { borderColor: 'rgba(232,162,122,0.22)', overflow: 'hidden' }]}>
                 <LinearGradient colors={['rgba(214,69,58,0.14)', 'rgba(255,255,255,0.02)']} locations={[0, 0.6]} start={{ x: 0.33, y: 0.03 }} end={{ x: 0.67, y: 0.97 }} style={StyleSheet.absoluteFill} />
                 <Eyebrow>{meetingTarget !== null ? t('live.untilMeeting') : waitingScan ? t('live.untilScan') : t(TABLE_TEXT[tab].title)}</Eyebrow>
-                <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} targetAt={meetingTarget} />
+                <Countdown day={SCAN_START_DAY} targetAt={meetingTarget ?? (waitingScan ? null : lockAt)} />
                 <T style={{ fontSize: 13, color: ll.text2, lineHeight: 19.5 }}>
-                  {waitingScan ? t('live.scanStarts') : t(TABLE_TEXT[tab].note)}
+                  {waitingScan ? t('live.scanStarts') : tomorrow ? t('live.closesTomorrow') : t(TABLE_TEXT[tab].note)}
                   {!waitingScan && tabSeatsLeft !== null && !(meetingTarget !== null && tabSeatsLeft === 0)
-                    ? `\n${tabSeatsLeft > 0 ? t('live.seatsLeft', { count: num(tabSeatsLeft) }) : t('live.tableFull')}` : ''}
+                    ? `\n${tabSeatsLeft === 1 ? t('live.seatsLeftOne') : tabSeatsLeft > 0 ? t('live.seatsLeft', { count: num(tabSeatsLeft) }) : t('live.tableFull')}` : ''}
                 </T>
               </View>
             )}

@@ -14,7 +14,7 @@ import { meetingCardEnd, meetingLockAt, tomorrowMeetingAt } from "../meetings/me
 import { ASSIGN_QUEUE, enqueueAssign } from "./assign-queue";
 import {
   activeSelectionWhere, busyMeetingDays, cancelCooldownUntil, cancelSelection, changeAvailableAt, deadlineOf, plannedTargetWeek,
-  seatWhere, SelectionDeps, selectionDayKey, trIsoWeekOf,
+  seatWhere, selectionLockAt, SelectionDeps, selectionDayKey, trIsoWeekOf,
 } from "./selection-cancel";
 
 export { deadlineOf, selectedThisWeek, trIsoWeekOf, SELECTION_DEADLINE } from "./selection-cancel";
@@ -116,6 +116,8 @@ export class WeeklySelectionService {
           weekNumber: selection.weekNumber,
           // "Değiştir" bu andan sonra açılır (Planlı 24 saat, Yarın 3 saat)
           changeAvailableAt: changeAvailableAt(selection),
+          // Kilit anı (Yarın: buluşmadan önceki gün 23:59; Planlı: haftalık kilit); Eşleşme Paneli sayacı buna sayar
+          lockAt: selectionLockAt({ ...selection, type }),
           kankaWaiting: type === MeetingType.KANKA && !link,
           // Planlı kayıt gelecek haftanın taramasında (bu haftanın son saati geçtiyse)
           nextWeek: selection.mode === MeetingMode.PLANNED && (selection.year !== current.year || selection.weekNumber !== current.week),

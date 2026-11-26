@@ -54,7 +54,7 @@ export interface WeeklySelection {
     locked: boolean;
     plannedDeadline: string;
     // changeAvailableAt: "Değiştir" bu andan sonra açılır (seçimden 24 saat, Yarın Buluşma'da 3 saat sonra)
-    selection: { mode: MeetingMode; meetingDate: string | null; kankaWaiting: boolean; nextWeek: boolean; changeAvailableAt: string } | null;
+    selection: { mode: MeetingMode; meetingDate: string | null; kankaWaiting: boolean; nextWeek: boolean; changeAvailableAt: string; lockAt: string | null } | null;
   }[];
   tomorrowDate: string;
   cancelCooldownUntil: string | null; // İptal sonrası 24 saat: bu ana kadar hiçbir türde "Seçim Yap" yok
@@ -165,6 +165,21 @@ export function useMasaTabs() {
     };
   }, [reload, refreshPlan]);
 
+  // Kilit anı geçince (sayaç 0) seçim yeniden okunur: Yarın kaydı kilitte düşer ya da Hafta Sonu'na aktarılır (aktarım kilit işinde
+  // yapıldığı için 1 dk sonra bir kez daha okunur); Hafta Sonu kaydı haftalık kilitte düşer. Kart kilit sonrası duruma geçer.
+  useEffect(() => {
+    const now = Date.now();
+    const next = Math.min(...(selection?.options ?? []).map(o => (o.selection?.lockAt ? Date.parse(o.selection.lockAt) : Infinity)).filter(at => at > now));
+    if (!Number.isFinite(next)) return undefined;
+    let alive = true;
+    let later: ReturnType<typeof setTimeout> | undefined;
+    const first = setTimeout(() => {
+      void refreshPlan();
+      later = setTimeout(() => { if (alive) void refreshPlan(); }, 60_000);
+    }, next - now + 5_000);
+    return () => { alive = false; clearTimeout(first); if (later) clearTimeout(later); };
+  }, [selection, refreshPlan]);
+
   // Tarama başlayınca/kapanınca sekme ve kart sayfa yenilenmeden değişsin
   useEffect(() => {
     const id = setInterval(() => setPastClosed(pastList()), 1000);
@@ -241,7 +256,7 @@ export function useMasaTabs() {
   return {
     ready: mounted && dashLoaded, me, items, kanka, tab, tabItem, selectTab, statuses, kycApproved, selection, submitSelection,
     changeSelection, cancelSelection,
-    tabPastClosing, scanning, selfParticipant, reload, tabAdminCancelled,
+    tabPastClosing, tabSel, scanning, selfParticipant, reload, tabAdminCancelled,
     // Hiç paketi yok ya da bütün hakları bitmiş (hiçbir türde hak, masa ya da iptal kaydı yok): Eşleşme Paneli'nde paket alma kartı
     noPackage: owned.length === 0 || statuses[tab] === 'NONE',
   };

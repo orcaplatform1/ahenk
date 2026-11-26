@@ -17,7 +17,7 @@ const MEETING_GRACE_MS = 3 * 60 * 60 * 1000;
 
 export default function DashboardPage() {
   const t = useTranslations();
-  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, kycApproved, tabPastClosing, scanning, selfParticipant, selection, submitSelection, changeSelection, cancelSelection, noPackage } = useMasaTabs();
+  const { ready, me, kanka, tab, tabItem: rawTabItem, selectTab, statuses, kycApproved, tabPastClosing, tabSel, scanning, selfParticipant, selection, submitSelection, changeSelection, cancelSelection, noPackage } = useMasaTabs();
   const [selectOpen, setSelectOpen] = useState(false);
   // Buluşma saatinden 3 saat sonra masa panelden düşer: sayaç yeni haftaya geçer, Katılım ve kontenjan sıfırlanır
   // (dashboard 15 sn'de bir yenilendiği için sayfa yenilenmeden geçer)
@@ -59,6 +59,7 @@ export default function DashboardPage() {
         tabSeatsLeft={tabItem ? Math.max(0, (tabItem.meeting.maxParticipants ?? 0) - tabItem.meeting.participants.filter(p => !p.cancelled).length) : null}
         meetingAt={tabItem && statuses[tab] === 'TABLE' ? tabItem.meeting.scheduledAt : null}
         tab={tab}
+        tabSelection={tabSel}
         statuses={statuses}
         tabPastClosing={tabPastClosing}
         noPackage={noPackage}

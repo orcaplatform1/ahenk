@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { api } from '@/lib/api';
 import { getNextTarget } from '@/components/HeroCountdown';
-import { CLOSING_DAY, SCAN_START_DAY } from './useMasaTabs';
+import { SCAN_START_DAY, type MeetingMode } from './useMasaTabs';
 import type { MasaTuru } from '@ahenk/ui';
 import LiveSonar from './LiveSonar';
 import { LEVELS } from './levels';
@@ -87,12 +87,13 @@ const LEVEL_ALPHA = { 1: 'd9', 2: 'a6', 3: '73', 4: '4d' } as const;
 // Tarama bekleme durumu: yoğunluk kartları "Düşük" kartının grisinde, yazı "Tarama bekleniyor"
 const WAIT_CELL = `${LEVELS[4].color}${LEVEL_ALPHA[4]}`;
 
-export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, tab, statuses, tabPastClosing, noPackage = false, onTab, notice, afterTabs, participation }: {
+export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meetingAt, tab, tabSelection, statuses, tabPastClosing, noPackage = false, onTab, notice, afterTabs, participation }: {
   activePlan: string | null;
   hasTabTable: boolean; // Seçili türde kullanıcının masası var mı
   tabSeatsLeft: number | null; // Kullanıcının masasındaki boş sandalye; masası yoksa null
   meetingAt: string | null; // Kurulmuş aktif masanın buluşma anı (buluşmadan 3 saat sonrasına kadar); yoksa null
   tab: MasaTuru;
+  tabSelection: { mode: MeetingMode; lockAt: string | null } | null; // Seçili türün açık kaydı (buluşma türü ve backend kilit anı); yoksa null
   statuses: Record<MasaTuru, TabStatus>;
   tabPastClosing: boolean; // Seçili türün bu haftaki kapanışı geçti mi
   noPackage?: boolean; // Hiç paketi yok ya da hakları bitmiş: sayaç kartı yerine paket alma kartı
@@ -108,9 +109,15 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
   // Şehir backend'de activeCity → primaryCity sırasıyla çözülür
   const overview = useLivePoll<LiveOverview>('/meetings/live/overview', OVERVIEW_MS);
   const pulse = useLivePoll<LivePulse>('/meetings/live/pulse', PULSE_MS);
-  const waitingScan = tabPastClosing && !hasTabTable;
+  // Yarın Buluşma her gün tarar: haftalık "Yeni tarama başlamasına" durumu yalnız Hafta Sonu (Planlı) kaydında ve kaydı olmayan türde
+  const tomorrow = tabSelection?.mode === 'TOMORROW';
+  const waitingScan = tabPastClosing && !hasTabTable && !tomorrow;
   // Kurulmuş aktif masa: sayaç buluşmaya sayar, yeni haftaya geçmez
   const meetingTarget = hasTabTable && meetingAt ? Date.parse(meetingAt) : null;
+  // Sayaç kartı: kurulmuş masada buluşmaya; açık kayıtta kaydın buluşma türüne göre backend kilit anına (Yarın: bugün 23:59,
+  // Hafta Sonu: haftalık kilit). Açık kayıt yoksa kart yok. Yarın kilidi geçince kart kilit sonrası veri gelene kadar gizli.
+  const lockAt = tabSelection?.lockAt ? Date.parse(tabSelection.lockAt) : null;
+  const showCountdown = meetingTarget !== null || (!!tabSelection && !(tomorrow && lockAt !== null && lockAt <= Date.now()));
   // PASİF: tarama başlamadı (geri sayım kartında "Yeni tarama başlamasına"); CANLI: tarama başlamış. Rozet, radar, semt noktaları ve
   // yoğunluk kartları yalnız bu tek durumdan okunur (mobil ile aynı)
   const scanIdle = meetingTarget === null && waitingScan;
@@ -138,15 +145,15 @@ export default function LiveLayer({ activePlan, hasTabTable, tabSeatsLeft, meeti
               {t('live.pkgCardBtn')}
             </StdButton>
           </section>
-        ) : (
+        ) : showCountdown && (
         <section className="ll-card" style={{ borderColor: 'rgba(232,162,122,0.22)', background: 'linear-gradient(160deg, rgba(214,69,58,0.14), rgba(255,255,255,0.02) 60%)' }}>
           <p key={tab} className="ll-eyebrow ll-fade">{meetingTarget !== null ? t('live.untilMeeting') : waitingScan ? t('live.untilScan') : t(`live.until${tab}`)}</p>
-          <Countdown day={waitingScan ? SCAN_START_DAY : CLOSING_DAY[tab]} targetAt={meetingTarget} />
+          <Countdown day={SCAN_START_DAY} targetAt={meetingTarget ?? (waitingScan ? null : lockAt)} />
           <p style={{ margin: 0, fontSize: 13, color: '#c9c2b8', lineHeight: 1.5 }}>
-            {waitingScan ? t('live.scanStarts') : t(`live.closes${tab}`)}
+            {waitingScan ? t('live.scanStarts') : tomorrow ? t('live.closesTomorrow') : t(`live.closes${tab}`)}
             {!waitingScan && tabSeatsLeft !== null && !(meetingTarget !== null && tabSeatsLeft === 0) && (
               <span style={{ display: 'block' }}>
-                {tabSeatsLeft > 0 ? t('live.seatsLeft', { count: num(tabSeatsLeft, locale) }) : t('live.tableFull')}
+                {tabSeatsLeft === 1 ? t('live.seatsLeftOne') : tabSeatsLeft > 0 ? t('live.seatsLeft', { count: num(tabSeatsLeft, locale) }) : t('live.tableFull')}
               </span>
             )}
           </p>
