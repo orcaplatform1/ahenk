@@ -22,14 +22,14 @@ export const TAKEOVER_NOTE = "SUPERADMIN devraldı"; // SUPERADMIN devralmasın�
 // Sistem mesajı kodları (istemci arayüz dilinde gösterir: sup.sys*)
 export const SYS = {
   NOTICE: "NOTICE", // kayıt / Aydınlatma Metni bildirimi
-  GREETING: "GREETING", // "Merhaba, ben Ahenk Müşteri Temsilcisi…"
+  GREETING: "GREETING", // "Merhaba, ben Ahenk müşteri temsilcisiyim…"
   TRANSFERRED: "TRANSFERRED", // görüşme başka temsilciye aktarıldı
   IDLE_WARNING: "IDLE_WARNING", // 1 dakika içinde yanıt vermezsen…
 } as const;
 
 export const SYS_TR: Record<string, string> = {
   NOTICE: "Hizmet kalitesinin artırılması ve güvenliğin için görüşmelerimiz kayıt altına alınır. Kişisel verilerinle ilgili Aydınlatma Metni'ni inceleyebilirsin.",
-  GREETING: "Merhaba, ben Ahenk Müşteri Temsilcisi. Sana nasıl yardımcı olabilirim?",
+  GREETING: "Merhaba, ben Ahenk müşteri temsilcisiyim. Bugün size yardımcı olmaktan mutluluk duyacağım.",
   TRANSFERRED: "Görüşmen başka bir temsilcimize aktarıldı, durumu baştan anlatmana gerek yok.",
   IDLE_WARNING: "1 dakika içinde yanıt vermezsen sohbet sonlanacak.",
 };

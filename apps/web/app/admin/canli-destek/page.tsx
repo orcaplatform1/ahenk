@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, API_PREFIX, langHeaders } from '@/lib/api';
 import { myRole } from '@/lib/adminRole';
+import { AttachIcon, AutoTextarea, EmojiIcon, SendIcon, StatusPill } from '@/components/support/ChatParts';
 import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
 type Sender = 'USER' | 'AGENT' | 'SYSTEM';
@@ -30,7 +31,7 @@ const TOPIC: Record<string, string> = { ACCOUNT: 'Hesap', PAYMENT: 'Ödeme', MEE
 const STATUS: [AgentState['me']['status'], string, string][] = [['ONLINE', 'Çevrimiçi', GREEN], ['BREAK', 'Mola', AMBER], ['OFFLINE', 'Çevrimdışı', MUTED]];
 const SYS: Record<string, string> = {
   NOTICE: "Hizmet kalitesinin artırılması ve güvenliğin için görüşmelerimiz kayıt altına alınır. Kişisel verilerinle ilgili Aydınlatma Metni'ni inceleyebilirsin.",
-  GREETING: 'Merhaba, ben Ahenk Müşteri Temsilcisi. Sana nasıl yardımcı olabilirim?',
+  GREETING: 'Merhaba, ben Ahenk müşteri temsilcisiyim. Bugün size yardımcı olmaktan mutluluk duyacağım.',
   TRANSFERRED: 'Görüşmen başka bir temsilcimize aktarıldı, durumu baştan anlatmana gerek yok.',
   IDLE_WARNING: '1 dakika içinde yanıt vermezsen sohbet sonlanacak.',
 };
@@ -43,6 +44,9 @@ const fmtMin = (n: number | null) => (n === null ? '—' : `${n.toFixed(1)} dk`)
 const TAKEN_OVER = 'Bu sohbet SUPERADMIN tarafından devralındı.';
 const imgUrl = (chatId: string, f: string) => `${API_PREFIX}/admin/live-support/chats/${chatId}/images/${f}`;
 
+// Mesaj kutusu ikon butonu (kullanıcı ekranıyla aynı: 44 px, palet kırmızısı)
+const ICON_BTN: React.CSSProperties = { width: 44, height: 44, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer' };
+const RED_ICON = '#c0392b';
 const btn = (color: string, filled = false): React.CSSProperties => ({ minHeight: 36, padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: SANS, cursor: 'pointer', color: filled ? '#fff' : color, background: filled ? color : 'transparent', border: `1px solid ${color}` });
 const inputStyle: React.CSSProperties = { background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '8px 10px', fontSize: 13, color: TEXT, fontFamily: SANS, outline: 'none' };
 
@@ -216,6 +220,8 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
   if (!c) return <div className="ll-card"><p style={{ color: err ? RED : MUTED, fontSize: 13 }}>{err || 'Yükleniyor…'}</p></div>;
   const open = c.status === 'ACTIVE' || c.status === 'QUEUED';
   const canWrite = c.mine && c.status === 'ACTIVE';
+  // Okundu: yalnız temsilci mesajlarından kullanıcının okuduğu sonuncusunun altında
+  const readId = c.userReadAt ? [...c.messages].reverse().find((m) => m.sender === 'AGENT' && m.createdAt <= c.userReadAt!)?.id : undefined;
   const slash = text.startsWith('/') ? canned.filter((x) => x.title.toLocaleLowerCase('tr').includes(text.slice(1).toLocaleLowerCase('tr'))) : [];
 
   function onType(v: string) {
@@ -249,18 +255,24 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
 
   return (
     <section className="ll-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', minHeight: 520, maxHeight: '78vh', overflow: 'hidden' }}>
-      <div style={{ padding: '12px 14px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
+      {/* Bilgi alanı solda genişler; Devral / Kapat / Kötüye kullanım sağda alt alta */}
+      <div style={{ padding: '12px 14px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <p style={{ fontSize: 15, fontWeight: 700 }}>{c.requesterName}</p>
           <p style={{ fontSize: 11, color: MUTED }}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · bekleme {waited(c.queuedAt)}{c.agentNo ? ` · Temsilci No ${c.agentNo}` : ''}</p>
-          {open && <p style={{ fontSize: 11, color: c.userTyping || c.userOnline ? GREEN : MUTED }}>{c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'}{(!c.mine && st.me.role === 'ADMIN') || c.takenOver ? ' · salt okunur' : ''}</p>}
+          {open && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <StatusPill status={c.userTyping ? 'typing' : c.userOnline ? 'online' : 'offline'} label={c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'} />
+              {((!c.mine && st.me.role === 'ADMIN') || c.takenOver) && <span style={{ fontSize: 11, color: MUTED }}>salt okunur</span>}
+            </div>
+          )}
         </div>
-        {open && !c.mine && st.me.role === 'SUPERADMIN' && <button style={btn(BLUE)} onClick={() => act(() => api.post(`/admin/live-support/chats/${id}/take`, {}))}>Devral</button>}
         {open && (c.mine || st.me.role === 'SUPERADMIN') && (
-          <>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 6, flexShrink: 0 }}>
+            {!c.mine && st.me.role === 'SUPERADMIN' && <button style={btn(BLUE)} onClick={() => act(() => api.post(`/admin/live-support/chats/${id}/take`, {}))}>Devral</button>}
             <button style={btn(MUTED)} onClick={() => act(() => api.post(`/admin/live-support/chats/${id}/close`, {}), onClosed)}>Kapat</button>
             <button style={btn(RED)} onClick={() => setAbuse((v) => !v)}>Kötüye kullanım</button>
-          </>
+          </div>
         )}
       </div>
       {abuse && (
@@ -273,10 +285,10 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
       <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {c.messages.map((m) => {
           const sys = m.sender === 'SYSTEM' && m.content !== 'GREETING';
-          if (sys) return <p key={m.id} style={{ alignSelf: 'center', maxWidth: '90%', fontSize: 11, color: MUTED, textAlign: 'center' }}>{SYS[m.content] ?? m.content} · {hm(m.createdAt)}</p>;
+          if (sys) return <p key={m.id} style={{ alignSelf: 'center', maxWidth: '90%', fontSize: 11, color: MUTED, textAlign: 'center', flexShrink: 0 }}>{SYS[m.content] ?? m.content} · {hm(m.createdAt)}</p>;
           const user = m.sender === 'USER';
           return (
-            <div key={m.id} style={{ alignSelf: user ? 'flex-start' : 'flex-end', maxWidth: '78%' }}>
+            <div key={m.id} style={{ alignSelf: user ? 'flex-start' : 'flex-end', maxWidth: '78%', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '7px 10px 5px', borderRadius: 12, background: user ? CARD : 'rgba(59,130,246,0.14)', border: `1px solid ${user ? BORDER : 'rgba(59,130,246,0.35)'}` }}>
                 {m.images.length > 0 && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>{m.images.map((f) => (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -285,10 +297,10 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
                 {(m.content || m.sender === 'SYSTEM') && <p style={{ fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.sender === 'SYSTEM' ? SYS.GREETING : m.content}</p>}
                 <p style={{ fontSize: 10, color: MUTED, textAlign: 'right' }}>{!user && m.agentNo ? `No ${m.agentNo} · ` : ''}{hm(m.createdAt)}</p>
               </div>
+              {m.id === readId && <p style={{ alignSelf: 'flex-end', fontSize: 10, color: MUTED, marginTop: 2 }}>Okundu</p>}
             </div>
           );
         })}
-        {c.userReadAt && c.messages.some((m) => m.sender === 'AGENT') && c.userReadAt >= ([...c.messages].reverse().find((m) => m.sender === 'AGENT')?.createdAt ?? '') && <p style={{ alignSelf: 'flex-end', fontSize: 10, color: MUTED }}>Okundu</p>}
         {/* Yazı önizlemesi: kullanıcının gönderilmemiş metni (sunucuda yalnız bellekte) */}
         {c.userTyping && <p style={{ fontSize: 12, color: AMBER, fontStyle: 'italic' }}>yazıyor…{c.userDraft ? ` “${c.userDraft}”` : ''}</p>}
         {c.takenOver && <p style={{ alignSelf: 'center', marginTop: 6, padding: '6px 12px', borderRadius: 8, fontSize: 12, color: AMBER, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', textAlign: 'center' }}>{TAKEN_OVER}</p>}
@@ -308,14 +320,13 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
             </button>
           ))}</div>}
           {emoji && <div style={{ display: 'flex', flexWrap: 'wrap', marginBottom: 6 }}>{EMOJIS.map((e) => <button key={e} onClick={() => setText((v) => v + e)} style={{ width: 34, height: 34, fontSize: 18, background: 'none', border: 'none', cursor: 'pointer' }}>{e}</button>)}</div>}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
-            <button onClick={() => setEmoji((v) => !v)} aria-label="Emoji" style={{ ...btn(MUTED), minWidth: 40 }}>☺</button>
-            <button onClick={() => fileRef.current?.click()} aria-label="Görsel ekle" style={{ ...btn(MUTED), minWidth: 40 }}>＋</button>
+          {/* Mesaj kutusu: kullanıcı ekranıyla aynı düzen (dosya, emoji, yazı alanı, gönder ikonu kutunun içinde) */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', minHeight: 48, borderRadius: 24, border: `1px solid ${BORDER}`, background: BG, padding: 2 }}>
+            <button type="button" onClick={() => fileRef.current?.click()} aria-label="Görsel ekle" style={ICON_BTN}><AttachIcon color={RED_ICON} /></button>
+            <button type="button" onClick={() => setEmoji((v) => !v)} aria-label="Emoji" style={ICON_BTN}><EmojiIcon color={RED_ICON} /></button>
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => pick(e.target.files)} />
-            <textarea value={text} onChange={(e) => onType(e.target.value)} rows={2} placeholder='Mesaj yaz ("/" ile hazır yanıtlar)'
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !slash.length) { e.preventDefault(); send(); } }}
-              style={{ ...inputStyle, flex: 1, resize: 'vertical' }} />
-            <button onClick={send} disabled={busy} style={btn(RED, true)}>Gönder</button>
+            <AutoTextarea value={text} onChange={onType} placeholder='Mesaj yaz ("/" ile hazır yanıtlar)' onEnter={send} enterSends={!slash.length} color={TEXT} />
+            <button type="button" onClick={send} disabled={busy || (!text.trim() && !files.length)} aria-label="Gönder" style={{ ...ICON_BTN, opacity: busy || (!text.trim() && !files.length) ? 0.5 : 1 }}><SendIcon /></button>
           </div>
         </div>
       )}

@@ -8,7 +8,7 @@ import { BackHandler, Image, KeyboardAvoidingView, Modal, Platform, Pressable, S
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { api } from '@/lib/api';
 import { API_PREFIX } from '@/lib/config';
 import { getAccess } from '@/lib/session';
@@ -18,6 +18,7 @@ import { supportRemaining } from '@/lib/supportTime';
 import { emitSupportChange } from '@/lib/supportBus';
 import * as Haptics from 'expo-haptics';
 import { Breakout } from '@/components/Breakout';
+import { ChatComposer, StatusPill, SUPPORT_EMOJIS } from '@/components/SupportChatParts';
 import { Card, Serif, StdButton, T } from '@/components/ui';
 import { btn, c, inputGlass, ll, sans, tw } from '@/theme/theme';
 
@@ -31,7 +32,6 @@ interface ChatView {
 interface State { restriction: { expiresAt: string } | null; chat: ChatView | null; pendingRating: string | null }
 
 const TOPICS = ['ACCOUNT', 'PAYMENT', 'MEETING', 'OTHER'] as const;
-const EMOJIS = ['😀', '😂', '😊', '😍', '🥰', '😎', '🤔', '😅', '😉', '🙏', '👍', '👏', '🙌', '💪', '🎉', '❤️', '🔥', '✨', '☕', '😮', '😢', '👋', '🤝', '😇', '🤗'];
 const TAGS = {
   good: ['CARED', 'SOLUTION', 'POLITE', 'FAST', 'PROCESS_OK'],
   mid: ['MORE_CARING', 'KNOWLEDGE', 'FASTER', 'PROCESS_IMPROVE'],
@@ -180,26 +180,31 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
     try { await api.post(`/support/chats/${chat.id}/close`); onEnded(chat.id); reload(); } catch (e) { setErr((e as Error).message || t('sup.error')); }
   }
 
-  const lastOwn = [...chat.messages].reverse().find((m) => m.sender === 'USER');
-  const read = !!lastOwn && !!chat.agentReadAt && chat.agentReadAt >= lastOwn.createdAt;
+  // Okundu: yalnız kendi mesajlarından temsilcinin okuduğu sonuncusunun altında
+  const readId = chat.agentReadAt ? [...chat.messages].reverse().find((m) => m.sender === 'USER' && m.createdAt <= chat.agentReadAt!)?.id : undefined;
+  const status = chat.agentTyping ? 'typing' : chat.agentOnline ? 'online' : 'offline';
   const img = (f: string) => ({ uri: `${API_PREFIX}/support/chats/${chat.id}/images/${f}`, headers: token ? { Authorization: `Bearer ${token}` } : undefined });
 
   return (
     <View style={{ flex: 1, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.025)', overflow: 'hidden' }}>
       {/* Başlık: temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
-      <View style={{ paddingVertical: 12, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <T w={700} style={{ fontSize: 15, color: ll.text }}>{chat.agentNo ? t('sup.headerAgent', { no: chat.agentNo }) : t('sup.header')}</T>
-          {chat.status === 'ACTIVE' && (
-            <T style={{ fontSize: 12, color: chat.agentTyping || chat.agentOnline ? c.ok2 : ll.label }}>
-              {chat.agentTyping ? t('sup.typing') : chat.agentOnline ? t('sup.online') : t('sup.offlineStatus')}
-            </T>
+      {/* Başlık metni kırılmaz (1. satır başlık, 2. satır Temsilci No + durum etiketi); küçült ve Sohbeti Sonlandır başlığın altında tek satırda */}
+      <View style={{ paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', gap: 6 }}>
+        <View style={{ gap: 4 }}>
+          <T w={700} numberOfLines={1} style={{ fontSize: 15, color: ll.text }}>{t('sup.header')}</T>
+          {!!chat.agentNo && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <T numberOfLines={1} style={{ fontSize: 13, color: ll.label }}>{t('sup.agentNo', { no: chat.agentNo })}</T>
+              {chat.status === 'ACTIVE' && <StatusPill status={status} label={status === 'typing' ? t('sup.typing') : status === 'online' ? t('sup.online') : t('sup.offlineStatus')} />}
+            </View>
           )}
         </View>
-        <Pressable onPress={onMinimize} accessibilityRole="button" accessibilityLabel={t('sup.minimize')} style={ICON}>
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={2} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
-        </Pressable>
-        <StdButton variant="ghost" label={t('sup.end')} onPress={end} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+          <Pressable onPress={onMinimize} accessibilityRole="button" accessibilityLabel={t('sup.minimize')} style={ICON}>
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={2} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
+          </Pressable>
+          <StdButton variant="ghost" label={t('sup.end')} onPress={end} />
+        </View>
       </View>
       {chat.status === 'QUEUED' && !!chat.queue && (
         <View style={{ paddingVertical: game ? 6 : 10, paddingHorizontal: 14, backgroundColor: 'rgba(245,158,11,0.06)', borderBottomWidth: 1, borderBottomColor: 'rgba(245,158,11,0.2)', gap: 4 }}>
@@ -220,8 +225,12 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
       ) : (<>
       <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 12, gap: 8 }} keyboardShouldPersistTaps="handled"
         onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
-        {msgs.map((m) => <Bubble key={m.id} m={m} img={img} onImage={(u) => setViewer(u)} />)}
-        {read && <T style={{ alignSelf: 'flex-end', fontSize: 10, color: ll.label }}>{t('sup.read')}</T>}
+        {msgs.map((m) => (
+          <View key={m.id}>
+            <Bubble m={m} img={img} onImage={(u) => setViewer(u)} />
+            {m.id === readId && <T style={{ alignSelf: 'flex-end', fontSize: 10, color: ll.label, marginTop: 2 }}>{t('sup.read')}</T>}
+          </View>
+        ))}
       </ScrollView>
       {!!err && <T accessibilityRole="alert" style={{ paddingHorizontal: 12, paddingBottom: 6, fontSize: 12, color: tw.accent }}>{err}</T>}
       {files.length > 0 && (
@@ -239,28 +248,19 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
       )}
       {emoji && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
-          {EMOJIS.map((e) => (
+          {SUPPORT_EMOJIS.map((e) => (
             <Pressable key={e} onPress={() => setText((v) => (v + e).slice(0, 2000))} accessibilityRole="button" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
               <T style={{ fontSize: 22 }}>{e}</T>
             </Pressable>
           ))}
         </View>
       )}
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 2, padding: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' }}>
-        <Pressable onPress={() => setEmoji((v) => !v)} accessibilityRole="button" accessibilityLabel={t('sup.emoji')} style={ICON}>
-          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={c.red} strokeWidth={1.8} strokeLinecap="round"><Circle cx={12} cy={12} r={9.5} /><Path d="M8 14.5s1.5 2 4 2 4-2 4-2" /><Path d="M9 9.5h.01M15 9.5h.01" strokeWidth={2.4} /></Svg>
-        </Pressable>
-        <Pressable onPress={pick} accessibilityRole="button" accessibilityLabel={t('sup.attach')} style={ICON}>
-          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={c.red} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Rect x={3} y={3} width={18} height={18} rx={3} /><Circle cx={8.5} cy={8.5} r={1.5} /><Path d="m21 15-5-5L5 21" /></Svg>
-        </Pressable>
-        <TextInput value={text} onChangeText={onType} placeholder={t('sup.placeholder')} placeholderTextColor={inputGlass.placeholder} multiline keyboardAppearance="dark"
+      {/* Mesaj kutusu: dosya, emoji, yazı alanı ve gönder ikonu kutunun içinde (temsilci ekranıyla aynı düzen) */}
+      <View style={{ padding: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' }}>
+        <ChatComposer value={text} onChangeText={onType} placeholder={t('sup.placeholder')} placeholderColor={inputGlass.placeholder} textColor={tw.text}
+          onAttach={pick} onEmoji={() => setEmoji((v) => !v)} onSend={send} sendDisabled={busy || (!text.trim() && !files.length)}
           onFocus={() => setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 300)}
-          style={{ flex: 1, minWidth: 0, minHeight: 44, maxHeight: 120, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.04)', color: tw.text, fontSize: 14, fontFamily: sans(400) }} />
-        <Pressable onPress={send} disabled={busy || (!text.trim() && !files.length)} accessibilityRole="button" accessibilityLabel={t('sup.send')} style={ICON}>
-          <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: c.red, alignItems: 'center', justifyContent: 'center', opacity: busy || (!text.trim() && !files.length) ? 0.5 : 1 }}>
-            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M22 2 11 13" /><Path d="M22 2 15 22l-4-9-9-4 20-7z" /></Svg>
-          </View>
-        </Pressable>
+          labels={{ attach: t('sup.attach'), emoji: t('sup.emoji'), send: t('sup.send') }} />
       </View>
       </>)}
       <Modal visible={!!viewer} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setViewer(null)}>

@@ -13,6 +13,7 @@ import { API_PREFIX } from '@/lib/config';
 import { getAccess } from '@/lib/session';
 import { myRole } from '@/lib/adminRole';
 import { pickFromLibrary, type PickedImage } from '@/lib/imagePick';
+import { ChatComposer, StatusPill, SUPPORT_EMOJIS } from '@/components/SupportChatParts';
 import { ACard, AError, ALabel, AMono, APage, AT } from '@/components/admin/AdminUi';
 import { adm, sans } from '@/theme/theme';
 
@@ -37,7 +38,7 @@ const TOPIC: Record<string, string> = { ACCOUNT: 'Hesap', PAYMENT: 'Ödeme', MEE
 const STATUS: [AgentState['me']['status'], string, string][] = [['ONLINE', 'Çevrimiçi', adm.green], ['BREAK', 'Mola', adm.amber], ['OFFLINE', 'Çevrimdışı', adm.muted]];
 const SYS: Record<string, string> = {
   NOTICE: "Hizmet kalitesinin artırılması ve güvenliğin için görüşmelerimiz kayıt altına alınır. Kişisel verilerinle ilgili Aydınlatma Metni'ni inceleyebilirsin.",
-  GREETING: 'Merhaba, ben Ahenk Müşteri Temsilcisi. Sana nasıl yardımcı olabilirim?',
+  GREETING: 'Merhaba, ben Ahenk müşteri temsilcisiyim. Bugün size yardımcı olmaktan mutluluk duyacağım.',
   TRANSFERRED: 'Görüşmen başka bir temsilcimize aktarıldı, durumu baştan anlatmana gerek yok.',
   IDLE_WARNING: '1 dakika içinde yanıt vermezsen sohbet sonlanacak.',
 };
@@ -149,6 +150,7 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
   const [busy, setBusy] = useState(false);
   const scroll = useRef<ScrollViewInstance>(null);
   const typingAt = useRef(0);
+  const [emoji, setEmoji] = useState(false);
 
   const loaded = useRef(false);
   const back = useRef(onBack);
@@ -202,7 +204,8 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
     try { await api.form(`/admin/live-support/chats/${id}/messages`, fd); setText(''); setFiles([]); load(); }
     catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
-  const lastAgent = [...c.messages].reverse().find((m) => m.sender === 'AGENT');
+  // Okundu: yalnız temsilci mesajlarından kullanıcının okuduğu sonuncusunun altında
+  const readId = c.userReadAt ? [...c.messages].reverse().find((m) => m.sender === 'AGENT' && m.createdAt <= c.userReadAt!)?.id : undefined;
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: adm.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + adm.headerH : 0}>
@@ -211,7 +214,12 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
         <View style={{ flex: 1, minWidth: 0 }}>
           <AT w={700} style={{ fontSize: 14 }} numberOfLines={1}>{c.requesterName}</AT>
           <AT style={{ fontSize: 11, color: adm.muted }} numberOfLines={1}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · {waited(c.queuedAt)}{c.agentNo ? ` · No ${c.agentNo}` : ''}</AT>
-          {open && <AT style={{ fontSize: 11, color: c.userTyping || c.userOnline ? adm.green : adm.muted }}>{c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'}{(!c.mine && st?.me.role === 'ADMIN') || c.takenOver ? ' · salt okunur' : ''}</AT>}
+          {open && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+              <StatusPill status={c.userTyping ? 'typing' : c.userOnline ? 'online' : 'offline'} label={c.userTyping ? 'yazıyor…' : c.userOnline ? 'Çevrimiçi' : 'Çevrimdışı'} />
+              {((!c.mine && st?.me.role === 'ADMIN') || !!c.takenOver) && <AT style={{ fontSize: 11, color: adm.muted }}>salt okunur</AT>}
+            </View>
+          )}
         </View>
         {/* Devralınan sohbette Haiku asistanı, iç not ve işlemler kapalı */}
         {!c.takenOver && <SmallBtn label="Haiku" color={adm.cyan} onPress={() => setHaiku(true)} />}
@@ -249,7 +257,8 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
           if (m.sender === 'SYSTEM' && m.content !== 'GREETING') return <AT key={m.id} style={{ alignSelf: 'center', textAlign: 'center', fontSize: 11, color: adm.muted }}>{SYS[m.content] ?? m.content} · {hm(m.createdAt)}</AT>;
           const user = m.sender === 'USER';
           return (
-            <View key={m.id} style={{ alignSelf: user ? 'flex-start' : 'flex-end', maxWidth: '82%', padding: 8, borderRadius: 12, backgroundColor: user ? adm.card : 'rgba(59,130,246,0.14)', borderWidth: 1, borderColor: user ? adm.border : 'rgba(59,130,246,0.35)' }}>
+            <View key={m.id}>
+            <View style={{ alignSelf: user ? 'flex-start' : 'flex-end', maxWidth: '82%', padding: 8, borderRadius: 12, backgroundColor: user ? adm.card : 'rgba(59,130,246,0.14)', borderWidth: 1, borderColor: user ? adm.border : 'rgba(59,130,246,0.35)' }}>
               {m.images.length > 0 && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
                   {m.images.map((f) => <Pressable key={f} onPress={() => setViewer(f)} accessibilityRole="imagebutton" accessibilityLabel="Görsel"><Image source={img(f)} style={{ width: 100, height: 100, borderRadius: 8 }} /></Pressable>)}
@@ -258,9 +267,10 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
               {(!!m.content || m.sender === 'SYSTEM') && <AT style={{ fontSize: 13, lineHeight: 19 }}>{m.sender === 'SYSTEM' ? SYS.GREETING : m.content}</AT>}
               <AT style={{ alignSelf: 'flex-end', fontSize: 10, color: adm.muted, marginTop: 2 }}>{!user && m.agentNo ? `No ${m.agentNo} · ` : ''}{hm(m.createdAt)}</AT>
             </View>
+            {m.id === readId && <AT style={{ alignSelf: 'flex-end', fontSize: 10, color: adm.muted, marginTop: 2 }}>Okundu</AT>}
+            </View>
           );
         })}
-        {!!lastAgent && !!c.userReadAt && c.userReadAt >= lastAgent.createdAt && <AT style={{ alignSelf: 'flex-end', fontSize: 10, color: adm.muted }}>Okundu</AT>}
         {/* Yazı önizlemesi: kullanıcının gönderilmemiş metni (sunucuda yalnız bellekte) */}
         {c.userTyping && <AT style={{ fontSize: 12, color: adm.amber, fontStyle: 'italic' }}>yazıyor…{c.userDraft ? ` “${c.userDraft}”` : ''}</AT>}
         {c.takenOver && (
@@ -287,11 +297,19 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
               {files.map((f, i) => <Pressable key={f.uri} onPress={() => setFiles((p) => p.filter((_, j) => j !== i))} accessibilityLabel="Görseli kaldır"><Image source={{ uri: f.uri }} style={{ width: 48, height: 48, borderRadius: 6 }} /></Pressable>)}
             </View>
           )}
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6 }}>
-            <SmallBtn label="＋" color={adm.muted} onPress={pick} />
-            <TextInput value={text} onChangeText={onType} multiline placeholder='Mesaj ("/" hazır yanıtlar)' placeholderTextColor={adm.muted} keyboardAppearance="dark" style={[input, { flex: 1, maxHeight: 120 }]} />
-            <SmallBtn label="Gönder" color={adm.red} filled disabled={busy || (!text.trim() && !files.length)} onPress={send} />
-          </View>
+          {emoji && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {SUPPORT_EMOJIS.map((e) => (
+                <Pressable key={e} onPress={() => onType((text + e).slice(0, 2000))} accessibilityRole="button" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                  <AT style={{ fontSize: 22 }}>{e}</AT>
+                </Pressable>
+              ))}
+            </View>
+          )}
+          {/* Mesaj kutusu: kullanıcı ekranıyla aynı düzen (dosya, emoji, yazı alanı, gönder ikonu) */}
+          <ChatComposer value={text} onChangeText={onType} placeholder='Mesaj ("/" hazır yanıtlar)' placeholderColor={adm.muted} textColor={adm.text}
+            onAttach={pick} onEmoji={() => setEmoji((v) => !v)} onSend={() => { setEmoji(false); send(); }} sendDisabled={busy || (!text.trim() && !files.length)}
+            labels={{ attach: 'Görsel ekle', emoji: 'Emoji', send: 'Gönder' }} boxBg={adm.bg} boxBorder={adm.border} />
         </View>
       )}
       <HaikuSheet visible={haiku && !c.takenOver} chatId={id} onClose={() => setHaiku(false)} onInsert={(t) => { setText((v) => (v ? `${v}\n` : '') + t); setHaiku(false); }} />

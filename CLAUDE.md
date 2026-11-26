@@ -663,11 +663,20 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     "{n} people ahead of you · ~{m} min" (tahmin = önündeki kişi × son 7 günün ortalama sohbet süresi ÷ çevrimiçi temsilci sayısı, tam
     dakikaya yukarı, en az 1 dk; çevrimiçi temsilci yoksa ya da son 7 günde veri yoksa yalnız "Önünde {n} kişi var"); çevrimiçi temsilci
     yoksa ayrıca "Şu an tüm temsilcilerimiz meşgul ya da çevrimdışı…" (mesaj bırakılır, sıraya girer). Altında "Beklerken oyna" /
-    "Play while you wait". Başlık "Ahenk Müşteri Temsilcisi · Temsilci No: {agentNo}" / "Ahenk Support Agent · Agent No: {agentNo}"
-    (sup.headerAgent), altında karşı tarafın durumu "yazıyor…" / "Çevrimiçi" / "Çevrimdışı" (EN typing… / Online / Offline; çevrimiçi =
-    son 20 sn'de yoklama, bellekte); temsilci tarafında da kullanıcının durumu. Temsilcinin adı / cinsiyeti / fotoğrafı hiçbir yerde
+    "Play while you wait". Başlık kelime kelime kırılmaz: 1. satır "Ahenk Müşteri Temsilcisi" / "Ahenk Support Agent" (sup.header), 2. satır
+    "Temsilci No: {agentNo}" / "Agent No: {agentNo}" (sup.agentNo) ve hemen yanında karşı tarafın durum etiketi; küçült ve "Sohbeti
+    Sonlandır" başlığı daraltmaz, dar ekranda (mobilde her zaman) başlığın altında tek satırda. Durum etiketi (yuvarlak köşeli küçük rozet,
+    kullanıcı, mekân ve temsilci ekranı; web components/support/ChatParts.tsx StatusPill, mobil components/SupportChatParts.tsx):
+    "Çevrimiçi" yeşil, "Çevrimdışı" gri, "yazıyor…" Ahenk kırmızısı (EN Online / Offline / typing…; çevrimiçi = son 20 sn'de yoklama,
+    bellekte); temsilci tarafında da kullanıcının durumu. Mesaj kutusu (kullanıcı, mekân ve temsilci ekranı aynı; web ChatParts, mobil
+    SupportChatParts ChatComposer): dosya ikonu, emoji ikonu, yazı alanı ve en sağda gönder ikonu ("Gönder" yazısı yok) kutunun içinde;
+    en az 48 px, yazdıkça en fazla 5 satır büyür; temsilci ekranında "/" hazır yanıt ve yer tutucu aynen. "Okundu" / "Read" yalnız
+    gönderenin kendi mesajlarından karşı tarafın okuduğu sonuncusunun hemen altında. Temsilci ekranı başlığında (web) Devral / Kapat /
+    Kötüye kullanım sağda alt alta, bilgi alanı solda geniş. Temsilcinin adı / cinsiyeti / fotoğrafı hiçbir yerde
     gösterilmez. Temsilci bağlandığı an mobilde hafif titreşim (expo-haptics). İlk atamada 2 otomatik mesaj (sistem kodları NOTICE: kayıt + Aydınlatma Metni linki
-    /kvkk, GREETING: karşılama); istemci kodu arayüz dilinde gösterir. Yazıyor göstergesi, okundu, saat, emoji, görsel (yalnız JPG / PNG /
+    /kvkk, GREETING: karşılama); istemci kodu arayüz dilinde gösterir. GREETING metni (sup.sysGreeting) TR "Merhaba, ben Ahenk müşteri
+    temsilcisiyim. Bugün size yardımcı olmaktan mutluluk duyacağım.", EN "Hello, I'm an Ahenk customer representative. I'll be happy to
+    help you today."; TR metin harfiyen böyledir: sen dili (hitap) kuralının bilinçli istisnasıdır, değiştirilmez. Yazıyor göstergesi, okundu, saat, emoji, görsel (yalnız JPG / PNG /
     WebP, dosya başına 5 MB, mesaj başına 3; EXIF silinerek WebP'ye çevrilir, bulanıklaştırma yok; uploads/support/<chatId>/, git'e eklenmez).
     Masa Sohbeti link / telefon / şüpheli kelime engelleri destek sohbetinde yok. "Sohbeti Sonlandır" ve küçült butonu. Mobilde klavye açıkken mesaj alanı
     klavyenin üstünde (KeyboardAvoidingView). Kullanıcı geçmiş destek sohbetlerini göremez, kapanan sohbet ekrandan kalkar

@@ -11,6 +11,7 @@ import { Link } from '@/i18n/navigation';
 import { api, API_PREFIX, langHeaders } from '@/lib/api';
 import { venueApi } from '@/lib/venueApi';
 import { Breakout } from './Breakout';
+import { AttachIcon, AutoTextarea, EmojiIcon, SendIcon, StatusPill } from './ChatParts';
 
 // Baloncuk (SupportBubble) sohbet başlatılınca / küçültülünce durumu yeniden okur
 export const SUPPORT_EVENT = 'ahenk:support';
@@ -185,22 +186,25 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
     try { await client.post(`/chats/${chat.id}/close`); onEnded(chat.id); reload(); } catch (e) { setErr((e as Error).message || t('sup.error')); }
   }
 
-  const lastOwn = [...msgs].reverse().find((m) => m.sender === 'USER' && !m.pending);
-  const read = !!lastOwn && !!chat.agentReadAt && chat.agentReadAt >= lastOwn.createdAt;
+  // Okundu: yalnız kendi mesajlarından temsilcinin okuduğu sonuncusunun altında
+  const readId = chat.agentReadAt ? [...msgs].reverse().find((m) => m.sender === 'USER' && !m.pending && m.createdAt <= chat.agentReadAt!)?.id : undefined;
+  const status = chat.agentTyping ? 'typing' : chat.agentOnline ? 'online' : 'offline';
 
   return (
     <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', height: 'min(72dvh, 680px)' }}>
       {/* Başlık: temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-        <div style={{ minWidth: 0 }}>
-          <p style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{chat.agentNo ? t('sup.headerAgent', { no: chat.agentNo }) : t('sup.header')}</p>
-          {chat.status === 'ACTIVE' && (
-            <p style={{ fontSize: 12, color: chat.agentTyping || chat.agentOnline ? '#22c55e' : MUTED }}>
-              {chat.agentTyping ? t('sup.typing') : chat.agentOnline ? t('sup.online') : t('sup.offlineStatus')}
-            </p>
+      {/* Başlık metni kırılmaz; sığmazsa küçült ve Sohbeti Sonlandır başlığın altında tek satıra iner */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: 10, rowGap: 6 }}>
+        <div style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: TEXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('sup.header')}</p>
+          {!!chat.agentNo && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 13, color: MUTED }}>{t('sup.agentNo', { no: chat.agentNo })}</span>
+              {chat.status === 'ACTIVE' && <StatusPill status={status} label={status === 'typing' ? t('sup.typing') : status === 'online' ? t('sup.online') : t('sup.offlineStatus')} />}
+            </div>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginLeft: 'auto' }}>
           <button type="button" aria-label={t('sup.minimize')} title={t('sup.minimize')} onClick={onMinimize} style={ICON_BTN}>
             <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth={2} strokeLinecap="round"><path d="M5 12h14" /></svg>
           </button>
@@ -225,8 +229,12 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
         </div>
       ) : (<>
       <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {msgs.map((m) => <Bubble key={m.id} m={m} chatId={chat.id} client={client} onImage={setViewer} />)}
-        {read && <p style={{ alignSelf: 'flex-end', fontSize: 10, color: MUTED }}>{t('sup.read')}</p>}
+        {msgs.map((m) => (
+          <div key={m.id} style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            <Bubble m={m} chatId={chat.id} client={client} onImage={setViewer} />
+            {m.id === readId && <p style={{ alignSelf: 'flex-end', fontSize: 10, color: MUTED, marginTop: 2 }}>{t('sup.read')}</p>}
+          </div>
+        ))}
       </div>
       {!!err && <p role="alert" style={{ padding: '0 14px 6px', fontSize: 12, color: '#ff6b6b' }}>{err}</p>}
       {files.length > 0 && (
@@ -246,22 +254,17 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
           {EMOJIS.map((e) => <button key={e} type="button" onClick={() => setText((v) => (v + e).slice(0, 2000))} style={{ width: 40, height: 40, fontSize: 22, background: 'none', border: 'none', cursor: 'pointer' }}>{e}</button>)}
         </div>
       )}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, padding: 8, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        <button type="button" aria-label={t('sup.emoji')} onClick={() => setEmoji((v) => !v)} style={ICON_BTN}>
-          <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth={1.8} strokeLinecap="round"><circle cx={12} cy={12} r={9.5} /><path d="M8 14.5s1.5 2 4 2 4-2 4-2" /><path d="M9 9.5h.01M15 9.5h.01" strokeWidth={2.4} /></svg>
-        </button>
-        <button type="button" aria-label={t('sup.attach')} onClick={() => fileRef.current?.click()} style={ICON_BTN}>
-          <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x={3} y={3} width={18} height={18} rx={3} /><circle cx={8.5} cy={8.5} r={1.5} /><path d="m21 15-5-5L5 21" /></svg>
-        </button>
-        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => pick(e.target.files)} />
-        <textarea value={text} onChange={(e) => onType(e.target.value)} placeholder={t('sup.placeholder')} rows={1}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-          style={{ flex: 1, minWidth: 0, resize: 'none', maxHeight: 120, padding: '10px 12px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: TEXT, fontSize: 14, outline: 'none' }} />
-        <button type="button" aria-label={t('sup.send')} onClick={send} disabled={busy || (!text.trim() && !files.length)} style={{ ...ICON_BTN, opacity: busy || (!text.trim() && !files.length) ? 0.5 : 1 }}>
-          <span style={{ width: 38, height: 38, borderRadius: 19, background: RED, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" /></svg>
-          </span>
-        </button>
+      {/* Mesaj kutusu: dosya, emoji, yazı alanı ve gönder ikonu kutunun içinde (temsilci ekranıyla aynı düzen) */}
+      <div style={{ padding: 8, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', minHeight: 48, borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', padding: '2px 2px' }}>
+          <button type="button" aria-label={t('sup.attach')} onClick={() => fileRef.current?.click()} style={ICON_BTN}><AttachIcon color={RED} /></button>
+          <button type="button" aria-label={t('sup.emoji')} onClick={() => setEmoji((v) => !v)} style={ICON_BTN}><EmojiIcon color={RED} /></button>
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => pick(e.target.files)} />
+          <AutoTextarea value={text} onChange={onType} placeholder={t('sup.placeholder')} onEnter={send} />
+          <button type="button" aria-label={t('sup.send')} onClick={send} disabled={busy || (!text.trim() && !files.length)} style={{ ...ICON_BTN, opacity: busy || (!text.trim() && !files.length) ? 0.5 : 1 }}>
+            <SendIcon />
+          </button>
+        </div>
       </div>
       </>)}
       {viewer && (
