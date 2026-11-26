@@ -1,6 +1,6 @@
 // Canlı Destek baloncuğu (mobil; web components/support/SupportBubble.tsx karşılığı). Yalnız açık destek sohbeti varken (Profilim →
 // Canlı Destek'ten başlatılmış) her ekranda sağ altta sabit; sürüklenmez; yönetim panelinde, giriş ekranlarında ve sohbet ekranında yok.
-// Baloncukta maskotun baloncuk sürümü (assets/destek-baloncuk.webp, 60 pt); kuyruktayken sıra numarası, yeni mesajda okunmamış sayı rozeti
+// Baloncukta maskotun baloncuk sürümü (assets/destek-baloncuk.webp, 60 pt; zemin şeffaf, c.red #c0392b 2 pt çerçeve); kuyruktayken sıra numarası, yeni mesajda okunmamış sayı rozeti
 // (ikisi de sağ üstte, maskotun üstünde) + hafif titreşim; temsilci bağlanınca hafif titreşim. Basınca sohbet açılır;
 // sohbet herhangi bir şekilde kapanınca kaybolur. Yoklama yalnız açık sohbet varken ve uygulama ön plandayken (4 sn). Okundu yazmaz.
 // HIG: 60 pt dokunma alanı, erişilebilirlik etiketi, güvenli alan; sekme çubuğu olan ekranlarda çubuğun üstünde.
@@ -61,9 +61,11 @@ export function SupportBubble() {
   return (
     <View pointerEvents="box-none" style={{ position: 'absolute', right: 16, bottom }}>
       <Pressable onPress={() => router.push('/canli-destek')} accessibilityRole="button" accessibilityLabel={label}
-        style={({ pressed }) => ({ width: 60, height: 60, borderRadius: 30, backgroundColor: c.red, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1,
+        style={({ pressed }) => ({ width: 60, height: 60, borderRadius: 30, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1,
           shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 8 })}>
         <Image source={require('@/assets/destek-baloncuk.webp')} accessible={false} style={{ width: 60, height: 60, borderRadius: 30 }} />
+        {/* Şeffaf zemin; kırmızı yalnız 2 pt çerçevede (maskotun üstünde, boyutu değiştirmez) */}
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 30, borderWidth: 2, borderColor: c.red }} />
         {sum.status === 'QUEUED' && !!sum.position && (
           <View style={{ position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: ll.text, borderWidth: 2, borderColor: '#121212', alignItems: 'center', justifyContent: 'center' }}>
             <T w={700} style={{ fontSize: 11, color: c.red }}>{sum.position}</T>

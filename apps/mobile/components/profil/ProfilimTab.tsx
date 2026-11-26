@@ -510,7 +510,8 @@ export function ProfilimTab({ user, cities, onLoggedOut, onAdmin, onOpenTest, on
             </Pressable>
           ))}
         </Card>
-        <StdButton variant="ghost" label={t('sup.button')} style={accountBtn.box} textStyle={accountBtn.text} disabled={!!supportRestricted} onPress={() => router.push('/canli-destek')} />
+        {/* Canlı Destek: stil aynen, yalnız çerçeve, nokta ve yazı Ahenk kırmızısı (tw.primary #c0392b) */}
+        <StdButton variant="ghost" label={t('sup.button')} style={[accountBtn.box, { borderColor: tw.primary }]} textStyle={[accountBtn.text, { color: tw.primary }]} dotColor={tw.primary} disabled={!!supportRestricted} onPress={() => router.push('/canli-destek')} />
         {!!supportRestricted && <T style={{ fontSize: 12, color: ll.label, textAlign: 'center' }}>{t('sup.restricted', { time: supportRemaining(supportRestricted, t) })}</T>}
         <StdButton variant="ghost" label={t('nav.logout')} style={accountBtn.box} textStyle={accountBtn.text} onPress={() => setLogoutOpen(true)} />
         <StdButton variant="ghost" label={logoutAllBusy ? t('prof.loggingOut') : t('prof.logoutAll')} style={accountBtn.box} textStyle={accountBtn.text} disabled={logoutAllBusy} onPress={logoutAll} />

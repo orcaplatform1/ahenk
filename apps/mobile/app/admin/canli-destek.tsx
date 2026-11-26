@@ -15,6 +15,7 @@ import { myRole } from '@/lib/adminRole';
 import { pickFromLibrary, type PickedImage } from '@/lib/imagePick';
 import { ChatComposer, StatusPill, SUPPORT_EMOJIS } from '@/components/SupportChatParts';
 import { DetayAvatar } from '@/components/DetayAvatar';
+import { AConfirm } from '@/components/admin/AConfirm';
 import { ACard, AError, ALabel, AMono, APage, AT } from '@/components/admin/AdminUi';
 import { adm, onb, sans } from '@/theme/theme';
 
@@ -150,6 +151,8 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
   const [token, setToken] = useState<string | null>(null);
   const [haiku, setHaiku] = useState(false);
   const [extra, setExtra] = useState(false);
+  // Onay penceresi: 0 = Sonlandır, 1 / 7 / 30 = kötüye kullanım gün sayısı; null = kapalı
+  const [confirm, setConfirm] = useState<number | null>(null);
   const [note, setNote] = useState('');
   const [transferTo, setTransferTo] = useState('');
   const [transferNote, setTransferNote] = useState('');
@@ -235,11 +238,11 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
       </View>
       {extra && !c.takenOver && (
         <ScrollView style={{ maxHeight: 300, borderBottomWidth: 1, borderBottomColor: adm.border }} contentContainerStyle={{ padding: 12, gap: 8 }} keyboardShouldPersistTaps="handled">
-          {/* Web temsilci başlığıyla aynı sıra: Devral / Kapat / Kötüye kullanım alt alta */}
+          {/* Web temsilci başlığıyla aynı sıra: Devral / Sonlandır / Kötüye kullanım alt alta */}
           <View style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
             {open && !c.mine && superadmin && <SmallBtn label="Devral" color={adm.blue} onPress={() => act(() => api.post(`/admin/live-support/chats/${id}/take`, {}))} />}
-            {open && (c.mine || superadmin) && <SmallBtn label="Kapat" color={adm.muted} onPress={() => act(() => api.post(`/admin/live-support/chats/${id}/close`, {}), onBack)} />}
-            {open && (c.mine || superadmin) && [1, 7, 30].map((d) => <SmallBtn key={d} label={`Kötüye kullanım · ${d} gün`} color={adm.red} onPress={() => act(() => api.post(`/admin/live-support/chats/${id}/close`, { abuseDays: d }), onBack)} />)}
+            {open && (c.mine || superadmin) && <SmallBtn label="Sonlandır" color={adm.muted} onPress={() => setConfirm(0)} />}
+            {open && (c.mine || superadmin) && [1, 7, 30].map((d) => <SmallBtn key={d} label={`Kötüye kullanım · ${d} gün`} color={adm.red} onPress={() => setConfirm(d)} />)}
           </View>
           <ALabel>İÇ NOTLAR ({c.notes.length}) · DEVİRLER ({c.transfers.length})</ALabel>
           {c.transfers.map((x) => <AT key={x.id} style={{ fontSize: 12, color: adm.amber }}>Devir {x.from ?? '—'} → {x.to ?? '—'} · {dt(x.createdAt)}: {x.note}</AT>)}
@@ -316,11 +319,15 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
             </View>
           )}
           {/* Mesaj kutusu: kullanıcı ekranıyla aynı düzen (dosya, emoji, yazı alanı, gönder ikonu) */}
-          <ChatComposer value={text} onChangeText={onType} placeholder='Mesaj ("/" hazır yanıtlar)' placeholderColor={adm.muted} textColor={adm.text}
+          <ChatComposer value={text} onChangeText={onType} textColor={adm.text}
             onAttach={pick} onEmoji={() => setEmoji((v) => !v)} onSend={() => { setEmoji(false); send(); }} sendDisabled={busy || (!text.trim() && !files.length)}
             labels={{ attach: 'Görsel ekle', emoji: 'Emoji', send: 'Gönder' }} boxBg={adm.bg} boxBorder={adm.border} />
         </View>
       )}
+      <AConfirm visible={confirm !== null}
+        text={confirm ? `${confirm} gün kısıtlama vermek istediğinden emin misin?` : 'Görüşmeyi sonlandırmak istediğinden emin misin?'}
+        onNo={() => setConfirm(null)}
+        onYes={() => { const d = confirm; setConfirm(null); act(() => api.post(`/admin/live-support/chats/${id}/close`, d ? { abuseDays: d } : {}), onBack); }} />
       <HaikuSheet visible={haiku && !c.takenOver} chatId={id} onClose={() => setHaiku(false)} onInsert={(t) => { setText((v) => (v ? `${v}\n` : '') + t); setHaiku(false); }} />
       <Modal visible={!!viewer} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setViewer(null)}>
         <Pressable onPress={() => setViewer(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' }}>

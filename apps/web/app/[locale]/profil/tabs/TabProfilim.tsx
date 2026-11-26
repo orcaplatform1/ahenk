@@ -90,6 +90,8 @@ interface Props {
 
 // Tüm Cihazlardan Çıkış Yap / Hesabımı Sil: yazı dar ekranda da tek satıra sığar
 const ACCOUNT_BTN: React.CSSProperties = { width: 'fit-content', minWidth: '72%', maxWidth: '100%', justifyContent: 'center', whiteSpace: 'nowrap', padding: '9px 10px', fontSize: 'clamp(8px, 2.5vw, 10px)', letterSpacing: '0.04em' };
+// Canlı Destek butonu: stil aynen (btn-ghost), yalnız çerçeve, nokta ve yazı Ahenk kırmızısı (tailwind primary #c0392b)
+const SUPPORT_RED = 'border-primary! text-primary! before:bg-primary!';
 
 export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activePlan }: Props) {
   const t = useTranslations();
@@ -569,11 +571,11 @@ export function TabProfilim({ user, onGoKyc, onGoTest, onGoRehber, cities, activ
       <div className="flex flex-col items-center gap-3 pb-2">
         {supportRestricted ? (
           <div className="flex flex-col items-center gap-1">
-            <StdButton variant="ghost" disabled className="mx-auto block disabled:opacity-40" style={ACCOUNT_BTN}>{t('sup.button')}</StdButton>
+            <StdButton variant="ghost" disabled className={`mx-auto block disabled:opacity-40 ${SUPPORT_RED}`} style={ACCOUNT_BTN}>{t('sup.button')}</StdButton>
             <p className="text-xs text-[#a39c93] text-center">{t('sup.restricted', { time: supportRemaining(supportRestricted, t) })}</p>
           </div>
         ) : (
-          <StdButton as={Link} href="/canli-destek" variant="ghost" className="mx-auto block text-center" style={ACCOUNT_BTN}>{t('sup.button')}</StdButton>
+          <StdButton as={Link} href="/canli-destek" variant="ghost" className={`mx-auto block text-center ${SUPPORT_RED}`} style={ACCOUNT_BTN}>{t('sup.button')}</StdButton>
         )}
         <StdButton variant="ghost" onClick={() => setReportOpen(true)} className="mx-auto block" style={ACCOUNT_BTN}>
           {t('report.title')}

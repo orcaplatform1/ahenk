@@ -11,6 +11,7 @@ import { DetayAvatar } from '@ahenk/ui';
 import { AMBER as GOLD } from '@/components/paket/PaketKarti';
 // Mekân sahibi avatarı: Premium / Nasıl Çalışır 3 aylık kutu altını (#e0a526) çerçeve + aynı altının cinsiyet zemini gibi hafif tonu
 const VENUE_RING = { color: GOLD, bg: 'rgba(224,165,38,0.12)' };
+import { AdminConfirm } from '@/components/AdminConfirm';
 import { AttachIcon, AutoTextarea, EmojiIcon, SendIcon, StatusPill } from '@/components/support/ChatParts';
 import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
@@ -189,6 +190,8 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
   const [transferTo, setTransferTo] = useState('');
   const [transferNote, setTransferNote] = useState('');
   const [abuse, setAbuse] = useState(false);
+  // Onay penceresi: 0 = Sonlandır, 1 / 7 / 30 = kötüye kullanım gün sayısı; null = kapalı
+  const [confirm, setConfirm] = useState<number | null>(null);
   const [viewer, setViewer] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
@@ -262,7 +265,7 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
 
   return (
     <section className="ll-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', minHeight: 520, maxHeight: '78vh', overflow: 'hidden' }}>
-      {/* Bilgi alanı solda genişler; Devral / Kapat / Kötüye kullanım sağda alt alta */}
+      {/* Bilgi alanı solda genişler; Devral / Sonlandır / Kötüye kullanım sağda alt alta */}
       <div style={{ padding: '12px 14px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
         {c.avatar !== undefined && <DetayAvatar ring={c.kind === 'venue' ? VENUE_RING : undefined} participant={c.avatar ?? {}} delay={0} size={48} />}
         <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -278,7 +281,7 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
         {open && (c.mine || st.me.role === 'SUPERADMIN') && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 6, flexShrink: 0 }}>
             {!c.mine && st.me.role === 'SUPERADMIN' && <button style={btn(BLUE)} onClick={() => act(() => api.post(`/admin/live-support/chats/${id}/take`, {}))}>Devral</button>}
-            <button style={btn(MUTED)} onClick={() => act(() => api.post(`/admin/live-support/chats/${id}/close`, {}), onClosed)}>Kapat</button>
+            <button style={btn(MUTED)} onClick={() => setConfirm(0)}>Sonlandır</button>
             <button style={btn(RED)} onClick={() => setAbuse((v) => !v)}>Kötüye kullanım</button>
           </div>
         )}
@@ -286,9 +289,13 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
       {abuse && (
         <div style={{ padding: '8px 14px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background: 'rgba(239,68,68,0.06)', borderBottom: `1px solid ${BORDER}` }}>
           <span style={{ fontSize: 12 }}>Sohbeti kapat ve canlı destek erişimini kısıtla:</span>
-          {[1, 7, 30].map((d) => <button key={d} style={btn(RED, true)} onClick={() => act(() => api.post(`/admin/live-support/chats/${id}/close`, { abuseDays: d }), onClosed)}>{d} gün</button>)}
+          {[1, 7, 30].map((d) => <button key={d} style={btn(RED, true)} onClick={() => setConfirm(d)}>{d} gün</button>)}
         </div>
       )}
+      <AdminConfirm open={confirm !== null}
+        text={confirm ? `${confirm} gün kısıtlama vermek istediğinden emin misin?` : 'Görüşmeyi sonlandırmak istediğinden emin misin?'}
+        onNo={() => setConfirm(null)}
+        onYes={() => { const d = confirm; setConfirm(null); act(() => api.post(`/admin/live-support/chats/${id}/close`, d ? { abuseDays: d } : {}), onClosed); }} />
       {!open && <p style={{ padding: '8px 14px', fontSize: 12, color: MUTED }}>Sohbet kapandı{c.closedAt ? ` (${dt(c.closedAt)})` : ''}.</p>}
       <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {c.messages.map((m) => {
@@ -333,7 +340,7 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
             <button type="button" onClick={() => fileRef.current?.click()} aria-label="Görsel ekle" style={ICON_BTN}><AttachIcon color={RED_ICON} /></button>
             <button type="button" onClick={() => setEmoji((v) => !v)} aria-label="Emoji" style={ICON_BTN}><EmojiIcon color={RED_ICON} /></button>
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => pick(e.target.files)} />
-            <AutoTextarea value={text} onChange={onType} placeholder='Mesaj yaz ("/" ile hazır yanıtlar)' onEnter={send} enterSends={!slash.length} color={TEXT} />
+            <AutoTextarea value={text} onChange={onType} onEnter={send} enterSends={!slash.length} color={TEXT} />
             <button type="button" onClick={send} disabled={busy || (!text.trim() && !files.length)} aria-label="Gönder" style={{ ...ICON_BTN, opacity: busy || (!text.trim() && !files.length) ? 0.5 : 1 }}><SendIcon /></button>
           </div>
         </div>

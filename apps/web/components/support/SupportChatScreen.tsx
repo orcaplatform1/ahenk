@@ -4,7 +4,7 @@
 // Anlık iletişim Masa Sohbeti gibi kısa aralıklı yoklama (3 sn). Konu seçimi → sıra → temsilci → sohbet → değerlendirme.
 // Kullanıcı geçmiş destek sohbetlerini göremez: sohbet kapanınca ekrandan kalkar. Küçült butonu sohbeti baloncuğa alır (SupportBubble);
 // kuyruktayken "Beklerken oyna" Breakout açar, temsilci bağlanınca ya da küçültülünce oyun tamamen kapanır.
-// Maskot: kuyrukta sıra satırının üstünde tam sürüm (72 px yükseklik), temsilci bağlanınca başlığın üstünde baloncuk sürümü (40 px),
+// Maskot: kuyrukta sıra satırının üstünde tam sürüm (72 px yükseklik), temsilci bağlanınca başlığın solunda tam sürüm (60 px yükseklik),
 // sohbet alanında sabit filigran (tam sürüm, alan genişliğinin %60'ı, ortada, opaklık %8 koyu tema; oyun açıkken gizli).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -41,8 +41,9 @@ const RED = '#c0392b';
 const TEXT = '#f4f1ec';
 const MUTED = '#a39c93';
 // Canlı destek maskotu (public/maskot); filigran opaklığı: uygulama yalnız koyu temada (%8)
-const MASCOT_BUBBLE = '/maskot/destek-baloncuk.webp';
 const MASCOT_FULL = '/maskot/destek-tam.webp';
+// Bağlı sohbet başlığındaki maskot yüksekliği: temsilci ekranı başlık avatarı (48 px) + %25
+const MASCOT_HEADER = 60;
 const WATERMARK_OPACITY = 0.08;
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Istanbul' });
@@ -147,6 +148,7 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
   const typingAt = useRef(0);
   // Oyun yalnız kuyruktayken; temsilci bağlanınca tamamen kapanır
   const [game, setGame] = useState(false);
+  const [endAsk, setEndAsk] = useState(false);
   useEffect(() => { if (chat.status !== 'QUEUED') setGame(false); }, [chat.status]);
 
   useEffect(() => {
@@ -199,21 +201,36 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
   return (
     <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', height: 'min(72dvh, 680px)' }}>
       {/* Başlık: temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
-      {/* Başlık metni kırılmaz; sığmazsa küçült ve Sohbeti Sonlandır başlığın altında tek satıra iner */}
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: 10, rowGap: 6 }}>
-        {/* Temsilci bağlanınca başlık bloğunun üstünde ortalı maskot (baloncuk sürümü, 40 px) */}
-        {chat.status === 'ACTIVE' && (
-          <div style={{ flexBasis: '100%', display: 'flex', justifyContent: 'center' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={MASCOT_BUBBLE} alt="" aria-hidden width={40} height={40} style={{ width: 40, height: 40 }} />
+      {chat.status === 'ACTIVE' ? (
+        // Temsilci bağlanınca (temsilci ekranı başlığıyla aynı mantık): solda maskot tam sürüm (60 px = temsilci ekranı avatarı 48 px + %25),
+        // sağında başlık + Temsilci No ve durum etiketi, en sağda küçült ve Sonlandır; tek satır, dikeyde en az yer
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={MASCOT_FULL} alt="" aria-hidden height={MASCOT_HEADER} style={{ height: MASCOT_HEADER, width: 'auto', flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <p style={{ fontSize: 15, fontWeight: 700, color: TEXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('sup.header')}</p>
+            {!!chat.agentNo && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', minWidth: 0 }}>
+                <span style={{ fontSize: 12, fontWeight: 400, color: MUTED, overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('sup.agentNo', { no: chat.agentNo })}</span>
+                <StatusPill status={status} label={status === 'typing' ? t('sup.typing') : status === 'online' ? t('sup.online') : t('sup.offlineStatus')} />
+              </div>
+            )}
           </div>
-        )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            <button type="button" aria-label={t('sup.minimize')} title={t('sup.minimize')} onClick={onMinimize} style={ICON_BTN}>
+              <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth={2} strokeLinecap="round"><path d="M5 12h14" /></svg>
+            </button>
+            <StdButton variant="ghost" onClick={() => setEndAsk(true)}>{t('sup.endShort')}</StdButton>
+          </div>
+        </div>
+      ) : (
+      /* Kuyrukta: başlık metni kırılmaz; sığmazsa küçült ve Sohbeti Sonlandır başlığın altında tek satıra iner */
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', columnGap: 10, rowGap: 6 }}>
         <div style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <p style={{ fontSize: 15, fontWeight: 700, color: TEXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('sup.header')}</p>
           {!!chat.agentNo && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
               <span style={{ fontSize: 13, color: MUTED }}>{t('sup.agentNo', { no: chat.agentNo })}</span>
-              {chat.status === 'ACTIVE' && <StatusPill status={status} label={status === 'typing' ? t('sup.typing') : status === 'online' ? t('sup.online') : t('sup.offlineStatus')} />}
             </div>
           )}
         </div>
@@ -224,6 +241,20 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
           <StdButton variant="ghost" onClick={end}>{t('sup.end')}</StdButton>
         </div>
       </div>
+      )}
+      {/* Sonlandır onayı (site paleti): Evet → mevcut sonlandırma akışı (değerlendirme dahil), Hayır / dışarı basma / Esc → işlem yok */}
+      {endAsk && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.7)' }} role="dialog" aria-modal="true" aria-labelledby="sup-end-title"
+          onClick={() => setEndAsk(false)} onKeyDown={(e) => { if (e.key === 'Escape') setEndAsk(false); }}>
+          <div className="ll-card w-full max-w-md flex flex-col gap-4" style={{ background: '#121212' }} onClick={(e) => e.stopPropagation()}>
+            <h3 id="sup-end-title" style={{ margin: 0, textAlign: 'center', fontSize: 17, lineHeight: 1.35, fontWeight: 700, color: TEXT }}>{t('sup.endConfirm')}</h3>
+            <div className="flex gap-3">
+              <StdButton variant="ghost" autoFocus onClick={() => setEndAsk(false)} className="justify-center" style={{ flex: 1 }}>{t('sup.no')}</StdButton>
+              <StdButton variant="primary" onClick={() => { setEndAsk(false); void end(); }} className="justify-center" style={{ flex: 1 }}>{t('sup.yes')}</StdButton>
+            </div>
+          </div>
+        </div>
+      )}
       {chat.status === 'QUEUED' && chat.queue && (
         <div style={{ padding: game ? '6px 16px' : '10px 16px', background: 'rgba(245,158,11,0.06)', borderBottom: '1px solid rgba(245,158,11,0.2)' }}>
           {/* Oyun açıkken sıra ve tahmin satırı üstte küçük */}
@@ -281,7 +312,7 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
           <button type="button" aria-label={t('sup.attach')} onClick={() => fileRef.current?.click()} style={ICON_BTN}><AttachIcon color={RED} /></button>
           <button type="button" aria-label={t('sup.emoji')} onClick={() => setEmoji((v) => !v)} style={ICON_BTN}><EmojiIcon color={RED} /></button>
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => pick(e.target.files)} />
-          <AutoTextarea value={text} onChange={onType} placeholder={t('sup.placeholder')} onEnter={send} />
+          <AutoTextarea value={text} onChange={onType} onEnter={send} />
           <button type="button" aria-label={t('sup.send')} onClick={send} disabled={busy || (!text.trim() && !files.length)} style={{ ...ICON_BTN, opacity: busy || (!text.trim() && !files.length) ? 0.5 : 1 }}>
             <SendIcon />
           </button>

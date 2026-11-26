@@ -90,9 +90,10 @@ function noShrink(style: ViewStyle | undefined): ViewStyle | undefined {
   const { flex, ...rest } = style;
   return { ...rest, flexGrow: flex, flexShrink: 0, flexBasis: 'auto' };
 }
-export function StdButton({ variant = 'primary', label, style, full, disabled, redDot, textStyle, noUpper, ...rest }: BtnProps & { variant?: 'primary' | 'ghost' }) {
+// dotColor: noktanın rengi (Profilim Canlı Destek: Ahenk kırmızısı)
+export function StdButton({ variant = 'primary', label, style, full, disabled, redDot, dotColor, textStyle, noUpper, ...rest }: BtnProps & { variant?: 'primary' | 'ghost'; dotColor?: string }) {
   const ghost = variant === 'ghost';
-  const dot = ghost ? (redDot ? c.ghostRedDot : btnGhost.dotColor) : btnPrimary.dotColor;
+  const dot = dotColor ?? (ghost ? (redDot ? c.ghostRedDot : btnGhost.dotColor) : btnPrimary.dotColor);
   return (
     <Pressable hitSlop={HIT} disabled={disabled} accessibilityRole="button" {...rest}
       style={({ pressed }) => [s.btn, ghost ? s.btnGhost : s.btnPrimary, full && s.full, pressed && !disabled && { backgroundColor: 'rgba(255,255,255,0.05)' }, disabled && { opacity: ghost ? btnGhost.disabledOpacity : btnPrimary.disabledOpacity }, noShrink(dropKeys<ViewStyle>(style, STD_BOX_DROP))]}>

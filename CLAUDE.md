@@ -659,27 +659,42 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     yapmış mekân sahibi (web mekân paneli menüsü "Canlı Destek", /mekan/panel/canli-destek; mobilde mekân paneli yok). Uçlar oturum zorunlu:
     üye /support/* (JWT), mekân /venue-panel/support/* (mekân çerezi yolu /api/v1/venue-panel). Sohbet başlatan hesabın ID'sine bağlı
     (SupportChat.userId / venueAccountId); hiçbir eşleştirme isimle yapılmaz. Üye ve mekân aynı ekran (web components/support/SupportChatScreen.tsx)
+  - Profilim "CANLI DESTEK" butonu (web + mobil): Profilim'deki diğer hesap butonlarıyla aynı stil (btn-ghost hap, ince çerçeve, soldaki
+    nokta, harf aralıklı büyük yazı, boyut, yer); yalnız çerçeve, nokta ve yazı Ahenk kırmızısı #c0392b (web tailwind primary, mobil
+    tw.primary). Sorun Bildir, Tüm Cihazlardan Çıkış Yap, Hesabımı Sil aynen
   - Kullanıcı ekranı (sup.* anahtarları, TR + EN): konu Hesap / Ödeme / Masa / Diğer; sırada canlı "Önünde {n} kişi var · ~{m} dk" /
     "{n} people ahead of you · ~{m} min" (tahmin = önündeki kişi × son 7 günün ortalama sohbet süresi ÷ çevrimiçi temsilci sayısı, tam
     dakikaya yukarı, en az 1 dk; çevrimiçi temsilci yoksa ya da son 7 günde veri yoksa yalnız "Önünde {n} kişi var"); çevrimiçi temsilci
     yoksa ayrıca "Şu an tüm temsilcilerimiz meşgul ya da çevrimdışı…" (mesaj bırakılır, sıraya girer). Altında "Beklerken oyna" /
-    "Play while you wait". Başlık kelime kelime kırılmaz: 1. satır "Ahenk Müşteri Temsilcisi" / "Ahenk Support Agent" (sup.header), 2. satır
-    "Temsilci No: {agentNo}" / "Agent No: {agentNo}" (sup.agentNo) ve hemen yanında karşı tarafın durum etiketi; küçült ve "Sohbeti
-    Sonlandır" başlığı daraltmaz, dar ekranda (mobilde her zaman) başlığın altında tek satırda. Durum etiketi (yuvarlak köşeli küçük rozet,
+    "Play while you wait". Başlık kelime kelime kırılmaz. Temsilci bağlanınca (ACTIVE) başlık temsilci ekranı başlığıyla aynı mantıkta tek
+    satır, dikeyde en az yer: solda maskot tam sürüm (destek-tam.webp; yükseklik web 60 px / mobil 50 pt = temsilci ekranı başlık avatarı
+    48 px / 40 pt + %25), sağında 1. satır "Ahenk Müşteri Temsilcisi" / "Ahenk Support Agent" (sup.header, kalın 15), 2. satır küçük ve
+    ince "Temsilci No: {agentNo}" / "Agent No: {agentNo}" (sup.agentNo, 12, normal ağırlık, soluk renk) ve hemen yanında karşı tarafın
+    durum etiketi; en sağda küçült (—) ve onun sağında "SONLANDIR" / "END" (sup.endShort, mevcut ghost buton stili). "SONLANDIR"a basınca
+    site paletinde (admin paleti değil) onay penceresi: "Görüşmeyi sonlandırmak istediğinden emin misin?" / "Are you sure you want to end
+    the chat?" (sup.endConfirm), butonlar "Hayır" / "No" (ghost) ve "Evet" / "Yes" (primary) (sup.no / sup.yes; web SupportChatScreen
+    satır içi pencere, mobil AppAlert showAlert); Evet mevcut sonlandırma akışı (değerlendirme dahil), Hayır / dışarı basma / Esc / geri
+    tuşu hiçbir işlem yapmaz. Kuyruktayken (QUEUED) başlık eskisi gibi: 1. satır sup.header, 2. satır sup.agentNo; küçült ve "Sohbeti
+    Sonlandır" (sup.end, onaysız) başlığı daraltmaz, dar ekranda (mobilde her zaman) başlığın altında tek satırda. Durum etiketi (yuvarlak köşeli küçük rozet,
     kullanıcı, mekân ve temsilci ekranı; web components/support/ChatParts.tsx StatusPill, mobil components/SupportChatParts.tsx):
     "Çevrimiçi" yeşil, "Çevrimdışı" gri, "yazıyor…" Ahenk kırmızısı (EN Online / Offline / typing…; çevrimiçi = son 20 sn'de yoklama,
     bellekte); temsilci tarafında da kullanıcının durumu. Mesaj kutusu (kullanıcı, mekân ve temsilci ekranı aynı; web ChatParts, mobil
     SupportChatParts ChatComposer): dosya ikonu, emoji ikonu, yazı alanı ve en sağda gönder ikonu ("Gönder" yazısı yok) kutunun içinde;
-    en az 48 px, yazdıkça en fazla 5 satır büyür; temsilci ekranında "/" hazır yanıt ve yer tutucu aynen. "Okundu" / "Read" yalnız
-    gönderenin kendi mesajlarından karşı tarafın okuduğu sonuncusunun hemen altında. Temsilci ekranı başlığında (web) Devral / Kapat /
+    en az 48 px, yazdıkça en fazla 5 satır büyür; yazı alanında yer tutucu metin yoktur (üye, mekân ve temsilci ekranı; boş görünür);
+    temsilci ekranında "/" hazır yanıt aynen. "Okundu" / "Read" yalnız
+    gönderenin kendi mesajlarından karşı tarafın okuduğu sonuncusunun hemen altında. Temsilci ekranı başlığında (web) Devral / Sonlandır /
     Kötüye kullanım sağda alt alta, bilgi alanı solda geniş; mobil temsilci ekranında "⋯" panelinin içinde aynı sırayla alt alta (Devral,
-    Kapat, Kötüye kullanım · 1 / 7 / 30 gün; tam genişlik). Temsilcinin adı / cinsiyeti / fotoğrafı hiçbir yerde
+    Sonlandır, Kötüye kullanım · 1 / 7 / 30 gün; tam genişlik). Temsilci / ADMIN / SUPERADMIN ekranında "Sonlandır" ve kötüye kullanım
+    gün seçimi (web: "Kötüye kullanım" butonu + 1 / 7 / 30 gün; mobil üç ayrı buton; düzen aynen) doğrudan işlem yapmaz: admin paletinde
+    ortak onay penceresi (web components/AdminConfirm.tsx, mobil components/admin/AConfirm.tsx; yönetim paneli yalnız Türkçe) açılır:
+    "Görüşmeyi sonlandırmak istediğinden emin misin?" ya da "{gün} gün kısıtlama vermek istediğinden emin misin?", butonlar "Hayır" ve
+    "Evet". Evet mevcut işlemi (sonlandırma; kısıt + sohbet kapanışı) aynen yapar, Hayır / dışarı basma / Esc / geri tuşu hiçbir işlem yapmaz. Temsilcinin adı / cinsiyeti / fotoğrafı hiçbir yerde
     gösterilmez. Temsilci bağlandığı an mobilde hafif titreşim (expo-haptics). İlk atamada 2 otomatik mesaj (sistem kodları NOTICE: kayıt + Aydınlatma Metni linki
     /kvkk, GREETING: karşılama); istemci kodu arayüz dilinde gösterir. GREETING metni (sup.sysGreeting) TR "Merhaba, ben Ahenk müşteri
     temsilcisiyim. Bugün size yardımcı olmaktan mutluluk duyacağım.", EN "Hello, I'm an Ahenk customer representative. I'll be happy to
     help you today."; TR metin harfiyen böyledir: sen dili (hitap) kuralının bilinçli istisnasıdır, değiştirilmez. Yazıyor göstergesi, okundu, saat, emoji, görsel (yalnız JPG / PNG /
     WebP, dosya başına 5 MB, mesaj başına 3; EXIF silinerek WebP'ye çevrilir, bulanıklaştırma yok; uploads/support/<chatId>/, git'e eklenmez).
-    Masa Sohbeti link / telefon / şüpheli kelime engelleri destek sohbetinde yok. "Sohbeti Sonlandır" ve küçült butonu. Mobilde klavye açıkken mesaj alanı
+    Masa Sohbeti link / telefon / şüpheli kelime engelleri destek sohbetinde yok. Sonlandır ve küçült butonu. Mobilde klavye açıkken mesaj alanı
     klavyenin üstünde (KeyboardAvoidingView). Kullanıcı geçmiş destek sohbetlerini göremez, kapanan sohbet ekrandan kalkar
   - Anlık iletişim: Masa Sohbeti gibi yoklama (3 sn). Yazıyor göstergesi ve gönderilmemiş yazı önizlemesi yalnız backend süreç belleğinde
     (5 sn), hiçbir yere yazılmaz. Kullanıcı 20 sn'dir yoklamıyorsa temsilci cevabı push + uygulama içi bildirimle gider (üye; mekân hesabında
@@ -747,11 +762,12 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
   - SupportChat.status: QUEUED (sırada), ACTIVE (atanmış), CLOSED; OPEN ve TICKET ileride destek bileti için ayrıldı (arayüz yok)
   - Maskot (kırmızı kulaklıklı sandalye, şeffaf WebP): baloncuk sürümü yalnız üst kısım 512×512 (web public/maskot/destek-baloncuk.webp,
     mobil assets/destek-baloncuk.webp); tam sürüm uzun kenar 1024 (public/maskot/destek-tam.webp, assets/destek-tam.webp)
-  - Baloncuk: mesaj ikonu yok, maskotun baloncuk sürümü; mobil 60 pt, web 64 px; sıra (kuyrukta) ve okunmamış rozeti sağ üstte maskotun
+  - Baloncuk: mesaj ikonu yok, maskotun baloncuk sürümü; mobil 60 pt, web 64 px; dolgu yok (zemin şeffaf), kırmızı (#c0392b; web,
+    mobil c.red) yalnız dairenin çerçevesinde: web 2 px, mobil 2 pt (maskotun üstünde, boyutu değiştirmez); sıra (kuyrukta) ve okunmamış rozeti sağ üstte maskotun
     üstünde; erişilebilirlik etiketi sup.title ("Canlı Destek" / "Live Support") + sıra / okunmamış bilgisi; davranış aynen
   - Kuyruk: sıra satırının hemen üstünde maskot tam sürüm, yükseklik 72 (pt / px); oyun açıkken gösterilmez
-  - Sohbet başlığı: temsilci bağlanınca (ACTIVE) başlık bloğunun üstünde ortalı maskot baloncuk sürümü 40 (pt / px); iki satırlı başlık ve
-    Sohbeti Sonlandır aynen
+  - Sohbet başlığı: temsilci bağlanınca (ACTIVE) başlığın solunda maskot tam sürüm (web 60 px / mobil 50 pt yükseklik; yukarıda); başlığın
+    üstünde ortalı baloncuk maskotu yoktur
   - Filigran (yalnız üye ve mekân ekranı; temsilci / ADMIN / SUPERADMIN ekranında yok): sohbet alanının ortasında maskot tam sürüm, alan
     genişliğinin %60'ı, oran korunur, sabit (mesajlar üstünden kayar), opaklık %8 (uygulama yalnız koyu tema; açık temada %10 kuralı),
     renkli, dokunma almaz (web pointer-events none, mobil pointerEvents none); kuyrukta ve sohbet boyunca görünür, Breakout açıkken gizli

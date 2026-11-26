@@ -2,7 +2,7 @@
 
 // Canlı Destek baloncuğu (üye sayfaları ve mekân paneli; yönetim panelinde yok). Yalnız açık destek sohbeti varken (Canlı Destek'ten
 // başlatılmış, kuyrukta ya da temsilcide) sağ altta sabit görünür, sürüklenmez. Kuyruktayken sıra numarası, yeni mesajda okunmamış
-// sayı rozeti. Baloncukta maskotun baloncuk sürümü (/maskot/destek-baloncuk.webp, 64 px); sıra ve okunmamış rozeti sağ üstte, maskotun
+// sayı rozeti. Baloncukta maskotun baloncuk sürümü (/maskot/destek-baloncuk.webp, 64 px; zemin şeffaf, #c0392b 2 px çerçeve); sıra ve okunmamış rozeti sağ üstte, maskotun
 // üstünde. Basınca sohbet ekranı açılır. Sohbet herhangi bir şekilde kapanınca kaybolur. Sohbet ekranındayken gizli.
 // Yoklama yalnız açık sohbet varken (4 sn); sayfa açılışında ve sohbet başlatılınca / küçültülünce bir kez okunur. Okundu yazmaz.
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -52,9 +52,11 @@ export function SupportBubble({ mode }: { mode: 'member' | 'venue' }) {
     <>
       <style>{`.sup-bubble{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 60px);z-index:45}@media(min-width:768px){.sup-bubble{right:24px;bottom:24px}}`}</style>
       <Link href={chatPath} aria-label={label} className="sup-bubble"
-        style={{ width: 64, height: 64, borderRadius: 32, background: '#c0392b', boxShadow: '0 6px 20px rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+        style={{ width: 64, height: 64, borderRadius: 32, background: 'transparent', boxShadow: '0 6px 20px rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/maskot/destek-baloncuk.webp" alt="" aria-hidden width={64} height={64} style={{ width: 64, height: 64, borderRadius: 32, pointerEvents: 'none' }} />
+        {/* Şeffaf zemin; kırmızı yalnız 2 px çerçevede (maskotun üstünde, boyutu değiştirmez) */}
+        <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: 32, border: '2px solid #c0392b', pointerEvents: 'none' }} />
         {sum.status === 'QUEUED' && !!sum.position && (
           <span aria-hidden style={{ position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, padding: '0 5px', borderRadius: 10, background: '#f4f1ec', color: '#c0392b', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #121212' }}>
             {sum.position}

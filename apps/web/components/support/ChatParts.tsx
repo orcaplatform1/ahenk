@@ -22,7 +22,7 @@ export function SendIcon() {
 }
 // Yazdıkça en fazla 5 satıra kadar büyür (satır 20 px), sonra kaydırır
 const LINE = 20;
-export function AutoTextarea({ value, onChange, placeholder, onEnter, color = TEXT, enterSends = true }: { value: string; onChange: (v: string) => void; placeholder: string; onEnter: () => void; color?: string; enterSends?: boolean }) {
+export function AutoTextarea({ value, onChange, onEnter, color = TEXT, enterSends = true }: { value: string; onChange: (v: string) => void; onEnter: () => void; color?: string; enterSends?: boolean }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     const el = ref.current; if (!el) return;
@@ -30,7 +30,7 @@ export function AutoTextarea({ value, onChange, placeholder, onEnter, color = TE
     el.style.height = `${Math.min(el.scrollHeight, LINE * 5 + 20)}px`;
   }, [value]);
   return (
-    <textarea ref={ref} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={1}
+    <textarea ref={ref} value={value} onChange={(e) => onChange(e.target.value)} rows={1}
       onKeyDown={(e) => { if (enterSends && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onEnter(); } }}
       style={{ flex: 1, minWidth: 0, resize: 'none', minHeight: 44, padding: '12px 6px', lineHeight: `${LINE}px`, border: 'none', background: 'transparent', color, fontSize: 14, outline: 'none', overflowY: 'auto' }} />
   );

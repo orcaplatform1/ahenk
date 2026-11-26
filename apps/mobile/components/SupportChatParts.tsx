@@ -26,8 +26,8 @@ export function StatusPill({ status, label }: { status: PillStatus; label: strin
   );
 }
 
-export function ChatComposer({ value, onChangeText, placeholder, placeholderColor, textColor, onAttach, onEmoji, onSend, sendDisabled, onFocus, labels, boxBg = 'rgba(255,255,255,0.04)', boxBorder = 'rgba(255,255,255,0.1)' }: {
-  value: string; onChangeText: (v: string) => void; placeholder: string; placeholderColor: string; textColor: string;
+export function ChatComposer({ value, onChangeText, textColor, onAttach, onEmoji, onSend, sendDisabled, onFocus, labels, boxBg = 'rgba(255,255,255,0.04)', boxBorder = 'rgba(255,255,255,0.1)' }: {
+  value: string; onChangeText: (v: string) => void; textColor: string;
   onAttach: () => void; onEmoji: () => void; onSend: () => void; sendDisabled: boolean; onFocus?: () => void;
   labels: { attach: string; emoji: string; send: string }; boxBg?: string; boxBorder?: string;
 }) {
@@ -39,7 +39,7 @@ export function ChatComposer({ value, onChangeText, placeholder, placeholderColo
       <Pressable onPress={onEmoji} accessibilityRole="button" accessibilityLabel={labels.emoji} style={ICON}>
         <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={c.red} strokeWidth={1.8} strokeLinecap="round"><Circle cx={12} cy={12} r={9.5} /><Path d="M8 14.5s1.5 2 4 2 4-2 4-2" /><Path d="M9 9.5h.01M15 9.5h.01" strokeWidth={2.4} /></Svg>
       </Pressable>
-      <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={placeholderColor} multiline keyboardAppearance="dark" onFocus={onFocus}
+      <TextInput value={value} onChangeText={onChangeText} multiline keyboardAppearance="dark" onFocus={onFocus}
         style={{ flex: 1, minWidth: 0, minHeight: 44, maxHeight: LINE * 5 + 24, paddingTop: 12, paddingBottom: 12, paddingHorizontal: 6, lineHeight: LINE, color: textColor, fontSize: 14, fontFamily: sans(400) }} />
       <Pressable onPress={onSend} disabled={sendDisabled} accessibilityRole="button" accessibilityLabel={labels.send} style={ICON}>
         <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: c.red, alignItems: 'center', justifyContent: 'center', opacity: sendDisabled ? 0.5 : 1 }}>

@@ -3,7 +3,7 @@
 // HIG: güvenli alan, en az 44 pt dokunma alanı, klavye açıkken mesaj alanı klavyenin üstünde (KeyboardAvoidingView).
 // Küçült butonu sohbeti baloncuğa alır (components/SupportBubble.tsx). Kuyruktayken "Beklerken oyna" Breakout açar; temsilci bağlanınca
 // (hafif titreşim) ya da küçültülünce oyun tamamen kapanır, dönüşte yeniden başlamaz.
-// Maskot: kuyrukta sıra satırının üstünde tam sürüm (72 pt yükseklik), temsilci bağlanınca başlığın üstünde baloncuk sürümü (40 pt),
+// Maskot: kuyrukta sıra satırının üstünde tam sürüm (72 pt yükseklik), temsilci bağlanınca başlığın solunda tam sürüm (50 pt yükseklik),
 // sohbet alanında sabit filigran (tam sürüm, alan genişliğinin %60'ı, ortada, opaklık %8 koyu tema, pointerEvents none; oyun açıkken gizli).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
@@ -22,6 +22,7 @@ import * as Haptics from 'expo-haptics';
 import { Breakout } from '@/components/Breakout';
 import { ChatComposer, StatusPill, SUPPORT_EMOJIS } from '@/components/SupportChatParts';
 import { Card, Serif, StdButton, T } from '@/components/ui';
+import { showAlert } from '@/components/AppAlert';
 import { btn, c, inputGlass, ll, sans, tw } from '@/theme/theme';
 
 type Sender = 'USER' | 'AGENT' | 'SYSTEM';
@@ -42,9 +43,10 @@ const TAGS = {
 const OK_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_BYTES = 5 * 1024 * 1024;
 // Canlı destek maskotu (assets); tam sürüm en-boy oranı 1009 / 1024; filigran opaklığı: uygulama yalnız koyu temada (%8)
-const MASCOT_BUBBLE = require('@/assets/destek-baloncuk.webp');
 const MASCOT_FULL = require('@/assets/destek-tam.webp');
 const MASCOT_RATIO = 1009 / 1024;
+// Bağlı sohbet başlığındaki maskot yüksekliği: temsilci ekranı başlık avatarı (40 pt) + %25
+const MASCOT_HEADER = 50;
 const WATERMARK_OPACITY = 0.08;
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Europe/Istanbul' });
 
@@ -195,26 +197,45 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
   return (
     <View style={{ flex: 1, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.025)', overflow: 'hidden' }}>
       {/* Başlık: temsilcinin adı ve cinsiyeti hiçbir yerde gösterilmez */}
-      {/* Başlık metni kırılmaz (1. satır başlık, 2. satır Temsilci No + durum etiketi); küçült ve Sohbeti Sonlandır başlığın altında tek satırda */}
-      <View style={{ paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', gap: 6 }}>
-        {/* Temsilci bağlanınca başlık bloğunun üstünde ortalı maskot (baloncuk sürümü, 40 pt) */}
-        {chat.status === 'ACTIVE' && <Image source={MASCOT_BUBBLE} accessible={false} style={{ width: 40, height: 40, alignSelf: 'center' }} />}
-        <View style={{ gap: 4 }}>
-          <T w={700} numberOfLines={1} style={{ fontSize: 15, color: ll.text }}>{t('sup.header')}</T>
-          {!!chat.agentNo && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <T numberOfLines={1} style={{ fontSize: 13, color: ll.label }}>{t('sup.agentNo', { no: chat.agentNo })}</T>
-              {chat.status === 'ACTIVE' && <StatusPill status={status} label={status === 'typing' ? t('sup.typing') : status === 'online' ? t('sup.online') : t('sup.offlineStatus')} />}
-            </View>
-          )}
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+      {chat.status === 'ACTIVE' ? (
+        // Temsilci bağlanınca (temsilci ekranı başlığıyla aynı mantık): solda maskot tam sürüm (50 pt = temsilci ekranı avatarı 40 pt + %25),
+        // sağında başlık + Temsilci No ve durum etiketi, en sağda küçült ve Sonlandır; tek satır, dikeyde en az yer
+        <View style={{ paddingVertical: 6, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Image source={MASCOT_FULL} accessible={false} style={{ height: MASCOT_HEADER, width: MASCOT_HEADER * MASCOT_RATIO }} />
+          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+            <T w={700} numberOfLines={1} style={{ fontSize: 15, color: ll.text }}>{t('sup.header')}</T>
+            {!!chat.agentNo && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <T numberOfLines={1} style={{ fontSize: 12, color: ll.label, flexShrink: 1 }}>{t('sup.agentNo', { no: chat.agentNo })}</T>
+                <StatusPill status={status} label={status === 'typing' ? t('sup.typing') : status === 'online' ? t('sup.online') : t('sup.offlineStatus')} />
+              </View>
+            )}
+          </View>
           <Pressable onPress={onMinimize} accessibilityRole="button" accessibilityLabel={t('sup.minimize')} style={ICON}>
             <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={2} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
           </Pressable>
-          <StdButton variant="ghost" label={t('sup.end')} onPress={end} />
+          {/* Sonlandır onayı (site paleti, AppAlert): Evet → mevcut sonlandırma akışı (değerlendirme dahil), Hayır / geri tuşu / dışarı basma → işlem yok */}
+          <StdButton variant="ghost" label={t('sup.endShort')} onPress={() => showAlert(t('sup.endConfirm'), undefined, [{ text: t('sup.no'), style: 'cancel' }, { text: t('sup.yes'), onPress: () => { void end(); } }])} />
         </View>
-      </View>
+      ) : (
+        /* Kuyrukta: başlık metni kırılmaz; küçült ve Sohbeti Sonlandır başlığın altında tek satırda */
+        <View style={{ paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', gap: 6 }}>
+          <View style={{ gap: 4 }}>
+            <T w={700} numberOfLines={1} style={{ fontSize: 15, color: ll.text }}>{t('sup.header')}</T>
+            {!!chat.agentNo && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <T numberOfLines={1} style={{ fontSize: 13, color: ll.label }}>{t('sup.agentNo', { no: chat.agentNo })}</T>
+              </View>
+            )}
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+            <Pressable onPress={onMinimize} accessibilityRole="button" accessibilityLabel={t('sup.minimize')} style={ICON}>
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={ll.text} strokeWidth={2} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
+            </Pressable>
+            <StdButton variant="ghost" label={t('sup.end')} onPress={end} />
+          </View>
+        </View>
+      )}
       {chat.status === 'QUEUED' && !!chat.queue && (
         <View style={{ paddingVertical: game ? 6 : 10, paddingHorizontal: 14, backgroundColor: 'rgba(245,158,11,0.06)', borderBottomWidth: 1, borderBottomColor: 'rgba(245,158,11,0.2)', gap: 4 }}>
           {/* Oyun açıkken sıra ve tahmin satırı üstte küçük */}
@@ -274,7 +295,7 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
       )}
       {/* Mesaj kutusu: dosya, emoji, yazı alanı ve gönder ikonu kutunun içinde (temsilci ekranıyla aynı düzen) */}
       <View style={{ padding: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' }}>
-        <ChatComposer value={text} onChangeText={onType} placeholder={t('sup.placeholder')} placeholderColor={inputGlass.placeholder} textColor={tw.text}
+        <ChatComposer value={text} onChangeText={onType} textColor={tw.text}
           onAttach={pick} onEmoji={() => setEmoji((v) => !v)} onSend={send} sendDisabled={busy || (!text.trim() && !files.length)}
           onFocus={() => setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 300)}
           labels={{ attach: t('sup.attach'), emoji: t('sup.emoji'), send: t('sup.send') }} />
