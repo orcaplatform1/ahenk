@@ -218,7 +218,11 @@ function ChatPanel({ client, chat, reload, onEnded, onMinimize }: { client: Clie
         </div>
       )}
       {game ? (
-        <div style={{ flex: 1, overflowY: 'auto', padding: 14 }}><Breakout /></div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 14 }}>
+          <Breakout />
+          {/* Oyunu kapat: oyun tamamen kapanır (bileşen kaldırılır), sıra ekranına dönülür; hiçbir oyun verisi saklanmaz */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}><StdButton variant="ghost" onClick={() => setGame(false)}>{t('sup.closeGame')}</StdButton></div>
+        </div>
       ) : (<>
       <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {msgs.map((m) => <Bubble key={m.id} m={m} chatId={chat.id} client={client} onImage={setViewer} />)}
@@ -316,7 +320,7 @@ function RatingView({ client, chatId, onDone }: { client: Client; chatId: string
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const group = stars >= 4 ? 'good' : stars >= 2 ? 'mid' : stars === 1 ? 'bad' : null;
-  const can = helped !== null && stars > 0 && (group === 'good' || tags.length > 0) && !busy;
+  const can = helped !== null && stars > 0 && !busy;
   useEffect(() => { setTags([]); }, [group]);
 
   async function submit() {

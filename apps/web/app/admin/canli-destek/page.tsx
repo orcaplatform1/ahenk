@@ -2,7 +2,7 @@
 
 // Canlı Destek (yönetim paneli). Temsilci (SUPPORT), ADMIN ve SUPERADMIN görür.
 // Sohbetler: 3 sütun — sol: sıradaki ve açık sohbetler, orta: aktif sohbet, sağ: Haiku asistanı.
-// Hazır Yanıtlar ve Raporlar: ADMIN + SUPERADMIN. Temsilciler, Kısıtlamalar, Haiku Kayıtları: yalnız SUPERADMIN.
+// Hazır Yanıtlar ve Raporlar: ADMIN + SUPERADMIN. Tüm Sohbetler, Temsilciler, Kısıtlamalar, Haiku Kayıtları: yalnız SUPERADMIN.
 // Temsilci kullanıcı hakkında Haiku dışında veri görmez (yalnız ad / mekân adı, konu, bekleme süresi).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, API_PREFIX, langHeaders } from '@/lib/api';
@@ -50,12 +50,13 @@ function beep() {
   } catch { /* ses çalınamadı */ }
 }
 
-type Tab = 'chats' | 'canned' | 'reports' | 'agents' | 'restrictions' | 'ai';
+type Tab = 'chats' | 'all' | 'canned' | 'reports' | 'agents' | 'restrictions' | 'ai';
 
 export default function CanliDestekAdmin() {
   const role = myRole();
   const tabs: [Tab, string][] = [
     ['chats', 'Sohbetler'],
+    ...(role === 'SUPERADMIN' ? ([['all', 'Tüm Sohbetler']] as [Tab, string][]) : []),
     ...(role === 'ADMIN' || role === 'SUPERADMIN' ? ([['canned', 'Hazır Yanıtlar'], ['reports', 'Raporlar']] as [Tab, string][]) : []),
     ...(role === 'SUPERADMIN' ? ([['agents', 'Temsilciler'], ['restrictions', 'Kısıtlamalar'], ['ai', 'Haiku Kayıtları']] as [Tab, string][]) : []),
   ];
@@ -72,6 +73,7 @@ export default function CanliDestekAdmin() {
         </div>
       )}
       {tab === 'chats' && <ChatsTab />}
+      {tab === 'all' && <AllChatsTab />}
       {tab === 'canned' && <CannedTab />}
       {tab === 'reports' && <ReportsTab />}
       {tab === 'agents' && <AgentsTab />}
@@ -370,6 +372,179 @@ function HaikuPanel({ chatId, onInsert }: { chatId: string; onInsert: (t: string
         </div>
       ))}
     </aside>
+  );
+}
+
+// ─── Tüm Sohbetler (yalnız SUPERADMIN) ─────────────────────────────────────
+// Açık, sıradaki ve kapanmış bütün sohbetler (üye + mekân). Sohbete basınca tamamı: mesajlar, görseller, iç notlar, devirler,
+// değerlendirme ve yorum, Haiku sorgu kayıtları. Açık sohbette mevcut devralma (POST /admin/live-support/chats/:id/take).
+
+interface AllRow { id: string; name: string; kind: 'user' | 'venue'; topic: string; status: string; agentNo: string | null; startedAt: string; durationMin: number; stars: number | null }
+interface AllDetail {
+  id: string; name: string; requesterName: string; kind: 'user' | 'venue'; topic: string; status: string; agentNo: string | null;
+  startedAt: string; closedAt: string | null; closedBy: string | null; durationMin: number; messages: Msg[];
+  notes: { id: string; agentNo: string; content: string; createdAt: string }[];
+  transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
+  rating: { helped: boolean; stars: number; tags: string[]; comment: string | null; createdAt: string } | null;
+  aiLogs: { id: string; agentNo: string; question: string; tools: string[]; createdAt: string }[];
+}
+const CHAT_STATUS: Record<string, string> = { QUEUED: 'Sırada', ACTIVE: 'Açık', CLOSED: 'Kapandı' };
+const CLOSED_BY: Record<string, string> = { USER: 'kullanıcı', AGENT: 'temsilci', AUTO: 'otomatik', ABUSE: 'kötüye kullanım' };
+const dur = (m: number) => (m < 60 ? `${Math.max(0, Math.round(m))} dk` : `${Math.floor(m / 60)} sa ${Math.round(m % 60)} dk`);
+const starsText = (n: number | null) => (n === null ? '—' : '★'.repeat(n) + '☆'.repeat(5 - n));
+
+function AllChatsTab() {
+  const [f, setF] = useState({ from: '', to: '', status: '', topic: '', agentNo: '', kind: '', q: '' });
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<{ total: number; page: number; pages: number; rows: AllRow[] } | null>(null);
+  const [sel, setSel] = useState<string | null>(null);
+  const [err, setErr] = useState('');
+  const load = useCallback(() => {
+    const qs = new URLSearchParams(Object.entries({ ...f, page: String(page) }).filter(([, v]) => v));
+    api.get<{ total: number; page: number; pages: number; rows: AllRow[] }>(`/admin/live-support/manage/chats?${qs}`).then((d) => { setData(d); setErr(''); }).catch((e) => setErr((e as Error).message));
+  }, [f, page]);
+  useEffect(() => { load(); }, [load]);
+  const set = (k: keyof typeof f, v: string) => { setF((p) => ({ ...p, [k]: v })); setPage(1); };
+  if (sel) return <AllChatDetailView id={sel} onBack={() => { setSel(null); load(); }} />;
+  return (
+    <div>
+      <div className="ll-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 8, marginBottom: 12 }}>
+        <input value={f.q} onChange={(e) => set('q', e.target.value)} placeholder="Ad soyad / mekân adı ara" style={{ ...inputStyle, gridColumn: 'span 2' }} />
+        <label style={{ fontSize: 11, color: MUTED, display: 'flex', flexDirection: 'column', gap: 3 }}>Başlangıç<input type="date" value={f.from} onChange={(e) => set('from', e.target.value)} style={inputStyle} /></label>
+        <label style={{ fontSize: 11, color: MUTED, display: 'flex', flexDirection: 'column', gap: 3 }}>Bitiş<input type="date" value={f.to} onChange={(e) => set('to', e.target.value)} style={inputStyle} /></label>
+        <select value={f.status} onChange={(e) => set('status', e.target.value)} style={inputStyle}>
+          <option value="">Tüm durumlar</option>{Object.entries(CHAT_STATUS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        </select>
+        <select value={f.topic} onChange={(e) => set('topic', e.target.value)} style={inputStyle}>
+          <option value="">Tüm konular</option>{Object.entries(TOPIC).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        </select>
+        <select value={f.kind} onChange={(e) => set('kind', e.target.value)} style={inputStyle}>
+          <option value="">Üye + Mekân</option><option value="user">Üye</option><option value="venue">Mekân</option>
+        </select>
+        <input value={f.agentNo} onChange={(e) => set('agentNo', e.target.value.replace(/\D/g, '').slice(0, 5))} inputMode="numeric" placeholder="Temsilci No" style={inputStyle} />
+      </div>
+      {err && <p style={{ color: RED, fontSize: 12, marginBottom: 8 }}>{err}</p>}
+      {!data ? <p style={{ color: MUTED, fontSize: 13 }}>Yükleniyor…</p> : (
+        <div className="ll-card" style={{ overflowX: 'auto' }}>
+          <p style={{ fontSize: 12, color: MUTED, marginBottom: 8 }}>{data.total} sohbet</p>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead><tr style={{ color: MUTED, textAlign: 'left' }}>{['Ad soyad / Mekân', 'Tür', 'Konu', 'Durum', 'Temsilci No', 'Başlangıç', 'Süre', 'Değerlendirme'].map((h) => <th key={h} style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{h}</th>)}</tr></thead>
+            <tbody>
+              {data.rows.map((r) => (
+                <tr key={r.id} onClick={() => setSel(r.id)} style={{ borderTop: `1px solid ${BORDER}`, cursor: 'pointer' }}>
+                  <td style={{ padding: '8px', fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ padding: '8px' }}>{r.kind === 'venue' ? 'Mekân' : 'Üye'}</td>
+                  <td style={{ padding: '8px' }}>{TOPIC[r.topic]}</td>
+                  <td style={{ padding: '8px', color: r.status === 'CLOSED' ? MUTED : r.status === 'ACTIVE' ? GREEN : AMBER }}>{CHAT_STATUS[r.status] ?? r.status}</td>
+                  <td style={{ padding: '8px', fontFamily: MONO }}>{r.agentNo ?? '—'}</td>
+                  <td style={{ padding: '8px', whiteSpace: 'nowrap' }}>{dt(r.startedAt)}</td>
+                  <td style={{ padding: '8px', whiteSpace: 'nowrap' }}>{dur(r.durationMin)}</td>
+                  <td style={{ padding: '8px', color: '#e0a526', whiteSpace: 'nowrap' }}>{starsText(r.stars)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!data.rows.length && <p style={{ fontSize: 12, color: MUTED, marginTop: 8 }}>Sohbet yok.</p>}
+          {data.pages > 1 && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
+              <button style={btn(MUTED)} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>← Önceki</button>
+              <span style={{ fontSize: 12, color: MUTED }}>{data.page} / {data.pages}</span>
+              <button style={btn(MUTED)} disabled={page >= data.pages} onClick={() => setPage((p) => p + 1)}>Sonraki →</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
+  const [c, setC] = useState<AllDetail | null>(null);
+  const [err, setErr] = useState('');
+  const [ok, setOk] = useState('');
+  const [viewer, setViewer] = useState<string | null>(null);
+  const load = useCallback(() => { api.get<AllDetail>(`/admin/live-support/manage/chats/${id}`).then((d) => { setC(d); setErr(''); }).catch((e) => setErr((e as Error).message)); }, [id]);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => { if (e.key === 'Escape') setViewer(null); };
+    window.addEventListener('keydown', on);
+    return () => window.removeEventListener('keydown', on);
+  }, []);
+  async function take() {
+    setErr(''); setOk('');
+    try { await api.post(`/admin/live-support/chats/${id}/take`, {}); setOk('Sohbeti devraldın. Sohbetler sekmesinden yazabilirsin.'); load(); } catch (e) { setErr((e as Error).message); }
+  }
+  if (!c) return <div><button style={btn(MUTED)} onClick={onBack}>← Tüm Sohbetler</button><p style={{ color: err ? RED : MUTED, fontSize: 13, marginTop: 10 }}>{err || 'Yükleniyor…'}</p></div>;
+  const open = c.status === 'ACTIVE' || c.status === 'QUEUED';
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 900 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button style={btn(MUTED)} onClick={onBack}>← Tüm Sohbetler</button>
+        {open && <button style={btn(BLUE)} onClick={take}>Devral</button>}
+        {ok && <span style={{ fontSize: 12, color: GREEN }}>{ok}</span>}
+        {err && <span style={{ fontSize: 12, color: RED }}>{err}</span>}
+      </div>
+      <div className="ll-card">
+        <p style={{ fontSize: 16, fontWeight: 700 }}>{c.name}</p>
+        {c.kind === 'venue' && c.requesterName !== c.name && <p style={{ fontSize: 12, color: MUTED }}>{c.requesterName}</p>}
+        <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>
+          {c.kind === 'venue' ? 'Mekân' : 'Üye'} · {TOPIC[c.topic]} · {CHAT_STATUS[c.status] ?? c.status} · Temsilci No {c.agentNo ?? '—'} · {dt(c.startedAt)} · {dur(c.durationMin)}
+          {c.closedAt ? ` · kapanış ${dt(c.closedAt)}${c.closedBy ? ` (${CLOSED_BY[c.closedBy] ?? c.closedBy})` : ''}` : ''}
+        </p>
+      </div>
+      <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '60vh', overflowY: 'auto' }}>
+        <p style={{ ...LABEL, color: MUTED }}>MESAJLAR ({c.messages.length})</p>
+        {c.messages.map((m) => {
+          if (m.sender === 'SYSTEM' && m.content !== 'GREETING') return <p key={m.id} style={{ alignSelf: 'center', maxWidth: '90%', fontSize: 11, color: MUTED, textAlign: 'center' }}>{SYS[m.content] ?? m.content} · {dt(m.createdAt)}</p>;
+          const user = m.sender === 'USER';
+          return (
+            <div key={m.id} style={{ alignSelf: user ? 'flex-start' : 'flex-end', maxWidth: '78%' }}>
+              <div style={{ padding: '7px 10px 5px', borderRadius: 12, background: user ? CARD : 'rgba(59,130,246,0.14)', border: `1px solid ${user ? BORDER : 'rgba(59,130,246,0.35)'}` }}>
+                {m.images.length > 0 && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>{m.images.map((f) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={f} src={imgUrl(id, f)} alt="Görsel" onClick={() => setViewer(imgUrl(id, f))} style={{ width: 110, height: 110, objectFit: 'cover', borderRadius: 8, cursor: 'zoom-in' }} />
+                ))}</div>}
+                {(m.content || m.sender === 'SYSTEM') && <p style={{ fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.sender === 'SYSTEM' ? SYS.GREETING : m.content}</p>}
+                <p style={{ fontSize: 10, color: MUTED, textAlign: 'right' }}>{!user && m.agentNo ? `No ${m.agentNo} · ` : ''}{dt(m.createdAt)}</p>
+              </div>
+            </div>
+          );
+        })}
+        {!c.messages.length && <p style={{ fontSize: 12, color: MUTED }}>—</p>}
+      </div>
+      <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <p style={{ ...LABEL, color: MUTED }}>İÇ NOTLAR ({c.notes.length}) · DEVİRLER ({c.transfers.length})</p>
+        {c.transfers.map((x) => <p key={x.id} style={{ fontSize: 12, color: AMBER }}>Devir {x.from ?? '—'} → {x.to ?? '—'} · {dt(x.createdAt)}: {x.note}</p>)}
+        {c.notes.map((n) => <p key={n.id} style={{ fontSize: 12 }}><span style={{ color: MUTED }}>No {n.agentNo} · {dt(n.createdAt)}:</span> {n.content}</p>)}
+        {!c.notes.length && !c.transfers.length && <p style={{ fontSize: 12, color: MUTED }}>—</p>}
+      </div>
+      <div className="ll-card" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <p style={{ ...LABEL, color: MUTED }}>DEĞERLENDİRME</p>
+        {c.rating ? (<>
+          <p style={{ fontSize: 16, color: '#e0a526' }}>{starsText(c.rating.stars)}</p>
+          <p style={{ fontSize: 12 }}>Sorun çözüldü mü: <strong>{c.rating.helped ? 'Evet' : 'Hayır'}</strong> · {dt(c.rating.createdAt)}</p>
+          {c.rating.tags.length > 0 && <p style={{ fontSize: 12, color: MUTED }}>{c.rating.tags.join(', ')}</p>}
+          {c.rating.comment && <p style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{c.rating.comment}</p>}
+        </>) : <p style={{ fontSize: 12, color: MUTED }}>Değerlendirme yok.</p>}
+      </div>
+      <div className="ll-card" style={{ overflowX: 'auto' }}>
+        <p style={{ ...LABEL, color: '#22d3ee', marginBottom: 6 }}>HAIKU SORGU KAYITLARI ({c.aiLogs.length})</p>
+        {c.aiLogs.map((l) => (
+          <div key={l.id} style={{ padding: '6px 0', borderTop: `1px solid ${BORDER}` }}>
+            <p style={{ fontSize: 11, color: MUTED }}>{dt(l.createdAt)} · Temsilci No {l.agentNo}</p>
+            <p style={{ fontSize: 13 }}>{l.question}</p>
+            <p style={{ fontSize: 11, color: '#22d3ee' }}>{l.tools.join(', ') || '—'}</p>
+          </div>
+        ))}
+        {!c.aiLogs.length && <p style={{ fontSize: 12, color: MUTED }}>Kayıt yok.</p>}
+      </div>
+      {viewer && (
+        <div onClick={() => setViewer(null)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={viewer} alt="Görsel" style={{ maxWidth: '94vw', maxHeight: '90vh', objectFit: 'contain' }} />
+        </div>
+      )}
+    </div>
   );
 }
 

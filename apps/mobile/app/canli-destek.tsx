@@ -212,7 +212,11 @@ function ChatPanel({ chat, token, reload, onEnded, onMinimize }: { chat: ChatVie
         </View>
       )}
       {game ? (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 12 }} scrollEnabled={false}><Breakout /></ScrollView>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 12 }} scrollEnabled={false}>
+          <Breakout />
+          {/* Oyunu kapat: oyun tamamen kapanır (bileşen kaldırılır), sıra ekranına dönülür; hiçbir oyun verisi saklanmaz */}
+          <StdButton variant="ghost" label={t('sup.closeGame')} style={{ alignSelf: 'center', marginTop: 12 }} onPress={() => setGame(false)} />
+        </ScrollView>
       ) : (<>
       <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 12, gap: 8 }} keyboardShouldPersistTaps="handled"
         onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
@@ -321,7 +325,7 @@ function RatingView({ chatId, onDone }: { chatId: string; onDone: () => void }) 
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const group = stars >= 4 ? 'good' : stars >= 2 ? 'mid' : stars === 1 ? 'bad' : null;
-  const can = helped !== null && stars > 0 && (group === 'good' || tags.length > 0) && !busy;
+  const can = helped !== null && stars > 0 && !busy;
   useEffect(() => { setTags([]); }, [group]);
 
   async function submit() {

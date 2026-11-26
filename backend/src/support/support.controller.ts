@@ -103,6 +103,12 @@ export class SupportManageController {
   @Get("restrictions") @Roles(UserRole.SUPERADMIN) restrictions() { return this.support.restrictions(); }
   @Post("restrictions/:id/lift") @Roles(UserRole.SUPERADMIN) lift(@Req() req: Request, @Param("id") id: string) { return this.support.liftRestriction(this.actor(req), id); }
   @Get("ai-logs") @Roles(UserRole.SUPERADMIN) aiLogs() { return this.support.aiLogs(); }
+  // Tüm Sohbetler (yalnız SUPERADMIN): liste + sohbetin tamamı; devralma mevcut POST /admin/live-support/chats/:id/take ile
+  @Get("chats") @Roles(UserRole.SUPERADMIN) allChats(
+    @Query("from") from?: string, @Query("to") to?: string, @Query("status") status?: string, @Query("topic") topic?: string,
+    @Query("agentNo") agentNo?: string, @Query("kind") kind?: string, @Query("q") q?: string, @Query("page") page?: string,
+  ) { return this.support.allChats({ from, to, status, topic, agentNo, kind, q, page }); }
+  @Get("chats/:id") @Roles(UserRole.SUPERADMIN) allChatDetail(@Param("id") id: string) { return this.support.allChatDetail(id); }
   @Get("settings") @Roles(UserRole.SUPERADMIN) settings() { return this.support.settings(); }
   @Patch("settings") @Roles(UserRole.SUPERADMIN) updateSettings(@Body() dto: SupportSettingsDto) { return this.support.updateSettings(dto); }
 }

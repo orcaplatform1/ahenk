@@ -287,7 +287,6 @@ export class SupportService implements OnModuleInit {
     const group = input.stars >= 4 ? "good" : input.stars >= 2 ? "mid" : "bad";
     const tags = [...new Set(input.tags ?? [])];
     if (tags.some((t) => !RATING_TAGS[group].includes(t))) throw new BadRequestException("Geçersiz değerlendirme etiketi");
-    if (group !== "good" && tags.length === 0) throw new BadRequestException("En az bir seçenek işaretlemelisin.");
     const comment = (input.comment ?? "").trim().slice(0, 1000) || null;
     await this.prisma.supportRating.create({ data: { chatId, helped: !!input.helped, stars: input.stars, tags, comment } });
     return { ok: true };
@@ -790,6 +789,76 @@ export class SupportService implements OnModuleInit {
       open: chats.filter((c) => OPEN.includes(c.status)).length,
       avgWaitMin: avg(waits),
       topics, hourly, shift, shiftDay: settings.shiftDay, shiftNight: settings.shiftNight, byAgent,
+    };
+  }
+
+  // ─── Tüm Sohbetler (yalnız SUPERADMIN): açık, sıradaki ve kapanmış bütün sohbetler ───────────────
+
+  // Satırdaki ad: üyede ad soyad, mekânda mekân adı (requesterName "mekân adı · yetkili ad soyad" biçiminde saklanır)
+  private displayName(c: { requesterName: string; venueAccountId: string | null }) {
+    if (!c.venueAccountId) return c.requesterName;
+    const i = c.requesterName.lastIndexOf(" · ");
+    return i > 0 ? c.requesterName.slice(0, i) : c.requesterName;
+  }
+
+  // Filtreler: tarih aralığı (başlangıç günü, TR), durum, konu, Temsilci No, hesap türü; ad soyad / mekân adıyla arama
+  async allChats(f: { from?: string; to?: string; status?: string; topic?: string; agentNo?: string; kind?: string; q?: string; page?: string }) {
+    const day = /^\d{4}-\d{2}-\d{2}$/;
+    const where: Prisma.SupportChatWhereInput = {};
+    const created: Prisma.DateTimeFilter = {};
+    if (f.from && day.test(f.from)) created.gte = new Date(`${f.from}T00:00:00+03:00`);
+    if (f.to && day.test(f.to)) created.lt = new Date(new Date(`${f.to}T00:00:00+03:00`).getTime() + 86_400_000);
+    if (created.gte || created.lt) where.createdAt = created;
+    if (f.status && (Object.values(SupportChatStatus) as string[]).includes(f.status)) where.status = f.status as SupportChatStatus;
+    if (f.topic && (Object.values(SupportTopic) as string[]).includes(f.topic)) where.topic = f.topic as SupportTopic;
+    if (f.kind === "user") where.venueAccountId = null;
+    if (f.kind === "venue") where.venueAccountId = { not: null };
+    const q = (f.q ?? "").trim();
+    if (q) where.requesterName = { contains: q.slice(0, 100), mode: "insensitive" };
+    const agents = await this.prisma.supportAgent.findMany({ select: { userId: true, agentNo: true } });
+    const no = new Map(agents.map((a) => [a.userId, a.agentNo]));
+    const agentNo = (f.agentNo ?? "").trim();
+    if (agentNo) where.agentId = agents.find((a) => a.agentNo === agentNo)?.userId ?? "__none__";
+    const size = 50;
+    const page = Math.max(1, Math.floor(Number(f.page) || 1));
+    const [total, rows] = await Promise.all([
+      this.prisma.supportChat.count({ where }),
+      this.prisma.supportChat.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * size, take: size, include: { rating: { select: { stars: true } } } }),
+    ]);
+    const now = Date.now();
+    return {
+      total, page, pages: Math.max(1, Math.ceil(total / size)),
+      rows: rows.map((c) => ({
+        id: c.id, name: this.displayName(c), kind: c.venueAccountId ? "venue" : "user", topic: c.topic, status: c.status,
+        agentNo: c.agentId ? no.get(c.agentId) ?? null : null, startedAt: c.createdAt.toISOString(),
+        durationMin: ((c.closedAt?.getTime() ?? now) - c.createdAt.getTime()) / 60_000, stars: c.rating?.stars ?? null,
+      })),
+    };
+  }
+
+  // Sohbetin tamamı: mesajlar, görseller, iç notlar, devirler, değerlendirme ve yorum, Haiku sorgu kayıtları
+  async allChatDetail(chatId: string) {
+    const chat = await this.prisma.supportChat.findUnique({ where: { id: chatId }, include: { rating: true } });
+    if (!chat) throw new NotFoundException("Sohbet bulunamadı");
+    const [messages, notes, transfers, aiLogs, agents] = await Promise.all([
+      this.prisma.supportMessage.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
+      this.prisma.supportNote.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
+      this.prisma.supportTransfer.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
+      this.prisma.supportAiLog.findMany({ where: { chatId }, orderBy: { createdAt: "asc" } }),
+      this.prisma.supportAgent.findMany({ select: { userId: true, agentNo: true } }),
+    ]);
+    const no = new Map(agents.map((a) => [a.userId, a.agentNo]));
+    const r = chat.rating;
+    return {
+      id: chat.id, name: this.displayName(chat), requesterName: chat.requesterName, kind: chat.venueAccountId ? "venue" : "user",
+      topic: chat.topic, status: chat.status, agentNo: chat.agentId ? no.get(chat.agentId) ?? null : null,
+      startedAt: chat.createdAt.toISOString(), closedAt: chat.closedAt?.toISOString() ?? null, closedBy: chat.closedBy,
+      durationMin: ((chat.closedAt?.getTime() ?? Date.now()) - chat.createdAt.getTime()) / 60_000,
+      messages: messages.map((m) => this.messageView(m)),
+      notes: notes.map((n) => ({ id: n.id, agentNo: n.agentNo, content: n.content, createdAt: n.createdAt.toISOString() })),
+      transfers: transfers.map((x) => ({ id: x.id, from: no.get(x.fromAgentId) ?? null, to: no.get(x.toAgentId) ?? null, note: x.note, createdAt: x.createdAt.toISOString() })),
+      rating: r ? { helped: r.helped, stars: r.stars, tags: r.tags.map((t) => RATING_TAG_TR[t] ?? t), comment: r.comment, createdAt: r.createdAt.toISOString() } : null,
+      aiLogs: aiLogs.map((l) => ({ id: l.id, agentNo: l.agentNo, question: l.question, tools: l.tools, createdAt: l.createdAt.toISOString() })),
     };
   }
 

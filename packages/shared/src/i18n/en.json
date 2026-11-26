@@ -528,7 +528,6 @@
     "supportAlreadyRated": "You've already rated this chat.",
     "supportStarsRequired": "Please choose a star rating.",
     "supportTagInvalid": "Invalid rating option",
-    "supportTagRequired": "Please select at least one option.",
     "supportAgentRemoved": "This agent is no longer on the support team."
   },
   "footer": {
@@ -2192,6 +2191,7 @@
     "offlineStatus": "Offline",
     "play": "Play while you wait",
     "playAgain": "Play again",
+    "closeGame": "Close game",
     "score": "Score: {n}",
     "lives": "Lives: {n}",
     "minimize": "Minimize chat",

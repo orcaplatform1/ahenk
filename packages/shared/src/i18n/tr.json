@@ -528,7 +528,6 @@
     "supportAlreadyRated": "Bu sohbeti zaten değerlendirdin.",
     "supportStarsRequired": "Yıldız puanı seçmelisin.",
     "supportTagInvalid": "Geçersiz değerlendirme etiketi",
-    "supportTagRequired": "En az bir seçenek işaretlemelisin.",
     "supportAgentRemoved": "Bu temsilci artık destek ekibinde değil."
   },
   "footer": {
@@ -2192,6 +2191,7 @@
     "offlineStatus": "Çevrimdışı",
     "play": "Beklerken oyna",
     "playAgain": "Tekrar oyna",
+    "closeGame": "Oyunu kapat",
     "score": "Skor: {n}",
     "lives": "Can: {n}",
     "minimize": "Sohbeti küçült",

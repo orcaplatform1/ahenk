@@ -677,10 +677,10 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
   - Hareketsizlik: temsilcinin son (elle yazdığı) mesajından sonra kullanıcı 2 dk cevap vermezse sistem mesajı "1 dakika içinde yanıt vermezsen
     sohbet sonlanacak.", 3. dakikada otomatik sonlanır (closedBy AUTO) ve değerlendirme push ile gider
   - Değerlendirme (sohbet kullanıcı, temsilci ya da otomatik kapanınca; kötüye kullanımla kapananda yok; kapanıştan 24 saat açılabilir):
-    "Sorunun çözüldü mü?" / "Was your issue resolved?" Evet / Hayır + 5 yıldız (zorunlu); 4–5 yıldız "Neyi beğendin?" (isteğe bağlı), 2–3 "Ne daha iyi olabilirdi?",
-    1 "Ne kötü gitti?" (zorunlu) etiketleri; serbest metin; "Değerlendir" → "Değerlendirmeni aldık! …" + "Kapat"
+    "Sorunun çözüldü mü?" / "Was your issue resolved?" Evet / Hayır + 5 yıldız (zorunlu); 4–5 yıldız "Neyi beğendin?", 2–3 "Ne daha iyi olabilirdi?",
+    1 "Ne kötü gitti?" etiketleri (hepsi isteğe bağlı, etiket seçmeden gönderilebilir); serbest metin; "Değerlendir" → "Değerlendirmeni aldık! …" + "Kapat"
   - Beklerken oyna (web components/support/Breakout.tsx canvas, mobil components/Breakout.tsx Skia + Reanimated frame callback): yalnız
-    kuyruktayken butonla açılır; tek seviye, 5 sıra tuğla, 3 can, bitince "Tekrar oyna" / "Play again"; ses / efekt yok; top, raket, tuğla
+    kuyruktayken butonla açılır; tek seviye, 5 sıra tuğla, 3 can, bitince "Tekrar oyna" / "Play again"; oyun ekranında "Oyunu kapat" / "Close game" butonu (oyun tamamen kapanır, sıra ekranına dönülür); ses / efekt yok; top, raket, tuğla
     Ahenk renklerinde; raket parmak / fareyle sürüklenir; sabit adımlı (en fazla 60 kare/sn). Oyun açıkken sıra satırı üstte küçük. Skor
     yalnız ekranda; hiçbir oyun verisi DB'ye, sunucuya, yerel depolamaya ya da loga yazılmaz. Temsilci bağlanınca ya da sohbet küçültülünce
     oyun tamamen kapanır, dönüşte yeniden başlamaz
@@ -718,6 +718,11 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     davet_ve_indirim; mekân: mekan_bilgisi, mekan_masalari. Kapalı: KYC görsel / video, kimlik no, telefon, OCEAN, Masa Sohbeti, Acil Yardım,
     başka kullanıcıların verisi. Temsilci isterse sohbetteki görselleri okur; taslak cevap önerir. Her sorgu SupportAiLog (Temsilci No, sohbet
     ID, soru, çağrılan işlevler, zaman; SUPERADMIN görür)
+  - Tüm Sohbetler sekmesi (yalnız SUPERADMIN; ADMIN ve SUPPORT görmez; web + mobil): açık, sıradaki ve kapanmış bütün üye ve mekân sohbetleri;
+    satırda ad soyad (mekânda mekân adı), konu, durum, Temsilci No, başlangıç tarihi saati, süre (başlangıçtan kapanışa / şimdiye), yıldız;
+    filtre tarih aralığı, durum, konu, Temsilci No, hesap türü; ad soyad / mekân adıyla arama; sayfa başına 50. Basınca sohbetin tamamı
+    (mesajlar, görseller, iç notlar, devirler, değerlendirme + yorum, o sohbetin Haiku sorgu kayıtları); açık sohbette "Devral" (mevcut
+    devralma). Uçlar GET /admin/live-support/manage/chats, GET /admin/live-support/manage/chats/:id (SUPERADMIN)
   - Raporlar (ADMIN + SUPERADMIN): temsilci başına ilk yanıt süresi, ortalama sohbet süresi, kapatılan sohbet, puan ortalaması, Evet oranı,
     etiket dağılımı; genel konu dağılımı, saatlik ve vardiya yoğunluğu, ortalama bekleme
   - Saklama: destek sohbetleri, görseller, iç notlar, değerlendirmeler ve Haiku sorgu kayıtları 2 yıl (retention-policy.ts SUPPORT_CHATS, gece

@@ -1,6 +1,6 @@
 // apps/web/app/admin/canli-destek/page.tsx karşılığı. Temsilci (SUPPORT), ADMIN ve SUPERADMIN görür.
 // Sohbetler: liste → sohbet ekranı; sohbet ekranında "Haiku" butonu alttan yarım ekran Haiku panelini açar (HIG sheet: dışına basınca,
-// Android geri tuşuyla kapanır). Hazır Yanıtlar ve Raporlar: ADMIN + SUPERADMIN. Temsilciler, Kısıtlamalar, Haiku Kayıtları: SUPERADMIN.
+// Android geri tuşuyla kapanır). Hazır Yanıtlar ve Raporlar: ADMIN + SUPERADMIN. Tüm Sohbetler, Temsilciler, Kısıtlamalar, Haiku Kayıtları: SUPERADMIN.
 // Yeni sohbet atanınca ve uygulama dışındayken yeni mesaj gelince push (backend). Temsilci kullanıcı hakkında Haiku dışında veri görmez.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
@@ -50,18 +50,21 @@ function SmallBtn({ label, color, filled, onPress, disabled }: { label: string; 
   );
 }
 
-type Tab = 'chats' | 'canned' | 'reports' | 'agents' | 'restrictions' | 'ai';
+type Tab = 'chats' | 'all' | 'canned' | 'reports' | 'agents' | 'restrictions' | 'ai';
 
 export default function AdminCanliDestek() {
   const role = myRole();
   const tabs: [Tab, string][] = [
     ['chats', 'Sohbetler'],
+    ...(role === 'SUPERADMIN' ? ([['all', 'Tüm Sohbetler']] as [Tab, string][]) : []),
     ...(role === 'ADMIN' || role === 'SUPERADMIN' ? ([['canned', 'Hazır Yanıtlar'], ['reports', 'Raporlar']] as [Tab, string][]) : []),
     ...(role === 'SUPERADMIN' ? ([['agents', 'Temsilciler'], ['restrictions', 'Kısıtlamalar'], ['ai', 'Haiku Kayıtları']] as [Tab, string][]) : []),
   ];
   const [tab, setTab] = useState<Tab>('chats');
   const [chatId, setChatId] = useState<string | null>(null);
+  const [allId, setAllId] = useState<string | null>(null);
   if (tab === 'chats' && chatId) return <ChatScreen id={chatId} onBack={() => setChatId(null)} />;
+  if (tab === 'all' && allId) return <AllChatDetailView id={allId} onBack={() => setAllId(null)} />;
   return (
     <APage>
       <AT w={700} style={{ fontSize: 20, marginBottom: 12 }}>Canlı Destek</AT>
@@ -71,6 +74,7 @@ export default function AdminCanliDestek() {
         </ScrollView>
       )}
       {tab === 'chats' && <ChatList onOpen={setChatId} />}
+      {tab === 'all' && <AllChatsTab onOpen={setAllId} />}
       {tab === 'canned' && <CannedTab />}
       {tab === 'reports' && <ReportsTab />}
       {tab === 'agents' && <AgentsTab />}
@@ -329,6 +333,178 @@ function HaikuSheet({ visible, chatId, onClose, onInsert }: { visible: boolean; 
         </View>
       </KeyboardAvoidingView>
     </Modal>
+  );
+}
+
+// ─── Tüm Sohbetler (yalnız SUPERADMIN; web AllChatsTab karşılığı) ─────────────
+// Açık, sıradaki ve kapanmış bütün sohbetler (üye + mekân); basınca tamamı: mesajlar, görseller, iç notlar, devirler, değerlendirme,
+// Haiku sorgu kayıtları. Açık sohbette mevcut devralma (POST /admin/live-support/chats/:id/take).
+
+interface AllRow { id: string; name: string; kind: 'user' | 'venue'; topic: string; status: string; agentNo: string | null; startedAt: string; durationMin: number; stars: number | null }
+interface AllDetail {
+  id: string; name: string; requesterName: string; kind: 'user' | 'venue'; topic: string; status: string; agentNo: string | null;
+  startedAt: string; closedAt: string | null; closedBy: string | null; durationMin: number; messages: Msg[];
+  notes: { id: string; agentNo: string; content: string; createdAt: string }[];
+  transfers: { id: string; from: string | null; to: string | null; note: string; createdAt: string }[];
+  rating: { helped: boolean; stars: number; tags: string[]; comment: string | null; createdAt: string } | null;
+  aiLogs: { id: string; agentNo: string; question: string; tools: string[]; createdAt: string }[];
+}
+const CHAT_STATUS: Record<string, string> = { QUEUED: 'Sırada', ACTIVE: 'Açık', CLOSED: 'Kapandı' };
+const CLOSED_BY: Record<string, string> = { USER: 'kullanıcı', AGENT: 'temsilci', AUTO: 'otomatik', ABUSE: 'kötüye kullanım' };
+const dur = (m: number) => (m < 60 ? `${Math.max(0, Math.round(m))} dk` : `${Math.floor(m / 60)} sa ${Math.round(m % 60)} dk`);
+const starsText = (n: number | null) => (n === null ? '—' : '★'.repeat(n) + '☆'.repeat(5 - n));
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function AllChatsTab({ onOpen }: { onOpen: (id: string) => void }) {
+  const [f, setF] = useState({ from: '', to: '', status: '', topic: '', agentNo: '', kind: '', q: '' });
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<{ total: number; page: number; pages: number; rows: AllRow[] } | null>(null);
+  const [err, setErr] = useState('');
+  const load = useCallback(() => {
+    const p: Record<string, string> = { ...f, page: String(page) };
+    if (!DAY_RE.test(p.from)) p.from = '';
+    if (!DAY_RE.test(p.to)) p.to = '';
+    const qs = Object.entries(p).filter(([, v]) => v).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+    api.get<{ total: number; page: number; pages: number; rows: AllRow[] }>(`/admin/live-support/manage/chats?${qs}`).then((d) => { setData(d); setErr(''); }).catch((e: Error) => setErr(e.message));
+  }, [f, page]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const set = (k: keyof typeof f, v: string) => { setF((p) => ({ ...p, [k]: v })); setPage(1); };
+  const chips = (k: 'status' | 'topic' | 'kind', opts: [string, string][]) => (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+      {opts.map(([v, l]) => <SmallBtn key={v || 'all'} label={l} color={adm.cyan} filled={f[k] === v} onPress={() => set(k, v)} />)}
+    </View>
+  );
+  return (
+    <View style={{ gap: 10 }}>
+      <ACard style={{ gap: 8 }}>
+        <TextInput value={f.q} onChangeText={(v) => set('q', v)} placeholder="Ad soyad / mekân adı ara" placeholderTextColor={adm.muted} style={input} keyboardAppearance="dark" autoCorrect={false} />
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          <TextInput value={f.from} onChangeText={(v) => set('from', v.replace(/[^\d-]/g, '').slice(0, 10))} placeholder="Başlangıç YYYY-AA-GG" placeholderTextColor={adm.muted} style={[input, { flex: 1 }]} keyboardAppearance="dark" keyboardType="numbers-and-punctuation" />
+          <TextInput value={f.to} onChangeText={(v) => set('to', v.replace(/[^\d-]/g, '').slice(0, 10))} placeholder="Bitiş YYYY-AA-GG" placeholderTextColor={adm.muted} style={[input, { flex: 1 }]} keyboardAppearance="dark" keyboardType="numbers-and-punctuation" />
+        </View>
+        <TextInput value={f.agentNo} onChangeText={(v) => set('agentNo', v.replace(/\D/g, '').slice(0, 5))} placeholder="Temsilci No" placeholderTextColor={adm.muted} style={input} keyboardAppearance="dark" keyboardType="number-pad" />
+        {chips('status', [['', 'Tüm durumlar'], ...Object.entries(CHAT_STATUS)])}
+        {chips('topic', [['', 'Tüm konular'], ...Object.entries(TOPIC)])}
+        {chips('kind', [['', 'Üye + Mekân'], ['user', 'Üye'], ['venue', 'Mekân']])}
+      </ACard>
+      {!!err && <AError>{err}</AError>}
+      {!data ? <AT style={{ color: adm.muted }}>Yükleniyor…</AT> : (
+        <>
+          <AT style={{ fontSize: 12, color: adm.muted }}>{data.total} sohbet</AT>
+          {data.rows.map((r) => (
+            <Pressable key={r.id} onPress={() => onOpen(r.id)} accessibilityRole="button" accessibilityLabel={r.name}
+              style={({ pressed }) => ({ minHeight: 44, padding: 10, borderRadius: 10, backgroundColor: adm.card, borderWidth: 1, borderColor: adm.border, opacity: pressed ? 0.7 : 1, gap: 3 })}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+                <AT w={600} style={{ fontSize: 13, flexShrink: 1 }} numberOfLines={1}>{r.name}</AT>
+                <AT style={{ fontSize: 12, color: r.status === 'CLOSED' ? adm.muted : r.status === 'ACTIVE' ? adm.green : adm.amber }}>{CHAT_STATUS[r.status] ?? r.status}</AT>
+              </View>
+              <AT style={{ fontSize: 11, color: adm.muted }}>{r.kind === 'venue' ? 'Mekân' : 'Üye'} · {TOPIC[r.topic]} · Temsilci No {r.agentNo ?? '—'}</AT>
+              <AT style={{ fontSize: 11, color: adm.muted }}>{dt(r.startedAt)} · {dur(r.durationMin)} · <AT style={{ fontSize: 11, color: '#e0a526' }}>{starsText(r.stars)}</AT></AT>
+            </Pressable>
+          ))}
+          {!data.rows.length && <AT style={{ fontSize: 12, color: adm.muted }}>Sohbet yok.</AT>}
+          {data.pages > 1 && (
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
+              <SmallBtn label="← Önceki" color={adm.muted} disabled={page <= 1} onPress={() => setPage((p) => p - 1)} />
+              <AT style={{ fontSize: 12, color: adm.muted }}>{data.page} / {data.pages}</AT>
+              <SmallBtn label="Sonraki →" color={adm.muted} disabled={page >= data.pages} onPress={() => setPage((p) => p + 1)} />
+            </View>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
+  const [c, setC] = useState<AllDetail | null>(null);
+  const [err, setErr] = useState('');
+  const [ok, setOk] = useState('');
+  const [token, setToken] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<string | null>(null);
+  const load = useCallback(() => { api.get<AllDetail>(`/admin/live-support/manage/chats/${id}`).then((d) => { setC(d); setErr(''); }).catch((e: Error) => setErr(e.message)); }, [id]);
+  useEffect(() => { load(); getAccess().then(setToken); }, [load]);
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { if (viewer) setViewer(null); else onBack(); return true; });
+    return () => sub.remove();
+  }, [viewer, onBack]);
+  const img = (f: string) => ({ uri: `${API_PREFIX}/admin/live-support/chats/${id}/images/${f}`, headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+  async function take() {
+    setErr(''); setOk('');
+    try { await api.post(`/admin/live-support/chats/${id}/take`, {}); setOk('Sohbeti devraldın. Sohbetler sekmesinden yazabilirsin.'); load(); } catch (e) { setErr((e as Error).message); }
+  }
+  const open = !!c && (c.status === 'ACTIVE' || c.status === 'QUEUED');
+  return (
+    <APage>
+      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+        <SmallBtn label="← Tüm Sohbetler" color={adm.muted} onPress={onBack} />
+        {open && <SmallBtn label="Devral" color={adm.blue} onPress={take} />}
+      </View>
+      {!!ok && <AT style={{ fontSize: 12, color: adm.green, marginBottom: 8 }}>{ok}</AT>}
+      {!!err && <AError>{err}</AError>}
+      {!c ? (!err && <AT style={{ color: adm.muted }}>Yükleniyor…</AT>) : (
+        <View style={{ gap: 10 }}>
+          <ACard style={{ gap: 4 }}>
+            <AT w={700} style={{ fontSize: 16 }}>{c.name}</AT>
+            {c.kind === 'venue' && c.requesterName !== c.name && <AT style={{ fontSize: 12, color: adm.muted }}>{c.requesterName}</AT>}
+            <AT style={{ fontSize: 12, color: adm.muted }}>
+              {c.kind === 'venue' ? 'Mekân' : 'Üye'} · {TOPIC[c.topic]} · {CHAT_STATUS[c.status] ?? c.status} · Temsilci No {c.agentNo ?? '—'} · {dt(c.startedAt)} · {dur(c.durationMin)}
+              {c.closedAt ? ` · kapanış ${dt(c.closedAt)}${c.closedBy ? ` (${CLOSED_BY[c.closedBy] ?? c.closedBy})` : ''}` : ''}
+            </AT>
+          </ACard>
+          <ACard style={{ gap: 8 }}>
+            <ALabel>MESAJLAR ({c.messages.length})</ALabel>
+            {c.messages.map((m) => {
+              if (m.sender === 'SYSTEM' && m.content !== 'GREETING') return <AT key={m.id} style={{ alignSelf: 'center', textAlign: 'center', fontSize: 11, color: adm.muted }}>{SYS[m.content] ?? m.content} · {dt(m.createdAt)}</AT>;
+              const user = m.sender === 'USER';
+              return (
+                <View key={m.id} style={{ alignSelf: user ? 'flex-start' : 'flex-end', maxWidth: '86%', padding: 8, borderRadius: 12, backgroundColor: user ? adm.surface : 'rgba(59,130,246,0.14)', borderWidth: 1, borderColor: user ? adm.border : 'rgba(59,130,246,0.35)' }}>
+                  {m.images.length > 0 && (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+                      {m.images.map((f) => <Pressable key={f} onPress={() => setViewer(f)} accessibilityRole="imagebutton" accessibilityLabel="Görsel"><Image source={img(f)} style={{ width: 100, height: 100, borderRadius: 8 }} /></Pressable>)}
+                    </View>
+                  )}
+                  {(!!m.content || m.sender === 'SYSTEM') && <AT style={{ fontSize: 13, lineHeight: 19 }}>{m.sender === 'SYSTEM' ? SYS.GREETING : m.content}</AT>}
+                  <AT style={{ alignSelf: 'flex-end', fontSize: 10, color: adm.muted, marginTop: 2 }}>{!user && m.agentNo ? `No ${m.agentNo} · ` : ''}{dt(m.createdAt)}</AT>
+                </View>
+              );
+            })}
+            {!c.messages.length && <AT style={{ fontSize: 12, color: adm.muted }}>—</AT>}
+          </ACard>
+          <ACard style={{ gap: 6 }}>
+            <ALabel>İÇ NOTLAR ({c.notes.length}) · DEVİRLER ({c.transfers.length})</ALabel>
+            {c.transfers.map((x) => <AT key={x.id} style={{ fontSize: 12, color: adm.amber }}>Devir {x.from ?? '—'} → {x.to ?? '—'} · {dt(x.createdAt)}: {x.note}</AT>)}
+            {c.notes.map((n) => <AT key={n.id} style={{ fontSize: 12 }}>No {n.agentNo} · {dt(n.createdAt)}: {n.content}</AT>)}
+            {!c.notes.length && !c.transfers.length && <AT style={{ fontSize: 12, color: adm.muted }}>—</AT>}
+          </ACard>
+          <ACard style={{ gap: 4 }}>
+            <ALabel>DEĞERLENDİRME</ALabel>
+            {c.rating ? (<>
+              <AT style={{ fontSize: 16, color: '#e0a526' }}>{starsText(c.rating.stars)}</AT>
+              <AT style={{ fontSize: 12 }}>Sorun çözüldü mü: {c.rating.helped ? 'Evet' : 'Hayır'} · {dt(c.rating.createdAt)}</AT>
+              {c.rating.tags.length > 0 && <AT style={{ fontSize: 12, color: adm.muted }}>{c.rating.tags.join(', ')}</AT>}
+              {!!c.rating.comment && <AT style={{ fontSize: 13, lineHeight: 19 }}>{c.rating.comment}</AT>}
+            </>) : <AT style={{ fontSize: 12, color: adm.muted }}>Değerlendirme yok.</AT>}
+          </ACard>
+          <ACard style={{ gap: 6 }}>
+            <ALabel style={{ color: adm.cyan }}>HAIKU SORGU KAYITLARI ({c.aiLogs.length})</ALabel>
+            {c.aiLogs.map((l) => (
+              <View key={l.id} style={{ gap: 2, paddingTop: 6, borderTopWidth: 1, borderTopColor: adm.border }}>
+                <AT style={{ fontSize: 11, color: adm.muted }}>{dt(l.createdAt)} · Temsilci No {l.agentNo}</AT>
+                <AT style={{ fontSize: 13 }}>{l.question}</AT>
+                <AT style={{ fontSize: 11, color: adm.cyan }}>{l.tools.join(', ') || '—'}</AT>
+              </View>
+            ))}
+            {!c.aiLogs.length && <AT style={{ fontSize: 12, color: adm.muted }}>Kayıt yok.</AT>}
+          </ACard>
+        </View>
+      )}
+      <Modal visible={!!viewer} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setViewer(null)}>
+        <Pressable onPress={() => setViewer(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' }}>
+          {!!viewer && <Image source={img(viewer)} resizeMode="contain" style={{ width: '94%', height: '85%' }} accessibilityLabel="Görsel" />}
+        </Pressable>
+      </Modal>
+    </APage>
   );
 }
 
