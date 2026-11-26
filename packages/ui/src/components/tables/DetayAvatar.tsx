@@ -10,15 +10,15 @@ function gBg(g?: string | null) {
 }
 
 // ── Avatar ─────────────────────────────────────────────────────────────────
-// size: çap (varsayılan 48)
-export function DetayAvatar({ participant, delay, size = 48 }: { participant: { initials?: string | null; gender?: string | null; photoUrl?: string | null }; delay: number; size?: number }) {
+// size: çap (varsayılan 48). ring: isteğe bağlı çerçeve / zemin rengi (yalnız canlı destek mekân sahibi avatarı: altın); verilmezse cinsiyet rengi
+export function DetayAvatar({ participant, delay, size = 48, ring }: { participant: { initials?: string | null; gender?: string | null; photoUrl?: string | null }; delay: number; size?: number; ring?: { color: string; bg: string } }) {
   const AV_D = size;
   const AV_R = AV_D / 2;
   const AV_BR = AV_R - 2.5;
   const CIRCUMF = 2 * Math.PI * AV_BR;
   const t = useTranslations();
-  const color = gColor(participant.gender);
-  const bg    = gBg(participant.gender);
+  const color = ring?.color ?? gColor(participant.gender);
+  const bg    = ring?.bg ?? gBg(participant.gender);
 
   const label = (() => {
     const raw = (participant.initials ?? '').trim();

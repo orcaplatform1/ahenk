@@ -8,6 +8,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, API_PREFIX, langHeaders } from '@/lib/api';
 import { myRole } from '@/lib/adminRole';
 import { DetayAvatar } from '@ahenk/ui';
+import { AMBER as GOLD } from '@/components/paket/PaketKarti';
+// Mekân sahibi avatarı: Premium / Nasıl Çalışır 3 aylık kutu altını (#e0a526) çerçeve + aynı altının cinsiyet zemini gibi hafif tonu
+const VENUE_RING = { color: GOLD, bg: 'rgba(224,165,38,0.12)' };
 import { AttachIcon, AutoTextarea, EmojiIcon, SendIcon, StatusPill } from '@/components/support/ChatParts';
 import { BG, SURFACE, CARD, BORDER, TEXT, MUTED, RED, GREEN, AMBER, BLUE, SANS, MONO, LABEL } from '@/lib/adminTheme';
 
@@ -130,7 +133,7 @@ function ChatsTab() {
       {rows.map((r) => (
         <button key={r.id} onClick={() => setSel(r.id)} style={{ width: '100%', textAlign: 'left', marginBottom: 6, padding: '9px 10px', borderRadius: 10, cursor: r.status === 'QUEUED' && !superadmin ? 'default' : 'pointer', background: sel === r.id ? 'rgba(59,130,246,0.15)' : CARD, border: `1px solid ${sel === r.id ? 'rgba(59,130,246,0.35)' : BORDER}`, color: TEXT }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <DetayAvatar participant={r.avatar ?? {}} delay={0} size={36} />
+            <DetayAvatar ring={r.kind === 'venue' ? VENUE_RING : undefined} participant={r.avatar ?? {}} delay={0} size={36} />
             <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.requesterName}</span>
             {r.unread > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 99, background: RED, color: '#fff' }}>{r.unread}</span>}
           </div>
@@ -261,7 +264,7 @@ function ChatColumn({ id, st, reload, onClosed, onTakenOver }: { id: string; st:
     <section className="ll-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', minHeight: 520, maxHeight: '78vh', overflow: 'hidden' }}>
       {/* Bilgi alanı solda genişler; Devral / Kapat / Kötüye kullanım sağda alt alta */}
       <div style={{ padding: '12px 14px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        {c.avatar !== undefined && <DetayAvatar participant={c.avatar ?? {}} delay={0} size={48} />}
+        {c.avatar !== undefined && <DetayAvatar ring={c.kind === 'venue' ? VENUE_RING : undefined} participant={c.avatar ?? {}} delay={0} size={48} />}
         <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <p style={{ fontSize: 15, fontWeight: 700 }}>{c.requesterName}</p>
           <p style={{ fontSize: 11, color: MUTED }}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · bekleme {waited(c.queuedAt)}{c.agentNo ? ` · Temsilci No ${c.agentNo}` : ''}</p>
@@ -475,7 +478,7 @@ function AllChatsTab() {
             <tbody>
               {data.rows.map((r) => (
                 <tr key={r.id} onClick={() => setSel(r.id)} style={{ borderTop: `1px solid ${BORDER}`, cursor: 'pointer' }}>
-                  <td style={{ padding: '8px', fontWeight: 600 }}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><DetayAvatar participant={r.avatar ?? {}} delay={0} size={32} /><span>{r.name}</span></div></td>
+                  <td style={{ padding: '8px', fontWeight: 600 }}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><DetayAvatar ring={r.kind === 'venue' ? VENUE_RING : undefined} participant={r.avatar ?? {}} delay={0} size={32} /><span>{r.name}</span></div></td>
                   <td style={{ padding: '8px' }}>{r.kind === 'venue' ? 'Mekân' : 'Üye'}</td>
                   <td style={{ padding: '8px' }}>{TOPIC[r.topic]}</td>
                   <td style={{ padding: '8px', color: r.status === 'CLOSED' ? MUTED : r.status === 'ACTIVE' ? GREEN : AMBER }}>{CHAT_STATUS[r.status] ?? r.status}</td>
@@ -529,7 +532,7 @@ function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
       </div>
       <div className="ll-card">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <DetayAvatar participant={c.avatar ?? {}} delay={0} size={48} />
+          <DetayAvatar ring={c.kind === 'venue' ? VENUE_RING : undefined} participant={c.avatar ?? {}} delay={0} size={48} />
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 16, fontWeight: 700 }}>{c.name}</p>
             {c.kind === 'venue' && c.requesterName !== c.name && <p style={{ fontSize: 12, color: MUTED }}>{c.requesterName}</p>}

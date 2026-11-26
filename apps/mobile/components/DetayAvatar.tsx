@@ -10,8 +10,9 @@ import i18n from '@/lib/i18n';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-export function DetayAvatar({ participant, delay = 0, size = detayAvatar.d, animated = true }: {
-  participant: { initials?: string | null; gender?: string | null; photoUrl?: string | null }; delay?: number; size?: number; animated?: boolean;
+// ring: isteğe bağlı çerçeve / zemin rengi (yalnız canlı destek mekân sahibi avatarı: altın); verilmezse cinsiyet rengi
+export function DetayAvatar({ participant, delay = 0, size = detayAvatar.d, animated = true, ring }: {
+  participant: { initials?: string | null; gender?: string | null; photoUrl?: string | null }; delay?: number; size?: number; animated?: boolean; ring?: { color: string; bg: string };
 }) {
   const reduce = useReduceMotion();
   const anim = animated && !reduce;
@@ -19,8 +20,8 @@ export function DetayAvatar({ participant, delay = 0, size = detayAvatar.d, anim
   const R = size / 2;
   const BR = R - detayAvatar.strokeWidth * k;
   const circ = 2 * Math.PI * BR;
-  const color = gColor(participant.gender);
-  const bg = gBg(participant.gender);
+  const color = ring?.color ?? gColor(participant.gender);
+  const bg = ring?.bg ?? gBg(participant.gender);
   const label = initialsLabel(participant.initials);
 
   const scale = useRef(new Animated.Value(anim ? 0.5 : 1)).current;

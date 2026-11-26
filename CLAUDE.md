@@ -757,8 +757,9 @@ CANLI DESTEK (backend/src/support, migration 20261126100000_live_support):
     renkli, dokunma almaz (web pointer-events none, mobil pointerEvents none); kuyrukta ve sohbet boyunca görünür, Breakout açıkken gizli
   - Temsilci ekranı avatarı (web + mobil; sohbet listesi satırları, açık sohbet başlığı, Tüm Sohbetler satırı ve detayı): Masa Kuruldu
     DetayAvatar (web @ahenk/ui, mobil components/DetayAvatar). Üye: onaylı profil fotoğrafı ya da ad soyad baş harfleri, cinsiyet renkli
-    çerçeve + cinsiyet tonlu zemin. Mekân hesabında cinsiyet ve fotoğraf yok: yetkili ad soyadının baş harfleri, bileşenin varsayılan
-    (erkek / mavi) rengiyle. Backend satır ve detay yanıtlarında avatar {initials, gender, photoUrl} (support.service.ts avatars)
+    çerçeve + cinsiyet tonlu zemin. Mekân hesabında cinsiyet ve fotoğraf yok: yetkili ad soyadının baş harfleri (ad yoksa "?.?."),
+    altın çerçeve #e0a526 (web PaketKarti AMBER, mobil onb.primeBorder; Nasıl Çalışır 3 aylık kutu kenarlığı) + hafif altın zemin
+    rgba(224,165,38,0.12), baş harfler beyaz kalın (DetayAvatar ring; yalnız canlı destek mekân sohbetlerinde, diğer ekranlar aynen). Backend satır ve detay yanıtlarında avatar {initials, gender, photoUrl} (support.service.ts avatars)
 
 BİLDİRİM SERVİSİ (Modül 9):
 Kanallar:

@@ -16,7 +16,10 @@ import { pickFromLibrary, type PickedImage } from '@/lib/imagePick';
 import { ChatComposer, StatusPill, SUPPORT_EMOJIS } from '@/components/SupportChatParts';
 import { DetayAvatar } from '@/components/DetayAvatar';
 import { ACard, AError, ALabel, AMono, APage, AT } from '@/components/admin/AdminUi';
-import { adm, sans } from '@/theme/theme';
+import { adm, onb, sans } from '@/theme/theme';
+
+// Mekân sahibi avatarı: Nasıl Çalışır 3 aylık kutu altını (onb.primeBorder #e0a526) çerçeve + aynı altının cinsiyet zemini gibi hafif tonu
+const VENUE_RING = { color: onb.primeBorder, bg: 'rgba(224,165,38,0.12)' };
 
 type Sender = 'USER' | 'AGENT' | 'SYSTEM';
 // Kullanıcı avatarı (Masa Kuruldu DetayAvatar): onaylı fotoğraf ya da baş harfler, cinsiyet renkli çerçeve; mekânda cinsiyet / foto yok
@@ -110,7 +113,7 @@ function ChatList({ onOpen }: { onOpen: (id: string) => void }) {
         <Pressable key={r.id} onPress={() => onOpen(r.id)} accessibilityRole="button"
           style={({ pressed }) => ({ minHeight: 44, marginBottom: 6, padding: 10, borderRadius: 10, backgroundColor: adm.card, borderWidth: 1, borderColor: adm.border, opacity: pressed ? 0.7 : 1 })}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <DetayAvatar participant={r.avatar ?? {}} size={36} />
+            <DetayAvatar ring={r.kind === 'venue' ? VENUE_RING : undefined} participant={r.avatar ?? {}} size={36} />
             <AT w={600} style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>{r.requesterName}</AT>
             {r.unread > 0 && <AT w={700} style={{ fontSize: 10, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 99, backgroundColor: adm.red, color: '#fff', overflow: 'hidden' }}>{r.unread}</AT>}
           </View>
@@ -215,7 +218,7 @@ function ChatScreen({ id, onBack }: { id: string; onBack: () => void }) {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: adm.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + adm.headerH : 0}>
       <View style={{ paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: adm.border, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Geri" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><AT style={{ fontSize: 20 }}>‹</AT></Pressable>
-        {c.avatar !== undefined && <DetayAvatar participant={c.avatar ?? {}} size={40} />}
+        {c.avatar !== undefined && <DetayAvatar ring={c.kind === 'venue' ? VENUE_RING : undefined} participant={c.avatar ?? {}} size={40} />}
         <View style={{ flex: 1, minWidth: 0 }}>
           <AT w={700} style={{ fontSize: 14 }} numberOfLines={1}>{c.requesterName}</AT>
           <AT style={{ fontSize: 11, color: adm.muted }} numberOfLines={1}>{TOPIC[c.topic]} · {c.kind === 'venue' ? 'Mekân' : 'Üye'} · {waited(c.queuedAt)}{c.agentNo ? ` · No ${c.agentNo}` : ''}</AT>
@@ -453,7 +456,7 @@ function AllChatsTab({ onOpen }: { onOpen: (id: string) => void }) {
             <Pressable key={r.id} onPress={() => onOpen(r.id)} accessibilityRole="button" accessibilityLabel={r.name}
               style={({ pressed }) => ({ minHeight: 44, padding: 10, borderRadius: 10, backgroundColor: adm.card, borderWidth: 1, borderColor: adm.border, opacity: pressed ? 0.7 : 1, gap: 3 })}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <DetayAvatar participant={r.avatar ?? {}} size={32} />
+                <DetayAvatar ring={r.kind === 'venue' ? VENUE_RING : undefined} participant={r.avatar ?? {}} size={32} />
                 <AT w={600} style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>{r.name}</AT>
                 <AT style={{ fontSize: 12, color: r.status === 'CLOSED' ? adm.muted : r.status === 'ACTIVE' ? adm.green : adm.amber }}>{CHAT_STATUS[r.status] ?? r.status}</AT>
               </View>
@@ -505,7 +508,7 @@ function AllChatDetailView({ id, onBack }: { id: string; onBack: () => void }) {
         <View style={{ gap: 10 }}>
           <ACard style={{ gap: 4 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <DetayAvatar participant={c.avatar ?? {}} size={48} />
+              <DetayAvatar ring={c.kind === 'venue' ? VENUE_RING : undefined} participant={c.avatar ?? {}} size={48} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <AT w={700} style={{ fontSize: 16 }}>{c.name}</AT>
                 {c.kind === 'venue' && c.requesterName !== c.name && <AT style={{ fontSize: 12, color: adm.muted }}>{c.requesterName}</AT>}
